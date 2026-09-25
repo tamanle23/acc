@@ -16,167 +16,167 @@
     }
   },
   "effects": {
-    "audio_spectrum": {
-      "category": "Unknown",
-      "pipeline": "webm_alpha",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/audio_spectrum.ts"
-    },
-    "bokeh": {
-      "category": "Unknown",
+    "rain": {
+      "category": "Weather",
       "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/bokeh.ts"
+      "variants": ["drizzle", "heavy_rain", "storm"],
+      "module_path": "./src/overlay-effects/generators/rain.ts"
     },
-    "bubbles": {
-      "category": "Unknown",
-      "pipeline": "webm_alpha",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/bubbles.ts"
-    },
-    "camera_ui": {
-      "category": "Unknown",
-      "pipeline": "webm_alpha",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/camera_ui.ts"
-    },
-    "confetti": {
-      "category": "Unknown",
-      "pipeline": "webm_alpha",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/confetti.ts"
-    },
-    "digital_glitch": {
-      "category": "Unknown",
+    "snow": {
+      "category": "Weather",
       "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/digital_glitch.ts"
+      "variants": ["light_snow", "flurries", "blizzard"],
+      "module_path": "./src/overlay-effects/generators/snow.ts"
     },
     "dust": {
-      "category": "Unknown",
+      "category": "Atmosphere",
       "pipeline": "mp4_luma",
-      "variants": [],
+      "variants": ["ambient_dust", "sunshaft_dust"],
       "module_path": "./src/overlay-effects/generators/dust.ts"
     },
-    "embers": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/embers.ts"
-    },
-    "film_damage": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/film_damage.ts"
-    },
-    "fire": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/fire.ts"
-    },
-    "floating_hearts": {
-      "category": "Unknown",
-      "pipeline": "webm_alpha",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/floating_hearts.ts"
-    },
     "fog": {
-      "category": "Unknown",
+      "category": "Atmosphere",
       "pipeline": "mp4_luma",
-      "variants": [],
+      "variants": ["ground_mist", "dense_fog"],
       "module_path": "./src/overlay-effects/generators/fog.ts"
     },
-    "god_rays": {
-      "category": "Unknown",
+    "light_leak": {
+      "category": "Atmosphere",
       "pipeline": "mp4_luma",
-      "variants": [],
+      "variants": ["edge_burns", "transition_flash"],
+      "module_path": "./src/overlay-effects/generators/light_leak.ts"
+    },
+    "embers": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": ["campfire_sparks", "windy_sparks"],
+      "module_path": "./src/overlay-effects/generators/embers.ts"
+    },
+    "smoke": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": ["rising_steam", "rolling_smoke"],
+      "module_path": "./src/overlay-effects/generators/smoke.ts"
+    },
+    "lightning": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": ["sheet_lightning", "branching_lightning"],
+      "module_path": "./src/overlay-effects/generators/lightning.ts"
+    },
+    "fire": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": ["campfire_flames", "wall_of_fire"],
+      "module_path": "./src/overlay-effects/generators/fire.ts"
+    },
+    "film_damage": {
+      "category": "Retro",
+      "pipeline": "mp4_luma",
+      "variants": ["hairline_scratches", "film_dirt"],
+      "module_path": "./src/overlay-effects/generators/film_damage.ts"
+    },
+    "vhs": {
+      "category": "Retro",
+      "pipeline": "mp4_luma",
+      "variants": ["tracking_snow", "tracking_lines"],
+      "module_path": "./src/overlay-effects/generators/vhs.ts"
+    },
+    "bokeh": {
+      "category": "Cinematic & Optical",
+      "pipeline": "mp4_luma",
+      "variants": ["drifting_bokeh", "pulsing_bokeh"],
+      "module_path": "./src/overlay-effects/generators/bokeh.ts"
+    },
+    "lens_flare": {
+      "category": "Cinematic & Optical",
+      "pipeline": "mp4_luma",
+      "variants": ["anamorphic_streak", "sun_burst"],
+      "module_path": "./src/overlay-effects/generators/lens_flare.ts"
+    },
+    "digital_glitch": {
+      "category": "Cyberpunk & Tech",
+      "pipeline": "mp4_luma",
+      "variants": ["block_datamosh", "rgb_shake"],
+      "module_path": "./src/overlay-effects/generators/digital_glitch.ts"
+    },
+    "matrix_rain": {
+      "category": "Cyberpunk & Tech",
+      "pipeline": "mp4_luma",
+      "variants": ["classic_green", "red_alert"],
+      "module_path": "./src/overlay-effects/generators/matrix_rain.ts"
+    },
+    "starfield": {
+      "category": "Cosmic",
+      "pipeline": "mp4_luma",
+      "variants": ["twinkling_night", "warp_speed"],
+      "module_path": "./src/overlay-effects/generators/starfield.ts"
+    },
+    "god_rays": {
+      "category": "Volumetric Lighting",
+      "pipeline": "mp4_luma",
+      "variants": ["heavenly_glow", "underwater_shafts"],
       "module_path": "./src/overlay-effects/generators/god_rays.ts"
     },
-    "grunge_texture": {
-      "category": "Unknown",
+    "rain_on_glass": {
+      "category": "Liquid & Grunge",
       "pipeline": "mp4_luma",
-      "variants": [],
+      "variants": ["static_drops", "sliding_drops"],
+      "module_path": "./src/overlay-effects/generators/rain_on_glass.ts"
+    },
+    "grunge_texture": {
+      "category": "Liquid & Grunge",
+      "pipeline": "mp4_luma",
+      "variants": ["stop_motion_paper", "flickering_halftone"],
       "module_path": "./src/overlay-effects/generators/grunge_texture.ts"
     },
     "leaves": {
-      "category": "Unknown",
+      "category": "Organic Objects",
       "pipeline": "webm_alpha",
-      "variants": [],
+      "variants": ["autumn_breeze", "sakura_petals"],
       "module_path": "./src/overlay-effects/generators/leaves.ts"
     },
-    "lens_flare": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/lens_flare.ts"
+    "bubbles": {
+      "category": "Organic Objects",
+      "pipeline": "webm_alpha",
+      "variants": ["underwater_bubbles", "floating_bubbles"],
+      "module_path": "./src/overlay-effects/generators/bubbles.ts"
     },
-    "lightning": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/lightning.ts"
+    "confetti": {
+      "category": "Celebration & Romance",
+      "pipeline": "webm_alpha",
+      "variants": ["party_confetti", "golden_shower"],
+      "module_path": "./src/overlay-effects/generators/confetti.ts"
     },
-    "light_leak": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/light_leak.ts"
+    "floating_hearts": {
+      "category": "Celebration & Romance",
+      "pipeline": "webm_alpha",
+      "variants": ["slow_hearts", "burst_hearts"],
+      "module_path": "./src/overlay-effects/generators/floating_hearts.ts"
     },
-    "matrix_rain": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/matrix_rain.ts"
-    },
-    "rain": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/rain.ts"
-    },
-    "rain_on_glass": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/rain_on_glass.ts"
+    "camera_ui": {
+      "category": "Motion Graphics & Camera UI",
+      "pipeline": "webm_alpha",
+      "variants": ["camcorder_rec", "cctv_security", "dslr_viewfinder"],
+      "module_path": "./src/overlay-effects/generators/camera_ui.ts"
     },
     "sci_fi_hud": {
-      "category": "Unknown",
+      "category": "Motion Graphics & Camera UI",
       "pipeline": "webm_alpha",
-      "variants": [],
+      "variants": ["target_lock", "data_processing"],
       "module_path": "./src/overlay-effects/generators/sci_fi_hud.ts"
     },
-    "smoke": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/smoke.ts"
-    },
-    "snow": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/snow.ts"
+    "audio_spectrum": {
+      "category": "Motion Graphics & Camera UI",
+      "pipeline": "webm_alpha",
+      "variants": ["classic_bars", "circular_eq"],
+      "module_path": "./src/overlay-effects/generators/audio_spectrum.ts"
     },
     "speed_lines": {
-      "category": "Unknown",
+      "category": "Anime & Manga Action",
       "pipeline": "webm_alpha",
-      "variants": [],
+      "variants": ["radial_burst", "horizontal_rush"],
       "module_path": "./src/overlay-effects/generators/speed_lines.ts"
-    },
-    "starfield": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/starfield.ts"
-    },
-    "vhs": {
-      "category": "Unknown",
-      "pipeline": "mp4_luma",
-      "variants": [],
-      "module_path": "./src/overlay-effects/generators/vhs.ts"
     }
   }
 }

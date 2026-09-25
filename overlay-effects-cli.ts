@@ -30,8 +30,7 @@ async function main() {
 
   try {
     // Step 1: Validate effect and variant against JSON Registry
-    // Skip variant validation if variants array is empty in registry (some aren't filled)
-    // registry.validate(effectName, variantName);
+    registry.validate(effectName, variantName);
 
     // Step 2: Fetch Data-Driven Configurations
     const effectConfig = registry.getEffectConfig(effectName);
