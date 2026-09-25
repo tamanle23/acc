@@ -51,5 +51,43 @@
 | **Motion UI** | `audio_spectrum`| `classic_bars`, `circular_eq` | Procedural noise-driven EQ bars, seamless looping. |
 | **Anime** | `speed_lines` | `radial_burst`, `horizontal_rush` | Sharp trailing lines, high contrast manga style. |
 
-## 4. Maintenance Directive
+## 4 Combinatorial System Architecture: Composite Effects Rule
+
+## 1. The Combinatorial Principle (Nguyên lý Tổ hợp)
+To achieve thousands of unique visual outcomes without bloating the codebase, the CLI MUST implement a Combinatorial System. This system generates **Composite Effects** by multiplying three dimensions:
+- **Base Variants:** (e.g., `drizzle`, `storm`).
+- **Polyrhythmic Time (Prime Durations):** Using prime numbers (3s, 5s, 7s, 11s) for different layers prevents visible repetition loops.
+- **Layer Stacking (Compositing):** Blending 2 to 5 distinct base effects simultaneously over a target video.
+
+## 2. Registry Expansion: The `composites` Object
+The `effects-registry.json` MUST be extended to include a `"composites"` object. A composite does not have its own rendering class; instead, it defines an array of base layers.
+
+**Example JSON Structure:**
+```json
+{
+  "pipelines": { ... },
+  "effects": { ... },
+  "composites": {
+    "haunted_forest": {
+      "category": "Horror",
+      "description": "Spooky ground mist with subtle fireflies and film damage.",
+      "layers": [
+        { "effect": "fog", "variant": "ground_mist", "duration": 7 },
+        { "effect": "fireflies", "variant": "deep_forest", "duration": 5 },
+        { "effect": "film_damage", "variant": "hairline_scratches", "duration": 3 }
+      ]
+    },
+    "cyberpunk_alley": {
+      "category": "Sci-Fi",
+      "description": "Heavy rain combined with rolling smoke and digital glitches.",
+      "layers": [
+        { "effect": "rain", "variant": "heavy_rain", "duration": 5 },
+        { "effect": "smoke", "variant": "rolling_smoke", "duration": 7 },
+        { "effect": "digital_glitch", "variant": "rgb_shake", "duration": 11 }
+      ]
+    }
+  }
+}
+
+## 5. Maintenance Directive
 **CRITICAL**: If a new effect or variant is requested, you MUST update this rule file (`.agents/rules/overlay-effects-architecture.md`) strictly following the Markdown Table format above before writing any implementation code.

@@ -38,6 +38,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`025`](025_cli_architecture_refactor.md) | 2026-09-25 | Refactor CLI Architecture Constraints | Enforce WebM/MP4 routing, Prime duration validation |
 | [`025`](025_performance_tuning_and_docs.md) | 2026-09-26 | Performance Tuning & Overlay CLI Docs | Fast intermediate config, GPU threads, Model URLs, Docs |
 | [`026`](026_fix_cq_double_space.md) | 2026-09-26 | Fix CQ Double Space ffmpeg Error | Fixed `-cq  12` unrecognized option bug in `renderer.ts` |
+| [`027`](027_populate_registry_validation.md) | 2026-09-26 | Populate Registry & Enable Validation | Full JSON metadata, Strict variant validation enabled |
+| [`028`](028_combinatorial_composite_effects.md) | 2026-09-26 | Implement Combinatorial Architecture | Added `--composite`, `Promise.all` parallel layer rendering |
 
 ---
 

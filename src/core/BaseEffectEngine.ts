@@ -12,6 +12,15 @@ export abstract class BaseEffectEngine {
   protected height: number = 1080;
   protected fps: number = 30;
 
+  public setDimensions(width: number, height: number): void {
+    this.width = width;
+    this.height = height;
+  }
+
+  public setFps(fps: number): void {
+    this.fps = fps;
+  }
+
   constructor(variantName: string, duration: number, pipelineConfig: PipelineConfig) {
     this.variantName = variantName;
     this.duration = duration;

@@ -16,9 +16,22 @@ export interface EffectConfig {
   module_path: string;
 }
 
+export interface CompositeLayer {
+  effect: string;
+  variant: string;
+  duration: number;
+}
+
+export interface CompositeConfig {
+  category: string;
+  description: string;
+  layers: CompositeLayer[];
+}
+
 export interface EffectsRegistry {
   pipelines: Record<string, PipelineConfig>;
   effects: Record<string, EffectConfig>;
+  composites: Record<string, CompositeConfig>;
 }
 
 export class RegistryManager {
@@ -45,6 +58,14 @@ export class RegistryManager {
     const config = this.registry.pipelines[pipelineId];
     if (!config) {
       throw new Error(`Pipeline '${pipelineId}' not found in registry.`);
+    }
+    return config;
+  }
+
+  public getCompositeConfig(compositeName: string): CompositeConfig {
+    const config = this.registry.composites[compositeName];
+    if (!config) {
+      throw new Error(`Composite '${compositeName}' not found in registry.`);
     }
     return config;
   }
