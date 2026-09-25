@@ -1,0 +1,99 @@
+{
+  "name": "Dinosaur_Story",
+  "description": "A short story about a dinosaur in a distant kingdom",
+  "settings": {
+    "platform": "youtube",
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "container": "mp4",
+    "videoCodec": "h264",
+    "crf": 20,
+    "preset": "p4",
+    "pixelFormat": "yuv420p",
+    "audioCodec": "aac",
+    "audioBitrate": "192k",
+    "gpuAcceleration": "auto",
+    "concurrency": "auto",
+    "fastIntermediate": true,
+    "fastStart": true,
+    "captions": {
+      "preset": "cinematic",
+      "subtitleMode": "burn",
+      "position": "bottom",
+      "wordsPerPhrase": 6,
+      "highlightPreset": "scale-color",
+      "highlightColor": "#00FFFF"
+    },
+    "transition": {
+      "enabled": true,
+      "type": "fade",
+      "duration": 1.0,
+      "audioBehavior": "pad"
+    },
+    "upscale": {
+      "enabled": false,
+      "model": "realesrgan-x4plus"
+    }
+  },
+  "slides": [
+    {
+      "image": "scene1.jpg",
+      "audio": "voiceover1.mp3",
+      "transition": {
+        "enabled": true,
+        "type": "wipeleft",
+        "duration": 1.5,
+        "audioBehavior": "pad"
+      },
+      "captions": [
+        {
+          "text": "Ngày",
+          "start": 0.0,
+          "end": 0.35
+        },
+        {
+          "text": "xửa",
+          "start": 0.35,
+          "end": 0.7
+        },
+        {
+          "text": "ngày",
+          "start": 0.7,
+          "end": 1.05
+        },
+        {
+          "text": "xưa...",
+          "start": 1.05,
+          "end": 1.85
+        }
+      ]
+    },
+    {
+      "image": "scene2.jpg",
+      "audio": "voiceover2.mp3",
+      "captions": [
+        {
+          "text": "Ở một",
+          "start": 0.0,
+          "end": 0.4
+        },
+        {
+          "text": "vương quốc",
+          "start": 0.4,
+          "end": 0.9
+        },
+        {
+          "text": "xa xôi,",
+          "start": 0.9,
+          "end": 1.5
+        },
+        {
+          "text": "có một chú khủng long.",
+          "start": 1.5,
+          "end": 2.3
+        }
+      ]
+    }
+  ]
+}

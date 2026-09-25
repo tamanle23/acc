@@ -1,0 +1,11 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "story-config.json",
+        "**/story-config.json"
+      ],
+      "url": "./schema/story-config.schema.json"
+    }
+  ]
+}

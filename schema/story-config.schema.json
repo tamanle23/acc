@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Visual Storytelling Generator Configuration",
+  "description": "Schema cho file story-config.json quản lý settings và slides của video",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Tên của video (được dùng làm tên file xuất ra)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Mô tả nội dung của video"
+    },
+    "settings": {
+      "type": "object",
+      "description": "Cấu hình toàn cục cho video",
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": ["tiktok", "shorts", "reels", "youtube", "youtube-4k", "facebook", "instagram", "instagram-story", "web", "mobile", "custom"],
+          "description": "Preset tối ưu hóa tự động cho từng nền tảng"
+        },
+        "width": { "type": "integer", "description": "Chiều rộng video (pixel)" },
+        "height": { "type": "integer", "description": "Chiều cao video (pixel)" },
+        "fps": { "type": "integer", "description": "Tốc độ khung hình (FPS)" },
+        "videoCodec": {
+          "type": "string",
+          "enum": ["auto", "h264", "h265", "hevc", "av1", "vp9", "libx264", "libx265", "h264_nvenc", "hevc_nvenc", "av1_nvenc", "libvpx-vp9"],
+          "description": "Định dạng mã hóa video"
+        },
+        "preset": { "type": "string", "description": "Preset mã hóa của FFmpeg (ví dụ: p4, fast, medium, slow)" },
+        "crf": { "type": "integer", "minimum": 0, "maximum": 51, "description": "Constant Rate Factor (18-28 là mức khuyên dùng, số càng thấp chất lượng càng cao)" },
+        "pixelFormat": { "type": "string", "default": "yuv420p", "description": "Định dạng Pixel, ví dụ yuv420p" },
+        "audioCodec": {
+          "type": "string",
+          "enum": ["auto", "aac", "mp3", "opus", "libmp3lame", "libopus", "copy"],
+          "description": "Định dạng mã hóa âm thanh"
+        },
+        "audioBitrate": { "type": "string", "description": "Bitrate âm thanh (ví dụ: 192k, 320k)" },
+        "container": {
+          "type": "string",
+          "enum": ["mp4", "mkv", "mov", "webm"],
+          "description": "Định dạng file container đầu ra"
+        },
+        "fastStart": { "type": "boolean", "description": "Đưa atom moov lên đầu file MP4 để Web Streaming" },
+        "gpuAcceleration": {
+          "type": "string",
+          "enum": ["auto", "nvidia", "none"],
+          "description": "Tăng tốc phần cứng GPU"
+        },
+        "concurrency": {
+          "type": ["integer", "string"],
+          "description": "Số lượng phân cảnh render song song (integer hoặc 'auto')"
+        },
+        "fastIntermediate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Bật/Tắt chế độ Ép xung Render Trung gian (tăng tốc độ, tốn dung lượng tạm)"
+        },
+        "captions": {
+          "$ref": "#/definitions/CaptionSettings"
+        },
+        "transition": {
+          "$ref": "#/definitions/TransitionSettings"
+        },
+        "upscale": {
+          "$ref": "#/definitions/UpscaleSettings"
+        }
+      }
+    },
+    "slides": {
+      "type": "array",
+      "description": "Danh sách các phân cảnh (slide) trong video",
+      "items": {
+        "type": "object",
+        "properties": {
+          "image": { "type": "string", "description": "Đường dẫn file ảnh" },
+          "audio": { "type": "string", "description": "Đường dẫn file âm thanh" },
+          "transition": { "$ref": "#/definitions/TransitionSettings" },
+          "captions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": { "type": "string" },
+                "start": { "type": "number", "description": "Thời điểm bắt đầu hiển thị (giây)" },
+                "end": { "type": "number", "description": "Thời điểm kết thúc hiển thị (giây)" }
+              },
+              "required": ["text", "start", "end"]
+            }
+          }
+        },
+        "required": ["image", "audio"]
+      },
+      "minItems": 1
+    }
+  },
+  "required": ["slides"],
+  "definitions": {
+    "CaptionSettings": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": ["classic", "tiktok", "cinematic", "vlog", "neon-glow", "bold-retro", "minimal-clean", "karaoke", "news-banner", "retro-typewriter"],
+          "description": "Phong cách phụ đề (Subtitle Style Preset)"
+        },
+        "subtitleMode": {
+          "type": "string",
+          "enum": ["burn", "soft"],
+          "description": "Chế độ phụ đề: burn (hardsub) hoặc soft (muxed track)"
+        },
+        "fontName": { "type": "string", "description": "Tên font chữ (VD: Arial, Tahoma)" },
+        "fontSize": { "type": "integer", "description": "Kích thước font" },
+        "primaryColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Màu chính (Hex #RRGGBB)" },
+        "outlineColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Màu viền (Hex #RRGGBB)" },
+        "shadowColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Màu bóng (Hex #RRGGBB)" },
+        "outlineSize": { "type": "integer", "description": "Độ dày viền (pixel)" },
+        "shadowSize": { "type": "integer", "description": "Độ dịch chuyển bóng (pixel)" },
+        "position": {
+          "type": "string",
+          "enum": ["bottom", "bottom-center", "bottom-left", "bottom-right", "center", "middle", "top", "top-center", "top-left", "top-right"],
+          "description": "Vị trí đặt phụ đề"
+        },
+        "alignment": { "type": "integer", "minimum": 1, "maximum": 9, "description": "Căn lề Numpad (1-9)" },
+        "marginV": { "type": "integer", "description": "Khoảng cách lề dọc (pixel)" },
+        "marginH": { "type": "integer", "description": "Khoảng cách lề ngang (pixel)" },
+        "marginL": { "type": "integer", "description": "Khoảng cách lề trái (pixel)" },
+        "marginR": { "type": "integer", "description": "Khoảng cách lề phải (pixel)" },
+        "borderStyle": { "type": "integer", "enum": [1, 3], "description": "1: Viền/Bóng, 3: Nền Opaque Box" },
+        "wordsPerPhrase": { "type": "integer", "minimum": 1, "description": "Số lượng từ hiển thị trên 1 dòng (dùng cho Karaoke chunking)" },
+        "highlightPreset": {
+          "type": "string",
+          "enum": ["none", "color", "scale", "glow", "scale-color"],
+          "description": "Hiệu ứng Karaoke highlight"
+        },
+        "highlightColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Màu chữ đang đọc (Hex #RRGGBB)" }
+      }
+    },
+    "TransitionSettings": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "type": {
+          "type": "string",
+          "enum": ["fade", "wipeleft", "wiperight", "wipeup", "wipedown", "slideleft", "slideright", "slideup", "slidedown", "circlecrop", "rectcrop", "distance", "fadeblack", "fadewhite", "radial", "smoothleft", "smoothright", "smoothup", "smoothdown", "circleopen", "circleclose", "vertopen", "vertclose", "horzopen", "horzclose", "dissolve", "pixelize", "diagtl", "diagtr", "diagbl", "diagbr", "hlslice", "hrslice", "vuslice", "vdslice", "hblur", "fadegrays", "wipetl", "wipetr", "wipebl", "wipebr", "squeezeh", "squeezev", "zoomin", "fadefast", "fadeslow", "random"]
+        },
+        "duration": { "type": "number", "description": "Thời gian chuyển cảnh (giây)" },
+        "audioBehavior": {
+          "type": "string",
+          "enum": ["crossfade", "pad"],
+          "description": "Cách xử lý chồng âm thanh"
+        }
+      }
+    },
+    "UpscaleSettings": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "model": {
+          "type": "string",
+          "enum": ["realesrgan-x4plus", "realesrgan-x4plus-anime", "realesrnet-x4plus", "4x-UltraSharp"]
+        }
+      }
+    }
+  }
+}

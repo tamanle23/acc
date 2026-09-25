@@ -1,0 +1,28 @@
+{
+  "name": "visual-story-telling-generator",
+  "module": "cli.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "render": "bun run cli.ts",
+    "auto-config": "bun run auto-config.ts",
+    "overlay-effects": "bun run overlay-effects-cli.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/node": "^26.6.2"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
+    "@napi-rs/canvas": "^1.0.9",
+    "extract-zip": "^2.0.1",
+    "fluent-ffmpeg": "^2.1.3",
+    "simplex-noise": "^4.0.3",
+    "wavefile": "^11.0.0",
+    "yauzl": "^3.4.0"
+  }
+}
