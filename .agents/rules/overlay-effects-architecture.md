@@ -1,94 +1,55 @@
-# Overlay Effects CLI Architecture Rule
+# Overlay Effects CLI: Architecture & Catalog Rules
 
-When working with the `overlay-effects` CLI, you MUST adhere to the following architectural guidelines.
+## 1. Modular Architecture & Routing
+- **CLI Pattern:** Use strict Interface/Class polymorphism. Trigger via CLI arguments: `--effect <name> --variant <variant_name>`.
+- **Strategy Pattern:** Each effect generator MUST implement a strategy interface to route, configure, and execute the requested variant dynamically. 
+- **Extensibility:** Adding a new effect requires updating ONLY its specific class implementation and this rule file.
 
-## 1. Modular Variant Architecture
-The CLI architecture must be modular. Use an Interface/Class structure to define effect variants so they can be triggered via CLI. For example: `--effect rain --variant drizzle`.
+## 2. Core System Architecture (Mandatory Constraints)
+- **Memory-Efficient Data Pipeline (Zero-Disk):** DO NOT render static image files (PNG/JPG) to disk. The graphics logic must calculate each frame, draw to Canvas, extract the raw byte array (Raw Buffer RGBA), and pipe it directly into an open FFmpeg process via Node.js/Bun Streams (`stdin`). FFmpeg must encode the video in real-time.
+- **Seamless Looping:** Implement exact loop interpolation. Particles moving across the screen MUST have matching coordinates at the first and last frames, or utilize opacity crossfading based on particle lifetime to ensure zero visual seams.
+- **Polyrhythmic Looping:** The CLI MUST support customizable prime number durations (e.g., 3s, 5s, 7s, 11s...) at a fixed FPS (30 or 60). This ensures that when stacked later via FFmpeg, the combined prime-duration overlays create a non-repeating cycle lasting for minutes.
+- **Background & Codec Management:**
+  - *Solid Black (RGB 0,0,0):* Export as MP4 (H.264/H.265). Strictly for `screen` or additive blended effects (weather, lights, atmospheric).
+  - *Transparent (Alpha Channel):* Export as WebM (VP9). Strictly for solid objects requiring transparency (leaves, bubbles, UI elements).
 
-Each effect generator must implement a strategy to select and execute the requested variant.
+## 3. Technical Catalog & Render Pipelines
+*CRITICAL: The FFmpeg configuration (codec, pixel format) MUST strictly match the pipeline designated for each effect.*
 
-## 2. Supported Effects & Variants Catalog
-Below is the mandatory catalog of supported effects, their variants, the required background container, and their core features.
+### Pipeline A: Luma/Screen Blending (Output: MP4 | Background: Solid Black RGB 0,0,0)
+| Category | Effect (`--effect`) | Variants (`--variant`) | Core Technical Features |
+| :--- | :--- | :--- | :--- |
+| **Weather** | `rain` | `drizzle`, `heavy_rain`, `storm` | Motion blur lines, 15-60 degree angles. |
+| **Weather** | `snow` | `light_snow`, `flurries`, `blizzard` | Sine-wave drifting, turbulence field. |
+| **Atmosphere** | `dust` | `ambient_dust`, `sunshaft_dust` | Slow-moving, low opacity, fade in/out. |
+| **Atmosphere** | `fog` | `ground_mist`, `dense_fog` | 2D perlin noise stretching horizontally. |
+| **Atmosphere** | `light_leak` | `edge_burns`, `transition_flash` | High luma, color gradients. |
+| **Action** | `embers` | `campfire_sparks`, `windy_sparks` | Upwards velocity, flickering glow. |
+| **Action** | `smoke` | `rising_steam`, `rolling_smoke` | Complex fractal movement. |
+| **Action** | `lightning` | `sheet_lightning`, `branching_lightning`| 1-3 frame flashes, high impact. |
+| **Action** | `fire` | `campfire_flames`, `wall_of_fire` | fBm noise with fire color gradient mapping. |
+| **Retro** | `film_damage`| `hairline_scratches`, `film_dirt` | Random generation, jittering. |
+| **Retro** | `vhs` | `tracking_snow`, `tracking_lines` | RGB displacement, chromatic aberration. |
+| **Cinematic** | `bokeh` | `drifting_bokeh`, `pulsing_bokeh` | Large out-of-focus overlapping light circles. |
+| **Cinematic** | `lens_flare` | `anamorphic_streak`, `sun_burst` | Horizontal light streaks, radial sun glares. |
+| **Cyberpunk** | `digital_glitch`| `block_datamosh`, `rgb_shake` | Blocky pixelation, severe RGB channel shifting. |
+| **Cyberpunk** | `matrix_rain` | `classic_green`, `red_alert` | Falling digital characters, glowing trails. |
+| **Cosmic** | `starfield` | `twinkling_night`, `warp_speed` | Sine-wave opacity twinkling, 3D perspective. |
+| **Volumetric**| `god_rays` | `heavenly_glow`, `underwater_shafts`| Intense light shafts, volumetric gradients. |
+| **Grunge** | `rain_on_glass`| `static_drops`, `sliding_drops` | Organic water drop shapes, sliding physics. |
+| **Grunge** | `grunge_texture`| `stop_motion_paper`, `flickering_halftone`| Stop-motion textures, halftone dots. |
 
-### Weather (MP4 / Black BG)
-*   **`rain`**: variants `[drizzle, heavy_rain, storm]`
-    *   *Features*: motion blur lines, angles 15-60 degrees.
-*   **`snow`**: variants `[light_snow, flurries, blizzard]`
-    *   *Features*: sine-wave drifting, turbulence field.
+### Pipeline B: Alpha Transparency (Output: WebM VP9 | Background: Transparent)
+| Category | Effect (`--effect`) | Variants (`--variant`) | Core Technical Features |
+| :--- | :--- | :--- | :--- |
+| **Organic** | `leaves` | `autumn_breeze`, `sakura_petals` | 3D rotation simulation, pendulum swinging. |
+| **Organic** | `bubbles` | `underwater_bubbles`, `floating_bubbles`| Scaling up over time, sharp edges. |
+| **Celebration**| `confetti` | `party_confetti`, `golden_shower` | Multi-colored 3D tumbling rectangles. |
+| **Celebration**| `floating_hearts`| `slow_hearts`, `burst_hearts` | Bezier heart shapes, upward pendulum drift. |
+| **Motion UI** | `camera_ui` | `camcorder_rec`, `cctv_security`, `dslr`| Blinking REC, crosshairs, battery indicators. |
+| **Motion UI** | `sci_fi_hud` | `target_lock`, `data_processing` | Rotating dashed circles, hex code streams. |
+| **Motion UI** | `audio_spectrum`| `classic_bars`, `circular_eq` | Procedural noise-driven EQ bars, seamless looping. |
+| **Anime** | `speed_lines` | `radial_burst`, `horizontal_rush` | Sharp trailing lines, high contrast manga style. |
 
-### Atmosphere (MP4 / Black BG)
-*   **`dust`**: variants `[ambient_dust, sunshaft_dust]`
-    *   *Features*: slow-moving, low opacity, fade in/out.
-*   **`fog`**: variants `[ground_mist, dense_fog]`
-    *   *Features*: 2D perlin noise stretching horizontally.
-*   **`light_leak`**: variants `[edge_burns, transition_flash]`
-    *   *Features*: high luma, color gradients.
-
-### Action & Fire (MP4 / Black BG)
-*   **`embers`**: variants `[campfire_sparks, windy_sparks]`
-    *   *Features*: upwards velocity, flickering glow.
-*   **`smoke`**: variants `[rising_steam, rolling_smoke]`
-    *   *Features*: complex fractal movement.
-*   **`lightning`**: variants `[sheet_lightning, branching_lightning]`
-    *   *Features*: 1-3 frame flashes, high impact.
-*   **`fire`**: variants `[campfire_flames, wall_of_fire]`
-    *   *Features*: fBm noise with fire color gradient mapping.
-
-### Retro (MP4 / Black BG)
-*   **`film_damage`**: variants `[hairline_scratches, film_dirt]`
-    *   *Features*: random generation, jittering.
-*   **`vhs`**: variants `[tracking_snow, tracking_lines]`
-    *   *Features*: RGB displacement, chromatic aberration.
-
-### Organic Objects (WebM / Transparent Alpha BG)
-*   **`leaves`**: variants `[autumn_breeze, sakura_petals]`
-    *   *Features*: 3D rotation simulation, pendulum swinging.
-*   **`bubbles`**: variants `[underwater_bubbles, floating_bubbles]`
-    *   *Features*: scaling up over time, sharp edges.
-
-### Cinematic & Optical (MP4 / Black BG)
-*   **`bokeh`**: variants `[drifting_bokeh, pulsing_bokeh]`
-    *   *Features*: large out-of-focus overlapping light circles, additive blending.
-*   **`lens_flare`**: variants `[anamorphic_streak, sun_burst]`
-    *   *Features*: horizontal light streaks, radial sun glares.
-
-### Cyberpunk & Tech (MP4 / Black BG)
-*   **`digital_glitch`**: variants `[block_datamosh, rgb_shake]`
-    *   *Features*: blocky pixelation, severe RGB channel shifting.
-*   **`matrix_rain`**: variants `[classic_green, red_alert]`
-    *   *Features*: falling digital characters, glowing trails.
-
-### Celebration & Romance (WebM / Transparent Alpha BG)
-*   **`confetti`**: variants `[party_confetti, golden_shower]`
-    *   *Features*: multi-colored 3D tumbling rectangles.
-*   **`floating_hearts`**: variants `[slow_hearts, burst_hearts]`
-    *   *Features*: bezier heart shapes, upward pendulum drift.
-
-### Cosmic (MP4 / Black BG)
-*   **`starfield`**: variants `[twinkling_night, warp_speed]`
-    *   *Features*: sine-wave opacity twinkling, 3D perspective projection.
-
-### Motion Graphics & Camera UI (WebM / Transparent Alpha BG)
-*   **`camera_ui`**: variants `[camcorder_rec, cctv_security, dslr_viewfinder]`
-    *   *Features*: blinking REC, crosshairs, battery indicators, timestamp.
-*   **`sci_fi_hud`**: variants `[target_lock, data_processing]`
-    *   *Features*: rotating dashed circles, scanning lines, hex code streams.
-*   **`audio_spectrum`**: variants `[classic_bars, circular_eq]`
-    *   *Features*: procedural noise-driven EQ bars, seamless looping visualization.
-
-### Anime & Manga Action (WebM / Transparent Alpha BG)
-*   **`speed_lines`**: variants `[radial_burst, horizontal_rush]`
-    *   *Features*: sharp trailing lines, high contrast manga style.
-
-### Volumetric Lighting (MP4 / Black BG)
-*   **`god_rays`**: variants `[heavenly_glow, underwater_shafts]`
-    *   *Features*: intense light shafts, slow moving volumetric gradients.
-
-### Liquid & Grunge (MP4 / Black BG or WebM)
-*   **`rain_on_glass`**: variants `[static_drops, sliding_drops]`
-    *   *Features*: organic water drop shapes, sliding physics.
-*   **`grunge_texture`**: variants `[stop_motion_paper, flickering_halftone]`
-    *   *Features*: stop-motion paper textures, comic book halftone dots.
-
-## 3. Maintaining this Rule
-**IMPORTANT**: If a new effect or variant is introduced to the `overlay-effects` CLI, you MUST update this rule file (`.agents/rules/overlay-effects-architecture.md`) to reflect the new additions.
+## 4. Maintenance Directive
+**CRITICAL**: If a new effect or variant is requested, you MUST update this rule file (`.agents/rules/overlay-effects-architecture.md`) strictly following the Markdown Table format above before writing any implementation code.

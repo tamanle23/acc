@@ -130,15 +130,19 @@ function renderSingleSlide(
         }
         // Use CRF 12 to ensure extremely fast but lossless quality
         for (let i = 0; i < outputOptions.length; i++) {
-          if (outputOptions[i].startsWith('-crf ') || outputOptions[i].startsWith('-cq ')) {
-            outputOptions[i] = `${outputOptions[i].substring(0, 4)} 12`;
+          if (outputOptions[i].startsWith('-crf ')) {
+            outputOptions[i] = '-crf 12';
+          } else if (outputOptions[i].startsWith('-cq ')) {
+            outputOptions[i] = '-cq 12';
           }
         }
       } else {
         // Find and replace CRF or CQ flags with higher quality for intermediate (old behavior)
         for (let i = 0; i < outputOptions.length; i++) {
-          if (outputOptions[i].startsWith('-crf ') || outputOptions[i].startsWith('-cq ')) {
-            outputOptions[i] = `${outputOptions[i].substring(0, 4)} 15`;
+          if (outputOptions[i].startsWith('-crf ')) {
+            outputOptions[i] = '-crf 15';
+          } else if (outputOptions[i].startsWith('-cq ')) {
+            outputOptions[i] = '-cq 15';
           } else if (outputOptions[i] === '-crf' || outputOptions[i] === '-cq') {
             outputOptions[i + 1] = '15'; // Handle legacy space-separated format just in case
           }

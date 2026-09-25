@@ -35,6 +35,9 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`022`](022_scifi_audio_motion_graphics.md) | 2026-09-25 | Expand Motion Graphics (Sci-Fi & Audio) | Procedural looping EQ bars, rotating HUD vectors |
 | [`023`](023_cinematic_optical_effects.md) | 2026-09-25 | Implement Cinematic & Optical Effects | Drifting bokeh boundary wrap, anamorphic flares |
 | [`024`](024_final_effects.md) | 2026-09-25 | Finalize Catalog: Cyberpunk, Party, Cosmic | 3D warp speed, matrix rain, vector hearts, glitches |
+| [`025`](025_cli_architecture_refactor.md) | 2026-09-25 | Refactor CLI Architecture Constraints | Enforce WebM/MP4 routing, Prime duration validation |
+| [`025`](025_performance_tuning_and_docs.md) | 2026-09-26 | Performance Tuning & Overlay CLI Docs | Fast intermediate config, GPU threads, Model URLs, Docs |
+| [`026`](026_fix_cq_double_space.md) | 2026-09-26 | Fix CQ Double Space ffmpeg Error | Fixed `-cq  12` unrecognized option bug in `renderer.ts` |
 
 ---
 
