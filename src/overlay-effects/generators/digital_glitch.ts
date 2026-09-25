@@ -1,30 +1,24 @@
-import { EffectGenerator, OverlayEffectConfig } from '../types';
-import { EffectPipeline } from '../pipeline';
+import { BaseEffectEngine } from '../../core/BaseEffectEngine';
 import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
-
-export const generateDigitalGlitchEffect: EffectGenerator = {
-  name: 'digital_glitch',
-  generate: async (config: OverlayEffectConfig, pipeline: EffectPipeline) => {
-    let adapter: CanvasAdapter;
-    if (config.canvasEngine === 'napi-rs') {
+export class DigitalGlitchEffect extends BaseEffectEngine {
+  async renderAndPipe(outputPath: string): Promise<void> {
+let adapter: CanvasAdapter;
+    if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
-      throw new Error(`Canvas engine ${config.canvasEngine} not supported yet.`);
+      throw new Error(`Canvas engine ${'napi-rs'} not supported yet.`);
     }
-
-    const canvas = adapter.createCanvas(config.width, config.height);
+    const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
-    
-    const totalFrames = Math.ceil(config.fps * config.duration);
-
+    const totalFrames = Math.ceil(this.fps * this.duration);
+    const { stream, promise } = this.setupFFmpegStream(outputPath);
     // Glitches are random discontinuous events. We can pre-generate them.
     interface GlitchBlock {
       x: number; y: number; w: number; h: number; color: string; frame: number;
     }
     const blocks: GlitchBlock[] = [];
-    
-    if (config.variant === 'block_datamosh') {
+    if (this.variantName === 'block_datamosh') {
       // Large moshing blocks
       const colors = ['rgba(255,0,255,0.8)', 'rgba(0,255,255,0.8)', 'rgba(255,255,0,0.8)'];
       for (let i = 0; i < totalFrames; i++) {
@@ -33,8 +27,8 @@ export const generateDigitalGlitchEffect: EffectGenerator = {
           const numBlocks = Math.floor(Math.random() * 10) + 5;
           for (let j = 0; j < numBlocks; j++) {
             blocks.push({
-              x: Math.random() * config.width,
-              y: Math.random() * config.height,
+              x: Math.random() * this.width,
+              y: Math.random() * this.height,
               w: Math.random() * 300 + 50,
               h: Math.random() * 100 + 20,
               color: colors[Math.floor(Math.random() * colors.length)],
@@ -56,22 +50,17 @@ export const generateDigitalGlitchEffect: EffectGenerator = {
         }
       }
     }
-
-    process.stdout.write(`Rendering ${totalFrames} frames for Digital Glitch (${config.variant}): `);
-    
+    process.stdout.write(`Rendering ${totalFrames} frames for Digital Glitch (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
-      if (frame % Math.floor(config.fps) === 0) process.stdout.write('.');
-
-      if (config.bgTransparent) {
-        ctx.clearRect(0, 0, config.width, config.height);
+      if (frame % Math.floor(this.fps) === 0) process.stdout.write('.');
+      if ((this.pipelineConfig.background === 'transparent')) {
+        ctx.clearRect(0, 0, this.width, this.height);
       } else {
         ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, config.width, config.height);
+        ctx.fillRect(0, 0, this.width, this.height);
       }
-
       ctx.globalCompositeOperation = 'screen';
-
-      if (config.variant === 'block_datamosh') {
+      if (this.variantName === 'block_datamosh') {
         const currentBlocks = blocks.filter(b => b.frame === frame);
         for (const b of currentBlocks) {
           ctx.fillStyle = b.color;
@@ -83,23 +72,23 @@ export const generateDigitalGlitchEffect: EffectGenerator = {
         if (shake) {
           // Draw aggressive full-screen RGB separation overlays
           ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
-          ctx.fillRect(shake.x, shake.y, config.width, config.height);
+          ctx.fillRect(shake.x, shake.y, this.width, this.height);
           ctx.fillStyle = 'rgba(0, 255, 255, 0.4)';
-          ctx.fillRect(-shake.x, -shake.y, config.width, config.height);
-          
+          ctx.fillRect(-shake.x, -shake.y, this.width, this.height);
           // Draw some horizontal slice displacement bars
           for (let i = 0; i < 5; i++) {
-            const sy = Math.random() * config.height;
+            const sy = Math.random() * this.height;
             const sh = Math.random() * 100 + 10;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fillRect(0, sy, config.width, sh);
+            ctx.fillRect(0, sy, this.width, sh);
           }
         }
       }
-
       const buffer = canvas.toBuffer('raw');
-      pipeline.pushFrame(buffer);
+      stream.write(buffer);
     }
     process.stdout.write(' Done!\n');
+    stream.end();
+    await promise;
   }
-};
+}

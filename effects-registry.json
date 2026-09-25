@@ -1,0 +1,182 @@
+{
+  "pipelines": {
+    "mp4_luma": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "blend_mode_recommended": "screen",
+      "background": "black"
+    },
+    "webm_alpha": {
+      "format": "webm",
+      "vcodec": "libvpx-vp9",
+      "pix_fmt": "yuva420p",
+      "blend_mode_recommended": "normal",
+      "background": "transparent"
+    }
+  },
+  "effects": {
+    "audio_spectrum": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/audio_spectrum.ts"
+    },
+    "bokeh": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/bokeh.ts"
+    },
+    "bubbles": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/bubbles.ts"
+    },
+    "camera_ui": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/camera_ui.ts"
+    },
+    "confetti": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/confetti.ts"
+    },
+    "digital_glitch": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/digital_glitch.ts"
+    },
+    "dust": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/dust.ts"
+    },
+    "embers": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/embers.ts"
+    },
+    "film_damage": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/film_damage.ts"
+    },
+    "fire": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/fire.ts"
+    },
+    "floating_hearts": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/floating_hearts.ts"
+    },
+    "fog": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/fog.ts"
+    },
+    "god_rays": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/god_rays.ts"
+    },
+    "grunge_texture": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/grunge_texture.ts"
+    },
+    "leaves": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/leaves.ts"
+    },
+    "lens_flare": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/lens_flare.ts"
+    },
+    "lightning": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/lightning.ts"
+    },
+    "light_leak": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/light_leak.ts"
+    },
+    "matrix_rain": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/matrix_rain.ts"
+    },
+    "rain": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/rain.ts"
+    },
+    "rain_on_glass": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/rain_on_glass.ts"
+    },
+    "sci_fi_hud": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/sci_fi_hud.ts"
+    },
+    "smoke": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/smoke.ts"
+    },
+    "snow": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/snow.ts"
+    },
+    "speed_lines": {
+      "category": "Unknown",
+      "pipeline": "webm_alpha",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/speed_lines.ts"
+    },
+    "starfield": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/starfield.ts"
+    },
+    "vhs": {
+      "category": "Unknown",
+      "pipeline": "mp4_luma",
+      "variants": [],
+      "module_path": "./src/overlay-effects/generators/vhs.ts"
+    }
+  }
+}
