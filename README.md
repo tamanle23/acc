@@ -135,4 +135,5 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 
 - 📜 **Tài liệu đặc tả cấu hình Story**: Xem tại [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md) (đầy đủ các platform, codec, caption presets...).
 - 🎨 **Tài liệu hướng dẫn sinh hiệu ứng Overlay**: Xem tại [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md).
+- 🔬 **Tài liệu hệ thống hóa các phương pháp Overlay & Hòa trộn**: Xem tại [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md).
 - 📋 **Quy tắc cập nhật bắt buộc**: Xem tại [AGENTS.md](AGENTS.md) / [.agents/rules/story-config.md](.agents/rules/story-config.md).

@@ -45,6 +45,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`031`](031_fix_vhs_tracking_lines.md) | 2026-09-26 | Fix & Enhance VHS Tracking Lines | Reset canvas composite mode, prominent RGB glitch bands |
 | [`032`](032_fix_webm_vp9_alpha_decoder.md) | 2026-09-26 | Fix WebM VP9 Alpha Decoding | Explicit `-c:v libvpx-vp9` input decoder for alpha transparency |
 | [`033`](033_overlay_method_rules_and_metadata.md) | 2026-09-26 | Overlay Methods & Companion Metadata | Enforce overlay methods & auto-generate `.json` companion files |
+| [`034`](034_document_overlay_methods_spec.md) | 2026-09-26 | Document Overlay Methods Spec | Created `docs/OVERLAY_METHODS_SPEC.md` |
 
 ---
 

@@ -2,6 +2,8 @@
 
 Công cụ `overlay-effects-cli.ts` là một công cụ mạnh mẽ dùng để tạo ra các video chứa hiệu ứng lớp phủ (overlay effects) dạng vòng lặp liền mạch (seamless loop). Công cụ sử dụng HTML5 Canvas (thông qua `@napi-rs/canvas`) để tính toán đồ họa hạt (particles) trực tiếp trong bộ nhớ (Zero-Disk) và nén thành video siêu nhẹ qua FFmpeg.
 
+> 📖 **Xem thêm:** Tài liệu đặc tả toán học và cơ chế hòa trộn chi tiết tại [`OVERLAY_METHODS_SPEC.md`](./OVERLAY_METHODS_SPEC.md).
+
 ---
 
 ## 🚀 Cách sử dụng
