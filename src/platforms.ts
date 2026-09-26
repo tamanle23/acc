@@ -368,6 +368,7 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     captions: mergedCaptions,
     transition: settings?.transition,
     upscale: settings?.upscale,
+    overlayComposite: settings?.overlayComposite,
   };
 }
 

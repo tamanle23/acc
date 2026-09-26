@@ -17,6 +17,7 @@
     "concurrency": "auto",
     "fastIntermediate": true,
     "fastStart": true,
+    "overlayComposite": "found_footage",
     "captions": {
       "preset": "cinematic",
       "subtitleMode": "burn",

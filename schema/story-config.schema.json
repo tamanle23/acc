@@ -66,6 +66,10 @@
         },
         "upscale": {
           "$ref": "#/definitions/UpscaleSettings"
+        },
+        "overlayComposite": {
+          "type": "string",
+          "description": "Tên của Composite Effect để phủ lên toàn bộ video (ví dụ: 'haunted_forest')"
         }
       }
     },

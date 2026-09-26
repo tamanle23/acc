@@ -40,6 +40,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`026`](026_fix_cq_double_space.md) | 2026-09-26 | Fix CQ Double Space ffmpeg Error | Fixed `-cq  12` unrecognized option bug in `renderer.ts` |
 | [`027`](027_populate_registry_validation.md) | 2026-09-26 | Populate Registry & Enable Validation | Full JSON metadata, Strict variant validation enabled |
 | [`028`](028_combinatorial_composite_effects.md) | 2026-09-26 | Implement Combinatorial Architecture | Added `--composite`, `Promise.all` parallel layer rendering |
+| [`029`](029_add_fps_resolution_args_to_cli.md) | 2026-09-26 | Add FPS & Resolution Args to CLI | Added `--fps`, `--width`, `--height` options to `overlay-effects-cli.ts` |
+| [`030`](030_composite_overlay_stacking.md) | 2026-09-26 | Implement Overlay Stacking Logic | Built `filter_complex` layer blender in Main FFmpeg Engine |
 
 ---
 

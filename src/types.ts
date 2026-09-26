@@ -162,6 +162,7 @@ export interface StorySettings {
   // Features
   transition?: TransitionSettings;
   upscale?: UpscaleSettings;
+  overlayComposite?: string; // e.g. "haunted_forest" to apply polyrhythmic looping overlay on final video
 }
 
 export interface StoryConfig {

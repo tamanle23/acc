@@ -10,7 +10,8 @@ async function renderEffectLayer(
   effectName: string, 
   variantName: string, 
   duration: number, 
-  outDir: string
+  outDir: string,
+  options?: { fps?: number, width?: number, height?: number }
 ): Promise<string> {
   // Step 1: Validate effect and variant
   registry.validate(effectName, variantName);
@@ -44,6 +45,10 @@ async function renderEffectLayer(
 
   // Step 4: Instantiate and execute the isolated effect pipeline
   const engine: BaseEffectEngine = new ExportedClass(variantName, duration, pipelineConfig);
+  if (options) {
+    if (options.fps) engine.setFps(options.fps);
+    if (options.width && options.height) engine.setDimensions(options.width, options.height);
+  }
   await engine.renderAndPipe(outputPath);
   
   return outputPath;
@@ -57,7 +62,10 @@ async function main() {
       variant: { type: 'string', short: 'v', default: 'default' },
       composite: { type: 'string', short: 'c' },
       duration: { type: 'string', short: 'd' },
-      output: { type: 'string', short: 'o' }
+      output: { type: 'string', short: 'o' },
+      fps: { type: 'string' },
+      width: { type: 'string' },
+      height: { type: 'string' }
     },
     allowPositionals: true,
   });
@@ -87,7 +95,11 @@ async function main() {
 
       // Generate all layers in parallel using Promise.all
       const renderPromises = compositeConfig.layers.map(layer => {
-        return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir);
+        return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir, {
+          fps: values.fps ? parseInt(values.fps, 10) : undefined,
+          width: values.width ? parseInt(values.width, 10) : undefined,
+          height: values.height ? parseInt(values.height, 10) : undefined
+        });
       });
 
       const outputs = await Promise.all(renderPromises);
@@ -102,7 +114,11 @@ async function main() {
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
 
       console.log(`\n=== Single Dynamic Effect Generator ===`);
-      const output = await renderEffectLayer(registry, effectName, variantName, duration, outDir);
+      const output = await renderEffectLayer(registry, effectName, variantName, duration, outDir, {
+        fps: values.fps ? parseInt(values.fps, 10) : undefined,
+        width: values.width ? parseInt(values.width, 10) : undefined,
+        height: values.height ? parseInt(values.height, 10) : undefined
+      });
       console.log(`\n✅ Successfully completed rendering to ${output}`);
     }
 
