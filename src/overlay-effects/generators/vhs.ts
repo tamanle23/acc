@@ -39,49 +39,83 @@ let adapter: CanvasAdapter;
         process.stdout.write('.');
       }
       const timeSec = frame / this.fps;
+
+      // Always reset composite operation to source-over before drawing background
+      ctx.globalCompositeOperation = 'source-over';
+
       if ((this.pipelineConfig.background === 'transparent')) {
         ctx.clearRect(0, 0, this.width, this.height);
       } else {
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, this.width, this.height);
       }
+
       // Exact speed to loop
       const exactSpeedY = (Math.ceil(speedY * this.duration / this.height) * this.height) / this.duration;
       const offsetY = (timeSec * exactSpeedY) % this.height;
+
       if (this.variantName === 'tracking_lines') {
-        // Draw multiple horizontal lines with Chromatic Aberration (RGB split)
-        const drawGlitchLine = (baseY: number, height: number) => {
+        // High-impact VHS tracking error lines with RGB split and horizontal noise bands
+        ctx.globalCompositeOperation = 'screen';
+
+        const drawTrackingBand = (baseY: number, bandHeight: number, intensity: number) => {
           let y = (baseY + offsetY) % this.height;
-          // Slight random horizontal jitter
-          const jitter = (Math.random() - 0.5) * 10;
-          ctx.globalCompositeOperation = 'screen';
-          // Red channel displacement
-          ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
-          ctx.fillRect(jitter - 4, y - 2, this.width, height);
-          // Blue channel displacement
-          ctx.fillStyle = 'rgba(0, 0, 255, 0.6)';
-          ctx.fillRect(jitter + 4, y + 2, this.width, height);
-          // Green/White core
-          ctx.fillStyle = 'rgba(100, 255, 100, 0.8)';
-          ctx.fillRect(jitter, y, this.width, height);
-          // Draw a second time wrapped for seamless loop if it crosses bottom
-          if (y + height > this.height) {
-            y -= this.height;
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.6)';
-            ctx.fillRect(jitter - 4, y - 2, this.width, height);
-            ctx.fillStyle = 'rgba(0, 0, 255, 0.6)';
-            ctx.fillRect(jitter + 4, y + 2, this.width, height);
-            ctx.fillStyle = 'rgba(100, 255, 100, 0.8)';
-            ctx.fillRect(jitter, y, this.width, height);
+          
+          const drawPass = (currentY: number) => {
+            // Draw multiple horizontal scanline slices inside the band
+            const slices = Math.max(3, Math.floor(bandHeight / 4));
+            for (let s = 0; s < slices; s++) {
+              const sliceY = currentY + (s * (bandHeight / slices));
+              const sliceH = Math.max(2, bandHeight / slices * 0.7);
+              const jitter = (Math.random() - 0.5) * 20;
+
+              // Red chromatic aberration
+              ctx.fillStyle = `rgba(255, 30, 30, ${0.7 * intensity})`;
+              ctx.fillRect(jitter - 8, sliceY - 2, this.width, sliceH);
+
+              // Blue/Cyan chromatic aberration
+              ctx.fillStyle = `rgba(0, 220, 255, ${0.7 * intensity})`;
+              ctx.fillRect(jitter + 8, sliceY + 2, this.width, sliceH);
+
+              // Intense white core with horizontal noise segments
+              ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * intensity})`;
+              ctx.fillRect(jitter, sliceY, this.width, sliceH);
+
+              // Random high-frequency white static segments
+              if (Math.random() > 0.3) {
+                const segX = Math.random() * (this.width - 300);
+                const segW = 100 + Math.random() * 200;
+                ctx.fillStyle = `rgba(255, 255, 255, ${1.0 * intensity})`;
+                ctx.fillRect(segX, sliceY - 1, segW, sliceH + 2);
+              }
+            }
+          };
+
+          drawPass(y);
+          // Wrap around for seamless loop
+          if (y + bandHeight > this.height) {
+            drawPass(y - this.height);
           }
         };
-        drawGlitchLine(this.height * 0.1, 4);
-        drawGlitchLine(this.height * 0.4, 2);
-        drawGlitchLine(this.height * 0.7, 8);
-        drawGlitchLine(this.height * 0.9, 3);
+
+        // Main prominent tracking band
+        drawTrackingBand(this.height * 0.15, 28, 1.0);
+        // Secondary medium tracking band
+        drawTrackingBand(this.height * 0.55, 18, 0.8);
+        // Subtle micro glitches
+        drawTrackingBand(this.height * 0.85, 10, 0.6);
+
+        // Bottom tape head switching noise (typical VHS artifact at bottom 2-3% of frame)
+        const headSwitchY = this.height - 24;
+        const headJitter = (Math.sin(timeSec * Math.PI * 8) * 15);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.fillRect(headJitter, headSwitchY, this.width, 8);
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+        ctx.fillRect(headJitter + 6, headSwitchY + 8, this.width, 6);
+
       } else if (this.variantName === 'tracking_snow') {
         // A thick band of static noise rolling up or down
-        // We'll roll it UP for a classic VHS tracking error feel
+        ctx.globalCompositeOperation = 'screen';
         const exactSpeedSnow = (Math.ceil(speedY * 1.5 * this.duration / this.height) * this.height) / this.duration;
         let y = this.height - ((timeSec * exactSpeedSnow) % this.height);
         const drawSnowBand = (yPos: number) => {
@@ -89,10 +123,10 @@ let adapter: CanvasAdapter;
           const raw = (noiseCanvas as any).getRawCanvas ? (noiseCanvas as any).getRawCanvas() : noiseCanvas;
           (ctx as any).drawImage(raw, 0, yPos, this.width, noiseHeight);
           // Add RGB aberration lines at the edges of the snow band
-          ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-          ctx.fillRect(0, yPos - 5, this.width, 5);
-          ctx.fillStyle = 'rgba(0, 0, 255, 0.8)';
-          ctx.fillRect(0, yPos + noiseHeight, this.width, 5);
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
+          ctx.fillRect(0, yPos - 6, this.width, 6);
+          ctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+          ctx.fillRect(0, yPos + noiseHeight, this.width, 6);
         };
         drawSnowBand(y);
         // Wrap around
