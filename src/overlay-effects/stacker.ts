@@ -20,7 +20,13 @@ export function applyPolyrhythmicOverlays(
 
     // Overlay Inputs (Loop infinitely to create the polyrhythmic effect)
     overlayPaths.forEach((path) => {
-      command.input(path).inputOptions(['-stream_loop -1']);
+      const isWebm = path.toLowerCase().endsWith('.webm');
+      const inputOpts = ['-stream_loop', '-1'];
+      if (isWebm) {
+        // FFmpeg's native vp9 decoder discards alpha; libvpx-vp9 is required to decode alpha plane (yuva420p)
+        inputOpts.unshift('-c:v', 'libvpx-vp9');
+      }
+      command.input(path).inputOptions(inputOpts);
     });
 
     let filterComplex = '';

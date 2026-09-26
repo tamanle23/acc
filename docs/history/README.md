@@ -43,6 +43,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`029`](029_add_fps_resolution_args_to_cli.md) | 2026-09-26 | Add FPS & Resolution Args to CLI | Added `--fps`, `--width`, `--height` options to `overlay-effects-cli.ts` |
 | [`030`](030_composite_overlay_stacking.md) | 2026-09-26 | Implement Overlay Stacking Logic | Built `filter_complex` layer blender in Main FFmpeg Engine |
 | [`031`](031_fix_vhs_tracking_lines.md) | 2026-09-26 | Fix & Enhance VHS Tracking Lines | Reset canvas composite mode, prominent RGB glitch bands |
+| [`032`](032_fix_webm_vp9_alpha_decoder.md) | 2026-09-26 | Fix WebM VP9 Alpha Decoding | Explicit `-c:v libvpx-vp9` input decoder for alpha transparency |
 
 ---
 
