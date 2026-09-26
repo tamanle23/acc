@@ -4,15 +4,49 @@
       "format": "mp4",
       "vcodec": "libx264",
       "pix_fmt": "yuv420p",
+      "overlay_method": "screen",
       "blend_mode_recommended": "screen",
-      "background": "black"
+      "background": {
+        "type": "solid",
+        "color": "#000000"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=screen:all_opacity=1:shortest=1"
     },
     "webm_alpha": {
       "format": "webm",
       "vcodec": "libvpx-vp9",
       "pix_fmt": "yuva420p",
+      "overlay_method": "alpha",
       "blend_mode_recommended": "normal",
-      "background": "transparent"
+      "background": {
+        "type": "transparent",
+        "color": "rgba(0, 0, 0, 0)"
+      },
+      "ffmpeg_filter_snippet": "overlay=shortest=1"
+    },
+    "mp4_multiply": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "overlay_method": "multiply",
+      "blend_mode_recommended": "multiply",
+      "background": {
+        "type": "solid",
+        "color": "#FFFFFF"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=multiply:all_opacity=1:shortest=1"
+    },
+    "mp4_overlay": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "overlay_method": "overlay",
+      "blend_mode_recommended": "overlay",
+      "background": {
+        "type": "solid",
+        "color": "#808080"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=overlay:all_opacity=1:shortest=1"
     }
   },
   "effects": {

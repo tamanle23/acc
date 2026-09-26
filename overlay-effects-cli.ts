@@ -2,57 +2,7 @@ import { parseArgs } from 'util';
 import { RegistryManager } from './src/core/Registry';
 import path from 'path';
 import fs from 'fs';
-import { BaseEffectEngine } from './src/core/BaseEffectEngine';
-import { pathToFileURL } from 'url';
-
-async function renderEffectLayer(
-  registry: RegistryManager, 
-  effectName: string, 
-  variantName: string, 
-  duration: number, 
-  outDir: string,
-  options?: { fps?: number, width?: number, height?: number }
-): Promise<string> {
-  // Step 1: Validate effect and variant
-  registry.validate(effectName, variantName);
-
-  // Step 2: Fetch Data-Driven Configurations
-  const effectConfig = registry.getEffectConfig(effectName);
-  const pipelineConfig = registry.getPipelineConfig(effectConfig.pipeline);
-  
-  const outputPath = path.join(outDir, `${effectName}_${variantName}_${duration}s.${pipelineConfig.format}`);
-
-  console.log(`[LAZY LOAD] Importing module for '${effectName}' (${variantName}): ${effectConfig.module_path}`);
-  
-  // Step 3: Lazy Load / Dynamic Import
-  const modulePath = path.resolve(process.cwd(), effectConfig.module_path);
-  const url = pathToFileURL(modulePath).href;
-  let module;
-  try {
-    module = await import(url);
-  } catch (e: any) {
-    throw new Error(`Failed to dynamically import module at ${modulePath}. Ensure the file exists. Error: ${e.message}`);
-  }
-  
-  // Scan module exports to find the class extending BaseEffectEngine
-  const ExportedClass = Object.values(module).find(
-    (val: any) => typeof val === 'function' && val.prototype instanceof BaseEffectEngine
-  ) as any;
-
-  if (!ExportedClass) {
-    throw new Error(`Module at ${effectConfig.module_path} does not export a class extending BaseEffectEngine.`);
-  }
-
-  // Step 4: Instantiate and execute the isolated effect pipeline
-  const engine: BaseEffectEngine = new ExportedClass(variantName, duration, pipelineConfig);
-  if (options) {
-    if (options.fps) engine.setFps(options.fps);
-    if (options.width && options.height) engine.setDimensions(options.width, options.height);
-  }
-  await engine.renderAndPipe(outputPath);
-  
-  return outputPath;
-}
+import { renderEffectLayer } from './src/overlay-effects/engine';
 
 async function main() {
   const { values } = parseArgs({
@@ -82,6 +32,12 @@ async function main() {
     fs.mkdirSync(outDir, { recursive: true });
   }
 
+  const layerOptions = {
+    fps: values.fps ? parseInt(values.fps, 10) : undefined,
+    width: values.width ? parseInt(values.width, 10) : undefined,
+    height: values.height ? parseInt(values.height, 10) : undefined
+  };
+
   try {
     if (values.composite) {
       const compositeName = values.composite.toLowerCase();
@@ -95,18 +51,18 @@ async function main() {
 
       // Generate all layers in parallel using Promise.all
       const renderPromises = compositeConfig.layers.map(layer => {
-        return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir, {
-          fps: values.fps ? parseInt(values.fps, 10) : undefined,
-          width: values.width ? parseInt(values.width, 10) : undefined,
-          height: values.height ? parseInt(values.height, 10) : undefined
-        });
+        return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir, layerOptions);
       });
 
       const outputs = await Promise.all(renderPromises);
 
       console.log(`\n✅ Composite '${compositeName}' successfully generated!`);
-      console.log(`Output Layers:`);
-      outputs.forEach(o => console.log(` - ${o}`));
+      console.log(`Output Layers & Metadata:`);
+      outputs.forEach(o => {
+        const jsonPath = o.slice(0, o.lastIndexOf('.')) + '.json';
+        console.log(` - Video:    ${o}`);
+        console.log(`   Metadata: ${jsonPath}`);
+      });
 
     } else if (values.effect) {
       const effectName = values.effect.toLowerCase();
@@ -114,12 +70,11 @@ async function main() {
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
 
       console.log(`\n=== Single Dynamic Effect Generator ===`);
-      const output = await renderEffectLayer(registry, effectName, variantName, duration, outDir, {
-        fps: values.fps ? parseInt(values.fps, 10) : undefined,
-        width: values.width ? parseInt(values.width, 10) : undefined,
-        height: values.height ? parseInt(values.height, 10) : undefined
-      });
-      console.log(`\n✅ Successfully completed rendering to ${output}`);
+      const output = await renderEffectLayer(registry, effectName, variantName, duration, outDir, layerOptions);
+      const jsonPath = output.slice(0, output.lastIndexOf('.')) + '.json';
+      console.log(`\n✅ Successfully completed rendering!`);
+      console.log(`Video:    ${output}`);
+      console.log(`Metadata: ${jsonPath}`);
     }
 
   } catch (err: any) {

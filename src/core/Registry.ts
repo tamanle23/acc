@@ -1,12 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 
+export interface PipelineBackground {
+  type: 'solid' | 'transparent';
+  color: string;
+}
+
 export interface PipelineConfig {
   format: string;
   vcodec: string;
   pix_fmt: string;
+  overlay_method: 'alpha' | 'screen' | 'multiply' | 'overlay';
   blend_mode_recommended: string;
-  background: string;
+  background: PipelineBackground | string;
+  ffmpeg_filter_snippet?: string;
 }
 
 export interface EffectConfig {
