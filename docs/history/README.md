@@ -46,6 +46,18 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`032`](032_fix_webm_vp9_alpha_decoder.md) | 2026-09-26 | Fix WebM VP9 Alpha Decoding | Explicit `-c:v libvpx-vp9` input decoder for alpha transparency |
 | [`033`](033_overlay_method_rules_and_metadata.md) | 2026-09-26 | Overlay Methods & Companion Metadata | Enforce overlay methods & auto-generate `.json` companion files |
 | [`034`](034_document_overlay_methods_spec.md) | 2026-09-26 | Document Overlay Methods Spec | Created `docs/OVERLAY_METHODS_SPEC.md` |
+| [`035`](035_sound_effects_cli.md) | 2026-09-26 | Implement Sound Effects CLI Utility | 3-Layer frequency composite FFmpeg audio synthesis |
+| [`036`](036_sound_effects_strategy_refactor.md) | 2026-09-26 | Refactor Sound Effects to Strategy Pattern | Decoupled Registry and Generator classes |
+| [`037`](037_ai_sound_effects_integration.md) | 2026-09-26 | Integrate Parallel AI Sound Generators | Local PyTorch Daemon via uv, Strategy Pattern, IPC |
+| [`038`](038_ffmpeg_hybrid_manager.md) | 2026-09-26 | Implement FFmpeg Hybrid Auto-Downloader | `FFmpegManager`, `extract-zip`, GPU builds |
+| [`039`](039_fauna_acoustic_translation.md) | 2026-09-26 | Fauna Acoustic Translation Bridge | Map Vietnamese sound cues to precise prompt templates |
+| [`040`](040_audio_normalizer_and_dsp_pipeline.md) | 2026-09-26 | Audio Normalizer & Seamless DSP Pipeline | One-shot/Loop categorizer, EBU R128 loudness, Seamless splicing crossfade |
+| [`041`](041_integrate_vieneu_tts.md) | 2026-09-26 | Integrate Local AI TTS (VieNeu-TTS) | Add `text` to slides, Python Daemon worker, `InferenceBackend` IPC, Update `auto-config` |
+| [`042`](042_pause_between_slides.md) | 2026-09-26 | Configurable Pause Between Slides | Implement `pauseBetweenSlides` in settings and `pauseAfter` per slide via FFmpeg padding |
+| [`043`](043_rename_slides_to_scenes.md) | 2026-09-26 | Rename Slides to Scenes | Refactor property 'slides' to 'scenes' for expanded media support, maintaining backwards compat |
+| [`044`](044_multi_timeline_bgm.md) | 2026-09-27 | Basic Background Music | Multi-timeline Phase 1: Implement global BGM with amix, fix pauseBetweenScenes bug |
+| [`045`](045_custom_prompt_cli.md) | 2026-09-27 | Sound Effects Custom Prompt CLI & Backlog | Freeform text prompting, CLI parsing, BACKLOG updates |
+| [`046`](046_3d_depth_backlog_and_frame_breaker.md) | 2026-09-27 | 3D Depth Backlog & Frame-Breaker Engine | 5 3D Depth Backlog, Canvas Frame-Breaker engine, 7-Point sync, Zero-disk RGBA stream |
 
 ---
 

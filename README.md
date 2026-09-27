@@ -118,7 +118,8 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 
 ## ⚡ Quy tắc cấu hình nhanh (Cheat Sheet)
 
-* **3 Thông số bắt buộc duy nhất**: `slides` (cấp root), `image` và `audio` (trong từng slide).
+* **Thông số bắt buộc**: `slides` (cấp root), `image` (trong từng slide) và bắt buộc phải có `audio` HOẶC `text` (nếu dùng hệ thống AI Voice).
+* **Tích hợp VieNeu-TTS v3 Turbo**: Hỗ trợ sinh giọng đọc trực tiếp ở local mà không cần API từ xa. Yêu cầu môi trường Python và đã cài thư viện: `pip install git+https://github.com/pnnbao97/VieNeu-TTS`.
 * **Tất cả các trường còn lại là tùy chọn (Optional)**: Nếu bỏ qua `settings`, hệ thống tự lấy mặc định Full HD 1080p, H.264, AAC, MP4, Auto GPU, Concurrency Auto.
 * **Thứ tự ưu tiên (Precedence)**: Thuộc tính tự viết cụ thể > Mặc định của `platform` > Fallback toàn cục (`"custom"`).
 * **Render song song đa luồng (`concurrency: "auto"`)**: Tự động tận dụng nhiều luồng CPU và bộ mã hóa GPU NVENC để render đồng thời nhiều phân cảnh cùng lúc, tăng tốc độ render lên gấp 4 - 5 lần.
@@ -126,6 +127,7 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
   * `"burn"`: Khắc chết vào video (Mặc định - chuẩn TikTok/Shorts/Facebook).
   * `"soft"`: Mux thành Track Subtitle riêng biệt (chuẩn MKV/MP4 bật/tắt được trong VLC).
 * **Hiệu ứng Chuyển cảnh (`transition`)**: Hỗ trợ xfade (fade, wipe, random) với cơ chế đệm âm thanh (`audioBehavior: "pad"`) chống đè giọng đọc. Cấu hình được ở mức Global hoặc từng Slide.
+* **Hiệu ứng Tạo Nổi 3D Vượt Khung (`depth3d`)**: Đột phá thị giác 3D Out-of-Bounds (Frame-Breaker) với các phong cách khung viền (`polaroid`, `card`, `cinema`, `comic`), đổ bóng đa tầng (Elevation Drop Shadow) và dao động nổi bồng bềnh (Floating Motion). Hỗ trợ tách chủ thể tự động hoặc qua transparent cutout `subjectImage`.
 * **AI Auto-Upscale (`upscale`)**: Tự động tải và chạy Real-ESRGAN/UltraSharp (Cross-Platform trên Windows/Mac/Linux) để làm nét ảnh trước khi render.
 * **10 Bộ Caption Presets**: `tiktok`, `classic`, `cinematic`, `vlog`, `neon-glow`, `bold-retro`, `minimal-clean`, `karaoke`, `news-banner`, `retro-typewriter`.
 
@@ -133,7 +135,8 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 
 ## 📖 Chi tiết tài liệu cấu hình & Quy tắc phát triển
 
-- 📜 **Tài liệu đặc tả cấu hình Story**: Xem tại [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md) (đầy đủ các platform, codec, caption presets...).
+- 📜 **Tài liệu đặc tả cấu hình Story**: Xem tại [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md) (đầy đủ các platform, codec, caption presets, depth3d...).
+- 🧊 **Tài liệu & Kế hoạch 3D Depth Techniques**: Xem tại [docs/3D_DEPTH_BACKLOG.md](docs/3D_DEPTH_BACKLOG.md).
 - 🎨 **Tài liệu hướng dẫn sinh hiệu ứng Overlay**: Xem tại [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md).
 - 🔬 **Tài liệu hệ thống hóa các phương pháp Overlay & Hòa trộn**: Xem tại [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md).
 - 📋 **Quy tắc cập nhật bắt buộc**: Xem tại [AGENTS.md](AGENTS.md) / [.agents/rules/story-config.md](.agents/rules/story-config.md).

@@ -1,12 +1,14 @@
+import { FFmpegManager } from './core/FFmpegManager';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 import ffmpeg from 'fluent-ffmpeg';
-import type { ResolvedStoryConfig, ResolvedSlideConfig, TransitionSettings } from './types';
-import { generateAssContent, getSlideDuration } from './subtitles';
+import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from './types';
+import { generateAssContent, getSceneDuration } from './subtitles';
 import { buildFfmpegEncodingFlags } from './platforms';
 import { upscaleImage, checkAndDownloadUpscaler } from './upscaler';
+import { renderFrameBreakerScene } from './depth3d/frame-breaker';
 
 function getFileChecksum(filePath: string): string {
   try {
@@ -63,8 +65,8 @@ function createSilentWavBuffer(seconds = 5): Buffer {
   return buffer;
 }
 
-function renderSingleSlide(
-  slide: ResolvedSlideConfig,
+function renderSingleScene(
+  scene: ResolvedSceneConfig,
   duration: number,
   assPath: string | null,
   config: ResolvedStoryConfig,
@@ -79,12 +81,12 @@ function renderSingleSlide(
     const { width, height, container, captions } = config.settings;
     const subtitleMode = captions?.subtitleMode || 'burn';
 
-    const hasImage = fs.existsSync(slide.resolvedImage);
-    const hasAudio = fs.existsSync(slide.resolvedAudio);
+    const hasImage = fs.existsSync(scene.resolvedImage);
+    const hasAudio = fs.existsSync(scene.resolvedAudio);
     const hasSubtitle = !!(assPath && fs.existsSync(assPath));
 
-    const imageInput = hasImage ? slide.resolvedImage : fallbackImagePath;
-    const audioInput = hasAudio ? slide.resolvedAudio : fallbackAudioPath;
+    const imageInput = hasImage ? scene.resolvedImage : fallbackImagePath;
+    const audioInput = hasAudio ? scene.resolvedAudio : fallbackAudioPath;
 
     // Extend video duration by paddingTime
     const totalDuration = duration + paddingTime;
@@ -288,8 +290,8 @@ export async function renderStoryVideo(
 ): Promise<void> {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'story-render-'));
   const { width, height, container, captions, concurrency, upscale } = config.settings;
-  const totalSlides = config.slides.length;
-  const activeConcurrency = Math.max(1, Math.min(concurrency || 1, totalSlides));
+  const totalScenes = config.scenes.length;
+  const activeConcurrency = Math.max(1, Math.min(concurrency || 1, totalScenes));
 
   // 1. AI Upscaling Pre-processing
   if (upscale?.enabled) {
@@ -303,25 +305,25 @@ export async function renderStoryVideo(
     }
 
     const upscalerConcurrency = Math.min(2, activeConcurrency);
-    console.log(`🚀 Starting AI Upscaling (${totalSlides} images, parallel workers: ${upscalerConcurrency})...`);
-    await runConcurrentPool(config.slides, upscalerConcurrency, async (slide, i) => {
-      if (fs.existsSync(slide.resolvedImage)) {
-        const ext = path.extname(slide.resolvedImage);
+    console.log(`🚀 Starting AI Upscaling (${totalScenes} images, parallel workers: ${upscalerConcurrency})...`);
+    await runConcurrentPool(config.scenes, upscalerConcurrency, async (scene, i) => {
+      if (fs.existsSync(scene.resolvedImage)) {
+        const ext = path.extname(scene.resolvedImage);
         
         // Cache file naming based on original filename, MD5 checksum, and model
-        const baseName = path.basename(slide.resolvedImage, ext);
-        const checksum = getFileChecksum(slide.resolvedImage);
+        const baseName = path.basename(scene.resolvedImage, ext);
+        const checksum = getFileChecksum(scene.resolvedImage);
         const upscaledFilename = `upscaled_${baseName}_${checksum}_${modelName}${ext}`;
         const upscaledPath = path.join(cacheDir, upscaledFilename);
         
         if (fs.existsSync(upscaledPath)) {
-          console.log(`▶ [Slide ${i + 1}/${totalSlides}] Using cached upscaled image: ${upscaledFilename}`);
-          slide.resolvedImage = upscaledPath;
+          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Using cached upscaled image/video: ${upscaledFilename}`);
+          scene.resolvedImage = upscaledPath;
         } else {
-          console.log(`▶ [Slide ${i + 1}/${totalSlides}] Upscaling image using ${modelName}...`);
-          await upscaleImage(slide.resolvedImage, upscaledPath, modelName);
-          slide.resolvedImage = upscaledPath;
-          console.log(`✓ [Slide ${i + 1}/${totalSlides}] Upscaling complete.`);
+          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Upscaling using ${modelName}...`);
+          await upscaleImage(scene.resolvedImage, upscaledPath, modelName);
+          scene.resolvedImage = upscaledPath;
+          console.log(`✓ [Scene ${i + 1}/${totalScenes}] Upscaling complete.`);
         }
       }
     });
@@ -334,72 +336,92 @@ export async function renderStoryVideo(
   fs.writeFileSync(fallbackAudioPath, createSilentWavBuffer(15));
 
   try {
-    console.log(`\n🚀 Starting slide rendering (${totalSlides} slides, parallel workers: ${activeConcurrency})...\n`);
+    console.log(`\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
 
-    const hasAnyTransition = config.slides.some(s => s.transition?.enabled) || config.settings.transition?.enabled;
+    const hasAnyTransition = config.scenes.some(s => s.transition?.enabled) || config.settings.transition?.enabled;
 
     const segments = await runConcurrentPool(
-      config.slides,
+      config.scenes,
       activeConcurrency,
-      async (slide, i) => {
-        const audioDuration = await getMediaDuration(slide.resolvedAudio);
-        const duration = getSlideDuration(slide, audioDuration);
+      async (scene, i) => {
+        const audioDuration = await getMediaDuration(scene.resolvedAudio);
+        const duration = getSceneDuration(scene, audioDuration);
 
         let assPath: string | null = null;
-        if (slide.captions && slide.captions.length > 0) {
-          assPath = path.join(tempDir, `slide_${i}.ass`);
-          const assContent = generateAssContent(slide.captions, captions, width, height);
+        if (scene.captions && scene.captions.length > 0) {
+          assPath = path.join(tempDir, `scene_${i}.ass`);
+          const assContent = generateAssContent(scene.captions, captions, width, height);
           fs.writeFileSync(assPath, assContent, 'utf-8');
         }
 
-        const segmentPath = path.join(tempDir, `slide_${i}.${container}`);
+        const segmentPath = path.join(tempDir, `scene_${i}.${container}`);
         const startTime = Date.now();
         
         // Determine transition padding
         let paddingTime = 0;
-        const tConfig = slide.transition || config.settings.transition;
-        if (tConfig?.enabled && tConfig.audioBehavior === 'pad' && i < totalSlides - 1) {
+        const tConfig = scene.transition || config.settings.transition;
+        if (tConfig?.enabled && tConfig.audioBehavior === 'pad' && i < totalScenes - 1) {
           paddingTime = tConfig.duration || 1.0;
         }
 
-        console.log(`▶ [Slide ${i + 1}/${totalSlides}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
+        const pauseTime = scene.pauseAfter !== undefined ? scene.pauseAfter : (config.settings.pauseBetweenScenes || 0);
+        if (pauseTime > 0 && i < totalScenes - 1) {
+          paddingTime += pauseTime;
+        }
 
-        const result = await renderSingleSlide(
-          slide,
-          duration,
-          assPath,
-          config,
-          segmentPath,
-          fallbackImagePath,
-          fallbackAudioPath,
-          paddingTime,
-          hasAnyTransition // use High Quality if transitioning later
-        );
+        const depthConfig = scene.depth3d || config.settings.depth3d;
+        let result;
+
+        if (depthConfig?.enabled !== false && (depthConfig?.mode === 'frame_breaker' || (depthConfig?.enabled && !depthConfig?.mode))) {
+          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering 3D Frame-Breaker (${(duration+paddingTime).toFixed(2)}s)...`);
+          result = await renderFrameBreakerScene({
+            scene,
+            duration,
+            assPath,
+            config,
+            outputPath: segmentPath,
+            paddingTime,
+            useHighQualityIntermediate: hasAnyTransition
+          });
+        } else {
+          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
+          result = await renderSingleScene(
+            scene,
+            duration,
+            assPath,
+            config,
+            segmentPath,
+            fallbackImagePath,
+            fallbackAudioPath,
+            paddingTime,
+            hasAnyTransition // use High Quality if transitioning later
+          );
+        }
 
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.log(`✓ [Slide ${i + 1}/${totalSlides}] Completed in ${elapsed}s`);
+        console.log(`✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
 
-        return { path: result.path, duration: result.duration, transition: slide.transition };
+        return { path: result.path, duration: result.duration, transition: scene.transition };
       }
     );
 
-    console.log('\nConcatenating slides into final video...');
+    console.log('\nConcatenating scenes into final video...');
     
-    // Create a temporary path for the concatenated video before overlays
-    const concatOutputPath = config.settings.overlayComposite ? path.join(tempDir, 'concat_output.mp4') : outputFilePath;
+    let currentVideoPath = path.join(tempDir, 'concat_output.mp4');
 
     if (segments.length === 1) {
-      fs.copyFileSync(segments[0].path, concatOutputPath);
+      fs.copyFileSync(segments[0].path, currentVideoPath);
     } else {
       if (hasAnyTransition) {
         console.log('Applying video transition filtergraph (xfade)...');
-        await concatenateWithTransitions(segments, concatOutputPath, config);
+        await concatenateWithTransitions(segments, currentVideoPath, config);
       } else {
-        await concatenateVideos(segments.map(s => s.path), concatOutputPath);
+        await concatenateVideos(segments.map(s => s.path), currentVideoPath);
       }
     }
 
     if (config.settings.overlayComposite) {
+      const nextVideoPath = path.join(tempDir, 'with_overlay.mp4');
       console.log(`\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);
       const { RegistryManager } = await import('./core/Registry');
       const { renderEffectLayer } = await import('./overlay-effects/engine');
@@ -417,9 +439,65 @@ export async function renderStoryVideo(
       const overlayPaths = await Promise.all(renderPromises);
 
       console.log('Stacking infinite polyrhythmic layers over the main video...');
-      await applyPolyrhythmicOverlays(concatOutputPath, overlayPaths, outputFilePath);
+      await applyPolyrhythmicOverlays(currentVideoPath, overlayPaths, nextVideoPath);
       console.log('✅ Compositing completed successfully!');
+      currentVideoPath = nextVideoPath;
     }
+
+    if (config.settings.bgm) {
+      const nextVideoPath = path.join(tempDir, 'with_bgm.mp4');
+      console.log(`\n=== Applying Background Music ===`);
+      await new Promise<void>((resolve, reject) => {
+        const bgm = config.settings.bgm!;
+        const bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
+        if (!fs.existsSync(bgmPath)) {
+          console.warn(`[BGM] Không tìm thấy file nhạc nền tại ${bgmPath}. Bỏ qua BGM.`);
+          fs.copyFileSync(currentVideoPath, nextVideoPath);
+          return resolve();
+        }
+
+        const volume = bgm.volume !== undefined ? bgm.volume : 0.1;
+        const isLoop = bgm.loop !== false;
+        const fadeIn = bgm.fadeIn || 0;
+
+        let command = ffmpeg().input(currentVideoPath);
+
+        command = command.input(bgmPath);
+        if (isLoop) {
+          command = command.inputOption('-stream_loop', '-1');
+        }
+
+        let audioFilter = `[1:a]volume=${volume}`;
+        if (fadeIn > 0) {
+          audioFilter += `,afade=t=in:st=0:d=${fadeIn}`;
+        }
+        
+        const filterComplex = `${audioFilter}[bgm_processed];[0:a][bgm_processed]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
+
+        console.log(`Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
+        command
+          .complexFilter(filterComplex)
+          .outputOptions([
+            '-map 0:v',
+            '-map [a_out]',
+            '-c:v copy', // Just copy the video stream, no re-encoding needed!
+            `-c:a ${config.settings.audioCodec}`,
+            `-b:a ${config.settings.audioBitrate}`
+          ])
+          .output(nextVideoPath)
+          .on('end', () => resolve())
+          .on('error', (err) => {
+            console.error(`[BGM] Lỗi mix nhạc nền:`, err);
+            reject(err);
+          })
+          .run();
+      });
+      console.log('✅ Background Music applied successfully!');
+      currentVideoPath = nextVideoPath;
+    }
+
+    // Final copy to output
+    fs.copyFileSync(currentVideoPath, outputFilePath);
 
   } finally {
     try {
@@ -427,3 +505,6 @@ export async function renderStoryVideo(
     } catch {}
   }
 }
+
+
+

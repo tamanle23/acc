@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import type { StoryConfig, SlideConfig, PlatformPreset, CaptionPreset, SubtitleMode } from './src/types';
+import type { StoryConfig, SceneConfig, PlatformPreset, CaptionPreset, SubtitleMode } from './src/types';
 import { transcribeAudio } from './src/whisper';
+import { generateAudioFromTTS } from './src/tts';
 import { PLATFORM_PRESETS } from './src/platforms';
 import { PRESETS as CAPTION_PRESETS } from './src/styles';
 
@@ -438,13 +439,45 @@ async function main() {
     }
   }
 
+  // 3d. Chọn 3D Depth Pop-out
+  let enableDepth3D = false;
+  let depth3DStyle: any = 'polaroid';
+  if (!shouldMerge) {
+    console.log('\n--- HIỆU ỨNG 3D POP-OUT (Out-of-Bounds Frame-Breaker) ---');
+    const depthAns = await askQuestion('Bạn có muốn bật hiệu ứng nổi 3D vượt khung (Frame-Breaker) không? (y/N) [mặc định: N]: ');
+    if (depthAns.trim().toLowerCase() === 'y') {
+      enableDepth3D = true;
+      console.log('  [1] Polaroid (Khung ảnh lấy liền viền dày) [Mặc định]');
+      console.log('  [2] Card (Thẻ bài bo góc hiện đại)');
+      console.log('  [3] Cinema (Khung phim màn ảnh rộng)');
+      console.log('  [4] Comic (Khung truyện tranh viền đen)');
+      const styleAns = await askQuestion('-> Chọn phong cách khung (1-4) [mặc định: 1]: ');
+      if (styleAns.trim() === '2') depth3DStyle = 'card';
+      else if (styleAns.trim() === '3') depth3DStyle = 'cinema';
+      else if (styleAns.trim() === '4') depth3DStyle = 'comic';
+    }
+  }
+
+  // 3e. Chọn TTS
+  let enableTTS = false;
+  let ttsVoice = 'hn-quynhanh';
+  if (!shouldMerge) {
+    console.log('\n--- LOCAL AI TTS (VieNeu) ---');
+    const ttsAns = await askQuestion('Bạn có muốn bật tính năng sinh giọng đọc bằng AI (Local VieNeu-TTS v3 Turbo) không? (y/N) [mặc định: N]: ');
+    if (ttsAns.trim().toLowerCase() === 'y') {
+      enableTTS = true;
+      const voiceAns = await askQuestion('-> Nhập mã giọng đọc (Mặc định: hn-quynhanh): ');
+      if (voiceAns.trim()) ttsVoice = voiceAns.trim();
+    }
+  }
+
   // Quét toàn bộ ảnh và âm thanh trong thư mục gốc và thư mục con (./voiceover, ./images...)
   const { imageFiles, audioFiles } = collectMediaFiles(absoluteDir);
 
   console.log(`\nTìm thấy: ${imageFiles.length} file ảnh, ${audioFiles.length} file âm thanh (bao gồm ./voiceover, ./images nếu có).`);
 
-  if (audioFiles.length === 0) {
-    console.error('Lỗi: Không tìm thấy file âm thanh nào trong thư mục.');
+  if (audioFiles.length === 0 && !enableTTS) {
+    console.error('Lỗi: Không tìm thấy file âm thanh nào trong thư mục, và TTS chưa được bật.');
     process.exit(1);
   }
 
@@ -458,8 +491,13 @@ async function main() {
     console.log('-> Bỏ qua bước Whisper transcription.');
   }
 
-  const filePairs = pairImagesAndAudios(imageFiles, audioFiles);
-  const slides: SlideConfig[] = [];
+  let filePairs = [];
+  if (audioFiles.length === 0 && enableTTS) {
+    filePairs = imageFiles.map((img) => ({ image: img, audio: '' }));
+  } else {
+    filePairs = pairImagesAndAudios(imageFiles, audioFiles);
+  }
+  const scenes: SceneConfig[] = [];
   const globalScriptCache = loadGlobalScripts(absoluteDir);
 
   if (globalScriptCache.globalJson) {
@@ -472,47 +510,69 @@ async function main() {
     const { image: imageName, audio: audioName } = filePairs[i];
     const fullAudioPath = path.isAbsolute(audioName) ? audioName : path.resolve(absoluteDir, audioName);
 
-    console.log(`\n[Slide ${i + 1}/${filePairs.length}] Ghép: ${imageName} <-> ${audioName}`);
+    console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${imageName} <-> ${audioName}`);
 
-    let captions = [];
+    let captions: any[] = [];
+    let sceneText: string | undefined = undefined;
+    const refScriptInfo = findReferenceScript(audioName, imageName, i, absoluteDir, globalScriptCache);
 
-    if (doTranscribe) {
-      const refScriptInfo = findReferenceScript(audioName, imageName, i, absoluteDir, globalScriptCache);
+    if (refScriptInfo) {
+      sceneText = refScriptInfo.scriptText;
+      console.log(`  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
+    }
 
+    let finalAudioName = audioName;
+
+    if (!finalAudioName && enableTTS && sceneText) {
+      console.log(`  -> Đang sinh âm thanh bằng VieNeu-TTS...`);
+      try {
+        const generatedAudio = await generateAudioFromTTS(sceneText, { provider: 'vieneu-v3-turbo', voice: ttsVoice, speed: 1.0 }, absoluteDir);
+        finalAudioName = path.relative(absoluteDir, generatedAudio).replace(/\\/g, '/');
+      } catch (err) {
+        console.warn(`  -> Cảnh báo: Lỗi sinh TTS:`, err);
+      }
+    }
+
+    if (finalAudioName && doTranscribe) {
+      const audioToTranscribe = path.isAbsolute(finalAudioName) ? finalAudioName : path.resolve(absoluteDir, finalAudioName);
       if (refScriptInfo) {
-        console.log(`  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
         console.log(`  -> Đang căn chỉnh timestamps theo đúng chữ gốc (Script-guided Alignment)...`);
         try {
-          captions = await transcribeAudio(fullAudioPath, 'vietnamese', true, refScriptInfo.scriptText);
+          captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, refScriptInfo.scriptText);
           console.log(`  -> ✅ Căn chỉnh thành công ${captions.length} từ theo đúng chính tả kịch bản.`);
         } catch (err: any) {
-          console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${audioName}:`, err?.message || err);
+          console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${finalAudioName}:`, err?.message || err);
         }
       } else {
-        console.log(`  -> Đang nhận diện giọng nói tự động bằng Whisper (${audioName})...`);
+        console.log(`  -> Đang nhận diện giọng nói tự động bằng Whisper (${finalAudioName})...`);
         try {
-          captions = await transcribeAudio(fullAudioPath, 'vietnamese', true);
+          captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true);
           console.log(`  -> Trích xuất được ${captions.length} mốc từ/cụm từ.`);
         } catch (err: any) {
-          console.warn(`  -> Cảnh báo: Lỗi khi transcribe ${audioName}:`, err?.message || err);
+          console.warn(`  -> Cảnh báo: Lỗi khi transcribe ${finalAudioName}:`, err?.message || err);
         }
       }
+    } else if (!finalAudioName) {
+      console.warn(`  -> Cảnh báo: Không có audio cho scene này!`);
     } else {
-      // Giữ lại captions cũ nếu có cùng tên audio hoặc ảnh
-      const existingSlide = prevConfig?.slides?.find(
+      // Giữ lại captions cũ nếu có
+      const existingScene = (prevConfig?.scenes || prevConfig?.slides)?.find(
         (s) => s.audio === audioName || s.image === imageName
       );
-      if (existingSlide && existingSlide.captions) {
-        captions = existingSlide.captions;
+      if (existingScene && existingScene.captions) {
+        captions = existingScene.captions;
         console.log(`  -> Giữ lại ${captions.length} captions đã có từ cấu hình trước.`);
       }
     }
 
-    slides.push({
+    const sceneObj: SceneConfig = {
       image: imageName,
-      audio: audioName,
       captions,
-    });
+    };
+    if (finalAudioName) sceneObj.audio = finalAudioName;
+    if (sceneText) sceneObj.text = sceneText;
+
+    scenes.push(sceneObj);
   }
 
   const basePlatform = PLATFORM_PRESETS[selectedPlatform];
@@ -560,7 +620,20 @@ async function main() {
       upscale: {
         enabled: enableUpscale,
         model: upscaleModel
-      }
+      },
+      depth3d: {
+        enabled: enableDepth3D,
+        mode: 'frame_breaker',
+        frameStyle: depth3DStyle,
+        popOutIntensity: 1.15,
+        elevationShadow: true,
+        floatingMotion: true,
+      },
+      tts: enableTTS ? {
+        provider: 'vieneu-v3-turbo',
+        voice: ttsVoice,
+        speed: 1.0
+      } : undefined
     };
   }
 
@@ -568,7 +641,7 @@ async function main() {
     name: shouldMerge && prevConfig?.name ? prevConfig.name : storyName,
     description: shouldMerge && prevConfig?.description !== undefined ? prevConfig.description : storyDesc,
     settings: finalSettings,
-    slides,
+    scenes,
   };
 
   fs.writeFileSync(configPath, JSON.stringify(resultConfig, null, 2), 'utf-8');

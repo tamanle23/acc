@@ -42,7 +42,7 @@ export function applyPolyrhythmicOverlays(
       if (isWebm) {
         // Alpha Transparency Overlay
         // shortest=1 ensures the output ends when the main video ends
-        filterComplex += `${lastV}[${overlayIndex}:v]overlay=shortest=1${nextOut};`;
+        filterComplex += `${lastV}[${overlayIndex}:v]overlay=shortest=1:format=auto[v_ovl${i}];[v_ovl${i}]format=yuv420p${nextOut};`;
       } else {
         // Luma/Screen Blending Overlay
         // shortest=1 ensures the blend ends when the shortest stream ends

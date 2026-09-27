@@ -17,7 +17,6 @@
     "concurrency": "auto",
     "fastIntermediate": true,
     "fastStart": true,
-    "overlayComposite": "found_footage",
     "captions": {
       "preset": "cinematic",
       "subtitleMode": "burn",
@@ -35,9 +34,21 @@
     "upscale": {
       "enabled": false,
       "model": "realesrgan-x4plus"
+    },
+    "tts": {
+      "provider": "vieneu-v3-turbo",
+      "voice": "hn-quynhanh",
+      "speed": 1.0
+    },
+    "pauseBetweenScenes": 1.0,
+    "bgm": {
+      "source": "bgm.mp3",
+      "volume": 0.2,
+      "loop": true,
+      "fadeIn": 2.0
     }
   },
-  "slides": [
+  "scenes": [
     {
       "image": "scene1.jpg",
       "audio": "voiceover1.mp3",
@@ -46,6 +57,14 @@
         "type": "wipeleft",
         "duration": 1.5,
         "audioBehavior": "pad"
+      },
+      "depth3d": {
+        "enabled": true,
+        "mode": "frame_breaker",
+        "frameStyle": "polaroid",
+        "popOutIntensity": 1.2,
+        "elevationShadow": true,
+        "floatingMotion": true
       },
       "captions": [
         {
@@ -95,6 +114,11 @@
           "end": 2.3
         }
       ]
+    },
+    {
+      "image": "scene1.jpg",
+      "text": "Chú khủng long này rất thân thiện và tốt bụng.",
+      "captions": []
     }
   ]
 }

@@ -70,18 +70,37 @@
         "overlayComposite": {
           "type": "string",
           "description": "Tên của Composite Effect để phủ lên toàn bộ video (ví dụ: 'haunted_forest')"
+        },
+        "depth3d": {
+          "$ref": "#/definitions/Depth3DSettings"
+        },
+        "tts": {
+          "$ref": "#/definitions/TTSSettings"
+        },
+        "pauseBetweenScenes": {
+          "type": "number",
+          "description": "Thời gian nghỉ (khoảng lặng) giữa các cảnh (giây)"
+        },
+        "bgm": {
+          "$ref": "#/definitions/BGMSettings"
         }
       }
     },
-    "slides": {
+    "scenes": {
       "type": "array",
-      "description": "Danh sách các phân cảnh (slide) trong video",
+      "description": "Danh sách các phân cảnh (scene) trong video",
       "items": {
         "type": "object",
         "properties": {
-          "image": { "type": "string", "description": "Đường dẫn file ảnh" },
+          "image": { "type": "string", "description": "Đường dẫn file ảnh/video" },
           "audio": { "type": "string", "description": "Đường dẫn file âm thanh" },
+          "text": { "type": "string", "description": "Kịch bản văn bản để sinh âm thanh (nếu không có file audio)" },
           "transition": { "$ref": "#/definitions/TransitionSettings" },
+          "depth3d": { "$ref": "#/definitions/Depth3DSettings" },
+          "pauseAfter": {
+            "type": "number",
+            "description": "Thời gian nghỉ sau cảnh (ghi đè pauseBetweenScenes)"
+          },
           "captions": {
             "type": "array",
             "items": {
@@ -95,13 +114,38 @@
             }
           }
         },
-        "required": ["image", "audio"]
+        "required": ["image"],
+        "anyOf": [
+          { "required": ["audio"] },
+          { "required": ["text"] }
+        ]
       },
       "minItems": 1
+    },
+    "slides": {
+      "type": "array",
+      "description": "DEPRECATED: Sử dụng scenes để thay thế",
+      "items": {
+        "type": "object"
+      }
     }
   },
-  "required": ["slides"],
+  "anyOf": [
+    { "required": ["scenes"] },
+    { "required": ["slides"] }
+  ],
   "definitions": {
+    "BGMSettings": {
+      "type": "object",
+      "properties": {
+        "source": { "type": "string", "description": "Tên file nhạc nền" },
+        "volume": { "type": "number", "description": "Âm lượng nhạc nền (0.0 đến 1.0)", "default": 0.1 },
+        "loop": { "type": "boolean", "description": "Lặp lại nếu nhạc ngắn hơn video", "default": true },
+        "fadeIn": { "type": "number", "description": "Thời gian fade-in (giây)" },
+        "fadeOut": { "type": "number", "description": "Thời gian fade-out (giây)", "default": 2 }
+      },
+      "required": ["source"]
+    },
     "CaptionSettings": {
       "type": "object",
       "properties": {
@@ -166,6 +210,44 @@
           "type": "string",
           "enum": ["realesrgan-x4plus", "realesrgan-x4plus-anime", "realesrnet-x4plus", "4x-UltraSharp"]
         }
+      }
+    },
+    "TTSSettings": {
+      "type": "object",
+      "properties": {
+        "provider": { "type": "string", "description": "Tên nhà cung cấp (ví dụ: vieneu-v3-turbo)" },
+        "voice": { "type": "string", "description": "Mã giọng đọc (ví dụ: hn-quynhanh)" },
+        "speed": { "type": "number", "description": "Tốc độ đọc" }
+      },
+      "required": ["provider", "voice"]
+    },
+    "Depth3DSettings": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true, "description": "Bật/Tắt hiệu ứng tạo nổi 3D" },
+        "mode": {
+          "type": "string",
+          "enum": ["frame_breaker", "parallax_dolly", "sandwich", "mesh_displacement", "wigglegram"],
+          "default": "frame_breaker",
+          "description": "Kỹ thuật tạo nổi 3D"
+        },
+        "frameStyle": {
+          "type": "string",
+          "enum": ["card", "polaroid", "cinema", "comic"],
+          "default": "card",
+          "description": "Kiểu khung ảnh vượt khung (Out-of-Bounds)"
+        },
+        "popOutIntensity": {
+          "type": "number",
+          "default": 1.15,
+          "description": "Mức độ phóng to / nhô ra của vật thể (1.0 đến 2.0)"
+        },
+        "shadow": { "type": "boolean", "default": true, "description": "Bật bóng đổ 3D" },
+        "shadowBlur": { "type": "number", "default": 25, "description": "Độ mờ của bóng đổ (px)" },
+        "shadowColor": { "type": "string", "default": "rgba(0,0,0,0.6)", "description": "Màu bóng đổ" },
+        "backdropBlur": { "type": "number", "default": 20, "description": "Độ mờ nền phía sau khung (px)" },
+        "floatMotion": { "type": "boolean", "default": true, "description": "Bật chuyển động lơ lửng 3D nhẹ nhàng" },
+        "subjectImage": { "type": "string", "description": "Đường dẫn ảnh PNG cutout trong suốt của chủ thể nếu có sẵn" }
       }
     }
   }

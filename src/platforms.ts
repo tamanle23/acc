@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { FFmpegManager } from './core/FFmpegManager';
 import os from 'os';
 import type {
   PlatformPreset,
@@ -293,7 +294,7 @@ export function checkNvidiaSupport(): boolean {
     return cachedNvidiaSupport;
   }
   try {
-    const output = execSync('ffmpeg -encoders', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const output = execSync(`"${FFmpegManager.getFFmpegPath()}" -encoders`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] });
     cachedNvidiaSupport = output.includes('h264_nvenc');
   } catch {
     cachedNvidiaSupport = false;
@@ -369,6 +370,9 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     transition: settings?.transition,
     upscale: settings?.upscale,
     overlayComposite: settings?.overlayComposite,
+    pauseBetweenScenes: settings?.pauseBetweenScenes || settings?.pauseBetweenSlides,
+    bgm: settings?.bgm,
+    depth3d: settings?.depth3d,
   };
 }
 
@@ -489,3 +493,4 @@ export function buildFfmpegEncodingFlags(
     outputOptions,
   };
 }
+

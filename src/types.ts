@@ -22,11 +22,36 @@ export interface TransitionSettings {
   audioBehavior?: 'crossfade' | 'pad'; // pad adds silence so voices don't overlap
 }
 
-export interface SlideConfig {
+export interface TTSSettings {
+  provider: string; // e.g. "vieneu-v3-turbo"
+  voice: string; // e.g. "hn-quynhanh"
+  speed?: number; // e.g. 1.0
+}
+
+export type Depth3DMode = 'frame_breaker' | 'parallax_dolly' | 'sandwich' | 'mesh_displacement' | 'wigglegram';
+export type FrameBreakerStyle = 'card' | 'polaroid' | 'cinema' | 'comic';
+
+export interface Depth3DConfig {
+  enabled?: boolean;
+  mode?: Depth3DMode; // default: 'frame_breaker'
+  frameStyle?: FrameBreakerStyle; // default: 'card'
+  popOutIntensity?: number; // default: 1.15 (scale/pop-out multiplier)
+  shadow?: boolean; // default: true
+  shadowBlur?: number; // default: 25
+  shadowColor?: string; // default: 'rgba(0,0,0,0.6)'
+  backdropBlur?: number; // default: 20 (px blur for outer background)
+  floatMotion?: boolean; // default: true (gentle 3D floating oscillation)
+  subjectImage?: string; // Optional transparent cutout PNG/WebM of subject if provided separately
+}
+
+export interface SceneConfig {
   image: string; // Filename (e.g. "scene1.jpg"), relative path ("./assets/scene1.jpg"), or absolute path ("C:/Photos/scene1.jpg")
-  audio: string; // Filename (e.g. "voiceover1.mp3"), relative path ("./audio/v1.mp3"), or absolute path ("C:/Audio/voiceover1.mp3")
+  audio?: string; // Optional if text is provided. Filename (e.g. "voiceover1.mp3")
+  text?: string; // Text script for TTS generation if audio is missing
   captions: CaptionConfig[];
-  transition?: TransitionSettings; // Slide-level override for transition to the NEXT slide
+  transition?: TransitionSettings; // Scene-level override for transition to the NEXT scene
+  pauseAfter?: number; // Override for pauseBetweenScenes
+  depth3d?: Depth3DConfig; // Scene-level 3D depth / pop-out effect
 }
 
 export type CaptionPreset =
@@ -128,6 +153,14 @@ export interface UpscaleSettings {
   model?: UpscaleModel;
 }
 
+export interface BGMSettings {
+  source: string; // Filename or path to the background music
+  volume?: number; // Volume multiplier (default: 0.1)
+  loop?: boolean; // Whether to loop the BGM (default: true)
+  fadeIn?: number; // Fade-in duration in seconds (default: 0)
+  fadeOut?: number; // Fade-out duration in seconds (default: 2)
+}
+
 export interface StorySettings {
   // Dimension & Frame rate
   width?: number;
@@ -162,33 +195,43 @@ export interface StorySettings {
   // Features
   transition?: TransitionSettings;
   upscale?: UpscaleSettings;
+  tts?: TTSSettings;
+  pauseBetweenScenes?: number; // Thời gian nghỉ (khoảng lặng) giữa các cảnh (giây)
   overlayComposite?: string; // e.g. "haunted_forest" to apply polyrhythmic looping overlay on final video
+  bgm?: BGMSettings; // Background Music configuration
+  depth3d?: Depth3DConfig; // Global default for 3D depth / pop-out effect
 }
 
 export interface StoryConfig {
   name?: string;
   description?: string;
   settings: StorySettings;
-  slides: SlideConfig[];
+  scenes?: SceneConfig[];
+  slides?: SceneConfig[]; // deprecated backward compatibility
 }
 
-export interface ResolvedSlideConfig extends SlideConfig {
+export interface ResolvedSceneConfig extends SceneConfig {
   resolvedImage: string;
   resolvedAudio: string;
 }
 
-export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'captions' | 'platform' | 'concurrency' | 'transition' | 'upscale' | 'fastIntermediate'>> {
+export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'captions' | 'platform' | 'concurrency' | 'transition' | 'upscale' | 'fastIntermediate' | 'tts' | 'pauseBetweenScenes' | 'pauseBetweenSlides' | 'overlayComposite' | 'bgm' | 'depth3d'>> {
   platform: PlatformPreset;
   concurrency: number; // Resolved numeric parallel workers count (e.g. 1, 2, 4, 6)
   fastIntermediate: boolean;
   captions?: CaptionSettings;
   transition?: TransitionSettings;
   upscale?: UpscaleSettings;
+  tts?: TTSSettings;
+  pauseBetweenScenes?: number;
+  overlayComposite?: string;
+  bgm?: BGMSettings;
+  depth3d?: Depth3DConfig;
 }
 
 export interface ResolvedStoryConfig {
   name?: string;
   description?: string;
   settings: ResolvedStorySettings;
-  slides: ResolvedSlideConfig[];
+  scenes: ResolvedSceneConfig[];
 }

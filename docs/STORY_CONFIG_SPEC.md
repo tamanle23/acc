@@ -10,7 +10,7 @@ Cấu trúc file `story-config.json` gồm các khối chính:
 - **`name`** (Tùy chọn): Tên của video (được dùng làm tên file đầu ra).
 - **`description`** (Tùy chọn): Mô tả tóm tắt nội dung video (ghi vào file metadata).
 - **`settings`**: Cài đặt video toàn cục (platform preset, kích thước, fps, video/audio codec, CRF, container, GPU acceleration, captions).
-- **`slides`**: Danh sách các phân cảnh (hình ảnh, âm thanh, danh sách timestamps phụ đề).
+- **`scenes`**: Danh sách các phân cảnh (hình ảnh, âm thanh, danh sách timestamps phụ đề).
 
 ```json
 {
@@ -55,7 +55,7 @@ Cấu trúc file `story-config.json` gồm các khối chính:
       "model": "realesrgan-x4plus"
     }
   },
-  "slides": [
+  "scenes": [
     {
       "image": "scene1.jpg",
       "audio": "voiceover1.mp3",
@@ -114,8 +114,9 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 | `container` | `string` | Không | `"mp4"`, `"webm"`, `"mkv"`, `"mov"` | `"mp4"` | Định dạng tệp video đầu ra (`output.mp4`, `output.webm`...). |
 | `fastStart` | `boolean` | Không | `true`, `false` | `true` | Đặt atom `moov` lên đầu file MP4/MOV để video có thể **phát ngay lập tức (streaming)** khi đang tải về trình duyệt web mà không cần đợi download hết file. |
 | `gpuAcceleration` | `string` | Không | `"auto"`, `"nvidia"`, `"none"` | `"auto"` | Bật tăng tốc phần cứng GPU NVIDIA NVENC (nếu có card đồ họa RTX/GTX) giúp render siêu tốc chỉ trong vài giây. |
-| `concurrency` | `number \| "auto"` | Không | `"auto"`, `1`, `2`, `4`, `6`, `8` | `"auto"` | **Số lượng phân cảnh (Slides) được render song song đồng thời** (Parallel Workers). `"auto"` tự động tối ưu dựa theo số nhân CPU và GPU NVENC để giảm thời gian render xuống tối đa. Đặt `1` để render tuần tự. |
+| `concurrency` | `number \| "auto"` | Không | `"auto"`, `1`, `2`, `4`, `6`, `8` | `"auto"` | **Số lượng phân cảnh (scenes) được render song song đồng thời** (Parallel Workers). `"auto"` tự động tối ưu dựa theo số nhân CPU và GPU NVENC để giảm thời gian render xuống tối đa. Đặt `1` để render tuần tự. |
 | `fastIntermediate` | `boolean` | Không | `true`, `false` | `true` | Khi bật Transition, FFmpeg tạo các file MP4 tạm thời bằng chế độ ép xung (Ultrafast preset, CPU bypass compression). Tăng tốc độ render lên x4 lần nhưng tốn bộ nhớ đệm ổ cứng tạm thời lúc render. |
+| `pauseBetweenscenes` | `number` | Không | - | `0` | **Thời gian nghỉ (khoảng lặng)** giữa các phân cảnh (tính bằng giây). Video sẽ giữ nguyên hình ảnh và âm thanh tạm dừng trước khi sang scene tiếp theo. |
 
 ---
 
@@ -176,19 +177,22 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 
 ---
 
-## 7. Chi tiết mảng `slides`
+## 7. Chi tiết mảng `scenes`
 
-Mỗi phần tử trong `slides` đại diện cho một phân cảnh trong video:
+Mỗi phần tử trong `scenes` đại diện cho một phân cảnh trong video:
 
 | Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mô tả |
 | :--- | :--- | :--- | :--- |
 | `image` | `string` | **Bắt buộc** | Tên tệp ảnh (ví dụ `scene1.jpg`), đường dẫn tương đối (ví dụ `./assets/scene1.png`, `../shared/bg.jpg`), hoặc **đường dẫn tuyệt đối** (ví dụ `C:/Users/Admin/Pictures/scene1.jpg`, `/var/media/images/scene1.png`). |
-| `audio` | `string` | **Bắt buộc** | Tên tệp âm thanh/voiceover tương ứng (ví dụ `voiceover1.mp3`), đường dẫn tương đối (ví dụ `./audio/v1.wav`), hoặc **đường dẫn tuyệt đối** (ví dụ `C:/Users/Admin/Audio/voiceover1.mp3`, `/var/media/voiceover1.wav`). |
+| `audio` | `string` | **Bắt buộc*** | Tên tệp âm thanh tương ứng (ví dụ `voiceover1.mp3`). Chỉ là tùy chọn nếu đã cung cấp `text`. |
+| `text`  | `string` | **Bắt buộc*** | Kịch bản văn bản. Nếu không cung cấp `audio` thì bắt buộc phải có `text` để tự động sinh TTS. |
 | `captions` | `CaptionConfig[]` | Không | Mảng danh sách các mốc hiển thị chữ trong phân cảnh này. |
+| `transition` | `TransitionSettings`| Không | Cấu hình Transition tuỳ chỉnh ghi đè riêng cho việc chuyển cảnh TỪ scene này SANG scene tiếp theo. |
+| `pauseAfter` | `number` | Không | Thời gian nghỉ (khoảng lặng) tính bằng giây ngay sau scene này, ghi đè thuộc tính `pauseBetweenscenes` toàn cục. |
 
 ### Cấu trúc từng mục trong `captions`:
 * **`text`** (`string`): Đoạn văn bản hoặc từ hiển thị trên màn hình.
-* **`start`** (`number`): Thời điểm bắt đầu xuất hiện (tính bằng **giây** từ `0.0` của slide hiện tại).
+* **`start`** (`number`): Thời điểm bắt đầu xuất hiện (tính bằng **giây** từ `0.0` của scene hiện tại).
 * **`end`** (`number`): Thời điểm kết thúc hiển thị (tính bằng **giây**, phải thỏa mãn `end > start`).
 
 ---
@@ -209,15 +213,39 @@ Mỗi phần tử trong `slides` đại diện cho một phân cảnh trong vide
 ## 9. Bảng tổng hợp thuộc tính Bắt buộc (Required) vs Tùy chọn (Optional)
 
 ### 🔴 Thuộc tính BẮT BUỘC:
-Chỉ có duy nhất 3 trường bắt buộc trong toàn bộ tệp cấu hình:
-1. `slides` (cấp root): Mảng phân cảnh (tối thiểu 1 slide).
-2. `slides[i].image` (trong từng slide): Đường dẫn tệp ảnh.
-3. `slides[i].audio` (trong từng slide): Đường dẫn tệp âm thanh.
+Chỉ có duy nhất 2 trường bắt buộc hoàn toàn trong toàn bộ tệp cấu hình:
+1. `scenes` (cấp root): Mảng phân cảnh (tối thiểu 1 scene).
+2. `scenes[i].image` (trong từng scene): Đường dẫn tệp ảnh.
+Ngoài ra, mỗi scene BẮT BUỘC phải có **`audio`** (đường dẫn âm thanh) HOẶC **`text`** (kịch bản văn bản để gọi AI Voice).
 
 ### 🟢 File cấu hình TỐI GIẢN NHẤT vẫn chạy được:
 ```json
 {
-  "slides": [
+  "scenes": [
+    {
+      "image": "scene1.jpg",
+      "audio": "voiceover1.mp3"
+    },
+    {
+      "image": "scene2.jpg",
+      "text": "Kịch bản tự động sinh giọng đọc AI."
+    }
+  ]
+}
+```
+
+---
+
+## 9.5. Tùy chỉnh TTS (Text-to-Speech)
+Sử dụng tính năng sinh giọng đọc trực tiếp ở Local bằng `VieNeu-TTS`.
+| Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- | :--- |
+| `provider` | `string` | **Có** | - | Đặt là `"vieneu-v3-turbo"`. |
+| `voice` | `string` | **Có** | - | Mã giọng đọc (ví dụ `"hn-quynhanh"`). |
+| `speed` | `number` | Không | `1.0` | Tốc độ đọc. |
+```json
+{
+  "scenes": [
     {
       "image": "scene1.jpg",
       "audio": "voiceover1.mp3"
@@ -239,11 +267,11 @@ Khi sử dụng Whisper để nhận diện giọng nói tự động, mô hình
 
 ### Các cách đặt file kịch bản để tự động nhận diện:
 
-1. **File `.txt` riêng cho từng slide (Khuyên dùng)**:
+1. **File `.txt` riêng cho từng scene (Khuyên dùng)**:
    - Cùng thư mục với audio: `voiceover/01.txt`, `voiceover/01.mp3.txt`, `voiceover/02.txt`
    - Hoặc ở thư mục gốc story: `01.txt`, `voiceover1.txt`, `scene1.txt`
 2. **File `.txt` toàn cục (`script.txt` / `story.txt` / `transcript.txt`)**:
-   - Mỗi dòng văn bản trong file tương ứng với 1 phân cảnh (slide).
+   - Mỗi dòng văn bản trong file tương ứng với 1 phân cảnh (scene).
 3. **File `.json` toàn cục (`script.json` / `story.json`)**:
    - Chứa mảng các chuỗi (`["Câu 1...", "Câu 2..."]`) hoặc mảng object (`[{"text": "Câu 1..."}, ...]`).
 4. **Fallback tự động**:
@@ -261,18 +289,18 @@ Hệ thống tích hợp sẵn luồng gọi Real-ESRGAN/UltraSharp để làm n
 | `enabled` | `boolean` | Không | `false` | Bật/tắt tự động upscale ảnh đầu vào (làm nét ảnh gốc trước khi gen video). |
 | `model` | `string` | Không | `"realesrgan-x4plus"` | Model làm nét. Hỗ trợ: `"realesrgan-x4plus"` (đa dụng), `"4x-UltraSharp"` (chân thực), `"realesrgan-x4plus-anime"` (hoạt hình 2D), `"realesrnet-x4plus"`. |
 
-### B. Tùy chỉnh Chuyển Cảnh (`settings.transition` & `slides[i].transition`)
-Cấu hình hiệu ứng chuyển cảnh sử dụng `xfade` của FFmpeg. **Hỗ trợ cấu hình mức Global (cho toàn bộ video) và mức Local (riêng cho từng slide để override).**
+### B. Tùy chỉnh Chuyển Cảnh (`settings.transition` & `scenes[i].transition`)
+Cấu hình hiệu ứng chuyển cảnh sử dụng `xfade` của FFmpeg. **Hỗ trợ cấu hình mức Global (cho toàn bộ video) và mức Local (riêng cho từng scene để override).**
 
 | Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
 | :--- | :--- | :--- | :--- | :--- |
 | `enabled` | `boolean` | Không | `false` | Bật/tắt hiệu ứng chuyển cảnh. |
-| `type` | `string` | Không | `"fade"` | Kiểu hiệu ứng. Các loại phổ biến: `"fade"`, `"wipeleft"`, `"circlecrop"`, `"random"`, `"slideleft"`, `"dissolve"`... |
+| `type` | `string` | Không | `"fade"` | Kiểu hiệu ứng. Các loại phổ biến: `"fade"`, `"wipeleft"`, `"circlecrop"`, `"random"`, `"sceneleft"`, `"dissolve"`... |
 | `duration` | `number` | Không | `1.0` | Thời gian chuyển cảnh (giây). |
 | `audioBehavior` | `"pad" \| "crossfade"` | Không | `"pad"` | Cách xử lý âm thanh chồng chéo (overlap).<br>• `"pad"`: Tự động đệm tĩnh âm thanh, tránh trường hợp 2 giọng nói đè lên nhau trong lúc hình ảnh mờ dần.<br>• `"crossfade"`: Mix đều 2 audio (chỉ nên dùng cho video ca nhạc). |
 
-**Ví dụ cấu hình riêng biệt (Override) ở từng Slide:**
-Hiệu ứng sẽ được áp dụng khi chuyển từ `Slide 1` sang `Slide 2`. Nếu slide không ghi, hệ thống fallback về Global `settings.transition`.
+**Ví dụ cấu hình riêng biệt (Override) ở từng scene:**
+Hiệu ứng sẽ được áp dụng khi chuyển từ `scene 1` sang `scene 2`. Nếu scene không ghi, hệ thống fallback về Global `settings.transition`.
 ```json
 {
   "image": "scene1.jpg",
@@ -285,5 +313,41 @@ Hiệu ứng sẽ được áp dụng khi chuyển từ `Slide 1` sang `Slide 2`
   }
 }
 ```
+
+---
+
+## 12. Tính năng Tạo nổi 3D & Vượt khung (`settings.depth3d` & `scenes[i].depth3d`)
+
+Hiệu ứng tạo nổi 3D (3D Depth / Pop-Out) biến hình ảnh 2D tĩnh thành phân cảnh có chiều sâu thị giác mạnh mẽ, hỗ trợ cấu hình ở cả mức Global (`settings.depth3d`) và mức từng phân cảnh (`scenes[i].depth3d`).
+
+| Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- | :--- |
+| `enabled` | `boolean` | Không | `true` | Bật/tắt hiệu ứng 3D cho scene. |
+| `mode` | `string` | Không | `"frame_breaker"` | Kỹ thuật 3D. Hỗ trợ: `"frame_breaker"` (Vượt khung), `"parallax_dolly"`, `"sandwich"`, `"mesh_displacement"`, `"wigglegram"`. |
+| `frameStyle` | `string` | Không | `"card"` | Kiểu khung vượt viền (`"card"`: Card bo góc hiện đại, `"polaroid"`: Ảnh chụp lấy liền, `"cinema"`: Khung phim 2.35:1, `"comic"`: Khung truyện tranh). |
+| `popOutIntensity` | `number` | Không | `1.15` | Mức độ phóng to / nhô ra của vật thể (1.0 đến 2.0). |
+| `shadow` | `boolean` | Không | `true` | Bật/tắt bóng đổ 3D (Drop Shadow) dưới khung và vật thể. |
+| `shadowBlur` | `number` | Không | `25` | Độ tỏa mờ của bóng đổ (pixel). |
+| `shadowColor` | `string` | Không | `"rgba(0,0,0,0.6)"` | Màu bóng đổ. |
+| `backdropBlur` | `number` | Không | `20` | Độ mờ Gaussian của lớp nền phía sau khung (pixel). |
+| `floatMotion` | `boolean` | Không | `true` | Bật chuyển động lơ lửng 3D nhẹ nhàng (Floating oscillation). |
+| `subjectImage` | `string` | Không | `undefined` | Đường dẫn ảnh PNG cutout trong suốt của nhân vật nếu có sẵn. |
+
+**Ví dụ cấu hình 3D Vượt khung:**
+```json
+{
+  "image": "scene1.jpg",
+  "audio": "voiceover1.mp3",
+  "depth3d": {
+    "enabled": true,
+    "mode": "frame_breaker",
+    "frameStyle": "polaroid",
+    "popOutIntensity": 1.2,
+    "shadow": true,
+    "floatMotion": true
+  }
+}
+```
+
 
 
