@@ -1,0 +1,32 @@
+{
+  "name": "Dinosaur_Story",
+  "description": "A short story about a dinosaur in a distant kingdom",
+  "videoFile": "Dinosaur_Story_9.mp4",
+  "renderedAt": "2026-09-27T06:25:34.410Z",
+  "durationSec": 7.1,
+  "scenesCount": 3,
+  "platform": "youtube",
+  "resolution": "1920x1080",
+  "fps": 30,
+  "videoCodec": "h264",
+  "audioCodec": "aac",
+  "crf": 20,
+  "preset": "p4",
+  "container": "mp4",
+  "gpuAcceleration": "auto",
+  "concurrency": 6,
+  "captions": {
+    "preset": "cinematic",
+    "subtitleMode": "burn"
+  },
+  "upscale": {
+    "enabled": false,
+    "model": "realesrgan-x4plus"
+  },
+  "transition": {
+    "enabled": true,
+    "type": "fade",
+    "duration": 1,
+    "audioBehavior": "pad"
+  }
+}

@@ -59,6 +59,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`045`](045_custom_prompt_cli.md) | 2026-09-27 | Sound Effects Custom Prompt CLI & Backlog | Freeform text prompting, CLI parsing, BACKLOG updates |
 | [`046`](046_3d_depth_backlog_and_frame_breaker.md) | 2026-09-27 | 3D Depth Backlog & Frame-Breaker Engine | 5 3D Depth Backlog, Canvas Frame-Breaker engine, 7-Point sync, Zero-disk RGBA stream |
 | [`047`](047_all_3d_depth_engines_implementation.md) | 2026-09-27 | Complete 5 3D Depth Engines Suite | Parallax 2.5D, Sandwich Volumetric, AI Depth Mesh, Wigglegram, Unified Dispatcher |
+| [`026`](026_video_scene_integration.md) | 2026-09-27 | Video Scene Integration (B-Roll) | Parse video extensions, FFmpeg map generation, 7-Point Sync Video Config |
 
 ---
 

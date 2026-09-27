@@ -118,35 +118,67 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
   }
 }
 
+import crypto from 'crypto';
+
 export function upscaleImage(
   inputPath: string, 
   outputPath: string,
   modelName: string = 'realesrgan-x4plus'
 ): Promise<void> {
   return new Promise((resolve, reject) => {
-    const binaryPath = getUpscalerBinaryPath();
-    const modelsDir = getModelsPath();
+    try {
+      const binaryPath = getUpscalerBinaryPath();
+      const modelsDir = getModelsPath();
 
-    const args = [
-      '-i', inputPath,
-      '-o', outputPath,
-      '-n', modelName
-    ];
+      // Sửa lỗi CLI C++ không nhận diện Unicode path trên Windows
+      const hasUnicode = /[^\x00-\x7F]/.test(inputPath) || /[^\x00-\x7F]/.test(outputPath) || inputPath.includes(' ') || outputPath.includes(' ');
+      let runInput = inputPath;
+      let runOutput = outputPath;
 
-    // Real-ESRGAN ncnn comes with default models in a "models" folder beside the exe.
-    // If we specify custom model paths, we can inject them here.
-    const customModelPath = path.join(modelsDir, `${modelName}.param`);
-    if (fs.existsSync(customModelPath)) {
-      args.push('-m', modelsDir);
-    }
-
-    execFile(binaryPath, args, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`[Upscaler] Failed to upscale ${inputPath}`);
-        console.error(stderr);
-        return reject(error);
+      if (hasUnicode) {
+        const hash = crypto.randomBytes(8).toString('hex');
+        runInput = path.join(os.tmpdir(), `upscaler_in_${hash}${path.extname(inputPath)}`);
+        runOutput = path.join(os.tmpdir(), `upscaler_out_${hash}${path.extname(outputPath)}`);
+        fs.copyFileSync(inputPath, runInput);
       }
-      resolve();
-    });
+
+      const args = [
+        '-i', runInput,
+        '-o', runOutput,
+        '-n', modelName
+      ];
+
+      const customModelPath = path.join(modelsDir, `${modelName}.param`);
+      if (fs.existsSync(customModelPath)) {
+        args.push('-m', modelsDir);
+      }
+
+      execFile(binaryPath, args, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`[Upscaler] Failed to upscale ${inputPath}`);
+          console.error(stderr);
+          if (hasUnicode) {
+             try { fs.unlinkSync(runInput); } catch(e){}
+             try { fs.unlinkSync(runOutput); } catch(e){}
+          }
+          return reject(error);
+        }
+
+        if (hasUnicode) {
+          try {
+            fs.copyFileSync(runOutput, outputPath);
+          } catch(e) {
+            return reject(e);
+          } finally {
+            try { fs.unlinkSync(runInput); } catch(e){}
+            try { fs.unlinkSync(runOutput); } catch(e){}
+          }
+        }
+        
+        resolve();
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 }

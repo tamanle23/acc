@@ -28,7 +28,7 @@
     "transition": {
       "enabled": true,
       "type": "fade",
-      "duration": 1.0,
+      "duration": 1,
       "audioBehavior": "pad"
     },
     "upscale": {
@@ -38,14 +38,15 @@
     "tts": {
       "provider": "vieneu-v3-turbo",
       "voice": "hn-quynhanh",
-      "speed": 1.0
+      "speed": 1
     },
-    "pauseBetweenScenes": 1.0,
+    "pauseBetweenScenes": 1,
     "bgm": {
       "source": "bgm.mp3",
       "volume": 0.2,
       "loop": true,
-      "fadeIn": 2.0
+      "fadeIn": 2,
+      "autoDucking": true
     }
   },
   "scenes": [
@@ -69,7 +70,7 @@
       "captions": [
         {
           "text": "Ngày",
-          "start": 0.0,
+          "start": 0,
           "end": 0.35
         },
         {
@@ -104,7 +105,7 @@
       "captions": [
         {
           "text": "Ở một",
-          "start": 0.0,
+          "start": 0,
           "end": 0.4
         },
         {
@@ -134,6 +135,17 @@
           "motion": "circle",
           "displacementScale": 18
         }
+      },
+      "captions": []
+    },
+    {
+      "video": "b-roll-nature.mp4",
+      "text": "Khung cảnh vương quốc xanh ngát, ngập tràn sức sống.",
+      "videoSettings": {
+        "timeBase": "audio",
+        "shortVideoMode": "loop",
+        "longVideoMode": "trim",
+        "volume": 0.15
       },
       "captions": []
     }

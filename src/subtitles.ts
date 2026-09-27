@@ -1,4 +1,4 @@
-import type { CaptionConfig, CaptionSettings, ResolvedSlideConfig } from './types';
+import type { CaptionConfig, CaptionSettings, ResolvedSceneConfig } from './types';
 import { getResolvedCaptionStyle, getHighlightAssTag } from './styles';
 
 function formatAssTimestamp(seconds: number): string {
@@ -108,13 +108,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
   return header + dialogues.join('\n') + '\n';
 }
 
-export function getSlideDuration(slide: ResolvedSlideConfig, audioDuration?: number): number {
+export function getSceneDuration(scene: ResolvedSceneConfig, audioDuration?: number): number {
   if (audioDuration && audioDuration > 0) {
     return audioDuration;
   }
 
-  if (slide.captions.length > 0) {
-    const lastCaption = slide.captions[slide.captions.length - 1];
+  if (scene.captions.length > 0) {
+    const lastCaption = scene.captions[scene.captions.length - 1];
     return Math.max(lastCaption.end + 0.5, 2);
   }
 

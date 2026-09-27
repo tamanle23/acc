@@ -80,37 +80,79 @@ function renderSingleScene(
     const { width, height, container, captions } = config.settings;
     const subtitleMode = captions?.subtitleMode || 'burn';
 
-    const hasImage = fs.existsSync(scene.resolvedImage);
+    const hasVideo = !!scene.resolvedVideo && fs.existsSync(scene.resolvedVideo);
+    const hasImage = !!scene.resolvedImage && fs.existsSync(scene.resolvedImage);
     const hasAudio = fs.existsSync(scene.resolvedAudio);
     const hasSubtitle = !!(assPath && fs.existsSync(assPath));
 
-    const imageInput = hasImage ? scene.resolvedImage : fallbackImagePath;
     const audioInput = hasAudio ? scene.resolvedAudio : fallbackAudioPath;
-
-    // Extend video duration by paddingTime
     const totalDuration = duration + paddingTime;
 
-    command = command
-      .input(imageInput)
-      .loop(totalDuration)
-      .input(audioInput);
+    const videoFilters: string[] = [];
+    let audioFilters: string[] = [];
+    let mapV = '0:v';
+    let mapA = '1:a';
+    let useShortest = false;
 
-    const videoFilters: string[] = [
-      `scale=${width}:${height}:force_original_aspect_ratio=decrease`,
-      `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`,
-      `setsar=1`
-    ];
+    if (hasVideo) {
+      const vSettings = scene.resolvedVideoSettings || {
+        timeBase: 'audio', shortVideoMode: 'freeze', longVideoMode: 'trim', volume: 0.0
+      };
+      
+      command = command.input(scene.resolvedVideo!);
+      
+      if (vSettings.timeBase === 'audio' && vSettings.shortVideoMode === 'loop') {
+        command = command.inputOptions(['-stream_loop', '-1']);
+      }
+      
+      command = command.input(audioInput);
+
+      if (vSettings.timeBase === 'audio' && vSettings.shortVideoMode === 'freeze') {
+        videoFilters.push(`tpad=stop_mode=clone:stop_duration=9999`);
+      }
+
+      if (vSettings.timeBase === 'audio' && vSettings.longVideoMode === 'trim') {
+        useShortest = true;
+      } else if (vSettings.timeBase === 'audio' && vSettings.shortVideoMode === 'loop') {
+        useShortest = true;
+      }
+
+      if (vSettings.volume! > 0) {
+        audioFilters.push(`[0:a]volume=${vSettings.volume}[va]`);
+        audioFilters.push(`[1:a]volume=1.0,apad[aa]`);
+        audioFilters.push(`[va][aa]amix=inputs=2:duration=${vSettings.timeBase === 'audio' && vSettings.longVideoMode === 'trim' ? 'first' : 'longest'}[aout]`);
+        mapA = '[aout]';
+      }
+
+      // Add basic scaling
+      videoFilters.push(`scale=${width}:${height}:force_original_aspect_ratio=decrease`, `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`, `setsar=1`);
+    } else {
+      const imageInput = hasImage ? scene.resolvedImage! : fallbackImagePath;
+      command = command
+        .input(imageInput)
+        .loop(totalDuration)
+        .input(audioInput);
+      
+      videoFilters.push(`scale=${width}:${height}:force_original_aspect_ratio=decrease`, `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`, `setsar=1`);
+      // When it's image, duration is handled by loop and -shortest (or we can use -t but -shortest is standard for loop)
+      // wait, earlier code didn't use -shortest, it just relied on loop(totalDuration) for image.
+    }
 
     if (hasSubtitle) {
       if (subtitleMode === 'burn') {
-        const escapedAss = assPath!
-          .replace(/\\/g, '/')
-          .replace(/:/g, '\\:');
-
+        const escapedAss = assPath!.replace(/\\/g, '/').replace(/:/g, '\\:');
         videoFilters.push(`subtitles='${escapedAss}'`);
       } else {
         command = command.input(assPath!);
       }
+    }
+
+    if (audioFilters.length > 0) {
+      command = command.complexFilter([...audioFilters, `[0:v]${videoFilters.join(',')}[vout]`]);
+      mapV = '[vout]';
+    } else if (videoFilters.length > 0) {
+      command = command.complexFilter([`[0:v]${videoFilters.join(',')}[vout]`]);
+      mapV = '[vout]';
     }
 
     const encodingFlags = buildFfmpegEncodingFlags(config.settings, totalDuration);
@@ -166,8 +208,19 @@ function renderSingleScene(
       }
     }
 
+    if (useShortest) {
+      outputOptions.push('-shortest');
+    }
+    
+    // Explicit mapping to prevent FFmpeg from doing auto-mapping which can ruin the complex filter output
+    outputOptions.push(`-map ${mapV}`);
+    outputOptions.push(`-map ${mapA}`);
+
+    if (audioFilters.length === 0 && videoFilters.length > 0) {
+      command.videoFilters(videoFilters);
+    } // if audioFilters > 0 it was already handled by complexFilter
+
     command
-      .videoFilters(videoFilters)
       .outputOptions(outputOptions)
       .output(outputPath)
       .on('end', () => resolve({ path: outputPath, duration: totalDuration }))
@@ -473,7 +526,18 @@ export async function renderStoryVideo(
           audioFilter += `,afade=t=in:st=0:d=${fadeIn}`;
         }
         
-        const filterComplex = `${audioFilter}[bgm_processed];[0:a][bgm_processed]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
+        const autoDuck = bgm.autoDucking !== false;
+          let filterComplex = `${audioFilter}[bgm_processed];`;
+          if (autoDuck) {
+            // Split Main Audio (Foreground)
+            filterComplex += `[0:a]asplit=2[fg_out][fg_sc];`;
+            // Duck BGM using Foreground Control Signal
+            filterComplex += `[bgm_processed][fg_sc]sidechaincompress=threshold=-24dB:ratio=5:attack=10:release=300[bg_ducked];`;
+            // Mix final
+            filterComplex += `[bg_ducked][fg_out]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
+          } else {
+            filterComplex += `[0:a][bgm_processed]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
+          }
 
         console.log(`Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
         command

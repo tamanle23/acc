@@ -22,6 +22,7 @@ function askQuestion(query: string): Promise<string> {
 }
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.webm', '.mkv']);
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac']);
 
 function naturalSort(a: string, b: string): number {
@@ -33,10 +34,10 @@ function getBaseNameWithoutExt(filename: string): string {
 }
 
 /**
- * Thu thập tất cả các file ảnh và âm thanh trong thư mục gốc và các thư mục con (e.g. ./voiceover, ./images, ./audio)
+ * Thu thập tất cả các file ảnh/video và âm thanh trong thư mục gốc và các thư mục con
  */
-function collectMediaFiles(baseDir: string): { imageFiles: string[]; audioFiles: string[] } {
-  const imageFiles: string[] = [];
+function collectMediaFiles(baseDir: string): { visualFiles: string[]; audioFiles: string[] } {
+  const visualFiles: string[] = [];
   const audioFiles: string[] = [];
 
   function scanDir(dir: string, relativePrefix = '') {
@@ -49,18 +50,17 @@ function collectMediaFiles(baseDir: string): { imageFiles: string[]; audioFiles:
 
       if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase();
-        if (IMAGE_EXTENSIONS.has(ext)) {
-          imageFiles.push(relPath.replace(/\\/g, '/'));
+        if (IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext)) {
+          visualFiles.push(relPath.replace(/\\/g, '/'));
         } else if (AUDIO_EXTENSIONS.has(ext)) {
           audioFiles.push(relPath.replace(/\\/g, '/'));
         }
       } else if (entry.isDirectory()) {
         const nameLower = entry.name.toLowerCase();
         const isAudioDir = ['voiceover', 'voiceovers', 'audio', 'audios', 'voices', 'sound', 'sounds'].includes(nameLower);
-        const isImageDir = ['images', 'image', 'img', 'scenes', 'scene', 'pictures', 'pics'].includes(nameLower);
+        const isVisualDir = ['images', 'image', 'img', 'scenes', 'scene', 'pictures', 'pics', 'video', 'videos', 'footage'].includes(nameLower);
 
-        // Quét sâu vào các thư mục media con (voiceover/, images/, audio/...) hoặc cấp 1
-        if ((isAudioDir || isImageDir || !relativePrefix) && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'dist') {
+        if ((isAudioDir || isVisualDir || !relativePrefix) && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'dist') {
           scanDir(fullPath, relPath);
         }
       }
@@ -69,49 +69,44 @@ function collectMediaFiles(baseDir: string): { imageFiles: string[]; audioFiles:
 
   scanDir(baseDir);
   return {
-    imageFiles: imageFiles.sort(naturalSort),
+    visualFiles: visualFiles.sort(naturalSort),
     audioFiles: audioFiles.sort(naturalSort),
   };
 }
 
 /**
- * Ghép cặp ảnh và audio thông minh:
- * 1. Ưu tiên trùng tên gốc (VD: 01.png đi với voiceover/01.mp3, intro.jpg đi với audio/intro.wav)
- * 2. Nếu không trùng tên, ghép theo thứ tự sắp xếp tự nhiên (1, 2, 3...)
+ * Ghép cặp ảnh/video và audio thông minh
  */
-function pairImagesAndAudios(
-  imageFiles: string[],
+function pairVisualsAndAudios(
+  visualFiles: string[],
   audioFiles: string[]
-): { image: string; audio: string }[] {
-  const pairs: { image: string; audio: string }[] = [];
-  const usedImages = new Set<string>();
+): { visual: string; audio: string }[] {
+  const pairs: { visual: string; audio: string }[] = [];
+  const usedVisuals = new Set<string>();
   const unmappedAudios: string[] = [];
 
-  // Tạo map tên gốc của ảnh (VD: "01" -> "images/01.jpg" hoặc "01.jpg")
-  const imageBaseMap = new Map<string, string>();
-  for (const img of imageFiles) {
-    imageBaseMap.set(getBaseNameWithoutExt(img), img);
+  const visualBaseMap = new Map<string, string>();
+  for (const vis of visualFiles) {
+    visualBaseMap.set(getBaseNameWithoutExt(vis), vis);
   }
 
-  // Bước 1: Ghép cặp theo tên giống nhau
   for (const audio of audioFiles) {
     const audioBase = getBaseNameWithoutExt(audio);
-    if (imageBaseMap.has(audioBase)) {
-      const matchedImage = imageBaseMap.get(audioBase)!;
-      pairs.push({ image: matchedImage, audio });
-      usedImages.add(matchedImage);
+    if (visualBaseMap.has(audioBase)) {
+      const matchedVisual = visualBaseMap.get(audioBase)!;
+      pairs.push({ visual: matchedVisual, audio });
+      usedVisuals.add(matchedVisual);
     } else {
       unmappedAudios.push(audio);
     }
   }
 
-  // Bước 2: Với các audio chưa ghép được, lấy các ảnh còn lại theo thứ tự
-  const remainingImages = imageFiles.filter((img) => !usedImages.has(img));
+  const remainingVisuals = visualFiles.filter((vis) => !usedVisuals.has(vis));
 
   for (let i = 0; i < unmappedAudios.length; i++) {
     const audio = unmappedAudios[i];
-    const image = remainingImages[i] || imageFiles[i % imageFiles.length] || 'scene.jpg';
-    pairs.push({ image, audio });
+    const visual = remainingVisuals[i] || visualFiles[i % visualFiles.length] || 'scene.jpg';
+    pairs.push({ visual, audio });
   }
 
   return pairs;
@@ -487,10 +482,10 @@ async function main() {
     }
   }
 
-  // Quét toàn bộ ảnh và âm thanh trong thư mục gốc và thư mục con (./voiceover, ./images...)
-  const { imageFiles, audioFiles } = collectMediaFiles(absoluteDir);
+  // Quét toàn bộ media trong thư mục gốc và thư mục con
+  const { visualFiles, audioFiles } = collectMediaFiles(absoluteDir);
 
-  console.log(`\nTìm thấy: ${imageFiles.length} file ảnh, ${audioFiles.length} file âm thanh (bao gồm ./voiceover, ./images nếu có).`);
+  console.log(`\nTìm thấy: ${visualFiles.length} file hình/video, ${audioFiles.length} file âm thanh (bao gồm ./voiceover, ./images nếu có).`);
 
   if (audioFiles.length === 0 && !enableTTS) {
     console.error('Lỗi: Không tìm thấy file âm thanh nào trong thư mục, và TTS chưa được bật.');
@@ -509,9 +504,9 @@ async function main() {
 
   let filePairs = [];
   if (audioFiles.length === 0 && enableTTS) {
-    filePairs = imageFiles.map((img) => ({ image: img, audio: '' }));
+    filePairs = visualFiles.map((img) => ({ visual: img, audio: '' }));
   } else {
-    filePairs = pairImagesAndAudios(imageFiles, audioFiles);
+    filePairs = pairVisualsAndAudios(visualFiles, audioFiles);
   }
   const scenes: SceneConfig[] = [];
   const globalScriptCache = loadGlobalScripts(absoluteDir);
@@ -523,14 +518,14 @@ async function main() {
   }
 
   for (let i = 0; i < filePairs.length; i++) {
-    const { image: imageName, audio: audioName } = filePairs[i];
+    const { visual: visualName, audio: audioName } = filePairs[i];
     const fullAudioPath = path.isAbsolute(audioName) ? audioName : path.resolve(absoluteDir, audioName);
 
-    console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${imageName} <-> ${audioName}`);
+    console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${visualName} <-> ${audioName}`);
 
     let captions: any[] = [];
     let sceneText: string | undefined = undefined;
-    const refScriptInfo = findReferenceScript(audioName, imageName, i, absoluteDir, globalScriptCache);
+    const refScriptInfo = findReferenceScript(audioName, visualName, i, absoluteDir, globalScriptCache);
 
     if (refScriptInfo) {
       sceneText = refScriptInfo.scriptText;
@@ -573,7 +568,7 @@ async function main() {
     } else {
       // Giữ lại captions cũ nếu có
       const existingScene = (prevConfig?.scenes || prevConfig?.slides)?.find(
-        (s) => s.audio === audioName || s.image === imageName
+        (s) => s.audio === audioName || s.image === visualName || s.video === visualName
       );
       if (existingScene && existingScene.captions) {
         captions = existingScene.captions;
@@ -581,10 +576,24 @@ async function main() {
       }
     }
 
+    const isVideo = VIDEO_EXTENSIONS.has(path.extname(visualName).toLowerCase());
+    
     const sceneObj: SceneConfig = {
-      image: imageName,
       captions,
     };
+    
+    if (isVideo) {
+      sceneObj.video = visualName;
+      sceneObj.videoSettings = {
+        timeBase: 'audio',
+        shortVideoMode: 'freeze',
+        longVideoMode: 'trim',
+        volume: 0.0
+      };
+    } else {
+      sceneObj.image = visualName;
+    }
+
     if (finalAudioName) sceneObj.audio = finalAudioName;
     if (sceneText) sceneObj.text = sceneText;
 

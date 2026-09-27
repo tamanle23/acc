@@ -6,7 +6,8 @@
   "scripts": {
     "render": "bun run cli.ts",
     "auto-config": "bun run auto-config.ts",
-    "overlay-effects": "bun run overlay-effects-cli.ts"
+    "overlay-effects": "bun run overlay-effects-cli.ts",
+    "benchmark-ai": "bun run scripts/batch-benchmark-ai.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -22,6 +23,7 @@
     "extract-zip": "^2.0.1",
     "fluent-ffmpeg": "^2.1.3",
     "simplex-noise": "^4.0.3",
+    "uv": "^1.4.0",
     "wavefile": "^11.0.0",
     "yauzl": "^3.4.0"
   }

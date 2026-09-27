@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSlideConfig } from './src/types';
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './src/types';
 import { renderStoryVideo } from './src/renderer';
 import { resolveStorySettings } from './src/platforms';
 
@@ -19,7 +19,10 @@ function askQuestion(query: string): Promise<string> {
   );
 }
 
+import { FFmpegManager } from './src/core/FFmpegManager';
+
 async function main() {
+  await FFmpegManager.prepare();
   let targetDir = process.argv.slice(2)[0];
 
   if (!targetDir) {
@@ -91,23 +94,58 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
   return directPath;
 }
 
-  const resolvedSlides: ResolvedSlideConfig[] = config.slides.map((slide, idx) => {
-    const resolvedImage = resolveMediaPath(slide.image, absoluteDir, 'image');
-    const resolvedAudio = resolveMediaPath(slide.audio, absoluteDir, 'audio');
+  const outputDir = path.join(absoluteDir, 'output');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
 
-    if (!fs.existsSync(resolvedImage)) {
-      console.warn(`⚠️ [Slide ${idx + 1}] Cảnh báo: Không tìm thấy file ảnh: ${slide.image} (đã thử: ${resolvedImage})`);
+  // Hỗ trợ backward compatibility cho file cũ sử dụng "slides"
+  const rawScenes = config.scenes || config.slides || [];
+  
+  if (rawScenes.length === 0) {
+    console.error('No scenes found in story-config.json');
+    process.exit(1);
+  }
+
+  const resolvedScenes: ResolvedSceneConfig[] = [];
+  for (let idx = 0; idx < rawScenes.length; idx++) {
+    const scene = rawScenes[idx];
+    const resolvedImage = scene.image ? resolveMediaPath(scene.image, absoluteDir, 'image') : undefined;
+    const resolvedVideo = scene.video ? resolveMediaPath(scene.video, absoluteDir, 'image') : undefined;
+    let resolvedAudio = resolveMediaPath(scene.audio || '', absoluteDir, 'audio');
+
+    if (scene.image && !fs.existsSync(resolvedImage || '')) {
+      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file ảnh: ${scene.image} (đã thử: ${resolvedImage})`);
     }
-    if (!fs.existsSync(resolvedAudio)) {
-      console.warn(`⚠️ [Slide ${idx + 1}] Cảnh báo: Không tìm thấy file âm thanh: ${slide.audio} (đã thử: ${resolvedAudio})`);
+    if (scene.video && !fs.existsSync(resolvedVideo || '')) {
+      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file video: ${scene.video} (đã thử: ${resolvedVideo})`);
+    }
+    
+    if (scene.audio && !fs.existsSync(resolvedAudio)) {
+      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file âm thanh: ${scene.audio} (đã thử: ${resolvedAudio})`);
+    } else if (!scene.audio) {
+      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Scene không có cấu hình audio.`);
     }
 
-    return {
-      ...slide,
-      resolvedImage,
-      resolvedAudio,
+    const defaultVideoSettings = {
+      timeBase: 'audio' as const,
+      shortVideoMode: 'freeze' as const,
+      longVideoMode: 'trim' as const,
+      volume: 0.0,
     };
-  });
+
+    const resolvedVideoSettings = scene.videoSettings
+      ? { ...defaultVideoSettings, ...scene.videoSettings }
+      : defaultVideoSettings;
+
+    resolvedScenes.push({
+      ...scene,
+      resolvedImage,
+      resolvedVideo,
+      resolvedAudio,
+      resolvedVideoSettings,
+    });
+  }
 
   const resolvedSettings = resolveStorySettings(config.settings);
 
@@ -115,13 +153,10 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
     name: config.name,
     description: config.description,
     settings: resolvedSettings,
-    slides: resolvedSlides,
+    scenes: resolvedScenes,
   };
 
-  const outputDir = path.join(absoluteDir, 'output');
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
+  // outputDir đã được tạo ở trên
 
   const baseName = config.name 
     ? config.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_') // allow unicode/vietnamese
@@ -144,7 +179,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
   }
 
   console.log(`\n=== Storyteller Video Generator ===`);
-  console.log(`Slides: ${resolvedConfig.slides.length}`);
+  console.log(`Scenes: ${resolvedConfig.scenes.length}`);
   console.log(`Platform: ${resolvedSettings.platform}`);
   console.log(`Resolution: ${resolvedSettings.width}x${resolvedSettings.height} @ ${resolvedSettings.fps}fps`);
   console.log(`Video: codec=${resolvedSettings.videoCodec}, crf/cq=${resolvedSettings.crf}, preset=${resolvedSettings.preset}, pix_fmt=${resolvedSettings.pixelFormat}`);
@@ -168,7 +203,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
       videoFile: outputFileName,
       renderedAt: new Date().toISOString(),
       durationSec: parseFloat(durationSec),
-      slidesCount: resolvedConfig.slides.length,
+      scenesCount: resolvedConfig.scenes.length,
       platform: resolvedSettings.platform,
       resolution: `${resolvedSettings.width}x${resolvedSettings.height}`,
       fps: resolvedSettings.fps,

@@ -4,7 +4,7 @@ Hệ thống tạo video visual storytelling tự động từ ảnh, âm thanh 
 
 ---
 
-## 🛠️ Bộ công cụ gồm 2 CLI chính:
+## 🛠️ Bộ công cụ gồm 3 CLI chính:
 
 ### 1. Tool Tự Động Sinh Cấu Hình & Timestamps (`auto-config.ts`)
 Menu tương tác thông minh (Interactive Wizard):
@@ -58,14 +58,15 @@ my-story-folder/
 #### Cách 2: Chia thành các thư mục con riêng biệt (Khuyên dùng)
 ```text
 my-story-folder/
-├── images/           (hoặc ./img, ./scenes)
+├── images/           (hoặc ./img, ./scenes, ./video, ./footage)
 │   ├── 01.jpg
-│   └── 02.jpg
+│   ├── 02.mp4        (Hỗ trợ mix thẳng Video B-roll/Stock footage)
+│   └── 03.webm
 └── voiceover/        (hoặc ./audio, ./voices)
     ├── 01.mp3
     ├── 01.txt        (Kịch bản gốc slide 1 - giúp Whisper căn chỉnh chuẩn 100% chữ gốc)
     ├── 02.mp3
-    └── 02.txt        (Kịch bản gốc slide 2)
+    └── 03.mp3
 ```
 *(Bạn cũng có thể dùng file chung `script.txt` hoặc `script.json` tại thư mục gốc thay vì từng file riêng)*.
 
@@ -129,6 +130,7 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 * **Hiệu ứng Chuyển cảnh (`transition`)**: Hỗ trợ xfade (fade, wipe, random) với cơ chế đệm âm thanh (`audioBehavior: "pad"`) chống đè giọng đọc. Cấu hình được ở mức Global hoặc từng Slide.
 * **Hiệu ứng Tạo Nổi 3D Vượt Khung (`depth3d`)**: Đột phá thị giác 3D Out-of-Bounds (Frame-Breaker) với các phong cách khung viền (`polaroid`, `card`, `cinema`, `comic`), đổ bóng đa tầng (Elevation Drop Shadow) và dao động nổi bồng bềnh (Floating Motion). Hỗ trợ tách chủ thể tự động hoặc qua transparent cutout `subjectImage`.
 * **AI Auto-Upscale (`upscale`)**: Tự động tải và chạy Real-ESRGAN/UltraSharp (Cross-Platform trên Windows/Mac/Linux) để làm nét ảnh trước khi render.
+* **Mix Video B-roll & Stock Footage (`video`)**: Hỗ trợ chèn trực tiếp file `.mp4`, `.mov`, `.webm` thay cho ảnh tĩnh. Đi kèm với thuộc tính `videoSettings` để xử lý xung đột thời lượng (Đóng băng `freeze`, lặp lại `loop`, cắt `trim`) và trộn âm thanh gốc của video (`volume > 0.0`).
 * **10 Bộ Caption Presets**: `tiktok`, `classic`, `cinematic`, `vlog`, `neon-glow`, `bold-retro`, `minimal-clean`, `karaoke`, `news-banner`, `retro-typewriter`.
 
 ---
@@ -136,7 +138,16 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 ## 📖 Chi tiết tài liệu cấu hình & Quy tắc phát triển
 
 - 📜 **Tài liệu đặc tả cấu hình Story**: Xem tại [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md) (đầy đủ các platform, codec, caption presets, depth3d...).
+- 🎥 **Hướng dẫn chèn Video (B-Roll) & Xử lý thời lượng**: Xem tại [docs/VIDEO_SCENES_GUIDE.md](docs/VIDEO_SCENES_GUIDE.md).
 - 🧊 **Tài liệu & Kế hoạch 3D Depth Techniques**: Xem tại [docs/3D_DEPTH_BACKLOG.md](docs/3D_DEPTH_BACKLOG.md).
 - 🎨 **Tài liệu hướng dẫn sinh hiệu ứng Overlay**: Xem tại [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md).
 - 🔬 **Tài liệu hệ thống hóa các phương pháp Overlay & Hòa trộn**: Xem tại [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md).
 - 📋 **Quy tắc cập nhật bắt buộc**: Xem tại [AGENTS.md](AGENTS.md) / [.agents/rules/story-config.md](.agents/rules/story-config.md).
+
+### 3. Tool Tự động Tạo Âm thanh & Kỹ xảo (Sound Effects CLI)
+Trí tuệ nhân tạo (AudioLDM2) kết hợp Kỹ xảo Toán học (FFmpeg) và Thư viện thực tế (Freesound):
+- Sinh âm thanh thông minh với **Smart Router** (Tự động chọn Engine tối ưu).
+- Tạo **Procedural UI Synth** (Hover, Click, Success Chime) siêu nhẹ không cần file mp3.
+- Kết hợp **Auto-Ducking Composites** (Nén âm nền nhường tiếng chính).
+👉 [Xem Hướng dẫn Sử dụng chi tiết](docs/SOUND_EFFECTS_CLI_GUIDE.md)
+

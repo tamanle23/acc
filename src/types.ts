@@ -91,14 +91,23 @@ export interface Depth3DConfig {
   wigglegram?: WigglegramSettings;
 }
 
+export interface VideoSettings {
+  timeBase?: 'audio' | 'video';
+  shortVideoMode?: 'freeze' | 'loop';
+  longVideoMode?: 'trim' | 'continue';
+  volume?: number;
+}
+
 export interface SceneConfig {
-  image: string; // Filename (e.g. "scene1.jpg"), relative path ("./assets/scene1.jpg"), or absolute path ("C:/Photos/scene1.jpg")
+  image?: string; // Optional if video is provided.
+  video?: string; // Optional if image is provided. B-roll / Stock footage
   audio?: string; // Optional if text is provided. Filename (e.g. "voiceover1.mp3")
   text?: string; // Text script for TTS generation if audio is missing
   captions: CaptionConfig[];
   transition?: TransitionSettings; // Scene-level override for transition to the NEXT scene
   pauseAfter?: number; // Override for pauseBetweenScenes
   depth3d?: Depth3DConfig; // Scene-level 3D depth / pop-out effect
+  videoSettings?: VideoSettings; // Configuration for duration conflict and audio mixing when using video
 }
 
 export type CaptionPreset =
@@ -206,6 +215,7 @@ export interface BGMSettings {
   loop?: boolean; // Whether to loop the BGM (default: true)
   fadeIn?: number; // Fade-in duration in seconds (default: 0)
   fadeOut?: number; // Fade-out duration in seconds (default: 2)
+  autoDucking?: boolean; // Tự động nén âm nền (sidechain compress) khi có SFX/Voice (default: true)
 }
 
 export interface StorySettings {
@@ -258,8 +268,10 @@ export interface StoryConfig {
 }
 
 export interface ResolvedSceneConfig extends SceneConfig {
-  resolvedImage: string;
+  resolvedImage?: string;
+  resolvedVideo?: string;
   resolvedAudio: string;
+  resolvedVideoSettings?: Required<VideoSettings>;
 }
 
 export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'captions' | 'platform' | 'concurrency' | 'transition' | 'upscale' | 'fastIntermediate' | 'tts' | 'pauseBetweenScenes' | 'pauseBetweenSlides' | 'overlayComposite' | 'bgm' | 'depth3d'>> {

@@ -183,12 +183,23 @@ Mỗi phần tử trong `scenes` đại diện cho một phân cảnh trong vide
 
 | Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mô tả |
 | :--- | :--- | :--- | :--- |
-| `image` | `string` | **Bắt buộc** | Tên tệp ảnh (ví dụ `scene1.jpg`), đường dẫn tương đối (ví dụ `./assets/scene1.png`, `../shared/bg.jpg`), hoặc **đường dẫn tuyệt đối** (ví dụ `C:/Users/Admin/Pictures/scene1.jpg`, `/var/media/images/scene1.png`). |
-| `audio` | `string` | **Bắt buộc*** | Tên tệp âm thanh tương ứng (ví dụ `voiceover1.mp3`). Chỉ là tùy chọn nếu đã cung cấp `text`. |
-| `text`  | `string` | **Bắt buộc*** | Kịch bản văn bản. Nếu không cung cấp `audio` thì bắt buộc phải có `text` để tự động sinh TTS. |
+| `image` | `string` | **Có*** | Tên tệp ảnh tĩnh (ví dụ `scene1.jpg`). Bắt buộc nếu không có `video`. |
+| `video` | `string` | **Có*** | Tên tệp video stock/B-roll (ví dụ `b-roll.mp4`). Bắt buộc nếu không có `image`. Nếu có cả 2, `video` sẽ được ưu tiên. |
+| `videoSettings` | `VideoSettings`| Không | Cấu hình chuyên sâu về thời lượng và âm thanh dành riêng cho `video` (Xem chi tiết bảng dưới). |
+| `audio` | `string` | **Có*** | Tên tệp âm thanh Voiceover (ví dụ `voiceover1.mp3`). Chỉ là tùy chọn nếu đã cung cấp `text`. |
+| `text`  | `string` | **Có*** | Kịch bản văn bản. Nếu không cung cấp `audio` thì bắt buộc phải có `text` để tự động sinh TTS. |
 | `captions` | `CaptionConfig[]` | Không | Mảng danh sách các mốc hiển thị chữ trong phân cảnh này. |
 | `transition` | `TransitionSettings`| Không | Cấu hình Transition tuỳ chỉnh ghi đè riêng cho việc chuyển cảnh TỪ scene này SANG scene tiếp theo. |
 | `pauseAfter` | `number` | Không | Thời gian nghỉ (khoảng lặng) tính bằng giây ngay sau scene này, ghi đè thuộc tính `pauseBetweenscenes` toàn cục. |
+| `depth3d` | `Depth3DSettings` | Không | Cấu hình hiệu ứng tạo nổi 3D (chỉ áp dụng nếu scene dùng `image`). |
+
+### Bảng cấu hình `videoSettings` (Giải quyết Xung đột Thời lượng & Âm thanh)
+| Thuộc tính | Kiểu dữ liệu | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `timeBase` | `"audio" \| "video"` | `"audio"` | Mốc thời gian chính. Nếu `"audio"`, cảnh sẽ dài đúng bằng Voiceover. Nếu `"video"`, cảnh sẽ dài bằng độ dài của file video. |
+| `shortVideoMode` | `"freeze" \| "loop"` | `"freeze"` | Xử lý khi Video NGẮN HƠN thước đo thời gian (Vd: `timeBase="audio"` nhưng video thiếu). `"freeze"`: Đóng băng frame cuối. `"loop"`: Lặp lại video. |
+| `longVideoMode` | `"trim" \| "continue"`| `"trim"` | Xử lý khi Video DÀI HƠN thước đo thời gian. `"trim"`: Cắt ngang video. `"continue"`: Kéo dài thời gian cho hết video (Tương đương `timeBase="video"`). |
+| `volume` | `number` | `0.0` | Âm lượng gốc của video (`0.0` = tắt tiếng hoàn toàn). Nếu đặt `> 0`, hệ thống sẽ sử dụng thuật toán Ducking/amix để trộn âm thanh nền của video cùng tiếng Voiceover (ưu tiên Voiceover). |
 
 ### Cấu trúc từng mục trong `captions`:
 * **`text`** (`string`): Đoạn văn bản hoặc từ hiển thị trên màn hình.
@@ -449,3 +460,25 @@ Hiệu ứng rung lắc thị sai lập thể cổ điển (Nimslo 3D camera / T
 
 
 
+
+### 4. Background Music (bgm)
+*(Optional)* Configures the global background music for the entire video.
+
+| Thuộc tính | Loại | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `source` | string | **Required** | Tên file hoặc đường dẫn tuyệt đối tới file nhạc (vd: `"music.mp3"`) |
+| `volume` | number | `0.1` | Âm lượng nhạc nền (0.0 đến 1.0) |
+| `loop` | boolean | `true` | Lặp lại nhạc nền nếu độ dài video dài hơn đoạn nhạc |
+| `fadeIn` | number | `0` | Thời gian Fade-in lúc bắt đầu video (giây) |
+| `fadeOut`| number | `2` | Thời gian Fade-out lúc kết thúc video (giây) |
+| `autoDucking` | boolean | `true` | Kích hoạt bộ nén Sidechain: Tự động giảm âm lượng BGM mỗi khi có tiếng nói hoặc âm thanh SFX. |
+
+**Ví dụ:**
+```json
+"bgm": {
+  "source": "epic_orchestra.wav",
+  "volume": 0.15,
+  "loop": true,
+  "autoDucking": true
+}
+```

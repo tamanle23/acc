@@ -12,8 +12,11 @@ For **EVERY change** in the codebase (from minor bug fixes to major feature enha
    - Format:
      - **# [XXX] Task Title**
      - **1. Context & Problem Statement**: What was requested/broken.
-     - **2. Implementation Plan**: Architectural design, 6-point synchronization checklist.
+     - **2. Implementation Plan**: Architectural design, 8-point synchronization checklist.
      - **3. Changes Made**: Detailed list of modified files and diff summaries.
      - **4. Verification & Walkthrough**: Test commands executed, benchmark results, CLI logs.
 2. **Maintain History Index (`docs/history/README.md`)**:
    - Update the table of historical changes with ID, Title, Date, and Scope.
+3. **Git Commit Protocol**:
+   - Once testing is verified and the history file is written, you MUST commit the changes to Git.
+   - Run `git add .` followed by `git commit -m "[XXX] Task Title" -m "Brief description..."` using the matching 3-digit history ID.
