@@ -40,3 +40,11 @@ This document tracks future features, technical debt, and architectural epics th
 - Migrate `src/overlay-effects/pipeline.ts` and combinatorial stacking engines in `overlay-effects-cli.ts` to `FFmpegFilterGraph`.
 - Use DAG node-based routing for alpha-blending, chroma-keying, and composite layer stacking.
 - Add static validation for composite stream graphs prior to running FFmpeg.
+
+## Epic 7: Isolated Pipeline Architecture (Phase 3 - The Pipeline Orchestrator)
+**Context:** Following Phase 1 (`AssetContext` & defensive fallbacks) and Phase 2 (`FFmpegFilterGraph` DAG builder) from `docs/ARCHITECTURE_VISION.md`, the final phase refactors the main rendering loop into a fully decoupled, extensible Pipeline Orchestrator.
+**Implementation Ideas:**
+- Implement `PipelineRunner` to orchestrate discrete processing stages (`Validation` -> `Asset Generation` -> `DAG Filtergraph Composition` -> `FFmpeg Execution` -> `Cleanup`).
+- Register all pipeline features (TTS, AI Upscaling, 3D Depth, Overlays, Transitions, Audio Normalization, Background Music) as pluggable middleware implementing `IPlugin`.
+- Sub-process Sandboxing (Actor Model): Run heavy AI tasks (such as Real-ESRGAN, Whisper alignment, VieNeu-TTS) in worker threads or isolated child processes with strict timeouts and resource limits.
+- Implement **Dry-Run Mode**: Fast syntax and graph verification using `ffmpeg -f null -` on the generated command (validates in <1s before starting long renders).

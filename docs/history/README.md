@@ -69,3 +69,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 |   0 5 2   |   F i x   F F m p e g   F i l t e r   C o n f l i c t   ( E r r o r   2 3 4 )   |   2 0 2 6 - 0 9 - 2 7   |   s r c / r e n d e r e r . t s   |  
  | [\ 52\](052_isolated_pipeline_phase_1.md) | 2026-09-27 | Isolated Pipeline Architecture (Phase 1) | Implement AssetContext, IPlugin, UpscalerPlugin, and defensive try/catch fallbacks |
 | [\ 53\](053_ffmpeg_filtergraph_dag_phase_2.md) | 2026-09-27 | FFmpegFilterGraph DAG Builder (Phase 2) | Object-oriented DAG builder for xfade, scene filters, and BGM auto-ducking |
+| [\ 54\](054_backlog_consolidation_and_phase_3.md) | 2026-09-27 | Backlog Consolidation & Phase 3 | Moved backlog files to docs/backlogs/ and added Phase 3 Epic |
