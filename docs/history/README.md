@@ -67,4 +67,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 |   [ ` 0 5 0 ` ] ( 0 5 0 _ a u t o _ t r a n s c r i b e _ f l a g _ f o r _ w h i s p e r . m d )   |   2 0 2 6 - 0 9 - 2 7   |   A u t o   T r a n s c r i b e   F l a g   f o r   W h i s p e r   i n   a u t o - c o n f i g   |   ` s t o r y - c o n f i g . j s o n ` ,   W h i s p e r   a u t o T r a n s c r i b e   f l a g ,   ` a u t o - c o n f i g . t s `   |  
  | [\ 51\](051_fix_upscaler_import.md) | 2026-09-27 | Fix Upscaler Import Error | Added missing checkAndDownloadUpscaler import |
 |   0 5 2   |   F i x   F F m p e g   F i l t e r   C o n f l i c t   ( E r r o r   2 3 4 )   |   2 0 2 6 - 0 9 - 2 7   |   s r c / r e n d e r e r . t s   |  
- 
+ | [\ 52\](052_isolated_pipeline_phase_1.md) | 2026-09-27 | Isolated Pipeline Architecture (Phase 1) | Implement AssetContext, IPlugin, UpscalerPlugin, and defensive try/catch fallbacks |
+| [\ 53\](053_ffmpeg_filtergraph_dag_phase_2.md) | 2026-09-27 | FFmpegFilterGraph DAG Builder (Phase 2) | Object-oriented DAG builder for xfade, scene filters, and BGM auto-ducking |

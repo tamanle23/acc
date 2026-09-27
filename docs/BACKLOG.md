@@ -33,3 +33,10 @@ This document tracks future features, technical debt, and architectural epics th
 **Implementation Ideas:**
 - Expand the Combinatorial Composites system to support Auto-Ducking (sidechain compression in FFmpeg).
 - Automatically lower the volume of ambient/background layers when an impact, transition, or voice-over occurs.
+
+## Epic 6: Migrate Overlay Effects CLI & Complex Composites to FFmpegFilterGraph DAG
+**Context:** Following Phase 2 of the Architecture Vision (`docs/ARCHITECTURE_VISION.md`), the core video renderer adopts `FFmpegFilterGraph`. Complex multi-layer stacking and procedural overlay generations in `overlay-effects-cli.ts` still use legacy string-based filters.
+**Implementation Ideas:**
+- Migrate `src/overlay-effects/pipeline.ts` and combinatorial stacking engines in `overlay-effects-cli.ts` to `FFmpegFilterGraph`.
+- Use DAG node-based routing for alpha-blending, chroma-keying, and composite layer stacking.
+- Add static validation for composite stream graphs prior to running FFmpeg.

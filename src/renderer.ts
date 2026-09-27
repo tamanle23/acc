@@ -8,7 +8,11 @@ import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } fro
 import { generateAssContent, getSceneDuration } from './subtitles';
 import { buildFfmpegEncodingFlags } from './platforms';
 import { renderDepth3DScene } from './depth3d';
-import { upscaleImage, checkAndDownloadUpscaler } from './upscaler';
+import { Logger } from './core/logger';
+import { AssetContext } from './core/AssetContext';
+import { RenderContext } from './core/IPlugin';
+import { UpscalerPlugin } from './plugins/UpscalerPlugin';
+import { FFmpegFilterGraph } from './core/FFmpegFilterGraph';
 
 function getFileChecksum(filePath: string): string {
   try {
@@ -89,8 +93,8 @@ function renderSingleScene(
     const audioInput = hasAudio ? scene.resolvedAudio : fallbackAudioPath;
     const totalDuration = duration + paddingTime;
 
+    const filterGraph = new FFmpegFilterGraph();
     const videoFilters: string[] = [];
-    let audioFilters: string[] = [];
     let mapV = '0:v';
     let mapA = '1:a';
     let useShortest = false;
@@ -119,10 +123,34 @@ function renderSingleScene(
       }
 
       if (vSettings.volume! > 0) {
-        audioFilters.push(`[0:a]volume=${vSettings.volume}[va]`);
-        audioFilters.push(`[1:a]volume=1.0,apad[aa]`);
-        audioFilters.push(`[va][aa]amix=inputs=2:duration=${vSettings.timeBase === 'audio' && vSettings.longVideoMode === 'trim' ? 'first' : 'longest'}[aout]`);
-        mapA = '[aout]';
+        const va = filterGraph.createStreamLabel('va');
+        const aa = filterGraph.createStreamLabel('aa');
+        const aout = filterGraph.createStreamLabel('aout');
+
+        filterGraph.addNode({
+          inputs: ['0:a'],
+          filter: 'volume',
+          options: `${vSettings.volume}`,
+          outputs: [va],
+        });
+
+        filterGraph.addNode({
+          inputs: ['1:a'],
+          filter: 'volume=1.0,apad',
+          outputs: [aa],
+        });
+
+        filterGraph.addNode({
+          inputs: [va, aa],
+          filter: 'amix',
+          options: {
+            inputs: 2,
+            duration: vSettings.timeBase === 'audio' && vSettings.longVideoMode === 'trim' ? 'first' : 'longest',
+          },
+          outputs: [aout],
+        });
+
+        mapA = aout;
       }
 
       // Add basic scaling
@@ -135,8 +163,6 @@ function renderSingleScene(
         .input(audioInput);
       
       videoFilters.push(`scale=${width}:${height}:force_original_aspect_ratio=decrease`, `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black`, `setsar=1`);
-      // When it's image, duration is handled by loop and -shortest (or we can use -t but -shortest is standard for loop)
-      // wait, earlier code didn't use -shortest, it just relied on loop(totalDuration) for image.
     }
 
     if (hasSubtitle) {
@@ -148,12 +174,18 @@ function renderSingleScene(
       }
     }
 
-    if (audioFilters.length > 0) {
-      command = command.complexFilter([...audioFilters, `[0:v]${videoFilters.join(',')}[vout]`]);
-      mapV = '[vout]';
-    } else if (videoFilters.length > 0) {
-      command = command.complexFilter([`[0:v]${videoFilters.join(',')}[vout]`]);
-      mapV = '[vout]';
+    if (videoFilters.length > 0) {
+      const vout = filterGraph.createStreamLabel('vout');
+      filterGraph.addNode({
+        inputs: ['0:v'],
+        filter: videoFilters.join(','),
+        outputs: [vout],
+      });
+      mapV = vout;
+    }
+
+    if (filterGraph.getNodes().length > 0) {
+      command = command.complexFilter(filterGraph.compile());
     }
 
     const encodingFlags = buildFfmpegEncodingFlags(config.settings, totalDuration);
@@ -267,12 +299,10 @@ function concatenateWithTransitions(
     let command = ffmpeg();
     segments.forEach(seg => command.input(seg.path));
 
-    let filterComplex = '';
+    const filterGraph = new FFmpegFilterGraph();
     let lastV = '[0:v]';
     let lastA = '[0:a]';
     let currentOffset = segments[0].duration;
-
-    const finalTransitions: TransitionSettings[] = [];
 
     // Build transition params
     for (let i = 0; i < segments.length - 1; i++) {
@@ -287,13 +317,30 @@ function concatenateWithTransitions(
       
       const nextV = `[${i + 1}:v]`;
       const nextA = `[${i + 1}:a]`;
-      const outV = `[v_out${i}]`;
-      const outA = `[a_out${i}]`;
+      const outV = filterGraph.createStreamLabel(`v_trans_${i}`);
+      const outA = filterGraph.createStreamLabel(`a_trans_${i}`);
 
       const tType = tConfig.type === 'random' ? 'fade' : (tConfig.type || 'fade');
 
-      filterComplex += `${lastV}${nextV}xfade=transition=${tType}:duration=${tDur}:offset=${currentOffset}${outV};`;
-      filterComplex += `${lastA}${nextA}acrossfade=d=${tDur}${outA};`;
+      filterGraph.addNode({
+        inputs: [lastV, nextV],
+        filter: 'xfade',
+        options: {
+          transition: tType,
+          duration: tDur,
+          offset: currentOffset,
+        },
+        outputs: [outV],
+      });
+
+      filterGraph.addNode({
+        inputs: [lastA, nextA],
+        filter: 'acrossfade',
+        options: {
+          d: tDur,
+        },
+        outputs: [outA],
+      });
 
       lastV = outV;
       lastA = outA;
@@ -304,7 +351,7 @@ function concatenateWithTransitions(
     const encodingFlags = buildFfmpegEncodingFlags(config.settings, currentOffset); // approximate final duration
 
     command
-      .complexFilter(filterComplex, [lastV.replace(/[[\]]/g, ''), lastA.replace(/[[\]]/g, '')])
+      .complexFilter(filterGraph.compile(), [FFmpegFilterGraph.stripLabel(lastV), FFmpegFilterGraph.stripLabel(lastA)])
       .outputOptions(encodingFlags.outputOptions)
       .output(outputPath)
       .on('end', () => resolve())
@@ -344,40 +391,24 @@ export async function renderStoryVideo(
   const totalScenes = config.scenes.length;
   const activeConcurrency = Math.max(1, Math.min(concurrency || 1, totalScenes));
 
-  // 1. AI Upscaling Pre-processing
-  if (upscale?.enabled) {
-    const modelName = upscale.model || 'realesrgan-x4plus';
-    console.log(`\n✨ AI Auto-Upscale is enabled. Checking dependencies for ${modelName}...`);
-    await checkAndDownloadUpscaler(modelName);
-    
-    const cacheDir = path.join(baseDir, '.cache');
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
+  const renderContext: RenderContext = {
+    config,
+    assets: new AssetContext(),
+    baseDir,
+    cacheDir: path.join(baseDir, '.cache'),
+    tempDir
+  };
 
-    const upscalerConcurrency = Math.min(2, activeConcurrency);
-    console.log(`🚀 Starting AI Upscaling (${totalScenes} images, parallel workers: ${upscalerConcurrency})...`);
-    await runConcurrentPool(config.scenes, upscalerConcurrency, async (scene, i) => {
-      if (fs.existsSync(scene.resolvedImage)) {
-        const ext = path.extname(scene.resolvedImage);
-        
-        // Cache file naming based on original filename, MD5 checksum, and model
-        const baseName = path.basename(scene.resolvedImage, ext);
-        const checksum = getFileChecksum(scene.resolvedImage);
-        const upscaledFilename = `upscaled_${baseName}_${checksum}_${modelName}${ext}`;
-        const upscaledPath = path.join(cacheDir, upscaledFilename);
-        
-        if (fs.existsSync(upscaledPath)) {
-          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Using cached upscaled image/video: ${upscaledFilename}`);
-          scene.resolvedImage = upscaledPath;
-        } else {
-          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Upscaling using ${modelName}...`);
-          await upscaleImage(scene.resolvedImage, upscaledPath, modelName);
-          scene.resolvedImage = upscaledPath;
-          console.log(`✓ [Scene ${i + 1}/${totalScenes}] Upscaling complete.`);
-        }
-      }
-    });
+  const plugins = [
+    new UpscalerPlugin()
+  ];
+
+  for (const plugin of plugins) {
+    try {
+      await plugin.execute(renderContext);
+    } catch (e: any) {
+      Logger.error('Pipeline', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
+    }
   }
 
   const fallbackImagePath = path.join(tempDir, '_fallback_black.png');
@@ -420,26 +451,44 @@ export async function renderStoryVideo(
           paddingTime += pauseTime;
         }
 
-        const depthConfig = scene.depth3d || config.settings.depth3d;
+        const currentImagePath = renderContext.assets.getPreferred(`scene_${i}`, ['image:upscaled', 'image:original']) || scene.resolvedImage;
+        const sceneToRender = { ...scene, resolvedImage: currentImagePath };
+
+        const depthConfig = sceneToRender.depth3d || config.settings.depth3d;
         let result;
 
         if (depthConfig?.enabled !== false && (depthConfig?.enabled || depthConfig?.mode)) {
           const modeName = depthConfig.mode || 'frame_breaker';
-          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
-          result = await renderDepth3DScene({
-            scene,
-            duration,
-            assPath,
-            config,
-            outputPath: segmentPath,
-            fallbackAudioPath,
-            paddingTime,
-            useHighQualityIntermediate: hasAnyTransition
-          });
+          Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
+          try {
+            result = await renderDepth3DScene({
+              scene: sceneToRender,
+              duration,
+              assPath,
+              config,
+              outputPath: segmentPath,
+              fallbackAudioPath,
+              paddingTime,
+              useHighQualityIntermediate: hasAnyTransition
+            });
+          } catch (depthErr: any) {
+            Logger.warn('Pipeline', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
+            result = await renderSingleScene(
+              sceneToRender,
+              duration,
+              assPath,
+              config,
+              segmentPath,
+              fallbackImagePath,
+              fallbackAudioPath,
+              paddingTime,
+              hasAnyTransition
+            );
+          }
         } else {
-          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
+          Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
           result = await renderSingleScene(
-            scene,
+            sceneToRender,
             duration,
             assPath,
             config,
@@ -447,7 +496,7 @@ export async function renderStoryVideo(
             fallbackImagePath,
             fallbackAudioPath,
             paddingTime,
-            hasAnyTransition // use High Quality if transitioning later
+            hasAnyTransition
           );
         }
 
@@ -520,30 +569,74 @@ export async function renderStoryVideo(
           command = command.inputOption('-stream_loop', '-1');
         }
 
-        let audioFilter = `[1:a]volume=${volume}`;
+        const bgmGraph = new FFmpegFilterGraph();
+        const bgmProcessed = bgmGraph.createStreamLabel('bgm_proc');
+
+        let bgmChain = `volume=${volume}`;
         if (fadeIn > 0) {
-          audioFilter += `,afade=t=in:st=0:d=${fadeIn}`;
+          bgmChain += `,afade=t=in:st=0:d=${fadeIn}`;
         }
-        
+        bgmGraph.addNode({
+          inputs: ['1:a'],
+          filter: bgmChain,
+          outputs: [bgmProcessed]
+        });
+
+        const aOut = bgmGraph.createStreamLabel('a_out');
         const autoDuck = bgm.autoDucking !== false;
-          let filterComplex = `${audioFilter}[bgm_processed];`;
-          if (autoDuck) {
-            // Split Main Audio (Foreground)
-            filterComplex += `[0:a]asplit=2[fg_out][fg_sc];`;
-            // Duck BGM using Foreground Control Signal
-            filterComplex += `[bgm_processed][fg_sc]sidechaincompress=threshold=-24dB:ratio=5:attack=10:release=300[bg_ducked];`;
-            // Mix final
-            filterComplex += `[bg_ducked][fg_out]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
-          } else {
-            filterComplex += `[0:a][bgm_processed]amix=inputs=2:duration=first:dropout_transition=2[a_out]`;
-          }
+
+        if (autoDuck) {
+          const fgOut = bgmGraph.createStreamLabel('fg_out');
+          const fgSc = bgmGraph.createStreamLabel('fg_sc');
+          const bgDucked = bgmGraph.createStreamLabel('bg_ducked');
+
+          bgmGraph.addNode({
+            inputs: ['0:a'],
+            filter: 'asplit=2',
+            outputs: [fgOut, fgSc]
+          });
+
+          bgmGraph.addNode({
+            inputs: [bgmProcessed, fgSc],
+            filter: 'sidechaincompress',
+            options: {
+              threshold: '-24dB',
+              ratio: 5,
+              attack: 10,
+              release: 300
+            },
+            outputs: [bgDucked]
+          });
+
+          bgmGraph.addNode({
+            inputs: [bgDucked, fgOut],
+            filter: 'amix',
+            options: {
+              inputs: 2,
+              duration: 'first',
+              dropout_transition: 2
+            },
+            outputs: [aOut]
+          });
+        } else {
+          bgmGraph.addNode({
+            inputs: ['0:a', bgmProcessed],
+            filter: 'amix',
+            options: {
+              inputs: 2,
+              duration: 'first',
+              dropout_transition: 2
+            },
+            outputs: [aOut]
+          });
+        }
 
         console.log(`Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
         command
-          .complexFilter(filterComplex)
+          .complexFilter(bgmGraph.compile())
           .outputOptions([
             '-map 0:v',
-            '-map [a_out]',
+            `-map ${aOut}`,
             '-c:v copy', // Just copy the video stream, no re-encoding needed!
             `-c:a ${config.settings.audioCodec}`,
             `-b:a ${config.settings.audioBitrate}`

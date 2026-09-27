@@ -74,3 +74,13 @@ When fixing bugs, refactoring, or implementing new features, you **MUST NOT brea
 1. **Holistic Verification**: Do not blindly fix a localized error without considering the wider impact. Ensure that your changes do not inadvertently disable or break other existing features (e.g., removing a flag that another feature depends on).
 2. **Preserve Existing Logic**: When using tools like `replace_file_content`, double-check that you are only modifying the intended logic. Do not accidentally delete surrounding code, fallbacks, or structural blocks.
 3. **Test the Happy Path**: Always ensure the core pipeline still works end-to-end after your changes. Your code modifications must be strictly additive or safely refactored without causing side-effect regressions.
+
+---
+
+## ?? Mandatory Rule: Defensive Architecture & Fallbacks
+
+To align with the `docs/ARCHITECTURE_VISION.md`, any new feature (especially AI/sub-processes) MUST NOT crash the main render loop.
+1. **Try-Catch Everything**: Wrap volatile operations in try/catch blocks.
+2. **Seamless Fallbacks**: If a feature fails (e.g. upscaling fails), you must fallback to the original asset.
+3. **FFmpeg Hygiene**: Never reuse generic stream labels in `filter_complex` strings; always ensure unique IDs to prevent collisions.
+*(See `.agents/rules/architectural-standards.md` for full details)*
