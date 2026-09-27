@@ -54,3 +54,23 @@ When developing the `overlay-effects-cli.ts` or its generators, you MUST follow 
 
 *   **Variants System**: Every effect must support variations (e.g., `--effect rain --variant drizzle`).
 *   **Documentation Sync**: If a new effect or variant is created, the catalog in the rule file must be updated.
+
+---
+
+## ?? Mandatory Rule: Import Integrity & Refactoring Checks
+
+When refactoring files or adding new function calls (especially in core modules like `src/renderer.ts`), you **MUST** ensure that all required module imports are present at the top of the file. 
+
+1. **Verify Imports After Edit**: Never assume an import already exists if you introduce a new dependency or function call. 
+2. **Preserve Existing Imports**: When doing partial replacements using tools like `replace_file_content` or `write_to_file`, ensure you do not accidentally trim or overwrite the import block.
+3. **Compile/Type Check**: Before finishing a task, ensure the code is free of `ReferenceError`s by verifying that all called methods are explicitly imported in the file.
+
+---
+
+## ?? Mandatory Rule: Zero Regression & Workflow Stability
+
+When fixing bugs, refactoring, or implementing new features, you **MUST NOT break existing working flows**. 
+
+1. **Holistic Verification**: Do not blindly fix a localized error without considering the wider impact. Ensure that your changes do not inadvertently disable or break other existing features (e.g., removing a flag that another feature depends on).
+2. **Preserve Existing Logic**: When using tools like `replace_file_content`, double-check that you are only modifying the intended logic. Do not accidentally delete surrounding code, fallbacks, or structural blocks.
+3. **Test the Happy Path**: Always ensure the core pipeline still works end-to-end after your changes. Your code modifications must be strictly additive or safely refactored without causing side-effect regressions.

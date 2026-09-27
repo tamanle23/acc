@@ -8,6 +8,7 @@ import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } fro
 import { generateAssContent, getSceneDuration } from './subtitles';
 import { buildFfmpegEncodingFlags } from './platforms';
 import { renderDepth3DScene } from './depth3d';
+import { upscaleImage, checkAndDownloadUpscaler } from './upscaler';
 
 function getFileChecksum(filePath: string): string {
   try {
@@ -216,9 +217,7 @@ function renderSingleScene(
     outputOptions.push(`-map ${mapV}`);
     outputOptions.push(`-map ${mapA}`);
 
-    if (audioFilters.length === 0 && videoFilters.length > 0) {
-      command.videoFilters(videoFilters);
-    } // if audioFilters > 0 it was already handled by complexFilter
+    // videoFilters are already handled by complexFilter above
 
     command
       .outputOptions(outputOptions)
