@@ -143,6 +143,7 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 | `wordsPerPhrase` | `number` | Không | `1` | Sắp xếp phụ đề hiển thị thành cụm từ (Karaoke chunking). Nếu nhập `5` hoặc `6`, phụ đề sẽ xuất hiện cả câu thay vì hiển thị 1 từ trên mỗi khung hình. |
 | `highlightPreset` | `"none" \| "color" \| "scale" \| "glow" \| "scale-color"` | Không | `"none"` | **Hiệu ứng Karaoke Highlight** làm nổi bật từ đang được phát âm. (Yêu cầu `wordsPerPhrase > 1` để thấy hiệu quả). |
 | `highlightColor` | `string` (Hex `#RRGGBB`) | Không | `#00FFFF` | Mã màu dùng cho hiệu ứng highlight từ đang đọc. |
+| `autoTranscribe` | `boolean` | Không | `true` | Bật/tắt chế độ tự động chạy Whisper AI để trích xuất phụ đề. Nếu `false`, CLI sẽ bỏ qua bước Whisper kể cả khi có audio. |
 
 ---
 

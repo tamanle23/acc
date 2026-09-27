@@ -64,3 +64,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 ---
 
 *Tuân thủ quy tắc bắt buộc tại [`AGENTS.md`](../../AGENTS.md) và [`.agents/rules/history-archival.md`](../../.agents/rules/history-archival.md).*
+|   [ ` 0 5 0 ` ] ( 0 5 0 _ a u t o _ t r a n s c r i b e _ f l a g _ f o r _ w h i s p e r . m d )   |   2 0 2 6 - 0 9 - 2 7   |   A u t o   T r a n s c r i b e   F l a g   f o r   W h i s p e r   i n   a u t o - c o n f i g   |   ` s t o r y - c o n f i g . j s o n ` ,   W h i s p e r   a u t o T r a n s c r i b e   f l a g ,   ` a u t o - c o n f i g . t s `   |  
+ 

@@ -427,6 +427,11 @@
           "type": "string",
           "pattern": "^#[0-9A-Fa-f]{6}$",
           "description": "Màu chữ đang đọc (Hex #RRGGBB)"
+        },
+        "autoTranscribe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Tự động trích xuất phụ đề bằng Whisper AI (Mặc định: true)"
         }
       }
     },

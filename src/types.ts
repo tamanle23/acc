@@ -158,6 +158,7 @@ export interface CaptionSettings {
   wordsPerPhrase?: number; // Number of words per phrase (e.g. 5-6). If 1, words flash individually.
   highlightPreset?: 'none' | 'color' | 'scale' | 'glow' | 'scale-color';
   highlightColor?: string; // HTML Hex code for highlight, e.g. #00FFFF
+  autoTranscribe?: boolean; // Automatically extract subtitles using Whisper AI (default: true)
 }
 
 export type PlatformPreset =

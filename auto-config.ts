@@ -492,14 +492,11 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Hỏi người dùng có muốn chạy Whisper transcribe không
-  const transcribePrompt = await askQuestion(
-    '\nBạn có muốn chạy Whisper AI để tự động trích xuất phụ đề & timestamps không? (Y/n) [mặc định: Y]: '
-  );
-  const doTranscribe = transcribePrompt.trim().toLowerCase() !== 'n';
+  // 4. Kiểm tra cấu hình autoTranscribe từ story-config
+  const doTranscribe = prevConfig?.settings?.captions?.autoTranscribe !== false;
 
   if (!doTranscribe) {
-    console.log('-> Bỏ qua bước Whisper transcription.');
+    console.log('\n-> Bỏ qua bước Whisper transcription (autoTranscribe = false).');
   }
 
   let filePairs = [];
@@ -634,7 +631,8 @@ async function main() {
         position: 'bottom',
         wordsPerPhrase,
         highlightPreset,
-        highlightColor
+        highlightColor,
+        autoTranscribe: doTranscribe
       },
       transition: {
         enabled: enableTransitions,

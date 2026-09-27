@@ -23,7 +23,8 @@
       "position": "bottom",
       "wordsPerPhrase": 6,
       "highlightPreset": "scale-color",
-      "highlightColor": "#00FFFF"
+      "highlightColor": "#00FFFF",
+      "autoTranscribe": true
     },
     "transition": {
       "enabled": true,
