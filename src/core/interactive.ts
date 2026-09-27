@@ -1,5 +1,5 @@
 import readline from 'readline';
-import { InferenceBackend } from './backend/InferenceBackend';
+import { PythonBackend } from './backend/PythonBackend';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -8,7 +8,7 @@ const rl = readline.createInterface({
 
 rl.on('SIGINT', () => {
   console.log('\n\n[Interactive] Received SIGINT. Shutting down engines...');
-  InferenceBackend.getInstance().shutdown();
+  PythonBackend.getInstance().shutdown();
   process.exit(0);
 });
 
@@ -49,7 +49,7 @@ export async function askYesNo(query: string, defaultYes = true): Promise<boolea
 
 export function closeInteractiveConsole() {
   rl.close();
-  InferenceBackend.getInstance().shutdown();
+  PythonBackend.getInstance().shutdown();
 }
 
 

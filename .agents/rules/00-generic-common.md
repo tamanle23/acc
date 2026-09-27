@@ -1,3 +1,14 @@
+---
+trigger: always_on
+---
+
+# RULE MANAGEMENT SOP (CRITICAL CONSTRAINT)
+Constraint: YOU MUST NEVER write long, detailed rules directly into the `.agents/rules/` directory.
+Workflow:
+  Step_1: Whenever the user asks to add or update a rule, FIRST write the full, verbose explanation and logic into `docs/master_rules_reference.md`.
+  Step_2: SECOND, strictly distill the rule into a highly compact, imperative constraint (using YAML or bullet points).
+  Step_3: THIRD, append ONLY the compacted version to either `00-generic-common.md` (if broad) or `01-workspace-specific.md` (if domain-specific).
+
 # Generic Common Rules
 
 - **OS-COMPAT**: MUST support Win/Linux/macOS. Use `node:path`. Dynamically detect `process.platform` & `process.arch` for external binaries. Set `chmod +x` on Unix.

@@ -1,9 +1,9 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { InferenceBackend } from '../../../core/backend/InferenceBackend';
+import { PythonBackend } from '../../../core/backend/PythonBackend';
 import path from 'path';
 
 export class Cinematic implements ISoundGenerator {
-  constructor(private aiModel: string) {}
+  constructor(private aiModel: string) { }
 
   async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
     const fileName = `${effect}_${variant}_${subVariant}_${duration}s_${this.aiModel}`;
@@ -12,12 +12,12 @@ export class Cinematic implements ISoundGenerator {
 
     let prompt = customPrompt || 'Cinematic Hollywood trailer sound effect, ';
     if (variant === 'impact' || variant === 'hit') {
-       prompt += 'massive sub drop impact, heavy bass explosion.';
+      prompt += 'massive sub drop impact, heavy bass explosion.';
     } else {
-       prompt += `${variant.replace('_', ' ')} ${subVariant.replace('_', ' ')}, dramatic tension.`;
+      prompt += `${variant.replace('_', ' ')} ${subVariant.replace('_', ' ')}, dramatic tension.`;
     }
 
-    const engine = InferenceBackend.getInstance();
+    const engine = PythonBackend.getInstance();
     await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', { prompt, model: this.aiModel, duration, output_path: audioPath });
 
     const metadata = { effect, variant, subVariant, category: 'cinematic', duration, engine: 'ai', model: this.aiModel, aiPrompt: prompt };

@@ -2,7 +2,7 @@ import path from 'path';
 import { RegistryManager } from '../src/sound-effects/core/Registry';
 import { renderSoundEffect } from '../src/sound-effects/engine';
 import { FFmpegManager } from '../src/core/FFmpegManager';
-import { InferenceBackend } from '../src/core/backend/InferenceBackend';
+import { PythonBackend } from '../src/core/backend/PythonBackend';
 
 const scenarios = [
   // FOLEY
@@ -103,7 +103,7 @@ const models = [
 
 async function main() {
   await FFmpegManager.prepare();
-  
+
   console.log('============================================');
   console.log('🤖 AI Sound Effects MASSIVE Batch Benchmark');
   console.log('============================================');
@@ -117,9 +117,9 @@ async function main() {
   for (const scenario of scenarios) {
     for (const model of models) {
       console.log(`\n▶️ Generating [${scenario.effect} > ${scenario.variant} > ${scenario.subVariant}] with model [${model}]`);
-      
+
       const registry = new RegistryManager('ai', model);
-      
+
       try {
         const outWav = await renderSoundEffect(
           registry,
@@ -137,7 +137,7 @@ async function main() {
   }
 
   console.log('\n🎉 Massive batch benchmark completed! Shutting down AI Engine...');
-  InferenceBackend.getInstance().shutdown();
+  PythonBackend.getInstance().shutdown();
   process.exit(0);
 }
 

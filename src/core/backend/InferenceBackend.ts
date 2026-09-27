@@ -53,11 +53,11 @@ class PythonWorker {
   private process: ChildProcess | null = null;
   private isReady = false;
   private initPromise: Promise<void> | null = null;
-  
+
   private pendingRequests = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void }>();
   private lineBuffer = new LineBuffer();
 
-  constructor(public readonly domain: string) {}
+  constructor(public readonly domain: string) { }
 
   /**
    * Bootstraps the worker process. Ensures singleton initialization per worker instance.
@@ -70,9 +70,9 @@ class PythonWorker {
     this.initPromise = new Promise<void>((resolve, reject) => {
       const scriptName = `${this.domain}_worker.py`;
       const scriptPath = path.join(__dirname, 'workers', scriptName);
-      
-      console.log(`[InferenceBackend:${this.domain}] Bootstrapping Python Worker...`);
-      
+
+      console.log(`[PythonBackend:${this.domain}] Bootstrapping Python Worker...`);
+
       // Spawn using 'bun x' to resolve environment paths reliably
       this.process = spawn('bun', ['x', 'uv', 'run', scriptPath], {
         stdio: ['pipe', 'pipe', 'inherit'],
@@ -85,14 +85,14 @@ class PythonWorker {
       });
 
       this.process.on('error', (err) => {
-        console.error(`[InferenceBackend:${this.domain}] Process Error: ${err.message}`);
+        console.error(`[PythonBackend:${this.domain}] Process Error: ${err.message}`);
         this.rejectAllPending(new Error(`Worker process failed: ${err.message}`));
         reject(err);
       });
-      
+
       this.process.on('exit', (code) => {
         if (code !== 0 && code !== null) {
-          console.error(`[InferenceBackend:${this.domain}] Exited with code ${code}`);
+          console.error(`[PythonBackend:${this.domain}] Exited with code ${code}`);
         }
         this.isReady = false;
         this.initPromise = null;
@@ -109,12 +109,12 @@ class PythonWorker {
    */
   private handleLine(line: string, onReady: () => void) {
     if (!this.isReady && line.includes('WORKER_READY')) {
-      console.log(`[InferenceBackend:${this.domain}] System is READY.`);
+      console.log(`[PythonBackend:${this.domain}] System is READY.`);
       this.isReady = true;
       onReady();
       return;
     }
-    
+
     if (this.isReady) {
       try {
         const res = JSON.parse(line) as AIResponse;
@@ -132,9 +132,9 @@ class PythonWorker {
         // Not a JSON response, just standard output from python (e.g. print statements)
       }
     }
-    
+
     // Pass-through logging
-    console.log(`[InferenceBackend:${this.domain}] ${line}`);
+    console.log(`[PythonBackend:${this.domain}] ${line}`);
   }
 
   /**
@@ -175,7 +175,7 @@ class PythonWorker {
     if (this.process && !this.process.killed) {
       this.process.kill('SIGKILL');
     }
-    this.rejectAllPending(new Error('InferenceBackend shutting down.'));
+    this.rejectAllPending(new Error('PythonBackend shutting down.'));
     this.isReady = false;
     this.initPromise = null;
   }
@@ -185,22 +185,22 @@ class PythonWorker {
 // Global Manager (Facade)
 // ==========================================
 /**
- * InferenceBackend is the central Orchestrator for all Python sub-systems.
+ * PythonBackend is the central Orchestrator for all Python sub-systems.
  * Implements the Singleton pattern to coordinate global daemon lifecycles.
  */
-export class InferenceBackend {
-  private static instance: InferenceBackend;
+export class PythonBackend {
+  private static instance: PythonBackend;
   private workers = new Map<string, PythonWorker>();
 
   private constructor() {
     this.setupProcessHandlers();
   }
 
-  public static getInstance(): InferenceBackend {
-    if (!InferenceBackend.instance) {
-      InferenceBackend.instance = new InferenceBackend();
+  public static getInstance(): PythonBackend {
+    if (!PythonBackend.instance) {
+      PythonBackend.instance = new PythonBackend();
     }
-    return InferenceBackend.instance;
+    return PythonBackend.instance;
   }
 
   private setupProcessHandlers() {

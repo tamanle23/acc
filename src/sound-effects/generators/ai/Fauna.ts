@@ -1,5 +1,5 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { InferenceBackend } from '../../../core/backend/InferenceBackend';
+import { PythonBackend } from '../../../core/backend/PythonBackend';
 import path from 'path';
 
 // Acoustic Translation Bridge: Mapping Vietnamese cultural onomatopoeia to English AI prompts
@@ -19,7 +19,7 @@ export const FAUNA_DICTIONARY: Record<string, Record<string, string>> = {
   'chuot': {
     'chit_chit': 'Mouse squeaking, high pitched rat squeaks, tiny rodent sounds'
   },
-  
+
   // LIVESTOCK & POULTRY
   'ga_trong': {
     'o_o_o': 'Rooster crowing loud, morning farm bird, cock-a-doodle-doo'
@@ -103,7 +103,7 @@ export const FAUNA_DICTIONARY: Record<string, Record<string, string>> = {
 };
 
 export class Fauna implements ISoundGenerator {
-  constructor(private aiModel: string) {}
+  constructor(private aiModel: string) { }
 
   async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
     const fileName = `${effect}_${variant}_${subVariant}_${duration}s_${this.aiModel}`;
@@ -111,7 +111,7 @@ export class Fauna implements ISoundGenerator {
     const jsonPath = path.join(outDir, `${fileName}.json`);
 
     let prompt = customPrompt || '';
-    
+
     // Look up the translation bridge for cultural onomatopoeia
     const animalEntry = FAUNA_DICTIONARY[variant];
     if (animalEntry && animalEntry[subVariant]) {
@@ -122,7 +122,7 @@ export class Fauna implements ISoundGenerator {
       prompt += `${variant.replace(/_/g, ' ')} ${subVariant.replace(/_/g, ' ')}, realistic wildlife fauna.`;
     }
 
-    const engine = InferenceBackend.getInstance();
+    const engine = PythonBackend.getInstance();
     await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', { prompt, model: this.aiModel, duration, output_path: audioPath });
 
     const metadata = { effect, variant, subVariant, category: 'fauna', duration, engine: 'ai', model: this.aiModel, aiPrompt: prompt };
