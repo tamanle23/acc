@@ -8,11 +8,11 @@ Tài liệu này lưu trữ danh mục ý tưởng, thông số kỹ thuật, c�
 
 | ID | Kỹ thuật 3D | Trạng thái | Độ phức tạp | Tác động thị giác |
 | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Out-of-Bounds (Frame-Breaker 3D Illusion)** | 🟢 **Đang thực thi (Active)** | Thấp - Trung bình | ⭐⭐⭐⭐⭐ (Cực kỳ bắt mắt trên Shorts/TikTok) |
-| **02** | **2.5D Multiplane Parallax & Inpainting** | 🟡 **Backlog (Phase 2)** | Trung bình | ⭐⭐⭐⭐ (Chuẩn điện ảnh tài liệu Ken Burns) |
-| **03** | **Sandwich Volumetric Stacking (Atmosphere & Rim Light)** | 🟡 **Backlog (Phase 3)** | Thấp | ⭐⭐⭐⭐ (Không gian sâu đa tầng khí quyển) |
-| **04** | **AI Monocular Depth Map 3D Mesh Displacement** | 🔵 **Backlog (Phase 4)** | Cao | ⭐⭐⭐⭐⭐ (Khối 3D biến dạng thực thụ) |
-| **05** | **Wigglegram / Stereoscopic 3D Shake** | 🔵 **Backlog (Phase 5)** | Trung bình | ⭐⭐⭐⭐ (Ảo giác thị sai chuyển động 2 mắt) |
+| **01** | **Out-of-Bounds (Frame-Breaker 3D Illusion)** | 🟢 **Đã hoàn thành (Active)** | Thấp - Trung bình | ⭐⭐⭐⭐⭐ (Cực kỳ bắt mắt trên Shorts/TikTok) |
+| **02** | **2.5D Multiplane Parallax & Inpainting** | 🟢 **Đã hoàn thành (Active)** | Trung bình | ⭐⭐⭐⭐ (Chuẩn điện ảnh tài liệu Ken Burns) |
+| **03** | **Sandwich Volumetric Stacking (Atmosphere & Typography)** | 🟢 **Đã hoàn thành (Active)** | Thấp | ⭐⭐⭐⭐ (Không gian sâu đa tầng kẹp chữ) |
+| **04** | **AI Depth Map 3D Mesh Displacement** | 🟢 **Đã hoàn thành (Active)** | Cao | ⭐⭐⭐⭐⭐ (Khối 3D biến dạng camera orbital) |
+| **05** | **Wigglegram / Stereoscopic 3D Shake** | 🟢 **Đã hoàn thành (Active)** | Trung bình | ⭐⭐⭐⭐ (Ảo giác thị sai chuyển động 2 mắt) |
 
 ---
 

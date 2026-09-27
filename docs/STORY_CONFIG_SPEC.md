@@ -316,15 +316,16 @@ Hiệu ứng sẽ được áp dụng khi chuyển từ `scene 1` sang `scene 2`
 
 ---
 
-## 12. Tính năng Tạo nổi 3D & Vượt khung (`settings.depth3d` & `scenes[i].depth3d`)
+## 12. Tính năng Tạo nổi 3D & Chiều sâu Visual (`settings.depth3d` & `scenes[i].depth3d`)
 
 Hiệu ứng tạo nổi 3D (3D Depth / Pop-Out) biến hình ảnh 2D tĩnh thành phân cảnh có chiều sâu thị giác mạnh mẽ, hỗ trợ cấu hình ở cả mức Global (`settings.depth3d`) và mức từng phân cảnh (`scenes[i].depth3d`).
 
+### 12.1. Bảng thuộc tính chung:
 | Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
 | :--- | :--- | :--- | :--- | :--- |
 | `enabled` | `boolean` | Không | `true` | Bật/tắt hiệu ứng 3D cho scene. |
-| `mode` | `string` | Không | `"frame_breaker"` | Kỹ thuật 3D. Hỗ trợ: `"frame_breaker"` (Vượt khung), `"parallax_dolly"`, `"sandwich"`, `"mesh_displacement"`, `"wigglegram"`. |
-| `frameStyle` | `string` | Không | `"card"` | Kiểu khung vượt viền (`"card"`: Card bo góc hiện đại, `"polaroid"`: Ảnh chụp lấy liền, `"cinema"`: Khung phim 2.35:1, `"comic"`: Khung truyện tranh). |
+| `mode` | `string` | Không | `"frame_breaker"` | Kỹ thuật 3D. Hỗ trợ: `"frame_breaker"`, `"parallax_25d"`, `"volumetric_sandwich"`, `"depth_map_3d"`, `"wigglegram"`. |
+| `frameStyle` | `string` | Không | `"card"` | Kiểu khung vượt viền (`"card"`, `"polaroid"`, `"cinema"`, `"comic"`). *(Áp dụng cho `frame_breaker`)*. |
 | `popOutIntensity` | `number` | Không | `1.15` | Mức độ phóng to / nhô ra của vật thể (1.0 đến 2.0). |
 | `shadow` | `boolean` | Không | `true` | Bật/tắt bóng đổ 3D (Drop Shadow) dưới khung và vật thể. |
 | `shadowBlur` | `number` | Không | `25` | Độ tỏa mờ của bóng đổ (pixel). |
@@ -332,8 +333,17 @@ Hiệu ứng tạo nổi 3D (3D Depth / Pop-Out) biến hình ảnh 2D tĩnh th�
 | `backdropBlur` | `number` | Không | `20` | Độ mờ Gaussian của lớp nền phía sau khung (pixel). |
 | `floatMotion` | `boolean` | Không | `true` | Bật chuyển động lơ lửng 3D nhẹ nhàng (Floating oscillation). |
 | `subjectImage` | `string` | Không | `undefined` | Đường dẫn ảnh PNG cutout trong suốt của nhân vật nếu có sẵn. |
+| `parallax` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `parallax_25d`. |
+| `sandwich` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `volumetric_sandwich`. |
+| `depthMesh` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `depth_map_3d`. |
+| `wigglegram` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `wigglegram`. |
 
-**Ví dụ cấu hình 3D Vượt khung:**
+---
+
+### 12.2. Chi tiết 5 Kỹ thuật 3D Depth:
+
+#### 1. Out-of-Bounds Frame-Breaker (`mode: "frame_breaker"`)
+Tạo ảo giác nhân vật vượt ra ngoài khung ảnh Polaroid/Card/Cinema với bóng đổ chân thực và dao động lơ lửng.
 ```json
 {
   "image": "scene1.jpg",
@@ -345,6 +355,94 @@ Hiệu ứng tạo nổi 3D (3D Depth / Pop-Out) biến hình ảnh 2D tĩnh th�
     "popOutIntensity": 1.2,
     "shadow": true,
     "floatMotion": true
+  }
+}
+```
+
+#### 2. 2.5D Parallax Ken Burns (`mode: "parallax_25d"`)
+Mô phỏng camera đa bình diện (Multi-plane camera) di chuyển với vận tốc vi sai giữa nền và chủ thể.
+- `cameraMotion`: `"pan_left" | "pan_right" | "zoom_in" | "zoom_out" | "dolly_zoom"`.
+- `intensity`: Hệ số cường độ chuyển động (mặc định: `1.0`).
+- `depthBlur`: Làm mờ bối cảnh xa tạo độ sâu trường ảnh DOF (mặc định: `true`).
+- `foregroundElements`: Bụi sáng/hạt trôi nhanh ở tiền cảnh (mặc định: `true`).
+```json
+{
+  "image": "scene2.jpg",
+  "audio": "voiceover2.mp3",
+  "depth3d": {
+    "enabled": true,
+    "mode": "parallax_25d",
+    "parallax": {
+      "cameraMotion": "dolly_zoom",
+      "intensity": 1.2,
+      "depthBlur": true,
+      "foregroundElements": true
+    }
+  }
+}
+```
+
+#### 3. Sandwich Volumetric Depth (`mode: "volumetric_sandwich"`)
+Cấu trúc kẹp 3 lớp xếp chồng: Phụ đề & Typography 3D nằm **sau** lưng nhân vật nhưng **trước** hình nền.
+- `textBehindSubject`: Bật hiển thị text kẹp sau nhân vật (mặc định: `true`).
+- `bannerText`: Đoạn chữ 3D typography lớn hiển thị ở giữa (mặc định: tự lấy từ phụ đề).
+- `ambientDust`: Hạt bụi lơ lửng trong không gian 3D (mặc định: `true`).
+- `vignette`: Bóng mờ viền khung tạo chiều sâu phòng chiếu (mặc định: `true`).
+```json
+{
+  "image": "scene3.jpg",
+  "audio": "voiceover3.mp3",
+  "depth3d": {
+    "enabled": true,
+    "mode": "volumetric_sandwich",
+    "sandwich": {
+      "textBehindSubject": true,
+      "ambientDust": true,
+      "vignette": true
+    }
+  }
+}
+```
+
+#### 4. AI Depth Map 3D Mesh Displacement (`mode: "depth_map_3d"`)
+Biến đổi tọa độ pixel theo bản đồ độ sâu (Depth Map) để tái tạo camera orbital quay quanh vật thể.
+- `depthMapPath`: Đường dẫn file ảnh bản đồ độ sâu đen trắng (trắng = gần, đen = xa). Nếu không có, thuật toán nội suy radial depth tự động kích hoạt.
+- `motion`: `"circle" | "horizontal" | "vertical" | "zoom"`.
+- `displacementScale`: Độ sâu dịch chuyển pixel (mặc định: `15`).
+```json
+{
+  "image": "scene4.jpg",
+  "audio": "voiceover4.mp3",
+  "depth3d": {
+    "enabled": true,
+    "mode": "depth_map_3d",
+    "depthMesh": {
+      "motion": "circle",
+      "displacementScale": 18
+    }
+  }
+}
+```
+
+#### 5. Stereoscopic Wigglegram (`mode: "wigglegram"`)
+Hiệu ứng rung lắc thị sai lập thể cổ điển (Nimslo 3D camera / TikTok 3D Pop Wobble).
+- `frequency`: Tần số dao động Hz (mặc định: `8`).
+- `amplitude`: Độ lệch pixel ngang (mặc định: `12`).
+- `direction`: `"horizontal" | "diagonal" | "rotational"`.
+- `chromaticAberration`: Tách sắc sai quang học RGB (mặc định: `true`).
+```json
+{
+  "image": "scene5.jpg",
+  "audio": "voiceover5.mp3",
+  "depth3d": {
+    "enabled": true,
+    "mode": "wigglegram",
+    "wigglegram": {
+      "frequency": 8,
+      "amplitude": 14,
+      "direction": "horizontal",
+      "chromaticAberration": true
+    }
   }
 }
 ```

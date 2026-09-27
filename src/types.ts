@@ -28,8 +28,49 @@ export interface TTSSettings {
   speed?: number; // e.g. 1.0
 }
 
-export type Depth3DMode = 'frame_breaker' | 'parallax_dolly' | 'sandwich' | 'mesh_displacement' | 'wigglegram';
+export type Depth3DMode = 
+  | 'frame_breaker' 
+  | 'parallax_25d' 
+  | 'volumetric_sandwich' 
+  | 'depth_map_3d' 
+  | 'wigglegram'
+  // Aliases for convenience
+  | 'parallax_dolly'
+  | 'sandwich' 
+  | 'mesh_displacement';
+
 export type FrameBreakerStyle = 'card' | 'polaroid' | 'cinema' | 'comic';
+
+export type ParallaxMotion = 'pan_left' | 'pan_right' | 'zoom_in' | 'zoom_out' | 'dolly_zoom';
+
+export interface Parallax25DSettings {
+  cameraMotion?: ParallaxMotion; // default: 'dolly_zoom'
+  intensity?: number; // default: 1.0
+  depthBlur?: boolean; // default: true (background depth of field blur)
+  backgroundImage?: string; // Optional separate clean background plate
+  foregroundElements?: boolean; // default: true (atmospheric particles)
+}
+
+export interface SandwichVolumetricSettings {
+  textBehindSubject?: boolean; // default: true (renders title/captions in mid-layer)
+  ambientDust?: boolean; // default: true (floating dust specks behind subject)
+  vignette?: boolean; // default: true (volumetric edge shadow)
+  bannerText?: string; // Optional custom large 3D typography behind subject
+  textColor?: string; // default: 'rgba(255,255,255,0.85)'
+}
+
+export interface DepthMap3DSettings {
+  depthMapPath?: string; // Path to grayscale depth map image (white = near, black = far)
+  motion?: 'circle' | 'horizontal' | 'vertical' | 'zoom'; // default: 'circle'
+  displacementScale?: number; // default: 15 (pixels displacement)
+}
+
+export interface WigglegramSettings {
+  frequency?: number; // default: 8 (Hz / oscillations per second)
+  amplitude?: number; // default: 12 (pixel horizontal shift)
+  direction?: 'horizontal' | 'diagonal' | 'rotational'; // default: 'horizontal'
+  chromaticAberration?: boolean; // default: true (subtle RGB split during wiggle)
+}
 
 export interface Depth3DConfig {
   enabled?: boolean;
@@ -42,6 +83,12 @@ export interface Depth3DConfig {
   backdropBlur?: number; // default: 20 (px blur for outer background)
   floatMotion?: boolean; // default: true (gentle 3D floating oscillation)
   subjectImage?: string; // Optional transparent cutout PNG/WebM of subject if provided separately
+  
+  // Specific mode sub-configurations
+  parallax?: Parallax25DSettings;
+  sandwich?: SandwichVolumetricSettings;
+  depthMesh?: DepthMap3DSettings;
+  wigglegram?: WigglegramSettings;
 }
 
 export interface SceneConfig {

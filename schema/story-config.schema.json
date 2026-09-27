@@ -227,7 +227,7 @@
         "enabled": { "type": "boolean", "default": true, "description": "Bật/Tắt hiệu ứng tạo nổi 3D" },
         "mode": {
           "type": "string",
-          "enum": ["frame_breaker", "parallax_dolly", "sandwich", "mesh_displacement", "wigglegram"],
+          "enum": ["frame_breaker", "parallax_25d", "volumetric_sandwich", "depth_map_3d", "wigglegram", "parallax_dolly", "sandwich", "mesh_displacement"],
           "default": "frame_breaker",
           "description": "Kỹ thuật tạo nổi 3D"
         },
@@ -247,7 +247,48 @@
         "shadowColor": { "type": "string", "default": "rgba(0,0,0,0.6)", "description": "Màu bóng đổ" },
         "backdropBlur": { "type": "number", "default": 20, "description": "Độ mờ nền phía sau khung (px)" },
         "floatMotion": { "type": "boolean", "default": true, "description": "Bật chuyển động lơ lửng 3D nhẹ nhàng" },
-        "subjectImage": { "type": "string", "description": "Đường dẫn ảnh PNG cutout trong suốt của chủ thể nếu có sẵn" }
+        "subjectImage": { "type": "string", "description": "Đường dẫn ảnh PNG cutout trong suốt của chủ thể nếu có sẵn" },
+        "parallax": {
+          "type": "object",
+          "description": "Tùy chọn chuyên biệt cho kỹ thuật 2.5D Parallax Ken Burns",
+          "properties": {
+            "cameraMotion": { "type": "string", "enum": ["pan_left", "pan_right", "zoom_in", "zoom_out", "dolly_zoom"], "default": "dolly_zoom" },
+            "intensity": { "type": "number", "default": 1.0 },
+            "depthBlur": { "type": "boolean", "default": true },
+            "backgroundImage": { "type": "string" },
+            "foregroundElements": { "type": "boolean", "default": true }
+          }
+        },
+        "sandwich": {
+          "type": "object",
+          "description": "Tùy chọn chuyên biệt cho kỹ thuật Sandwich Volumetric Depth (Chữ/Typography nằm sau nhân vật)",
+          "properties": {
+            "textBehindSubject": { "type": "boolean", "default": true },
+            "ambientDust": { "type": "boolean", "default": true },
+            "vignette": { "type": "boolean", "default": true },
+            "bannerText": { "type": "string" },
+            "textColor": { "type": "string", "default": "rgba(255,255,255,0.85)" }
+          }
+        },
+        "depthMesh": {
+          "type": "object",
+          "description": "Tùy chọn chuyên biệt cho kỹ thuật AI Depth Map 3D Mesh Displacement",
+          "properties": {
+            "depthMapPath": { "type": "string", "description": "Đường dẫn file ảnh grayscale depth map" },
+            "motion": { "type": "string", "enum": ["circle", "horizontal", "vertical", "zoom"], "default": "circle" },
+            "displacementScale": { "type": "number", "default": 15 }
+          }
+        },
+        "wigglegram": {
+          "type": "object",
+          "description": "Tùy chọn chuyên biệt cho kỹ thuật Stereoscopic Wigglegram (Rung lắc thị sai 3D)",
+          "properties": {
+            "frequency": { "type": "number", "default": 8, "description": "Tần số rung lắc (Hz)" },
+            "amplitude": { "type": "number", "default": 12, "description": "Biên độ dịch chuyển pixel (px)" },
+            "direction": { "type": "string", "enum": ["horizontal", "diagonal", "rotational"], "default": "horizontal" },
+            "chromaticAberration": { "type": "boolean", "default": true }
+          }
+        }
       }
     }
   }

@@ -7,8 +7,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from './types';
 import { generateAssContent, getSceneDuration } from './subtitles';
 import { buildFfmpegEncodingFlags } from './platforms';
-import { upscaleImage, checkAndDownloadUpscaler } from './upscaler';
-import { renderFrameBreakerScene } from './depth3d/frame-breaker';
+import { renderDepth3DScene } from './depth3d';
 
 function getFileChecksum(filePath: string): string {
   try {
@@ -372,14 +371,16 @@ export async function renderStoryVideo(
         const depthConfig = scene.depth3d || config.settings.depth3d;
         let result;
 
-        if (depthConfig?.enabled !== false && (depthConfig?.mode === 'frame_breaker' || (depthConfig?.enabled && !depthConfig?.mode))) {
-          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering 3D Frame-Breaker (${(duration+paddingTime).toFixed(2)}s)...`);
-          result = await renderFrameBreakerScene({
+        if (depthConfig?.enabled !== false && (depthConfig?.enabled || depthConfig?.mode)) {
+          const modeName = depthConfig.mode || 'frame_breaker';
+          console.log(`▶ [Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
+          result = await renderDepth3DScene({
             scene,
             duration,
             assPath,
             config,
             outputPath: segmentPath,
+            fallbackAudioPath,
             paddingTime,
             useHighQualityIntermediate: hasAnyTransition
           });

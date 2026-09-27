@@ -439,22 +439,38 @@ async function main() {
     }
   }
 
-  // 3d. Chọn 3D Depth Pop-out
+  // 3d. Chọn 3D Depth & Visual Pop-Out
   let enableDepth3D = false;
+  let depth3DMode: any = 'frame_breaker';
   let depth3DStyle: any = 'polaroid';
   if (!shouldMerge) {
-    console.log('\n--- HIỆU ỨNG 3D POP-OUT (Out-of-Bounds Frame-Breaker) ---');
-    const depthAns = await askQuestion('Bạn có muốn bật hiệu ứng nổi 3D vượt khung (Frame-Breaker) không? (y/N) [mặc định: N]: ');
+    console.log('\n--- HIỆU ỨNG TẠO NỔI 3D & CHIỀU SÂU (3D Depth Visuals) ---');
+    const depthAns = await askQuestion('Bạn có muốn bật hiệu ứng chiều sâu 3D (Frame-Breaker, Parallax, Sandwich, Wiggle...) không? (y/N) [mặc định: N]: ');
     if (depthAns.trim().toLowerCase() === 'y') {
       enableDepth3D = true;
-      console.log('  [1] Polaroid (Khung ảnh lấy liền viền dày) [Mặc định]');
-      console.log('  [2] Card (Thẻ bài bo góc hiện đại)');
-      console.log('  [3] Cinema (Khung phim màn ảnh rộng)');
-      console.log('  [4] Comic (Khung truyện tranh viền đen)');
-      const styleAns = await askQuestion('-> Chọn phong cách khung (1-4) [mặc định: 1]: ');
-      if (styleAns.trim() === '2') depth3DStyle = 'card';
-      else if (styleAns.trim() === '3') depth3DStyle = 'cinema';
-      else if (styleAns.trim() === '4') depth3DStyle = 'comic';
+      console.log('Chọn kỹ thuật 3D:');
+      console.log('  [1] Out-of-Bounds (Vượt khung viền 3D) [Mặc định]');
+      console.log('  [2] 2.5D Parallax Ken Burns (Camera đa bình diện vi sai)');
+      console.log('  [3] Sandwich Volumetric Depth (Chữ & Bụi sáng nằm sau nhân vật)');
+      console.log('  [4] AI Depth Map 3D Mesh Displacement (Camera orbital quay quanh vật thể)');
+      console.log('  [5] Stereoscopic Wigglegram (Rung lắc thị sai 3D Pop Wobble)');
+      const modeAns = await askQuestion('-> Chọn kỹ thuật (1-5) [mặc định: 1]: ');
+      if (modeAns.trim() === '2') depth3DMode = 'parallax_25d';
+      else if (modeAns.trim() === '3') depth3DMode = 'volumetric_sandwich';
+      else if (modeAns.trim() === '4') depth3DMode = 'depth_map_3d';
+      else if (modeAns.trim() === '5') depth3DMode = 'wigglegram';
+      else {
+        depth3DMode = 'frame_breaker';
+        console.log('\nChọn phong cách khung:');
+        console.log('  [1] Polaroid (Khung ảnh lấy liền viền dày) [Mặc định]');
+        console.log('  [2] Card (Thẻ bài bo góc hiện đại)');
+        console.log('  [3] Cinema (Khung phim màn ảnh rộng)');
+        console.log('  [4] Comic (Khung truyện tranh viền đen)');
+        const styleAns = await askQuestion('-> Chọn phong cách khung (1-4) [mặc định: 1]: ');
+        if (styleAns.trim() === '2') depth3DStyle = 'card';
+        else if (styleAns.trim() === '3') depth3DStyle = 'cinema';
+        else if (styleAns.trim() === '4') depth3DStyle = 'comic';
+      }
     }
   }
 
@@ -623,11 +639,11 @@ async function main() {
       },
       depth3d: {
         enabled: enableDepth3D,
-        mode: 'frame_breaker',
+        mode: depth3DMode,
         frameStyle: depth3DStyle,
         popOutIntensity: 1.15,
-        elevationShadow: true,
-        floatingMotion: true,
+        shadow: true,
+        floatMotion: true,
       },
       tts: enableTTS ? {
         provider: 'vieneu-v3-turbo',

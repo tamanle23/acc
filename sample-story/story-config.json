@@ -92,6 +92,15 @@
     {
       "image": "scene2.jpg",
       "audio": "voiceover2.mp3",
+      "depth3d": {
+        "enabled": true,
+        "mode": "volumetric_sandwich",
+        "sandwich": {
+          "textBehindSubject": true,
+          "ambientDust": true,
+          "vignette": true
+        }
+      },
       "captions": [
         {
           "text": "Ở một",
@@ -118,6 +127,14 @@
     {
       "image": "scene1.jpg",
       "text": "Chú khủng long này rất thân thiện và tốt bụng.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "depth_map_3d",
+        "depthMesh": {
+          "motion": "circle",
+          "displacementScale": 18
+        }
+      },
       "captions": []
     }
   ]
