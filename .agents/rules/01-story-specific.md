@@ -16,3 +16,7 @@
 - **FFMPEG-MANAGER**: MUST run `await FFmpegManager.prepare()` in entrypoints. Set paths via `setFfmpegPath`/`setFfprobePath` for `fluent-ffmpeg`. Quote binary path in shell calls.
 - **GLOBAL-STORAGE**: MUST store global binaries/models in `path.join(os.homedir(), '.visual-storyteller')`. NEVER use `__dirname` or relative project paths for cached app assets.
 - **STREAM-LABELS**: MUST use unique stream identifiers in FFmpeg `filter_complex` strings to prevent collisions.
+- **BACKLOG-MANAGEMENT**: When deferring future tasks or completing existing backlog items:
+  1. Create sequential 3-digit file in `docs/backlogs/XXX_<epic_name>.md` with Status (`[ ] Planned`), Component, Context, Design, Criteria.
+  2. Sync master index table in `docs/backlogs/README.md`.
+  3. When an implementation fulfills a backlog item, MUST mark status as `[x] Completed`, record completion date, link to History log (`docs/history/YYY_...md`), and check off criteria in both the item file and `docs/backlogs/README.md`. Detail: [.agents/rules/backlog-management.md](backlog-management.md).

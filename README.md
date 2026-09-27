@@ -140,7 +140,7 @@ Sau đó bạn chạy `bun run cli.ts` để xuất video `output.mp4` (hoặc `
 - 📜 **Tài liệu đặc tả cấu hình Story**: Xem tại [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md) (đầy đủ các platform, codec, caption presets, depth3d...).
 - 🎥 **Hướng dẫn chèn Video (B-Roll) & Xử lý thời lượng**: Xem tại [docs/VIDEO_SCENES_GUIDE.md](docs/VIDEO_SCENES_GUIDE.md).
 - 🧊 **Tài liệu & Kế hoạch 3D Depth Techniques**: Xem tại [docs/backlogs/3D_DEPTH_BACKLOG.md](docs/backlogs/3D_DEPTH_BACKLOG.md).
-- 📌 **Tổng hợp Kế hoạch Phát triển (Backlog Epics)**: Xem tại [docs/backlogs/BACKLOG.md](docs/backlogs/BACKLOG.md).
+- 📌 **Tổng hợp Kế hoạch Phát triển (Backlog Epics)**: Xem tại [docs/backlogs/README.md](docs/backlogs/README.md).
 - 🎨 **Tài liệu hướng dẫn sinh hiệu ứng Overlay**: Xem tại [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md).
 - 🔬 **Tài liệu hệ thống hóa các phương pháp Overlay & Hòa trộn**: Xem tại [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md).
 - 📋 **Quy tắc cập nhật bắt buộc**: Xem tại [AGENTS.md](AGENTS.md) / [.agents/rules/story-config.md](.agents/rules/story-config.md).

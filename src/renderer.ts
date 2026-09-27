@@ -255,7 +255,7 @@ function renderSingleScene(
       .outputOptions(outputOptions)
       .output(outputPath)
       .on('end', () => resolve({ path: outputPath, duration: totalDuration }))
-      .on('error', (err) => reject(err))
+      .on('error', (err, stdout, stderr) => reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`)))
       .run();
   });
 }
@@ -278,9 +278,9 @@ function concatenateVideos(videoPaths: string[], outputPath: string): Promise<vo
         try { fs.unlinkSync(listFilePath); } catch {}
         resolve();
       })
-      .on('error', (err) => {
+      .on('error', (err, stdout, stderr) => {
         try { fs.unlinkSync(listFilePath); } catch {}
-        reject(err);
+        reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`));
       })
       .run();
   });
@@ -355,7 +355,7 @@ function concatenateWithTransitions(
       .outputOptions(encodingFlags.outputOptions)
       .output(outputPath)
       .on('end', () => resolve())
-      .on('error', (err) => reject(err))
+      .on('error', (err, stdout, stderr) => reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`)))
       .run();
   });
 }
@@ -643,9 +643,9 @@ export async function renderStoryVideo(
           ])
           .output(nextVideoPath)
           .on('end', () => resolve())
-          .on('error', (err) => {
+          .on('error', (err, stdout, stderr) => {
             console.error(`[BGM] Lỗi mix nhạc nền:`, err);
-            reject(err);
+            reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`));
           })
           .run();
       });
