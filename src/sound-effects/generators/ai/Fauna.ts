@@ -1,5 +1,5 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { PythonBackend } from '../../../core/backend/PythonBackend';
+import { PythonBackend } from '../../../core/PythonBackend';
 import path from 'path';
 
 // Acoustic Translation Bridge: Mapping Vietnamese cultural onomatopoeia to English AI prompts

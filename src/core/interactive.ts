@@ -1,5 +1,5 @@
 import readline from 'readline';
-import { PythonBackend } from './backend/PythonBackend';
+import { PythonBackend } from './PythonBackend';
 
 const rl = readline.createInterface({
   input: process.stdin,

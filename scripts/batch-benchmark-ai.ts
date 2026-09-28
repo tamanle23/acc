@@ -2,7 +2,7 @@ import path from 'path';
 import { RegistryManager } from '../src/sound-effects/core/Registry';
 import { renderSoundEffect } from '../src/sound-effects/engine';
 import { FFmpegManager } from '../src/core/FFmpegManager';
-import { PythonBackend } from '../src/core/backend/PythonBackend';
+import { PythonBackend } from '../src/core/PythonBackend';
 
 const scenarios = [
   // FOLEY
