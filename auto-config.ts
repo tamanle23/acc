@@ -55,19 +55,20 @@ function collectMediaFiles(baseDir: string): { visualFiles: string[]; audioFiles
         } else if (AUDIO_EXTENSIONS.has(ext)) {
           audioFiles.push(relPath.replace(/\\/g, '/'));
         }
-      } else if (entry.isDirectory()) {
-        const nameLower = entry.name.toLowerCase();
-        const isAudioDir = ['voiceover', 'voiceovers', 'audio', 'audios', 'voices', 'sound', 'sounds'].includes(nameLower);
-        const isVisualDir = ['images', 'image', 'img', 'scenes', 'scene', 'pictures', 'pics', 'video', 'videos', 'footage'].includes(nameLower);
-
-        if ((isAudioDir || isVisualDir || !relativePrefix) && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'dist') {
-          scanDir(fullPath, relPath);
-        }
       }
+      // else if (entry.isDirectory()) {
+      //   const nameLower = entry.name.toLowerCase();
+      //   const isAudioDir = ['assets'].includes(nameLower);
+      //   const isVisualDir = ['assets'].includes(nameLower);
+
+      //   if ((isAudioDir || isVisualDir || !relativePrefix) && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'dist') {
+      //     scanDir(fullPath, relPath);
+      //   }
+      // }
     }
   }
 
-  scanDir(baseDir);
+  scanDir(path.join(baseDir, 'assets'));
   return {
     visualFiles: visualFiles.sort(naturalSort),
     audioFiles: audioFiles.sort(naturalSort),
@@ -156,7 +157,7 @@ function loadGlobalScripts(baseDir: string): ReferenceScriptCache {
             .filter((s) => s.length > 0);
           break;
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -184,7 +185,7 @@ function loadGlobalScripts(baseDir: string): ReferenceScriptCache {
           cache.globalLines = lines;
           break;
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -205,26 +206,18 @@ function findReferenceScript(
   baseDir: string,
   cache: ReferenceScriptCache
 ): { scriptText: string; source: string } | null {
+
   const audioBase = path.parse(audioName).name;
   const imageBase = path.parse(imageName).name;
-  const audioDir = path.dirname(
-    path.isAbsolute(audioName) ? audioName : path.join(baseDir, audioName)
-  );
-
+  const baseName = audioBase || imageBase;
+  const audioDir = !!audioName ? path.dirname(path.isAbsolute(audioName) ? audioName : path.join(baseDir, audioName))
+    : path.join(baseDir, 'assets');
   // Danh sách các ứng viên file script riêng lẻ
   const candidates = [
     // Cùng thư mục với file audio
-    path.join(audioDir, `${audioBase}.txt`),
-    path.join(audioDir, `${path.basename(audioName)}.txt`),
-    path.join(audioDir, `${audioBase}.script`),
-    // Thư mục gốc story
-    path.join(baseDir, `${audioBase}.txt`),
-    path.join(baseDir, `${imageBase}.txt`),
-    path.join(baseDir, `${slideIndex + 1}.txt`),
-    path.join(baseDir, `slide${slideIndex + 1}.txt`),
-    path.join(baseDir, `scene${slideIndex + 1}.txt`),
-    path.join(baseDir, `voiceover${slideIndex + 1}.txt`),
-    path.join(baseDir, `audio${slideIndex + 1}.txt`),
+    path.join(audioDir, `${baseName}.txt`),
+    path.join(audioDir, `${path.basename(baseName)}.txt`),
+    path.join(audioDir, `${baseName}.script`),
   ];
 
   for (const candidate of candidates) {
@@ -232,9 +225,9 @@ function findReferenceScript(
       try {
         const text = fs.readFileSync(candidate, 'utf-8').trim();
         if (text.length > 0) {
-          return { scriptText: text, source: path.relative(baseDir, candidate) };
+          return { scriptText: text, source: candidate };
         }
-      } catch {}
+      } catch { }
     }
   }
 
@@ -316,13 +309,13 @@ async function main() {
         );
         shouldMerge = mergeAns.trim() !== '2';
       }
-    } catch {}
+    } catch { }
   }
 
   let selectedPlatform: PlatformPreset = 'tiktok';
   let selectedCaptionPreset: CaptionPreset = 'tiktok';
   let selectedSubtitleMode: SubtitleMode = 'burn';
-  
+
   let storyName = path.basename(absoluteDir);
   let storyDesc = '';
 
@@ -330,7 +323,7 @@ async function main() {
     console.log('\n--- THÔNG TIN VIDEO ---');
     const nameAns = await askQuestion(`Nhập tên video (Mặc định: ${storyName}): `);
     if (nameAns.trim()) storyName = nameAns.trim();
-    
+
     const descAns = await askQuestion(`Nhập mô tả video (Tùy chọn): `);
     storyDesc = descAns.trim();
 
@@ -471,13 +464,13 @@ async function main() {
 
   // 3e. Chọn TTS
   let enableTTS = false;
-  let ttsVoice = 'hn-quynhanh';
+  let ttsVoice = 'Ngọc Trân';
   if (!shouldMerge) {
     console.log('\n--- LOCAL AI TTS (VieNeu) ---');
     const ttsAns = await askQuestion('Bạn có muốn bật tính năng sinh giọng đọc bằng AI (Local VieNeu-TTS v3 Turbo) không? (y/N) [mặc định: N]: ');
     if (ttsAns.trim().toLowerCase() === 'y') {
       enableTTS = true;
-      const voiceAns = await askQuestion('-> Nhập mã giọng đọc (Mặc định: hn-quynhanh): ');
+      const voiceAns = await askQuestion('-> Nhập mã giọng đọc (Mặc định: Ngọc Trân): ');
       if (voiceAns.trim()) ttsVoice = voiceAns.trim();
     }
   }
@@ -493,7 +486,7 @@ async function main() {
   }
 
   // 4. Kiểm tra cấu hình autoTranscribe từ story-config
-  const doTranscribe = prevConfig?.settings?.captions?.autoTranscribe !== false;
+  const doTranscribe = !shouldMerge || prevConfig?.settings?.captions?.autoTranscribe !== false;
 
   if (!doTranscribe) {
     console.log('\n-> Bỏ qua bước Whisper transcription (autoTranscribe = false).');
@@ -516,29 +509,29 @@ async function main() {
 
   for (let i = 0; i < filePairs.length; i++) {
     const { visual: visualName, audio: audioName } = filePairs[i];
-    const fullAudioPath = path.isAbsolute(audioName) ? audioName : path.resolve(absoluteDir, audioName);
-
-    console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${visualName} <-> ${audioName}`);
+        console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${visualName} <-> ${audioName}`);
 
     let captions: any[] = [];
     let sceneText: string | undefined = undefined;
     const refScriptInfo = findReferenceScript(audioName, visualName, i, absoluteDir, globalScriptCache);
 
-    if (refScriptInfo) {
-      sceneText = refScriptInfo.scriptText;
-      console.log(`  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
-    }
-
     let finalAudioName = audioName;
 
-    if (!finalAudioName && enableTTS && sceneText) {
-      console.log(`  -> Đang sinh âm thanh bằng VieNeu-TTS...`);
-      try {
-        const generatedAudio = await generateAudioFromTTS(sceneText, { provider: 'vieneu-v3-turbo', voice: ttsVoice, speed: 1.0 }, absoluteDir);
-        finalAudioName = path.relative(absoluteDir, generatedAudio).replace(/\\/g, '/');
-      } catch (err) {
-        console.warn(`  -> Cảnh báo: Lỗi sinh TTS:`, err);
+    if (!finalAudioName && enableTTS) {
+      if (refScriptInfo) {
+        sceneText = refScriptInfo.scriptText;
+        console.log(`  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
+        if (sceneText) {
+          console.log(`  -> Đang sinh âm thanh bằng VieNeu-TTS...`);
+          try {
+            const generatedAudio = await generateAudioFromTTS(sceneText, { provider: 'vieneu-v3-turbo', voice: ttsVoice, speed: 1.0 }, path.join(absoluteDir, "autogenerated", "voiceovers"));
+            finalAudioName = path.relative(absoluteDir, generatedAudio).replace(/\\/g, '/');
+          } catch (err) {
+            console.warn(`  -> Cảnh báo: Lỗi sinh TTS:`, err);
+          }
+        }
       }
+
     }
 
     if (finalAudioName && doTranscribe) {
@@ -574,11 +567,11 @@ async function main() {
     }
 
     const isVideo = VIDEO_EXTENSIONS.has(path.extname(visualName).toLowerCase());
-    
+
     const sceneObj: SceneConfig = {
       captions,
     };
-    
+
     if (isVideo) {
       sceneObj.video = visualName;
       sceneObj.videoSettings = {
