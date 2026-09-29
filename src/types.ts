@@ -22,8 +22,9 @@ export interface TransitionSettings {
   audioBehavior?: 'crossfade' | 'pad'; // pad adds silence so voices don't overlap
 }
 
-export interface TTSSettings {
-  provider: string; // e.g. "vieneu-v3-turbo"
+export interface TtsConfig {
+  enabled?: boolean;
+  provider?: string; // e.g. "vieneu-v3-turbo"
   voice: string; // e.g. "Ngọc Trân"
   speed?: number; // e.g. 1.0
 }
@@ -253,7 +254,7 @@ export interface StorySettings {
   // Features
   transition?: TransitionSettings;
   upscale?: UpscaleSettings;
-  tts?: TTSSettings;
+  tts?: TtsConfig;
   pauseBetweenScenes?: number; // Thời gian nghỉ (khoảng lặng) giữa các cảnh (giây)
   overlayComposite?: string; // e.g. "haunted_forest" to apply polyrhythmic looping overlay on final video
   bgm?: BGMSettings; // Background Music configuration
@@ -282,7 +283,7 @@ export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'cap
   captions?: CaptionSettings;
   transition?: TransitionSettings;
   upscale?: UpscaleSettings;
-  tts?: TTSSettings;
+  tts?: TtsConfig;
   pauseBetweenScenes?: number;
   overlayComposite?: string;
   bgm?: BGMSettings;

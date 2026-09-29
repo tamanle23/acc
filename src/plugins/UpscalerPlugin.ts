@@ -3,18 +3,8 @@ import path from 'path';
 import { IPlugin, RenderContext } from '../core/IPlugin';
 import { Logger } from '../core/logger';
 import { checkAndDownloadUpscaler, upscaleImage } from '../upscaler';
+import { Utils } from '../core/utils';
 
-function getFileChecksum(filePath: string): string {
-  try {
-    const fileBuffer = fs.readFileSync(filePath);
-    const crypto = require('crypto');
-    const hashSum = crypto.createHash('md5');
-    hashSum.update(fileBuffer);
-    return hashSum.digest('hex').substring(0, 8);
-  } catch (e) {
-    return Date.now().toString();
-  }
-}
 
 export class UpscalerPlugin implements IPlugin {
   name = 'AI-Upscaler';
@@ -54,7 +44,7 @@ export class UpscalerPlugin implements IPlugin {
       if (sourceImage && fs.existsSync(sourceImage)) {
         const ext = path.extname(sourceImage);
         const baseName = path.basename(sourceImage, ext);
-        const checksum = getFileChecksum(sourceImage);
+        const checksum = Utils.getFileChecksum(sourceImage);
         const upscaledFilename = `upscaled_${baseName}_${checksum}_${modelName}${ext}`;
         const upscaledPath = path.join(cacheDir, upscaledFilename);
 

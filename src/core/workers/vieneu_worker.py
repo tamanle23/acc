@@ -5,6 +5,7 @@
 #     "torchaudio",
 #     "torchcodec",
 #     "vieneu==3.8.3",
+#     "transformers==4.57.6"
 # ]
 # ///
 
@@ -24,7 +25,7 @@ def main():
         from vieneu import Vieneu
         
         log("Initializing Vieneu TTS v3 Turbo...")
-        tts_engine = Vieneu(mode="v3turbo")
+        tts_engine = Vieneu(mode="v3turbo", backend="pytorch")
         log("Vieneu initialized.")
         print("WORKER_READY", flush=True)
     except ImportError as e:
@@ -50,10 +51,12 @@ def main():
             if action == "synthesize":
                 text = payload.get("text")
                 voice = payload.get("voice", "Ngọc Trân")
+                # pyrefly: ignore [invalid-syntax]
+                file_name =  f"{payload.get('fileName', uuid.uuid4().hex[:8])}.wav"
                 output_dir = payload.get("outputDir", "./output")
                 
                 os.makedirs(output_dir, exist_ok=True)
-                file_name = f"tts_{uuid.uuid4().hex[:8]}.wav"
+                # file_name = f"tts_{uuid.uuid4().hex[:8]}.wav"
                 output_file = os.path.join(output_dir, file_name)
                 
                 log(f"Synthesizing text: '{text[:30]}...' with voice: {voice}")

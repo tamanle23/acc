@@ -37,7 +37,7 @@
   Hardware Acceleration: auto
   Parallel Workers: 6
   Container: mp4 (FastStart=true)
-  Output: C:\Users\Admin\workspace\git\visual-story-telling-generator\sample-story\output.mp4
+  Output: C:\Users\Admin\workspace\git\acc\sample-story\output.mp4
 
   🚀 Starting slide rendering (2 slides, parallel workers: 2)...
 

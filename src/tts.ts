@@ -1,28 +1,31 @@
 import { PythonBackend } from './core/PythonBackend';
-import { TTSSettings } from './types';
+import { TtsConfig } from './types';
 import path from 'path';
 
-export async function generateAudioFromTTS(
+export async function tts(
   text: string,
-  settings: TTSSettings,
-  outputDir: string
-): Promise<string> {
-  const backend = PythonBackend.getInstance();
+  settings: TtsConfig,
+  fileName: string,
+  outputDir: string,
+  backend: PythonBackend
+): Promise<{ file: string }> {
+  if (backend) {
+    console.log(`[TTS] Requesting audio synthesis for text: "${text.slice(0, 30)}..." with voice: ${settings.voice}`);
 
-  console.log(`[TTS] Requesting audio synthesis for text: "${text.slice(0, 30)}..." with voice: ${settings.voice}`);
+    try {
+      const filePath = await backend.dispatchTask<{ file: string }>('vieneu', 'synthesize', {
+        text,
+        voice: settings.voice,
+        speed: settings.speed || 1.0,
+        fileName,
+        outputDir
+      });
 
-  try {
-    const result = await backend.dispatchTask<{ file: string }>('vieneu', 'synthesize', {
-      text,
-      voice: settings.voice,
-      speed: settings.speed || 1.0,
-      outputDir
-    });
-
-    console.log(`[TTS] Audio generated successfully: ${result.file}`);
-    return result.file;
-  } catch (error) {
-    console.error('[TTS] Failed to generate audio:', error);
-    throw error;
-  }
+      console.log(`[TTS] Audio generated successfully: ${filePath}`);
+      return filePath;
+    } catch (error) {
+      console.error('[TTS] Failed to generate audio:', error);
+      throw error;
+    }
+  } else throw new Error('PythonBackend is not initialized');
 }

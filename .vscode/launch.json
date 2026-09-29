@@ -19,7 +19,7 @@
             "internalConsoleOptions": "neverOpen",
             "request": "attach",
             "name": "Attach Bun",
-            "url": "ws://localhost:6499/9e219cdc-cb07-4464-a320-c4519ff2aa85",
+            "url": "ws://localhost:6499/aead4109-abf9-4c80-8530-35caf073d7ab",
             "stopOnEntry": false
         }
     ]

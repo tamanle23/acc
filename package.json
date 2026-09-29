@@ -1,5 +1,6 @@
 {
-  "name": "visual-story-telling-generator",
+  "name": "acc",
+  "description": "Automated Content Creator",
   "module": "cli.ts",
   "type": "module",
   "private": true,
