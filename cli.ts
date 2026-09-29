@@ -59,40 +59,37 @@ async function main() {
     process.exit(1);
   }
 
-function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'audio'): string {
-  if (!filePath) return '';
+  function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'audio'): string {
+    if (!filePath) return '';
 
-  // 1. Kiểm tra trực tiếp theo đường dẫn tuyệt đối hoặc tương đối
-  const directPath = path.isAbsolute(filePath)
-    ? path.normalize(filePath)
-    : path.resolve(baseDir, filePath);
+    // 1. Kiểm tra trực tiếp theo đường dẫn tuyệt đối hoặc tương đối
+    const directPath = path.isAbsolute(filePath)
+      ? path.normalize(filePath)
+      : path.resolve(baseDir, filePath);
 
-  if (fs.existsSync(directPath)) {
+    if (fs.existsSync(directPath)) {
+      return directPath;
+    }
+
+    // 2. Tìm trong các thư mục con media phổ biến (images/, voiceover/, audio/...)
+    const baseName = path.basename(filePath);
+    const subFolders = ['assets'];
+
+    for (const folder of subFolders) {
+      const candidate = path.resolve(baseDir, folder, baseName);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    // 3. Tìm ở thư mục gốc story
+    const rootCandidate = path.resolve(baseDir, baseName);
+    if (fs.existsSync(rootCandidate)) {
+      return rootCandidate;
+    }
+
     return directPath;
   }
-
-  // 2. Tìm trong các thư mục con media phổ biến (images/, voiceover/, audio/...)
-  const baseName = path.basename(filePath);
-  const subFolders =
-    type === 'image'
-      ? ['images', 'image', 'img', 'scenes', 'scene', 'pics', 'pictures']
-      : ['voiceover', 'voiceovers', 'audio', 'audios', 'voices', 'sound', 'sounds'];
-
-  for (const folder of subFolders) {
-    const candidate = path.resolve(baseDir, folder, baseName);
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  // 3. Tìm ở thư mục gốc story
-  const rootCandidate = path.resolve(baseDir, baseName);
-  if (fs.existsSync(rootCandidate)) {
-    return rootCandidate;
-  }
-
-  return directPath;
-}
 
   const outputDir = path.join(absoluteDir, 'output');
   if (!fs.existsSync(outputDir)) {
@@ -101,7 +98,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
 
   // Hỗ trợ backward compatibility cho file cũ sử dụng "slides"
   const rawScenes = config.scenes || config.slides || [];
-  
+
   if (rawScenes.length === 0) {
     console.error('No scenes found in story-config.json');
     process.exit(1);
@@ -120,7 +117,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
     if (scene.video && !fs.existsSync(resolvedVideo || '')) {
       console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file video: ${scene.video} (đã thử: ${resolvedVideo})`);
     }
-    
+
     if (scene.audio && !fs.existsSync(resolvedAudio)) {
       console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file âm thanh: ${scene.audio} (đã thử: ${resolvedAudio})`);
     } else if (!scene.audio) {
@@ -158,7 +155,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
 
   // outputDir đã được tạo ở trên
 
-  const baseName = config.name 
+  const baseName = config.name
     ? config.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_') // allow unicode/vietnamese
     : 'output';
   const container = resolvedSettings.container;
@@ -166,7 +163,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
   let counter = 1;
   let outputFileName = `${baseName}_${counter}.${container}`;
   let metadataFileName = `${baseName}_${counter}.json`;
-  
+
   let outputFilePath = path.join(outputDir, outputFileName);
   let metadataPath = path.join(outputDir, metadataFileName);
 
@@ -221,7 +218,7 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
       upscale: resolvedSettings.upscale,
       transition: resolvedSettings.transition
     };
-    
+
     fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
     console.log(`Metadata saved to: ${metadataPath}\n`);
 

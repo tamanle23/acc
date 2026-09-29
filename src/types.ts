@@ -4,15 +4,15 @@ export interface CaptionConfig {
   end: number; // in seconds
 }
 
-export type TransitionType = 
-  | 'fade' | 'wipeleft' | 'wiperight' | 'wipeup' | 'wipedown' | 'slideleft' 
-  | 'slideright' | 'slideup' | 'slidedown' | 'circlecrop' | 'rectcrop' 
-  | 'distance' | 'fadeblack' | 'fadewhite' | 'radial' | 'smoothleft' 
-  | 'smoothright' | 'smoothup' | 'smoothdown' | 'circleopen' | 'circleclose' 
-  | 'vertopen' | 'vertclose' | 'horzopen' | 'horzclose' | 'dissolve' 
-  | 'pixelize' | 'diagtl' | 'diagtr' | 'diagbl' | 'diagbr' | 'hlslice' 
-  | 'hrslice' | 'vuslice' | 'vdslice' | 'hblur' | 'fadegrays' | 'wipetl' 
-  | 'wipetr' | 'wipebl' | 'wipebr' | 'squeezeh' | 'squeezev' | 'zoomin' 
+export type TransitionType =
+  | 'fade' | 'wipeleft' | 'wiperight' | 'wipeup' | 'wipedown' | 'slideleft'
+  | 'slideright' | 'slideup' | 'slidedown' | 'circlecrop' | 'rectcrop'
+  | 'distance' | 'fadeblack' | 'fadewhite' | 'radial' | 'smoothleft'
+  | 'smoothright' | 'smoothup' | 'smoothdown' | 'circleopen' | 'circleclose'
+  | 'vertopen' | 'vertclose' | 'horzopen' | 'horzclose' | 'dissolve'
+  | 'pixelize' | 'diagtl' | 'diagtr' | 'diagbl' | 'diagbr' | 'hlslice'
+  | 'hrslice' | 'vuslice' | 'vdslice' | 'hblur' | 'fadegrays' | 'wipetl'
+  | 'wipetr' | 'wipebl' | 'wipebr' | 'squeezeh' | 'squeezev' | 'zoomin'
   | 'fadefast' | 'fadeslow' | 'random';
 
 export interface TransitionSettings {
@@ -24,19 +24,19 @@ export interface TransitionSettings {
 
 export interface TTSSettings {
   provider: string; // e.g. "vieneu-v3-turbo"
-  voice: string; // e.g. "hn-quynhanh"
+  voice: string; // e.g. "Ngọc Trân"
   speed?: number; // e.g. 1.0
 }
 
-export type Depth3DMode = 
-  | 'frame_breaker' 
-  | 'parallax_25d' 
-  | 'volumetric_sandwich' 
-  | 'depth_map_3d' 
+export type Depth3DMode =
+  | 'frame_breaker'
+  | 'parallax_25d'
+  | 'volumetric_sandwich'
+  | 'depth_map_3d'
   | 'wigglegram'
   // Aliases for convenience
   | 'parallax_dolly'
-  | 'sandwich' 
+  | 'sandwich'
   | 'mesh_displacement';
 
 export type FrameBreakerStyle = 'card' | 'polaroid' | 'cinema' | 'comic';
@@ -83,7 +83,7 @@ export interface Depth3DConfig {
   backdropBlur?: number; // default: 20 (px blur for outer background)
   floatMotion?: boolean; // default: true (gentle 3D floating oscillation)
   subjectImage?: string; // Optional transparent cutout PNG/WebM of subject if provided separately
-  
+
   // Specific mode sub-configurations
   parallax?: Parallax25DSettings;
   sandwich?: SandwichVolumetricSettings;

@@ -38,7 +38,7 @@
     },
     "tts": {
       "provider": "vieneu-v3-turbo",
-      "voice": "hn-quynhanh",
+      "voice": "Ngọc Trân",
       "speed": 1
     },
     "pauseBetweenScenes": 1,

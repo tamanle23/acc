@@ -533,7 +533,7 @@
         },
         "voice": {
           "type": "string",
-          "description": "Mã giọng đọc (ví dụ: hn-quynhanh)"
+          "description": "Mã giọng đọc (ví dụ: Ngọc Trân)"
         },
         "speed": {
           "type": "number",

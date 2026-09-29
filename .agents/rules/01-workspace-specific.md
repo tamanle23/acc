@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Project-Specific Rules: Visual Storytelling Generator
 
 - **STORY-CONFIG-8POINT-SYNC**: On any `story-config.json` schema/property/behavior edit, MUST sync all 8 components:

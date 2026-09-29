@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "torch",
+#     "torchaudio",
+#     "torchcodec",
+#     "vieneu==3.8.3",
+# ]
+# ///
+
 import sys
 import json
 import traceback
@@ -39,7 +49,7 @@ def main():
             
             if action == "synthesize":
                 text = payload.get("text")
-                voice = payload.get("voice", "hn-quynhanh")
+                voice = payload.get("voice", "Ngọc Trân")
                 output_dir = payload.get("outputDir", "./output")
                 
                 os.makedirs(output_dir, exist_ok=True)

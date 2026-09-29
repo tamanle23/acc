@@ -9,9 +9,6 @@ export async function generateAudioFromTTS(
 ): Promise<string> {
   const backend = PythonBackend.getInstance();
 
-  // Create a voiceovers directory inside the output directory if needed
-  const voiceoversDir = path.join(outputDir, 'voiceovers');
-
   console.log(`[TTS] Requesting audio synthesis for text: "${text.slice(0, 30)}..." with voice: ${settings.voice}`);
 
   try {
@@ -19,7 +16,7 @@ export async function generateAudioFromTTS(
       text,
       voice: settings.voice,
       speed: settings.speed || 1.0,
-      outputDir: voiceoversDir
+      outputDir
     });
 
     console.log(`[TTS] Audio generated successfully: ${result.file}`);

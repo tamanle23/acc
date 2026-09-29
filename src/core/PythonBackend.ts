@@ -77,7 +77,13 @@ class PythonWorker {
       this.process = spawn('bun', ['x', 'uv', 'run', scriptPath], {
         stdio: ['pipe', 'pipe', 'inherit'],
         cwd: path.join(__dirname, 'workers'),
-        shell: process.platform === 'win32'
+        shell: process.platform === 'win32',
+        env: {
+          ...process.env,            // Keep existing environment variables
+          PYTHONIOENCODING: "utf-8", // Force Python to read strings as UTF-8
+          PYTHONUTF8: "1",           // Enforces UTF-8 mode globally in Python 3.7+
+          HF_TOKEN: "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"
+        }
       });
 
       this.process.stdout?.on('data', (chunk) => {

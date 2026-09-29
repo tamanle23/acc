@@ -253,7 +253,7 @@ Sử dụng tính năng sinh giọng đọc trực tiếp ở Local bằng `VieN
 | Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
 | :--- | :--- | :--- | :--- | :--- |
 | `provider` | `string` | **Có** | - | Đặt là `"vieneu-v3-turbo"`. |
-| `voice` | `string` | **Có** | - | Mã giọng đọc (ví dụ `"hn-quynhanh"`). |
+| `voice` | `string` | **Có** | - | Mã giọng đọc (ví dụ `"Ngọc Trân"`). |
 | `speed` | `number` | Không | `1.0` | Tốc độ đọc. |
 ```json
 {
