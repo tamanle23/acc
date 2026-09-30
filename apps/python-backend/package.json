@@ -1,0 +1,10 @@
+{
+  "name": "@acc/python-backend",
+  "version": "1.0.0",
+  "description": "Python AI Subsystem (gRPC Server with Kokoro, Depth Anything v2, SAM 2, llama.cpp)",
+  "private": true,
+  "scripts": {
+    "dev": "uv run python src/server.py",
+    "test": "uv run pytest"
+  }
+}

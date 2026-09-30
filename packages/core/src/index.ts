@@ -11,3 +11,4 @@ export * from './IPlugin';
 export * from './Registry';
 export * from './interactive';
 export * from './utils';
+export * from './ipc/IPCFacade';

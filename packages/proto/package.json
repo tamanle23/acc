@@ -1,0 +1,11 @@
+{
+  "name": "@acc/proto",
+  "version": "1.0.0",
+  "description": "Protocol Buffers contracts for ACC AI Services",
+  "main": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "codegen": "bun x proto-loader-gen-types --longs=String --enums=String --defaults --oneofs --grpcLib=@grpc/grpc-js --outDir=src/generated/ proto/acc/v1/*.proto"
+  }
+}
