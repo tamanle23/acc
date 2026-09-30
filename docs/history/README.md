@@ -96,4 +96,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`082`](082_sam2_segmentation_enhancement_and_framebreaker_refinement.md) | 2026-09-30 | SAM 2 Segmentation Enhancement & Frame Breaker Refinement | Default autoSegment for frame_breaker/sandwich, sample-story sync, ellipse fallback, daemon pre-warming |
 | [`083`](083_backlog_gpu_acceleration_enhancement_suite.md) | 2026-09-30 | Backlog Epic: Full GPU Acceleration & Hardware Encoding Enhancement Suite | Created Backlog 009 covering dynamic multi-codec NVENC/AV1, CUDA color conversion, and Skia GPU rasterization |
 | [`084`](084_fix_visual_defects_framebreaker_sandwich_depthmesh.md) | 2026-10-01 | Fix 3D Visual Defects in Frame Breaker, Volumetric Sandwich, and Depth Mesh | True polaroid head/arm pop-out, 1080p fantasy kingdom sandwich, continuous multi-plane depth parallax |
+| [`085`](085_fix_source_crop_head_popout_and_explain_src_monorepo_architecture.md) | 2026-10-01 | Fix Source Crop Head Pop-out & Architecture Map of /src Post-Monorepo | Affine uncropped pop-out head projection, test suite analysis, /src Pipeline 4 architecture map |
 

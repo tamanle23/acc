@@ -120,14 +120,32 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const innerW = frameW - (innerPadding * 2);
   const innerH = frameH - (innerPadding * 2) - bottomExtraPadding;
 
-  const innerZoom = style === 'polaroid' ? 1.6 : 1.15;
-  const focusOffsetY = style === 'polaroid' ? 0.16 : 0.0;
+  // Compute source crop parameters for coordinate alignment
+  const innerZoom = style === 'polaroid' ? 1.5 : 1.15;
+  const focusOffsetY = style === 'polaroid' ? 0.18 : 0.0;
   const focusOffsetX = style === 'polaroid' ? 0.06 : 0.0;
 
+  const imgRatio = img.width / img.height;
+  const targetRatio = innerW / innerH;
+  let sw: number, sh: number, sx: number, sy: number;
+
+  if (imgRatio > targetRatio) {
+    sh = img.height / innerZoom;
+    sw = (img.height * targetRatio) / innerZoom;
+    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
+    sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
+  } else {
+    sw = img.width / innerZoom;
+    sh = (img.width / targetRatio) / innerZoom;
+    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
+    sy = Math.max(0, Math.min(img.height - sh, (img.height - sh) / 2 + img.height * focusOffsetY));
+  }
+
+  // 4. Draw Inner Scene (Clipped inside the frame)
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));
   ctx.clip();
-  drawImageCover(ctx, img, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
+  ctx.drawImage(img, sx, sy, sw, sh, innerX, innerY, innerW, innerH);
   ctx.restore();
 
   // 5. Draw Frame Border Stroke
@@ -137,10 +155,14 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.stroke();
 
   // 6. Draw Out-of-Bounds Pop-Out Subject (Head and upper body breaking outside top frame)
+  const scale = innerW / sw;
+  const offsetX = innerX - sx * scale;
+  const offsetY = innerY - sy * scale;
+
   ctx.save();
   // Clip bottom so subject never bleeds over the bottom card margin
   ctx.beginPath();
-  ctx.rect(frameX - 200, frameY - 400, frameW + 400, (innerY + innerH) - (frameY - 400));
+  ctx.rect(frameX - 400, frameY - 600, frameW + 800, (innerY + innerH) - (frameY - 600));
   ctx.clip();
 
   if (shadowEnabled) {
@@ -150,10 +172,11 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   }
 
   if (subjectImg) {
-    // Exact 1:1 coordinate alignment: lower body connects seamlessly, head bursts over top border
-    drawImageCover(ctx, subjectImg, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
+    // Full uncropped subject rendered via exact affine mapping:
+    // Lower body matches inner photo 100%, head & hands project freely over top border!
+    ctx.drawImage(subjectImg, offsetX, offsetY, img.width * scale, img.height * scale);
   } else {
-    // Dynamic Pop-out Fallback: Upper 55% of image bursts through the top
+    // Dynamic Pop-out Fallback
     ctx.save();
     ctx.beginPath();
     const focalCenterX = innerX + innerW * 0.5;
@@ -162,7 +185,7 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     ctx.ellipse(focalCenterX, innerY + innerH * 0.25, focalRadiusX, focalRadiusY, 0, 0, Math.PI * 2);
     ctx.clip();
 
-    drawImageCover(ctx, img, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
+    ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
     ctx.restore();
   }
   ctx.restore();
