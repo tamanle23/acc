@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class FloatingHeartsEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     interface Heart {
       x: number; y: number; s: number; color: string;
       speedY: number; swayFreq: number; swayPhase: number;
@@ -52,7 +52,7 @@ let adapter: CanvasAdapter;
       const timeSec = frame / this.fps;
       ctx.clearRect(0, 0, this.width, this.height);
       for (const p of particles) {
-        const cx = ((p.x + Math.sin(timeSec * p.swayFreq + p.swayPhase)*50) % this.width + this.width) % this.width;
+        const cx = ((p.x + Math.sin(timeSec * p.swayFreq + p.swayPhase) * 50) % this.width + this.width) % this.width;
         const cy = ((p.y + p.speedY * timeSec) % this.height + this.height) % this.height;
         ctx.fillStyle = `rgba(${p.color}, 0.8)`;
         drawHeart(ctx, cx, cy, p.s);

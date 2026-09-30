@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class BubblesEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,11 +12,11 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     let bubbleCount = 50;
     let baseSpeedY = -this.height * 0.2; // Move up
     let sizeMultiplier = 1;
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'underwater_bubbles':
         bubbleCount = 200;
         baseSpeedY = -this.height * 0.4;

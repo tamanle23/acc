@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class SciFiHudEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Sci-Fi HUD (${this.variantName}): `);
     // Pre-generate some random hex data for data_processing
     const hexLines: string[] = [];
@@ -31,7 +31,7 @@ let adapter: CanvasAdapter;
       }
       const timeSec = frame / this.fps;
       // Normalised time [0, 1) for looping
-      const tNorm = frame / totalFrames; 
+      const tNorm = frame / totalFrames;
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.strokeStyle = 'rgba(100, 255, 255, 0.8)';
       ctx.fillStyle = 'rgba(100, 255, 255, 0.8)';
@@ -68,13 +68,13 @@ let adapter: CanvasAdapter;
         const b = 250;
         const l = 40;
         // Top Left
-        ctx.beginPath(); ctx.moveTo(-b, -b+l); ctx.lineTo(-b, -b); ctx.lineTo(-b+l, -b); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-b, -b + l); ctx.lineTo(-b, -b); ctx.lineTo(-b + l, -b); ctx.stroke();
         // Top Right
-        ctx.beginPath(); ctx.moveTo(b-l, -b); ctx.lineTo(b, -b); ctx.lineTo(b, -b+l); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(b - l, -b); ctx.lineTo(b, -b); ctx.lineTo(b, -b + l); ctx.stroke();
         // Bottom Left
-        ctx.beginPath(); ctx.moveTo(-b, b-l); ctx.lineTo(-b, b); ctx.lineTo(-b+l, b); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-b, b - l); ctx.lineTo(-b, b); ctx.lineTo(-b + l, b); ctx.stroke();
         // Bottom Right
-        ctx.beginPath(); ctx.moveTo(b-l, b); ctx.lineTo(b, b); ctx.lineTo(b, b-l); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(b - l, b); ctx.lineTo(b, b); ctx.lineTo(b, b - l); ctx.stroke();
         ctx.restore();
         ctx.restore();
         // Target coords updating

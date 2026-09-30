@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class FilmDamageEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // For film damage to be a seamless loop, we can pre-generate the damage events
     // for every single frame in the loop, or rely on the fact that random 1-frame
     // dirt doesn't need to seamlessly interpolate to frame 0 (it's inherently discontinuous).
@@ -111,9 +111,9 @@ let adapter: CanvasAdapter;
           ctx.beginPath();
           ctx.moveTo(dirt.x, dirt.y);
           ctx.bezierCurveTo(
-            dirt.x + Math.random()*20 - 10, dirt.y + Math.random()*20 - 10,
-            dirt.x + Math.random()*20 - 10, dirt.y + Math.random()*20 - 10,
-            dirt.x + Math.random()*10 - 5, dirt.y + Math.random()*10 - 5
+            dirt.x + Math.random() * 20 - 10, dirt.y + Math.random() * 20 - 10,
+            dirt.x + Math.random() * 20 - 10, dirt.y + Math.random() * 20 - 10,
+            dirt.x + Math.random() * 10 - 5, dirt.y + Math.random() * 10 - 5
           );
           ctx.lineWidth = Math.random() * 2 + 1;
           ctx.stroke();

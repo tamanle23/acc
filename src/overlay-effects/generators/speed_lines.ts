@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class SpeedLinesEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,13 +12,13 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // Anime speed lines are basically just lots of lines.
     // They usually flicker or change slightly every frame or every 2 frames.
     // We can just generate them dynamically per frame.
     const cx = this.width / 2;
     const cy = this.height / 2;
-    const maxRadius = Math.sqrt(cx*cx + cy*cy); // Distance to corner
+    const maxRadius = Math.sqrt(cx * cx + cy * cy); // Distance to corner
     process.stdout.write(`Rendering ${totalFrames} frames for Speed Lines (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
       if (frame % Math.floor(this.fps) === 0) {

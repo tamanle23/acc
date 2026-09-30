@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class RainOnGlassEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // We will draw water drops that are meant to be overlaid.
     // Real rain drops act as lenses, but since we are generating an overlay, 
     // we use a stylistic approach: dark edge, inner shadow, and bright white specular highlight.
@@ -95,7 +95,7 @@ let adapter: CanvasAdapter;
         ctx.translate(currentX, currentY);
         // Deform large sliding drops to look like a tear
         if (d.speedY > 0) {
-          ctx.scale(1, 1.2 + Math.sin(timeSec * d.wobbleFreq*2) * 0.2); // Pulse vertically
+          ctx.scale(1, 1.2 + Math.sin(timeSec * d.wobbleFreq * 2) * 0.2); // Pulse vertically
         }
         const opacity = d.opacityScale;
         // Base dark lens edge

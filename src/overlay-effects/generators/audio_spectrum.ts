@@ -4,7 +4,7 @@ import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class AudioSpectrumEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -13,7 +13,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     const noise2D = createNoise2D();
     // To make 1D noise loop perfectly over time, we map time [0, 1] to a circle in 2D noise space
     const getLoopingNoise = (x: number, tNorm: number, radius: number = 1.0) => {
@@ -29,7 +29,7 @@ let adapter: CanvasAdapter;
       if (frame % Math.floor(this.fps) === 0) {
         process.stdout.write('.');
       }
-      const tNorm = frame / totalFrames; 
+      const tNorm = frame / totalFrames;
       ctx.clearRect(0, 0, this.width, this.height);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
       if (this.variantName === 'classic_bars') {
@@ -73,7 +73,7 @@ let adapter: CanvasAdapter;
           ctx.rotate(angle);
           // Draw bar jutting out from baseRadius
           ctx.beginPath();
-          ctx.roundRect(-barWidth/2, baseRadius, barWidth, h, barWidth/2);
+          ctx.roundRect(-barWidth / 2, baseRadius, barWidth, h, barWidth / 2);
           ctx.fill();
           ctx.restore();
         }

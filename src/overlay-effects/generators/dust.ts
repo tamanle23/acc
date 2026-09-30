@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class DustEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,13 +12,13 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     let particleCount = 1000;
     let baseSpeedY = this.height * 0.05; // Very slow moving down
     let baseSpeedX = this.width * 0.02;  // Very slow moving right
     let sizeMultiplier = 1;
     let baseOpacity = 0.5;
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'ambient_dust':
         particleCount = 1000;
         baseSpeedY = this.height * 0.03;
@@ -85,7 +85,7 @@ let adapter: CanvasAdapter;
         const currentX = ((p.x + p.speedX * timeSec) % this.width + this.width) % this.width;
         const currentY = ((p.y + p.speedY * timeSec) % this.height + this.height) % this.height;
         // Pulsing opacity for fade in/out (sine wave normalized to 0-1)
-        const pulse = (Math.sin(timeSec * p.pulseFrequency + p.pulsePhase) + 1) / 2; 
+        const pulse = (Math.sin(timeSec * p.pulseFrequency + p.pulsePhase) + 1) / 2;
         // pulse is 0.0 to 1.0
         // Some particles twinkle fully, some just slightly dim
         const opacity = baseOpacity * p.z * (0.3 + 0.7 * pulse);

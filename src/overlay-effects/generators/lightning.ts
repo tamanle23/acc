@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class LightningEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,15 +12,15 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // We pre-calculate lightning strike events so they are deterministic per loop.
     // Let's have 2-3 strikes per loop.
     const strikes: { frameStart: number; type: 'main' | 'secondary'; x?: number }[] = [];
     const addStrike = (progressPct: number, type: 'main' | 'secondary') => {
       const frameStart = Math.floor(progressPct * totalFrames);
-      strikes.push({ 
-        frameStart, 
-        type, 
+      strikes.push({
+        frameStart,
+        type,
         x: this.width * (0.2 + Math.random() * 0.6) // Random X near center
       });
     };
@@ -30,7 +30,7 @@ let adapter: CanvasAdapter;
     addStrike(0.65, 'main');
     // Helper to generate a fractal branching bolt
     const generateBolt = (startX: number, startY: number, endY: number, branches: number) => {
-      const points = [{x: startX, y: startY}];
+      const points = [{ x: startX, y: startY }];
       let currentX = startX;
       let currentY = startY;
       const segmentHeight = this.height * 0.05;
@@ -38,7 +38,7 @@ let adapter: CanvasAdapter;
         currentY += segmentHeight * (0.5 + Math.random());
         // Random horizontal walk
         currentX += (Math.random() - 0.5) * this.width * 0.15;
-        points.push({x: currentX, y: currentY});
+        points.push({ x: currentX, y: currentY });
       }
       return points;
     };
@@ -74,7 +74,7 @@ let adapter: CanvasAdapter;
         if (intensity > 0) {
           if (this.variantName === 'sheet_lightning') {
             // Sheet lightning: huge flashes illuminating the sky
-            const radial = ctx.createRadialGradient(strike.x || this.width/2, 0, 0, this.width/2, this.height*0.2, this.height);
+            const radial = ctx.createRadialGradient(strike.x || this.width / 2, 0, 0, this.width / 2, this.height * 0.2, this.height);
             // Core white, edge purple/blue
             radial.addColorStop(0, `rgba(255, 255, 255, ${intensity})`);
             radial.addColorStop(0.3, `rgba(200, 200, 255, ${intensity * 0.6})`);

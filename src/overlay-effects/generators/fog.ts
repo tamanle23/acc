@@ -4,7 +4,7 @@ import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class FogEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -14,7 +14,7 @@ let adapter: CanvasAdapter;
     const ctx = canvas.getContext('2d');
     // We generate a lower resolution noise map to save CPU, then stretch it.
     // This perfectly satisfies the "2D perlin noise stretching" requirement.
-    const noiseScale = 0.25; 
+    const noiseScale = 0.25;
     const nWidth = Math.floor(this.width * noiseScale);
     const nHeight = Math.floor(this.height * noiseScale);
     const noise2D = createNoise2D();
@@ -52,7 +52,7 @@ let adapter: CanvasAdapter;
           const n2 = noise2D((x - nWidth) * scaleX, y * scaleY);
           const blendX = x / nWidth; // 0 to 1
           // Smoother step for blending
-          const blend = blendX * blendX * (3 - 2 * blendX); 
+          const blend = blendX * blendX * (3 - 2 * blendX);
           let n = n1 * (1 - blend) + n2 * blend;
           // Map from [-1, 1] to [0, 255]
           n = (n + 1) / 2;
@@ -69,7 +69,7 @@ let adapter: CanvasAdapter;
     };
     let layer1Params = { scaleX: 0.02, scaleY: 0.05, alpha: 0.4, mask: 'none' as any, speed: this.width * 0.1 };
     let layer2Params = { scaleX: 0.04, scaleY: 0.08, alpha: 0.3, mask: 'none' as any, speed: this.width * 0.15 };
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'ground_mist':
         layer1Params = { scaleX: 0.01, scaleY: 0.04, alpha: 0.6, mask: 'ground', speed: this.width * 0.05 };
         layer2Params = { scaleX: 0.03, scaleY: 0.06, alpha: 0.5, mask: 'ground', speed: this.width * 0.08 };
@@ -87,7 +87,7 @@ let adapter: CanvasAdapter;
     const layer2 = generateNoiseLayer(layer2Params.scaleX, layer2Params.scaleY, layer2Params.alpha, layer2Params.mask);
     console.log(`Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Fog (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
       if (frame % Math.floor(this.fps) === 0) {

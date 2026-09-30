@@ -82,7 +82,7 @@ class PythonWorker {
           ...process.env,            // Keep existing environment variables
           PYTHONIOENCODING: "utf-8", // Force Python to read strings as UTF-8
           PYTHONUTF8: "1",           // Enforces UTF-8 mode globally in Python 3.7+
-          HF_TOKEN: "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"
+          HF_TOKEN: process.env.HF_TOKEN
         }
       });
 

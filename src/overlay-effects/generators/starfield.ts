@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class StarfieldEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     interface Star {
       x: number; y: number; z: number; // 3D coordinates
       r: number;
@@ -50,7 +50,7 @@ let adapter: CanvasAdapter;
           // To loop seamlessly, Z goes from 1000 down to 0, then wraps.
           // speed = 1000 units per duration
           const speedZ = 1000 / this.duration;
-          currentZ = ((s.z - timeSec * speedZ) % 1000 + 1000) % 1000 + 1; 
+          currentZ = ((s.z - timeSec * speedZ) % 1000 + 1000) % 1000 + 1;
         }
         const scale = fov / currentZ;
         const screenX = this.width / 2 + s.x * scale;

@@ -14,11 +14,11 @@ trigger: always_on
   7. `sample-story/story-config.json` (verify via `bun run cli.ts ./sample-story`)
   8. `README.md`
 - **HISTORY-GIT-ARCHIVAL**: For EVERY change:
-  1. Create sequential 3-digit history log `docs/history/XXX_<task>.md` (Problem, Plan, Changes, Verification).
+  1. Create sequential 3-digit history log `docs/history/XXX_<task>.md` (Problem, Plan, Changes, Verification, Walkthrough, Tasks).
   2. Update index in `docs/history/README.md`.
   3. Run `git add .` and `git commit -m "[XXX] Task Title" -m "Brief summary"`.
 - **FFMPEG-MANAGER**: MUST run `await FFmpegManager.prepare()` in entrypoints. Set paths via `setFfmpegPath`/`setFfprobePath` for `fluent-ffmpeg`. Quote binary path in shell calls.
-- **GLOBAL-STORAGE**: MUST store global binaries/models in `path.join(os.homedir(), '.visual-storyteller')`. NEVER use `__dirname` or relative project paths for cached app assets.
+- **GLOBAL-STORAGE**: MUST store global binaries/models in `path.join(os.homedir(), '.')`. NEVER use `__dirname` or relative project paths for cached app assets.
 - **STREAM-LABELS**: MUST use unique stream identifiers in FFmpeg `filter_complex` strings to prevent collisions.
 - **BACKLOG-MANAGEMENT**: When deferring future tasks or completing existing backlog items:
   1. Create sequential 3-digit file in `docs/backlogs/XXX_<epic_name>.md` with Status (`[ ] Planned`), Component, Context, Design, Criteria.

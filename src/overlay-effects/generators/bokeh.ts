@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class BokehEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     interface BokehParticle {
       x: number;
       y: number;
@@ -101,7 +101,7 @@ let adapter: CanvasAdapter;
             wGrad.addColorStop(0.7, `rgba(${p.color}, ${opacity * 0.5})`);
             wGrad.addColorStop(1, `rgba(${p.color}, 0)`);
             ctx.fillStyle = wGrad;
-            ctx.beginPath(); ctx.arc(wx, wy, p.r, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(wx, wy, p.r, 0, Math.PI * 2); ctx.fill();
           };
           if (x - p.r < 0) drawWrap(x + this.width, y);
           if (x + p.r > this.width) drawWrap(x - this.width, y);

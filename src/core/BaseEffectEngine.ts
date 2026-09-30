@@ -6,7 +6,7 @@ export abstract class BaseEffectEngine {
   protected variantName: string;
   protected duration: number;
   protected pipelineConfig: PipelineConfig;
-  
+
   // Default values that child implementations can use or override
   protected width: number = 1920;
   protected height: number = 1080;
@@ -37,7 +37,7 @@ export abstract class BaseEffectEngine {
    * Returns an input stream (PassThrough) where raw RGBA buffers can be piped,
    * and a Promise that resolves when FFmpeg finishes encoding the file.
    */
-  protected setupFFmpegStream(outputPath: string): { stream: PassThrough, promise: Promise<void> } {
+  protected initStream(outputPath: string): { stream: PassThrough, promise: Promise<void> } {
     const inputStream = new PassThrough();
     const command = ffmpeg(inputStream as any)
       .inputFormat('rawvideo')
@@ -58,12 +58,12 @@ export abstract class BaseEffectEngine {
     // Apply format-specific optimizations
     if (this.pipelineConfig.format === 'webm') {
       command.outputOptions([
-        '-b:v 2M', 
+        '-b:v 2M',
         '-auto-alt-ref 0'
       ]);
     } else {
       command.outputOptions([
-        '-crf 18', 
+        '-crf 18',
         '-preset fast'
       ]);
     }

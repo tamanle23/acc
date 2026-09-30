@@ -1,15 +1,8 @@
 import readline from 'readline';
-import { PythonBackend } from './PythonBackend';
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
-});
-
-rl.on('SIGINT', () => {
-  console.log('\n\n[Interactive] Received SIGINT. Shutting down engines...');
-  PythonBackend.getInstance().shutdown();
-  process.exit(0);
 });
 
 export function askQuestion(query: string): Promise<string> {
@@ -49,7 +42,6 @@ export async function askYesNo(query: string, defaultYes = true): Promise<boolea
 
 export function closeInteractiveConsole() {
   rl.close();
-  PythonBackend.getInstance().shutdown();
 }
 
 

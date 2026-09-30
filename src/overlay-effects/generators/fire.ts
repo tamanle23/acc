@@ -4,7 +4,7 @@ import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class FireEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -13,7 +13,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     // Lower resolution noise map to save CPU, then stretch it
-    const noiseScale = 0.25; 
+    const noiseScale = 0.25;
     const nWidth = Math.floor(this.width * noiseScale);
     const nHeight = Math.floor(this.height * noiseScale);
     const noise2D = createNoise2D();
@@ -38,19 +38,19 @@ let adapter: CanvasAdapter;
       const t = i / 255;
       // Black (transparent) -> Red -> Orange -> Yellow -> White
       if (t < 0.2) {
-        palette[idx] = 0; palette[idx+1] = 0; palette[idx+2] = 0; palette[idx+3] = 0;
+        palette[idx] = 0; palette[idx + 1] = 0; palette[idx + 2] = 0; palette[idx + 3] = 0;
       } else if (t < 0.4) {
         const factor = (t - 0.2) / 0.2;
-        palette[idx] = Math.floor(255 * factor); palette[idx+1] = 0; palette[idx+2] = 0; palette[idx+3] = Math.floor(255 * factor);
+        palette[idx] = Math.floor(255 * factor); palette[idx + 1] = 0; palette[idx + 2] = 0; palette[idx + 3] = Math.floor(255 * factor);
       } else if (t < 0.7) {
         const factor = (t - 0.4) / 0.3;
-        palette[idx] = 255; palette[idx+1] = Math.floor(165 * factor); palette[idx+2] = 0; palette[idx+3] = 255;
+        palette[idx] = 255; palette[idx + 1] = Math.floor(165 * factor); palette[idx + 2] = 0; palette[idx + 3] = 255;
       } else if (t < 0.9) {
         const factor = (t - 0.7) / 0.2;
-        palette[idx] = 255; palette[idx+1] = 165 + Math.floor(90 * factor); palette[idx+2] = 0; palette[idx+3] = 255;
+        palette[idx] = 255; palette[idx + 1] = 165 + Math.floor(90 * factor); palette[idx + 2] = 0; palette[idx + 3] = 255;
       } else {
         const factor = (t - 0.9) / 0.1;
-        palette[idx] = 255; palette[idx+1] = 255; palette[idx+2] = Math.floor(255 * factor); palette[idx+3] = 255;
+        palette[idx] = 255; palette[idx + 1] = 255; palette[idx + 2] = Math.floor(255 * factor); palette[idx + 3] = 255;
       }
     }
     // Generate vertically tileable fBm noise for rising flames
@@ -87,7 +87,7 @@ let adapter: CanvasAdapter;
     let layer2Params = { scaleX: 0.03, scaleY: 0.06, speed: this.height * 0.7 };
     // Mask logic
     let maskHeight = 0.4; // bottom 40%
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'campfire_flames':
         layer1Params = { scaleX: 0.015, scaleY: 0.04, speed: this.height * 0.5 };
         layer2Params = { scaleX: 0.025, scaleY: 0.07, speed: this.height * 0.8 };
@@ -107,7 +107,7 @@ let adapter: CanvasAdapter;
     const layer2 = generateFireLayer(layer2Params.scaleX, layer2Params.scaleY);
     console.log(`Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Fire (${this.variantName}): `);
     // Create a vertical mask gradient so flames die out at the top
     const gradientMask = ctx.createLinearGradient(0, this.height * (1 - maskHeight), 0, this.height);
@@ -129,7 +129,7 @@ let adapter: CanvasAdapter;
       const exactSpeed2 = (Math.ceil(layer2Params.speed * this.duration / this.height) * this.height) / this.duration;
       const offset1 = (timeSec * exactSpeed1) % this.height;
       const offset2 = (timeSec * exactSpeed2) % this.height;
-      const swayFreq = (Math.PI * 2) / this.duration; 
+      const swayFreq = (Math.PI * 2) / this.duration;
       const sway1 = Math.sin(timeSec * swayFreq) * (this.width * 0.02);
       const sway2 = Math.cos(timeSec * swayFreq * 2) * (this.width * 0.015);
       // Create a temporary canvas to draw the flames and apply the mask

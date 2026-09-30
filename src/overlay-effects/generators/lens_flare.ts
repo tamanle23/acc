@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class LensFlareEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,14 +12,14 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Lens Flare (${this.variantName}): `);
     // Anamorphic flares: Long horizontal streaks.
     // Sun burst: Radial rays.
     // We'll define a few key light sources
     const flares = [
       { x: this.width * 0.3, y: this.height * 0.4, color: '100, 200, 255', phaseX: 0, phaseY: 0, phasePulse: 0 },
-      { x: this.width * 0.8, y: this.height * 0.6, color: '255, 150, 50', phaseX: Math.PI, phaseY: Math.PI/2, phasePulse: Math.PI },
+      { x: this.width * 0.8, y: this.height * 0.6, color: '255, 150, 50', phaseX: Math.PI, phaseY: Math.PI / 2, phasePulse: Math.PI },
     ];
     const moveFreq = (1 * Math.PI * 2) / this.duration; // 1 cycle per loop
     const pulseFreq = (2 * Math.PI * 2) / this.duration; // 2 cycles per loop
@@ -53,17 +53,17 @@ let adapter: CanvasAdapter;
           // Horizontal long streak
           const streakWidth = this.width * 1.5 * pulse;
           const streakHeight = 8 * pulse;
-          const streakGrad = ctx.createLinearGradient(currentX - streakWidth/2, currentY, currentX + streakWidth/2, currentY);
+          const streakGrad = ctx.createLinearGradient(currentX - streakWidth / 2, currentY, currentX + streakWidth / 2, currentY);
           streakGrad.addColorStop(0, `rgba(${f.color}, 0)`);
           streakGrad.addColorStop(0.4, `rgba(${f.color}, ${0.6 * pulse})`);
           streakGrad.addColorStop(0.5, `rgba(255, 255, 255, ${0.9 * pulse})`);
           streakGrad.addColorStop(0.6, `rgba(${f.color}, ${0.6 * pulse})`);
           streakGrad.addColorStop(1, `rgba(${f.color}, 0)`);
           ctx.fillStyle = streakGrad;
-          ctx.fillRect(currentX - streakWidth/2, currentY - streakHeight/2, streakWidth, streakHeight);
+          ctx.fillRect(currentX - streakWidth / 2, currentY - streakHeight / 2, streakWidth, streakHeight);
           // Secondary tiny horizontal streak
           ctx.fillStyle = `rgba(255,255,255, ${0.8 * pulse})`;
-          ctx.fillRect(currentX - streakWidth/4, currentY - 1, streakWidth/2, 2);
+          ctx.fillRect(currentX - streakWidth / 4, currentY - 1, streakWidth / 2, 2);
         } else if (this.variantName === 'sun_burst') {
           // Large soft core
           const coreGrad = ctx.createRadialGradient(currentX, currentY, 0, currentX, currentY, 200 * pulse);

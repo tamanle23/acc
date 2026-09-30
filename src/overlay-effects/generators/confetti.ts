@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class ConfettiEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     interface Confetti {
       x: number; y: number; w: number; h: number;
       color: string;
@@ -21,8 +21,8 @@ let adapter: CanvasAdapter;
       rotFreqZ: number; rotPhaseZ: number;
     }
     const particles: Confetti[] = [];
-    const colors = this.variantName === 'golden_shower' 
-      ? ['255,215,0', '218,165,32', '255,223,0'] 
+    const colors = this.variantName === 'golden_shower'
+      ? ['255,215,0', '218,165,32', '255,223,0']
       : ['255,0,0', '0,255,0', '0,0,255', '255,255,0', '255,0,255', '0,255,255'];
     for (let i = 0; i < 200; i++) {
       const rotCyclesX = Math.floor(Math.random() * 5) + 2;
@@ -54,7 +54,7 @@ let adapter: CanvasAdapter;
         ctx.rotate(timeSec * p.rotFreqZ + p.rotPhaseZ);
         ctx.scale(Math.cos(timeSec * p.rotFreqX + p.rotPhaseX), 1);
         ctx.fillStyle = `rgb(${p.color})`;
-        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
         ctx.restore();
       }
       pipeline.pushFrame(canvas.toBuffer('raw'));

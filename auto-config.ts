@@ -6,7 +6,7 @@ import { transcribeAudio } from './src/whisper';
 import { tts } from './src/tts';
 import { PLATFORM_PRESETS } from './src/platforms';
 import { PRESETS as CAPTION_PRESETS } from './src/styles';
-import { PythonBackend } from './src/core/PythonBackend';
+import { PythonBackend } from './src/ai-backend/python/PythonBackend';
 import { Utils } from './src/core/utils';
 
 function askQuestion(query: string): Promise<string> {

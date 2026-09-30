@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class LightLeakEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // Light leaks typically use additive blending (screen or lighter)
     // On black BG, standard 'source-over' with high opacity gradients works well for 'screen' blending downstream.
     process.stdout.write(`Rendering ${totalFrames} frames for Light Leak (${this.variantName}): `);
@@ -43,7 +43,7 @@ let adapter: CanvasAdapter;
           // Draw radial gradient
           const grad = ctx.createRadialGradient(x, y, 0, x, y, radius);
           grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);
-          grad.addColorStop(0.5, `rgba(${r}, ${Math.floor(g*0.5)}, ${Math.floor(b*0.5)}, 0.4)`);
+          grad.addColorStop(0.5, `rgba(${r}, ${Math.floor(g * 0.5)}, ${Math.floor(b * 0.5)}, 0.4)`);
           grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
           ctx.fillStyle = grad;
           ctx.beginPath();
@@ -77,7 +77,7 @@ let adapter: CanvasAdapter;
           const coreProgress = (progress - 0.3) / 0.4; // 0 to 1
           coreWhite = Math.sin(coreProgress * Math.PI);
         }
-        const radial = ctx.createRadialGradient(this.width/2, this.height/2, 0, this.width/2, this.height/2, this.width * coreWhite);
+        const radial = ctx.createRadialGradient(this.width / 2, this.height / 2, 0, this.width / 2, this.height / 2, this.width * coreWhite);
         radial.addColorStop(0, `rgba(255, 255, 255, ${coreWhite})`);
         radial.addColorStop(0.4, `rgba(255, 200, 100, ${coreWhite * 0.8})`);
         radial.addColorStop(1, `rgba(255, 200, 100, 0)`);

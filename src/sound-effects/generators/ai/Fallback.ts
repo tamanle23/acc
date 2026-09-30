@@ -1,5 +1,5 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { PythonBackend } from '../../../core/PythonBackend';
+import { PythonBackend } from '../../../ai-backend/python/PythonBackend';
 import path from 'path';
 
 export class Fallback implements ISoundGenerator {

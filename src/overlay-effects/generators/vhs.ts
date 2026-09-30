@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class VHSEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,7 +12,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // tracking_lines: Glitchy horizontal lines rolling down
     // tracking_snow: Thick band of static noise
     // To make a seamless loop of rolling bands, we use modulo on the Y axis
@@ -28,9 +28,9 @@ let adapter: CanvasAdapter;
       // Black and white static
       const val = Math.random() > 0.5 ? 255 : 0;
       data[i] = val;
-      data[i+1] = val;
-      data[i+2] = val;
-      data[i+3] = Math.random() > 0.7 ? 200 : 0; // Lots of holes for transparency
+      data[i + 1] = val;
+      data[i + 2] = val;
+      data[i + 3] = Math.random() > 0.7 ? 200 : 0; // Lots of holes for transparency
     }
     noiseCtx.putImageData(imgData, 0, 0);
     process.stdout.write(`Rendering ${totalFrames} frames for VHS (${this.variantName}): `);
@@ -60,7 +60,7 @@ let adapter: CanvasAdapter;
 
         const drawTrackingBand = (baseY: number, bandHeight: number, intensity: number) => {
           let y = (baseY + offsetY) % this.height;
-          
+
           const drawPass = (currentY: number) => {
             // Draw multiple horizontal scanline slices inside the band
             const slices = Math.max(3, Math.floor(bandHeight / 4));

@@ -1,4 +1,4 @@
-import { PythonBackend } from './core/PythonBackend';
+import { PythonBackend } from './ai-backend/python/PythonBackend';
 import { TtsConfig } from './types';
 import path from 'path';
 

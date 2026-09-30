@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class LeavesEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,13 +12,13 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     let leafCount = 100;
     let baseSpeedY = this.height * 0.3; // Fall down
     let baseSpeedX = this.width * 0.2;  // Drift right
     let sizeMultiplier = 1;
     let colors = ['220, 100, 50', '255, 150, 20', '200, 50, 20']; // Autumn
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'autumn_breeze':
         leafCount = 120;
         baseSpeedY = this.height * 0.2;

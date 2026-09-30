@@ -3,7 +3,7 @@ import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class SnowEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -12,13 +12,13 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // Configurable snow parameters based on variant
     let flakeCount = 1500;
-    let baseSpeed = this.height * 0.2; 
+    let baseSpeed = this.height * 0.2;
     let swayAmpBase = 40;
     let swayAmpVariance = 20;
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'light_snow':
         flakeCount = 500;
         baseSpeed = this.height * 0.15;

@@ -4,7 +4,7 @@ import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class SmokeEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-let adapter: CanvasAdapter;
+    let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
     } else {
@@ -13,7 +13,7 @@ let adapter: CanvasAdapter;
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     // Lower resolution noise map to save CPU
-    const noiseScale = 0.25; 
+    const noiseScale = 0.25;
     const nWidth = Math.floor(this.width * noiseScale);
     const nHeight = Math.floor(this.height * noiseScale);
     const noise2D = createNoise2D();
@@ -65,8 +65,8 @@ let adapter: CanvasAdapter;
     };
     let layer1Params = { scaleX: 0.015, scaleY: 0.03, alpha: 0.4, speed: this.height * 0.2 };
     let layer2Params = { scaleX: 0.025, scaleY: 0.05, alpha: 0.3, speed: this.height * 0.3 };
-    let layer3Params = { scaleX: 0.04,  scaleY: 0.08, alpha: 0.0, speed: 0 };
-    switch(this.variantName) {
+    let layer3Params = { scaleX: 0.04, scaleY: 0.08, alpha: 0.0, speed: 0 };
+    switch (this.variantName) {
       case 'rising_steam':
         // Fast, highly stretched vertically, lower opacity
         layer1Params = { scaleX: 0.01, scaleY: 0.05, alpha: 0.3, speed: this.height * 0.4 };
@@ -91,7 +91,7 @@ let adapter: CanvasAdapter;
     }
     console.log(`Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Smoke (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
       if (frame % Math.floor(this.fps) === 0) {
@@ -125,7 +125,7 @@ let adapter: CanvasAdapter;
       };
       // Add a slight horizontal sine sway for more organic "rolling" look
       // Must complete integer cycles over duration
-      const swayFreq = (Math.PI * 2) / this.duration; 
+      const swayFreq = (Math.PI * 2) / this.duration;
       const sway1 = Math.sin(timeSec * swayFreq) * (this.width * 0.05);
       const sway2 = Math.cos(timeSec * swayFreq * 2) * (this.width * 0.03);
       drawLayer(layer1, offset1, sway1);

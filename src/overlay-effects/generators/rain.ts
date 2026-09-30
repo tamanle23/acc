@@ -5,7 +5,7 @@ import { CanvasAdapter, CanvasInstance } from '../canvas-strategies/base';
 // though for rain, standard random might be fine since we warp the positions.
 export class RainEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-// Choose adapter based on config
+    // Choose adapter based on config
     let adapter: CanvasAdapter;
     if ('napi-rs' === 'napi-rs') {
       adapter = new NapiRsCanvasAdapter();
@@ -15,13 +15,13 @@ export class RainEffect extends BaseEffectEngine {
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
-    const { stream, promise } = this.setupFFmpegStream(outputPath);
+    const { stream, promise } = this.initStream(outputPath);
     // Configurable rain parameters based on variant
     let dropCount = 1000;
     let baseSpeed = this.height * 1.5; // Distance per second (pixels)
     let windOffsetBase = -200;
     let windOffsetVariance = -100;
-    switch(this.variantName) {
+    switch (this.variantName) {
       case 'drizzle':
         dropCount = 300;
         baseSpeed = this.height * 0.8;
