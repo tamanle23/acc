@@ -1,4 +1,5 @@
 import { FFmpegManager } from '../core/FFmpegManager';
+import { FFmpegCommand } from '../core/FFmpegExecutor';
 import { RegistryManager } from './core/Registry';
 import { AudioNormalizer } from '../core/AudioNormalizer';
 import path from 'path';
@@ -105,13 +106,13 @@ export async function renderCompositeSound(
     // 5. Final Mix
     filterComplex += `[bg_ducked][fg_out]amix=inputs=2:duration=longest[out]`;
   }
-  const ffmpegPath = FFmpegManager.getFFmpegPath();
-  const cmd = `"${ffmpegPath}" -y ${inputs} -filter_complex "${filterComplex}" -map "[out]" "${finalWavPath}"`;
-  
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
-  const execAsync = promisify(exec);
-  await execAsync(cmd);
+  const cmd = new FFmpegCommand();
+  for (const part of layers) {
+    cmd.input(part.audioPath);
+  }
+  cmd.complexFilter(filterComplex, ['out']);
+  cmd.output(finalWavPath);
+  await cmd.run();
   
   outputs.push(finalWavPath);
 

@@ -16,6 +16,7 @@ export class FFIVideoEncoder {
     private audioStream: bigint = 0n;
     private audioInCtx: bigint = 0n;
     private inAudioTimeBase: bigint = 0n;
+    private customSwsCtx: bigint = 0n;
 
     constructor(
         private width: number,
@@ -183,6 +184,47 @@ export class FFIVideoEncoder {
             pktView.setBigInt64(8, streamPts, true);   // pts
             pktView.setBigInt64(16, streamPts, true);  // dts
             pktView.setBigInt64(64, ticksPerFrame, true); // duration
+            FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
+        }
+    }
+
+    public encodeRawFrame(srcFrame: bigint, srcW: number, srcH: number, srcFmt: number) {
+        if (!this.isInitialized) this.initialize();
+
+        if (!this.customSwsCtx) {
+            this.customSwsCtx = BigInt(FFI.swscale.sws_getContext(
+                srcW, srcH, srcFmt,
+                this.width, this.height, AV_PIX_FMT_YUV420P,
+                2, 0n, 0n, 0n
+            ));
+        }
+
+        const srcData = ptr(new Uint8Array(toArrayBuffer(srcFrame, 0, 64)));
+        const srcLinesize = ptr(new Uint8Array(toArrayBuffer(srcFrame, 64, 32)));
+        const dstData = ptr(new Uint8Array(toArrayBuffer(this.frame, 0, 64)));
+        const dstLinesize = ptr(new Uint8Array(toArrayBuffer(this.frame, 64, 32)));
+
+        FFI.swscale.sws_scale(
+            this.customSwsCtx,
+            srcData,
+            srcLinesize,
+            0,
+            srcH,
+            dstData,
+            dstLinesize
+        );
+
+        Structs.AVFrame.setPts(this.frame, BigInt(this.frameIndex++));
+        FFI.avcodec.avcodec_send_frame(this.codecCtx, this.frame);
+
+        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
+        while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
+            Structs.AVPacket.setStreamIndex(this.packet, 0);
+            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
+            pktView.setBigInt64(8, streamPts, true);
+            pktView.setBigInt64(16, streamPts, true);
+            pktView.setBigInt64(64, ticksPerFrame, true);
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
         }
     }

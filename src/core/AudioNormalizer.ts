@@ -1,10 +1,7 @@
 import { FFmpegManager } from './FFmpegManager';
 import path from 'path';
 import fs from 'fs';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { FFmpegCommand } from './FFmpegExecutor';
 
 export type PlaybackType = 'loop' | 'oneshot';
 
@@ -52,8 +49,12 @@ export class AudioNormalizer {
       const fadeStart = Math.max(0, targetDuration - 0.2);
       filterComplex = `[0:a]silenceremove=start_periods=1:start_threshold=-50dB,highpass=f=40,atrim=0:${targetDuration},loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=out:st=${fadeStart}:d=0.2[out]`;
       
-      const cmd = `"${ffmpegPath}" -y -i "${inputPath}" -filter_complex "${filterComplex}" -map "[out]" -ar 44100 -ac 2 "${finalWavPath}"`;
-      await execAsync(cmd);
+      const cmd = new FFmpegCommand(inputPath);
+      cmd.complexFilter(filterComplex, ['out']);
+      cmd.audioFrequency(44100);
+      cmd.audioChannels(2);
+      cmd.output(finalWavPath);
+      await cmd.run();
 
     } else {
       // LOOP LOGIC
@@ -76,15 +77,22 @@ export class AudioNormalizer {
                       `[part2]atrim=${crossfadeDur}:${targetDuration + crossfadeDur},asetpts=PTS-STARTPTS[tail];` +
                       `[tail][head]acrossfade=d=${crossfadeDur}:curve1=losi:curve2=losi[out]`;
 
-      const cmd = `"${ffmpegPath}" -y -i "${inputPath}" -filter_complex "${filterComplex}" -map "[out]" -ar 44100 -ac 2 "${finalWavPath}"`;
-      
       try {
-        await execAsync(cmd);
+        const cmd = new FFmpegCommand(inputPath);
+        cmd.complexFilter(filterComplex, ['out']);
+        cmd.audioFrequency(44100);
+        cmd.audioChannels(2);
+        cmd.output(finalWavPath);
+        await cmd.run();
       } catch (err) {
         // Fallback if audio is too short for crossfade trick
         console.warn(`[Normalizer] Audio too short for crossfade, using standard trim...`);
-        const fallbackCmd = `"${ffmpegPath}" -y -i "${inputPath}" -af "highpass=f=40,atrim=0:${targetDuration},loudnorm=I=-16:TP=-1.5:LRA=11" -ar 44100 -ac 2 "${finalWavPath}"`;
-        await execAsync(fallbackCmd);
+        const fallbackCmd = new FFmpegCommand(inputPath);
+        fallbackCmd.outputOptions(['-af', `highpass=f=40,atrim=0:${targetDuration},loudnorm=I=-16:TP=-1.5:LRA=11`]);
+        fallbackCmd.audioFrequency(44100);
+        fallbackCmd.audioChannels(2);
+        fallbackCmd.output(finalWavPath);
+        await fallbackCmd.run();
       }
     }
 

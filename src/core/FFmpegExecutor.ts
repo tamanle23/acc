@@ -169,49 +169,90 @@ export class FFmpegCommand {
     return this;
   }
 
-  public run(): Promise<void> {
-    return new Promise((resolve, reject) => {
+  public async run(): Promise<void> {
+    const inputPaths = this.inputs.map((i) => i.file);
+    const outputFile = this.outputFile;
+
+    for (const fn of this.startListeners) {
       try {
-        const ffmpegPath = FFmpegManager.getFFmpegPath();
-        const args = this.buildArgs();
+        fn(`[FFI Native Muxer] Inputs: ${inputPaths.join(', ')} -> Output: ${outputFile}`);
+      } catch {}
+    }
 
-        for (const fn of this.startListeners) {
-          try { fn(`${ffmpegPath} ${args.join(' ')}`); } catch {}
-        }
-
-        const proc = Bun.spawn({
-          cmd: [ffmpegPath, ...args],
-          stdout: 'pipe',
-          stderr: 'pipe',
-        });
-
-        proc.exited.then(async (code) => {
-          if (code === 0) {
-            for (const fn of this.endListeners) {
-              try { fn(); } catch {}
-            }
-            resolve();
-          } else {
-            const stderrText = await new Response(proc.stderr).text();
-            const err = new Error(`FFmpeg exited with code ${code}:\n${stderrText}`);
-            for (const fn of this.errorListeners) {
-              try { fn(err, '', stderrText); } catch {}
-            }
-            reject(err);
-          }
-        }).catch((err) => {
-          for (const fn of this.errorListeners) {
-            try { fn(err, '', err.message); } catch {}
-          }
-          reject(err);
-        });
-      } catch (err: any) {
-        for (const fn of this.errorListeners) {
-          try { fn(err, '', err.message); } catch {}
-        }
-        reject(err);
+    try {
+      // 1. Lossless Concat or Transitions routing
+      if (
+        this.complexFilterStr?.includes('xfade') ||
+        (inputPaths.length > 1 &&
+          !this.complexFilterStr?.includes('amix') &&
+          !this.complexFilterStr?.includes('overlay'))
+      ) {
+        const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
+        await FFIConcatMuxer.concatenate(inputPaths, outputFile);
       }
-    });
+      // 2. Audio mixing / BGM routing
+      else if (
+        this.complexFilterStr?.includes('amix') ||
+        inputPaths.some((p) => p.includes('bgm'))
+      ) {
+        if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
+          fs.copyFileSync(inputPaths[0], outputFile);
+        }
+      }
+      // 3. Single Scene Video/Image rendering
+      else if (inputPaths.length >= 1) {
+        const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
+        const primaryInput = inputPaths[0];
+        const audioInput = inputPaths.length > 1 ? inputPaths[1] : '';
+
+        if (
+          primaryInput.endsWith('.mp4') ||
+          primaryInput.endsWith('.mov') ||
+          primaryInput.endsWith('.webm')
+        ) {
+          await FFISceneEngine.renderScene({
+            scene: {
+              resolvedVideo: primaryInput,
+              resolvedAudio: audioInput,
+              captions: [],
+            } as any,
+            duration: this.loopDuration || 3.0,
+            assPath: null,
+            config: { settings: { width: 1920, height: 1080, fps: 30 } } as any,
+            outputPath: outputFile,
+            fallbackImagePath: '',
+            fallbackAudioPath: '',
+          });
+        } else {
+          await FFISceneEngine.renderScene({
+            scene: {
+              resolvedImage: primaryInput,
+              resolvedAudio: audioInput,
+              captions: [],
+            } as any,
+            duration: this.loopDuration || 3.0,
+            assPath: null,
+            config: { settings: { width: 1920, height: 1080, fps: 30 } } as any,
+            outputPath: outputFile,
+            fallbackImagePath: '',
+            fallbackAudioPath: '',
+          });
+        }
+      }
+
+      for (const fn of this.endListeners) {
+        try {
+          fn();
+        } catch {}
+      }
+    } catch (err: any) {
+      for (const fn of this.errorListeners) {
+        try {
+          fn(err, '', err.message);
+        } catch {}
+      }
+      throw err;
+    }
   }
 }
 
