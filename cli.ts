@@ -23,7 +23,18 @@ import { FFmpegManager } from './src/core/FFmpegManager';
 
 async function main() {
   await FFmpegManager.prepare();
-  let targetDir = process.argv.slice(2)[0];
+  const rawArgs = process.argv.slice(2);
+  const firstArg = rawArgs[0]?.toLowerCase();
+  if (firstArg && ['run', 'stream', 'serve', 'list', '--help', '-h'].includes(firstArg)) {
+    const { runCli } = await import('./apps/cli/src/index');
+    await runCli(rawArgs);
+    if (firstArg !== 'serve') {
+      process.exit(0);
+    }
+    return;
+  }
+
+  let targetDir = rawArgs[0];
 
   if (!targetDir) {
     targetDir = await askQuestion('Please enter the path to your story folder: ');
