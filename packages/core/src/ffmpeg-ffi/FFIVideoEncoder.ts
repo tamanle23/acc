@@ -1,13 +1,13 @@
 import { FFI, Structs, freePtr, makeAVRational, AV_PIX_FMT_YUV420P, AV_PIX_FMT_RGBA } from "./index";
 import { ptr, toArrayBuffer } from "bun:ffi";
 import fs from "fs";
-import type { IVideoEncodingStrategy } from "./EncodingStrategies";
+import type { IVideoEncodingStrategy, FileVideoEncodingOptions } from "./EncodingStrategies";
 import {
     FileVideoEncodingStrategy,
     RtmpLiveStreamEncodingStrategy
 } from "./EncodingStrategies";
 
-export type { IVideoEncodingStrategy };
+export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
 export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
 
 export class FFIVideoEncoder {
@@ -37,13 +37,24 @@ export class FFIVideoEncoder {
         private outputPath: string,
         private crf: number = 20,
         private audioPath?: string,
-        strategy?: IVideoEncodingStrategy
+        strategy?: IVideoEncodingStrategy,
+        fileOptions?: FileVideoEncodingOptions
     ) {
         if (strategy) {
             this.strategy = strategy;
         } else {
             const isRtmp = outputPath.startsWith("rtmp://") || outputPath.startsWith("rtmps://");
-            this.strategy = isRtmp ? new RtmpLiveStreamEncodingStrategy() : new FileVideoEncodingStrategy();
+            if (isRtmp) {
+                this.strategy = new RtmpLiveStreamEncodingStrategy();
+            } else {
+                const ext = outputPath.split('.').pop()?.toLowerCase();
+                const container = fileOptions?.container || (ext && ['mp4', 'mkv', 'mov', 'webm'].includes(ext) ? ext : 'mp4');
+                this.strategy = new FileVideoEncodingStrategy({
+                    container,
+                    fastStart: fileOptions?.fastStart,
+                    preset: fileOptions?.preset
+                });
+            }
         }
     }
 
@@ -86,6 +97,7 @@ export class FFIVideoEncoder {
         const frameRateStr = Buffer.from(`${this.fps}/1\0`);
         FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("time_base\0"), timeBaseStr, 0);
         FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("framerate\0"), frameRateStr, 0);
+        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("flags\0"), Buffer.from("+global_header\0"), 0);
 
         // Delegate codec settings (GOP, latency tune, presets, rate control) to Strategy
         this.strategy.configureCodec(this.codecCtx, isNvenc, this.fps, this.crf);
@@ -114,6 +126,14 @@ export class FFIVideoEncoder {
         const streamView = new DataView(toArrayBuffer(this.stream, 0, 64));
         const streamCodecpar = streamView.getBigUint64(16, true);
         FFI.avcodec.avcodec_parameters_from_context(streamCodecpar, this.codecCtx);
+
+        // Reset codec_tag to 0 to let container assign native tag (essential for MKV, WebM, MP4)
+        const cpView = new DataView(toArrayBuffer(streamCodecpar, 0, 64));
+        cpView.setUint32(8, 0, true);
+
+        // Set stream time base to match packet ticks (1/90000)
+        streamView.setInt32(32, 1, true);
+        streamView.setInt32(36, 90000, true);
 
         // 7. Optional: Setup Audio Stream (stream #1) if audioPath exists
         if (this.audioPath && fs.existsSync(this.audioPath)) {

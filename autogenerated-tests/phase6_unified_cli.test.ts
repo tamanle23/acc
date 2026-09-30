@@ -22,6 +22,9 @@ describe('Phase 6: Unified CLI Dispatcher & Production Tooling Suite', () => {
     expect(parsedServe.command).toBe('serve');
     expect(parsedServe.port).toBe(8080);
 
+    const parsedFormat = parseCliArgs(['run', 'story', '--format', 'mkv']);
+    expect(parsedFormat.format).toBe('mkv');
+
     const parsedHelp = parseCliArgs(['--help']);
     expect(parsedHelp.command).toBe('help');
 

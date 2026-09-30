@@ -217,5 +217,39 @@ describe('Deep Unit & Edge-Case Test Suite for Exporters', () => {
       expect(fs.existsSync(videoPath)).toBe(true);
       expect(fs.statSync(videoPath).size).toBeGreaterThan(5000);
     }, 15000);
+
+    it('renders MKV container format when container is configured as mkv', async () => {
+      const mkvIR: PipelineIR = {
+        schemaVersion: '3.0.0',
+        pipelineId: 'generative-storytelling',
+        metadata: {
+          jobId: 'mkv_test',
+          title: 'MKV Container Export Test',
+          createdAt: new Date().toISOString(),
+          tags: ['mkv', 'container'],
+        },
+        chunks: [
+          {
+            id: 'c1',
+            order: 1,
+            summary: 'Testing MKV Output Format',
+            durationMs: 500, // 0.5s (15 frames)
+          },
+        ],
+        audioComposition: { sfxMarkers: [], ducking: { enabled: false, attenuationDb: 0, attackMs: 0, releaseMs: 0 } },
+      };
+
+      const result = await videoExporter.export(mkvIR, {
+        outputDir: path.join(testBaseDir, 'video_mkv'),
+        container: 'mkv',
+        fps: 30,
+      });
+
+      expect(result.format).toBe('mkv');
+      const videoPath = result.outputPath as string;
+      expect(videoPath.endsWith('.mkv')).toBe(true);
+      expect(fs.existsSync(videoPath)).toBe(true);
+      expect(fs.statSync(videoPath).size).toBeGreaterThan(1000);
+    }, 15000);
   });
 });

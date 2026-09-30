@@ -96,4 +96,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`078`](078_youtube_live_rtmp_compliance_and_realtime_pacing.md) | 2026-09-30 | YouTube Live RTMP Ingestion Compliance & Real-Time Clock Pacing | 2.0s closed GOP, FLV RTMP container, zerolatency tuning, Atomics.wait real-time clock pacing |
 | [`079`](079_encoding_strategy_pattern_refactor.md) | 2026-09-30 | Encoding Strategy Pattern Refactor for Video & RTMP Live Streams | IVideoEncodingStrategy, FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy, DI setter |
 | [`080`](080_phase6_unified_cli_and_production_tooling.md) | 2026-09-30 | Phase 6: Unified CLI Dispatcher & Production Tooling | Unified CLI router, acc run/stream/serve/list, Ambient RTMP stream, zero-regression cli.ts |
+| [`081`](081_dynamic_container_format_selection_in_strategy.md) | 2026-09-30 | Dynamic Video Container Format Selection in Strategy Pattern | FileVideoEncodingOptions, dynamic mp4/mkv/mov/webm muxing, +global_header, CLI --format |
 

@@ -20,6 +20,7 @@ export interface CliOptions {
   rtmpUrl?: string;
   port?: number;
   duration?: number;
+  format?: 'mp4' | 'mkv' | 'mov' | 'webm' | string;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -73,6 +74,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.port = parseInt(args[++i], 10);
     } else if (arg === '--duration' || arg === '-d') {
       options.duration = parseFloat(args[++i]);
+    } else if (arg === '--format' || arg === '-f' || arg === '--container') {
+      options.format = args[++i]?.toLowerCase();
     }
   }
 
@@ -102,6 +105,7 @@ OPTIONS:
   -c, --config <file|dir>    Input data/configuration JSON file or story folder
   -e, --exporters <list>     Comma-separated exporters: video, audio, social, web
   -o, --out <dir>            Output directory for rendered assets
+  -f, --format <fmt>         Output video container: mp4, mkv, mov, webm (Default: mp4)
   -r, --rtmp <url>           RTMP/RTMPS server ingestion endpoint
   -p, --port <port>          Webhook listener HTTP port (Default: 3000)
   -d, --duration <seconds>   Stream or loop duration limit in seconds

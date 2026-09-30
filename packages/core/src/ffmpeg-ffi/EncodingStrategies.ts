@@ -9,37 +9,83 @@ export interface IVideoEncodingStrategy {
   paceFrame(frameIndex: number, fps: number): void;
 }
 
+export interface FileVideoEncodingOptions {
+  container?: 'mp4' | 'mkv' | 'mov' | 'webm' | string;
+  fastStart?: boolean;
+  preset?: string;
+}
+
 /**
- * Strategy for offline disk video file rendering (MP4, MKV, etc.).
- * Operates at maximum CPU/GPU throughput without network clock delays.
+ * Strategy for offline disk video file rendering (MP4, MKV, WebM, MOV, etc.).
+ * Dynamically resolves container format from story/pipeline config and optimizes throughput.
  */
 export class FileVideoEncodingStrategy implements IVideoEncodingStrategy {
   public readonly mode = 'file';
+  private container: string;
+  private fastStart: boolean;
+  private preset?: string;
+
+  constructor(options: FileVideoEncodingOptions = {}) {
+    this.container = options.container || 'mp4';
+    this.fastStart = options.fastStart ?? (this.container === 'mp4' || this.container === 'mov');
+    this.preset = options.preset;
+  }
+
+  public getContainer(): string {
+    return this.container;
+  }
+
+  public isFastStart(): boolean {
+    return this.fastStart;
+  }
 
   public configureCodec(codecCtx: bigint, isNvenc: boolean, fps: number, crf: number): void {
     if (isNvenc) {
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from("p4\0"), 0);
+      const p = this.preset || "p4";
+      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from(`${p}\0`), 0);
       FFI.avutil.av_opt_set(codecCtx, Buffer.from("cq\0"), Buffer.from(`${crf}\0`), 0);
     } else {
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from("fast\0"), 0);
+      const p = this.preset || "fast";
+      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from(`${p}\0`), 0);
       FFI.avutil.av_opt_set(codecCtx, Buffer.from("crf\0"), Buffer.from(`${crf}\0`), 0);
     }
   }
 
   public allocateFormatContext(outputPath: string): bigint {
     const fmtCtxPtr = new BigUint64Array(1);
+
+    // Resolve FFmpeg format name: matroska for mkv, webm for webm, mov for mov, mp4 for mp4
+    let formatName: string | null = null;
+    const ext = outputPath.split('.').pop()?.toLowerCase();
+    const targetFormat = (this.container || ext || 'mp4').toLowerCase();
+
+    if (targetFormat === 'mkv' || targetFormat === 'matroska') {
+      formatName = 'matroska';
+    } else if (targetFormat === 'webm') {
+      formatName = 'webm';
+    } else if (targetFormat === 'mov') {
+      formatName = 'mov';
+    } else if (targetFormat === 'mp4') {
+      formatName = 'mp4';
+    }
+
+    const formatBuf = formatName ? Buffer.from(formatName + "\0") : 0n;
+
     const retOut = FFI.avformat.avformat_alloc_output_context2(
       ptr(fmtCtxPtr.buffer),
       0n,
-      0n,
+      formatBuf,
       Buffer.from(outputPath + "\0")
     );
-    if (retOut < 0) throw new Error(`Failed to allocate output context for file: ${outputPath}`);
+    if (retOut < 0) throw new Error(`Failed to allocate output context for file: ${outputPath} (format: ${targetFormat})`);
     return fmtCtxPtr[0];
   }
 
-  public configureFormatContext(_formatCtx: bigint): void {
-    // Standard file container - no additional live flags needed
+  public configureFormatContext(formatCtx: bigint): void {
+    // For MP4 and MOV streaming, apply faststart (movflags +faststart) if enabled
+    if ((this.container === 'mp4' || this.container === 'mov') && this.fastStart) {
+      FFI.avutil.av_opt_set(formatCtx, Buffer.from("movflags\0"), Buffer.from("faststart\0"), 0);
+    }
   }
 
   public paceFrame(_frameIndex: number, _fps: number): void {

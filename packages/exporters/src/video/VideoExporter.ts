@@ -10,6 +10,9 @@ export interface VideoExportOptions extends ExportOptions {
   height?: number;
   fps?: number;
   crf?: number;
+  container?: 'mp4' | 'mkv' | 'mov' | 'webm';
+  format?: 'mp4' | 'mkv' | 'mov' | 'webm';
+  fastStart?: boolean;
 }
 
 export class VideoExporter implements IExporter<VideoExportOptions> {
@@ -30,8 +33,9 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       fs.mkdirSync(outDir, { recursive: true });
     }
 
+    const container = options.container || options.format || (ir.distributionHints as any)?.targetFormat || 'mp4';
     const prefix = options.fileNamePrefix || ir.metadata.jobId || 'video';
-    const outputPath = path.join(outDir, `${prefix}.mp4`);
+    const outputPath = path.join(outDir, `${prefix}.${container}`);
 
     // Prepare audio track if available
     let primaryAudio: string | undefined = undefined;
@@ -42,7 +46,10 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       }
     }
 
-    const encoder = new FFIVideoEncoder(width, height, fps, outputPath, crf, primaryAudio);
+    const encoder = new FFIVideoEncoder(width, height, fps, outputPath, crf, primaryAudio, undefined, {
+      container,
+      fastStart: options.fastStart ?? true,
+    });
     encoder.initialize();
 
     let totalEncodedFrames = 0;
@@ -74,7 +81,7 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
     return {
       exporterId: this.id,
       outputPath,
-      format: 'mp4',
+      format: container,
       durationMs: totalDurationMs,
       metadata: {
         width,
@@ -82,6 +89,7 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
         fps,
         totalFrames: totalEncodedFrames,
         aspectRatio: isVertical ? '9:16' : '16:9',
+        container,
       },
     };
   }

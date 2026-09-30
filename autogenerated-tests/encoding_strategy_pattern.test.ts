@@ -65,4 +65,41 @@ describe("Video Encoding Strategy Pattern Unit Tests", () => {
     encoder.setStrategy(newMock);
     expect(encoder.getStrategy()).toBe(newMock);
   });
+
+  it("FileVideoEncodingStrategy dynamically selects container format and faststart from config", () => {
+    const defaultStrategy = new FileVideoEncodingStrategy();
+    expect(defaultStrategy.getContainer()).toBe("mp4");
+    expect(defaultStrategy.isFastStart()).toBe(true);
+
+    const mkvStrategy = new FileVideoEncodingStrategy({ container: "mkv" });
+    expect(mkvStrategy.getContainer()).toBe("mkv");
+    expect(mkvStrategy.isFastStart()).toBe(false);
+
+    const webmStrategy = new FileVideoEncodingStrategy({ container: "webm" });
+    expect(webmStrategy.getContainer()).toBe("webm");
+
+    const movStrategy = new FileVideoEncodingStrategy({ container: "mov", fastStart: false });
+    expect(movStrategy.getContainer()).toBe("mov");
+    expect(movStrategy.isFastStart()).toBe(false);
+  });
+
+  it("FFIVideoEncoder automatically resolves container format from file extension and fileOptions", () => {
+    const mkvEncoder = new FFIVideoEncoder(1280, 720, 30, "output.mkv");
+    const strategy = mkvEncoder.getStrategy() as FileVideoEncodingStrategy;
+    expect(strategy).toBeInstanceOf(FileVideoEncodingStrategy);
+    expect(strategy.getContainer()).toBe("mkv");
+
+    const webmEncoder = new FFIVideoEncoder(1280, 720, 30, "output.webm");
+    const webmStrat = webmEncoder.getStrategy() as FileVideoEncodingStrategy;
+    expect(webmStrat.getContainer()).toBe("webm");
+
+    const customEncoder = new FFIVideoEncoder(
+      1280, 720, 30, "custom_video_output",
+      20, undefined, undefined,
+      { container: "mkv", fastStart: true }
+    );
+    const customStrat = customEncoder.getStrategy() as FileVideoEncodingStrategy;
+    expect(customStrat.getContainer()).toBe("mkv");
+    expect(customStrat.isFastStart()).toBe(true);
+  });
 });
