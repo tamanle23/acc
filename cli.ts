@@ -143,7 +143,6 @@ async function main() {
     settings: resolvedSettings,
     scenes: resolvedScenes,
   };
-
   // outputDir đã được tạo ở trên
 
   const baseName = config.name
@@ -179,6 +178,7 @@ async function main() {
 
   try {
     const startTime = Date.now();
+
     await renderStoryVideo(resolvedConfig, outputFilePath, absoluteDir);
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`\nVideo rendering successfully completed in ${durationSec}s!`);

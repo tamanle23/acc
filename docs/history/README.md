@@ -84,4 +84,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`066`](066_phase5_route_ffmpeg_executor_and_remove_spawn.md) | 2026-09-30 | Phase 5: Route FFmpegExecutor to FFI & 100% Deprecate Process Spawning | Zero spawn in src/, FFISceneEngine, decode+scale b-roll, pure FFI |
 | [`067`](067_canvas_caption_rendering_and_parallel_ffi_acceleration.md) | 2026-09-30 | Canvas Caption Rendering Engine & Multi-Core FFI Acceleration | Per-frame Canvas karaoke subtitles, SceneWorkerPool true parallel workers (4.1s render) |
 | [`068`](068_fix_interface_initializer_and_resolve_defaults.md) | 2026-09-30 | Fix Interface Property Initializer & Resolve Settings Defaults | Remove invalid interface initializer in types.ts, populate upscale & bgm defaults in resolveStorySettings |
+| [`069`](069_fix_ffi_segfault_and_graceful_worker_exit.md) | 2026-09-30 | Fix FFI Segmentation Fault & Graceful Worker Thread Shutdown | Fix AVFrame memory pointers in sws_scale, eliminate nursery GC relocation crash, graceful worker termination |
 

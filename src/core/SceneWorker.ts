@@ -35,6 +35,9 @@ if (!isMainThread) {
       const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
 
       parentPort?.on('message', async (task: { type: string; data: SceneTaskPayload }) => {
+        if (task.type === 'EXIT') {
+          process.exit(0);
+        }
         if (task.type === 'RENDER') {
           const { scene, duration, assPath, config, outputPath, fallbackImagePath, fallbackAudioPath, paddingTime, hasAnyTransition, is3D } = task.data;
           try {
@@ -171,7 +174,7 @@ export class SceneWorkerPool {
   public terminate() {
     for (const w of this.workers) {
       try {
-        w.terminate();
+        w.postMessage({ type: 'EXIT' });
       } catch {}
     }
     this.workers = [];

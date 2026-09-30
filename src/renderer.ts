@@ -182,6 +182,7 @@ export async function renderStoryVideo(
   outputFilePath: string,
   baseDir: string = process.cwd()
 ): Promise<void> {
+  await FFmpegManager.prepare();
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'story-render-'));
   const { width, height, container, captions, concurrency, upscale } = config.settings;
   const totalScenes = config.scenes.length;

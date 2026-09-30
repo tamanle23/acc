@@ -20,8 +20,6 @@ export class FFIVideoEncoder {
 
     private srcData: BigUint64Array = new BigUint64Array(8);
     private srcStride: Int32Array = new Int32Array(8);
-    private srcDataPtr: any;
-    private srcStridePtr: any;
 
     constructor(
         private width: number,
@@ -153,8 +151,6 @@ export class FFIVideoEncoder {
 
         // 12. Pre-allocate buffer pointers for zero-allocation hot loop
         this.srcStride[0] = this.width * 4;
-        this.srcDataPtr = ptr(this.srcData.buffer);
-        this.srcStridePtr = ptr(this.srcStride.buffer);
 
         this.isInitialized = true;
     }
@@ -167,8 +163,8 @@ export class FFIVideoEncoder {
 
         FFI.swscale.sws_scale(
             this.swsCtx,
-            this.srcDataPtr,
-            this.srcStridePtr,
+            ptr(this.srcData.buffer),
+            ptr(this.srcStride.buffer),
             0,
             this.height,
             this.frame,
@@ -205,19 +201,14 @@ export class FFIVideoEncoder {
             ));
         }
 
-        const srcData = ptr(new Uint8Array(toArrayBuffer(srcFrame, 0, 64)));
-        const srcLinesize = ptr(new Uint8Array(toArrayBuffer(srcFrame, 64, 32)));
-        const dstData = ptr(new Uint8Array(toArrayBuffer(this.frame, 0, 64)));
-        const dstLinesize = ptr(new Uint8Array(toArrayBuffer(this.frame, 64, 32)));
-
         FFI.swscale.sws_scale(
             this.customSwsCtx,
-            srcData,
-            srcLinesize,
+            srcFrame,
+            srcFrame + 64n,
             0,
             srcH,
-            dstData,
-            dstLinesize
+            this.frame,
+            this.frame + 64n
         );
 
         Structs.AVFrame.setPts(this.frame, BigInt(this.frameIndex++));

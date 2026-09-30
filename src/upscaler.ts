@@ -147,9 +147,8 @@ export function upscaleImage(
         '-i', runInput,
         '-o', runOutput,
         '-n', modelName,
-        '-s', ratio,
+        '-s', `${ratio}`,
       ];
-
       const customModelPath = path.join(modelsDir, `${modelName}.param`);
       if (fs.existsSync(customModelPath)) {
         args.push('-m', modelsDir);
