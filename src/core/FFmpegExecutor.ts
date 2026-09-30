@@ -1,23 +1,11 @@
 import { FFmpegManager } from './FFmpegManager';
 import fs from 'fs';
 
+import { getMediaDurationFFI } from './ffmpeg-ffi';
+
 export function getMediaDurationSync(filePath: string): number {
   if (!fs.existsSync(filePath)) return 0;
-  try {
-    const ffprobePath = FFmpegManager.getFFprobePath();
-    const proc = Bun.spawnSync([
-      ffprobePath,
-      '-v', 'error',
-      '-show_entries', 'format=duration',
-      '-of', 'default=noprint_wrappers=1:nokey=1',
-      filePath
-    ]);
-    const output = proc.stdout.toString().trim();
-    const duration = parseFloat(output);
-    return isNaN(duration) ? 0 : duration;
-  } catch {
-    return 0;
-  }
+  return getMediaDurationFFI(filePath);
 }
 
 export function getMediaDuration(filePath: string): Promise<number> {

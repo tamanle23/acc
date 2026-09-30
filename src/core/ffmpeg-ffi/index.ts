@@ -49,6 +49,9 @@ export function initFFI() {
         avformat_alloc_context: { args: [], returns: FFIType.ptr },
         avformat_free_context: { args: [FFIType.ptr], returns: FFIType.void },
         avformat_alloc_output_context2: { args: [FFIType.ptr, FFIType.ptr, FFIType.cstring, FFIType.cstring], returns: FFIType.i32 },
+        avformat_open_input: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avformat_find_stream_info: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avformat_close_input: { args: [FFIType.ptr], returns: FFIType.void },
         avio_open: { args: [FFIType.ptr, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         avio_closep: { args: [FFIType.ptr], returns: FFIType.i32 },
         avformat_new_stream: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
@@ -83,10 +86,10 @@ export function initFFI() {
 }
 
 export const FFI = {
-    get avutil() { return avutil.symbols; },
-    get avcodec() { return avcodec.symbols; },
-    get avformat() { return avformat.symbols; },
-    get swscale() { return swscale.symbols; }
+    get avutil() { initFFI(); return avutil.symbols; },
+    get avcodec() { initFFI(); return avcodec.symbols; },
+    get avformat() { initFFI(); return avformat.symbols; },
+    get swscale() { initFFI(); return swscale.symbols; }
 };
 
 /**
@@ -123,7 +126,7 @@ export const Structs = {
         setWidth: (framePtr: number | bigint, width: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(104, width, true),
         setHeight: (framePtr: number | bigint, height: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(108, height, true),
         setFormat: (framePtr: number | bigint, format: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(116, format, true),
-        setPts: (framePtr: number | bigint, pts: bigint) => new DataView(toArrayBuffer(framePtr, 0, 128)).setBigInt64(128, pts, true), // offset for pts in AVFrame? We need to verify this!
+        setPts: (framePtr: number | bigint, pts: bigint) => new DataView(toArrayBuffer(framePtr, 0, 128)).setBigInt64(128, pts, true),
         getDataPointer: (framePtr: number | bigint, plane: number = 0) => new DataView(toArrayBuffer(framePtr, 0, 64)).getBigUint64(plane * 8, true),
         getLinesize: (framePtr: number | bigint, plane: number = 0) => new DataView(toArrayBuffer(framePtr, 0, 128)).getInt32(64 + plane * 4, true)
     },
@@ -133,3 +136,31 @@ export const Structs = {
         setStreamIndex: (pktPtr: number | bigint, index: number) => new DataView(toArrayBuffer(pktPtr, 0, 64)).setInt32(36, index, true),
     }
 };
+
+/**
+ * Native Zero-Copy FFI Media Duration Probe (Replaces ffprobe.exe process calls)
+ */
+export function getMediaDurationFFI(filePath: string): number {
+  try {
+    initFFI();
+    const fmtCtxPtr = new BigUint64Array(1);
+    const url = Buffer.from(filePath + "\0");
+
+    const res = FFI.avformat.avformat_open_input(ptr(fmtCtxPtr.buffer), url, 0n, 0n);
+    if (res !== 0) return 0;
+
+    const fmtCtx = fmtCtxPtr[0];
+    FFI.avformat.avformat_find_stream_info(fmtCtx, 0n);
+
+    const view = new DataView(toArrayBuffer(fmtCtx, 0, 256));
+    const durationUs = view.getBigInt64(104, true);
+
+    const p = new BigUint64Array([fmtCtx]);
+    FFI.avformat.avformat_close_input(ptr(p.buffer));
+
+    if (durationUs <= 0n) return 0;
+    return Number(durationUs) / 1000000.0;
+  } catch {
+    return 0;
+  }
+}
