@@ -78,3 +78,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [ 60](060_refactor_renderer_and_remove_fluent_ffmpeg.md) | 2026-09-30 | Refactor renderer.ts and Remove fluent-ffmpeg Imports | Created FFmpegExecutor native wrapper, refactored renderer.ts, whisper.ts, BaseEffectEngine, pipeline, stacker |
 | [ 61](061_replace_ffprobe_with_ffi_probe.md) | 2026-09-30 | Replace ffprobe Process Spawning with Native Bun FFI Duration Probe | In-memory duration probing via avformat_open_input in libavformat |
 | [ 62](062_phase1_codec_timebase_stabilization.md) | 2026-09-30 | Phase 1: Codec TimeBase, Timestamp & Zero-Copy Encoding Stabilization | Resolved AVCodecContext timebase/dimensions, AVIO close, and NVENC/x264 FFI encoding |
+| [ 63](063_phase2_in_memory_lossless_concat_muxer.md) | 2026-09-30 | Phase 2: In-Memory Lossless Concat Engine (FFIConcatMuxer) | Implemented FFIConcatMuxer packet stream-copy, eliminated -f concat spawn |

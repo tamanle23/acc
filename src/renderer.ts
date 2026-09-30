@@ -247,29 +247,8 @@ function renderSingleScene(
 }
 
 function concatenateVideos(videoPaths: string[], outputPath: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const listFilePath = path.join(os.tmpdir(), `concat_list_${Date.now()}.txt`);
-    const fileContent = videoPaths
-      .map((p) => `file '${p.replace(/\\/g, '/')}'`)
-      .join('\n');
-
-    fs.writeFileSync(listFilePath, fileContent, 'utf-8');
-
-    ffmpeg()
-      .input(listFilePath)
-      .inputOptions(['-f concat', '-safe 0'])
-      .outputOptions(['-c copy', '-map 0'])
-      .output(outputPath)
-      .on('end', () => {
-        try { fs.unlinkSync(listFilePath); } catch {}
-        resolve();
-      })
-      .on('error', (err, stdout, stderr) => {
-        try { fs.unlinkSync(listFilePath); } catch {}
-        reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`));
-      })
-      .run();
-  });
+  const { FFIConcatMuxer } = require('./core/ffmpeg-ffi/FFIConcatMuxer');
+  return FFIConcatMuxer.concatenate(videoPaths, outputPath);
 }
 
 function concatenateWithTransitions(

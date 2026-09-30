@@ -46,6 +46,8 @@ export function initFFI() {
         avcodec_parameters_free: { args: [FFIType.ptr], returns: FFIType.void },
         avcodec_parameters_to_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_parameters_from_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avcodec_parameters_copy: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        av_packet_unref: { args: [FFIType.ptr], returns: FFIType.void },
     });
 
     avformat = dlopen(avformatPath, {
@@ -55,6 +57,7 @@ export function initFFI() {
         avformat_open_input: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avformat_find_stream_info: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avformat_close_input: { args: [FFIType.ptr], returns: FFIType.void },
+        av_read_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avio_open: { args: [FFIType.ptr, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         avio_closep: { args: [FFIType.ptr], returns: FFIType.i32 },
         avformat_new_stream: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
