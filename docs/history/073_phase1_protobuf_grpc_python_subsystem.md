@@ -23,8 +23,9 @@ The ACC system previously invoked Python workers on an ad-hoc basis over line-bu
 - `apps/python-backend/`:
   - `pyproject.toml` & `package.json`: Configured `uv` virtual environment and dependencies (`grpcio`, `protobuf`, `numpy`, `pillow`).
   - `src/generated/`: Compiled Python stubs from `.proto` definitions.
-  - `src/server.py`: Built multi-threaded gRPC server implementing TTS, Vision, and LLM servicers with graceful shutdown.
-- `packages/core/src/ipc/IPCFacade.ts`:
+    - `src/server.py`: Built multi-threaded gRPC server implementing TTS, Vision, and LLM servicers with graceful shutdown.
+    - Security Enhancement: Strictly bound socket to `127.0.0.1` (localhost only) preventing unauthorized network exposure on local LAN.
+  - `packages/core/src/ipc/IPCFacade.ts`:
   - Implemented `GRPCAIStrategy` with background daemon auto-bootstrap and liveness polling.
   - Implemented `FallbackAIStrategy` for graceful degradation.
   - Implemented `IPCFacade` with runtime strategy hot-swapping.

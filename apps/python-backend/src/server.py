@@ -82,16 +82,16 @@ class LLMService(llm_pb2_grpc.LLMServiceServicer):
         )
 
 
-def serve(port=50051):
+def serve(host="127.0.0.1", port=50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
     tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
     vision_pb2_grpc.add_VisionServiceServicer_to_server(VisionService(), server)
     llm_pb2_grpc.add_LLMServiceServicer_to_server(LLMService(), server)
 
-    bind_address = f"0.0.0.0:{port}"
+    bind_address = f"{host}:{port}"
     server.add_insecure_port(bind_address)
-    print(f"[ACC Python AI] gRPC server listening on {bind_address}", flush=True)
+    print(f"[ACC Python AI] gRPC server listening securely on {bind_address}", flush=True)
     server.start()
 
     try:
@@ -102,10 +102,11 @@ def serve(port=50051):
 
 
 if __name__ == "__main__":
+    target_host = os.environ.get("ACC_GRPC_HOST", "127.0.0.1")
     target_port = int(os.environ.get("ACC_GRPC_PORT", 50051))
     if len(sys.argv) > 1:
         try:
             target_port = int(sys.argv[1])
         except ValueError:
             pass
-    serve(target_port)
+    serve(target_host, target_port)
