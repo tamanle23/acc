@@ -16,6 +16,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`006`](006_overlay_effects_dag_migration.md) | Migrate Overlay Effects to FFmpegFilterGraph DAG | Overlay CLI / Core | ⏳ `Planned` | 2026-09-27 | N/A |
 | [`007`](007_pipeline_orchestrator_phase_3.md) | Isolated Pipeline Architecture (Phase 3) | Architecture / Core | ⏳ `Planned` | 2026-09-27 | N/A |
 | [`008`](008_3d_depth_pop_out_suite.md) | 3D Depth & Visual Pop-Out Effects Suite | 3D Depth Engine | ✅ `Completed` | 2026-09-27 | [`046`](../history/046_3d_depth_backlog_and_frame_breaker.md), [`047`](../history/047_all_3d_depth_engines_implementation.md) |
+| [`009`](009_gpu_acceleration_enhancement_suite.md) | Full GPU Acceleration & Hardware Encoding Enhancement Suite | Core Engine / Hardware Accel | ⏳ `Planned` | 2026-09-30 | N/A |
 
 ---
 

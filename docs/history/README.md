@@ -98,4 +98,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`080`](080_phase6_unified_cli_and_production_tooling.md) | 2026-09-30 | Phase 6: Unified CLI Dispatcher & Production Tooling | Unified CLI router, acc run/stream/serve/list, Ambient RTMP stream, zero-regression cli.ts |
 | [`081`](081_dynamic_container_format_selection_in_strategy.md) | 2026-09-30 | Dynamic Video Container Format Selection in Strategy Pattern | FileVideoEncodingOptions, dynamic mp4/mkv/mov/webm muxing, +global_header, CLI --format |
 | [`082`](082_sam2_segmentation_enhancement_and_framebreaker_refinement.md) | 2026-09-30 | SAM 2 Segmentation Enhancement & Frame Breaker Refinement | Default autoSegment for frame_breaker/sandwich, sample-story sync, ellipse fallback, daemon pre-warming |
+| [`083`](083_backlog_gpu_acceleration_enhancement_suite.md) | 2026-09-30 | Backlog Epic: Full GPU Acceleration & Hardware Encoding Enhancement Suite | Created Backlog 009 covering dynamic multi-codec NVENC/AV1, CUDA color conversion, and Skia GPU rasterization |
 
