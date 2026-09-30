@@ -1,5 +1,5 @@
-import { renderStoryVideo } from '../../../../src/renderer';
-import type { StoryConfig, StoryRenderOptions } from '../../../../src/types';
+import { renderStoryVideo } from '../../../../../src/renderer';
+import type { StoryConfig, StoryRenderOptions } from '../../../../../src/types';
 import { FFmpegManager } from '@acc/core';
 
 export interface StoryPipelineOptions extends StoryRenderOptions {
