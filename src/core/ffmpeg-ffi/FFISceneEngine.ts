@@ -4,7 +4,8 @@ import path from "path";
 import { FFI, initFFI, makeAVRational } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
 import { ptr, toArrayBuffer } from "bun:ffi";
-import type { ResolvedStoryConfig, ResolvedSceneConfig } from "../../types";
+import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../../types";
+import { drawCanvasCaptions } from "../captions-canvas";
 
 export interface SceneEngineOptions {
   scene: ResolvedSceneConfig;
@@ -49,7 +50,9 @@ export class FFISceneEngine {
         outputPath,
         width,
         height,
-        fps
+        fps,
+        captions: scene.captions,
+        captionSettings: config.settings.captions
       });
     }
   }
@@ -65,8 +68,10 @@ export class FFISceneEngine {
     width: number;
     height: number;
     fps: number;
+    captions?: CaptionConfig[];
+    captionSettings?: CaptionSettings;
   }): Promise<{ path: string; duration: number }> {
-    const { imagePath, audioPath, duration, outputPath, width, height, fps } = options;
+    const { imagePath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings } = options;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
 
@@ -98,10 +103,25 @@ export class FFISceneEngine {
     encoder.initialize();
 
     const totalFrames = Math.ceil(fps * duration);
-    const rawRgba = canvas.data();
 
-    for (let f = 0; f < totalFrames; f++) {
-      encoder.encodeRgbaFrame(rawRgba);
+    if (captions && captions.length > 0) {
+      const bgCanvas = createCanvas(width, height);
+      const bgCtx = bgCanvas.getContext("2d");
+      bgCtx.fillStyle = "#000000";
+      bgCtx.fillRect(0, 0, width, height);
+      bgCtx.drawImage(img, drawX, drawY, drawW, drawH);
+
+      for (let f = 0; f < totalFrames; f++) {
+        const timeSec = f / fps;
+        ctx.drawImage(bgCanvas, 0, 0);
+        drawCanvasCaptions(ctx, captions, timeSec, captionSettings, width, height);
+        encoder.encodeRgbaFrame(canvas.data());
+      }
+    } else {
+      const rawRgba = canvas.data();
+      for (let f = 0; f < totalFrames; f++) {
+        encoder.encodeRgbaFrame(rawRgba);
+      }
     }
 
     encoder.close();

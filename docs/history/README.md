@@ -82,3 +82,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`064`](064_phase3_filtergraph_timebase_normalization.md) | 2026-09-30 | Phase 3: FFI TimeBase Normalization & Zero-Copy Audio Remuxing | settb=AVTB, aresample, av_rescale_q audio timestamp sync, silent MP3 |
 | [`065`](065_phase4_native_audio_resampling_dsp.md) | 2026-09-30 | Phase 4: Native In-Memory Audio Resampling & DSP | libswresample FFI, direct 16kHz Float32 decode in Whisper |
 | [`066`](066_phase5_route_ffmpeg_executor_and_remove_spawn.md) | 2026-09-30 | Phase 5: Route FFmpegExecutor to FFI & 100% Deprecate Process Spawning | Zero spawn in src/, FFISceneEngine, decode+scale b-roll, pure FFI |
+| [`067`](067_canvas_caption_rendering_and_parallel_ffi_acceleration.md) | 2026-09-30 | Canvas Caption Rendering Engine & Multi-Core FFI Acceleration | Per-frame Canvas karaoke subtitles, SceneWorkerPool true parallel workers (4.1s render) |

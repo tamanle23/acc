@@ -90,8 +90,8 @@ Dự án đã hoàn toàn loại bỏ `fluent-ffmpeg` và các tiến trình con
 
 ### Requirements
 1. **Global App Directory**: Tất cả binary tải về (FFmpeg, Real-ESRGAN, AI models `.bin`) KHÔNG ĐƯỢC lưu trong thư mục dự án hay `__dirname`.
-2. **Directory Resolution**: Đặt tại thư mục Home của người dùng dưới namespace `.visual-storyteller`:
-   - `path.join(os.homedir(), '.visual-storyteller', ...)`
+2. **Directory Resolution**: Đặt tại thư mục Home của người dùng dưới namespace `.acc`:
+   - `path.join(os.homedir(), '.acc', ...)`
 3. **Lý do**:
    - Đường dẫn `__dirname` bị hạn chế/chỉ đọc trong compiled binaries.
    - Tránh lỗi phân quyền ghi (`EACCES`) khi công cụ được cài ở `/usr/local/bin` hoặc `C:\Program Files`.

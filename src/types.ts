@@ -204,11 +204,12 @@ export type ContainerFormat = 'mp4' | 'mkv' | 'mov' | 'webm';
 
 export type GpuAcceleration = 'auto' | 'nvidia' | 'none';
 
-export type UpscaleModel = 'realesrgan-x4plus' | 'realesrgan-x4plus-anime' | 'realesrnet-x4plus' | '4x-UltraSharp' | (string & {});
+export type UpscaleModel = 'realesrgan-x4plus' | 'realesrgan-x4plus-anime' | 'realesrnet-x4plus' | 'realesr-animevideov3' | '4x-UltraSharp' | (string & {});
 
 export interface UpscaleSettings {
   enabled: boolean;
   model?: UpscaleModel;
+  ratio?: number;
 }
 
 export interface BGMSettings {

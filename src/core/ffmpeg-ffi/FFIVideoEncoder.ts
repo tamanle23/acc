@@ -18,6 +18,11 @@ export class FFIVideoEncoder {
     private inAudioTimeBase: bigint = 0n;
     private customSwsCtx: bigint = 0n;
 
+    private srcData: BigUint64Array = new BigUint64Array(8);
+    private srcStride: Int32Array = new Int32Array(8);
+    private srcDataPtr: any;
+    private srcStridePtr: any;
+
     constructor(
         private width: number,
         private height: number,
@@ -146,23 +151,24 @@ export class FFIVideoEncoder {
             2, 0n, 0n, 0n // SWS_BILINEAR = 2
         ));
 
+        // 12. Pre-allocate buffer pointers for zero-allocation hot loop
+        this.srcStride[0] = this.width * 4;
+        this.srcDataPtr = ptr(this.srcData.buffer);
+        this.srcStridePtr = ptr(this.srcStride.buffer);
+
         this.isInitialized = true;
     }
 
     public encodeRgbaFrame(rgbaBuffer: Buffer | Uint8Array) {
         if (!this.isInitialized) this.initialize();
 
-        // Zero-Copy pointer pass directly to libswscale
-        const srcData = new BigUint64Array(8);
-        srcData[0] = BigInt(ptr(rgbaBuffer));
-        
-        const srcStride = new Int32Array(8);
-        srcStride[0] = this.width * 4;
+        // Zero-Copy pointer pass directly to libswscale without JS heap allocation
+        this.srcData[0] = BigInt(ptr(rgbaBuffer));
 
         FFI.swscale.sws_scale(
             this.swsCtx,
-            ptr(srcData.buffer),
-            ptr(srcStride.buffer),
+            this.srcDataPtr,
+            this.srcStridePtr,
             0,
             this.height,
             this.frame,

@@ -4,6 +4,7 @@ import type { Depth3DConfig } from '../types';
 export interface FrameBreakerState {
   img: Image;
   subjectImg: Image | null;
+  bgCanvas?: any;
   width: number;
   height: number;
   frame: number;
@@ -14,11 +15,11 @@ export interface FrameBreakerState {
 }
 
 export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
-  const { img, subjectImg, width, height, timeSec, depthConfig } = state;
+  const { img, subjectImg, width, height, timeSec, depthConfig, bgCanvas } = state;
   const style = depthConfig.frameStyle || 'card';
   const popOutIntensity = depthConfig.popOutIntensity ?? 1.15;
   const shadowEnabled = depthConfig.shadow !== false;
-  const shadowBlur = depthConfig.shadowBlur ?? 25;
+  const shadowBlur = depthConfig.shadowBlur ?? 14;
   const shadowColor = depthConfig.shadowColor || 'rgba(0, 0, 0, 0.6)';
   const floatMotion = depthConfig.floatMotion !== false;
 
@@ -65,9 +66,13 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
 
   // 1. Draw Backdrop (Dimmed Scene)
   ctx.save();
-  drawImageCover(ctx, img, 0, 0, width, height);
-  ctx.fillStyle = 'rgba(10, 10, 18, 0.65)';
-  ctx.fillRect(0, 0, width, height);
+  if (bgCanvas) {
+    ctx.drawImage(bgCanvas, 0, 0);
+  } else {
+    drawImageCover(ctx, img, 0, 0, width, height);
+    ctx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    ctx.fillRect(0, 0, width, height);
+  }
   ctx.restore();
 
   // 2. Compute Floating Motion (Oscillation)

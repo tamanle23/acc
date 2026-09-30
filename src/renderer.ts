@@ -13,6 +13,7 @@ import { AssetContext } from './core/AssetContext';
 import { RenderContext } from './core/IPlugin';
 import { UpscalerPlugin } from './plugins/UpscalerPlugin';
 import { FFmpegFilterGraph } from './core/FFmpegFilterGraph';
+import { SceneWorkerPool } from './core/SceneWorker';
 
 function getFileChecksum(filePath: string): string {
   try {
@@ -217,57 +218,103 @@ export async function renderStoryVideo(
 
     const hasAnyTransition = config.scenes.some(s => s.transition?.enabled) || config.settings.transition?.enabled;
 
-    const segments = await runConcurrentPool(
-      config.scenes,
-      activeConcurrency,
-      async (scene, i) => {
-        const audioDuration = await getMediaDuration(scene.resolvedAudio);
-        const duration = getSceneDuration(scene, audioDuration);
+    let workerPool: SceneWorkerPool | null = null;
+    if (activeConcurrency > 1) {
+      try {
+        workerPool = new SceneWorkerPool(activeConcurrency, FFmpegManager.getBinDir());
+        await workerPool.initialize();
+      } catch (err: any) {
+        Logger.warn('Pipeline', `Worker pool initialization failed: ${err.message}. Running in main thread.`);
+        workerPool = null;
+      }
+    }
 
-        let assPath: string | null = null;
-        if (scene.captions && scene.captions.length > 0) {
-          assPath = path.join(tempDir, `scene_${i}.ass`);
-          const assContent = generateAssContent(scene.captions, captions, width, height);
-          fs.writeFileSync(assPath, assContent, 'utf-8');
-        }
+    let segments;
+    try {
+      segments = await runConcurrentPool(
+        config.scenes,
+        activeConcurrency,
+        async (scene, i) => {
+          const audioDuration = await getMediaDuration(scene.resolvedAudio);
+          const duration = getSceneDuration(scene, audioDuration);
 
-        const segmentPath = path.join(tempDir, `scene_${i}.${container}`);
-        const startTime = Date.now();
-        
-        // Determine transition padding
-        let paddingTime = 0;
-        const tConfig = scene.transition || config.settings.transition;
-        if (tConfig?.enabled && tConfig.audioBehavior === 'pad' && i < totalScenes - 1) {
-          paddingTime = tConfig.duration || 1.0;
-        }
+          let assPath: string | null = null;
+          if (scene.captions && scene.captions.length > 0) {
+            assPath = path.join(tempDir, `scene_${i}.ass`);
+            const assContent = generateAssContent(scene.captions, captions, width, height);
+            fs.writeFileSync(assPath, assContent, 'utf-8');
+          }
 
-        const pauseTime = scene.pauseAfter !== undefined ? scene.pauseAfter : (config.settings.pauseBetweenScenes || 0);
-        if (pauseTime > 0 && i < totalScenes - 1) {
-          paddingTime += pauseTime;
-        }
+          const segmentPath = path.join(tempDir, `scene_${i}.${container}`);
+          const startTime = Date.now();
+          
+          // Determine transition padding
+          let paddingTime = 0;
+          const tConfig = scene.transition || config.settings.transition;
+          if (tConfig?.enabled && tConfig.audioBehavior === 'pad' && i < totalScenes - 1) {
+            paddingTime = tConfig.duration || 1.0;
+          }
 
-        const currentImagePath = renderContext.assets.getPreferred(`scene_${i}`, ['image:upscaled', 'image:original']) || scene.resolvedImage;
-        const sceneToRender = { ...scene, resolvedImage: currentImagePath };
+          const pauseTime = scene.pauseAfter !== undefined ? scene.pauseAfter : (config.settings.pauseBetweenScenes || 0);
+          if (pauseTime > 0 && i < totalScenes - 1) {
+            paddingTime += pauseTime;
+          }
 
-        const depthConfig = sceneToRender.depth3d || config.settings.depth3d;
-        let result;
+          const currentImagePath = renderContext.assets.getPreferred(`scene_${i}`, ['image:upscaled', 'image:original']) || scene.resolvedImage;
+          const sceneToRender = { ...scene, resolvedImage: currentImagePath };
 
-        if (depthConfig?.enabled !== false && (depthConfig?.enabled || depthConfig?.mode)) {
-          const modeName = depthConfig.mode || 'frame_breaker';
-          Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
-          try {
-            result = await renderDepth3DScene({
+          const depthConfig = sceneToRender.depth3d || config.settings.depth3d;
+          const is3D = depthConfig?.enabled !== false && (depthConfig?.enabled || depthConfig?.mode);
+          const modeName = depthConfig?.mode || 'frame_breaker';
+
+          if (is3D) {
+            Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
+          } else {
+            Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
+          }
+
+          let result;
+          if (workerPool) {
+            result = await workerPool.runTask({
+              sceneIndex: i,
               scene: sceneToRender,
               duration,
               assPath,
               config,
               outputPath: segmentPath,
+              fallbackImagePath,
               fallbackAudioPath,
               paddingTime,
-              useHighQualityIntermediate: hasAnyTransition
+              hasAnyTransition,
+              is3D: !!is3D
             });
-          } catch (depthErr: any) {
-            Logger.warn('Pipeline', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
+          } else if (is3D) {
+            try {
+              result = await renderDepth3DScene({
+                scene: sceneToRender,
+                duration,
+                assPath,
+                config,
+                outputPath: segmentPath,
+                fallbackAudioPath,
+                paddingTime,
+                useHighQualityIntermediate: hasAnyTransition
+              });
+            } catch (depthErr: any) {
+              Logger.warn('Pipeline', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
+              result = await renderSingleScene(
+                sceneToRender,
+                duration,
+                assPath,
+                config,
+                segmentPath,
+                fallbackImagePath,
+                fallbackAudioPath,
+                paddingTime,
+                hasAnyTransition
+              );
+            }
+          } else {
             result = await renderSingleScene(
               sceneToRender,
               duration,
@@ -280,27 +327,19 @@ export async function renderStoryVideo(
               hasAnyTransition
             );
           }
-        } else {
-          Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
-          result = await renderSingleScene(
-            sceneToRender,
-            duration,
-            assPath,
-            config,
-            segmentPath,
-            fallbackImagePath,
-            fallbackAudioPath,
-            paddingTime,
-            hasAnyTransition
-          );
+
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+          console.log(`✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
+
+          return { path: result.path, duration: result.duration, transition: scene.transition };
         }
-
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        console.log(`✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
-
-        return { path: result.path, duration: result.duration, transition: scene.transition };
+      );
+    } finally {
+      if (workerPool) {
+        workerPool.terminate();
+        workerPool = null;
       }
-    );
+    }
 
     console.log('\nConcatenating scenes into final video...');
     

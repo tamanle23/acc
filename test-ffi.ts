@@ -2,7 +2,7 @@ import { dlopen, FFIType, ptr, toArrayBuffer } from "bun:ffi";
 import path from "path";
 import os from "os";
 
-const binDir = path.join(os.homedir(), '.visual-storyteller', 'bin', 'ffmpeg-shared', 'ffmpeg-master-latest-win64-gpl-shared', 'bin');
+const binDir = path.join(os.homedir(), '.acc', 'bin', 'ffmpeg-shared', 'ffmpeg-master-latest-win64-gpl-shared', 'bin');
 const avcodecPath = path.join(binDir, 'avcodec-63.dll');
 
 const avcodec = dlopen(avcodecPath, {

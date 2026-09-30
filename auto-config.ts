@@ -417,7 +417,7 @@ async function main() {
 
   // 3c. Chọn AI Upscaling
   let enableUpscale = prevConfig?.settings.upscale?.enabled;
-  let upscaleModel: any = 'realesrgan-x4plus';
+  let upscaleModel: any = shouldMerge ? prevConfig?.settings.upscale?.model : 'realesr-animevideov3';
   if (!shouldMerge) {
     console.log('\n--- AI AUTO-UPSCALE ---');
     const upscaleAns = await askQuestion('Bạn có muốn dùng AI (Real-ESRGAN/UltraSharp) để làm nét ảnh trước khi render không? (y/N) [mặc định: N]: ');
@@ -426,9 +426,11 @@ async function main() {
       console.log('  [1] Real-ESRGAN (Đa dụng) [Mặc định]');
       console.log('  [2] 4x-UltraSharp (Siêu nét, ảnh thật)');
       console.log('  [3] Real-ESRGAN-Anime (Hoạt hình/2D)');
-      const modelAns = await askQuestion('-> Chọn mô hình (1-3) [mặc định: 1]: ');
+      console.log('  [4] Real-ESRGAN-AnimeVideo (Video với batched frames)');
+      const modelAns = await askQuestion('-> Chọn mô hình (1-3) [mặc định: 4]: ');
       if (modelAns.trim() === '2') upscaleModel = '4x-UltraSharp';
       else if (modelAns.trim() === '3') upscaleModel = 'realesrgan-x4plus-anime';
+      else if (modelAns.trim() === '4') upscaleModel = 'realesr-animevideov3';
     }
   }
 

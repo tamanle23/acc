@@ -8,6 +8,7 @@ import { drawParallaxFrame } from './parallax';
 import { drawSandwichFrame } from './sandwich';
 import { drawDepthMeshFrame } from './depth-mesh';
 import { drawWigglegramFrame } from './wigglegram';
+import { drawCanvasCaptions } from '../core/captions-canvas';
 
 export interface Depth3DSceneOptions {
   scene: ResolvedSceneConfig;
@@ -53,6 +54,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   let cellW = width / gridX;
   let cellH = height / gridY;
   let baseCanvas: Canvas | null = null;
+  let bgCanvas: Canvas | null = null;
 
   if (mode === 'parallax_25d' || mode === 'parallax_dolly') {
     if (depthConfig.parallax?.backgroundImage && fs.existsSync(depthConfig.parallax.backgroundImage)) {
@@ -110,6 +112,12 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     baseCanvas = createCanvas(width, height);
     const bCtx = baseCanvas.getContext('2d');
     drawImageCover(bCtx, img, 0, 0, width, height);
+  } else if (mode === 'frame_breaker') {
+    bgCanvas = createCanvas(width, height);
+    const bgCtx = bgCanvas.getContext('2d');
+    drawImageCover(bgCtx, img, 0, 0, width, height);
+    bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    bgCtx.fillRect(0, 0, width, height);
   }
 
   // 3. Setup Canvas and Zero-Copy FFIVideoEncoder Pipeline
@@ -162,10 +170,13 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
           case 'frame_breaker':
           default:
             drawFrameBreakerFrame(ctx, {
-              img, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig
+              img, subjectImg, bgCanvas, width, height, frame, totalFrames, timeSec, progress, depthConfig
             });
             break;
         }
+
+        // Draw Canvas Subtitles / Captions
+        drawCanvasCaptions(ctx, scene.captions, timeSec, config.settings.captions, width, height);
 
         // ZERO-COPY FFI INGESTION
         const buffer = canvas.data();

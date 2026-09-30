@@ -4,7 +4,7 @@
 Implement Phase 1 of the Zero-Copy 4K implementation plan by refactoring `FFmpegManager` to download and manage FFmpeg **Shared Builds** instead of static builds. Shared builds contain `.dll` / `.so` libraries required for `bun:ffi` bindings.
 
 ## 2. Changes
-- Modified `src/core/FFmpegManager.ts` to point to `os.homedir() + '.visual-storyteller/bin/ffmpeg-shared'`.
+- Modified `src/core/FFmpegManager.ts` to point to `os.homedir() + '.acc/bin/ffmpeg-shared'`.
 - Changed download URL to BtbN's `ffmpeg-master-latest-win64-gpl-shared.zip`.
 - Added logic to find the `bin` directory containing `.dll` libraries and exposed it via `FFmpegManager.getBinDir()`.
 - Updated fallback paths for Linux/Mac to recommend `libavcodec-dev`, `libavformat-dev`, etc.

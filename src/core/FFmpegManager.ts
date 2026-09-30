@@ -21,15 +21,21 @@ export class FFmpegManager {
   }
 
   public static getBinDir(): string {
-     if (!this.binDirPath) throw new Error('FFmpegManager.prepare() must be called before getBinDir()');
-     return this.binDirPath;
+    if (!this.binDirPath) throw new Error('FFmpegManager.prepare() must be called before getBinDir()');
+    return this.binDirPath;
+  }
+
+  public static setBinDir(binDir: string): void {
+    this.binDirPath = binDir;
+    this.ffmpegPath = path.join(binDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+    this.ffprobePath = path.join(binDir, process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe');
   }
 
   private static findBinaries(dir: string): { ffmpeg: string | null, ffprobe: string | null, binDir: string | null } {
     let ffmpeg = null;
     let ffprobe = null;
     let binDir = null;
-    
+
     if (!fs.existsSync(dir)) return { ffmpeg, ffprobe, binDir };
 
     const search = (currentDir: string) => {
@@ -41,14 +47,14 @@ export class FFmpegManager {
         } else {
           const name = file.toLowerCase();
           if (name === 'ffmpeg.exe' || name === 'ffmpeg') {
-              ffmpeg = fullPath;
-              binDir = currentDir;
+            ffmpeg = fullPath;
+            binDir = currentDir;
           }
           if (name === 'ffprobe.exe' || name === 'ffprobe') ffprobe = fullPath;
         }
       }
     };
-    
+
     search(dir);
     return { ffmpeg, ffprobe, binDir };
   }
@@ -58,7 +64,7 @@ export class FFmpegManager {
 
     console.log('[FFmpegManager] Checking FFmpeg installation...');
     const platform = process.platform;
-    const appDir = path.join(os.homedir(), '.visual-storyteller');
+    const appDir = path.join(os.homedir(), '.acc');
     const targetDir = path.join(appDir, 'bin', 'ffmpeg-shared');
 
     // 1. Check Local Shared Fallback Installation first (since we now REQUIRE shared libs for FFI)
@@ -87,11 +93,11 @@ export class FFmpegManager {
     // 3. Windows Auto-Download (GPL NVENC SHARED Build from BtbN)
     console.log('\n[FFmpegManager] Shared FFmpeg not found. Automatically downloading full GPU-enabled Shared Windows build...');
     const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip';
-    
+
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
-    
+
     const tempZipPath = path.join(os.tmpdir(), `ffmpeg_shared_${Date.now()}.zip`);
 
     await new Promise<void>((resolve, reject) => {
@@ -101,21 +107,21 @@ export class FFmpegManager {
       const request = https.get(url, (response) => {
         if (response.statusCode === 301 || response.statusCode === 302) {
           https.get(response.headers.location!, (redirectResponse) => {
-             totalBytes = parseInt(redirectResponse.headers['content-length'] || '0', 10);
-             const file = fs.createWriteStream(tempZipPath);
-             redirectResponse.pipe(file);
-             
-             redirectResponse.on('data', (chunk) => {
-                downloadedBytes += chunk.length;
-                const percent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-                process.stdout.write(`\rDownloading FFmpeg Shared... ${percent}% (${(downloadedBytes/1024/1024).toFixed(1)}MB)`);
-             });
+            totalBytes = parseInt(redirectResponse.headers['content-length'] || '0', 10);
+            const file = fs.createWriteStream(tempZipPath);
+            redirectResponse.pipe(file);
 
-             file.on('finish', () => {
-               console.log('\nDownload complete.');
-               file.close();
-               resolve();
-             });
+            redirectResponse.on('data', (chunk) => {
+              downloadedBytes += chunk.length;
+              const percent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
+              process.stdout.write(`\rDownloading FFmpeg Shared... ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(1)}MB)`);
+            });
+
+            file.on('finish', () => {
+              console.log('\nDownload complete.');
+              file.close();
+              resolve();
+            });
           }).on('error', reject);
         }
       });
@@ -140,7 +146,7 @@ export class FFmpegManager {
     this.ffmpegPath = downloadedBins.ffmpeg;
     this.ffprobePath = downloadedBins.ffprobe;
     this.binDirPath = downloadedBins.binDir;
-    
+
     console.log(`[FFmpegManager] Successfully installed local Shared FFmpeg at: ${this.binDirPath}`);
   }
 }

@@ -19,20 +19,20 @@ export const CUSTOM_MODEL_URLS: Record<string, { param: string, bin: string }> =
 
 export function getUpscalerBinaryPath(): string {
   // Dùng thư mục home của User để an toàn cho cả bản dev và bản compile/distribution
-  const appDir = path.join(os.homedir(), '.visual-storyteller');
+  const appDir = path.join(os.homedir(), '.acc');
   const ext = process.platform === 'win32' ? '.exe' : '';
   return path.join(appDir, 'bin', 'upscaler', `realesrgan-ncnn-vulkan${ext}`);
 }
 
 export function getModelsPath(): string {
-  const appDir = path.join(os.homedir(), '.visual-storyteller');
+  const appDir = path.join(os.homedir(), '.acc');
   return path.join(appDir, 'bin', 'upscaler', 'models');
 }
 
 async function downloadFile(url: string, dest: string): Promise<void> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-  
+
   const buffer = await response.arrayBuffer();
   fs.writeFileSync(dest, Buffer.from(buffer));
 }
@@ -45,7 +45,7 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
   if (!fs.existsSync(upscalerDir)) {
     fs.mkdirSync(upscalerDir, { recursive: true });
   }
-  
+
   if (!fs.existsSync(modelsPath)) {
     fs.mkdirSync(modelsPath, { recursive: true });
   }
@@ -54,15 +54,15 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
     console.log(`\n[Upscaler] Binary not found. Starting automated download for ${process.platform}...`);
     const zipUrl = (UPSCALER_RELEASES as any)[process.platform] || UPSCALER_RELEASES.linux;
     const tempZipPath = path.join(os.tmpdir(), `realesrgan_${Date.now()}.zip`);
-    
+
     try {
       console.log(`[Upscaler] Downloading Real-ESRGAN engine (~15MB) from GitHub...`);
       await downloadFile(zipUrl, tempZipPath);
-      
+
       console.log(`[Upscaler] Extracting engine...`);
       await extractZip(tempZipPath, { dir: upscalerDir });
       fs.unlinkSync(tempZipPath);
-      
+
       if (process.platform !== 'win32') {
         fs.chmodSync(binaryPath, '755');
       }
@@ -98,7 +98,7 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
   if (requestedModel && CUSTOM_MODEL_URLS[requestedModel]) {
     const paramDest = path.join(modelsPath, `${requestedModel}.param`);
     const binDest = path.join(modelsPath, `${requestedModel}.bin`);
-    
+
     if (!fs.existsSync(paramDest) || !fs.existsSync(binDest)) {
       console.log(`\n[Upscaler] Model ${requestedModel} chưa có sẵn. Tự động tải từ Cloud...`);
       const urls = CUSTOM_MODEL_URLS[requestedModel];
@@ -121,9 +121,10 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
 import crypto from 'crypto';
 
 export function upscaleImage(
-  inputPath: string, 
+  inputPath: string,
   outputPath: string,
-  modelName: string = 'realesrgan-x4plus'
+  modelName: string = 'realesrgan-x4plus',
+  ratio: number = 2
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
@@ -145,7 +146,8 @@ export function upscaleImage(
       const args = [
         '-i', runInput,
         '-o', runOutput,
-        '-n', modelName
+        '-n', modelName,
+        '-s', ratio,
       ];
 
       const customModelPath = path.join(modelsDir, `${modelName}.param`);
@@ -158,8 +160,8 @@ export function upscaleImage(
           console.error(`[Upscaler] Failed to upscale ${inputPath}`);
           console.error(stderr);
           if (hasUnicode) {
-             try { fs.unlinkSync(runInput); } catch(e){}
-             try { fs.unlinkSync(runOutput); } catch(e){}
+            try { fs.unlinkSync(runInput); } catch (e) { }
+            try { fs.unlinkSync(runOutput); } catch (e) { }
           }
           return reject(error);
         }
@@ -167,14 +169,14 @@ export function upscaleImage(
         if (hasUnicode) {
           try {
             fs.copyFileSync(runOutput, outputPath);
-          } catch(e) {
+          } catch (e) {
             return reject(e);
           } finally {
-            try { fs.unlinkSync(runInput); } catch(e){}
-            try { fs.unlinkSync(runOutput); } catch(e){}
+            try { fs.unlinkSync(runInput); } catch (e) { }
+            try { fs.unlinkSync(runOutput); } catch (e) { }
           }
         }
-        
+
         resolve();
       });
     } catch (err) {
