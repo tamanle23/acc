@@ -1,0 +1,8 @@
+{
+  "name": "@acc/core",
+  "version": "1.0.0",
+  "description": "Native media processing foundation (FFmpegManager, bun:ffi zero-copy, AssetContext, logger)",
+  "main": "src/index.ts",
+  "type": "module",
+  "private": true
+}

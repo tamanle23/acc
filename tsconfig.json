@@ -8,6 +8,13 @@
     "types": ["bun", "node"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@acc/core": ["packages/core/src/index.ts"],
+      "@acc/core/*": ["packages/core/src/*"],
+      "@acc/ir": ["packages/ir/src/index.ts"],
+      "@acc/ir/*": ["packages/ir/src/*"]
+    }
   }
 }
