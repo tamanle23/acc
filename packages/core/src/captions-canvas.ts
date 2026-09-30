@@ -1,5 +1,5 @@
-import type { CaptionConfig, CaptionSettings } from '../types';
-import { PRESETS } from '../styles';
+import type { CaptionConfig, CaptionSettings } from '../../../src/types';
+import { PRESETS } from '../../../src/styles';
 
 export function groupCaptionsIntoPhrases(captions: CaptionConfig[], wordsPerPhrase: number): CaptionConfig[][] {
   if (wordsPerPhrase <= 1) return captions.map(c => [c]);

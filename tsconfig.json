@@ -16,7 +16,9 @@
       "@acc/ir": ["packages/ir/src/index.ts"],
       "@acc/ir/*": ["packages/ir/src/*"],
       "@acc/proto": ["packages/proto/src/index.ts"],
-      "@acc/proto/*": ["packages/proto/src/*"]
+      "@acc/proto/*": ["packages/proto/src/*"],
+      "@acc/exporters": ["packages/exporters/src/index.ts"],
+      "@acc/exporters/*": ["packages/exporters/src/*"]
     }
   }
 }

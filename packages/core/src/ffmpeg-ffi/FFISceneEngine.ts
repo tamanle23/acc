@@ -3,8 +3,7 @@ import fs from "fs";
 import path from "path";
 import { FFI, initFFI, makeAVRational } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
-import { ptr, toArrayBuffer } from "bun:ffi";
-import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../../types";
+import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../../../../src/types";
 import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../captions-canvas";
 
 export interface SceneEngineOptions {

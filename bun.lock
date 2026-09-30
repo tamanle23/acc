@@ -33,12 +33,29 @@
         "@acc/ir": "workspace:*",
       },
     },
+    "apps/python-backend": {
+      "name": "@acc/python-backend",
+      "version": "1.0.0",
+    },
     "packages/core": {
       "name": "@acc/core",
       "version": "1.0.0",
     },
+    "packages/exporters": {
+      "name": "@acc/exporters",
+      "version": "1.0.0",
+      "dependencies": {
+        "@acc/core": "workspace:*",
+        "@acc/ir": "workspace:*",
+        "@napi-rs/canvas": "^1.0.9",
+      },
+    },
     "packages/ir": {
       "name": "@acc/ir",
+      "version": "1.0.0",
+    },
+    "packages/proto": {
+      "name": "@acc/proto",
       "version": "1.0.0",
     },
   },
@@ -47,7 +64,13 @@
 
     "@acc/core": ["@acc/core@workspace:packages/core"],
 
+    "@acc/exporters": ["@acc/exporters@workspace:packages/exporters"],
+
     "@acc/ir": ["@acc/ir@workspace:packages/ir"],
+
+    "@acc/proto": ["@acc/proto@workspace:packages/proto"],
+
+    "@acc/python-backend": ["@acc/python-backend@workspace:apps/python-backend"],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.11.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA=="],
 
