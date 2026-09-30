@@ -105,6 +105,55 @@ export class GRPCAIStrategy implements IAIClientStrategy {
     });
   }
 
+  public async generateStructuredJson(
+    prompt: string,
+    jsonSchema = '',
+    systemInstruction = '',
+    temperature = 0.2
+  ): Promise<{ jsonOutput: string; tokensUsed: number; latencyMs: number }> {
+    this.initClients();
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 10000);
+      this.llmClient.GenerateStructuredJson(
+        { prompt, json_schema: jsonSchema, system_instruction: systemInstruction, temperature },
+        { deadline },
+        (err: any, response: any) => {
+          if (err) return reject(err);
+          resolve({
+            jsonOutput: response.json_output,
+            tokensUsed: response.tokens_used,
+            latencyMs: Number(response.latency_ms),
+          });
+        }
+      );
+    });
+  }
+
+  public async synthesizeSpeech(
+    text: string,
+    voiceId = 'af_heart',
+    speed = 1.0,
+    modelStrategy = 'kokoro'
+  ): Promise<{ audioBuffer: Buffer; sampleRate: number; channels: number; durationMs: number }> {
+    this.initClients();
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 10000);
+      this.ttsClient.Synthesize(
+        { text, voice_id: voiceId, speed, model_strategy: modelStrategy },
+        { deadline },
+        (err: any, response: any) => {
+          if (err) return reject(err);
+          resolve({
+            audioBuffer: Buffer.from(response.audio_data),
+            sampleRate: response.sample_rate,
+            channels: response.channels,
+            durationMs: Number(response.duration_ms),
+          });
+        }
+      );
+    });
+  }
+
   /**
    * Auto-bootstraps the Python gRPC daemon if it is not currently running.
    */
@@ -164,6 +213,23 @@ export class FallbackAIStrategy implements IAIClientStrategy {
   public async segmentSubject(): Promise<{ maskBuffer: Buffer; boundingBox: any; confidence: number }> {
     return { maskBuffer: Buffer.alloc(0), boundingBox: { x: 0, y: 0, width: 1, height: 1, confidence: 1 }, confidence: 1 };
   }
+  public async generateStructuredJson(
+    prompt: string
+  ): Promise<{ jsonOutput: string; tokensUsed: number; latencyMs: number }> {
+    const payload = {
+      title: prompt.split('\n')[0].slice(0, 80) || 'Breaking Event Alert',
+      key_points: [prompt.slice(0, 100) || 'Alert details incoming', 'Automated data stream processing active'],
+      urgency_level: 'medium',
+      voiceover_script: `Breaking alert: ${prompt.slice(0, 120)}`,
+      category: 'tech'
+    };
+    return { jsonOutput: JSON.stringify(payload, null, 2), tokensUsed: 35, latencyMs: 5 };
+  }
+  public async synthesizeSpeech(
+    text: string
+  ): Promise<{ audioBuffer: Buffer; sampleRate: number; channels: number; durationMs: number }> {
+    return { audioBuffer: Buffer.alloc(0), sampleRate: 24000, channels: 1, durationMs: 2500 };
+  }
 }
 
 export class IPCFacade {
@@ -208,6 +274,32 @@ export class IPCFacade {
       return this.strategy.segmentSubject(imageBufferOrPath, mode);
     }
     return (this.strategy as FallbackAIStrategy).segmentSubject();
+  }
+
+  public async generateStructuredJson(
+    prompt: string,
+    jsonSchema = '',
+    systemInstruction = '',
+    temperature = 0.2
+  ): Promise<{ jsonOutput: string; tokensUsed: number; latencyMs: number }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return (this.strategy as GRPCAIStrategy).generateStructuredJson(prompt, jsonSchema, systemInstruction, temperature);
+    }
+    return (this.strategy as FallbackAIStrategy).generateStructuredJson(prompt);
+  }
+
+  public async synthesizeSpeech(
+    text: string,
+    voiceId = 'af_heart',
+    speed = 1.0,
+    modelStrategy = 'kokoro'
+  ): Promise<{ audioBuffer: Buffer; sampleRate: number; channels: number; durationMs: number }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return (this.strategy as GRPCAIStrategy).synthesizeSpeech(text, voiceId, speed, modelStrategy);
+    }
+    return (this.strategy as FallbackAIStrategy).synthesizeSpeech(text);
   }
 
   public async pingAllServices(message = 'test'): Promise<{ tts: string; vision: string; llm: string }> {

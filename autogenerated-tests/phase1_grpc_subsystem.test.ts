@@ -107,7 +107,8 @@ describe('Phase 1: Protobuf Contracts & gRPC AI Subsystem Deep Test Suite', () =
       });
 
       expect(res).toBeDefined();
-      expect(res.json_output).toBe('{}');
+      expect(() => JSON.parse(res.json_output)).not.toThrow();
+      expect(typeof JSON.parse(res.json_output)).toBe('object');
     });
   });
 

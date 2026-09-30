@@ -23,6 +23,11 @@ import llm_pb2_grpc
 
 
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
+    def __init__(self):
+        super().__init__()
+        from services.tts_engine import TTSEngine
+        self.engine = TTSEngine.get_instance()
+
     def Ping(self, request, context):
         current_time = int(time.time() * 1000)
         return common_pb2.PingResponse(
@@ -32,13 +37,23 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         )
 
     def Synthesize(self, request, context):
-        # Stub response for Phase 1 verification
-        return tts_pb2.TTSResponse(
-            audio_data=b"",
-            sample_rate=24000,
-            channels=1,
-            duration_ms=0,
-        )
+        try:
+            audio_bytes, sr, ch, dur = self.engine.synthesize(
+                request.text,
+                request.voice_id or "af_heart",
+                request.speed or 1.0,
+                request.model_strategy or "kokoro"
+            )
+            return tts_pb2.TTSResponse(
+                audio_data=audio_bytes,
+                sample_rate=sr,
+                channels=ch,
+                duration_ms=dur,
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return tts_pb2.TTSResponse()
 
 
 class VisionService(vision_pb2_grpc.VisionServiceServicer):
@@ -85,6 +100,11 @@ class VisionService(vision_pb2_grpc.VisionServiceServicer):
 
 
 class LLMService(llm_pb2_grpc.LLMServiceServicer):
+    def __init__(self):
+        super().__init__()
+        from services.llm_engine import LLMEngine
+        self.engine = LLMEngine.get_instance()
+
     def Ping(self, request, context):
         current_time = int(time.time() * 1000)
         return common_pb2.PingResponse(
@@ -94,11 +114,22 @@ class LLMService(llm_pb2_grpc.LLMServiceServicer):
         )
 
     def GenerateStructuredJson(self, request, context):
-        return llm_pb2.LLMJsonResponse(
-            json_output="{}",
-            tokens_used=0,
-            latency_ms=0,
-        )
+        try:
+            json_str, tokens, lat = self.engine.generate_structured_json(
+                request.prompt,
+                request.json_schema,
+                request.system_instruction,
+                request.temperature
+            )
+            return llm_pb2.LLMJsonResponse(
+                json_output=json_str,
+                tokens_used=tokens,
+                latency_ms=lat,
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return llm_pb2.LLMJsonResponse(json_output="{}", tokens_used=0, latency_ms=0)
 
 
 def serve(host="127.0.0.1", port=50051):
