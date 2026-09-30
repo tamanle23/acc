@@ -18,8 +18,8 @@ export class FFIVideoEncoder {
     private inAudioTimeBase: bigint = 0n;
     private customSwsCtx: bigint = 0n;
 
-    private srcData: BigUint64Array = new BigUint64Array(8);
-    private srcStride: Int32Array = new Int32Array(8);
+    private srcDataC: bigint = 0n;
+    private srcStrideC: bigint = 0n;
 
     constructor(
         private width: number,
@@ -149,8 +149,16 @@ export class FFIVideoEncoder {
             2, 0n, 0n, 0n // SWS_BILINEAR = 2
         ));
 
-        // 12. Pre-allocate buffer pointers for zero-allocation hot loop
-        this.srcStride[0] = this.width * 4;
+        // 12. Pre-allocate native C memory for zero-allocation, nursery-immune sws_scale
+        this.srcDataC = BigInt(FFI.avutil.av_malloc(64n));
+        this.srcStrideC = BigInt(FFI.avutil.av_malloc(32n));
+
+        const strideView = new DataView(toArrayBuffer(this.srcStrideC, 0, 32));
+        for (let i = 0; i < 8; i++) strideView.setInt32(i * 4, 0, true);
+        strideView.setInt32(0, this.width * 4, true);
+
+        const dataView = new DataView(toArrayBuffer(this.srcDataC, 0, 64));
+        for (let i = 0; i < 8; i++) dataView.setBigUint64(i * 8, 0n, true);
 
         this.isInitialized = true;
     }
@@ -158,13 +166,14 @@ export class FFIVideoEncoder {
     public encodeRgbaFrame(rgbaBuffer: Buffer | Uint8Array) {
         if (!this.isInitialized) this.initialize();
 
-        // Zero-Copy pointer pass directly to libswscale without JS heap allocation
-        this.srcData[0] = BigInt(ptr(rgbaBuffer));
+        // Write raw pointer directly into native C memory buffer
+        const dataView = new DataView(toArrayBuffer(this.srcDataC, 0, 64));
+        dataView.setBigUint64(0, BigInt(ptr(rgbaBuffer)), true);
 
         FFI.swscale.sws_scale(
             this.swsCtx,
-            ptr(this.srcData.buffer),
-            ptr(this.srcStride.buffer),
+            this.srcDataC,
+            this.srcStrideC,
             0,
             this.height,
             this.frame,
@@ -317,6 +326,18 @@ export class FFIVideoEncoder {
         if (this.swsCtx) {
             FFI.swscale.sws_freeContext(this.swsCtx);
             this.swsCtx = 0n;
+        }
+        if (this.customSwsCtx) {
+            FFI.swscale.sws_freeContext(this.customSwsCtx);
+            this.customSwsCtx = 0n;
+        }
+        if (this.srcDataC) {
+            FFI.avutil.av_free(this.srcDataC);
+            this.srcDataC = 0n;
+        }
+        if (this.srcStrideC) {
+            FFI.avutil.av_free(this.srcStrideC);
+            this.srcStrideC = 0n;
         }
 
         this.isInitialized = false;

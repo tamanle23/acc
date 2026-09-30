@@ -34,6 +34,7 @@ export function initFFI() {
         av_strerror: { args: [FFIType.i32, FFIType.ptr, FFIType.i64], returns: FFIType.i32 },
         av_rescale_q: { args: [FFIType.i64, FFIType.i64, FFIType.i64], returns: FFIType.i64 }, // Actually uses AVRational structs (8 bytes), we can pass them as i64 in bun:ffi (2x i32)
         av_malloc: { args: [FFIType.i64], returns: FFIType.ptr },
+        av_free: { args: [FFIType.ptr], returns: FFIType.void },
         av_freep: { args: [FFIType.ptr], returns: FFIType.void },
     });
 

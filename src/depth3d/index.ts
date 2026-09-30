@@ -181,6 +181,14 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         // ZERO-COPY FFI INGESTION
         const buffer = canvas.data();
         encoder.encodeRgbaFrame(buffer);
+
+        // Periodic yield to allow event loop & GC reclamation of dereferenced frames
+        if (frame % 15 === 0) {
+          if (typeof Bun !== 'undefined' && (Bun as any).gc) {
+            (Bun as any).gc(true);
+          }
+          await new Promise(r => setTimeout(r, 0));
+        }
       }
 
       encoder.close();

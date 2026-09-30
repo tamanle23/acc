@@ -417,18 +417,24 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
 
   if (typeof userConcurrency === 'number' && userConcurrency >= 1) {
     resolvedConcurrency = Math.floor(userConcurrency);
+    const is4K = (width && width >= 3840) || (height && height >= 2160);
+    if (is4K && resolvedConcurrency > 3) {
+      console.warn(`⚠️ [Concurrency] 4K resolution detected with high concurrency (${resolvedConcurrency}). Clamping to 3 parallel workers to prevent RAM and NVENC session exhaustion.`);
+      resolvedConcurrency = 3;
+    }
   } else {
-    // 'auto' mode: calculate optimal parallel slots
+    // 'auto' mode: calculate optimal parallel slots based on CPU, GPU, and frame resolution
     const cpus = os.cpus()?.length || 4;
     const hasNvidia = checkNvidiaSupport();
     const isGpu = gpuAcceleration !== 'none' && hasNvidia;
+    const is4K = (width && width >= 3840) || (height && height >= 2160);
 
     if (isGpu) {
-      // GPU NVENC can comfortably encode 4-6 streams simultaneously while CPU feeds libass subtitles
-      resolvedConcurrency = Math.min(Math.max(cpus, 2), 6);
+      // GPU NVENC can comfortably encode 4-6 streams in 1080p, but 4K (33.2MB/frame) must be capped to 2
+      resolvedConcurrency = Math.min(Math.max(cpus, 2), is4K ? 2 : 6);
     } else {
       // CPU software encoding (libx264): min(cpus, 4)
-      resolvedConcurrency = Math.min(Math.max(Math.floor(cpus / 2), 1), 4);
+      resolvedConcurrency = Math.min(Math.max(Math.floor(cpus / 2), 1), is4K ? 2 : 4);
     }
   }
 

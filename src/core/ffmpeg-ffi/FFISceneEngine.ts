@@ -5,7 +5,7 @@ import { FFI, initFFI, makeAVRational } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
 import { ptr, toArrayBuffer } from "bun:ffi";
 import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../../types";
-import { drawCanvasCaptions } from "../captions-canvas";
+import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../captions-canvas";
 
 export interface SceneEngineOptions {
   scene: ResolvedSceneConfig;
@@ -111,16 +111,63 @@ export class FFISceneEngine {
       bgCtx.fillRect(0, 0, width, height);
       bgCtx.drawImage(img, drawX, drawY, drawW, drawH);
 
+      const wordsPerPhrase = captionSettings?.wordsPerPhrase ?? 1;
+      const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
+
+      let lastPhraseIdx = -2;
+      let lastActiveWordIdx = -2;
+      let cachedRgbaBuffer: Buffer | null = null;
+
       for (let f = 0; f < totalFrames; f++) {
         const timeSec = f / fps;
-        ctx.drawImage(bgCanvas, 0, 0);
-        drawCanvasCaptions(ctx, captions, timeSec, captionSettings, width, height);
-        encoder.encodeRgbaFrame(canvas.data());
+
+        let activePhraseIdx = -1;
+        let activeWordIdx = -1;
+
+        for (let pIdx = 0; pIdx < phrases.length; pIdx++) {
+          const phrase = phrases[pIdx];
+          const pStart = phrase[0].start;
+          const pEnd = phrase[phrase.length - 1].end + 0.2;
+          if (timeSec >= pStart && timeSec <= pEnd) {
+            activePhraseIdx = pIdx;
+            for (let wIdx = 0; wIdx < phrase.length; wIdx++) {
+              const word = phrase[wIdx];
+              const nextStart = (wIdx === phrase.length - 1) ? (word.end + 0.25) : phrase[wIdx + 1].start;
+              if (timeSec >= word.start && timeSec < nextStart) {
+                activeWordIdx = wIdx;
+                break;
+              }
+            }
+            break;
+          }
+        }
+
+        // Only redraw canvas and allocate new buffer if the active subtitle state changed!
+        if (activePhraseIdx !== lastPhraseIdx || activeWordIdx !== lastActiveWordIdx || !cachedRgbaBuffer) {
+          ctx.drawImage(bgCanvas, 0, 0);
+          drawCanvasCaptions(ctx, captions, timeSec, captionSettings, width, height);
+          cachedRgbaBuffer = canvas.data();
+          lastPhraseIdx = activePhraseIdx;
+          lastActiveWordIdx = activeWordIdx;
+        }
+
+        encoder.encodeRgbaFrame(cachedRgbaBuffer);
+
+        // Periodic yield to allow event loop & GC reclamation of dereferenced frames
+        if (f % 15 === 0) {
+          if (typeof Bun !== 'undefined' && (Bun as any).gc) {
+            (Bun as any).gc(true);
+          }
+          await new Promise(r => setTimeout(r, 0));
+        }
       }
     } else {
       const rawRgba = canvas.data();
       for (let f = 0; f < totalFrames; f++) {
         encoder.encodeRgbaFrame(rawRgba);
+        if (f % 60 === 0) {
+          await new Promise(r => setTimeout(r, 0));
+        }
       }
     }
 
