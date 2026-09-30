@@ -42,6 +42,9 @@ export function initFFI() {
         avcodec_open2: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_send_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_receive_packet: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avcodec_parameters_alloc: { args: [], returns: FFIType.ptr },
+        avcodec_parameters_free: { args: [FFIType.ptr], returns: FFIType.void },
+        avcodec_parameters_to_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_parameters_from_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
     });
 
@@ -126,7 +129,7 @@ export const Structs = {
         setWidth: (framePtr: number | bigint, width: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(104, width, true),
         setHeight: (framePtr: number | bigint, height: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(108, height, true),
         setFormat: (framePtr: number | bigint, format: number) => new DataView(toArrayBuffer(framePtr, 0, 128)).setInt32(116, format, true),
-        setPts: (framePtr: number | bigint, pts: bigint) => new DataView(toArrayBuffer(framePtr, 0, 128)).setBigInt64(128, pts, true),
+        setPts: (framePtr: number | bigint, pts: bigint) => new DataView(toArrayBuffer(framePtr, 0, 256)).setBigInt64(136, pts, true),
         getDataPointer: (framePtr: number | bigint, plane: number = 0) => new DataView(toArrayBuffer(framePtr, 0, 64)).getBigUint64(plane * 8, true),
         getLinesize: (framePtr: number | bigint, plane: number = 0) => new DataView(toArrayBuffer(framePtr, 0, 128)).getInt32(64 + plane * 4, true)
     },

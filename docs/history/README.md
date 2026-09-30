@@ -77,3 +77,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [ 59](059_update_rules_ffi_zero_copy.md) | 2026-09-30 | Rule Optimization for Bun FFI & Zero-Copy Architecture | Update master rules & active rules to remove fluent-ffmpeg & spawn constraints |
 | [ 60](060_refactor_renderer_and_remove_fluent_ffmpeg.md) | 2026-09-30 | Refactor renderer.ts and Remove fluent-ffmpeg Imports | Created FFmpegExecutor native wrapper, refactored renderer.ts, whisper.ts, BaseEffectEngine, pipeline, stacker |
 | [ 61](061_replace_ffprobe_with_ffi_probe.md) | 2026-09-30 | Replace ffprobe Process Spawning with Native Bun FFI Duration Probe | In-memory duration probing via avformat_open_input in libavformat |
+| [ 62](062_phase1_codec_timebase_stabilization.md) | 2026-09-30 | Phase 1: Codec TimeBase, Timestamp & Zero-Copy Encoding Stabilization | Resolved AVCodecContext timebase/dimensions, AVIO close, and NVENC/x264 FFI encoding |
