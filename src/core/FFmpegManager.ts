@@ -8,6 +8,7 @@ import extractZip from 'extract-zip';
 export class FFmpegManager {
   private static ffmpegPath: string | null = null;
   private static ffprobePath: string | null = null;
+  private static binDirPath: string | null = null;
 
   public static getFFmpegPath(): string {
     if (!this.ffmpegPath) throw new Error('FFmpegManager.prepare() must be called before getFFmpegPath()');
@@ -19,21 +20,17 @@ export class FFmpegManager {
     return this.ffprobePath;
   }
 
-  private static isSystemFFmpegAvailable(): boolean {
-    try {
-      execSync('ffmpeg -version', { stdio: 'ignore' });
-      execSync('ffprobe -version', { stdio: 'ignore' });
-      return true;
-    } catch {
-      return false;
-    }
+  public static getBinDir(): string {
+     if (!this.binDirPath) throw new Error('FFmpegManager.prepare() must be called before getBinDir()');
+     return this.binDirPath;
   }
 
-  private static findBinaries(dir: string): { ffmpeg: string | null, ffprobe: string | null } {
+  private static findBinaries(dir: string): { ffmpeg: string | null, ffprobe: string | null, binDir: string | null } {
     let ffmpeg = null;
     let ffprobe = null;
+    let binDir = null;
     
-    if (!fs.existsSync(dir)) return { ffmpeg, ffprobe };
+    if (!fs.existsSync(dir)) return { ffmpeg, ffprobe, binDir };
 
     const search = (currentDir: string) => {
       const files = fs.readdirSync(currentDir);
@@ -43,64 +40,59 @@ export class FFmpegManager {
           search(fullPath);
         } else {
           const name = file.toLowerCase();
-          if (name === 'ffmpeg.exe' || name === 'ffmpeg') ffmpeg = fullPath;
+          if (name === 'ffmpeg.exe' || name === 'ffmpeg') {
+              ffmpeg = fullPath;
+              binDir = currentDir;
+          }
           if (name === 'ffprobe.exe' || name === 'ffprobe') ffprobe = fullPath;
         }
       }
     };
     
     search(dir);
-    return { ffmpeg, ffprobe };
+    return { ffmpeg, ffprobe, binDir };
   }
 
   public static async prepare(): Promise<void> {
     if (this.ffmpegPath) return; // Already prepared
 
     console.log('[FFmpegManager] Checking FFmpeg installation...');
-
-    // 1. Check Global System PATH
-    if (this.isSystemFFmpegAvailable()) {
-      console.log('[FFmpegManager] Found global system FFmpeg. Using system binaries.');
-      this.ffmpegPath = 'ffmpeg';
-      this.ffprobePath = 'ffprobe';
-      return;
-    }
-
     const platform = process.platform;
-    const targetDir = path.join(process.cwd(), 'bin', 'ffmpeg');
+    const appDir = path.join(os.homedir(), '.visual-storyteller');
+    const targetDir = path.join(appDir, 'bin', 'ffmpeg-shared');
 
-    // 2. Check Local Fallback Installation
+    // 1. Check Local Shared Fallback Installation first (since we now REQUIRE shared libs for FFI)
     const existingBins = this.findBinaries(targetDir);
-    if (existingBins.ffmpeg && existingBins.ffprobe) {
-      console.log('[FFmpegManager] Found local FFmpeg build.');
+    if (existingBins.ffmpeg && existingBins.ffprobe && existingBins.binDir) {
+      console.log('[FFmpegManager] Found local shared FFmpeg build.');
       this.ffmpegPath = existingBins.ffmpeg;
       this.ffprobePath = existingBins.ffprobe;
+      this.binDirPath = existingBins.binDir;
       return;
     }
 
-    // 3. MacOS / Linux Error Handling
+    // 2. MacOS / Linux Error Handling
     if (platform !== 'win32') {
-      console.error('\n❌ [ERROR] FFmpeg is missing!');
-      console.error('Because you are on macOS or Linux, automatic downloading is disabled for security and architecture compatibility reasons.');
-      console.error('\nPlease install FFmpeg manually using your package manager:');
+      console.error('\n❌ [ERROR] Shared FFmpeg libraries missing!');
+      console.error('Please install FFmpeg shared libraries manually using your package manager:');
       if (platform === 'darwin') {
         console.error('   👉 brew install ffmpeg');
       } else {
-        console.error('   👉 sudo apt update && sudo apt install ffmpeg');
+        console.error('   👉 sudo apt update && sudo apt install libavcodec-dev libavformat-dev libswscale-dev libavfilter-dev ffmpeg');
       }
       console.error('\nAfter installing, restart this CLI.\n');
       process.exit(1);
     }
 
-    // 4. Windows Auto-Download (GPL NVENC Build from BtbN)
-    console.log('\n[FFmpegManager] FFmpeg not found. Automatically downloading full GPU-enabled Windows build...');
-    const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip';
+    // 3. Windows Auto-Download (GPL NVENC SHARED Build from BtbN)
+    console.log('\n[FFmpegManager] Shared FFmpeg not found. Automatically downloading full GPU-enabled Shared Windows build...');
+    const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip';
     
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
     
-    const tempZipPath = path.join(os.tmpdir(), `ffmpeg_${Date.now()}.zip`);
+    const tempZipPath = path.join(os.tmpdir(), `ffmpeg_shared_${Date.now()}.zip`);
 
     await new Promise<void>((resolve, reject) => {
       let downloadedBytes = 0;
@@ -108,7 +100,6 @@ export class FFmpegManager {
 
       const request = https.get(url, (response) => {
         if (response.statusCode === 301 || response.statusCode === 302) {
-          // Handle redirect
           https.get(response.headers.location!, (redirectResponse) => {
              totalBytes = parseInt(redirectResponse.headers['content-length'] || '0', 10);
              const file = fs.createWriteStream(tempZipPath);
@@ -117,7 +108,7 @@ export class FFmpegManager {
              redirectResponse.on('data', (chunk) => {
                 downloadedBytes += chunk.length;
                 const percent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-                process.stdout.write(`\rDownloading FFmpeg... ${percent}% (${(downloadedBytes/1024/1024).toFixed(1)}MB)`);
+                process.stdout.write(`\rDownloading FFmpeg Shared... ${percent}% (${(downloadedBytes/1024/1024).toFixed(1)}MB)`);
              });
 
              file.on('finish', () => {
@@ -126,22 +117,6 @@ export class FFmpegManager {
                resolve();
              });
           }).on('error', reject);
-        } else {
-          totalBytes = parseInt(response.headers['content-length'] || '0', 10);
-          const file = fs.createWriteStream(tempZipPath);
-          response.pipe(file);
-          
-          response.on('data', (chunk) => {
-             downloadedBytes += chunk.length;
-             const percent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-             process.stdout.write(`\rDownloading FFmpeg... ${percent}% (${(downloadedBytes/1024/1024).toFixed(1)}MB)`);
-          });
-
-          file.on('finish', () => {
-            console.log('\nDownload complete.');
-            file.close();
-            resolve();
-          });
         }
       });
       request.on('error', reject);
@@ -157,14 +132,16 @@ export class FFmpegManager {
     }
 
     const downloadedBins = this.findBinaries(targetDir);
-    if (!downloadedBins.ffmpeg || !downloadedBins.ffprobe) {
-      console.error('\n❌ [ERROR] Extraction succeeded but ffmpeg.exe was not found inside the zip structure.');
+    if (!downloadedBins.ffmpeg || !downloadedBins.ffprobe || !downloadedBins.binDir) {
+      console.error('\n❌ [ERROR] Extraction succeeded but ffmpeg.exe or bin folder was not found inside the zip structure.');
       process.exit(1);
     }
 
     this.ffmpegPath = downloadedBins.ffmpeg;
     this.ffprobePath = downloadedBins.ffprobe;
+    this.binDirPath = downloadedBins.binDir;
     
-    console.log(`[FFmpegManager] Successfully installed local FFmpeg at: ${this.ffmpegPath}`);
+    console.log(`[FFmpegManager] Successfully installed local Shared FFmpeg at: ${this.binDirPath}`);
   }
 }
+
