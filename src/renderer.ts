@@ -214,6 +214,18 @@ export async function renderStoryVideo(
   const fallbackAudioPath = path.join(tempDir, '_fallback_silent.mp3');
   fs.writeFileSync(fallbackAudioPath, createSilentMp3Buffer(15));
 
+  // Pre-warm AI daemon once in main thread to prevent worker port collisions
+  const needsAI = config.scenes.some(s => s.depth3d?.enabled && (s.depth3d?.autoSegment || s.depth3d?.autoDepth || s.depth3d?.mode === 'frame_breaker' || s.depth3d?.mode === 'volumetric_sandwich')) || config.settings.captions?.autoTranscribe;
+  if (needsAI) {
+    try {
+      console.log('[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...');
+      const { defaultIPCFacade } = await import('../packages/core/src/ipc/IPCFacade');
+      await defaultIPCFacade.ensureDaemonRunning();
+    } catch (err: any) {
+      console.warn('[Pipeline] Pre-warming error:', err.message);
+    }
+  }
+
   try {
     console.log(`\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
 

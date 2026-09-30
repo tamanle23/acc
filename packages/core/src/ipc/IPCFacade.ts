@@ -157,45 +157,61 @@ export class GRPCAIStrategy implements IAIClientStrategy {
   /**
    * Auto-bootstraps the Python gRPC daemon if it is not currently running.
    */
+  private static bootstrapLock: Promise<boolean> | null = null;
+
   public async ensureDaemonRunning(maxRetries = 10): Promise<boolean> {
     const isUp = await this.isAvailable();
     if (isUp) return true;
 
-    if (!GRPCAIStrategy.daemonProcess) {
-      const pythonBackendDir = path.resolve(__dirname, '../../../../apps/python-backend');
-      console.log(`[IPCFacade] Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
+    if (GRPCAIStrategy.bootstrapLock) {
+      return GRPCAIStrategy.bootstrapLock;
+    }
 
-      const port = process.env.ACC_GRPC_PORT || '50051';
-      GRPCAIStrategy.daemonProcess = spawn('bun', ['x', 'uv', 'run', 'python', 'src/server.py', port], {
-        cwd: pythonBackendDir,
-        stdio: ['ignore', 'inherit', 'inherit'],
-        shell: process.platform === 'win32',
-      });
+    GRPCAIStrategy.bootstrapLock = (async () => {
+      try {
+        if (await this.isAvailable()) return true;
 
-      GRPCAIStrategy.daemonProcess.unref();
+        if (!GRPCAIStrategy.daemonProcess) {
+          const pythonBackendDir = path.resolve(__dirname, '../../../../apps/python-backend');
+          console.log(`[IPCFacade] Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
 
-      // Gracefully kill daemon on parent process exit
-      process.on('exit', () => {
-        if (GRPCAIStrategy.daemonProcess) {
-          try {
-            GRPCAIStrategy.daemonProcess.kill();
-          } catch {}
+          const port = process.env.ACC_GRPC_PORT || '50051';
+          GRPCAIStrategy.daemonProcess = spawn('bun', ['x', 'uv', 'run', 'python', 'src/server.py', port], {
+            cwd: pythonBackendDir,
+            stdio: ['ignore', 'inherit', 'inherit'],
+            shell: process.platform === 'win32',
+          });
+
+          GRPCAIStrategy.daemonProcess.unref();
+
+          // Gracefully kill daemon on parent process exit
+          process.on('exit', () => {
+            if (GRPCAIStrategy.daemonProcess) {
+              try {
+                GRPCAIStrategy.daemonProcess.kill();
+              } catch {}
+            }
+          });
         }
-      });
-    }
 
-    // Poll until healthy
-    for (let i = 0; i < maxRetries; i++) {
-      await new Promise((r) => setTimeout(r, 400));
-      const healthy = await this.isAvailable();
-      if (healthy) {
-        console.log(`[IPCFacade] Python AI Daemon is ONLINE at ${this.endpoint}`);
-        return true;
+        // Poll until healthy
+        for (let i = 0; i < maxRetries; i++) {
+          await new Promise((r) => setTimeout(r, 400));
+          const healthy = await this.isAvailable();
+          if (healthy) {
+            console.log(`[IPCFacade] Python AI Daemon is ONLINE at ${this.endpoint}`);
+            return true;
+          }
+        }
+
+        console.warn(`[IPCFacade] Daemon failed to respond within timeout. Switching to fallback.`);
+        return false;
+      } finally {
+        GRPCAIStrategy.bootstrapLock = null;
       }
-    }
+    })();
 
-    console.warn(`[IPCFacade] Daemon failed to respond within timeout. Switching to fallback.`);
-    return false;
+    return GRPCAIStrategy.bootstrapLock;
   }
 }
 
@@ -245,6 +261,13 @@ export class IPCFacade {
 
   public getStrategyName(): string {
     return this.strategy.name;
+  }
+
+  public async ensureDaemonRunning(): Promise<boolean> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      return this.strategy.ensureDaemonRunning();
+    }
+    return true;
   }
 
   public async ping(message = 'hello'): Promise<string> {

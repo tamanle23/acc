@@ -148,10 +148,13 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     }
     drawImageCover(ctx, subjectImg, popX, popY, popW, popH);
   } else {
-    // Dynamic Pop-out: Extract upper 60% of image popping out of top edge
+    // Dynamic Pop-out Fallback: Constrain pop-out to upper central focal area with rounded arch
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, 0, width, innerY + innerH * 0.5);
+    const focalCenterX = innerX + innerW * 0.5;
+    const focalRadiusX = innerW * 0.38;
+    const focalRadiusY = innerH * 0.45;
+    ctx.ellipse(focalCenterX, innerY + innerH * 0.2, focalRadiusX, focalRadiusY, 0, 0, Math.PI * 2);
     ctx.clip();
 
     if (shadowEnabled) {

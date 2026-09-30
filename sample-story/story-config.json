@@ -64,6 +64,7 @@
         "enabled": true,
         "mode": "frame_breaker",
         "frameStyle": "polaroid",
+        "autoSegment": true,
         "popOutIntensity": 1.2,
         "elevationShadow": true,
         "floatingMotion": true
@@ -97,6 +98,7 @@
       "depth3d": {
         "enabled": true,
         "mode": "volumetric_sandwich",
+        "autoSegment": true,
         "sandwich": {
           "textBehindSubject": true,
           "ambientDust": true,
@@ -132,6 +134,7 @@
       "depth3d": {
         "enabled": true,
         "mode": "depth_map_3d",
+        "autoDepth": true,
         "depthMesh": {
           "motion": "circle",
           "displacementScale": 18

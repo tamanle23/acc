@@ -37,11 +37,15 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   // 1. Load primary image and optional subject cutout
   const img = await loadImage(scene.resolvedImage);
   let subjectImg: Image | null = null;
+  const shouldAutoSegment = depthConfig.autoSegment !== undefined
+    ? depthConfig.autoSegment
+    : (mode === 'frame_breaker' || mode === 'volumetric_sandwich' || mode === 'sandwich');
+
   if (depthConfig.subjectImage && fs.existsSync(depthConfig.subjectImage)) {
     try {
       subjectImg = await loadImage(depthConfig.subjectImage);
     } catch {}
-  } else if (depthConfig.autoSegment && scene.resolvedImage) {
+  } else if (shouldAutoSegment && scene.resolvedImage) {
     try {
       const { defaultIPCFacade } = await import('../../packages/core/src/ipc/IPCFacade');
       const segRes = await defaultIPCFacade.segmentSubject(scene.resolvedImage);
