@@ -31,7 +31,7 @@ if (!isMainThread) {
         await FFmpegManager.prepare();
       }
 
-      const { renderDepth3DScene } = await import('../depth3d');
+      const { renderDepth3DScene } = await import('../../../src/depth3d');
       const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
 
       parentPort?.on('message', async (task: { type: string; data: SceneTaskPayload }) => {

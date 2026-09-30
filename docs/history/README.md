@@ -90,3 +90,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`072`](072_phase0_turborepo_monorepo_scaffolding.md) | 2026-09-30 | Phase 0: Turborepo Monorepo & Workspace Scaffolding (Zero-Regression) | Initialized Turborepo, Bun workspaces, packages/core, packages/ir, apps/cli, zero-regression shims |
 | [`073`](073_phase1_protobuf_grpc_python_subsystem.md) | 2026-09-30 | Phase 1: Protobuf Contracts & Python gRPC Backend Integration | Protocol buffers, Python gRPC server, IPCFacade auto-bootstrapping, 3 AI services |
 | [`074`](074_phase2_branching_exporter_suite.md) | 2026-09-30 | Phase 2: Branching Exporter Suite (Video, Audio, Social Canvas, Static Web) | BaseExporter, VideoExporter (bun:ffi), AudioExporter, Canvas Carousel, Static Web |
+| [`075`](075_phase3_pipeline4_refinement_depth3d_vision.md) | 2026-09-30 | Phase 3: Pipeline 4 Refinement (Depth Anything v2 + SAM 2 + Depth3D) | VisionEngine & VisionService gRPC, autoSegment & autoDepth in Depth3D, migrated sfx & overlay CLI |
+

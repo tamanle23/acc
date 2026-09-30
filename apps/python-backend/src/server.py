@@ -42,6 +42,11 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
 
 class VisionService(vision_pb2_grpc.VisionServiceServicer):
+    def __init__(self):
+        super().__init__()
+        from services.vision_engine import VisionEngine
+        self.engine = VisionEngine.get_instance()
+
     def Ping(self, request, context):
         current_time = int(time.time() * 1000)
         return common_pb2.PingResponse(
@@ -51,18 +56,32 @@ class VisionService(vision_pb2_grpc.VisionServiceServicer):
         )
 
     def EstimateDepth(self, request, context):
-        return vision_pb2.DepthResponse(
-            depth_map_png=b"",
-            min_depth=0.0,
-            max_depth=1.0,
-        )
+        try:
+            depth_bytes, min_d, max_d = self.engine.estimate_depth(request.image_data, request.model_size)
+            return vision_pb2.DepthResponse(
+                depth_map_png=depth_bytes,
+                min_depth=min_d,
+                max_depth=max_d,
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return vision_pb2.DepthResponse()
 
     def SegmentSubject(self, request, context):
-        return vision_pb2.SegmentationResponse(
-            mask_png=b"",
-            bounding_box=common_pb2.BoundingBox(x=0.0, y=0.0, width=1.0, height=1.0, confidence=1.0),
-            confidence=1.0,
-        )
+        try:
+            mask_bytes, bbox, conf = self.engine.segment_subject(request.image_data, request.mode)
+            return vision_pb2.SegmentationResponse(
+                mask_png=mask_bytes,
+                bounding_box=common_pb2.BoundingBox(
+                    x=bbox["x"], y=bbox["y"], width=bbox["width"], height=bbox["height"], confidence=conf
+                ),
+                confidence=conf,
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return vision_pb2.SegmentationResponse()
 
 
 class LLMService(llm_pb2_grpc.LLMServiceServicer):

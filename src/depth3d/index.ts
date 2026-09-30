@@ -41,6 +41,14 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     try {
       subjectImg = await loadImage(depthConfig.subjectImage);
     } catch {}
+  } else if (depthConfig.autoSegment && scene.resolvedImage) {
+    try {
+      const { defaultIPCFacade } = await import('../../packages/core/src/ipc/IPCFacade');
+      const segRes = await defaultIPCFacade.segmentSubject(scene.resolvedImage);
+      if (segRes && segRes.maskBuffer && segRes.maskBuffer.length > 0) {
+        subjectImg = await loadImage(segRes.maskBuffer);
+      }
+    } catch {}
   }
 
   // 2. Setup Mode-Specific Pre-Allocated Data Structures
@@ -92,6 +100,35 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         const dm = await loadImage(depthConfig.depthMesh.depthMapPath);
         drawImageCover(dCtx, dm, 0, 0, width, height);
       } catch {}
+    } else if (depthConfig.autoDepth && scene.resolvedImage) {
+      try {
+        const { defaultIPCFacade } = await import('../../packages/core/src/ipc/IPCFacade');
+        const depthRes = await defaultIPCFacade.estimateDepth(scene.resolvedImage);
+        if (depthRes && depthRes.depthMapBuffer && depthRes.depthMapBuffer.length > 0) {
+          const dm = await loadImage(depthRes.depthMapBuffer);
+          drawImageCover(dCtx, dm, 0, 0, width, height);
+        } else {
+          const radGrad = dCtx.createRadialGradient(
+            width / 2, height * 0.52, width * 0.05,
+            width / 2, height * 0.52, width * 0.65
+          );
+          radGrad.addColorStop(0, 'rgb(255, 255, 255)');
+          radGrad.addColorStop(0.5, 'rgb(180, 180, 180)');
+          radGrad.addColorStop(1, 'rgb(30, 30, 30)');
+          dCtx.fillStyle = radGrad;
+          dCtx.fillRect(0, 0, width, height);
+        }
+      } catch {
+        const radGrad = dCtx.createRadialGradient(
+          width / 2, height * 0.52, width * 0.05,
+          width / 2, height * 0.52, width * 0.65
+        );
+        radGrad.addColorStop(0, 'rgb(255, 255, 255)');
+        radGrad.addColorStop(0.5, 'rgb(180, 180, 180)');
+        radGrad.addColorStop(1, 'rgb(30, 30, 30)');
+        dCtx.fillStyle = radGrad;
+        dCtx.fillRect(0, 0, width, height);
+      }
     } else {
       const radGrad = dCtx.createRadialGradient(
         width / 2, height * 0.52, width * 0.05,

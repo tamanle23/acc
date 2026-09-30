@@ -91,7 +91,7 @@ describe('Phase 1: Protobuf Contracts & gRPC AI Subsystem Deep Test Suite', () =
 
       expect(res).toBeDefined();
       expect(res.bounding_box).toBeDefined();
-      expect(res.bounding_box.confidence).toBe(1.0);
+      expect(res.bounding_box.confidence).toBeGreaterThan(0.5);
     });
 
     it('executes LLMService.GenerateStructuredJson and returns valid JSON string', async () => {

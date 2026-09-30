@@ -71,6 +71,40 @@ export class GRPCAIStrategy implements IAIClientStrategy {
     });
   }
 
+  public async estimateDepth(imageBufferOrPath: string | Buffer, modelSize = 'small'): Promise<{ depthMapBuffer: Buffer; minDepth: number; maxDepth: number }> {
+    this.initClients();
+    const fs = await import('fs');
+    const image_data = typeof imageBufferOrPath === 'string' ? fs.readFileSync(imageBufferOrPath) : imageBufferOrPath;
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 8000);
+      this.visionClient.EstimateDepth({ image_data, model_size: modelSize }, { deadline }, (err: any, response: any) => {
+        if (err) return reject(err);
+        resolve({
+          depthMapBuffer: Buffer.from(response.depth_map_png),
+          minDepth: response.min_depth,
+          maxDepth: response.max_depth,
+        });
+      });
+    });
+  }
+
+  public async segmentSubject(imageBufferOrPath: string | Buffer, mode = 'foreground'): Promise<{ maskBuffer: Buffer; boundingBox: any; confidence: number }> {
+    this.initClients();
+    const fs = await import('fs');
+    const image_data = typeof imageBufferOrPath === 'string' ? fs.readFileSync(imageBufferOrPath) : imageBufferOrPath;
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 8000);
+      this.visionClient.SegmentSubject({ image_data, mode }, { deadline }, (err: any, response: any) => {
+        if (err) return reject(err);
+        resolve({
+          maskBuffer: Buffer.from(response.mask_png),
+          boundingBox: response.bounding_box,
+          confidence: response.confidence,
+        });
+      });
+    });
+  }
+
   /**
    * Auto-bootstraps the Python gRPC daemon if it is not currently running.
    */
@@ -124,6 +158,12 @@ export class FallbackAIStrategy implements IAIClientStrategy {
   public async ping(message: string): Promise<string> {
     return `Fallback in-process pong: ${message}`;
   }
+  public async estimateDepth(): Promise<{ depthMapBuffer: Buffer; minDepth: number; maxDepth: number }> {
+    return { depthMapBuffer: Buffer.alloc(0), minDepth: 0, maxDepth: 1 };
+  }
+  public async segmentSubject(): Promise<{ maskBuffer: Buffer; boundingBox: any; confidence: number }> {
+    return { maskBuffer: Buffer.alloc(0), boundingBox: { x: 0, y: 0, width: 1, height: 1, confidence: 1 }, confidence: 1 };
+  }
 }
 
 export class IPCFacade {
@@ -152,6 +192,22 @@ export class IPCFacade {
       this.strategy = new FallbackAIStrategy();
       return this.strategy.ping(message);
     }
+  }
+
+  public async estimateDepth(imageBufferOrPath: string | Buffer, modelSize = 'small'): Promise<{ depthMapBuffer: Buffer; minDepth: number; maxDepth: number }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return this.strategy.estimateDepth(imageBufferOrPath, modelSize);
+    }
+    return (this.strategy as FallbackAIStrategy).estimateDepth();
+  }
+
+  public async segmentSubject(imageBufferOrPath: string | Buffer, mode = 'foreground'): Promise<{ maskBuffer: Buffer; boundingBox: any; confidence: number }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return this.strategy.segmentSubject(imageBufferOrPath, mode);
+    }
+    return (this.strategy as FallbackAIStrategy).segmentSubject();
   }
 
   public async pingAllServices(message = 'test'): Promise<{ tts: string; vision: string; llm: string }> {

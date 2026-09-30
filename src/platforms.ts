@@ -353,6 +353,8 @@ export const DEFAULT_DEPTH3D_CONFIG: Depth3DConfig = {
   shadowColor: 'rgba(0,0,0,0.6)',
   backdropBlur: 20,
   floatMotion: true,
+  autoSegment: false,
+  autoDepth: false,
 };
 
 export const DEFAULT_TTS_CONFIG: TtsConfig = {

@@ -613,6 +613,16 @@
           "type": "string",
           "description": "Đường dẫn ảnh PNG cutout trong suốt của chủ thể nếu có sẵn"
         },
+        "autoSegment": {
+          "type": "boolean",
+          "default": false,
+          "description": "Tự động trích xuất mặt nạ alpha chủ thể bằng AI (SAM 2 / MobileSAM)"
+        },
+        "autoDepth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Tự động ước lượng bản đồ độ sâu metric 16-bit bằng AI (Depth Anything v2)"
+        },
         "parallax": {
           "type": "object",
           "description": "Tùy chọn chuyên biệt cho kỹ thuật 2.5D Parallax Ken Burns",

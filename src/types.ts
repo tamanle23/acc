@@ -84,6 +84,8 @@ export interface Depth3DConfig {
   backdropBlur?: number; // default: 20 (px blur for outer background)
   floatMotion?: boolean; // default: true (gentle 3D floating oscillation)
   subjectImage?: string; // Optional transparent cutout PNG/WebM of subject if provided separately
+  autoSegment?: boolean; // Auto-extract subject alpha mask via SAM2 / MobileSAM when subjectImage is omitted
+  autoDepth?: boolean; // Auto-generate metric depth map via Depth Anything v2 when depthMapPath is omitted
 
   // Specific mode sub-configurations
   parallax?: Parallax25DSettings;

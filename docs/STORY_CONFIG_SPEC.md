@@ -345,6 +345,8 @@ Hiệu ứng tạo nổi 3D (3D Depth / Pop-Out) biến hình ảnh 2D tĩnh th�
 | `backdropBlur` | `number` | Không | `20` | Độ mờ Gaussian của lớp nền phía sau khung (pixel). |
 | `floatMotion` | `boolean` | Không | `true` | Bật chuyển động lơ lửng 3D nhẹ nhàng (Floating oscillation). |
 | `subjectImage` | `string` | Không | `undefined` | Đường dẫn ảnh PNG cutout trong suốt của nhân vật nếu có sẵn. |
+| `autoSegment` | `boolean` | Không | `false` | Tự động trích xuất mặt nạ alpha chủ thể bằng AI SAM 2 / MobileSAM khi không cung cấp `subjectImage`. |
+| `autoDepth` | `boolean` | Không | `false` | Tự động tạo bản đồ độ sâu metric 16-bit bằng AI Depth Anything v2 khi không cung cấp `depthMesh.depthMapPath`. |
 | `parallax` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `parallax_25d`. |
 | `sandwich` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `volumetric_sandwich`. |
 | `depthMesh` | `object` | Không | `{}` | Cấu hình chuyên biệt cho `depth_map_3d`. |
