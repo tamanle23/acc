@@ -52,10 +52,11 @@ Hệ thống chạy trên Bun/Node.js hỗ trợ đa nền tảng (Windows, Linu
 
 ---
 
-## 3. FFmpeg Manager Protocol
+## 3. FFmpeg Manager & Zero-Copy Bun FFI Protocol
 
 ### Context & Rationale
-Bộ quản lý `FFmpegManager` tự động phát hiện hoặc tải các bản dựng FFmpeg GPL có hỗ trợ GPU (NVENC/QSV) trên Windows/Linux/macOS nếu máy người dùng chưa cài đặt. Việc bỏ qua manager này sẽ gây lỗi `ENOENT` trên các máy sạch và phá vỡ triết lý "Zero-Config".
+Bộ quản lý `FFmpegManager` tự động phát hiện hoặc tải các bản dựng **FFmpeg Shared Build** chứa các thư viện động (`.dll`, `.so`, `.dylib` như `libavcodec`, `libavformat`, `libswscale`, `libavfilter`).
+Dự án đã hoàn toàn loại bỏ `fluent-ffmpeg` và các tiến trình con `child_process.spawn('ffmpeg')` để giải phóng nghẽn cổ chai IPC/Pipe bộ nhớ. Mọi thao tác xử lý khung hình 4K và mã hóa video được truyền trực tiếp qua con trỏ bộ nhớ (Pointer) của mảng RGBA từ Canvas vào C space bằng `bun:ffi`.
 
 ### Usage Rules
 1. **Initialization**: Tất cả entrypoint CLI (`cli.ts`, `auto-config.ts`, `sound-effects-cli.ts`) MUST khởi tạo manager trước khi xử lý:
@@ -66,20 +67,19 @@ Bộ quản lý `FFmpegManager` tự động phát hiện hoặc tải các bả
      // rest of logic
    }
    ```
-2. **fluent-ffmpeg Integration**: Nếu dùng package `fluent-ffmpeg`, MUST gán đường dẫn ngay sau `prepare()`:
+2. **Native Bun FFI Integration**:
+   - TUYỆT ĐỐI KHÔNG dùng package `fluent-ffmpeg` hay `child_process.spawn('ffmpeg')`.
+   - Lấy thư mục binary chứa `.dll`/`.so` qua `FFmpegManager.getBinDir()`.
+   - Gọi các hàm C-API lõi thông qua module FFI tập trung (`src/core/ffmpeg-ffi/index.ts`):
    ```typescript
-   import ffmpeg from 'fluent-ffmpeg';
-   import { FFmpegManager } from './core/FFmpegManager';
-   ffmpeg.setFfmpegPath(FFmpegManager.getFFmpegPath());
-   ffmpeg.setFfprobePath(FFmpegManager.getFFprobePath());
+   import { initFFI, FFI } from './src/core/ffmpeg-ffi';
+   import { FFmpegManager } from './src/core/FFmpegManager';
+   
+   await FFmpegManager.prepare();
+   initFFI(); // Dynamic load libavcodec, libavformat, libswscale via dlopen()
    ```
-3. **Native Shell Execution (`child_process`)**: Nếu gọi raw shell command (`exec`, `spawn`), MUST lấy path động và bao trong dấu ngoặc kép:
-   ```typescript
-   import { FFmpegManager } from './core/FFmpegManager';
-   const ffmpegPath = FFmpegManager.getFFmpegPath();
-   const cmd = `"${ffmpegPath}" -i input.mp4 output.mkv`;
-   execSync(cmd);
-   ```
+3. **Zero-Copy Frame Memory Ingestion**:
+   - Truyền mảng RGBA thuần trực tiếp từ Canvas sang `sws_scale` bằng `canvas.toBuffer('raw')` qua con trỏ `bun:ffi` mà không ghi file tạm hay ghi vào stream `stdin`.
 
 ---
 

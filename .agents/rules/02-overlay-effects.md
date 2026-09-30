@@ -1,7 +1,7 @@
 # Overlay Effects Architecture Rules
 
 - **ROUTING**: CLI `--effect <name> --variant <variant_name>`. MUST use Strategy Pattern.
-- **ZERO-DISK**: NEVER render image files to disk. Pipe Canvas raw RGBA buffer directly via `stdin` to FFmpeg.
+- **ZERO-DISK**: NEVER render image files to disk. Pass Canvas raw RGBA memory pointers directly to FFmpeg `sws_scale` via `bun:ffi` (Zero-Copy).
 - **LOOPING**: Exact loop interpolation or opacity crossfade. Use prime-number durations (3s, 5s, 7s, 11s) at 30/60 FPS for polyrhythmic non-repeating layer cycles.
 - **OVERLAY-METHODS**:
   - `alpha`: WebM VP9 (`libvpx-vp9`), transparent `rgba(0,0,0,0)`, filter `overlay=shortest=1`.

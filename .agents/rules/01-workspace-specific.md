@@ -17,7 +17,7 @@ trigger: always_on
   1. Create sequential 3-digit history log `docs/history/XXX_<task>.md` (Problem, Plan, Changes, Verification, Walkthrough, Tasks).
   2. Update index in `docs/history/README.md`.
   3. Run `git add .` and `git commit -m "[XXX] Task Title" -m "Brief summary"`.
-- **FFMPEG-MANAGER**: MUST run `await FFmpegManager.prepare()` in entrypoints. Set paths via `setFfmpegPath`/`setFfprobePath` for `fluent-ffmpeg`. Quote binary path in shell calls.
+- **FFMPEG-MANAGER**: MUST run `await FFmpegManager.prepare()` in entrypoints. NEVER use `fluent-ffmpeg` or `child_process.spawn`. MUST load shared libraries via `bun:ffi` (`getBinDir()`) for zero-copy memory rendering.
 - **GLOBAL-STORAGE**: MUST store global binaries/models in `path.join(os.homedir(), '.')`. NEVER use `__dirname` or relative project paths for cached app assets.
 - **STREAM-LABELS**: MUST use unique stream identifiers in FFmpeg `filter_complex` strings to prevent collisions.
 - **BACKLOG-MANAGEMENT**: When deferring future tasks or completing existing backlog items:
