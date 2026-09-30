@@ -1,10 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import ffmpeg from 'fluent-ffmpeg';
+import { FFmpegCommand, getMediaDuration as getAudioDuration } from './core/FFmpegExecutor';
 import { pipeline } from '@huggingface/transformers';
 import { WaveFile } from 'wavefile';
 import type { CaptionConfig } from './types';
+
+export { getAudioDuration };
 
 let transcriberInstance: any = null;
 
@@ -23,41 +25,32 @@ async function getTranscriber() {
 }
 
 /**
- * Gets audio duration in seconds using ffprobe
- */
-export function getAudioDuration(audioPath: string): Promise<number> {
-  return new Promise((resolve) => {
-    if (!fs.existsSync(audioPath)) return resolve(0);
-    ffmpeg.ffprobe(audioPath, (err, metadata) => {
-      if (err || !metadata?.format?.duration) {
-        return resolve(0);
-      }
-      resolve(metadata.format.duration);
-    });
-  });
-}
-
-/**
  * Converts any audio format (mp3, wav, ogg, m4a...) into a 16kHz mono WAV buffer
  */
 function convertAudioTo16kWavBuffer(inputAudioPath: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const tempWavPath = path.join(
       os.tmpdir(),
       `whisper_in_${Date.now()}_${Math.random().toString(36).substring(7)}.wav`
     );
 
-    ffmpeg(inputAudioPath)
-      .noVideo()
-      .audioFrequency(16000)
-      .audioChannels(1)
-      .audioCodec('pcm_s16le')
-      .outputFormat('wav')
-      .output(tempWavPath)
-      .on('end', () => {
-        try {
-          const buffer = fs.readFileSync(tempWavPath);
-          fs.unlinkSync(tempWavPath);
+    try {
+      const cmd = new FFmpegCommand(inputAudioPath);
+      cmd.outputOptions(['-vn', '-ar 16000', '-ac 1', '-c:a pcm_s16le', '-f wav']);
+      cmd.output(tempWavPath);
+      await cmd.run();
+
+      const buffer = fs.readFileSync(tempWavPath);
+      fs.unlinkSync(tempWavPath);
+      resolve(buffer);
+    } catch (err) {
+      if (fs.existsSync(tempWavPath)) {
+        try { fs.unlinkSync(tempWavPath); } catch {}
+      }
+      reject(err);
+    }
+  });
+}
           resolve(buffer);
         } catch (e) {
           reject(e);

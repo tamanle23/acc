@@ -75,3 +75,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [ 57](057_ffi_bindings_and_zero_copy_encoder.md) | 2026-09-30 | FFI Bindings Ecosystem & Zero-Copy Encoder (FFI Phase 2 & 3) | un:ffi bindings for avutil, avcodec, swscale, FFIVideoEncoder |
 | [ 58](058_phase4_5_ffi_filtergraph_and_cleanup.md) | 2026-09-30 | FFI FilterGraph & fluent-ffmpeg Removal (FFI Phase 4 & 5) | FFIFilterGraph, remove luent-ffmpeg, Zero-Copy Depth3D engine |
 | [ 59](059_update_rules_ffi_zero_copy.md) | 2026-09-30 | Rule Optimization for Bun FFI & Zero-Copy Architecture | Update master rules & active rules to remove fluent-ffmpeg & spawn constraints |
+| [ 60](060_refactor_renderer_and_remove_fluent_ffmpeg.md) | 2026-09-30 | Refactor renderer.ts and Remove fluent-ffmpeg Imports | Created FFmpegExecutor native wrapper, refactored renderer.ts, whisper.ts, BaseEffectEngine, pipeline, stacker |

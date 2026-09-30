@@ -1,5 +1,8 @@
-import ffmpeg from 'fluent-ffmpeg';
+import { FFmpegCommand } from './FFmpegExecutor';
 import { PassThrough } from 'stream';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { PipelineConfig } from './Registry';
 
 export abstract class BaseEffectEngine {
@@ -39,41 +42,44 @@ export abstract class BaseEffectEngine {
    */
   protected initStream(outputPath: string): { stream: PassThrough, promise: Promise<void> } {
     const inputStream = new PassThrough();
-    const command = ffmpeg(inputStream as any)
-      .inputFormat('rawvideo')
-      .inputOptions([
-        '-pix_fmt rgba',
-        `-s ${this.width}x${this.height}`,
-        `-r ${this.fps}`
-      ]);
+    const command = new FFmpegCommand();
 
-    // Apply strict pipeline configuration from registry
-    command
-      .output(outputPath)
-      .videoCodec(this.pipelineConfig.vcodec)
-      .outputOptions([
-        `-pix_fmt ${this.pipelineConfig.pix_fmt}`
-      ]);
-
-    // Apply format-specific optimizations
-    if (this.pipelineConfig.format === 'webm') {
-      command.outputOptions([
-        '-b:v 2M',
-        '-auto-alt-ref 0'
-      ]);
-    } else {
-      command.outputOptions([
-        '-crf 18',
-        '-preset fast'
-      ]);
-    }
+    // Configure input stream as raw RGBA video
+    const tempRawPath = path.join(os.tmpdir(), `raw_pipe_${Date.now()}_${Math.random().toString(36).substring(7)}.raw`);
+    // Note: To preserve stream writing for legacy callers, we write buffer to file or run command
+    const writeStream = fs.createWriteStream(tempRawPath);
+    inputStream.pipe(writeStream);
 
     const promise = new Promise<void>((resolve, reject) => {
-      command.on('end', () => resolve());
-      command.on('error', (err) => reject(err));
-    });
+      writeStream.on('finish', async () => {
+        try {
+          const cmd = new FFmpegCommand(tempRawPath);
+          cmd.inputOptions([
+            '-f rawvideo',
+            '-pix_fmt rgba',
+            `-s ${this.width}x${this.height}`,
+            `-r ${this.fps}`
+          ]);
 
-    command.run();
+          const opts = [`-c:v ${this.pipelineConfig.vcodec}`, `-pix_fmt ${this.pipelineConfig.pix_fmt}`];
+          if (this.pipelineConfig.format === 'webm') {
+            opts.push('-b:v 2M', '-auto-alt-ref 0');
+          } else {
+            opts.push('-crf 18', '-preset fast');
+          }
+
+          cmd.outputOptions(opts);
+          cmd.output(outputPath);
+          await cmd.run();
+          try { fs.unlinkSync(tempRawPath); } catch {}
+          resolve();
+        } catch (err) {
+          try { fs.unlinkSync(tempRawPath); } catch {}
+          reject(err);
+        }
+      });
+      writeStream.on('error', reject);
+    });
 
     return { stream: inputStream, promise };
   }

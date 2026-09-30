@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import ffmpeg from 'fluent-ffmpeg';
+import ffmpeg, { getMediaDuration } from './core/FFmpegExecutor';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from './types';
 import { generateAssContent, getSceneDuration } from './subtitles';
 import { buildFfmpegEncodingFlags } from './platforms';
@@ -23,20 +23,6 @@ function getFileChecksum(filePath: string): string {
   } catch (e) {
     return Date.now().toString(); // Fallback if file read fails
   }
-}
-
-function getMediaDuration(filePath: string): Promise<number> {
-  return new Promise((resolve) => {
-    if (!fs.existsSync(filePath)) {
-      return resolve(0);
-    }
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
-      if (err || !metadata?.format?.duration) {
-        return resolve(0);
-      }
-      resolve(metadata.format.duration);
-    });
-  });
 }
 
 const BLACK_PNG_BASE64 =
