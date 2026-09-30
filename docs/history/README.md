@@ -92,4 +92,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`074`](074_phase2_branching_exporter_suite.md) | 2026-09-30 | Phase 2: Branching Exporter Suite (Video, Audio, Social Canvas, Static Web) | BaseExporter, VideoExporter (bun:ffi), AudioExporter, Canvas Carousel, Static Web |
 | [`075`](075_phase3_pipeline4_refinement_depth3d_vision.md) | 2026-09-30 | Phase 3: Pipeline 4 Refinement (Depth Anything v2 + SAM 2 + Depth3D) | VisionEngine & VisionService gRPC, autoSegment & autoDepth in Depth3D, migrated sfx & overlay CLI |
 | [`076`](076_phase4_pipeline1_event_driven_scraper_summarizer.md) | 2026-09-30 | Phase 4: Pipeline 1 Implementation (Event-Driven Scraper & Summarizer - Priority 1) | ScraperEngine (Bun.serve webhook + URL), LLMEngine grammar, TTSEngine, ScraperPipeline, 4-way fanning |
+| [`077`](077_phase5_specialized_pipelines_db_repurpose_rule_ambient.md) | 2026-09-30 | Phase 5: Specialized Pipelines Implementation (DB, Repurpose, Rule/Math, Ambient) | DBTemplatingPipeline (P2), RepurposingPipeline (P3), RuleLogicPipeline (P5), AmbientStreamPipeline (P6) |
 
