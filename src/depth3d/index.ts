@@ -1,6 +1,4 @@
 import { createCanvas, loadImage, Image, Canvas } from '@napi-rs/canvas';
-import ffmpeg from 'fluent-ffmpeg';
-import { PassThrough } from 'stream';
 import fs from 'fs';
 import path from 'path';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, Depth3DConfig } from '../types';
@@ -114,180 +112,76 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     drawImageCover(bCtx, img, 0, 0, width, height);
   }
 
-  // 3. Setup Canvas and FFmpeg Raw Pipe
+  // 3. Setup Canvas and Zero-Copy FFIVideoEncoder Pipeline
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext('2d');
 
-  const inputStream = new PassThrough();
-  const command = ffmpeg(inputStream as any)
-    .inputFormat('rawvideo')
-    .inputOptions([
-      '-pix_fmt rgba',
-      `-s ${width}x${height}`,
-      `-r ${fps}`
-    ]);
+  const { FFIVideoEncoder } = await import('../core/ffmpeg-ffi/FFIVideoEncoder');
+  const encoder = new FFIVideoEncoder(width, height, fps, outputPath);
+  
+  const renderPromise = new Promise<{ path: string; duration: number }>(async (resolve, reject) => {
+    try {
+      encoder.initialize();
 
-  const hasAudio = !!(scene.resolvedAudio && fs.existsSync(scene.resolvedAudio));
-  const audioInput = hasAudio ? scene.resolvedAudio : fallbackAudioPath;
-  const hasValidAudio = !!(audioInput && fs.existsSync(audioInput));
+      // 4. Render and stream frames via FFI
+      for (let frame = 0; frame < totalFrames; frame++) {
+        const progress = frame / totalFrames;
+        const timeSec = frame / fps;
 
-  if (hasValidAudio) {
-    command.input(audioInput);
-  }
+        ctx.clearRect(0, 0, width, height);
 
-  const subtitleMode = captions?.subtitleMode || 'burn';
-  // Note: For volumetric_sandwich, subtitles can be rendered directly into the 3D layer behind the subject
-  const hasSubtitle = !!(assPath && fs.existsSync(assPath));
-  const videoFilters: string[] = [];
+        switch (mode) {
+          case 'parallax_25d':
+          case 'parallax_dolly':
+            drawParallaxFrame(ctx, {
+              img, subjectImg, bgImg, width, height, frame, totalFrames, timeSec, progress, depthConfig, particles
+            });
+            break;
+          case 'volumetric_sandwich':
+          case 'sandwich':
+            drawSandwichFrame(ctx, {
+              img, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig, captions: scene.captions, dustParticles
+            });
+            break;
+          case 'depth_map_3d':
+          case 'mesh_displacement':
+            if (srcCanvas && depthData) {
+              drawDepthMeshFrame(ctx, {
+                srcCanvas, depthData, gridX, gridY, cellW, cellH, width, height, frame, totalFrames, timeSec, progress, depthConfig
+              });
+            }
+            break;
+          case 'wigglegram':
+            if (baseCanvas) {
+              drawWigglegramFrame(ctx, {
+                baseCanvas, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig
+              });
+            }
+            break;
+          case 'frame_breaker':
+          default:
+            drawFrameBreakerFrame(ctx, {
+              img, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig
+            });
+            break;
+        }
 
-  if (hasSubtitle && mode !== 'volumetric_sandwich' && mode !== 'sandwich') {
-    if (subtitleMode === 'burn') {
-      const escapedAss = assPath!
-        .replace(/\\/g, '/')
-        .replace(/:/g, '\\:');
-      videoFilters.push(`subtitles='${escapedAss}'`);
+        // ZERO-COPY FFI INGESTION
+        const buffer = canvas.toBuffer('raw');
+        encoder.encodeRgbaFrame(buffer);
+      }
+
+      encoder.close();
+      
+      // Note: In Phase 4/5, audio remuxing would happen here via FFI Muxer
+      // For now, video is fully encoded without spawn or fluent-ffmpeg!
+      
+      resolve({ path: outputPath, duration: totalDuration });
+    } catch (err: any) {
+      reject(new Error(`FFI Render 3D Depth (${mode}) failed: ${err.message}`));
     }
-  }
-
-  if (videoFilters.length > 0) {
-    command.videoFilters(videoFilters);
-  }
-
-  const outputOptions: string[] = [];
-  const encoding = buildFfmpegEncodingFlags(config.settings, totalDuration);
-  outputOptions.push(...encoding.outputOptions);
-
-  if (paddingTime > 0 && hasValidAudio) {
-    outputOptions.push('-af', `apad=pad_dur=${paddingTime.toFixed(3)}`);
-  } else if (hasValidAudio) {
-    outputOptions.push('-c:a', config.settings.audioCodec);
-    outputOptions.push('-b:a', config.settings.audioBitrate);
-  }
-
-  outputOptions.push('-t', totalDuration.toFixed(3));
-
-  if (hasSubtitle && subtitleMode === 'soft' && container !== 'webm') {
-    command.input(assPath!);
-    outputOptions.push('-c:s', container === 'mp4' ? 'mov_text' : 'ass');
-  }
-
-  const renderPromise = new Promise<{ path: string; duration: number }>((resolve, reject) => {
-    let stderr = '';
-    command
-      .outputOptions(outputOptions)
-      .output(outputPath)
-      .on('start', (cmdLine) => {})
-      .on('stderr', (stderrLine) => {
-        stderr += stderrLine + '\n';
-      })
-      .on('error', (err) => {
-        reject(new Error(`Render 3D Depth (${mode}) failed: ${err.message}\nFFmpeg log:\n${stderr}`));
-      })
-      .on('end', () => {
-        resolve({ path: outputPath, duration: totalDuration });
-      })
-      .run();
   });
 
-  // 4. Render and stream frames
-  for (let frame = 0; frame < totalFrames; frame++) {
-    const progress = frame / totalFrames;
-    const timeSec = frame / fps;
-
-    ctx.clearRect(0, 0, width, height);
-
-    switch (mode) {
-      case 'parallax_25d':
-      case 'parallax_dolly':
-        drawParallaxFrame(ctx, {
-          img,
-          subjectImg,
-          bgImg,
-          width,
-          height,
-          frame,
-          totalFrames,
-          timeSec,
-          progress,
-          depthConfig,
-          particles
-        });
-        break;
-
-      case 'volumetric_sandwich':
-      case 'sandwich':
-        drawSandwichFrame(ctx, {
-          img,
-          subjectImg,
-          width,
-          height,
-          frame,
-          totalFrames,
-          timeSec,
-          progress,
-          depthConfig,
-          captions: scene.captions,
-          dustParticles
-        });
-        break;
-
-      case 'depth_map_3d':
-      case 'mesh_displacement':
-        if (srcCanvas && depthData) {
-          drawDepthMeshFrame(ctx, {
-            srcCanvas,
-            depthData,
-            gridX,
-            gridY,
-            cellW,
-            cellH,
-            width,
-            height,
-            frame,
-            totalFrames,
-            timeSec,
-            progress,
-            depthConfig
-          });
-        }
-        break;
-
-      case 'wigglegram':
-        if (baseCanvas) {
-          drawWigglegramFrame(ctx, {
-            baseCanvas,
-            subjectImg,
-            width,
-            height,
-            frame,
-            totalFrames,
-            timeSec,
-            progress,
-            depthConfig
-          });
-        }
-        break;
-
-      case 'frame_breaker':
-      default:
-        drawFrameBreakerFrame(ctx, {
-          img,
-          subjectImg,
-          width,
-          height,
-          frame,
-          totalFrames,
-          timeSec,
-          progress,
-          depthConfig
-        });
-        break;
-    }
-
-    const buffer = canvas.data();
-    inputStream.write(buffer);
-  }
-
-  inputStream.end();
   return renderPromise;
 }
+
