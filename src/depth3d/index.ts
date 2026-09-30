@@ -34,16 +34,29 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const totalDuration = duration + paddingTime;
   const totalFrames = Math.ceil(fps * totalDuration);
 
-  // 1. Load primary image and optional subject cutout
-  const img = await loadImage(scene.resolvedImage);
+  // 1. Load primary image and optional subject cutout safely
+  const img = await loadImage(fs.readFileSync(scene.resolvedImage));
   let subjectImg: Image | null = null;
   const shouldAutoSegment = depthConfig.autoSegment !== undefined
     ? depthConfig.autoSegment
     : (mode === 'frame_breaker' || mode === 'volumetric_sandwich' || mode === 'sandwich');
 
-  if (depthConfig.subjectImage && fs.existsSync(depthConfig.subjectImage)) {
+  const sceneDir = path.dirname(scene.resolvedImage);
+  let resolvedSubPath: string | null = null;
+  if (depthConfig.subjectImage) {
+    const candidate = path.isAbsolute(depthConfig.subjectImage)
+      ? depthConfig.subjectImage
+      : path.resolve(sceneDir, depthConfig.subjectImage);
+    if (fs.existsSync(candidate)) resolvedSubPath = candidate;
+  }
+  if (!resolvedSubPath) {
+    const autoCandidate = path.resolve(sceneDir, `${path.parse(scene.resolvedImage).name}_subject.png`);
+    if (fs.existsSync(autoCandidate)) resolvedSubPath = autoCandidate;
+  }
+
+  if (resolvedSubPath) {
     try {
-      subjectImg = await loadImage(depthConfig.subjectImage);
+      subjectImg = await loadImage(fs.readFileSync(resolvedSubPath));
     } catch {}
   } else if (shouldAutoSegment && scene.resolvedImage) {
     try {
@@ -67,6 +80,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   let cellH = height / gridY;
   let baseCanvas: Canvas | null = null;
   let bgCanvas: Canvas | null = null;
+  let depthLayers: any = null;
 
   if (mode === 'parallax_25d' || mode === 'parallax_dolly') {
     if (depthConfig.parallax?.backgroundImage && fs.existsSync(depthConfig.parallax.backgroundImage)) {
@@ -99,41 +113,36 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
 
     const dCanvas = createCanvas(width, height);
     const dCtx = dCanvas.getContext('2d');
-    if (depthConfig.depthMesh?.depthMapPath && fs.existsSync(depthConfig.depthMesh.depthMapPath)) {
-      try {
-        const dm = await loadImage(depthConfig.depthMesh.depthMapPath);
-        drawImageCover(dCtx, dm, 0, 0, width, height);
-      } catch {}
-    } else if (depthConfig.autoDepth && scene.resolvedImage) {
+
+    const sceneDir = path.dirname(scene.resolvedImage);
+    let loadedDepth = false;
+
+    if (depthConfig.depthMesh?.depthMapPath) {
+      const candidateDm = path.isAbsolute(depthConfig.depthMesh.depthMapPath)
+        ? depthConfig.depthMesh.depthMapPath
+        : path.resolve(sceneDir, depthConfig.depthMesh.depthMapPath);
+      if (fs.existsSync(candidateDm)) {
+        try {
+          const dm = await loadImage(fs.readFileSync(candidateDm));
+          drawImageCover(dCtx, dm, 0, 0, width, height);
+          loadedDepth = true;
+        } catch {}
+      }
+    }
+
+    if (!loadedDepth && depthConfig.autoDepth && scene.resolvedImage) {
       try {
         const { defaultIPCFacade } = await import('../../packages/core/src/ipc/IPCFacade');
         const depthRes = await defaultIPCFacade.estimateDepth(scene.resolvedImage);
         if (depthRes && depthRes.depthMapBuffer && depthRes.depthMapBuffer.length > 0) {
           const dm = await loadImage(depthRes.depthMapBuffer);
           drawImageCover(dCtx, dm, 0, 0, width, height);
-        } else {
-          const radGrad = dCtx.createRadialGradient(
-            width / 2, height * 0.52, width * 0.05,
-            width / 2, height * 0.52, width * 0.65
-          );
-          radGrad.addColorStop(0, 'rgb(255, 255, 255)');
-          radGrad.addColorStop(0.5, 'rgb(180, 180, 180)');
-          radGrad.addColorStop(1, 'rgb(30, 30, 30)');
-          dCtx.fillStyle = radGrad;
-          dCtx.fillRect(0, 0, width, height);
+          loadedDepth = true;
         }
-      } catch {
-        const radGrad = dCtx.createRadialGradient(
-          width / 2, height * 0.52, width * 0.05,
-          width / 2, height * 0.52, width * 0.65
-        );
-        radGrad.addColorStop(0, 'rgb(255, 255, 255)');
-        radGrad.addColorStop(0.5, 'rgb(180, 180, 180)');
-        radGrad.addColorStop(1, 'rgb(30, 30, 30)');
-        dCtx.fillStyle = radGrad;
-        dCtx.fillRect(0, 0, width, height);
-      }
-    } else {
+      } catch {}
+    }
+
+    if (!loadedDepth) {
       const radGrad = dCtx.createRadialGradient(
         width / 2, height * 0.52, width * 0.05,
         width / 2, height * 0.52, width * 0.65
@@ -145,10 +154,53 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       dCtx.fillRect(0, 0, width, height);
     }
 
-    const sampleCanvas = createCanvas(gridX, gridY);
-    const sampleCtx = sampleCanvas.getContext('2d');
-    sampleCtx.drawImage(dCanvas, 0, 0, gridX, gridY);
-    depthData = sampleCtx.getImageData(0, 0, gridX, gridY).data;
+    // Build Continuous Multi-Plane Depth Layers (Zero grid tearing)
+    try {
+      const depthDataFull = dCtx.getImageData(0, 0, width, height).data;
+      const srcDataFull = sCtx.getImageData(0, 0, width, height).data;
+
+      const mgCanvas = createCanvas(width, height);
+      const mgCtx = mgCanvas.getContext('2d');
+      const mgImgData = mgCtx.createImageData(width, height);
+      const mgData = mgImgData.data;
+
+      const fgCanvas = createCanvas(width, height);
+      const fgCtx = fgCanvas.getContext('2d');
+      const fgImgData = fgCtx.createImageData(width, height);
+      const fgData = fgImgData.data;
+
+      for (let i = 0; i < depthDataFull.length; i += 4) {
+        const d = depthDataFull[i] / 255.0; // 0 (far) to 1 (near)
+        const r = srcDataFull[i];
+        const g = srcDataFull[i + 1];
+        const b = srcDataFull[i + 2];
+
+        // Midground layer: soft bell curve around 0.30 - 0.70
+        let mgAlpha = 0;
+        if (d >= 0.25 && d <= 0.75) {
+          mgAlpha = Math.sin((d - 0.25) / 0.50 * Math.PI) * 255;
+        }
+        mgData[i] = r; mgData[i + 1] = g; mgData[i + 2] = b; mgData[i + 3] = mgAlpha;
+
+        // Foreground subject layer: depth > 0.48
+        let fgAlpha = 0;
+        if (d > 0.48) {
+          fgAlpha = Math.min(255, ((d - 0.48) / 0.35) * 255);
+        }
+        fgData[i] = r; fgData[i + 1] = g; fgData[i + 2] = b; fgData[i + 3] = fgAlpha;
+      }
+
+      mgCtx.putImageData(mgImgData, 0, 0);
+      fgCtx.putImageData(fgImgData, 0, 0);
+
+      depthLayers = {
+        bgCanvas: srcCanvas,
+        mgCanvas,
+        fgCanvas,
+      };
+    } catch {
+      depthLayers = { bgCanvas: srcCanvas };
+    }
   } else if (mode === 'wigglegram') {
     baseCanvas = createCanvas(width, height);
     const bCtx = baseCanvas.getContext('2d');
@@ -195,9 +247,17 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
             break;
           case 'depth_map_3d':
           case 'mesh_displacement':
-            if (srcCanvas && depthData) {
+            if (srcCanvas) {
               drawDepthMeshFrame(ctx, {
-                srcCanvas, depthData, gridX, gridY, cellW, cellH, width, height, frame, totalFrames, timeSec, progress, depthConfig
+                srcCanvas,
+                depthLayers: depthLayers || undefined,
+                width,
+                height,
+                frame,
+                totalFrames,
+                timeSec,
+                progress,
+                depthConfig,
               });
             }
             break;

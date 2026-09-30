@@ -120,10 +120,14 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const innerW = frameW - (innerPadding * 2);
   const innerH = frameH - (innerPadding * 2) - bottomExtraPadding;
 
+  const innerZoom = style === 'polaroid' ? 1.6 : 1.15;
+  const focusOffsetY = style === 'polaroid' ? 0.16 : 0.0;
+  const focusOffsetX = style === 'polaroid' ? 0.06 : 0.0;
+
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));
   ctx.clip();
-  drawImageCover(ctx, img, innerX, innerY, innerW, innerH);
+  drawImageCover(ctx, img, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
   ctx.restore();
 
   // 5. Draw Frame Border Stroke
@@ -132,38 +136,33 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   roundRect(ctx, frameX, frameY, frameW, frameH, cornerRadius);
   ctx.stroke();
 
-  // 6. Draw Out-of-Bounds Pop-Out Subject (Breaking outside the top frame)
-  const popScale = popOutIntensity;
-  const popW = innerW * popScale;
-  const popH = innerH * popScale;
-  const popX = innerX - (popW - innerW) / 2;
-  const popY = innerY - (popH - innerH);
-
+  // 6. Draw Out-of-Bounds Pop-Out Subject (Head and upper body breaking outside top frame)
   ctx.save();
+  // Clip bottom so subject never bleeds over the bottom card margin
+  ctx.beginPath();
+  ctx.rect(frameX - 200, frameY - 400, frameW + 400, (innerY + innerH) - (frameY - 400));
+  ctx.clip();
+
+  if (shadowEnabled) {
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = shadowBlur * 1.2;
+    ctx.shadowOffsetY = 16;
+  }
+
   if (subjectImg) {
-    if (shadowEnabled) {
-      ctx.shadowColor = shadowColor;
-      ctx.shadowBlur = shadowBlur * 0.8;
-      ctx.shadowOffsetY = 12;
-    }
-    drawImageCover(ctx, subjectImg, popX, popY, popW, popH);
+    // Exact 1:1 coordinate alignment: lower body connects seamlessly, head bursts over top border
+    drawImageCover(ctx, subjectImg, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
   } else {
-    // Dynamic Pop-out Fallback: Constrain pop-out to upper central focal area with rounded arch
+    // Dynamic Pop-out Fallback: Upper 55% of image bursts through the top
     ctx.save();
     ctx.beginPath();
     const focalCenterX = innerX + innerW * 0.5;
-    const focalRadiusX = innerW * 0.38;
-    const focalRadiusY = innerH * 0.45;
-    ctx.ellipse(focalCenterX, innerY + innerH * 0.2, focalRadiusX, focalRadiusY, 0, 0, Math.PI * 2);
+    const focalRadiusX = innerW * 0.42;
+    const focalRadiusY = innerH * 0.50;
+    ctx.ellipse(focalCenterX, innerY + innerH * 0.25, focalRadiusX, focalRadiusY, 0, 0, Math.PI * 2);
     ctx.clip();
 
-    if (shadowEnabled) {
-      ctx.shadowColor = shadowColor;
-      ctx.shadowBlur = shadowBlur * 0.7;
-      ctx.shadowOffsetY = 14;
-    }
-
-    drawImageCover(ctx, img, popX, popY, popW, popH);
+    drawImageCover(ctx, img, innerX, innerY, innerW, innerH, innerZoom, focusOffsetY, focusOffsetX);
     ctx.restore();
   }
   ctx.restore();
@@ -184,21 +183,31 @@ function roundRect(ctx: any, x: number, y: number, w: number, h: number, r: numb
   ctx.closePath();
 }
 
-export function drawImageCover(ctx: any, img: any, x: number, y: number, w: number, h: number) {
+export function drawImageCover(
+  ctx: any,
+  img: any,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  zoom = 1.0,
+  focusOffsetY = 0.0,
+  focusOffsetX = 0.0
+) {
   const imgRatio = img.width / img.height;
   const targetRatio = w / h;
   let sw, sh, sx, sy;
 
   if (imgRatio > targetRatio) {
-    sh = img.height;
-    sw = img.height * targetRatio;
-    sx = (img.width - sw) / 2;
-    sy = 0;
+    sh = img.height / zoom;
+    sw = (img.height * targetRatio) / zoom;
+    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
+    sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
   } else {
-    sw = img.width;
-    sh = img.width / targetRatio;
-    sx = 0;
-    sy = (img.height - sh) / 2;
+    sw = img.width / zoom;
+    sh = (img.width / targetRatio) / zoom;
+    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
+    sy = Math.max(0, Math.min(img.height - sh, (img.height - sh) / 2 + img.height * focusOffsetY));
   }
 
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
