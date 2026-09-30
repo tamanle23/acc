@@ -117,18 +117,17 @@ class VisionEngine:
 
                     fg_mask = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 255, 0).astype("uint8")
 
-                    # Keep largest connected component
-                    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(fg_mask)
-                    if num_labels > 1:
-                        largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
-                        fg_mask = np.where(labels == largest_label, 255, 0).astype("uint8")
+                    # Keep largest connected component and fill all internal holes (eyes, mouth, belly)
+                    contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    if contours:
+                        largest_contour = max(contours, key=cv2.contourArea)
+                        solid_mask = np.zeros_like(fg_mask)
+                        cv2.drawContours(solid_mask, [largest_contour], -1, 255, -1) # Fill completely
+                        fg_mask = solid_mask
 
-                    # Morphological closing to fill subject holes
-                    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-                    fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_CLOSE, kernel)
-
+                    # Smooth edge anti-aliasing
                     mask_full = cv2.resize(fg_mask, (w, h), interpolation=cv2.INTER_LINEAR)
-                    mask_full = cv2.GaussianBlur(mask_full, (5, 5), 0)
+                    mask_full = cv2.GaussianBlur(mask_full, (3, 3), 0)
 
                     b, g, r = cv2.split(img)
                     rgba = cv2.merge([b, g, r, mask_full])
