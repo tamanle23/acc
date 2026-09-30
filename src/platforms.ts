@@ -350,6 +350,25 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
 
   const fastIntermediate = settings?.fastIntermediate ?? true; // Defaults to true for optimal performance
 
+  const upscale = settings?.upscale
+    ? {
+        enabled: settings.upscale.enabled,
+        model: settings.upscale.model ?? 'realesrgan-x4plus',
+        ratio: settings.upscale.ratio ?? 2,
+      }
+    : undefined;
+
+  const bgm = settings?.bgm
+    ? {
+        ...settings.bgm,
+        volume: settings.bgm.volume ?? 0.1,
+        loop: settings.bgm.loop ?? true,
+        fadeIn: settings.bgm.fadeIn ?? 0,
+        fadeOut: settings.bgm.fadeOut ?? 2,
+        autoDucking: settings.bgm.autoDucking ?? true,
+      }
+    : undefined;
+
   return {
     platform,
     width,
@@ -368,10 +387,10 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     fastIntermediate,
     captions: mergedCaptions,
     transition: settings?.transition,
-    upscale: settings?.upscale,
+    upscale,
     overlayComposite: settings?.overlayComposite,
     pauseBetweenScenes: settings?.pauseBetweenScenes || settings?.pauseBetweenSlides,
-    bgm: settings?.bgm,
+    bgm,
     depth3d: settings?.depth3d,
   };
 }
