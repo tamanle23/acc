@@ -7,6 +7,7 @@ let avutil: any;
 let avcodec: any;
 let avformat: any;
 let swscale: any;
+let swresample: any;
 
 export function initFFI() {
     if (avutil) return; // already initialized
@@ -18,11 +19,14 @@ export function initFFI() {
     const avcodecPath = path.join(binDir, 'avcodec-63.dll');
     const avformatPath = path.join(binDir, 'avformat-63.dll');
     const swscalePath = path.join(binDir, 'swscale-10.dll');
+    const swresamplePath = path.join(binDir, 'swresample-7.dll');
 
     avutil = dlopen(avutilPath, {
         av_frame_alloc: { args: [], returns: FFIType.ptr },
         av_frame_free: { args: [FFIType.ptr], returns: FFIType.void },
         av_frame_get_buffer: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
+        av_frame_unref: { args: [FFIType.ptr], returns: FFIType.void },
+        av_channel_layout_default: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.void },
         av_dict_set: { args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         av_dict_free: { args: [FFIType.ptr], returns: FFIType.void },
         av_opt_set: { args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
@@ -37,11 +41,14 @@ export function initFFI() {
         av_packet_alloc: { args: [], returns: FFIType.ptr },
         av_packet_free: { args: [FFIType.ptr], returns: FFIType.void },
         avcodec_find_encoder_by_name: { args: [FFIType.cstring], returns: FFIType.ptr },
+        avcodec_find_decoder: { args: [FFIType.i32], returns: FFIType.ptr },
         avcodec_alloc_context3: { args: [FFIType.ptr], returns: FFIType.ptr },
         avcodec_free_context: { args: [FFIType.ptr], returns: FFIType.void },
         avcodec_open2: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_send_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_receive_packet: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avcodec_send_packet: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avcodec_receive_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_parameters_alloc: { args: [], returns: FFIType.ptr },
         avcodec_parameters_free: { args: [FFIType.ptr], returns: FFIType.void },
         avcodec_parameters_to_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
@@ -89,13 +96,30 @@ export function initFFI() {
         },
         sws_freeContext: { args: [FFIType.ptr], returns: FFIType.void }
     });
+
+    swresample = dlopen(swresamplePath, {
+        swr_alloc_set_opts2: { 
+            args: [
+                FFIType.ptr, FFIType.ptr, FFIType.i32, FFIType.i32, 
+                FFIType.ptr, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.ptr
+            ], 
+            returns: FFIType.i32 
+        },
+        swr_init: { args: [FFIType.ptr], returns: FFIType.i32 },
+        swr_convert: { 
+            args: [FFIType.ptr, FFIType.ptr, FFIType.i32, FFIType.ptr, FFIType.i32], 
+            returns: FFIType.i32 
+        },
+        swr_free: { args: [FFIType.ptr], returns: FFIType.void }
+    });
 }
 
 export const FFI = {
     get avutil() { initFFI(); return avutil.symbols; },
     get avcodec() { initFFI(); return avcodec.symbols; },
     get avformat() { initFFI(); return avformat.symbols; },
-    get swscale() { initFFI(); return swscale.symbols; }
+    get swscale() { initFFI(); return swscale.symbols; },
+    get swresample() { initFFI(); return swresample.symbols; }
 };
 
 /**

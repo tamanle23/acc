@@ -1,12 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { FFmpegCommand, getMediaDuration as getAudioDuration } from './core/FFmpegExecutor';
+import { getMediaDuration as getAudioDuration } from './core/FFmpegExecutor';
+import { FFIAudioDSP } from './core/ffmpeg-ffi/FFIAudioDSP';
 import { pipeline } from '@huggingface/transformers';
-import { WaveFile } from 'wavefile';
 import type { CaptionConfig } from './types';
-
-export { getAudioDuration };
 
 let transcriberInstance: any = null;
 
@@ -22,48 +20,6 @@ async function getTranscriber() {
     );
   }
   return transcriberInstance;
-}
-
-/**
- * Converts any audio format (mp3, wav, ogg, m4a...) into a 16kHz mono WAV buffer
- */
-function convertAudioTo16kWavBuffer(inputAudioPath: string): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    const tempWavPath = path.join(
-      os.tmpdir(),
-      `whisper_in_${Date.now()}_${Math.random().toString(36).substring(7)}.wav`
-    );
-
-    try {
-      const cmd = new FFmpegCommand(inputAudioPath);
-      cmd.outputOptions(['-vn', '-ar 16000', '-ac 1', '-c:a pcm_s16le', '-f wav']);
-      cmd.output(tempWavPath);
-      await cmd.run();
-
-      const buffer = fs.readFileSync(tempWavPath);
-      fs.unlinkSync(tempWavPath);
-      resolve(buffer);
-    } catch (err) {
-      if (fs.existsSync(tempWavPath)) {
-        try { fs.unlinkSync(tempWavPath); } catch {}
-      }
-      reject(err);
-    }
-  });
-}
-          resolve(buffer);
-        } catch (e) {
-          reject(e);
-        }
-      })
-      .on('error', (err) => {
-        try {
-          if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
-        } catch {}
-        reject(err);
-      })
-      .run();
-  });
 }
 
 function splitChunkIntoWords(
@@ -157,14 +113,7 @@ export async function transcribeAudio(
   splitWords: boolean = true,
   referenceScript?: string
 ): Promise<CaptionConfig[]> {
-  const wavBuffer = await convertAudioTo16kWavBuffer(audioPath);
-  const wav = new WaveFile(wavBuffer);
-  wav.toBitDepth('32f');
-
-  let samples = wav.getSamples(false, Float32Array);
-  if (Array.isArray(samples)) {
-    samples = samples[0];
-  }
+  const samples = await FFIAudioDSP.decodeTo16kMonoFloat32(audioPath);
 
   const transcriber = await getTranscriber();
   const audioDuration = await getAudioDuration(audioPath);

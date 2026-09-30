@@ -80,3 +80,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [62](062_phase1_codec_timebase_stabilization.md) | 2026-09-30 | Phase 1: Codec TimeBase, Timestamp & Zero-Copy Encoding Stabilization | Resolved AVCodecContext timebase/dimensions, AVIO close, and NVENC/x264 FFI encoding |
 | [63](063_phase2_in_memory_lossless_concat_muxer.md) | 2026-09-30 | Phase 2: In-Memory Lossless Concat Engine (FFIConcatMuxer) | Implemented FFIConcatMuxer packet stream-copy, eliminated -f concat spawn |
 | [`064`](064_phase3_filtergraph_timebase_normalization.md) | 2026-09-30 | Phase 3: FFI TimeBase Normalization & Zero-Copy Audio Remuxing | settb=AVTB, aresample, av_rescale_q audio timestamp sync, silent MP3 |
+| [`065`](065_phase4_native_audio_resampling_dsp.md) | 2026-09-30 | Phase 4: Native In-Memory Audio Resampling & DSP | libswresample FFI, direct 16kHz Float32 decode in Whisper |
