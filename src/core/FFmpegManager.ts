@@ -1,1 +1,1 @@
-export { FFmpegManager } from '../../packages/core/src/FFmpegManager';
+export * from '../../packages/core/src/FFmpegManager';

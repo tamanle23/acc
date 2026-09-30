@@ -1,10 +1,11 @@
+import { ptr, toArrayBuffer } from "bun:ffi";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import fs from "fs";
 import path from "path";
 import { FFI, initFFI, makeAVRational } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
-import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../../../../src/types";
-import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../captions-canvas";
+import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../types";
+import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../../../effect-engines/src/subtitles/captions-canvas";
 
 export interface SceneEngineOptions {
   scene: ResolvedSceneConfig;

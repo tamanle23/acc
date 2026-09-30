@@ -260,5 +260,6 @@ export function ffmpeg(input?: string): FFmpegCommand {
   return new FFmpegCommand(input);
 }
 
+export const FFmpegExecutor = ffmpeg;
 export default ffmpeg;
 

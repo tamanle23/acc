@@ -1,0 +1,14 @@
+{
+  "name": "@acc/effect-engines",
+  "version": "1.0.0",
+  "description": "Visual 3D depth suite, overlay shader effects, sound effect generators, and canvas subtitles",
+  "main": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/ir": "workspace:*",
+    "@napi-rs/canvas": "^1.0.9",
+    "simplex-noise": "^4.0.3"
+  }
+}

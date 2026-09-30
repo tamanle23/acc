@@ -97,4 +97,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`083`](083_backlog_gpu_acceleration_enhancement_suite.md) | 2026-09-30 | Backlog Epic: Full GPU Acceleration & Hardware Encoding Enhancement Suite | Created Backlog 009 covering dynamic multi-codec NVENC/AV1, CUDA color conversion, and Skia GPU rasterization |
 | [`084`](084_fix_visual_defects_framebreaker_sandwich_depthmesh.md) | 2026-10-01 | Fix 3D Visual Defects in Frame Breaker, Volumetric Sandwich, and Depth Mesh | True polaroid head/arm pop-out, 1080p fantasy kingdom sandwich, continuous multi-plane depth parallax |
 | [`085`](085_fix_source_crop_head_popout_and_explain_src_monorepo_architecture.md) | 2026-10-01 | Fix Source Crop Head Pop-out & Architecture Map of /src Post-Monorepo | Affine uncropped pop-out head projection, test suite analysis, /src Pipeline 4 architecture map |
+| [`086`](086_migrate_legacy_src_to_monorepo_packages.md) | 2026-10-01 | Migrate Legacy /src to @acc/effect-engines and Monorepo Packages | Created @acc/effect-engines, migrated StoryRenderer to apps/cli, converted /src to zero-regression shims |
 

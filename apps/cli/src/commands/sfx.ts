@@ -1,10 +1,8 @@
 import { parseArgs } from 'util';
-import { RegistryManager } from '../../../../src/sound-effects/core/Registry';
+import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '@acc/core';
 import path from 'path';
 import fs from 'fs';
-import { renderSoundEffect, renderCompositeSound } from '../../../../src/sound-effects/engine';
-import { FFmpegManager } from '../../../../packages/core/src/FFmpegManager';
-import { askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '../../../../src/core/interactive';
+import { renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 
 export async function generateHeadless(values: any) {
   if (!values.composite && !values['custom-prompt'] && (!values.effect || !values.variant || !values['sub-variant'])) {
