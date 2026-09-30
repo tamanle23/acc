@@ -10,6 +10,12 @@ import type {
   ContainerFormat,
   GpuAcceleration,
   CaptionSettings,
+  UpscaleSettings,
+  BGMSettings,
+  TransitionSettings,
+  Depth3DConfig,
+  TtsConfig,
+  VideoSettings,
 } from './types';
 
 export interface PlatformConfigDefaults {
@@ -287,6 +293,92 @@ export const PLATFORM_PRESETS: Record<PlatformPreset, PlatformConfigDefaults> = 
   },
 };
 
+/**
+ * Recursively merges user properties into a default object.
+ * Ignores `undefined` and `null` values in `userObj`, preserving the default value.
+ */
+export function mergeDefined<T extends Record<string, any>>(defaultObj: T, userObj?: Record<string, any>): T {
+  if (!userObj) {
+    return { ...defaultObj };
+  }
+  const result: any = { ...defaultObj };
+  for (const key of Object.keys(userObj)) {
+    const val = userObj[key];
+    if (val !== undefined && val !== null) {
+      if (
+        typeof val === 'object' &&
+        !Array.isArray(val) &&
+        defaultObj[key] &&
+        typeof defaultObj[key] === 'object' &&
+        !Array.isArray(defaultObj[key])
+      ) {
+        result[key] = mergeDefined(defaultObj[key], val);
+      } else {
+        result[key] = val;
+      }
+    }
+  }
+  return result;
+}
+
+export const DEFAULT_UPSCALE_SETTINGS: UpscaleSettings = {
+  enabled: false,
+  model: 'realesrgan-x4plus',
+  ratio: 2,
+};
+
+export const DEFAULT_BGM_SETTINGS: BGMSettings = {
+  source: '',
+  volume: 0.1,
+  loop: true,
+  fadeIn: 0,
+  fadeOut: 2,
+  autoDucking: true,
+};
+
+export const DEFAULT_TRANSITION_SETTINGS: TransitionSettings = {
+  enabled: true,
+  type: 'fade',
+  duration: 1.0,
+  audioBehavior: 'crossfade',
+};
+
+export const DEFAULT_DEPTH3D_CONFIG: Depth3DConfig = {
+  enabled: false,
+  mode: 'frame_breaker',
+  frameStyle: 'card',
+  popOutIntensity: 1.15,
+  shadow: true,
+  shadowBlur: 25,
+  shadowColor: 'rgba(0,0,0,0.6)',
+  backdropBlur: 20,
+  floatMotion: true,
+};
+
+export const DEFAULT_TTS_CONFIG: TtsConfig = {
+  enabled: false,
+  provider: 'vieneu-v3-turbo',
+  voice: 'Ngọc Trân',
+  speed: 1.0,
+};
+
+export const DEFAULT_CAPTION_SETTINGS: CaptionSettings = {
+  preset: 'classic',
+  subtitleMode: 'burn',
+  position: 'bottom',
+  alignment: 2,
+  marginV: 60,
+  marginH: 40,
+  autoTranscribe: true,
+};
+
+export const DEFAULT_VIDEO_SETTINGS: Required<VideoSettings> = {
+  timeBase: 'audio',
+  shortVideoMode: 'freeze',
+  longVideoMode: 'trim',
+  volume: 0.0,
+};
+
 let cachedNvidiaSupport: boolean | null = null;
 
 export function checkNvidiaSupport(): boolean {
@@ -343,30 +435,31 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
   const platformCaptionDefaults = base.captions || {};
   const userCaptions = settings?.captions || {};
 
-  const mergedCaptions: CaptionSettings = {
-    ...platformCaptionDefaults,
-    ...userCaptions,
-  };
+  const mergedCaptions: CaptionSettings = mergeDefined(
+    mergeDefined(DEFAULT_CAPTION_SETTINGS, platformCaptionDefaults),
+    userCaptions
+  );
 
   const fastIntermediate = settings?.fastIntermediate ?? true; // Defaults to true for optimal performance
 
   const upscale = settings?.upscale
-    ? {
-        enabled: settings.upscale.enabled,
-        model: settings.upscale.model ?? 'realesrgan-x4plus',
-        ratio: settings.upscale.ratio ?? 2,
-      }
+    ? mergeDefined(DEFAULT_UPSCALE_SETTINGS, settings.upscale)
     : undefined;
 
   const bgm = settings?.bgm
-    ? {
-        ...settings.bgm,
-        volume: settings.bgm.volume ?? 0.1,
-        loop: settings.bgm.loop ?? true,
-        fadeIn: settings.bgm.fadeIn ?? 0,
-        fadeOut: settings.bgm.fadeOut ?? 2,
-        autoDucking: settings.bgm.autoDucking ?? true,
-      }
+    ? mergeDefined(DEFAULT_BGM_SETTINGS, settings.bgm)
+    : undefined;
+
+  const transition = settings?.transition
+    ? mergeDefined(DEFAULT_TRANSITION_SETTINGS, settings.transition)
+    : undefined;
+
+  const depth3d = settings?.depth3d
+    ? mergeDefined(DEFAULT_DEPTH3D_CONFIG, settings.depth3d)
+    : undefined;
+
+  const tts = settings?.tts
+    ? mergeDefined(DEFAULT_TTS_CONFIG, settings.tts)
     : undefined;
 
   return {
@@ -386,12 +479,13 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     concurrency: resolvedConcurrency,
     fastIntermediate,
     captions: mergedCaptions,
-    transition: settings?.transition,
+    transition,
     upscale,
     overlayComposite: settings?.overlayComposite,
-    pauseBetweenScenes: settings?.pauseBetweenScenes || settings?.pauseBetweenSlides,
+    pauseBetweenScenes: settings?.pauseBetweenScenes ?? settings?.pauseBetweenSlides,
     bgm,
-    depth3d: settings?.depth3d,
+    depth3d,
+    tts,
   };
 }
 

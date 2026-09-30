@@ -3,7 +3,7 @@ import path from 'path';
 import readline from 'readline';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './src/types';
 import { renderStoryVideo } from './src/renderer';
-import { resolveStorySettings } from './src/platforms';
+import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './src/platforms';
 
 function askQuestion(query: string): Promise<string> {
   const rl = readline.createInterface({
@@ -124,16 +124,7 @@ async function main() {
       console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Scene không có cấu hình audio.`);
     }
 
-    const defaultVideoSettings = {
-      timeBase: 'audio' as const,
-      shortVideoMode: 'freeze' as const,
-      longVideoMode: 'trim' as const,
-      volume: 0.0,
-    };
-
-    const resolvedVideoSettings = scene.videoSettings
-      ? { ...defaultVideoSettings, ...scene.videoSettings }
-      : defaultVideoSettings;
+    const resolvedVideoSettings = mergeDefined(DEFAULT_VIDEO_SETTINGS, scene.videoSettings);
 
     resolvedScenes.push({
       ...scene,
