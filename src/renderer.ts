@@ -28,31 +28,11 @@ function getFileChecksum(filePath: string): string {
 const BLACK_PNG_BASE64 =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-function createSilentWavBuffer(seconds = 5): Buffer {
-  const sampleRate = 44100;
-  const numChannels = 2;
-  const bitsPerSample = 16;
-  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-  const blockAlign = (numChannels * bitsPerSample) / 8;
-  const numSamples = Math.ceil(sampleRate * seconds);
-  const dataSize = numSamples * blockAlign;
-  const buffer = Buffer.alloc(44 + dataSize);
-
-  buffer.write('RIFF', 0);
-  buffer.writeUInt32LE(36 + dataSize, 4);
-  buffer.write('WAVE', 8);
-  buffer.write('fmt ', 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20); // PCM
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(byteRate, 28);
-  buffer.writeUInt16LE(blockAlign, 32);
-  buffer.writeUInt16LE(bitsPerSample, 34);
-  buffer.write('data', 36);
-  buffer.writeUInt32LE(dataSize, 40);
-
-  return buffer;
+function createSilentMp3Buffer(seconds = 5): Buffer {
+  const framesCount = Math.ceil(seconds * 38.28125);
+  const frame = Buffer.alloc(417);
+  frame[0] = 0xFF; frame[1] = 0xFB; frame[2] = 0x90; frame[3] = 0x04;
+  return Buffer.concat(Array(framesCount).fill(frame));
 }
 
 function renderSingleScene(
@@ -265,8 +245,25 @@ function concatenateWithTransitions(
     segments.forEach(seg => command.input(seg.path));
 
     const filterGraph = new FFmpegFilterGraph();
-    let lastV = '[0:v]';
-    let lastA = '[0:a]';
+
+    // Normalize all input timebases to AVTB so xfade never mismatches
+    for (let idx = 0; idx < segments.length; idx++) {
+      filterGraph.addNode({
+        inputs: [`[${idx}:v]`],
+        filter: 'settb',
+        options: 'AVTB',
+        outputs: [`[v_norm_${idx}]`],
+      });
+      filterGraph.addNode({
+        inputs: [`[${idx}:a]`],
+        filter: 'aresample',
+        options: '44100:async=1',
+        outputs: [`[a_norm_${idx}]`],
+      });
+    }
+
+    let lastV = '[v_norm_0]';
+    let lastA = '[a_norm_0]';
     let currentOffset = segments[0].duration;
 
     // Build transition params
@@ -280,8 +277,8 @@ function concatenateWithTransitions(
       const tDur = tConfig.duration || 1.0;
       currentOffset -= tDur; // offset shrinks because we overlap
       
-      const nextV = `[${i + 1}:v]`;
-      const nextA = `[${i + 1}:a]`;
+      const nextV = `[v_norm_${i + 1}]`;
+      const nextA = `[a_norm_${i + 1}]`;
       const outV = filterGraph.createStreamLabel(`v_trans_${i}`);
       const outA = filterGraph.createStreamLabel(`a_trans_${i}`);
 
@@ -379,8 +376,8 @@ export async function renderStoryVideo(
   const fallbackImagePath = path.join(tempDir, '_fallback_black.png');
   fs.writeFileSync(fallbackImagePath, Buffer.from(BLACK_PNG_BASE64, 'base64'));
 
-  const fallbackAudioPath = path.join(tempDir, '_fallback_silent.wav');
-  fs.writeFileSync(fallbackAudioPath, createSilentWavBuffer(15));
+  const fallbackAudioPath = path.join(tempDir, '_fallback_silent.mp3');
+  fs.writeFileSync(fallbackAudioPath, createSilentMp3Buffer(15));
 
   try {
     console.log(`\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);

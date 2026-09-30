@@ -117,7 +117,8 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const ctx = canvas.getContext('2d');
 
   const { FFIVideoEncoder } = await import('../core/ffmpeg-ffi/FFIVideoEncoder');
-  const encoder = new FFIVideoEncoder(width, height, fps, outputPath);
+  const audioInput = scene.resolvedAudio || fallbackAudioPath;
+  const encoder = new FFIVideoEncoder(width, height, fps, outputPath, 20, audioInput);
   
   const renderPromise = new Promise<{ path: string; duration: number }>(async (resolve, reject) => {
     try {
@@ -167,7 +168,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         }
 
         // ZERO-COPY FFI INGESTION
-        const buffer = canvas.toBuffer('raw');
+        const buffer = canvas.data();
         encoder.encodeRgbaFrame(buffer);
       }
 

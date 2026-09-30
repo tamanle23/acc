@@ -64,18 +64,19 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 ---
 
 *Tuân thủ quy tắc bắt buộc tại [`AGENTS.md`](../../AGENTS.md) và [`.agents/rules/history-archival.md`](../../.agents/rules/history-archival.md).*
-|   [ ` 0 5 0 ` ] ( 0 5 0 _ a u t o _ t r a n s c r i b e _ f l a g _ f o r _ w h i s p e r . m d )   |   2 0 2 6 - 0 9 - 2 7   |   A u t o   T r a n s c r i b e   F l a g   f o r   W h i s p e r   i n   a u t o - c o n f i g   |   ` s t o r y - c o n f i g . j s o n ` ,   W h i s p e r   a u t o T r a n s c r i b e   f l a g ,   ` a u t o - c o n f i g . t s `   |  
- | [\ 51\](051_fix_upscaler_import.md) | 2026-09-27 | Fix Upscaler Import Error | Added missing checkAndDownloadUpscaler import |
-|   0 5 2   |   F i x   F F m p e g   F i l t e r   C o n f l i c t   ( E r r o r   2 3 4 )   |   2 0 2 6 - 0 9 - 2 7   |   s r c / r e n d e r e r . t s   |  
- | [\ 52\](052_isolated_pipeline_phase_1.md) | 2026-09-27 | Isolated Pipeline Architecture (Phase 1) | Implement AssetContext, IPlugin, UpscalerPlugin, and defensive try/catch fallbacks |
-| [\ 53\](053_ffmpeg_filtergraph_dag_phase_2.md) | 2026-09-27 | FFmpegFilterGraph DAG Builder (Phase 2) | Object-oriented DAG builder for xfade, scene filters, and BGM auto-ducking |
-| [\ 54\](054_backlog_consolidation_and_phase_3.md) | 2026-09-27 | Backlog Consolidation & Phase 3 | Moved backlog files to docs/backlogs/ and added Phase 3 Epic |
-| [\ 55\](055_backlog_increment_system_and_rule.md) | 2026-09-27 | Backlog Incremental System & Rule | 3-digit numbered backlogs, completion marking, and agent rule |
-| [ 56](056_ffmpeg_manager_shared_build.md) | 2026-09-30 | FFmpeg Manager Shared Build (FFI Phase 1) | Auto-download FFmpeg Shared Build (.dll/.so) for FFI |
-| [ 57](057_ffi_bindings_and_zero_copy_encoder.md) | 2026-09-30 | FFI Bindings Ecosystem & Zero-Copy Encoder (FFI Phase 2 & 3) | un:ffi bindings for avutil, avcodec, swscale, FFIVideoEncoder |
-| [ 58](058_phase4_5_ffi_filtergraph_and_cleanup.md) | 2026-09-30 | FFI FilterGraph & fluent-ffmpeg Removal (FFI Phase 4 & 5) | FFIFilterGraph, remove luent-ffmpeg, Zero-Copy Depth3D engine |
-| [ 59](059_update_rules_ffi_zero_copy.md) | 2026-09-30 | Rule Optimization for Bun FFI & Zero-Copy Architecture | Update master rules & active rules to remove fluent-ffmpeg & spawn constraints |
-| [ 60](060_refactor_renderer_and_remove_fluent_ffmpeg.md) | 2026-09-30 | Refactor renderer.ts and Remove fluent-ffmpeg Imports | Created FFmpegExecutor native wrapper, refactored renderer.ts, whisper.ts, BaseEffectEngine, pipeline, stacker |
-| [ 61](061_replace_ffprobe_with_ffi_probe.md) | 2026-09-30 | Replace ffprobe Process Spawning with Native Bun FFI Duration Probe | In-memory duration probing via avformat_open_input in libavformat |
-| [ 62](062_phase1_codec_timebase_stabilization.md) | 2026-09-30 | Phase 1: Codec TimeBase, Timestamp & Zero-Copy Encoding Stabilization | Resolved AVCodecContext timebase/dimensions, AVIO close, and NVENC/x264 FFI encoding |
-| [ 63](063_phase2_in_memory_lossless_concat_muxer.md) | 2026-09-30 | Phase 2: In-Memory Lossless Concat Engine (FFIConcatMuxer) | Implemented FFIConcatMuxer packet stream-copy, eliminated -f concat spawn |
+| [`050`](050_auto_transcribe_flag_for_whisper.md) | 2026-09-27 | Auto Transcribe Flag for Whisper in auto-config | `story-config.json`, Whisper autoTranscribe flag, `auto-config.ts` |
+| [\51\](051_fix_upscaler_import.md) | 2026-09-27 | Fix Upscaler Import Error | Added missing checkAndDownloadUpscaler import |
+| 052 | Fix FFmpeg Filter Conflict (Error 234) | 2026-09-27 | src/renderer.ts |
+| [\52\](052_isolated_pipeline_phase_1.md) | 2026-09-27 | Isolated Pipeline Architecture (Phase 1) | Implement AssetContext, IPlugin, UpscalerPlugin, and defensive try/catch fallbacks |
+| [\53\](053_ffmpeg_filtergraph_dag_phase_2.md) | 2026-09-27 | FFmpegFilterGraph DAG Builder (Phase 2) | Object-oriented DAG builder for xfade, scene filters, and BGM auto-ducking |
+| [\54\](054_backlog_consolidation_and_phase_3.md) | 2026-09-27 | Backlog Consolidation & Phase 3 | Moved backlog files to docs/backlogs/ and added Phase 3 Epic |
+| [\55\](055_backlog_increment_system_and_rule.md) | 2026-09-27 | Backlog Incremental System & Rule | 3-digit numbered backlogs, completion marking, and agent rule |
+| [56](056_ffmpeg_manager_shared_build.md) | 2026-09-30 | FFmpeg Manager Shared Build (FFI Phase 1) | Auto-download FFmpeg Shared Build (.dll/.so) for FFI |
+| [57](057_ffi_bindings_and_zero_copy_encoder.md) | 2026-09-30 | FFI Bindings Ecosystem & Zero-Copy Encoder (FFI Phase 2 & 3) | un:ffi bindings for avutil, avcodec, swscale, FFIVideoEncoder |
+| [58](058_phase4_5_ffi_filtergraph_and_cleanup.md) | 2026-09-30 | FFI FilterGraph & fluent-ffmpeg Removal (FFI Phase 4 & 5) | FFIFilterGraph, remove luent-ffmpeg, Zero-Copy Depth3D engine |
+| [59](059_update_rules_ffi_zero_copy.md) | 2026-09-30 | Rule Optimization for Bun FFI & Zero-Copy Architecture | Update master rules & active rules to remove fluent-ffmpeg & spawn constraints |
+| [60](060_refactor_renderer_and_remove_fluent_ffmpeg.md) | 2026-09-30 | Refactor renderer.ts and Remove fluent-ffmpeg Imports | Created FFmpegExecutor native wrapper, refactored renderer.ts, whisper.ts, BaseEffectEngine, pipeline, stacker |
+| [61](061_replace_ffprobe_with_ffi_probe.md) | 2026-09-30 | Replace ffprobe Process Spawning with Native Bun FFI Duration Probe | In-memory duration probing via avformat_open_input in libavformat |
+| [62](062_phase1_codec_timebase_stabilization.md) | 2026-09-30 | Phase 1: Codec TimeBase, Timestamp & Zero-Copy Encoding Stabilization | Resolved AVCodecContext timebase/dimensions, AVIO close, and NVENC/x264 FFI encoding |
+| [63](063_phase2_in_memory_lossless_concat_muxer.md) | 2026-09-30 | Phase 2: In-Memory Lossless Concat Engine (FFIConcatMuxer) | Implemented FFIConcatMuxer packet stream-copy, eliminated -f concat spawn |
+| [`064`](064_phase3_filtergraph_timebase_normalization.md) | 2026-09-30 | Phase 3: FFI TimeBase Normalization & Zero-Copy Audio Remuxing | settb=AVTB, aresample, av_rescale_q audio timestamp sync, silent MP3 |

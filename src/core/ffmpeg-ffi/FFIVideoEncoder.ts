@@ -1,5 +1,6 @@
 import { FFI, Structs, freePtr, makeAVRational, AV_PIX_FMT_YUV420P, AV_PIX_FMT_RGBA } from "./index";
 import { ptr, toArrayBuffer } from "bun:ffi";
+import fs from "fs";
 
 export class FFIVideoEncoder {
     private formatCtx: bigint = 0n;
@@ -12,12 +13,17 @@ export class FFIVideoEncoder {
     private isInitialized: boolean = false;
     private isHeaderWritten: boolean = false;
 
+    private audioStream: bigint = 0n;
+    private audioInCtx: bigint = 0n;
+    private inAudioTimeBase: bigint = 0n;
+
     constructor(
         private width: number,
         private height: number,
         private fps: number,
         private outputPath: string,
-        private crf: number = 20
+        private crf: number = 20,
+        private audioPath?: string
     ) {}
 
     public initialize() {
@@ -63,7 +69,6 @@ export class FFIVideoEncoder {
         // 4. Open video codec
         let openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
         if (openRet < 0 && isNvenc) {
-            // NVENC failed at runtime (e.g. no GPU driver). Fallback to libx264
             codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("libx264\0"));
             if (codec) {
                 FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from("fast\0"), 0);
@@ -81,19 +86,44 @@ export class FFIVideoEncoder {
         if (retOut < 0) throw new Error("Failed to allocate output context");
         this.formatCtx = fmtCtxPtr[0];
 
-        // 6. Create Video Stream and copy codecpar
+        // 6. Create Video Stream (stream #0) and copy codecpar
         this.stream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
         if (!this.stream) throw new Error("Failed to create video stream");
 
         const streamView = new DataView(toArrayBuffer(this.stream, 0, 64));
-        const streamCodecpar = streamView.getBigUint64(16, true); // codecpar offset = 16
+        const streamCodecpar = streamView.getBigUint64(16, true);
         FFI.avcodec.avcodec_parameters_from_context(streamCodecpar, this.codecCtx);
 
-        // 7. Open AVIO output file
-        const retIo = FFI.avformat.avio_open(this.formatCtx + 32n, Buffer.from(this.outputPath + "\0"), 2); // 2 = AVIO_FLAG_WRITE
+        // 7. Optional: Setup Audio Stream (stream #1) if audioPath exists
+        if (this.audioPath && fs.existsSync(this.audioPath)) {
+            const aInPtr = new BigUint64Array(1);
+            const aRet = FFI.avformat.avformat_open_input(ptr(aInPtr.buffer), Buffer.from(this.audioPath + "\0"), 0n, 0n);
+            if (aRet === 0) {
+                this.audioInCtx = aInPtr[0];
+                FFI.avformat.avformat_find_stream_info(this.audioInCtx, 0n);
+
+                const inView = new DataView(toArrayBuffer(this.audioInCtx, 0, 64));
+                const inStreamsArray = new DataView(toArrayBuffer(inView.getBigUint64(48, true), 0, 64));
+                const inAudioStream = inStreamsArray.getBigUint64(0, true);
+                const inAudioCodecpar = new DataView(toArrayBuffer(inAudioStream, 0, 64)).getBigUint64(16, true);
+
+                const inStreamView = new DataView(toArrayBuffer(inAudioStream, 0, 64));
+                this.inAudioTimeBase = makeAVRational(inStreamView.getInt32(32, true), inStreamView.getInt32(36, true));
+
+                this.audioStream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
+                const outAudioCodecpar = new DataView(toArrayBuffer(this.audioStream, 0, 64)).getBigUint64(16, true);
+                FFI.avcodec.avcodec_parameters_copy(outAudioCodecpar, inAudioCodecpar);
+                // Reset codec_tag to 0 to prevent container tag mismatch (e.g. WAV PCM in MP4)
+                const outCpView = new DataView(toArrayBuffer(outAudioCodecpar, 0, 64));
+                outCpView.setUint32(8, 0, true);
+            }
+        }
+
+        // 8. Open AVIO output file
+        const retIo = FFI.avformat.avio_open(this.formatCtx + 32n, Buffer.from(this.outputPath + "\0"), 2);
         if (retIo < 0) throw new Error(`Failed to open output file: ${this.outputPath}`);
 
-        // 8. Write Container Header
+        // 9. Write Container Header
         const retHdr = FFI.avformat.avformat_write_header(this.formatCtx, 0n);
         if (retHdr < 0) throw new Error(`Failed to write stream header (code ${retHdr})`);
         this.isHeaderWritten = true;
@@ -145,8 +175,14 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_send_frame(this.codecCtx, this.frame);
 
         // Drain encoded packets
+        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
+            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
+            pktView.setBigInt64(8, streamPts, true);   // pts
+            pktView.setBigInt64(16, streamPts, true);  // dts
+            pktView.setBigInt64(64, ticksPerFrame, true); // duration
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
         }
     }
@@ -155,10 +191,56 @@ export class FFIVideoEncoder {
         if (!this.isInitialized) return;
 
         // Flush remaining frames in encoder
+        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         FFI.avcodec.avcodec_send_frame(this.codecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
+            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const streamPts = BigInt(this.frameIndex++) * ticksPerFrame;
+            pktView.setBigInt64(8, streamPts, true);   // pts
+            pktView.setBigInt64(16, streamPts, true);  // dts
+            pktView.setBigInt64(64, ticksPerFrame, true); // duration
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
+        }
+
+        // Remux audio packets if audio stream is active
+        if (this.audioInCtx) {
+            const outStreamView = new DataView(toArrayBuffer(this.audioStream, 0, 64));
+            const outAudioTimeBase = makeAVRational(outStreamView.getInt32(32, true), outStreamView.getInt32(36, true));
+            const maxDurationUs = BigInt(Math.round((this.frameIndex / this.fps) * 1000000));
+            const maxPts = FFI.avutil.av_rescale_q(maxDurationUs, makeAVRational(1, 1000000), outAudioTimeBase);
+
+            while (FFI.avformat.av_read_frame(this.audioInCtx, this.packet) >= 0) {
+                const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+                pktView.setInt32(36, 1, true); // stream_index = 1
+
+                const inPts = pktView.getBigInt64(8, true);
+                const inDts = pktView.getBigInt64(16, true);
+                const inDur = pktView.getBigInt64(64, true);
+
+                let scaledPts = inPts;
+                if (inPts !== -0x8000000000000000n && this.inAudioTimeBase) {
+                    scaledPts = FFI.avutil.av_rescale_q(inPts, this.inAudioTimeBase, outAudioTimeBase);
+                    pktView.setBigInt64(8, scaledPts, true);
+                }
+                if (inDts !== -0x8000000000000000n && this.inAudioTimeBase) {
+                    pktView.setBigInt64(16, FFI.avutil.av_rescale_q(inDts, this.inAudioTimeBase, outAudioTimeBase), true);
+                }
+                if (inDur > 0n && this.inAudioTimeBase) {
+                    pktView.setBigInt64(64, FFI.avutil.av_rescale_q(inDur, this.inAudioTimeBase, outAudioTimeBase), true);
+                }
+
+                if (scaledPts > maxPts) {
+                    FFI.avcodec.av_packet_unref(this.packet);
+                    break;
+                }
+
+                FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
+                FFI.avcodec.av_packet_unref(this.packet);
+            }
+            const pIn = new BigUint64Array([this.audioInCtx]);
+            FFI.avformat.avformat_close_input(ptr(pIn.buffer));
+            this.audioInCtx = 0n;
         }
 
         // Write container trailer
