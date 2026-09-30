@@ -93,4 +93,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`075`](075_phase3_pipeline4_refinement_depth3d_vision.md) | 2026-09-30 | Phase 3: Pipeline 4 Refinement (Depth Anything v2 + SAM 2 + Depth3D) | VisionEngine & VisionService gRPC, autoSegment & autoDepth in Depth3D, migrated sfx & overlay CLI |
 | [`076`](076_phase4_pipeline1_event_driven_scraper_summarizer.md) | 2026-09-30 | Phase 4: Pipeline 1 Implementation (Event-Driven Scraper & Summarizer - Priority 1) | ScraperEngine (Bun.serve webhook + URL), LLMEngine grammar, TTSEngine, ScraperPipeline, 4-way fanning |
 | [`077`](077_phase5_specialized_pipelines_db_repurpose_rule_ambient.md) | 2026-09-30 | Phase 5: Specialized Pipelines Implementation (DB, Repurpose, Rule/Math, Ambient) | DBTemplatingPipeline (P2), RepurposingPipeline (P3), RuleLogicPipeline (P5), AmbientStreamPipeline (P6) |
+| [`078`](078_youtube_live_rtmp_compliance_and_realtime_pacing.md) | 2026-09-30 | YouTube Live RTMP Ingestion Compliance & Real-Time Clock Pacing | 2.0s closed GOP, FLV RTMP container, zerolatency tuning, Atomics.wait real-time clock pacing |
 

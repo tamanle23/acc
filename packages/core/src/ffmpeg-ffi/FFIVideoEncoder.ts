@@ -20,6 +20,8 @@ export class FFIVideoEncoder {
 
     private srcDataC: bigint = 0n;
     private srcStrideC: bigint = 0n;
+    private isRtmp: boolean = false;
+    private streamStartTime: number = 0;
 
     constructor(
         private width: number,
@@ -56,17 +58,28 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_parameters_to_context(this.codecCtx, par);
         FFI.avcodec.avcodec_parameters_free(ptr(new BigUint64Array([par]).buffer));
 
+        this.isRtmp = this.outputPath.startsWith("rtmp://") || this.outputPath.startsWith("rtmps://");
+
         // 3. TimeBase & Framerate configuration
         const timeBaseStr = Buffer.from(`1/${this.fps}\0`);
         const frameRateStr = Buffer.from(`${this.fps}/1\0`);
         FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("time_base\0"), timeBaseStr, 0);
         FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("framerate\0"), frameRateStr, 0);
 
+        // YouTube & Broadcast compliant GOP (Group of Pictures): Fixed 2-second keyframe interval
+        const gopSize = this.fps * 2;
+        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("g\0"), Buffer.from(`${gopSize}\0`), 0);
+        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("keyint_min\0"), Buffer.from(`${gopSize}\0`), 0);
+
+        if (this.isRtmp) {
+            FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("tune\0"), Buffer.from("zerolatency\0"), 0);
+        }
+
         if (isNvenc) {
-            FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from("p4\0"), 0);
+            FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from(this.isRtmp ? "p2\0" : "p4\0"), 0);
             FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("cq\0"), Buffer.from(`${this.crf}\0`), 0);
         } else {
-            FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from("fast\0"), 0);
+            FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from(this.isRtmp ? "veryfast\0" : "fast\0"), 0);
             FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("crf\0"), Buffer.from(`${this.crf}\0`), 0);
         }
 
@@ -75,7 +88,7 @@ export class FFIVideoEncoder {
         if (openRet < 0 && isNvenc) {
             codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("libx264\0"));
             if (codec) {
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from("fast\0"), 0);
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("preset\0"), Buffer.from(this.isRtmp ? "veryfast\0" : "fast\0"), 0);
                 FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("crf\0"), Buffer.from(`${this.crf}\0`), 0);
                 openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
             }
@@ -86,9 +99,14 @@ export class FFIVideoEncoder {
 
         // 5. Allocate output format context
         const fmtCtxPtr = new BigUint64Array(1);
-        const retOut = FFI.avformat.avformat_alloc_output_context2(ptr(fmtCtxPtr.buffer), 0n, 0n, Buffer.from(this.outputPath + "\0"));
+        const formatName = this.isRtmp ? Buffer.from("flv\0") : 0n;
+        const retOut = FFI.avformat.avformat_alloc_output_context2(ptr(fmtCtxPtr.buffer), 0n, formatName, Buffer.from(this.outputPath + "\0"));
         if (retOut < 0) throw new Error("Failed to allocate output context");
         this.formatCtx = fmtCtxPtr[0];
+
+        if (this.isRtmp) {
+            FFI.avutil.av_opt_set(this.formatCtx, Buffer.from("flvflags\0"), Buffer.from("no_duration_filesize\0"), 0);
+        }
 
         // 6. Create Video Stream (stream #0) and copy codecpar
         this.stream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
@@ -165,6 +183,19 @@ export class FFIVideoEncoder {
 
     public encodeRgbaFrame(rgbaBuffer: Buffer | Uint8Array) {
         if (!this.isInitialized) this.initialize();
+
+        if (this.isRtmp) {
+            if (this.streamStartTime === 0) {
+                this.streamStartTime = performance.now();
+            } else {
+                const targetTime = this.streamStartTime + (this.frameIndex * 1000) / this.fps;
+                const now = performance.now();
+                const sleepMs = targetTime - now;
+                if (sleepMs > 1) {
+                    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Math.floor(sleepMs));
+                }
+            }
+        }
 
         // Write raw pointer directly into native C memory buffer
         const dataView = new DataView(toArrayBuffer(this.srcDataC, 0, 64));
