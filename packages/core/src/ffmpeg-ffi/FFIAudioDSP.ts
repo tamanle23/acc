@@ -2,6 +2,100 @@ import { FFI, initFFI } from "./index";
 import { ptr, toArrayBuffer } from "bun:ffi";
 import fs from "fs";
 
+function tryDecodeWav(audioPath: string): Float32Array | null {
+  try {
+    const buf = fs.readFileSync(audioPath);
+    if (buf.length < 44) return null;
+    if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') {
+      return null;
+    }
+
+    let pos = 12;
+    let format = 0;
+    let channels = 0;
+    let sampleRate = 0;
+    let bitsPerSample = 0;
+    let dataOffset = 0;
+    let dataSize = 0;
+
+    while (pos < buf.length - 8) {
+      const chunkId = buf.toString('ascii', pos, pos + 4);
+      const chunkSize = buf.readUInt32LE(pos + 4);
+      if (chunkId === 'fmt ') {
+        format = buf.readUInt16LE(pos + 8);
+        channels = buf.readUInt16LE(pos + 10);
+        sampleRate = buf.readUInt32LE(pos + 12);
+        bitsPerSample = buf.readUInt16LE(pos + 22);
+      } else if (chunkId === 'data') {
+        dataOffset = pos + 8;
+        dataSize = chunkSize;
+        break;
+      }
+      pos += 8 + chunkSize;
+    }
+
+    if (!dataOffset || channels < 1 || sampleRate < 1) return null;
+
+    const bytesPerSample = bitsPerSample / 8;
+    const blockAlign = channels * bytesPerSample;
+    const totalFrames = Math.floor(Math.min(dataSize, buf.length - dataOffset) / blockAlign);
+    if (totalFrames <= 0) return null;
+
+    const monoSamples = new Float32Array(totalFrames);
+    for (let i = 0; i < totalFrames; i++) {
+      const frameOffset = dataOffset + i * blockAlign;
+      let frameSum = 0;
+      for (let ch = 0; ch < channels; ch++) {
+        const sampleOffset = frameOffset + ch * bytesPerSample;
+        let sampleVal = 0;
+        if (format === 1) { // PCM
+          if (bitsPerSample === 16) {
+            sampleVal = buf.readInt16LE(sampleOffset) / 32768.0;
+          } else if (bitsPerSample === 8) {
+            sampleVal = (buf.readUInt8(sampleOffset) - 128) / 128.0;
+          } else if (bitsPerSample === 24) {
+            const b0 = buf.readUInt8(sampleOffset);
+            const b1 = buf.readUInt8(sampleOffset + 1);
+            const b2 = buf.readInt8(sampleOffset + 2);
+            const val24 = (b2 << 16) | (b1 << 8) | b0;
+            sampleVal = val24 / 8388608.0;
+          } else if (bitsPerSample === 32) {
+            sampleVal = buf.readInt32LE(sampleOffset) / 2147483648.0;
+          }
+        } else if (format === 3) { // IEEE Float
+          if (bitsPerSample === 32) {
+            sampleVal = buf.readFloatLE(sampleOffset);
+          }
+        }
+        frameSum += sampleVal;
+      }
+      monoSamples[i] = frameSum / channels;
+    }
+
+    if (sampleRate === 16000) {
+      return monoSamples;
+    }
+
+    const targetRate = 16000;
+    const targetLength = Math.round((monoSamples.length * targetRate) / sampleRate);
+    const resampled = new Float32Array(targetLength);
+    const ratio = sampleRate / targetRate;
+
+    for (let i = 0; i < targetLength; i++) {
+      const srcPos = i * ratio;
+      const srcIdx = Math.floor(srcPos);
+      const frac = srcPos - srcIdx;
+      const s1 = monoSamples[srcIdx] || 0;
+      const s2 = monoSamples[Math.min(srcIdx + 1, monoSamples.length - 1)] || 0;
+      resampled[i] = s1 + frac * (s2 - s1);
+    }
+
+    return resampled;
+  } catch {
+    return null;
+  }
+}
+
 export class FFIAudioDSP {
   /**
    * Decodes any audio file (MP3, WAV, M4A, OGG, FLAC) directly into a 16kHz mono Float32Array in memory.
@@ -10,6 +104,12 @@ export class FFIAudioDSP {
   public static async decodeTo16kMonoFloat32(audioPath: string): Promise<Float32Array> {
     if (!fs.existsSync(audioPath)) {
       throw new Error(`Audio file not found: ${audioPath}`);
+    }
+
+    // Fast path for WAV files: pure in-memory zero-FFI decode
+    const directWav = tryDecodeWav(audioPath);
+    if (directWav) {
+      return directWav;
     }
 
     initFFI();
@@ -126,7 +226,7 @@ export class FFIAudioDSP {
               const nbSamples = fView.getInt32(112, true);
               const extendedData = fView.getBigUint64(96, true);
 
-              const outCapacity = Math.ceil((nbSamples * 16000) / inputSampleRate) + 256;
+              const outCapacity = Math.max(16384, Math.ceil((nbSamples * 16000) / inputSampleRate) * 4 + 8192);
               const outBuf = new Float32Array(outCapacity);
               const outPtrs = new BigUint64Array([BigInt(ptr(outBuf))]);
 
@@ -158,7 +258,7 @@ export class FFIAudioDSP {
         const nbSamples = fView.getInt32(112, true);
         const extendedData = fView.getBigUint64(96, true);
 
-        const outCapacity = Math.ceil((nbSamples * 16000) / inputSampleRate) + 256;
+        const outCapacity = Math.max(16384, Math.ceil((nbSamples * 16000) / inputSampleRate) * 4 + 8192);
         const outBuf = new Float32Array(outCapacity);
         const outPtrs = new BigUint64Array([BigInt(ptr(outBuf))]);
 
