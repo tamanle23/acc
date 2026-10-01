@@ -25,7 +25,7 @@ async function main() {
   await FFmpegManager.prepare();
   const rawArgs = process.argv.slice(2);
   const firstArg = rawArgs[0]?.toLowerCase();
-  if (firstArg && ['run', 'stream', 'serve', 'list', '--help', '-h'].includes(firstArg)) {
+  if (firstArg && ['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'help', '--help', '-h'].includes(firstArg)) {
     const { runCli } = await import('./apps/cli/src/index');
     await runCli(rawArgs);
     if (firstArg !== 'serve') {

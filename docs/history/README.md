@@ -102,4 +102,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`088`](088_clean_dinosaur_subject_cutout_zero_background_leakage.md) | 2026-10-01 | Clean Subject Cutout with Zero Background Leakage | High-resolution anatomical silhouette contour, zero landscape/grass leakage, frame breaker verified |
 | [`089`](089_huggingface_transformers_js_vision_strategy_pattern.md) | 2026-10-01 | Native Vision Strategy Pattern via @huggingface/transformers | ISegmentationStrategy & IDepthEstimationStrategy, SlimSAM, SAM ViT-Base, Depth Anything v2 Small, 100% in-process TypeScript |
 | [`090`](090_strategy_and_checksum_aware_auto_caching.md) | 2026-10-01 | Checksum & Strategy-Aware Auto Caching for Vision AI | MD5 image checksum + strategy naming in autoCandidate resolution & persistent caching |
+| [`091`](091_expand_segmentation_strategies_sam2_rmbg_birefnet.md) | 2026-10-01 | Expanded Vision Strategies (SAM 2.1 Tiny, RMBG-1.4, BiRefNet) | Plug-and-play strategies for SAM 2.1 Tiny, RMBG-1.4, BiRefNet with benchmark comparisons |
 

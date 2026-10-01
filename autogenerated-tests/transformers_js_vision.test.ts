@@ -47,6 +47,15 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
       segContext.useStrategy('sam-vit-base');
       expect(segContext.getActiveStrategyName()).toBe('sam-vit-base');
 
+      segContext.useStrategy('sam2-tiny');
+      expect(segContext.getActiveStrategyName()).toBe('sam2-tiny');
+
+      segContext.useStrategy('rmbg-1.4');
+      expect(segContext.getActiveStrategyName()).toBe('rmbg-1.4');
+
+      segContext.useStrategy('birefnet-general');
+      expect(segContext.getActiveStrategyName()).toBe('birefnet-general');
+
       segContext.useStrategy('slimsam');
       expect(segContext.getActiveStrategyName()).toBe('slimsam');
     });

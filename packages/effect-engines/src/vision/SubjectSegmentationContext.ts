@@ -1,6 +1,9 @@
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from './types';
 import { SlimSamStrategy } from './strategies/segmentation/SlimSamStrategy';
 import { SamVitBaseStrategy } from './strategies/segmentation/SamVitBaseStrategy';
+import { Sam2TinyStrategy } from './strategies/segmentation/Sam2TinyStrategy';
+import { RmbgStrategy } from './strategies/segmentation/RmbgStrategy';
+import { BiRefNetStrategy } from './strategies/segmentation/BiRefNetStrategy';
 import { GrabCutFallbackStrategy } from './strategies/segmentation/GrabCutFallbackStrategy';
 
 export class SubjectSegmentationContext {
@@ -25,8 +28,23 @@ export class SubjectSegmentationContext {
     this.currentStrategy = strategy;
   }
 
-  public useStrategy(name: 'slimsam' | 'sam-vit-base' | 'grabcut' | string): void {
+  public useStrategy(name: 'slimsam' | 'sam-vit-base' | 'sam2-tiny' | 'rmbg-1.4' | 'birefnet-general' | 'grabcut' | string): void {
     switch (name.toLowerCase()) {
+      case 'sam2-tiny':
+      case 'sam2':
+      case 'sam2.1':
+        this.currentStrategy = new Sam2TinyStrategy();
+        break;
+      case 'rmbg':
+      case 'rmbg-1.4':
+      case 'briaai':
+        this.currentStrategy = new RmbgStrategy();
+        break;
+      case 'birefnet':
+      case 'birefnet-general':
+      case 'birefnet-lite':
+        this.currentStrategy = new BiRefNetStrategy();
+        break;
       case 'sam-vit-base':
       case 'vit-b':
         this.currentStrategy = new SamVitBaseStrategy();

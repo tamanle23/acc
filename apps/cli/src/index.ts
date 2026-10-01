@@ -12,7 +12,7 @@ import {
 } from './pipelines';
 
 export interface CliOptions {
-  command?: 'run' | 'stream' | 'serve' | 'list' | 'help';
+  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help';
   pipelineId?: string;
   configPath?: string;
   exporters?: string[];
@@ -33,7 +33,7 @@ export function parseCliArgs(args: string[]): CliOptions {
   const firstArg = args[0].toLowerCase();
   let startIndex = 0;
 
-  if (['run', 'stream', 'serve', 'list', 'help', '--help', '-h'].includes(firstArg)) {
+  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'help', '--help', '-h'].includes(firstArg)) {
     if (firstArg === '--help' || firstArg === '-h') {
       options.command = 'help';
     } else {
@@ -91,6 +91,8 @@ USAGE:
   acc stream <pipeline_id> --rtmp <url> [options]
   acc serve [--port <number>]
   acc list
+  acc overlay [options]
+  acc sfx [options]
   acc <story_folder> (Legacy Generative Storyteller shorthand)
 
 PIPELINE IDENTIFIERS:
@@ -142,6 +144,18 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
     case 'list':
       listPipelines();
       return { success: true, command: 'list' };
+
+    case 'overlay': {
+      const { runOverlayCommand } = await import('./commands/overlay');
+      await runOverlayCommand(argv.slice(1));
+      return { success: true, command: 'overlay' };
+    }
+
+    case 'sfx': {
+      const { runSFXCommand } = await import('./commands/sfx');
+      await runSFXCommand(argv.slice(1));
+      return { success: true, command: 'sfx' };
+    }
 
     case 'serve': {
       const port = options.port || 3000;
