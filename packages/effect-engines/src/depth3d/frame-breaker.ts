@@ -4,6 +4,7 @@ import type { Depth3DConfig } from '../types';
 export interface FrameBreakerState {
   img: Image;
   subjectImg: Image | null;
+  subjectBBox?: { x: number; y: number; width: number; height: number } | null;
   bgCanvas?: any;
   width: number;
   height: number;
@@ -15,7 +16,7 @@ export interface FrameBreakerState {
 }
 
 export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
-  const { img, subjectImg, width, height, timeSec, depthConfig, bgCanvas } = state;
+  const { img, subjectImg, subjectBBox: inputBBox, width, height, timeSec, depthConfig, bgCanvas } = state;
   const style = depthConfig.frameStyle || 'card';
   const popOutIntensity = depthConfig.popOutIntensity ?? 1.15;
   const shadowEnabled = depthConfig.shadow !== false;
@@ -42,9 +43,16 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     bgX = (width - bgW) / 2;
   }
 
-  // Helper: Detect non-transparent bounding box from subject image
+  // Helper: Detect non-transparent bounding box from subject image or passed subjectBBox
   let subBBox: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
-  if (subjectImg) {
+  if (inputBBox && typeof inputBBox.x === 'number') {
+    subBBox = {
+      minX: inputBBox.x * img.width,
+      maxX: (inputBBox.x + inputBBox.width) * img.width,
+      minY: inputBBox.y * img.height,
+      maxY: (inputBBox.y + inputBBox.height) * img.height
+    };
+  } else if (subjectImg) {
     if ((subjectImg as any)._bbox) {
       subBBox = (subjectImg as any)._bbox;
     } else {
@@ -55,10 +63,10 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
         cctx.drawImage(subjectImg, 0, 0);
         const data = cctx.getImageData(0, 0, subjectImg.width, subjectImg.height).data;
         let minX = subjectImg.width, maxX = 0, minY = subjectImg.height, maxY = 0;
-        for (let y = 0; y < subjectImg.height; y += 2) {
-          for (let x = 0; x < subjectImg.width; x += 2) {
+        for (let y = 2; y < subjectImg.height - 2; y += 2) {
+          for (let x = 2; x < subjectImg.width - 2; x += 2) {
             const a = data[(y * subjectImg.width + x) * 4 + 3];
-            if (a > 30) {
+            if (a >= 80) {
               if (x < minX) minX = x;
               if (x > maxX) maxX = x;
               if (y < minY) minY = y;

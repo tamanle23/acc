@@ -39,6 +39,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const imgBuffer = fs.readFileSync(scene.resolvedImage);
   const img = await loadImage(imgBuffer);
   let subjectImg: Image | null = null;
+  let subjectBBox: any = null;
   const shouldAutoSegment = depthConfig.autoSegment !== undefined
     ? depthConfig.autoSegment
     : (mode === 'frame_breaker' || mode === 'volumetric_sandwich' || mode === 'sandwich');
@@ -77,16 +78,27 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   if (resolvedSubPath) {
     try {
       subjectImg = await loadImage(fs.readFileSync(resolvedSubPath));
+      // Check for companion bbox json
+      const jsonCandidate = resolvedSubPath.replace(/\.png$/i, '.json');
+      if (fs.existsSync(jsonCandidate)) {
+        try {
+          const meta = JSON.parse(fs.readFileSync(jsonCandidate, 'utf-8'));
+          if (meta.boundingBox) subjectBBox = meta.boundingBox;
+        } catch {}
+      }
     } catch {}
   } else if (shouldAutoSegment && scene.resolvedImage) {
     try {
       const segRes = await segContext.segment(imgBuffer);
       if (segRes && segRes.maskRgbaBuffer && segRes.maskRgbaBuffer.length > 0) {
         subjectImg = await loadImage(segRes.maskRgbaBuffer);
-        // Persist cached cutout with checksum and strategy name for deterministic cache hits
+        subjectBBox = segRes.boundingBox;
+        // Persist cached cutout with checksum, strategy name and companion bbox JSON
         const cachePath = path.resolve(sceneDir, `${baseName}_subject_${segStratName}_${imageChecksum}.png`);
+        const metaPath = path.resolve(sceneDir, `${baseName}_subject_${segStratName}_${imageChecksum}.json`);
         try {
           fs.writeFileSync(cachePath, segRes.maskRgbaBuffer);
+          fs.writeFileSync(metaPath, JSON.stringify({ boundingBox: segRes.boundingBox, strategy: segStratName }, null, 2));
         } catch {}
       }
     } catch {}
@@ -336,7 +348,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
           case 'frame_breaker':
           default:
             drawFrameBreakerFrame(ctx, {
-              img, subjectImg, bgCanvas, width, height, frame, totalFrames, timeSec, progress, depthConfig
+              img, subjectImg, subjectBBox, bgCanvas, width, height, frame, totalFrames, timeSec, progress, depthConfig
             });
             break;
         }

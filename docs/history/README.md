@@ -112,4 +112,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`098`](098_character_frame_breaker_popout_with_ambient_backdrop.md) | 2026-10-01 | Character Frame Breaker Pop-out with Ambient Aspect-Preserving Backdrop | Implemented inner framing zoom (1.25x) & vertical offset for dramatic 3D pop-out over top frame |
 | [`099`](099_aspect_ratio_contained_backdrop_plate_in_frame_breaker.md) | 2026-10-01 | Aspect Ratio Contained Backdrop Plate in Frame Breaker | Implemented centered aspect-ratio contained backdrop plate with clean cinematic margins |
 | [`100`](100_subject_aware_auto_framing_and_headroom_for_frame_breaker.md) | 2026-10-01 | Subject-Aware Auto Framing & Headroom for 3D Frame Breaker | Auto-detected character bbox/neck line and adjusted card headroom for ~92px head popout |
+| [`101`](101_fix_subject_bounding_box_and_metadata_persistence.md) | 2026-10-01 | Fix Subject Bounding Box Calculation & Metadata Persistence | Fixed mW/mH normalization in utils.ts, high-confidence alpha thresholding & metadata JSON |
 
