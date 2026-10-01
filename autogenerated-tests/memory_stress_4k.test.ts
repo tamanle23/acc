@@ -3,10 +3,10 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { createCanvas } from "@napi-rs/canvas";
-import { FFmpegManager } from "../src/core/FFmpegManager";
-import { initFFI } from "../src/core/ffmpeg-ffi";
-import { FFIVideoEncoder } from "../src/core/ffmpeg-ffi/FFIVideoEncoder";
-import { resolveStorySettings } from "../src/platforms";
+import { FFmpegManager } from "../packages/core/src/FFmpegManager";
+import { initFFI } from "../packages/core/src/ffmpeg-ffi";
+import { FFIVideoEncoder } from "../packages/core/src/ffmpeg-ffi/FFIVideoEncoder";
+import { resolveStorySettings } from "../apps/cli/src/pipelines/04-generative-story/platforms";
 
 describe("4K Resolution Memory & Pointer Safety Suite", () => {
   const tempFiles: string[] = [];

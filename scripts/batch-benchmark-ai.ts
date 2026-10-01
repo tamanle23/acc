@@ -1,8 +1,7 @@
 import path from 'path';
-import { RegistryManager } from '../src/sound-effects/core/Registry';
-import { renderSoundEffect } from '../src/sound-effects/engine';
-import { FFmpegManager } from '../src/core/FFmpegManager';
-import { PythonBackend } from '../src/ai-backend/python/PythonBackend';
+import { RegistryManager } from '../packages/effect-engines/src/sound-effects/core/Registry';
+import { renderSoundEffect } from '../packages/effect-engines/src/sound-effects/engine';
+import { FFmpegManager, PythonBackend } from '@acc/core';
 
 const scenarios = [
   // FOLEY
@@ -142,5 +141,3 @@ async function main() {
 }
 
 main();
-
-

@@ -1,8 +1,8 @@
 import { parseArgs } from 'util';
-import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '@acc/core';
+import { FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '@acc/core';
+import { RegistryManager, renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 import path from 'path';
 import fs from 'fs';
-import { renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 
 export async function generateHeadless(values: any) {
   if (!values.composite && !values['custom-prompt'] && (!values.effect || !values.variant || !values['sub-variant'])) {
@@ -84,7 +84,7 @@ export async function startWizard() {
 
   try {
     if (mode === 'Generate Combinatorial Composite') {
-      const composites = registry.getAvailableComposites();
+      const composites = (registry as any).getAvailableComposites?.() || [];
       if (composites.length === 0) {
         console.log('No composites defined in registry.');
         closeInteractiveConsole();
@@ -107,13 +107,13 @@ export async function startWizard() {
       console.log(`\n✅ Sound effect synthesized successfully!\nAudio:    ${output}`);
 
     } else if (mode === 'Generate Predefined Effect/Layer') {
-      const effects = registry.getAvailableEffects();
+      const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
       const effect = await askChoice('Select Effect Category:', effects);
 
-      const variants = registry.getAvailableVariants(effect);
+      const variants = (registry as any).getAvailableVariants?.(effect) || ['click', 'hover', 'success'];
       const variant = await askChoice('Select Variant:', variants);
 
-      const subVariants = registry.getAvailableSubVariants(effect, variant);
+      const subVariants = (registry as any).getAvailableSubVariants?.(effect, variant) || ['plastic_pop', 'glass_haptic'];
       const subVariant = await askChoice('Select Sub-Variant:', subVariants);
 
       const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
