@@ -78,13 +78,13 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const baseFrameW = targetInnerW + borderWidth * 2;
   const baseFrameH = targetInnerH + borderWidth * 2 + bottomExtraPadding;
 
-  // 2. Draw Backdrop (Dimmed Scene)
+  // 2. Draw Backdrop (Dimmed Scene preserving ambient original tone with soft scrim)
   ctx.save();
   if (bgCanvas) {
     ctx.drawImage(bgCanvas, 0, 0);
   } else {
     drawImageCover(ctx, img, 0, 0, width, height);
-    ctx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    ctx.fillStyle = 'rgba(10, 10, 18, 0.70)';
     ctx.fillRect(0, 0, width, height);
   }
   ctx.restore();
@@ -127,17 +127,21 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 5. Draw Inner Scene (Clipped inside the frame - strictly 100% original aspect ratio)
+  // 5. Draw Inner Scene (Framed with ~1.25x zoom so character head naturally breaks out of top frame)
   const innerPadding = borderWidth * floatScale;
   const innerX = frameX + innerPadding;
   const innerY = frameY + innerPadding;
   const innerW = frameW - (innerPadding * 2);
   const innerH = frameH - (innerPadding * 2) - (bottomExtraPadding * floatScale);
 
-  const sw = img.width;
-  const sh = img.height;
-  const sx = 0;
-  const sy = 0;
+  const innerZoom = depthConfig.innerZoom ?? (style === 'polaroid' ? 1.45 : 1.25);
+  const focusOffsetY = depthConfig.focusOffsetY ?? (style === 'polaroid' ? 0.24 : 0.16);
+  const focusOffsetX = depthConfig.focusOffsetX ?? 0.0;
+
+  const sw = img.width / innerZoom;
+  const sh = img.height / innerZoom;
+  const sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
+  const sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
 
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));
@@ -145,13 +149,13 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.drawImage(img, sx, sy, sw, sh, innerX, innerY, innerW, innerH);
   ctx.restore();
 
-  // 5. Draw Frame Border Stroke
+  // 6. Draw Frame Border Stroke
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = borderWidth;
   roundRect(ctx, frameX, frameY, frameW, frameH, cornerRadius);
   ctx.stroke();
 
-  // 6. Draw Out-of-Bounds Pop-Out Subject (Head and upper body breaking outside top frame)
+  // 7. Draw Out-of-Bounds Pop-Out Subject (Head and upper body breaking outside top frame)
   const scale = innerW / sw;
   const offsetX = innerX - sx * scale;
   const offsetY = innerY - sy * scale;

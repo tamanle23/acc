@@ -109,4 +109,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`095`](095_eliminate_segformer_warning_via_pretrainedmodel.md) | 2026-10-01 | Eliminate Segformer Architecture Warning via PreTrainedModel | Direct PreTrainedModel invocation in RmbgStrategy & BiRefNetStrategy with 0 console warnings |
 | [`096`](096_expanded_depth_strategies_and_benchmark.md) | 2026-10-01 | Expanded Depth Estimation Strategies & Multi-Model Benchmark | Added GlpnMetricStrategy, DepthAnythingV2BaseStrategy, DptLargeStrategy & benchmark suite |
 | [`097`](097_preserve_source_asset_aspect_ratio_in_depth3d.md) | 2026-10-01 | Preserve Source Asset Aspect Ratio in 3D Depth & Frame Breaker | Calculated dynamic card bounds matching 100% source image aspect ratio with zero crop |
+| [`098`](098_character_frame_breaker_popout_with_ambient_backdrop.md) | 2026-10-01 | Character Frame Breaker Pop-out with Ambient Aspect-Preserving Backdrop | Implemented inner framing zoom (1.25x) & vertical offset for dramatic 3D pop-out over top frame |
 
