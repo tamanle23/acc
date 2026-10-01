@@ -72,31 +72,62 @@
         "backdropBlur": 20
       },
       "captions": [
-        {
-          "text": "Ngày",
-          "start": 0,
-          "end": 0.35
-        },
-        {
-          "text": "xửa",
-          "start": 0.35,
-          "end": 0.7
-        },
-        {
-          "text": "ngày",
-          "start": 0.7,
-          "end": 1.05
-        },
-        {
-          "text": "xưa...",
-          "start": 1.05,
-          "end": 1.85
-        }
+        { "text": "Ngày", "start": 0, "end": 0.35 },
+        { "text": "xửa", "start": 0.35, "end": 0.7 },
+        { "text": "ngày", "start": 0.7, "end": 1.05 },
+        { "text": "xưa...", "start": 1.05, "end": 1.85 }
       ]
     },
     {
       "image": "scene2.jpg",
       "audio": "voiceover2.mp3",
+      "depth3d": {
+        "enabled": true,
+        "mode": "frame_breaker",
+        "frameStyle": "comic",
+        "autoSegment": true,
+        "popOutIntensity": 1.2,
+        "shadow": true,
+        "floatMotion": false
+      },
+      "captions": [
+        { "text": "Ở một", "start": 0, "end": 0.4 },
+        { "text": "vương quốc", "start": 0.4, "end": 0.9 },
+        { "text": "xa xôi,", "start": 0.9, "end": 1.5 },
+        { "text": "có một chú khủng long.", "start": 1.5, "end": 2.3 }
+      ]
+    },
+    {
+      "image": "scene1.jpg",
+      "text": "Khung hình điện ảnh Cinema với phần đầu vượt mép viền trên ấn tượng.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "frame_breaker",
+        "frameStyle": "cinema",
+        "autoSegment": true,
+        "popOutIntensity": 1.3,
+        "shadow": true,
+        "floatMotion": true
+      },
+      "captions": []
+    },
+    {
+      "image": "scene2.jpg",
+      "text": "Thẻ bài Trading Card bo góc hiện đại với bóng đổ đa tầng sang trọng.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "frame_breaker",
+        "frameStyle": "card",
+        "autoSegment": true,
+        "popOutIntensity": 1.25,
+        "shadow": true,
+        "floatMotion": true
+      },
+      "captions": []
+    },
+    {
+      "image": "scene2.jpg",
+      "text": "Kỹ thuật Sandwich 3D đặt dòng chữ nổi bật phía sau nhân vật cùng bụi sáng.",
       "depth3d": {
         "enabled": true,
         "mode": "volumetric_sandwich",
@@ -109,32 +140,11 @@
           "textColor": "rgba(255, 230, 120, 0.95)"
         }
       },
-      "captions": [
-        {
-          "text": "Ở một",
-          "start": 0,
-          "end": 0.4
-        },
-        {
-          "text": "vương quốc",
-          "start": 0.4,
-          "end": 0.9
-        },
-        {
-          "text": "xa xôi,",
-          "start": 0.9,
-          "end": 1.5
-        },
-        {
-          "text": "có một chú khủng long.",
-          "start": 1.5,
-          "end": 2.3
-        }
-      ]
+      "captions": []
     },
     {
       "image": "scene1.jpg",
-      "text": "Khám phá không gian 3D chân thực với bản đồ độ sâu Depth Anything v2.",
+      "text": "Chuyển động camera quỹ đạo 3D xoay vòng quanh mô hình độ sâu 16-bit.",
       "depth3d": {
         "enabled": true,
         "mode": "depth_map_3d",
@@ -148,14 +158,44 @@
     },
     {
       "image": "scene2.jpg",
-      "text": "Hiệu ứng thị sai Parallax 2.5D mang lại chuyển động camera điện ảnh nhiều tầng lớp.",
+      "text": "Hiệu ứng đẩy sâu camera Zoom Perspective xuyên qua các lớp không gian.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "depth_map_3d",
+        "autoDepth": true,
+        "depthMesh": {
+          "motion": "zoom",
+          "displacementScale": 22
+        }
+      },
+      "captions": []
+    },
+    {
+      "image": "scene1.jpg",
+      "text": "Hiệu ứng Dolly Zoom tạo cảm giác thị sai kịch tính giữa chủ thể và hậu cảnh.",
       "depth3d": {
         "enabled": true,
         "mode": "parallax_25d",
         "autoSegment": true,
         "parallax": {
           "cameraMotion": "dolly_zoom",
-          "intensity": 1.25,
+          "intensity": 1.3,
+          "depthBlur": true,
+          "foregroundElements": true
+        }
+      },
+      "captions": []
+    },
+    {
+      "image": "scene2.jpg",
+      "text": "Góc quay lia máy Pan Right đa tầng mang lại trải nghiệm điện ảnh sâu sắc.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "parallax_25d",
+        "autoSegment": true,
+        "parallax": {
+          "cameraMotion": "pan_right",
+          "intensity": 1.2,
           "depthBlur": true,
           "foregroundElements": true
         }
@@ -164,7 +204,7 @@
     },
     {
       "image": "scene1.jpg",
-      "text": "Hiệu ứng Wigglegram 3D tái hiện rung lắc thị sai lập thể với quang sai màu sống động.",
+      "text": "Wigglegram ngang mô phỏng máy ảnh chụp phim lập thể kèm hiệu ứng quang sai màu.",
       "depth3d": {
         "enabled": true,
         "mode": "wigglegram",
@@ -178,8 +218,23 @@
       "captions": []
     },
     {
+      "image": "scene2.jpg",
+      "text": "Wigglegram xoay nghiêng Rotational tạo độ rung lắc thị giác độc đáo.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "wigglegram",
+        "wigglegram": {
+          "frequency": 6,
+          "amplitude": 12,
+          "direction": "rotational",
+          "chromaticAberration": true
+        }
+      },
+      "captions": []
+    },
+    {
       "video": "b-roll-nature.mp4",
-      "text": "Khung cảnh vương quốc xanh ngát, ngập tràn sức sống thiên nhiên.",
+      "text": "Khung cảnh thiên nhiên thác nước chân thực kết hợp mượt mà với kịch bản.",
       "videoSettings": {
         "timeBase": "audio",
         "shortVideoMode": "loop",
