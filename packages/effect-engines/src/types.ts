@@ -35,6 +35,27 @@ export type Depth3DMode =
   | 'volumetric_sandwich'
   | 'depth_map_3d'
   | 'wigglegram'
+  // Category 1: Frame-Breaking & Occlusion
+  | 'isometric_podium'
+  | 'cutout_portal'
+  // Category 2: Depth Motion (Parallax & Z-Axis)
+  | 'gyro_focal_tilt'
+  | 'flythrough_carousel'
+  // Category 3: Lighting & Materiality
+  | 'diffuse_shadow'
+  | 'glassmorphic_fresnel'
+  | 'silhouette_rim_light'
+  | 'plane_cast_shadow'
+  // Category 4: Depth of Field & Atmospherics
+  | 'macro_bokeh'
+  | 'aerial_mist'
+  | 'rack_focus'
+  | 'vignette_tunnel'
+  // Category 5: Spatial Architecture
+  | 'perspective_grid'
+  | 'extruded_text_3d'
+  | 'isometric_billboard'
+  | 'tunneling_text'
   // Aliases for convenience
   | 'parallax_dolly'
   | 'sandwich'
