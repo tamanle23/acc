@@ -1,5 +1,8 @@
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from './types';
 import { DepthAnythingV2SmallStrategy } from './strategies/depth/DepthAnythingV2SmallStrategy';
+import { DepthAnythingV2BaseStrategy } from './strategies/depth/DepthAnythingV2BaseStrategy';
+import { GlpnMetricStrategy } from './strategies/depth/GlpnMetricStrategy';
+import { DptLargeStrategy } from './strategies/depth/DptLargeStrategy';
 import { HeuristicDepthStrategy } from './strategies/depth/HeuristicDepthStrategy';
 
 export class DepthEstimationContext {
@@ -24,8 +27,23 @@ export class DepthEstimationContext {
     this.currentStrategy = strategy;
   }
 
-  public useStrategy(name: 'depth-anything-v2-small' | 'heuristic' | string): void {
+  public useStrategy(name: 'depth-anything-v2-small' | 'depth-anything-v2-base' | 'glpn-metric' | 'metric-depth' | 'dpt-large' | 'dpt' | 'heuristic' | string): void {
     switch (name.toLowerCase()) {
+      case 'depth-anything-v2-base':
+      case 'depth-anything-base':
+      case 'v2-base':
+        this.currentStrategy = new DepthAnythingV2BaseStrategy();
+        break;
+      case 'glpn-metric':
+      case 'metric-depth':
+      case 'metric':
+      case 'glpn':
+        this.currentStrategy = new GlpnMetricStrategy();
+        break;
+      case 'dpt-large':
+      case 'dpt':
+        this.currentStrategy = new DptLargeStrategy();
+        break;
       case 'heuristic':
       case 'gradient':
         this.currentStrategy = this.fallbackStrategy;

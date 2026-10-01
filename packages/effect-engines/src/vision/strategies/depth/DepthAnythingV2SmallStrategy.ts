@@ -54,6 +54,8 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy {
     const [minD, maxD] = options?.normalizeRange ?? [0.5, 8.5];
     return {
       depth16Buffer: depthCanvas.toBuffer('image/png'),
+      width: w,
+      height: h,
       minDepth: minD,
       maxDepth: maxD,
       modelUsed: this.modelId

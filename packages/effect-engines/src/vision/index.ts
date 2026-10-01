@@ -9,4 +9,7 @@ export * from './strategies/segmentation/RmbgStrategy';
 export * from './strategies/segmentation/BiRefNetStrategy';
 export * from './strategies/segmentation/GrabCutFallbackStrategy';
 export * from './strategies/depth/DepthAnythingV2SmallStrategy';
+export * from './strategies/depth/DepthAnythingV2BaseStrategy';
+export * from './strategies/depth/GlpnMetricStrategy';
+export * from './strategies/depth/DptLargeStrategy';
 export * from './strategies/depth/HeuristicDepthStrategy';

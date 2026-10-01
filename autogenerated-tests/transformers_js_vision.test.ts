@@ -133,6 +133,15 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
       depthContext.useStrategy('heuristic');
       expect(depthContext.getActiveStrategyName()).toBe('heuristic-depth');
 
+      depthContext.useStrategy('depth-anything-v2-base');
+      expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-base');
+
+      depthContext.useStrategy('glpn-metric');
+      expect(depthContext.getActiveStrategyName()).toBe('glpn-metric');
+
+      depthContext.useStrategy('dpt-large');
+      expect(depthContext.getActiveStrategyName()).toBe('dpt-large');
+
       depthContext.useStrategy('depth-anything-v2-small');
       expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-small');
     });

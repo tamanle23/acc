@@ -107,4 +107,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`093`](093_turborepo_monorepo_unified_cli_guide.md) | 2026-10-01 | Turborepo Monorepo Unified CLI Documentation & Subcommand Router | CLI_GUIDE.md, updated README.md, overlay/sfx CLI routing, package.json scripts |
 | [`094`](094_set_rmbg14_as_default_segmentation_and_fix_sam_tensor_indexing.md) | 2026-10-01 | Set RMBG-1.4 as Default Strategy & Fixed SAM Mask Indexing | Default RMBG-1.4, fix SAM [1, 3, H, W] tensor indexing via subarray, retain BiRefNet SOTA |
 | [`095`](095_eliminate_segformer_warning_via_pretrainedmodel.md) | 2026-10-01 | Eliminate Segformer Architecture Warning via PreTrainedModel | Direct PreTrainedModel invocation in RmbgStrategy & BiRefNetStrategy with 0 console warnings |
+| [`096`](096_expanded_depth_strategies_and_benchmark.md) | 2026-10-01 | Expanded Depth Estimation Strategies & Multi-Model Benchmark | Added GlpnMetricStrategy, DepthAnythingV2BaseStrategy, DptLargeStrategy & benchmark suite |
 
