@@ -1,4 +1,4 @@
-import { AutoModel, AutoProcessor, RawImage } from '@huggingface/transformers';
+import { PreTrainedModel, AutoProcessor, RawImage } from '@huggingface/transformers';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { configureHfEnv, createCutoutRgba } from '../../utils';
 
@@ -20,7 +20,7 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
     this.initPromise = (async () => {
       try {
         const [model, processor] = await Promise.all([
-          AutoModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => AutoModel.from_pretrained(this.modelId)),
+          PreTrainedModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => PreTrainedModel.from_pretrained(this.modelId)),
           AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
