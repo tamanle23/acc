@@ -249,9 +249,33 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   } else if (mode === 'frame_breaker') {
     bgCanvas = createCanvas(width, height);
     const bgCtx = bgCanvas.getContext('2d');
-    drawImageCover(bgCtx, img, 0, 0, width, height);
-    bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    
+    // Fill canvas with deep cinematic dark backdrop
+    bgCtx.fillStyle = '#06060c';
     bgCtx.fillRect(0, 0, width, height);
+
+    // Compute letterbox / pillarbox bounds strictly preserving original image aspect ratio
+    const imgRatio = img.width / img.height;
+    const canvasRatio = width / height;
+    let bgW = width;
+    let bgH = height;
+    let bgX = 0;
+    let bgY = 0;
+
+    if (imgRatio > canvasRatio) {
+      bgW = width;
+      bgH = width / imgRatio;
+      bgY = (height - bgH) / 2;
+    } else {
+      bgH = height;
+      bgW = height * imgRatio;
+      bgX = (width - bgW) / 2;
+    }
+
+    // Draw uncropped source image plate in exact original aspect ratio
+    bgCtx.drawImage(img, 0, 0, img.width, img.height, bgX, bgY, bgW, bgH);
+    bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    bgCtx.fillRect(bgX, bgY, bgW, bgH);
   }
 
   // 3. Setup Canvas and Zero-Copy FFIVideoEncoder Pipeline

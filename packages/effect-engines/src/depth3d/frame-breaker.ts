@@ -23,11 +23,27 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const shadowColor = depthConfig.shadowColor || 'rgba(0, 0, 0, 0.6)';
   const floatMotion = depthConfig.floatMotion !== false;
 
-  // 1. Calculate Frame Sizing strictly preserving the Source Image Aspect Ratio
+  // 1. Calculate Backdrop Plate & Frame Sizing strictly preserving the Source Image Aspect Ratio
   const imgRatio = img.width / img.height;
+  const canvasRatio = width / height;
 
-  let maxInnerW = width * 0.74;
-  let maxInnerH = height * 0.74;
+  let bgW = width;
+  let bgH = height;
+  let bgX = 0;
+  let bgY = 0;
+
+  if (imgRatio > canvasRatio) {
+    bgW = width;
+    bgH = width / imgRatio;
+    bgY = (height - bgH) / 2;
+  } else {
+    bgH = height;
+    bgW = height * imgRatio;
+    bgX = (width - bgW) / 2;
+  }
+
+  let maxInnerW = bgW * 0.76;
+  let maxInnerH = bgH * 0.76;
   let cornerRadius = 24;
   let borderWidth = 18;
   let borderColor = '#ffffff';
@@ -35,31 +51,31 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
 
   switch (style) {
     case 'polaroid':
-      maxInnerW = width * 0.70;
-      maxInnerH = height * 0.68;
+      maxInnerW = bgW * 0.72;
+      maxInnerH = bgH * 0.70;
       cornerRadius = 12;
       borderWidth = 16;
       borderColor = '#fdfdfd';
-      bottomExtraPadding = height * 0.09; // classic thick white polaroid bottom lip
+      bottomExtraPadding = bgH * 0.09; // classic thick white polaroid bottom lip
       break;
     case 'cinema':
-      maxInnerW = width * 0.82;
-      maxInnerH = height * 0.70;
+      maxInnerW = bgW * 0.84;
+      maxInnerH = bgH * 0.72;
       cornerRadius = 8;
       borderWidth = 12;
       borderColor = '#111111';
       break;
     case 'comic':
-      maxInnerW = width * 0.76;
-      maxInnerH = height * 0.76;
+      maxInnerW = bgW * 0.78;
+      maxInnerH = bgH * 0.78;
       cornerRadius = 0;
       borderWidth = 16;
       borderColor = '#000000';
       break;
     case 'card':
     default:
-      maxInnerW = width * 0.74;
-      maxInnerH = height * 0.74;
+      maxInnerW = bgW * 0.76;
+      maxInnerH = bgH * 0.76;
       cornerRadius = 28;
       borderWidth = 18;
       borderColor = '#ffffff';
@@ -78,14 +94,16 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const baseFrameW = targetInnerW + borderWidth * 2;
   const baseFrameH = targetInnerH + borderWidth * 2 + bottomExtraPadding;
 
-  // 2. Draw Backdrop (Dimmed Scene preserving ambient original tone with soft scrim)
+  // 2. Draw Backdrop (Dimmed Scene preserving exact 100% original aspect ratio plate)
   ctx.save();
   if (bgCanvas) {
     ctx.drawImage(bgCanvas, 0, 0);
   } else {
-    drawImageCover(ctx, img, 0, 0, width, height);
-    ctx.fillStyle = 'rgba(10, 10, 18, 0.70)';
+    ctx.fillStyle = '#06060c';
     ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, img.width, img.height, bgX, bgY, bgW, bgH);
+    ctx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+    ctx.fillRect(bgX, bgY, bgW, bgH);
   }
   ctx.restore();
 
