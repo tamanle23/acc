@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './src/types';
-import { renderStoryVideo } from './src/renderer';
-import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './src/platforms';
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './apps/cli/src/pipelines/04-generative-story/types';
+import { renderStoryVideo } from './apps/cli/src/pipelines/04-generative-story/StoryRenderer';
+import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './apps/cli/src/pipelines/04-generative-story/platforms';
 
 function askQuestion(query: string): Promise<string> {
   const rl = readline.createInterface({
@@ -19,7 +19,7 @@ function askQuestion(query: string): Promise<string> {
   );
 }
 
-import { FFmpegManager } from './src/core/FFmpegManager';
+import { FFmpegManager } from '@acc/core';
 
 async function main() {
   await FFmpegManager.prepare();
@@ -154,10 +154,9 @@ async function main() {
     settings: resolvedSettings,
     scenes: resolvedScenes,
   };
-  // outputDir đã được tạo ở trên
 
   const baseName = config.name
-    ? config.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_') // allow unicode/vietnamese
+    ? config.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_')
     : 'output';
   const container = resolvedSettings.container;
 

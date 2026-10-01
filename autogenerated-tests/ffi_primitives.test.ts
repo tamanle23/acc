@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll } from "bun:test";
-import { initFFI, FFI, Structs } from "../src/core/ffmpeg-ffi";
-import { FFmpegManager } from "../src/core/FFmpegManager";
+import { initFFI, FFI, Structs } from "../packages/core/src/ffmpeg-ffi";
+import { FFmpegManager } from "../packages/core/src/FFmpegManager";
 import { toArrayBuffer, ptr } from "bun:ffi";
 
 describe("FFI Primitives & Struct Offsets Suite", () => {
