@@ -2,11 +2,11 @@ import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import path from "path";
 import fs from "fs";
 import os from "os";
-import { FFmpegManager } from "../src/core/FFmpegManager";
-import { initFFI } from "../src/core/ffmpeg-ffi";
-import { renderStoryVideo } from "../src/renderer";
-import { resolveStorySettings, DEFAULT_VIDEO_SETTINGS, mergeDefined } from "../src/platforms";
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from "../src/types";
+import { FFmpegManager } from "../packages/core/src/FFmpegManager";
+import { initFFI } from "../packages/core/src/ffmpeg-ffi";
+import { renderStoryVideo } from "../apps/cli/src/pipelines/04-generative-story/StoryRenderer";
+import { resolveStorySettings, DEFAULT_VIDEO_SETTINGS, mergeDefined } from "../apps/cli/src/pipelines/04-generative-story/platforms";
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from "../apps/cli/src/pipelines/04-generative-story/types";
 
 describe("Stress & Stability Rendering Suite", () => {
   const sampleDir = path.resolve(process.cwd(), "sample-story");

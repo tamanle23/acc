@@ -58,7 +58,7 @@
         "heavy_rain",
         "storm"
       ],
-      "module_path": "./src/overlay-effects/generators/rain.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/rain.ts"
     },
     "snow": {
       "category": "Weather",
@@ -68,7 +68,7 @@
         "flurries",
         "blizzard"
       ],
-      "module_path": "./src/overlay-effects/generators/snow.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/snow.ts"
     },
     "dust": {
       "category": "Atmosphere",
@@ -77,7 +77,7 @@
         "ambient_dust",
         "sunshaft_dust"
       ],
-      "module_path": "./src/overlay-effects/generators/dust.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/dust.ts"
     },
     "fog": {
       "category": "Atmosphere",
@@ -86,7 +86,7 @@
         "ground_mist",
         "dense_fog"
       ],
-      "module_path": "./src/overlay-effects/generators/fog.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/fog.ts"
     },
     "light_leak": {
       "category": "Atmosphere",
@@ -95,7 +95,7 @@
         "edge_burns",
         "transition_flash"
       ],
-      "module_path": "./src/overlay-effects/generators/light_leak.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/light_leak.ts"
     },
     "embers": {
       "category": "Action & Fire",
@@ -104,7 +104,7 @@
         "campfire_sparks",
         "windy_sparks"
       ],
-      "module_path": "./src/overlay-effects/generators/embers.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/embers.ts"
     },
     "smoke": {
       "category": "Action & Fire",
@@ -113,7 +113,7 @@
         "rising_steam",
         "rolling_smoke"
       ],
-      "module_path": "./src/overlay-effects/generators/smoke.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/smoke.ts"
     },
     "lightning": {
       "category": "Action & Fire",
@@ -122,7 +122,7 @@
         "sheet_lightning",
         "branching_lightning"
       ],
-      "module_path": "./src/overlay-effects/generators/lightning.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/lightning.ts"
     },
     "fire": {
       "category": "Action & Fire",
@@ -131,7 +131,7 @@
         "campfire_flames",
         "wall_of_fire"
       ],
-      "module_path": "./src/overlay-effects/generators/fire.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/fire.ts"
     },
     "film_damage": {
       "category": "Retro",
@@ -140,7 +140,7 @@
         "hairline_scratches",
         "film_dirt"
       ],
-      "module_path": "./src/overlay-effects/generators/film_damage.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/film_damage.ts"
     },
     "vhs": {
       "category": "Retro",
@@ -149,7 +149,7 @@
         "tracking_snow",
         "tracking_lines"
       ],
-      "module_path": "./src/overlay-effects/generators/vhs.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/vhs.ts"
     },
     "bokeh": {
       "category": "Cinematic & Optical",
@@ -158,7 +158,7 @@
         "drifting_bokeh",
         "pulsing_bokeh"
       ],
-      "module_path": "./src/overlay-effects/generators/bokeh.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/bokeh.ts"
     },
     "lens_flare": {
       "category": "Cinematic & Optical",
@@ -167,7 +167,7 @@
         "anamorphic_streak",
         "sun_burst"
       ],
-      "module_path": "./src/overlay-effects/generators/lens_flare.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/lens_flare.ts"
     },
     "digital_glitch": {
       "category": "Cyberpunk & Tech",
@@ -176,7 +176,7 @@
         "block_datamosh",
         "rgb_shake"
       ],
-      "module_path": "./src/overlay-effects/generators/digital_glitch.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/digital_glitch.ts"
     },
     "matrix_rain": {
       "category": "Cyberpunk & Tech",
@@ -185,7 +185,7 @@
         "classic_green",
         "red_alert"
       ],
-      "module_path": "./src/overlay-effects/generators/matrix_rain.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/matrix_rain.ts"
     },
     "starfield": {
       "category": "Cosmic",
@@ -194,7 +194,7 @@
         "twinkling_night",
         "warp_speed"
       ],
-      "module_path": "./src/overlay-effects/generators/starfield.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/starfield.ts"
     },
     "god_rays": {
       "category": "Volumetric Lighting",
@@ -203,7 +203,7 @@
         "heavenly_glow",
         "underwater_shafts"
       ],
-      "module_path": "./src/overlay-effects/generators/god_rays.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/god_rays.ts"
     },
     "rain_on_glass": {
       "category": "Liquid & Grunge",
@@ -212,7 +212,7 @@
         "static_drops",
         "sliding_drops"
       ],
-      "module_path": "./src/overlay-effects/generators/rain_on_glass.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/rain_on_glass.ts"
     },
     "grunge_texture": {
       "category": "Liquid & Grunge",
@@ -221,7 +221,7 @@
         "stop_motion_paper",
         "flickering_halftone"
       ],
-      "module_path": "./src/overlay-effects/generators/grunge_texture.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/grunge_texture.ts"
     },
     "leaves": {
       "category": "Organic Objects",
@@ -230,7 +230,7 @@
         "autumn_breeze",
         "sakura_petals"
       ],
-      "module_path": "./src/overlay-effects/generators/leaves.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/leaves.ts"
     },
     "bubbles": {
       "category": "Organic Objects",
@@ -239,7 +239,7 @@
         "underwater_bubbles",
         "floating_bubbles"
       ],
-      "module_path": "./src/overlay-effects/generators/bubbles.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/bubbles.ts"
     },
     "confetti": {
       "category": "Celebration & Romance",
@@ -248,7 +248,7 @@
         "party_confetti",
         "golden_shower"
       ],
-      "module_path": "./src/overlay-effects/generators/confetti.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/confetti.ts"
     },
     "floating_hearts": {
       "category": "Celebration & Romance",
@@ -257,7 +257,7 @@
         "slow_hearts",
         "burst_hearts"
       ],
-      "module_path": "./src/overlay-effects/generators/floating_hearts.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/floating_hearts.ts"
     },
     "camera_ui": {
       "category": "Motion Graphics & Camera UI",
@@ -267,7 +267,7 @@
         "cctv_security",
         "dslr_viewfinder"
       ],
-      "module_path": "./src/overlay-effects/generators/camera_ui.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/camera_ui.ts"
     },
     "sci_fi_hud": {
       "category": "Motion Graphics & Camera UI",
@@ -276,7 +276,7 @@
         "target_lock",
         "data_processing"
       ],
-      "module_path": "./src/overlay-effects/generators/sci_fi_hud.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/sci_fi_hud.ts"
     },
     "audio_spectrum": {
       "category": "Motion Graphics & Camera UI",
@@ -285,7 +285,7 @@
         "classic_bars",
         "circular_eq"
       ],
-      "module_path": "./src/overlay-effects/generators/audio_spectrum.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/audio_spectrum.ts"
     },
     "speed_lines": {
       "category": "Anime & Manga Action",
@@ -294,7 +294,7 @@
         "radial_burst",
         "horizontal_rush"
       ],
-      "module_path": "./src/overlay-effects/generators/speed_lines.ts"
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/speed_lines.ts"
     }
   },
   "composites": {

@@ -77,8 +77,20 @@ export class FFmpegManager {
       return;
     }
 
-    // 2. MacOS / Linux Error Handling
+    // 2. MacOS / Linux system-wide FFmpeg check
     if (platform !== 'win32') {
+      try {
+        const sysFfmpeg = execSync('which ffmpeg', { encoding: 'utf-8' }).trim();
+        const sysFfprobe = execSync('which ffprobe', { encoding: 'utf-8' }).trim();
+        if (sysFfmpeg && sysFfprobe && fs.existsSync(sysFfmpeg)) {
+          console.log('[FFmpegManager] Found system FFmpeg installation.');
+          this.ffmpegPath = sysFfmpeg;
+          this.ffprobePath = sysFfprobe;
+          this.binDirPath = path.dirname(sysFfmpeg);
+          return;
+        }
+      } catch {}
+
       console.error('\n❌ [ERROR] Shared FFmpeg libraries missing!');
       console.error('Please install FFmpeg shared libraries manually using your package manager:');
       if (platform === 'darwin') {
@@ -150,4 +162,3 @@ export class FFmpegManager {
     console.log(`[FFmpegManager] Successfully installed local Shared FFmpeg at: ${this.binDirPath}`);
   }
 }
-

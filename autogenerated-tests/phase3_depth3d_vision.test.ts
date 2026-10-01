@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { createCanvas } from '@napi-rs/canvas';
 import { IPCFacade, FallbackAIStrategy, GRPCAIStrategy } from '../packages/core/src/ipc/IPCFacade';
-import { renderDepth3DScene } from '../src/depth3d';
+import { renderDepth3DScene } from '../packages/effect-engines/src/depth3d';
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
 import { runSFXCommand } from '../apps/cli/src/commands/sfx';
 import { runOverlayCommand } from '../apps/cli/src/commands/overlay';

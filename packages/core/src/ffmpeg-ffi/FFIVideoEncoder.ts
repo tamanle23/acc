@@ -10,6 +10,10 @@ import {
 export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
 export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
 
+function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
+    return toArrayBuffer(Number(ptrVal) as any, offset, length);
+}
+
 export class FFIVideoEncoder {
     private formatCtx: bigint = 0n;
     private codecCtx: bigint = 0n;
@@ -82,7 +86,7 @@ export class FFIVideoEncoder {
 
         // 2. Allocate & configure AVCodecParameters to bridge context dimensions
         const par = BigInt(FFI.avcodec.avcodec_parameters_alloc());
-        const parView = new DataView(toArrayBuffer(par, 0, 160));
+        const parView = new DataView(safeArrayBuffer(par, 0, 160));
         parView.setInt32(0, 0, true);               // codec_type = AVMEDIA_TYPE_VIDEO
         parView.setInt32(44, AV_PIX_FMT_YUV420P, true); // format = AV_PIX_FMT_YUV420P
         parView.setInt32(72, this.width, true);     // width
@@ -123,12 +127,12 @@ export class FFIVideoEncoder {
         this.stream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
         if (!this.stream) throw new Error("Failed to create video stream");
 
-        const streamView = new DataView(toArrayBuffer(this.stream, 0, 64));
+        const streamView = new DataView(safeArrayBuffer(this.stream, 0, 64));
         const streamCodecpar = streamView.getBigUint64(16, true);
         FFI.avcodec.avcodec_parameters_from_context(streamCodecpar, this.codecCtx);
 
         // Reset codec_tag to 0 to let container assign native tag (essential for MKV, WebM, MP4)
-        const cpView = new DataView(toArrayBuffer(streamCodecpar, 0, 64));
+        const cpView = new DataView(safeArrayBuffer(streamCodecpar, 0, 64));
         cpView.setUint32(8, 0, true);
 
         // Set stream time base to match packet ticks (1/90000)
@@ -143,19 +147,19 @@ export class FFIVideoEncoder {
                 this.audioInCtx = aInPtr[0];
                 FFI.avformat.avformat_find_stream_info(this.audioInCtx, 0n);
 
-                const inView = new DataView(toArrayBuffer(this.audioInCtx, 0, 64));
-                const inStreamsArray = new DataView(toArrayBuffer(inView.getBigUint64(48, true), 0, 64));
+                const inView = new DataView(safeArrayBuffer(this.audioInCtx, 0, 64));
+                const inStreamsArray = new DataView(safeArrayBuffer(inView.getBigUint64(48, true), 0, 64));
                 const inAudioStream = inStreamsArray.getBigUint64(0, true);
-                const inAudioCodecpar = new DataView(toArrayBuffer(inAudioStream, 0, 64)).getBigUint64(16, true);
+                const inAudioCodecpar = new DataView(safeArrayBuffer(inAudioStream, 0, 64)).getBigUint64(16, true);
 
-                const inStreamView = new DataView(toArrayBuffer(inAudioStream, 0, 64));
+                const inStreamView = new DataView(safeArrayBuffer(inAudioStream, 0, 64));
                 this.inAudioTimeBase = makeAVRational(inStreamView.getInt32(32, true), inStreamView.getInt32(36, true));
 
                 this.audioStream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
-                const outAudioCodecpar = new DataView(toArrayBuffer(this.audioStream, 0, 64)).getBigUint64(16, true);
+                const outAudioCodecpar = new DataView(safeArrayBuffer(this.audioStream, 0, 64)).getBigUint64(16, true);
                 FFI.avcodec.avcodec_parameters_copy(outAudioCodecpar, inAudioCodecpar);
                 // Reset codec_tag to 0 to prevent container tag mismatch (e.g. WAV PCM in MP4)
-                const outCpView = new DataView(toArrayBuffer(outAudioCodecpar, 0, 64));
+                const outCpView = new DataView(safeArrayBuffer(outAudioCodecpar, 0, 64));
                 outCpView.setUint32(8, 0, true);
             }
         }
@@ -190,11 +194,11 @@ export class FFIVideoEncoder {
         this.srcDataC = BigInt(FFI.avutil.av_malloc(64n));
         this.srcStrideC = BigInt(FFI.avutil.av_malloc(32n));
 
-        const strideView = new DataView(toArrayBuffer(this.srcStrideC, 0, 32));
+        const strideView = new DataView(safeArrayBuffer(this.srcStrideC, 0, 32));
         for (let i = 0; i < 8; i++) strideView.setInt32(i * 4, 0, true);
         strideView.setInt32(0, this.width * 4, true);
 
-        const dataView = new DataView(toArrayBuffer(this.srcDataC, 0, 64));
+        const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 64));
         for (let i = 0; i < 8; i++) dataView.setBigUint64(i * 8, 0n, true);
 
         this.isInitialized = true;
@@ -206,7 +210,7 @@ export class FFIVideoEncoder {
         this.strategy.paceFrame(this.frameIndex, this.fps);
 
         // Write raw pointer directly into native C memory buffer
-        const dataView = new DataView(toArrayBuffer(this.srcDataC, 0, 64));
+        const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 64));
         dataView.setBigUint64(0, BigInt(ptr(rgbaBuffer)), true);
 
         FFI.swscale.sws_scale(
@@ -229,7 +233,7 @@ export class FFIVideoEncoder {
         const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
             const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);   // pts
             pktView.setBigInt64(16, streamPts, true);  // dts
@@ -267,7 +271,7 @@ export class FFIVideoEncoder {
         const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
             const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);
             pktView.setBigInt64(16, streamPts, true);
@@ -284,7 +288,7 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_send_frame(this.codecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
             const streamPts = BigInt(this.frameIndex++) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);   // pts
             pktView.setBigInt64(16, streamPts, true);  // dts
@@ -294,13 +298,13 @@ export class FFIVideoEncoder {
 
         // Remux audio packets if audio stream is active
         if (this.audioInCtx) {
-            const outStreamView = new DataView(toArrayBuffer(this.audioStream, 0, 64));
+            const outStreamView = new DataView(safeArrayBuffer(this.audioStream, 0, 64));
             const outAudioTimeBase = makeAVRational(outStreamView.getInt32(32, true), outStreamView.getInt32(36, true));
             const maxDurationUs = BigInt(Math.round((this.frameIndex / this.fps) * 1000000));
             const maxPts = FFI.avutil.av_rescale_q(maxDurationUs, makeAVRational(1, 1000000), outAudioTimeBase);
 
             while (FFI.avformat.av_read_frame(this.audioInCtx, this.packet) >= 0) {
-                const pktView = new DataView(toArrayBuffer(this.packet, 0, 128));
+                const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
                 pktView.setInt32(36, 1, true); // stream_index = 1
 
                 const inPts = pktView.getBigInt64(8, true);
@@ -338,7 +342,7 @@ export class FFIVideoEncoder {
         }
 
         // Close AVIO
-        const fmtView = new DataView(toArrayBuffer(this.formatCtx, 0, 64));
+        const fmtView = new DataView(safeArrayBuffer(this.formatCtx, 0, 64));
         const pb = fmtView.getBigUint64(32, true);
         if (pb > 0n) {
             FFI.avformat.avio_closep(this.formatCtx + 32n);

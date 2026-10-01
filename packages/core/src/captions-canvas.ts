@@ -1,5 +1,5 @@
-import type { CaptionConfig, CaptionSettings } from '../../../src/types';
-import { PRESETS } from '../../../src/styles';
+import type { CaptionConfig, CaptionSettings } from '../../effect-engines/src/types';
+import { PRESETS } from '../../effect-engines/src/styles';
 
 export function groupCaptionsIntoPhrases(captions: CaptionConfig[], wordsPerPhrase: number): CaptionConfig[][] {
   if (wordsPerPhrase <= 1) return captions.map(c => [c]);
