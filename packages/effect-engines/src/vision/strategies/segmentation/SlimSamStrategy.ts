@@ -97,15 +97,17 @@ export class SlimSamStrategy implements ISegmentationStrategy {
     }
 
     // Best mask tensor: shape [batch_size, num_masks, height, width]
-    const maskTensor = Array.isArray(masks) ? (masks[bestMaskIdx] || masks[0]) : masks;
-    const maskData = maskTensor.data || maskTensor;
-    const [maskH, maskW] = [height, width];
+    const maskTensor = Array.isArray(masks) ? masks[0] : masks;
+    const allMasksData = maskTensor.data || maskTensor;
+    const singleMaskData = allMasksData.subarray
+      ? allMasksData.subarray(bestMaskIdx * width * height, (bestMaskIdx + 1) * width * height)
+      : allMasksData.slice(bestMaskIdx * width * height, (bestMaskIdx + 1) * width * height);
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
       imageBuffer,
-      maskData,
-      maskW,
-      maskH,
+      singleMaskData,
+      width,
+      height,
       { fillHoles: options?.fillInternalHoles ?? true, featherRadius: options?.featherRadius ?? 2 }
     );
 

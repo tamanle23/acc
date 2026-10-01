@@ -105,4 +105,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`091`](091_expand_segmentation_strategies_sam2_rmbg_birefnet.md) | 2026-10-01 | Expanded Vision Strategies (SAM 2.1 Tiny, RMBG-1.4, BiRefNet) | Plug-and-play strategies for SAM 2.1 Tiny, RMBG-1.4, BiRefNet with benchmark comparisons |
 | [`092`](092_vision_segmentation_optimization_and_benchmark.md) | 2026-10-01 | Vision Segmentation Optimization & Benchmark | Negative prompts, IoU max selection, smoothstep alpha feathering, re-benchmarking |
 | [`093`](093_turborepo_monorepo_unified_cli_guide.md) | 2026-10-01 | Turborepo Monorepo Unified CLI Documentation & Subcommand Router | CLI_GUIDE.md, updated README.md, overlay/sfx CLI routing, package.json scripts |
+| [`094`](094_set_rmbg14_as_default_segmentation_and_fix_sam_tensor_indexing.md) | 2026-10-01 | Set RMBG-1.4 as Default Strategy & Fixed SAM Mask Indexing | Default RMBG-1.4, fix SAM [1, 3, H, W] tensor indexing via subarray, retain BiRefNet SOTA |
 

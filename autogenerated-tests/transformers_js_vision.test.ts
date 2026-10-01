@@ -34,9 +34,9 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
   });
 
   describe('SubjectSegmentationContext & Strategies', () => {
-    it('should initialize with default SlimSam strategy', () => {
+    it('should initialize with default RMBG-1.4 strategy', () => {
       const segContext = SubjectSegmentationContext.getInstance();
-      expect(segContext.getActiveStrategyName()).toBe('slimsam');
+      expect(segContext.getActiveStrategyName()).toBe('rmbg-1.4');
     });
 
     it('should switch strategies dynamically via useStrategy', () => {

@@ -13,8 +13,8 @@ export class SubjectSegmentationContext {
 
   private constructor() {
     this.fallbackStrategy = new GrabCutFallbackStrategy();
-    // Default strategy: SlimSAM (fast, 38MB)
-    this.currentStrategy = new SlimSamStrategy();
+    // Default strategy: RMBG-1.4 (SOTA clean background removal, 44MB, 2.8s)
+    this.currentStrategy = new RmbgStrategy();
   }
 
   public static getInstance(): SubjectSegmentationContext {
@@ -28,34 +28,34 @@ export class SubjectSegmentationContext {
     this.currentStrategy = strategy;
   }
 
-  public useStrategy(name: 'slimsam' | 'sam-vit-base' | 'sam2-tiny' | 'rmbg-1.4' | 'birefnet-general' | 'grabcut' | string): void {
+  public useStrategy(name: 'rmbg-1.4' | 'birefnet-general' | 'sam2-tiny' | 'sam-vit-base' | 'slimsam' | 'grabcut' | string): void {
     switch (name.toLowerCase()) {
-      case 'sam2-tiny':
-      case 'sam2':
-      case 'sam2.1':
-        this.currentStrategy = new Sam2TinyStrategy();
-        break;
-      case 'rmbg':
-      case 'rmbg-1.4':
-      case 'briaai':
-        this.currentStrategy = new RmbgStrategy();
-        break;
       case 'birefnet':
       case 'birefnet-general':
       case 'birefnet-lite':
         this.currentStrategy = new BiRefNetStrategy();
         break;
+      case 'sam2-tiny':
+      case 'sam2':
+      case 'sam2.1':
+        this.currentStrategy = new Sam2TinyStrategy();
+        break;
       case 'sam-vit-base':
       case 'vit-b':
         this.currentStrategy = new SamVitBaseStrategy();
+        break;
+      case 'slimsam':
+        this.currentStrategy = new SlimSamStrategy();
         break;
       case 'grabcut':
       case 'fallback':
         this.currentStrategy = this.fallbackStrategy;
         break;
-      case 'slimsam':
+      case 'rmbg':
+      case 'rmbg-1.4':
+      case 'briaai':
       default:
-        this.currentStrategy = new SlimSamStrategy();
+        this.currentStrategy = new RmbgStrategy();
         break;
     }
   }

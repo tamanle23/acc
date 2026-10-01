@@ -96,12 +96,15 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
       }
     }
 
-    const maskTensor = Array.isArray(masks) ? (masks[bestMaskIdx] || masks[0]) : masks;
-    const maskData = maskTensor.data || maskTensor;
+    const maskTensor = Array.isArray(masks) ? masks[0] : masks;
+    const allMasksData = maskTensor.data || maskTensor;
+    const singleMaskData = allMasksData.subarray
+      ? allMasksData.subarray(bestMaskIdx * width * height, (bestMaskIdx + 1) * width * height)
+      : allMasksData.slice(bestMaskIdx * width * height, (bestMaskIdx + 1) * width * height);
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
       imageBuffer,
-      maskData,
+      singleMaskData,
       width,
       height,
       { fillHoles: options?.fillInternalHoles ?? true, featherRadius: options?.featherRadius ?? 2 }
