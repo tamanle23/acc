@@ -400,7 +400,13 @@ export async function renderStoryVideo(
       console.log(`\n=== Applying Background Music ===`);
       await new Promise<void>((resolve, reject) => {
         const bgm = config.settings.bgm!;
-        const bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
+        let bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
+        if (!fs.existsSync(bgmPath)) {
+          const candidate = path.resolve(baseDir, 'assets', path.basename(bgm.source));
+          if (fs.existsSync(candidate)) {
+            bgmPath = candidate;
+          }
+        }
         if (!fs.existsSync(bgmPath)) {
           console.warn(`[BGM] Không tìm thấy file nhạc nền tại ${bgmPath}. Bỏ qua BGM.`);
           fs.copyFileSync(currentVideoPath, nextVideoPath);
