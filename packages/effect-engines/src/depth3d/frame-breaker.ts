@@ -42,53 +42,88 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     bgX = (width - bgW) / 2;
   }
 
-  let maxInnerW = bgW * 0.76;
-  let maxInnerH = bgH * 0.76;
+  // Helper: Detect non-transparent bounding box from subject image
+  let subBBox: { minX: number; maxX: number; minY: number; maxY: number } | null = null;
+  if (subjectImg) {
+    if ((subjectImg as any)._bbox) {
+      subBBox = (subjectImg as any)._bbox;
+    } else {
+      try {
+        const { createCanvas } = require('@napi-rs/canvas');
+        const c = createCanvas(subjectImg.width, subjectImg.height);
+        const cctx = c.getContext('2d');
+        cctx.drawImage(subjectImg, 0, 0);
+        const data = cctx.getImageData(0, 0, subjectImg.width, subjectImg.height).data;
+        let minX = subjectImg.width, maxX = 0, minY = subjectImg.height, maxY = 0;
+        for (let y = 0; y < subjectImg.height; y += 2) {
+          for (let x = 0; x < subjectImg.width; x += 2) {
+            const a = data[(y * subjectImg.width + x) * 4 + 3];
+            if (a > 30) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        if (maxX > minX && maxY > minY) {
+          subBBox = { minX, maxX, minY, maxY };
+          (subjectImg as any)._bbox = subBBox;
+        }
+      } catch {}
+    }
+  }
+
+  // Calculate inner photo crop (sw, sh, sx, sy) with intelligent subject framing
+  const innerZoom = depthConfig.innerZoom ?? (style === 'polaroid' ? 1.50 : 1.38);
+  const sw = img.width / innerZoom;
+  const sh = img.height / innerZoom;
+
+  let sx = (img.width - sw) / 2;
+  let sy = (img.height - sh) * 0.28;
+
+  if (subBBox) {
+    const subCenterX = (subBBox.minX + subBBox.maxX) / 2;
+    const subCutY = subBBox.minY + (subBBox.maxY - subBBox.minY) * (depthConfig.popOutIntensity ? Math.min(0.42, 0.28 * depthConfig.popOutIntensity) : 0.30);
+    sx = Math.max(0, Math.min(img.width - sw, subCenterX - sw / 2 + img.width * (depthConfig.focusOffsetX ?? 0)));
+    sy = Math.max(0, Math.min(img.height - sh, subCutY));
+  } else {
+    const focusOffsetY = depthConfig.focusOffsetY ?? (style === 'polaroid' ? 0.35 : 0.28);
+    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * (depthConfig.focusOffsetX ?? 0)));
+    sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
+  }
+
+  // Sizing card frame to allow ample headroom above for 3D character popout
+  let targetInnerH = bgH * (style === 'polaroid' ? 0.52 : (style === 'cinema' ? 0.48 : 0.54));
+  let targetInnerW = targetInnerH * (sw / sh);
   let cornerRadius = 24;
-  let borderWidth = 18;
+  let borderWidth = 16;
   let borderColor = '#ffffff';
   let bottomExtraPadding = 0;
 
   switch (style) {
     case 'polaroid':
-      maxInnerW = bgW * 0.72;
-      maxInnerH = bgH * 0.70;
       cornerRadius = 12;
       borderWidth = 16;
       borderColor = '#fdfdfd';
-      bottomExtraPadding = bgH * 0.09; // classic thick white polaroid bottom lip
+      bottomExtraPadding = bgH * 0.08; // classic thick white polaroid bottom lip
       break;
     case 'cinema':
-      maxInnerW = bgW * 0.84;
-      maxInnerH = bgH * 0.72;
       cornerRadius = 8;
       borderWidth = 12;
       borderColor = '#111111';
       break;
     case 'comic':
-      maxInnerW = bgW * 0.78;
-      maxInnerH = bgH * 0.78;
       cornerRadius = 0;
       borderWidth = 16;
       borderColor = '#000000';
       break;
     case 'card':
     default:
-      maxInnerW = bgW * 0.76;
-      maxInnerH = bgH * 0.76;
-      cornerRadius = 28;
+      cornerRadius = 24;
       borderWidth = 18;
       borderColor = '#ffffff';
       break;
-  }
-
-  // Preserve EXACT original aspect ratio of source image for inner photo area
-  let targetInnerW = maxInnerW;
-  let targetInnerH = maxInnerW / imgRatio;
-
-  if (targetInnerH > maxInnerH) {
-    targetInnerH = maxInnerH;
-    targetInnerW = maxInnerH * imgRatio;
   }
 
   const baseFrameW = targetInnerW + borderWidth * 2;
@@ -113,20 +148,21 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   let floatScale = 1.0;
 
   if (floatMotion) {
-    floatY = Math.sin(timeSec * Math.PI * 1.2) * 12;
-    floatTilt = Math.sin(timeSec * Math.PI * 0.8) * 0.012; // ~0.7 degrees tilt
-    floatScale = 1.0 + Math.sin(timeSec * Math.PI * 0.6) * 0.015;
+    floatY = Math.sin(timeSec * Math.PI * 1.2) * 10;
+    floatTilt = Math.sin(timeSec * Math.PI * 0.8) * 0.010; // ~0.6 degrees tilt
+    floatScale = 1.0 + Math.sin(timeSec * Math.PI * 0.6) * 0.012;
   }
 
   const frameW = baseFrameW * floatScale;
   const frameH = baseFrameH * floatScale;
   const frameX = (width - frameW) / 2;
-  const frameY = (height - frameH) / 2 + floatY;
+  // Position frame slightly lower to leave ample headroom for the character head popping out above
+  const frameY = (height - frameH) / 2 + bgH * 0.05 + floatY;
 
   ctx.save();
-  ctx.translate(width / 2, height / 2 + floatY);
+  ctx.translate(width / 2, height / 2 + bgH * 0.05 + floatY);
   ctx.rotate(floatTilt);
-  ctx.translate(-width / 2, -(height / 2 + floatY));
+  ctx.translate(-width / 2, -(height / 2 + bgH * 0.05 + floatY));
 
   // 4. Draw Outer Card Drop Shadow & Card Body
   if (shadowEnabled) {
@@ -145,21 +181,12 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 5. Draw Inner Scene (Framed with ~1.25x zoom so character head naturally breaks out of top frame)
+  // 5. Draw Inner Scene (Framed with subject neck line matching top border)
   const innerPadding = borderWidth * floatScale;
   const innerX = frameX + innerPadding;
   const innerY = frameY + innerPadding;
   const innerW = frameW - (innerPadding * 2);
   const innerH = frameH - (innerPadding * 2) - (bottomExtraPadding * floatScale);
-
-  const innerZoom = depthConfig.innerZoom ?? (style === 'polaroid' ? 1.45 : 1.25);
-  const focusOffsetY = depthConfig.focusOffsetY ?? (style === 'polaroid' ? 0.24 : 0.16);
-  const focusOffsetX = depthConfig.focusOffsetX ?? 0.0;
-
-  const sw = img.width / innerZoom;
-  const sh = img.height / innerZoom;
-  const sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
-  const sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
 
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));

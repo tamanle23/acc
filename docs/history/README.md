@@ -111,4 +111,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`097`](097_preserve_source_asset_aspect_ratio_in_depth3d.md) | 2026-10-01 | Preserve Source Asset Aspect Ratio in 3D Depth & Frame Breaker | Calculated dynamic card bounds matching 100% source image aspect ratio with zero crop |
 | [`098`](098_character_frame_breaker_popout_with_ambient_backdrop.md) | 2026-10-01 | Character Frame Breaker Pop-out with Ambient Aspect-Preserving Backdrop | Implemented inner framing zoom (1.25x) & vertical offset for dramatic 3D pop-out over top frame |
 | [`099`](099_aspect_ratio_contained_backdrop_plate_in_frame_breaker.md) | 2026-10-01 | Aspect Ratio Contained Backdrop Plate in Frame Breaker | Implemented centered aspect-ratio contained backdrop plate with clean cinematic margins |
+| [`100`](100_subject_aware_auto_framing_and_headroom_for_frame_breaker.md) | 2026-10-01 | Subject-Aware Auto Framing & Headroom for 3D Frame Breaker | Auto-detected character bbox/neck line and adjusted card headroom for ~92px head popout |
 
