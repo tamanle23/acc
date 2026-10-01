@@ -82,21 +82,30 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     }
   }
 
-  // Calculate inner photo crop (sw, sh, sx, sy) with intelligent subject framing
-  const innerZoom = depthConfig.innerZoom ?? (style === 'polaroid' ? 1.50 : 1.38);
-  const sw = img.width / innerZoom;
-  const sh = img.height / innerZoom;
+  // Calculate inner photo crop (sw, sh, sx, sy) with universal subject-aware framing
+  let sw: number, sh: number, sx: number, sy: number;
 
-  let sx = (img.width - sw) / 2;
-  let sy = (img.height - sh) * 0.28;
-
-  if (subBBox) {
+  if (subBBox && (subBBox.maxX > subBBox.minX) && (subBBox.maxY > subBBox.minY)) {
+    const subW = subBBox.maxX - subBBox.minX;
+    const subH = subBBox.maxY - subBBox.minY;
     const subCenterX = (subBBox.minX + subBBox.maxX) / 2;
-    const subCutY = subBBox.minY + (subBBox.maxY - subBBox.minY) * (depthConfig.popOutIntensity ? Math.min(0.42, 0.28 * depthConfig.popOutIntensity) : 0.30);
+
+    // 1. Cut line is 25% below head top to guarantee dramatic head pop-out on ANY photo
+    const popoutFraction = depthConfig.popOutIntensity ? Math.min(0.40, 0.25 * depthConfig.popOutIntensity) : 0.25;
+    sy = Math.max(0, Math.min(img.height - 100, subBBox.minY + subH * popoutFraction));
+
+    // 2. Crop height covers the rest of the subject down to maxY with margin
+    const desiredSh = Math.min(img.height - sy, Math.max(subH * 0.90, (subBBox.maxY - sy) * 1.15));
+    sh = Math.min(img.height - sy, Math.max(img.height * 0.45, desiredSh));
+
+    // 3. Crop width matches source/card aspect ratio and centers horizontally on subject
+    sw = Math.min(img.width, sh * imgRatio);
     sx = Math.max(0, Math.min(img.width - sw, subCenterX - sw / 2 + img.width * (depthConfig.focusOffsetX ?? 0)));
-    sy = Math.max(0, Math.min(img.height - sh, subCutY));
   } else {
+    const innerZoom = depthConfig.innerZoom ?? (style === 'polaroid' ? 1.50 : 1.38);
     const focusOffsetY = depthConfig.focusOffsetY ?? (style === 'polaroid' ? 0.35 : 0.28);
+    sw = img.width / innerZoom;
+    sh = img.height / innerZoom;
     sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * (depthConfig.focusOffsetX ?? 0)));
     sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
   }
