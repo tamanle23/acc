@@ -1,4 +1,3 @@
-import { FFmpegManager } from './FFmpegManager';
 import path from 'path';
 import fs from 'fs';
 import { FFmpegCommand } from './FFmpegExecutor';
@@ -32,7 +31,6 @@ export class AudioNormalizer {
     playbackType: PlaybackType, 
     targetDuration: number
   ): Promise<string> {
-    const ffmpegPath = FFmpegManager.getFFmpegPath();
     const finalExt = '.wav';
     
     const parsedPath = path.parse(outputPath);

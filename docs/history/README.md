@@ -108,4 +108,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`094`](094_set_rmbg14_as_default_segmentation_and_fix_sam_tensor_indexing.md) | 2026-10-01 | Set RMBG-1.4 as Default Strategy & Fixed SAM Mask Indexing | Default RMBG-1.4, fix SAM [1, 3, H, W] tensor indexing via subarray, retain BiRefNet SOTA |
 | [`095`](095_eliminate_segformer_warning_via_pretrainedmodel.md) | 2026-10-01 | Eliminate Segformer Architecture Warning via PreTrainedModel | Direct PreTrainedModel invocation in RmbgStrategy & BiRefNetStrategy with 0 console warnings |
 | [`096`](096_expanded_depth_strategies_and_benchmark.md) | 2026-10-01 | Expanded Depth Estimation Strategies & Multi-Model Benchmark | Added GlpnMetricStrategy, DepthAnythingV2BaseStrategy, DptLargeStrategy & benchmark suite |
+| [`097`](097_preserve_source_asset_aspect_ratio_in_depth3d.md) | 2026-10-01 | Preserve Source Asset Aspect Ratio in 3D Depth & Frame Breaker | Calculated dynamic card bounds matching 100% source image aspect ratio with zero crop |
 

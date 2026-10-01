@@ -23,9 +23,11 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   const shadowColor = depthConfig.shadowColor || 'rgba(0, 0, 0, 0.6)';
   const floatMotion = depthConfig.floatMotion !== false;
 
-  // Frame dimension profiles based on style
-  let baseFrameW = width * 0.72;
-  let baseFrameH = height * 0.72;
+  // 1. Calculate Frame Sizing strictly preserving the Source Image Aspect Ratio
+  const imgRatio = img.width / img.height;
+
+  let maxInnerW = width * 0.74;
+  let maxInnerH = height * 0.74;
   let cornerRadius = 24;
   let borderWidth = 18;
   let borderColor = '#ffffff';
@@ -33,38 +35,50 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
 
   switch (style) {
     case 'polaroid':
-      baseFrameW = width * 0.68;
-      baseFrameH = height * 0.78;
+      maxInnerW = width * 0.70;
+      maxInnerH = height * 0.68;
       cornerRadius = 12;
       borderWidth = 16;
       borderColor = '#fdfdfd';
-      bottomExtraPadding = baseFrameH * 0.16; // thick white bottom lip
+      bottomExtraPadding = height * 0.09; // classic thick white polaroid bottom lip
       break;
     case 'cinema':
-      baseFrameW = width * 0.82;
-      baseFrameH = height * 0.62;
+      maxInnerW = width * 0.82;
+      maxInnerH = height * 0.70;
       cornerRadius = 8;
       borderWidth = 12;
       borderColor = '#111111';
       break;
     case 'comic':
-      baseFrameW = width * 0.75;
-      baseFrameH = height * 0.75;
+      maxInnerW = width * 0.76;
+      maxInnerH = height * 0.76;
       cornerRadius = 0;
       borderWidth = 16;
       borderColor = '#000000';
       break;
     case 'card':
     default:
-      baseFrameW = width * 0.72;
-      baseFrameH = height * 0.72;
+      maxInnerW = width * 0.74;
+      maxInnerH = height * 0.74;
       cornerRadius = 28;
       borderWidth = 18;
       borderColor = '#ffffff';
       break;
   }
 
-  // 1. Draw Backdrop (Dimmed Scene)
+  // Preserve EXACT original aspect ratio of source image for inner photo area
+  let targetInnerW = maxInnerW;
+  let targetInnerH = maxInnerW / imgRatio;
+
+  if (targetInnerH > maxInnerH) {
+    targetInnerH = maxInnerH;
+    targetInnerW = maxInnerH * imgRatio;
+  }
+
+  const baseFrameW = targetInnerW + borderWidth * 2;
+  const baseFrameH = targetInnerH + borderWidth * 2 + bottomExtraPadding;
+
+  // 2. Draw Backdrop (Dimmed Scene)
   ctx.save();
   if (bgCanvas) {
     ctx.drawImage(bgCanvas, 0, 0);
@@ -75,7 +89,7 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   }
   ctx.restore();
 
-  // 2. Compute Floating Motion (Oscillation)
+  // 3. Compute Floating Motion (Oscillation)
   let floatY = 0;
   let floatTilt = 0;
   let floatScale = 1.0;
@@ -96,7 +110,7 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.rotate(floatTilt);
   ctx.translate(-width / 2, -(height / 2 + floatY));
 
-  // 3. Draw Outer Card Drop Shadow & Card Body
+  // 4. Draw Outer Card Drop Shadow & Card Body
   if (shadowEnabled) {
     ctx.shadowColor = shadowColor;
     ctx.shadowBlur = shadowBlur;
@@ -113,35 +127,18 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // 4. Draw Inner Scene (Clipped inside the frame)
-  const innerPadding = borderWidth;
+  // 5. Draw Inner Scene (Clipped inside the frame - strictly 100% original aspect ratio)
+  const innerPadding = borderWidth * floatScale;
   const innerX = frameX + innerPadding;
   const innerY = frameY + innerPadding;
   const innerW = frameW - (innerPadding * 2);
-  const innerH = frameH - (innerPadding * 2) - bottomExtraPadding;
+  const innerH = frameH - (innerPadding * 2) - (bottomExtraPadding * floatScale);
 
-  // Compute source crop parameters for coordinate alignment
-  const innerZoom = style === 'polaroid' ? 1.5 : 1.15;
-  const focusOffsetY = style === 'polaroid' ? 0.18 : 0.0;
-  const focusOffsetX = style === 'polaroid' ? 0.06 : 0.0;
+  const sw = img.width;
+  const sh = img.height;
+  const sx = 0;
+  const sy = 0;
 
-  const imgRatio = img.width / img.height;
-  const targetRatio = innerW / innerH;
-  let sw: number, sh: number, sx: number, sy: number;
-
-  if (imgRatio > targetRatio) {
-    sh = img.height / innerZoom;
-    sw = (img.height * targetRatio) / innerZoom;
-    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
-    sy = Math.max(0, Math.min(img.height - sh, img.height * focusOffsetY));
-  } else {
-    sw = img.width / innerZoom;
-    sh = (img.width / targetRatio) / innerZoom;
-    sx = Math.max(0, Math.min(img.width - sw, (img.width - sw) / 2 + img.width * focusOffsetX));
-    sy = Math.max(0, Math.min(img.height - sh, (img.height - sh) / 2 + img.height * focusOffsetY));
-  }
-
-  // 4. Draw Inner Scene (Clipped inside the frame)
   ctx.save();
   roundRect(ctx, innerX, innerY, innerW, innerH, Math.max(0, cornerRadius - 4));
   ctx.clip();

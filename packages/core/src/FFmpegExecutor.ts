@@ -1,4 +1,3 @@
-import { FFmpegManager } from './FFmpegManager';
 import fs from 'fs';
 
 import { getMediaDurationFFI } from './ffmpeg-ffi';
