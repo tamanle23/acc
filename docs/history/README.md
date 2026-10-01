@@ -116,4 +116,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`102`](102_universal_subject_aware_frame_breaker_and_crisp_cutout.md) | 2026-10-01 | Universal Subject-Aware Frame Breaker & Crisp Cutout | Dynamic neck-anchored framing (154px-187px pop-out), sharp alpha cutout, 87/87 tests passing |
 | [`103`](103_active_word_highlight_flag_and_multiword_subtitles.md) | 2026-10-01 | Active Word Highlight Flag & Multi-Word Subtitles | Added activeWordHighlight flag, decoupled wordsPerPhrase for clean static multi-word subtitles, 93 tests |
 | [`104`](104_sample_story_all_3d_depth_modes.md) | 2026-10-01 | Sample Story All 3D Depth Modes Coverage | Expanded sample-story to 6 scenes covering all 5 3D depth engines (frame breaker, sandwich, depth map, parallax, wigglegram) + video |
+| [`105`](105_real_nature_broll_sample_video.md) | 2026-10-01 | Real Nature B-Roll Sample Video Asset | Downloaded & transcoded authentic 1080p waterfall nature footage replacing blue screen dummy |
 
