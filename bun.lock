@@ -30,6 +30,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@acc/core": "workspace:*",
+        "@acc/effect-engines": "workspace:*",
         "@acc/ir": "workspace:*",
       },
     },
@@ -40,6 +41,16 @@
     "packages/core": {
       "name": "@acc/core",
       "version": "1.0.0",
+    },
+    "packages/effect-engines": {
+      "name": "@acc/effect-engines",
+      "version": "1.0.0",
+      "dependencies": {
+        "@acc/core": "workspace:*",
+        "@acc/ir": "workspace:*",
+        "@napi-rs/canvas": "^1.0.9",
+        "simplex-noise": "^4.0.3",
+      },
     },
     "packages/exporters": {
       "name": "@acc/exporters",
@@ -63,6 +74,8 @@
     "@acc/cli": ["@acc/cli@workspace:apps/cli"],
 
     "@acc/core": ["@acc/core@workspace:packages/core"],
+
+    "@acc/effect-engines": ["@acc/effect-engines@workspace:packages/effect-engines"],
 
     "@acc/exporters": ["@acc/exporters@workspace:packages/exporters"],
 

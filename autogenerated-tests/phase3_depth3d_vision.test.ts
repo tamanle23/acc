@@ -111,7 +111,7 @@ describe('Phase 3: Pipeline 4 Refinement (Depth Anything v2 + SAM 2 + Depth3D)',
       expect(result).toBeDefined();
       expect(fs.existsSync(result.path)).toBe(true);
       expect(fs.statSync(result.path).size).toBeGreaterThan(500);
-    });
+    }, 60000);
 
     it('should render depth_map_3d with autoDepth enabled', async () => {
       const outVideo = path.resolve(testOutputDir, 'depth_map_auto.mp4');
@@ -150,7 +150,7 @@ describe('Phase 3: Pipeline 4 Refinement (Depth Anything v2 + SAM 2 + Depth3D)',
       expect(result).toBeDefined();
       expect(fs.existsSync(result.path)).toBe(true);
       expect(fs.statSync(result.path).size).toBeGreaterThan(500);
-    });
+    }, 60000);
 
     it('should render volumetric_sandwich with caption integration', async () => {
       const outVideo = path.resolve(testOutputDir, 'sandwich_caption.mp4');

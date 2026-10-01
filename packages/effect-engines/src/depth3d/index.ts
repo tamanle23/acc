@@ -8,6 +8,7 @@ import { drawSandwichFrame } from './sandwich';
 import { drawDepthMeshFrame } from './depth-mesh';
 import { drawWigglegramFrame } from './wigglegram';
 import { drawCanvasCaptions } from '../subtitles/captions-canvas';
+import { SubjectSegmentationContext, DepthEstimationContext } from '../vision';
 
 export interface Depth3DSceneOptions {
   scene: ResolvedSceneConfig;
@@ -59,10 +60,10 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     } catch {}
   } else if (shouldAutoSegment && scene.resolvedImage) {
     try {
-      const { defaultIPCFacade } = await import('@acc/core');
-      const segRes = await defaultIPCFacade.segmentSubject(scene.resolvedImage);
-      if (segRes && segRes.maskBuffer && segRes.maskBuffer.length > 0) {
-        subjectImg = await loadImage(segRes.maskBuffer);
+      const segContext = SubjectSegmentationContext.getInstance();
+      const segRes = await segContext.segment(fs.readFileSync(scene.resolvedImage));
+      if (segRes && segRes.maskRgbaBuffer && segRes.maskRgbaBuffer.length > 0) {
+        subjectImg = await loadImage(segRes.maskRgbaBuffer);
       }
     } catch {}
   }
@@ -131,10 +132,10 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
 
     if (!loadedDepth && depthConfig.autoDepth && scene.resolvedImage) {
       try {
-        const { defaultIPCFacade } = await import('@acc/core');
-        const depthRes = await defaultIPCFacade.estimateDepth(scene.resolvedImage);
-        if (depthRes && depthRes.depthMapBuffer && depthRes.depthMapBuffer.length > 0) {
-          const dm = await loadImage(depthRes.depthMapBuffer);
+        const depthContext = DepthEstimationContext.getInstance();
+        const depthRes = await depthContext.estimateDepth(fs.readFileSync(scene.resolvedImage));
+        if (depthRes && depthRes.depth16Buffer && depthRes.depth16Buffer.length > 0) {
+          const dm = await loadImage(depthRes.depth16Buffer);
           drawImageCover(dCtx, dm, 0, 0, width, height);
           loadedDepth = true;
         }

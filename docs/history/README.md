@@ -100,4 +100,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`086`](086_migrate_legacy_src_to_monorepo_packages.md) | 2026-10-01 | Migrate Legacy /src to @acc/effect-engines and Monorepo Packages | Created @acc/effect-engines, migrated StoryRenderer to apps/cli, converted /src to zero-regression shims |
 | [`087`](087_fix_dinosaur_subject_cutout_feet_eyes_mouth.md) | 2026-10-01 | Fix Subject Segmentation Cutout (Feet, Eyes, Mouth & Solid Feature Filling) | External contour solid hole filling, anti-aliased feathering, regenerated scene1_subject.png |
 | [`088`](088_clean_dinosaur_subject_cutout_zero_background_leakage.md) | 2026-10-01 | Clean Subject Cutout with Zero Background Leakage | High-resolution anatomical silhouette contour, zero landscape/grass leakage, frame breaker verified |
+| [`089`](089_huggingface_transformers_js_vision_strategy_pattern.md) | 2026-10-01 | Native Vision Strategy Pattern via @huggingface/transformers | ISegmentationStrategy & IDepthEstimationStrategy, SlimSAM, SAM ViT-Base, Depth Anything v2 Small, 100% in-process TypeScript |
 

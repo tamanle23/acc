@@ -8,6 +8,7 @@
   "dependencies": {
     "@acc/core": "workspace:*",
     "@acc/ir": "workspace:*",
+    "@huggingface/transformers": "^4.3.0",
     "@napi-rs/canvas": "^1.0.9",
     "simplex-noise": "^4.0.3"
   }
