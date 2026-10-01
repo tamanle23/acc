@@ -1,6 +1,7 @@
 import { createCanvas, loadImage, Image, Canvas } from '@napi-rs/canvas';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, Depth3DConfig } from '../types';
 import { drawFrameBreakerFrame, drawImageCover } from './frame-breaker';
 import { drawParallaxFrame } from './parallax';
@@ -35,23 +36,42 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const totalFrames = Math.ceil(fps * totalDuration);
 
   // 1. Load primary image and optional subject cutout safely
-  const img = await loadImage(fs.readFileSync(scene.resolvedImage));
+  const imgBuffer = fs.readFileSync(scene.resolvedImage);
+  const img = await loadImage(imgBuffer);
   let subjectImg: Image | null = null;
   const shouldAutoSegment = depthConfig.autoSegment !== undefined
     ? depthConfig.autoSegment
     : (mode === 'frame_breaker' || mode === 'volumetric_sandwich' || mode === 'sandwich');
 
   const sceneDir = path.dirname(scene.resolvedImage);
+  const baseName = path.parse(scene.resolvedImage).name;
+  const imageChecksum = crypto.createHash('md5').update(imgBuffer).digest('hex').slice(0, 8);
+  const segContext = SubjectSegmentationContext.getInstance();
+  const segStratName = segContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, '_');
+
   let resolvedSubPath: string | null = null;
+  // A. Explicit user configuration in story-config takes precedence
   if (depthConfig.subjectImage) {
     const candidate = path.isAbsolute(depthConfig.subjectImage)
       ? depthConfig.subjectImage
       : path.resolve(sceneDir, depthConfig.subjectImage);
     if (fs.existsSync(candidate)) resolvedSubPath = candidate;
   }
+  
+  // B. Strategy & content-checksum specific cache hit
   if (!resolvedSubPath) {
-    const autoCandidate = path.resolve(sceneDir, `${path.parse(scene.resolvedImage).name}_subject.png`);
-    if (fs.existsSync(autoCandidate)) resolvedSubPath = autoCandidate;
+    const stratCandidate = path.resolve(sceneDir, `${baseName}_subject_${segStratName}_${imageChecksum}.png`);
+    if (fs.existsSync(stratCandidate)) {
+      resolvedSubPath = stratCandidate;
+    }
+  }
+
+  // C. Fallback checksum candidate
+  if (!resolvedSubPath) {
+    const checksumCandidate = path.resolve(sceneDir, `${baseName}_subject_${imageChecksum}.png`);
+    if (fs.existsSync(checksumCandidate)) {
+      resolvedSubPath = checksumCandidate;
+    }
   }
 
   if (resolvedSubPath) {
@@ -60,10 +80,14 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     } catch {}
   } else if (shouldAutoSegment && scene.resolvedImage) {
     try {
-      const segContext = SubjectSegmentationContext.getInstance();
-      const segRes = await segContext.segment(fs.readFileSync(scene.resolvedImage));
+      const segRes = await segContext.segment(imgBuffer);
       if (segRes && segRes.maskRgbaBuffer && segRes.maskRgbaBuffer.length > 0) {
         subjectImg = await loadImage(segRes.maskRgbaBuffer);
+        // Persist cached cutout with checksum and strategy name for deterministic cache hits
+        const cachePath = path.resolve(sceneDir, `${baseName}_subject_${segStratName}_${imageChecksum}.png`);
+        try {
+          fs.writeFileSync(cachePath, segRes.maskRgbaBuffer);
+        } catch {}
       }
     } catch {}
   }
@@ -114,7 +138,8 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
     const dCanvas = createCanvas(width, height);
     const dCtx = dCanvas.getContext('2d');
 
-    const sceneDir = path.dirname(scene.resolvedImage);
+    const depthContext = DepthEstimationContext.getInstance();
+    const depthStratName = depthContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, '_');
     let loadedDepth = false;
 
     if (depthConfig.depthMesh?.depthMapPath) {
@@ -130,14 +155,30 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       }
     }
 
+    // Strategy & content-checksum specific depth cache hit
+    if (!loadedDepth) {
+      const stratDepthCandidate = path.resolve(sceneDir, `${baseName}_depth_${depthStratName}_${imageChecksum}.png`);
+      if (fs.existsSync(stratDepthCandidate)) {
+        try {
+          const dm = await loadImage(fs.readFileSync(stratDepthCandidate));
+          drawImageCover(dCtx, dm, 0, 0, width, height);
+          loadedDepth = true;
+        } catch {}
+      }
+    }
+
     if (!loadedDepth && depthConfig.autoDepth && scene.resolvedImage) {
       try {
-        const depthContext = DepthEstimationContext.getInstance();
-        const depthRes = await depthContext.estimateDepth(fs.readFileSync(scene.resolvedImage));
+        const depthRes = await depthContext.estimateDepth(imgBuffer);
         if (depthRes && depthRes.depth16Buffer && depthRes.depth16Buffer.length > 0) {
           const dm = await loadImage(depthRes.depth16Buffer);
           drawImageCover(dCtx, dm, 0, 0, width, height);
           loadedDepth = true;
+          // Persist cached depth map with checksum and strategy name
+          const cacheDepthPath = path.resolve(sceneDir, `${baseName}_depth_${depthStratName}_${imageChecksum}.png`);
+          try {
+            fs.writeFileSync(cacheDepthPath, depthRes.depth16Buffer);
+          } catch {}
         }
       } catch {}
     }

@@ -101,4 +101,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`087`](087_fix_dinosaur_subject_cutout_feet_eyes_mouth.md) | 2026-10-01 | Fix Subject Segmentation Cutout (Feet, Eyes, Mouth & Solid Feature Filling) | External contour solid hole filling, anti-aliased feathering, regenerated scene1_subject.png |
 | [`088`](088_clean_dinosaur_subject_cutout_zero_background_leakage.md) | 2026-10-01 | Clean Subject Cutout with Zero Background Leakage | High-resolution anatomical silhouette contour, zero landscape/grass leakage, frame breaker verified |
 | [`089`](089_huggingface_transformers_js_vision_strategy_pattern.md) | 2026-10-01 | Native Vision Strategy Pattern via @huggingface/transformers | ISegmentationStrategy & IDepthEstimationStrategy, SlimSAM, SAM ViT-Base, Depth Anything v2 Small, 100% in-process TypeScript |
+| [`090`](090_strategy_and_checksum_aware_auto_caching.md) | 2026-10-01 | Checksum & Strategy-Aware Auto Caching for Vision AI | MD5 image checksum + strategy naming in autoCandidate resolution & persistent caching |
 
