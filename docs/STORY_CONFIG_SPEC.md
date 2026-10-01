@@ -140,8 +140,9 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 | `marginR` | `number` | Không | `40` | Khoảng cách lề phải (Right margin - pixel, ghi đè `marginH`). |
 | `alignment` | `number` (1 - 9) | Không | Tùy `position` | Căn lề thủ công theo cụm phím Numpad (nếu muốn override `position`). |
 | `borderStyle` | `1 \| 3` | Không | `1` | `1` = Viền chữ & bóng đổ (Outline & Shadow).<br>`3` = Hộp nền màu đặc/mờ bao quanh chữ (Opaque Box). |
-| `wordsPerPhrase` | `number` | Không | `1` | Sắp xếp phụ đề hiển thị thành cụm từ (Karaoke chunking). Nếu nhập `5` hoặc `6`, phụ đề sẽ xuất hiện cả câu thay vì hiển thị 1 từ trên mỗi khung hình. |
-| `highlightPreset` | `"none" \| "color" \| "scale" \| "glow" \| "scale-color"` | Không | `"none"` | **Hiệu ứng Karaoke Highlight** làm nổi bật từ đang được phát âm. (Yêu cầu `wordsPerPhrase > 1` để thấy hiệu quả). |
+| `activeWordHighlight` | `boolean` | Không | `false` | **Bật hiệu ứng Karaoke Highlight**: Khi `true`, làm nổi bật từ đang được phát âm. Khi `false`, cụm từ (`wordsPerPhrase`) sẽ hiển thị tĩnh sạch sẽ không nhảy highlight. Hỗ trợ alias `active-word-highlight`. |
+| `wordsPerPhrase` | `number` | Không | `1` | Sắp xếp phụ đề hiển thị thành cụm từ. Nếu nhập `5` hoặc `6`, phụ đề sẽ xuất hiện theo từng cụm câu. Dùng kết hợp với `activeWordHighlight: true` để tạo Karaoke, hoặc hiển thị phụ đề đa từ tĩnh khi `activeWordHighlight: false`. |
+| `highlightPreset` | `"none" \| "color" \| "scale" \| "glow" \| "scale-color"` | Không | `"color"` (nếu activeWordHighlight=true) / `"none"` | **Hiệu ứng Karaoke Highlight** làm nổi bật từ đang được phát âm. |
 | `highlightColor` | `string` (Hex `#RRGGBB`) | Không | `#00FFFF` | Mã màu dùng cho hiệu ứng highlight từ đang đọc. |
 | `autoTranscribe` | `boolean` | Không | `true` | Bật/tắt chế độ tự động chạy Whisper AI để trích xuất phụ đề. Nếu `false`, CLI sẽ bỏ qua bước Whisper kể cả khi có audio. |
 

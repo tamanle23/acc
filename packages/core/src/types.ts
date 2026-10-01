@@ -157,7 +157,9 @@ export interface CaptionSettings {
   marginR?: number; // right margin in pixels
   borderStyle?: number; // 1 = Outline+Shadow, 3 = Opaque Box
 
-  // Karaoke Highlight settings
+  // Karaoke & Subtitle Highlight settings
+  activeWordHighlight?: boolean; // When true, enables karaoke active-word highlight. When false (default), phrases render cleanly without active word jumping.
+  'active-word-highlight'?: boolean; // Alias for activeWordHighlight
   wordsPerPhrase?: number; // Number of words per phrase (e.g. 5-6). If 1, words flash individually.
   highlightPreset?: 'none' | 'color' | 'scale' | 'glow' | 'scale-color';
   highlightColor?: string; // HTML Hex code for highlight, e.g. #00FFFF

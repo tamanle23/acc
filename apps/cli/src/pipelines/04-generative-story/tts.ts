@@ -1,5 +1,5 @@
-import { PythonBackend } from './ai-backend/python/PythonBackend';
-import { TtsConfig } from './types';
+import { PythonBackend } from '@acc/core/ai-backend/python/PythonBackend';
+import { TtsConfig } from '@acc/core/types';
 import path from 'path';
 
 export async function tts(

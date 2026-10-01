@@ -177,7 +177,7 @@ Mẫu `story-config.json` tiêu chuẩn:
 * **Kiến trúc Monorepo Turborepo**: Phân rã theo trách nhiệm rõ ràng, độc lập kiểm thử và tận dụng tối đa caching.
 * **FFmpeg C/FFI Zero-Copy Acceleration**: Tải thư viện FFI trực tiếp trong memory, loại bỏ hoàn toàn `fluent-ffmpeg` và `child_process.spawn`.
 * **Hiệu ứng Tạo Nổi 3D Vượt Khung (`depth3d`)**: Đột phá thị giác Out-of-Bounds (Frame-Breaker) với đa dạng khung viền (`card`, `polaroid`, `cinema`, `comic`), đổ bóng đa tầng (Elevation Drop Shadow) và dao động nổi bồng bềnh (Floating Motion). Hỗ trợ tách chủ thể qua SAM 2 (`autoSegment: true`) và tạo bản đồ độ sâu metric qua Depth Anything v2 (`autoDepth: true`).
-* **Hỗ trợ 10 Bộ Caption Presets**: `tiktok`, `classic`, `cinematic`, `vlog`, `neon-glow`, `bold-retro`, `minimal-clean`, `karaoke`, `news-banner`, `retro-typewriter`.
+* **Hỗ trợ 10 Bộ Caption Presets & Dynamic Captions**: `tiktok`, `classic`, `cinematic`, `vlog`, `neon-glow`, `bold-retro`, `minimal-clean`, `karaoke`, `news-banner`, `retro-typewriter`. Hỗ trợ gộp cụm từ (`wordsPerPhrase`) và bật/tắt hiệu ứng Karaoke Highlight (`activeWordHighlight`).
 * **Mix Video B-roll & Stock Footage**: Hỗ trợ chèn trực tiếp `.mp4`, `.mov`, `.webm` kèm xử lý thời lượng (`freeze`, `loop`, `trim`) và trộn âm thanh nền.
 
 ---

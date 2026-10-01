@@ -114,4 +114,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`100`](100_subject_aware_auto_framing_and_headroom_for_frame_breaker.md) | 2026-10-01 | Subject-Aware Auto Framing & Headroom for 3D Frame Breaker | Auto-detected character bbox/neck line and adjusted card headroom for ~92px head popout |
 | [`101`](101_fix_subject_bounding_box_and_metadata_persistence.md) | 2026-10-01 | Fix Subject Bounding Box Calculation & Metadata Persistence | Fixed mW/mH normalization in utils.ts, high-confidence alpha thresholding & metadata JSON |
 | [`102`](102_universal_subject_aware_frame_breaker_and_crisp_cutout.md) | 2026-10-01 | Universal Subject-Aware Frame Breaker & Crisp Cutout | Dynamic neck-anchored framing (154px-187px pop-out), sharp alpha cutout, 87/87 tests passing |
+| [`103`](103_active_word_highlight_flag_and_multiword_subtitles.md) | 2026-10-01 | Active Word Highlight Flag & Multi-Word Subtitles | Added activeWordHighlight flag, decoupled wordsPerPhrase for clean static multi-word subtitles, 93 tests |
 

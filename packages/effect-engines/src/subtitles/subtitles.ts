@@ -46,7 +46,15 @@ export function generateAssContent(
 ): string {
   const style = getResolvedCaptionStyle(captionSettings);
   const wordsPerPhrase = captionSettings?.wordsPerPhrase || 1;
-  const highlightTag = getHighlightAssTag(captionSettings?.highlightPreset, captionSettings?.highlightColor);
+  const activeWordHighlight = captionSettings?.activeWordHighlight ?? (captionSettings as any)?.['active-word-highlight'] ?? false;
+  
+  const effectiveHighlightPreset = activeWordHighlight
+    ? (captionSettings?.highlightPreset && captionSettings.highlightPreset !== 'none' ? captionSettings.highlightPreset : 'color')
+    : (captionSettings?.highlightPreset || 'none');
+
+  const highlightTag = activeWordHighlight
+    ? getHighlightAssTag(effectiveHighlightPreset, captionSettings?.highlightColor)
+    : '';
 
   const header = `[Script Info]
 ScriptType: v4.00+
@@ -64,45 +72,55 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
   let dialogues: string[] = [];
 
-  if (wordsPerPhrase <= 1 || !highlightTag) {
-    // Basic Rendering (One-by-one or without highlighting)
+  if (wordsPerPhrase > 1) {
+    const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
+
+    if (activeWordHighlight && highlightTag) {
+      // Phrase-level Karaoke Rendering (Active word highlight jumping)
+      for (const phrase of phrases) {
+        const phraseStart = phrase[0].start;
+        const phraseEnd = phrase[phrase.length - 1].end;
+
+        for (let i = 0; i < phrase.length; i++) {
+          const lineStart = i === 0 ? phraseStart : phrase[i].start;
+          const lineEnd = (i === phrase.length - 1) ? phraseEnd : phrase[i + 1].start;
+
+          const startAss = formatAssTimestamp(lineStart);
+          const endAss = formatAssTimestamp(lineEnd);
+
+          const textParts = phrase.map((w, index) => {
+            const cleanText = w.text.replace(/\r?\n/g, '\\N').trim();
+            if (index === i) {
+              return `${highlightTag}${cleanText}{\\r}`;
+            }
+            return cleanText;
+          });
+
+          const fullLineText = textParts.join(' ');
+          dialogues.push(`Dialogue: 0,${startAss},${endAss},Default,,0,0,0,,${fullLineText}`);
+        }
+      }
+    } else {
+      // Multi-word phrase subtitle WITHOUT active word highlight (clean static phrase)
+      for (const phrase of phrases) {
+        const phraseStart = phrase[0].start;
+        const phraseEnd = phrase[phrase.length - 1].end;
+        const startAss = formatAssTimestamp(phraseStart);
+        const endAss = formatAssTimestamp(phraseEnd);
+
+        const fullPhraseText = phrase.map(w => w.text.replace(/\r?\n/g, '\\N').trim()).join(' ');
+        dialogues.push(`Dialogue: 0,${startAss},${endAss},Default,,0,0,0,,${fullPhraseText}`);
+      }
+    }
+  } else {
+    // Basic single word rendering
     dialogues = captions.map((caption) => {
       const start = formatAssTimestamp(caption.start);
       const end = formatAssTimestamp(caption.end);
       const cleanText = caption.text.replace(/\r?\n/g, '\\N').trim();
-      const text = highlightTag ? `${highlightTag}${cleanText}{\\r}` : cleanText;
+      const text = (activeWordHighlight && highlightTag) ? `${highlightTag}${cleanText}{\\r}` : cleanText;
       return `Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`;
     });
-  } else {
-    // Phrase-level Karaoke Rendering
-    const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
-
-    for (const phrase of phrases) {
-      const phraseStart = phrase[0].start;
-      const phraseEnd = phrase[phrase.length - 1].end;
-
-      for (let i = 0; i < phrase.length; i++) {
-        // Time window for this specific word to be highlighted
-        const lineStart = i === 0 ? phraseStart : phrase[i].start;
-        // Keep the word highlighted until the next word starts, or until phrase ends
-        const lineEnd = (i === phrase.length - 1) ? phraseEnd : phrase[i + 1].start;
-
-        const startAss = formatAssTimestamp(lineStart);
-        const endAss = formatAssTimestamp(lineEnd);
-
-        // Build the full phrase text, applying the tag to the active word only
-        const textParts = phrase.map((w, index) => {
-          const cleanText = w.text.replace(/\r?\n/g, '\\N').trim();
-          if (index === i) {
-            return `${highlightTag}${cleanText}{\\r}`;
-          }
-          return cleanText;
-        });
-
-        const fullLineText = textParts.join(' ');
-        dialogues.push(`Dialogue: 0,${startAss},${endAss},Default,,0,0,0,,${fullLineText}`);
-      }
-    }
   }
 
   return header + dialogues.join('\n') + '\n';

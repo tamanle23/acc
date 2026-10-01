@@ -21,6 +21,7 @@
       "preset": "cinematic",
       "subtitleMode": "burn",
       "position": "bottom",
+      "activeWordHighlight": true,
       "wordsPerPhrase": 6,
       "highlightPreset": "scale-color",
       "highlightColor": "#00FFFF",

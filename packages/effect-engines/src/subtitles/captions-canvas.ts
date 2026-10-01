@@ -77,7 +77,10 @@ export function drawCanvasCaptions(
   const shadowSize = Math.round((settings?.shadowSize ?? base.shadowSize ?? 2) * scale);
   const borderStyle = settings?.borderStyle ?? base.borderStyle ?? 1;
 
-  const highlightPreset = settings?.highlightPreset ?? 'color';
+  const activeWordHighlight = settings?.activeWordHighlight ?? (settings as any)?.['active-word-highlight'] ?? false;
+  const highlightPreset = activeWordHighlight
+    ? (settings?.highlightPreset && settings.highlightPreset !== 'none' ? settings.highlightPreset : 'color')
+    : 'none';
   const highlightColor = settings?.highlightColor ?? (presetName === 'tiktok' ? '#FFFF00' : '#00FFFF');
 
   // Compute Vertical Position

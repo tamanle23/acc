@@ -407,10 +407,20 @@
           ],
           "description": "1: Viền/Bóng, 3: Nền Opaque Box"
         },
+        "activeWordHighlight": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bật hiệu ứng Karaoke Highlight từ đang phát âm (Mặc định: false). Nếu false, các cụm từ (wordsPerPhrase) hiển thị tĩnh sạch sẽ không nhảy highlight."
+        },
+        "active-word-highlight": {
+          "type": "boolean",
+          "default": false,
+          "description": "Alias dạng kebab-case cho activeWordHighlight"
+        },
         "wordsPerPhrase": {
           "type": "integer",
           "minimum": 1,
-          "description": "Số lượng từ hiển thị trên 1 dòng (dùng cho Karaoke chunking)"
+          "description": "Số lượng từ hiển thị trên 1 dòng phụ đề (dùng cho nhóm cụm từ hoặc Karaoke chunking)"
         },
         "highlightPreset": {
           "type": "string",

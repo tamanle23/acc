@@ -354,14 +354,16 @@ async function main() {
   }
 
   // 3a. Chọn Karaoke Highlight Style
+  let activeWordHighlight = true;
   let wordsPerPhrase = 6;
   let highlightPreset: any = 'scale-color';
   let highlightColor = '#00FFFF';
 
   if (!shouldMerge) {
-    console.log('\n--- HIỆU ỨNG KARAOKE PHỤ ĐỀ (Highlight) ---');
-    const karAns = await askQuestion('Bạn có muốn bật hiệu ứng Highlight từng từ khi đọc không? (Y/n) [mặc định: Y]: ');
+    console.log('\n--- HIỆU ỨNG KARAOKE PHỤ ĐỀ (Active Word Highlight) ---');
+    const karAns = await askQuestion('Bạn có muốn bật hiệu ứng Highlight từng từ khi đọc (Karaoke) không? (Y/n) [mặc định: Y]: ');
     if (karAns.trim().toLowerCase() !== 'n') {
+      activeWordHighlight = true;
       const wAns = await askQuestion('-> Số chữ tối đa trên một dòng (Mặc định: 6): ');
       if (parseInt(wAns.trim(), 10) > 0) wordsPerPhrase = parseInt(wAns.trim(), 10);
 
@@ -380,8 +382,10 @@ async function main() {
         if (cAns.trim()) highlightColor = cAns.trim();
       }
     } else {
+      activeWordHighlight = false;
+      const wAns = await askQuestion('-> Số chữ tối đa trên một dòng phụ đề (Mặc định: 6): ');
+      if (parseInt(wAns.trim(), 10) > 0) wordsPerPhrase = parseInt(wAns.trim(), 10);
       highlightPreset = 'none';
-      wordsPerPhrase = 1;
     }
   }
 
@@ -620,6 +624,7 @@ async function main() {
         preset: selectedCaptionPreset,
         subtitleMode: selectedSubtitleMode,
         position: 'bottom',
+        activeWordHighlight,
         wordsPerPhrase,
         highlightPreset,
         highlightColor,

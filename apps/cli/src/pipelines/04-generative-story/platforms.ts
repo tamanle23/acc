@@ -54,6 +54,7 @@ export const PLATFORM_PRESETS: Record<PlatformPreset, PlatformConfigDefaults> = 
       preset: 'tiktok',
       subtitleMode: 'burn',
       position: 'bottom',
+      wordsPerPhrase: 3,
       fontSize: 54,
       marginV: 280, // Optimized for TikTok UI safe zone (above title/sound disk)
       marginH: 60,
@@ -77,6 +78,7 @@ export const PLATFORM_PRESETS: Record<PlatformPreset, PlatformConfigDefaults> = 
       preset: 'tiktok',
       subtitleMode: 'burn',
       position: 'bottom',
+      wordsPerPhrase: 3,
       fontSize: 54,
       marginV: 280, // Above YouTube Shorts engagement UI
       marginH: 60,
