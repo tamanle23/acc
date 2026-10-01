@@ -66,9 +66,10 @@
         "mode": "frame_breaker",
         "frameStyle": "polaroid",
         "autoSegment": true,
-        "popOutIntensity": 1.2,
-        "elevationShadow": true,
-        "floatingMotion": true
+        "popOutIntensity": 1.25,
+        "shadow": true,
+        "floatMotion": true,
+        "backdropBlur": 20
       },
       "captions": [
         {
@@ -103,7 +104,9 @@
         "sandwich": {
           "textBehindSubject": true,
           "ambientDust": true,
-          "vignette": true
+          "vignette": true,
+          "bannerText": "JURASSIC REALM",
+          "textColor": "rgba(255, 230, 120, 0.95)"
         }
       },
       "captions": [
@@ -131,21 +134,52 @@
     },
     {
       "image": "scene1.jpg",
-      "text": "Chú khủng long này rất thân thiện và tốt bụng.",
+      "text": "Khám phá không gian 3D chân thực với bản đồ độ sâu Depth Anything v2.",
       "depth3d": {
         "enabled": true,
         "mode": "depth_map_3d",
         "autoDepth": true,
         "depthMesh": {
           "motion": "circle",
-          "displacementScale": 18
+          "displacementScale": 20
+        }
+      },
+      "captions": []
+    },
+    {
+      "image": "scene2.jpg",
+      "text": "Hiệu ứng thị sai Parallax 2.5D mang lại chuyển động camera điện ảnh nhiều tầng lớp.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "parallax_25d",
+        "autoSegment": true,
+        "parallax": {
+          "cameraMotion": "dolly_zoom",
+          "intensity": 1.25,
+          "depthBlur": true,
+          "foregroundElements": true
+        }
+      },
+      "captions": []
+    },
+    {
+      "image": "scene1.jpg",
+      "text": "Hiệu ứng Wigglegram 3D tái hiện rung lắc thị sai lập thể với quang sai màu sống động.",
+      "depth3d": {
+        "enabled": true,
+        "mode": "wigglegram",
+        "wigglegram": {
+          "frequency": 7,
+          "amplitude": 14,
+          "direction": "horizontal",
+          "chromaticAberration": true
         }
       },
       "captions": []
     },
     {
       "video": "b-roll-nature.mp4",
-      "text": "Khung cảnh vương quốc xanh ngát, ngập tràn sức sống.",
+      "text": "Khung cảnh vương quốc xanh ngát, ngập tràn sức sống thiên nhiên.",
       "videoSettings": {
         "timeBase": "audio",
         "shortVideoMode": "loop",
