@@ -10,6 +10,10 @@ import { drawDepthMeshFrame } from './depth-mesh';
 import { drawWigglegramFrame } from './wigglegram';
 import { drawCanvasCaptions } from '../subtitles/captions-canvas';
 import { SubjectSegmentationContext, DepthEstimationContext } from '../vision';
+import { Depth3DFactory } from './factory';
+export * from './strategy';
+export * from './renderers';
+export * from './factory';
 
 export interface Depth3DSceneOptions {
   scene: ResolvedSceneConfig;
@@ -421,49 +425,27 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
 
         ctx.clearRect(0, 0, width, height);
 
-        switch (mode) {
-          case 'parallax_25d':
-          case 'parallax_dolly':
-            drawParallaxFrame(ctx, {
-              img, subjectImg, bgImg, width, height, frame, totalFrames, timeSec, progress, depthConfig, particles
-            });
-            break;
-          case 'volumetric_sandwich':
-          case 'sandwich':
-            drawSandwichFrame(ctx, {
-              img, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig, captions: scene.captions, dustParticles
-            });
-            break;
-          case 'depth_map_3d':
-          case 'mesh_displacement':
-            if (srcCanvas) {
-              drawDepthMeshFrame(ctx, {
-                srcCanvas,
-                depthLayers: depthLayers || undefined,
-                width,
-                height,
-                frame,
-                totalFrames,
-                timeSec,
-                progress,
-                depthConfig,
-              });
-            }
-            break;
-          case 'wigglegram':
-            if (baseCanvas) {
-              drawWigglegramFrame(ctx, {
-                baseCanvas, subjectImg, width, height, frame, totalFrames, timeSec, progress, depthConfig
-              });
-            }
-            break;
-          case 'frame_breaker':
-          default:
-            drawFrameBreakerFrame(ctx, {
-              img, subjectImg, subjectBBox, bgCanvas, width, height, frame, totalFrames, timeSec, progress, depthConfig
-            });
-            break;
-        }
+        const renderer = Depth3DFactory.getRenderer(mode);
+        renderer.renderFrame(ctx, {
+          img,
+          subjectImg,
+          subjectBBox,
+          bgImg,
+          bgCanvas,
+          srcCanvas,
+          baseCanvas,
+          depthLayers,
+          width,
+          height,
+          frame,
+          totalFrames,
+          timeSec,
+          progress,
+          depthConfig,
+          captions: scene.captions,
+          particles,
+          dustParticles,
+        });
 
         // Draw Canvas Subtitles / Captions
         drawCanvasCaptions(ctx, scene.captions, timeSec, config.settings.captions, width, height);
