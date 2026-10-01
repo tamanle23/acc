@@ -103,5 +103,6 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`089`](089_huggingface_transformers_js_vision_strategy_pattern.md) | 2026-10-01 | Native Vision Strategy Pattern via @huggingface/transformers | ISegmentationStrategy & IDepthEstimationStrategy, SlimSAM, SAM ViT-Base, Depth Anything v2 Small, 100% in-process TypeScript |
 | [`090`](090_strategy_and_checksum_aware_auto_caching.md) | 2026-10-01 | Checksum & Strategy-Aware Auto Caching for Vision AI | MD5 image checksum + strategy naming in autoCandidate resolution & persistent caching |
 | [`091`](091_expand_segmentation_strategies_sam2_rmbg_birefnet.md) | 2026-10-01 | Expanded Vision Strategies (SAM 2.1 Tiny, RMBG-1.4, BiRefNet) | Plug-and-play strategies for SAM 2.1 Tiny, RMBG-1.4, BiRefNet with benchmark comparisons |
-| [`092`](092_turborepo_monorepo_unified_cli_guide.md) | 2026-10-01 | Turborepo Monorepo Unified CLI Documentation & Subcommand Router | CLI_GUIDE.md, updated README.md, overlay/sfx CLI routing, package.json scripts |
+| [`092`](092_vision_segmentation_optimization_and_benchmark.md) | 2026-10-01 | Vision Segmentation Optimization & Benchmark | Negative prompts, IoU max selection, smoothstep alpha feathering, re-benchmarking |
+| [`093`](093_turborepo_monorepo_unified_cli_guide.md) | 2026-10-01 | Turborepo Monorepo Unified CLI Documentation & Subcommand Router | CLI_GUIDE.md, updated README.md, overlay/sfx CLI routing, package.json scripts |
 

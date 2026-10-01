@@ -71,15 +71,26 @@ export async function createCutoutRgba(
     for (let x = 0; x < mW; x++) {
       const idx = y * mW + x;
       const rawVal = alphaMask[idx];
-      const alpha = typeof rawVal === 'number' && rawVal <= 1.0 ? Math.round(rawVal * 255) : Math.round(Number(rawVal));
+      let normVal = typeof rawVal === 'number' && rawVal <= 1.0 ? rawVal : Number(rawVal) / 255.0;
+      
+      // Smoothstep curve for soft edge transition if requested or default
+      if (options?.featherRadius !== 0) {
+        // smoothstep between 0.1 and 0.9
+        const edgeMin = 0.08;
+        const edgeMax = 0.92;
+        const clamped = Math.max(0, Math.min(1, (normVal - edgeMin) / (edgeMax - edgeMin)));
+        normVal = clamped * clamped * (3 - 2 * clamped);
+      }
+      
+      const alpha = Math.max(0, Math.min(255, Math.round(normVal * 255)));
       const pos = idx * 4;
       
       maskImgData.data[pos] = 255;
       maskImgData.data[pos + 1] = 255;
       maskImgData.data[pos + 2] = 255;
-      maskImgData.data[pos + 3] = alpha > 127 ? 255 : 0;
+      maskImgData.data[pos + 3] = alpha;
 
-      if (alpha > 127) {
+      if (alpha > 30) {
         fgPixels++;
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;

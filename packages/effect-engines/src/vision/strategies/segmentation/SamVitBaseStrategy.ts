@@ -42,11 +42,23 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
       inputLabels = [options.points.map(p => (p.label !== undefined ? p.label : 1))];
     } else {
       inputPoints = [[
+        // Positive foreground (label 1)
         [width * 0.50, height * 0.45],
-        [width * 0.50, height * 0.28],
-        [width * 0.48, height * 0.65]
+        [width * 0.50, height * 0.26],
+        [width * 0.48, height * 0.68],
+        [width * 0.58, height * 0.48],
+        [width * 0.42, height * 0.45],
+        // Negative background margin points (label 0)
+        [width * 0.05, height * 0.05],
+        [width * 0.95, height * 0.05],
+        [width * 0.05, height * 0.95],
+        [width * 0.95, height * 0.95],
+        [width * 0.50, height * 0.03],
+        [width * 0.50, height * 0.97],
+        [width * 0.03, height * 0.50],
+        [width * 0.97, height * 0.50]
       ]];
-      inputLabels = [[1, 1, 1]];
+      inputLabels = [[1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]];
     }
 
     const inputs = await this.processor(rawImage, {
@@ -61,7 +73,19 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
       inputs.reshaped_input_sizes
     );
 
-    const maskTensor = Array.isArray(masks) ? masks[0] : masks;
+    let bestMaskIdx = 0;
+    if (outputs.iou_scores) {
+      const scores = outputs.iou_scores.data || outputs.iou_scores;
+      let maxScore = -Infinity;
+      for (let s = 0; s < scores.length; s++) {
+        if (scores[s] > maxScore) {
+          maxScore = scores[s];
+          bestMaskIdx = s;
+        }
+      }
+    }
+
+    const maskTensor = Array.isArray(masks) ? (masks[bestMaskIdx] || masks[0]) : masks;
     const maskData = maskTensor.data || maskTensor;
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
@@ -75,6 +99,8 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
     return {
       maskRgbaBuffer: rgbaBuffer,
       maskAlphaBuffer: alphaBuffer,
+      width,
+      height,
       boundingBox: bbox,
       confidence: 0.98,
       modelUsed: this.modelId

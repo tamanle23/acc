@@ -1,4 +1,4 @@
-# History Entry 092: Turborepo Monorepo Unified CLI Documentation & Subcommand Router
+# History Entry 093: Turborepo Monorepo Unified CLI Documentation & Subcommand Router
 
 ## Problem
 Following the architectural migration to a Turborepo + Bun Workspaces monorepo (`packages/core`, `packages/ir`, `packages/effect-engines`, `packages/exporters`, `packages/proto`, `apps/cli`, `apps/python-backend`), the user documentation (`README.md`) and project guides did not reflect the new Unified CLI v3.0 capabilities, subcommands (`run`, `stream`, `serve`, `list`, `overlay`, `sfx`), the 6 canonical multi-pipeline engines, or how to invoke them across the monorepo.

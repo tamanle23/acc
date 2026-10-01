@@ -53,12 +53,23 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
       inputLabels = [[1]];
     } else {
       inputPoints = [[
+        // Positive foreground (label 1)
         [width * 0.50, height * 0.45], // Core body
-        [width * 0.50, height * 0.28], // Head & crest
-        [width * 0.48, height * 0.65], // Lower body & legs
-        [width * 0.58, height * 0.48]  // Flank / arm
+        [width * 0.50, height * 0.26], // Head & crest
+        [width * 0.48, height * 0.68], // Lower body & legs
+        [width * 0.58, height * 0.48], // Flank / arm
+        [width * 0.42, height * 0.45], // Left flank
+        // Negative background margin points (label 0)
+        [width * 0.05, height * 0.05], // Top-Left corner
+        [width * 0.95, height * 0.05], // Top-Right corner
+        [width * 0.05, height * 0.95], // Bottom-Left corner
+        [width * 0.95, height * 0.95], // Bottom-Right corner
+        [width * 0.50, height * 0.03], // Top margin
+        [width * 0.50, height * 0.97], // Bottom margin
+        [width * 0.03, height * 0.50], // Left margin
+        [width * 0.97, height * 0.50]  // Right margin
       ]];
-      inputLabels = [[1, 1, 1, 1]];
+      inputLabels = [[1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]];
     }
 
     const inputs = await this.processor(rawImage, {
@@ -73,7 +84,19 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
       inputs.reshaped_input_sizes
     );
 
-    const maskTensor = Array.isArray(masks) ? masks[0] : masks;
+    let bestMaskIdx = 0;
+    if (outputs.iou_scores) {
+      const scores = outputs.iou_scores.data || outputs.iou_scores;
+      let maxScore = -Infinity;
+      for (let s = 0; s < scores.length; s++) {
+        if (scores[s] > maxScore) {
+          maxScore = scores[s];
+          bestMaskIdx = s;
+        }
+      }
+    }
+
+    const maskTensor = Array.isArray(masks) ? (masks[bestMaskIdx] || masks[0]) : masks;
     const maskData = maskTensor.data || maskTensor;
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(

@@ -49,7 +49,10 @@ export class RmbgStrategy implements ISegmentationStrategy {
 
     const uint8Mask = new Uint8Array(maskW * maskH);
     for (let i = 0; i < maskW * maskH; i++) {
-      uint8Mask[i] = Math.round(Math.max(0, Math.min(1, maskData[i])) * 255);
+      const raw = Math.max(0, Math.min(1, maskData[i]));
+      // Hermite smoothstep for anti-aliased alpha borders
+      const smoothVal = raw * raw * (3 - 2 * raw);
+      uint8Mask[i] = Math.round(smoothVal * 255);
     }
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(

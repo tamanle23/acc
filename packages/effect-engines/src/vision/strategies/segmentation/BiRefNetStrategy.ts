@@ -20,7 +20,7 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
     this.initPromise = (async () => {
       try {
         const [model, processor] = await Promise.all([
-          AutoModel.from_pretrained(this.modelId),
+          AutoModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => AutoModel.from_pretrained(this.modelId)),
           AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
@@ -52,7 +52,9 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
       // Sigmoid activation for BiRefNet logits if raw or clamp
       const raw = maskData[i];
       const val = raw < 0 || raw > 1 ? 1 / (1 + Math.exp(-raw)) : raw;
-      uint8Mask[i] = Math.round(Math.max(0, Math.min(1, val)) * 255);
+      const clamped = Math.max(0, Math.min(1, val));
+      const smoothVal = clamped * clamped * (3 - 2 * clamped);
+      uint8Mask[i] = Math.round(smoothVal * 255);
     }
 
     const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
