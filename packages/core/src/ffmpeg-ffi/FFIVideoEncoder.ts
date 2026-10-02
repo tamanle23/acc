@@ -11,8 +11,8 @@ export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
 export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
 
 function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
-    const p = ptr(new BigUint64Array([BigInt(ptrVal)]));
-    return toArrayBuffer(p, offset, length);
+    const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
+    return toArrayBuffer(numPtr, offset, length);
 }
 
 export class FFIVideoEncoder {
@@ -85,17 +85,11 @@ export class FFIVideoEncoder {
             throw new Error("No compatible H.264 video encoder found in FFmpeg shared libraries.");
         }
 
-        // 2. Allocate & configure AVCodecParameters to bridge context dimensions
-        const par = BigInt(FFI.avcodec.avcodec_parameters_alloc());
-        const parView = new DataView(safeArrayBuffer(par, 0, 160));
-        parView.setInt32(0, 0, true);               // codec_type = AVMEDIA_TYPE_VIDEO
-        parView.setInt32(44, AV_PIX_FMT_YUV420P, true); // format = AV_PIX_FMT_YUV420P
-        parView.setInt32(72, this.width, true);     // width
-        parView.setInt32(76, this.height, true);    // height
-
+        // 2. Allocate & configure AVCodecContext dimensions & pixel format
         this.codecCtx = BigInt(FFI.avcodec.avcodec_alloc_context3(codec));
-        FFI.avcodec.avcodec_parameters_to_context(this.codecCtx, par);
-        FFI.avcodec.avcodec_parameters_free(ptr(new BigUint64Array([par]).buffer));
+        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("video_size\0"), Buffer.from(`${this.width}x${this.height}\0`), 0);
+        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("pixel_format\0"), Buffer.from("yuv420p\0"), 0);
+        FFI.avutil.av_opt_set_int(this.codecCtx, Buffer.from("pixel_format\0"), BigInt(AV_PIX_FMT_YUV420P), 0);
 
         // 3. TimeBase & Framerate configuration
         const timeBaseStr = Buffer.from(`1/${this.fps}\0`);
@@ -112,6 +106,15 @@ export class FFIVideoEncoder {
         if (openRet < 0 && isNvenc) {
             codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("libx264\0"));
             if (codec) {
+                const p = new BigUint64Array([this.codecCtx]);
+                FFI.avcodec.avcodec_free_context(ptr(p.buffer));
+                this.codecCtx = BigInt(FFI.avcodec.avcodec_alloc_context3(codec));
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("video_size\0"), Buffer.from(`${this.width}x${this.height}\0`), 0);
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("pixel_format\0"), Buffer.from("yuv420p\0"), 0);
+                FFI.avutil.av_opt_set_int(this.codecCtx, Buffer.from("pixel_format\0"), BigInt(AV_PIX_FMT_YUV420P), 0);
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("time_base\0"), timeBaseStr, 0);
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("framerate\0"), frameRateStr, 0);
+                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("flags\0"), Buffer.from("+global_header\0"), 0);
                 this.strategy.configureCodec(this.codecCtx, false, this.fps, this.crf);
                 openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
             }
