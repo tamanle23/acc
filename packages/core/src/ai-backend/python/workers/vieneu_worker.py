@@ -51,6 +51,7 @@ def main():
             if action == "synthesize":
                 text = payload.get("text")
                 voice = payload.get("voice", "Ngọc Trân")
+                speed = payload.get("speed", 1)
                 # pyrefly: ignore [invalid-syntax]
                 file_name =  f"{payload.get('fileName', uuid.uuid4().hex[:8])}.wav"
                 output_dir = payload.get("outputDir", "./output")
@@ -63,7 +64,7 @@ def main():
                 
                 # Perform inference
                 # Note: Vieneu infer() likely returns a torch Tensor or numpy array
-                audio_data = tts_engine.infer(text, voice=voice)
+                audio_data = tts_engine.infer(text, voice=voice, speed=speed)
                 
                 # We assume 48kHz as per README
                 sample_rate = 48000 

@@ -6,7 +6,7 @@ let transcriberInstance: any = null;
 
 async function getTranscriber() {
   if (!transcriberInstance) {
-    Logger.info('whisper','Loading Whisper model (onnx-community/whisper-tiny)...');
+    Logger.info('whisper','Loading Whisper model (onnx-community/whisper-base)...');
     transcriberInstance = await pipeline(
       'automatic-speech-recognition',
       'onnx-community/whisper-tiny',

@@ -229,7 +229,7 @@ export async function renderStoryVideo(
   }
 
   try {
-    Logger.info('StoryRenderer', `\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
+    Logger.info('StoryRenderer', `🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
 
     const hasAnyTransition = config.scenes.some(s => s.transition?.enabled) || config.settings.transition?.enabled || false;
 
