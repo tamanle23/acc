@@ -54,7 +54,7 @@
   "scenes": [
     {
       "image": "assets/scene1.jpg",
-      "audio": "assets/voiceover1.mp3",
+      
       "transition": {
         "enabled": true,
         "type": "wipeleft",
@@ -96,7 +96,7 @@
     },
     {
       "image": "assets/scene2.jpg",
-      "audio": "assets/voiceover2.mp3",
+      
       "depth3d": {
         "enabled": true,
         "mode": "frame_breaker",

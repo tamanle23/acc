@@ -232,6 +232,7 @@ export class FFISceneEngine {
     let rgbaFrame: bigint = 0n;
     let imgData: any = null;
     let swsToRgbaCtx: bigint = 0n;
+    let uint8Clamped: Uint8ClampedArray | null = null;
 
     if (hasCaptions) {
       canvas = createCanvas(width, height);
@@ -252,28 +253,29 @@ export class FFISceneEngine {
       const rgbaPtr = Structs.AVFrame.getDataPointer(rgbaFrame, 0);
       const linesize = Structs.AVFrame.getLinesize(rgbaFrame, 0);
       const ab = toArrayBuffer(rgbaPtr as any, 0, linesize * height);
-      const uint8Clamped = new Uint8ClampedArray(ab, 0, width * height * 4);
-      imgData = new ImageData(uint8Clamped, width, height);
+      uint8Clamped = new Uint8ClampedArray(ab, 0, width * height * 4);
+      imgData = new ImageData(width, height);
     }
 
     const encodeDecodedFrame = async (f: bigint) => {
       if (hasCaptions) {
-        FFI.swscale.sws_scale(
-          swsToRgbaCtx,
-          f,
-          f + 64n,
-          0,
-          srcH,
-          rgbaFrame,
-          rgbaFrame + 64n
-        );
-        ctx.putImageData(imgData, 0, 0);
-        const timeSec = framesEncoded / fps;
-        drawCanvasCaptions(ctx, captions!, timeSec, captionSettings, width, height);
-        encoder.encodeRgbaFrame(canvas.data());
-      } else {
-        encoder.encodeRawFrame(f, srcW, srcH, srcFmt);
-      }
+          FFI.swscale.sws_scale(
+            swsToRgbaCtx,
+            f,
+            f + 64n,
+            0,
+            srcH,
+            rgbaFrame,
+            rgbaFrame + 64n
+          );
+          imgData.data.set(uint8Clamped);
+          ctx.putImageData(imgData, 0, 0);
+          const timeSec = framesEncoded / fps;
+          drawCanvasCaptions(ctx, captions!, timeSec, captionSettings, width, height);
+          encoder.encodeRgbaFrame(canvas.data());
+        } else {
+          encoder.encodeRawFrame(f, srcW, srcH, srcFmt);
+        }
       framesEncoded++;
 
       if (framesEncoded % 15 === 0) {

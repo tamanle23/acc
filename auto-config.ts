@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import type { StoryConfig, SceneConfig, PlatformPreset, CaptionPreset, SubtitleMode } from './apps/cli/src/pipelines/04-generative-story/types';
-import { transcribeAudio } from './apps/cli/src/pipelines/04-generative-story/whisper';
-import { tts } from './apps/cli/src/pipelines/04-generative-story/tts';
-import { PLATFORM_PRESETS } from './apps/cli/src/pipelines/04-generative-story/platforms';
+import type { StoryConfig, SceneConfig, PlatformPreset, CaptionPreset, SubtitleMode } from '@acc/core';
+import { transcribeAudio } from '@acc/cli/src/pipelines/04-generative-story/whisper';
+import { tts } from '@acc/cli/src/pipelines/04-generative-story/tts';
+import { PLATFORM_PRESETS } from '@acc/cli/src/pipelines/04-generative-story/platforms';
 import { PRESETS as CAPTION_PRESETS } from '@acc/effect-engines';
 import { PythonBackend, Utils, FFmpegManager } from '@acc/core';
 

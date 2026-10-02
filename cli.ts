@@ -19,7 +19,7 @@ async function main() {
     return;
   }
 
-  intro('ACC Storyteller Video Generator');
+  intro('ACC - Automated Content Creator');
 
   let targetDir = rawArgs[0];
 

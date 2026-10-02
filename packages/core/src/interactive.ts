@@ -1,5 +1,10 @@
 import * as prompt from '@clack/prompts';
 
+export const intro = prompt.intro;
+export const outro = prompt.outro;
+export const isCancel = prompt.isCancel;
+export const cancel = prompt.cancel;
+
 export function handleCancel(value: any): void {
   if (prompt.isCancel(value)) {
     prompt.cancel('Operation cancelled.');
