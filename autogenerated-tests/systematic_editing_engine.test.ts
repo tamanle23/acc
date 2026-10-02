@@ -15,6 +15,9 @@ import { SafeZoneManager } from '../packages/effect-engines/src/subtitles/SafeZo
 import { AudioDuckingDSP } from '../packages/core/src/ffmpeg-ffi/AudioDuckingDSP';
 import { WidgetExporter } from '../packages/exporters/src/interactive-web/WidgetExporter';
 import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/EditingPipelineOrchestrator';
+import { AutoReframeStrategy } from '../packages/effect-engines/src/vision/AutoReframeStrategy';
+import { MulticamSynchronizer } from '../packages/core/src/multicam/MulticamSynchronizer';
+import { KineticTypography } from '../packages/effect-engines/src/overlay-effects/KineticTypography';
 
 describe('Systematic Video Editing Engine Unit & E2E Integration Tests', () => {
   describe('LegacyStoryConfigAdapter (Adapter Pattern)', () => {
@@ -218,6 +221,57 @@ describe('Systematic Video Editing Engine Unit & E2E Integration Tests', () => {
 
       // Cleanup
       fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+  });
+
+  describe('AutoReframeStrategy (Group 8.1)', () => {
+    test('computes centered 9:16 crop box for focal subject on 1920x1080 source', () => {
+      const autoReframe = new AutoReframeStrategy({
+        sourceWidth: 1920,
+        sourceHeight: 1080,
+        targetAspectRatio: '9:16',
+        smoothingFactor: 0.5,
+      });
+
+      const subjectBox = { x: 1200, y: 200, width: 300, height: 600 };
+      const crop = autoReframe.calculateCropForSubject(subjectBox);
+
+      // Target 9:16 width for 1080 height is 608px
+      expect(crop.width).toBe(608);
+      expect(crop.height).toBe(1080);
+      // Center X = 1350, Crop X = 1350 - 304 = 1046
+      expect(crop.x).toBe(1046);
+
+      const filterStr = autoReframe.generateFFmpegCropFilter(crop);
+      expect(filterStr).toBe('crop=608:1080:1046:0');
+    });
+  });
+
+  describe('MulticamSynchronizer (Group 7.1)', () => {
+    test('calculates cross-correlation lag offset between reference and target audio', () => {
+      const sampleRate = 1000;
+      const ref = new Float32Array(2000);
+      const target = new Float32Array(2000);
+
+      // Add signal peak at index 500 in ref, index 700 in target (lag = +200 samples = +200ms)
+      for (let i = 0; i < 50; i++) {
+        ref[500 + i] = 1.0;
+        target[700 + i] = 1.0;
+      }
+
+      const result = MulticamSynchronizer.calculateWaveformOffset(ref, target, sampleRate, 2);
+      expect(result.offsetMs).toBe(200);
+      expect(result.confidenceScore).toBeGreaterThan(0.5);
+    });
+  });
+
+  describe('KineticTypography (Group 6.3)', () => {
+    test('solves spring physics pop-in scale sequence over time', () => {
+      const scales = KineticTypography.generatePopInSequence(15, 30);
+      expect(scales.length).toBe(15);
+      expect(scales[0]).toBe(0.0);
+      // Scale should spring overshoot around 1.0
+      expect(Math.max(...scales)).toBeGreaterThan(0.9);
     });
   });
 

@@ -11,6 +11,7 @@ export * from './ffmpeg-ffi/FFIConcatMuxer';
 export * from './ffmpeg-ffi/FFISceneEngine';
 export * from './ffmpeg-ffi/FFIAudioDSP';
 export * from './ffmpeg-ffi/AudioDuckingDSP';
+export * from './multicam/MulticamSynchronizer';
 export * from './AudioNormalizer';
 export * from './BaseEffectEngine';
 export * from './FFmpegExecutor';
