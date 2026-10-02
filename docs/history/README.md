@@ -136,6 +136,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`122`](122_whisper_and_caption_synchronization_analysis.md) | 2026-10-02 | Whisper Model Architecture & Caption Timing Analysis | Documented comprehensive guide on Whisper models, macro/micro desync root causes, and acoustic lead-in timing |
 | [`123`](123_unify_all_6_pipelines_under_orchestrator.md) | 2026-10-02 | Unify All 6 Pipelines Under Orchestrator & Middleware Architecture | Established UnifiedPipelineContext, IPipeline, and PipelineRegistry; decomposed all 6 pipelines into discrete middleware stages with 100% test coverage |
 | [`124`](124_update_cli_main_handler_orchestrator_delegation.md) | 2026-10-02 | Phase 3 Step 3.2: Update CLI Main Handler for Orchestrator Delegation | Refactored CLI run command to delegate all pipeline execution dynamically via defaultPipelineRegistry |
+| [`125`](125_phase1_core_orchestrator_enhancements.md) | 2026-10-02 | Phase 1: Core Orchestrator Enhancements | Implemented PipelineRunner hooks, tap, AbortSignal cancellation, BoundedExecutionMiddleware, and DryRunValidatorMiddleware |
+
 
 
 
