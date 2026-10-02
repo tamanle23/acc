@@ -665,6 +665,7 @@ async function main() {
         wordsPerPhrase,
         highlightPreset,
         highlightColor,
+        timeOffset: 0.12,
         autoTranscribe: doTranscribe
       },
       transition: {

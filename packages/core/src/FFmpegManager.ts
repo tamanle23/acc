@@ -4,6 +4,7 @@ import os from 'os';
 import https from 'https';
 import { execSync } from 'child_process';
 import extractZip from 'extract-zip';
+import { Logger } from './logger';
 
 export class FFmpegManager {
   private static ffmpegPath: string | null = null;
@@ -91,12 +92,17 @@ export class FFmpegManager {
         }
       } catch {}
 
-      console.warn('\n⚠️ [WARN] Shared FFmpeg libraries missing or not found in system PATH.');
+      Logger.error('FFmpegManager','❌ [ERROR] Shared FFmpeg libraries missing! Please install FFmpeg shared libraries manually using your package manager and restart this CLI.');
+      if (platform === 'darwin') {
+        Logger.info('FFmpegManager','MacOS   👉 brew install ffmpeg');
+      } else {
+        Logger.info('FFmpegManager','Linux   👉 sudo apt update && sudo apt install libavcodec-dev libavformat-dev libswscale-dev libavfilter-dev ffmpeg');
+      }
       throw new Error('Shared FFmpeg libraries missing');
     }
 
     // 3. Windows Auto-Download (GPL NVENC SHARED Build from BtbN)
-    console.log('\n[FFmpegManager] Shared FFmpeg not found. Automatically downloading full GPU-enabled Shared Windows build...');
+    Logger.info('FFmpegManager', 'Shared FFmpeg not found. Automatically downloading full GPU-enabled Shared Windows build...');
     const url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl-shared.zip';
 
     if (!fs.existsSync(targetDir)) {
@@ -119,11 +125,11 @@ export class FFmpegManager {
             redirectResponse.on('data', (chunk) => {
               downloadedBytes += chunk.length;
               const percent = totalBytes ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-              process.stdout.write(`\rDownloading FFmpeg Shared... ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(1)}MB)`);
+              Logger.info('FFmpegManager', `Downloading FFmpeg Shared... ${percent}% (${(downloadedBytes / 1024 / 1024).toFixed(1)}MB)`);
             });
 
             file.on('finish', () => {
-              console.log('\nDownload complete.');
+              Logger.info('FFmpegManager', 'Download complete.');
               file.close();
               resolve();
             });
@@ -133,12 +139,12 @@ export class FFmpegManager {
       request.on('error', reject);
     });
 
-    console.log('[FFmpegManager] Extracting zip archive... (This may take a minute)');
+    Logger.info('FFmpegManager', 'Extracting zip archive... (This may take a minute)');
     try {
       await extractZip(tempZipPath, { dir: targetDir });
       fs.unlinkSync(tempZipPath);
     } catch (e: any) {
-      console.error(`\n❌ [ERROR] Failed to extract FFmpeg zip: ${e.message}`);
+      Logger.error('FFmpegManager', `Failed to extract FFmpeg zip: ${e.message}`);
       throw e;
     }
 
@@ -151,6 +157,6 @@ export class FFmpegManager {
     this.ffprobePath = downloadedBins.ffprobe;
     this.binDirPath = downloadedBins.binDir;
 
-    console.log(`[FFmpegManager] Successfully installed local Shared FFmpeg at: ${this.binDirPath}`);
+    Logger.info('FFmpegManager', `Successfully installed local Shared FFmpeg at: ${this.binDirPath}`);
   }
 }

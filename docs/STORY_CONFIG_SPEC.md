@@ -144,6 +144,7 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 | `wordsPerPhrase` | `number` | Không | `1` | Sắp xếp phụ đề hiển thị thành cụm từ. Nếu nhập `5` hoặc `6`, phụ đề sẽ xuất hiện theo từng cụm câu. Dùng kết hợp với `activeWordHighlight: true` để tạo Karaoke, hoặc hiển thị phụ đề đa từ tĩnh khi `activeWordHighlight: false`. |
 | `highlightPreset` | `"none" \| "color" \| "scale" \| "glow" \| "scale-color"` | Không | `"color"` (nếu activeWordHighlight=true) / `"none"` | **Hiệu ứng Karaoke Highlight** làm nổi bật từ đang được phát âm. |
 | `highlightColor` | `string` (Hex `#RRGGBB`) | Không | `#00FFFF` | Mã màu dùng cho hiệu ứng highlight từ đang đọc. |
+| `timeOffset` | `number` | Không | `0.12` | **Độ lệch thời gian sớm (giây)**: Giúp đồng bộ chính xác giữa phụ đề highlight và thời điểm âm thanh phát ra (Lead-in offset). Mặc định là `0.12s` (~120ms) loại bỏ hoàn toàn cảm giác âm thanh đi trước phụ đề. |
 | `autoTranscribe` | `boolean` | Không | `true` | Bật/tắt chế độ tự động chạy Whisper AI để trích xuất phụ đề. Nếu `false`, CLI sẽ bỏ qua bước Whisper kể cả khi có audio. |
 
 ---

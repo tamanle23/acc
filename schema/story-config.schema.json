@@ -438,6 +438,11 @@
           "pattern": "^#[0-9A-Fa-f]{6}$",
           "description": "Màu chữ đang đọc (Hex #RRGGBB)"
         },
+        "timeOffset": {
+          "type": "number",
+          "default": 0.12,
+          "description": "Độ lệch thời gian / thời gian sớm (giây) giúp căn chỉnh chính xác phụ đề và highlight với thời điểm phát âm thanh (Mặc định: 0.12)"
+        },
         "autoTranscribe": {
           "type": "boolean",
           "default": true,

@@ -120,8 +120,10 @@ export class FFISceneEngine {
       let lastActiveWordIdx = -2;
       let cachedRgbaBuffer: Buffer | null = null;
 
+      const timeOffset = captionSettings?.timeOffset ?? 0.12;
       for (let f = 0; f < totalFrames; f++) {
         const timeSec = f / fps;
+        const effectiveTime = timeSec + timeOffset;
 
         let activePhraseIdx = -1;
         let activeWordIdx = -1;
@@ -129,13 +131,13 @@ export class FFISceneEngine {
         for (let pIdx = 0; pIdx < phrases.length; pIdx++) {
           const phrase = phrases[pIdx];
           const pStart = phrase[0].start;
-          const pEnd = phrase[phrase.length - 1].end + 0.2;
-          if (timeSec >= pStart && timeSec <= pEnd) {
+          const pEnd = phrase[phrase.length - 1].end + 0.25;
+          if (effectiveTime >= pStart && effectiveTime <= pEnd) {
             activePhraseIdx = pIdx;
             for (let wIdx = 0; wIdx < phrase.length; wIdx++) {
               const word = phrase[wIdx];
               const nextStart = (wIdx === phrase.length - 1) ? (word.end + 0.25) : phrase[wIdx + 1].start;
-              if (timeSec >= word.start && timeSec < nextStart) {
+              if (effectiveTime >= word.start && effectiveTime < nextStart) {
                 activeWordIdx = wIdx;
                 break;
               }

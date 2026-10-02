@@ -45,11 +45,15 @@ export function drawCanvasCaptions(
   const wordsPerPhrase = settings?.wordsPerPhrase ?? 1;
   const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
 
+  // Time offset / lead-in (in seconds) aligns caption highlights with speech acoustic onset
+  const timeOffset = settings?.timeOffset ?? 0.12;
+  const effectiveTime = timeSec + timeOffset;
+
   // Find active phrase
   const activePhrase = phrases.find(p => {
     const start = p[0].start;
-    const end = p[p.length - 1].end + 0.2; // slight grace window
-    return timeSec >= start && timeSec <= end;
+    const end = p[p.length - 1].end + 0.25; // slight grace window
+    return effectiveTime >= start && effectiveTime <= end;
   });
 
   if (!activePhrase || activePhrase.length === 0) return;
@@ -135,7 +139,7 @@ export function drawCanvasCaptions(
   for (let i = 0; i < wordMetrics.length; i++) {
     const m = wordMetrics[i];
     const nextStart = (i === wordMetrics.length - 1) ? (m.word.end + 0.25) : wordMetrics[i + 1].word.start;
-    const isWordActive = timeSec >= m.word.start && timeSec < nextStart;
+    const isWordActive = effectiveTime >= m.word.start && effectiveTime < nextStart;
 
     ctx.save();
 

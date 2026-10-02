@@ -3,7 +3,7 @@ import path from 'path';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from '@acc/core/src/types';
 import { renderStoryVideo } from '@acc/cli/src/pipelines/04-generative-story/StoryRenderer';
 import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from '@acc/cli/src/pipelines/04-generative-story/platforms';
-import { FFmpegManager, intro, outro, isCancel, cancel } from '@acc/core';
+import { FFmpegManager, intro, outro, isCancel, cancel, Logger } from '@acc/core';
 import * as prompt from '@clack/prompts';
 
 async function main() {
@@ -117,16 +117,16 @@ async function main() {
     let resolvedAudio = resolveMediaPath(scene.audio || '', absoluteDir, 'audio');
 
     if (scene.image && !fs.existsSync(resolvedImage || '')) {
-      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file ảnh: ${scene.image} (đã thử: ${resolvedImage})`);
+      Logger.warn('cli', `⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file ảnh: ${scene.image} (đã thử: ${resolvedImage})`);
     }
     if (scene.video && !fs.existsSync(resolvedVideo || '')) {
-      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file video: ${scene.video} (đã thử: ${resolvedVideo})`);
+      Logger.warn('cli', `⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file video: ${scene.video} (đã thử: ${resolvedVideo})`);
     }
 
     if (scene.audio && !fs.existsSync(resolvedAudio)) {
-      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file âm thanh: ${scene.audio} (đã thử: ${resolvedAudio})`);
+      Logger.warn('cli', `⚠️ [Scene ${idx + 1}] Cảnh báo: Không tìm thấy file âm thanh: ${scene.audio} (đã thử: ${resolvedAudio})`);
     } else if (!scene.audio) {
-      console.warn(`⚠️ [Scene ${idx + 1}] Cảnh báo: Scene không có cấu hình audio.`);
+      Logger.warn('cli', `⚠️ [Scene ${idx + 1}] Cảnh báo: Scene không có cấu hình audio.`);
     }
 
     const resolvedVideoSettings = mergeDefined(DEFAULT_VIDEO_SETTINGS, scene.videoSettings);
@@ -169,15 +169,15 @@ async function main() {
     metadataPath = path.join(outputDir, metadataFileName);
   }
 
-  console.log(`Scenes: ${resolvedConfig.scenes.length}`);
-  console.log(`Platform: ${resolvedSettings.platform}`);
-  console.log(`Resolution: ${resolvedSettings.width}x${resolvedSettings.height} @ ${resolvedSettings.fps}fps`);
-  console.log(`Video: codec=${resolvedSettings.videoCodec}, crf/cq=${resolvedSettings.crf}, preset=${resolvedSettings.preset}, pix_fmt=${resolvedSettings.pixelFormat}`);
-  console.log(`Audio: codec=${resolvedSettings.audioCodec}, bitrate=${resolvedSettings.audioBitrate}`);
-  console.log(`Hardware Acceleration: ${resolvedSettings.gpuAcceleration}`);
-  console.log(`Parallel Workers: ${resolvedSettings.concurrency}`);
-  console.log(`Container: ${resolvedSettings.container} (FastStart=${resolvedSettings.fastStart})`);
-  console.log(`Output: ${outputFilePath}\n`);
+  Logger.info('cli', `Scenes: ${resolvedConfig.scenes.length}`);
+  Logger.info('cli', `Platform: ${resolvedSettings.platform}`);
+  Logger.info('cli', `Resolution: ${resolvedSettings.width}x${resolvedSettings.height} @ ${resolvedSettings.fps}fps`);
+  Logger.info('cli', `Video: codec=${resolvedSettings.videoCodec}, crf/cq=${resolvedSettings.crf}, preset=${resolvedSettings.preset}, pix_fmt=${resolvedSettings.pixelFormat}`);
+  Logger.info('cli', `Audio: codec=${resolvedSettings.audioCodec}, bitrate=${resolvedSettings.audioBitrate}`);
+  Logger.info('cli', `Hardware Acceleration: ${resolvedSettings.gpuAcceleration}`);
+  Logger.info('cli', `Parallel Workers: ${resolvedSettings.concurrency}`);
+  Logger.info('cli', `Container: ${resolvedSettings.container} (FastStart=${resolvedSettings.fastStart})`);
+  Logger.info('cli', `Output: ${outputFilePath}\n`);
 
   try {
     const startTime = Date.now();

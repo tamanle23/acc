@@ -25,6 +25,7 @@
       "wordsPerPhrase": 6,
       "highlightPreset": "scale-color",
       "highlightColor": "#00FFFF",
+      "timeOffset": 0.12,
       "autoTranscribe": true
     },
     "transition": {
