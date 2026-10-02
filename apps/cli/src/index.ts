@@ -22,6 +22,7 @@ export interface CliOptions {
   port?: number;
   duration?: number;
   format?: 'mp4' | 'mkv' | 'mov' | 'webm' | string;
+  dryRun?: boolean;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -77,6 +78,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.duration = parseFloat(args[++i]);
     } else if (arg === '--format' || arg === '-f' || arg === '--container') {
       options.format = args[++i]?.toLowerCase();
+    } else if (arg === '--dry-run' || arg === '-n') {
+      options.dryRun = true;
     }
   }
 
@@ -112,6 +115,7 @@ OPTIONS:
   -r, --rtmp <url>           RTMP/RTMPS server ingestion endpoint
   -p, --port <port>          Webhook listener HTTP port (Default: 3000)
   -d, --duration <seconds>   Stream or loop duration limit in seconds
+  -n, --dry-run              Inspect and validate pipeline AST & assets without file encoding
   -h, --help                 Display this CLI guide
 `);
 }

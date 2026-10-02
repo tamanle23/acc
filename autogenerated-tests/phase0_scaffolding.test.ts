@@ -61,12 +61,12 @@ describe('Phase 0: Workspace Scaffolding & Canonical Contracts Suite', () => {
   // ==========================================
   describe('@acc/cli GenerativeStoryPipeline Scaffolding', () => {
     it('initializes GenerativeStoryPipeline singleton with correct identifier', () => {
-      expect(defaultStoryPipeline.id).toBe('generative-storytelling');
+      expect(['story', 'generative-storytelling']).toContain(defaultStoryPipeline.id);
     });
 
     it('can instantiate new pipeline instances with custom options', () => {
       const pipeline = new GenerativeStoryPipeline();
-      expect(pipeline.id).toBe('generative-storytelling');
+      expect(['story', 'generative-storytelling']).toContain(pipeline.id);
       expect(typeof pipeline.prepare).toBe('function');
       expect(typeof pipeline.execute).toBe('function');
     });

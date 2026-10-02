@@ -2,10 +2,18 @@ import type { IPipeline, PipelineExecutionOptions } from './IPipeline';
 import type { UnifiedPipelineContext } from './UnifiedPipelineContext';
 import { Logger } from '../logger';
 
+export interface PipelineSummary {
+  id: string;
+  name: string;
+  description?: string;
+  aliases: string[];
+}
+
 export class PipelineRegistry {
   private static instance: PipelineRegistry;
   private pipelines: Map<string, IPipeline> = new Map();
   private aliases: Map<string, string> = new Map();
+  private pipelineAliases: Map<string, Set<string>> = new Map();
 
   private constructor() {}
 
@@ -18,9 +26,17 @@ export class PipelineRegistry {
 
   public register(pipeline: IPipeline, aliases: string[] = []): this {
     this.pipelines.set(pipeline.id, pipeline);
-    for (const alias of aliases) {
-      this.aliases.set(alias.toLowerCase(), pipeline.id);
+
+    if (!this.pipelineAliases.has(pipeline.id)) {
+      this.pipelineAliases.set(pipeline.id, new Set());
     }
+
+    for (const alias of aliases) {
+      const norm = alias.toLowerCase();
+      this.aliases.set(norm, pipeline.id);
+      this.pipelineAliases.get(pipeline.id)!.add(norm);
+    }
+
     Logger.debug('PipelineRegistry', `Registered pipeline [${pipeline.id}] with aliases: [${aliases.join(', ')}]`);
     return this;
   }
@@ -43,6 +59,20 @@ export class PipelineRegistry {
 
   public list(): IPipeline[] {
     return Array.from(this.pipelines.values());
+  }
+
+  public getAliases(pipelineId: string): string[] {
+    const aliasSet = this.pipelineAliases.get(pipelineId);
+    return aliasSet ? Array.from(aliasSet) : [];
+  }
+
+  public getSummaries(): PipelineSummary[] {
+    return this.list().map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      aliases: this.getAliases(p.id),
+    }));
   }
 
   public async execute(

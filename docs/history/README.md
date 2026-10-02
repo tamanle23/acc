@@ -138,6 +138,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`124`](124_update_cli_main_handler_orchestrator_delegation.md) | 2026-10-02 | Phase 3 Step 3.2: Update CLI Main Handler for Orchestrator Delegation | Refactored CLI run command to delegate all pipeline execution dynamically via defaultPipelineRegistry |
 | [`125`](125_phase1_core_orchestrator_enhancements.md) | 2026-10-02 | Phase 1: Core Orchestrator Enhancements | Implemented PipelineRunner hooks, tap, AbortSignal cancellation, BoundedExecutionMiddleware, and DryRunValidatorMiddleware |
 | [`126`](126_phase2_pipeline_stages_refactoring.md) | 2026-10-02 | Phase 2: Pipeline Stage Decomposition & Modular Middleware Refactoring | Extracted discrete stage modules under stages/ across all 6 content pipelines with 100% test coverage |
+| [`127`](127_phase3_cli_dispatcher_and_dryrun.md) | 2026-10-02 | Phase 3: CLI Dispatcher & Unified Registry with Dry-Run Support | Added --dry-run CLI support, dynamic registry delegation, canonical ID alignment across all 6 pipelines |
 
 
 

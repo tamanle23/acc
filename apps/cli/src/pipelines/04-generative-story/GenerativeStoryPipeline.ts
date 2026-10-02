@@ -9,7 +9,7 @@ import {
   createUnifiedPipelineContext,
   defaultPipelineRegistry,
 } from '@acc/core';
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './types';
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from '@acc/core/types';
 import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './platforms';
 import { EditingPipelineOrchestrator } from './EditingPipelineOrchestrator';
 import { createStoryFolderResolutionStage } from './stages/StoryFolderResolutionStage';
