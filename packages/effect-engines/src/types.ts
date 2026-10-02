@@ -79,6 +79,11 @@ export interface SandwichVolumetricSettings {
   vignette?: boolean; // default: true (volumetric edge shadow)
   bannerText?: string; // Optional custom large 3D typography behind subject
   textColor?: string; // default: 'rgba(255,255,255,0.85)'
+  position?: 'top' | 'center' | 'bottom'; // Preset vertical position (default: 38% height)
+  positionY?: number; // Custom Y coordinate (0.0-1.0 relative ratio or absolute pixels)
+  positionX?: number; // Custom X coordinate (0.0-1.0 relative ratio or absolute pixels)
+  fontSize?: number; // Custom font size in pixels or relative width factor (e.g. 0.08)
+  floatMotion?: boolean; // default: true (gentle vertical floating oscillation)
 }
 
 export interface DepthMap3DSettings {
