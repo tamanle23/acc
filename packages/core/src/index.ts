@@ -10,6 +10,7 @@ export * from './ffmpeg-ffi/FFAudioMuxer';
 export * from './ffmpeg-ffi/FFIConcatMuxer';
 export * from './ffmpeg-ffi/FFISceneEngine';
 export * from './ffmpeg-ffi/FFIAudioDSP';
+export * from './ffmpeg-ffi/AudioDuckingDSP';
 export * from './AudioNormalizer';
 export * from './BaseEffectEngine';
 export * from './FFmpegExecutor';

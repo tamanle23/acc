@@ -3,6 +3,7 @@ export * from './video/VideoExporter';
 export * from './audio/AudioExporter';
 export * from './social/SocialExporter';
 export * from './static-web/StaticWebExporter';
+export * from './interactive-web/WidgetExporter';
 
 import type { PipelineIR } from '@acc/ir';
 import type { IExporter, ExportResult, ExportOptions } from './base/BaseExporter';

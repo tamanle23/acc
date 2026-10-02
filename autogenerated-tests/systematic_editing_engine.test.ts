@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 import { LegacyStoryConfigAdapter, type LegacyStoryConfig } from '../packages/ir/src/LegacyStoryConfigAdapter';
 import {
   EditingOpFactory,
@@ -7,8 +10,13 @@ import {
   PiPCompositorStrategy,
   SplitScreenCompositorStrategy
 } from '../packages/effect-engines/src/editing';
+import { ColorGradingEngine } from '../packages/effect-engines/src/styles/ColorGradingEngine';
+import { SafeZoneManager } from '../packages/effect-engines/src/subtitles/SafeZoneManager';
+import { AudioDuckingDSP } from '../packages/core/src/ffmpeg-ffi/AudioDuckingDSP';
+import { WidgetExporter } from '../packages/exporters/src/interactive-web/WidgetExporter';
+import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/EditingPipelineOrchestrator';
 
-describe('Systematic Video Editing Engine Unit Tests', () => {
+describe('Systematic Video Editing Engine Unit & E2E Integration Tests', () => {
   describe('LegacyStoryConfigAdapter (Adapter Pattern)', () => {
     test('adapts legacy story config into ExtendedPipelineIR v3.1 AST', () => {
       const legacyConfig: LegacyStoryConfig = {
@@ -141,6 +149,98 @@ describe('Systematic Video Editing Engine Unit Tests', () => {
       expect(layout.viewports.length).toBe(2);
       expect(layout.viewports[0].rect).toEqual({ x: 0, y: 0, width: 1080, height: 960 });
       expect(layout.viewports[1].rect).toEqual({ x: 0, y: 960, width: 1080, height: 960 });
+    });
+  });
+
+  describe('ColorGradingEngine & 3D LUT (Group 4.1)', () => {
+    test('generates contrast, saturation and lut3d filter string', () => {
+      const engine = new ColorGradingEngine();
+      const filter = engine.generateFFmpegFilter({
+        contrast: 1.1,
+        saturation: 1.2,
+        exposure: 0.05,
+        lutPath: 'luts/cinematic.cube',
+      });
+
+      expect(filter).toContain('eq=contrast=1.10:saturation=1.20:brightness=0.05');
+      expect(filter).toContain("lut3d=file='luts/cinematic.cube':interp=tetrahedral");
+    });
+  });
+
+  describe('SafeZoneManager (Group 9.1)', () => {
+    test('verifies bounding boxes in TikTok safe zones', () => {
+      const margins = SafeZoneManager.getMargins('tiktok');
+      expect(margins.topMarginPx).toBe(120);
+      expect(margins.bottomMarginPx).toBe(220);
+
+      const centerBox = { x: 200, y: 500, width: 400, height: 100 };
+      expect(SafeZoneManager.isBoxInSafeZone(centerBox, 'tiktok')).toBe(true);
+
+      const occludedBox = { x: 925, y: 900, width: 100, height: 100 };
+      expect(SafeZoneManager.isBoxInSafeZone(occludedBox, 'tiktok')).toBe(false);
+    });
+  });
+
+  describe('AudioDuckingDSP (Group 3.1 & 9.3)', () => {
+    test('builds sidechain compress and loudnorm filter graphs', () => {
+      const sidechain = AudioDuckingDSP.buildSidechainFilterGraph('voice', 'bgm', 'out', {
+        attenuationDb: -18,
+        attackMs: 20,
+        releaseMs: 250,
+      });
+
+      expect(sidechain).toContain('sidechaincompress=threshold=-24dB');
+      expect(sidechain).toContain('attack=20:release=250');
+
+      const loudnorm = AudioDuckingDSP.buildEBUR128LoudnessFilter(-14.0);
+      expect(loudnorm).toBe('loudnorm=I=-14.0:LRA=11:TP=-1.5');
+    });
+  });
+
+  describe('WidgetExporter (Group 11.1)', () => {
+    test('exports interactive HTML player and JSON tree file', () => {
+      const tmpDir = path.join(os.tmpdir(), `acc_test_widget_${Date.now()}`);
+      const ir = LegacyStoryConfigAdapter.adapt({
+        name: 'Interactive Story',
+        scenes: [{ text: 'Scene 1', duration: 3 }],
+      });
+
+      const { htmlPath, jsonPath } = WidgetExporter.exportInteractiveWidget(ir, {
+        outputDir: tmpDir,
+        autostart: true,
+      });
+
+      expect(fs.existsSync(htmlPath)).toBe(true);
+      expect(fs.existsSync(jsonPath)).toBe(true);
+
+      const jsonContent = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+      expect(jsonContent.title).toBe('Interactive Story');
+
+      // Cleanup
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+  });
+
+  describe('EditingPipelineOrchestrator End-to-End Flow', () => {
+    test('orchestrates adaptation, strategy calculation, and filter graph assembly', async () => {
+      const orchestrator = new EditingPipelineOrchestrator();
+      const legacyConfig: LegacyStoryConfig = {
+        name: 'Full E2E Test Story',
+        settings: { platform: 'tiktok' },
+        scenes: [
+          { text: 'Hook', duration: 3, video: 'v1.mp4' },
+          { text: 'Body', duration: 4, image: 'i1.jpg' },
+        ],
+      };
+
+      const result = await orchestrator.processAndRender(legacyConfig, {
+        outputDir: path.join(os.tmpdir(), 'acc_e2e_out'),
+      });
+
+      expect(result.ir.metadata.title).toBe('Full E2E Test Story');
+      expect(result.ir.extendedChunks.length).toBe(2);
+      expect(result.filterGraphString).toContain('eq=contrast=1.05');
+      expect(result.filterGraphString).toContain('sidechaincompress');
     });
   });
 });

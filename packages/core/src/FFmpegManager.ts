@@ -91,15 +91,8 @@ export class FFmpegManager {
         }
       } catch {}
 
-      console.error('\n❌ [ERROR] Shared FFmpeg libraries missing!');
-      console.error('Please install FFmpeg shared libraries manually using your package manager:');
-      if (platform === 'darwin') {
-        console.error('   👉 brew install ffmpeg');
-      } else {
-        console.error('   👉 sudo apt update && sudo apt install libavcodec-dev libavformat-dev libswscale-dev libavfilter-dev ffmpeg');
-      }
-      console.error('\nAfter installing, restart this CLI.\n');
-      process.exit(1);
+      console.warn('\n⚠️ [WARN] Shared FFmpeg libraries missing or not found in system PATH.');
+      throw new Error('Shared FFmpeg libraries missing');
     }
 
     // 3. Windows Auto-Download (GPL NVENC SHARED Build from BtbN)
@@ -146,13 +139,12 @@ export class FFmpegManager {
       fs.unlinkSync(tempZipPath);
     } catch (e: any) {
       console.error(`\n❌ [ERROR] Failed to extract FFmpeg zip: ${e.message}`);
-      process.exit(1);
+      throw e;
     }
 
     const downloadedBins = this.findBinaries(targetDir);
     if (!downloadedBins.ffmpeg || !downloadedBins.ffprobe || !downloadedBins.binDir) {
-      console.error('\n❌ [ERROR] Extraction succeeded but ffmpeg.exe or bin folder was not found inside the zip structure.');
-      process.exit(1);
+      throw new Error('Extraction succeeded but ffmpeg.exe or bin folder was not found inside the zip structure.');
     }
 
     this.ffmpegPath = downloadedBins.ffmpeg;
