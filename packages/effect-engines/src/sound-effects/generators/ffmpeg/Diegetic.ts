@@ -1,83 +1,66 @@
-import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { FFmpegManager } from '@acc/core';
-import path from 'path';
+import { GeneratedSound } from '../../core/interfaces';
+import { BaseFFmpegGenerator } from '../base';
 
-export class Diegetic implements ISoundGenerator {
-  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
-    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
-    const audioPath = path.join(outDir, `${fileName}.wav`);
-    const jsonPath = path.join(outDir, `${fileName}.json`);
+export class Diegetic extends BaseFFmpegGenerator {
+  async generate(
+    effect: string,
+    variant: string,
+    subVariant: string,
+    duration: number,
+    outDir: string
+  ): Promise<GeneratedSound> {
+    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
+    const dur = Math.max(duration, 0.2);
 
-    let lavfiInput = '';
-    let filters: string[] = [];
+    let inputArgs: string[] = [];
+    let filterComplex = '';
 
-    if (variant === 'weather' || subVariant.includes('rain')) {
-      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
+    if (variant === 'weather' || subVariant.includes('rain') || subVariant.includes('storm')) {
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
       if (subVariant.includes('heavy') || subVariant.includes('storm')) {
-        filters.push('lowpass=f=2500'); 
+        filterComplex = `lowpass=f=2200,tremolo=f=0.5:d=0.3,${this.buildADSRFilter(dur, 0.2, 0.5)}[out]`;
       } else {
-        filters.push('highpass=f=3000'); 
+        filterComplex = `highpass=f=2800,lowpass=f=8000,${this.buildADSRFilter(dur, 0.2, 0.5)}[out]`;
       }
     } else if (variant === 'weather' && subVariant.includes('wind')) {
-      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
-      filters.push('bandpass=f=800:width_type=h:width=400', 'tremolo=f=0.5:d=0.6');
-    } else if (variant === 'water') {
-      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
-      filters.push(
-        'lowpass=f=1200', 
-        'tremolo=f=0.2:d=0.7' // Slow crashing ocean waves
-      );
-    } else if (variant === 'urban' || variant === 'traffic') {
-      lavfiInput = `anoisesrc=c=brown:d=${duration}`;
-      filters.push('lowpass=f=400', 'tremolo=f=1:d=0.3');
-    } else if (variant === 'mechanical') {
-      if (subVariant.includes('engine')) {
-        lavfiInput = `sine=f=80:d=${duration}`; // Deep engine hum
-        filters.push('vibrato=f=10:d=0.5', 'volume=2.0');
-      } else {
-        lavfiInput = `anoisesrc=c=white:d=${duration}`;
-        filters.push('highpass=f=4000', 'tremolo=f=2:d=1.0'); // Ticking clock/creak
-      }
-    } else if (variant === 'weapon' || subVariant.includes('gunshot')) {
-      lavfiInput = `anoisesrc=c=white:d=${duration}`;
-      filters.push(
-        'lowpass=f=3000',
-        'afade=t=in:ss=0:d=0.005,afade=t=out:st=0.05:d=0.5', // Extremely sharp explosion transient
-        'volume=4.0'
-      );
-    } else if (variant === 'bell' || subVariant.includes('doorbell')) {
-      lavfiInput = `sine=f=880:d=${duration}`;
-      filters.push(
-        'tremolo=f=3:d=0.8', // Simulate dual-tone ding-dong pulsing
-        'aecho=0.8:0.9:50:0.4',
-        'afade=t=in:ss=0:d=0.05,afade=t=out:st=0.5:d=1.0'
-      );
-    } else if (variant === 'chatter' || subVariant.includes('chatter')) {
-      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
-      filters.push(
-        'bandpass=f=1000:width_type=h:width=500', // Human vocal frequency range
-        'tremolo=f=2:d=0.5', // Crowd mumbling fluctuation
-        'volume=0.5'
-      );
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
+      filterComplex = `bandpass=f=750:width_type=h:width=450,tremolo=f=0.6:d=0.7,vibrato=f=1.5:d=0.4,${this.buildADSRFilter(dur, 0.3, 0.5)}[out]`;
+    } else if (variant === 'water' || subVariant.includes('ocean') || subVariant.includes('waves')) {
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
+      filterComplex = `lowpass=f=1100,tremolo=f=0.25:d=0.8,aecho=0.8:0.88:120:0.4,${this.buildADSRFilter(dur, 0.3, 0.5)}[out]`;
+    } else if (variant === 'weapon' || subVariant.includes('gunshot') || subVariant.includes('explosion')) {
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=brown:d=${dur}`];
+      filterComplex = `lowpass=f=2500,${this.buildADSRFilter(dur, 0.002, dur * 0.8)}[out]`;
+    } else if (variant === 'bell' || subVariant.includes('chime') || subVariant.includes('doorbell')) {
+      inputArgs = ['-f', 'lavfi', '-i', `sine=f=880:d=${dur}`];
+      filterComplex = `tremolo=f=4:d=0.7,aecho=0.8:0.9:60:0.4,${this.buildADSRFilter(dur, 0.01, dur * 0.7)}[out]`;
     } else {
-      lavfiInput = `anoisesrc=c=white:d=${duration}`;
-      filters.push('anull');
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
+      filterComplex = `bandpass=f=1200:width_type=h:width=600,${this.buildADSRFilter(dur, 0.1, 0.3)}[out]`;
     }
 
-    const filterStr = filters.join(',');
-    const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;
-    
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    await execAsync(cmd);
+    const args = [
+      '-y',
+      ...inputArgs,
+      '-filter_complex', filterComplex,
+      '-map', '[out]',
+      '-ar', '44100',
+      '-ac', '2',
+      audioPath
+    ];
 
-    const metadata = { effect, variant, subVariant, category: 'diegetic', duration, ffmpegFilters: filters };
-    require('fs').writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
+    await this.executeFFmpeg(args);
+
+    this.writeMetadata(jsonPath, {
+      effect,
+      variant,
+      subVariant,
+      category: 'diegetic',
+      duration: dur,
+      engine: 'ffmpeg_procedural',
+      qualityGrade: 'studio_dsp'
+    });
 
     return { audioPath, jsonPath };
   }
 }
-
-
-

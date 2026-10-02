@@ -1,4 +1,5 @@
 import { Server } from 'bun';
+import { BoundedQueue } from '@acc/core';
 
 export interface IngestedEvent {
   sourceType: 'webhook' | 'rss' | 'url' | 'manual';
@@ -13,9 +14,18 @@ export type EventHandler = (event: IngestedEvent) => Promise<void> | void;
 export class ScraperEngine {
   private server: Server<any> | null = null;
   private listeners: EventHandler[] = [];
+  private eventQueue: BoundedQueue<IngestedEvent>;
+
+  constructor(queueCapacity: number = 50) {
+    this.eventQueue = new BoundedQueue<IngestedEvent>(queueCapacity);
+  }
 
   public onEvent(handler: EventHandler) {
     this.listeners.push(handler);
+  }
+
+  public getQueue(): BoundedQueue<IngestedEvent> {
+    return this.eventQueue;
   }
 
   public async ingestManual(text: string, metadata?: Record<string, unknown>): Promise<IngestedEvent> {
@@ -25,6 +35,7 @@ export class ScraperEngine {
       metadata,
       receivedAt: new Date().toISOString(),
     };
+    await this.eventQueue.enqueue(event);
     await this.notifyListeners(event);
     return event;
   }
@@ -48,6 +59,7 @@ export class ScraperEngine {
         rawText: cleaned.slice(0, 8000), // Bounded slice
         receivedAt: new Date().toISOString(),
       };
+      await this.eventQueue.enqueue(event);
       await this.notifyListeners(event);
       return event;
     } catch (err: any) {
@@ -75,7 +87,9 @@ export class ScraperEngine {
               metadata: body,
               receivedAt: new Date().toISOString(),
             };
-            // Asynchronously process event through listeners
+
+            // Asynchronously enqueue and notify listeners
+            self.eventQueue.enqueue(event).catch(console.error);
             self.notifyListeners(event).catch(console.error);
 
             return new Response(JSON.stringify({ status: 'ACK', receivedAt: event.receivedAt }), {

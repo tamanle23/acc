@@ -1,4 +1,5 @@
-import { ISoundGenerator, SoundCompositeConfig } from './interfaces';
+import { ISoundGenerator, SoundCompositeConfig, SoundPresetCatalog } from './interfaces';
+import { SmartRouter, CategoryMatchRule } from './router';
 
 // --- FFmpeg Generators ---
 import { UI as UIFFmpeg } from '../generators/ffmpeg/UI';
@@ -12,22 +13,65 @@ import { Fallback as FallbackAI } from '../generators/ai/Fallback';
 import { GenericLibrary } from '../generators/library/GenericLibrary';
 
 export class RegistryManager {
+  private router: SmartRouter;
   private genericLibraryInstance: GenericLibrary;
   private ffmpegUIGenerator: UIFFmpeg;
-  private aiGenerators: Map<string, ISoundGenerator> = new Map();
   private aiFallback: FallbackAI;
+
+  private catalog: SoundPresetCatalog = {
+    ui: {
+      hover: ['subtle_pop', 'soft_chirp', 'glass_haptic'],
+      click: ['button_press', 'plastic_pop', 'mechanical_switch'],
+      success: ['chime', 'modern_arpeggio', 'rising_major'],
+      error: ['descending_buzz', 'triple_alert', 'negative_beep'],
+      pickup: ['coin', 'gem_collect', 'power_up'],
+      jump: ['arcade_bounce', 'boing', 'spring']
+    },
+    cinematic: {
+      transition: ['whoosh', 'sub_passby', 'reverb_riser'],
+      impact: ['sub_drop', 'trailer_hit', 'metal_boom'],
+      tension: ['braam', 'drone_pulse', 'clock_shepard'],
+      riser: ['white_noise_lift', 'pitch_sweep', 'dramatic_build'],
+      stinger: ['horror_shock', 'brass_stab', 'metallic_sting']
+    },
+    scifi: {
+      laser: ['pew_blast', 'pulse_cannon', 'plasma_rifle'],
+      warp_drive: ['hyperdrive_charge', 'quantum_hum', 'singularity'],
+      glitch: ['digital_corrupt', 'data_burst', 'cyber_flicker'],
+      forcefield: ['energy_shield', 'barrier_hum', 'deflector_hit']
+    },
+    foley: {
+      footsteps: ['heavy_boots', 'sneakers_wood', 'grass_gravel'],
+      cloth: ['jacket_rustle', 'denim_swish', 'curtain_pull'],
+      handling: ['keys_jingle', 'coin_drop', 'glass_clink'],
+      typing: ['mechanical_keyboard', 'laptop_keys', 'typewriter']
+    },
+    diegetic: {
+      weather: ['rain', 'heavy_storm', 'howling_wind'],
+      water: ['ocean_waves', 'river_stream', 'drip_echo'],
+      urban: ['city_traffic', 'cafe', 'subway_ambient'],
+      weapon: ['gunshot_echo', 'blade_unsheathe', 'arrow_pass']
+    },
+    fauna: {
+      apex_predator: ['lion_roar', 'wolf_howl', 'bear_growl'],
+      birds_of_prey: ['vulture_screech', 'eagle_call', 'falcon_screech'],
+      livestock: ['pig_squeal', 'cow_moo', 'rooster_crow'],
+      marine: ['whale_song', 'dolphin_click'],
+      insects: ['bee_swarm', 'cicada_buzz']
+    }
+  };
 
   private composites: Record<string, SoundCompositeConfig> = {
     'kaiju_roar': {
       name: 'kaiju_roar',
       category: 'creature',
       layers: [
-        { effect: 'avian', variant: 'birds_of_prey', subVariant: 'vulture_screech' },
-        { effect: 'domestic_farm', variant: 'livestock', subVariant: 'pig_squeal' },
-        { effect: 'wild_terrestrial', variant: 'apex_predator', subVariant: 'lion_roar' }
+        { effect: 'avian', variant: 'birds_of_prey', subVariant: 'vulture_screech', duration: 3, delay: 0 },
+        { effect: 'domestic_farm', variant: 'livestock', subVariant: 'pig_squeal', duration: 3, delay: 0.2 },
+        { effect: 'wild_terrestrial', variant: 'apex_predator', subVariant: 'lion_roar', duration: 4, delay: 0.5 }
       ]
     },
-        'cafe_notification': {
+    'cafe_notification': {
       name: 'cafe_notification',
       category: 'ui',
       layers: [
@@ -54,68 +98,89 @@ export class RegistryManager {
   };
 
   constructor(private aiModel: string = 'audioldm2-base') {
-    // 1. Initialize Library (For biological, physical, environmental sounds)
     this.genericLibraryInstance = new GenericLibrary();
-
-    // 2. Initialize FFmpeg (For mathematical UI sounds)
     this.ffmpegUIGenerator = new UIFFmpeg();
-
-    // 3. Initialize AI (For synthetic, creative, sci-fi, cinematic sounds)
     this.aiFallback = new FallbackAI(this.aiModel);
-    
-    // Cinematic AI
-    this.aiGenerators.set('cinematic', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('transition', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('impact', new CinematicAI(this.aiModel));
-    this.aiGenerators.set('tension', new CinematicAI(this.aiModel));
 
-    // Sci-Fi AI
-    this.aiGenerators.set('scifi', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('laser', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('warp_drive', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('glitch', new SciFiAI(this.aiModel));
-    this.aiGenerators.set('forcefield', new SciFiAI(this.aiModel));
-    
-    // Custom Text-to-Audio defaults to AI
-    this.aiGenerators.set('custom', this.aiFallback);
+    this.router = new SmartRouter(this.aiFallback);
+
+    // Rule 1: UI Procedural
+    this.router.registerRule(
+      new CategoryMatchRule(
+        'UI Procedural Synth',
+        ['ui', 'click', 'feedback', 'hover', 'success', 'error', 'pickup', 'jump'],
+        () => this.ffmpegUIGenerator
+      )
+    );
+
+    // Rule 2: Freesound Library (Acoustic / Environmental / Foley)
+    this.router.registerRule(
+      new CategoryMatchRule(
+        'Library Freesound Engine',
+        ['fauna', 'diegetic', 'weather', 'water', 'urban', 'foley', 'cloth', 'footsteps', 'handling', 'domestic_farm', 'avian', 'wild_terrestrial'],
+        () => this.genericLibraryInstance
+      )
+    );
+
+    // Rule 3: AI Model Generators
+    const cinematicAI = new CinematicAI(this.aiModel);
+    const sciFiAI = new SciFiAI(this.aiModel);
+
+    this.router.registerRule(
+      new CategoryMatchRule(
+        'Cinematic AI Engine',
+        ['cinematic', 'transition', 'impact', 'tension', 'riser', 'stinger'],
+        () => cinematicAI
+      )
+    );
+
+    this.router.registerRule(
+      new CategoryMatchRule(
+        'SciFi AI Engine',
+        ['scifi', 'laser', 'warp_drive', 'glitch', 'forcefield'],
+        () => sciFiAI
+      )
+    );
   }
 
-  /**
-   * SMART ROUTING LOGIC
-   * Intelligently selects the optimal generation engine based on the acoustic nature of the effect.
-   */
-  getGenerator(effect: string): ISoundGenerator {
-    const eff = effect.toLowerCase();
-
-    // Rule 1: UI Sounds (Crisp, mathematically pure) -> FFmpeg Procedural Synth
-    if (['ui', 'click', 'feedback', 'hover', 'success', 'error'].includes(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> FFmpeg Procedural`);
-      return this.ffmpegUIGenerator;
-    }
-
-    // Rule 2: Physical & Biological Sounds -> Freesound Library API
-    // AI is notoriously bad at creating realistic footsteps or animal sounds. Real recordings are superior.
-    if (['fauna', 'diegetic', 'weather', 'water', 'urban', 'foley', 'cloth', 'footsteps', 'handling'].includes(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> Library (Freesound)`);
-      return this.genericLibraryInstance;
-    }
-
-    // Rule 3: Creative, Synthesized, Cinematic -> AI Model
-    if (this.aiGenerators.has(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> AI Model (${this.aiModel})`);
-      return this.aiGenerators.get(eff)!;
-    }
-
-    // Fallback logic
-    console.log(`[SmartRouter] Route '${eff}' (Unrecognized) -> AI Fallback`);
-    return this.aiFallback;
+  public getGenerator(effect: string): ISoundGenerator {
+    return this.router.route(effect);
   }
 
-  getCompositeConfig(name: string): SoundCompositeConfig {
+  public getCompositeConfig(name: string): SoundCompositeConfig {
     const config = this.composites[name];
     if (!config) {
       throw new Error(`Composite effect '${name}' not found in registry.`);
     }
     return config;
+  }
+
+  public registerComposite(config: SoundCompositeConfig): void {
+    this.composites[config.name] = config;
+  }
+
+  public getAvailableComposites(): string[] {
+    return Object.keys(this.composites);
+  }
+
+  public getAvailableEffects(): string[] {
+    return Object.keys(this.catalog);
+  }
+
+  public getAvailableVariants(effect: string): string[] {
+    const eff = effect.toLowerCase();
+    if (this.catalog[eff]) {
+      return Object.keys(this.catalog[eff]);
+    }
+    return ['hover', 'click', 'success', 'impact', 'transition'];
+  }
+
+  public getAvailableSubVariants(effect: string, variant: string): string[] {
+    const eff = effect.toLowerCase();
+    const varName = variant.toLowerCase();
+    if (this.catalog[eff] && this.catalog[eff][varName]) {
+      return this.catalog[eff][varName];
+    }
+    return ['default_subvariant'];
   }
 }

@@ -400,7 +400,13 @@ Mô phỏng camera đa bình diện (Multi-plane camera) di chuyển với vận
 #### 3. Sandwich Volumetric Depth (`mode: "volumetric_sandwich"`)
 Cấu trúc kẹp 3 lớp xếp chồng: Phụ đề & Typography 3D nằm **sau** lưng nhân vật nhưng **trước** hình nền.
 - `textBehindSubject`: Bật hiển thị text kẹp sau nhân vật (mặc định: `true`).
-- `bannerText`: Đoạn chữ 3D typography lớn hiển thị ở giữa (mặc định: tự lấy từ phụ đề).
+- `bannerText`: Đoạn chữ 3D typography lớn hiển thị chèn giữa (mặc định: tự lấy từ phụ đề).
+- `position`: Vị trí đặt chữ theo trục dọc dạng preset (`"top"` ~ 22%, `"center"` / `"middle"` ~ 48%, `"bottom"` ~ 72%, mặc định: `38%`).
+- `positionY`: Tọa độ trục dọc tuỳ chỉnh (`0.0 - 1.0` theo tỉ lệ chiều cao hoặc số pixel tuyệt đối, vd `0.25` hoặc `280`).
+- `positionX`: Tọa độ trục ngang tuỳ chỉnh (`0.0 - 1.0` theo tỉ lệ chiều rộng hoặc số pixel tuyệt đối, mặc định `0.5` - chính giữa).
+- `fontSize`: Kích thước chữ (`0.0 - 1.0` theo tỉ lệ chiều rộng như `0.08` hoặc số pixel tuyệt đối như `80`).
+- `textColor`: Màu chữ tùy chỉnh mã Hex/RGBA (mặc định: gradient trắng bạc `rgba(230, 240, 255, 0.85)`).
+- `floatMotion`: Hiệu ứng nổi bồng bềnh chuyển động dọc cho chữ (mặc định: `true`).
 - `ambientDust`: Hạt bụi lơ lửng trong không gian 3D (mặc định: `true`).
 - `vignette`: Bóng mờ viền khung tạo chiều sâu phòng chiếu (mặc định: `true`).
 ```json
@@ -412,6 +418,12 @@ Cấu trúc kẹp 3 lớp xếp chồng: Phụ đề & Typography 3D nằm **sau
     "mode": "volumetric_sandwich",
     "sandwich": {
       "textBehindSubject": true,
+      "bannerText": "KHOA HỌC TỰ NHIÊN",
+      "position": "top",
+      "positionY": 0.22,
+      "fontSize": 0.075,
+      "textColor": "#FFD700",
+      "floatMotion": true,
       "ambientDust": true,
       "vignette": true
     }

@@ -1,25 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './apps/cli/src/pipelines/04-generative-story/types';
-import { renderStoryVideo } from './apps/cli/src/pipelines/04-generative-story/StoryRenderer';
-import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './apps/cli/src/pipelines/04-generative-story/platforms';
-
-function askQuestion(query: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) =>
-    rl.question(query, (ans) => {
-      rl.close();
-      resolve(ans);
-    })
-  );
-}
-
-import { FFmpegManager } from '@acc/core';
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from '@acc/core/src/types';
+import { renderStoryVideo } from '@acc/cli/src/pipelines/04-generative-story/StoryRenderer';
+import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from '@acc/cli/src/pipelines/04-generative-story/platforms';
+import { FFmpegManager, intro, outro, isCancel, cancel } from '@acc/core';
+import * as prompt from '@clack/prompts';
 
 async function main() {
   await FFmpegManager.prepare();
@@ -34,14 +19,27 @@ async function main() {
     return;
   }
 
+  intro('ACC Storyteller Video Generator');
+
   let targetDir = rawArgs[0];
 
   if (!targetDir) {
-    targetDir = await askQuestion('Please enter the path to your story folder: ');
+    const dirPrompt = await prompt.text({
+      message: 'Please enter the path to your story folder:',
+      placeholder: './sample-story',
+      validate: (val) => (!val || val.trim() === '' ? 'Path cannot be empty.' : undefined),
+    });
+
+    if (isCancel(dirPrompt)) {
+      cancel('Operation cancelled.');
+      process.exit(0);
+    }
+
+    targetDir = dirPrompt as string;
   }
 
   if (!targetDir || targetDir.trim() === '') {
-    console.error('No folder path provided. Exiting.');
+    outro('No folder path provided. Exiting.');
     process.exit(1);
   }
 
@@ -52,12 +50,12 @@ async function main() {
   const configPath = path.join(absoluteDir, 'story-config.json');
 
   if (!fs.existsSync(absoluteDir)) {
-    console.error(`Directory not found: ${absoluteDir}`);
+    outro(`Directory not found: ${absoluteDir}`);
     process.exit(1);
   }
 
   if (!fs.existsSync(configPath)) {
-    console.error(`Config file not found: ${configPath}`);
+    outro(`Config file not found: ${configPath}`);
     process.exit(1);
   }
 
@@ -66,14 +64,13 @@ async function main() {
   try {
     config = JSON.parse(rawConfig);
   } catch (error) {
-    console.error('Failed to parse story-config.json:', error);
+    outro(`Failed to parse story-config.json: ${error}`);
     process.exit(1);
   }
 
   function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'audio'): string {
     if (!filePath) return '';
 
-    // 1. Kiểm tra trực tiếp theo đường dẫn tuyệt đối hoặc tương đối
     const directPath = path.isAbsolute(filePath)
       ? path.normalize(filePath)
       : path.resolve(baseDir, filePath);
@@ -82,7 +79,6 @@ async function main() {
       return directPath;
     }
 
-    // 2. Tìm trong các thư mục con media phổ biến (images/, voiceover/, audio/...)
     const baseName = path.basename(filePath);
     const subFolders = ['assets'];
 
@@ -93,7 +89,6 @@ async function main() {
       }
     }
 
-    // 3. Tìm ở thư mục gốc story
     const rootCandidate = path.resolve(baseDir, baseName);
     if (fs.existsSync(rootCandidate)) {
       return rootCandidate;
@@ -107,11 +102,10 @@ async function main() {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  // Hỗ trợ backward compatibility cho file cũ sử dụng "slides"
   const rawScenes = config.scenes || config.slides || [];
 
   if (rawScenes.length === 0) {
-    console.error('No scenes found in story-config.json');
+    outro('No scenes found in story-config.json');
     process.exit(1);
   }
 
@@ -175,7 +169,6 @@ async function main() {
     metadataPath = path.join(outputDir, metadataFileName);
   }
 
-  console.log(`\n=== Storyteller Video Generator ===`);
   console.log(`Scenes: ${resolvedConfig.scenes.length}`);
   console.log(`Platform: ${resolvedSettings.platform}`);
   console.log(`Resolution: ${resolvedSettings.width}x${resolvedSettings.height} @ ${resolvedSettings.fps}fps`);
@@ -191,10 +184,7 @@ async function main() {
 
     await renderStoryVideo(resolvedConfig, outputFilePath, absoluteDir);
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`\nVideo rendering successfully completed in ${durationSec}s!`);
-    console.log(`File saved to: ${outputFilePath}`);
 
-    // Generate JSON Metadata for History Tracing
     const metadata = {
       name: config.name || baseName,
       description: config.description || '',
@@ -221,10 +211,10 @@ async function main() {
     };
 
     fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
-    console.log(`Metadata saved to: ${metadataPath}\n`);
+    outro(`Video rendering successfully completed in ${durationSec}s!\nFile saved to: ${outputFilePath}\nMetadata saved to: ${metadataPath}`);
 
   } catch (error) {
-    console.error('\nRender failed:', error);
+    outro(`Render failed: ${error}`);
     process.exit(1);
   }
 }

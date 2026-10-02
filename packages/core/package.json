@@ -4,5 +4,8 @@
   "description": "Native media processing foundation (FFmpegManager, bun:ffi zero-copy, AssetContext, logger)",
   "main": "src/index.ts",
   "type": "module",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@clack/prompts": "^1.8.1"
+  }
 }
