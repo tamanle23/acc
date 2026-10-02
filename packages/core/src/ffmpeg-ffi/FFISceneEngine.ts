@@ -261,14 +261,16 @@ export class FFISceneEngine {
 
     const encodeDecodedFrame = async (f: bigint) => {
       if (hasCaptions) {
+          const fPtr = BigInt(f);
+          const rgbaPtrBig = BigInt(rgbaFrame);
           FFI.swscale.sws_scale(
             swsToRgbaCtx,
-            f,
-            f + 64n,
+            fPtr,
+            fPtr + 64n,
             0,
             srcH,
-            rgbaFrame,
-            rgbaFrame + 64n
+            rgbaPtrBig,
+            rgbaPtrBig + 64n
           );
           imgData.data.set(uint8Clamped);
           ctx.putImageData(imgData, 0, 0);

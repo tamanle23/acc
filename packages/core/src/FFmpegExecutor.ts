@@ -179,28 +179,12 @@ export class FFmpegCommand {
     }
 
     try {
-      // 1. Complex Filtergraph Execution (xfade, acrossfade, amix, sidechaincompress, overlay, etc.)
-      if (this.complexFilterStr && this.complexFilterStr.trim().length > 0) {
-        const { FFmpegManager } = await import('./FFmpegManager');
-        await FFmpegManager.prepare();
-        const ffmpegBin = FFmpegManager.getFFmpegPath();
-
-        const args = this.buildArgs();
-        const proc = Bun.spawnSync([ffmpegBin, ...args]);
-        if (proc.exitCode !== 0) {
-          const errText = proc.stderr?.toString() || `FFmpeg filtergraph exited with code ${proc.exitCode}`;
-          console.warn(`[FFmpegExecutor] Filtergraph execution warning: ${errText}`);
-          if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
-            fs.copyFileSync(inputPaths[0], outputFile);
-          }
-        }
-      }
-      // 2. Pure Lossless Stream Concatenation (multiple inputs, no complex filtergraph)
-      else if (inputPaths.length > 1) {
+      // 1. Lossless Stream Concatenation (multiple inputs)
+      if (inputPaths.length > 1) {
         const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
         await FFIConcatMuxer.concatenate(inputPaths, outputFile);
       }
-      // 3. Single Scene Video/Image rendering
+      // 2. Single Scene Video/Image rendering
       else if (inputPaths.length === 1) {
         const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
         const primaryInput = inputPaths[0];

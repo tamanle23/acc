@@ -44,38 +44,9 @@ function createSilentMp3Buffer(seconds = 5): Buffer {
   return Buffer.concat(Array(framesCount).fill(frame));
 }
 
-async function concatenateVideos(videoPaths: string[], outputPath: string): Promise<void> {
-  await FFmpegManager.prepare();
-  const ffmpegBin = FFmpegManager.getFFmpegPath();
-  const tempConcatList = path.join(path.dirname(outputPath), `concat_${Date.now()}.txt`);
-  const fileLines = videoPaths.map((p) => `file '${p.replace(/\\/g, '/')}'`).join('\n');
-  fs.writeFileSync(tempConcatList, fileLines, 'utf-8');
-
-  try {
-    const proc = Bun.spawnSync([
-      ffmpegBin,
-      '-y',
-      '-f',
-      'concat',
-      '-safe',
-      '0',
-      '-i',
-      tempConcatList,
-      '-c',
-      'copy',
-      outputPath,
-    ]);
-    if (proc.exitCode !== 0) {
-      const errText = proc.stderr?.toString() || `FFmpeg concat exited with code ${proc.exitCode}`;
-      throw new Error(`Concatenation failed: ${errText}`);
-    }
-  } finally {
-    try {
-      if (fs.existsSync(tempConcatList)) {
-        fs.unlinkSync(tempConcatList);
-      }
-    } catch {}
-  }
+function concatenateVideos(videoPaths: string[], outputPath: string): Promise<void> {
+  const { FFIConcatMuxer } = require('@acc/core');
+  return FFIConcatMuxer.concatenate(videoPaths, outputPath);
 }
 
 function concatenateWithTransitions(

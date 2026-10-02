@@ -271,14 +271,17 @@ export class FFIVideoEncoder {
             ));
         }
 
+        const srcPtr = BigInt(srcFrame);
+        const dstPtr = BigInt(this.frame);
+
         FFI.swscale.sws_scale(
             this.customSwsCtx,
-            srcFrame,
-            srcFrame + 64n,
+            srcPtr,
+            srcPtr + 64n,
             0,
             srcH,
-            this.frame,
-            this.frame + 64n
+            dstPtr,
+            dstPtr + 64n
         );
 
         Structs.AVFrame.setPts(this.frame, BigInt(this.frameIndex++));

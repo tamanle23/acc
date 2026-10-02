@@ -34,8 +34,12 @@ function resolveLibPath(binDir: string, winName: string, unixName: string): stri
       }
     } catch {}
   }
-
   return unixName;
+}
+
+export function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
+  const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
+  return toArrayBuffer(numPtr, offset, length);
 }
 
 export function initFFI() {
@@ -101,7 +105,8 @@ export function initFFI() {
         av_read_frame: { args: [FFIType.u64, FFIType.u64], returns: FFIType.i32 },
         av_seek_frame: { args: [FFIType.u64, FFIType.i32, FFIType.i64, FFIType.i32], returns: FFIType.i32 },
         avio_open: { args: [FFIType.u64, FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
-        avio_closep: { args: [FFIType.u64], returns: FFIType.i32 },
+        avio_close: { args: [FFIType.u64], returns: FFIType.i32 },
+        avio_closep: { args: [FFIType.ptr], returns: FFIType.i32 },
         avformat_new_stream: { args: [FFIType.u64, FFIType.u64], returns: FFIType.ptr },
         avformat_write_header: { args: [FFIType.u64, FFIType.u64], returns: FFIType.i32 },
         av_interleaved_write_frame: { args: [FFIType.u64, FFIType.u64], returns: FFIType.i32 },

@@ -144,6 +144,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`130`](130_optimize_generative_story_pipeline.md) | 2026-10-02 | Optimize GenerativeStoryPipeline and Modular Folder Resolution | Extracted utils/folderResolver.ts and refactored GenerativeStoryPipeline into clean declarative pipeline class |
 | [`131`](131_fix_nvenc_vbr_bitrate_and_verify_sample_story_duration.md) | 2026-10-02 | Fix NVENC VBR Bitrate Control & Verify Sample Story Duration | Added rate-controlled VBR flags (-rc:v vbr, -cq, -b:v 2500k) and verified transition overlap timeline math |
 | [`132`](132_fix_zero_copy_concat_and_restore_original_duration_and_size.md) | 2026-10-02 | Fix Zero-Copy Concat & Restore Exact 2:41 Duration & 34.5MB Size | Restored zero-copy bitstream concatenation via concat demuxer; verified 161.34s duration and 34.5MB size |
+| [`133`](133_eliminate_bun_spawnsync_and_enforce_pure_ffi.md) | 2026-10-02 | Eliminate Bun.spawnSync and Enforce Pure bun:ffi Execution | Completely eliminated Bun.spawnSync in FFmpegExecutor, fixed pointer arithmetic in FFIVideoEncoder and FFISceneEngine |
 
 
 
