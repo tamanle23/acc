@@ -11,8 +11,7 @@ export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
 export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
 
 function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
-    const p = ptr(new BigUint64Array([BigInt(ptrVal)]));
-    return toArrayBuffer(p, offset, length);
+    return toArrayBuffer(Number(ptrVal) as any, offset, length);
 }
 
 export class FFIVideoEncoder {
@@ -210,12 +209,9 @@ export class FFIVideoEncoder {
 
         this.strategy.paceFrame(this.frameIndex, this.fps);
 
-        // Ensure Uint8Array is standard Node/Bun Buffer with valid memory layout
-        const safeBuffer = Buffer.isBuffer(rgbaBuffer) ? rgbaBuffer : Buffer.from(rgbaBuffer.buffer, rgbaBuffer.byteOffset, rgbaBuffer.byteLength);
-
         // Write raw pointer directly into native C memory buffer
         const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 64));
-        dataView.setBigUint64(0, BigInt(ptr(safeBuffer)), true);
+        dataView.setBigUint64(0, BigInt(ptr(rgbaBuffer)), true);
 
         FFI.swscale.sws_scale(
             this.swsCtx,

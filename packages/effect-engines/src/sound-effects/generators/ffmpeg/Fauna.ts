@@ -1,61 +1,61 @@
-import { GeneratedSound } from '../../core/interfaces';
-import { BaseFFmpegGenerator } from '../base';
+import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
+import { FFmpegManager } from '@acc/core';
+import path from 'path';
+import fs from 'fs';
 
-export class Fauna extends BaseFFmpegGenerator {
-  async generate(
-    effect: string,
-    variant: string,
-    subVariant: string,
-    duration: number,
-    outDir: string
-  ): Promise<GeneratedSound> {
-    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
-    const dur = Math.max(duration, 0.2);
+export class Fauna implements ISoundGenerator {
+  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
+    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
+    const audioPath = path.join(outDir, `${fileName}.wav`);
+    const jsonPath = path.join(outDir, `${fileName}.json`);
 
-    let inputArgs: string[] = [];
-    let filterComplex = '';
+    // To make synthetic FFmpeg audio sound "realistic" without real WAV samples,
+    // we must use envelopes (afade), modulation (tremolo/vibrato), and noise types (pink/brown)
+    let lavfiInput = '';
+    let filters: string[] = [];
 
-    if (subVariant.includes('screech') || subVariant.includes('vulture')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
-      filterComplex = `bandpass=f=2600:width_type=h:width=1200,tremolo=f=14:d=0.8,vibrato=f=8:d=0.5,${this.buildADSRFilter(dur, 0.05, dur * 0.5)}[out]`;
-    } else if (subVariant.includes('squeal') || subVariant.includes('pig')) {
-      inputArgs = ['-f', 'lavfi', '-i', `sine=f=850:d=${dur}`];
-      filterComplex = `vibrato=f=18:d=0.9,tremolo=f=10:d=0.7,${this.buildADSRFilter(dur, 0.02, dur * 0.6)}[out]`;
-    } else if (subVariant.includes('roar') || subVariant.includes('lion') || subVariant.includes('bear')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=brown:d=${dur}`];
-      filterComplex = `lowpass=f=350,tremolo=f=3.5:d=0.85,aecho=0.8:0.88:80:0.4,${this.buildADSRFilter(dur, 0.1, dur * 0.5)}[out]`;
-    } else if (subVariant.includes('buzz') || subVariant.includes('bee') || subVariant.includes('cicada')) {
-      inputArgs = ['-f', 'lavfi', '-i', `sine=f=220:d=${dur}`];
-      filterComplex = `tremolo=f=45:d=0.6,vibrato=f=5:d=0.3,${this.buildADSRFilter(dur, 0.1, 0.2)}[out]`;
-    } else if (variant === 'avian' || subVariant.includes('birds') || subVariant.includes('eagle')) {
-      inputArgs = ['-f', 'lavfi', '-i', `sine=f=3200:d=${dur}`];
-      filterComplex = `vibrato=f=12:d=0.8,tremolo=f=6:d=0.6,${this.buildADSRFilter(dur, 0.05, dur * 0.5)}[out]`;
+    if (subVariant.includes('screech')) {
+      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
+      filters.push('bandpass=f=2500:width_type=h:width=1000', 'tremolo=f=12:d=0.8', 'afade=t=in:ss=0:d=0.1,afade=t=out:st=1.5:d=0.5');
+    } else if (subVariant.includes('squeal')) {
+      lavfiInput = `sine=f=800:d=${duration}`;
+      filters.push('vibrato=f=15:d=1', 'tremolo=f=8:d=0.6', 'afade=t=in:ss=0:d=0.1,afade=t=out:st=1.0:d=0.8');
+    } else if (subVariant.includes('roar')) {
+      lavfiInput = `anoisesrc=c=brown:d=${duration}`;
+      filters.push('lowpass=f=300', 'tremolo=f=3:d=0.9', 'afade=t=in:ss=0:d=0.2,afade=t=out:st=1.2:d=1.5', 'volume=2.0');
+    } else if (subVariant.includes('bark') || subVariant.includes('howl')) {
+      lavfiInput = `anoisesrc=c=pink:d=${duration}`;
+      filters.push('lowpass=f=1200', 'tremolo=f=15:d=0.5', 'afade=t=in:ss=0:d=0.05,afade=t=out:st=0.3:d=0.2');
+    } else if (subVariant.includes('buzz')) {
+      lavfiInput = `sine=f=200:d=${duration}`;
+      filters.push('tremolo=f=40:d=0.5'); // Fast bee/insect wing buzz
+    } else if (variant === 'marine' || subVariant.includes('whale')) {
+      lavfiInput = `sine=f=300:d=${duration}`;
+      filters.push('vibrato=f=2:d=0.6', 'aecho=0.8:0.9:100:0.5', 'afade=t=in:ss=0:d=0.5,afade=t=out:st=1.5:d=2.0');
+    } else if (variant === 'avian' || subVariant.includes('chorus')) {
+      lavfiInput = `sine=f=3000:d=${duration}`; // High pitched birds
+      filters.push('vibrato=f=10:d=0.8', 'tremolo=f=5:d=0.5', 'afade=t=in:ss=0:d=0.1,afade=t=out:st=1.0:d=0.5');
     } else {
-      inputArgs = ['-f', 'lavfi', '-i', `sine=f=180:d=${dur}`];
-      filterComplex = `tremolo=f=8:d=0.5,${this.buildADSRFilter(dur, 0.05, 0.2)}[out]`;
+      lavfiInput = `sine=f=150:d=${duration}`;
+      filters.push('anull');
     }
 
-    const args = [
-      '-y',
-      ...inputArgs,
-      '-filter_complex', filterComplex,
-      '-map', '[out]',
-      '-ar', '44100',
-      '-ac', '2',
-      audioPath
-    ];
+    console.log(`[Fauna] Applying filters: ${filters.join(', ')}`);
 
-    await this.executeFFmpeg(args);
+    const filterStr = filters.join(',');
+    const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;
 
-    this.writeMetadata(jsonPath, {
-      effect,
-      variant,
-      subVariant,
-      category: 'fauna',
-      duration: dur,
-      engine: 'ffmpeg_procedural',
-      qualityGrade: 'studio_dsp'
-    });
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    await execAsync(cmd);
+
+    const metadata = {
+      effect, variant, subVariant, category: 'fauna_creature', duration,
+      ffmpegFilters: filters,
+      generatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
 
     return { audioPath, jsonPath };
   }

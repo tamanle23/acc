@@ -2,15 +2,6 @@ import path from 'path';
 import fs from 'fs';
 import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import {
-  AssetContext,
-  FlyweightModelRegistry,
-  PipelineRunner,
-  PipelineContext,
-  IPipelineMiddleware,
-  RenderLowerThirdTickerCommand,
-  Logger
-} from '@acc/core';
 import { defaultIPCFacade, IPCFacade } from '../../../../../packages/core/src/ipc/IPCFacade';
 import { defaultExporterDispatcher, ExporterDispatcher, MultiExportResults } from '@acc/exporters';
 import { IngestedEvent } from './ScraperEngine';
@@ -38,265 +29,176 @@ export class ScraperPipeline {
       fs.mkdirSync(targetDir, { recursive: true });
     }
 
-    const sceneId = 'alert_scene_0';
-    const assets = new AssetContext();
+    // 1. Zero-hallucination Local LLM Structured JSON Extraction
+    const prompt = `Extract news summary from the following text:\n\n${event.rawText}`;
+    const llmRes = await this.ipcFacade.generateStructuredJson(prompt);
 
-    const ctx: PipelineContext = {
-      storyId: `scraper_${Date.now()}`,
-      baseDir: targetDir,
-      assets,
-      vfxQueue: [],
+    let summary: ScraperSummary;
+    try {
+      summary = JSON.parse(llmRes.jsonOutput);
+    } catch {
+      summary = {
+        title: 'Breaking Event Update',
+        key_points: ['Critical data update received', 'Monitoring active metrics'],
+        urgency_level: 'high',
+        voiceover_script: 'Breaking alert: critical updates detected in event stream.',
+        category: 'tech'
+      };
+    }
+
+    // 2. Synthesize Spoken Narration via Kokoro TTS
+    const speechRes = await this.ipcFacade.synthesizeSpeech(summary.voiceover_script, 'af_heart', 1.0, 'kokoro');
+    const audioPath = path.join(targetDir, 'narration.wav');
+    if (speechRes.audioBuffer && speechRes.audioBuffer.length > 0) {
+      fs.writeFileSync(audioPath, speechRes.audioBuffer);
+    } else {
+      // Deterministic empty audio fallback
+      fs.writeFileSync(audioPath, Buffer.alloc(0));
+    }
+
+    const durationMs = speechRes.durationMs || 3000;
+
+    // 3. Render High-Impact Breaking Alert Slide (1080x1920 Vertical format for Shorts/TikTok)
+    const cardWidth = 1080;
+    const cardHeight = 1920;
+    const canvas = createCanvas(cardWidth, cardHeight);
+    const ctx = canvas.getContext('2d');
+
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, cardHeight);
+    grad.addColorStop(0, '#0a0d1a');
+    grad.addColorStop(1, '#05070e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, cardWidth, cardHeight);
+
+    // Header badge
+    const badgeColor = summary.urgency_level === 'critical' ? '#ff3344' : summary.urgency_level === 'high' ? '#ff8800' : '#00d2ff';
+    ctx.fillStyle = badgeColor;
+    ctx.fillRect(80, 140, 260, 48);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(`${summary.urgency_level.toUpperCase()} ALERT`, 105, 172);
+
+    // Category tag
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(`CATEGORY: ${summary.category.toUpperCase()} • ${new Date().toLocaleTimeString()}`, 360, 172);
+
+    // Title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 64px sans-serif';
+
+    // Simple text wrapping for title
+    const words = summary.title.split(' ');
+    let line = '';
+    let y = 290;
+    for (const w of words) {
+      const testLine = line + w + ' ';
+      if (ctx.measureText(testLine).width > 900) {
+        ctx.fillText(line, 80, y);
+        line = w + ' ';
+        y += 80;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, 80, y);
+
+    // Key points bullets
+    y += 100;
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillStyle = badgeColor;
+    ctx.fillText('KEY DEVELOPMENTS', 80, y);
+    y += 60;
+
+    ctx.font = '32px sans-serif';
+    ctx.fillStyle = '#e2e8f0';
+    for (const pt of summary.key_points) {
+      ctx.fillStyle = badgeColor;
+      ctx.beginPath();
+      ctx.arc(95, y - 10, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(pt.slice(0, 50), 125, y);
+      y += 75;
+    }
+
+    // Footer banner
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.fillRect(80, cardHeight - 160, cardWidth - 160, 2);
+    ctx.font = '24px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillText('⚡ Automated Event-Driven Stream • Visual Storytelling Engine', 80, cardHeight - 100);
+
+    const alertCardPath = path.join(targetDir, 'alert_card.png');
+    fs.writeFileSync(alertCardPath, canvas.toBuffer('image/png'));
+
+    // 4. Assemble Canonical PipelineIR
+    const chunks: ContentChunk[] = [
+      {
+        id: 'alert_chunk_0',
+        order: 0,
+        text: summary.voiceover_script,
+        spokenAudioPath: audioPath,
+        durationMs,
+        visualAsset: {
+          type: 'canvas',
+          sourcePathOrBuffer: alertCardPath,
+          resolution: { width: cardWidth, height: cardHeight },
+        },
+        metadata: {
+          key_points: summary.key_points,
+          urgency: summary.urgency_level,
+        },
+      },
+    ];
+
+    const ir: PipelineIR = {
+      schemaVersion: '3.0.0',
+      pipelineId: 'scraper-summarizer',
       metadata: {
-        event,
-        sceneId,
+        jobId: `job_${Date.now()}`,
+        title: summary.title,
+        createdAt: event.receivedAt,
+        tags: [summary.category, summary.urgency_level, 'breaking'],
+        author: 'ACC Scraper Engine',
       },
-      errors: [],
+      chunks,
+      audioComposition: {
+        narrationTrack: {
+          sampleRate: 24000,
+          channels: 1,
+          loudnessLufs: -14,
+        },
+        sfxMarkers: [],
+        ducking: {
+          enabled: true,
+          attenuationDb: -16,
+          attackMs: 20,
+          releaseMs: 150,
+        },
+      },
+      structuredData: {
+        title: summary.title,
+        key_points: summary.key_points,
+        urgency: summary.urgency_level,
+        category: summary.category,
+        source: event.sourceUrl || event.sourceType,
+      },
+      distributionHints: {
+        supportedExporters: ['video', 'audio', 'social', 'static-web'],
+        targetAspectRatios: ['9:16', '16:9', '1:1'],
+      },
     };
 
-    const runner = new PipelineRunner();
-
-    // Stage 1: LLM Summarization Stage
-    runner.use({
-      name: 'SummarizeStage',
-      execute: async (pCtx, next) => {
-        const rawText = pCtx.metadata.event?.rawText || '';
-        const prompt = `Extract news summary from the following text:\n\n${rawText}`;
-
-        let summary: ScraperSummary;
-        try {
-          const llmRes = await this.ipcFacade.generateStructuredJson(prompt);
-          summary = JSON.parse(llmRes.jsonOutput);
-        } catch {
-          summary = {
-            title: 'Breaking Event Update',
-            key_points: ['Critical data update received', 'Monitoring active metrics'],
-            urgency_level: 'high',
-            voiceover_script: 'Breaking alert: critical updates detected in event stream.',
-            category: 'tech',
-          };
-        }
-
-        pCtx.metadata.summary = summary;
-        pCtx.assets.register(sceneId, 'summary_json', JSON.stringify(summary), { title: summary.title });
-        await next();
-      },
+    // 5. Fan out across all 4 Exporters concurrently
+    const exportResults = await this.dispatcher.exportAll(ir, {
+      outputDir: targetDir,
+      targetAspectRatio: '9:16',
     });
 
-    // Stage 2: TTS Synthesis Stage
-    runner.use({
-      name: 'TTSStage',
-      execute: async (pCtx, next) => {
-        const summary: ScraperSummary = pCtx.metadata.summary;
-        const voiceoverScript = summary?.voiceover_script || 'Breaking update.';
-
-        // Flyweight AI model handle check
-        const registry = FlyweightModelRegistry.getInstance();
-        const speechRes = await registry.acquireModel('kokoro-tts', async () => {
-          return this.ipcFacade.synthesizeSpeech(voiceoverScript, 'af_heart', 1.0, 'kokoro');
-        });
-
-        const audioPath = path.join(pCtx.baseDir, 'narration.wav');
-        if (speechRes.audioBuffer && speechRes.audioBuffer.length > 0) {
-          fs.writeFileSync(audioPath, speechRes.audioBuffer);
-        } else {
-          fs.writeFileSync(audioPath, Buffer.alloc(0));
-        }
-
-        const durationMs = speechRes.durationMs || 3000;
-        pCtx.metadata.audioPath = audioPath;
-        pCtx.metadata.durationMs = durationMs;
-        pCtx.assets.register(sceneId, 'narration_audio', audioPath, { durationMs });
-
-        await next();
-      },
-    });
-
-    // Stage 3: VFX Composition Stage (Breaking Alert Card + Lower Third Ticker Command)
-    runner.use({
-      name: 'VFXCompositionStage',
-      execute: async (pCtx, next) => {
-        const summary: ScraperSummary = pCtx.metadata.summary;
-        const cardWidth = 1080;
-        const cardHeight = 1920;
-        const canvas = createCanvas(cardWidth, cardHeight);
-        const ctx2d = canvas.getContext('2d');
-
-        // Background gradient
-        const grad = ctx2d.createLinearGradient(0, 0, 0, cardHeight);
-        grad.addColorStop(0, '#0a0d1a');
-        grad.addColorStop(1, '#05070e');
-        ctx2d.fillStyle = grad;
-        ctx2d.fillRect(0, 0, cardWidth, cardHeight);
-
-        // Header badge
-        const badgeColor = summary.urgency_level === 'critical' ? '#ff3344' : summary.urgency_level === 'high' ? '#ff8800' : '#00d2ff';
-        ctx2d.fillStyle = badgeColor;
-        ctx2d.fillRect(80, 140, 260, 48);
-
-        ctx2d.fillStyle = '#ffffff';
-        ctx2d.font = 'bold 24px sans-serif';
-        ctx2d.fillText(`${summary.urgency_level.toUpperCase()} ALERT`, 105, 172);
-
-        // Category tag
-        ctx2d.fillStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx2d.font = '22px sans-serif';
-        ctx2d.fillText(`CATEGORY: ${summary.category.toUpperCase()} • ${new Date().toLocaleTimeString()}`, 360, 172);
-
-        // Title
-        ctx2d.fillStyle = '#ffffff';
-        ctx2d.font = 'bold 64px sans-serif';
-
-        const words = summary.title.split(' ');
-        let line = '';
-        let y = 290;
-        for (const w of words) {
-          const testLine = line + w + ' ';
-          if (ctx2d.measureText(testLine).width > 900) {
-            ctx2d.fillText(line, 80, y);
-            line = w + ' ';
-            y += 80;
-          } else {
-            line = testLine;
-          }
-        }
-        ctx2d.fillText(line, 80, y);
-
-        // Key points bullets
-        y += 100;
-        ctx2d.font = 'bold 36px sans-serif';
-        ctx2d.fillStyle = badgeColor;
-        ctx2d.fillText('KEY DEVELOPMENTS', 80, y);
-        y += 60;
-
-        ctx2d.font = '32px sans-serif';
-        ctx2d.fillStyle = '#e2e8f0';
-        for (const pt of summary.key_points) {
-          ctx2d.fillStyle = badgeColor;
-          ctx2d.beginPath();
-          ctx2d.arc(95, y - 10, 8, 0, Math.PI * 2);
-          ctx2d.fill();
-
-          ctx2d.fillStyle = '#e2e8f0';
-          ctx2d.fillText(pt.slice(0, 50), 125, y);
-          y += 75;
-        }
-
-        // Footer banner
-        ctx2d.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx2d.fillRect(80, cardHeight - 160, cardWidth - 160, 2);
-        ctx2d.font = '24px sans-serif';
-        ctx2d.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx2d.fillText('⚡ Automated Event-Driven Stream • Visual Storytelling Engine', 80, cardHeight - 100);
-
-        const alertCardPath = path.join(pCtx.baseDir, 'alert_card.png');
-        fs.writeFileSync(alertCardPath, canvas.toBuffer('image/png'));
-
-        pCtx.assets.register(sceneId, 'alert_card', alertCardPath, { width: cardWidth, height: cardHeight });
-        pCtx.assets.register(sceneId, 'canvas', alertCardPath);
-
-        // Enqueue VFX Command for Lower Third Ticker
-        const tickerCmd = new RenderLowerThirdTickerCommand(
-          `ticker_${Date.now()}`,
-          sceneId,
-          summary.title,
-          summary.urgency_level
-        );
-        pCtx.vfxQueue.push(tickerCmd);
-
-        await next();
-      },
-    });
-
-    // Stage 4: Pipeline IR Assembly Stage
-    runner.use({
-      name: 'IRAssemblyStage',
-      execute: async (pCtx, next) => {
-        const summary: ScraperSummary = pCtx.metadata.summary;
-        const alertCardPath = pCtx.assets.getPreferred(sceneId, ['alert_card', 'canvas']) || '';
-        const audioPath = pCtx.assets.getPreferred(sceneId, ['narration_audio']) || '';
-        const durationMs = pCtx.metadata.durationMs || 3000;
-
-        const chunks: ContentChunk[] = [
-          {
-            id: 'alert_chunk_0',
-            order: 0,
-            text: summary.voiceover_script,
-            spokenAudioPath: audioPath,
-            durationMs,
-            visualAsset: {
-              type: 'canvas',
-              sourcePathOrBuffer: alertCardPath,
-              resolution: { width: 1080, height: 1920 },
-            },
-            metadata: {
-              key_points: summary.key_points,
-              urgency: summary.urgency_level,
-            },
-          },
-        ];
-
-        const ir: PipelineIR = {
-          schemaVersion: '3.0.0',
-          pipelineId: 'scraper-summarizer',
-          metadata: {
-            jobId: `job_${Date.now()}`,
-            title: summary.title,
-            createdAt: pCtx.metadata.event?.receivedAt || new Date().toISOString(),
-            tags: [summary.category, summary.urgency_level, 'breaking'],
-            author: 'ACC Scraper Engine',
-          },
-          chunks,
-          audioComposition: {
-            narrationTrack: {
-              sampleRate: 24000,
-              channels: 1,
-              loudnessLufs: -14,
-            },
-            sfxMarkers: [],
-            ducking: {
-              enabled: true,
-              attenuationDb: -16,
-              attackMs: 20,
-              releaseMs: 150,
-            },
-          },
-          structuredData: {
-            title: summary.title,
-            key_points: summary.key_points,
-            urgency: summary.urgency_level,
-            category: summary.category,
-            source: pCtx.metadata.event?.sourceUrl || pCtx.metadata.event?.sourceType,
-          },
-          distributionHints: {
-            supportedExporters: ['video', 'audio', 'social', 'static-web'],
-            targetAspectRatios: ['9:16', '16:9', '1:1'],
-          },
-        };
-
-        pCtx.metadata.ir = ir;
-        await next();
-      },
-    });
-
-    // Stage 5: Multi-Exporter Fan-Out Stage
-    runner.use({
-      name: 'ExporterStage',
-      execute: async (pCtx, next) => {
-        const ir: PipelineIR = pCtx.metadata.ir;
-        const exportResults = await this.dispatcher.exportAll(ir, {
-          outputDir: pCtx.baseDir,
-          targetAspectRatio: '9:16',
-        });
-        pCtx.metadata.exportResults = exportResults;
-        await next();
-      },
-    });
-
-    await runner.run(ctx);
-
-    return {
-      ir: ctx.metadata.ir,
-      exportResults: ctx.metadata.exportResults,
-    };
+    return { ir, exportResults };
   }
 }

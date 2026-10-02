@@ -179,28 +179,8 @@ export class FFmpegCommand {
     }
 
     try {
-      const isAudioOnly =
-        outputFile.endsWith('.wav') ||
-        outputFile.endsWith('.mp3') ||
-        outputFile.endsWith('.aac') ||
-        outputFile.endsWith('.flac') ||
-        this.outputOpts.includes('-vn') ||
-        Boolean(this.complexFilterStr?.includes('loudnorm')) ||
-        Boolean(this.complexFilterStr?.includes('highpass'));
-
-      if (isAudioOnly) {
-        const { FFmpegManager } = await import('./FFmpegManager');
-        const { execFile } = await import('child_process');
-        const { promisify } = await import('util');
-        const execFileAsync = promisify(execFile);
-        await FFmpegManager.prepare();
-        const ffmpegBin = FFmpegManager.getFFmpegPath();
-        const args = this.buildArgs();
-        await execFileAsync(ffmpegBin, args);
-        return;
-      }
       // 1. Lossless Concat or Transitions routing
-      else if (
+      if (
         this.complexFilterStr?.includes('xfade') ||
         (inputPaths.length > 1 &&
           !this.complexFilterStr?.includes('amix') &&

@@ -1,58 +1,75 @@
-import { GeneratedSound } from '../../core/interfaces';
-import { BaseFFmpegGenerator } from '../base';
+import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
+import { FFmpegManager } from '@acc/core';
+import path from 'path';
+import fs from 'fs';
 
-export class Foley extends BaseFFmpegGenerator {
-  async generate(
-    effect: string,
-    variant: string,
-    subVariant: string,
-    duration: number,
-    outDir: string
-  ): Promise<GeneratedSound> {
-    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
-    const dur = Math.max(duration, 0.1);
+export class Foley implements ISoundGenerator {
+  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
+    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
+    const audioPath = path.join(outDir, `${fileName}.wav`);
+    const jsonPath = path.join(outDir, `${fileName}.json`);
 
-    let inputArgs: string[] = [];
-    let filterComplex = '';
+    console.log(`[Foley] Synthesizing ${variant} -> ${subVariant}`);
 
-    if (effect === 'footsteps' || subVariant.includes('boots') || subVariant.includes('footstep')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=brown:d=${dur}`];
-      filterComplex = `lowpass=f=280,${this.buildADSRFilter(dur, 0.005, dur * 0.8)}[out]`;
-    } else if (effect === 'cloth' || variant === 'cloth' || subVariant.includes('rustle') || subVariant.includes('swish')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=white:d=${dur}`];
-      filterComplex = `bandpass=f=3500:width_type=h:width=1800,${this.buildADSRFilter(dur, 0.03, dur * 0.6)}[out]`;
-    } else if (effect === 'handling' || variant === 'handling' || subVariant.includes('keys') || subVariant.includes('coin')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=white:d=${dur}`];
-      filterComplex = `highpass=f=5500,tremolo=f=18:d=0.9,${this.buildADSRFilter(dur, 0.005, dur * 0.7)}[out]`;
-    } else if (effect === 'typing' || variant === 'typing' || subVariant.includes('keyboard')) {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
-      filterComplex = `bandpass=f=4500:width_type=h:width=2000,${this.buildADSRFilter(dur, 0.002, dur * 0.9)}[out]`;
+    // Foley requires sharp, percussive envelopes rather than continuous noise.
+    let filters: string[] = [];
+    let lavfiInput = `anoisesrc=c=pink:d=${duration}`;
+
+    if (effect === 'footsteps' || subVariant.includes('heavy')) {
+      filters.push(
+        'lowpass=f=250',
+        'afade=t=in:ss=0:d=0.01,afade=t=out:st=0.1:d=0.2',
+        'volume=3.0'
+      );
+    } else if (effect === 'cloth' || variant === 'cloth') {
+      lavfiInput = `anoisesrc=c=white:d=${duration}`;
+      filters.push(
+        'bandpass=f=4000:width_type=h:width=2000',
+        'afade=t=in:ss=0:d=0.05,afade=t=out:st=0.2:d=0.3', // Quick rustle
+        'volume=1.5'
+      );
+    } else if (effect === 'handling' || variant === 'handling') {
+      lavfiInput = `anoisesrc=c=white:d=${duration}`;
+      filters.push(
+        'highpass=f=6000',
+        'tremolo=f=15:d=1.0', // Clinking/shattering modulation
+        'afade=t=in:ss=0:d=0.01,afade=t=out:st=0.1:d=0.4',
+        'volume=2.0'
+      );
+    } else if (effect === 'typing' || variant === 'typing') {
+      filters.push(
+        'highpass=f=2000',
+        'tremolo=f=12:d=0.9', // Fast bursting keystrokes
+        'afade=t=in:ss=0:d=0.01,afade=t=out:st=0.8:d=0.2'
+      );
+    } else if (effect === 'liquid' || variant === 'liquid' || subVariant.includes('pouring')) {
+      lavfiInput = `anoisesrc=c=brown:d=${duration}`;
+      filters.push(
+        'highpass=f=1000',
+        'bandpass=f=2000:width_type=h:width=500',
+        'tremolo=f=25:d=0.7', // High-speed gurgling/splashing modulation
+        'afade=t=in:ss=0:d=0.1,afade=t=out:st=1.5:d=0.5'
+      );
     } else {
-      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=pink:d=${dur}`];
-      filterComplex = `lowpass=f=1500,${this.buildADSRFilter(dur, 0.01, dur * 0.5)}[out]`;
+      filters.push('anull');
     }
 
-    const args = [
-      '-y',
-      ...inputArgs,
-      '-filter_complex', filterComplex,
-      '-map', '[out]',
-      '-ar', '44100',
-      '-ac', '2',
-      audioPath
-    ];
+    console.log(`[Foley] Applying filters: ${filters.join(', ')}`);
 
-    await this.executeFFmpeg(args);
+    const filterStr = filters.join(',');
+    const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;
 
-    this.writeMetadata(jsonPath, {
-      effect,
-      variant,
-      subVariant,
-      category: 'foley',
-      duration: dur,
-      engine: 'ffmpeg_procedural',
-      qualityGrade: 'studio_dsp'
-    });
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    await execAsync(cmd);
+
+    const metadata = {
+      effect, variant, subVariant, category: 'foley', duration,
+      ffmpegFilters: filters,
+      generatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
 
     return { audioPath, jsonPath };
   }
