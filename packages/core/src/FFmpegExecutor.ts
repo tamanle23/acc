@@ -201,17 +201,23 @@ export class FFmpegCommand {
         const args: string[] = ['-y'];
         for (const inp of this.inputs) {
           if (inp.options && inp.options.length > 0) {
-            args.push(...inp.options);
+            for (const opt of inp.options) {
+              const parts = opt.trim().split(/\s+/).filter(Boolean);
+              args.push(...parts);
+            }
           }
-          args.push('-i', inp.source);
+          args.push('-i', inp.file);
         }
 
         if (this.complexFilterStr) {
           args.push('-filter_complex', this.complexFilterStr);
         }
 
-        if (this.outputOptionsList && this.outputOptionsList.length > 0) {
-          args.push(...this.outputOptionsList);
+        if (this.outputOpts && this.outputOpts.length > 0) {
+          for (const opt of this.outputOpts) {
+            const parts = opt.trim().split(/\s+/).filter(Boolean);
+            args.push(...parts);
+          }
         } else {
           args.push('-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k');
         }
