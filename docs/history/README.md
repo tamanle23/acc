@@ -124,4 +124,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`110`](110_volumetric_sandwich_banner_text_positioning.md) | 2026-10-02 | Volumetric Sandwich Banner Text Positioning & Customization | Added position, positionY, positionX, fontSize, floatMotion, and textColor options to 3D sandwich scenes |
 | [`111`](111_fix_ffmpeg_pixel_format_and_native_pointer_dereference.md) | 2026-10-02 | Fix FFmpeg FFI Pixel Format Resolution & Native Pointer Dereference | Fixed video_size/pixel_format av_opt_set on AVCodecContext and native pointer wrapping in safeArrayBuffer |
 | [`112`](112_fix_volumetric_sandwich_bottom_positioning.md) | 2026-10-02 | Fix Volumetric Sandwich Bottom Text Positioning | Resolved bottom positioning calculation (75% height) and adaptive fallback subject masking in sandwich.ts |
+| [`113`](113_opensource_bgm_track_integration.md) | 2026-10-02 | Open-Source Background Music Integration for Sample Story | Downloaded & transcoded authentic CC-BY 3.0 soundtrack Windswept by Kevin MacLeod to sample-story/assets/bgm.mp3 |
 
