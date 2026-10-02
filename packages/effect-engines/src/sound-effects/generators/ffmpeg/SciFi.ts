@@ -1,70 +1,59 @@
-import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { FFmpegManager } from '@acc/core';
-import path from 'path';
+import { GeneratedSound } from '../../core/interfaces';
+import { BaseFFmpegGenerator } from '../base';
 
-export class SciFi implements ISoundGenerator {
-  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
-    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
-    const audioPath = path.join(outDir, `${fileName}.wav`);
-    const jsonPath = path.join(outDir, `${fileName}.json`);
+export class SciFi extends BaseFFmpegGenerator {
+  async generate(
+    effect: string,
+    variant: string,
+    subVariant: string,
+    duration: number,
+    outDir: string
+  ): Promise<GeneratedSound> {
+    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
+    const dur = Math.max(duration, 0.1);
 
-    console.log(`[SciFi] Synthesizing ${variant} -> ${subVariant}`);
+    let inputArgs: string[] = [];
+    let filterComplex = '';
 
-    let lavfiInput = '';
-    let filters: string[] = [];
-
-    if (variant === 'laser' || subVariant.includes('blast')) {
-      // Classic "pew" laser blast: Short, sharp, highly modulated burst
-      lavfiInput = `sine=f=1500:d=0.3`;
-      filters.push(
-        'tremolo=f=50:d=1.0', // High speed modulation
-        'flanger=delay=5:depth=10:regen=0:width=71:speed=10', // Phase shifting for sci-fi feel
-        'afade=t=in:ss=0:d=0.01,afade=t=out:st=0.1:d=0.2' // Fast decay
-      );
-    } else if (variant === 'warp_drive' || subVariant.includes('warp')) {
-      // Building engine hum / hyperdrive
-      lavfiInput = `sine=f=60:d=${duration}`; // Deep sub hum
-      filters.push(
-        'chorus=0.7:0.9:55:0.4:0.25:2',
-        'flanger=speed=5', // Swirling energy
-        `afade=t=in:ss=0:d=${duration}:curve=exp` // Powering up envelope
-      );
-    } else if (variant === 'glitch' || subVariant.includes('error')) {
-      // Sci-Fi computer glitch / static burst
-      lavfiInput = `anoisesrc=c=white:d=${duration}`;
-      filters.push(
-        'bandpass=f=3000:width_type=h:width=1000',
-        'tremolo=f=25:d=0.9', // Stuttering logic
-        'tremolo=f=10:d=0.8',
-        'afade=t=in:ss=0:d=0.05,afade=t=out:st=0.3:d=0.2'
-      );
-    } else if (variant === 'forcefield') {
-      // Constant electrical hum
-      lavfiInput = `sine=f=120:d=${duration}`;
-      filters.push(
-        'lowpass=f=800',
-        'vibrato=f=2:d=0.5',
-        'tremolo=f=15:d=0.2' // Electricity buzzing
-      );
+    if (variant === 'laser' || subVariant.includes('blast') || subVariant.includes('cannon')) {
+      inputArgs = ['-f', 'lavfi', '-i', `aevalsrc='sgn(sin(2*PI*(1800*t - 3200*t*t)))':d=${dur}`];
+      filterComplex = `flanger=delay=4:depth=8:regen=15:width=60:speed=10,aphaser=type=t:speed=0.8:decay=0.6,${this.buildADSRFilter(dur, 0.005, dur * 0.8)}[out]`;
+    } else if (variant === 'warp_drive' || subVariant.includes('warp') || subVariant.includes('singularity')) {
+      inputArgs = ['-f', 'lavfi', '-i', `sine=f=55:d=${dur}`];
+      filterComplex = `chorus=0.7:0.9:55:0.4:0.25:2,flanger=delay=10:depth=20:speed=3,aecho=0.8:0.9:80:0.4,${this.buildADSRFilter(dur, dur * 0.4, dur * 0.3)}[out]`;
+    } else if (variant === 'glitch' || subVariant.includes('corrupt') || subVariant.includes('burst')) {
+      inputArgs = ['-f', 'lavfi', '-i', `anoisesrc=c=white:d=${dur}`];
+      filterComplex = `bandpass=f=2800:width_type=h:width=1500,tremolo=f=35:d=0.9,tremolo=f=12:d=0.8,${this.buildADSRFilter(dur, 0.01, dur * 0.6)}[out]`;
+    } else if (variant === 'forcefield' || subVariant.includes('shield') || subVariant.includes('barrier')) {
+      inputArgs = ['-f', 'lavfi', '-i', `sine=f=120:d=${dur}`];
+      filterComplex = `vibrato=f=4:d=0.6,tremolo=f=18:d=0.4,flanger=delay=5:speed=2,aecho=0.7:0.8:60:0.3,${this.buildADSRFilter(dur, 0.1, 0.3)}[out]`;
     } else {
-      lavfiInput = `sine=f=440:d=${duration}`;
-      filters.push('anull');
+      inputArgs = ['-f', 'lavfi', '-i', `sine=f=350:d=${dur}`];
+      filterComplex = `tremolo=f=15:d=0.5,${this.buildADSRFilter(dur, 0.05, 0.2)}[out]`;
     }
 
-    const filterStr = filters.join(',');
-    const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;
-    
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    await execAsync(cmd);
+    const args = [
+      '-y',
+      ...inputArgs,
+      '-filter_complex', filterComplex,
+      '-map', '[out]',
+      '-ar', '44100',
+      '-ac', '2',
+      audioPath
+    ];
 
-    const metadata = { effect, variant, subVariant, category: 'scifi', duration, ffmpegFilters: filters };
-    require('fs').writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
+    await this.executeFFmpeg(args);
+
+    this.writeMetadata(jsonPath, {
+      effect,
+      variant,
+      subVariant,
+      category: 'scifi',
+      duration: dur,
+      engine: 'ffmpeg_procedural',
+      qualityGrade: 'studio_dsp'
+    });
 
     return { audioPath, jsonPath };
   }
 }
-
-
-

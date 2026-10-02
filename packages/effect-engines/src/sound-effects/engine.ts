@@ -1,9 +1,11 @@
-import { FFmpegManager } from '@acc/core';
-import { FFmpegCommand } from '@acc/core';
+import { FFmpegManager, AudioNormalizer } from '@acc/core';
 import { RegistryManager } from './core/Registry';
-import { AudioNormalizer } from '@acc/core';
 import path from 'path';
 import fs from 'fs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 export async function renderSoundEffect(
   registry: RegistryManager,
@@ -31,7 +33,7 @@ export async function renderSoundEffect(
       meta.loudness = "-16 LUFS";
       meta.final_audio = path.basename(finalWavPath);
       fs.writeFileSync(result.jsonPath, JSON.stringify(meta, null, 2));
-    } catch(e) {}
+    } catch (e) {}
   }
   
   return finalWavPath;
@@ -53,10 +55,10 @@ export async function renderCompositeSound(
     outputs.push(wavPath);
   }
   
-  // Mix the layers together using FFmpeg's filter_complex with delays
-  const finalWavPath = path.join(outDir, `${compositeName}_composite.wav`);
-  const inputs = outputs.map(o => `-i "${o}"`).join(' ');
-  
+  const rawCompositePath = path.join(outDir, `${compositeName}_raw_composite.wav`);
+  const finalCompositePath = path.join(outDir, `${compositeName}_composite.wav`);
+  const jsonPath = path.join(outDir, `${compositeName}_composite.json`);
+
   let filterComplex = '';
   
   const bgIndices: string[] = [];
@@ -68,7 +70,7 @@ export async function renderCompositeSound(
     let outLabel = `[${i}:a]`;
 
     if (layerDelaySec > 0) {
-      const delayMs = layerDelaySec * 1000;
+      const delayMs = Math.round(layerDelaySec * 1000);
       filterComplex += `[${i}:a]adelay=${delayMs}|${delayMs}[d${i}];`;
       outLabel = `[d${i}]`;
     }
@@ -106,16 +108,43 @@ export async function renderCompositeSound(
     // 5. Final Mix
     filterComplex += `[bg_ducked][fg_out]amix=inputs=2:duration=longest[out]`;
   }
-  const cmd = new FFmpegCommand();
-  for (const part of layers) {
-    cmd.input(part.audioPath);
-  }
-  cmd.complexFilter(filterComplex, ['out']);
-  cmd.output(finalWavPath);
-  await cmd.run();
-  
-  outputs.push(finalWavPath);
 
+  await FFmpegManager.prepare();
+  const ffmpegBin = FFmpegManager.getFFmpegPath();
+
+  const inputArgs: string[] = [];
+  for (const wavFile of outputs) {
+    inputArgs.push('-i', wavFile);
+  }
+
+  const args = [
+    '-y',
+    ...inputArgs,
+    '-filter_complex', filterComplex,
+    '-map', '[out]',
+    '-ar', '44100',
+    '-ac', '2',
+    rawCompositePath
+  ];
+
+  await execFileAsync(ffmpegBin, args);
+
+  // Post-process composite mixing with loudness normalization
+  const normalizedPath = await AudioNormalizer.normalize(rawCompositePath, finalCompositePath, 'oneshot', 10.0);
+
+  const compositeMeta = {
+    name: compositeName,
+    category: config.category,
+    layersCount: config.layers.length,
+    isComposite: true,
+    isNormalized: true,
+    loudness: '-16 LUFS',
+    audioFile: path.basename(normalizedPath),
+    createdAt: new Date().toISOString()
+  };
+
+  fs.writeFileSync(jsonPath, JSON.stringify(compositeMeta, null, 2));
+
+  outputs.push(normalizedPath);
   return outputs;
 }
-

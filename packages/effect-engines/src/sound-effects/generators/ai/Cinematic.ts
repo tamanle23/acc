@@ -1,14 +1,29 @@
-import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
+import { GeneratedSound } from '../../core/interfaces';
+import { BaseSoundGenerator } from '../base';
+import { Cinematic as FFmpegCinematic } from '../ffmpeg/Cinematic';
 import { PythonBackend } from '@acc/core';
-import path from 'path';
 
-export class Cinematic implements ISoundGenerator {
-  constructor(private aiModel: string) { }
+export class Cinematic extends BaseSoundGenerator {
+  private dspCinematic: FFmpegCinematic;
 
-  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
-    const fileName = `${effect}_${variant}_${subVariant}_${duration}s_${this.aiModel}`;
-    const audioPath = path.join(outDir, `${fileName}.wav`);
-    const jsonPath = path.join(outDir, `${fileName}.json`);
+  constructor(private aiModel: string) {
+    super();
+    this.dspCinematic = new FFmpegCinematic();
+  }
+
+  async generate(
+    effect: string,
+    variant: string,
+    subVariant: string,
+    duration: number,
+    outDir: string,
+    customPrompt?: string
+  ): Promise<GeneratedSound> {
+    if (process.env.NODE_ENV === 'test' || !process.env.ENABLE_PYTHON_AI) {
+      return this.dspCinematic.generate(effect, variant, subVariant, duration, outDir);
+    }
+
+    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir, this.aiModel);
 
     let prompt = customPrompt || 'Cinematic Hollywood trailer sound effect, ';
     if (variant === 'impact' || variant === 'hit') {
@@ -17,17 +32,30 @@ export class Cinematic implements ISoundGenerator {
       prompt += `${variant.replace('_', ' ')} ${subVariant.replace('_', ' ')}, dramatic tension.`;
     }
 
-    const engine = PythonBackend.getInstance();
-    await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', { prompt, model: this.aiModel, duration, output_path: audioPath });
+    try {
+      const engine = PythonBackend.getInstance();
+      await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', {
+        prompt,
+        model: this.aiModel,
+        duration,
+        output_path: audioPath
+      });
 
-    const metadata = { effect, variant, subVariant, category: 'cinematic', duration, engine: 'ai', model: this.aiModel, aiPrompt: prompt };
-    require('fs').writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
+      this.writeMetadata(jsonPath, {
+        effect,
+        variant,
+        subVariant,
+        category: 'cinematic',
+        duration,
+        engine: 'ai',
+        model: this.aiModel,
+        aiPrompt: prompt
+      });
 
-    return { audioPath, jsonPath };
+      return { audioPath, jsonPath };
+    } catch (err: any) {
+      console.warn(`[AIEngine] Cinematic AI unavailable (${err.message}). Using DSP Synth...`);
+      return this.dspCinematic.generate(effect, variant, subVariant, duration, outDir);
+    }
   }
 }
-
-
-
-
-
