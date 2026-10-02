@@ -30,6 +30,7 @@ import {
   LowerThirdFactory
 } from '../packages/effect-engines/src/styles';
 import { SafeZoneManager } from '../packages/effect-engines/src/subtitles/SafeZoneManager';
+import { SoundEffectFactory } from '../packages/effect-engines/src/sound-effects/SoundEffectFactory';
 import {
   AudioDuckingDSP,
   ToneMappingEngine,
@@ -161,8 +162,8 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
     });
   });
 
-  // GROUP 3: AUDIO EDITING (DSP STRATEGY & DECORATOR PATTERNS)
-  describe('Group 3: Audio Editing (DSP Strategy & Decorator Patterns)', () => {
+  // GROUP 3: AUDIO EDITING (DSP STRATEGY, DECORATOR & SOUND EFFECT FACTORY PATTERNS)
+  describe('Group 3: Audio Editing (DSP Strategy, Decorator & Sound Effect Factory Patterns)', () => {
     test('3.1: Sidechain Audio Ducking & Decorator', () => {
       const filter = AudioDuckingDSP.buildSidechainFilterGraph('v', 'm', 'out', { attenuationDb: -18 });
       expect(filter).toContain('sidechaincompress=threshold=-24dB');
@@ -170,6 +171,17 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       const duckingDecorator = new AudioDuckingDecorator('eq=contrast=1.1');
       const decoratedFilter = duckingDecorator.generateDecoratedFilterGraph('voice', 'bgm', 'out');
       expect(decoratedFilter).toContain('eq=contrast=1.1; [bgm][voice]sidechaincompress');
+    });
+
+    test('3.2: SoundEffectFactory Foley & SFX Generation', () => {
+      const footsteps = SoundEffectFactory.createFoleyPreset('footsteps', 1200);
+      expect(footsteps.category).toBe('foley');
+      expect(footsteps.offsetMs).toBe(1200);
+      expect(footsteps.audioPath).toContain('foley_footsteps.wav');
+
+      const whoosh = SoundEffectFactory.createFoleyPreset('whoosh', 2500);
+      expect(whoosh.category).toBe('cinematic');
+      expect(whoosh.audioPath).toContain('whoosh_cinematic.wav');
     });
 
     test('Audio DSP Strategy', () => {
