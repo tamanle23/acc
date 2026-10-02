@@ -42,12 +42,12 @@ export class FileVideoEncodingStrategy implements IVideoEncodingStrategy {
   public configureCodec(codecCtx: bigint, isNvenc: boolean, fps: number, crf: number): void {
     if (isNvenc) {
       const p = this.preset || "p4";
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from(`${p}\0`), 0);
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("cq\0"), Buffer.from(`${crf}\0`), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("preset\0")), ptr(Buffer.from(`${p}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("cq\0")), ptr(Buffer.from(`${crf}\0`)), 0);
     } else {
       const p = this.preset || "fast";
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from(`${p}\0`), 0);
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("crf\0"), Buffer.from(`${crf}\0`), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("preset\0")), ptr(Buffer.from(`${p}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("crf\0")), ptr(Buffer.from(`${crf}\0`)), 0);
     }
   }
 
@@ -69,13 +69,13 @@ export class FileVideoEncodingStrategy implements IVideoEncodingStrategy {
       formatName = 'mp4';
     }
 
-    const formatBuf = formatName ? Buffer.from(formatName + "\0") : 0n;
+    const formatBuf = formatName ? ptr(Buffer.from(formatName + "\0")) : 0n;
 
     const retOut = FFI.avformat.avformat_alloc_output_context2(
       ptr(fmtCtxPtr.buffer),
       0n,
       formatBuf,
-      Buffer.from(outputPath + "\0")
+      ptr(Buffer.from(outputPath + "\0"))
     );
     if (retOut < 0) throw new Error(`Failed to allocate output context for file: ${outputPath} (format: ${targetFormat})`);
     return fmtCtxPtr[0];
@@ -84,7 +84,7 @@ export class FileVideoEncodingStrategy implements IVideoEncodingStrategy {
   public configureFormatContext(formatCtx: bigint): void {
     // For MP4 and MOV streaming, apply faststart (movflags +faststart) if enabled
     if ((this.container === 'mp4' || this.container === 'mov') && this.fastStart) {
-      FFI.avutil.av_opt_set(formatCtx, Buffer.from("movflags\0"), Buffer.from("faststart\0"), 0);
+      FFI.avutil.av_opt_set(formatCtx, ptr(Buffer.from("movflags\0")), ptr(Buffer.from("faststart\0")), 0);
     }
   }
 
@@ -105,18 +105,18 @@ export class RtmpLiveStreamEncodingStrategy implements IVideoEncodingStrategy {
   public configureCodec(codecCtx: bigint, isNvenc: boolean, fps: number, crf: number): void {
     // 1. YouTube Mandatory 2-Second Closed GOP (keyframe every 2s)
     const gopSize = fps * 2;
-    FFI.avutil.av_opt_set(codecCtx, Buffer.from("g\0"), Buffer.from(`${gopSize}\0`), 0);
-    FFI.avutil.av_opt_set(codecCtx, Buffer.from("keyint_min\0"), Buffer.from(`${gopSize}\0`), 0);
+    FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("g\0")), ptr(Buffer.from(`${gopSize}\0`)), 0);
+    FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("keyint_min\0")), ptr(Buffer.from(`${gopSize}\0`)), 0);
 
     // 2. Zero-latency low-overhead profile
-    FFI.avutil.av_opt_set(codecCtx, Buffer.from("tune\0"), Buffer.from("zerolatency\0"), 0);
+    FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("tune\0")), ptr(Buffer.from("zerolatency\0")), 0);
 
     if (isNvenc) {
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from("p2\0"), 0);
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("cq\0"), Buffer.from(`${crf}\0`), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("preset\0")), ptr(Buffer.from("p2\0")), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("cq\0")), ptr(Buffer.from(`${crf}\0`)), 0);
     } else {
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("preset\0"), Buffer.from("veryfast\0"), 0);
-      FFI.avutil.av_opt_set(codecCtx, Buffer.from("crf\0"), Buffer.from(`${crf}\0`), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("preset\0")), ptr(Buffer.from("veryfast\0")), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from("crf\0")), ptr(Buffer.from(`${crf}\0`)), 0);
     }
   }
 
@@ -126,8 +126,8 @@ export class RtmpLiveStreamEncodingStrategy implements IVideoEncodingStrategy {
     const retOut = FFI.avformat.avformat_alloc_output_context2(
       ptr(fmtCtxPtr.buffer),
       0n,
-      Buffer.from("flv\0"),
-      Buffer.from(outputPath + "\0")
+      ptr(Buffer.from("flv\0")),
+      ptr(Buffer.from(outputPath + "\0"))
     );
     if (retOut < 0) throw new Error(`Failed to allocate RTMP live output context for: ${outputPath}`);
     return fmtCtxPtr[0];
@@ -135,7 +135,7 @@ export class RtmpLiveStreamEncodingStrategy implements IVideoEncodingStrategy {
 
   public configureFormatContext(formatCtx: bigint): void {
     // Omit duration/filesize metadata for continuous infinite live streaming
-    FFI.avutil.av_opt_set(formatCtx, Buffer.from("flvflags\0"), Buffer.from("no_duration_filesize\0"), 0);
+    FFI.avutil.av_opt_set(formatCtx, ptr(Buffer.from("flvflags\0")), ptr(Buffer.from("no_duration_filesize\0")), 0);
   }
 
   public paceFrame(frameIndex: number, fps: number): void {

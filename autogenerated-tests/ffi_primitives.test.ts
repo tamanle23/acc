@@ -13,7 +13,7 @@ describe("FFI Primitives & Struct Offsets Suite", () => {
     const pktPtr = FFI.avcodec.av_packet_alloc();
     expect(pktPtr).not.toBe(0);
 
-    const pktView = new DataView(toArrayBuffer(pktPtr, 0, 64));
+    const pktView = new DataView(toArrayBuffer(typeof pktPtr === 'bigint' ? Number(pktPtr) : pktPtr, 0, 64));
     pktView.setBigInt64(8, 12345n, true); // pts
     pktView.setBigInt64(16, 12345n, true); // dts
 
@@ -30,7 +30,7 @@ describe("FFI Primitives & Struct Offsets Suite", () => {
     expect(framePtr).not.toBe(0);
 
     Structs.AVFrame.setPts(framePtr, 987654321n);
-    const view = new DataView(toArrayBuffer(framePtr, 0, 256));
+    const view = new DataView(toArrayBuffer(typeof framePtr === 'bigint' ? Number(framePtr) : framePtr, 0, 256));
     expect(view.getBigInt64(136, true)).toBe(987654321n);
 
     const ptrToFree = new BigUint64Array(1);

@@ -119,7 +119,7 @@ export class FFIAudioDSP {
     const fmtCtxPtr = new BigUint64Array(1);
     const retOpen = FFI.avformat.avformat_open_input(
       ptr(fmtCtxPtr.buffer),
-      Buffer.from(audioPath + "\0"),
+      ptr(Buffer.from(audioPath + "\0")),
       0n,
       0n
     );
@@ -324,41 +324,4 @@ export class FFIAudioDSP {
     return Buffer.concat(Array(framesCount).fill(frame));
   }
 
-  /**
-   * Automatically normalizes any audio file (WAV, M4A, OGG, FLAC) into a standardized MP3 audio cache.
-   * Ensures 100% audio codec compatibility across all concatenated scenes in FFIConcatMuxer.
-   */
-  public static ensureMp3Audio(audioPath: string): string {
-    if (!audioPath || !fs.existsSync(audioPath)) return audioPath;
-    if (audioPath.toLowerCase().endsWith('.mp3')) return audioPath;
-
-    const dir = path.dirname(audioPath);
-    const base = path.basename(audioPath, path.extname(audioPath));
-    const mp3Path = path.join(dir, `${base}.mp3`);
-
-    if (fs.existsSync(mp3Path) && fs.statSync(mp3Path).size > 100) {
-      return mp3Path;
-    }
-
-    try {
-      const ffmpegBin = FFmpegManager.getFFmpegPath();
-      const proc = Bun.spawnSync([
-        ffmpegBin,
-        '-y',
-        '-i',
-        audioPath,
-        '-c:a',
-        'libmp3lame',
-        '-b:a',
-        '192k',
-        mp3Path
-      ]);
-      if (proc.exitCode === 0 && fs.existsSync(mp3Path)) {
-        return mp3Path;
-      }
-    } catch {
-      // fallback to original audioPath
-    }
-    return audioPath;
-  }
 }

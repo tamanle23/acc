@@ -18,7 +18,7 @@ export class FFIConcatMuxer {
 
         // 1. Open the first segment to extract stream layout
         const inCtxPtr = new BigUint64Array(1);
-        let ret = FFI.avformat.avformat_open_input(ptr(inCtxPtr.buffer), Buffer.from(inputPaths[0] + "\0"), 0n, 0n);
+        let ret = FFI.avformat.avformat_open_input(ptr(inCtxPtr.buffer), ptr(Buffer.from(inputPaths[0] + "\0")), 0n, 0n);
         if (ret < 0) throw new Error(`FFIConcatMuxer: Failed to open input file ${inputPaths[0]}`);
         const firstInCtx = inCtxPtr[0];
         FFI.avformat.avformat_find_stream_info(firstInCtx, 0n);
@@ -30,7 +30,7 @@ export class FFIConcatMuxer {
 
         // 2. Allocate output container
         const outCtxPtr = new BigUint64Array(1);
-        ret = FFI.avformat.avformat_alloc_output_context2(ptr(outCtxPtr.buffer), 0n, 0n, Buffer.from(outputPath + "\0"));
+        ret = FFI.avformat.avformat_alloc_output_context2(ptr(outCtxPtr.buffer), 0n, 0n, ptr(Buffer.from(outputPath + "\0")));
         if (ret < 0) throw new Error(`FFIConcatMuxer: Failed to create output context for ${outputPath}`);
         const outCtx = outCtxPtr[0];
 
@@ -39,8 +39,8 @@ export class FFIConcatMuxer {
           const inStream = inStreamsArray.getBigUint64(i * 8, true);
           const outStream = BigInt(FFI.avformat.avformat_new_stream(outCtx, 0n));
           
-          const inStreamCodecpar = new DataView(toArrayBuffer(inStream, 0, 64)).getBigUint64(16, true);
-          const outStreamCodecpar = new DataView(toArrayBuffer(outStream, 0, 64)).getBigUint64(16, true);
+          const inStreamCodecpar = new DataView(toArrayBuffer(inStream, 0, 64)).getBigUint64(8, true);
+          const outStreamCodecpar = new DataView(toArrayBuffer(outStream, 0, 64)).getBigUint64(8, true);
           
           FFI.avcodec.avcodec_parameters_copy(outStreamCodecpar, inStreamCodecpar);
         }
@@ -50,7 +50,7 @@ export class FFIConcatMuxer {
         FFI.avformat.avformat_close_input(ptr(pCloseFirst.buffer));
 
         // 4. Open Output AVIO
-        ret = FFI.avformat.avio_open(outCtx + 32n, Buffer.from(outputPath + "\0"), 2); // 2 = AVIO_FLAG_WRITE
+        ret = FFI.avformat.avio_open(outCtx + 32n, ptr(Buffer.from(outputPath + "\0")), 2); // 2 = AVIO_FLAG_WRITE
         if (ret < 0) throw new Error(`FFIConcatMuxer: Failed to open output AVIO: ${outputPath}`);
 
         // 5. Write Container Header
@@ -64,7 +64,7 @@ export class FFIConcatMuxer {
         for (let segIdx = 0; segIdx < inputPaths.length; segIdx++) {
           const segPath = inputPaths[segIdx];
           const segInPtr = new BigUint64Array(1);
-          ret = FFI.avformat.avformat_open_input(ptr(segInPtr.buffer), Buffer.from(segPath + "\0"), 0n, 0n);
+          ret = FFI.avformat.avformat_open_input(ptr(segInPtr.buffer), ptr(Buffer.from(segPath + "\0")), 0n, 0n);
           if (ret < 0) continue;
           const segInCtx = segInPtr[0];
           FFI.avformat.avformat_find_stream_info(segInCtx, 0n);
