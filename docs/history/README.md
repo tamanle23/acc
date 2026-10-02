@@ -133,4 +133,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`119`](119_in_memory_aac_audio_encoding_via_ffi.md) | 2026-10-02 | In-Memory AAC Audio Encoding & Zero-Disk Transcoding via FFI | Native format-agnostic audio decoding, dynamic resampling, and zero-disk in-memory AAC encoding in FFIVideoEncoder |
 | [`120`](120_fix_audio_caption_transition_sync.md) | 2026-10-02 | Fix Audio, Caption, and Transition Desynchronization | Padded silence to exact video frame count in FFIVideoEncoder, fixed audioBehavior resolution, synchronized acrossfade and xfade |
 | [`121`](121_caption_lead_in_time_offset_synchronization.md) | 2026-10-02 | Caption Acoustic Lead-In Offset Synchronization | Added timeOffset (120ms default lead-in) to CaptionSettings and Canvas renderer for frame-perfect audio-visual speech sync |
+| [`122`](122_whisper_and_caption_synchronization_analysis.md) | 2026-10-02 | Whisper Model Architecture & Caption Timing Analysis | Documented comprehensive guide on Whisper models, macro/micro desync root causes, and acoustic lead-in timing |
 
