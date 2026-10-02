@@ -1,41 +1,33 @@
-import { GeneratedSound } from '../../core/interfaces';
-import { BaseFFmpegGenerator } from '../base';
+import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
+import { FFmpegManager } from '@acc/core';
+import path from 'path';
+import fs from 'fs';
 
-export class Fallback extends BaseFFmpegGenerator {
-  async generate(
-    effect: string,
-    variant: string,
-    subVariant: string,
-    duration: number,
-    outDir: string
-  ): Promise<GeneratedSound> {
-    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
-    const dur = Math.max(duration, 0.1);
+export class Fallback implements ISoundGenerator {
+  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
+    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
+    const audioPath = path.join(outDir, `${fileName}.wav`);
+    const jsonPath = path.join(outDir, `${fileName}.json`);
 
-    const inputArgs = ['-f', 'lavfi', '-i', `sine=f=440:d=${dur}`];
-    const filterComplex = `${this.buildADSRFilter(dur, 0.01, dur * 0.5)}[out]`;
+    const filters = ['anull']; // Default fallback filter
 
-    const args = [
-      '-y',
-      ...inputArgs,
-      '-filter_complex', filterComplex,
-      '-map', '[out]',
-      '-ar', '44100',
-      '-ac', '2',
-      audioPath
-    ];
+    console.log(`[Fallback] Synthesizing ${variant} -> ${subVariant}`);
 
-    await this.executeFFmpeg(args);
+    // Use FFmpeg lavfi to generate a real synthetic sine wave fallback
+    const filterStr = filters.join(',');
+    const cmd = `ffmpeg -y -f lavfi -i "sine=f=440:d=${duration}" -af "${filterStr}" "${audioPath}"`;
 
-    this.writeMetadata(jsonPath, {
-      effect,
-      variant,
-      subVariant,
-      category: 'generic',
-      duration: dur,
-      engine: 'ffmpeg_procedural_fallback',
-      qualityGrade: 'studio_dsp'
-    });
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    await execAsync(cmd);
+
+    const metadata = {
+      effect, variant, subVariant, category: 'generic', duration,
+      ffmpegFilters: filters,
+      generatedAt: new Date().toISOString()
+    };
+    fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
 
     return { audioPath, jsonPath };
   }

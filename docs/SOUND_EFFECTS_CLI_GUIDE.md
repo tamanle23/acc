@@ -69,13 +69,3 @@ Khi render Composite:
 bun run sound-effects-cli.ts --composite stormy_night
 ```
 Hệ thống sẽ **tự động ép giảm âm lượng của các lớp Background xuống** mỗi khi lớp Foreground phát ra tiếng, giúp bản Mix của bạn cực kỳ trong trẻo, không bị "đục" hay tranh chấp tần số. Kỹ thuật này cũng được áp dụng tự động cho Nhạc nền (BGM) trên Main Video của bạn!
-
----
-
-## 🏛️ 6. Kiến trúc Design Patterns & Vòng lặp Kiểm định Chất lượng (Quality Loop)
-
-Hệ thống Sound Effects Engine V2.0 được tái cấu trúc hoàn toàn với các Design Patterns chuẩn Studio:
-* **Strategy Pattern & SmartRouter:** Bộ định tuyến chuyển hướng tự động qua `ISmartRouter` và các quy tắc `CategoryMatchRule`.
-* **Template Method Pattern (`BaseSoundGenerator` / `BaseFFmpegGenerator`):** Chuẩn hóa quy trình tạo file, xuất Metadata JSON, và bao đóng các công thức tổng hợp DSP (ADSR Envelopes, Resonant Filters, Harmonic Modulation, Chorus/Echo).
-* **Composite Pattern & Sidechain Compression:** Hỗ trợ trộn đa lớp với Sidechain Auto-Ducking chuẩn EBU R128 (-16 LUFS).
-* **Automated Quality Verification Loop:** Vòng lặp kiểm định tự động (`sound_effects_quality_loop.test.ts`) kiểm tra âm lượng RMS, độ dài thời gian, tần số phản hồi và độ chuẩn hóa của mọi hiệu ứng âm thanh.

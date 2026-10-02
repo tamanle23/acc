@@ -1,6 +1,5 @@
 import { parseArgs } from 'util';
-import { RegistryManager, FFmpegManager, intro, outro, spinner, note, isCancel, cancel } from '@acc/core';
-import * as p from '@clack/prompts';
+import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '@acc/core';
 import path from 'path';
 import fs from 'fs';
 import { renderEffectLayer } from '@acc/effect-engines';
@@ -55,19 +54,18 @@ export async function generateHeadless(values: any) {
 }
 
 export async function startWizard() {
-  intro('🎥 Overlay Effects Interactive Console');
+  console.log('\n============================================');
+  console.log('🎥 Overlay Effects Interactive Console');
+  console.log('============================================');
 
-  const mode = await p.select({
-    message: 'Select operation mode:',
-    options: [
-      { label: 'Generate Single Dynamic Effect', value: 'single' },
-      { label: 'Generate Combinatorial Composite', value: 'composite' },
-      { label: 'Exit', value: 'exit' },
-    ],
-  });
+  const mode = await askChoice('Select operation mode:', [
+    'Generate Single Dynamic Effect',
+    'Generate Combinatorial Composite',
+    'Exit'
+  ]);
 
-  if (isCancel(mode) || mode === 'exit') {
-    cancel('Operation cancelled.');
+  if (mode === 'Exit') {
+    closeInteractiveConsole();
     process.exit(0);
   }
 
@@ -78,83 +76,44 @@ export async function startWizard() {
   }
 
   try {
-    if (mode === 'composite') {
+    if (mode === 'Generate Combinatorial Composite') {
       const composites = registry.getAvailableComposites();
       if (composites.length === 0) {
-        outro('No composites defined in registry.');
+        console.log('No composites defined in registry.');
+        closeInteractiveConsole();
         return;
       }
 
-      const composite = await p.select({
-        message: 'Select Composite Preset:',
-        options: composites.map((c: string) => ({ label: c, value: c })),
-      });
+      const composite = await askChoice('Select Composite Preset:', composites);
+      const compositeConfig = registry.getCompositeConfig(composite);
 
-      if (isCancel(composite)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-
-      const compositeConfig = registry.getCompositeConfig(composite as string);
-
-      const s = spinner();
-      s.start(`Rendering composite '${composite}' (${compositeConfig.layers.length} layers)...`);
+      console.log(`\nRendering composite '${composite}' (${compositeConfig.layers.length} layers)...`);
       const renderPromises = compositeConfig.layers.map((layer: any) => {
         return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir);
       });
 
       const outputs = await Promise.all(renderPromises);
-      s.stop(`Composite '${composite}' generated successfully!`);
+      console.log(`\n✅ Composite '${composite}' generated successfully!`);
+      outputs.forEach((o: any) => console.log(` - Video:    ${o}`));
 
-      note(outputs.map((o: any) => `Video: ${o}`).join('\n'), 'Rendered Files');
-      outro('Done!');
-
-    } else if (mode === 'single') {
+    } else if (mode === 'Generate Single Dynamic Effect') {
       const effects = registry.getAvailableEffects();
-      const effect = await p.select({
-        message: 'Select Effect Type:',
-        options: effects.map((e: string) => ({ label: e, value: e })),
-      });
+      const effect = await askChoice('Select Effect Type:', effects);
 
-      if (isCancel(effect)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
+      const variants = registry.getAvailableVariants(effect);
+      const variant = await askChoice('Select Variant:', variants);
 
-      const variants = registry.getAvailableVariants(effect as string);
-      const variant = await p.select({
-        message: 'Select Variant:',
-        options: variants.map((v: string) => ({ label: v, value: v })),
-      });
-
-      if (isCancel(variant)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-
-      const durStr = await p.text({
-        message: 'Duration in seconds (default: 3.0):',
-        placeholder: '3.0',
-        defaultValue: '3.0',
-      });
-
-      if (isCancel(durStr)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-
+      const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
       const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
 
-      const s = spinner();
-      s.start(`Rendering '${effect}' (variant: ${variant})...`);
-      const output = await renderEffectLayer(registry, effect as string, variant as string, duration, outDir);
-      s.stop('Effect generated successfully!');
-
-      note(`Video: ${output}`, 'Generated File');
-      outro('Done!');
+      console.log(`\nRendering '${effect}' (variant: ${variant})...`);
+      const output = await renderEffectLayer(registry, effect, variant, duration, outDir);
+      console.log(`\n✅ Effect generated successfully!\nVideo:    ${output}`);
     }
   } catch (err: any) {
-    outro(`❌ Error: ${err.message}`);
+    console.error(`\n❌ Error: ${err.message}`);
+  } finally {
+    closeInteractiveConsole();
   }
 }
 

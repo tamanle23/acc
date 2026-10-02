@@ -571,6 +571,22 @@
             "volumetric_sandwich",
             "depth_map_3d",
             "wigglegram",
+            "isometric_podium",
+            "cutout_portal",
+            "gyro_focal_tilt",
+            "flythrough_carousel",
+            "diffuse_shadow",
+            "glassmorphic_fresnel",
+            "silhouette_rim_light",
+            "plane_cast_shadow",
+            "macro_bokeh",
+            "aerial_mist",
+            "rack_focus",
+            "vignette_tunnel",
+            "perspective_grid",
+            "extruded_text_3d",
+            "isometric_billboard",
+            "tunneling_text",
             "parallax_dolly",
             "sandwich",
             "mesh_displacement"
@@ -682,35 +698,11 @@
               "default": true
             },
             "bannerText": {
-              "type": "string",
-              "description": "Văn bản tiêu đề 3D lớn hiển thị chèn giữa lớp nền và chủ thể"
+              "type": "string"
             },
             "textColor": {
               "type": "string",
-              "default": "rgba(255,255,255,0.85)",
-              "description": "Màu chữ hoặc mã màu Hex/RGBA"
-            },
-            "position": {
-              "type": "string",
-              "enum": ["top", "center", "bottom"],
-              "description": "Vị trí đặt văn bản theo chiều dọc ('top' ~ 22%, 'center' ~ 48%, 'bottom' ~ 72%, mặc định 38%)"
-            },
-            "positionY": {
-              "type": "number",
-              "description": "Tọa độ dọc tùy chỉnh (tỉ lệ 0.0 - 1.0 so với chiều cao khung hình hoặc số pixel tuyệt đối)"
-            },
-            "positionX": {
-              "type": "number",
-              "description": "Tọa độ ngang tùy chỉnh (tỉ lệ 0.0 - 1.0 so với chiều rộng khung hình hoặc số pixel tuyệt đối, mặc định 0.5 - chính giữa)"
-            },
-            "fontSize": {
-              "type": "number",
-              "description": "Kích thước font chữ (tỉ lệ 0.0 - 1.0 so với chiều rộng hoặc số pixel tuyệt đối)"
-            },
-            "floatMotion": {
-              "type": "boolean",
-              "default": true,
-              "description": "Bật hiệu ứng nổi bồng bềnh chuyển động dọc cho chữ"
+              "default": "rgba(255,255,255,0.85)"
             }
           }
         },

@@ -58,56 +58,23 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
 
   if (activeText) {
     ctx.save();
-    
-    // 1. Compute Font Size
-    let fontSize = Math.round(width * 0.065);
-    if (typeof sandwichSettings.fontSize === 'number' && sandwichSettings.fontSize > 0) {
-      fontSize = sandwichSettings.fontSize <= 1.0
-        ? Math.round(width * sandwichSettings.fontSize)
-        : Math.round(sandwichSettings.fontSize);
-    }
+    const fontSize = Math.round(width * 0.065);
     ctx.font = `900 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // 2. Compute Position Y
-    let baseY = height * 0.38;
-    if (sandwichSettings.position === 'top') {
-      baseY = height * 0.22;
-    } else if (sandwichSettings.position === 'center' || (sandwichSettings.position as string) === 'middle') {
-      baseY = height * 0.48;
-    } else if (sandwichSettings.position === 'bottom') {
-      baseY = height * 0.72;
-    }
-    if (typeof sandwichSettings.positionY === 'number') {
-      baseY = sandwichSettings.positionY <= 1.0 ? height * sandwichSettings.positionY : sandwichSettings.positionY;
-    }
-
-    // 3. Compute Position X
-    let baseX = width / 2;
-    if (typeof sandwichSettings.positionX === 'number') {
-      baseX = sandwichSettings.positionX <= 1.0 ? width * sandwichSettings.positionX : sandwichSettings.positionX;
-    }
-
-    // 4. Float Motion
-    const floatOffset = sandwichSettings.floatMotion !== false ? Math.sin(timeSec * Math.PI * 0.5) * 8 : 0;
-    const textY = baseY + floatOffset;
-    const textX = baseX;
+    const textY = height * 0.38 + Math.sin(timeSec * Math.PI * 0.5) * 8;
+    const textX = width / 2;
 
     // 3D Extrusion / Drop Shadow for text
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillText(activeText.toUpperCase(), textX + 4, textY + 6);
 
-    // Text Fill Color or Gradient
-    if (sandwichSettings.textColor) {
-      ctx.fillStyle = sandwichSettings.textColor;
-    } else {
-      const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
-      textGrad.addColorStop(0, '#FFFFFF');
-      textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
-      ctx.fillStyle = textGrad;
-    }
+    const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
+    textGrad.addColorStop(0, '#FFFFFF');
+    textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
 
+    ctx.fillStyle = textGrad;
     ctx.fillText(activeText.toUpperCase(), textX, textY);
     ctx.restore();
   }

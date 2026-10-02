@@ -318,11 +318,7 @@
           "ambientDust": true,
           "vignette": true,
           "bannerText": "JURASSIC REALM",
-          "textColor": "rgba(255, 230, 120, 0.95)",
-          "position": "top",
-          "positionY": 0.28,
-          "fontSize": 0.075,
-          "floatMotion": true
+          "textColor": "rgba(255, 230, 120, 0.95)"
         }
       },
       "captions": [

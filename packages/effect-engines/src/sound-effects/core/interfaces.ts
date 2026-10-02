@@ -37,20 +37,3 @@ export interface SoundCompositeConfig {
   category: string;
   layers: SoundCompositeLayer[];
 }
-
-export interface ISmartRouterRule {
-  name: string;
-  matches(effect: string): boolean;
-  getGenerator(effect: string): ISoundGenerator;
-}
-
-export interface ISmartRouter {
-  route(effect: string): ISoundGenerator;
-  registerRule(rule: ISmartRouterRule): void;
-}
-
-export interface SoundPresetCatalog {
-  [effect: string]: {
-    [variant: string]: string[]; // array of subVariants
-  };
-}

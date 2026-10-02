@@ -1,55 +1,23 @@
-import { GeneratedSound } from '../../core/interfaces';
-import { BaseSoundGenerator } from '../base';
-import { Fallback as FFmpegFallback } from '../ffmpeg/Fallback';
+import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { PythonBackend } from '@acc/core';
+import path from 'path';
 
-export class Fallback extends BaseSoundGenerator {
-  private dspFallback: FFmpegFallback;
+export class Fallback implements ISoundGenerator {
+  constructor(private aiModel: string) { }
 
-  constructor(private aiModel: string) {
-    super();
-    this.dspFallback = new FFmpegFallback();
-  }
+  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
+    const fileName = `${effect}_${variant}_${subVariant}_${duration}s_${this.aiModel}`;
+    const audioPath = path.join(outDir, `${fileName}.wav`);
+    const jsonPath = path.join(outDir, `${fileName}.json`);
 
-  async generate(
-    effect: string,
-    variant: string,
-    subVariant: string,
-    duration: number,
-    outDir: string,
-    customPrompt?: string
-  ): Promise<GeneratedSound> {
-    if (process.env.NODE_ENV === 'test' || !process.env.ENABLE_PYTHON_AI) {
-      return this.dspFallback.generate(effect, variant, subVariant, duration, outDir);
-    }
+    let prompt = customPrompt || `Sound effect of ${effect} ${variant} ${subVariant}`;
 
-    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir, this.aiModel);
-    const prompt = customPrompt || `Sound effect of ${effect} ${variant} ${subVariant}`;
+    const engine = PythonBackend.getInstance();
+    await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', { prompt, model: this.aiModel, duration, output_path: audioPath });
 
-    try {
-      const engine = PythonBackend.getInstance();
-      await engine.dispatchTask<{ file_path: string }>('audio', 'generate_sfx', {
-        prompt,
-        model: this.aiModel,
-        duration,
-        output_path: audioPath
-      });
+    const metadata = { effect, variant, subVariant, category: 'fallback', duration, engine: 'ai', model: this.aiModel, aiPrompt: prompt };
+    require('fs').writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
 
-      this.writeMetadata(jsonPath, {
-        effect,
-        variant,
-        subVariant,
-        category: 'fallback',
-        duration,
-        engine: 'ai',
-        model: this.aiModel,
-        aiPrompt: prompt
-      });
-
-      return { audioPath, jsonPath };
-    } catch (err: any) {
-      console.warn(`[AIEngine] AI sound synthesis unavailable (${err.message}). Using DSP Fallback...`);
-      return this.dspFallback.generate(effect, variant, subVariant, duration, outDir);
-    }
+    return { audioPath, jsonPath };
   }
 }
