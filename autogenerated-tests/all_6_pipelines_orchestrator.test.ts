@@ -200,10 +200,11 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
       const sampleStoryDir = path.resolve(process.cwd(), 'sample-story');
       const outDir = path.join(testOutDir, 'story_run');
 
-      const result = await pipeline.execute(sampleStoryDir, { outDir, dryRun: true });
+      const ctx = await pipeline.execute(sampleStoryDir, { outDir, dryRun: true });
 
-      expect(typeof result).toBe('string');
-      expect(result.length).toBeGreaterThan(0);
+      expect(ctx.pipelineId).toBe('story');
+      expect(ctx.outputFilePath).toBeDefined();
+      expect(ctx.resolvedConfig).toBeDefined();
     });
 
     it('Pipeline 5 (Rule & Math Logic): validates proof equations and renders chalkboard slide', async () => {

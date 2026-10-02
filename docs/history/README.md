@@ -135,5 +135,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`121`](121_caption_lead_in_time_offset_synchronization.md) | 2026-10-02 | Caption Acoustic Lead-In Offset Synchronization | Added timeOffset (120ms default lead-in) to CaptionSettings and Canvas renderer for frame-perfect audio-visual speech sync |
 | [`122`](122_whisper_and_caption_synchronization_analysis.md) | 2026-10-02 | Whisper Model Architecture & Caption Timing Analysis | Documented comprehensive guide on Whisper models, macro/micro desync root causes, and acoustic lead-in timing |
 | [`123`](123_unify_all_6_pipelines_under_orchestrator.md) | 2026-10-02 | Unify All 6 Pipelines Under Orchestrator & Middleware Architecture | Established UnifiedPipelineContext, IPipeline, and PipelineRegistry; decomposed all 6 pipelines into discrete middleware stages with 100% test coverage |
+| [`124`](124_update_cli_main_handler_orchestrator_delegation.md) | 2026-10-02 | Phase 3 Step 3.2: Update CLI Main Handler for Orchestrator Delegation | Refactored CLI run command to delegate all pipeline execution dynamically via defaultPipelineRegistry |
+
 
 

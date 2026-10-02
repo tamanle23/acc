@@ -134,6 +134,117 @@ export function listPipelines(): void {
 `);
 }
 
+export function resolvePipelineInput(pipelineId: string, options: CliOptions): any {
+  const normId = pipelineId.toLowerCase();
+
+  if (normId === '1' || normId === 'scraper' || normId === 'scraper-summarizer') {
+    let event: any = {
+      eventId: `evt_${Date.now()}`,
+      sourceUrl: 'https://news.ycombinator.com',
+      rawText: 'OpenAI and DeepMind announce next-generation agent architectures with sub-second latency.',
+      receivedAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+    };
+    if (options.configPath && fs.existsSync(options.configPath)) {
+      event = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    }
+    return event;
+  }
+
+  if (normId === '2' || normId === 'db' || normId === 'db-templating' || normId === 'database') {
+    let dataset: any = {
+      title: 'Programming Language Adoption 2026',
+      category: 'Technology',
+      highlightMetric: 'popularity',
+      entities: [
+        { id: '1', name: 'TypeScript', category: 'Frontend', metrics: { popularity: 92 }, highlightMetric: 'popularity' },
+        { id: '2', name: 'Python', category: 'AI/Backend', metrics: { popularity: 89 }, highlightMetric: 'popularity' },
+        { id: '3', name: 'Rust', category: 'Systems', metrics: { popularity: 74 }, highlightMetric: 'popularity' },
+        { id: '4', name: 'Go', category: 'Cloud', metrics: { popularity: 68 }, highlightMetric: 'popularity' },
+      ],
+    };
+    if (options.configPath && fs.existsSync(options.configPath)) {
+      dataset = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    }
+    return dataset;
+  }
+
+  if (normId === '3' || normId === 'repurpose' || normId === 'repurposing' || normId === 'recycler') {
+    let repurposeOpts: any = {
+      title: 'Repurposed Video Highlight',
+      rawTranscript: 'Stop doing repetitive work manually. Automate everything with ACC engines.',
+      captions: [
+        { text: 'Stop doing repetitive work manually.', startTimeMs: 0, endTimeMs: 1500 },
+        { text: 'Automate everything with ACC engines.', startTimeMs: 1500, endTimeMs: 3000 },
+      ],
+      activeSpeakerPosition: { x: 0.5, y: 0.35 },
+    };
+    if (options.configPath && fs.existsSync(options.configPath)) {
+      repurposeOpts = { ...repurposeOpts, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
+    }
+    return repurposeOpts;
+  }
+
+  if (normId === '4' || normId === 'story' || normId === 'generative-storytelling' || normId === 'storyteller') {
+    return options.configPath || './sample-story';
+  }
+
+  if (normId === '5' || normId === 'rule' || normId === 'math' || normId === 'logic' || normId === 'rule-logic') {
+    let proof: any = {
+      problemTitle: 'Pythagorean Theorem Proof',
+      category: 'Geometry',
+      problemStatement: 'Prove that a^2 + b^2 = c^2 for any right triangle.',
+      steps: [
+        { stepNumber: 1, explanation: 'Construct square on hypotenuse c', latexFormula: 'Area = c^2' },
+        { stepNumber: 2, explanation: 'Expand outer square (a + b)^2', latexFormula: 'a^2 + 2ab + b^2' },
+        { stepNumber: 3, explanation: 'Subtract 4 right triangles (2ab)', latexFormula: 'a^2 + b^2 = c^2', evaluatedResult: 'c^2' },
+      ],
+      finalAnswer: 'a^2 + b^2 = c^2 (Q.E.D.)',
+    };
+    if (options.configPath && fs.existsSync(options.configPath)) {
+      proof = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    }
+    return proof;
+  }
+
+  if (normId === '6' || normId === 'ambient' || normId === 'ambient-stream' || normId === 'loop') {
+    let config: any = {
+      title: 'Deep Space Procedural Loop',
+      theme: 'deep_space' as const,
+      loopDurationSeconds: options.duration || 5,
+      particleCount: 150,
+    };
+    if (options.configPath && fs.existsSync(options.configPath)) {
+      config = { ...config, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
+    }
+    return config;
+  }
+
+  if (options.configPath && fs.existsSync(options.configPath)) {
+    try {
+      return JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    } catch {
+      return options.configPath;
+    }
+  }
+  return {};
+}
+
+function extractOutputPaths(results: any): string[] {
+  const paths: string[] = [];
+  if (!results) return paths;
+  for (const exp of [results.video, results.audio, results.social, results.staticWeb]) {
+    if (exp?.outputPath) {
+      if (Array.isArray(exp.outputPath)) {
+        paths.push(...exp.outputPath);
+      } else {
+        paths.push(exp.outputPath);
+      }
+    }
+  }
+  return paths;
+}
+
 export async function runCli(argv = process.argv.slice(2)): Promise<any> {
   const options = parseCliArgs(argv);
   intro('ACC - Automated Content Creator');
@@ -189,130 +300,32 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
 
     case 'run': {
       const pipelineId = (options.pipelineId || 'story').toLowerCase();
-      console.log(`[ACC-CLI] Executing Pipeline [${pipelineId}]...`);
+      console.log(`[ACC-CLI] Executing Pipeline [${pipelineId}] via Orchestrator...`);
 
-      function extractOutputPaths(results: any): string[] {
-        const paths: string[] = [];
-        if (!results) return paths;
-        for (const exp of [results.video, results.audio, results.social, results.staticWeb]) {
-          if (exp?.outputPath) {
-            if (Array.isArray(exp.outputPath)) {
-              paths.push(...exp.outputPath);
-            } else {
-              paths.push(exp.outputPath);
-            }
-          }
-        }
-        return paths;
+      if (!defaultPipelineRegistry.has(pipelineId)) {
+        throw new Error(`Unknown pipeline identifier: '${pipelineId}'. Run 'acc list' for available pipelines.`);
       }
 
-      if (pipelineId === '1' || pipelineId === 'scraper') {
-        const pipeline = new ScraperPipeline();
-        let event = {
-          eventId: `evt_${Date.now()}`,
-          sourceUrl: 'https://news.ycombinator.com',
-          rawText: 'OpenAI and DeepMind announce next-generation agent architectures with sub-second latency.',
-          timestamp: new Date().toISOString(),
-        };
-        if (options.configPath && fs.existsSync(options.configPath)) {
-          event = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
-        }
-        const res = await pipeline.run(event, options.outDir);
-        const outputPaths = extractOutputPaths(res.exportResults);
-        console.log(`[ACC-CLI] Pipeline [scraper] completed. Output:`, outputPaths);
-        return { ...res, outputPaths };
+      const input = resolvePipelineInput(pipelineId, options);
+      const executionResult = await defaultPipelineRegistry.execute(pipelineId, input, {
+        outDir: options.outDir,
+        format: options.format,
+        duration: options.duration,
+        exporters: options.exporters,
+      });
+
+      const outputPaths = executionResult.exportResults ? extractOutputPaths(executionResult.exportResults) : [];
+      if ((executionResult as any).outputFilePath && !outputPaths.includes((executionResult as any).outputFilePath)) {
+        outputPaths.push((executionResult as any).outputFilePath);
       }
 
-      if (pipelineId === '2' || pipelineId === 'db') {
-        const pipeline = new DBTemplatingPipeline();
-        let dataset: any = {
-          title: 'Programming Language Adoption 2026',
-          category: 'Technology',
-          highlightMetric: 'popularity',
-          entities: [
-            { id: '1', name: 'TypeScript', category: 'Frontend', metrics: { popularity: 92 }, highlightMetric: 'popularity' },
-            { id: '2', name: 'Python', category: 'AI/Backend', metrics: { popularity: 89 }, highlightMetric: 'popularity' },
-            { id: '3', name: 'Rust', category: 'Systems', metrics: { popularity: 74 }, highlightMetric: 'popularity' },
-            { id: '4', name: 'Go', category: 'Cloud', metrics: { popularity: 68 }, highlightMetric: 'popularity' },
-          ],
-        };
-        if (options.configPath && fs.existsSync(options.configPath)) {
-          dataset = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
-        }
-        const res = await pipeline.run(dataset, options.outDir);
-        const outputPaths = extractOutputPaths(res.exportResults);
-        console.log(`[ACC-CLI] Pipeline [db] completed. Output:`, outputPaths);
-        return { ...res, outputPaths };
-      }
-
-      if (pipelineId === '3' || pipelineId === 'repurpose') {
-        const pipeline = new RepurposingPipeline();
-        let repurposeOpts = {
-          rawVideoPath: 'sample.mp4',
-          audioPath: 'sample.mp3',
-          captions: [
-            { text: 'Stop doing repetitive work manually.', startTimeMs: 0, endTimeMs: 1500 },
-            { text: 'Automate everything with ACC engines.', startTimeMs: 1500, endTimeMs: 3000 },
-          ],
-          outputDir: options.outDir,
-        };
-        if (options.configPath && fs.existsSync(options.configPath)) {
-          repurposeOpts = { ...repurposeOpts, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
-        }
-        const res = await pipeline.run(repurposeOpts);
-        const outputPaths = extractOutputPaths(res.exportResults);
-        console.log(`[ACC-CLI] Pipeline [repurpose] completed. Output:`, outputPaths);
-        return { ...res, outputPaths };
-      }
-
-      if (pipelineId === '4' || pipelineId === 'story') {
-        const storyDir = options.configPath || './sample-story';
-        console.log(`[ACC-CLI] Launching Generative Storytelling Pipeline for: ${storyDir}`);
-        const result = await defaultStoryPipeline.execute(storyDir);
-        console.log(`[ACC-CLI] Render complete: ${result}`);
-        return { success: true, outputPath: result, outputPaths: [result] };
-      }
-
-      if (pipelineId === '5' || pipelineId === 'rule' || pipelineId === 'math') {
-        const pipeline = new RuleLogicPipeline();
-        let proof: any = {
-          problemTitle: 'Pythagorean Theorem Proof',
-          category: 'Geometry',
-          problemStatement: 'Prove that a^2 + b^2 = c^2 for any right triangle.',
-          steps: [
-            { stepNumber: 1, ruleApplied: 'Geometric Area', statement: 'Construct square on hypotenuse c', result: 'Area = c^2' },
-            { stepNumber: 2, ruleApplied: 'Algebraic Expansion', statement: 'Expand outer square (a + b)^2', result: 'a^2 + 2ab + b^2' },
-            { stepNumber: 3, ruleApplied: 'Subtraction', statement: 'Subtract 4 right triangles (2ab)', result: 'a^2 + b^2 = c^2' },
-          ],
-          finalAnswer: 'a^2 + b^2 = c^2 (Q.E.D.)',
-        };
-        if (options.configPath && fs.existsSync(options.configPath)) {
-          proof = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
-        }
-        const res = await pipeline.run(proof, options.outDir);
-        const outputPaths = extractOutputPaths(res.exportResults);
-        console.log(`[ACC-CLI] Pipeline [rule/math] completed. Output:`, outputPaths);
-        return { ...res, outputPaths };
-      }
-
-      if (pipelineId === '6' || pipelineId === 'ambient') {
-        const pipeline = new AmbientStreamPipeline();
-        let config = {
-          title: 'Deep Space Procedural Loop',
-          theme: 'deep_space' as const,
-          loopDurationSeconds: options.duration || 5,
-          particleCount: 150,
-        };
-        if (options.configPath && fs.existsSync(options.configPath)) {
-          config = { ...config, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
-        }
-        const res = await pipeline.run(config, options.outDir);
-        const outputPaths = extractOutputPaths(res.exportResults);
-        console.log(`[ACC-CLI] Pipeline [ambient] completed. Output:`, outputPaths);
-        return { ...res, outputPaths };
-      }
-
-      throw new Error(`Unknown pipeline identifier: '${pipelineId}'. Run 'acc list' for available pipelines.`);
+      console.log(`[ACC-CLI] Pipeline [${pipelineId}] completed. Output:`, outputPaths);
+      return {
+        ...executionResult,
+        success: true,
+        outputPath: outputPaths[0],
+        outputPaths,
+      };
     }
 
     default:
@@ -328,3 +341,4 @@ if (import.meta.main) {
     process.exit(1);
   });
 }
+

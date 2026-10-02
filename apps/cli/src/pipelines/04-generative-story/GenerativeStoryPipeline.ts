@@ -243,7 +243,7 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
   public async execute(
     storyDirOrConfig: string | StoryConfig,
     options: StoryPipelineOptions = {}
-  ): Promise<any> {
+  ): Promise<GenerativeStoryContext> {
     const baseDir = typeof storyDirOrConfig === 'string' ? path.resolve(storyDirOrConfig) : process.cwd();
     const outDir = options.outDir ? path.resolve(options.outDir) : path.join(baseDir, 'output');
 
@@ -257,7 +257,9 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
 
     const runner = this.buildRunner();
     const executedCtx = (await runner.run(ctx)) as GenerativeStoryContext;
-    return executedCtx.outputFilePath || outDir;
+    (executedCtx as any).outputPath = executedCtx.outputFilePath || outDir;
+    (executedCtx as any).toString = () => executedCtx.outputFilePath || outDir;
+    return executedCtx;
   }
 }
 
