@@ -298,9 +298,15 @@ export class FFIVideoEncoder {
     private encodeAudio(audioPath: string) {
         if (!this.aCodecCtx || !this.audioStream) return;
 
+        // Max audio duration clamped to video length to prevent stream length mismatch
+        const maxAudioSamples = BigInt(Math.ceil((this.frameIndex / this.fps) * 48000));
+
         const inFmtPtr = new BigUint64Array(1);
         const retAIn = FFI.avformat.avformat_open_input(ptr(inFmtPtr.buffer), Buffer.from(audioPath + "\0"), 0n, 0n);
-        if (retAIn !== 0) return;
+        if (retAIn !== 0) {
+            this.generateSilenceAudio(maxAudioSamples);
+            return;
+        }
 
         const inAudioCtx = inFmtPtr[0];
         FFI.avformat.avformat_find_stream_info(inAudioCtx, 0n);
@@ -326,6 +332,7 @@ export class FFIVideoEncoder {
         if (inAudioStreamIdx < 0 || !inAudioCodecpar) {
             const pInA = new BigUint64Array([inAudioCtx]);
             FFI.avformat.avformat_close_input(ptr(pInA.buffer));
+            this.generateSilenceAudio(maxAudioSamples);
             return;
         }
 
@@ -339,6 +346,7 @@ export class FFIVideoEncoder {
         if (!inDecoder) {
             const pInA = new BigUint64Array([inAudioCtx]);
             FFI.avformat.avformat_close_input(ptr(pInA.buffer));
+            this.generateSilenceAudio(maxAudioSamples);
             return;
         }
 
@@ -349,6 +357,7 @@ export class FFIVideoEncoder {
             FFI.avcodec.avcodec_free_context(ptr(pDec.buffer));
             const pInA = new BigUint64Array([inAudioCtx]);
             FFI.avformat.avformat_close_input(ptr(pInA.buffer));
+            this.generateSilenceAudio(maxAudioSamples);
             return;
         }
 
@@ -369,9 +378,6 @@ export class FFIVideoEncoder {
         const inFrame = BigInt(FFI.avutil.av_frame_alloc());
         const aPkt = BigInt(FFI.avcodec.av_packet_alloc?.() || FFI.avcodec.avpacket_alloc());
         const readPkt = BigInt(FFI.avcodec.av_packet_alloc?.() || FFI.avcodec.avpacket_alloc());
-
-        // Max audio duration clamped to video length to prevent stream length mismatch
-        const maxAudioSamples = BigInt(Math.ceil((this.frameIndex / this.fps) * 48000));
 
         let fifoL: number[] = [];
         let fifoR: number[] = [];
@@ -491,6 +497,17 @@ export class FFIVideoEncoder {
         }
         pushSamplesToEncoder(true);
 
+        // Pad with silence to match exact video frame count duration
+        while (totalAudioSamplesSent < maxAudioSamples) {
+            const needed = Number(maxAudioSamples - totalAudioSamplesSent);
+            const chunk = Math.min(1024, needed);
+            for (let i = 0; i < chunk; i++) {
+                fifoL.push(0);
+                fifoR.push(0);
+            }
+            pushSamplesToEncoder(true);
+        }
+
         // Flush AAC encoder
         FFI.avcodec.avcodec_send_frame(this.aCodecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
@@ -516,6 +533,52 @@ export class FFIVideoEncoder {
         FFI.avcodec.av_packet_free(ptr(pAP.buffer));
         const pRP = new BigUint64Array([readPkt]);
         FFI.avcodec.av_packet_free(ptr(pRP.buffer));
+    }
+
+    private generateSilenceAudio(maxAudioSamples: bigint) {
+        if (!this.aCodecCtx) return;
+
+        const aFrame = BigInt(FFI.avutil.av_frame_alloc());
+        const aFrameView = new DataView(safeArrayBuffer(aFrame, 0, 512));
+        aFrameView.setInt32(112, 1024, true);
+        aFrameView.setInt32(116, 8, true); // AV_SAMPLE_FMT_FLTP
+        aFrameView.setInt32(180, 48000, true);
+        FFI.avutil.av_channel_layout_default(aFrame + 384n, 2);
+        FFI.avutil.av_frame_get_buffer(aFrame, 0);
+
+        const dataPtrL = aFrameView.getBigUint64(0, true);
+        const dataPtrR = aFrameView.getBigUint64(8, true);
+        new Float32Array(safeArrayBuffer(dataPtrL, 0, 1024 * 4)).fill(0);
+        new Float32Array(safeArrayBuffer(dataPtrR, 0, 1024 * 4)).fill(0);
+
+        const aPkt = BigInt(FFI.avcodec.av_packet_alloc?.() || FFI.avcodec.avpacket_alloc());
+        let totalSent = 0n;
+        let frameCount = 0n;
+
+        while (totalSent < maxAudioSamples) {
+            aFrameView.setBigInt64(136, frameCount * 1024n, true);
+            frameCount++;
+            totalSent += 1024n;
+
+            FFI.avcodec.avcodec_send_frame(this.aCodecCtx, aFrame);
+            while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
+                Structs.AVPacket.setStreamIndex(aPkt, 1);
+                FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+                FFI.avcodec.av_packet_unref(aPkt);
+            }
+        }
+
+        FFI.avcodec.avcodec_send_frame(this.aCodecCtx, 0n);
+        while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
+            Structs.AVPacket.setStreamIndex(aPkt, 1);
+            FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+            FFI.avcodec.av_packet_unref(aPkt);
+        }
+
+        const pAF = new BigUint64Array([aFrame]);
+        FFI.avutil.av_frame_free(ptr(pAF.buffer));
+        const pAP = new BigUint64Array([aPkt]);
+        FFI.avcodec.av_packet_free(ptr(pAP.buffer));
     }
 
     public close() {

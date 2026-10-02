@@ -93,7 +93,7 @@ function concatenateWithTransitions(
       filterGraph.addNode({
         inputs: [`[${idx}:a]`],
         filter: 'aresample',
-        options: '44100:async=1',
+        options: '48000:async=1',
         outputs: [`[a_norm_${idx}]`],
       });
     }
@@ -266,7 +266,8 @@ export async function renderStoryVideo(
           // Determine transition padding
           let paddingTime = 0;
           const tConfig = scene.transition || config.settings.transition;
-          if (tConfig?.enabled && tConfig.audioBehavior === 'pad' && i < totalScenes - 1) {
+          const audioBehavior = tConfig?.audioBehavior ?? config.settings.transition?.audioBehavior ?? 'pad';
+          if (tConfig?.enabled && audioBehavior === 'pad' && i < totalScenes - 1) {
             paddingTime = tConfig.duration || 1.0;
           }
 
