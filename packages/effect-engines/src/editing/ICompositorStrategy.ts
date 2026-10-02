@@ -28,7 +28,7 @@ export interface ICompositorStrategy {
 }
 
 export class PiPCompositorStrategy implements ICompositorStrategy {
-  public readonly id = 'pip';
+  public readonly id: string = 'pip';
   private readonly pipScale: number;
   private readonly corner: 'bottom_right' | 'top_right' | 'bottom_left' | 'top_left';
 
@@ -104,7 +104,7 @@ export class PiPCompositorStrategy implements ICompositorStrategy {
 }
 
 export class SplitScreenCompositorStrategy implements ICompositorStrategy {
-  public readonly id = 'split_screen';
+  public readonly id: string = 'split_screen';
   private readonly orientation: 'vertical' | 'horizontal';
 
   constructor(orientation: 'vertical' | 'horizontal' = 'horizontal') {

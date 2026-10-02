@@ -2,7 +2,7 @@ import type { ICutStrategy, CutExecutionResult } from './ICutStrategy';
 import type { ExtendedContentChunk } from '@acc/ir';
 
 export class SmashCutStrategy implements ICutStrategy {
-  public readonly id = 'smash_cut';
+  public readonly id: string = 'smash_cut';
 
   public calculateCut(chunk: ExtendedContentChunk): CutExecutionResult {
     return {

@@ -12,7 +12,7 @@ import {
 } from './ICompositorStrategy';
 
 export class EditingOpFactory {
-  private static cutStrategies: Map<string, ICutStrategy> = new Map([
+  private static cutStrategies: Map<string, ICutStrategy> = new Map<string, ICutStrategy>([
     ['standard_cut', new StandardCutStrategy()],
     ['j_cut', new JCutLCutStrategy('j_cut')],
     ['l_cut', new JCutLCutStrategy('l_cut')],
@@ -20,7 +20,7 @@ export class EditingOpFactory {
     ['smash_cut', new SmashCutStrategy()],
   ]);
 
-  private static compositorStrategies: Map<string, ICompositorStrategy> = new Map([
+  private static compositorStrategies: Map<string, ICompositorStrategy> = new Map<string, ICompositorStrategy>([
     ['pip', new PiPCompositorStrategy()],
     ['split_screen', new SplitScreenCompositorStrategy('horizontal')],
     ['split_screen_vertical', new SplitScreenCompositorStrategy('vertical')],

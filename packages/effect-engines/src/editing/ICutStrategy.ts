@@ -20,7 +20,7 @@ export interface ICutStrategy {
 }
 
 export class StandardCutStrategy implements ICutStrategy {
-  public readonly id = 'standard_cut';
+  public readonly id: string = 'standard_cut';
 
   public calculateCut(chunk: ExtendedContentChunk): CutExecutionResult {
     const duration = chunk.durationMs;
@@ -34,7 +34,7 @@ export class StandardCutStrategy implements ICutStrategy {
 }
 
 export class JCutLCutStrategy implements ICutStrategy {
-  public readonly id = 'split_edit';
+  public readonly id: string = 'split_edit';
   private readonly offsetMs: number;
   private readonly mode: 'j_cut' | 'l_cut';
 
@@ -68,7 +68,7 @@ export class JCutLCutStrategy implements ICutStrategy {
 }
 
 export class MatchCutStrategy implements ICutStrategy {
-  public readonly id = 'match_cut';
+  public readonly id: string = 'match_cut';
 
   public calculateCut(chunk: ExtendedContentChunk): CutExecutionResult {
     const duration = chunk.durationMs;
