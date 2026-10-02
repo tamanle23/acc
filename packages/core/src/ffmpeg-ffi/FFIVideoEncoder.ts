@@ -614,22 +614,22 @@ export class FFIVideoEncoder {
             this.formatCtx = 0n;
         }
         if (this.codecCtx) {
-            const p = new BigUint64Array([this.codecCtx]);
+            const p = new BigUint64Array([BigInt(this.codecCtx as any)]);
             FFI.avcodec.avcodec_free_context(ptr(p.buffer));
             this.codecCtx = 0n;
         }
         if (this.aCodecCtx) {
-            const p = new BigUint64Array([this.aCodecCtx]);
+            const p = new BigUint64Array([BigInt(this.aCodecCtx as any)]);
             FFI.avcodec.avcodec_free_context(ptr(p.buffer));
             this.aCodecCtx = 0n;
         }
         if (this.frame) {
-            const p = new BigUint64Array([this.frame]);
+            const p = new BigUint64Array([BigInt(this.frame as any)]);
             FFI.avutil.av_frame_free(ptr(p.buffer));
             this.frame = 0n;
         }
         if (this.packet) {
-            const p = new BigUint64Array([this.packet]);
+            const p = new BigUint64Array([BigInt(this.packet as any)]);
             FFI.avcodec.av_packet_free(ptr(p.buffer));
             this.packet = 0n;
         }

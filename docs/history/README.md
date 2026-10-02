@@ -139,6 +139,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`125`](125_phase1_core_orchestrator_enhancements.md) | 2026-10-02 | Phase 1: Core Orchestrator Enhancements | Implemented PipelineRunner hooks, tap, AbortSignal cancellation, BoundedExecutionMiddleware, and DryRunValidatorMiddleware |
 | [`126`](126_phase2_pipeline_stages_refactoring.md) | 2026-10-02 | Phase 2: Pipeline Stage Decomposition & Modular Middleware Refactoring | Extracted discrete stage modules under stages/ across all 6 content pipelines with 100% test coverage |
 | [`127`](127_phase3_cli_dispatcher_and_dryrun.md) | 2026-10-02 | Phase 3: CLI Dispatcher & Unified Registry with Dry-Run Support | Added --dry-run CLI support, dynamic registry delegation, canonical ID alignment across all 6 pipelines |
+| [`128`](128_phase1_consolidate_editing_orchestrator.md) | 2026-10-02 | Phase 1: Consolidate Video Editing Operations into EditingPipelineOrchestrator | Centralized multi-scene rendering, 3D depth, transitions, overlays, and BGM into EditingPipelineOrchestrator; refactored StoryRenderer.ts |
 
 
 
