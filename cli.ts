@@ -11,7 +11,7 @@ async function main() {
   const rawArgs = process.argv.slice(2);
   const firstArg = rawArgs[0]?.toLowerCase();
   if (firstArg && ['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'help', '--help', '-h'].includes(firstArg)) {
-    const { runCli } = await import('./apps/cli/src/index');
+    const { runCli } = await import('@acc/cli');
     await runCli(rawArgs);
     if (firstArg !== 'serve') {
       process.exit(0);
@@ -19,7 +19,7 @@ async function main() {
     return;
   }
 
-  intro('ACC - Automated Content Creator');
+  intro('Lagacy Storytelling generator');
 
   let targetDir = rawArgs[0];
 

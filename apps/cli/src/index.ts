@@ -10,6 +10,7 @@ import {
   ScraperEngine,
   defaultStoryPipeline,
 } from './pipelines';
+import { intro } from '@acc/core';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help';
@@ -135,7 +136,7 @@ export function listPipelines(): void {
 
 export async function runCli(argv = process.argv.slice(2)): Promise<any> {
   const options = parseCliArgs(argv);
-
+  intro('ACC - Automated Content Creator');
   switch (options.command) {
     case 'help':
       printHelp();
@@ -190,20 +191,20 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
       const pipelineId = (options.pipelineId || 'story').toLowerCase();
       console.log(`[ACC-CLI] Executing Pipeline [${pipelineId}]...`);
 
-function extractOutputPaths(results: any): string[] {
-  const paths: string[] = [];
-  if (!results) return paths;
-  for (const exp of [results.video, results.audio, results.social, results.staticWeb]) {
-    if (exp?.outputPath) {
-      if (Array.isArray(exp.outputPath)) {
-        paths.push(...exp.outputPath);
-      } else {
-        paths.push(exp.outputPath);
+      function extractOutputPaths(results: any): string[] {
+        const paths: string[] = [];
+        if (!results) return paths;
+        for (const exp of [results.video, results.audio, results.social, results.staticWeb]) {
+          if (exp?.outputPath) {
+            if (Array.isArray(exp.outputPath)) {
+              paths.push(...exp.outputPath);
+            } else {
+              paths.push(exp.outputPath);
+            }
+          }
+        }
+        return paths;
       }
-    }
-  }
-  return paths;
-}
 
       if (pipelineId === '1' || pipelineId === 'scraper') {
         const pipeline = new ScraperPipeline();

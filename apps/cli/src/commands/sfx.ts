@@ -1,12 +1,13 @@
 import { parseArgs } from 'util';
-import { FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } from '@acc/core';
+import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } from '@acc/core';
 import { RegistryManager, renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 import path from 'path';
 import fs from 'fs';
+import * as prompt from '@clack/prompts';
 
 export async function generateHeadless(values: any) {
   if (!values.composite && !values['custom-prompt'] && (!values.effect || !values.variant || !values['sub-variant'])) {
-    console.error('Error: Either --composite, --custom-prompt, OR (--effect, --variant, and --sub-variant) is required.');
+    Logger.error('sfx', 'Error: Either --composite, --custom-prompt, OR (--effect, --variant, and --sub-variant) is required.');
     process.exit(1);
   }
 
@@ -22,34 +23,34 @@ export async function generateHeadless(values: any) {
   try {
     if (values.composite) {
       const compositeName = values.composite.toLowerCase();
-      console.log(`\n=== Sound Effects Composite Generator ===`);
-      console.log(`Composite:  ${compositeName}`);
-      
+      intro(`=== Sound Effects Composite Generator ===`);
+      Logger.info('sfx', `Composite:  ${compositeName}`);
+
       const outputs = await renderCompositeSound(registry, compositeName, outDir);
-      console.log(`\n✅ Composite '${compositeName}' successfully generated!`);
+      outro(`\n✅ Composite '${compositeName}' successfully generated!`);
       outputs.forEach(o => console.log(` - Audio:    ${o}`));
     } else if (values['custom-prompt']) {
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
       const customPrompt = values['custom-prompt'];
-      
-      console.log(`\n=== Sound Effect Generator (Custom Prompt) ===`);
-      console.log(`Prompt:     ${customPrompt}`);
-      
+
+      intro(`=== Sound Effect Generator (Custom Prompt) ===`);
+      Logger.info('sfx', `Prompt:     ${customPrompt}`);
+
       const output = await renderSoundEffect(registry, 'custom', 'custom', 'custom', duration, outDir, customPrompt);
-      console.log(`\n✅ Successfully completed audio synthesis!\nAudio:    ${output}`);
+      outro(`\n✅ Successfully completed audio synthesis!\nAudio:    ${output}`);
     } else if (values.effect) {
       const effectName = values.effect.toLowerCase();
       const variantName = values.variant!.toLowerCase();
       const subVariantName = values['sub-variant']!.toLowerCase();
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
 
-      console.log(`\n=== Sound Effect Generator ===`);
-      
+      intro(`=== Sound Effect Generator ===`);
+
       const output = await renderSoundEffect(registry, effectName, variantName, subVariantName, duration, outDir);
-      console.log(`\n✅ Successfully completed audio synthesis!\nAudio:    ${output}`);
+      outro(`\n✅ Successfully completed audio synthesis!\nAudio:    ${output}`);
     }
   } catch (err: any) {
-    console.error(`\n❌ Error: ${err.message}`);
+    outro(`❌ Error: ${err.message}`);
     process.exit(1);
   }
 }
@@ -108,7 +109,7 @@ export async function startWizard() {
 
     } else if (mode === 'predefined') {
       const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
-      const effect = await p.select({
+      const effect = await prompt.select({
         message: 'Select Effect Category:',
         options: effects.map((e: string) => ({ label: e, value: e })),
       });
@@ -119,7 +120,7 @@ export async function startWizard() {
       }
 
       const variants = (registry as any).getAvailableVariants?.(effect) || ['click', 'hover', 'success'];
-      const variant = await p.select({
+      const variant = await prompt.select({
         message: 'Select Variant:',
         options: variants.map((v: string) => ({ label: v, value: v })),
       });
@@ -130,7 +131,7 @@ export async function startWizard() {
       }
 
       const subVariants = (registry as any).getAvailableSubVariants?.(effect, variant) || ['plastic_pop', 'glass_haptic'];
-      const subVariant = await p.select({
+      const subVariant = await prompt.select({
         message: 'Select Sub-Variant:',
         options: subVariants.map((sv: string) => ({ label: sv, value: sv })),
       });
@@ -140,7 +141,7 @@ export async function startWizard() {
         process.exit(0);
       }
 
-      const durStr = await p.text({
+      const durStr = await prompt.text({
         message: 'Duration in seconds (default: 3.0):',
         placeholder: '3.0',
         defaultValue: '3.0',

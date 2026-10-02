@@ -1366,6 +1366,7 @@
       "depth3d": {
         "enabled": true,
         "mode": "silhouette_rim_light"
+        
       },
       "captions": [
         {
