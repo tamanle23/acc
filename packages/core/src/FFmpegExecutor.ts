@@ -179,65 +179,31 @@ export class FFmpegCommand {
     }
 
     try {
-      // 1. Lossless Concat or Transitions routing
-      if (
-        this.complexFilterStr?.includes('xfade') ||
-        (inputPaths.length > 1 &&
-          !this.complexFilterStr?.includes('amix') &&
-          !this.complexFilterStr?.includes('overlay'))
-      ) {
-        const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
-        await FFIConcatMuxer.concatenate(inputPaths, outputFile);
-      }
-      // 2. Audio mixing / BGM routing
-      else if (
-        this.complexFilterStr?.includes('amix') ||
-        inputPaths.some((p) => p.includes('bgm'))
-      ) {
+      // 1. Complex Filtergraph Execution (xfade, acrossfade, amix, sidechaincompress, overlay, etc.)
+      if (this.complexFilterStr && this.complexFilterStr.trim().length > 0) {
         const { FFmpegManager } = await import('./FFmpegManager');
         await FFmpegManager.prepare();
         const ffmpegBin = FFmpegManager.getFFmpegPath();
 
-        const args: string[] = ['-y'];
-        for (const inp of this.inputs) {
-          if (inp.options && inp.options.length > 0) {
-            for (const opt of inp.options) {
-              const parts = opt.trim().split(/\s+/).filter(Boolean);
-              args.push(...parts);
-            }
-          }
-          args.push('-i', inp.file);
-        }
-
-        if (this.complexFilterStr) {
-          args.push('-filter_complex', this.complexFilterStr);
-        }
-
-        if (this.outputOpts && this.outputOpts.length > 0) {
-          for (const opt of this.outputOpts) {
-            const parts = opt.trim().split(/\s+/).filter(Boolean);
-            args.push(...parts);
-          }
-        } else {
-          args.push('-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k');
-        }
-
-        args.push(outputFile);
-
+        const args = this.buildArgs();
         const proc = Bun.spawnSync([ffmpegBin, ...args]);
         if (proc.exitCode !== 0) {
-          const errText = proc.stderr?.toString() || `FFmpeg exited with code ${proc.exitCode}`;
-          console.warn(`[FFmpegExecutor] BGM mix fallback: ${errText}`);
+          const errText = proc.stderr?.toString() || `FFmpeg filtergraph exited with code ${proc.exitCode}`;
+          console.warn(`[FFmpegExecutor] Filtergraph execution warning: ${errText}`);
           if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
             fs.copyFileSync(inputPaths[0], outputFile);
           }
         }
       }
+      // 2. Pure Lossless Stream Concatenation (multiple inputs, no complex filtergraph)
+      else if (inputPaths.length > 1) {
+        const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
+        await FFIConcatMuxer.concatenate(inputPaths, outputFile);
+      }
       // 3. Single Scene Video/Image rendering
-      else if (inputPaths.length >= 1) {
+      else if (inputPaths.length === 1) {
         const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
         const primaryInput = inputPaths[0];
-        const audioInput = inputPaths.length > 1 ? inputPaths[1] : '';
 
         if (
           primaryInput.endsWith('.mp4') ||
@@ -247,7 +213,7 @@ export class FFmpegCommand {
           await FFISceneEngine.renderScene({
             scene: {
               resolvedVideo: primaryInput,
-              resolvedAudio: audioInput,
+              resolvedAudio: '',
               captions: [],
             } as any,
             duration: this.loopDuration || 3.0,
@@ -257,20 +223,8 @@ export class FFmpegCommand {
             fallbackImagePath: '',
             fallbackAudioPath: '',
           });
-        } else {
-          await FFISceneEngine.renderScene({
-            scene: {
-              resolvedImage: primaryInput,
-              resolvedAudio: audioInput,
-              captions: [],
-            } as any,
-            duration: this.loopDuration || 3.0,
-            assPath: null,
-            config: { settings: { width: 1920, height: 1080, fps: 30 } } as any,
-            outputPath: outputFile,
-            fallbackImagePath: '',
-            fallbackAudioPath: '',
-          });
+        } else if (fs.existsSync(primaryInput)) {
+          fs.copyFileSync(primaryInput, outputFile);
         }
       }
 

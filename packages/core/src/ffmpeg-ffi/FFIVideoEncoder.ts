@@ -11,27 +11,28 @@ export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
 export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
 
 function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
-    const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
-    return toArrayBuffer(numPtr, offset, length);
+  const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
+  return toArrayBuffer(numPtr, offset, length);
 }
 
 export class FFIVideoEncoder {
-    private formatCtx: bigint = 0n;
-    private codecCtx: bigint = 0n;
-    private stream: bigint = 0n;
-    private frame: bigint = 0n;
-    private packet: bigint = 0n;
-    private swsCtx: bigint = 0n;
+    private formatCtx: any = 0;
+    private codecCtx: any = 0;
+    private stream: any = 0;
+    private frame: any = 0;
+    private packet: any = 0;
+    private swsCtx: any = 0;
     private frameIndex: number = 0;
     private isInitialized: boolean = false;
     private isHeaderWritten: boolean = false;
 
-    private audioStream: bigint = 0n;
-    private aCodecCtx: bigint = 0n;
-    private customSwsCtx: bigint = 0n;
+    private audioStream: any = 0;
+    private aCodecCtx: any = 0;
+    private customSwsCtx: any = 0;
 
-    private srcDataC: bigint = 0n;
-    private srcStrideC: bigint = 0n;
+    private srcDataC: any = 0;
+    private srcStrideC: any = 0;
+    private pinnedFrameBuf: Buffer | null = null;
     private strategy: IVideoEncodingStrategy;
 
     constructor(
@@ -74,10 +75,10 @@ export class FFIVideoEncoder {
         if (this.isInitialized) return;
 
         // 1. Hardware Encoder Selection (NVENC GPU first, CPU libx264 fallback)
-        let codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("h264_nvenc\0"));
+        let codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("h264_nvenc\0")));
         let isNvenc = true;
         if (!codec) {
-            codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("libx264\0"));
+            codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("libx264\0")));
             isNvenc = false;
         }
         if (!codec) {
@@ -85,17 +86,17 @@ export class FFIVideoEncoder {
         }
 
         // 2. Allocate & configure AVCodecContext dimensions & pixel format
-        this.codecCtx = BigInt(FFI.avcodec.avcodec_alloc_context3(codec));
-        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("video_size\0"), Buffer.from(`${this.width}x${this.height}\0`), 0);
-        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("pixel_format\0"), Buffer.from("yuv420p\0"), 0);
-        FFI.avutil.av_opt_set_int(this.codecCtx, Buffer.from("pixel_format\0"), BigInt(AV_PIX_FMT_YUV420P), 0);
+        this.codecCtx = FFI.avcodec.avcodec_alloc_context3(codec);
+        FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("video_size\0")), ptr(Buffer.from(`${this.width}x${this.height}\0`)), 0);
+        FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("pixel_format\0")), ptr(Buffer.from("yuv420p\0")), 0);
+        FFI.avutil.av_opt_set_int(this.codecCtx, ptr(Buffer.from("pixel_format\0")), BigInt(AV_PIX_FMT_YUV420P), 0);
 
         // 3. TimeBase & Framerate configuration
-        const timeBaseStr = Buffer.from(`1/${this.fps}\0`);
-        const frameRateStr = Buffer.from(`${this.fps}/1\0`);
-        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("time_base\0"), timeBaseStr, 0);
-        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("framerate\0"), frameRateStr, 0);
-        FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("flags\0"), Buffer.from("+global_header\0"), 0);
+        const timeBaseStr = ptr(Buffer.from(`1/${this.fps}\0`));
+        const frameRateStr = ptr(Buffer.from(`${this.fps}/1\0`));
+        FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("time_base\0")), timeBaseStr, 0);
+        FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("framerate\0")), frameRateStr, 0);
+        FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("flags\0")), ptr(Buffer.from("+global_header\0")), 0);
 
         // Delegate codec settings (GOP, latency tune, presets, rate control) to Strategy
         this.strategy.configureCodec(this.codecCtx, isNvenc, this.fps, this.crf);
@@ -103,17 +104,17 @@ export class FFIVideoEncoder {
         // 4. Open video codec
         let openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
         if (openRet < 0 && isNvenc) {
-            codec = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("libx264\0"));
+            codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("libx264\0")));
             if (codec) {
-                const p = new BigUint64Array([this.codecCtx]);
+                const p = new BigUint64Array([BigInt(this.codecCtx)]);
                 FFI.avcodec.avcodec_free_context(ptr(p.buffer));
-                this.codecCtx = BigInt(FFI.avcodec.avcodec_alloc_context3(codec));
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("video_size\0"), Buffer.from(`${this.width}x${this.height}\0`), 0);
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("pixel_format\0"), Buffer.from("yuv420p\0"), 0);
-                FFI.avutil.av_opt_set_int(this.codecCtx, Buffer.from("pixel_format\0"), BigInt(AV_PIX_FMT_YUV420P), 0);
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("time_base\0"), timeBaseStr, 0);
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("framerate\0"), frameRateStr, 0);
-                FFI.avutil.av_opt_set(this.codecCtx, Buffer.from("flags\0"), Buffer.from("+global_header\0"), 0);
+                this.codecCtx = FFI.avcodec.avcodec_alloc_context3(codec);
+                FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("video_size\0")), ptr(Buffer.from(`${this.width}x${this.height}\0`)), 0);
+                FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("pixel_format\0")), ptr(Buffer.from("yuv420p\0")), 0);
+                FFI.avutil.av_opt_set_int(this.codecCtx, ptr(Buffer.from("pixel_format\0")), BigInt(AV_PIX_FMT_YUV420P), 0);
+                FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("time_base\0")), timeBaseStr, 0);
+                FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("framerate\0")), frameRateStr, 0);
+                FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("flags\0")), ptr(Buffer.from("+global_header\0")), 0);
                 this.strategy.configureCodec(this.codecCtx, false, this.fps, this.crf);
                 openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
             }
@@ -127,7 +128,7 @@ export class FFIVideoEncoder {
         this.strategy.configureFormatContext(this.formatCtx);
 
         // 6. Create Video Stream (stream #0) and copy codecpar
-        this.stream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
+        this.stream = FFI.avformat.avformat_new_stream(this.formatCtx, 0n);
         if (!this.stream) throw new Error("Failed to create video stream");
 
         const streamView = new DataView(safeArrayBuffer(this.stream, 0, 64));
@@ -144,25 +145,25 @@ export class FFIVideoEncoder {
 
         // 7. Optional: Setup Audio Stream (stream #1) if audioPath exists
         if (this.audioPath && fs.existsSync(this.audioPath)) {
-            const aacEncoder = FFI.avcodec.avcodec_find_encoder_by_name(Buffer.from("aac\0"));
+            const aacEncoder = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("aac\0")));
             if (aacEncoder) {
-                this.aCodecCtx = BigInt(FFI.avcodec.avcodec_alloc_context3(aacEncoder));
+                this.aCodecCtx = FFI.avcodec.avcodec_alloc_context3(aacEncoder);
 
-                FFI.avutil.av_opt_set_int(this.aCodecCtx, Buffer.from("ar\0"), 48000n, 0);
-                FFI.avutil.av_opt_set_int(this.aCodecCtx, Buffer.from("b\0"), 192000n, 0);
-                FFI.avutil.av_opt_set(this.aCodecCtx, Buffer.from("time_base\0"), Buffer.from("1/48000\0"), 0);
-                FFI.avutil.av_opt_set(this.aCodecCtx, Buffer.from("flags\0"), Buffer.from("+global_header\0"), 0);
+                FFI.avutil.av_opt_set_int(this.aCodecCtx, ptr(Buffer.from("ar\0")), 48000n, 0);
+                FFI.avutil.av_opt_set_int(this.aCodecCtx, ptr(Buffer.from("b\0")), 192000n, 0);
+                FFI.avutil.av_opt_set(this.aCodecCtx, ptr(Buffer.from("time_base\0")), ptr(Buffer.from("1/48000\0")), 0);
+                FFI.avutil.av_opt_set(this.aCodecCtx, ptr(Buffer.from("flags\0")), ptr(Buffer.from("+global_header\0")), 0);
 
                 const aacLayout = new Uint8Array(24);
                 FFI.avutil.av_channel_layout_default(ptr(aacLayout.buffer), 2); // 2 channels stereo
-                FFI.avutil.av_opt_set_chlayout(this.aCodecCtx, Buffer.from("ch_layout\0"), ptr(aacLayout.buffer), 0);
+                FFI.avutil.av_opt_set_chlayout(this.aCodecCtx, ptr(Buffer.from("ch_layout\0")), ptr(aacLayout.buffer), 0);
 
                 const aCtxData = new DataView(safeArrayBuffer(this.aCodecCtx, 0, 500));
                 aCtxData.setInt32(348, 8, true); // sample_fmt = AV_SAMPLE_FMT_FLTP (8)
 
                 const retAOpen = FFI.avcodec.avcodec_open2(this.aCodecCtx, aacEncoder, 0n);
                 if (retAOpen >= 0) {
-                    this.audioStream = BigInt(FFI.avformat.avformat_new_stream(this.formatCtx, 0n));
+                    this.audioStream = FFI.avformat.avformat_new_stream(this.formatCtx, 0n);
                     const aStreamView = new DataView(safeArrayBuffer(this.audioStream, 0, 64));
                     aStreamView.setInt32(32, 1, true);
                     aStreamView.setInt32(36, 48000, true);
@@ -172,15 +173,15 @@ export class FFIVideoEncoder {
                     const outCpView = new DataView(safeArrayBuffer(aCp, 0, 64));
                     outCpView.setUint32(8, 0, true);
                 } else {
-                    const p = new BigUint64Array([this.aCodecCtx]);
+                    const p = new BigUint64Array([BigInt(this.aCodecCtx)]);
                     FFI.avcodec.avcodec_free_context(ptr(p.buffer));
-                    this.aCodecCtx = 0n;
+                    this.aCodecCtx = 0;
                 }
             }
         }
 
         // 8. Open AVIO output file
-        const retIo = FFI.avformat.avio_open(this.formatCtx + 32n, Buffer.from(this.outputPath + "\0"), 2);
+        const retIo = FFI.avformat.avio_open(BigInt(this.formatCtx) + 32n, ptr(Buffer.from(this.outputPath + "\0")), 2);
         if (retIo < 0) throw new Error(`Failed to open output file: ${this.outputPath}`);
 
         // 9. Write Container Header
@@ -189,25 +190,25 @@ export class FFIVideoEncoder {
         this.isHeaderWritten = true;
 
         // 9. Allocate AVFrame for YUV420P output
-        this.frame = BigInt(FFI.avutil.av_frame_alloc());
+        this.frame = FFI.avutil.av_frame_alloc();
         Structs.AVFrame.setFormat(this.frame, AV_PIX_FMT_YUV420P);
         Structs.AVFrame.setWidth(this.frame, this.width);
         Structs.AVFrame.setHeight(this.frame, this.height);
         FFI.avutil.av_frame_get_buffer(this.frame, 0);
 
         // 10. Allocate AVPacket
-        this.packet = BigInt(FFI.avcodec.av_packet_alloc?.() || FFI.avcodec.avpacket_alloc());
+        this.packet = FFI.avcodec.av_packet_alloc?.() || FFI.avcodec.avpacket_alloc();
 
         // 11. SWS Context for Zero-Copy RGBA -> YUV420P conversion
-        this.swsCtx = BigInt(FFI.swscale.sws_getContext(
+        this.swsCtx = FFI.swscale.sws_getContext(
             this.width, this.height, AV_PIX_FMT_RGBA,
             this.width, this.height, AV_PIX_FMT_YUV420P,
             2, 0n, 0n, 0n // SWS_BILINEAR = 2
-        ));
+        );
 
         // 12. Pre-allocate native C memory for zero-allocation, nursery-immune sws_scale
-        this.srcDataC = BigInt(FFI.avutil.av_malloc(64n));
-        this.srcStrideC = BigInt(FFI.avutil.av_malloc(32n));
+        this.srcDataC = FFI.avutil.av_malloc(64n);
+        this.srcStrideC = FFI.avutil.av_malloc(32n);
 
         const strideView = new DataView(safeArrayBuffer(this.srcStrideC, 0, 32));
         for (let i = 0; i < 8; i++) strideView.setInt32(i * 4, 0, true);
@@ -224,18 +225,18 @@ export class FFIVideoEncoder {
 
         this.strategy.paceFrame(this.frameIndex, this.fps);
 
-        // Write raw pointer directly into native C memory buffer
-        const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 64));
-        dataView.setBigUint64(0, BigInt(ptr(rgbaBuffer)), true);
+        const frameBuf = Buffer.from(rgbaBuffer);
+        const srcDataArray = new BigUint64Array([BigInt(ptr(frameBuf))]);
+        const srcStrideArray = new Int32Array([this.width * 4, 0, 0, 0, 0, 0, 0, 0]);
 
         FFI.swscale.sws_scale(
             this.swsCtx,
-            this.srcDataC,
-            this.srcStrideC,
+            ptr(srcDataArray.buffer),
+            ptr(srcStrideArray.buffer),
             0,
             this.height,
-            this.frame,
-            this.frame + 64n
+            BigInt(this.frame),
+            BigInt(this.frame) + 64n
         );
 
         // Set PTS
@@ -302,7 +303,7 @@ export class FFIVideoEncoder {
         const maxAudioSamples = BigInt(Math.ceil((this.frameIndex / this.fps) * 48000));
 
         const inFmtPtr = new BigUint64Array(1);
-        const retAIn = FFI.avformat.avformat_open_input(ptr(inFmtPtr.buffer), Buffer.from(audioPath + "\0"), 0n, 0n);
+        const retAIn = FFI.avformat.avformat_open_input(ptr(inFmtPtr.buffer), ptr(Buffer.from(audioPath + "\0")), 0n, 0n);
         if (retAIn !== 0) {
             this.generateSilenceAudio(maxAudioSamples);
             return;
@@ -421,7 +422,7 @@ export class FFIVideoEncoder {
                 FFI.avcodec.avcodec_send_frame(this.aCodecCtx, aFrame);
                 while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
                     Structs.AVPacket.setStreamIndex(aPkt, 1);
-                    FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+                    FFI.avformat.av_interleaved_write_frame(this.formatCtx, aPkt);
                     FFI.avcodec.av_packet_unref(aPkt);
                 }
             }
@@ -512,7 +513,7 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_send_frame(this.aCodecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
             Structs.AVPacket.setStreamIndex(aPkt, 1);
-            FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+            FFI.avformat.av_interleaved_write_frame(this.formatCtx, aPkt);
             FFI.avcodec.av_packet_unref(aPkt);
         }
 
@@ -563,7 +564,7 @@ export class FFIVideoEncoder {
             FFI.avcodec.avcodec_send_frame(this.aCodecCtx, aFrame);
             while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
                 Structs.AVPacket.setStreamIndex(aPkt, 1);
-                FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+                FFI.avformat.av_interleaved_write_frame(this.formatCtx, aPkt);
                 FFI.avcodec.av_packet_unref(aPkt);
             }
         }
@@ -571,7 +572,7 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_send_frame(this.aCodecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.aCodecCtx, aPkt) === 0) {
             Structs.AVPacket.setStreamIndex(aPkt, 1);
-            FFI.avformat.av_write_frame(this.formatCtx, aPkt);
+            FFI.avformat.av_interleaved_write_frame(this.formatCtx, aPkt);
             FFI.avcodec.av_packet_unref(aPkt);
         }
 
@@ -607,14 +608,11 @@ export class FFIVideoEncoder {
             FFI.avformat.av_write_trailer(this.formatCtx);
         }
 
-        // Close AVIO
-        const fmtView = new DataView(safeArrayBuffer(this.formatCtx, 0, 64));
-        const pb = fmtView.getBigUint64(32, true);
-        if (pb > 0n) {
-            FFI.avformat.avio_closep(this.formatCtx + 32n);
+        // Free resources in correct FFmpeg lifecycle order (Format Context first, then Codec Contexts)
+        if (this.formatCtx) {
+            FFI.avformat.avformat_free_context(this.formatCtx);
+            this.formatCtx = 0n;
         }
-
-        // Free resources
         if (this.codecCtx) {
             const p = new BigUint64Array([this.codecCtx]);
             FFI.avcodec.avcodec_free_context(ptr(p.buffer));
@@ -624,10 +622,6 @@ export class FFIVideoEncoder {
             const p = new BigUint64Array([this.aCodecCtx]);
             FFI.avcodec.avcodec_free_context(ptr(p.buffer));
             this.aCodecCtx = 0n;
-        }
-        if (this.formatCtx) {
-            FFI.avformat.avformat_free_context(this.formatCtx);
-            this.formatCtx = 0n;
         }
         if (this.frame) {
             const p = new BigUint64Array([this.frame]);
