@@ -527,7 +527,11 @@ export function buildFfmpegEncodingFlags(
         `-c:v h264_nvenc`,
         `-preset ${preset}`,
         `-tune hq`,
-        `-cq ${settings.crf}`
+        `-rc:v vbr`,
+        `-cq ${settings.crf}`,
+        `-b:v 2500k`,
+        `-maxrate 5000k`,
+        `-bufsize 10000k`
       );
     } else {
       videoEncoder = 'libx264';
@@ -546,7 +550,9 @@ export function buildFfmpegEncodingFlags(
         `-c:v hevc_nvenc`,
         `-preset ${preset}`,
         `-tune hq`,
-        `-cq ${settings.crf}`
+        `-rc:v vbr`,
+        `-cq ${settings.crf}`,
+        `-b:v 0`
       );
     } else {
       videoEncoder = 'libx265';

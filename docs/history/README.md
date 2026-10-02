@@ -142,6 +142,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`128`](128_phase1_consolidate_editing_orchestrator.md) | 2026-10-02 | Phase 1: Consolidate Video Editing Operations into EditingPipelineOrchestrator | Centralized multi-scene rendering, 3D depth, transitions, overlays, and BGM into EditingPipelineOrchestrator; refactored StoryRenderer.ts |
 | [`129`](129_phase2_refactor_story_pipeline_and_stages.md) | 2026-10-02 | Phase 2: Refactor GenerativeStoryPipeline and Stages | Enhanced StoryFolderResolutionStage, StoryOrchestratedRenderStage, StoryMetadataPersistenceStage with full AST and AssetContext pass-through |
 | [`130`](130_optimize_generative_story_pipeline.md) | 2026-10-02 | Optimize GenerativeStoryPipeline and Modular Folder Resolution | Extracted utils/folderResolver.ts and refactored GenerativeStoryPipeline into clean declarative pipeline class |
+| [`131`](131_fix_nvenc_vbr_bitrate_and_verify_sample_story_duration.md) | 2026-10-02 | Fix NVENC VBR Bitrate Control & Verify Sample Story Duration | Added rate-controlled VBR flags (-rc:v vbr, -cq, -b:v 2500k) and verified transition overlap timeline math |
 
 
 
