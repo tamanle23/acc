@@ -126,6 +126,59 @@ export class Depth3DPopOutCommand implements VFXCommand {
 }
 
 /**
+ * Concrete Command: Render Lower Third News Ticker
+ */
+export class RenderLowerThirdTickerCommand implements VFXCommand {
+  public id: string;
+  public type = 'VFX_LOWER_THIRD_TICKER';
+
+  constructor(
+    id: string,
+    private sceneId: string,
+    private tickerText: string,
+    private category: string = 'BREAKING'
+  ) {
+    this.id = id;
+  }
+
+  public validate(context: AssetContext): CommandValidationResult {
+    const errors: string[] = [];
+    const bg = context.getPreferred(this.sceneId, ['canvas', 'alert_card', 'upscaled', 'original']);
+    if (!bg) {
+      errors.push(`RenderLowerThirdTickerCommand requires background asset for scene ID: ${this.sceneId}`);
+    }
+    return { valid: errors.length === 0, errors };
+  }
+
+  public async compileToFilterGraph(graph: FFmpegFilterGraph, context: AssetContext): Promise<void> {
+    const validation = this.validate(context);
+    if (!validation.valid) {
+      throw new Error(`RenderLowerThirdTickerCommand [${this.id}] validation failed: ${validation.errors.join(', ')}`);
+    }
+
+    const cleanText = this.tickerText.replace(/'/g, '').replace(/:/g, '\\:');
+    graph.addNode({
+      filter: 'drawtext',
+      inputs: [`v_${this.sceneId}`],
+      outputs: [`v_ticker_${this.id}`],
+      options: {
+        text: `'${this.category.toUpperCase()}: ${cleanText}'`,
+        fontsize: 28,
+        fontcolor: 'white',
+        box: 1,
+        boxcolor: 'black@0.6',
+        x: 'w-mod(t*100\\,w+tw)',
+        y: 'h-60'
+      }
+    });
+  }
+
+  public estimateCost(): VFXCommandCost {
+    return { cpuScore: 1, vramMB: 32, durationSec: 3.0 };
+  }
+}
+
+/**
  * Macro Command: Chains multiple VFXCommands into a composite execution unit
  */
 export class CompositeVFXCommand implements VFXCommand {
