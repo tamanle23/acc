@@ -129,6 +129,7 @@ export async function transcribeAudio(
 
   // Nếu người dùng có script gốc, dùng Forced/Script-guided Alignment để giữ 100% chữ gốc
   if (referenceScript && referenceScript.trim().length > 0) {
+    console.log(`  -> Đang căn chỉnh timestamps theo kịch bản (Script-guided Alignment)...`);
     return alignScriptWithTimestamps(referenceScript.trim(), chunks, audioDuration);
   }
 

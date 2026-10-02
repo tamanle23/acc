@@ -39,10 +39,13 @@ export function initFFI() {
         av_frame_get_buffer: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
         av_frame_unref: { args: [FFIType.ptr], returns: FFIType.void },
         av_channel_layout_default: { args: [FFIType.ptr, FFIType.i32], returns: FFIType.void },
+        av_channel_layout_describe: { args: [FFIType.ptr, FFIType.ptr, FFIType.i64], returns: FFIType.i32 },
+        av_channel_layout_copy: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         av_dict_set: { args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         av_dict_free: { args: [FFIType.ptr], returns: FFIType.void },
         av_opt_set: { args: [FFIType.ptr, FFIType.cstring, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         av_opt_set_int: { args: [FFIType.ptr, FFIType.cstring, FFIType.i64, FFIType.i32], returns: FFIType.i32 },
+        av_opt_set_chlayout: { args: [FFIType.ptr, FFIType.cstring, FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
         av_strerror: { args: [FFIType.i32, FFIType.ptr, FFIType.i64], returns: FFIType.i32 },
         av_rescale_q: { args: [FFIType.i64, FFIType.i64, FFIType.i64], returns: FFIType.i64 },
         av_malloc: { args: [FFIType.i64], returns: FFIType.ptr },
@@ -85,6 +88,7 @@ export function initFFI() {
         avformat_new_stream: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
         avformat_write_header: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         av_interleaved_write_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        av_write_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         av_write_trailer: { args: [FFIType.ptr], returns: FFIType.i32 },
     });
 

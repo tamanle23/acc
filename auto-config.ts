@@ -559,22 +559,12 @@ async function main() {
       // 2. Whisper Transcription if audio exists and captions are empty or doTranscribe
       if (audioName && doTranscribe && captions.length === 0) {
         const audioToTranscribe = path.isAbsolute(audioName) ? audioName : path.resolve(absoluteDir, audioName);
-        if (sceneText) {
-          console.log(`  -> Đang căn chỉnh timestamps theo kịch bản (Script-guided Alignment)...`);
-          try {
-            captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, sceneText);
-            console.log(`  -> ✅ Căn chỉnh thành công ${captions.length} từ theo đúng chính tả kịch bản.`);
-          } catch (err: any) {
-            console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${audioName}:`, err?.message || err);
-          }
-        } else {
-          console.log(`  -> Đang nhận diện giọng nói tự động bằng Whisper (${audioName})...`);
-          try {
-            captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true);
-            console.log(`  -> Trích xuất được ${captions.length} mốc từ/cụm từ.`);
-          } catch (err: any) {
-            console.warn(`  -> Cảnh báo: Lỗi khi transcribe ${audioName}:`, err?.message || err);
-          }
+        
+        try {
+          captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, sceneText);
+          console.log(`  -> ✅ Căn chỉnh thành công ${captions.length} từ`);
+        } catch (err: any) {
+          console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${audioName}:`, err?.message || err);
         }
       }
 
