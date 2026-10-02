@@ -1,8 +1,11 @@
 export * from './base/BaseExporter';
 export * from './video/VideoExporter';
+export * from './video/SpatialVideoExporter';
 export * from './audio/AudioExporter';
 export * from './social/SocialExporter';
 export * from './static-web/StaticWebExporter';
+export * from './interactive-web/WidgetExporter';
+export * from './live-stream/ZeroCopyRTMPStreamStrategy';
 
 import type { PipelineIR } from '@acc/ir';
 import type { IExporter, ExportResult, ExportOptions } from './base/BaseExporter';

@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { FFmpegManager } from '@acc/core';
-import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig, StorySettings } from './types';
+import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './types';
 import { renderStoryVideo } from './StoryRenderer';
 import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './platforms';
+import { EditingPipelineOrchestrator } from './EditingPipelineOrchestrator';
 
 export interface StoryPipelineOptions {
   outDir?: string;
@@ -11,7 +12,7 @@ export interface StoryPipelineOptions {
   dryRun?: boolean;
 }
 
-export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOptions): { resolvedConfig: ResolvedStoryConfig; outputFilePath: string; metadataPath: string; absoluteDir: string } {
+export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOptions): { rawConfig: StoryConfig; resolvedConfig: ResolvedStoryConfig; outputFilePath: string; metadataPath: string; absoluteDir: string } {
   const absoluteDir = path.resolve(storyDir);
   const configPath = path.join(absoluteDir, 'story-config.json');
 
@@ -22,10 +23,10 @@ export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOpti
     throw new Error(`Config file not found: ${configPath}`);
   }
 
-  const rawConfig = fs.readFileSync(configPath, 'utf-8');
-  let config: StoryConfig;
+  const rawConfigStr = fs.readFileSync(configPath, 'utf-8');
+  let rawConfig: StoryConfig;
   try {
-    config = JSON.parse(rawConfig);
+    rawConfig = JSON.parse(rawConfigStr);
   } catch (error: any) {
     throw new Error(`Failed to parse story-config.json: ${error.message}`);
   }
@@ -49,7 +50,7 @@ export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOpti
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const rawScenes = config.scenes || config.slides || [];
+  const rawScenes = rawConfig.scenes || rawConfig.slides || [];
   if (rawScenes.length === 0) {
     throw new Error('No scenes found in story-config.json');
   }
@@ -71,20 +72,20 @@ export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOpti
     });
   }
 
-  const resolvedSettings = resolveStorySettings(config.settings);
+  const resolvedSettings = resolveStorySettings(rawConfig.settings);
   if (options?.format) {
     resolvedSettings.container = options.format as any;
   }
 
   const resolvedConfig: ResolvedStoryConfig = {
-    name: config.name,
-    description: config.description,
+    name: rawConfig.name,
+    description: rawConfig.description,
     settings: resolvedSettings,
     scenes: resolvedScenes,
   };
 
-  const baseName = config.name
-    ? config.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_')
+  const baseName = rawConfig.name
+    ? rawConfig.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_')
     : 'output';
   const container = resolvedSettings.container;
 
@@ -102,11 +103,12 @@ export function resolveStoryFolder(storyDir: string, options?: StoryPipelineOpti
     metadataPath = path.join(outputDir, metadataFileName);
   }
 
-  return { resolvedConfig, outputFilePath, metadataPath, absoluteDir };
+  return { rawConfig, resolvedConfig, outputFilePath, metadataPath, absoluteDir };
 }
 
 export class GenerativeStoryPipeline {
   public readonly id = 'generative-storytelling' as const;
+  private orchestrator = new EditingPipelineOrchestrator();
 
   public async prepare(): Promise<void> {
     await FFmpegManager.prepare();
@@ -114,10 +116,21 @@ export class GenerativeStoryPipeline {
 
   public async execute(storyDir: string, options?: StoryPipelineOptions): Promise<string> {
     await this.prepare();
-    const { resolvedConfig, outputFilePath, metadataPath, absoluteDir } = resolveStoryFolder(storyDir, options);
+    const { rawConfig, resolvedConfig, outputFilePath, metadataPath, absoluteDir } = resolveStoryFolder(storyDir, options);
 
     const startTime = Date.now();
-    await renderStoryVideo(resolvedConfig, outputFilePath, absoluteDir);
+
+    // Use EditingPipelineOrchestrator to process and normalize story AST
+    try {
+      await this.orchestrator.processAndRender(rawConfig, {
+        outputDir: path.dirname(outputFilePath),
+        format: resolvedConfig.settings.container as any,
+      });
+    } catch {
+      // Fallback to classic scene-by-scene canvas renderer
+      await renderStoryVideo(resolvedConfig, outputFilePath, absoluteDir);
+    }
+
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
 
     // Save metadata
