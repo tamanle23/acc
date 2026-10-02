@@ -1,4 +1,7 @@
+import fs from 'fs';
+import path from 'path';
 import type { IPipelineMiddleware } from '@acc/core';
+import { LegacyStoryConfigAdapter } from '@acc/ir';
 import type { GenerativeStoryContext } from '../GenerativeStoryPipeline';
 import { resolveStoryFolder } from '../GenerativeStoryPipeline';
 
@@ -15,14 +18,36 @@ export function createStoryFolderResolutionStage(): IPipelineMiddleware<Generati
       ctx.metadataPath = resolved.metadataPath;
       ctx.absoluteDir = resolved.absoluteDir;
 
+      // Register Scene Assets into Unified AssetContext
       for (const [idx, scene] of resolved.resolvedConfig.scenes.entries()) {
         const sceneId = `scene_${idx}`;
         if (scene.resolvedImage) {
           ctx.assets.register(sceneId, 'original', scene.resolvedImage);
         }
+        if (scene.resolvedVideo) {
+          ctx.assets.register(sceneId, 'video', scene.resolvedVideo);
+        }
         if (scene.resolvedAudio) {
           ctx.assets.register(sceneId, 'narration', scene.resolvedAudio);
         }
+      }
+
+      // Register Global BGM if configured
+      if (resolved.resolvedConfig.settings.bgm?.source) {
+        const bgmSource = resolved.resolvedConfig.settings.bgm.source;
+        const bgmPath = path.isAbsolute(bgmSource)
+          ? bgmSource
+          : path.resolve(resolved.absoluteDir, bgmSource);
+        if (fs.existsSync(bgmPath)) {
+          ctx.assets.register('global', 'bgm', bgmPath);
+        }
+      }
+
+      // Adapter Pattern: Populate PipelineIR AST
+      try {
+        ctx.ir = LegacyStoryConfigAdapter.adapt(resolved.rawConfig);
+      } catch (err: any) {
+        ctx.metadata.irAdapterWarning = err.message;
       }
 
       await next();
