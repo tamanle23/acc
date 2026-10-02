@@ -142,6 +142,7 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
     ctx.shadowBlur = 24;
     ctx.shadowOffsetY = 12;
     drawImageCover(ctx, subjectImg, subX, subY, subW, subH);
+  } else {
     // Dynamic Subject Segmentation Fallback (when no cutout subjectImg is provided)
     ctx.save();
     ctx.beginPath();

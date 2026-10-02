@@ -125,4 +125,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`111`](111_fix_ffmpeg_pixel_format_and_native_pointer_dereference.md) | 2026-10-02 | Fix FFmpeg FFI Pixel Format Resolution & Native Pointer Dereference | Fixed video_size/pixel_format av_opt_set on AVCodecContext and native pointer wrapping in safeArrayBuffer |
 | [`112`](112_fix_volumetric_sandwich_bottom_positioning.md) | 2026-10-02 | Fix Volumetric Sandwich Bottom Text Positioning | Resolved bottom positioning calculation (75% height) and adaptive fallback subject masking in sandwich.ts |
 | [`113`](113_opensource_bgm_track_integration.md) | 2026-10-02 | Open-Source Background Music Integration for Sample Story | Downloaded & transcoded authentic CC-BY 3.0 soundtrack Windswept by Kevin MacLeod to sample-story/assets/bgm.mp3 |
+| [`114`](114_fix_sandwich_subject_nesting_and_glass_box_overlay.md) | 2026-10-02 | Fix Sandwich Subject Layer Nesting & Eliminate Glass Box Overlay | Fixed if/else nesting in sandwich.ts layer 3 to eliminate overlapping glass box plate and uncover bottom banner text |
 
