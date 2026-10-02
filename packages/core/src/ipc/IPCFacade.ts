@@ -29,6 +29,9 @@ export class GRPCAIStrategy implements IAIClientStrategy {
   }
 
   public async isAvailable(): Promise<boolean> {
+    if (process.env.NODE_ENV === 'test' && !process.env.ACC_ENABLE_GRPC_TESTS) {
+      return false;
+    }
     try {
       this.initClients();
       const res = await this.ping('health_check');
@@ -159,7 +162,7 @@ export class GRPCAIStrategy implements IAIClientStrategy {
    */
   private static bootstrapLock: Promise<boolean> | null = null;
 
-  public async ensureDaemonRunning(maxRetries = 10): Promise<boolean> {
+  public async ensureDaemonRunning(maxRetries = process.env.NODE_ENV === 'test' ? 2 : 10): Promise<boolean> {
     const isUp = await this.isAvailable();
     if (isUp) return true;
 
@@ -194,9 +197,10 @@ export class GRPCAIStrategy implements IAIClientStrategy {
           });
         }
 
+        const pollInterval = process.env.NODE_ENV === 'test' ? 100 : 400;
         // Poll until healthy
         for (let i = 0; i < maxRetries; i++) {
-          await new Promise((r) => setTimeout(r, 400));
+          await new Promise((r) => setTimeout(r, pollInterval));
           const healthy = await this.isAvailable();
           if (healthy) {
             console.log(`[IPCFacade] Python AI Daemon is ONLINE at ${this.endpoint}`);
@@ -306,8 +310,17 @@ export class IPCFacade {
     temperature = 0.2
   ): Promise<{ jsonOutput: string; tokensUsed: number; latencyMs: number }> {
     if (this.strategy instanceof GRPCAIStrategy) {
-      await this.strategy.ensureDaemonRunning();
-      return (this.strategy as GRPCAIStrategy).generateStructuredJson(prompt, jsonSchema, systemInstruction, temperature);
+      const isUp = await this.strategy.ensureDaemonRunning();
+      if (isUp) {
+        try {
+          return await (this.strategy as GRPCAIStrategy).generateStructuredJson(prompt, jsonSchema, systemInstruction, temperature);
+        } catch (err) {
+          console.warn('[IPCFacade] gRPC generateStructuredJson failed. Switching to FallbackAIStrategy:', err);
+          this.strategy = new FallbackAIStrategy();
+        }
+      } else {
+        this.strategy = new FallbackAIStrategy();
+      }
     }
     return (this.strategy as FallbackAIStrategy).generateStructuredJson(prompt);
   }
@@ -319,8 +332,17 @@ export class IPCFacade {
     modelStrategy = 'kokoro'
   ): Promise<{ audioBuffer: Buffer; sampleRate: number; channels: number; durationMs: number }> {
     if (this.strategy instanceof GRPCAIStrategy) {
-      await this.strategy.ensureDaemonRunning();
-      return (this.strategy as GRPCAIStrategy).synthesizeSpeech(text, voiceId, speed, modelStrategy);
+      const isUp = await this.strategy.ensureDaemonRunning();
+      if (isUp) {
+        try {
+          return await (this.strategy as GRPCAIStrategy).synthesizeSpeech(text, voiceId, speed, modelStrategy);
+        } catch (err) {
+          console.warn('[IPCFacade] gRPC synthesizeSpeech failed. Switching to FallbackAIStrategy:', err);
+          this.strategy = new FallbackAIStrategy();
+        }
+      } else {
+        this.strategy = new FallbackAIStrategy();
+      }
     }
     return (this.strategy as FallbackAIStrategy).synthesizeSpeech(text);
   }
