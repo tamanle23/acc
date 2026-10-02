@@ -93,7 +93,7 @@ export async function startWizard() {
 
   try {
     if (mode === 'composite') {
-      const composites = (registry as any).getAvailableComposites?.() || [];
+      const composites = registry.getAvailableComposites();
       if (composites.length === 0) {
         outro('No composites defined in registry.');
         return;
@@ -151,7 +151,7 @@ export async function startWizard() {
       outro('Done!');
 
     } else if (mode === 'predefined') {
-      const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
+      const effects = registry.getAvailableEffects();
       const effect = await p.select({
         message: 'Select Effect Category:',
         options: effects.map((e: string) => ({ label: e, value: e })),
@@ -162,7 +162,7 @@ export async function startWizard() {
         process.exit(0);
       }
 
-      const variants = (registry as any).getAvailableVariants?.(effect) || ['click', 'hover', 'success'];
+      const variants = registry.getAvailableVariants(effect as string);
       const variant = await p.select({
         message: 'Select Variant:',
         options: variants.map((v: string) => ({ label: v, value: v })),
@@ -173,7 +173,7 @@ export async function startWizard() {
         process.exit(0);
       }
 
-      const subVariants = (registry as any).getAvailableSubVariants?.(effect, variant) || ['plastic_pop', 'glass_haptic'];
+      const subVariants = registry.getAvailableSubVariants(effect as string, variant as string);
       const subVariant = await p.select({
         message: 'Select Sub-Variant:',
         options: subVariants.map((sv: string) => ({ label: sv, value: sv })),

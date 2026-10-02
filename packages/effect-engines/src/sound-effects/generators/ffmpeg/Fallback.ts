@@ -1,37 +1,42 @@
-import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { FFmpegManager } from '@acc/core';
-import path from 'path';
-import fs from 'fs';
+import { GeneratedSound } from '../../core/interfaces';
+import { BaseFFmpegGenerator } from '../base';
 
-export class Fallback implements ISoundGenerator {
-  async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
-    const fileName = `${effect}_${variant}_${subVariant}_${duration}s`;
-    const audioPath = path.join(outDir, `${fileName}.wav`);
-    const jsonPath = path.join(outDir, `${fileName}.json`);
+export class Fallback extends BaseFFmpegGenerator {
+  async generate(
+    effect: string,
+    variant: string,
+    subVariant: string,
+    duration: number,
+    outDir: string
+  ): Promise<GeneratedSound> {
+    const { audioPath, jsonPath } = this.getOutputFilePaths(effect, variant, subVariant, duration, outDir);
+    const dur = Math.max(duration, 0.1);
 
-    const filters = ['anull']; // Default fallback filter
+    const inputArgs = ['-f', 'lavfi', '-i', `sine=f=440:d=${dur}`];
+    const filterComplex = `${this.buildADSRFilter(dur, 0.01, dur * 0.5)}[out]`;
 
-    console.log(`[Fallback] Synthesizing ${variant} -> ${subVariant}`);
-    
-    // Use FFmpeg lavfi to generate a real synthetic sine wave fallback
-    const filterStr = filters.join(',');
-    const cmd = `ffmpeg -y -f lavfi -i "sine=f=440:d=${duration}" -af "${filterStr}" "${audioPath}"`;
-    
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    await execAsync(cmd);
+    const args = [
+      '-y',
+      ...inputArgs,
+      '-filter_complex', filterComplex,
+      '-map', '[out]',
+      '-ar', '44100',
+      '-ac', '2',
+      audioPath
+    ];
 
-    const metadata = {
-      effect, variant, subVariant, category: 'generic', duration,
-      ffmpegFilters: filters,
-      generatedAt: new Date().toISOString()
-    };
-    fs.writeFileSync(jsonPath, JSON.stringify(metadata, null, 2));
+    await this.executeFFmpeg(args);
+
+    this.writeMetadata(jsonPath, {
+      effect,
+      variant,
+      subVariant,
+      category: 'generic',
+      duration: dur,
+      engine: 'ffmpeg_procedural_fallback',
+      qualityGrade: 'studio_dsp'
+    });
 
     return { audioPath, jsonPath };
   }
 }
-
-
-
