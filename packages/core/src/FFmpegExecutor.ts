@@ -194,8 +194,37 @@ export class FFmpegCommand {
         this.complexFilterStr?.includes('amix') ||
         inputPaths.some((p) => p.includes('bgm'))
       ) {
-        if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
-          fs.copyFileSync(inputPaths[0], outputFile);
+        const { FFmpegManager } = await import('./FFmpegManager');
+        await FFmpegManager.prepare();
+        const ffmpegBin = FFmpegManager.getFFmpegPath();
+
+        const args: string[] = ['-y'];
+        for (const inp of this.inputs) {
+          if (inp.options && inp.options.length > 0) {
+            args.push(...inp.options);
+          }
+          args.push('-i', inp.source);
+        }
+
+        if (this.complexFilterStr) {
+          args.push('-filter_complex', this.complexFilterStr);
+        }
+
+        if (this.outputOptionsList && this.outputOptionsList.length > 0) {
+          args.push(...this.outputOptionsList);
+        } else {
+          args.push('-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k');
+        }
+
+        args.push(outputFile);
+
+        const proc = Bun.spawnSync([ffmpegBin, ...args]);
+        if (proc.exitCode !== 0) {
+          const errText = proc.stderr?.toString() || `FFmpeg exited with code ${proc.exitCode}`;
+          console.warn(`[FFmpegExecutor] BGM mix fallback: ${errText}`);
+          if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
+            fs.copyFileSync(inputPaths[0], outputFile);
+          }
         }
       }
       // 3. Single Scene Video/Image rendering

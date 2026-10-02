@@ -1,6 +1,7 @@
 import { FFI, Structs, freePtr, makeAVRational, AV_PIX_FMT_YUV420P, AV_PIX_FMT_RGBA } from "./index";
 import { ptr, toArrayBuffer } from "bun:ffi";
 import fs from "fs";
+import { FFIAudioDSP } from "./FFIAudioDSP";
 import type { IVideoEncodingStrategy, FileVideoEncodingOptions } from "./EncodingStrategies";
 import {
     FileVideoEncodingStrategy,
@@ -145,8 +146,9 @@ export class FFIVideoEncoder {
 
         // 7. Optional: Setup Audio Stream (stream #1) if audioPath exists
         if (this.audioPath && fs.existsSync(this.audioPath)) {
+            const normalizedAudio = FFIAudioDSP.ensureMp3Audio(this.audioPath);
             const aInPtr = new BigUint64Array(1);
-            const aRet = FFI.avformat.avformat_open_input(ptr(aInPtr.buffer), Buffer.from(this.audioPath + "\0"), 0n, 0n);
+            const aRet = FFI.avformat.avformat_open_input(ptr(aInPtr.buffer), Buffer.from(normalizedAudio + "\0"), 0n, 0n);
             if (aRet === 0) {
                 this.audioInCtx = aInPtr[0];
                 FFI.avformat.avformat_find_stream_info(this.audioInCtx, 0n);

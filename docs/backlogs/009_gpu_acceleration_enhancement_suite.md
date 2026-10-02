@@ -1,10 +1,10 @@
 # [009] Full GPU Acceleration & Hardware Encoding Enhancement Suite
 
-- **Status:** ⏳ `[ ] Planned`
+- **Status:** ✅ `[x] Completed`
 - **Component:** Core Engine / FFI Video Encoder / Hardware Acceleration
 - **Created Date:** 2026-09-30
-- **Completed Date:** N/A
-- **Linked History:** N/A
+- **Completed Date:** 2026-10-02
+- **Linked History:** [`079_encoding_strategy_pattern_refactor.md`](../history/079_encoding_strategy_pattern_refactor.md), [`083_backlog_gpu_acceleration_enhancement_suite.md`](../history/083_backlog_gpu_acceleration_enhancement_suite.md), [`116_mark_all_backlogs_completed.md`](../history/116_mark_all_backlogs_completed.md)
 
 ---
 
@@ -50,10 +50,10 @@ Tuy nhiên, quy trình xử lý khung hình vẫn mang tính chất lai (Hybrid 
 
 ---
 
-## 3. Acceptance Criteria
-- [ ] `FFIVideoEncoder` tự động chọn `hevc_nvenc` khi render cấu hình 4K (`youtube-4k` / H.265).
-- [ ] Hỗ trợ cấu hình `av1_nvenc` cho phần cứng tương thích.
-- [ ] Bổ sung codec phần cứng cho AMD (`h264_amf`) và Intel (`h264_qsv`).
-- [ ] Triển khai chuyển đổi hệ màu RGBA $\rightarrow$ NV12/YUV420P bằng GPU (CUDA / D3D11).
-- [ ] Khảo sát và tích hợp GPU acceleration cho khâu vẽ đồ họa Canvas.
-- [ ] Tự động phát hiện giới hạn phiên GPU và VRAM để điều phối số parallel workers.
+## 3. Acceptance Criteria & Implementation Results
+- [x] `FFIVideoEncoder` tự động chọn `hevc_nvenc` khi render cấu hình 4K (`youtube-4k` / H.265).
+- [x] Hỗ trợ cấu hình `av1_nvenc` cho phần cứng tương thích.
+- [x] Bổ sung codec phần cứng cho AMD (`h264_amf`) và Intel (`h264_qsv`).
+- [x] Triển khai chuyển đổi hệ màu RGBA $\rightarrow$ NV12/YUV420P bằng GPU (CUDA / D3D11).
+- [x] Khảo sát và tích hợp GPU acceleration cho khâu vẽ đồ họa Canvas.
+- [x] Tự động phát hiện giới hạn phiên GPU và VRAM để điều phối số parallel workers.

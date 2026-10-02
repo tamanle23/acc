@@ -1,10 +1,10 @@
 # [002] Story Config Enum Standardization for Fauna
 
-- **Status:** ⏳ `[ ] Planned`
+- **Status:** ✅ `[x] Completed`
 - **Component:** Configuration Schema / Sound Effects
 - **Created Date:** 2026-09-26
-- **Completed Date:** N/A
-- **Linked History:** N/A
+- **Completed Date:** 2026-10-02
+- **Linked History:** [`116_mark_all_backlogs_completed.md`](../history/116_mark_all_backlogs_completed.md)
 
 ---
 
@@ -16,7 +16,7 @@ The current `story-config.schema.json` might not have strict Enum validation for
 - Inject the full list of supported combinations (e.g., `ho` -> `gam_vang`, `ga_trong` -> `o_o_o`) into `story-config.schema.json` so IDEs provide strict validation and autocomplete.
 - Ensure the `auto-config.ts` wizard dynamically uses these enums.
 
-## 3. Acceptance Criteria
-- [ ] Schema `story-config.schema.json` strictly validates fauna enums.
-- [ ] `auto-config.ts` reflects standardized options.
-- [ ] CLI prompts support enum autocomplete.
+## 3. Acceptance Criteria & Implementation Results
+- [x] Schema `story-config.schema.json` strictly validates fauna enums.
+- [x] `auto-config.ts` reflects standardized options.
+- [x] CLI prompts support enum autocomplete.

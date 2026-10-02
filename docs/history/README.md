@@ -127,4 +127,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`113`](113_opensource_bgm_track_integration.md) | 2026-10-02 | Open-Source Background Music Integration for Sample Story | Downloaded & transcoded authentic CC-BY 3.0 soundtrack Windswept by Kevin MacLeod to sample-story/assets/bgm.mp3 |
 | [`114`](114_fix_sandwich_subject_nesting_and_glass_box_overlay.md) | 2026-10-02 | Fix Sandwich Subject Layer Nesting & Eliminate Glass Box Overlay | Fixed if/else nesting in sandwich.ts layer 3 to eliminate overlapping glass box plate and uncover bottom banner text |
 | [`115`](115_burn_captions_on_video_broll_scenes.md) | 2026-10-02 | Burn Captions & Subtitles on Video / B-Roll Scenes | Enabled Canvas caption overlay and looping in FFISceneEngine.renderVideoScene |
+| [`116`](116_mark_all_backlogs_completed.md) | 2026-10-02 | Backlog Index Cleanup & Mark All Completed | Cleaned and marked all 11 backlog items as completed in docs/backlogs/ and synchronized index table |
 

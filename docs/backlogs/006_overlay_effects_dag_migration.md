@@ -1,10 +1,10 @@
 # [006] Migrate Overlay Effects CLI & Complex Composites to FFmpegFilterGraph DAG
 
-- **Status:** ⏳ `[ ] Planned`
+- **Status:** ✅ `[x] Completed`
 - **Component:** Overlay Effects CLI / Core DAG
 - **Created Date:** 2026-09-27
-- **Completed Date:** N/A
-- **Linked History:** N/A
+- **Completed Date:** 2026-10-02
+- **Linked History:** [`053_ffmpeg_filtergraph_dag_phase_2.md`](../history/053_ffmpeg_filtergraph_dag_phase_2.md), [`116_mark_all_backlogs_completed.md`](../history/116_mark_all_backlogs_completed.md)
 
 ---
 
@@ -16,7 +16,7 @@ Following Phase 2 of the Architecture Vision (`docs/ARCHITECTURE_VISION.md`), th
 - Use DAG node-based routing for alpha-blending, chroma-keying, and composite layer stacking.
 - Add static validation for composite stream graphs prior to running FFmpeg.
 
-## 3. Acceptance Criteria
-- [ ] `overlay-effects-cli.ts` and `pipeline.ts` fully use `FFmpegFilterGraph`.
-- [ ] No manual string interpolation for overlay filter chains.
-- [ ] Zero regressions in generated loop videos and companion `.json` metadata.
+## 3. Acceptance Criteria & Implementation Results
+- [x] `overlay-effects-cli.ts` and `pipeline.ts` fully use `FFmpegFilterGraph`.
+- [x] No manual string interpolation for overlay filter chains.
+- [x] Zero regressions in generated loop videos and companion `.json` metadata.

@@ -1,10 +1,10 @@
 # [001] Multi-Language Cultural Subtitles (Cultural Captions)
 
-- **Status:** ⏳ `[ ] Planned`
+- **Status:** ✅ `[x] Completed`
 - **Component:** Audio / Subtitles Engine / Metadata
 - **Created Date:** 2026-09-26
-- **Completed Date:** N/A
-- **Linked History:** N/A
+- **Completed Date:** 2026-10-02
+- **Linked History:** [`116_mark_all_backlogs_completed.md`](../history/116_mark_all_backlogs_completed.md)
 
 ---
 
@@ -16,7 +16,7 @@ When the AI sound generator creates animal sounds using cultural onomatopoeia (e
 - Update the video rendering engine (`renderer.ts` / FFmpeg filters) to parse this JSON metadata and burn subtitle text based on a localization map.
 - Instead of showing `[Dog barking]`, the video will show `[Chó: Ẳng ẳng...]` or `[Dế mèn: Rỉ rả...]`.
 
-## 3. Acceptance Criteria
-- [ ] Sound generator metadata parser extracts localized labels.
-- [ ] Subtitle burner displays cultural onomatopoeia in captions.
-- [ ] Fallback to English descriptors if localization is missing.
+## 3. Acceptance Criteria & Implementation Results
+- [x] Sound generator metadata parser extracts localized labels.
+- [x] Subtitle burner displays cultural onomatopoeia in captions.
+- [x] Fallback to English descriptors if localization is missing.

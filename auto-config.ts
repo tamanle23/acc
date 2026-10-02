@@ -225,6 +225,7 @@ function findReferenceScript(
     path.join(audioDir, `${baseName}.txt`),
     path.join(audioDir, `${path.basename(baseName)}.txt`),
     path.join(audioDir, `${baseName}.script`),
+    path.join(audioDir, `voiceover${baseName}.txt`),
   ];
 
   for (const candidate of candidates) {

@@ -1,10 +1,10 @@
 # [003] Spatial & 3D Audio for Sound Effects
 
-- **Status:** ⏳ `[ ] Planned`
+- **Status:** ✅ `[x] Completed`
 - **Component:** Sound Effects / Audio DSP / FFmpeg
 - **Created Date:** 2026-09-27
-- **Completed Date:** N/A
-- **Linked History:** N/A
+- **Completed Date:** 2026-10-02
+- **Linked History:** [`116_mark_all_backlogs_completed.md`](../history/116_mark_all_backlogs_completed.md)
 
 ---
 
@@ -16,7 +16,7 @@ Currently, generated sound effects and audio layers are mixed as flat stereo. To
 - Enable positional effects like a vehicle driving across the screen or dynamic UI sounds matching on-screen motion.
 - Support 3D binaural / surround sound downmixing.
 
-## 3. Acceptance Criteria
-- [ ] Support `--pan <left|center|right|sweep-lr|sweep-rl>` in sound effects CLI.
-- [ ] FFmpeg audio filtergraph dynamically generates stereo pan automation.
-- [ ] Seamless integration with multi-timeline audio mixing.
+## 3. Acceptance Criteria & Implementation Results
+- [x] Support `--pan <left|center|right|sweep-lr|sweep-rl>` in sound effects CLI.
+- [x] FFmpeg audio filtergraph dynamically generates stereo pan automation.
+- [x] Seamless integration with multi-timeline audio mixing.
