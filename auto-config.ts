@@ -1,32 +1,59 @@
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
 import type { StoryConfig, SceneConfig, PlatformPreset, CaptionPreset, SubtitleMode } from '@acc/core';
 import { transcribeAudio } from '@acc/cli/src/pipelines/04-generative-story/whisper';
 import { tts } from '@acc/cli/src/pipelines/04-generative-story/tts';
 import { PLATFORM_PRESETS } from '@acc/cli/src/pipelines/04-generative-story/platforms';
-import { PRESETS as CAPTION_PRESETS } from '@acc/effect-engines';
-import { PythonBackend, Utils, FFmpegManager } from '@acc/core';
+import { PythonBackend, Utils, FFmpegManager, intro, outro, isCancel, cancel, Logger } from '@acc/core';
+import * as prompt from '@clack/prompts';
+import type { Option } from '@clack/prompts';
 
 const isAutoYes = process.argv.includes('--yes') || process.argv.includes('-y');
 
-function askQuestion(query: string): Promise<string> {
+async function promptText(message: string, placeholder = '', defaultValue = ''): Promise<string> {
   if (isAutoYes) {
-    console.log(`${query} (Auto-Yes: Default)`);
-    return Promise.resolve('');
+    return defaultValue;
   }
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
+  const res = await prompt.text({
+    message,
+    placeholder,
+    defaultValue,
   });
+  if (isCancel(res)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
+  return (res as string).trim();
+}
 
-  return new Promise((resolve) =>
-    rl.question(query, (ans) => {
-      rl.close();
-      resolve(ans);
-    })
-  );
+async function promptSelect<T extends string>(message: string, options: Option<T>[]): Promise<T> {
+  if (isAutoYes) {
+    return options[0].value as T;
+  }
+  const res = await prompt.select({
+    message,
+    options,
+  });
+  if (isCancel(res)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
+  return res as T;
+}
+
+async function promptConfirm(message: string, initialValue = true): Promise<boolean> {
+  if (isAutoYes) {
+    return initialValue;
+  }
+  const res = await prompt.confirm({
+    message,
+    initialValue,
+  });
+  if (isCancel(res)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
+  return Boolean(res);
 }
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
@@ -282,17 +309,17 @@ const CAPTION_MENU: { label: string; preset: CaptionPreset }[] = [
 ];
 
 async function main() {
-  console.log('=== Storyteller Auto-Config & Whisper Transcriber ===\n');
+  intro('=== Storyteller Auto-Config & Whisper Transcriber ===');
   await FFmpegManager.prepare();
 
-  let targetDir = process.argv.slice(2)[0];
+  let targetDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
 
   if (!targetDir) {
-    targetDir = await askQuestion('Nhập đường dẫn thư mục story: ');
+    targetDir = await promptText('Nhập đường dẫn thư mục story: ');
   }
 
   if (!targetDir || targetDir.trim() === '') {
-    console.error('Lỗi: Bạn chưa cung cấp đường dẫn thư mục.');
+    outro('Lỗi: Bạn chưa cung cấp đường dẫn thư mục.');
     process.exit(1);
   }
 
@@ -300,7 +327,7 @@ async function main() {
   const absoluteDir = path.resolve(targetDir);
 
   if (!fs.existsSync(absoluteDir)) {
-    console.error(`Lỗi: Không tìm thấy thư mục: ${absoluteDir}`);
+    outro(`Lỗi: Không tìm thấy thư mục: ${absoluteDir}`);
     process.exit(1);
   }
 
@@ -312,11 +339,11 @@ async function main() {
     try {
       prevConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       if (prevConfig?.settings) {
-        console.log('⚡ Phát hiện file story-config.json đã có sẵn trong thư mục.');
-        const mergeAns = await askQuestion(
-          '-> Bạn muốn: [1] Giữ lại & Merge cấu hình cũ (mặc định), hay [2] Tạo mới cấu hình hoàn toàn? (1/2): '
+        Logger.info('auto-config', '⚡ Phát hiện file story-config.json đã có sẵn trong thư mục.');
+        shouldMerge = await promptConfirm(
+          'Phát hiện story-config.json có sẵn. Giữ lại & Merge cấu hình cũ?',
+          true
         );
-        shouldMerge = mergeAns.trim() !== '2';
       }
     } catch { }
   }
@@ -329,43 +356,26 @@ async function main() {
   let storyDesc = '';
 
   if (!shouldMerge) {
-    console.log('\n--- THÔNG TIN VIDEO ---');
-    const nameAns = await askQuestion(`Nhập tên video (Mặc định: ${storyName}): `);
-    if (nameAns.trim()) storyName = nameAns.trim();
+    storyName = await promptText(`Nhập tên video:`, `Mặc định: ${storyName}`, storyName);
+    storyDesc = await promptText('Nhập mô tả video (Tùy chọn):');
 
-    const descAns = await askQuestion(`Nhập mô tả video (Tùy chọn): `);
-    storyDesc = descAns.trim();
+    selectedPlatform = await promptSelect<PlatformPreset>(
+      'Chọn nền tảng xuất video (Platform Preset):',
+      PLATFORM_MENU.map((item) => ({ label: item.label, value: item.preset }))
+    );
 
-    // 1. Chọn Platform Preset
-    console.log('\n--- CHỌN NỀN TẢNG XUẤT VIDEO (Platform Preset) ---');
-    PLATFORM_MENU.forEach((item, idx) => {
-      console.log(`  [${idx + 1}] ${item.label}${idx === 0 ? ' [Mặc định]' : ''}`);
-    });
-    const platformAns = await askQuestion('-> Chọn số (1-7) [mặc định: 1]: ');
-    const platformIdx = parseInt(platformAns.trim(), 10) - 1;
-    if (!isNaN(platformIdx) && platformIdx >= 0 && platformIdx < PLATFORM_MENU.length) {
-      selectedPlatform = PLATFORM_MENU[platformIdx].preset;
-    }
+    selectedCaptionPreset = await promptSelect<CaptionPreset>(
+      'Chọn phong cách phụ đề (Caption Style Preset):',
+      CAPTION_MENU.map((item) => ({ label: item.label, value: item.preset }))
+    );
 
-    // 2. Chọn Caption Preset
-    console.log('\n--- CHỌN PHONG CÁCH PHỤ ĐỀ (Caption Style Preset) ---');
-    CAPTION_MENU.forEach((item, idx) => {
-      console.log(`  [${idx + 1}] ${item.label}${idx === 0 ? ' [Mặc định]' : ''}`);
-    });
-    const captionAns = await askQuestion('-> Chọn số (1-10) [mặc định: 1]: ');
-    const captionIdx = parseInt(captionAns.trim(), 10) - 1;
-    if (!isNaN(captionIdx) && captionIdx >= 0 && captionIdx < CAPTION_MENU.length) {
-      selectedCaptionPreset = CAPTION_MENU[captionIdx].preset;
-    }
-
-    // 3. Chọn Subtitle Mode
-    console.log('\n--- CHỌN CHẾ ĐỘ PHỤ ĐỀ (Subtitle Mode) ---');
-    console.log('  [1] Hardsub (Khắc trực tiếp vào video, chuẩn TikTok/Reels/Shorts/Web) [Mặc định]');
-    console.log('  [2] Softsub (Mux thành Track Subtitle riêng cho MKV/MP4, bật/tắt được)');
-    const subModeAns = await askQuestion('-> Chọn số (1/2) [mặc định: 1]: ');
-    if (subModeAns.trim() === '2') {
-      selectedSubtitleMode = 'soft';
-    }
+    selectedSubtitleMode = await promptSelect<SubtitleMode>(
+      'Chọn chế độ phụ đề (Subtitle Mode):',
+      [
+        { label: 'Hardsub (Khắc trực tiếp vào video)', value: 'burn' },
+        { label: 'Softsub (Track Subtitle riêng cho MKV/MP4)', value: 'soft' },
+      ]
+    );
   }
 
   // 3a. Chọn Karaoke Highlight Style
@@ -375,31 +385,29 @@ async function main() {
   let highlightColor = '#00FFFF';
 
   if (!shouldMerge) {
-    console.log('\n--- HIỆU ỨNG KARAOKE PHỤ ĐỀ (Active Word Highlight) ---');
-    const karAns = await askQuestion('Bạn có muốn bật hiệu ứng Highlight từng từ khi đọc (Karaoke) không? (Y/n) [mặc định: Y]: ');
-    if (karAns.trim().toLowerCase() !== 'n') {
-      activeWordHighlight = true;
-      const wAns = await askQuestion('-> Số chữ tối đa trên một dòng (Mặc định: 6): ');
-      if (parseInt(wAns.trim(), 10) > 0) wordsPerPhrase = parseInt(wAns.trim(), 10);
+    activeWordHighlight = await promptConfirm(
+      'Bật hiệu ứng Highlight từng từ khi đọc (Karaoke)?',
+      true
+    );
 
-      console.log('\nChọn hiệu ứng Highlight:');
-      console.log('  [1] Phóng to + Đổi màu (Scale & Color) [Mặc định]');
-      console.log('  [2] Chỉ đổi màu (Color only)');
-      console.log('  [3] Phát sáng (Glow + Scale)');
-      console.log('  [4] Chỉ phóng to (Scale only)');
-      const hlAns = await askQuestion('-> Chọn số (1-4) [mặc định: 1]: ');
-      if (hlAns.trim() === '2') highlightPreset = 'color';
-      else if (hlAns.trim() === '3') highlightPreset = 'glow';
-      else if (hlAns.trim() === '4') highlightPreset = 'scale';
+    if (activeWordHighlight) {
+      const wAns = await promptText('Số chữ tối đa trên một dòng:', 'Mặc định: 6', '6');
+      if (parseInt(wAns, 10) > 0) wordsPerPhrase = parseInt(wAns, 10);
 
-      if (['1', '2', '3'].includes(hlAns.trim()) || hlAns.trim() === '') {
-        const cAns = await askQuestion('-> Nhập mã màu Hex cho Highlight (Mặc định: #00FFFF - Vàng Neon): ');
-        if (cAns.trim()) highlightColor = cAns.trim();
+      highlightPreset = await promptSelect('Chọn hiệu ứng Highlight:', [
+        { label: 'Phóng to + Đổi màu (Scale & Color)', value: 'scale-color' },
+        { label: 'Chỉ đổi màu (Color only)', value: 'color' },
+        { label: 'Phát sáng (Glow + Scale)', value: 'glow' },
+        { label: 'Chỉ phóng to (Scale only)', value: 'scale' },
+      ]);
+
+      if (highlightPreset !== 'scale') {
+        highlightColor = await promptText('Nhập mã màu Hex cho Highlight:', 'Mặc định: #00FFFF', '#00FFFF');
+
       }
     } else {
-      activeWordHighlight = false;
-      const wAns = await askQuestion('-> Số chữ tối đa trên một dòng phụ đề (Mặc định: 6): ');
-      if (parseInt(wAns.trim(), 10) > 0) wordsPerPhrase = parseInt(wAns.trim(), 10);
+      const wAns = await promptText('Số chữ tối đa trên một dòng phụ đề:', 'Mặc định: 6', '6');
+      if (parseInt(wAns, 10) > 0) wordsPerPhrase = parseInt(wAns, 10);
       highlightPreset = 'none';
     }
   }
@@ -408,37 +416,29 @@ async function main() {
   let enableTransitions = prevConfig?.settings.transition?.enabled;
   let transitionType: any = 'fade';
   if (!shouldMerge) {
-    console.log('\n--- HIỆU ỨNG CHUYỂN CẢNH (Transitions) ---');
-    const transAns = await askQuestion('Bạn có muốn bật hiệu ứng chuyển cảnh mượt mà giữa các ảnh không? (Y/n) [mặc định: Y]: ');
-    if (transAns.trim().toLowerCase() !== 'n') {
-      enableTransitions = true;
-      console.log('  [1] Fade (Mờ dần) [Mặc định]');
-      console.log('  [2] Random (Ngẫu nhiên)');
-      console.log('  [3] Wipe Left (Vuốt trái)');
-      console.log('  [4] Circle Crop (Thu nhỏ vòng tròn)');
-      const typeAns = await askQuestion('-> Chọn kiểu (1-4) [mặc định: 1]: ');
-      if (typeAns.trim() === '2') transitionType = 'random';
-      else if (typeAns.trim() === '3') transitionType = 'wipeleft';
-      else if (typeAns.trim() === '4') transitionType = 'circlecrop';
+    enableTransitions = await promptConfirm('Bật hiệu ứng chuyển cảnh mượt mà giữa các ảnh?', true);
+    if (enableTransitions) {
+      transitionType = await promptSelect('Chọn kiểu chuyển cảnh:', [
+        { label: 'Fade (Mờ dần)', value: 'fade' },
+        { label: 'Random (Ngẫu nhiên)', value: 'random' },
+        { label: 'Wipe Left (Vuốt trái)', value: 'wipeleft' },
+        { label: 'Circle Crop (Thu nhỏ vòng tròn)', value: 'circlecrop' },
+      ]);
     }
   }
 
   // 3c. Chọn AI Upscaling
-  let enableUpscale = prevConfig?.settings.upscale?.enabled;
+  let enableUpscale = prevConfig?.settings.upscale?.enabled || false;
   let upscaleModel: any = shouldMerge ? prevConfig?.settings.upscale?.model : 'realesr-animevideov3';
   if (!shouldMerge) {
-    console.log('\n--- AI AUTO-UPSCALE ---');
-    const upscaleAns = await askQuestion('Bạn có muốn dùng AI (Real-ESRGAN/UltraSharp) để làm nét ảnh trước khi render không? (y/N) [mặc định: N]: ');
-    if (upscaleAns.trim().toLowerCase() === 'y') {
-      enableUpscale = true;
-      console.log('  [1] Real-ESRGAN (Đa dụng) [Mặc định]');
-      console.log('  [2] 4x-UltraSharp (Siêu nét, ảnh thật)');
-      console.log('  [3] Real-ESRGAN-Anime (Hoạt hình/2D)');
-      console.log('  [4] Real-ESRGAN-AnimeVideo (Video với batched frames)');
-      const modelAns = await askQuestion('-> Chọn mô hình (1-3) [mặc định: 4]: ');
-      if (modelAns.trim() === '2') upscaleModel = '4x-UltraSharp';
-      else if (modelAns.trim() === '3') upscaleModel = 'realesrgan-x4plus-anime';
-      else if (modelAns.trim() === '4') upscaleModel = 'realesr-animevideov3';
+    enableUpscale = await promptConfirm('Dùng AI (Real-ESRGAN) để làm nét ảnh trước khi render?', false);
+    if (enableUpscale) {
+      upscaleModel = await promptSelect('Chọn mô hình AI Upscale:', [
+        { label: 'Real-ESRGAN-AnimeVideo', value: 'realesr-animevideov3' },
+        { label: 'Real-ESRGAN (Đa dụng)', value: 'realesrgan-x4plus' },
+        { label: '4x-UltraSharp (Siêu nét, ảnh thật)', value: '4x-UltraSharp' },
+        { label: 'Real-ESRGAN-Anime (Hoạt hình/2D)', value: 'realesrgan-x4plus-anime' },
+      ]);
     }
   }
 
@@ -447,57 +447,46 @@ async function main() {
   let depth3DMode: any = prevConfig?.settings.depth3d?.mode || 'frame_breaker';
   let depth3DStyle: any = prevConfig?.settings.depth3d?.frameStyle || 'polaroid';
   if (!shouldMerge) {
-    console.log('\n--- HIỆU ỨNG TẠO NỔI 3D & CHIỀU SÂU (3D Depth Visuals) ---');
-    const depthAns = await askQuestion('Bạn có muốn bật hiệu ứng chiều sâu 3D (Frame-Breaker, Parallax, Sandwich, Wiggle...) không? (y/N) [mặc định: N]: ');
-    if (depthAns.trim().toLowerCase() === 'y') {
-      enableDepth3D = true;
-      console.log('Chọn kỹ thuật 3D:');
-      console.log('  [1] Out-of-Bounds (Vượt khung viền 3D) [Mặc định]');
-      console.log('  [2] 2.5D Parallax Ken Burns (Camera đa bình diện vi sai)');
-      console.log('  [3] Sandwich Volumetric Depth (Chữ & Bụi sáng nằm sau nhân vật)');
-      console.log('  [4] AI Depth Map 3D Mesh Displacement (Camera orbital quay quanh vật thể)');
-      console.log('  [5] Stereoscopic Wigglegram (Rung lắc thị sai 3D Pop Wobble)');
-      const modeAns = await askQuestion('-> Chọn kỹ thuật (1-5) [mặc định: 1]: ');
-      if (modeAns.trim() === '2') depth3DMode = 'parallax_25d';
-      else if (modeAns.trim() === '3') depth3DMode = 'volumetric_sandwich';
-      else if (modeAns.trim() === '4') depth3DMode = 'depth_map_3d';
-      else if (modeAns.trim() === '5') depth3DMode = 'wigglegram';
-      else {
-        depth3DMode = 'frame_breaker';
-        console.log('\nChọn phong cách khung:');
-        console.log('  [1] Polaroid (Khung ảnh lấy liền viền dày) [Mặc định]');
-        console.log('  [2] Card (Thẻ bài bo góc hiện đại)');
-        console.log('  [3] Cinema (Khung phim màn ảnh rộng)');
-        console.log('  [4] Comic (Khung truyện tranh viền đen)');
-        const styleAns = await askQuestion('-> Chọn phong cách khung (1-4) [mặc định: 1]: ');
-        if (styleAns.trim() === '2') depth3DStyle = 'card';
-        else if (styleAns.trim() === '3') depth3DStyle = 'cinema';
-        else if (styleAns.trim() === '4') depth3DStyle = 'comic';
+    enableDepth3D = await promptConfirm('Bật hiệu ứng chiều sâu 3D (Frame-Breaker, Parallax...)?', false);
+    if (enableDepth3D) {
+      depth3DMode = await promptSelect('Chọn kỹ thuật 3D:', [
+        { label: 'Out-of-Bounds (Vượt khung viền 3D)', value: 'frame_breaker' },
+        { label: '2.5D Parallax Ken Burns', value: 'parallax_25d' },
+        { label: 'Sandwich Volumetric Depth', value: 'volumetric_sandwich' },
+        { label: 'AI Depth Map 3D Mesh Displacement', value: 'depth_map_3d' },
+        { label: 'Stereoscopic Wigglegram', value: 'wigglegram' },
+      ]);
+
+      if (depth3DMode === 'frame_breaker') {
+        depth3DStyle = await promptSelect('Chọn phong cách khung:', [
+          { label: 'Polaroid (Khung ảnh lấy liền viền dày)', value: 'polaroid' },
+          { label: 'Card (Thẻ bài bo góc hiện đại)', value: 'card' },
+          { label: 'Cinema (Khung phim màn ảnh rộng)', value: 'cinema' },
+          { label: 'Comic (Khung truyện tranh viền đen)', value: 'comic' },
+        ]);
       }
     }
   }
 
   // 3e. Chọn TTS
   let enableTTS = prevConfig?.settings.tts?.enabled || false;
+
   let ttsVoice = prevConfig?.settings.tts?.voice || 'Ngọc Trân';
   let ttsSpeed = prevConfig?.settings.tts?.speed || 1.0;
   if (!shouldMerge) {
-    console.log('\n--- LOCAL AI TTS (VieNeu) ---');
-    const ttsAns = await askQuestion('Bạn có muốn bật tính năng sinh giọng đọc bằng AI (Local VieNeu-TTS v3 Turbo) không? (y/N) [mặc định: N]: ');
-    if (ttsAns.trim().toLowerCase() === 'y') {
-      enableTTS = true;
-      const voiceAns = await askQuestion('-> Nhập mã giọng đọc (Mặc định: Ngọc Trân): ');
-      if (voiceAns.trim()) ttsVoice = voiceAns.trim();
+    enableTTS = await promptConfirm('Bật tính năng sinh giọng đọc bằng AI (Local VieNeu-TTS v3 Turbo)?', false);
+    if (enableTTS) {
+      ttsVoice = await promptText('Nhập mã giọng đọc:', 'Mặc định: Ngọc Trân', 'Ngọc Trân');
     }
   }
 
   // Quét toàn bộ media trong thư mục gốc và thư mục con
   const { visualFiles, audioFiles } = collectMediaFiles(absoluteDir);
 
-  console.log(`\nTìm thấy: ${visualFiles.length} file hình/video, ${audioFiles.length} file âm thanh`);
+  Logger.info('auto-config', `Tìm thấy: ${visualFiles.length} file hình/video, ${audioFiles.length} file âm thanh`);
 
   if (audioFiles.length === 0 && !enableTTS) {
-    console.error('Lỗi: Không tìm thấy file âm thanh nào trong thư mục, và TTS chưa được bật.');
+    outro('Lỗi: Không tìm thấy file âm thanh nào trong thư mục, và TTS chưa được bật.');
     process.exit(1);
   }
 
@@ -505,7 +494,7 @@ async function main() {
   const doTranscribe = !shouldMerge || prevConfig?.settings?.captions?.autoTranscribe !== false;
 
   if (!doTranscribe) {
-    console.log('\n-> Bỏ qua bước Whisper transcription (autoTranscribe = false).');
+    Logger.info('auto-config', '-> Bỏ qua bước Whisper transcription (autoTranscribe = false).');
   }
 
   let filePairs = [];
@@ -518,14 +507,14 @@ async function main() {
   const globalScriptCache = loadGlobalScripts(absoluteDir);
 
   if (globalScriptCache.globalJson) {
-    console.log(`⚡ Tìm thấy kịch bản toàn cục: script.json (${globalScriptCache.globalJson.length} đoạn)`);
+    Logger.info('auto-config', `⚡ Tìm thấy kịch bản toàn cục: script.json (${globalScriptCache.globalJson.length} đoạn)`);
   } else if (globalScriptCache.globalLines) {
-    console.log(`⚡ Tìm thấy kịch bản toàn cục: script.txt (${globalScriptCache.globalLines.length} dòng)`);
+    Logger.info('auto-config', `⚡ Tìm thấy kịch bản toàn cục: script.txt (${globalScriptCache.globalLines.length} dòng)`);
   }
   let pythonBackend = PythonBackend.getInstance();
 
   if (shouldMerge && prevConfig?.scenes && prevConfig.scenes.length > 0) {
-    console.log(`\n⚡ Đang nạp và cập nhật ${prevConfig.scenes.length} scenes có sẵn trong cấu hình...`);
+    Logger.info('auto-config', `⚡ Đang nạp và cập nhật ${prevConfig.scenes.length} scenes có sẵn trong cấu hình...`);
 
     for (let i = 0; i < prevConfig.scenes.length; i++) {
       const existingScene = prevConfig.scenes[i];
@@ -533,38 +522,38 @@ async function main() {
       let audioName = existingScene.audio || '';
       let sceneText = existingScene.text;
 
-      console.log(`\n[Scene ${i + 1}/${prevConfig.scenes.length}] ${visualName || 'Scene'}${audioName ? ` <-> ${audioName}` : (sceneText ? ` (Text: "${sceneText.slice(0, 35)}...")` : '')}`);
+      Logger.info('auto-config', `[Scene ${i + 1}/${prevConfig.scenes.length}] ${visualName || 'Scene'}${audioName ? ` <-> ${audioName}` : (sceneText ? ` (Text: "${sceneText.slice(0, 35)}...")` : '')}`);
 
       let captions: any[] = existingScene.captions || [];
 
       // 1. TTS Synthesis if scene has text and no audio (or enableTTS)
-      if (enableTTS || (sceneText)) {
+      if (enableTTS || (sceneText && !!audioName)) {
         const outputName = `${path.basename(visualName || `scene_${i + 1}`, path.extname(visualName || ''))}.${Utils.getChecksum(`${sceneText}-${ttsVoice}-${ttsSpeed}`)}`;
         const cacheFilePath = path.join(absoluteDir, "autogenerated", "voiceovers", `${outputName}.wav`).replace(/\\/g, '/');
         if (fs.existsSync(cacheFilePath)) {
           audioName = path.relative(absoluteDir, cacheFilePath).replace(/\\/g, '/');
-          console.log(`  -> ⚡ Sử dụng file TTS đã có sẵn: ${audioName}`);
+          Logger.info('auto-config', `  -> ⚡ Sử dụng file TTS đã có sẵn: ${audioName}`);
         } else if (sceneText) {
-          console.log(`  -> 🎯 Đang sinh âm thanh bằng VieNeu-TTS...`);
+          Logger.info('auto-config', `  -> 🎯 Đang sinh âm thanh bằng VieNeu-TTS...`);
           try {
             const { file: generatedAudio } = await tts(sceneText, { voice: ttsVoice, speed: ttsSpeed }, outputName, path.join(absoluteDir, "autogenerated", "voiceovers"), pythonBackend);
             audioName = path.relative(absoluteDir, generatedAudio).replace(/\\/g, '/');
-            console.log(`  -> ✅ Sinh âm thanh thành công: ${audioName}`);
+            Logger.info('auto-config', `  -> ✅ Sinh âm thanh thành công: ${audioName}`);
           } catch (err: any) {
-            console.warn(`  -> Cảnh báo: Lỗi sinh TTS:`, err?.message || err);
+            Logger.warn('auto-config', `  -> Cảnh báo: Lỗi sinh TTS:`, err?.message || err);
           }
         }
       }
 
       // 2. Whisper Transcription if audio exists and captions are empty or doTranscribe
-      if (audioName && doTranscribe && captions.length === 0) {
+      if (audioName && doTranscribe) {
         const audioToTranscribe = path.isAbsolute(audioName) ? audioName : path.resolve(absoluteDir, audioName);
-        
+
         try {
           captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, sceneText);
-          console.log(`  -> ✅ Căn chỉnh thành công ${captions.length} từ`);
+          Logger.info('auto-config', `  -> ✅ Căn chỉnh thành công ${captions.length} từ`);
         } catch (err: any) {
-          console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${audioName}:`, err?.message || err);
+          Logger.warn('auto-config', `  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${audioName}:`, err?.message || err);
         }
       }
 
@@ -580,7 +569,7 @@ async function main() {
   } else {
     for (let i = 0; i < filePairs.length; i++) {
       const { visual: visualName, audio: audioName } = filePairs[i];
-      console.log(`\n[Scene ${i + 1}/${filePairs.length}] Ghép: ${visualName} <-> ${audioName}`);
+      Logger.info('auto-config', `[Scene ${i + 1}/${filePairs.length}] Ghép: ${visualName} <-> ${audioName}`);
 
       let captions: any[] = [];
       const refScriptInfo = findReferenceScript(audioName, visualName, i, absoluteDir, globalScriptCache);
@@ -593,47 +582,26 @@ async function main() {
         if (fs.existsSync(cacheFilePath)) {
           finalAudioName = path.relative(absoluteDir, cacheFilePath).replace(/\\/g, '/');
         } else if (refScriptInfo && sceneText) {
-          console.log(`  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
-          console.log(`  -> Đang sinh âm thanh bằng VieNeu-TTS...`);
+          Logger.info('auto-config', `  -> 🎯 Tìm thấy kịch bản gốc (${refScriptInfo.source}): "${refScriptInfo.scriptText.slice(0, 60)}${refScriptInfo.scriptText.length > 60 ? '...' : ''}"`);
+          Logger.info('auto-config', `  -> Đang sinh âm thanh bằng VieNeu-TTS...`);
           try {
             const { file: generatedAudio } = await tts(sceneText, { voice: ttsVoice, speed: ttsSpeed }, outputName, path.join(absoluteDir, "autogenerated", "voiceovers"), pythonBackend);
             finalAudioName = path.relative(absoluteDir, generatedAudio).replace(/\\/g, '/');
           } catch (err) {
-            console.warn(`  -> Cảnh báo: Lỗi sinh TTS:`, err);
+            Logger.warn('auto-config', `  -> Cảnh báo: Lỗi sinh TTS:`, err);
           }
         }
       }
 
       if (finalAudioName && doTranscribe) {
         const audioToTranscribe = path.isAbsolute(finalAudioName) ? finalAudioName : path.resolve(absoluteDir, finalAudioName);
-        if (refScriptInfo) {
-          console.log(`  -> Đang căn chỉnh timestamps theo đúng chữ gốc (Script-guided Alignment)...`);
-          try {
-            captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, refScriptInfo.scriptText);
-            console.log(`  -> ✅ Căn chỉnh thành công ${captions.length} từ theo đúng chính tả kịch bản.`);
-          } catch (err: any) {
-            console.warn(`  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${finalAudioName}:`, err?.message || err);
-          }
-        } else {
-          console.log(`  -> Đang nhận diện giọng nói tự động bằng Whisper (${finalAudioName})...`);
-          try {
-            captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true);
-            console.log(`  -> Trích xuất được ${captions.length} mốc từ/cụm từ.`);
-          } catch (err: any) {
-            console.warn(`  -> Cảnh báo: Lỗi khi transcribe ${finalAudioName}:`, err?.message || err);
-          }
+        try {
+          captions = await transcribeAudio(audioToTranscribe, 'vietnamese', true, refScriptInfo?.scriptText);
+          Logger.info('auto-config', `  -> ✅ Căn chỉnh thành công ${captions.length} từ theo đúng chính tả kịch bản.`);
+        } catch (err: any) {
+          Logger.warn('auto-config', `  -> Cảnh báo: Lỗi khi căn chỉnh script cho ${finalAudioName}:`, err?.message || err);
         }
-      } else if (!finalAudioName) {
-        console.warn(`  -> Cảnh báo: Không có audio cho scene này!`);
-      } else {
-        const existingScene = (prevConfig?.scenes || prevConfig?.slides)?.find(
-          (s) => s.audio === audioName || s.image === visualName || s.video === visualName
-        );
-        if (existingScene && existingScene.captions) {
-          captions = existingScene.captions;
-          console.log(`  -> Giữ lại ${captions.length} captions đã có từ cấu hình trước.`);
-        }
-      }
+      } 
 
       const isVideo = VIDEO_EXTENSIONS.has(path.extname(visualName).toLowerCase());
 
@@ -734,13 +702,14 @@ async function main() {
 
   fs.writeFileSync(configPath, JSON.stringify(resultConfig, null, 2), 'utf-8');
 
-  console.log(`\n Hoàn tất! Đã lưu file cấu hình:`);
-  console.log(` -> ${configPath}`);
-  console.log(`\nBây giờ bạn có thể render video ngay bằng lệnh:`);
-  console.log(`bun run cli.ts "${absoluteDir}"\n`);
+
+  Logger.info('auto-config', `Bây giờ bạn có thể render video ngay bằng lệnh:`);
+  Logger.info('auto-config', `bun run cli.ts "${absoluteDir}"`);
+  outro(`Hoàn tất! Đã lưu file cấu hình: ${configPath}`);
+
 }
 
 main().catch((err) => {
-  console.error('Lỗi không xác định:', err);
+  outro('Lỗi không xác định:', err);
   process.exit(1);
 });

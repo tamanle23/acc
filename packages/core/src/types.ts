@@ -271,7 +271,6 @@ export interface StoryConfig {
   description?: string;
   settings: StorySettings;
   scenes?: SceneConfig[];
-  slides?: SceneConfig[]; // deprecated backward compatibility
 }
 
 export interface ResolvedSceneConfig extends SceneConfig {

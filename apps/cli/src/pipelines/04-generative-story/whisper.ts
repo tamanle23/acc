@@ -1,15 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { getMediaDuration as getAudioDuration, FFIAudioDSP } from '@acc/core';
+import { getMediaDuration as getAudioDuration, FFIAudioDSP, Logger } from '@acc/core';
 import { pipeline } from '@huggingface/transformers';
-import type { CaptionConfig } from './types';
+import type { CaptionConfig } from '@acc/core/types';
 
 let transcriberInstance: any = null;
 
 async function getTranscriber() {
   if (!transcriberInstance) {
-    console.log('Loading Whisper model (onnx-community/whisper-tiny)...');
+    Logger.info('whisper','Loading Whisper model (onnx-community/whisper-tiny)...');
     transcriberInstance = await pipeline(
       'automatic-speech-recognition',
       'onnx-community/whisper-tiny',
@@ -129,7 +126,7 @@ export async function transcribeAudio(
 
   // Nếu người dùng có script gốc, dùng Forced/Script-guided Alignment để giữ 100% chữ gốc
   if (referenceScript && referenceScript.trim().length > 0) {
-    console.log(`  -> Đang căn chỉnh timestamps theo kịch bản (Script-guided Alignment)...`);
+    Logger.info('whisper', `Đang căn chỉnh timestamps theo đúng chữ gốc (Script-guided Alignment)...`);
     return alignScriptWithTimestamps(referenceScript.trim(), chunks, audioDuration);
   }
 

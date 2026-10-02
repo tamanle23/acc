@@ -13,7 +13,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { FFmpegExecutor, getMediaDuration } from '@acc/core';
 const ffmpeg = FFmpegExecutor;
-import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from './types';
+import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from '@acc/core/types';
 import { generateAssContent, getSceneDuration, renderDepth3DScene } from '@acc/effect-engines';
 import { buildFfmpegEncodingFlags } from './platforms';
 import { UpscalerPlugin } from './plugins/UpscalerPlugin';
@@ -109,10 +109,10 @@ function concatenateWithTransitions(
         // Fallback to a fast cut if no transition is enabled between these
         tConfig = { enabled: true, type: 'fade', duration: 0.1, audioBehavior: 'crossfade' };
       }
-      
+
       const tDur = tConfig.duration || 1.0;
       currentOffset -= tDur; // offset shrinks because we overlap
-      
+
       const nextV = `[v_norm_${i + 1}]`;
       const nextA = `[a_norm_${i + 1}]`;
       const outV = filterGraph.createStreamLabel(`v_trans_${i}`);
@@ -206,7 +206,7 @@ export async function renderStoryVideo(
     try {
       await plugin.execute(renderContext);
     } catch (e: any) {
-      Logger.error('Pipeline', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
+      Logger.error('StoryRenderer', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
     }
   }
 
@@ -220,7 +220,7 @@ export async function renderStoryVideo(
   const needsAI = config.scenes.some(s => s.depth3d?.enabled && (s.depth3d?.autoSegment || s.depth3d?.autoDepth || s.depth3d?.mode === 'frame_breaker' || s.depth3d?.mode === 'volumetric_sandwich')) || config.settings.captions?.autoTranscribe;
   if (needsAI) {
     try {
-      console.log('[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...');
+      Logger.info('StoryRenderer', '[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...');
       const { defaultIPCFacade } = await import('@acc/core');
       await defaultIPCFacade.ensureDaemonRunning();
     } catch (err: any) {
@@ -229,7 +229,7 @@ export async function renderStoryVideo(
   }
 
   try {
-    console.log(`\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
+    Logger.info('StoryRenderer', `\n🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`);
 
     const hasAnyTransition = config.scenes.some(s => s.transition?.enabled) || config.settings.transition?.enabled;
 
@@ -239,7 +239,7 @@ export async function renderStoryVideo(
         workerPool = new SceneWorkerPool(activeConcurrency, FFmpegManager.getBinDir());
         await workerPool.initialize();
       } catch (err: any) {
-        Logger.warn('Pipeline', `Worker pool initialization failed: ${err.message}. Running in main thread.`);
+        Logger.warn('StoryRenderer', `Worker pool initialization failed: ${err.message}. Running in main thread.`);
         workerPool = null;
       }
     }
@@ -262,7 +262,7 @@ export async function renderStoryVideo(
 
           const segmentPath = path.join(tempDir, `scene_${i}.${container}`);
           const startTime = Date.now();
-          
+
           // Determine transition padding
           let paddingTime = 0;
           const tConfig = scene.transition || config.settings.transition;
@@ -283,9 +283,9 @@ export async function renderStoryVideo(
           const modeName = depthConfig?.mode || 'frame_breaker';
 
           if (is3D) {
-            Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration+paddingTime).toFixed(2)}s)...`);
+            Logger.info('StoryRenderer', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration + paddingTime).toFixed(2)}s)...`);
           } else {
-            Logger.info('Pipeline', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration+paddingTime).toFixed(2)}s)...`);
+            Logger.info('StoryRenderer', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration + paddingTime).toFixed(2)}s)...`);
           }
 
           let result;
@@ -316,7 +316,7 @@ export async function renderStoryVideo(
                 useHighQualityIntermediate: hasAnyTransition
               });
             } catch (depthErr: any) {
-              Logger.warn('Pipeline', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
+              Logger.warn('StoryRenderer', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
               result = await renderSingleScene(
                 sceneToRender,
                 duration,
@@ -344,7 +344,7 @@ export async function renderStoryVideo(
           }
 
           const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.log(`✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
+          Logger.info('StoryRenderer', `✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
 
           return { path: result.path, duration: result.duration, transition: scene.transition };
         }
@@ -356,15 +356,15 @@ export async function renderStoryVideo(
       }
     }
 
-    console.log('\nConcatenating scenes into final video...');
-    
+    Logger.info('StoryRenderer', '\nConcatenating scenes into final video...');
+
     let currentVideoPath = path.join(tempDir, 'concat_output.mp4');
 
     if (segments.length === 1) {
       fs.copyFileSync(segments[0].path, currentVideoPath);
     } else {
       if (hasAnyTransition) {
-        console.log('Applying video transition filtergraph (xfade)...');
+        Logger.info('StoryRenderer', 'Applying video transition filtergraph (xfade)...');
         await concatenateWithTransitions(segments, currentVideoPath, config);
       } else {
         await concatenateVideos(segments.map(s => s.path), currentVideoPath);
@@ -373,31 +373,31 @@ export async function renderStoryVideo(
 
     if (config.settings.overlayComposite) {
       const nextVideoPath = path.join(tempDir, 'with_overlay.mp4');
-      console.log(`\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);
-      const { RegistryManager } = await import('./core/Registry');
-      const { renderEffectLayer } = await import('./overlay-effects/engine');
-      const { applyPolyrhythmicOverlays } = await import('./overlay-effects/stacker');
+      Logger.info('StoryRenderer', `\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);
+      const { RegistryManager } = await import('@acc/core/Registry');
+      const { renderEffectLayer } = await import('@acc/effect-engines/overlay-effects/engine');
+      const { applyPolyrhythmicOverlays } = await import('@acc/effect-engines/overlay-effects/stacker');
 
       const registry = new RegistryManager();
       const compositeConfig = registry.getCompositeConfig(config.settings.overlayComposite);
-      
+
       const outDir = path.join(baseDir, 'autogenerated', 'overlay-effects');
-      console.log(`Generating/Fetching ${compositeConfig.layers.length} prime-duration layers...`);
-      
+      Logger.info('StoryRenderer', `Generating/Fetching ${compositeConfig.layers.length} prime-duration layers...`);
+
       const renderPromises = compositeConfig.layers.map(layer => {
         return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir);
       });
       const overlayPaths = await Promise.all(renderPromises);
 
-      console.log('Stacking infinite polyrhythmic layers over the main video...');
+      Logger.info('StoryRenderer', 'Stacking infinite polyrhythmic layers over the main video...');
       await applyPolyrhythmicOverlays(currentVideoPath, overlayPaths, nextVideoPath);
-      console.log('✅ Compositing completed successfully!');
+      Logger.info('StoryRenderer', '✅ Compositing completed successfully!');
       currentVideoPath = nextVideoPath;
     }
 
     if (config.settings.bgm) {
       const nextVideoPath = path.join(tempDir, 'with_bgm.mp4');
-      console.log(`\n=== Applying Background Music ===`);
+      Logger.info('StoryRenderer', `=== Applying Background Music ===`);
       await new Promise<void>((resolve, reject) => {
         const bgm = config.settings.bgm!;
         let bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
@@ -486,7 +486,7 @@ export async function renderStoryVideo(
           });
         }
 
-        console.log(`Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
+        Logger.info('StoryRenderer', `Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
         command
           .complexFilter(bgmGraph.compile())
           .outputOptions([
@@ -504,7 +504,7 @@ export async function renderStoryVideo(
           })
           .run();
       });
-      console.log('✅ Background Music applied successfully!');
+      Logger.info('StoryRenderer', '✅ Background Music applied successfully!');
       currentVideoPath = nextVideoPath;
     }
 
@@ -514,7 +514,7 @@ export async function renderStoryVideo(
   } finally {
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {}
+    } catch { }
   }
 }
 
