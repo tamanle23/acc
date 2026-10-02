@@ -40,3 +40,4 @@ export * from './ipc/IPCFacade';
 export * from './types';
 export * from './ai-backend/python/PythonBackend';
 export * from './SceneWorker';
+export * from './pipeline';

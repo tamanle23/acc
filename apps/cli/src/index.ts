@@ -10,7 +10,7 @@ import {
   ScraperEngine,
   defaultStoryPipeline,
 } from './pipelines';
-import { intro } from '@acc/core';
+import { intro, defaultPipelineRegistry } from '@acc/core';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help';

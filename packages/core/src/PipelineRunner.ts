@@ -9,28 +9,35 @@ export interface PipelineContext {
   vfxQueue: VFXCommand[];
   metadata: Record<string, any>;
   errors: Array<{ stage: string; error: Error }>;
+  timings?: Record<string, number>;
+  [key: string]: any;
 }
 
-export interface IPipelineMiddleware {
+export interface IPipelineMiddleware<TContext extends PipelineContext = PipelineContext> {
   name: string;
-  execute(ctx: PipelineContext, next: () => Promise<void>): Promise<void>;
+  execute(ctx: TContext, next: () => Promise<void>): Promise<void>;
 }
 
-export class PipelineRunner {
-  private middlewares: IPipelineMiddleware[] = [];
+export class PipelineRunner<TContext extends PipelineContext = PipelineContext> {
+  private middlewares: IPipelineMiddleware<TContext>[] = [];
 
-  public use(middleware: IPipelineMiddleware): this {
+  public use(middleware: IPipelineMiddleware<TContext>): this {
     this.middlewares.push(middleware);
     return this;
   }
 
-  public getMiddlewares(): IPipelineMiddleware[] {
+  public getMiddlewares(): IPipelineMiddleware<TContext>[] {
     return [...this.middlewares];
   }
 
-  public async run(ctx: PipelineContext): Promise<PipelineContext> {
-    Logger.info('PipelineRunner', `Starting pipeline execution for story [${ctx.storyId}]`);
+  public async run(ctx: TContext): Promise<TContext> {
+    const storyIdentifier = ctx.storyId || (ctx as any).pipelineId || 'unknown';
+    Logger.info('PipelineRunner', `Starting pipeline execution for story [${storyIdentifier}]`);
     let index = -1;
+
+    if (!ctx.timings) {
+      ctx.timings = {};
+    }
 
     const dispatch = async (i: number): Promise<void> => {
       if (i <= index) {
@@ -44,6 +51,7 @@ export class PipelineRunner {
 
       const mw = this.middlewares[i];
       Logger.debug('PipelineRunner', `Executing middleware stage: ${mw.name}`);
+      const stageStartTime = Date.now();
 
       try {
         await mw.execute(ctx, () => dispatch(i + 1));
@@ -54,11 +62,13 @@ export class PipelineRunner {
 
         // Defensive Fault Isolation: Continue pipeline execution to allow fallbacks to process
         await dispatch(i + 1);
+      } finally {
+        ctx.timings![mw.name] = Date.now() - stageStartTime;
       }
     };
 
     await dispatch(0);
-    Logger.info('PipelineRunner', `Pipeline [${ctx.storyId}] completed with ${ctx.errors.length} stage error(s).`);
+    Logger.info('PipelineRunner', `Pipeline [${storyIdentifier}] completed with ${ctx.errors.length} stage error(s).`);
     return ctx;
   }
 }

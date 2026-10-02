@@ -19,6 +19,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`009`](009_gpu_acceleration_enhancement_suite.md) | Full GPU Acceleration & Hardware Encoding Enhancement Suite | Core Engine / Hardware Accel | ✅ `Completed` | 2026-09-30 | [`079`](../history/079_encoding_strategy_pattern_refactor.md), [`083`](../history/083_backlog_gpu_acceleration_enhancement_suite.md), [`116`](../history/116_mark_all_backlogs_completed.md) |
 | [`010`](010_huggingface_transformers_js_sam_depth.md) | Native In-Process SAM & Depth via @huggingface/transformers | Effect Engines / Vision | ✅ `Completed` | 2026-10-01 | [`089_huggingface_transformers_js_vision_strategy_pattern.md`](../history/089_huggingface_transformers_js_vision_strategy_pattern.md) |
 | [`011`](011_vision_segmentation_optimization_and_birefnet_acceleration.md) | Vision Segmentation Optimization & BiRefNet Acceleration | Effect Engines / Vision | ✅ `Completed` | 2026-10-01 | [`092_vision_segmentation_optimization_and_benchmark.md`](../history/092_vision_segmentation_optimization_and_benchmark.md) |
+| [`012`](012_unify_all_6_pipelines_under_orchestrator.md) | Unify All 6 Pipelines Under Orchestrator & Middleware Architecture | Core Architecture / Orchestrator | ✅ `Completed` | 2026-10-02 | [`123_unify_all_6_pipelines_under_orchestrator.md`](../history/123_unify_all_6_pipelines_under_orchestrator.md) |
 
 ---
 
