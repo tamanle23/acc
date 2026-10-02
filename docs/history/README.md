@@ -129,4 +129,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`115`](115_burn_captions_on_video_broll_scenes.md) | 2026-10-02 | Burn Captions & Subtitles on Video / B-Roll Scenes | Enabled Canvas caption overlay and looping in FFISceneEngine.renderVideoScene |
 | [`116`](116_mark_all_backlogs_completed.md) | 2026-10-02 | Backlog Index Cleanup & Mark All Completed | Cleaned and marked all 11 backlog items as completed in docs/backlogs/ and synchronized index table |
 | [`117`](117_unified_audio_codec_and_native_bgm_mixer.md) | 2026-10-02 | Unified Audio Codec Normalization & Native BGM Filtergraph Execution | Normalized scene audio inputs to MP3, fixed FFmpegExecutor option splitting for BGM filtergraph |
+| [`118`](118_synchronize_all_scenes_voiceovers_and_captions.md) | 2026-10-02 | Synchronize All Story Scenes, Voiceovers, and Captions | Synthesized dedicated TTS voiceovers and aligned word timestamps across all 28 scenes |
 
