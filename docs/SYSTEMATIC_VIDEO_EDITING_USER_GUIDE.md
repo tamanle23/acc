@@ -70,31 +70,29 @@ console.log(`Rendered output saved to: ${result.exportResult.outputPath}`);
 
 ---
 
-## 3. Comprehensive Guide to All 13 Video Editing Groups
+## 3. Comprehensive Guide to All 13 Video Editing Groups & Subgroups
 
 ### ✂️ Group 1: Cuts & Transitions
 
-#### 1.1 Standard Cuts & J/L-Cut Split Edits
-J-Cuts start audio before the video appears, while L-Cuts allow audio to continue into the next scene.
+#### 1.1 Standard Cuts, J/L-Cut Split Edits, & Freeze Frame
+J-Cuts start audio before the video appears, L-Cuts allow audio to continue into the next scene, and Freeze Frames hold a video on a single frame.
 
-* **Configuration**:
-```json
-{
-  "scenes": [
-    {
-      "video": "interviews/speaker1.mp4",
-      "duration": 5,
-      "videoOffsetMs": 600
-    }
-  ]
-}
-```
-* **TypeScript Usage**:
+* **Split Edits**:
 ```typescript
 import { EditingOpFactory } from '@acc/effect-engines';
 
 const jCutStrategy = EditingOpFactory.getCutStrategy('j_cut', { offsetMs: 600 });
 const cutCalc = jCutStrategy.calculateCut(chunk);
+```
+
+* **Freeze Frame Strategy**:
+```typescript
+import { FreezeFrameStrategy } from '@acc/effect-engines';
+
+const freezeFilter = FreezeFrameStrategy.generateFFmpegFreezeFrameFilter({
+  freezeAtMs: 1200,
+  durationMs: 2000,
+});
 ```
 
 #### 1.2 Transitions via `TransitionFactory`
@@ -167,17 +165,25 @@ const filterStr = SpeedRampStrategy.generateFFmpegSetPtsFilter(speedAt500ms);
 Automatically lower background music volume under speech and normalize output to $-14\text{ LUFS}$.
 
 ```typescript
-import { AudioDuckingDSP, AudioDuckingDecorator } from '@acc/core';
+import { AudioDuckingDSP } from '@acc/core';
 
-// Build sidechain compression filter
 const duckingFilter = AudioDuckingDSP.buildSidechainFilterGraph('a_narration', 'a_bgm', 'a_out', {
   attenuationDb: -18,
   attackMs: 20,
   releaseMs: 250,
 });
 
-// Build EBU R128 loudness normalization filter
 const loudnormFilter = AudioDuckingDSP.buildEBUR128LoudnessFilter(-14.0);
+```
+
+#### 3.2 Foley & Sound Design Presets
+Instantiate Foley and SFX markers using `SoundEffectFactory`.
+
+```typescript
+import { SoundEffectFactory } from '@acc/effect-engines';
+
+const footstepsMarker = SoundEffectFactory.createFoleyPreset('footsteps', 1200);
+const whooshMarker = SoundEffectFactory.createFoleyPreset('whoosh', 2500);
 ```
 
 ---
@@ -244,6 +250,19 @@ const chromaFilter = ChromaKeyCompositorStrategy.generateFFmpegChromaKeyFilter({
 const matrix = HomographyCompositorStrategy.calculate3x3HomographyMatrix(srcQuad, dstQuad);
 ```
 
+#### 5.3 Double Exposure Blending
+Blend two video layers together using `screen`, `multiply`, or `overlay` blend modes.
+
+```typescript
+import { DoubleExposureCompositorStrategy } from '@acc/effect-engines';
+
+// Apply blend mode on 2D Canvas
+DoubleExposureCompositorStrategy.applyDoubleExposureBlend(canvasCtx, 'screen', 0.85);
+
+// Generate FFmpeg blend filter
+const blendFilter = DoubleExposureCompositorStrategy.generateFFmpegBlendFilter('v0', 'v1', 'v_out', 'screen');
+```
+
 ---
 
 ### 🔠 Group 6: Typography & Motion Graphics
@@ -296,41 +315,51 @@ const synchronizedAngles = MulticamFacade.syncAllCameraAngles(cameraA, [cameraB,
 console.log(`Camera B offset: ${synchronizedAngles[0].offsetMs}ms`);
 ```
 
-#### 7.2 Proxy Asset Manager
-Edit with lightweight 720p proxies during preview, swapping back to 4K originals on final render.
+#### 7.2 Proxy Asset Manager & 7.4 Text-Based Transcript Editing
+Edit with lightweight 720p proxies during preview and calculate timeline cuts directly from deleted transcript words.
 
 ```typescript
-import { ProxyAssetManager } from '@acc/core';
+import { ProxyAssetManager, TextBasedEditingEngine } from '@acc/core';
 
+// Proxy Asset Manager
 const proxyManager = new ProxyAssetManager();
 proxyManager.registerAsset('scene_1', '4k_originals/scene1.mp4', 'proxies/scene1_720p.mp4');
-
 proxyManager.setProxyMode(true);
-const previewPath = proxyManager.getResolvedPath('scene_1'); // 'proxies/scene1_720p.mp4'
+const previewPath = proxyManager.getResolvedPath('scene_1');
 
-proxyManager.setProxyMode(false);
-const exportPath = proxyManager.getResolvedPath('scene_1'); // '4k_originals/scene1.mp4'
+// Text-Based Editing Engine
+const wordTokens = [
+  { word: 'Welcome', startMs: 0, endMs: 500, deleted: false },
+  { word: 'um', startMs: 500, endMs: 900, deleted: true },
+  { word: 'everyone', startMs: 900, endMs: 1400, deleted: false },
+];
+const retainedRanges = TextBasedEditingEngine.calculateTimelineCutsFromDeletedWords(wordTokens);
 ```
 
 ---
 
 ### 🤖 Group 8: AI-Powered & Generative Editing
 
-#### 8.1 Auto-Reframe (16:9 to 9:16)
-Convert horizontal video to vertical format while keeping focal subjects automatically centered.
+#### 8.1 Auto-Reframe (16:9 to 9:16) & Voice Isolation
+Convert horizontal video to vertical format while keeping focal subjects centered and remove background audio noise.
 
 ```typescript
 import { AutoReframeStrategy } from '@acc/effect-engines';
+import { VoiceIsolationEngine } from '@acc/core';
 
+// Auto-Reframe 16:9 to 9:16
 const autoReframe = new AutoReframeStrategy({
   sourceWidth: 1920,
   sourceHeight: 1080,
   targetAspectRatio: '9:16',
-  smoothingFactor: 0.85,
 });
-
 const cropRect = autoReframe.calculateCropForSubject({ x: 1200, y: 200, width: 300, height: 600 });
-const filterStr = autoReframe.generateFFmpegCropFilter(cropRect);
+
+// Voice Isolation & Audio Noise Removal Filter
+const voiceIsoFilter = VoiceIsolationEngine.generateFFmpegVoiceIsolationFilter({
+  noiseSuppressionDb: -21,
+  highpassHz: 80,
+});
 ```
 
 ---
@@ -338,18 +367,13 @@ const filterStr = autoReframe.generateFFmpegCropFilter(cropRect);
 ### 📤 Group 9: Mastering & Delivery
 
 #### 9.1 TikTok / Reels / Shorts Safe Zones
-Ensure text and captions avoid platform UI occlusion zones (like buttons, audio discs).
+Ensure text and captions avoid platform UI occlusion zones.
 
 ```typescript
 import { SafeZoneManager } from '@acc/effect-engines';
 
 const inSafeZone = SafeZoneManager.isBoxInSafeZone(
   { x: 100, y: 1750, width: 400, height: 100 },
-  'tiktok'
-);
-
-const clampedPos = SafeZoneManager.clampPositionToSafeZone(
-  { x: 920, y: 800, width: 200, height: 100 },
   'tiktok'
 );
 ```
@@ -401,15 +425,17 @@ const { htmlPath, jsonPath } = WidgetExporter.exportInteractiveWidget(extendedIR
 
 ### 🥽 Group 12: Immersive & Spatial Media
 
-#### 12.1 360 Video Stitching & Stereoscopic Spatial Video
-Process 360 VR dual fisheye lenses or export stereoscopic 3D for Apple Vision Pro.
+#### 12.1 360 Video Stitching, Stereoscopic Spatial Video, & Ambisonics
+Process 360 VR dual fisheye lenses, export stereoscopic 3D for Apple Vision Pro, or encode Higher-Order Ambisonics (HOA) B-Format 3D audio.
 
 ```typescript
 import { EquirectangularStitcher } from '@acc/effect-engines';
+import { SpatialAudioAmbisonicsEngine } from '@acc/core';
 import { SpatialVideoExporter } from '@acc/exporters';
 
 const v360Filter = EquirectangularStitcher.generateFFmpegV360Filter({ inputProjection: 'dual_fisheye', yawDeg: 10 });
 const stereoFilter = SpatialVideoExporter.generateStereoscopicFFmpegFilter({ outputDir: '/tmp', eyeDisparityPx: 64 });
+const ambisonicFilter = SpatialAudioAmbisonicsEngine.generateFFmpegAmbisonicBFormatFilter({ azimuthDeg: 45, elevationDeg: 0 });
 ```
 
 ---
@@ -451,7 +477,7 @@ MoCapVTubeFacade.renderAvatarFrameFromLandmarks(ctx, {
 | **Adapter** | `LegacyStoryConfigAdapter` | Adapts legacy `story-config.json` into `ExtendedPipelineIR` AST v3.1 |
 | **Facade** | `EditingEngineFacade`, `IPCFacade`, `MulticamFacade` | Provides simple unified APIs hiding FFI C-pointers and IPC gRPC calls |
 | **Strategy** | `ICutStrategy`, `ICompositorStrategy`, `ITransitionStrategy`, `IAudioDSPStrategy` | Hot-swappable algorithms for cuts, layouts, transitions, and audio DSP |
-| **Factory** | `EditingOpFactory`, `TransitionFactory`, `LowerThirdFactory` | Centralized instantiation of editing strategies based on IR metadata |
+| **Factory** | `EditingOpFactory`, `TransitionFactory`, `LowerThirdFactory`, `SoundEffectFactory` | Centralized instantiation of editing strategies based on IR metadata |
 | **Decorator** | `EffectDecorator`, `VignetteDecorator`, `AudioDuckingDecorator` | Wraps frame producers and filter graphs to chain visual & audio effects |
 | **Command** | `RenderTimelineCommand`, `ApplyColorGradingCommand`, `BurnSubtitleCommand` | Transactional execution units with memory & CPU cost estimation |
 | **Middleware** | `EditingStageRunner`, `IEditingStageMiddleware` | Pipeline execution chain with defensive fault isolation error boundaries |
