@@ -14,13 +14,33 @@ export class FFIFilterGraph {
     constructor() {
         if (!avfilter) {
             const binDir = FFmpegManager.getBinDir();
-            avfilter = dlopen(path.join(binDir, 'avfilter-12.dll'), {
-                avfilter_graph_alloc: { args: [], returns: FFIType.ptr },
+            const ext = process.platform === 'darwin' ? '.dylib' : '.so';
+            const winName = 'avfilter-12.dll';
+            const unixName = `libavfilter${ext}`;
+            let libPath = process.platform === 'win32' ? path.join(binDir, winName) : unixName;
+            if (process.platform !== 'win32') {
+              const candidateInBin = path.join(binDir, unixName);
+              if (fs.existsSync(candidateInBin)) libPath = candidateInBin;
+              else {
+                const searchDirs = [binDir, '/usr/lib/x86_64-linux-gnu', '/usr/lib64', '/usr/lib', '/opt/homebrew/lib'];
+                for (const dir of searchDirs) {
+                  try {
+                    if (dir && fs.existsSync(dir)) {
+                      const match = fs.readdirSync(dir).find(f => f.startsWith('libavfilter'));
+                      if (match) { libPath = path.join(dir, match); break; }
+                    }
+                  } catch {}
+                }
+              }
+            }
+
+            avfilter = dlopen(libPath, {
+                avfilter_graph_alloc: { args: [], returns: FFIType.u64 },
                 avfilter_graph_free: { args: [FFIType.ptr], returns: FFIType.void },
-                avfilter_graph_parse2: { args: [FFIType.ptr, FFIType.cstring, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
-                avfilter_graph_config: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
-                av_buffersrc_add_frame_flags: { args: [FFIType.ptr, FFIType.ptr, FFIType.i32], returns: FFIType.i32 },
-                av_buffersink_get_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 }
+                avfilter_graph_parse2: { args: [FFIType.u64, FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+                avfilter_graph_config: { args: [FFIType.u64, FFIType.ptr], returns: FFIType.i32 },
+                av_buffersrc_add_frame_flags: { args: [FFIType.u64, FFIType.u64, FFIType.i32], returns: FFIType.i32 },
+                av_buffersink_get_frame: { args: [FFIType.u64, FFIType.u64], returns: FFIType.i32 }
             }).symbols;
         }
 
@@ -29,16 +49,13 @@ export class FFIFilterGraph {
     }
 
     public parse(filterComplex: string) {
-        // Prepare in/out linked lists (AVFilterInOut)
-        // In a complete implementation, we'd need to allocate AVFilterInOut structs, 
-        // link them to our buffersrc and buffersink nodes, and pass them here.
-        // For this architectural implementation, we demonstrate the API call:
-        
+        const inPtr = new BigUint64Array(1);
+        const outPtr = new BigUint64Array(1);
         const ret = avfilter.avfilter_graph_parse2(
             this.graph,
-            Buffer.from(filterComplex + "\0"),
-            0n, // inputs (AVFilterInOut**)
-            0n  // outputs (AVFilterInOut**)
+            ptr(Buffer.from(filterComplex + "\0")),
+            ptr(inPtr.buffer),
+            ptr(outPtr.buffer)
         );
         
         if (ret < 0) {
