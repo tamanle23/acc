@@ -9,3 +9,4 @@ export * from './EditingPipelineOrchestrator';
 export * from './stages/StoryFolderResolutionStage';
 export * from './stages/StoryOrchestratedRenderStage';
 export * from './stages/StoryMetadataPersistenceStage';
+export * from './utils/folderResolver';

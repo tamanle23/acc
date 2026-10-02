@@ -316,6 +316,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
         format: options.format,
         duration: options.duration,
         exporters: options.exporters,
+        dryRun: options.dryRun,
       });
 
       const outputPaths = executionResult.exportResults ? extractOutputPaths(executionResult.exportResults) : [];

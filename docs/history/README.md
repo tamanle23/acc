@@ -141,6 +141,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`127`](127_phase3_cli_dispatcher_and_dryrun.md) | 2026-10-02 | Phase 3: CLI Dispatcher & Unified Registry with Dry-Run Support | Added --dry-run CLI support, dynamic registry delegation, canonical ID alignment across all 6 pipelines |
 | [`128`](128_phase1_consolidate_editing_orchestrator.md) | 2026-10-02 | Phase 1: Consolidate Video Editing Operations into EditingPipelineOrchestrator | Centralized multi-scene rendering, 3D depth, transitions, overlays, and BGM into EditingPipelineOrchestrator; refactored StoryRenderer.ts |
 | [`129`](129_phase2_refactor_story_pipeline_and_stages.md) | 2026-10-02 | Phase 2: Refactor GenerativeStoryPipeline and Stages | Enhanced StoryFolderResolutionStage, StoryOrchestratedRenderStage, StoryMetadataPersistenceStage with full AST and AssetContext pass-through |
+| [`130`](130_optimize_generative_story_pipeline.md) | 2026-10-02 | Optimize GenerativeStoryPipeline and Modular Folder Resolution | Extracted utils/folderResolver.ts and refactored GenerativeStoryPipeline into clean declarative pipeline class |
 
 
 
