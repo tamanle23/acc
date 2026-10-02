@@ -62,24 +62,48 @@ import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-genera
 describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () => {
   // FLYWEIGHT PATTERN: MODEL HANDLE REGISTRY
   describe('Flyweight Pattern: ModelHandleRegistry', () => {
-    test('acquires, caches, and manages AI model handles with idle eviction', async () => {
+    test('acquires, caches, registers, and manages AI model handles with memory tracking and eviction', async () => {
       const registry = ModelHandleRegistry.getInstance();
-      let loadCount = 0;
+      registry.clearAll();
 
+      let loadCount = 0;
       const modelLoader = async () => {
         loadCount++;
         return { name: 'kokoro-tts-v1', version: '1.0' };
       };
 
-      const m1 = await registry.acquireModel('kokoro-tts', modelLoader);
+      // 1. acquireModel
+      const m1 = await registry.acquireModel('kokoro-tts', modelLoader, 150);
       expect(m1.name).toBe('kokoro-tts-v1');
       expect(loadCount).toBe(1);
 
       // Re-acquiring should return cached handle without reloading
-      const m2 = await registry.acquireModel('kokoro-tts', modelLoader);
+      const m2 = await registry.acquireModel('kokoro-tts', modelLoader, 150);
       expect(m2).toBe(m1);
       expect(loadCount).toBe(1);
       expect(registry.hasModel('kokoro-tts')).toBe(true);
+
+      // 2. registerHandle & getHandle
+      let disposed = false;
+      const customHandle = { dispose: async () => { disposed = true; } };
+      registry.registerHandle('custom-sam2', customHandle, 300);
+
+      expect(registry.getHandle('custom-sam2')).toBe(customHandle);
+      expect(registry.getActiveHandles()).toContain('kokoro-tts');
+      expect(registry.getActiveHandles()).toContain('custom-sam2');
+      expect(registry.getTotalMemoryUsageMB()).toBe(450); // 150 + 300
+
+      // 3. releaseHandle
+      const released = await registry.releaseHandle('custom-sam2');
+      expect(released).toBe(true);
+      expect(disposed).toBe(true);
+      expect(registry.getHandle('custom-sam2')).toBeUndefined();
+      expect(registry.getTotalMemoryUsageMB()).toBe(150);
+
+      // 4. evictLowestPriorityHandle
+      const evicted = await registry.evictLowestPriorityHandle();
+      expect(evicted).toBe(true);
+      expect(registry.getActiveHandles().length).toBe(0);
 
       registry.clearAll();
       expect(registry.hasModel('kokoro-tts')).toBe(false);
