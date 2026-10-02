@@ -13,8 +13,10 @@ import {
   MontageBeatSync,
   SpeedRampStrategy,
   SmashCutStrategy,
+  FreezeFrameStrategy,
   ChromaKeyCompositorStrategy,
   HomographyCompositorStrategy,
+  DoubleExposureCompositorStrategy,
   EquirectangularStitcher,
   VTubingEngine,
   TransitionFactory,
@@ -52,6 +54,9 @@ import {
   VoiceIsolationCloningStrategy,
   MatchmoveVisionFacade,
   ModelHandleRegistry,
+  TextBasedEditingEngine,
+  VoiceIsolationEngine,
+  SpatialAudioAmbisonicsEngine,
 } from '../packages/core';
 import {
   KineticTypography,
@@ -116,11 +121,14 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
 
   // GROUP 1: CUTS & TRANSITIONS (STRATEGY & FACTORY PATTERNS)
   describe('Group 1: Cuts & Transitions (Strategy & Factory Patterns)', () => {
-    test('1.1 & 1.3: Standard Cut & J/L-Cuts', () => {
+    test('1.1 & 1.3: Standard Cut, J/L-Cuts, Freeze Frame', () => {
       const jCut = EditingOpFactory.getCutStrategy('j_cut', { offsetMs: 500 });
       const calc = jCut.calculateCut({ id: 'c1', order: 0, durationMs: 4000, visualLayers: [], typographyOverlays: [] });
       expect(calc.splitEditType).toBe('j_cut');
       expect(calc.videoRange.startMs).toBe(500);
+
+      const freezeFilter = FreezeFrameStrategy.generateFFmpegFreezeFrameFilter({ freezeAtMs: 1200, durationMs: 2000 });
+      expect(freezeFilter).toContain('start=trunc(1.20*fps)');
     });
 
     test('1.2: Transitions via TransitionFactory', () => {
@@ -238,11 +246,14 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       expect(filter).toContain('chromakey=color=0x00FF00:similarity=0.18');
     });
 
-    test('5.3: Homography Corner Pinning', () => {
+    test('5.3: Homography Corner Pinning & Double Exposure', () => {
       const src = { topLeft: { x: 0, y: 0 }, topRight: { x: 100, y: 0 }, bottomRight: { x: 100, y: 100 }, bottomLeft: { x: 0, y: 100 } };
       const dst = { topLeft: { x: 10, y: 10 }, topRight: { x: 110, y: 10 }, bottomRight: { x: 110, y: 110 }, bottomLeft: { x: 10, y: 110 } };
       const matrix = HomographyCompositorStrategy.calculate3x3HomographyMatrix(src, dst);
       expect(matrix[2]).toBe(10);
+
+      const doubleExpFilter = DoubleExposureCompositorStrategy.generateFFmpegBlendFilter('v0', 'v1', 'v_out', 'screen');
+      expect(doubleExpFilter).toContain("blend=all_mode='screen'");
     });
   });
 
@@ -274,13 +285,23 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
 
   // GROUP 7: WORKFLOW & MULTICAM
   describe('Group 7: Workflow & Multicam', () => {
-    test('7.1: Multicam Waveform Alignment & Facade', () => {
+    test('7.1 & 7.4: Multicam Waveform Alignment & Text-Based Editing', () => {
       const ref = { angleId: 'a1', sourcePath: 's1.mp4', audioSamples: new Float32Array(1000), sampleRate: 1000 };
       const target = { angleId: 'a2', sourcePath: 's2.mp4', audioSamples: new Float32Array(1000), sampleRate: 1000 };
       for (let i = 0; i < 20; i++) { ref.audioSamples[200 + i] = 1.0; target.audioSamples[300 + i] = 1.0; }
 
       const synced = MulticamFacade.syncAllCameraAngles(ref, [target]);
       expect(synced[0].offsetMs).toBe(100);
+
+      const tokens = [
+        { word: 'Keep', startMs: 0, endMs: 500, deleted: false },
+        { word: 'Delete', startMs: 500, endMs: 1000, deleted: true },
+        { word: 'KeepTwo', startMs: 1000, endMs: 1500, deleted: false },
+      ];
+      const ranges = TextBasedEditingEngine.calculateTimelineCutsFromDeletedWords(tokens);
+      expect(ranges.length).toBe(2);
+      expect(ranges[0]).toEqual({ startMs: 0, endMs: 500 });
+      expect(ranges[1]).toEqual({ startMs: 1000, endMs: 1500 });
     });
 
     test('7.2: Proxy Asset Manager', () => {
@@ -301,12 +322,15 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       expect(crop.height).toBe(1080);
     });
 
-    test('8.2 & 8.3: Generative AI Facade & Voice Cloning', async () => {
+    test('8.2 & 8.3: Generative AI Facade, Voice Cloning & Voice Isolation', async () => {
       const broll = await GenerativeAIFacade.generateBrollAsset({ prompt: 'forest', durationMs: 2000 });
       expect(broll).toContain('gen_broll_');
 
       const voice = await VoiceIsolationCloningStrategy.synthesizeClonedVoice({ referenceAudioPath: 'ref.mp3', targetText: 'Hello' });
       expect(voice).toContain('cloned_voice_');
+
+      const isolationFilter = VoiceIsolationEngine.generateFFmpegVoiceIsolationFilter({ noiseSuppressionDb: -18 });
+      expect(isolationFilter).toContain('afftdn=nr=18');
     });
   });
 
@@ -353,14 +377,15 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
 
   // GROUP 12: IMMERSIVE & SPATIAL MEDIA
   describe('Group 12: Immersive & Spatial Media', () => {
-    test('12.1: 360 Video Stitching', () => {
+    test('12.1 & 12.2: 360 Video Stitching, Stereoscopic Spatial Video & Ambisonics', () => {
       const filter = EquirectangularStitcher.generateFFmpegV360Filter({ inputProjection: 'dual_fisheye', yawDeg: 10 });
       expect(filter).toBe('v360=input=dfisheye:output=equirect:yaw=10:pitch=0:roll=0');
-    });
 
-    test('12.2: Stereoscopic Spatial Video', () => {
-      const filter = SpatialVideoExporter.generateStereoscopicFFmpegFilter({ outputDir: '/tmp', eyeDisparityPx: 64 });
-      expect(filter).toContain('stereo3d=sbsl:sbsr');
+      const stereoFilter = SpatialVideoExporter.generateStereoscopicFFmpegFilter({ outputDir: '/tmp', eyeDisparityPx: 64 });
+      expect(stereoFilter).toContain('stereo3d=sbsl:sbsr');
+
+      const ambisonicFilter = SpatialAudioAmbisonicsEngine.generateFFmpegAmbisonicBFormatFilter({ azimuthDeg: 45, elevationDeg: 0 });
+      expect(ambisonicFilter).toBe('sofalizer=azimuth=45:elevation=0');
     });
   });
 
