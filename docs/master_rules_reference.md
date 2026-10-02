@@ -67,19 +67,22 @@ Dự án đã hoàn toàn loại bỏ `fluent-ffmpeg` và các tiến trình con
      // rest of logic
    }
    ```
-2. **Native Bun FFI Integration**:
-   - TUYỆT ĐỐI KHÔNG dùng package `fluent-ffmpeg` hay `child_process.spawn('ffmpeg')`.
+2. **Native Bun FFI Integration & Absolute Ban on Subprocess Spawning**:
+   - **TUYỆT ĐỐI KHÔNG** sử dụng `Bun.spawnSync`, `Bun.spawn`, `child_process.spawn`, `child_process.exec`, `execSync`, hay `fluent-ffmpeg` để invoke/gọi `ffmpeg` hoặc `ffprobe`.
+   - Tất cả các thao tác liên quan đến media (decode video frame, canvas capture, depth 3D mesh rendering, audio resampling/DSP, AAC encoding, lossless bitstream stream copy / concat muxer) **BẮT BUỘC** phải load và tương tác trực tiếp với các shared libraries (`libavcodec`, `libavformat`, `libavutil`, `libswscale`, `libswresample`, `libavfilter`) qua `bun:ffi`.
    - Lấy thư mục binary chứa `.dll`/`.so` qua `FFmpegManager.getBinDir()`.
-   - Gọi các hàm C-API lõi thông qua module FFI tập trung (`src/core/ffmpeg-ffi/index.ts`):
+   - Gọi các hàm C-API lõi thông qua module FFI tập trung (`packages/core/src/ffmpeg-ffi/index.ts`):
    ```typescript
-   import { initFFI, FFI } from './src/core/ffmpeg-ffi';
-   import { FFmpegManager } from './src/core/FFmpegManager';
+   import { initFFI, FFI } from '@acc/core';
+   import { FFmpegManager } from '@acc/core';
    
    await FFmpegManager.prepare();
-   initFFI(); // Dynamic load libavcodec, libavformat, libswscale via dlopen()
+   initFFI(); // Dynamic load libavcodec, libavformat, libswscale, libswresample, libavfilter via dlopen()
    ```
 3. **Zero-Copy Frame Memory Ingestion**:
    - Truyền mảng RGBA thuần trực tiếp từ Canvas sang `sws_scale` bằng `canvas.toBuffer('raw')` qua con trỏ `bun:ffi` mà không ghi file tạm hay ghi vào stream `stdin`.
+4. **Defensive Pointer Casting**:
+   - Mọi phép tính offset bộ nhớ con trỏ với BigInt (ví dụ `srcPtr + 64n`, `dstPtr + 64n`) BẮT BUỘC phải ép kiểu con trỏ gốc tường minh qua `BigInt(ptr)` trước khi cộng để tránh lỗi `TypeError: Invalid mix of BigInt and other type in addition`.
 
 ---
 
