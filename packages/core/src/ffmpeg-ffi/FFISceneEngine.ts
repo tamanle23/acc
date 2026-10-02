@@ -1,8 +1,8 @@
 import { ptr, toArrayBuffer } from "bun:ffi";
-import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { createCanvas, loadImage, ImageData } from "@napi-rs/canvas";
 import fs from "fs";
 import path from "path";
-import { FFI, initFFI, makeAVRational } from "./index";
+import { FFI, initFFI, makeAVRational, AV_PIX_FMT_RGBA, Structs } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
 import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../types";
 import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../../../effect-engines/src/subtitles/captions-canvas";
@@ -39,7 +39,9 @@ export class FFISceneEngine {
         outputPath,
         width,
         height,
-        fps
+        fps,
+        captions: scene.captions,
+        captionSettings: config.settings.captions
       });
     } else {
       const imagePath = (scene.resolvedImage && fs.existsSync(scene.resolvedImage)) ? scene.resolvedImage : fallbackImagePath;
@@ -186,8 +188,10 @@ export class FFISceneEngine {
     width: number;
     height: number;
     fps: number;
+    captions?: CaptionConfig[];
+    captionSettings?: CaptionSettings;
   }): Promise<{ path: string; duration: number }> {
-    const { videoPath, audioPath, duration, outputPath, width, height, fps } = options;
+    const { videoPath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings } = options;
     initFFI();
 
     // 1. Open Input Video
@@ -221,13 +225,82 @@ export class FFISceneEngine {
     const totalFrames = Math.ceil(fps * duration);
     let framesEncoded = 0;
 
-    while (FFI.avformat.av_read_frame(vInFmt, pkt) >= 0 && framesEncoded < totalFrames) {
+    const hasCaptions = !!(captions && captions.length > 0);
+
+    let canvas: any = null;
+    let ctx: any = null;
+    let rgbaFrame: bigint = 0n;
+    let imgData: any = null;
+    let swsToRgbaCtx: bigint = 0n;
+
+    if (hasCaptions) {
+      canvas = createCanvas(width, height);
+      ctx = canvas.getContext("2d");
+
+      rgbaFrame = BigInt(FFI.avutil.av_frame_alloc());
+      Structs.AVFrame.setFormat(rgbaFrame, AV_PIX_FMT_RGBA);
+      Structs.AVFrame.setWidth(rgbaFrame, width);
+      Structs.AVFrame.setHeight(rgbaFrame, height);
+      FFI.avutil.av_frame_get_buffer(rgbaFrame, 0);
+
+      swsToRgbaCtx = BigInt(FFI.swscale.sws_getContext(
+        srcW, srcH, srcFmt,
+        width, height, AV_PIX_FMT_RGBA,
+        2, 0n, 0n, 0n
+      ));
+
+      const rgbaPtr = Structs.AVFrame.getDataPointer(rgbaFrame, 0);
+      const linesize = Structs.AVFrame.getLinesize(rgbaFrame, 0);
+      const ab = toArrayBuffer(rgbaPtr as any, 0, linesize * height);
+      const uint8Clamped = new Uint8ClampedArray(ab, 0, width * height * 4);
+      imgData = new ImageData(uint8Clamped, width, height);
+    }
+
+    const encodeDecodedFrame = async (f: bigint) => {
+      if (hasCaptions) {
+        FFI.swscale.sws_scale(
+          swsToRgbaCtx,
+          f,
+          f + 64n,
+          0,
+          srcH,
+          rgbaFrame,
+          rgbaFrame + 64n
+        );
+        ctx.putImageData(imgData, 0, 0);
+        const timeSec = framesEncoded / fps;
+        drawCanvasCaptions(ctx, captions!, timeSec, captionSettings, width, height);
+        encoder.encodeRgbaFrame(canvas.data());
+      } else {
+        encoder.encodeRawFrame(f, srcW, srcH, srcFmt);
+      }
+      framesEncoded++;
+
+      if (framesEncoded % 15 === 0) {
+        if (typeof Bun !== 'undefined' && (Bun as any).gc) {
+          (Bun as any).gc(true);
+        }
+        await new Promise(r => setTimeout(r, 0));
+      }
+    };
+
+    while (framesEncoded < totalFrames) {
+      let readRet = FFI.avformat.av_read_frame(vInFmt, pkt);
+      if (readRet < 0) {
+        // Loop video if needed
+        FFI.avformat.av_seek_frame(vInFmt, -1, 0n, 1);
+        FFI.avcodec.avcodec_flush_buffers(decCtx);
+        readRet = FFI.avformat.av_read_frame(vInFmt, pkt);
+        if (readRet < 0) {
+          break;
+        }
+      }
+
       const pktView = new DataView(toArrayBuffer(pkt, 0, 64));
       if (pktView.getInt32(36, true) === 0) { // Stream 0 is video
         if (FFI.avcodec.avcodec_send_packet(decCtx, pkt) === 0) {
           while (FFI.avcodec.avcodec_receive_frame(decCtx, frame) === 0) {
-            encoder.encodeRawFrame(frame, srcW, srcH, srcFmt);
-            framesEncoded++;
+            await encodeDecodedFrame(frame);
             FFI.avutil.av_frame_unref(frame);
             if (framesEncoded >= totalFrames) break;
           }
@@ -239,6 +312,13 @@ export class FFISceneEngine {
     encoder.close();
 
     // Cleanup
+    if (rgbaFrame) {
+      const pRgba = new BigUint64Array([rgbaFrame]);
+      FFI.avutil.av_frame_free(ptr(pRgba.buffer));
+    }
+    if (swsToRgbaCtx) {
+      FFI.swscale.sws_freeContext(swsToRgbaCtx);
+    }
     const pDec = new BigUint64Array([decCtx]);
     FFI.avcodec.avcodec_free_context(ptr(pDec.buffer));
     const pPkt = new BigUint64Array([pkt]);

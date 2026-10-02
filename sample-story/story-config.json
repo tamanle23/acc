@@ -1,6 +1,4 @@
 {
-  "schemaVersion": "v1.0.0",
-  "schema": "story-config-schema.json",
   "name": "Dinosaur_Story",
   "description": "A short story about a dinosaur in a distant kingdom",
   "settings": {

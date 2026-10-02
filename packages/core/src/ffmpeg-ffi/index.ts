@@ -67,6 +67,7 @@ export function initFFI() {
         avcodec_parameters_to_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_parameters_from_context: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avcodec_parameters_copy: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        avcodec_flush_buffers: { args: [FFIType.ptr], returns: FFIType.void },
         av_packet_unref: { args: [FFIType.ptr], returns: FFIType.void },
     });
 
@@ -78,6 +79,7 @@ export function initFFI() {
         avformat_find_stream_info: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
         avformat_close_input: { args: [FFIType.ptr], returns: FFIType.void },
         av_read_frame: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+        av_seek_frame: { args: [FFIType.ptr, FFIType.i32, FFIType.i64, FFIType.i32], returns: FFIType.i32 },
         avio_open: { args: [FFIType.ptr, FFIType.cstring, FFIType.i32], returns: FFIType.i32 },
         avio_closep: { args: [FFIType.ptr], returns: FFIType.i32 },
         avformat_new_stream: { args: [FFIType.ptr, FFIType.ptr], returns: FFIType.ptr },
