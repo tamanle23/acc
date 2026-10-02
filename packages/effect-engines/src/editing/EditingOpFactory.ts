@@ -4,6 +4,7 @@ import {
   JCutLCutStrategy,
   MatchCutStrategy
 } from './ICutStrategy';
+import { SmashCutStrategy } from './SmashCutStrategy';
 import {
   ICompositorStrategy,
   PiPCompositorStrategy,
@@ -16,6 +17,7 @@ export class EditingOpFactory {
     ['j_cut', new JCutLCutStrategy('j_cut')],
     ['l_cut', new JCutLCutStrategy('l_cut')],
     ['match_cut', new MatchCutStrategy()],
+    ['smash_cut', new SmashCutStrategy()],
   ]);
 
   private static compositorStrategies: Map<string, ICompositorStrategy> = new Map([

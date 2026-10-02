@@ -1,5 +1,6 @@
 export * from './base/BaseExporter';
 export * from './video/VideoExporter';
+export * from './video/SpatialVideoExporter';
 export * from './audio/AudioExporter';
 export * from './social/SocialExporter';
 export * from './static-web/StaticWebExporter';

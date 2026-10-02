@@ -1,25 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './apps/cli/src/pipelines/04-generative-story/types';
 import { renderStoryVideo } from './apps/cli/src/pipelines/04-generative-story/StoryRenderer';
 import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './apps/cli/src/pipelines/04-generative-story/platforms';
-
-function askQuestion(query: string): Promise<string> {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) =>
-    rl.question(query, (ans) => {
-      rl.close();
-      resolve(ans);
-    })
-  );
-}
-
-import { FFmpegManager } from '@acc/core';
+import { FFmpegManager, intro, outro, isCancel, cancel } from '@acc/core';
+import * as p from '@clack/prompts';
 
 async function main() {
   await FFmpegManager.prepare();
@@ -37,7 +22,18 @@ async function main() {
   let targetDir = rawArgs[0];
 
   if (!targetDir) {
-    targetDir = await askQuestion('Please enter the path to your story folder: ');
+    const dirPrompt = await p.text({
+      message: 'Please enter the path to your story folder:',
+      placeholder: './sample-story',
+      validate: (val) => (!val || val.trim() === '' ? 'Path cannot be empty.' : undefined),
+    });
+
+    if (isCancel(dirPrompt)) {
+      cancel('Operation cancelled.');
+      process.exit(0);
+    }
+
+    targetDir = dirPrompt as string;
   }
 
   if (!targetDir || targetDir.trim() === '') {

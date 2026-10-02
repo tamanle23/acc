@@ -83,7 +83,7 @@ export async function startWizard() {
   }
 
   try {
-    if (mode === 'Generate Combinatorial Composite') {
+    if (mode === 'composite') {
       const composites = (registry as any).getAvailableComposites?.() || [];
       if (composites.length === 0) {
         console.log('No composites defined in registry.');
@@ -106,17 +106,51 @@ export async function startWizard() {
       const output = await renderSoundEffect(registry, 'custom', 'custom', 'custom', duration, outDir, prompt);
       console.log(`\n✅ Sound effect synthesized successfully!\nAudio:    ${output}`);
 
-    } else if (mode === 'Generate Predefined Effect/Layer') {
+    } else if (mode === 'predefined') {
       const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
-      const effect = await askChoice('Select Effect Category:', effects);
+      const effect = await p.select({
+        message: 'Select Effect Category:',
+        options: effects.map((e: string) => ({ label: e, value: e })),
+      });
+
+      if (isCancel(effect)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
 
       const variants = (registry as any).getAvailableVariants?.(effect) || ['click', 'hover', 'success'];
-      const variant = await askChoice('Select Variant:', variants);
+      const variant = await p.select({
+        message: 'Select Variant:',
+        options: variants.map((v: string) => ({ label: v, value: v })),
+      });
+
+      if (isCancel(variant)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
 
       const subVariants = (registry as any).getAvailableSubVariants?.(effect, variant) || ['plastic_pop', 'glass_haptic'];
-      const subVariant = await askChoice('Select Sub-Variant:', subVariants);
+      const subVariant = await p.select({
+        message: 'Select Sub-Variant:',
+        options: subVariants.map((sv: string) => ({ label: sv, value: sv })),
+      });
 
-      const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
+      if (isCancel(subVariant)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
+      const durStr = await p.text({
+        message: 'Duration in seconds (default: 3.0):',
+        placeholder: '3.0',
+        defaultValue: '3.0',
+      });
+
+      if (isCancel(durStr)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+
       const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
 
       console.log(`\nSynthesizing '${effect} / ${variant} / ${subVariant}'...`);

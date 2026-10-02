@@ -10,6 +10,4 @@ export * from './subtitles';
 export * from './vision';
 export * from './styles';
 export * from './types';
-export * from './editing/ICutStrategy';
-export * from './editing/ICompositorStrategy';
-export * from './editing/EditingOpFactory';
+export * from './editing';

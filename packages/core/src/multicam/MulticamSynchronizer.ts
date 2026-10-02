@@ -24,8 +24,8 @@ export class MulticamSynchronizer {
     let maxCorrelation = -Infinity;
     let bestLag = 0;
 
-    // Cross-correlation search window
-    const step = 8; // Fine-grained search step for exact offset calculation
+    // Cross-correlation search window (sample-accurate)
+    const step = 1;
     for (let lag = -maxOffsetSamples; lag <= maxOffsetSamples; lag += step) {
       let sum = 0;
       let count = 0;

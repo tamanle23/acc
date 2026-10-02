@@ -45,16 +45,20 @@ export class AutoReframeStrategy {
       targetWidth = Math.round((sourceHeight * 4) / 5);
     }
 
-    // Ensure target width does not exceed source
+    // Ensure target dimensions do not exceed source
     targetWidth = Math.min(targetWidth, sourceWidth);
+    targetHeight = Math.min(targetHeight, sourceHeight);
 
-    // Center crop on subject center X
+    // Center crop on subject center X and Y
     const subjectCenterX = subjectBox.x + subjectBox.width / 2;
+    const subjectCenterY = subjectBox.y + subjectBox.height / 2;
+
     let rawX = subjectCenterX - targetWidth / 2;
+    let rawY = subjectCenterY - targetHeight / 2;
 
     // Clamp crop to source boundaries
     rawX = Math.max(0, Math.min(rawX, sourceWidth - targetWidth));
-    const rawY = Math.max(0, Math.min(0, sourceHeight - targetHeight));
+    rawY = Math.max(0, Math.min(rawY, sourceHeight - targetHeight));
 
     const rawCrop: CropRect = {
       x: Math.round(rawX),
@@ -72,10 +76,13 @@ export class AutoReframeStrategy {
     const smoothedX = Math.round(
       this.previousCrop.x * smoothingFactor + rawCrop.x * (1 - smoothingFactor)
     );
+    const smoothedY = Math.round(
+      this.previousCrop.y * smoothingFactor + rawCrop.y * (1 - smoothingFactor)
+    );
 
     const finalCrop: CropRect = {
       x: smoothedX,
-      y: rawCrop.y,
+      y: smoothedY,
       width: targetWidth,
       height: targetHeight,
     };
