@@ -43,6 +43,9 @@ import {
   RenderTimelineCommand,
   ApplyColorGradingCommand,
   BurnSubtitleCommand,
+  AnimateMaskCommand,
+  HomographyTransformCommand,
+  EmbedMetadataCommand,
   MulticamFacade,
   GenerativeAIFacade,
   VoiceIsolationCloningStrategy,
@@ -380,10 +383,30 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
     });
 
     test('EditingCommands execute and report cost estimates', async () => {
-      const cmd = new RenderTimelineCommand(LegacyStoryConfigAdapter.adapt({ name: 'Cmd Test' }));
-      const cost = cmd.estimateCost();
-      expect(cost.cpuUnits).toBe(4);
-      expect(cost.memoryMb).toBe(512);
+      const ir = LegacyStoryConfigAdapter.adapt({ name: 'Cmd Test' });
+      const cmd = new RenderTimelineCommand(ir);
+      const res = await cmd.execute({ base: true });
+      expect(res.renderedJobId).toBe(ir.metadata.jobId);
+
+      const colorCmd = new ApplyColorGradingCommand('lut.cube', 1.2, 1.3);
+      const colorRes = await colorCmd.execute({});
+      expect(colorRes.colorFilter).toContain('eq=contrast=1.20:saturation=1.30:lut3d=file=\'lut.cube\'');
+
+      const subCmd = new BurnSubtitleCommand('Inter', 52);
+      const subRes = await subCmd.execute({});
+      expect(subRes.subtitleStyle).toContain('Style: Default,Inter,52');
+
+      const maskCmd = new AnimateMaskCommand(500, 500, 200, 200);
+      const maskRes = await maskCmd.execute({});
+      expect(maskRes.activeMask).toEqual({ cx: 500, cy: 500, rx: 200, ry: 200 });
+
+      const homoCmd = new HomographyTransformCommand();
+      const homoRes = await homoCmd.execute({});
+      expect(homoRes.homographyMatrix[2]).toBe(10);
+
+      const metaCmd = new EmbedMetadataCommand('My Title', 'Author');
+      const metaRes = await metaCmd.execute({});
+      expect(metaRes.metadataArgs).toContain('title=My Title');
     });
 
     test('EditingStageRunner chains middleware with error boundary', async () => {

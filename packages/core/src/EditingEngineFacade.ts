@@ -20,14 +20,19 @@ export class EditingEngineFacade {
     options: FacadeRenderOptions = {}
   ): Promise<FacadeRenderResult> {
     const outputDir = options.outputDir || '/tmp/acc_exports';
-    const outputPath = `${outputDir}/${ir.metadata.jobId}.${ir.settings.platform === 'tiktok' ? 'mp4' : 'mp4'}`;
+    const container = ir.settings.platform === 'tiktok' ? 'mp4' : 'mp4';
+    const outputPath = `${outputDir}/${ir.metadata.jobId}.${container}`;
+
+    const durationMs = ir.extendedChunks.reduce((acc, c) => acc + c.durationMs, 0);
+    const fps = ir.settings.fps || 30;
+    const totalFrames = Math.max(1, Math.ceil((durationMs * fps) / 1000));
 
     return {
       jobId: ir.metadata.jobId,
       outputPath,
-      durationMs: ir.extendedChunks.reduce((acc, c) => acc + c.durationMs, 0),
-      totalFrames: Math.ceil((ir.extendedChunks.reduce((acc, c) => acc + c.durationMs, 0) * ir.settings.fps) / 1000),
-      format: 'mp4',
+      durationMs,
+      totalFrames,
+      format: container,
     };
   }
 }
