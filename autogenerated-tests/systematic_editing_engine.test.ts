@@ -47,6 +47,7 @@ import {
   GenerativeAIFacade,
   VoiceIsolationCloningStrategy,
   MatchmoveVisionFacade,
+  ModelHandleRegistry,
 } from '../packages/core';
 import {
   KineticTypography,
@@ -59,6 +60,32 @@ import { ZeroCopyRTMPStreamStrategy } from '../packages/exporters/src/live-strea
 import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/EditingPipelineOrchestrator';
 
 describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () => {
+  // FLYWEIGHT PATTERN: MODEL HANDLE REGISTRY
+  describe('Flyweight Pattern: ModelHandleRegistry', () => {
+    test('acquires, caches, and manages AI model handles with idle eviction', async () => {
+      const registry = ModelHandleRegistry.getInstance();
+      let loadCount = 0;
+
+      const modelLoader = async () => {
+        loadCount++;
+        return { name: 'kokoro-tts-v1', version: '1.0' };
+      };
+
+      const m1 = await registry.acquireModel('kokoro-tts', modelLoader);
+      expect(m1.name).toBe('kokoro-tts-v1');
+      expect(loadCount).toBe(1);
+
+      // Re-acquiring should return cached handle without reloading
+      const m2 = await registry.acquireModel('kokoro-tts', modelLoader);
+      expect(m2).toBe(m1);
+      expect(loadCount).toBe(1);
+      expect(registry.hasModel('kokoro-tts')).toBe(true);
+
+      registry.clearAll();
+      expect(registry.hasModel('kokoro-tts')).toBe(false);
+    });
+  });
+
   // GROUP 1: CUTS & TRANSITIONS (STRATEGY & FACTORY PATTERNS)
   describe('Group 1: Cuts & Transitions (Strategy & Factory Patterns)', () => {
     test('1.1 & 1.3: Standard Cut & J/L-Cuts', () => {

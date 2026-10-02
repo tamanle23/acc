@@ -71,10 +71,10 @@ export class AssetContext {
  */
 export class FlyweightModelRegistry {
   private static instance: FlyweightModelRegistry;
-  private loadedModels: Map<string, { modelHandle: any; lastUsed: number }> = new Map();
-  private maxVRAMBudgetMB: number = 8192; // 8GB default budget
+  protected loadedModels: Map<string, { modelHandle: any; lastUsed: number }> = new Map();
+  protected maxVRAMBudgetMB: number = 8192; // 8GB default budget
 
-  private constructor() {}
+  protected constructor() {}
 
   public static getInstance(): FlyweightModelRegistry {
     if (!FlyweightModelRegistry.instance) {
@@ -129,5 +129,19 @@ export class FlyweightModelRegistry {
       }
     }
     this.loadedModels.clear();
+  }
+}
+
+/**
+ * ModelHandleRegistry alias class providing Flyweight model handle management.
+ */
+export class ModelHandleRegistry extends FlyweightModelRegistry {
+  private static handleInstance: ModelHandleRegistry;
+
+  public static override getInstance(): ModelHandleRegistry {
+    if (!ModelHandleRegistry.handleInstance) {
+      ModelHandleRegistry.handleInstance = new ModelHandleRegistry();
+    }
+    return ModelHandleRegistry.handleInstance;
   }
 }
