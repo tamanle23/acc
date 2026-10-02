@@ -357,7 +357,7 @@ export async function renderStoryVideo(
       }
     }
 
-    Logger.info('StoryRenderer', '\nConcatenating scenes into final video...');
+    Logger.info('StoryRenderer', 'Concatenating scenes into final video...');
 
     let currentVideoPath = path.join(tempDir, 'concat_output.mp4');
 
