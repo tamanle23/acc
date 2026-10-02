@@ -10,9 +10,11 @@ import {
   defaultPipelineRegistry,
 } from '@acc/core';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from './types';
-import { renderStoryVideo } from './StoryRenderer';
 import { resolveStorySettings, mergeDefined, DEFAULT_VIDEO_SETTINGS } from './platforms';
 import { EditingPipelineOrchestrator } from './EditingPipelineOrchestrator';
+import { createStoryFolderResolutionStage } from './stages/StoryFolderResolutionStage';
+import { createStoryOrchestratedRenderStage } from './stages/StoryOrchestratedRenderStage';
+import { createStoryMetadataPersistenceStage } from './stages/StoryMetadataPersistenceStage';
 
 export interface StoryPipelineOptions extends PipelineExecutionOptions {
   outDir?: string;
@@ -146,96 +148,13 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
     const runner = new PipelineRunner<UnifiedPipelineContext<string | StoryConfig>>();
 
     // Stage 1: Resolve Config and Asset Paths
-    runner.use({
-      name: 'StoryFolderResolutionStage',
-      execute: async (ctx: GenerativeStoryContext, next) => {
-        await this.prepare();
-        const storyDir = typeof ctx.input === 'string' ? ctx.input : ctx.baseDir;
-        const resolved = resolveStoryFolder(storyDir, { outDir: ctx.outDir, dryRun: ctx.dryRun });
-
-        ctx.rawConfig = resolved.rawConfig;
-        ctx.resolvedConfig = resolved.resolvedConfig;
-        ctx.outputFilePath = resolved.outputFilePath;
-        ctx.metadataPath = resolved.metadataPath;
-        ctx.absoluteDir = resolved.absoluteDir;
-
-        for (const [idx, scene] of resolved.resolvedConfig.scenes.entries()) {
-          const sceneId = `scene_${idx}`;
-          if (scene.resolvedImage) {
-            ctx.assets.register(sceneId, 'original', scene.resolvedImage);
-          }
-          if (scene.resolvedAudio) {
-            ctx.assets.register(sceneId, 'narration', scene.resolvedAudio);
-          }
-        }
-
-        await next();
-      },
-    });
+    runner.use(createStoryFolderResolutionStage());
 
     // Stage 2: Orchestrated AST Transformation & Video Rendering
-    runner.use({
-      name: 'StoryOrchestratedRenderStage',
-      execute: async (ctx: GenerativeStoryContext, next) => {
-        const rawConfig = ctx.rawConfig!;
-        const resolvedConfig = ctx.resolvedConfig!;
-        const outputFilePath = ctx.outputFilePath!;
-        const absoluteDir = ctx.absoluteDir!;
-
-        if (ctx.dryRun) {
-          await next();
-          return;
-        }
-
-        try {
-          const result = await this.orchestrator.processAndRender(rawConfig, {
-            outputDir: path.dirname(outputFilePath),
-            format: resolvedConfig.settings.container as any,
-          });
-          ctx.ir = result.ir;
-        } catch {
-          // Graceful fallback to classic canvas renderer
-          await renderStoryVideo(resolvedConfig, outputFilePath, absoluteDir);
-        }
-
-        await next();
-      },
-    });
+    runner.use(createStoryOrchestratedRenderStage(this.orchestrator));
 
     // Stage 3: Metadata Persistence
-    runner.use({
-      name: 'StoryMetadataPersistenceStage',
-      execute: async (ctx: GenerativeStoryContext, next) => {
-        if (ctx.dryRun) {
-          await next();
-          return;
-        }
-
-        const resolvedConfig = ctx.resolvedConfig!;
-        const outputFilePath = ctx.outputFilePath!;
-        const metadataPath = ctx.metadataPath!;
-
-        const metadata = {
-          name: resolvedConfig.name || 'story',
-          description: resolvedConfig.description || '',
-          videoFile: path.basename(outputFilePath),
-          renderedAt: new Date().toISOString(),
-          durationSec: 0,
-          scenesCount: resolvedConfig.scenes.length,
-          platform: resolvedConfig.settings.platform,
-          resolution: `${resolvedConfig.settings.width}x${resolvedConfig.settings.height}`,
-          fps: resolvedConfig.settings.fps,
-          videoCodec: resolvedConfig.settings.videoCodec,
-          audioCodec: resolvedConfig.settings.audioCodec,
-          crf: resolvedConfig.settings.crf,
-          preset: resolvedConfig.settings.preset,
-          container: resolvedConfig.settings.container,
-        };
-        fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
-
-        await next();
-      },
-    });
+    runner.use(createStoryMetadataPersistenceStage());
 
     return runner;
   }
@@ -244,6 +163,7 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
     storyDirOrConfig: string | StoryConfig,
     options: StoryPipelineOptions = {}
   ): Promise<GenerativeStoryContext> {
+    await this.prepare();
     const baseDir = typeof storyDirOrConfig === 'string' ? path.resolve(storyDirOrConfig) : process.cwd();
     const outDir = options.outDir ? path.resolve(options.outDir) : path.join(baseDir, 'output');
 
