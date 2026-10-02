@@ -29,6 +29,7 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
   const ambientDust = sandwichSettings.ambientDust !== false;
   const vignette = sandwichSettings.vignette !== false;
   const bannerText = sandwichSettings.bannerText;
+  const pos = (sandwichSettings.position as string)?.toLowerCase();
 
   // 1. Layer 1: Background Plate (Subtle slow zoom)
   const bgScale = 1.0 + progress * 0.05;
@@ -56,25 +57,58 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
     }
   }
 
+  // Compute base Y position
+  let baseY = height * 0.38;
+  if (pos === 'top' || pos === 'top-center') {
+    baseY = height * 0.22;
+  } else if (pos === 'center' || pos === 'middle') {
+    baseY = height * 0.48;
+  } else if (pos === 'bottom' || pos === 'bottom-center') {
+    baseY = height * 0.75;
+  }
+  if (typeof sandwichSettings.positionY === 'number') {
+    baseY = sandwichSettings.positionY <= 1.0 ? height * sandwichSettings.positionY : sandwichSettings.positionY;
+  }
+
   if (activeText) {
     ctx.save();
-    const fontSize = Math.round(width * 0.065);
+
+    // 1. Compute Font Size
+    let fontSize = Math.round(width * 0.065);
+    if (typeof sandwichSettings.fontSize === 'number' && sandwichSettings.fontSize > 0) {
+      fontSize = sandwichSettings.fontSize <= 1.0
+        ? Math.round(width * sandwichSettings.fontSize)
+        : Math.round(sandwichSettings.fontSize);
+    }
     ctx.font = `900 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const textY = height * 0.38 + Math.sin(timeSec * Math.PI * 0.5) * 8;
-    const textX = width / 2;
+    // 3. Compute Position X
+    let baseX = width / 2;
+    if (typeof sandwichSettings.positionX === 'number') {
+      baseX = sandwichSettings.positionX <= 1.0 ? width * sandwichSettings.positionX : sandwichSettings.positionX;
+    }
+
+    // 4. Float Motion
+    const floatOffset = sandwichSettings.floatMotion !== false ? Math.sin(timeSec * Math.PI * 0.5) * 8 : 0;
+    const textY = baseY + floatOffset;
+    const textX = baseX;
 
     // 3D Extrusion / Drop Shadow for text
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillText(activeText.toUpperCase(), textX + 4, textY + 6);
 
-    const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
-    textGrad.addColorStop(0, '#FFFFFF');
-    textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
+    // Text Fill Color or Gradient
+    if (sandwichSettings.textColor) {
+      ctx.fillStyle = sandwichSettings.textColor;
+    } else {
+      const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
+      textGrad.addColorStop(0, '#FFFFFF');
+      textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
+      ctx.fillStyle = textGrad;
+    }
 
-    ctx.fillStyle = textGrad;
     ctx.fillText(activeText.toUpperCase(), textX, textY);
     ctx.restore();
   }
@@ -108,11 +142,19 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
     ctx.shadowBlur = 24;
     ctx.shadowOffsetY = 12;
     drawImageCover(ctx, subjectImg, subX, subY, subW, subH);
-  } else {
-    // Dynamic Subject Segmentation: Lower 65% in sharp foreground over text
+    // Dynamic Subject Segmentation Fallback (when no cutout subjectImg is provided)
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, height * 0.42, width, height * 0.58);
+    if (pos === 'bottom' || pos === 'bottom-center' || baseY > height * 0.60) {
+      // Center character mask to allow bottom banner text to peek through
+      const cw = width * 0.58;
+      const ch = height * 0.62;
+      const cx = (width - cw) / 2;
+      const cy = height * 0.38;
+      ctx.rect(cx, cy, cw, ch);
+    } else {
+      ctx.rect(0, height * 0.42, width, height * 0.58);
+    }
     ctx.clip();
 
     ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';

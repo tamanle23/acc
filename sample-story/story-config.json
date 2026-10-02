@@ -1,4 +1,6 @@
 {
+  "schemaVersion": "v1.0.0",
+  "schema": "story-config-schema.json",
   "name": "Dinosaur_Story",
   "description": "A short story about a dinosaur in a distant kingdom",
   "settings": {
@@ -317,6 +319,7 @@
           "textBehindSubject": true,
           "ambientDust": true,
           "vignette": true,
+          "position": "bottom",
           "bannerText": "JURASSIC REALM",
           "textColor": "rgba(255, 230, 120, 0.95)"
         }
@@ -1042,7 +1045,13 @@
         "enabled": true,
         "mode": "isometric_podium"
       },
-      "captions": [{ "text": "Bục 3D Isometric Podium tôn vinh nhân vật.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Bục 3D Isometric Podium tôn vinh nhân vật.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1051,7 +1060,13 @@
         "enabled": true,
         "mode": "cutout_portal"
       },
-      "captions": [{ "text": "Cổng không gian Cutout Portal rực rỡ.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Cổng không gian Cutout Portal rực rỡ.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1060,7 +1075,13 @@
         "enabled": true,
         "mode": "gyro_focal_tilt"
       },
-      "captions": [{ "text": "Nghiêng góc quay Gyro Focal Tilt tương tác.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Nghiêng góc quay Gyro Focal Tilt tương tác.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1069,7 +1090,13 @@
         "enabled": true,
         "mode": "flythrough_carousel"
       },
-      "captions": [{ "text": "Băng chuyền 3D Flythrough Carousel liên tục.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Băng chuyền 3D Flythrough Carousel liên tục.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1078,7 +1105,13 @@
         "enabled": true,
         "mode": "diffuse_shadow"
       },
-      "captions": [{ "text": "Đổ bóng đa tầng Diffuse Shadow nổi bật.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Đổ bóng đa tầng Diffuse Shadow nổi bật.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1087,7 +1120,13 @@
         "enabled": true,
         "mode": "glassmorphic_fresnel"
       },
-      "captions": [{ "text": "Kính mờ Glassmorphic Fresnel lấp lánh.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Kính mờ Glassmorphic Fresnel lấp lánh.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1096,7 +1135,13 @@
         "enabled": true,
         "mode": "silhouette_rim_light"
       },
-      "captions": [{ "text": "Viền sáng Silhouette Rim Light rực rỡ.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Viền sáng Silhouette Rim Light rực rỡ.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1105,7 +1150,13 @@
         "enabled": true,
         "mode": "plane_cast_shadow"
       },
-      "captions": [{ "text": "Bóng đổ mặt phẳng Plane Cast Shadow chân thực.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Bóng đổ mặt phẳng Plane Cast Shadow chân thực.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1114,7 +1165,13 @@
         "enabled": true,
         "mode": "macro_bokeh"
       },
-      "captions": [{ "text": "Bụi sáng Macro Bokeh mờ ảo.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Bụi sáng Macro Bokeh mờ ảo.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1123,7 +1180,13 @@
         "enabled": true,
         "mode": "aerial_mist"
       },
-      "captions": [{ "text": "Sương mù Aerial Mist không gian xa xăm.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Sương mù Aerial Mist không gian xa xăm.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1132,7 +1195,13 @@
         "enabled": true,
         "mode": "rack_focus"
       },
-      "captions": [{ "text": "Chuyển tiêu cự Rack Focus ống kính mượt mà.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Chuyển tiêu cự Rack Focus ống kính mượt mà.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1141,7 +1210,13 @@
         "enabled": true,
         "mode": "vignette_tunnel"
       },
-      "captions": [{ "text": "Góc tối Vignette Tunnel tập trung ánh nhìn.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Góc tối Vignette Tunnel tập trung ánh nhìn.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1150,7 +1225,13 @@
         "enabled": true,
         "mode": "perspective_grid"
       },
-      "captions": [{ "text": "Lưới không gian Perspective Grid chuyển động.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Lưới không gian Perspective Grid chuyển động.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1159,7 +1240,13 @@
         "enabled": true,
         "mode": "extruded_text_3d"
       },
-      "captions": [{ "text": "Chữ nổi 3D Extruded Text kim loại.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Chữ nổi 3D Extruded Text kim loại.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene1.jpg",
@@ -1168,7 +1255,13 @@
         "enabled": true,
         "mode": "isometric_billboard"
       },
-      "captions": [{ "text": "Biển quảng cáo Isometric Billboard 30 độ.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Biển quảng cáo Isometric Billboard 30 độ.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     },
     {
       "image": "assets/scene2.jpg",
@@ -1177,7 +1270,13 @@
         "enabled": true,
         "mode": "tunneling_text"
       },
-      "captions": [{ "text": "Dòng chữ xoáy sâu Tunneling Text không gian.", "start": 0, "end": 2 }]
+      "captions": [
+        {
+          "text": "Dòng chữ xoáy sâu Tunneling Text không gian.",
+          "start": 0,
+          "end": 2
+        }
+      ]
     }
   ]
 }
