@@ -1,5 +1,11 @@
 export * from './ICutStrategy';
 export * from './ICompositorStrategy';
+export * from './ITransitionStrategy';
+export * from './TransitionFactory';
+export * from './IAudioDSPStrategy';
+export * from './IMotionGraphicsStrategy';
+export * from './EffectDecorator';
+export * from './AudioDuckingDecorator';
 export * from './EditingOpFactory';
 export * from './CutawayOverlayCommand';
 export * from './MontageBeatSync';
@@ -9,3 +15,4 @@ export * from './ChromaKeyCompositorStrategy';
 export * from './HomographyCompositorStrategy';
 export * from './EquirectangularStitcher';
 export * from './VTubingEngine';
+export * from './MoCapVTubeFacade';

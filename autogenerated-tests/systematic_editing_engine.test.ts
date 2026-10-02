@@ -17,6 +17,12 @@ import {
   HomographyCompositorStrategy,
   EquirectangularStitcher,
   VTubingEngine,
+  TransitionFactory,
+  GainNormalizeAudioDSP,
+  KaraokeSubtitleMotionGraphics,
+  VignetteDecorator,
+  AudioDuckingDecorator,
+  MoCapVTubeFacade,
 } from '../packages/effect-engines/src/editing';
 import {
   ColorGradingEngine,
@@ -31,7 +37,16 @@ import {
   MetadataArchiver,
   ProxyAssetManager,
   GenerativeBrollEngine,
-  MulticamSynchronizer
+  MulticamSynchronizer,
+  EditingEngineFacade,
+  EditingStageRunner,
+  RenderTimelineCommand,
+  ApplyColorGradingCommand,
+  BurnSubtitleCommand,
+  MulticamFacade,
+  GenerativeAIFacade,
+  VoiceIsolationCloningStrategy,
+  MatchmoveVisionFacade,
 } from '../packages/core';
 import {
   KineticTypography,
@@ -40,16 +55,26 @@ import {
 import { AutoReframeStrategy } from '../packages/effect-engines/src/vision/AutoReframeStrategy';
 import { WidgetExporter } from '../packages/exporters/src/interactive-web/WidgetExporter';
 import { SpatialVideoExporter } from '../packages/exporters/src/video/SpatialVideoExporter';
+import { ZeroCopyRTMPStreamStrategy } from '../packages/exporters/src/live-stream/ZeroCopyRTMPStreamStrategy';
 import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/EditingPipelineOrchestrator';
 
-describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', () => {
-  // GROUP 1: CUTS & TRANSITIONS
-  describe('Group 1: Cuts & Transitions', () => {
+describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () => {
+  // GROUP 1: CUTS & TRANSITIONS (STRATEGY & FACTORY PATTERNS)
+  describe('Group 1: Cuts & Transitions (Strategy & Factory Patterns)', () => {
     test('1.1 & 1.3: Standard Cut & J/L-Cuts', () => {
       const jCut = EditingOpFactory.getCutStrategy('j_cut', { offsetMs: 500 });
       const calc = jCut.calculateCut({ id: 'c1', order: 0, durationMs: 4000, visualLayers: [], typographyOverlays: [] });
       expect(calc.splitEditType).toBe('j_cut');
       expect(calc.videoRange.startMs).toBe(500);
+    });
+
+    test('1.2: Transitions via TransitionFactory', () => {
+      const fade = TransitionFactory.getTransition('fade');
+      const filter = fade.generateFFmpegXfadeFilter('v0', 'v1', 'v_out', 3.0, 1.0);
+      expect(filter).toContain('xfade=transition=fade:duration=1.00:offset=3.00');
+
+      const glitch = TransitionFactory.getTransition('glitch_dissolve');
+      expect(glitch.id).toBe('glitch_dissolve');
     });
 
     test('1.4: Cutaway B-roll Overlay Command', () => {
@@ -82,15 +107,26 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
     });
   });
 
-  // GROUP 3: AUDIO EDITING
-  describe('Group 3: Audio Editing', () => {
-    test('3.1: Sidechain Audio Ducking', () => {
+  // GROUP 3: AUDIO EDITING (DSP STRATEGY & DECORATOR PATTERNS)
+  describe('Group 3: Audio Editing (DSP Strategy & Decorator Patterns)', () => {
+    test('3.1: Sidechain Audio Ducking & Decorator', () => {
       const filter = AudioDuckingDSP.buildSidechainFilterGraph('v', 'm', 'out', { attenuationDb: -18 });
       expect(filter).toContain('sidechaincompress=threshold=-24dB');
+
+      const duckingDecorator = new AudioDuckingDecorator('eq=contrast=1.1');
+      const decoratedFilter = duckingDecorator.generateDecoratedFilterGraph('voice', 'bgm', 'out');
+      expect(decoratedFilter).toContain('eq=contrast=1.1; [bgm][voice]sidechaincompress');
+    });
+
+    test('Audio DSP Strategy', () => {
+      const dsp = new GainNormalizeAudioDSP();
+      const buffer = new Float32Array([0.1, 0.5, -0.2]);
+      const processed = dsp.processAudioBuffer(buffer, { gainDb: 6 });
+      expect(processed[1]).toBeGreaterThan(0.5);
     });
   });
 
-  // GROUP 4: VISUAL & EFFECTS
+  // GROUP 4: VISUAL & EFFECTS (DECORATOR & MASK PATTERNS)
   describe('Group 4: Visual & Effects', () => {
     test('4.1: Color Correction 3D LUT', () => {
       const engine = new ColorGradingEngine();
@@ -99,9 +135,23 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
       expect(filter).toContain("lut3d=file='lut.cube'");
     });
 
-    test('4.2: Vignette Mask Engine', () => {
+    test('4.2: Vignette Mask Engine & Decorator', () => {
       const maskStr = ParametricMaskEngine.generateFFmpegVignetteMask(1080, 1920, 0.5);
       expect(maskStr).toContain('vignette=angle=0.39');
+
+      const mockProducer = {
+        renderFrame: (ctx: any) => { ctx.rendered = true; }
+      };
+      const decorator = new VignetteDecorator(mockProducer);
+      const mockCtx = {
+        rendered: false,
+        save: () => {},
+        restore: () => {},
+        createRadialGradient: () => ({ addColorStop: () => {} }),
+        fillRect: () => {},
+      };
+      decorator.renderFrame(mockCtx, 1080, 1920, 0);
+      expect(mockCtx.rendered).toBe(true);
     });
   });
 
@@ -132,25 +182,23 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
 
   // GROUP 6: TYPOGRAPHY & MOTION GRAPHICS
   describe('Group 6: Typography & Motion Graphics', () => {
-    test('6.3: Kinetic Typography & Callouts', () => {
-      const scales = KineticTypography.generatePopInSequence(10, 30);
-      expect(scales[0]).toBe(0.0);
-
+    test('6.2 & 6.3: Motion Graphics Strategy & Kinetic Typography', () => {
+      const motion = new KaraokeSubtitleMotionGraphics();
       const mockCtx = {
         save: () => {},
         restore: () => {},
-        beginPath: () => {},
-        arc: () => {},
-        fill: () => {},
-        moveTo: () => {},
-        lineTo: () => {},
-        stroke: () => {},
-        roundRect: () => {},
         fillText: () => {},
-        measureText: () => ({ width: 100 }),
       };
+      motion.renderFrame(mockCtx, { text: 'Hello', canvasWidth: 1080, canvasHeight: 1920, progress: 0.5 });
 
-      TrackingCalloutEngine.renderTrackingCallout(mockCtx, {
+      const scales = KineticTypography.generatePopInSequence(10, 30);
+      expect(scales[0]).toBe(0.0);
+
+      TrackingCalloutEngine.renderTrackingCallout({
+        save: () => {}, restore: () => {}, beginPath: () => {}, arc: () => {}, fill: () => {},
+        moveTo: () => {}, lineTo: () => {}, stroke: () => {}, roundRect: () => {}, fillText: () => {},
+        measureText: () => ({ width: 100 }),
+      }, {
         labelText: 'Specs',
         targetPoint: { x: 500, y: 500 },
         boxOffset: { x: 50, y: -50 },
@@ -160,12 +208,13 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
 
   // GROUP 7: WORKFLOW & MULTICAM
   describe('Group 7: Workflow & Multicam', () => {
-    test('7.1: Multicam Waveform Alignment', () => {
-      const ref = new Float32Array(1000);
-      const target = new Float32Array(1000);
-      for (let i = 0; i < 20; i++) { ref[200 + i] = 1.0; target[300 + i] = 1.0; }
-      const res = MulticamSynchronizer.calculateWaveformOffset(ref, target, 1000, 2);
-      expect(res.offsetMs).toBe(100);
+    test('7.1: Multicam Waveform Alignment & Facade', () => {
+      const ref = { angleId: 'a1', sourcePath: 's1.mp4', audioSamples: new Float32Array(1000), sampleRate: 1000 };
+      const target = { angleId: 'a2', sourcePath: 's2.mp4', audioSamples: new Float32Array(1000), sampleRate: 1000 };
+      for (let i = 0; i < 20; i++) { ref.audioSamples[200 + i] = 1.0; target.audioSamples[300 + i] = 1.0; }
+
+      const synced = MulticamFacade.syncAllCameraAngles(ref, [target]);
+      expect(synced[0].offsetMs).toBe(100);
     });
 
     test('7.2: Proxy Asset Manager', () => {
@@ -186,9 +235,12 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
       expect(crop.height).toBe(1080);
     });
 
-    test('8.2: Generative B-roll Engine', async () => {
-      const res = await GenerativeBrollEngine.resolveGenerativeBroll({ prompt: 'cinematic forest', durationMs: 3000 });
-      expect(res.isAiGenerated).toBe(true);
+    test('8.2 & 8.3: Generative AI Facade & Voice Cloning', async () => {
+      const broll = await GenerativeAIFacade.generateBrollAsset({ prompt: 'forest', durationMs: 2000 });
+      expect(broll).toContain('gen_broll_');
+
+      const voice = await VoiceIsolationCloningStrategy.synthesizeClonedVoice({ referenceAudioPath: 'ref.mp3', targetText: 'Hello' });
+      expect(voice).toContain('cloned_voice_');
     });
   });
 
@@ -207,9 +259,12 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
 
   // GROUP 10: VFX & CGI INTEGRATION
   describe('Group 10: VFX & CGI Integration', () => {
-    test('10.2: Clean Plate Wire Removal Filter', () => {
+    test('10.2: Clean Plate Wire Removal & Matchmove Facade', async () => {
       const filter = CleanPlateEngine.generateFFmpegInpaintFilter({ x: 100, y: 100, width: 50, height: 50 });
       expect(filter).toBe('delogo=x=100:y=100:w=50:h=50');
+
+      const tracks = await MatchmoveVisionFacade.calculate3DCameraTrajectory('video.mp4');
+      expect(tracks.length).toBe(1);
     });
   });
 
@@ -245,30 +300,73 @@ describe('Systematic Video Editing Engine 13 Groups Comprehensive Test Suite', (
 
   // GROUP 13: VIRTUAL PRODUCTION & REAL-TIME COMPOSITING
   describe('Group 13: Virtual Production & Real-time Compositing', () => {
-    test('13.2: VTubing Avatar Mesh Animation', () => {
-      const mockCtx = {
-        save: () => {},
-        restore: () => {},
-        translate: () => {},
-        rotate: () => {},
-        beginPath: () => {},
-        arc: () => {},
-        ellipse: () => {},
-        fill: () => {},
-      };
-
-      VTubingEngine.animateAvatarMesh(mockCtx, {
-        mouthOpenRatio: 0.8,
-        eyeBlinkLeft: false,
-        eyeBlinkRight: false,
-        headRotation: { pitch: 0, yaw: 0, roll: 5 },
-      });
+    test('13.1: Zero-Copy RTMP Live Streaming Strategy', () => {
+      const stream = new ZeroCopyRTMPStreamStrategy({ rtmpUrl: 'rtmp://localhost/live', width: 1920, height: 1080, fps: 30 });
+      expect(stream.pushRgbaFramePointer(0n)).toBe(false);
+      stream.startStream();
+      expect(stream.pushRgbaFramePointer(0n)).toBe(true);
+      stream.stopStream();
     });
 
-    test('End-to-End Orchestrator', async () => {
+    test('13.2: MoCap VTube Facade', () => {
+      const mockCtx = {
+        save: () => {}, restore: () => {}, translate: () => {}, rotate: () => {},
+        beginPath: () => {}, arc: () => {}, ellipse: () => {}, fill: () => {},
+      };
+      MoCapVTubeFacade.renderAvatarFrameFromLandmarks(mockCtx, {
+        mouthOpenRatio: 0.8, eyeBlinkLeft: false, eyeBlinkRight: false, headRotation: { pitch: 0, yaw: 0, roll: 0 },
+      });
+    });
+  });
+
+  // DESIGN PATTERN FOUNDATION TESTS (FACADE, COMMAND, MIDDLEWARE)
+  describe('Design Pattern Foundations (Facade, Command, Middleware)', () => {
+    test('EditingEngineFacade renders timeline IR', async () => {
+      const facade = new EditingEngineFacade();
+      const ir = LegacyStoryConfigAdapter.adapt({ name: 'Facade Test', scenes: [{ text: 'Scene 1', duration: 2 }] });
+      const res = await facade.renderTimeline(ir, { outputDir: '/tmp' });
+      expect(res.jobId).toBe(ir.metadata.jobId);
+    });
+
+    test('EditingCommands execute and report cost estimates', async () => {
+      const cmd = new RenderTimelineCommand(LegacyStoryConfigAdapter.adapt({ name: 'Cmd Test' }));
+      const cost = cmd.estimateCost();
+      expect(cost.cpuUnits).toBe(4);
+      expect(cost.memoryMb).toBe(512);
+    });
+
+    test('EditingStageRunner chains middleware with error boundary', async () => {
+      const runner = new EditingStageRunner();
+      let executedStage1 = false;
+      let executedStage2 = false;
+
+      runner.use({
+        name: 'Stage1',
+        execute: async (ctx, next) => {
+          executedStage1 = true;
+          await next();
+        },
+      });
+
+      runner.use({
+        name: 'Stage2_Failing',
+        execute: async (ctx, next) => {
+          executedStage2 = true;
+          throw new Error('Failing middleware stage');
+        },
+      });
+
+      const ir = LegacyStoryConfigAdapter.adapt({ name: 'Middleware Test' });
+      await runner.run({ ir, intermediateFiles: [], filterGraphParts: [], metadata: {} });
+
+      expect(executedStage1).toBe(true);
+      expect(executedStage2).toBe(true);
+    });
+
+    test('EditingPipelineOrchestrator End-to-End Execution', async () => {
       const orchestrator = new EditingPipelineOrchestrator();
-      const res = await orchestrator.processAndRender({ name: 'G13 Orchestrator', scenes: [{ text: 'Scene 1', duration: 2 }] });
-      expect(res.ir.metadata.title).toBe('G13 Orchestrator');
+      const res = await orchestrator.processAndRender({ name: 'Master E2E Orchestrator', scenes: [{ text: 'Scene 1', duration: 2 }] });
+      expect(res.ir.metadata.title).toBe('Master E2E Orchestrator');
     });
   });
 });
