@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" style="background:#090d16; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <!-- Liquid Glass Ambient Glows -->
+    <radialGradient id="cyanGlow" cx="30%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="magentaGlow" cx="80%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="#ff007f" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#ff007f" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Specular Border Linear Gradients -->
+    <linearGradient id="specularBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Glass Surface Fill -->
+    <linearGradient id="glassFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.35"/>
+    </linearGradient>
+
+    <!-- Inner Panel Fill -->
+    <linearGradient id="innerGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Ambient Glow Layer -->
+  <rect width="1920" height="1080" fill="#090d16"/>
+  <circle cx="500" cy="200" r="600" fill="url(#cyanGlow)"/>
+  <circle cx="1500" cy="300" r="550" fill="url(#magentaGlow)"/>
+
+  <!-- Top Glass Header Bar -->
+  <g transform="translate(60, 40)">
+    <rect width="1800" height="70" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="42" fill="#ffffff" font-size="20" font-weight="700" letter-spacing="1">ACC CONTROL PLANE <tspan fill="#00f0ff" font-size="14" font-weight="400">| Liquid Glass Workspace</tspan></text>
+    <rect x="1540" y="18" width="230" height="34" rx="8" fill="#ff007f" fill-opacity="0.2" stroke="#ff007f" stroke-width="1"/>
+    <text x="1555" y="40" fill="#ff70b8" font-size="13" font-weight="600">● PAUSED: HUMAN REVIEW</text>
+  </g>
+
+  <!-- Left Sidebar: Pipeline & Content Type Navigation -->
+  <g transform="translate(60, 130)">
+    <rect width="320" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="24" y="40" fill="#94a3b8" font-size="12" font-weight="700" letter-spacing="1.5">CANONICAL PIPELINES</text>
+
+    <!-- Active Pipeline Card -->
+    <rect x="16" y="60" width="288" height="64" rx="12" fill="#00f0ff" fill-opacity="0.12" stroke="#00f0ff" stroke-width="1"/>
+    <text x="36" y="90" fill="#ffffff" font-size="14" font-weight="600">Pipeline 4: Generative Story</text>
+    <text x="36" y="110" fill="#00f0ff" font-size="11">Item 103: Creepypasta Short (9:16)</text>
+
+    <rect x="16" y="136" width="288" height="54" rx="12" fill="url(#innerGlass)"/>
+    <text x="36" y="168" fill="#cbd5e1" font-size="13">Pipeline 1: Event Scraper</text>
+
+    <rect x="16" y="200" width="288" height="54" rx="12" fill="url(#innerGlass)"/>
+    <text x="36" y="232" fill="#cbd5e1" font-size="13">Pipeline 2: DB Templating</text>
+
+    <rect x="16" y="264" width="288" height="54" rx="12" fill="url(#innerGlass)"/>
+    <text x="36" y="296" fill="#cbd5e1" font-size="13">Pipeline 3: Repurposing Studio</text>
+  </g>
+
+  <!-- Center Main Pane: Zero-Copy WebGL Video Frame Preview -->
+  <g transform="translate(400, 130)">
+    <rect width="1020" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="40" fill="#ffffff" font-size="16" font-weight="600">Zero-Copy Video Timeline &amp; Depth3D Inspector</text>
+
+    <!-- Video Preview Frame (9:16 Vertical TikTok Aspect Ratio inside Canvas) -->
+    <rect x="330" y="70" width="360" height="640" rx="16" fill="#000000" stroke="#334155" stroke-width="2"/>
+    <text x="440" y="380" fill="#00f0ff" font-size="14" font-weight="500">[ Video Frame Preview ]</text>
+    <!-- TikTok Safe Zone Overlay Grid -->
+    <rect x="330" y="550" width="360" height="160" rx="0" fill="#ff007f" fill-opacity="0.1" stroke="#ff007f" stroke-dasharray="4" stroke-width="1"/>
+    <text x="430" y="620" fill="#ff70b8" font-size="11">TikTok UI Safe Zone Bound</text>
+
+    <!-- Timeline Tracks -->
+    <g transform="translate(30, 730)">
+      <rect width="960" height="150" rx="12" fill="url(#innerGlass)" stroke="#334155" stroke-width="1"/>
+      <!-- Track 1: Video Scene Clips -->
+      <rect x="20" y="15" width="280" height="32" rx="6" fill="#00f0ff" fill-opacity="0.3" stroke="#00f0ff" stroke-width="1"/>
+      <text x="30" y="36" fill="#ffffff" font-size="11">Scene 1: Lab Intro (4.2s)</text>
+      <rect x="310" y="15" width="340" height="32" rx="6" fill="#00f0ff" fill-opacity="0.3" stroke="#00f0ff" stroke-width="1"/>
+      <text x="320" y="36" fill="#ffffff" font-size="11">Scene 2: Creature Reveal (5.8s)</text>
+
+      <!-- Track 2: Audio Narration -->
+      <rect x="20" y="55" width="630" height="28" rx="6" fill="#a855f7" fill-opacity="0.3" stroke="#a855f7" stroke-width="1"/>
+      <text x="30" y="73" fill="#ffffff" font-size="11">Kokoro TTS Voiceover Track (Sidechain Ducked -18dB)</text>
+
+      <!-- Playhead Line -->
+      <line x1="280" y1="0" x2="280" y2="150" stroke="#ff007f" stroke-width="2"/>
+      <polygon points="274,0 286,0 280,10" fill="#ff007f"/>
+    </g>
+  </g>
+
+  <!-- Right Pane: AI Script & Conductor Control Inspector -->
+  <g transform="translate(1440, 130)">
+    <rect width="420" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="24" y="40" fill="#ffffff" font-size="16" font-weight="600">Intervention Controls</text>
+
+    <text x="24" y="80" fill="#94a3b8" font-size="12" font-weight="700">AI NARRATIVE SCRIPT</text>
+    <rect x="20" y="95" width="380" height="220" rx="12" fill="url(#innerGlass)" stroke="#334155" stroke-width="1"/>
+    <text x="36" y="125" fill="#e2e8f0" font-size="13">"I found the abandoned radio station at 3 AM...</text>
+    <text x="36" y="150" fill="#e2e8f0" font-size="13">The static was repeating my full name."</text>
+
+    <!-- Action Buttons -->
+    <rect x="20" y="780" width="380" height="48" rx="12" fill="#10b981" fill-opacity="0.85"/>
+    <text x="110" y="810" fill="#ffffff" font-size="14" font-weight="700">Approve &amp; Resume Workflow</text>
+
+    <rect x="20" y="840" width="380" height="44" rx="12" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="1"/>
+    <text x="145" y="867" fill="#fca5a5" font-size="13" font-weight="600">Reject &amp; Re-prompt</text>
+  </g>
+</svg>

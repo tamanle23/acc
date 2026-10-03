@@ -1,0 +1,75 @@
+{
+  "penpotVersion": "1.19.0",
+  "board": {
+    "name": "ACC Liquid Glass UI - Control Plane Workspaces",
+    "width": 1920,
+    "height": 1080,
+    "background": "#0a0f1d",
+    "shapes": [
+      {
+        "id": "shape-ambient-glow-cyan",
+        "type": "circle",
+        "name": "Ambient Cyan Mesh Glow",
+        "x": 400,
+        "y": -200,
+        "radius": 500,
+        "fills": [
+          {
+            "fillColor": "#00f0ff",
+            "fillOpacity": 0.25,
+            "blur": 120
+          }
+        ]
+      },
+      {
+        "id": "shape-ambient-glow-magenta",
+        "type": "circle",
+        "name": "Ambient Magenta Review Gate Glow",
+        "x": 1200,
+        "y": 100,
+        "radius": 450,
+        "fills": [
+          {
+            "fillColor": "#ff007f",
+            "fillOpacity": 0.2,
+            "blur": 140
+          }
+        ]
+      },
+      {
+        "id": "panel-video-timeline-workspace",
+        "type": "rect",
+        "name": "Liquid Glass Video Intervention Workspace",
+        "x": 80,
+        "y": 60,
+        "width": 1760,
+        "height": 960,
+        "rx": 24,
+        "fills": [
+          {
+            "fillColor": "#0f172a",
+            "fillOpacity": 0.45
+          }
+        ],
+        "stroke": {
+          "strokeColor": "#ffffff",
+          "strokeOpacity": 0.2,
+          "strokeWidth": 1
+        },
+        "effects": [
+          {
+            "type": "backdrop-blur",
+            "value": 16
+          },
+          {
+            "type": "drop-shadow",
+            "color": "#000000",
+            "opacity": 0.4,
+            "blur": 32,
+            "y": 8
+          }
+        ]
+      }
+    ]
+  }
+}

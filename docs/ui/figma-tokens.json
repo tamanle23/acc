@@ -1,0 +1,126 @@
+{
+  "$schema": "https://tokens.studio/dtcg.json",
+  "name": "ACC Liquid Glass Design System Tokens",
+  "version": "1.0.0",
+  "color": {
+    "surface": {
+      "base": {
+        "$type": "color",
+        "$value": "rgba(15, 23, 42, 0.45)",
+        "$description": "Translucent dark slate frosted base"
+      },
+      "hover": {
+        "$type": "color",
+        "$value": "rgba(30, 41, 59, 0.60)",
+        "$description": "Interactive glass surface hover state"
+      },
+      "active": {
+        "$type": "color",
+        "$value": "rgba(51, 65, 85, 0.75)",
+        "$description": "Active/Pressed glass surface"
+      }
+    },
+    "border": {
+      "specular": {
+        "$type": "color",
+        "$value": "linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(0, 240, 255, 0.2) 100%)",
+        "$description": "1px inset specular rim highlight border gradient"
+      },
+      "alert": {
+        "$type": "color",
+        "$value": "linear-gradient(135deg, rgba(255, 99, 132, 0.6) 0%, rgba(255, 205, 86, 0.2) 100%)",
+        "$description": "Alert/Error specular rim highlight"
+      }
+    },
+    "ambient": {
+      "cyanGlow": {
+        "$type": "color",
+        "$value": "#00f0ff",
+        "$description": "Neon cyan active pipeline ambient light"
+      },
+      "magentaGlow": {
+        "$type": "color",
+        "$value": "#ff007f",
+        "$description": "Neon magenta human review gate ambient light"
+      },
+      "emeraldSuccess": {
+        "$type": "color",
+        "$value": "#10b981",
+        "$description": "Emerald green published status light"
+      }
+    }
+  },
+  "backdropBlur": {
+    "sm": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Light glass blur for tooltips and badges"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "16px",
+      "$description": "Standard glass panel backdrop blur"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "28px",
+      "$description": "Modal overlay glass backdrop blur"
+    }
+  },
+  "borderRadius": {
+    "panel": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "modal": {
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "button": {
+      "$type": "dimension",
+      "$value": "12px"
+    }
+  },
+  "boxShadow": {
+    "glassCard": {
+      "$type": "boxShadow",
+      "$value": [
+        {
+          "x": "0px",
+          "y": "8px",
+          "blur": "32px",
+          "spread": "0px",
+          "color": "rgba(0, 0, 0, 0.37)"
+        },
+        {
+          "x": "0px",
+          "y": "1px",
+          "blur": "0px",
+          "spread": "0px",
+          "color": "rgba(255, 255, 255, 0.2)",
+          "type": "innerShadow"
+        }
+      ]
+    },
+    "glassCardHover": {
+      "$type": "boxShadow",
+      "$value": [
+        {
+          "x": "0px",
+          "y": "12px",
+          "blur": "48px",
+          "spread": "0px",
+          "color": "rgba(0, 240, 255, 0.15)"
+        },
+        {
+          "x": "0px",
+          "y": "1px",
+          "blur": "1px",
+          "spread": "0px",
+          "color": "rgba(255, 255, 255, 0.4)",
+          "type": "innerShadow"
+        }
+      ]
+    }
+  }
+}
