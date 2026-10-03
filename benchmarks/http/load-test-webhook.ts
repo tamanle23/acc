@@ -1,0 +1,169 @@
+import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+
+interface OhaJsonOutput {
+  summary?: {
+    successRate?: number;
+    total?: number;
+    slowest?: number;
+    fastest?: number;
+    average?: number;
+    requestsPerSec?: number;
+  };
+  latencyPercentiles?: {
+    p50?: number;
+    p90?: number;
+    p95?: number;
+    p99?: number;
+  };
+  statusCodeDistribution?: Record<string, number>;
+  [key: string]: any;
+}
+
+async function waitForServer(url: string, timeoutMs = 8000): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { method: 'GET' });
+      if (res.ok || res.status === 404 || res.status === 405) return true;
+    } catch {
+      // Retry
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return false;
+}
+
+async function main() {
+  const port = 3009;
+  const webhookUrl = `http://127.0.0.1:${port}/webhook`;
+
+  console.log('=====================================================');
+  console.log(`🔥 ACC Webhook HTTP Load Benchmark (oha)`);
+  console.log(`Target: ${webhookUrl}`);
+  console.log('=====================================================\n');
+
+  const ohaPath = process.env.OHA_PATH || 'oha';
+
+  // 1. Spawn `bun run cli.ts serve --port 3009` in background
+  console.log(`[HTTP-Bench] Starting background ACC Webhook Server on port ${port}...`);
+  const serverProc = spawn('bun', ['run', 'cli.ts', 'serve', '--port', String(port)], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: false,
+  });
+
+  let serverOutput = '';
+  serverProc.stdout?.on('data', (data) => {
+    serverOutput += data.toString();
+  });
+  serverProc.stderr?.on('data', (data) => {
+    serverOutput += data.toString();
+  });
+
+  const cleanup = () => {
+    if (!serverProc.killed) {
+      serverProc.kill('SIGTERM');
+      console.log('[HTTP-Bench] Terminated background webhook server.');
+    }
+  };
+  process.on('exit', cleanup);
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+
+  try {
+    const isReady = await waitForServer(webhookUrl, 8000);
+    if (!isReady) {
+      console.error('[HTTP-Bench] Server failed to start in time. Output:\n', serverOutput);
+      process.exit(1);
+    }
+    console.log('✅ Server active and ready for load test.');
+
+    const samplePayload = JSON.stringify({
+      eventId: `evt_bench_${Date.now()}`,
+      sourceUrl: 'https://news.ycombinator.com',
+      rawText: 'High frequency automated content creation pipeline benchmark event payload.',
+      receivedAt: new Date().toISOString(),
+    });
+
+    const numRequests = 500;
+    const concurrency = 50;
+
+    console.log(`\n🚀 Executing oha load test (${numRequests} requests, ${concurrency} concurrency)...`);
+
+    const ohaProc = spawn(ohaPath, [
+      '-n', String(numRequests),
+      '-c', String(concurrency),
+      '-m', 'POST',
+      '-T', 'application/json',
+      '-d', samplePayload,
+      '--no-tui',
+      '--output-format', 'json',
+      webhookUrl,
+    ]);
+
+    let ohaOutput = '';
+    let ohaStderr = '';
+
+    ohaProc.stdout.on('data', (data) => {
+      ohaOutput += data.toString();
+    });
+    ohaProc.stderr.on('data', (data) => {
+      ohaStderr += data.toString();
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      ohaProc.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`oha exited with code ${code}: ${ohaStderr}`));
+      });
+    });
+
+    let parsed: OhaJsonOutput = {};
+    try {
+      parsed = JSON.parse(ohaOutput);
+    } catch (e: any) {
+      console.error('Failed to parse JSON output from oha:', e.message);
+      console.log('Raw oha output:\n', ohaOutput);
+    }
+
+    const summary = parsed.summary || {};
+    const percentiles = parsed.latencyPercentiles || {};
+
+    console.log('\n=====================================================');
+    console.log('📊 OHA LOAD TEST RESULTS SUMMARY');
+    console.log('=====================================================');
+    console.log(`Requests Total:       ${numRequests}`);
+    console.log(`Concurrency:          ${concurrency}`);
+    console.log(`Requests / Sec (RPS): ${(summary.requestsPerSec || 0).toFixed(2)} req/sec`);
+    console.log(`Average Latency:      ${((summary.average || 0) * 1000).toFixed(2)} ms`);
+    console.log(`Fastest Latency:      ${((summary.fastest || 0) * 1000).toFixed(2)} ms`);
+    console.log(`Slowest Latency:      ${((summary.slowest || 0) * 1000).toFixed(2)} ms`);
+    console.log(`p50 Latency:          ${((percentiles.p50 || 0) * 1000).toFixed(2)} ms`);
+    console.log(`p90 Latency:          ${((percentiles.p90 || 0) * 1000).toFixed(2)} ms`);
+    console.log(`p95 Latency:          ${((percentiles.p95 || 0) * 1000).toFixed(2)} ms`);
+    console.log(`p99 Latency:          ${((percentiles.p99 || 0) * 1000).toFixed(2)} ms`);
+    console.log('=====================================================\n');
+
+    const outDir = path.join(process.cwd(), 'autogenerated', 'benchmarks');
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir, { recursive: true });
+    }
+    const reportPath = path.join(outDir, 'http-load-test-results.json');
+    fs.writeFileSync(reportPath, JSON.stringify({
+      timestamp: new Date().toISOString(),
+      endpoint: webhookUrl,
+      config: { numRequests, concurrency },
+      metrics: parsed,
+    }, null, 2));
+
+    console.log(`✅ Saved HTTP benchmark report to ${reportPath}`);
+  } finally {
+    cleanup();
+  }
+}
+
+main().catch((err) => {
+  console.error('[HTTP-Bench] Error:', err);
+  process.exit(1);
+});
