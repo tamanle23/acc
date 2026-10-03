@@ -37,8 +37,8 @@ group('Canvas & Overlay Frame Rendering', () => {
     }
   });
 
-  bench('Canvas RGBA Frame Pixel Buffer Readout (toBuffer)', () => {
-    const rawBuffer = canvas.toBuffer('raw');
+  bench('Canvas Frame Buffer Readout (toBuffer image/png)', () => {
+    const rawBuffer = canvas.toBuffer('image/png');
   });
 });
 
