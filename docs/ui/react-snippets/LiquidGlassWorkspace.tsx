@@ -3,19 +3,19 @@
 import React, { useState } from 'react';
 
 export interface LiquidGlassWorkspaceProps {
-  taskId: string;
-  contentTypeId: string;
-  scriptText: string;
-  onApprove: (updatedScript: string) => Promise<void>;
-  onReject: () => Promise<void>;
+  taskId?: string;
+  contentTypeId?: string;
+  scriptText?: string;
+  onApprove?: (updatedScript: string) => Promise<void>;
+  onReject?: () => Promise<void>;
 }
 
 export const LiquidGlassWorkspace: React.FC<LiquidGlassWorkspaceProps> = ({
-  taskId,
-  contentTypeId,
-  scriptText: initialScript,
-  onApprove,
-  onReject
+  taskId = 'task_123',
+  contentTypeId = 'video_103',
+  scriptText: initialScript = 'Sample narrative script for review...',
+  onApprove = async () => {},
+  onReject = async () => {}
 }) => {
   const [script, setScript] = useState(initialScript);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,3 +103,6 @@ export const LiquidGlassWorkspace: React.FC<LiquidGlassWorkspaceProps> = ({
     </div>
   );
 };
+
+// Export as Default Export to support `import LiquidGlassWorkspace from ...`
+export default LiquidGlassWorkspace;

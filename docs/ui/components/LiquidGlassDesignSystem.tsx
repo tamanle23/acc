@@ -43,7 +43,6 @@ export const LiquidGlassPanel: React.FC<LiquidGlassPanelProps> = ({
         ${activeGlowMap} ${className}
       `}
     >
-      {/* Specular Top Rim Highlight */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-white/90 via-white/40 to-cyan-400/40 rounded-t-2xl pointer-events-none" />
       {children}
     </div>
@@ -54,7 +53,11 @@ export const LiquidGlassPanel: React.FC<LiquidGlassPanelProps> = ({
 // WORKSPACE 1: LIGHT MODE TRIGGER & SEED STUDIO
 // ============================================================================
 
-export const TriggerStudioWorkspace: React.FC<{ onLaunch: (pipelineId: string) => void }> = ({ onLaunch }) => {
+export interface TriggerStudioWorkspaceProps {
+  onLaunch?: (pipelineId: string) => void;
+}
+
+export const TriggerStudioWorkspace: React.FC<TriggerStudioWorkspaceProps> = ({ onLaunch = () => {} }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('1');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -109,3 +112,8 @@ export const TriggerStudioWorkspace: React.FC<{ onLaunch: (pipelineId: string) =
     </div>
   );
 };
+
+export const LiquidGlassDesignSystem = TriggerStudioWorkspace;
+
+// Export as Default Export to support `import LiquidGlassDesignSystem from ...`
+export default LiquidGlassDesignSystem;

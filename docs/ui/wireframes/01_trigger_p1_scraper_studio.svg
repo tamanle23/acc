@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" style="background:#f8fafc; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <radialGradient id="cyanGlow" cx="20%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="#00b4d8" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="specularBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="glassFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#f1f5f9" stop-opacity="0.55"/>
+    </linearGradient>
+    <linearGradient id="innerGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#f8fafc"/>
+  <circle cx="400" cy="200" r="600" fill="url(#cyanGlow)"/>
+
+  <!-- Header Bar -->
+  <g transform="translate(60, 40)">
+    <rect width="1800" height="70" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="42" fill="#0f172a" font-size="20" font-weight="700">ACC CONTROL PLANE <tspan fill="#0284c7" font-size="14" font-weight="500">| Pipeline 1 Trigger Studio (Event Scraper &amp; Summarizer)</tspan></text>
+  </g>
+
+  <!-- Content Grid -->
+  <g transform="translate(60, 130)">
+    <rect width="1800" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="40" y="45" fill="#0f172a" font-size="18" font-weight="700">Pipeline 1 Configuration &amp; Ingestion Rules</text>
+
+    <!-- Source Feed Matrix -->
+    <text x="40" y="90" fill="#475569" font-size="12" font-weight="700">WHITELISTED INGESTION SOURCES</text>
+    <rect x="40" y="105" width="540" height="110" rx="12" fill="url(#innerGlass)" stroke="#cbd5e1"/>
+    <text x="60" y="140" fill="#0f172a" font-size="14" font-weight="700">TechCrunch &amp; HackerNews RSS</text>
+    <text x="60" y="165" fill="#059669" font-size="12" font-weight="600">● Status: Active (Polling every 5m)</text>
+
+    <rect x="610" y="105" width="540" height="110" rx="12" fill="url(#innerGlass)" stroke="#cbd5e1"/>
+    <text x="630" y="140" fill="#0f172a" font-size="14" font-weight="700">CoinGecko Volatility Webhook</text>
+    <text x="630" y="165" fill="#059669" font-size="12" font-weight="600">● Trigger: BTC Delta &gt; 3.0%</text>
+
+    <rect x="1180" y="105" width="580" height="110" rx="12" fill="url(#innerGlass)" stroke="#cbd5e1"/>
+    <text x="1200" y="140" fill="#0f172a" font-size="14" font-weight="700">GitHub Trending GraphQL API</text>
+    <text x="1200" y="165" fill="#059669" font-size="12" font-weight="600">● Filter: Min 500 Stars / Day</text>
+
+    <!-- Code Editor -->
+    <text x="40" y="255" fill="#475569" font-size="12" font-weight="700">vLLM QWEN2.5 JSON GRAMMAR RULES</text>
+    <rect x="40" y="270" width="1720" height="480" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="60" y="310" fill="#0284c7" font-family="monospace" font-size="13" font-weight="600">root ::= "{" whitespace "\"headline\":" string "," whitespace "\"summary\":" string "," whitespace "\"targetFormats\":" format_array "}"</text>
+    <text x="60" y="340" fill="#9333ea" font-family="monospace" font-size="13" font-weight="600">format_array ::= "[" "\"static-web\"," "\"social-thread\"," "\"video-short\"" "]"</text>
+
+    <!-- Launch Button -->
+    <rect x="40" y="780" width="1720" height="60" rx="14" fill="#0284c7"/>
+    <text x="750" y="818" fill="#ffffff" font-size="16" font-weight="800" letter-spacing="1">LAUNCH PIPELINE 1 WORKFLOW NOW</text>
+  </g>
+</svg>
