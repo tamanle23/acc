@@ -167,9 +167,30 @@ The **Liquid Glass Design System** elevates standard glassmorphism into a dynami
 
 ---
 
-## 4. Universal Pipeline Trigger UIs (`Before` Stage — Pre-Processing Seeding)
+## 4. Modular UI Patterns for Universal Content Interventions
 
-In the `Before` stage (56.4% of content creation workflows), human operators configure triggers, seed templates, and setup domain rules prior to execution.
+To support 250 distinct content types without building 250 separate UI views, the Liquid Glass Control Plane employs **Modular UI Component Patterns**. These primitive components are combined dynamically based on the Canonical Pipeline and output format.
+
+### 4.1 Text, Code & Tone Editors (Textual Domain)
+* **Split-Pane Narrative Editor:** Used for Scripts, Markdown, and Summaries. Left pane displays raw ingestion (e.g., scraped RSS or podcast transcript); right pane displays the AI-refactored narrative (e.g., Twitter Thread, ELI5 Explainer). Includes PII redaction highlight boxes and AI "Make Punchier" / "Simplify" contextual menus.
+* **JSON/AST Grammar Builder:** Used for strict vLLM/Qwen2.5 outputs (e.g., DB templating matrices, game state buffers). Features schema validation highlighting and syntax tree collapsing.
+* **KaTeX/Code Syntax Sandbox:** Used in Pipeline 5 (Math/Physics). Live-renders LaTeX math or code snippets to catch visual overflows before rendering.
+
+### 4.2 Spatial, Node & Layout Grids (Visual/Interactive Domain)
+* **D3.js Reachability Node Graph:** Used for Interactive HTML5 formats (CYOA games, visual learning roadmaps). Displays narrative trees, detecting unreachable branches and orphan nodes with Red/Emerald status glows.
+* **Canvas Layout Inspector (`@napi-rs/canvas`):** Used for static quote cards and infographics. Renders exact font bounds, safe zones, and padding boxes to catch text overflows on dynamically generated quote cards.
+* **Depth3D & Parallax Grid:** Used for Pipeline 4 visual workflows. Provides X/Y/Z spatial sliders to preview focal points and SAM 2 cut-out boundaries over AI-generated images.
+
+### 4.3 Audio, Waveform & Sidechain Timelines (Audio/Video Domain)
+* **Zero-Copy Video Trim Timeline:** Used for Shorts, Reels, and Timelines. Streams uncompressed WebCodecs frames directly from FFmpeg scratch. Includes TikTok/Reels UI safe zone mesh overlays and drag-to-trim handles.
+* **Multitrack Waveform Ducking Inspector:** Used for podcasts and audiobooks. Displays multitrack waveforms (TTS, BGM, SFX Foley) with an interactive compression curve visualizer (-18dB attenuation) to verify audio ducking.
+* **Phoneme & Viseme Alignment Track:** Used for automated lip-sync (LivePortrait, Manim). Displays word-level Whisper.cpp alignments with drag-and-drop phonetic pronunciation overrides.
+
+---
+
+## 5. Universal Pipeline Trigger UIs (`Before` Stage — Pre-Processing Seeding)
+
+In the `Before` stage (56.4% of content creation workflows), human operators configure triggers, seed templates, and setup domain rules prior to execution. The interface adapts based on which of the 6 Canonical Pipelines is selected.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────────────┐
@@ -179,33 +200,83 @@ In the `Before` stage (56.4% of content creation workflows), human operators con
 │  │ ┌───────────────────────┐ │ ┌─────────────────────────────────────────────────────┐ │  │
 │  │ │ P1: Scraper & Digest  │ │ │ Whitelisted Feeds: TechCrunch RSS, CoinGecko API    │ │  │
 │  │ ├───────────────────────┤ │ ├─────────────────────────────────────────────────────┤ │  │
-│  │ │ P2: DB & Spec Matrix  │ │ │ vLLM Qwen2.5 Strict JSON Grammar Builder            │ │  │
+│  │ │ P2: DB & Spec Matrix  │ │ │ Domain Filters: [x] Tech  [ ] Crypto  [x] Markets     │ │  │
+│  │ ├───────────────────────┤ │ ├─────────────────────────────────────────────────────┤ │  │
+│  │ │ P3: Repurposing       │ │ │ vLLM Qwen2.5 Strict JSON Grammar Builder            │ │  │
 │  │ ├───────────────────────┤ │ └─────────────────────────────────────────────────────┘ │  │
-│  │ │ P3: Repurposing       │ │ Volatility Trigger Threshold: [====||-------] 3.5%    │  │
+│  │ │ P4: Generative Story  │ │ Volatility Trigger Threshold: [====||-------] 3.5%    │  │
 │  │ ├───────────────────────┤ │ ┌─────────────────────────────────────────────────────┐ │  │
-│  │ │ P4: Generative Story  │ │ │ [ LAUNCH WORKFLOW PIPELINE NOW (Primary CTA) ]      │ │  │
-│  │ └───────────────────────┘ │ └─────────────────────────────────────────────────────┘ │  │
+│  │ │ P5: Rule Logic & Math │ │ │ [ LAUNCH WORKFLOW PIPELINE NOW (Primary CTA) ]      │ │  │
+│  │ ├───────────────────────┤ │ └─────────────────────────────────────────────────────┘ │  │
+│  │ │ P6: Ambient Loops     │ │                                                         │  │
+│  │ └───────────────────────┘ │                                                         │  │
 │  └───────────────────────────┴─────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.1 Trigger Workspaces across 6 Canonical Pipelines
-1. **Pipeline 1 (Event Scraper & Summarizer):** RSS Feed Whitelist matrix, API Rate-Limit sliders, and vLLM Qwen2.5 JSON Grammar Schema editor.
-2. **Pipeline 2 (DB Templating & Programmatic Cards):** PostgreSQL JSONB spec matrix query builder and `@napi-rs/canvas` typography/padding inspector.
-3. **Pipeline 3 (Repurposing & Media Ingestion):** Drag-and-drop media ingestion dropzone with Whisper.cpp word-level alignment & speaker diarization controls.
-4. **Pipeline 4 (Generative Storytelling):** Character LoRA face-lock selector grid, Depth3D pop-out intensity seed, and narrative pacing AST controls.
-5. **Pipeline 5 (Rule Logic & Math Engines):** Live KaTeX / LaTeX equation math previewer and Matter.js / Manim physics simulation sliders.
-6. **Pipeline 6 (Infinite Ambient Loops):** WebGL GLSL shader parameter explorer and Audio DSP 30Hz anti-rumble high-pass filter toggle.
+### 5.1 Trigger Workspaces across 6 Canonical Pipelines
+The trigger workspace dynamically loads specific component panels for each pipeline:
+
+1. **Pipeline 1 (Event Scraper & Summarizer):**
+   - **Components:** RSS Feed Whitelist matrix, API Rate-Limit sliders, Domain Filter Toggles, and a vLLM Qwen2.5 JSON Grammar Schema editor.
+   - **Operator Action:** The operator filters noisy feeds and sets volatility thresholds before automated summarization starts.
+2. **Pipeline 2 (DB Templating & Programmatic Cards):**
+   - **Components:** PostgreSQL JSONB spec matrix query builder, affiliate API product picker grid, and `@napi-rs/canvas` typography/padding inspector.
+   - **Operator Action:** The operator sets layout rules and maps database fields to visual card templates.
+3. **Pipeline 3 (Repurposing & Media Ingestion):**
+   - **Components:** Drag-and-drop media ingestion dropzone, Whisper.cpp word-level alignment confidence sliders, and speaker diarization role assignment menus.
+   - **Operator Action:** The operator uploads base media and configures the extraction rules for repurposing.
+4. **Pipeline 4 (Generative Storytelling):**
+   - **Components:** Character LoRA face-lock selector grid, Depth3D pop-out intensity slider, and narrative pacing AST node graph.
+   - **Operator Action:** The operator seeds the story structure and defines visual constraints for LLM script generation.
+5. **Pipeline 5 (Rule Logic & Math Engines):**
+   - **Components:** Live KaTeX / LaTeX equation math previewer, variable domain bounds inputs, and Matter.js / Manim physics simulation parameter sliders.
+   - **Operator Action:** The operator validates boundaries of mathematical algorithms before large-scale generation.
+6. **Pipeline 6 (Infinite Ambient Loops):**
+   - **Components:** WebGL GLSL shader parameter explorer, audio DSP 30Hz anti-rumble high-pass filter toggle, and environmental random seed inputs.
+   - **Operator Action:** The operator defines the procedural rules and boundary constraints for infinite stream generation.
 
 ---
 
-## 5. Mid-Execution Human Intervention Workspaces (`In the Middle` Conductor Gates)
+## 6. Mid-Execution Human Intervention Workspaces (`In the Middle` Conductor Gates)
 
-When Conductor pauses at a `HUMAN_REVIEW` task node (35.2% of content creation workflows), the Control Plane renders one of **5 Specialized Liquid Glass Intervene Workspaces** based on output format:
+When Conductor pauses at a `HUMAN_REVIEW` task node (35.2% of content creation workflows), the Control Plane renders one of **4 Specialized Liquid Glass Intervene Workspaces** based on the output format. Each workspace is a composition of the Modular UI Patterns (Section 4).
+
+### 6.1 Workspace 1: Static Web & Social Network Intervene (Formats 1 & 2)
+* **Handles Content Types:** Items 1–100 (ELI5 Explainers, Book Summary Threads, Quote Cards, Infographics)
+* **Liquid Glass Interventions:**
+  * Side-by-Side Split View displaying raw ingested source on the left and rendered social quote card on the right.
+  * AI refactoring controls (`Make Punchier`, `Simplify to ELI5`).
+  * Real-time character count overflow guard badges for social limits.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────────────┐
-│                 FORMAT 3: ZERO-COPY VIDEO TIMELINE INTERVENE WORKSPACE                     │
+│               WORKSPACE 1: SOCIAL NETWORK & STATIC WEB INTERVENE (TEXT & CARDS)           │
+│  ┌──────────────────────────────────────────────┬──────────────────────────────────────┐  │
+│  │ RAW SOURCE TEXT (e.g. Scraped Feed)          │ RENDERED SOCIAL CARD (PREVIEW)       │  │
+│  │ "The company announced Q3 revenues..."       │ ┌────────────────────────────────┐   │  │
+│  │                                              │ │ 🚀 Huge Q3 Breakout!           │   │  │
+│  │ [ Highlight PII Redaction ]                  │ │ Revenues up 24% YoY            │   │  │
+│  ├──────────────────────────────────────────────┤ │ #Tech #Finance                 │   │  │
+│  │ AI TONE ADJUSTMENTS                          │ └────────────────────────────────┘   │  │
+│  │ [ Make Punchier ] [ Simplify to ELI5 ]       │ Char Limit: 230/280 (Safe)           │  │
+│  ├──────────────────────────────────────────────┴──────────────────────────────────────┤  │
+│  │  [ Reject & Re-prompt ]      [ Regenerate Card ]    [ APPROVE & RESUME (Primary) ]  │  │
+│  └─────────────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 Workspace 2: Shorts, Reels & Long-Form Video Intervene (Format 3)
+* **Handles Content Types:** Items 101–150 (Reddit Creepypasta, AI Short Films, Bar Chart Races, Web Walkthroughs)
+* **Liquid Glass Interventions:**
+  * WebCodecs zero-copy frame player streaming directly from FFmpeg scratch space.
+  * TikTok/Reels platform safe zone mesh overlays to ensure text isn't obscured.
+  * Interactive Depth3D parallax sliders and SAM 2 layer cutout visualizers.
+  * Multi-track clip trimming for pacing.
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│                 WORKSPACE 2: ZERO-COPY VIDEO TIMELINE INTERVENE (FORMAT 3)                 │
 │  ┌──────────────────────────────────────────────┬──────────────────────────────────────┐  │
 │  │                                              │  AI Script Narrative Breakdown       │  │
 │  │   Zero-Copy WebCodecs 9:16 Video Player      │  ┌────────────────────────────────┐  │  │
@@ -222,25 +293,56 @@ When Conductor pauses at a `HUMAN_REVIEW` task node (35.2% of content creation w
 └───────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.1 Format 1 & 2 (Static Web & Social Network Intervene Workspace)
-* **Handles Content Types:** Items 1–100 (ELI5 Explainers, Book Summary Threads, Quote Cards, Infographics)
-* **Liquid Glass Interventions:** Side-by-Side Split View displaying raw ingested source on the left and rendered social quote card on the right; AI refactoring controls (`Make Punchier`, `Simplify to ELI5`); Real-time character count overflow guard badges.
-
-### 5.2 Format 3 (Shorts, Reels & Long-Form Video Intervene Workspace)
-* **Handles Content Types:** Items 101–150 (Reddit Creepypasta, AI Short Films, Bar Chart Races, Web Walkthroughs)
-* **Liquid Glass Interventions:** WebCodecs zero-copy frame player streaming directly from FFmpeg scratch space; TikTok/Reels platform safe zone mesh overlays; Interactive Depth3D parallax sliders; Multi-track clip trimming.
-
-### 5.3 Format 4 (Audio, Podcasts & SFX Intervene Workspace)
+### 6.3 Workspace 3: Audio, Podcasts & SFX Intervene (Format 4)
 * **Handles Content Types:** Items 151–200 (2-Host Podcasts, Audiobooks, Binaural Beats, Guided Meditations)
-* **Liquid Glass Interventions:** Multitrack waveform visualizer (Host A, Host B, BGM, Foley SFX); Dynamic sidechain ducking curve inspector (-18dB attenuation curve); Inline phonetic pronunciation fixer.
+* **Liquid Glass Interventions:**
+  * Multitrack waveform visualizer (Host A, Host B, BGM, Foley SFX).
+  * Dynamic sidechain ducking curve inspector (-18dB attenuation curve to ensure BGM drops when speaking).
+  * Inline phonetic pronunciation fixer (Whisper word-level alignment).
 
-### 5.4 Format 5 (Interactive HTML5, WebGL & CYOA Games Intervene Workspace)
+```text
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│                 WORKSPACE 3: AUDIO & PODCAST INTERVENE (MULTITRACK MIXER)                  │
+│  ┌──────────────────────────────────────────────┬──────────────────────────────────────┐  │
+│  │ Multitrack Waveform Ducking Inspector        │  Phonetic Pronunciation Fixer        │  │
+│  │ ┌────────────────────────────────────────┐   │  ┌────────────────────────────────┐  │  │
+│  │ │ Host A:  ▂▃▄▅▆▇█  (Speaking)           │   │  │ Word: "Xal'atath"              │  │  │
+│  │ │ BGM   : █▇▆▅▄▃▂   (Ducking -18dB)      │   │  │ IPA: [zal.a.tath]              │  │  │
+│  │ └────────────────────────────────────────┘   │  └────────────────────────────────┘  │  │
+│  │ Sidechain Attenuation: [|||||----] -18dB     │                                      │  │
+│  ├──────────────────────────────────────────────┴──────────────────────────────────────┤  │
+│  │  [ Reject & Re-prompt ]      [ Regenerate Audio ]   [ APPROVE & RESUME (Primary) ]  │  │
+│  └─────────────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.4 Workspace 4: Interactive HTML5, WebGL & CYOA Games Intervene (Format 5)
 * **Handles Content Types:** Items 201–250 (Choose Your Own Adventure, Scrollytelling, Calculators, Tinder Swipers)
-* **Liquid Glass Interventions:** D3.js choice reachability node graph detecting unreachable narrative branches or orphan choice nodes; Sandboxed embedded `<iframe>` runtime player; Monte Carlo 1,000-playthrough game balance tester.
+* **Liquid Glass Interventions:**
+  * D3.js choice reachability node graph detecting unreachable narrative branches or orphan choice nodes.
+  * Sandboxed embedded `<iframe>` runtime player.
+  * Monte Carlo 1,000-playthrough game balance tester controls.
+
+```text
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│              WORKSPACE 4: INTERACTIVE HTML5 & NODE GRAPH INTERVENE (FORMAT 5)              │
+│  ┌──────────────────────────────────────────────┬──────────────────────────────────────┐  │
+│  │ D3.js Reachability Node Graph                │  Embedded HTML5 Runtime Player       │  │
+│  │ ┌────────────────────────────────────────┐   │  ┌────────────────────────────────┐  │  │
+│  │ │ [Start] -> [Choice A] -> [Ending 1]    │   │  │ What do you do next?           │  │  │
+│  │ │         -> [Choice B] -> [Orphan Node] │   │  │ [ Open Door ] [ Wait Here ]    │  │  │
+│  │ │ ⚠️ Orphan Node Detected!                 │   │  └────────────────────────────────┘  │  │
+│  │ └────────────────────────────────────────┘   │  Monte Carlo Balance Tester          │  │
+│  │                                              │  [ Run 1000 Simulations ]            │  │
+│  ├──────────────────────────────────────────────┴──────────────────────────────────────┤  │
+│  │  [ Reject & Re-prompt ]      [ Fix Node Graph ]     [ APPROVE & RESUME (Primary) ]  │  │
+│  └─────────────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 6. Post-Publishing Health & Monitoring UIs (`After` Stage Operations)
+## 7. Post-Publishing Health & Monitoring UIs (`After` Stage Operations)
 
 For real-time alert tickers, sports scores, and 24/7 RTMP streams (8.0% of content creation workflows), intervention occurs post-publishing via the **Post-Publishing Dashboard**.
 
@@ -262,7 +364,7 @@ For real-time alert tickers, sports scores, and 24/7 RTMP streams (8.0% of conte
 
 ---
 
-## 7. Master Itemized Integration & UI Interaction Matrix (Items 1 - 250)
+## 8. Master Itemized Integration & UI Interaction Matrix (Items 1 - 250)
 
 The table below maps all 250 content types from `docs/4.250_CONTENT_TYPES_6_PIPELINES_INTEGRATION_MATRIX.md` to their canonical pipeline, Conductor task definition, intervention timing stage, and specific Liquid Glass UI workspace:
 
@@ -521,7 +623,7 @@ The table below maps all 250 content types from `docs/4.250_CONTENT_TYPES_6_PIPE
 
 ---
 
-## 8. Summary Checklist for Frontend Systems Engineering
+## 9. Summary Checklist for Frontend Systems Engineering
 
 | Component / Subsystem | Primary Engineering Responsibility | Verification Landmark |
 | :--- | :--- | :--- |
