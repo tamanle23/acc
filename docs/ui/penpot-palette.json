@@ -1,0 +1,53 @@
+{
+  "name": "ACC Liquid Glass UI Design System",
+  "colors": [
+    {
+      "name": "Glass Surface Base",
+      "color": "#0F172A",
+      "opacity": 0.45,
+      "path": "Surface"
+    },
+    {
+      "name": "Glass Surface Hover",
+      "color": "#1E293B",
+      "opacity": 0.60,
+      "path": "Surface"
+    },
+    {
+      "name": "Glass Surface Active",
+      "color": "#334155",
+      "opacity": 0.75,
+      "path": "Surface"
+    },
+    {
+      "name": "Neon Cyan Glow",
+      "color": "#00F0FF",
+      "opacity": 1.0,
+      "path": "Ambient"
+    },
+    {
+      "name": "Neon Magenta Review Gate Glow",
+      "color": "#FF007F",
+      "opacity": 1.0,
+      "path": "Ambient"
+    },
+    {
+      "name": "Emerald Success Glow",
+      "color": "#10B981",
+      "opacity": 1.0,
+      "path": "Status"
+    },
+    {
+      "name": "Alert Red Glow",
+      "color": "#EF4444",
+      "opacity": 1.0,
+      "path": "Status"
+    },
+    {
+      "name": "Background Dark Slate",
+      "color": "#090D16",
+      "opacity": 1.0,
+      "path": "Background"
+    }
+  ]
+}
