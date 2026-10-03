@@ -7,7 +7,7 @@ In previous builds, when joining the 28 scenes of `sample-story`:
 3. **FFI Concat Stability**: An unstable memory dereference in `FFIConcatMuxer.ts` caused a panic on certain Windows memory configurations.
 
 ## 2. Implementation Plan & Changes
-1. **Zero-Copy Lossless Stream Concatenation (`EditingPipelineOrchestrator.ts`)**:
+1. **Zero-Copy Lossless Stream Concatenation (`VideoEditPipelineOrchestrator.ts`)**:
    - Upgraded `concatenateVideos` to use the high-performance, rock-solid FFmpeg concat demuxer (`-f concat -safe 0 -c copy`), achieving zero-copy bitstream concatenation without quality loss or re-encoding.
    - Respected `settings.fastIntermediate: true` to bypass unnecessary re-encoding passes and preserve the exact 2:41 min story timeline.
 2. **Bitstream Audio-Video Preservation**:

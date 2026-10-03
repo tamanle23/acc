@@ -15,7 +15,7 @@ The **ACC Systematic Video Editing Engine** is fully implemented end-to-end. You
    bun run cli.ts ./my-story-folder
    ```
 2. **Programmatic TypeScript API (For Developers & Pipeline Integrators)**:
-   Import domain strategies (`EditingPipelineOrchestrator`, `EditingOpFactory`, `SafeZoneManager`, `ColorGradingEngine`) directly into custom TypeScript/Node/Bun microservices.
+   Import domain strategies (`VideoEditPipelineOrchestrator`, `EditingOpFactory`, `SafeZoneManager`, `ColorGradingEngine`) directly into custom TypeScript/Node/Bun microservices.
 
 ---
 

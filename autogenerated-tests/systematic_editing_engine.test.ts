@@ -66,7 +66,7 @@ import { AutoReframeStrategy } from '../packages/effect-engines/src/vision/AutoR
 import { WidgetExporter } from '../packages/exporters/src/interactive-web/WidgetExporter';
 import { SpatialVideoExporter } from '../packages/exporters/src/video/SpatialVideoExporter';
 import { ZeroCopyRTMPStreamStrategy } from '../packages/exporters/src/live-stream/ZeroCopyRTMPStreamStrategy';
-import { EditingPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/EditingPipelineOrchestrator';
+import { VideoEditPipelineOrchestrator } from '../apps/cli/src/pipelines/04-generative-story/VideoEditPipelineOrchestrator';
 
 describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () => {
   // FLYWEIGHT PATTERN: MODEL HANDLE REGISTRY
@@ -219,10 +219,10 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       const decorator = new VignetteDecorator(mockProducer);
       const mockCtx = {
         rendered: false,
-        save: () => {},
-        restore: () => {},
-        createRadialGradient: () => ({ addColorStop: () => {} }),
-        fillRect: () => {},
+        save: () => { },
+        restore: () => { },
+        createRadialGradient: () => ({ addColorStop: () => { } }),
+        fillRect: () => { },
       };
       decorator.renderFrame(mockCtx, 1080, 1920, 0);
       expect(mockCtx.rendered).toBe(true);
@@ -262,9 +262,9 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
     test('6.2 & 6.3: Motion Graphics Strategy & Kinetic Typography', () => {
       const motion = new KaraokeSubtitleMotionGraphics();
       const mockCtx = {
-        save: () => {},
-        restore: () => {},
-        fillText: () => {},
+        save: () => { },
+        restore: () => { },
+        fillText: () => { },
       };
       motion.renderFrame(mockCtx, { text: 'Hello', canvasWidth: 1080, canvasHeight: 1920, progress: 0.5 });
 
@@ -272,8 +272,8 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       expect(scales[0]).toBe(0.0);
 
       TrackingCalloutEngine.renderTrackingCallout({
-        save: () => {}, restore: () => {}, beginPath: () => {}, arc: () => {}, fill: () => {},
-        moveTo: () => {}, lineTo: () => {}, stroke: () => {}, roundRect: () => {}, fillText: () => {},
+        save: () => { }, restore: () => { }, beginPath: () => { }, arc: () => { }, fill: () => { },
+        moveTo: () => { }, lineTo: () => { }, stroke: () => { }, roundRect: () => { }, fillText: () => { },
         measureText: () => ({ width: 100 }),
       }, {
         labelText: 'Specs',
@@ -401,8 +401,8 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
 
     test('13.2: MoCap VTube Facade', () => {
       const mockCtx = {
-        save: () => {}, restore: () => {}, translate: () => {}, rotate: () => {},
-        beginPath: () => {}, arc: () => {}, ellipse: () => {}, fill: () => {},
+        save: () => { }, restore: () => { }, translate: () => { }, rotate: () => { },
+        beginPath: () => { }, arc: () => { }, ellipse: () => { }, fill: () => { },
       };
       MoCapVTubeFacade.renderAvatarFrameFromLandmarks(mockCtx, {
         mouthOpenRatio: 0.8, eyeBlinkLeft: false, eyeBlinkRight: false, headRotation: { pitch: 0, yaw: 0, roll: 0 },
@@ -474,8 +474,8 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       expect(executedStage2).toBe(true);
     });
 
-    test('EditingPipelineOrchestrator End-to-End Execution', async () => {
-      const orchestrator = new EditingPipelineOrchestrator();
+    test('VideoEditPipelineOrchestrator End-to-End Execution', async () => {
+      const orchestrator = new VideoEditPipelineOrchestrator();
       const res = await orchestrator.processAndRender({ name: 'Master E2E Orchestrator', scenes: [{ text: 'Scene 1', duration: 2 }] });
       expect(res.ir.metadata.title).toBe('Master E2E Orchestrator');
     });

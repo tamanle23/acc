@@ -9,7 +9,7 @@ import {
   defaultPipelineRegistry,
 } from '@acc/core';
 import type { StoryConfig, ResolvedStoryConfig } from '@acc/core/types';
-import { EditingPipelineOrchestrator } from './EditingPipelineOrchestrator';
+import { VideoEditPipelineOrchestrator } from './VideoEditPipelineOrchestrator';
 import { createStoryFolderResolutionStage } from './stages/StoryFolderResolutionStage';
 import { createStoryOrchestratedRenderStage } from './stages/StoryOrchestratedRenderStage';
 import { createStoryMetadataPersistenceStage } from './stages/StoryMetadataPersistenceStage';
@@ -37,7 +37,7 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
   public readonly description =
     'Multi-scene visual storytelling generator featuring 3D Depth mesh pop-outs, character cutouts, dynamic typography, and zero-copy NVENC rendering.';
 
-  private orchestrator = new EditingPipelineOrchestrator();
+  private orchestrator = new VideoEditPipelineOrchestrator();
 
   public async prepare(): Promise<void> {
     await FFmpegManager.prepare();

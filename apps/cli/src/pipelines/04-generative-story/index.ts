@@ -5,7 +5,7 @@ export * from './tts';
 export * from './whisper';
 export * from './upscaler';
 export * from './plugins/UpscalerPlugin';
-export * from './EditingPipelineOrchestrator';
+export * from './VideoEditPipelineOrchestrator';
 export * from './stages/StoryFolderResolutionStage';
 export * from './stages/StoryOrchestratedRenderStage';
 export * from './stages/StoryMetadataPersistenceStage';

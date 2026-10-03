@@ -1,9 +1,9 @@
 import type { IPipelineMiddleware } from '@acc/core';
 import type { GenerativeStoryContext } from '../GenerativeStoryPipeline';
-import { EditingPipelineOrchestrator } from '../EditingPipelineOrchestrator';
+import { VideoEditPipelineOrchestrator } from '../VideoEditPipelineOrchestrator';
 
 export function createStoryOrchestratedRenderStage(
-  orchestrator: EditingPipelineOrchestrator = new EditingPipelineOrchestrator()
+  orchestrator: VideoEditPipelineOrchestrator = new VideoEditPipelineOrchestrator()
 ): IPipelineMiddleware<GenerativeStoryContext> {
   return {
     name: 'StoryOrchestratedRenderStage',
@@ -19,8 +19,8 @@ export function createStoryOrchestratedRenderStage(
 
       const renderStartTime = Date.now();
 
-      // Delegate video rendering to the consolidated EditingPipelineOrchestrator
-      await EditingPipelineOrchestrator.renderStoryVideo(
+      // Delegate video rendering to the consolidated VideoEditPipelineOrchestrator
+      await VideoEditPipelineOrchestrator.renderStoryVideo(
         resolvedConfig,
         outputFilePath,
         absoluteDir

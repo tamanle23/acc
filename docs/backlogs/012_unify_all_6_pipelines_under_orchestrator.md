@@ -9,7 +9,7 @@
 ---
 
 ## 1. Context & Problem Statement
-Prior to this enhancement, while `EditingPipelineOrchestrator` was used by Pipeline 4 (`GenerativeStoryPipeline`), Pipelines 1 (`Scraper`), 2 (`DB Templating`), 3 (`Repurposing`), 5 (`Rule Logic`), and 6 (`Ambient Stream`) executed procedural logic directly within monolithic `run()` methods. Furthermore, the generic middleware orchestrator (`PipelineRunner`) in `@acc/core` was not universally wired across all 6 pipelines.
+Prior to this enhancement, while `VideoEditPipelineOrchestrator` was used by Pipeline 4 (`GenerativeStoryPipeline`), Pipelines 1 (`Scraper`), 2 (`DB Templating`), 3 (`Repurposing`), 5 (`Rule Logic`), and 6 (`Ambient Stream`) executed procedural logic directly within monolithic `run()` methods. Furthermore, the generic middleware orchestrator (`PipelineRunner`) in `@acc/core` was not universally wired across all 6 pipelines.
 
 ## 2. Proposed Design & Implementation Strategy
 - Defined `UnifiedPipelineContext<TInput>` and `IPipeline<TInput, TOutput>` interface in `@acc/core`.

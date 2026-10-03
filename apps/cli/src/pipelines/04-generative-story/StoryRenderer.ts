@@ -1,14 +1,14 @@
 import type { ResolvedStoryConfig } from '@acc/core/types';
-import { EditingPipelineOrchestrator } from './EditingPipelineOrchestrator';
+import { VideoEditPipelineOrchestrator } from './VideoEditPipelineOrchestrator';
 
 /**
  * Backward-compatible entrypoint for story video rendering.
- * Delegates directly to the consolidated EditingPipelineOrchestrator.
+ * Delegates directly to the consolidated VideoEditPipelineOrchestrator.
  */
 export async function renderStoryVideo(
   config: ResolvedStoryConfig,
   outputFilePath: string,
   baseDir: string = process.cwd()
 ): Promise<void> {
-  return EditingPipelineOrchestrator.renderStoryVideo(config, outputFilePath, baseDir);
+  return VideoEditPipelineOrchestrator.renderStoryVideo(config, outputFilePath, baseDir);
 }

@@ -1,19 +1,19 @@
 # [129] Phase 2: Refactor GenerativeStoryPipeline and Stages
 
 ## 1. Problem Statement
-The stages of the Generative Storytelling Pipeline (`04-generative-story`) needed clean integration with the consolidated `EditingPipelineOrchestrator`, comprehensive `AssetContext` registration (including scene images, video clips, narration stems, and global BGM), `PipelineIR` AST adapter generation, and complete metadata serialization with timing metrics.
+The stages of the Generative Storytelling Pipeline (`04-generative-story`) needed clean integration with the consolidated `VideoEditPipelineOrchestrator`, comprehensive `AssetContext` registration (including scene images, video clips, narration stems, and global BGM), `PipelineIR` AST adapter generation, and complete metadata serialization with timing metrics.
 
 ## 2. Implementation Plan & Changes
 1. **Enhanced `StoryFolderResolutionStage.ts`**:
    - Added registration of scene images (`original`), videos (`video`), narration stems (`narration`), and global background music (`bgm`) into `UnifiedPipelineContext.assets`.
    - Integrated `LegacyStoryConfigAdapter.adapt(rawConfig)` to populate `ctx.ir` with strongly-typed `ExtendedPipelineIR` AST.
 2. **Updated `StoryOrchestratedRenderStage.ts`**:
-   - Streamlined stage execution to delegate video rendering to `EditingPipelineOrchestrator.renderStoryVideo()`.
+   - Streamlined stage execution to delegate video rendering to `VideoEditPipelineOrchestrator.renderStoryVideo()`.
    - Added render execution timing capture into `ctx.timings.render`.
 3. **Enhanced `StoryMetadataPersistenceStage.ts`**:
    - Persisted complete render metadata (duration, platform, resolution, fps, codecs, crf, preset, hardware acceleration, concurrency, caption presets, upscaler settings, and transition configs) to `metadataPath`.
 4. **Export Index Updates (`apps/cli/src/pipelines/04-generative-story/index.ts`)**:
-   - Exported `EditingPipelineOrchestrator` alongside all discrete stages and helper modules.
+   - Exported `VideoEditPipelineOrchestrator` alongside all discrete stages and helper modules.
 
 ## 3. Verification & Results
 - Ran 73 tests across 8 test suites with 100% pass rate:

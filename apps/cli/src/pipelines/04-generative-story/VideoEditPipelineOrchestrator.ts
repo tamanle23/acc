@@ -166,7 +166,7 @@ export interface PipelineExecutionOptions extends ExportOptions {
   autoSafeZones?: boolean;
 }
 
-export class EditingPipelineOrchestrator {
+export class VideoEditPipelineOrchestrator {
   private videoExporter = new VideoExporter();
   private colorGradingEngine = new ColorGradingEngine();
 
@@ -260,7 +260,7 @@ export class EditingPipelineOrchestrator {
       try {
         await plugin.execute(renderContext);
       } catch (e: any) {
-        Logger.error('EditingPipelineOrchestrator', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
+        Logger.error('VideoEditPipelineOrchestrator', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
       }
     }
 
@@ -283,7 +283,7 @@ export class EditingPipelineOrchestrator {
 
     if (needsAI) {
       try {
-        Logger.info('EditingPipelineOrchestrator', '[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...');
+        Logger.info('VideoEditPipelineOrchestrator', '[Pipeline] Pre-warming AI Subsystem (SAM 2 & Depth Anything v2)...');
         const { defaultIPCFacade } = await import('@acc/core');
         await defaultIPCFacade.ensureDaemonRunning();
       } catch (err: any) {
@@ -293,7 +293,7 @@ export class EditingPipelineOrchestrator {
 
     try {
       Logger.info(
-        'EditingPipelineOrchestrator',
+        'VideoEditPipelineOrchestrator',
         `🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`
       );
 
@@ -306,7 +306,7 @@ export class EditingPipelineOrchestrator {
           workerPool = new SceneWorkerPool(activeConcurrency, FFmpegManager.getBinDir());
           await workerPool.initialize();
         } catch (err: any) {
-          Logger.warn('EditingPipelineOrchestrator', `Worker pool initialization failed: ${err.message}. Running in main thread.`);
+          Logger.warn('VideoEditPipelineOrchestrator', `Worker pool initialization failed: ${err.message}. Running in main thread.`);
           workerPool = null;
         }
       }
@@ -351,9 +351,9 @@ export class EditingPipelineOrchestrator {
             const modeName = depthConfig?.mode || 'frame_breaker';
 
             if (is3D) {
-              Logger.info('EditingPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration + paddingTime).toFixed(2)}s)...`);
+              Logger.info('VideoEditPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] Rendering 3D Depth [${modeName}] (${(duration + paddingTime).toFixed(2)}s)...`);
             } else {
-              Logger.info('EditingPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration + paddingTime).toFixed(2)}s)...`);
+              Logger.info('VideoEditPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] Rendering (duration: ${(duration + paddingTime).toFixed(2)}s)...`);
             }
 
             let result;
@@ -384,7 +384,7 @@ export class EditingPipelineOrchestrator {
                   useHighQualityIntermediate: hasAnyTransition,
                 });
               } catch (depthErr: any) {
-                Logger.warn('EditingPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
+                Logger.warn('VideoEditPipelineOrchestrator', `[Scene ${i + 1}/${totalScenes}] 3D Depth rendering failed: ${depthErr.message}. Falling back to 2D render.`);
                 result = await FFISceneEngine.renderScene({
                   scene: sceneToRender,
                   duration,
@@ -410,7 +410,7 @@ export class EditingPipelineOrchestrator {
             }
 
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-            Logger.info('EditingPipelineOrchestrator', `✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
+            Logger.info('VideoEditPipelineOrchestrator', `✓ [Scene ${i + 1}/${totalScenes}] Completed in ${elapsed}s`);
 
             return { path: result.path, duration: result.duration, transition: scene.transition };
           }
@@ -422,7 +422,7 @@ export class EditingPipelineOrchestrator {
         }
       }
 
-      Logger.info('EditingPipelineOrchestrator', 'Concatenating scenes into final video...');
+      Logger.info('VideoEditPipelineOrchestrator', 'Concatenating scenes into final video...');
 
       let currentVideoPath = path.join(tempDir, 'concat_output.mp4');
 
@@ -430,17 +430,17 @@ export class EditingPipelineOrchestrator {
         fs.copyFileSync(segments[0].path, currentVideoPath);
       } else {
         if (hasAnyTransition && !config.settings.fastIntermediate) {
-          Logger.info('EditingPipelineOrchestrator', 'Applying video transition filtergraph (xfade)...');
+          Logger.info('VideoEditPipelineOrchestrator', 'Applying video transition filtergraph (xfade)...');
           await concatenateWithTransitions(segments, currentVideoPath, config);
         } else {
-          Logger.info('EditingPipelineOrchestrator', 'Fast zero-copy stream concatenation (FFIConcatMuxer)...');
+          Logger.info('VideoEditPipelineOrchestrator', 'Fast zero-copy stream concatenation (FFIConcatMuxer)...');
           await concatenateVideos(segments.map(s => s.path), currentVideoPath);
         }
       }
 
       if (config.settings.overlayComposite) {
         const nextVideoPath = path.join(tempDir, 'with_overlay.mp4');
-        Logger.info('EditingPipelineOrchestrator', `\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);
+        Logger.info('VideoEditPipelineOrchestrator', `\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);
         const { RegistryManager } = await import('@acc/core/Registry');
         const { renderEffectLayer } = await import('@acc/effect-engines/overlay-effects/engine');
         const { applyPolyrhythmicOverlays } = await import('@acc/effect-engines/overlay-effects/stacker');
@@ -449,22 +449,22 @@ export class EditingPipelineOrchestrator {
         const compositeConfig = registry.getCompositeConfig(config.settings.overlayComposite);
 
         const outDir = path.join(baseDir, 'autogenerated', 'overlay-effects');
-        Logger.info('EditingPipelineOrchestrator', `Generating/Fetching ${compositeConfig.layers.length} prime-duration layers...`);
+        Logger.info('VideoEditPipelineOrchestrator', `Generating/Fetching ${compositeConfig.layers.length} prime-duration layers...`);
 
         const renderPromises = compositeConfig.layers.map(layer => {
           return renderEffectLayer(registry, layer.effect, layer.variant, layer.duration, outDir);
         });
         const overlayPaths = await Promise.all(renderPromises);
 
-        Logger.info('EditingPipelineOrchestrator', 'Stacking infinite polyrhythmic layers over the main video...');
+        Logger.info('VideoEditPipelineOrchestrator', 'Stacking infinite polyrhythmic layers over the main video...');
         await applyPolyrhythmicOverlays(currentVideoPath, overlayPaths, nextVideoPath);
-        Logger.info('EditingPipelineOrchestrator', '✅ Compositing completed successfully!');
+        Logger.info('VideoEditPipelineOrchestrator', '✅ Compositing completed successfully!');
         currentVideoPath = nextVideoPath;
       }
 
       if (config.settings.bgm) {
         const nextVideoPath = path.join(tempDir, 'with_bgm.mp4');
-        Logger.info('EditingPipelineOrchestrator', `=== Applying Background Music ===`);
+        Logger.info('VideoEditPipelineOrchestrator', `=== Applying Background Music ===`);
         await new Promise<void>((resolve, reject) => {
           const bgm = config.settings.bgm!;
           let bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
@@ -553,7 +553,7 @@ export class EditingPipelineOrchestrator {
             });
           }
 
-          Logger.info('EditingPipelineOrchestrator', `Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
+          Logger.info('VideoEditPipelineOrchestrator', `Mixing audio with volume ${volume}${isLoop ? ' (looped)' : ''}...`);
           command
             .complexFilter(bgmGraph.compile())
             .outputOptions([
@@ -571,7 +571,7 @@ export class EditingPipelineOrchestrator {
             })
             .run();
         });
-        Logger.info('EditingPipelineOrchestrator', '✅ Background Music applied successfully!');
+        Logger.info('VideoEditPipelineOrchestrator', '✅ Background Music applied successfully!');
         currentVideoPath = nextVideoPath;
       }
 
@@ -579,7 +579,7 @@ export class EditingPipelineOrchestrator {
     } finally {
       try {
         fs.rmSync(tempDir, { recursive: true, force: true });
-      } catch {}
+      } catch { }
     }
   }
 }

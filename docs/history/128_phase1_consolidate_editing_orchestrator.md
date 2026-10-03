@@ -1,16 +1,16 @@
-# [128] Phase 1: Consolidate Video Editing Operations into EditingPipelineOrchestrator
+# [128] Phase 1: Consolidate Video Editing Operations into VideoEditPipelineOrchestrator
 
 ## 1. Problem Statement
-Previously, the video generation and non-linear editing (NLE) logic was split across procedural scripts (`StoryRenderer.ts`, 524 lines) and the AST-based `EditingPipelineOrchestrator.ts`. Multi-scene pooling, 3D depth compilation, ASS subtitle generation, transition filtergraphs, and background music (BGM) mixing were tightly coupled to procedural canvas workflows rather than being centralized inside the unified video editing orchestrator.
+Previously, the video generation and non-linear editing (NLE) logic was split across procedural scripts (`StoryRenderer.ts`, 524 lines) and the AST-based `VideoEditPipelineOrchestrator.ts`. Multi-scene pooling, 3D depth compilation, ASS subtitle generation, transition filtergraphs, and background music (BGM) mixing were tightly coupled to procedural canvas workflows rather than being centralized inside the unified video editing orchestrator.
 
 ## 2. Implementation Plan & Changes
-1. **Consolidated `EditingPipelineOrchestrator.ts`**:
+1. **Consolidated `VideoEditPipelineOrchestrator.ts`**:
    - Integrated full native multi-scene worker pooling (`SceneWorkerPool`), zero-copy `FFISceneEngine`, and 3D depth mesh generation (`renderDepth3DScene`).
    - Integrated `UpscalerPlugin` hooks and pre-warmed AI daemons (SAM 2, Depth Anything v2).
    - Integrated normalized transition filtergraph builder (`settb=AVTB`, `aresample`, `xfade`, `acrossfade`).
    - Integrated polyrhythmic overlay effects compositing (`applyPolyrhythmicOverlays`) and DSP BGM sidechain ducking (`AudioDuckingDSP` / `sidechaincompress`).
 2. **Refactored `StoryRenderer.ts`**:
-   - Reduced `StoryRenderer.ts` from 524 lines to a lightweight backward-compatible proxy delegating directly to `EditingPipelineOrchestrator.renderStoryVideo`.
+   - Reduced `StoryRenderer.ts` from 524 lines to a lightweight backward-compatible proxy delegating directly to `VideoEditPipelineOrchestrator.renderStoryVideo`.
 3. **Fixed Pointer Wrapping in `FFIVideoEncoder.ts`**:
    - Wrapped `this.codecCtx`, `this.aCodecCtx`, `this.frame`, and `this.packet` pointers in `BigInt()` in `FFIVideoEncoder.close()` to prevent `ToBigInt` TypeErrors during memory freeing under Bun FFI.
 

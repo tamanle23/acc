@@ -2,7 +2,7 @@
 
 ## 1. Problem Statement
 Previously, the multi-pipeline content generation suite suffered from architectural asymmetry:
-1. Only Pipeline 4 (`GenerativeStoryPipeline`) utilized an orchestrator pattern (`EditingPipelineOrchestrator`), while Pipelines 1 (`Scraper`), 2 (`DB Templating`), 3 (`Repurposing`), 5 (`Rule Logic`), and 6 (`Ambient Stream`) executed procedural code in monolithic `run()` functions.
+1. Only Pipeline 4 (`GenerativeStoryPipeline`) utilized an orchestrator pattern (`VideoEditPipelineOrchestrator`), while Pipelines 1 (`Scraper`), 2 (`DB Templating`), 3 (`Repurposing`), 5 (`Rule Logic`), and 6 (`Ambient Stream`) executed procedural code in monolithic `run()` functions.
 2. The core middleware engine `PipelineRunner` in `@acc/core` lacked integration with all 6 pipelines, missing stage duration metrics, standard export middleware, and unified registry resolution.
 
 ## 2. Implementation Plan & Changes
