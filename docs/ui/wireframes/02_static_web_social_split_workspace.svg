@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" style="background:#090d16; font-family: system-ui, -apple-system, sans-serif;">
+  <defs>
+    <radialGradient id="magentaGlow" cx="80%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="#ff007f" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ff007f" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="specularBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ff007f" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="glassFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="innerGlass" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="#090d16"/>
+  <circle cx="1500" cy="200" r="600" fill="url(#magentaGlow)"/>
+
+  <!-- Header -->
+  <g transform="translate(60, 40)">
+    <rect width="1800" height="70" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="42" fill="#ffffff" font-size="20" font-weight="700">ACC CONTROL PLANE <tspan fill="#ff007f" font-size="14" font-weight="400">| Static Web &amp; Social Network Intervene Workspace (Formats 1 &amp; 2)</tspan></text>
+    <rect x="1520" y="18" width="250" height="34" rx="8" fill="#ff007f" fill-opacity="0.2" stroke="#ff007f" stroke-width="1"/>
+    <text x="1538" y="40" fill="#ff70b8" font-size="13" font-weight="600">● PAUSED: HUMAN REVIEW GATE</text>
+  </g>
+
+  <!-- Left Pane: Source Content Ingestion JSON / Text -->
+  <g transform="translate(60, 130)">
+    <rect width="880" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="40" fill="#ffffff" font-size="16" font-weight="600">Raw Source Material &amp; Article Ingest</text>
+
+    <rect x="30" y="65" width="820" height="800" rx="14" fill="#030712" stroke="#1e293b"/>
+    <text x="50" y="105" fill="#a855f7" font-family="monospace" font-size="14">Item 51: Book Summary Thread ("Atomic Habits")</text>
+    <text x="50" y="140" fill="#e2e8f0" font-family="sans-serif" font-size="14">Key Principle 1: Small 1% improvements accumulate exponentially over time.</text>
+    <text x="50" y="170" fill="#e2e8f0" font-family="sans-serif" font-size="14">Key Principle 2: Systems dictate outcomes, not goals.</text>
+  </g>
+
+  <!-- Right Pane: Rendered Social Thread Preview & Refactoring AI Tools -->
+  <g transform="translate(970, 130)">
+    <rect width="890" height="910" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
+    <text x="30" y="40" fill="#ffffff" font-size="16" font-weight="600">Rendered Liquid Glass Social Card &amp; Thread Preview</text>
+
+    <!-- Social Quote Card Render -->
+    <rect x="30" y="65" width="830" height="360" rx="16" fill="url(#innerGlass)" stroke="#00f0ff" stroke-width="1"/>
+    <text x="60" y="120" fill="#00f0ff" font-size="12" font-weight="700">@ACC_DIGEST • QUOTE CARD PREVIEW</text>
+    <text x="60" y="180" fill="#ffffff" font-size="22" font-weight="700">"You do not rise to the level of your goals.</text>
+    <text x="60" y="215" fill="#ffffff" font-size="22" font-weight="700">You fall to the level of your systems."</text>
+
+    <!-- AI Refactoring Quick Buttons -->
+    <text x="30" y="460" fill="#94a3b8" font-size="12" font-weight="700">AI REFACTORING QUICK CONTROLS</text>
+    <rect x="30" y="480" width="260" height="44" rx="10" fill="#00f0ff" fill-opacity="0.15" stroke="#00f0ff" stroke-width="1"/>
+    <text x="75" y="507" fill="#ffffff" font-size="13" font-weight="600">Make Punchier Hook</text>
+
+    <rect x="310" y="480" width="260" height="44" rx="10" fill="#a855f7" fill-opacity="0.15" stroke="#a855f7" stroke-width="1"/>
+    <text x="370" y="507" fill="#ffffff" font-size="13" font-weight="600">Simplify to ELI5</text>
+
+    <rect x="590" y="480" width="270" height="44" rx="10" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1"/>
+    <text x="635" y="507" fill="#ffffff" font-size="13" font-weight="600">Check Brand Safety</text>
+
+    <!-- Action Buttons -->
+    <rect x="30" y="770" width="830" height="54" rx="12" fill="#10b981" fill-opacity="0.9"/>
+    <text x="340" y="803" fill="#090d16" font-size="16" font-weight="800">Approve &amp; Resume Conductor Workflow</text>
+
+    <rect x="30" y="835" width="830" height="44" rx="12" fill="#ef4444" fill-opacity="0.2" stroke="#ef4444" stroke-width="1"/>
+    <text x="380" y="862" fill="#fca5a5" font-size="13" font-weight="600">Reject &amp; Cancel Workflow</text>
+  </g>
+</svg>
