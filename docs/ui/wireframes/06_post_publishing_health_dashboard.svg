@@ -1,85 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" style="background:#090d16; font-family: system-ui, -apple-system, sans-serif;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" style="background:#f8fafc; font-family: system-ui, -apple-system, sans-serif;">
   <defs>
     <radialGradient id="cyanGlow" cx="20%" cy="20%" r="50%">
-      <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#00b4d8" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="specularBorder" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.3"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#00b4d8" stop-opacity="0.4"/>
     </linearGradient>
     <linearGradient id="glassFill" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#1e293b" stop-opacity="0.4"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#f1f5f9" stop-opacity="0.55"/>
     </linearGradient>
     <linearGradient id="innerGlass" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.06"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.25"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.6"/>
     </linearGradient>
   </defs>
 
-  <rect width="1920" height="1080" fill="#090d16"/>
+  <rect width="1920" height="1080" fill="#f8fafc"/>
   <circle cx="400" cy="200" r="600" fill="url(#cyanGlow)"/>
 
-  <!-- Header Bar -->
+  <!-- Header -->
   <g transform="translate(60, 40)">
     <rect width="1800" height="70" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="30" y="42" fill="#ffffff" font-size="20" font-weight="700">ACC CONTROL PLANE <tspan fill="#00f0ff" font-size="14" font-weight="400">| Post-Publishing Health &amp; Omnichannel Fan-Out Dashboard (After Stage)</tspan></text>
+    <text x="30" y="42" fill="#0f172a" font-size="20" font-weight="700">ACC CONTROL PLANE <tspan fill="#0284c7" font-size="14" font-weight="500">| Post-Publishing Dashboard (Light Mode)</tspan></text>
   </g>
 
-  <!-- Metrics Grid Cards -->
+  <!-- Metrics Grid -->
   <g transform="translate(60, 130)">
     <rect width="420" height="140" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="30" y="40" fill="#94a3b8" font-size="12" font-weight="700">24/7 RTMP STREAM BITRATE</text>
-    <text x="30" y="85" fill="#10b981" font-size="32" font-weight="800">6,120 kbps</text>
-    <text x="30" y="115" fill="#10b981" font-size="12">● Stream Health: Excellent (0 FPS Drop)</text>
+    <text x="30" y="40" fill="#475569" font-size="12" font-weight="700">24/7 RTMP STREAM BITRATE</text>
+    <text x="30" y="85" fill="#059669" font-size="32" font-weight="800">6,120 kbps</text>
+    <text x="30" y="115" fill="#059669" font-size="12" font-weight="600">● Stream Health: Excellent (0 FPS Drop)</text>
 
     <rect x="460" y="0" width="420" height="140" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="490" y="40" fill="#94a3b8" font-size="12" font-weight="700">OMNICHANNEL EXPORT FAN-OUT</text>
-    <text x="490" y="85" fill="#00f0ff" font-size="32" font-weight="800">250 / 250</text>
-    <text x="490" y="115" fill="#00f0ff" font-size="12">● Formats: Static, Social, Video, Audio, Interactive</text>
+    <text x="490" y="40" fill="#475569" font-size="12" font-weight="700">OMNICHANNEL EXPORT FAN-OUT</text>
+    <text x="490" y="85" fill="#0284c7" font-size="32" font-weight="800">250 / 250</text>
+    <text x="490" y="115" fill="#0284c7" font-size="12" font-weight="600">● Formats: Static, Social, Video, Audio, Interactive</text>
 
     <rect x="920" y="0" width="420" height="140" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="950" y="40" fill="#94a3b8" font-size="12" font-weight="700">ACTIVE CONDUCTOR WORKFLOWS</text>
-    <text x="950" y="85" fill="#a855f7" font-size="32" font-weight="800">18 Workers</text>
-    <text x="950" y="115" fill="#a855f7" font-size="12">● Conductor OSS Poller: Polling 18 Task Defs</text>
+    <text x="950" y="40" fill="#475569" font-size="12" font-weight="700">ACTIVE CONDUCTOR WORKFLOWS</text>
+    <text x="950" y="85" fill="#9333ea" font-size="32" font-weight="800">18 Workers</text>
+    <text x="950" y="115" fill="#9333ea" font-size="12" font-weight="600">● Conductor OSS Poller: Polling 18 Task Defs</text>
 
     <rect x="1380" y="0" width="420" height="140" rx="16" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="1410" y="40" fill="#94a3b8" font-size="12" font-weight="700">AUTO-REPLY BOT AUDIT LOGS</text>
-    <text x="1410" y="85" fill="#ffffff" font-size="32" font-weight="800">1,420 Replies</text>
-    <text x="1410" y="115" fill="#10b981" font-size="12">● Toxicity Score: 0.00% (Passed)</text>
+    <text x="1410" y="40" fill="#475569" font-size="12" font-weight="700">AUTO-REPLY BOT AUDIT LOGS</text>
+    <text x="1410" y="85" fill="#0f172a" font-size="32" font-weight="800">1,420 Replies</text>
+    <text x="1410" y="115" fill="#059669" font-size="12" font-weight="600">● Toxicity Score: 0.00% (Passed)</text>
   </g>
 
-  <!-- Main Tables Section -->
+  <!-- Table -->
   <g transform="translate(60, 300)">
     <rect width="1800" height="740" rx="20" fill="url(#glassFill)" stroke="url(#specularBorder)" stroke-width="1.5"/>
-    <text x="30" y="40" fill="#ffffff" font-size="16" font-weight="600">Omnichannel Multi-Format Fan-Out Execution Matrix</text>
+    <text x="30" y="40" fill="#0f172a" font-size="16" font-weight="700">Omnichannel Multi-Format Fan-Out Execution Matrix</text>
 
-    <!-- Table Header -->
     <rect x="30" y="65" width="1740" height="44" rx="8" fill="url(#innerGlass)"/>
-    <text x="50" y="92" fill="#94a3b8" font-size="12" font-weight="700">CONTENT SEED / ID</text>
-    <text x="350" y="92" fill="#94a3b8" font-size="12" font-weight="700">PRIMARY PIPELINE</text>
-    <text x="650" y="92" fill="#94a3b8" font-size="12" font-weight="700">FORMAT 1 (WEB)</text>
-    <text x="920" y="92" fill="#94a3b8" font-size="12" font-weight="700">FORMAT 2 (SOCIAL)</text>
-    <text x="1200" y="92" fill="#94a3b8" font-size="12" font-weight="700">FORMAT 3 (VIDEO)</text>
-    <text x="1480" y="92" fill="#94a3b8" font-size="12" font-weight="700">FORMAT 4 (AUDIO)</text>
+    <text x="50" y="92" fill="#475569" font-size="12" font-weight="700">CONTENT SEED / ID</text>
+    <text x="350" y="92" fill="#475569" font-size="12" font-weight="700">PRIMARY PIPELINE</text>
+    <text x="650" y="92" fill="#475569" font-size="12" font-weight="700">FORMAT 1 (WEB)</text>
+    <text x="920" y="92" fill="#475569" font-size="12" font-weight="700">FORMAT 2 (SOCIAL)</text>
+    <text x="1200" y="92" fill="#475569" font-size="12" font-weight="700">FORMAT 3 (VIDEO)</text>
+    <text x="1480" y="92" fill="#475569" font-size="12" font-weight="700">FORMAT 4 (AUDIO)</text>
 
     <!-- Row 1 -->
-    <rect x="30" y="120" width="1740" height="60" rx="10" fill="#030712" stroke="#1e293b"/>
-    <text x="50" y="155" fill="#ffffff" font-size="14" font-weight="600">Item 1: Industry Digest</text>
-    <text x="350" y="155" fill="#00f0ff" font-size="13">Pipeline 1 (Scraper)</text>
-    <text x="650" y="155" fill="#10b981" font-size="13">✓ Published (Ghost)</text>
-    <text x="920" y="155" fill="#10b981" font-size="13">✓ Posted (X Thread)</text>
-    <text x="1200" y="155" fill="#10b981" font-size="13">✓ Rendered (TikTok)</text>
-    <text x="1480" y="155" fill="#10b981" font-size="13">✓ Synced (Spotify)</text>
+    <rect x="30" y="120" width="1740" height="60" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="50" y="155" fill="#0f172a" font-size="14" font-weight="700">Item 1: Industry Digest</text>
+    <text x="350" y="155" fill="#0284c7" font-size="13" font-weight="600">Pipeline 1 (Scraper)</text>
+    <text x="650" y="155" fill="#059669" font-size="13" font-weight="700">✓ Published (Ghost)</text>
+    <text x="920" y="155" fill="#059669" font-size="13" font-weight="700">✓ Posted (X Thread)</text>
+    <text x="1200" y="155" fill="#059669" font-size="13" font-weight="700">✓ Rendered (TikTok)</text>
+    <text x="1480" y="155" fill="#059669" font-size="13" font-weight="700">✓ Synced (Spotify)</text>
 
     <!-- Row 2 -->
-    <rect x="30" y="190" width="1740" height="60" rx="10" fill="#030712" stroke="#1e293b"/>
-    <text x="50" y="225" fill="#ffffff" font-size="14" font-weight="600">Item 103: Creepypasta Short</text>
-    <text x="350" y="225" fill="#a855f7" font-size="13">Pipeline 4 (Generative)</text>
-    <text x="650" y="225" fill="#10b981" font-size="13">✓ Article Created</text>
-    <text x="920" y="225" fill="#10b981" font-size="13">✓ Micro-fiction Post</text>
-    <text x="1200" y="225" fill="#ff007f" font-size="13">● Human Review Gate</text>
-    <text x="1480" y="225" fill="#10b981" font-size="13">✓ Audio Synthesized</text>
+    <rect x="30" y="190" width="1740" height="60" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="50" y="225" fill="#0f172a" font-size="14" font-weight="700">Item 103: Creepypasta Short</text>
+    <text x="350" y="225" fill="#9333ea" font-size="13" font-weight="600">Pipeline 4 (Generative)</text>
+    <text x="650" y="225" fill="#059669" font-size="13" font-weight="700">✓ Article Created</text>
+    <text x="920" y="225" fill="#059669" font-size="13" font-weight="700">✓ Micro-fiction Post</text>
+    <text x="1200" y="225" fill="#c026d3" font-size="13" font-weight="700">● Human Review Gate</text>
+    <text x="1480" y="225" fill="#059669" font-size="13" font-weight="700">✓ Audio Synthesized</text>
   </g>
 </svg>
