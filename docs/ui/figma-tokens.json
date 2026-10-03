@@ -1,51 +1,65 @@
 {
   "$schema": "https://tokens.studio/dtcg.json",
-  "name": "ACC Liquid Glass Design System Tokens",
+  "name": "ACC Light Mode Liquid Glass Design System Tokens",
   "version": "1.0.0",
   "color": {
     "surface": {
       "base": {
         "$type": "color",
-        "$value": "rgba(15, 23, 42, 0.45)",
-        "$description": "Translucent dark slate frosted base"
+        "$value": "rgba(255, 255, 255, 0.65)",
+        "$description": "Luminous frosted crystal ice surface (Default Light Mode)"
       },
       "hover": {
         "$type": "color",
-        "$value": "rgba(30, 41, 59, 0.60)",
-        "$description": "Interactive glass surface hover state"
+        "$value": "rgba(255, 255, 255, 0.82)",
+        "$description": "Interactive light glass hover state"
       },
       "active": {
         "$type": "color",
-        "$value": "rgba(51, 65, 85, 0.75)",
-        "$description": "Active/Pressed glass surface"
+        "$value": "rgba(241, 245, 249, 0.95)",
+        "$description": "Active pressed light glass surface"
+      }
+    },
+    "background": {
+      "page": {
+        "$type": "color",
+        "$value": "#F8FAFC",
+        "$description": "Light slate crystal canvas background"
+      }
+    },
+    "text": {
+      "primary": {
+        "$type": "color",
+        "$value": "#0F172A",
+        "$description": "Deep slate high-contrast body text"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "#475569",
+        "$description": "Slate secondary text"
       }
     },
     "border": {
       "specular": {
         "$type": "color",
-        "$value": "linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(0, 240, 255, 0.2) 100%)",
-        "$description": "1px inset specular rim highlight border gradient"
-      },
-      "alert": {
-        "$type": "color",
-        "$value": "linear-gradient(135deg, rgba(255, 99, 132, 0.6) 0%, rgba(255, 205, 86, 0.2) 100%)",
-        "$description": "Alert/Error specular rim highlight"
+        "$value": "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(203, 213, 225, 0.5) 40%, rgba(0, 180, 216, 0.4) 100%)",
+        "$description": "1px inset specular rim light border gradient"
       }
     },
     "ambient": {
       "cyanGlow": {
         "$type": "color",
-        "$value": "#00f0ff",
-        "$description": "Neon cyan active pipeline ambient light"
+        "$value": "#00b4d8",
+        "$description": "Cyan active pipeline ambient light"
       },
       "magentaGlow": {
         "$type": "color",
-        "$value": "#ff007f",
-        "$description": "Neon magenta human review gate ambient light"
+        "$value": "#d946ef",
+        "$description": "Magenta human review gate ambient light"
       },
       "emeraldSuccess": {
         "$type": "color",
-        "$value": "#10b981",
+        "$value": "#059669",
         "$description": "Emerald green published status light"
       }
     }
@@ -53,74 +67,15 @@
   "backdropBlur": {
     "sm": {
       "$type": "dimension",
-      "$value": "8px",
-      "$description": "Light glass blur for tooltips and badges"
+      "$value": "8px"
     },
     "md": {
       "$type": "dimension",
-      "$value": "16px",
-      "$description": "Standard glass panel backdrop blur"
+      "$value": "18px"
     },
     "lg": {
       "$type": "dimension",
-      "$value": "28px",
-      "$description": "Modal overlay glass backdrop blur"
-    }
-  },
-  "borderRadius": {
-    "panel": {
-      "$type": "dimension",
-      "$value": "16px"
-    },
-    "modal": {
-      "$type": "dimension",
-      "$value": "24px"
-    },
-    "button": {
-      "$type": "dimension",
-      "$value": "12px"
-    }
-  },
-  "boxShadow": {
-    "glassCard": {
-      "$type": "boxShadow",
-      "$value": [
-        {
-          "x": "0px",
-          "y": "8px",
-          "blur": "32px",
-          "spread": "0px",
-          "color": "rgba(0, 0, 0, 0.37)"
-        },
-        {
-          "x": "0px",
-          "y": "1px",
-          "blur": "0px",
-          "spread": "0px",
-          "color": "rgba(255, 255, 255, 0.2)",
-          "type": "innerShadow"
-        }
-      ]
-    },
-    "glassCardHover": {
-      "$type": "boxShadow",
-      "$value": [
-        {
-          "x": "0px",
-          "y": "12px",
-          "blur": "48px",
-          "spread": "0px",
-          "color": "rgba(0, 240, 255, 0.15)"
-        },
-        {
-          "x": "0px",
-          "y": "1px",
-          "blur": "1px",
-          "spread": "0px",
-          "color": "rgba(255, 255, 255, 0.4)",
-          "type": "innerShadow"
-        }
-      ]
+      "$value": "32px"
     }
   }
 }

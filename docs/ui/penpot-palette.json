@@ -1,53 +1,53 @@
 {
-  "name": "ACC Liquid Glass UI Design System",
+  "name": "ACC Light Mode Liquid Glass UI Design System",
   "colors": [
     {
-      "name": "Glass Surface Base",
-      "color": "#0F172A",
-      "opacity": 0.45,
+      "name": "Light Glass Surface Base",
+      "color": "#FFFFFF",
+      "opacity": 0.65,
       "path": "Surface"
     },
     {
-      "name": "Glass Surface Hover",
-      "color": "#1E293B",
-      "opacity": 0.60,
+      "name": "Light Glass Surface Hover",
+      "color": "#FFFFFF",
+      "opacity": 0.82,
       "path": "Surface"
     },
     {
-      "name": "Glass Surface Active",
-      "color": "#334155",
-      "opacity": 0.75,
+      "name": "Light Glass Surface Active",
+      "color": "#F1F5F9",
+      "opacity": 0.95,
       "path": "Surface"
     },
     {
-      "name": "Neon Cyan Glow",
-      "color": "#00F0FF",
-      "opacity": 1.0,
-      "path": "Ambient"
-    },
-    {
-      "name": "Neon Magenta Review Gate Glow",
-      "color": "#FF007F",
-      "opacity": 1.0,
-      "path": "Ambient"
-    },
-    {
-      "name": "Emerald Success Glow",
-      "color": "#10B981",
-      "opacity": 1.0,
-      "path": "Status"
-    },
-    {
-      "name": "Alert Red Glow",
-      "color": "#EF4444",
-      "opacity": 1.0,
-      "path": "Status"
-    },
-    {
-      "name": "Background Dark Slate",
-      "color": "#090D16",
+      "name": "Page Background Light Slate",
+      "color": "#F8FAFC",
       "opacity": 1.0,
       "path": "Background"
+    },
+    {
+      "name": "Text Primary Slate",
+      "color": "#0F172A",
+      "opacity": 1.0,
+      "path": "Text"
+    },
+    {
+      "name": "Cyan Accent",
+      "color": "#00B4D8",
+      "opacity": 1.0,
+      "path": "Ambient"
+    },
+    {
+      "name": "Magenta Accent",
+      "color": "#D946EF",
+      "opacity": 1.0,
+      "path": "Ambient"
+    },
+    {
+      "name": "Emerald Success Accent",
+      "color": "#059669",
+      "opacity": 1.0,
+      "path": "Status"
     }
   ]
 }
