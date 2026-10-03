@@ -10,5 +10,7 @@ await import('./ir-adaptation.bench');
 await import('./canvas-overlay.bench');
 await import('./model-registry.bench');
 await import('./ffmpeg-ffi.bench');
+await import('./bounded-queue.bench');
+await import('./color-grading.bench');
 
 await run();
