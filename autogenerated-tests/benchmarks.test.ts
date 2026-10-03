@@ -1,12 +1,13 @@
 import { describe, test, expect } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
+import { ptr } from 'bun:ffi';
 import { createCanvas } from '@napi-rs/canvas';
 import { ModelHandleRegistry } from '../packages/core/src/AssetContext';
 import { BoundedQueue } from '../packages/core/src/BoundedQueue';
 import { LegacyStoryConfigAdapter } from '../packages/ir/src/LegacyStoryConfigAdapter';
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
-import { FFI, freePtr, makeAVRational, safeArrayBuffer } from '../packages/core/src/ffmpeg-ffi';
+import { FFI, freePtr, makeAVRational, safeArrayBuffer, Structs, AV_PIX_FMT_RGBA } from '../packages/core/src/ffmpeg-ffi';
 import { generateCsvReport } from '../benchmarks/cli/benchmark-cli';
 
 describe('Performance Benchmarking Suite & Harness Unit Tests', () => {
@@ -83,7 +84,7 @@ describe('Performance Benchmarking Suite & Harness Unit Tests', () => {
       const sampleCount = 1000;
       const audioBuffer = new Float32Array(sampleCount);
       for (let i = 0; i < sampleCount; i++) {
-        audioBuffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) * 1.5; // Over-driven signal
+        audioBuffer[i] = Math.sin((2 * Math.PI * 440 * i) / 44100) * 1.5;
       }
 
       let peak = 0;
@@ -162,21 +163,46 @@ describe('Performance Benchmarking Suite & Harness Unit Tests', () => {
       expect(adapted.audioComposition?.ducking.enabled).toBe(true);
     });
 
-    test('FFmpeg bun:ffi Zero-Copy C-Pointer Allocation & Rescaling', async () => {
+    test('FFmpeg bun:ffi Zero-Copy C-Pointer Allocation, Encoder Lookup, & Struct Mutators', async () => {
       await FFmpegManager.prepare();
 
+      // AVFrame allocation & Structs mutators
       const framePtr = FFI.avutil.av_frame_alloc();
       expect(framePtr).not.toBe(0n);
       expect(framePtr).not.toBe(0);
 
-      const frameBuf = safeArrayBuffer(framePtr, 0, 64);
-      expect(frameBuf.byteLength).toBe(64);
+      Structs.AVFrame.setWidth(framePtr, 1280);
+      Structs.AVFrame.setHeight(framePtr, 720);
+      Structs.AVFrame.setFormat(framePtr, AV_PIX_FMT_RGBA);
+      Structs.AVFrame.setPts(framePtr, 150n);
+
+      const frameBuf = safeArrayBuffer(framePtr, 0, 128);
+      expect(frameBuf.byteLength).toBe(128);
       freePtr(FFI.avutil.av_frame_free, framePtr);
 
+      // AVPacket allocation
       const pktPtr = FFI.avcodec.av_packet_alloc();
       expect(pktPtr).not.toBe(0n);
       freePtr(FFI.avcodec.av_packet_free, pktPtr);
 
+      // AVFormatContext allocation & free
+      const fmtCtx = FFI.avformat.avformat_alloc_context();
+      expect(fmtCtx).not.toBe(0n);
+      FFI.avformat.avformat_free_context(fmtCtx);
+
+      // Encoder lookup & AVCodecContext allocation
+      const encoderBuf = Buffer.from('libx264\0');
+      const codecPtr = FFI.avcodec.avcodec_find_encoder_by_name(ptr(encoderBuf));
+      expect(codecPtr).not.toBe(0n);
+
+      if (codecPtr) {
+        const codecCtx = FFI.avcodec.avcodec_alloc_context3(codecPtr);
+        expect(codecCtx).not.toBe(0n);
+        const ctxPtrArr = new BigUint64Array([codecCtx]);
+        FFI.avcodec.avcodec_free_context(ptr(ctxPtrArr.buffer));
+      }
+
+      // Rational rescaling
       const rescale = FFI.avutil.av_rescale_q(1000n, makeAVRational(1, 30), makeAVRational(1, 1000));
       expect(Number(rescale)).toBe(33333);
     });
