@@ -266,3 +266,27 @@ Hệ thống tạo video, render đồ họa 3D, đọc/ghi file và nén codec 
 2. **Main Render Loop Non-blocking**: Trong các vòng lặp tạo khung hình liên tục (per-frame rendering) hoặc khởi tạo FFI, mọi hàm có thể block I/O hoặc network cần phải được pre-load bất đồng bộ trước.
 3. **Yield Event Loop (`setImmediate` / `setTimeout`)**: Với các tác vụ tính toán CPU-bound rất nặng nề và lặp dài (như xử lý mảng raw pixels hoặc tensor math), phải thiết kế cơ chế nhường quyền điều khiển (yield loop) cho V8 Event Loop sau một số batch xử lý nhất định để GC (Garbage Collector) dọn dẹp bộ nhớ và tránh out-of-memory.
 4. **Zero-Copy & Native Buffer Mapping**: Ưu tiên sử dụng `Buffer`, `ArrayBuffer`, và FFI C-structs bằng native pointer, giảm thiểu serialize/deserialize dữ liệu ảnh (JSON to Pixel Array).
+
+---
+
+## 14. Zero-Allocation Frame Loop & Native FFI Memory Invariance Protocol
+
+### Context & Rationale
+Trong quá trình kết xuất video (video rendering pipeline) với độ phân giải cao (ví dụ: Full HD dọc 1080x1920 cho TikTok/Reels hay 4K 3840x2160) chạy song song đa luồng (`concurrency = 6` workers), mỗi khung hình RGBA thuần chưa nén có kích thước từ 8.3 MB đến 33 MB.
+Tại tốc độ render 30fps across 6 workers (tương đương 180 fps), nếu có bất kỳ hành vi sao chép buffer (như `Buffer.from(rgbaBuffer)`) hoặc cấp phát đối tượng JavaScript tạm thời (như `new BigUint64Array(...)`, `new Int32Array(...)`, tạo regex, mảng cụm từ lặp lại) diễn ra bên trong vòng lặp khung hình (`encodeRgbaFrame`, `renderFrame`, `drawCanvasCaptions`):
+1. **Bùng nổ bộ nhớ rác (Garbage Churn > 1.5 GB/s)**: Vùng nhớ JavaScript Nursery Heap bị phình to liên tục, chạm trần giới hạn tiến trình (4.19 GB RSS) chỉ trong vài giây.
+2. **Crash Segmentation Fault do GC Compaction**: Dưới áp lực dọn rác cực hạn (hàng triệu page faults), Garbage Collector của Bun di dời đối tượng trên heap (Heap Compaction) hoặc giải phóng các mảng tạm thời đúng vào thời điểm hàm C bên trong FFmpeg Shared Library (`sws_scale`, `avcodec_send_frame`) đang giải mã con trỏ bộ nhớ. Điều này dẫn tới việc truy cập địa chỉ không hợp lệ và làm sập tiến trình (`panic: Segmentation fault at address 0x...`).
+
+Lỗi này từng được giải quyết ở commit [069] nhưng bị hồi quy (regression) ở commit `e57226c` do thiếu luật cưỡng chế rõ ràng đối với các agent/developer trong tương lai.
+
+### Detailed Requirements
+1. **ABSOLUTE BAN on Heap Cloning in Frame Loops**:
+   - TUYỆT ĐỐI KHÔNG sử dụng `Buffer.from(rgbaBuffer)`, `new Uint8Array(buffer)`, hay bất kỳ thao tác clone buffer nào trong `encodeRgbaFrame`, `encodeRawFrame`, hoặc bên trong vòng lặp per-frame của bất kỳ scene renderer nào.
+   - Luôn sử dụng trực tiếp con trỏ vùng nhớ `ptr(rgbaBuffer)` của buffer đã tồn tại.
+2. **Pre-Allocated Native C Memory for FFI Pointer Arrays**:
+   - Mọi mảng con trỏ dữ liệu và stride truyền vào các hàm C FFI (đặc biệt là `sws_scale`) BẮT BUỘC phải được cấp phát một lần duy nhất trong vùng nhớ C cố định thông qua `FFI.avutil.av_malloc(...)` ở giai đoạn `initialize()`.
+   - TUYỆT ĐỐI KHÔNG cấp phát mảng tạm thời `new BigUint64Array(...)` hoặc `new Int32Array(...)` trên JavaScript heap trong mỗi frame.
+   - Ghi địa chỉ con trỏ của frame trực tiếp vào bộ nhớ C cố định bằng `DataView` trên `safeArrayBuffer(this.srcDataC, 0, ...)`.
+3. **Memoization / WeakMap Caching for Frame Helpers**:
+   - Mọi thao tác tính toán phụ trợ lặp lại qua các frame (như phân nhóm cụm từ `groupPhrases`, biểu thức chính quy regex, tính toán trọng số âm tiết) BẮT BUỘC phải được lưu cache (ví dụ qua `WeakMap<T, ...>` hoặc khởi tạo 1 lần trước vòng lặp render).
+   - TUYỆT ĐỐI KHÔNG thực hiện regex hay biến đổi cấu trúc mảng mới trên mỗi frame tick.
