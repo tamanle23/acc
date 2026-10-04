@@ -1,5 +1,6 @@
 import { IConductorListenerStrategy } from '../interfaces/IConductorListenerStrategy';
 import { ConductorTaskOutput } from '../interfaces/IConductorTaskCommand';
+import { TaskWorkerFactory } from '../TaskWorkerFactory';
 
 export class LocalSandboxListenerStrategy implements IConductorListenerStrategy {
     private sandboxServer: any = null;
@@ -18,7 +19,35 @@ export class LocalSandboxListenerStrategy implements IConductorListenerStrategy 
           async fetch(req) {
             const url = new URL(req.url);
 
-            // POST /sandbox/task/:taskDefName
+            // Healthcheck endpoint
+            if (req.method === 'GET' && url.pathname === '/health') {
+                return new Response(JSON.stringify({ status: "UP", mode: "sandbox" }), {
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+
+            // List Registered Tasks
+            if (req.method === 'GET' && url.pathname === '/tasks/registry') {
+                return new Response(JSON.stringify({
+                    tasks: TaskWorkerFactory.getAllRegisteredTaskNames()
+                }), {
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+
+            // Simulate Workflow trigger
+            if (req.method === 'POST' && url.pathname.startsWith('/sandbox/workflow/')) {
+                const workflowName = url.pathname.replace('/sandbox/workflow/', '');
+                return new Response(JSON.stringify({
+                    workflowId: `mock-wf-${Date.now()}`,
+                    workflowName,
+                    status: 'RUNNING'
+                }), {
+                    headers: { "Content-Type": "application/json" }
+                });
+            }
+
+            // Execute specific task
             if (req.method === 'POST' && url.pathname.startsWith('/sandbox/task/')) {
               const taskDefName = url.pathname.replace('/sandbox/task/', '');
               try {
@@ -37,7 +66,9 @@ export class LocalSandboxListenerStrategy implements IConductorListenerStrategy 
           }
         });
         console.log(`[ConductorPoller Sandbox] Listening at http://localhost:${this.port}`);
-        console.log(`[ConductorPoller Sandbox] Test via: curl -X POST http://localhost:${this.port}/sandbox/task/acc.p4_story.compose_video -d '{"inputData":{"storyConfig":{"scene":1}}}'`);
+        console.log(`[ConductorPoller Sandbox] Health: GET http://localhost:${this.port}/health`);
+        console.log(`[ConductorPoller Sandbox] Registry: GET http://localhost:${this.port}/tasks/registry`);
+        console.log(`[ConductorPoller Sandbox] Execute: POST http://localhost:${this.port}/sandbox/task/<taskDefName>`);
     }
 
     public stop(): void {
