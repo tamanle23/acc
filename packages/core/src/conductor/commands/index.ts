@@ -6,3 +6,5 @@ export function registerAllConductorCommands() {
     TaskWorkerFactory.register(new ComposeVideoTaskCommand());
     TaskWorkerFactory.register(new RenderBarChartRaceTaskCommand());
 }
+export * from './p4/ComposeVideoTaskCommand';
+export * from './p2/RenderBarChartRaceTaskCommand';

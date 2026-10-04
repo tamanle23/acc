@@ -1,7 +1,4 @@
 import { runWorkerDaemon } from './commands/WorkerCommand';
-import { runWorkerDaemon } from './commands/WorkerCommand';
-import { runWorkerDaemon } from './commands/WorkerCommand';
-import { runWorkerDaemon } from './commands/WorkerCommand';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -17,19 +14,17 @@ import {
 import { intro, defaultPipelineRegistry } from '@acc/core';
 
 export interface CliOptions {
-  conductorUrl?: string;
-  conductorUrl?: string;
-  conductorUrl?: string;
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker';
   pipelineId?: string;
   configPath?: string;
-  exporters?: string[];
   outDir?: string;
+  exporters?: string[];
+  format?: string;
+  dryRun?: boolean;
   rtmpUrl?: string;
   port?: number;
   duration?: number;
-  format?: 'mp4' | 'mkv' | 'mov' | 'webm' | string;
-  dryRun?: boolean;
+  conductorUrl?: string;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -135,10 +130,6 @@ PIPELINE IDENTIFIERS:
   6 | ambient     Procedural Ambient Stream (24/7 Generative Loop)
 
 OPTIONS:
-  -w, --conductor-url <url>  Start Conductor task polling daemon
-  -w, --conductor-url <url>  Start Conductor task polling daemon
-  -w, --conductor-url <url>  Start Conductor task polling daemon
-  -w, --conductor-url <url>  Start Conductor task polling daemon
   -c, --config <file|dir>    Input data/configuration JSON file or story folder
   -e, --exporters <list>     Comma-separated exporters: video, audio, social, web
   -o, --out <dir>            Output directory for rendered assets
@@ -311,33 +302,6 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
       const server = scraper.startWebhookServer(port);
       console.log(`[ACC-CLI] Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
       return { success: true, server, port };
-    }
-
-    case 'worker': {
-      if (!options.conductorUrl) {
-        console.error("Error: --conductor-url <url> is required for the worker daemon command.");
-        return { success: false, error: 'Missing --conductor-url flag' };
-      }
-      await runWorkerDaemon({ conductorUrl: options.conductorUrl });
-      return { success: true, command: 'worker' };
-    }
-
-    case 'worker': {
-      if (!options.conductorUrl) {
-        console.error("Error: --conductor-url <url> is required for the worker daemon command.");
-        return { success: false, error: 'Missing --conductor-url flag' };
-      }
-      await runWorkerDaemon({ conductorUrl: options.conductorUrl });
-      return { success: true, command: 'worker' };
-    }
-
-    case 'worker': {
-      if (!options.conductorUrl) {
-        console.error("Error: --conductor-url <url> is required for the worker daemon command.");
-        return { success: false, error: 'Missing --conductor-url flag' };
-      }
-      await runWorkerDaemon({ conductorUrl: options.conductorUrl });
-      return { success: true, command: 'worker' };
     }
 
     case 'worker': {
