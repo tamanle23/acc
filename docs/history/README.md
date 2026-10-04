@@ -148,6 +148,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`134`](134_add_workspace_rule_for_pure_ffi_and_ban_bun_spawnsync.md) | 2026-10-02 | Add Workspace Rule Mandate for Pure bun:ffi & Ban on Bun.spawnSync | Updated master_rules_reference.md and 01-workspace-specific.md to strictly ban Bun.spawnSync and enforce pure bun:ffi |
 | [`135`](135_optimize_digital_glitch_generator_lookups.md) | 2026-10-04 | Optimize Digital Glitch Generator Lookups | Pre-grouped glitch blocks by frame into Map for O(1) lookup in render loop |
 | [`136`](136_multi_track_timeline_engine_and_caption_audio_sync.md) | 2026-10-04 | Multi-Track TimelineEngine & Regression-Free Caption/Audio Synchronization | Established SSOT TimelineEngine, BoundedAcousticCaptionStrategy, dialogue clearance in transitions, and syllable-weighted Whisper alignment |
+| [`137`](137_fix_ffi_encoder_heap_clone_and_segfault.md) | 2026-10-04 | Fix FFI Video Encoder Heap Cloning & Multi-Worker Segmentation Fault | Eliminated 8.3MB frame clone per frame, used pre-allocated C memory for sws_scale, and cached phrase groups in WeakMap |
 
 
 

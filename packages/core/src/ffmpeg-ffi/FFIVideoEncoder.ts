@@ -225,14 +225,14 @@ export class FFIVideoEncoder {
 
         this.strategy.paceFrame(this.frameIndex, this.fps);
 
-        const frameBuf = Buffer.from(rgbaBuffer);
-        const srcDataArray = new BigUint64Array([BigInt(ptr(frameBuf))]);
-        const srcStrideArray = new Int32Array([this.width * 4, 0, 0, 0, 0, 0, 0, 0]);
+        const framePtr = BigInt(ptr(rgbaBuffer));
+        const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 8));
+        dataView.setBigUint64(0, framePtr, true);
 
         FFI.swscale.sws_scale(
             this.swsCtx,
-            ptr(srcDataArray.buffer),
-            ptr(srcStrideArray.buffer),
+            this.srcDataC,
+            this.srcStrideC,
             0,
             this.height,
             BigInt(this.frame),

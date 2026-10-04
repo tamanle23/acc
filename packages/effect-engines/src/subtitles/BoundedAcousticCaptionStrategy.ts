@@ -48,6 +48,22 @@ export class BoundedAcousticCaptionStrategy implements ITimelineStrategy<Caption
     return phrases;
   }
 
+  private phraseCache = new WeakMap<CaptionConfig[], Map<number, CaptionConfig[][]>>();
+
+  public getGroupedPhrases(captions: CaptionConfig[], wordsPerPhrase: number): CaptionConfig[][] {
+    let perPhraseMap = this.phraseCache.get(captions);
+    if (!perPhraseMap) {
+      perPhraseMap = new Map();
+      this.phraseCache.set(captions, perPhraseMap);
+    }
+    let cached = perPhraseMap.get(wordsPerPhrase);
+    if (!cached) {
+      cached = this.groupPhrases(captions, wordsPerPhrase);
+      perPhraseMap.set(wordsPerPhrase, cached);
+    }
+    return cached;
+  }
+
   public evaluate(
     items: CaptionConfig[],
     localTimeSec: number,
@@ -70,7 +86,7 @@ export class BoundedAcousticCaptionStrategy implements ITimelineStrategy<Caption
       : (options?.leadInOffsetSec ?? this.defaultLeadInSec);
     const maxHoldSec = options?.maxHoldDecaySec ?? this.defaultMaxHoldSec;
 
-    const phrases = this.groupPhrases(items, wordsPerPhrase);
+    const phrases = this.getGroupedPhrases(items, wordsPerPhrase);
 
     let foundPhraseIndex = -1;
     let activePhrase: CaptionConfig[] | null = null;
