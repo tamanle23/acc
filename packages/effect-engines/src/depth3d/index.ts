@@ -64,7 +64,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const totalFrames = Math.ceil(fps * totalDuration);
 
   // 1. Load primary image and optional subject cutout safely
-  const imgBuffer = fs.readFileSync(scene.resolvedImage);
+  const imgBuffer = await fs.promises.readFile(scene.resolvedImage);
   const img = await loadImage(imgBuffer);
   let subjectImg: Image | null = null;
   let subjectBBox: any = null;
@@ -141,12 +141,12 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
 
   if (resolvedSubPath) {
     try {
-      subjectImg = await loadImage(fs.readFileSync(resolvedSubPath));
+      subjectImg = await loadImage(await fs.promises.readFile(resolvedSubPath));
       // Check for companion bbox json
       const jsonCandidate = resolvedSubPath.replace(/\.png$/i, '.json');
       if (fs.existsSync(jsonCandidate)) {
         try {
-          const meta = JSON.parse(fs.readFileSync(jsonCandidate, 'utf-8'));
+          const meta = JSON.parse(await fs.promises.readFile(jsonCandidate, 'utf-8'));
           if (meta.boundingBox) subjectBBox = meta.boundingBox;
         } catch {}
       }
@@ -161,8 +161,8 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         const cachePath = path.resolve(depthCacheDir, `${baseName}_subject_${segStratName}_${imageChecksum}.png`);
         const metaPath = path.resolve(depthCacheDir, `${baseName}_subject_${segStratName}_${imageChecksum}.json`);
         try {
-          fs.writeFileSync(cachePath, segRes.maskRgbaBuffer);
-          fs.writeFileSync(metaPath, JSON.stringify({ boundingBox: segRes.boundingBox, strategy: segStratName }, null, 2));
+          await fs.promises.writeFile(cachePath, segRes.maskRgbaBuffer);
+          await fs.promises.writeFile(metaPath, JSON.stringify({ boundingBox: segRes.boundingBox, strategy: segStratName }, null, 2));
         } catch {}
       }
     } catch {}
@@ -224,7 +224,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         : path.resolve(sceneDir, depthConfig.depthMesh.depthMapPath);
       if (fs.existsSync(candidateDm)) {
         try {
-          const dm = await loadImage(fs.readFileSync(candidateDm));
+          const dm = await loadImage(await fs.promises.readFile(candidateDm));
           drawImageCover(dCtx, dm, 0, 0, width, height);
           loadedDepth = true;
         } catch {}
@@ -232,7 +232,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
         const rootCandidateDm = path.resolve(storyRoot, depthConfig.depthMesh.depthMapPath);
         if (fs.existsSync(rootCandidateDm)) {
           try {
-            const dm = await loadImage(fs.readFileSync(rootCandidateDm));
+            const dm = await loadImage(await fs.promises.readFile(rootCandidateDm));
             drawImageCover(dCtx, dm, 0, 0, width, height);
             loadedDepth = true;
           } catch {}
@@ -240,7 +240,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
           const cacheCandidateDm = path.resolve(depthCacheDir, depthConfig.depthMesh.depthMapPath);
           if (fs.existsSync(cacheCandidateDm)) {
             try {
-              const dm = await loadImage(fs.readFileSync(cacheCandidateDm));
+              const dm = await loadImage(await fs.promises.readFile(cacheCandidateDm));
               drawImageCover(dCtx, dm, 0, 0, width, height);
               loadedDepth = true;
             } catch {}
@@ -254,7 +254,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       const stratDepthCandidate = path.resolve(depthCacheDir, `${baseName}_depth_${depthStratName}_${imageChecksum}.png`);
       if (fs.existsSync(stratDepthCandidate)) {
         try {
-          const dm = await loadImage(fs.readFileSync(stratDepthCandidate));
+          const dm = await loadImage(await fs.promises.readFile(stratDepthCandidate));
           drawImageCover(dCtx, dm, 0, 0, width, height);
           loadedDepth = true;
         } catch {}
@@ -266,7 +266,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       const checksumDepthCandidate = path.resolve(depthCacheDir, `${baseName}_depth_${imageChecksum}.png`);
       if (fs.existsSync(checksumDepthCandidate)) {
         try {
-          const dm = await loadImage(fs.readFileSync(checksumDepthCandidate));
+          const dm = await loadImage(await fs.promises.readFile(checksumDepthCandidate));
           drawImageCover(dCtx, dm, 0, 0, width, height);
           loadedDepth = true;
         } catch {}
@@ -286,7 +286,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       for (const cand of legacyDepthCandidates) {
         if (fs.existsSync(cand)) {
           try {
-            const dm = await loadImage(fs.readFileSync(cand));
+            const dm = await loadImage(await fs.promises.readFile(cand));
             drawImageCover(dCtx, dm, 0, 0, width, height);
             loadedDepth = true;
             break;
@@ -305,7 +305,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
           // Persist cached depth map with checksum and strategy name into autogenerated/depth-3d
           const cacheDepthPath = path.resolve(depthCacheDir, `${baseName}_depth_${depthStratName}_${imageChecksum}.png`);
           try {
-            fs.writeFileSync(cacheDepthPath, depthRes.depth16Buffer);
+            await fs.promises.writeFile(cacheDepthPath, depthRes.depth16Buffer);
           } catch {}
         }
       } catch {}
