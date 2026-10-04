@@ -1,3 +1,4 @@
+import { runWorkerDaemon } from './commands/WorkerCommand';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -13,16 +14,18 @@ import {
 import { intro, defaultPipelineRegistry } from '@acc/core';
 
 export interface CliOptions {
-  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help';
+  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker';
   pipelineId?: string;
   configPath?: string;
-  exporters?: string[];
   outDir?: string;
+  exporters?: string[];
+  format?: string;
+  dryRun?: boolean;
   rtmpUrl?: string;
   port?: number;
   duration?: number;
-  format?: 'mp4' | 'mkv' | 'mov' | 'webm' | string;
-  dryRun?: boolean;
+  conductorUrl?: string;
+  conductorSandbox?: boolean;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -35,7 +38,7 @@ export function parseCliArgs(args: string[]): CliOptions {
   const firstArg = args[0].toLowerCase();
   let startIndex = 0;
 
-  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'help', '--help', '-h'].includes(firstArg)) {
+  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'help', '--help', '-h'].includes(firstArg)) {
     if (firstArg === '--help' || firstArg === '-h') {
       options.command = 'help';
     } else {
@@ -46,10 +49,10 @@ export function parseCliArgs(args: string[]): CliOptions {
     // If first argument is not a known command, check if it's a directory or config path
     if (fs.existsSync(args[0]) || args[0].startsWith('./') || args[0].startsWith('../') || args[0].includes('/') || args[0].includes('\\')) {
       options.command = 'run';
-      options.pipelineId = 'story';
       options.configPath = args[0];
       startIndex = 1;
     } else {
+      // Default to help if unrecognized
       options.command = 'help';
       return options;
     }
@@ -59,27 +62,52 @@ export function parseCliArgs(args: string[]): CliOptions {
   for (let i = startIndex; i < args.length; i++) {
     const arg = args[i];
 
-    if (!options.pipelineId && (options.command === 'run' || options.command === 'stream') && !arg.startsWith('-')) {
-      options.pipelineId = arg.toLowerCase();
+    if (arg === '-w' || arg === '--conductor-url') {
+      options.conductorUrl = args[++i];
       continue;
     }
-
-    if (arg === '--config' || arg === '-c') {
+    if (arg === '-s' || arg === '--sandbox') {
+      options.conductorSandbox = true;
+      continue;
+    }
+    if (arg === '-c' || arg === '--config') {
       options.configPath = args[++i];
-    } else if (arg === '--exporters' || arg === '-e') {
-      options.exporters = (args[++i] || '').split(',').map(s => s.trim().toLowerCase());
-    } else if (arg === '--out' || arg === '-o') {
+      continue;
+    }
+    if (arg === '-e' || arg === '--exporters') {
+      options.exporters = (args[++i] || '').split(',').map((s) => s.trim().toLowerCase());
+      continue;
+    }
+    if (arg === '-o' || arg === '--out') {
       options.outDir = args[++i];
-    } else if (arg === '--rtmp' || arg === '-r') {
+      continue;
+    }
+    if (arg === '-f' || arg === '--format' || arg === '--container') {
+      options.format = (args[++i] || '').trim().toLowerCase();
+      continue;
+    }
+    if (arg === '-r' || arg === '--rtmp') {
       options.rtmpUrl = args[++i];
-    } else if (arg === '--port' || arg === '-p') {
-      options.port = parseInt(args[++i], 10);
-    } else if (arg === '--duration' || arg === '-d') {
-      options.duration = parseFloat(args[++i]);
-    } else if (arg === '--format' || arg === '-f' || arg === '--container') {
-      options.format = args[++i]?.toLowerCase();
-    } else if (arg === '--dry-run' || arg === '-n') {
+      continue;
+    }
+    if (arg === '-p' || arg === '--port') {
+      options.port = parseInt(args[++i] || '3000', 10);
+      continue;
+    }
+    if (arg === '-d' || arg === '--duration') {
+      options.duration = parseInt(args[++i] || '0', 10);
+      continue;
+    }
+    if (arg === '-n' || arg === '--dry-run') {
       options.dryRun = true;
+      continue;
+    }
+    if (arg === '-h' || arg === '--help') {
+      options.command = 'help';
+      break;
+    }
+    if (!options.pipelineId && (options.command === 'run' || options.command === 'stream')) {
+      options.pipelineId = arg.trim().toLowerCase();
     }
   }
 
@@ -280,6 +308,18 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
       const server = scraper.startWebhookServer(port);
       console.log(`[ACC-CLI] Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
       return { success: true, server, port };
+    }
+
+    case 'worker': {
+      if (!options.conductorUrl && !options.conductorSandbox) {
+        console.error("Error: --conductor-url <url> or --sandbox is required for the worker daemon command.");
+        return { success: false, error: 'Missing configuration for worker' };
+      }
+      await runWorkerDaemon({
+          conductorUrl: options.conductorUrl || 'http://localhost:8080',
+          sandboxMode: options.conductorSandbox
+      });
+      return { success: true, command: 'worker' };
     }
 
     case 'stream': {
