@@ -1,14 +1,9 @@
 import { BaseEffectEngine } from '@acc/core';
-import { NapiRsCanvasAdapter } from '../canvas-strategies/napi-rs';
+import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
 export class ConfettiEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-    let adapter: CanvasAdapter;
-    if ('napi-rs' === 'napi-rs') {
-      adapter = new NapiRsCanvasAdapter();
-    } else {
-      throw new Error(`Canvas engine ${'napi-rs'} not supported yet.`);
-    }
+    const adapter = CanvasAdapterFactory.getAdapter('napi-rs');
     const canvas = adapter.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
