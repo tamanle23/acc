@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { IPlugin, RenderContext, Logger, Utils } from '@acc/core';
+import { IPlugin, RenderContext, Logger, Utils, fileExists } from '@acc/core';
 import { checkAndDownloadUpscaler, upscaleImage } from '../upscaler';
 
 
@@ -26,8 +26,8 @@ export class UpscalerPlugin implements IPlugin {
     }
 
     const cacheDir = path.join(baseDir, '.cache');
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
+    if (!(await fileExists(cacheDir))) {
+      await fs.promises.mkdir(cacheDir, { recursive: true });
     }
 
     const totalScenes = config.scenes.length;
@@ -39,15 +39,15 @@ export class UpscalerPlugin implements IPlugin {
       const currentImagePath = assets.getPreferred(`scene_${i}`, ['image:original']);
       const sourceImage = currentImagePath || scene.resolvedImage;
 
-      if (sourceImage && fs.existsSync(sourceImage)) {
+      if (sourceImage && (await fileExists(sourceImage))) {
         const ext = path.extname(sourceImage);
         const baseName = path.basename(sourceImage, ext);
-        const checksum = Utils.getFileChecksum(sourceImage);
+        const checksum = await Utils.getFileChecksum(sourceImage);
         const upscaledFilename = `upscaled_${baseName}_${checksum}_${modelName}${ext}`;
         const upscaledPath = path.join(cacheDir, upscaledFilename);
 
         try {
-          if (fs.existsSync(upscaledPath)) {
+          if (await fileExists(upscaledPath)) {
             Logger.info(this.name, `[Scene ${i + 1}/${totalScenes}] Using cached upscaled image: ${upscaledFilename}`);
             assets.register(`scene_${i}`, 'image:upscaled', upscaledPath);
           } else {

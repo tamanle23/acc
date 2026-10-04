@@ -1,10 +1,19 @@
 import fs from 'fs';
 
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export class Utils {
 
-  public static getFileChecksum(filePath: string): string {
+  public static async getFileChecksum(filePath: string): Promise<string> {
     try {
-      const fileBuffer = fs.readFileSync(filePath);
+      const fileBuffer = await fs.promises.readFile(filePath);
       const crypto = require('crypto');
       const hashSum = crypto.createHash('md5');
       hashSum.update(fileBuffer);
