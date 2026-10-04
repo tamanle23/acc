@@ -43,3 +43,4 @@ export * from './SceneWorker';
 export * from './pipeline';
 export * from './conductor';
 export * from './conductor/commands';
+export * from './timeline';

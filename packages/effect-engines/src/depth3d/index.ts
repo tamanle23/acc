@@ -11,8 +11,8 @@ import { drawFrameBreakerFrame, drawImageCover } from "./frame-breaker";
 import { drawParallaxFrame } from "./parallax";
 import { drawSandwichFrame } from "./sandwich";
 import { drawDepthMeshFrame } from "./depth-mesh";
-import { drawWigglegramFrame } from "./wigglegram";
-import { drawCanvasCaptions } from "../subtitles/captions-canvas";
+import { drawCanvasCaptionsFromSnapshot, BoundedAcousticCaptionStrategy } from "../subtitles";
+import { TimelineEngine, type CaptionTrackSnapshot } from "@acc/core";
 import { SubjectSegmentationContext, DepthEstimationContext } from "../vision";
 import { Depth3DFactory } from "./factory";
 
@@ -545,6 +545,17 @@ export async function renderDepth3DScene(
       try {
         encoder.initialize();
 
+        const timeline = new TimelineEngine();
+        if (scene.captions && scene.captions.length > 0) {
+          timeline.addTrack({
+            id: 'subtitles',
+            type: 'caption',
+            items: scene.captions,
+            strategy: new BoundedAcousticCaptionStrategy(),
+            duration: totalDuration,
+          });
+        }
+
         // 4. Render and stream frames via FFI
         for (let frame = 0; frame < totalFrames; frame++) {
           const progress = frame / totalFrames;
@@ -574,15 +585,21 @@ export async function renderDepth3DScene(
             dustParticles,
           });
 
-          // Draw Canvas Subtitles / Captions
-          drawCanvasCaptions(
-            ctx,
-            scene.captions,
-            timeSec,
-            config.settings.captions,
-            width,
-            height,
-          );
+          // Draw Canvas Subtitles / Captions via SSOT TimelineEngine
+          if (scene.captions && scene.captions.length > 0) {
+            const snapshot = timeline.getTrackState<CaptionTrackSnapshot>(
+              'subtitles',
+              timeSec,
+              config.settings.captions
+            );
+            drawCanvasCaptionsFromSnapshot(
+              ctx,
+              snapshot,
+              config.settings.captions,
+              width,
+              height
+            );
+          }
 
           // ZERO-COPY FFI INGESTION
           const buffer = canvas.data();

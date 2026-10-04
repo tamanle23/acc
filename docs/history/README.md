@@ -146,6 +146,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`132`](132_fix_zero_copy_concat_and_restore_original_duration_and_size.md) | 2026-10-02 | Fix Zero-Copy Concat & Restore Exact 2:41 Duration & 34.5MB Size | Restored zero-copy bitstream concatenation via concat demuxer; verified 161.34s duration and 34.5MB size |
 | [`133`](133_eliminate_bun_spawnsync_and_enforce_pure_ffi.md) | 2026-10-02 | Eliminate Bun.spawnSync and Enforce Pure bun:ffi Execution | Completely eliminated Bun.spawnSync in FFmpegExecutor, fixed pointer arithmetic in FFIVideoEncoder and FFISceneEngine |
 | [`134`](134_add_workspace_rule_for_pure_ffi_and_ban_bun_spawnsync.md) | 2026-10-02 | Add Workspace Rule Mandate for Pure bun:ffi & Ban on Bun.spawnSync | Updated master_rules_reference.md and 01-workspace-specific.md to strictly ban Bun.spawnSync and enforce pure bun:ffi |
+| [`135`](135_optimize_digital_glitch_generator_lookups.md) | 2026-10-04 | Optimize Digital Glitch Generator Lookups | Pre-grouped glitch blocks by frame into Map for O(1) lookup in render loop |
+| [`136`](136_multi_track_timeline_engine_and_caption_audio_sync.md) | 2026-10-04 | Multi-Track TimelineEngine & Regression-Free Caption/Audio Synchronization | Established SSOT TimelineEngine, BoundedAcousticCaptionStrategy, dialogue clearance in transitions, and syllable-weighted Whisper alignment |
 
 
 

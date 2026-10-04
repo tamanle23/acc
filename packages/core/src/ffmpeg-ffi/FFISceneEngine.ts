@@ -4,8 +4,9 @@ import fs from "fs";
 import path from "path";
 import { FFI, initFFI, makeAVRational, AV_PIX_FMT_RGBA, Structs } from "./index";
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
-import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings } from "../types";
-import { drawCanvasCaptions, groupCaptionsIntoPhrases } from "../../../effect-engines/src/subtitles/captions-canvas";
+import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings, CaptionTrackSnapshot } from "../types";
+import { TimelineEngine } from "../timeline/TimelineEngine";
+import { drawCanvasCaptionsFromSnapshot, BoundedAcousticCaptionStrategy } from "../../../effect-engines/src/subtitles";
 
 export interface SceneEngineOptions {
   scene: ResolvedSceneConfig;
@@ -113,43 +114,31 @@ export class FFISceneEngine {
       bgCtx.fillRect(0, 0, width, height);
       bgCtx.drawImage(img, drawX, drawY, drawW, drawH);
 
-      const wordsPerPhrase = captionSettings?.wordsPerPhrase ?? 1;
-      const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
+      const timeline = new TimelineEngine();
+      const strategy = new BoundedAcousticCaptionStrategy();
+      timeline.addTrack({
+        id: "subtitles",
+        type: "caption",
+        items: captions,
+        strategy,
+        duration,
+      });
 
       let lastPhraseIdx = -2;
       let lastActiveWordIdx = -2;
       let cachedRgbaBuffer: Buffer | null = null;
 
-      const timeOffset = captionSettings?.timeOffset ?? 0.12;
       for (let f = 0; f < totalFrames; f++) {
         const timeSec = f / fps;
-        const effectiveTime = timeSec + timeOffset;
+        const snapshot = timeline.getTrackState<CaptionTrackSnapshot>("subtitles", timeSec, captionSettings);
 
-        let activePhraseIdx = -1;
-        let activeWordIdx = -1;
-
-        for (let pIdx = 0; pIdx < phrases.length; pIdx++) {
-          const phrase = phrases[pIdx];
-          const pStart = phrase[0].start;
-          const pEnd = phrase[phrase.length - 1].end + 0.25;
-          if (effectiveTime >= pStart && effectiveTime <= pEnd) {
-            activePhraseIdx = pIdx;
-            for (let wIdx = 0; wIdx < phrase.length; wIdx++) {
-              const word = phrase[wIdx];
-              const nextStart = (wIdx === phrase.length - 1) ? (word.end + 0.25) : phrase[wIdx + 1].start;
-              if (effectiveTime >= word.start && effectiveTime < nextStart) {
-                activeWordIdx = wIdx;
-                break;
-              }
-            }
-            break;
-          }
-        }
+        const activePhraseIdx = snapshot.activePhraseIndex;
+        const activeWordIdx = (snapshot.activeWord && snapshot.activeWord.isActive) ? snapshot.activeWord.wordIndex : -1;
 
         // Only redraw canvas and allocate new buffer if the active subtitle state changed!
         if (activePhraseIdx !== lastPhraseIdx || activeWordIdx !== lastActiveWordIdx || !cachedRgbaBuffer) {
           ctx.drawImage(bgCanvas, 0, 0);
-          drawCanvasCaptions(ctx, captions, timeSec, captionSettings, width, height);
+          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
           cachedRgbaBuffer = canvas.data();
           lastPhraseIdx = activePhraseIdx;
           lastActiveWordIdx = activeWordIdx;
@@ -229,6 +218,7 @@ export class FFISceneEngine {
 
     const hasCaptions = !!(captions && captions.length > 0);
 
+    let timeline: TimelineEngine | null = null;
     let canvas: any = null;
     let ctx: any = null;
     let rgbaFrame: bigint = 0n;
@@ -237,6 +227,15 @@ export class FFISceneEngine {
     let uint8Clamped: Uint8ClampedArray | null = null;
 
     if (hasCaptions) {
+      timeline = new TimelineEngine();
+      timeline.addTrack({
+        id: "subtitles",
+        type: "caption",
+        items: captions!,
+        strategy: new BoundedAcousticCaptionStrategy(),
+        duration,
+      });
+
       canvas = createCanvas(width, height);
       ctx = canvas.getContext("2d");
 
@@ -260,7 +259,7 @@ export class FFISceneEngine {
     }
 
     const encodeDecodedFrame = async (f: bigint) => {
-      if (hasCaptions) {
+      if (hasCaptions && timeline) {
           const fPtr = BigInt(f);
           const rgbaPtrBig = BigInt(rgbaFrame);
           FFI.swscale.sws_scale(
@@ -275,7 +274,8 @@ export class FFISceneEngine {
           imgData.data.set(uint8Clamped);
           ctx.putImageData(imgData, 0, 0);
           const timeSec = framesEncoded / fps;
-          drawCanvasCaptions(ctx, captions!, timeSec, captionSettings, width, height);
+          const snapshot = timeline.getTrackState<CaptionTrackSnapshot>("subtitles", timeSec, captionSettings);
+          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
           encoder.encodeRgbaFrame(canvas.data());
         } else {
           encoder.encodeRawFrame(f, srcW, srcH, srcFmt);

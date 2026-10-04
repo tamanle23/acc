@@ -1,64 +1,26 @@
-import type { CaptionConfig, CaptionSettings } from '../types';
+import type { CaptionConfig, CaptionSettings, CaptionTrackSnapshot } from '../types';
 import { PRESETS } from '../styles';
+import { BoundedAcousticCaptionStrategy } from './BoundedAcousticCaptionStrategy';
+
+const defaultStrategy = new BoundedAcousticCaptionStrategy();
 
 export function groupCaptionsIntoPhrases(captions: CaptionConfig[], wordsPerPhrase: number): CaptionConfig[][] {
-  if (wordsPerPhrase <= 1) return captions.map(c => [c]);
-
-  const phrases: CaptionConfig[][] = [];
-  let currentPhrase: CaptionConfig[] = [];
-
-  for (let i = 0; i < captions.length; i++) {
-    const word = captions[i];
-    currentPhrase.push(word);
-
-    const isPunctuation = /[.!?]$/.test(word.text.trim());
-    const nextWord = captions[i + 1];
-    const isLongPause = nextWord && (nextWord.start - word.end) > 0.45;
-
-    if (currentPhrase.length >= wordsPerPhrase || isPunctuation || isLongPause) {
-      phrases.push(currentPhrase);
-      currentPhrase = [];
-    }
-  }
-
-  if (currentPhrase.length > 0) {
-    phrases.push(currentPhrase);
-  }
-
-  return phrases;
+  return defaultStrategy.groupPhrases(captions, wordsPerPhrase);
 }
 
 /**
- * Draws styled, frame-perfect subtitles directly onto a Canvas 2D context.
- * Supports karaoke word-level highlighting, scale/glow animations, and preset styles.
+ * Draws styled, frame-perfect subtitles onto a Canvas 2D context using an immutable CaptionTrackSnapshot.
  */
-export function drawCanvasCaptions(
+export function drawCanvasCaptionsFromSnapshot(
   ctx: any,
-  captions: CaptionConfig[] | undefined,
-  timeSec: number,
+  snapshot: CaptionTrackSnapshot,
   settings: CaptionSettings | undefined,
   width: number,
   height: number
 ): void {
-  if (!captions || captions.length === 0) return;
+  if (!snapshot.shouldRender || !snapshot.phrase || snapshot.phrase.length === 0) return;
 
-  const wordsPerPhrase = settings?.wordsPerPhrase ?? 1;
-  const phrases = groupCaptionsIntoPhrases(captions, wordsPerPhrase);
-
-  // Time offset / lead-in (in seconds) aligns caption highlights with speech acoustic onset
-  const timeOffset = settings?.timeOffset ?? 0.12;
-  const effectiveTime = timeSec + timeOffset;
-
-  // Find active phrase
-  const activePhrase = phrases.find(p => {
-    const start = p[0].start;
-    const end = p[p.length - 1].end + 0.25; // slight grace window
-    return effectiveTime >= start && effectiveTime <= end;
-  });
-
-  if (!activePhrase || activePhrase.length === 0) return;
-
-  // Resolve style configurations
+  const activePhrase = snapshot.phrase;
   const presetName = settings?.preset || 'classic';
   const base = PRESETS[presetName] || PRESETS['classic'];
 
@@ -135,11 +97,11 @@ export function drawCanvasCaptions(
 
   // Draw Words with Karaoke Highlighting
   let currentX = xStart;
+  const activeWordIdx = (snapshot.activeWord && snapshot.activeWord.isActive) ? snapshot.activeWord.wordIndex : -1;
 
   for (let i = 0; i < wordMetrics.length; i++) {
     const m = wordMetrics[i];
-    const nextStart = (i === wordMetrics.length - 1) ? (m.word.end + 0.25) : wordMetrics[i + 1].word.start;
-    const isWordActive = effectiveTime >= m.word.start && effectiveTime < nextStart;
+    const isWordActive = i === activeWordIdx;
 
     ctx.save();
 
@@ -196,4 +158,20 @@ export function drawCanvasCaptions(
   }
 
   ctx.restore();
+}
+
+/**
+ * Draws styled subtitles directly onto a Canvas 2D context using pure functional evaluation.
+ */
+export function drawCanvasCaptions(
+  ctx: any,
+  captions: CaptionConfig[] | undefined,
+  timeSec: number,
+  settings: CaptionSettings | undefined,
+  width: number,
+  height: number
+): void {
+  if (!captions || captions.length === 0) return;
+  const snapshot = defaultStrategy.evaluate(captions, timeSec, settings);
+  drawCanvasCaptionsFromSnapshot(ctx, snapshot, settings, width, height);
 }

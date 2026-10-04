@@ -333,8 +333,16 @@ export class VideoEditPipelineOrchestrator {
             let paddingTime = 0;
             const tConfig = scene.transition || config.settings.transition;
             const audioBehavior = tConfig?.audioBehavior ?? config.settings.transition?.audioBehavior ?? 'pad';
-            if (tConfig?.enabled && audioBehavior === 'pad' && i < totalScenes - 1) {
-              paddingTime = tConfig.duration || 1.0;
+            if (tConfig?.enabled && i < totalScenes - 1) {
+              const tDur = tConfig.duration || 1.0;
+              if (audioBehavior === 'pad') {
+                paddingTime = tDur;
+              } else if (audioBehavior === 'crossfade') {
+                const lastCaptionEnd = scene.captions?.length ? scene.captions[scene.captions.length - 1].end : 0;
+                if (duration - tDur < lastCaptionEnd) {
+                  paddingTime = Math.max(0, (lastCaptionEnd + 0.2) - (duration - tDur));
+                }
+              }
             }
 
             const pauseTime = scene.pauseAfter !== undefined ? scene.pauseAfter : (config.settings.pauseBetweenScenes || 0);
@@ -531,7 +539,7 @@ export class VideoEditPipelineOrchestrator {
             });
 
             bgmGraph.addNode({
-              inputs: [bgDucked, fgOut],
+              inputs: [fgOut, bgDucked],
               filter: 'amix',
               options: {
                 inputs: 2,

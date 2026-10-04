@@ -323,3 +323,32 @@ export interface ResolvedStoryConfig {
   settings: ResolvedStorySettings;
   scenes: ResolvedSceneConfig[];
 }
+
+export interface ITimelineTrack<TItem = any, TSnapshot = any> {
+  readonly id: string;
+  readonly type: 'caption' | 'video' | 'audio' | 'overlay' | 'sfx';
+  items: TItem[];
+  strategy: ITimelineStrategy<TItem, TSnapshot>;
+  duration: number;
+  timeOffset?: number; // Slip/nudge in seconds
+}
+
+export interface ITimelineStrategy<TItem = any, TSnapshot = any> {
+  readonly strategyId: string;
+  evaluate(items: TItem[], localTimeSec: number, trackConfig?: any): TSnapshot;
+}
+
+export interface CaptionWordState {
+  wordIndex: number;
+  word: CaptionConfig;
+  isActive: boolean;
+  progress: number; // 0.0 to 1.0 progression within the word
+}
+
+export interface CaptionTrackSnapshot {
+  activePhraseIndex: number;
+  phrase: CaptionConfig[] | null;
+  activeWord: CaptionWordState | null;
+  isInSpeechPause: boolean;
+  shouldRender: boolean;
+}

@@ -49,6 +49,7 @@ export function parseCliArgs(args: string[]): CliOptions {
     // If first argument is not a known command, check if it's a directory or config path
     if (fs.existsSync(args[0]) || args[0].startsWith('./') || args[0].startsWith('../') || args[0].includes('/') || args[0].includes('\\')) {
       options.command = 'run';
+      options.pipelineId = 'story';
       options.configPath = args[0];
       startIndex = 1;
     } else {

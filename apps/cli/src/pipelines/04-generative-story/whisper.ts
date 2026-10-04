@@ -46,6 +46,16 @@ function splitChunkIntoWords(
   });
 }
 
+function estimatePhoneticWeight(word: string): number {
+  const clean = word.toLowerCase().replace(/[^a-z0-9àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/g, '');
+  if (clean.length === 0) return 1.0;
+
+  const vowelMatches = clean.match(/[aeiouyàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]/g);
+  const vowelCount = vowelMatches ? vowelMatches.length : 1;
+
+  return Math.max(1.5, vowelCount * 1.2 + clean.length * 0.4);
+}
+
 /**
  * Aligns the original reference script words with the speech timestamps detected by Whisper.
  * This guarantees 100% text accuracy (exact spelling, accents, punctuation) while using precise audio timings.
@@ -86,11 +96,16 @@ export function alignScriptWithTimestamps(
   }
 
   const activeDuration = Math.max(speechEnd - speechStart, 0.5);
-  const durationPerWord = activeDuration / words.length;
+  const weights = words.map((w) => estimatePhoneticWeight(w));
+  const totalWeight = weights.reduce((acc, val) => acc + val, 0);
+
+  let currentClock = speechStart;
 
   return words.map((word, idx) => {
-    const wStart = Number((speechStart + idx * durationPerWord).toFixed(2));
-    const wEnd = Number((speechStart + (idx + 1) * durationPerWord).toFixed(2));
+    const wordDuration = (weights[idx] / totalWeight) * activeDuration;
+    const wStart = Number(currentClock.toFixed(2));
+    currentClock += wordDuration;
+    const wEnd = Number(currentClock.toFixed(2));
     return {
       text: word,
       start: wStart,
