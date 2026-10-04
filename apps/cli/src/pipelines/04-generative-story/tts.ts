@@ -1,5 +1,5 @@
 import { PythonBackend } from '@acc/core/ai-backend/python/PythonBackend';
-import { defaultIPCFacade } from '@acc/core';
+import { defaultIPCFacade, Logger } from '@acc/core';
 import { TtsConfig } from '@acc/core/types';
 import fs from 'fs';
 import path from 'path';
@@ -11,7 +11,7 @@ export async function tts(
   outputDir: string,
   backend?: PythonBackend
 ): Promise<{ file: string }> {
-  console.log(`[TTS] Requesting audio synthesis for text: "${text.slice(0, 30)}..." with voice: ${settings.voice}`);
+  Logger.info('TTS', `Requesting audio synthesis for text: "${text.slice(0, 30)}..." with voice: ${settings.voice}`);
   fs.mkdirSync(outputDir, { recursive: true });
 
   const finalName = fileName.endsWith('.wav') ? fileName : `${fileName}.wav`;
@@ -27,21 +27,21 @@ export async function tts(
         outputDir
       });
       if (res && res.file && fs.existsSync(res.file)) {
-        console.log(`[TTS] Audio generated successfully via Vieneu: ${res.file}`);
+        Logger.info('TTS', `Audio generated successfully via Vieneu: ${res.file}`);
         return res;
       }
     } catch (err: any) {
-      console.warn(`[TTS] Vieneu worker error: ${err.message || err}. Falling back to IPCFacade...`);
+      Logger.warn('TTS', `Vieneu worker error: ${err.message || err}. Falling back to IPCFacade...`);
     }
   }
 
   try {
     const ttsRes = await defaultIPCFacade.synthesizeSpeech(text, settings.voice, settings.speed || 1.0);
     fs.writeFileSync(targetPath, ttsRes.audioBuffer);
-    console.log(`[TTS] Audio generated successfully via IPCFacade: ${targetPath}`);
+    Logger.info('TTS', `Audio generated successfully via IPCFacade: ${targetPath}`);
     return { file: targetPath };
   } catch (error: any) {
-    console.error('[TTS] Failed to generate audio:', error);
+    Logger.error('TTS', 'Failed to generate audio:', error);
     throw error;
   }
 }
