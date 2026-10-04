@@ -2,6 +2,7 @@ import io
 import math
 import struct
 import wave
+import numpy as np
 
 class TTSEngine:
     _instance = None
@@ -55,22 +56,24 @@ class TTSEngine:
             wf.setframerate(sample_rate)
 
             # Generate pleasant soft warm cadence tones modulated by syllables
-            samples = []
             base_freq = 180.0 # Hz (natural fundamental speech formant)
             
-            for i in range(total_samples):
-                t = float(i) / sample_rate
-                # Cadence envelope: smooth pauses between words
-                word_phase = math.sin(t * math.pi * (word_count / duration_sec))
-                envelope = max(0.0, word_phase) * 0.4
-                
-                # Syllable frequency vibrato
-                formant = base_freq + 25.0 * math.sin(t * 8.0)
-                sample_val = int(32767.0 * envelope * 0.5 * math.sin(2.0 * math.pi * formant * t))
-                # Clamp 16-bit
-                sample_val = max(-32767, min(32767, sample_val))
-                samples.append(struct.pack('<h', sample_val))
+            # Vectorized numpy operations
+            t = np.arange(total_samples, dtype=np.float32) / sample_rate
 
-            wf.writeframes(b''.join(samples))
+            # Cadence envelope: smooth pauses between words
+            word_phase = np.sin(t * np.pi * (word_count / duration_sec))
+            envelope = np.maximum(0.0, word_phase) * 0.4
+
+            # Syllable frequency vibrato
+            formant = base_freq + 25.0 * np.sin(t * 8.0)
+
+            # Generate sample values
+            sample_val = 32767.0 * envelope * 0.5 * np.sin(2.0 * np.pi * formant * t)
+
+            # Clamp 16-bit and convert to bytes
+            sample_val = np.clip(sample_val, -32767, 32767).astype(np.int16)
+
+            wf.writeframes(sample_val.tobytes())
 
         return wav_buf.getvalue(), sample_rate, channels, duration_ms
