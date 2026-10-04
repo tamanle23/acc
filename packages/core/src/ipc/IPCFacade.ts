@@ -73,8 +73,8 @@ export class GRPCAIStrategy implements IAIClientStrategy {
 
   public async estimateDepth(imageBufferOrPath: string | Buffer, modelSize = 'small'): Promise<{ depthMapBuffer: Buffer; minDepth: number; maxDepth: number }> {
     this.initClients();
-    const fs = await import('fs');
-    const image_data = typeof imageBufferOrPath === 'string' ? fs.readFileSync(imageBufferOrPath) : imageBufferOrPath;
+    const fs = await import('fs/promises');
+    const image_data = typeof imageBufferOrPath === 'string' ? await fs.readFile(imageBufferOrPath) : imageBufferOrPath;
     return new Promise((resolve, reject) => {
       const deadline = new Date(Date.now() + 8000);
       this.visionClient.EstimateDepth({ image_data, model_size: modelSize }, { deadline }, (err: any, response: any) => {
@@ -90,8 +90,8 @@ export class GRPCAIStrategy implements IAIClientStrategy {
 
   public async segmentSubject(imageBufferOrPath: string | Buffer, mode = 'foreground'): Promise<{ maskBuffer: Buffer; boundingBox: any; confidence: number }> {
     this.initClients();
-    const fs = await import('fs');
-    const image_data = typeof imageBufferOrPath === 'string' ? fs.readFileSync(imageBufferOrPath) : imageBufferOrPath;
+    const fs = await import('fs/promises');
+    const image_data = typeof imageBufferOrPath === 'string' ? await fs.readFile(imageBufferOrPath) : imageBufferOrPath;
     return new Promise((resolve, reject) => {
       const deadline = new Date(Date.now() + 8000);
       this.visionClient.SegmentSubject({ image_data, mode }, { deadline }, (err: any, response: any) => {
