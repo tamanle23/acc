@@ -25,6 +25,7 @@ export interface CliOptions {
   port?: number;
   duration?: number;
   conductorUrl?: string;
+  conductorSandbox?: boolean;
 }
 
 export function parseCliArgs(args: string[]): CliOptions {
@@ -60,8 +61,13 @@ export function parseCliArgs(args: string[]): CliOptions {
   // Parse remaining arguments
   for (let i = startIndex; i < args.length; i++) {
     const arg = args[i];
+
     if (arg === '-w' || arg === '--conductor-url') {
       options.conductorUrl = args[++i];
+      continue;
+    }
+    if (arg === '-s' || arg === '--sandbox') {
+      options.conductorSandbox = true;
       continue;
     }
     if (arg === '-c' || arg === '--config') {
@@ -69,15 +75,15 @@ export function parseCliArgs(args: string[]): CliOptions {
       continue;
     }
     if (arg === '-e' || arg === '--exporters') {
-      options.exporters = args[++i].split(',');
+      options.exporters = (args[++i] || '').split(',').map((s) => s.trim().toLowerCase());
       continue;
     }
     if (arg === '-o' || arg === '--out') {
       options.outDir = args[++i];
       continue;
     }
-    if (arg === '-f' || arg === '--format') {
-      options.format = args[++i];
+    if (arg === '-f' || arg === '--format' || arg === '--container') {
+      options.format = (args[++i] || '').trim().toLowerCase();
       continue;
     }
     if (arg === '-r' || arg === '--rtmp') {
@@ -85,11 +91,11 @@ export function parseCliArgs(args: string[]): CliOptions {
       continue;
     }
     if (arg === '-p' || arg === '--port') {
-      options.port = parseInt(args[++i], 10);
+      options.port = parseInt(args[++i] || '3000', 10);
       continue;
     }
     if (arg === '-d' || arg === '--duration') {
-      options.duration = parseInt(args[++i], 10);
+      options.duration = parseInt(args[++i] || '0', 10);
       continue;
     }
     if (arg === '-n' || arg === '--dry-run') {
@@ -100,8 +106,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.command = 'help';
       break;
     }
-    if (!options.pipelineId && options.command === 'run') {
-      options.pipelineId = arg;
+    if (!options.pipelineId && (options.command === 'run' || options.command === 'stream')) {
+      options.pipelineId = arg.trim().toLowerCase();
     }
   }
 
@@ -305,11 +311,14 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
     }
 
     case 'worker': {
-      if (!options.conductorUrl) {
-        console.error("Error: --conductor-url <url> is required for the worker daemon command.");
-        return { success: false, error: 'Missing --conductor-url flag' };
+      if (!options.conductorUrl && !options.conductorSandbox) {
+        console.error("Error: --conductor-url <url> or --sandbox is required for the worker daemon command.");
+        return { success: false, error: 'Missing configuration for worker' };
       }
-      await runWorkerDaemon({ conductorUrl: options.conductorUrl });
+      await runWorkerDaemon({
+          conductorUrl: options.conductorUrl || 'http://localhost:8080',
+          sandboxMode: options.conductorSandbox
+      });
       return { success: true, command: 'worker' };
     }
 

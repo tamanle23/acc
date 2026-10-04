@@ -1,6 +1,5 @@
-import { test, expect, describe, mock, beforeEach } from 'bun:test';
+import { test, expect, describe, mock, beforeEach, afterEach } from 'bun:test';
 import { ConductorWorkerPoller, TaskWorkerFactory, ComposeVideoTaskCommand } from '@acc/core';
-import * as conductorClient from '@io-orkes/conductor-javascript';
 
 // Mock the external SDK to avoid actual server connections
 mock.module('@io-orkes/conductor-javascript', () => {
@@ -16,19 +15,54 @@ mock.module('@io-orkes/conductor-javascript', () => {
 });
 
 describe('ConductorWorkerPoller', () => {
+    let poller: ConductorWorkerPoller;
+
     beforeEach(() => {
         TaskWorkerFactory.register(new ComposeVideoTaskCommand());
     });
 
-    test('should initialize and start polling', async () => {
-        const poller = new ConductorWorkerPoller('http://mock.server', ['acc.p4_story.compose_video']);
+    afterEach(() => {
+        if (poller) poller.stop();
+    });
+
+    test('should initialize and start polling in normal mode', async () => {
+        poller = new ConductorWorkerPoller('http://mock.server', ['acc.p4_story.compose_video']);
+        await poller.start();
+        expect(poller).toBeDefined();
+    });
+
+    test('should start sandbox HTTP server and execute tasks', async () => {
+        poller = new ConductorWorkerPoller('http://mock.server', ['acc.p4_story.compose_video'], 'test-worker', true);
         await poller.start();
 
-        // Since we mocked TaskManager, we can't directly inspect its inner calls easily without exporting it,
-        // but we can ensure start does not throw and internal initialization finishes.
-        expect(poller).toBeDefined();
+        // Send a mock request to the sandbox server
+        const res = await fetch('http://localhost:8081/sandbox/task/acc.p4_story.compose_video', {
+            method: 'POST',
+            body: JSON.stringify({
+                inputData: { storyConfig: { scene: 1 } }
+            })
+        });
 
-        // It's safe to stop right away
-        expect(() => poller.stop()).not.toThrow();
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.status).toBe('COMPLETED');
+        expect(data.outputData.renderedScenesCount).toBe(3);
+    });
+
+    test('sandbox should return 400 for validation errors', async () => {
+        poller = new ConductorWorkerPoller('http://mock.server', ['acc.p4_story.compose_video'], 'test-worker', true);
+        await poller.start();
+
+        const res = await fetch('http://localhost:8081/sandbox/task/acc.p4_story.compose_video', {
+            method: 'POST',
+            body: JSON.stringify({
+                inputData: { invalid: true }
+            })
+        });
+
+        expect(res.status).toBe(200); // the wrapper catches it and returns FAILED task payload, so HTTP 200
+        const data = await res.json();
+        expect(data.status).toBe('FAILED');
+        expect(data.reasonForIncompletion).toContain('Missing storyConfig in task inputData');
     });
 });
