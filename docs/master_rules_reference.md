@@ -255,3 +255,14 @@ Trong quá trình phát triển và gỡ lỗi (debugging/profiling), các agent
    - Các file sinh ra trong quá trình test phải được lưu trong thư mục tạm của hệ điều hành (`os.tmpdir()`) hoặc tự dọn dẹp sau khi kiểm thử kết thúc (`afterAll` / `afterEach`).
 
 
+
+## 13. Performance Tuning & Asynchronous I/O Optimization Protocol
+
+### Context & Rationale
+Hệ thống tạo video, render đồ họa 3D, đọc/ghi file và nén codec (FFmpeg FFI) yêu cầu băng thông bộ nhớ và CPU lớn. Việc sử dụng các hàm đồng bộ (synchronous I/O) chặn (block) toàn bộ Node.js Event Loop, ngăn chặn hệ thống xử lý các tiến trình song song (như Conductor workers, networking, hoặc HTTP Webhooks), làm giảm nghiêm trọng thông lượng xử lý.
+
+### Detailed Requirements
+1. **Always Use Async `fs.promises`**: Mọi thao tác đọc/ghi file như (`fs.readFile`, `fs.writeFile`, `fs.readdir`, `fs.stat`) BẮT BUỘC sử dụng phiên bản bất đồng bộ `await fs.promises.*`. TUYỆT ĐỐI KHÔNG dùng `fs.readFileSync` hoặc `fs.writeFileSync` (ngoại trừ giai đoạn nạp cấu hình duy nhất ở lúc boot app ban đầu).
+2. **Main Render Loop Non-blocking**: Trong các vòng lặp tạo khung hình liên tục (per-frame rendering) hoặc khởi tạo FFI, mọi hàm có thể block I/O hoặc network cần phải được pre-load bất đồng bộ trước.
+3. **Yield Event Loop (`setImmediate` / `setTimeout`)**: Với các tác vụ tính toán CPU-bound rất nặng nề và lặp dài (như xử lý mảng raw pixels hoặc tensor math), phải thiết kế cơ chế nhường quyền điều khiển (yield loop) cho V8 Event Loop sau một số batch xử lý nhất định để GC (Garbage Collector) dọn dẹp bộ nhớ và tránh out-of-memory.
+4. **Zero-Copy & Native Buffer Mapping**: Ưu tiên sử dụng `Buffer`, `ArrayBuffer`, và FFI C-structs bằng native pointer, giảm thiểu serialize/deserialize dữ liệu ảnh (JSON to Pixel Array).
