@@ -41,3 +41,5 @@ export * from './types';
 export * from './ai-backend/python/PythonBackend';
 export * from './SceneWorker';
 export * from './pipeline';
+export * from './conductor';
+export * from './conductor/commands';
