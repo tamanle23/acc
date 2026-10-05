@@ -29,3 +29,4 @@ trigger: always_on
   1. ABSOLUTELY NEVER clone/duplicate buffers (`Buffer.from(rgbaBuffer)` is strictly banned). Must pass raw pointer `ptr(rgbaBuffer)` directly.
   2. MUST use pre-allocated native C memory (`av_malloc`) for FFI pointer arrays (`srcDataC`, `srcStrideC`). NEVER allocate temporary JS typed arrays (`BigUint64Array`/`Int32Array`) on nursery heap per frame.
   3. MUST cache structural phrase/regex calculations across frames (e.g. `WeakMap`). Zero heap allocations per frame. Detail: [docs/master_rules_reference.md](docs/master_rules_reference.md#14-zero-allocation-frame-loop--native-ffi-memory-invariance-protocol).
+- **System Architecture Anchor**: Treat `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` as the primary architectural source of truth. Any changes that alter system architecture, data flows, or structural dependencies MUST include an update to this document.

@@ -290,3 +290,8 @@ Lỗi này từng được giải quyết ở commit [069] nhưng bị hồi quy
 3. **Memoization / WeakMap Caching for Frame Helpers**:
    - Mọi thao tác tính toán phụ trợ lặp lại qua các frame (như phân nhóm cụm từ `groupPhrases`, biểu thức chính quy regex, tính toán trọng số âm tiết) BẮT BUỘC phải được lưu cache (ví dụ qua `WeakMap<T, ...>` hoặc khởi tạo 1 lần trước vòng lặp render).
    - TUYỆT ĐỐI KHÔNG thực hiện regex hay biến đổi cấu trúc mảng mới trên mỗi frame tick.
+
+## 29. ACC System Architecture Anchor Rule
+**Rule**: `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` is the primary source of truth for the end-to-end ACC system architecture.
+**Context**: As the ACC project scales across multiple workspaces, pipelines, and the Python gRPC backend, it is critical to maintain a single, cohesive architectural master blueprint. `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` was created to serve exactly this purpose. It contains detailed breakdowns of the Turborepo structure, Netflix Conductor OSS stateless orchestration, the 6 Canonical Pipelines (with step-by-step processing flows), AI Subsystems, UI control planes, and performance standards.
+**Actionable Requirement**: Any future modifications, feature additions, or structural refactors that fundamentally alter the system's architecture, pipeline data flow, or structural dependencies must be accompanied by a synchronous update to `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md`. This ensures the master blueprint never falls out of sync with the codebase.
