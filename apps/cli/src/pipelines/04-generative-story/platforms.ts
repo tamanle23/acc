@@ -16,7 +16,10 @@ import type {
   Depth3DConfig,
   TtsConfig,
   VideoSettings,
-} from './types';
+  AudioTrackConfig,
+  SFXClipConfig,
+} from '@acc/core';
+
 
 export interface PlatformConfigDefaults {
   width: number;
@@ -494,10 +497,13 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     overlayComposite: settings?.overlayComposite,
     pauseBetweenScenes: settings?.pauseBetweenScenes ?? settings?.pauseBetweenSlides,
     bgm,
+    audioTrack: settings?.audioTrack,
+    sfx: settings?.sfx,
     depth3d,
     tts,
   };
 }
+
 
 export interface ResolvedFfmpegFlags {
   videoEncoder: string;

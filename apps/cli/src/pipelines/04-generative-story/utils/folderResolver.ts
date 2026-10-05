@@ -71,16 +71,35 @@ export function resolveStoryFolder(
     const resolvedAudio = resolveMediaPath(scene.audio || '', absoluteDir, 'audio');
 
     const resolvedVideoSettings = mergeDefined(DEFAULT_VIDEO_SETTINGS, scene.videoSettings);
+    const resolvedSfx = scene.sfx?.map(clip => ({
+      ...clip,
+      source: resolveMediaPath(clip.source, absoluteDir, 'audio'),
+    }));
+
     resolvedScenes.push({
       ...scene,
       resolvedImage,
       resolvedVideo,
       resolvedAudio,
       resolvedVideoSettings,
+      sfx: resolvedSfx,
     });
   }
 
   const resolvedSettings = resolveStorySettings(rawConfig.settings);
+  if (resolvedSettings.audioTrack) {
+    resolvedSettings.audioTrack = {
+      ...resolvedSettings.audioTrack,
+      source: resolveMediaPath(resolvedSettings.audioTrack.source, absoluteDir, 'audio'),
+    };
+  }
+  if (resolvedSettings.sfx) {
+    resolvedSettings.sfx = resolvedSettings.sfx.map(clip => ({
+      ...clip,
+      source: resolveMediaPath(clip.source, absoluteDir, 'audio'),
+    }));
+  }
+
   if (options?.format) {
     resolvedSettings.container = options.format as any;
   }
@@ -90,7 +109,9 @@ export function resolveStoryFolder(
     description: rawConfig.description,
     settings: resolvedSettings,
     scenes: resolvedScenes,
+    captions: rawConfig.captions,
   };
+
 
   const baseName = rawConfig.name
     ? rawConfig.name.replace(/[^a-zA-Z0-9_\-\u00C0-\u024F\u1E00-\u1EFF]/g, '_')

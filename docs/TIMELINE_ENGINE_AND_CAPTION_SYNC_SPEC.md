@@ -97,11 +97,64 @@ export interface CaptionTrackSnapshot {
   isInSpeechPause: boolean;
   shouldRender: boolean;
 }
+export interface SFXTrackSnapshot {
+  activeClips: SFXClipConfig[];
+  isEmittingAudio: boolean;
+}
+
+export interface VideoClipItem {
+  sceneIndex: number;
+  start: number;
+  end: number;
+  duration: number;
+  image?: string;
+  video?: string;
+  transition?: any;
+}
+
+export interface VideoTrackSnapshot {
+  activeClipIndex: number;
+  activeClip: VideoClipItem | null;
+  clipLocalTimeSec: number;
+  isInTransition: boolean;
+}
+```
+
+### 3.2 SFX & Master Audio Timeline Strategies
+```typescript
+export class SoundEffectsTimelineStrategy implements ITimelineStrategy<SFXClipConfig, SFXTrackSnapshot> {
+  public readonly strategyId = 'sfx-timeline-v1';
+
+  public evaluate(items: SFXClipConfig[], localTimeSec: number): SFXTrackSnapshot {
+    const activeClips = items.filter(clip => {
+      const start = clip.time || 0;
+      const duration = clip.duration !== undefined ? clip.duration : 2.0; // fallback window
+      return localTimeSec >= start && localTimeSec < start + duration;
+    });
+
+    return {
+      activeClips,
+      isEmittingAudio: activeClips.length > 0,
+    };
+  }
+}
+
+export class MasterAudioTimingStrategy implements ITimelineStrategy<AudioTrackConfig, { isPlaying: boolean; timeSec: number }> {
+  public readonly strategyId = 'master-audio-timing-v1';
+
+  public evaluate(items: AudioTrackConfig[], localTimeSec: number): { isPlaying: boolean; timeSec: number } {
+    return {
+      isPlaying: localTimeSec >= 0,
+      timeSec: localTimeSec,
+    };
+  }
+}
 ```
 
 ---
 
 ## 4. Full Concrete Implementation Modules
+
 
 ### 4.1 Bounded Acoustic Caption Strategy
 

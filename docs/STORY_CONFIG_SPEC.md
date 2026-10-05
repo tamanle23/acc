@@ -117,8 +117,18 @@ Khi khai báo `platform`, hệ thống tự động thiết lập các thông s�
 | `concurrency` | `number \| "auto"` | Không | `"auto"`, `1`, `2`, `4`, `6`, `8` | `"auto"` | **Số lượng phân cảnh (scenes) được render song song đồng thời** (Parallel Workers). `"auto"` tự động tối ưu dựa theo số nhân CPU và GPU NVENC để giảm thời gian render xuống tối đa. Đặt `1` để render tuần tự. |
 | `fastIntermediate` | `boolean` | Không | `true`, `false` | `true` | Khi bật Transition, FFmpeg tạo các file MP4 tạm thời bằng chế độ ép xung (Ultrafast preset, CPU bypass compression). Tăng tốc độ render lên x4 lần nhưng tốn bộ nhớ đệm ổ cứng tạm thời lúc render. |
 | `pauseBetweenscenes` | `number` | Không | - | `0` | **Thời gian nghỉ (khoảng lặng)** giữa các phân cảnh (tính bằng giây). Video sẽ giữ nguyên hình ảnh và âm thanh tạm dừng trước khi sang scene tiếp theo. |
+| `audioTrack` | `AudioTrackConfig` | Không | - | - | **Chế độ Master Voiceover Timeline**: Dùng 1 file audio duy nhất làm thước đo thời gian chính cho toàn bộ video thay vì chia audio theo từng scene. |
+
+### D. Cấu hình Master Voiceover Timeline (`settings.audioTrack`)
+Khi dự án có 1 file thu âm hoàn chỉnh từ đầu đến cuối (Master Voiceover):
+| Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- | :--- |
+| `source` | `string` | **Có** | - | Đường dẫn file voiceover chính (ví dụ `"voiceover/master.mp3"`). |
+| `volume` | `number` | Không | `1.0` | Âm lượng master voiceover (`0.0` đến `2.0`). |
+| `timeBase` | `"master"` | Không | `"master"` | Khóa trục thời gian của toàn video theo file audio này. |
 
 ---
+
 
 ## 4. Chi tiết thuộc tính `settings.captions` (Tùy chỉnh phụ đề, Chế độ Subtitle & Vị trí)
 
@@ -188,13 +198,25 @@ Mỗi phần tử trong `scenes` đại diện cho một phân cảnh trong vide
 | :--- | :--- | :--- | :--- |
 | `image` | `string` | **Có*** | Tên tệp ảnh tĩnh (ví dụ `scene1.jpg`). Bắt buộc nếu không có `video`. |
 | `video` | `string` | **Có*** | Tên tệp video stock/B-roll (ví dụ `b-roll.mp4`). Bắt buộc nếu không có `image`. Nếu có cả 2, `video` sẽ được ưu tiên. |
+| `duration` | `number` | Không | Thời lượng phân cảnh (giây). Bắt buộc trong chế độ **Master Voiceover Timeline** (`settings.audioTrack`) hoặc khi dùng ảnh tĩnh không có audio riêng. |
 | `videoSettings` | `VideoSettings`| Không | Cấu hình chuyên sâu về thời lượng và âm thanh dành riêng cho `video` (Xem chi tiết bảng dưới). |
-| `audio` | `string` | **Có*** | Tên tệp âm thanh Voiceover (ví dụ `voiceover1.mp3`). Chỉ là tùy chọn nếu đã cung cấp `text`. |
+| `audio` | `string` | **Có*** | Tên tệp âm thanh Voiceover (ví dụ `voiceover1.mp3`). Chỉ là tùy chọn nếu đã cung cấp `text` hoặc khi sử dụng `settings.audioTrack`. |
 | `text`  | `string` | **Có*** | Kịch bản văn bản. Nếu không cung cấp `audio` thì bắt buộc phải có `text` để tự động sinh TTS. |
+| `sfx`   | `SFXClipConfig[]` | Không | Danh sách âm thanh hiệu ứng (Sound Effects) phát theo mốc thời gian cục bộ của phân cảnh này. |
 | `captions` | `CaptionConfig[]` | Không | Mảng danh sách các mốc hiển thị chữ trong phân cảnh này. |
 | `transition` | `TransitionSettings`| Không | Cấu hình Transition tuỳ chỉnh ghi đè riêng cho việc chuyển cảnh TỪ scene này SANG scene tiếp theo. |
 | `pauseAfter` | `number` | Không | Thời gian nghỉ (khoảng lặng) tính bằng giây ngay sau scene này, ghi đè thuộc tính `pauseBetweenscenes` toàn cục. |
 | `depth3d` | `Depth3DSettings` | Không | Cấu hình hiệu ứng tạo nổi 3D (chỉ áp dụng nếu scene dùng `image`). |
+
+### Bảng cấu hình Sound Effects trong phân cảnh (`scenes[].sfx`)
+| Thuộc tính | Kiểu dữ liệu | Bắt buộc? | Mặc định | Mô tả |
+| :--- | :--- | :--- | :--- | :--- |
+| `source` | `string` | **Có** | - | Đường dẫn file âm thanh SFX (ví dụ `"sfx/whoosh.wav"`, `"sfx/impact.mp3"`). |
+| `time` | `number` | Không | `0.0` | Thời điểm phát âm thanh (tính bằng giây từ lúc bắt đầu scene). |
+| `duration` | `number` | Không | Độ dài file | Thời lượng phát SFX (giây). Mặc định phát hết file hoặc kết thúc cùng scene. |
+| `volume` | `number` | Không | `1.0` | Âm lượng SFX (từ `0.0` đến `2.0`). |
+| `duckBgm` | `boolean` | Không | `true` | Khi `true`, đưa SFX vào bus sidechain ducking để tự động hạ nhẹ BGM giúp âm thanh hiệu ứng rõ nét. |
+
 
 ### Bảng cấu hình `videoSettings` (Giải quyết Xung đột Thời lượng & Âm thanh)
 | Thuộc tính | Kiểu dữ liệu | Mặc định | Mô tả |

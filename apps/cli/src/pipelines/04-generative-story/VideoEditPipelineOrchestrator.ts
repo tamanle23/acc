@@ -446,6 +446,133 @@ export class VideoEditPipelineOrchestrator {
         }
       }
 
+      // Check for Master Audio Track (audioTrack)
+      if (config.settings.audioTrack && config.settings.audioTrack.source) {
+        let masterAudioPath = config.settings.audioTrack.source;
+        if (!path.isAbsolute(masterAudioPath)) {
+          masterAudioPath = path.resolve(baseDir, masterAudioPath);
+        }
+        if (fs.existsSync(masterAudioPath)) {
+          Logger.info('VideoEditPipelineOrchestrator', `=== Remuxing Master Voiceover Track: ${path.basename(masterAudioPath)} ===`);
+          const masterVoicePath = path.join(tempDir, 'with_master_voice.mp4');
+          const vol = config.settings.audioTrack.volume ?? 1.0;
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg()
+              .input(currentVideoPath)
+              .input(masterAudioPath)
+              .outputOptions([
+                '-map 0:v:0',
+                '-map 1:a:0',
+                '-c:v copy',
+                `-af volume=${vol}`,
+                `-c:a ${config.settings.audioCodec}`,
+                `-b:a ${config.settings.audioBitrate}`,
+                '-shortest',
+              ])
+              .output(masterVoicePath)
+              .on('end', () => resolve())
+              .on('error', (err: any) => reject(new Error(`Failed to remux master voice track: ${err.message}`)))
+              .run();
+          });
+          currentVideoPath = masterVoicePath;
+        } else {
+          Logger.warn('VideoEditPipelineOrchestrator', `Master audio track file not found at ${masterAudioPath}`);
+        }
+      }
+
+      // Collect all SFX clips (global + per-scene with calculated offsets)
+      const allSfxClips: Array<{ source: string; time: number; volume: number; duckBgm: boolean }> = [];
+      if (config.settings.sfx && Array.isArray(config.settings.sfx)) {
+        for (const clip of config.settings.sfx) {
+          if (clip.source && fs.existsSync(clip.source)) {
+            allSfxClips.push({
+              source: clip.source,
+              time: clip.time ?? 0,
+              volume: clip.volume ?? 1.0,
+              duckBgm: clip.duckBgm ?? true,
+            });
+          }
+        }
+      }
+
+      let cumulativeSceneTime = 0;
+      for (let i = 0; i < config.scenes.length; i++) {
+        const sc = config.scenes[i];
+        const segDuration = segments[i]?.duration ?? (sc.duration || 3);
+        if (sc.sfx && Array.isArray(sc.sfx)) {
+          for (const clip of sc.sfx) {
+            let sfxPath = clip.source;
+            if (!path.isAbsolute(sfxPath)) {
+              sfxPath = path.resolve(baseDir, sfxPath);
+            }
+            if (fs.existsSync(sfxPath)) {
+              allSfxClips.push({
+                source: sfxPath,
+                time: cumulativeSceneTime + (clip.time ?? 0),
+                volume: clip.volume ?? 1.0,
+                duckBgm: clip.duckBgm ?? true,
+              });
+            }
+          }
+        }
+        cumulativeSceneTime += segDuration;
+      }
+
+      if (allSfxClips.length > 0) {
+        Logger.info('VideoEditPipelineOrchestrator', `=== Mixing ${allSfxClips.length} Sound Effects (SFX) Track(s) ===`);
+        const sfxMixedPath = path.join(tempDir, 'with_sfx.mp4');
+        await new Promise<void>((resolve, reject) => {
+          let sfxCmd = ffmpeg().input(currentVideoPath);
+          allSfxClips.forEach(clip => {
+            sfxCmd = sfxCmd.input(clip.source);
+          });
+
+          const sfxGraph = new FFmpegFilterGraph();
+          const delayedSfxLabels: string[] = [];
+
+          allSfxClips.forEach((clip, idx) => {
+            const inputIdx = idx + 1;
+            const delayMs = Math.round((clip.time || 0) * 1000);
+            const delayedOut = sfxGraph.createStreamLabel(`sfx_d_${idx}`);
+            sfxGraph.addNode({
+              inputs: [`${inputIdx}:a`],
+              filter: `volume=${clip.volume},adelay=${delayMs}|${delayMs}`,
+              outputs: [delayedOut],
+            });
+            delayedSfxLabels.push(delayedOut);
+          });
+
+          const finalAudioOut = sfxGraph.createStreamLabel('a_sfx_mix');
+          sfxGraph.addNode({
+            inputs: ['0:a', ...delayedSfxLabels],
+            filter: 'amix',
+            options: {
+              inputs: 1 + delayedSfxLabels.length,
+              duration: 'first',
+              dropout_transition: 2,
+            },
+            outputs: [finalAudioOut],
+          });
+
+          sfxCmd
+            .complexFilter(sfxGraph.compile())
+            .outputOptions([
+              '-map 0:v',
+              `-map ${finalAudioOut}`,
+              '-c:v copy',
+              `-c:a ${config.settings.audioCodec}`,
+              `-b:a ${config.settings.audioBitrate}`,
+            ])
+            .output(sfxMixedPath)
+            .on('end', () => resolve())
+            .on('error', (err: any) => reject(new Error(`Failed to mix SFX: ${err.message}`)))
+            .run();
+        });
+        currentVideoPath = sfxMixedPath;
+        Logger.info('VideoEditPipelineOrchestrator', '✅ SFX mixing completed!');
+      }
+
+
       if (config.settings.overlayComposite) {
         const nextVideoPath = path.join(tempDir, 'with_overlay.mp4');
         Logger.info('VideoEditPipelineOrchestrator', `\n=== Applying Overlay Composite: ${config.settings.overlayComposite} ===`);

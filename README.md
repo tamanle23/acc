@@ -179,6 +179,9 @@ Mẫu `story-config.json` tiêu chuẩn:
 * **Hiệu ứng Tạo Nổi 3D Vượt Khung (`depth3d`)**: Đột phá thị giác Out-of-Bounds (Frame-Breaker) với đa dạng khung viền (`card`, `polaroid`, `cinema`, `comic`), đổ bóng đa tầng (Elevation Drop Shadow) và dao động nổi bồng bềnh (Floating Motion). Hỗ trợ tách chủ thể qua SAM 2 (`autoSegment: true`) và tạo bản đồ độ sâu metric qua Depth Anything v2 (`autoDepth: true`).
 * **Hỗ trợ 10 Bộ Caption Presets & Dynamic Captions**: `tiktok`, `classic`, `cinematic`, `vlog`, `neon-glow`, `bold-retro`, `minimal-clean`, `karaoke`, `news-banner`, `retro-typewriter`. Hỗ trợ gộp cụm từ (`wordsPerPhrase`), bật/tắt hiệu ứng Karaoke Highlight (`activeWordHighlight`) và căn chỉnh độ trễ âm thanh chính xác (`timeOffset`).
 * **Mix Video B-roll & Stock Footage**: Hỗ trợ chèn trực tiếp `.mp4`, `.mov`, `.webm` kèm xử lý thời lượng (`freeze`, `loop`, `trim`) và trộn âm thanh nền.
+* **Kiến Trúc Multi-Track Timeline & Master Voiceover (`audioTrack`)**: Khóa trục thời gian video theo một file âm thanh chủ quyền duy nhất (Master Clock) giúp loại bỏ triệt để hiện tượng lệch phụ đề/âm thanh, tự do căn chỉnh độ dài hình ảnh/video B-roll mà không làm gián đoạn lời thoại.
+* **Hệ Thống Sound Effects Đa Kênh (`sfx`)**: Tích hợp SFX ở cả cấp độ Scene (`scenes[].sfx`) và Global (`settings.sfx`), tự động điều hướng vào Sidechain Compression DSP để dìm BGM khi có hiệu ứng âm thanh quan trọng.
+
 
 ---
 
@@ -186,7 +189,9 @@ Mẫu `story-config.json` tiêu chuẩn:
 
 * 📘 **Hướng dẫn Chi tiết CLI & Monorepo**: [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 * 📜 **Đặc tả Cấu hình Story Config**: [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md)
+* 🏛️ **Đặc tả Kiến trúc Multi-Track Timeline & Unified Voiceover**: [docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md](docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md)
 * 🎥 **Hướng dẫn Chèn Video B-Roll**: [docs/VIDEO_SCENES_GUIDE.md](docs/VIDEO_SCENES_GUIDE.md)
 * 🎨 **Hướng dẫn Hiệu ứng Overlay**: [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md) & [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md)
 * 🔊 **Hướng dẫn Hiệu ứng Âm thanh SFX**: [docs/SOUND_EFFECTS_CLI_GUIDE.md](docs/SOUND_EFFECTS_CLI_GUIDE.md)
 * 📌 **Tổng hợp Kế hoạch Phát triển Backlog**: [docs/backlogs/README.md](docs/backlogs/README.md)
+

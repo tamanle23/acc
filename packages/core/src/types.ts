@@ -101,12 +101,28 @@ export interface VideoSettings {
   volume?: number;
 }
 
+export interface SFXClipConfig {
+  source: string; // Filename or path to SFX audio file
+  time?: number; // Start time offset in seconds relative to scene/timeline start (default: 0)
+  duration?: number; // Optional duration in seconds to trim SFX
+  volume?: number; // Volume multiplier (0.0 to 2.0, default: 1.0)
+  duckBgm?: boolean; // Whether this SFX should trigger BGM sidechain ducking (default: true)
+}
+
+export interface AudioTrackConfig {
+  source: string; // Filename or path to the master voiceover audio
+  volume?: number; // Volume multiplier (default: 1.0)
+  timeBase?: 'master'; // Master timeline clock
+}
+
 export interface SceneConfig {
   image?: string; // Optional if video is provided.
   video?: string; // Optional if image is provided. B-roll / Stock footage
-  audio?: string; // Optional if text is provided. Filename (e.g. "voiceover1.mp3")
+  duration?: number; // Explicit duration in seconds (required for master audio track mode or static images without individual audio)
+  audio?: string; // Optional if text is provided or settings.audioTrack is set.
   text?: string; // Text script for TTS generation if audio is missing
-  captions: CaptionConfig[];
+  sfx?: SFXClipConfig[]; // Optional scene-level sound effects
+  captions?: CaptionConfig[]; // Optional per-scene captions
   transition?: TransitionSettings; // Scene-level override for transition to the NEXT scene
   pauseAfter?: number; // Override for pauseBetweenScenes
   depth3d?: Depth3DConfig; // Scene-level 3D depth / pop-out effect
@@ -264,6 +280,8 @@ export interface StorySettings {
   pauseBetweenScenes?: number; // Thời gian nghỉ (khoảng lặng) giữa các cảnh (giây)
   overlayComposite?: string; // e.g. "haunted_forest" to apply polyrhythmic looping overlay on final video
   bgm?: BGMSettings; // Background Music configuration
+  audioTrack?: AudioTrackConfig; // Master continuous voiceover track configuration
+  sfx?: SFXClipConfig[]; // Global sound effect cues
   depth3d?: Depth3DConfig; // Global default for 3D depth / pop-out effect
 }
 
@@ -272,6 +290,7 @@ export interface StoryConfig {
   description?: string;
   settings: StorySettings;
   scenes?: SceneConfig[];
+  captions?: CaptionConfig[]; // Global caption timeline (used in master audio track mode)
 }
 
 export interface ResolvedSceneConfig extends SceneConfig {
@@ -281,7 +300,7 @@ export interface ResolvedSceneConfig extends SceneConfig {
   resolvedVideoSettings?: Required<VideoSettings>;
 }
 
-export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'captions' | 'platform' | 'concurrency' | 'transition' | 'upscale' | 'fastIntermediate' | 'tts' | 'pauseBetweenScenes' | 'pauseBetweenSlides' | 'overlayComposite' | 'bgm' | 'depth3d'>> {
+export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'captions' | 'platform' | 'concurrency' | 'transition' | 'upscale' | 'fastIntermediate' | 'tts' | 'pauseBetweenScenes' | 'pauseBetweenSlides' | 'overlayComposite' | 'bgm' | 'audioTrack' | 'sfx' | 'depth3d'>> {
   platform: PlatformPreset;
   concurrency: number; // Resolved numeric parallel workers count (e.g. 1, 2, 4, 6)
   fastIntermediate: boolean;
@@ -292,6 +311,8 @@ export interface ResolvedStorySettings extends Required<Omit<StorySettings, 'cap
   pauseBetweenScenes?: number;
   overlayComposite?: string;
   bgm?: BGMSettings;
+  audioTrack?: AudioTrackConfig;
+  sfx?: SFXClipConfig[];
   depth3d?: Depth3DConfig;
 }
 
@@ -300,6 +321,7 @@ export interface ResolvedStoryConfig {
   description?: string;
   settings: ResolvedStorySettings;
   scenes: ResolvedSceneConfig[];
+  captions?: CaptionConfig[];
 }
 
 export interface ITimelineTrack<TItem = any, TSnapshot = any> {
@@ -330,3 +352,9 @@ export interface CaptionTrackSnapshot {
   isInSpeechPause: boolean;
   shouldRender: boolean;
 }
+
+export interface SFXTrackSnapshot {
+  activeClips: SFXClipConfig[];
+  isEmittingAudio: boolean;
+}
+
