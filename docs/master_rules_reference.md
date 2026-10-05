@@ -291,8 +291,6 @@ Lỗi này từng được giải quyết ở commit [069] nhưng bị hồi quy
    - Mọi thao tác tính toán phụ trợ lặp lại qua các frame (như phân nhóm cụm từ `groupPhrases`, biểu thức chính quy regex, tính toán trọng số âm tiết) BẮT BUỘC phải được lưu cache (ví dụ qua `WeakMap<T, ...>` hoặc khởi tạo 1 lần trước vòng lặp render).
    - TUYỆT ĐỐI KHÔNG thực hiện regex hay biến đổi cấu trúc mảng mới trên mỗi frame tick.
 
----
-
 ## 15. Multi-Track Timeline & Master Audio Architecture Protocol
 
 ### Context & Rationale
@@ -307,3 +305,8 @@ Hệ thống video hỗ trợ hai mô hình trục thời gian (Timebase Models)
 2. **Master Audio Immutability**: Trong chế độ `settings.audioTrack`, thời lượng video được khóa cứng theo độ dài của file master voiceover. Các clip hình ảnh/video phải tự động tính toán thời điểm bắt đầu/kết thúc dựa theo `duration` khai báo hoặc phân bổ đều.
 3. **SFX Sidechain Priority Bus**: Khi `duckBgm: true` trong SFX clip, tín hiệu SFX phải được gom cùng bus thoại để kích hoạt bộ nén Sidechain làm chìm BGM, đảm bảo độ rõ nét của âm thanh.
 
+## 16. ACC System Architecture Anchor Rule
+**Rule**: `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` is the primary source of truth for the end-to-end ACC system architecture.
+**Context**: As the ACC project scales across multiple workspaces, pipelines, and the Python gRPC backend, it is critical to maintain a single, cohesive architectural master blueprint. `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` was created to serve exactly this purpose. It contains detailed breakdowns of the Turborepo structure, Netflix Conductor OSS stateless orchestration, the 6 Canonical Pipelines (with step-by-step processing flows), AI Subsystems, UI control planes, and performance standards.
+**Actionable Requirement**: Any future modifications, feature additions, or structural refactors that fundamentally alter the system's architecture, pipeline data flow, or structural dependencies must be accompanied by a synchronous update to `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md`. This ensures the master blueprint never falls out of sync with the codebase.
+---
