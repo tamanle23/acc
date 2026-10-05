@@ -27,13 +27,55 @@ The project is structured as a Turborepo monorepo divided into applications (`ap
 ## 3. The 6 Canonical Pipelines & Conductor Orchestration
 ACC maps 250 diverse content types into **6 Canonical Pipelines**. These pipelines are orchestrated externally via Netflix Conductor OSS `FORK_JOIN` DAGs (Directed Acyclic Graphs) for 1-to-N omnichannel fan-out, ensuring zero complex internal business routing logic within the workers themselves.
 
+All pipelines utilize the following foundational design patterns:
+- **Pipeline Pattern (Middleware Architecture):** Breaks execution into a sequence of isolated processing stages (`PipelineRunner`).
+- **Command Pattern:** Encapsulates media editing instructions (e.g., `XFadeTransition`, `AudioDucking`).
+- **Shared Context / Flyweight Pattern:** Eliminates duplicate media copies and prevents memory bloat by sharing immutable assets (`AssetContext`).
+- **Producer-Consumer with Bounded Queues:** Controls concurrency and applies backpressure between fast I/O tasks and compute/VRAM-heavy tasks.
+
 ### The Canonical Pipelines
-1.  **`01-scraper`**: Ingests external data using `BoundedQueue` and `PipelineRunner`. Wraps external assets with `AssetContext`.
-2.  **`02-db-templating`**: Populates dynamic visuals and data-driven graphics.
-3.  **`03-repurposing`**: Transforms existing long-form content into short-form multi-platform clips using `AutoReframeStrategy`.
-4.  **`04-generative-story`**: Orchestrates `ExtendedPipelineIR` v3.1 AST via `EditingPipelineOrchestrator` to coordinate story configs, platform safe zones, and video export rendering.
-5.  **`05-rule-logic`**: Domain-specific logic application and branching logic handling.
-6.  **`06-ambient-stream`**: Continuous, seamless generation and broadcast workflows.
+
+#### Pipeline 1: Event-Driven Scraper & Summarizer
+*Goal: Ingest real-time market/news data, summarize via vLLM/Llama 3, synthesize TTS, and render alert videos/podcasts.*
+- **Producer-Consumer:** Websockets/Cron emit events to `BoundedQueue`. Consumers apply LLM grammar constraints to output JSON and synthesize TTS audio.
+- **Shared Context/Flyweight:** Tracks raw text, extracted key points, synthesized voice, and screenshot PNGs. Retains vLLM models in VRAM.
+- **VFX Commands:** `RenderLowerThirdTickerCommand`, `AudioDuckingCommand`.
+- **Pipeline Orchestration:** `IngestStage` -> `SummarizeStage` -> `TTSStage` -> `VFXCompositionStage` -> `FFmpegStreamStage`.
+
+#### Pipeline 2: Database Injection & Programmatic Templating
+*Goal: Stream rows from PostgreSQL (JSONB), inject into HTML/Canvas templates, and render infographics/comparison videos.*
+- **Producer-Consumer:** PostgreSQL streams records in batches. Consumer workers render DOM nodes to PNG buffers.
+- **Shared Context/Flyweight:** Headless browser instance and canvas handles reused across items.
+- **VFX Commands:** `BarChartRaceCommand`, `SplitScreenComparisonCommand`.
+- **Pipeline Orchestration:** `DBStreamStage` -> `CanvasRenderStage` -> `VFXCommandCompileStage` -> `FFmpegConcatStage`.
+
+#### Pipeline 3: Repurposing / Asset Extraction
+*Goal: Process long-form audio/video, perform Whisper.cpp word-level alignment, track faces, and output auto-cropped clips.*
+- **Producer-Consumer:** Audio splitter breaks data into chunks. Whisper.cpp aligns words, and YOLO Face-Tracking identifies speaker coordinates.
+- **Shared Context/Flyweight:** Shared memory pointers for source 4K video files, avoiding duplicate file open calls.
+- **VFX Commands:** `DynamicCropCommand`, `WordHighlightCaptionCommand`.
+- **Pipeline Orchestration:** `AudioExtractStage` -> `WhisperAlignmentStage` -> `FaceTrackingStage` -> `VFXCropStage` -> `FFmpegEncodingStage`.
+
+#### Pipeline 4: Autonomous Generative Storytelling
+*Goal: Turn seed prompts into multi-scene videos with AI images (Flux/SDXL), VieNeu-TTS dialogue, 3D Depth pop-outs, and procedural overlays.*
+- **Producer-Consumer:** LLMs generate script prompts. GPU Diffusers generate sequential images, and Depth Anything v2 computes depth maps.
+- **Shared Context/Flyweight:** `AssetContext` tracks original images, depth maps, cutout masks. Diffusers and TTS stay active in VRAM.
+- **VFX Commands:** `Depth3DPopOutMacroCommand`, `ParallaxSlideCommand`.
+- **Pipeline Orchestration:** `PromptGenStage` -> `ImageGenStage` -> `DepthExtractionStage` -> `VFX3DStage` -> `VoiceGenStage` -> `FFmpegStage`.
+
+#### Pipeline 5: Rule-Based & Logic Generation
+*Goal: Execute mathematical functions, Manim procedural animations, or code syntax highlights.*
+- **Producer-Consumer:** Math generator creates problem sets. Python/Manim processes render vector animation frames.
+- **Shared Context/Flyweight:** Reusable SVG path handles and pre-rendered vector glyphs.
+- **VFX Commands:** `SVGPathTracingCommand`, `CodeTypingEffectCommand`.
+- **Pipeline Orchestration:** `LogicGenStage` -> `VectorRenderStage` -> `VFXSyncStage` -> `FFmpegMuxStage`.
+
+#### Pipeline 6: Infinite Ambient & Procedural Loops
+*Goal: Stream 24/7 Lofi radio or ambient relaxation videos with real-time audio synthesis and WebGL procedural shaders to RTMP.*
+- **Producer-Consumer:** MusicGen generates 30s chunks. WebGL renderer generates loop frames. Non-blocking FFmpeg stdin pipes multiplex bytes.
+- **Shared Context/Flyweight:** Shared GPU frame buffers and seamless loop video handles.
+- **VFX Commands:** `AudioReactiveWaveformCommand`, `ProceduralShaderOverlayCommand`.
+- **Pipeline Orchestration:** `ProceduralAudioGenStage` -> `ShaderLoopStage` -> `StreamMultiplexStage` -> `RTMPDeliveryStage`.
 
 ### Orchestration Mechanism
 *   The `apps/cli` application spins up stateless workers via `@io-orkes/conductor-javascript`.
