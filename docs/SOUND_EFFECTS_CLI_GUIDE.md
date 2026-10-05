@@ -69,3 +69,60 @@ Khi render Composite:
 bun run sound-effects-cli.ts --composite stormy_night
 ```
 Hệ thống sẽ **tự động ép giảm âm lượng của các lớp Background xuống** mỗi khi lớp Foreground phát ra tiếng, giúp bản Mix của bạn cực kỳ trong trẻo, không bị "đục" hay tranh chấp tần số. Kỹ thuật này cũng được áp dụng tự động cho Nhạc nền (BGM) trên Main Video của bạn!
+
+---
+
+## 🎬 6. Tích hợp Sound Effects & Master Voiceover vào `story-config.json`
+
+Hệ thống cho phép gắn SFX trực tiếp vào từng phân cảnh hoặc toàn bộ video theo kiến trúc Multi-Track Timeline:
+
+### A. Gắn SFX vào từng Scene (`scenes[].sfx`)
+```json
+{
+  "scenes": [
+    {
+      "image": "scene1.jpg",
+      "audio": "voiceover1.mp3",
+      "sfx": [
+        {
+          "source": "sfx/whoosh.wav",
+          "time": 0.0,
+          "duration": 0.5,
+          "volume": 0.8,
+          "duckBgm": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+### B. Chế độ Master Voiceover Timeline (`settings.audioTrack`)
+Khi toàn bộ video sử dụng 1 file voiceover duy nhất làm trục thời gian chính:
+```json
+{
+  "settings": {
+    "audioTrack": {
+      "source": "voiceover/master.mp3",
+      "volume": 1.0
+    },
+    "sfx": [
+      {
+        "source": "sfx/cinematic_boom.mp3",
+        "time": 4.5,
+        "volume": 0.9,
+        "duckBgm": true
+      }
+    ]
+  },
+  "scenes": [
+    { "image": "scene1.jpg", "duration": 4.5 },
+    { "image": "scene2.jpg", "duration": 5.5 }
+  ],
+  "captions": [
+    { "text": "Lời", "start": 0.2, "end": 0.6 },
+    { "text": "thoại...", "start": 0.7, "end": 1.2 }
+  ]
+}
+```
+

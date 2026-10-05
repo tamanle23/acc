@@ -155,9 +155,20 @@
         },
         "bgm": {
           "$ref": "#/definitions/BGMSettings"
+        },
+        "audioTrack": {
+          "$ref": "#/definitions/AudioTrackSettings"
+        },
+        "sfx": {
+          "type": "array",
+          "description": "Danh sách các hiệu ứng âm thanh (SFX) toàn cục",
+          "items": {
+            "$ref": "#/definitions/SFXClipSettings"
+          }
         }
       }
     },
+
     "scenes": {
       "type": "array",
       "description": "Danh sách các phân cảnh (scene) trong video",
@@ -188,6 +199,17 @@
           },
           "depth3d": {
             "$ref": "#/definitions/Depth3DSettings"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Thời lượng hiển thị cảnh (giây), dùng khi có master audioTrack hoặc ảnh tĩnh không kèm audio"
+          },
+          "sfx": {
+            "type": "array",
+            "description": "Danh sách các hiệu ứng âm thanh (SFX) của cảnh",
+            "items": {
+              "$ref": "#/definitions/SFXClipSettings"
+            }
           },
           "pauseAfter": {
             "type": "number",
@@ -233,6 +255,12 @@
           },
           {
             "required": [
+              "image",
+              "duration"
+            ]
+          },
+          {
+            "required": [
               "video",
               "audio"
             ]
@@ -242,11 +270,43 @@
               "video",
               "text"
             ]
+          },
+          {
+            "required": [
+              "video",
+              "duration"
+            ]
           }
         ]
       },
       "minItems": 1
     },
+    "captions": {
+      "type": "array",
+      "description": "Danh sách phụ đề toàn cục (dùng trong chế độ master audioTrack)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "start": {
+            "type": "number",
+            "description": "Thời điểm bắt đầu hiển thị (giây)"
+          },
+          "end": {
+            "type": "number",
+            "description": "Thời điểm kết thúc hiển thị (giây)"
+          }
+        },
+        "required": [
+          "text",
+          "start",
+          "end"
+        ]
+      }
+    },
+
     "slides": {
       "type": "array",
       "description": "DEPRECATED: Sử dụng scenes để thay thế",
@@ -268,8 +328,63 @@
     }
   ],
   "definitions": {
+    "AudioTrackSettings": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Đường dẫn file voiceover chính cho toàn bộ video"
+        },
+        "volume": {
+          "type": "number",
+          "description": "Âm lượng voiceover chính (0.0 đến 2.0)",
+          "default": 1.0
+        },
+        "timeBase": {
+          "type": "string",
+          "enum": ["master"],
+          "description": "Khóa trục thời gian video theo file audio này",
+          "default": "master"
+        }
+      },
+      "required": [
+        "source"
+      ]
+    },
+    "SFXClipSettings": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Đường dẫn file âm thanh hiệu ứng (SFX)"
+        },
+        "time": {
+          "type": "number",
+          "description": "Thời điểm phát (giây) tính từ đầu scene hoặc timeline",
+          "default": 0
+        },
+        "duration": {
+          "type": "number",
+          "description": "Thời lượng phát (giây)"
+        },
+        "volume": {
+          "type": "number",
+          "description": "Âm lượng SFX (0.0 đến 2.0)",
+          "default": 1.0
+        },
+        "duckBgm": {
+          "type": "boolean",
+          "description": "Tự động hạ âm lượng BGM (sidechain ducking) khi phát SFX này",
+          "default": true
+        }
+      },
+      "required": [
+        "source"
+      ]
+    },
     "BGMSettings": {
       "type": "object",
+
       "properties": {
         "source": {
           "type": "string",

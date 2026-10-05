@@ -127,14 +127,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 }
 
 export function getSceneDuration(scene: ResolvedSceneConfig, audioDuration?: number): number {
+  if (scene.duration !== undefined && scene.duration > 0) {
+    return scene.duration;
+  }
+
   if (audioDuration && audioDuration > 0) {
     return audioDuration;
   }
 
-  if (scene.captions.length > 0) {
+  if (scene.captions && scene.captions.length > 0) {
     const lastCaption = scene.captions[scene.captions.length - 1];
     return Math.max(lastCaption.end + 0.5, 2);
   }
 
   return 3;
 }
+
