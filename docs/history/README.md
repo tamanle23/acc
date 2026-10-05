@@ -151,6 +151,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`137`](137_fix_ffi_encoder_heap_clone_and_segfault.md) | 2026-10-04 | Fix FFI Video Encoder Heap Cloning & Multi-Worker Segmentation Fault | Eliminated 8.3MB frame clone per frame, used pre-allocated C memory for sws_scale, and cached phrase groups in WeakMap |
 | [`138`](138_add_workspace_rule_zero_alloc_frame_loop.md) | 2026-10-04 | Add Workspace Rule for Zero-Alloc Frame Loop and Native FFI Memory | Master rules spec section 14 and compact workspace rule ZERO-ALLOC-FRAME-LOOP banning per-frame heap allocations |
 | [`139`](139_multi_track_sfx_and_master_audio_timeline.md) | 2026-10-05 | Multi-Track Timeline SFX & Master Audio Track Architecture Integration | Added SFXClipConfig, AudioTrackConfig, timeline strategies, orchestrator mixer, schema, docs, and 8-point sync |
+| [`140`](140_publish_multi_track_timeline_unified_voiceover_spec.md) | 2026-10-05 | Publish Dedicated Multi-Track Timeline & Unified Voiceover Specification | Authored dedicated architectural specification in docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md |
+
 
 
 

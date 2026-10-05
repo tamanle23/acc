@@ -189,7 +189,9 @@ Mẫu `story-config.json` tiêu chuẩn:
 
 * 📘 **Hướng dẫn Chi tiết CLI & Monorepo**: [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)
 * 📜 **Đặc tả Cấu hình Story Config**: [docs/STORY_CONFIG_SPEC.md](docs/STORY_CONFIG_SPEC.md)
+* 🏛️ **Đặc tả Kiến trúc Multi-Track Timeline & Unified Voiceover**: [docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md](docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md)
 * 🎥 **Hướng dẫn Chèn Video B-Roll**: [docs/VIDEO_SCENES_GUIDE.md](docs/VIDEO_SCENES_GUIDE.md)
 * 🎨 **Hướng dẫn Hiệu ứng Overlay**: [docs/OVERLAY_EFFECTS_CLI.md](docs/OVERLAY_EFFECTS_CLI.md) & [docs/OVERLAY_METHODS_SPEC.md](docs/OVERLAY_METHODS_SPEC.md)
 * 🔊 **Hướng dẫn Hiệu ứng Âm thanh SFX**: [docs/SOUND_EFFECTS_CLI_GUIDE.md](docs/SOUND_EFFECTS_CLI_GUIDE.md)
 * 📌 **Tổng hợp Kế hoạch Phát triển Backlog**: [docs/backlogs/README.md](docs/backlogs/README.md)
+
