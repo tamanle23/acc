@@ -35,7 +35,25 @@ Features only in `renderStoryVideo` (absent from `processAndRender`): worker poo
 5. Decide later whether `renderStoryVideo` becomes a thin wrapper over the IR path (tied to the timeline editor, see `docs/brainstorming/VIDEO_EDIT_PIPELINE_ORCHESTRATOR_DETERMINISM_AND_REMOTION_FEASIBILITY.md`).
 6. If still unused after parity work, delete `processAndRender`.
 
-## 3. Acceptance Criteria
+## 3. IR Implementation Findings (2026-10-06)
+Source: `packages/ir/src/PipelineIR.ts`, `packages/ir/src/LegacyStoryConfigAdapter.ts`, `packages/exporters/src/video/VideoExporter.ts`, `ctx.ir` call sites.
+
+- **Two-layer schema:** `PipelineIR` (common contract for all 6 pipelines: `chunks`, `audioComposition`, `distributionHints`) and `ExtendedPipelineIR` 3.1.0 (NLE superset: `settings`, `extendedChunks`, `audioTracks`, layers, typography overlays, transitions, J/L-cut offsets, speed ramps, keyframes, masks, depth maps, chroma key, LUT grading).
+- **IR is mostly decorative in the production story path:** `StoryFolderResolutionStage` fills `ctx.ir` via `LegacyStoryConfigAdapter.adapt`, but rendering uses `ResolvedStoryConfig` through `renderStoryVideo`. Only the dry-run validator and exporter dispatcher read `ctx.ir`.
+- **Adapter is one-way and lossy:** it never produces masks, depth maps, chroma key, speed ramps or keyframes; `depth3d`, SFX and overlay scene fields never reach the IR; `sfxMarkers` is always `[]`; ducking (-18 dB / 20 ms / 250 ms), `colorSpace` and -14 LUFS are hard-coded. Base `chunks` keep only the first layer as `visualAsset`.
+- **`VideoExporter` ignores `extendedChunks`:** it reads base `chunks` and repeats one static canvas per chunk (slideshow). Layers, transitions, overlays, cuts and grading are not rendered. It uses `bun:ffi` (`FFIVideoEncoder`), which complies with FFMPEG-MANAGER. It also relies on an `(ir.distributionHints as any)` cast.
+- **Type looseness:** middlewares cast `ctx.ir as any` and fall back from `chunks` to `extendedChunks`; the two shapes are not a discriminated union.
+- **Two sources of truth:** `chunks` and `extendedChunks` overlap with no sync guarantee.
+- **Non-determinism in IR creation:** default `jobId = job_${Date.now()}` and `createdAt = new Date()`.
+
+### Resulting work items
+1. Make the adapter lossless (carry `depth3d`, SFX, overlays, BGM/ducking settings from `ResolvedStoryConfig`; remove hard-coded values).
+2. Make `VideoExporter` (or a new IR renderer) consume `extendedChunks`.
+3. Replace `as any` IR casts with a discriminated union.
+4. Derive `chunks` from `extendedChunks` in one place to keep a single source of truth.
+5. Allow `jobId` / `createdAt` injection for reproducible IR.
+
+## 4. Acceptance Criteria
 - [ ] Safe-zone margins applied to captions/overlays in `renderStoryVideo`
 - [ ] J/L cut calculations consumed by scene timing
 - [ ] LUT / color grading applied via `ColorGradingEngine`
