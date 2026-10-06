@@ -163,3 +163,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 
 
 | [142](142_four_stage_generation_brainstorm.md) | 2026-10-06 | Four-Stage Generation Brainstorm | Design doc for config -> AST -> edit -> export architecture |
+| [143](143_mark_process_and_render_experimental.md) | 2026-10-06 | Mark processAndRender Experimental & Parity Backlog | JSDoc experimental flag; backlog 013 with feature gap analysis |

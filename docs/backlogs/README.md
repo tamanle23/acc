@@ -20,6 +20,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`010`](010_huggingface_transformers_js_sam_depth.md) | Native In-Process SAM & Depth via @huggingface/transformers | Effect Engines / Vision | ✅ `Completed` | 2026-10-01 | [`089_huggingface_transformers_js_vision_strategy_pattern.md`](../history/089_huggingface_transformers_js_vision_strategy_pattern.md) |
 | [`011`](011_vision_segmentation_optimization_and_birefnet_acceleration.md) | Vision Segmentation Optimization & BiRefNet Acceleration | Effect Engines / Vision | ✅ `Completed` | 2026-10-01 | [`092_vision_segmentation_optimization_and_benchmark.md`](../history/092_vision_segmentation_optimization_and_benchmark.md) |
 | [`012`](012_unify_all_6_pipelines_under_orchestrator.md) | Unify All 6 Pipelines Under Orchestrator & Middleware Architecture | Core Architecture / Orchestrator | ✅ `Completed` | 2026-10-02 | [`123_unify_all_6_pipelines_under_orchestrator.md`](../history/123_unify_all_6_pipelines_under_orchestrator.md) |
+| [`013`](013_ir_pipeline_feature_parity.md) | IR Pipeline (processAndRender) Feature Parity with renderStoryVideo | Core Architecture / Orchestrator | `[ ] Planned` | 2026-10-06 | [`143_mark_process_and_render_experimental.md`](../history/143_mark_process_and_render_experimental.md) |
 
 ---
 
