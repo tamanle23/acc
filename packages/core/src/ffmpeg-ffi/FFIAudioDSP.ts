@@ -3,10 +3,11 @@ import { ptr, toArrayBuffer } from "bun:ffi";
 import fs from "fs";
 import path from "path";
 import { FFmpegManager } from "../FFmpegManager";
+import { fileExists } from "../utils";
 
-function tryDecodeWav(audioPath: string): Float32Array | null {
+async function tryDecodeWav(audioPath: string): Promise<Float32Array | null> {
   try {
-    const buf = fs.readFileSync(audioPath);
+    const buf = await fs.promises.readFile(audioPath);
     if (buf.length < 44) return null;
     if (buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') {
       return null;
@@ -104,12 +105,12 @@ export class FFIAudioDSP {
    * Completely zero-disk, zero-spawn, zero-dependency.
    */
   public static async decodeTo16kMonoFloat32(audioPath: string): Promise<Float32Array> {
-    if (!fs.existsSync(audioPath)) {
+    if (!(await fileExists(audioPath))) {
       throw new Error(`Audio file not found: ${audioPath}`);
     }
 
     // Fast path for WAV files: pure in-memory zero-FFI decode
-    const directWav = tryDecodeWav(audioPath);
+    const directWav = await tryDecodeWav(audioPath);
     if (directWav) {
       return directWav;
     }
