@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -74,13 +75,13 @@ export class FogEffect extends BaseEffectEngine {
         layer2Params = { scaleX: 0.015, scaleY: 0.03, alpha: 0.6, mask: 'none', speed: this.width * 0.04 };
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for fog, defaulting to dense_fog`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for fog, defaulting to dense_fog`);
         break;
     }
     process.stdout.write(`Generating procedural noise textures... `);
     const layer1 = generateNoiseLayer(layer1Params.scaleX, layer1Params.scaleY, layer1Params.alpha, layer1Params.mask);
     const layer2 = generateNoiseLayer(layer2Params.scaleX, layer2Params.scaleY, layer2Params.alpha, layer2Params.mask);
-    console.log(`Done.`);
+    Logger.info('OverlayGenerator', `Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
     const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Fog (${this.variantName}): `);

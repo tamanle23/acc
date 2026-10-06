@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -79,7 +80,7 @@ export class LightLeakEffect extends BaseEffectEngine {
         ctx.fillStyle = radial;
         ctx.fillRect(0, 0, this.width, this.height);
       } else {
-        console.warn(`\nVariant '${this.variantName}' not recognized for light_leak, using fallback logic.`);
+        Logger.warn('OverlayGenerator', `\nVariant '${this.variantName}' not recognized for light_leak, using fallback logic.`);
       }
       const buffer = canvas.toBuffer('raw');
       stream.write(buffer);

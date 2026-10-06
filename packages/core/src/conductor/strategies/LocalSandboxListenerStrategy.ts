@@ -1,3 +1,4 @@
+import { Logger } from '../../logger';
 import { IConductorListenerStrategy } from '../interfaces/IConductorListenerStrategy';
 import { ConductorTaskOutput } from '../interfaces/IConductorTaskCommand';
 import { TaskWorkerFactory } from '../TaskWorkerFactory';
@@ -11,7 +12,7 @@ export class LocalSandboxListenerStrategy implements IConductorListenerStrategy 
     ) {}
 
     public async start(): Promise<void> {
-        console.log(`[ConductorPoller Sandbox] Starting local sandbox server on port ${this.port}...`);
+        Logger.info('LocalSandboxListenerStrategy', `Starting local sandbox server on port ${this.port}...`);
         const executeCb = this.executeTaskCb;
 
         this.sandboxServer = Bun.serve({
@@ -52,7 +53,7 @@ export class LocalSandboxListenerStrategy implements IConductorListenerStrategy 
               const taskDefName = url.pathname.replace('/sandbox/task/', '');
               try {
                   const body = await req.json();
-                  console.log(`[Sandbox] Executing task: ${taskDefName}`);
+                  Logger.info('LocalSandboxListenerStrategy', `Executing task: ${taskDefName}`);
                   const result = await executeCb(taskDefName, body);
                   return new Response(JSON.stringify(result), {
                       headers: { "Content-Type": "application/json" }
@@ -65,15 +66,15 @@ export class LocalSandboxListenerStrategy implements IConductorListenerStrategy 
             return new Response("Not found", { status: 404 });
           }
         });
-        console.log(`[ConductorPoller Sandbox] Listening at http://localhost:${this.port}`);
-        console.log(`[ConductorPoller Sandbox] Health: GET http://localhost:${this.port}/health`);
-        console.log(`[ConductorPoller Sandbox] Registry: GET http://localhost:${this.port}/tasks/registry`);
-        console.log(`[ConductorPoller Sandbox] Execute: POST http://localhost:${this.port}/sandbox/task/<taskDefName>`);
+        Logger.info('LocalSandboxListenerStrategy', `Listening at http://localhost:${this.port}`);
+        Logger.info('LocalSandboxListenerStrategy', `Health: GET http://localhost:${this.port}/health`);
+        Logger.info('LocalSandboxListenerStrategy', `Registry: GET http://localhost:${this.port}/tasks/registry`);
+        Logger.info('LocalSandboxListenerStrategy', 'Execute: POST http://localhost:${this.port}/sandbox/task/<taskDefName>');
     }
 
     public stop(): void {
         if (this.sandboxServer) {
-            console.log(`[ConductorPoller Sandbox] Stopping sandbox server...`);
+            Logger.info('LocalSandboxListenerStrategy', 'Stopping sandbox server...');
             this.sandboxServer.stop(true);
             this.sandboxServer = null;
         }

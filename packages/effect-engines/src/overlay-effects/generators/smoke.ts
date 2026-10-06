@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -74,7 +75,7 @@ export class SmokeEffect extends BaseEffectEngine {
         layer3Params = { scaleX: 0.03, scaleY: 0.06, alpha: 0.2, speed: this.height * 0.1 };
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for smoke, defaulting to rising_steam`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for smoke, defaulting to rising_steam`);
         break;
     }
     process.stdout.write(`Generating procedural fractal smoke textures... `);
@@ -84,7 +85,7 @@ export class SmokeEffect extends BaseEffectEngine {
     if (layer3Params.alpha > 0) {
       layer3 = generateNoiseLayer(layer3Params.scaleX, layer3Params.scaleY, layer3Params.alpha);
     }
-    console.log(`Done.`);
+    Logger.info('OverlayGenerator', `Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
     const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Smoke (${this.variantName}): `);

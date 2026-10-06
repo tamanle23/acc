@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -54,7 +55,7 @@ export class SpeedLinesEffect extends BaseEffectEngine {
           ctx.fillRect(xOffset, y, length, thickness);
         }
       } else {
-        console.warn(`Variant '${this.variantName}' not recognized for speed_lines`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for speed_lines`);
       }
       const buffer = canvas.toBuffer('raw');
       stream.write(buffer);

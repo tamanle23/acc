@@ -1,3 +1,4 @@
+import { Logger } from '../logger';
 import { TaskWorkerFactory } from './TaskWorkerFactory';
 import { ConductorTaskInput, ConductorTaskOutput } from './interfaces/IConductorTaskCommand';
 import { IConductorListenerStrategy } from './interfaces/IConductorListenerStrategy';
@@ -61,7 +62,7 @@ export class ConductorWorkerPoller {
         reasonForIncompletion: result.reasonForIncompletion
       };
     } catch (err: any) {
-      console.error(`[ConductorPoller] Task ${taskDefName} failed:`, err);
+      Logger.error('ConductorWorkerPoller', `Task ${taskDefName} failed:`, err);
       return {
         status: 'FAILED',
         reasonForIncompletion: err.message || String(err),

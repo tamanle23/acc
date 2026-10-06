@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { FFmpegManager } from '@acc/core';
 import path from 'path';
@@ -40,7 +41,7 @@ export class Fauna implements ISoundGenerator {
       filters.push('anull');
     }
 
-    console.log(`[Fauna] Applying filters: ${filters.join(', ')}`);
+    Logger.info('FaunaGenerator', `Applying filters: ${filters.join(', ')}`);
 
     const filterStr = filters.join(',');
     const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;

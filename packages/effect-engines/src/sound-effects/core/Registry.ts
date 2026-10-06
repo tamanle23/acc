@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { ISoundGenerator, SoundCompositeConfig } from './interfaces';
 
 // --- FFmpeg Generators ---
@@ -89,25 +90,25 @@ export class RegistryManager {
 
     // Rule 1: UI Sounds (Crisp, mathematically pure) -> FFmpeg Procedural Synth
     if (['ui', 'click', 'feedback', 'hover', 'success', 'error'].includes(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> FFmpeg Procedural`);
+      Logger.info('SmartRouter', `Route '${eff}' -> FFmpeg Procedural`);
       return this.ffmpegUIGenerator;
     }
 
     // Rule 2: Physical & Biological Sounds -> Freesound Library API
     // AI is notoriously bad at creating realistic footsteps or animal sounds. Real recordings are superior.
     if (['fauna', 'diegetic', 'weather', 'water', 'urban', 'foley', 'cloth', 'footsteps', 'handling'].includes(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> Library (Freesound)`);
+      Logger.info('SmartRouter', `Route '${eff}' -> Library (Freesound)`);
       return this.genericLibraryInstance;
     }
 
     // Rule 3: Creative, Synthesized, Cinematic -> AI Model
     if (this.aiGenerators.has(eff)) {
-      console.log(`[SmartRouter] Route '${eff}' -> AI Model (${this.aiModel})`);
+      Logger.info('SmartRouter', `Route '${eff}' -> AI Model (${this.aiModel})`);
       return this.aiGenerators.get(eff)!;
     }
 
     // Fallback logic
-    console.log(`[SmartRouter] Route '${eff}' (Unrecognized) -> AI Fallback`);
+    Logger.info('SmartRouter', `Route '${eff}' (Unrecognized) -> AI Fallback`);
     return this.aiFallback;
   }
 

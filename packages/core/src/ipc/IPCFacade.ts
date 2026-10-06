@@ -1,3 +1,4 @@
+import { Logger } from '../logger';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { getTTSServiceClient, getVisionServiceClient, getLLMServiceClient } from '@acc/proto';
@@ -173,7 +174,7 @@ export class GRPCAIStrategy implements IAIClientStrategy {
 
         if (!GRPCAIStrategy.daemonProcess) {
           const pythonBackendDir = path.resolve(__dirname, '../../../../apps/python-backend');
-          console.log(`[IPCFacade] Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
+          Logger.info('IPCFacade', `Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
 
           const port = process.env.ACC_GRPC_PORT || '50051';
           GRPCAIStrategy.daemonProcess = spawn('bun', ['x', 'uv', 'run', 'python', 'src/server.py', port], {
@@ -199,12 +200,12 @@ export class GRPCAIStrategy implements IAIClientStrategy {
           await new Promise((r) => setTimeout(r, 400));
           const healthy = await this.isAvailable();
           if (healthy) {
-            console.log(`[IPCFacade] Python AI Daemon is ONLINE at ${this.endpoint}`);
+            Logger.info('IPCFacade', `Python AI Daemon is ONLINE at ${this.endpoint}`);
             return true;
           }
         }
 
-        console.warn(`[IPCFacade] Daemon failed to respond within timeout. Switching to fallback.`);
+        Logger.warn('IPCFacade', 'Daemon failed to respond within timeout. Switching to fallback.');
         return false;
       } finally {
         GRPCAIStrategy.bootstrapLock = null;
@@ -277,7 +278,7 @@ export class IPCFacade {
     try {
       return await this.strategy.ping(message);
     } catch (err: any) {
-      console.warn(`[IPCFacade] Strategy '${this.strategy.name}' error: ${err.message}. Engaging Fallback.`);
+      Logger.warn('IPCFacade', `Strategy '${this.strategy.name}' error: ${err.message}. Engaging Fallback.`);
       this.strategy = new FallbackAIStrategy();
       return this.strategy.ping(message);
     }

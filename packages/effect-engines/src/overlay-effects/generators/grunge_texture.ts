@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -71,11 +72,11 @@ export class GrungeTextureEffect extends BaseEffectEngine {
           }
         }
       } else {
-        console.warn(`Variant '${this.variantName}' not recognized for grunge_texture`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for grunge_texture`);
       }
       textures.push((texCanvas as any).getRawCanvas ? (texCanvas as any).getRawCanvas() : texCanvas);
     }
-    console.log(`Done.`);
+    Logger.info('OverlayGenerator', `Done.`);
     process.stdout.write(`Rendering ${totalFrames} frames for Grunge Texture (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
       if (frame % Math.floor(this.fps) === 0) {

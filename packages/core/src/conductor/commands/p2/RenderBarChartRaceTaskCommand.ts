@@ -1,3 +1,4 @@
+import { Logger } from '../../../logger';
 import { IConductorTaskCommand, ConductorTaskInput, ConductorTaskOutput } from '../../interfaces/IConductorTaskCommand';
 
 export class RenderBarChartRaceTaskCommand implements IConductorTaskCommand {
@@ -14,7 +15,7 @@ export class RenderBarChartRaceTaskCommand implements IConductorTaskCommand {
     // const pipeline = defaultPipelineRegistry.get('2'); // '2' = DBTemplatingPipeline
     // const result = await pipeline.run(input.inputData);
 
-    console.log(`[RenderBarChartRaceTaskCommand] Mocking barchart race for task ${input.taskId}`);
+    Logger.info('RenderBarChartRaceTaskCommand', `Mocking barchart race for task ${input.taskId}`);
 
     const result = {
         exportedUrls: ['https://example.com/barchart1.mp4'],

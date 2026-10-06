@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from './types';
 import { SlimSamStrategy } from './strategies/segmentation/SlimSamStrategy';
 import { SamVitBaseStrategy } from './strategies/segmentation/SamVitBaseStrategy';
@@ -72,7 +73,7 @@ export class SubjectSegmentationContext {
     try {
       return await this.currentStrategy.segment(imageBuffer, options);
     } catch (err) {
-      console.warn(`[SubjectSegmentationContext] Strategy [${this.currentStrategy.name}] failed, switching to defensive fallback:`, err);
+      Logger.warn('SubjectSegmentationContext', `Strategy [${this.currentStrategy.name}] failed, switching to defensive fallback:`, err);
       return await this.fallbackStrategy.segment(imageBuffer, options);
     }
   }

@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -29,7 +30,7 @@ export class DustEffect extends BaseEffectEngine {
         baseOpacity = 0.8;
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for dust, defaulting to ambient_dust`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for dust, defaulting to ambient_dust`);
         break;
     }
     interface DustParticle {

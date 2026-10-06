@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { FFmpegManager } from '@acc/core';
 import { FFmpegCommand } from '@acc/core';
 import { RegistryManager } from './core/Registry';
@@ -19,7 +20,7 @@ export async function renderSoundEffect(
   
   const playbackType = AudioNormalizer.getPlaybackType(effect, variant);
   
-  console.log(`[Normalizer] Post-processing output (Type: ${playbackType}, Duration: ${duration}s)...`);
+  Logger.info('SoundEffectsEngine', `Post-processing output (Type: ${playbackType}, Duration: ${duration}s)...`);
   const finalWavPath = await AudioNormalizer.normalize(result.audioPath, result.audioPath, playbackType, duration);
   
   // Update the JSON metadata
@@ -45,7 +46,7 @@ export async function renderCompositeSound(
   const config = registry.getCompositeConfig(compositeName);
   const outputs: string[] = [];
   
-  console.log(`[Audio-Engine] Preparing mix for composite: ${compositeName}...`);
+  Logger.info('SoundEffectsEngine', `Preparing mix for composite: ${compositeName}...`);
   
   for (const layer of config.layers) {
     const dur = layer.duration || 5.0; // Polyrhythmic defaults

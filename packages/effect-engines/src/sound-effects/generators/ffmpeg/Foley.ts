@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { FFmpegManager } from '@acc/core';
 import path from 'path';
@@ -9,7 +10,7 @@ export class Foley implements ISoundGenerator {
     const audioPath = path.join(outDir, `${fileName}.wav`);
     const jsonPath = path.join(outDir, `${fileName}.json`);
 
-    console.log(`[Foley] Synthesizing ${variant} -> ${subVariant}`);
+    Logger.info('FoleyGenerator', `Synthesizing ${variant} -> ${subVariant}`);
 
     // Foley requires sharp, percussive envelopes rather than continuous noise.
     let filters: string[] = [];
@@ -54,7 +55,7 @@ export class Foley implements ISoundGenerator {
       filters.push('anull');
     }
 
-    console.log(`[Foley] Applying filters: ${filters.join(', ')}`);
+    Logger.info('FoleyGenerator', `Applying filters: ${filters.join(', ')}`);
 
     const filterStr = filters.join(',');
     const cmd = `ffmpeg -y -f lavfi -i "${lavfiInput}" -af "${filterStr}" "${audioPath}"`;

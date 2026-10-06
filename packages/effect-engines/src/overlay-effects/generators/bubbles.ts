@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -23,7 +24,7 @@ export class BubblesEffect extends BaseEffectEngine {
         sizeMultiplier = 1.5;
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for bubbles, defaulting to floating_bubbles`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for bubbles, defaulting to floating_bubbles`);
         break;
     }
     interface Bubble {

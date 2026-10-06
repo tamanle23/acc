@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { PassThrough } from 'stream';
 import fs from 'fs';
 import path from 'path';
@@ -48,11 +49,11 @@ export class EffectPipeline {
 
           cmd.output(config.output);
           await cmd.run();
-          console.log(`\nEffect successfully generated at ${config.output}`);
+          Logger.info('OverlayPipeline', `Effect successfully generated at ${config.output}`);
           try { fs.unlinkSync(this.tempRawPath); } catch {}
           resolve();
         } catch (err: any) {
-          console.error('\nFFmpeg encountered an error:', err.message);
+          Logger.error('OverlayPipeline', 'FFmpeg encountered an error:', err.message);
           try { fs.unlinkSync(this.tempRawPath); } catch {}
           reject(err);
         }

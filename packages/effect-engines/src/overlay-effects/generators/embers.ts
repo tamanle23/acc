@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -26,7 +27,7 @@ export class EmbersEffect extends BaseEffectEngine {
         windVariance = this.width * 0.2;
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for embers, defaulting to campfire_sparks`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for embers, defaulting to campfire_sparks`);
         break;
     }
     interface Spark {

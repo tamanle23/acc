@@ -11,7 +11,7 @@ import {
   ScraperEngine,
   defaultStoryPipeline,
 } from './pipelines';
-import { intro, defaultPipelineRegistry } from '@acc/core';
+import { intro, defaultPipelineRegistry } , Logger } from '@acc/core';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker';
@@ -116,7 +116,7 @@ export function parseCliArgs(args: string[]): CliOptions {
 }
 
 export function printHelp(): void {
-  console.log(`
+  Logger.info('ACC-CLI', `
 ACC (Automated Content Creator) - Multi-Pipeline Engine CLI v3.0
 
 USAGE:
@@ -150,7 +150,7 @@ OPTIONS:
 }
 
 export function listPipelines(): void {
-  console.log(`
+  Logger.info('ACC-CLI', `
 === ACC Multi-Pipeline Engine Registry ===
 1. [scraper]     Event-Driven Scraper & Summarizer
    Supported Exporters: video (alert card), audio (Kokoro TTS), social (breaking alert), web (markdown)
@@ -304,16 +304,16 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
 
     case 'serve': {
       const port = options.port || 3000;
-      console.log(`[ACC-CLI] Starting Webhook Ingestion Daemon on port ${port}...`);
+      Logger.info('ACC-CLI', `Starting Webhook Ingestion Daemon on port ${port}...`);
       const scraper = new ScraperEngine();
       const server = scraper.startWebhookServer(port);
-      console.log(`[ACC-CLI] Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
+      Logger.info('ACC-CLI', `Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
       return { success: true, server, port };
     }
 
     case 'worker': {
       if (!options.conductorUrl && !options.conductorSandbox) {
-        console.error("Error: --conductor-url <url> or --sandbox is required for the worker daemon command.");
+        Logger.error('ACC-CLI', 'Error: --conductor-url <url> or --sandbox is required for the worker daemon command.');
         return { success: false, error: 'Missing configuration for worker' };
       }
       await runWorkerDaemon({
@@ -325,18 +325,18 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
 
     case 'stream': {
       if (!options.rtmpUrl) {
-        console.error(`Error: --rtmp <url> is required for stream command.`);
+        Logger.error('ACC-CLI', 'Error: --rtmp <url> is required for stream command.');
         return { success: false, error: 'Missing --rtmp flag' };
       }
       const pipelineId = options.pipelineId || 'ambient';
-      console.log(`[ACC-CLI] Initializing RTMP Live Stream for pipeline '${pipelineId}' -> ${options.rtmpUrl}`);
+      Logger.info('ACC-CLI', `Initializing RTMP Live Stream for pipeline '${pipelineId}' -> ${options.rtmpUrl}`);
 
       if (pipelineId === '6' || pipelineId === 'ambient') {
         const ambientPipeline = new AmbientStreamPipeline();
         const duration = options.duration || 10;
         const maxFrames = Math.round(duration * 30);
         const res = await ambientPipeline.streamToRtmp(options.rtmpUrl, undefined, maxFrames);
-        console.log(`[ACC-CLI] Stream finished successfully. Pushed ${res.framesSent} frames.`);
+        Logger.info('ACC-CLI', `Stream finished successfully. Pushed ${res.framesSent} frames.`);
         return { success: true, framesSent: res.framesSent };
       } else {
         throw new Error(`Pipeline '${pipelineId}' does not support live RTMP streaming.`);
@@ -345,7 +345,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
 
     case 'run': {
       const pipelineId = (options.pipelineId || 'story').toLowerCase();
-      console.log(`[ACC-CLI] Executing Pipeline [${pipelineId}] via Orchestrator...`);
+      Logger.info('ACC-CLI', `Executing Pipeline [${pipelineId}] via Orchestrator...`);
 
       if (!defaultPipelineRegistry.has(pipelineId)) {
         throw new Error(`Unknown pipeline identifier: '${pipelineId}'. Run 'acc list' for available pipelines.`);
@@ -365,7 +365,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
         outputPaths.push((executionResult as any).outputFilePath);
       }
 
-      console.log(`[ACC-CLI] Pipeline [${pipelineId}] completed. Output:`, outputPaths);
+      Logger.info('ACC-CLI', `Pipeline [${pipelineId}] completed. Output: ${JSON.stringify(outputPaths)}`);
       return {
         ...executionResult,
         success: true,
@@ -383,7 +383,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
 // Allow direct execution when invoked as a script
 if (import.meta.main) {
   runCli().catch((err) => {
-    console.error(`[ACC-CLI] Fatal Error:`, err);
+    Logger.error('ACC-CLI', 'Fatal Error:', err);
     process.exit(1);
   });
 }

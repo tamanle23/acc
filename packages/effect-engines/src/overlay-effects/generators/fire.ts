@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -94,13 +95,13 @@ export class FireEffect extends BaseEffectEngine {
         maskHeight = 0.7; // Cover most of the screen
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for fire, defaulting to campfire_flames`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for fire, defaulting to campfire_flames`);
         break;
     }
     process.stdout.write(`Generating procedural fire textures... `);
     const layer1 = generateFireLayer(layer1Params.scaleX, layer1Params.scaleY);
     const layer2 = generateFireLayer(layer2Params.scaleX, layer2Params.scaleY);
-    console.log(`Done.`);
+    Logger.info('OverlayGenerator', `Done.`);
     const totalFrames = Math.ceil(this.fps * this.duration);
     const { stream, promise } = this.initStream(outputPath);
     process.stdout.write(`Rendering ${totalFrames} frames for Fire (${this.variantName}): `);

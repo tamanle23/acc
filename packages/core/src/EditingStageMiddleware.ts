@@ -1,3 +1,4 @@
+import { Logger } from './logger';
 import type { ExtendedPipelineIR } from '@acc/ir';
 
 export interface EditingStageContext {
@@ -34,7 +35,7 @@ export class EditingStageRunner {
       try {
         await middleware.execute(ctx, () => dispatch(i + 1));
       } catch (err) {
-        console.warn(`[EditingStageRunner] Middleware [${middleware.name}] failed. Applying graceful fallback:`, err);
+        Logger.warn('EditingStageRunner', `Middleware [${middleware.name}] failed. Applying graceful fallback:`, err);
         // Fallback boundary: continue pipeline to next stage
         await dispatch(i + 1);
       }

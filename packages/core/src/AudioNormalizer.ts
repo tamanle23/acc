@@ -1,3 +1,4 @@
+import { Logger } from './logger';
 import path from 'path';
 import fs from 'fs';
 import { FFmpegCommand } from './FFmpegExecutor';
@@ -84,7 +85,7 @@ export class AudioNormalizer {
         await cmd.run();
       } catch (err) {
         // Fallback if audio is too short for crossfade trick
-        console.warn(`[Normalizer] Audio too short for crossfade, using standard trim...`);
+        Logger.warn('AudioNormalizer', 'Audio too short for crossfade, using standard trim...');
         const fallbackCmd = new FFmpegCommand(inputPath);
         fallbackCmd.outputOptions(['-af', `highpass=f=40,atrim=0:${targetDuration},loudnorm=I=-16:TP=-1.5:LRA=11`]);
         fallbackCmd.audioFrequency(44100);

@@ -1,3 +1,4 @@
+import { Logger } from '../../logger';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import { randomUUID } from 'crypto';
@@ -71,7 +72,7 @@ class PythonWorker {
       const scriptName = `${this.domain}_worker.py`;
       const scriptPath = path.join(__dirname, 'workers', scriptName);
 
-      console.log(`[PythonBackend:${this.domain}] Bootstrapping Python Worker...`);
+      Logger.info(`PythonBackend:${this.domain}`, 'Bootstrapping Python Worker...');
 
       // Spawn using 'bun x' to resolve environment paths reliably
       this.process = spawn('bun', ['x', 'uv', 'run', scriptPath], {
@@ -91,14 +92,14 @@ class PythonWorker {
       });
 
       this.process.on('error', (err) => {
-        console.error(`[PythonBackend:${this.domain}] Process Error: ${err.message}`);
+        Logger.error(`PythonBackend:${this.domain}`, `Process Error: ${err.message}`);
         this.rejectAllPending(new Error(`Worker process failed: ${err.message}`));
         reject(err);
       });
 
       this.process.on('exit', (code) => {
         if (code !== 0 && code !== null) {
-          console.error(`[PythonBackend:${this.domain}] Exited with code ${code}`);
+          Logger.error(`PythonBackend:${this.domain}`, `Exited with code ${code}`);
         }
         this.isReady = false;
         this.initPromise = null;
@@ -115,7 +116,7 @@ class PythonWorker {
    */
   private handleLine(line: string, onReady: () => void) {
     if (!this.isReady && line.includes('WORKER_READY')) {
-      console.log(`[PythonBackend:${this.domain}] System is READY.`);
+      Logger.info(`PythonBackend:${this.domain}`, 'System is READY.');
       this.isReady = true;
       onReady();
       return;
@@ -140,7 +141,7 @@ class PythonWorker {
     }
 
     // Pass-through logging
-    console.log(`[PythonBackend:${this.domain}] ${line}`);
+    Logger.info(`PythonBackend:${this.domain}`, line);
   }
 
   /**
