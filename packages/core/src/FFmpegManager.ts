@@ -63,7 +63,7 @@ export class FFmpegManager {
   public static async prepare(): Promise<void> {
     if (this.ffmpegPath) return; // Already prepared
 
-    console.log('[FFmpegManager] Checking FFmpeg installation...');
+    Logger.info('FFmpegManager', 'Checking FFmpeg installation...');
     const platform = process.platform;
     const appDir = path.join(os.homedir(), '.acc');
     const targetDir = path.join(appDir, 'bin', 'ffmpeg-shared');
@@ -71,7 +71,7 @@ export class FFmpegManager {
     // 1. Check Local Shared Fallback Installation first (since we now REQUIRE shared libs for FFI)
     const existingBins = this.findBinaries(targetDir);
     if (existingBins.ffmpeg && existingBins.ffprobe && existingBins.binDir) {
-      console.log('[FFmpegManager] Found local shared FFmpeg build.');
+      Logger.info('FFmpegManager', 'Found local shared FFmpeg build.');
       this.ffmpegPath = existingBins.ffmpeg;
       this.ffprobePath = existingBins.ffprobe;
       this.binDirPath = existingBins.binDir;
@@ -84,7 +84,7 @@ export class FFmpegManager {
         const sysFfmpeg = execSync('which ffmpeg', { encoding: 'utf-8' }).trim();
         const sysFfprobe = execSync('which ffprobe', { encoding: 'utf-8' }).trim();
         if (sysFfmpeg && sysFfprobe && fs.existsSync(sysFfmpeg)) {
-          console.log('[FFmpegManager] Found system FFmpeg installation.');
+          Logger.info('FFmpegManager', 'Found system FFmpeg installation.');
           this.ffmpegPath = sysFfmpeg;
           this.ffprobePath = sysFfprobe;
           this.binDirPath = path.dirname(sysFfmpeg);

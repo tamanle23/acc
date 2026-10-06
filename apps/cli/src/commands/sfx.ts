@@ -1,5 +1,5 @@
 import { parseArgs } from 'util';
-import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } from '@acc/core';
+import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } , Logger } from '@acc/core';
 import { RegistryManager, renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 import path from 'path';
 import fs from 'fs';
@@ -28,7 +28,7 @@ export async function generateHeadless(values: any) {
 
       const outputs = await renderCompositeSound(registry, compositeName, outDir);
       outro(`\n✅ Composite '${compositeName}' successfully generated!`);
-      outputs.forEach(o => console.log(` - Audio:    ${o}`));
+      outputs.forEach(o => Logger.info('sfx', ` - Audio:    ${o}`));
     } else if (values['custom-prompt']) {
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
       const customPrompt = values['custom-prompt'];
@@ -56,9 +56,9 @@ export async function generateHeadless(values: any) {
 }
 
 export async function startWizard() {
-  console.log('\n============================================');
-  console.log('🔊 Sound Effects Interactive Console');
-  console.log('============================================');
+  Logger.info('sfx', '============================================');
+  Logger.info('sfx', '🔊 Sound Effects Interactive Console');
+  Logger.info('sfx', '============================================');
 
   const mode = await askChoice('Select operation mode:', [
     'Generate Predefined Effect/Layer',
@@ -87,25 +87,25 @@ export async function startWizard() {
     if (mode === 'composite') {
       const composites = (registry as any).getAvailableComposites?.() || [];
       if (composites.length === 0) {
-        console.log('No composites defined in registry.');
+        Logger.info('sfx', 'No composites defined in registry.');
         closeInteractiveConsole();
         return;
       }
 
       const composite = await askChoice('Select Composite Preset:', composites);
-      console.log(`\nRendering composite '${composite}'...`);
+      Logger.info('sfx', `Rendering composite '${composite}'...`);
       const outputs = await renderCompositeSound(registry, composite, outDir);
-      console.log(`\n✅ Composite '${composite}' generated successfully!`);
-      outputs.forEach(o => console.log(` - Audio:    ${o}`));
+      Logger.info('sfx', `Composite '${composite}' generated successfully!`);
+      outputs.forEach(o => Logger.info('sfx', ` - Audio:    ${o}`));
 
     } else if (mode === 'Generate with Custom Prompt (Local AI AudioLDM2)') {
       const prompt = await askQuestion('Enter description / prompt for the sound effect: ');
       const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
       const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
 
-      console.log(`\nSynthesizing custom sound effect...`);
+      Logger.info('sfx', 'Synthesizing custom sound effect...');
       const output = await renderSoundEffect(registry, 'custom', 'custom', 'custom', duration, outDir, prompt);
-      console.log(`\n✅ Sound effect synthesized successfully!\nAudio:    ${output}`);
+      Logger.info('sfx', `Sound effect synthesized successfully! Audio: ${output}`);
 
     } else if (mode === 'predefined') {
       const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
@@ -154,12 +154,12 @@ export async function startWizard() {
 
       const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
 
-      console.log(`\nSynthesizing '${effect} / ${variant} / ${subVariant}'...`);
+      Logger.info('sfx', `Synthesizing '${effect} / ${variant} / ${subVariant}'...`);
       const output = await renderSoundEffect(registry, effect, variant, subVariant, duration, outDir);
-      console.log(`\n✅ Sound effect generated successfully!\nAudio:    ${output}`);
+      Logger.info('sfx', `Sound effect generated successfully! Audio: ${output}`);
     }
   } catch (err: any) {
-    console.error(`\n❌ Error: ${err.message}`);
+    Logger.error('sfx', `Error: ${err.message}`);
   } finally {
     closeInteractiveConsole();
   }

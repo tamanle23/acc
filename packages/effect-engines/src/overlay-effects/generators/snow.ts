@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -33,7 +34,7 @@ export class SnowEffect extends BaseEffectEngine {
         swayAmpVariance = 100;
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for snow, defaulting to light_snow`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for snow, defaulting to light_snow`);
         flakeCount = 500; // default safe fallback
         break;
     }

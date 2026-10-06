@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { FFmpegManager } from '@acc/core';
 import path from 'path';
@@ -8,7 +9,7 @@ export class SciFi implements ISoundGenerator {
     const audioPath = path.join(outDir, `${fileName}.wav`);
     const jsonPath = path.join(outDir, `${fileName}.json`);
 
-    console.log(`[SciFi] Synthesizing ${variant} -> ${subVariant}`);
+    Logger.info('SciFiGenerator', `Synthesizing ${variant} -> ${subVariant}`);
 
     let lavfiInput = '';
     let filters: string[] = [];

@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
@@ -51,24 +52,24 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
   }
 
   if (!fs.existsSync(binaryPath)) {
-    console.log(`\n[Upscaler] Binary not found. Starting automated download for ${process.platform}...`);
+    Logger.info('Upscaler', `Binary not found. Starting automated download for ${process.platform}...`);
     const zipUrl = (UPSCALER_RELEASES as any)[process.platform] || UPSCALER_RELEASES.linux;
     const tempZipPath = path.join(os.tmpdir(), `realesrgan_${Date.now()}.zip`);
 
     try {
-      console.log(`[Upscaler] Downloading Real-ESRGAN engine (~15MB) from GitHub...`);
+      Logger.info('Upscaler', 'Downloading Real-ESRGAN engine (~15MB) from GitHub...');
       await downloadFile(zipUrl, tempZipPath);
 
-      console.log(`[Upscaler] Extracting engine...`);
+      Logger.info('Upscaler', 'Extracting engine...');
       await extractZip(tempZipPath, { dir: upscalerDir });
       fs.unlinkSync(tempZipPath);
 
       if (process.platform !== 'win32') {
         fs.chmodSync(binaryPath, '755');
       }
-      console.log(`[Upscaler] Engine successfully installed!`);
+      Logger.info('Upscaler', 'Engine successfully installed!');
     } catch (e: any) {
-      console.error(`[Upscaler] Automated download failed: ${e.message}`);
+      Logger.error('Upscaler', `Automated download failed: ${e.message}`);
       throw new Error(`Failed to download Real-ESRGAN automatically. Please download it manually from ${zipUrl}`);
     }
   }
@@ -85,12 +86,12 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
         if (!fs.existsSync(dest)) {
           fs.copyFileSync(src, dest);
           copiedAny = true;
-          console.log(`[Upscaler] Tự động cài đặt custom model từ local: ${file}`);
+          Logger.info('Upscaler', `Auto-installing custom model from local: ${file}`);
         }
       }
     }
     if (copiedAny) {
-      console.log(`[Upscaler] Đã cài đặt xong các custom models đi kèm CLI!`);
+      Logger.info('Upscaler', 'CLI custom models installed successfully!');
     }
   }
 
@@ -100,16 +101,16 @@ export async function checkAndDownloadUpscaler(requestedModel?: string): Promise
     const binDest = path.join(modelsPath, `${requestedModel}.bin`);
 
     if (!fs.existsSync(paramDest) || !fs.existsSync(binDest)) {
-      console.log(`\n[Upscaler] Model ${requestedModel} chưa có sẵn. Tự động tải từ Cloud...`);
+      Logger.info('Upscaler', `Model ${requestedModel} not available locally. Downloading from Cloud...`);
       const urls = CUSTOM_MODEL_URLS[requestedModel];
       try {
         await downloadFile(urls.param, paramDest);
-        console.log(`[Upscaler] Đã tải xong file .param`);
+        Logger.info('Upscaler', 'Downloaded .param file');
         await downloadFile(urls.bin, binDest);
-        console.log(`[Upscaler] Đã tải xong file .bin`);
-        console.log(`[Upscaler] Tải và cài đặt thành công model ${requestedModel}!`);
+        Logger.info('Upscaler', 'Downloaded .bin file');
+        Logger.info('Upscaler', `Model ${requestedModel} installed successfully!`);
       } catch (e: any) {
-        console.error(`[Upscaler] Lỗi khi tải model ${requestedModel}: ${e.message}`);
+        Logger.error('Upscaler', `Error downloading model ${requestedModel}: ${e.message}`);
         // Xóa file rác nếu tải lỗi
         if (fs.existsSync(paramDest)) fs.unlinkSync(paramDest);
         if (fs.existsSync(binDest)) fs.unlinkSync(binDest);
@@ -156,8 +157,8 @@ export function upscaleImage(
 
       execFile(binaryPath, args, (error, stdout, stderr) => {
         if (error) {
-          console.error(`[Upscaler] Failed to upscale ${inputPath}`);
-          console.error(stderr);
+          Logger.error('Upscaler', `Failed to upscale ${inputPath}`);
+          Logger.error('Upscaler', stderr);
           if (hasUnicode) {
             try { fs.unlinkSync(runInput); } catch (e) { }
             try { fs.unlinkSync(runOutput); } catch (e) { }

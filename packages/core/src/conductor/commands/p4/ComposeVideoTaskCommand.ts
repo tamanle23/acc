@@ -1,3 +1,4 @@
+import { Logger } from '../../../logger';
 import { IConductorTaskCommand, ConductorTaskInput, ConductorTaskOutput } from '../../interfaces/IConductorTaskCommand';
 import { ConductorPipelineAdapter } from '../../ConductorPipelineAdapter';
 
@@ -15,7 +16,7 @@ export class ComposeVideoTaskCommand implements IConductorTaskCommand {
     const storyIR = input.inputData.storyConfig as any;
 
     // Simulate orchestrator execution for the example
-    console.log(`[ComposeVideoTaskCommand] Mocking video edit orchestration for ${ctx.metadata.workflowInstanceId}`);
+    Logger.info('ComposeVideoTaskCommand', `Mocking video edit orchestration for ${ctx.metadata.workflowInstanceId}`);
 
     // In a real implementation:
     // const orchestrator = new VideoEditPipelineOrchestrator();

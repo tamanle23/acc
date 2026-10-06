@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { FFmpegManager } from '@acc/core';
+import { FFmpegManager } , Logger } from '@acc/core';
 import os from 'os';
 import type {
   PlatformPreset,
@@ -426,7 +426,7 @@ export function resolveStorySettings(settings?: StorySettings): ResolvedStorySet
     resolvedConcurrency = Math.floor(userConcurrency);
     const is4K = (width && width >= 3840) || (height && height >= 2160);
     if (is4K && resolvedConcurrency > 3) {
-      console.warn(`⚠️ [Concurrency] 4K resolution detected with high concurrency (${resolvedConcurrency}). Clamping to 3 parallel workers to prevent RAM and NVENC session exhaustion.`);
+      Logger.warn('Platforms', `4K resolution detected with high concurrency (${resolvedConcurrency}). Clamping to 3 parallel workers to prevent RAM and NVENC session exhaustion.`);
       resolvedConcurrency = 3;
     }
   } else {

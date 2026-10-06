@@ -1,3 +1,4 @@
+import { Logger } from '../../logger';
 import { IConductorListenerStrategy } from '../interfaces/IConductorListenerStrategy';
 import { TaskManager, orkesConductorClient } from '@io-orkes/conductor-javascript';
 import { ConductorTaskOutput } from '../interfaces/IConductorTaskCommand';
@@ -33,13 +34,13 @@ export class OrkesConductorListenerStrategy implements IConductorListenerStrateg
             }
         });
 
-        console.log(`[ConductorPoller] Starting polling on ${this.conductorServerUrl} with ${workers.length} task definitions...`);
+        Logger.info('OrkesConductorListenerStrategy', `Starting polling on ${this.conductorServerUrl} with ${workers.length} task definitions...`);
         this.taskManager.startPolling();
     }
 
     public stop(): void {
         if (this.taskManager) {
-            console.log(`[ConductorPoller] Stopping polling...`);
+            Logger.info('OrkesConductorListenerStrategy', 'Stopping polling...');
             this.taskManager.stopPolling();
             this.taskManager = null;
         }

@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import { FFmpegManager } from '@acc/core';
 import path from 'path';
@@ -11,7 +12,7 @@ export class Fallback implements ISoundGenerator {
 
     const filters = ['anull']; // Default fallback filter
 
-    console.log(`[Fallback] Synthesizing ${variant} -> ${subVariant}`);
+    Logger.info('FallbackGenerator', `Synthesizing ${variant} -> ${subVariant}`);
 
     // Use FFmpeg lavfi to generate a real synthetic sine wave fallback
     const filterStr = filters.join(',');

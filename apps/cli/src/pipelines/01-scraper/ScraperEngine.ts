@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { Server } from 'bun';
 
 export interface IngestedEvent {
@@ -76,7 +77,7 @@ export class ScraperEngine {
               receivedAt: new Date().toISOString(),
             };
             // Asynchronously process event through listeners
-            self.notifyListeners(event).catch(console.error);
+            self.notifyListeners(event).catch((err) => Logger.error('ScraperEngine', 'Listener notify error:', err));
 
             return new Response(JSON.stringify({ status: 'ACK', receivedAt: event.receivedAt }), {
               headers: { 'Content-Type': 'application/json' },
@@ -105,7 +106,7 @@ export class ScraperEngine {
       try {
         await listener(event);
       } catch (err) {
-        console.error('[ScraperEngine] Listener error:', err);
+        Logger.error('ScraperEngine', 'Listener error:', err);
       }
     }
   }

@@ -292,7 +292,7 @@ export class VideoEditPipelineOrchestrator {
         const { defaultIPCFacade } = await import('@acc/core');
         await defaultIPCFacade.ensureDaemonRunning();
       } catch (err: any) {
-        console.warn('[Pipeline] Pre-warming error:', err.message);
+        Logger.warn('VideoEditPipelineOrchestrator', `[Pipeline] Pre-warming error: ${err.message}`);
       }
     }
 
@@ -615,7 +615,7 @@ export class VideoEditPipelineOrchestrator {
             }
           }
           if (!fs.existsSync(bgmPath)) {
-            console.warn(`[BGM] Không tìm thấy file nhạc nền tại ${bgmPath}. Bỏ qua BGM.`);
+            Logger.warn('VideoEditPipelineOrchestrator', `[BGM] Background music file not found at ${bgmPath}. Skipping BGM.`);
             fs.copyFileSync(currentVideoPath, nextVideoPath);
             return resolve();
           }
@@ -706,7 +706,7 @@ export class VideoEditPipelineOrchestrator {
             .output(nextVideoPath)
             .on('end', () => resolve())
             .on('error', (err, stdout, stderr) => {
-              console.error(`[BGM] Lỗi mix nhạc nền:`, err);
+              Logger.error('VideoEditPipelineOrchestrator', '[BGM] Background music mixing error:', err);
               reject(new Error(`${err.message}\nFFMPEG STDERR:\n${stderr}`));
             })
             .run();

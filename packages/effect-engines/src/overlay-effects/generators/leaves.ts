@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -28,7 +29,7 @@ export class LeavesEffect extends BaseEffectEngine {
         colors = ['255, 180, 200', '255, 200, 220', '255, 150, 180']; // Pinks
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for leaves, defaulting to autumn_breeze`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for leaves, defaulting to autumn_breeze`);
         break;
     }
     interface Leaf {

@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from './types';
 import { DepthAnythingV2SmallStrategy } from './strategies/depth/DepthAnythingV2SmallStrategy';
 import { DepthAnythingV2BaseStrategy } from './strategies/depth/DepthAnythingV2BaseStrategy';
@@ -67,7 +68,7 @@ export class DepthEstimationContext {
     try {
       return await this.currentStrategy.estimateDepth(imageBuffer, options);
     } catch (err) {
-      console.warn(`[DepthEstimationContext] Strategy [${this.currentStrategy.name}] failed, switching to defensive fallback:`, err);
+      Logger.warn('DepthEstimationContext', `Strategy [${this.currentStrategy.name}] failed, switching to defensive fallback:`, err);
       return await this.fallbackStrategy.estimateDepth(imageBuffer, options);
     }
   }

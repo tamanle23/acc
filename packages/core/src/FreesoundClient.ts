@@ -1,3 +1,4 @@
+import { Logger } from './logger';
 import fs from 'fs';
 import path from 'path';
 
@@ -23,7 +24,7 @@ export class FreesoundClient {
 
     const searchUrl = `${this.baseUrl}/search/text/?query=${encodeURIComponent(query)}&filter=duration:[${minDur} TO ${maxDur}]&sort=rating_desc&fields=id,name,previews&page_size=1`;
     
-    console.log(`[Freesound] Searching: "${query}" (Target: ${durationInSeconds}s)`);
+    Logger.info('FreesoundClient', `Searching: "${query}" (Target: ${durationInSeconds}s)`);
     
     const response = await fetch(searchUrl, {
       headers: {
@@ -48,7 +49,7 @@ export class FreesoundClient {
       throw new Error('Found sound but no HQ MP3 preview is available.');
     }
 
-    console.log(`[Freesound] Downloading "${sound.name}" (ID: ${sound.id})`);
+    Logger.info('FreesoundClient', `Downloading "${sound.name}" (ID: ${sound.id})`);
     
     // Download the MP3
     const audioRes = await fetch(previewUrl);

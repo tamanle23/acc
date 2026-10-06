@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -132,7 +133,7 @@ export class VHSEffect extends BaseEffectEngine {
           drawSnowBand(y + this.height);
         }
       } else {
-        console.warn(`Variant '${this.variantName}' not recognized for vhs, doing nothing`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for vhs, doing nothing`);
       }
       const buffer = canvas.toBuffer('raw');
       stream.write(buffer);

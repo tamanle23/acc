@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter, CanvasInstance } from '../canvas-strategies/base';
@@ -36,7 +37,7 @@ export class RainEffect extends BaseEffectEngine {
         windOffsetVariance = -400;
         break;
       default:
-        console.warn(`Variant '${this.variantName}' not recognized for rain, defaulting to heavy_rain`);
+        Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for rain, defaulting to heavy_rain`);
         break;
     }
     // Initialize drops

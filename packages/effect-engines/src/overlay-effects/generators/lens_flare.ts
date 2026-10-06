@@ -1,3 +1,4 @@
+import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
 import { CanvasAdapter } from '../canvas-strategies/base';
@@ -93,7 +94,7 @@ export class LensFlareEffect extends BaseEffectEngine {
           }
           ctx.restore();
         } else {
-          console.warn(`Variant '${this.variantName}' not recognized for lens_flare`);
+          Logger.warn('OverlayGenerator', `Variant '${this.variantName}' not recognized for lens_flare`);
         }
       }
       const buffer = canvas.toBuffer('raw');
