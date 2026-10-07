@@ -1,9 +1,8 @@
 import { parseArgs } from 'util';
-import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } , Logger } from '@acc/core';
+import { FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel, Logger } from '@acc/core';
 import { RegistryManager, renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 import path from 'path';
 import fs from 'fs';
-import * as prompt from '@clack/prompts';
 
 export async function generateHeadless(values: any) {
   if (!values.composite && !values['custom-prompt'] && (!values.effect || !values.variant || !values['sub-variant'])) {
@@ -56,25 +55,24 @@ export async function generateHeadless(values: any) {
 }
 
 export async function startWizard() {
-  Logger.info('sfx', '============================================');
-  Logger.info('sfx', '🔊 Sound Effects Interactive Console');
-  Logger.info('sfx', '============================================');
+  intro('🔊 Sound Effects Interactive Console');
 
   const mode = await askChoice('Select operation mode:', [
-    'Generate Predefined Effect/Layer',
-    'Generate Combinatorial Composite',
-    'Generate with Custom Prompt (Local AI AudioLDM2)',
-    'Exit'
+    { label: 'Generate Predefined Effect/Layer', value: 'predefined', hint: 'DSP procedural sound synthesis' },
+    { label: 'Generate Combinatorial Composite', value: 'composite', hint: 'Multi-layer polyrhythmic SFX stack' },
+    { label: 'Generate with Custom Prompt', value: 'custom', hint: 'Local AI AudioLDM2 neural synthesis' },
+    { label: 'Exit', value: 'exit' }
   ]);
 
-  if (mode === 'Exit') {
+  if (mode === 'exit') {
+    outro('Goodbye!');
     closeInteractiveConsole();
     process.exit(0);
   }
 
   const aiModel = await askChoice('Select AI Model Engine:', [
-    'audioldm2-base',
-    'audioldm2-large'
+    { label: 'AudioLDM2 Base', value: 'audioldm2-base', hint: 'Faster inference, standard quality' },
+    { label: 'AudioLDM2 Large', value: 'audioldm2-large', hint: 'High fidelity neural synthesis' }
   ]);
 
   const registry = new RegistryManager(aiModel);
@@ -87,7 +85,7 @@ export async function startWizard() {
     if (mode === 'composite') {
       const composites = (registry as any).getAvailableComposites?.() || [];
       if (composites.length === 0) {
-        Logger.info('sfx', 'No composites defined in registry.');
+        outro('No composites defined in registry.');
         closeInteractiveConsole();
         return;
       }
@@ -95,71 +93,36 @@ export async function startWizard() {
       const composite = await askChoice('Select Composite Preset:', composites);
       Logger.info('sfx', `Rendering composite '${composite}'...`);
       const outputs = await renderCompositeSound(registry, composite, outDir);
-      Logger.info('sfx', `Composite '${composite}' generated successfully!`);
-      outputs.forEach(o => Logger.info('sfx', ` - Audio:    ${o}`));
+      outro(`✅ Composite '${composite}' generated successfully!\n` + outputs.map((o) => ` - Audio: ${o}`).join('\n'));
 
-    } else if (mode === 'Generate with Custom Prompt (Local AI AudioLDM2)') {
-      const prompt = await askQuestion('Enter description / prompt for the sound effect: ');
-      const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
-      const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
+    } else if (mode === 'custom') {
+      const promptText = await askQuestion('Enter description / prompt for the sound effect:');
+      const durStr = await askQuestion('Duration in seconds (default: 3.0):', '3.0', '3.0');
+      const duration = durStr ? parseFloat(durStr) : 3.0;
 
       Logger.info('sfx', 'Synthesizing custom sound effect...');
-      const output = await renderSoundEffect(registry, 'custom', 'custom', 'custom', duration, outDir, prompt);
-      Logger.info('sfx', `Sound effect synthesized successfully! Audio: ${output}`);
+      const output = await renderSoundEffect(registry, 'custom', 'custom', 'custom', duration, outDir, promptText);
+      outro(`✅ Sound effect synthesized successfully!\nAudio: ${output}`);
 
     } else if (mode === 'predefined') {
       const effects = (registry as any).getAvailableEffects?.() || ['ui', 'cinematic', 'scifi', 'foley', 'diegetic', 'fauna'];
-      const effect = await prompt.select({
-        message: 'Select Effect Category:',
-        options: effects.map((e: string) => ({ label: e, value: e })),
-      });
-
-      if (isCancel(effect)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
+      const effect = await askChoice('Select Effect Category:', effects);
 
       const variants = (registry as any).getAvailableVariants?.(effect) || ['click', 'hover', 'success'];
-      const variant = await prompt.select({
-        message: 'Select Variant:',
-        options: variants.map((v: string) => ({ label: v, value: v })),
-      });
-
-      if (isCancel(variant)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
+      const variant = await askChoice('Select Variant:', variants);
 
       const subVariants = (registry as any).getAvailableSubVariants?.(effect, variant) || ['plastic_pop', 'glass_haptic'];
-      const subVariant = await prompt.select({
-        message: 'Select Sub-Variant:',
-        options: subVariants.map((sv: string) => ({ label: sv, value: sv })),
-      });
+      const subVariant = await askChoice('Select Sub-Variant:', subVariants);
 
-      if (isCancel(subVariant)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-
-      const durStr = await prompt.text({
-        message: 'Duration in seconds (default: 3.0):',
-        placeholder: '3.0',
-        defaultValue: '3.0',
-      });
-
-      if (isCancel(durStr)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-
-      const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
+      const durStr = await askQuestion('Duration in seconds (default: 3.0):', '3.0', '3.0');
+      const duration = durStr ? parseFloat(durStr) : 3.0;
 
       Logger.info('sfx', `Synthesizing '${effect} / ${variant} / ${subVariant}'...`);
       const output = await renderSoundEffect(registry, effect, variant, subVariant, duration, outDir);
-      Logger.info('sfx', `Sound effect generated successfully! Audio: ${output}`);
+      outro(`✅ Sound effect generated successfully!\nAudio: ${output}`);
     }
   } catch (err: any) {
-    Logger.error('sfx', `Error: ${err.message}`);
+    outro(`❌ Error: ${err.message}`);
   } finally {
     closeInteractiveConsole();
   }
