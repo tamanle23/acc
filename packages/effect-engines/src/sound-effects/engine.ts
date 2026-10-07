@@ -2,7 +2,7 @@ import { Logger } from "@acc/core";
 import { FFmpegManager } from '@acc/core';
 import { FFmpegCommand } from '@acc/core';
 import { RegistryManager } from './core/Registry';
-import { AudioNormalizer } from '@acc/core';
+import { AudioNormalizer, fileExists } from '@acc/core';
 import path from 'path';
 import fs from 'fs';
 
@@ -24,14 +24,15 @@ export async function renderSoundEffect(
   const finalWavPath = await AudioNormalizer.normalize(result.audioPath, result.audioPath, playbackType, duration);
   
   // Update the JSON metadata
-  if (result.jsonPath && fs.existsSync(result.jsonPath)) {
+  if (result.jsonPath && await fileExists(result.jsonPath)) {
     try {
-      const meta = JSON.parse(fs.readFileSync(result.jsonPath, 'utf8'));
+      const rawData = await fs.promises.readFile(result.jsonPath, 'utf8');
+      const meta = JSON.parse(rawData);
       meta.playback_type = playbackType;
       meta.is_normalized = true;
       meta.loudness = "-16 LUFS";
       meta.final_audio = path.basename(finalWavPath);
-      fs.writeFileSync(result.jsonPath, JSON.stringify(meta, null, 2));
+      await fs.promises.writeFile(result.jsonPath, JSON.stringify(meta, null, 2));
     } catch(e) {}
   }
   
