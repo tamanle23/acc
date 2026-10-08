@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { FFmpegManager } , Logger } from '@acc/core';
+import { FFmpegManager, Logger } from '@acc/core';
 import os from 'os';
 import type {
   PlatformPreset,

@@ -10,7 +10,7 @@ import {
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import { createAmbientParticleShaderCompositionStage } from './stages/AmbientParticleShaderCompositionStage';
 
@@ -150,4 +150,4 @@ export class AmbientStreamPipeline implements IPipeline<AmbientLoopConfig> {
 }
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new AmbientStreamPipeline(), ['6', 'ambient', 'ambient-stream', 'loop']);
+DefaultPipelineRegistry.register(new AmbientStreamPipeline(), ['6', 'ambient', 'ambient-stream', 'loop']);

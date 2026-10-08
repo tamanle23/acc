@@ -1,6 +1,5 @@
 import { parseArgs } from 'util';
-import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole } , Logger } from '@acc/core';
-import path from 'path';
+import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole, Logger } from '@acc/core';
 import fs from 'fs';
 import { renderEffectLayer } from '@acc/effect-engines';
 

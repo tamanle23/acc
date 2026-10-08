@@ -11,42 +11,42 @@ let swscale: any;
 let swresample: any;
 
 function resolveLibPath(binDir: string, winName: string, unixName: string): string {
-  if (process.platform === 'win32') {
-    return path.join(binDir, winName);
-  }
-  const candidateInBin = path.join(binDir, unixName);
-  if (fs.existsSync(candidateInBin)) return candidateInBin;
+    if (process.platform === 'win32') {
+        return path.join(binDir, winName);
+    }
+    const candidateInBin = path.join(binDir, unixName);
+    if (fs.existsSync(candidateInBin)) return candidateInBin;
 
-  const candidateInLib = path.join(binDir, '..', 'lib', unixName);
-  if (fs.existsSync(candidateInLib)) return candidateInLib;
+    const candidateInLib = path.join(binDir, '..', 'lib', unixName);
+    if (fs.existsSync(candidateInLib)) return candidateInLib;
 
-  const candidateInArchLib = path.join(binDir, '..', 'lib', 'x86_64-linux-gnu', unixName);
-  if (fs.existsSync(candidateInArchLib)) return candidateInArchLib;
+    const candidateInArchLib = path.join(binDir, '..', 'lib', 'x86_64-linux-gnu', unixName);
+    if (fs.existsSync(candidateInArchLib)) return candidateInArchLib;
 
-  const baseName = unixName.replace(/\.so$|\.dylib$/, '');
-  const searchDirs = [binDir, '/usr/lib/x86_64-linux-gnu', '/usr/lib64', '/usr/lib', '/opt/homebrew/lib'];
-  for (const dir of searchDirs) {
-    try {
-      if (dir && fs.existsSync(dir)) {
-        const files = fs.readdirSync(dir);
-        const match = files.find(f => f.startsWith(baseName));
-        if (match) return path.join(dir, match);
-      }
-    } catch {}
-  }
-  return unixName;
+    const baseName = unixName.replace(/\.so$|\.dylib$/, '');
+    const searchDirs = [binDir, '/usr/lib/x86_64-linux-gnu', '/usr/lib64', '/usr/lib', '/opt/homebrew/lib'];
+    for (const dir of searchDirs) {
+        try {
+            if (dir && fs.existsSync(dir)) {
+                const files = fs.readdirSync(dir);
+                const match = files.find(f => f.startsWith(baseName));
+                if (match) return path.join(dir, match);
+            }
+        } catch { }
+    }
+    return unixName;
 }
 
 export function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
-  const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
-  return toArrayBuffer(numPtr, offset, length);
+    const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
+    return toArrayBuffer(numPtr, offset, length);
 }
 
 export function initFFI() {
     if (avutil) return; // already initialized
-    
+
     const binDir = FFmpegManager.getBinDir();
-    
+
     const ext = process.platform === 'darwin' ? '.dylib' : '.so';
     const avutilPath = resolveLibPath(binDir, 'avutil-61.dll', `libavutil${ext}`);
     const avcodecPath = resolveLibPath(binDir, 'avcodec-63.dll', `libavcodec${ext}`);
@@ -72,7 +72,18 @@ export function initFFI() {
         av_malloc: { args: [FFIType.i64], returns: FFIType.u64 },
         av_free: { args: [FFIType.u64], returns: FFIType.void },
         av_freep: { args: [FFIType.ptr], returns: FFIType.void },
+        av_log_set_level: {
+            args: [FFIType.i32],
+            returns: FFIType.void,
+        },
     });
+    const AV_LOG_QUIET = -8;
+    const AV_LOG_ERROR = 16;
+    const AV_LOG_INFO = 32;
+    const AV_LOG_DEBUG = 48;
+    // Turn off the logs immediately before processing your audio
+    // This changes the global state for all of FFmpeg within this process
+    avutil.symbols.av_log_set_level(AV_LOG_ERROR);
 
     avcodec = dlopen(avcodecPath, {
         av_packet_alloc: { args: [], returns: FFIType.ptr },
@@ -115,12 +126,12 @@ export function initFFI() {
     });
 
     swscale = dlopen(swscalePath, {
-        sws_getContext: { 
+        sws_getContext: {
             args: [
                 FFIType.i32, FFIType.i32, FFIType.i32,
                 FFIType.i32, FFIType.i32, FFIType.i32,
                 FFIType.i32, FFIType.u64, FFIType.u64, FFIType.u64
-            ], 
+            ],
             returns: FFIType.u64
         },
         sws_scale: {
@@ -139,17 +150,17 @@ export function initFFI() {
     });
 
     swresample = dlopen(swresamplePath, {
-        swr_alloc_set_opts2: { 
+        swr_alloc_set_opts2: {
             args: [
-                FFIType.ptr, FFIType.ptr, FFIType.i32, FFIType.i32, 
+                FFIType.ptr, FFIType.ptr, FFIType.i32, FFIType.i32,
                 FFIType.ptr, FFIType.i32, FFIType.i32, FFIType.i32, FFIType.u64
-            ], 
-            returns: FFIType.i32 
+            ],
+            returns: FFIType.i32
         },
         swr_init: { args: [FFIType.u64], returns: FFIType.i32 },
-        swr_convert: { 
+        swr_convert: {
             args: [FFIType.u64, FFIType.ptr, FFIType.i32, FFIType.u64, FFIType.i32],
-            returns: FFIType.i32 
+            returns: FFIType.i32
         },
         swr_free: { args: [FFIType.ptr], returns: FFIType.void }
     });
@@ -197,26 +208,26 @@ export const Structs = {
 };
 
 export function getMediaDurationFFI(filePath: string): number {
-  try {
-    initFFI();
-    const fmtCtxPtr = new BigUint64Array(1);
-    const url = Buffer.from(filePath + "\0");
+    try {
+        initFFI();
+        const fmtCtxPtr = new BigUint64Array(1);
+        const url = Buffer.from(filePath + "\0");
 
-    const res = FFI.avformat.avformat_open_input(ptr(fmtCtxPtr.buffer), ptr(url), 0n, 0n);
-    if (res !== 0) return 0;
+        const res = FFI.avformat.avformat_open_input(ptr(fmtCtxPtr.buffer), ptr(url), 0n, 0n);
+        if (res !== 0) return 0;
 
-    const fmtCtx = fmtCtxPtr[0];
-    FFI.avformat.avformat_find_stream_info(fmtCtx, 0n);
+        const fmtCtx = fmtCtxPtr[0];
+        FFI.avformat.avformat_find_stream_info(fmtCtx, 0n);
 
-    const view = new DataView(toArrayBuffer(fmtCtx as any, 0, 256));
-    const durationUs = view.getBigInt64(104, true);
+        const view = new DataView(toArrayBuffer(fmtCtx as any, 0, 256));
+        const durationUs = view.getBigInt64(104, true);
 
-    const p = new BigUint64Array([fmtCtx]);
-    FFI.avformat.avformat_close_input(ptr(p.buffer));
+        const p = new BigUint64Array([fmtCtx]);
+        FFI.avformat.avformat_close_input(ptr(p.buffer));
 
-    if (durationUs <= 0n) return 0;
-    return Number(durationUs) / 1000000.0;
-  } catch {
-    return 0;
-  }
+        if (durationUs <= 0n) return 0;
+        return Number(durationUs) / 1000000.0;
+    } catch {
+        return 0;
+    }
 }

@@ -9,7 +9,7 @@ import {
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import { createRepurposingHookExtractionStage } from './stages/RepurposingHookExtractionStage';
 import { createRepurposingCompositionStage } from './stages/RepurposingCompositionStage';
@@ -92,4 +92,4 @@ export class RepurposingPipeline implements IPipeline<RepurposingInput> {
 }
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new RepurposingPipeline(), ['3', 'repurpose', 'repurposing', 'recycler']);
+DefaultPipelineRegistry.register(new RepurposingPipeline(), ['3', 'repurpose', 'repurposing', 'recycler']);

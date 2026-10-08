@@ -15,7 +15,7 @@ export class PipelineRegistry {
   private aliases: Map<string, string> = new Map();
   private pipelineAliases: Map<string, Set<string>> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): PipelineRegistry {
     if (!PipelineRegistry.instance) {
@@ -88,4 +88,4 @@ export class PipelineRegistry {
   }
 }
 
-export const defaultPipelineRegistry = PipelineRegistry.getInstance();
+export const DefaultPipelineRegistry = PipelineRegistry.getInstance();

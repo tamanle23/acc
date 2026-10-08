@@ -1,17 +1,10 @@
 import { runWorkerDaemon } from './commands/WorkerCommand';
 import fs from 'fs';
-import path from 'path';
 import {
-  ScraperPipeline,
-  DBTemplatingPipeline,
-  RepurposingPipeline,
-  GenerativeStoryPipeline,
-  RuleLogicPipeline,
   AmbientStreamPipeline,
   ScraperEngine,
-  defaultStoryPipeline,
 } from './pipelines';
-import { intro, defaultPipelineRegistry } , Logger } from '@acc/core';
+import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions } from '@acc/core';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker';
@@ -27,6 +20,17 @@ export interface CliOptions {
   conductorUrl?: string;
   conductorSandbox?: boolean;
 }
+import { cancel, intro, isCancel, outro, select, spinner, text } from '@clack/prompts';
+
+const spin = spinner({
+
+  onCancel: () => {
+    Logger.info('ACC-CLI', 'Cleaning up resources...');
+  },
+  cancelMessage: 'Task was cancelled by user',
+  errorMessage: 'Task failed unexpectedly',
+  styleFrame: (frame) => `\x1b[35m${frame}\x1b[0m`,
+});
 
 export function parseCliArgs(args: string[]): CliOptions {
   const options: CliOptions = {};
@@ -167,7 +171,7 @@ export function listPipelines(): void {
 `);
 }
 
-export function resolvePipelineInput(pipelineId: string, options: CliOptions): any {
+export async function resolvePipelineInput(pipelineId: string, options: CliOptions): Promise<any> {
   const normId = pipelineId.toLowerCase();
 
   if (normId === '1' || normId === 'scraper' || normId === 'scraper-summarizer') {
@@ -278,37 +282,40 @@ function extractOutputPaths(results: any): string[] {
   return paths;
 }
 
-export async function runCli(argv = process.argv.slice(2)): Promise<any> {
-  const options = parseCliArgs(argv);
-  intro('ACC - Automated Content Creator');
-  switch (options.command) {
-    case 'help':
-      printHelp();
-      return { success: true, command: 'help' };
+export async function run(): Promise<any> {
+  const rawArgs = process.argv.slice(2);
+  // If arguments are provided, delegate directly to the unified CLI runner
+  if (rawArgs.length > 0) {
+    return await runPipeline('story', rawArgs[0]);
+  }
 
-    case 'list':
-      listPipelines();
-      return { success: true, command: 'list' };
+  const commandSelection = await select({
+    message: 'ACC CLI command:',
+    options: [
+      { label: 'Run', value: 'run' },
+      { label: 'Stream', value: 'stream' },
+      { label: 'Overlay', value: 'overlay' },
+      { label: 'SFX', value: 'sfx' },
+      { label: 'Worker', value: 'worker' },
+    ],
+  });
+  if (isCancel(commandSelection)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
 
+
+  switch (commandSelection) {
     case 'overlay': {
       const { runOverlayCommand } = await import('./commands/overlay');
-      await runOverlayCommand(argv.slice(1));
+      await runOverlayCommand(process.argv.slice(1));
       return { success: true, command: 'overlay' };
     }
 
     case 'sfx': {
       const { runSFXCommand } = await import('./commands/sfx');
-      await runSFXCommand(argv.slice(1));
+      await runSFXCommand(process.argv.slice(1));
       return { success: true, command: 'sfx' };
-    }
-
-    case 'serve': {
-      const port = options.port || 3000;
-      Logger.info('ACC-CLI', `Starting Webhook Ingestion Daemon on port ${port}...`);
-      const scraper = new ScraperEngine();
-      const server = scraper.startWebhookServer(port);
-      Logger.info('ACC-CLI', `Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
-      return { success: true, server, port };
     }
 
     case 'worker': {
@@ -317,8 +324,8 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
         return { success: false, error: 'Missing configuration for worker' };
       }
       await runWorkerDaemon({
-          conductorUrl: options.conductorUrl || 'http://localhost:8080',
-          sandboxMode: options.conductorSandbox
+        conductorUrl: options.conductorUrl || 'http://localhost:8080',
+        sandboxMode: options.conductorSandbox
       });
       return { success: true, command: 'worker' };
     }
@@ -344,28 +351,31 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
     }
 
     case 'run': {
-      const pipelineId = (options.pipelineId || 'story').toLowerCase();
-      Logger.info('ACC-CLI', `Executing Pipeline [${pipelineId}] via Orchestrator...`);
+      const pipelineId = await select({
+        message: 'Pipeline:',
+        options: DefaultPipelineRegistry.list().map(pipeline => {
+          return {
+            label: pipeline.name,
+            value: pipeline.id,
+          }
+        }),
 
-      if (!defaultPipelineRegistry.has(pipelineId)) {
-        throw new Error(`Unknown pipeline identifier: '${pipelineId}'. Run 'acc list' for available pipelines.`);
-      }
-
-      const input = resolvePipelineInput(pipelineId, options);
-      const executionResult = await defaultPipelineRegistry.execute(pipelineId, input, {
-        outDir: options.outDir,
-        format: options.format,
-        duration: options.duration,
-        exporters: options.exporters,
-        dryRun: options.dryRun,
       });
-
-      const outputPaths = executionResult.exportResults ? extractOutputPaths(executionResult.exportResults) : [];
-      if ((executionResult as any).outputFilePath && !outputPaths.includes((executionResult as any).outputFilePath)) {
-        outputPaths.push((executionResult as any).outputFilePath);
+      if (isCancel(pipelineId)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
       }
+      const configLocation = await text({
+        message: 'Please enter the path to your story-config folder:',
+        placeholder: './sample-story',
+        validate: async (val) => ((!val || val.trim() === '' || !(await fs.promises.exists(val))) ? 'Path cannot be empty or invalid.' : ""),
+      });
+      if (isCancel(configLocation)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+      const { executionResult, outputPaths } = await runPipeline(pipelineId, configLocation);
 
-      Logger.info('ACC-CLI', `Pipeline [${pipelineId}] completed. Output: ${JSON.stringify(outputPaths)}`);
       return {
         ...executionResult,
         success: true,
@@ -373,18 +383,39 @@ export async function runCli(argv = process.argv.slice(2)): Promise<any> {
         outputPaths,
       };
     }
-
-    default:
-      printHelp();
-      return { success: true };
   }
 }
 
-// Allow direct execution when invoked as a script
 if (import.meta.main) {
-  runCli().catch((err) => {
-    Logger.error('ACC-CLI', 'Fatal Error:', err);
+  intro('--- ACC - Automated Content Creator ---');
+  run().then(async (result) => {
+    if (result?.success === false) {
+      Logger.error('ACC-CLI', `❌ Render failed: ${result.error || 'Unknown error'}`);
+      outro('--- Finished ---');
+      process.exit(1);
+    } else {
+      Logger.info('ACC-CLI', '✅ Story generation completed successfully!');
+      outro('--- Finished ---');
+    }
+  }).catch((error: any) => {
+    Logger.error('ACC-CLI', `❌ Render failed: ${error}`);
+    outro('--- Finished ---');
     process.exit(1);
   });
 }
 
+async function runPipeline(pipelineSelection: string, configLocation: string) {
+  const pipelineId = (pipelineSelection || 'story').toLowerCase();
+  Logger.info('ACC-CLI', `Executing Pipeline [${pipelineId}] via Orchestrator...`);
+
+  const input = resolvePipelineInput(pipelineId, { command: 'run', pipelineId, configPath: configLocation! });
+  const executionResult = await DefaultPipelineRegistry.execute(pipelineId, input);
+
+  const outputPaths = executionResult.exportResults ? extractOutputPaths(executionResult.exportResults) : [];
+  if ((executionResult as any).outputFilePath && !outputPaths.includes((executionResult as any).outputFilePath)) {
+    outputPaths.push((executionResult as any).outputFilePath);
+  }
+
+  Logger.info('ACC-CLI', `Pipeline [${pipelineId}] completed. Output: ${JSON.stringify(outputPaths)}`);
+  return { executionResult, outputPaths };
+}

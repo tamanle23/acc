@@ -6,7 +6,7 @@ import {
   PipelineRunner,
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import type { StoryConfig, ResolvedStoryConfig } from '@acc/core/types';
 import { VideoEditPipelineOrchestrator } from './VideoEditPipelineOrchestrator';
@@ -88,7 +88,7 @@ export class GenerativeStoryPipeline implements IPipeline<string | StoryConfig> 
 export const defaultStoryPipeline = new GenerativeStoryPipeline();
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new GenerativeStoryPipeline(), [
+DefaultPipelineRegistry.register(new GenerativeStoryPipeline(), [
   '4',
   'story',
   'generative-storytelling',

@@ -9,7 +9,7 @@ import {
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import { createDBDataNormalizationStage } from './stages/DBDataNormalizationStage';
 import { createDBBarChartCompositionStage } from './stages/DBBarChartCompositionStage';
@@ -95,4 +95,4 @@ export class DBTemplatingPipeline implements IPipeline<DBTemplatePayload> {
 }
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new DBTemplatingPipeline(), ['2', 'db', 'db-templating', 'database']);
+DefaultPipelineRegistry.register(new DBTemplatingPipeline(), ['2', 'db', 'db-templating', 'database']);

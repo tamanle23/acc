@@ -1,5 +1,5 @@
 import { parseArgs } from 'util';
-import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } , Logger } from '@acc/core';
+import { FFmpegManager, Logger, askChoice, askQuestion, askYesNo, closeInteractiveConsole, intro, outro, isCancel, cancel } from '@acc/core';
 import { RegistryManager, renderSoundEffect, renderCompositeSound } from '@acc/effect-engines';
 import path from 'path';
 import fs from 'fs';

@@ -297,9 +297,8 @@ export class VideoEditPipelineOrchestrator {
     }
 
     try {
-      Logger.info(
-        'VideoEditPipelineOrchestrator',
-        `🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...\n`
+      Logger.info('VideoEditPipelineOrchestrator',
+        `🚀 Starting scene rendering (${totalScenes} scenes, parallel workers: ${activeConcurrency})...`
       );
 
       const hasAnyTransition =
@@ -715,10 +714,10 @@ export class VideoEditPipelineOrchestrator {
         currentVideoPath = nextVideoPath;
       }
 
-      fs.copyFileSync(currentVideoPath, outputFilePath);
+      await fs.promises.copyFile(currentVideoPath, outputFilePath);
     } finally {
       try {
-        fs.rmSync(tempDir, { recursive: true, force: true });
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
       } catch { }
     }
   }

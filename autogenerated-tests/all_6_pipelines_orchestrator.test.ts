@@ -4,7 +4,7 @@ import fs from 'fs';
 import {
   PipelineRunner,
   createUnifiedPipelineContext,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
   IPipelineMiddleware,
   FFmpegManager,
 } from '@acc/core';
@@ -98,30 +98,30 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
 
   describe('Pipeline Registry & Unified Discovery', () => {
     it('verifies all 6 pipelines are registered and resolvable via IDs and aliases', () => {
-      expect(defaultPipelineRegistry.has('scraper')).toBe(true);
-      expect(defaultPipelineRegistry.has('1')).toBe(true);
+      expect(DefaultPipelineRegistry.has('scraper')).toBe(true);
+      expect(DefaultPipelineRegistry.has('1')).toBe(true);
 
-      expect(defaultPipelineRegistry.has('db')).toBe(true);
-      expect(defaultPipelineRegistry.has('2')).toBe(true);
+      expect(DefaultPipelineRegistry.has('db')).toBe(true);
+      expect(DefaultPipelineRegistry.has('2')).toBe(true);
 
-      expect(defaultPipelineRegistry.has('repurposing')).toBe(true);
-      expect(defaultPipelineRegistry.has('3')).toBe(true);
+      expect(DefaultPipelineRegistry.has('repurposing')).toBe(true);
+      expect(DefaultPipelineRegistry.has('3')).toBe(true);
 
-      expect(defaultPipelineRegistry.has('story')).toBe(true);
-      expect(defaultPipelineRegistry.has('4')).toBe(true);
+      expect(DefaultPipelineRegistry.has('story')).toBe(true);
+      expect(DefaultPipelineRegistry.has('4')).toBe(true);
 
-      expect(defaultPipelineRegistry.has('rule-logic')).toBe(true);
-      expect(defaultPipelineRegistry.has('5')).toBe(true);
-      expect(defaultPipelineRegistry.has('math')).toBe(true);
+      expect(DefaultPipelineRegistry.has('rule-logic')).toBe(true);
+      expect(DefaultPipelineRegistry.has('5')).toBe(true);
+      expect(DefaultPipelineRegistry.has('math')).toBe(true);
 
-      expect(defaultPipelineRegistry.has('ambient')).toBe(true);
-      expect(defaultPipelineRegistry.has('6')).toBe(true);
+      expect(DefaultPipelineRegistry.has('ambient')).toBe(true);
+      expect(DefaultPipelineRegistry.has('6')).toBe(true);
     });
   });
 
   describe('End-to-End Orchestrated Pipeline Executions', () => {
     it('Pipeline 1 (Scraper): executes middleware stages and generates PipelineIR & exports', async () => {
-      const pipeline = defaultPipelineRegistry.get('scraper') as ScraperPipeline;
+      const pipeline = DefaultPipelineRegistry.get('scraper') as ScraperPipeline;
       expect(pipeline).toBeDefined();
 
       const outDir = path.join(testOutDir, 'scraper_run');
@@ -146,7 +146,7 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
     });
 
     it('Pipeline 2 (DB Templating): normalizes records and renders bar chart ranking via orchestrator', async () => {
-      const pipeline = defaultPipelineRegistry.get('db') as DBTemplatingPipeline;
+      const pipeline = DefaultPipelineRegistry.get('db') as DBTemplatingPipeline;
       expect(pipeline).toBeDefined();
 
       const outDir = path.join(testOutDir, 'db_run');
@@ -173,7 +173,7 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
     });
 
     it('Pipeline 3 (Repurposing): extracts viral hook and formats 9:16 smart-crop via orchestrator', async () => {
-      const pipeline = defaultPipelineRegistry.get('repurposing') as RepurposingPipeline;
+      const pipeline = DefaultPipelineRegistry.get('repurposing') as RepurposingPipeline;
       expect(pipeline).toBeDefined();
 
       const outDir = path.join(testOutDir, 'repurpose_run');
@@ -194,7 +194,7 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
     });
 
     it('Pipeline 4 (Generative Story): processes story folder through orchestrated AST stages', async () => {
-      const pipeline = defaultPipelineRegistry.get('story') as GenerativeStoryPipeline;
+      const pipeline = DefaultPipelineRegistry.get('story') as GenerativeStoryPipeline;
       expect(pipeline).toBeDefined();
 
       const sampleStoryDir = path.resolve(process.cwd(), 'sample-story');
@@ -208,7 +208,7 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
     });
 
     it('Pipeline 5 (Rule & Math Logic): validates proof equations and renders chalkboard slide', async () => {
-      const pipeline = defaultPipelineRegistry.get('rule-logic') as RuleLogicPipeline;
+      const pipeline = DefaultPipelineRegistry.get('rule-logic') as RuleLogicPipeline;
       expect(pipeline).toBeDefined();
 
       const outDir = path.join(testOutDir, 'rule_run');
@@ -234,7 +234,7 @@ describe('Universal Pipeline Orchestrator & Decoupled 6-Pipeline Suite', () => {
     });
 
     it('Pipeline 6 (Ambient Stream): renders procedural shader loop and emits stream-ready IR', async () => {
-      const pipeline = defaultPipelineRegistry.get('ambient') as AmbientStreamPipeline;
+      const pipeline = DefaultPipelineRegistry.get('ambient') as AmbientStreamPipeline;
       expect(pipeline).toBeDefined();
 
       const outDir = path.join(testOutDir, 'ambient_run');

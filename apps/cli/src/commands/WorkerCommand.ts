@@ -1,4 +1,4 @@
-import { ConductorWorkerPoller, registerAllConductorCommands, TaskWorkerFactory } , Logger } from '@acc/core';
+import { ConductorWorkerPoller, registerAllConductorCommands, TaskWorkerFactory, Logger } from '@acc/core';
 
 export async function runWorkerDaemon(options: { conductorUrl: string; tasks?: string[]; sandboxMode?: boolean }) {
   // Register all known Conductor commands in the factory

@@ -9,7 +9,7 @@ import {
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import { IngestedEvent } from './ScraperEngine';
 import { createScraperLLMSummarizeStage } from './stages/ScraperLLMSummarizeStage';
@@ -95,4 +95,4 @@ export class ScraperPipeline implements IPipeline<IngestedEvent> {
 }
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new ScraperPipeline(), ['1', 'scraper', 'scraper-summarizer']);
+DefaultPipelineRegistry.register(new ScraperPipeline(), ['1', 'scraper', 'scraper-summarizer']);

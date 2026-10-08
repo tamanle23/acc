@@ -9,7 +9,7 @@ import {
   UnifiedPipelineContext,
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
-  defaultPipelineRegistry,
+  DefaultPipelineRegistry,
 } from '@acc/core';
 import { createRuleLogicProofValidationStage } from './stages/RuleLogicProofValidationStage';
 import { createRuleLogicChalkboardCompositionStage } from './stages/RuleLogicChalkboardCompositionStage';
@@ -92,4 +92,4 @@ export class RuleLogicPipeline implements IPipeline<RuleLogicPayload> {
 }
 
 // Auto-register in central registry
-defaultPipelineRegistry.register(new RuleLogicPipeline(), ['5', 'rule', 'math', 'logic', 'rule-logic']);
+DefaultPipelineRegistry.register(new RuleLogicPipeline(), ['5', 'rule', 'math', 'logic', 'rule-logic']);

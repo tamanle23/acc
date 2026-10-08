@@ -31,34 +31,25 @@ function resolveMediaPath(filePath: string, baseDir: string, type: 'image' | 'au
   return directPath;
 }
 
-export function resolveStoryFolder(
+export async function resolveStoryFolder(
   storyDir: string,
   options?: StoryFolderResolutionOptions
-): ResolvedStoryFolderResult {
+): Promise<ResolvedStoryFolderResult> {
   const absoluteDir = path.resolve(storyDir);
   const configPath = path.join(absoluteDir, 'story-config.json');
 
   if (!fs.existsSync(absoluteDir)) {
     throw new Error(`Directory not found: ${absoluteDir}`);
   }
-  if (!fs.existsSync(configPath)) {
-    throw new Error(`Config file not found: ${configPath}`);
-  }
-
-  const rawConfigStr = fs.readFileSync(configPath, 'utf-8');
-  let rawConfig: StoryConfig;
-  try {
-    rawConfig = JSON.parse(rawConfigStr);
-  } catch (error: any) {
-    throw new Error(`Failed to parse story-config.json: ${error.message}`);
-  }
+  
+  let rawConfig: StoryConfig = await loadStoryConfig(configPath);
 
   const outputDir = options?.outDir ? path.resolve(options.outDir) : path.join(absoluteDir, 'output');
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const rawScenes = rawConfig.scenes || rawConfig.slides || [];
+  const rawScenes = rawConfig.scenes || [];
   if (rawScenes.length === 0) {
     throw new Error('No scenes found in story-config.json');
   }
@@ -134,3 +125,19 @@ export function resolveStoryFolder(
 
   return { rawConfig, resolvedConfig, outputFilePath, metadataPath, absoluteDir };
 }
+
+async function loadStoryConfig(configPath: string) : Promise<StoryConfig>  {
+  if (!fs.existsSync(configPath)) {
+    throw new Error(`Config file not found: ${configPath}`);
+  }
+
+  const rawConfigStr = fs.readFileSync(configPath, 'utf-8');
+  let rawConfig: StoryConfig;
+  try {
+    rawConfig = JSON.parse(rawConfigStr);
+  } catch (error: any) {
+    throw new Error(`Failed to parse story-config.json: ${error.message}`);
+  }
+  return rawConfig;
+}
+
