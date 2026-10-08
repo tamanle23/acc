@@ -22,7 +22,8 @@ export async function askQuestion(message: string, placeholder = '', defaultValu
     prompt.cancel('Operation cancelled.');
     process.exit(0);
   }
-  return (result as string).trim();
+  const answer = (result as string).trim();
+  return answer.length > 0 ? answer : defaultValue;
 }
 
 export async function askChoice(message: string, options: (string | { label: string; value: string; hint?: string })[]): Promise<string> {
