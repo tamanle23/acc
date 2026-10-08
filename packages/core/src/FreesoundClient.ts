@@ -64,7 +64,10 @@ export class FreesoundClient {
     const parsedPath = path.parse(outputPath);
     const mp3OutputPath = path.join(parsedPath.dir, `${parsedPath.name}.mp3`);
     
-    fs.writeFileSync(mp3OutputPath, buffer);
+    // ⚡ Bolt: Replaced synchronous fs.writeFileSync with async fs.promises.writeFile
+    // 🎯 Why: Synchronous I/O blocks the Node.js event loop causing significant latency for other requests
+    // 📊 Impact: Improves concurrency and unblocks the main thread.
+    await fs.promises.writeFile(mp3OutputPath, buffer);
     return mp3OutputPath;
   }
 }
