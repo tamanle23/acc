@@ -1,5 +1,5 @@
 import { parseArgs } from 'util';
-import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole, Logger } from '@acc/core';
+import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole, Logger, intro, outro } from '@acc/core';
 import fs from 'fs';
 import { renderEffectLayer } from '@acc/effect-engines';
 
@@ -27,7 +27,7 @@ export async function generateHeadless(values: any) {
       const compositeName = values.composite.toLowerCase();
       const compositeConfig = registry.getCompositeConfig(compositeName);
       
-      Logger.info('OverlayCommand', '=== Combinatorial Composite Generator ===');
+      intro('=== Combinatorial Composite Generator ===');
       Logger.info('OverlayCommand', `Composite:  ${compositeName}`);
       
       const renderPromises = compositeConfig.layers.map((layer: any) => {
@@ -35,35 +35,33 @@ export async function generateHeadless(values: any) {
       });
 
       const outputs = await Promise.all(renderPromises);
-      Logger.info('OverlayCommand', `Composite '${compositeName}' successfully generated!`);
-      outputs.forEach((o: any) => Logger.info('OverlayCommand', ` - Video:    ${o}`));
+      outro(`✅ Composite '${compositeName}' successfully generated!\n` + outputs.map((o: any) => ` - Video:    ${o}`).join('\n'));
     } else if (values.effect) {
       const effectName = values.effect.toLowerCase();
       const variantName = values.variant || 'default';
       const duration = values.duration ? parseFloat(values.duration) : 3.0;
 
-      Logger.info('OverlayCommand', '=== Single Dynamic Effect Generator ===');
+      intro('=== Single Dynamic Effect Generator ===');
       const output = await renderEffectLayer(registry, effectName, variantName, duration, outDir, layerOptions);
-      Logger.info('OverlayCommand', `Successfully completed rendering! Video: ${output}`);
+      outro(`✅ Successfully completed rendering!\nVideo: ${output}`);
     }
   } catch (err: any) {
-    Logger.error('OverlayCommand', `Error: ${err.message}`);
+    outro(`❌ Error: ${err.message}`);
     process.exit(1);
   }
 }
 
 export async function startWizard() {
-  Logger.info('OverlayCommand', '============================================');
-  Logger.info('OverlayCommand', '🎥 Overlay Effects Interactive Console');
-  Logger.info('OverlayCommand', '============================================');
+  intro('🎥 Overlay Effects Interactive Console');
 
   const mode = await askChoice('Select operation mode:', [
-    'Generate Single Dynamic Effect',
-    'Generate Combinatorial Composite',
-    'Exit'
+    { label: 'Generate Single Dynamic Effect', value: 'single', hint: 'Render single procedural dynamic overlay effect' },
+    { label: 'Generate Combinatorial Composite', value: 'composite', hint: 'Multi-layer polyrhythmic visual stack' },
+    { label: 'Exit', value: 'exit' }
   ]);
 
-  if (mode === 'Exit') {
+  if (mode === 'exit') {
+    outro('Goodbye!');
     closeInteractiveConsole();
     process.exit(0);
   }
@@ -75,10 +73,10 @@ export async function startWizard() {
   }
 
   try {
-    if (mode === 'Generate Combinatorial Composite') {
+    if (mode === 'composite') {
       const composites = registry.getAvailableComposites();
       if (composites.length === 0) {
-        Logger.info('OverlayCommand', 'No composites defined in registry.');
+        outro('No composites defined in registry.');
         closeInteractiveConsole();
         return;
       }
@@ -92,25 +90,24 @@ export async function startWizard() {
       });
 
       const outputs = await Promise.all(renderPromises);
-      Logger.info('OverlayCommand', `Composite '${composite}' generated successfully!`);
-      outputs.forEach((o: any) => Logger.info('OverlayCommand', ` - Video:    ${o}`));
+      outro(`✅ Composite '${composite}' generated successfully!\n` + outputs.map((o: any) => ` - Video: ${o}`).join('\n'));
 
-    } else if (mode === 'Generate Single Dynamic Effect') {
+    } else if (mode === 'single') {
       const effects = registry.getAvailableEffects();
       const effect = await askChoice('Select Effect Type:', effects);
 
       const variants = registry.getAvailableVariants(effect);
       const variant = await askChoice('Select Variant:', variants);
 
-      const durStr = await askQuestion('Duration in seconds (default: 3.0): ');
+      const durStr = await askQuestion('Duration in seconds (default: 3.0):', '3.0', '3.0');
       const duration = durStr.trim() ? parseFloat(durStr) : 3.0;
 
       Logger.info('OverlayCommand', `Rendering '${effect}' (variant: ${variant})...`);
       const output = await renderEffectLayer(registry, effect, variant, duration, outDir);
-      Logger.info('OverlayCommand', `Effect generated successfully! Video: ${output}`);
+      outro(`✅ Effect generated successfully!\nVideo: ${output}`);
     }
   } catch (err: any) {
-    Logger.error('OverlayCommand', `Error: ${err.message}`);
+    outro(`❌ Error: ${err.message}`);
   } finally {
     closeInteractiveConsole();
   }
