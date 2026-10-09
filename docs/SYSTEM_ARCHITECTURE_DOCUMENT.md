@@ -99,13 +99,22 @@ The visual and auditory powerhouse containing 13 Systematic Video Editing Groups
 *   **Sound Effects (`sound-effects`)**: Uses `SmartRouter`, `BaseSoundGenerator`, and `BaseFFmpegGenerator` for procedural DSP synthesis, sidechain ducking (`AudioDuckingDSP`), and Foley marking.
 *   **Systematic Video Editing (`src/editing`)**: Features facades like `EditingEngineFacade` and capabilities like `MontageBeatSync`, `SpeedRampStrategy`, `SmashCutStrategy`, `ChromaKeyCompositorStrategy`, and `KineticTypography` spring-physics motion graphics.
 
-### 4.3 `@acc/exporters` (Publishing Fan-Out)
+### 4.3 `@acc/ir` (Universal Video Intermediate Representation)
+The deterministic timeline compiler and declarative data plane connecting high-level story configs to low-level media engines.
+*   **Canonical IR Schema (`VideoIR.ts`)**: Versioned declarative schema adhering to the Open-Closed Principle (OCP) with polymorphic modifiers and immutable metadata.
+*   **Relational DAG Compiler (`RelationalDAGCompiler.ts`)**: Resolves non-destructive relative dependencies (`startWith`, `startAfter`, `endWith`) into absolute discrete frame intervals via two-pass Kahn's topological sort and cycle detection.
+*   **Deterministic Clock & Interval Tree Index (`DeterministicAudioClock.ts`, `IntervalTreeIndex.ts`)**: Rational Bresenham sample accumulator ensuring zero drift across millions of frames, paired with an augmented binary interval tree index enabling $O(\log M)$ playhead intersection lookups for frontend visual editing preview.
+*   **Pioneer Adapter Flywheel (`StoryConfigToUniversalIRAdapter.ts`)**: Bi-directional bridge auto-transpiling legacy `story-config.json` structures directly into universal IR timelines with zero breaking regressions.
+*   **Modifier Plugin Registry (`ModifierPluginRegistry.ts`)**: Extensible Strategy/Plugin architecture executing audio ducking, 3D depth pop-out, blend modes, transitions, and split edits dynamically.
+*   **Deterministic Headless Rasterizer & Interactive Preview Engine (`IRMasterRenderer.ts`, `IRPreviewEngine.ts`)**: Frame-locked synchronous rasterizer driven by deterministic PRNG seeded noise with bit-identical rendering parity between headless batch exports and interactive video editor scrubbers.
+
+### 4.4 `@acc/exporters` (Publishing Fan-Out)
 Responsible for platform-compliant rendering.
 *   Features `WidgetExporter` for interactive video branching.
 *   Features `SpatialVideoExporter` for specialized AR/VR delivery formats.
 *   Executes parallel multi-format outputs as defined by the Conductor `FORK_JOIN` nodes.
 
-### 4.4 `apps/python-backend` (gRPC AI Subsystem)
+### 4.5 `apps/python-backend` (gRPC AI Subsystem)
 A high-throughput backend managed by `uv` (`pyproject.toml`) wrapping heavy AI models behind a strict gRPC interface.
 *   **Computer Vision**: Depth Anything v2, SAM 2 (Segment Anything).
 *   **Audio/Voice**: Kokoro.

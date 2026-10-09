@@ -95,6 +95,7 @@ export class FFIConcatMuxer {
           const segInCtx = segInPtr[0];
           FFI.avformat.avformat_find_stream_info(segInCtx, 0n);
 
+          const firstPtsInSeg: Array<bigint | null> = new Array(nbStreams).fill(null);
           const maxPtsInSeg = new Array(nbStreams).fill(0n);
 
           while (FFI.avformat.av_read_frame(segInCtx, pkt) >= 0) {
@@ -104,13 +105,23 @@ export class FFIConcatMuxer {
             if (streamIdx < nbStreams) {
               const rawPts = pktView.getBigInt64(8, true);
               const rawDts = pktView.getBigInt64(16, true);
+              const rawDuration = pktView.getBigInt64(64, true);
 
-              if (rawPts > maxPtsInSeg[streamIdx]) {
-                maxPtsInSeg[streamIdx] = rawPts;
+              if (firstPtsInSeg[streamIdx] === null) {
+                firstPtsInSeg[streamIdx] = rawPts >= 0n ? rawPts : (rawDts >= 0n ? rawDts : 0n);
               }
 
-              let newPts = rawPts + streamPtsOffsets[streamIdx];
-              let newDts = rawDts + streamPtsOffsets[streamIdx];
+              const basePts = firstPtsInSeg[streamIdx] ?? 0n;
+              const relPts = rawPts >= basePts ? rawPts - basePts : 0n;
+              const relDts = rawDts >= basePts ? rawDts - basePts : relPts;
+
+              const pktSpan = relPts + (rawDuration > 0n ? rawDuration : 1n);
+              if (pktSpan > maxPtsInSeg[streamIdx]) {
+                maxPtsInSeg[streamIdx] = pktSpan;
+              }
+
+              let newPts = relPts + streamPtsOffsets[streamIdx];
+              let newDts = relDts + streamPtsOffsets[streamIdx];
 
               if (newDts <= lastDts[streamIdx]) {
                 newDts = lastDts[streamIdx] + 1n;
@@ -130,7 +141,11 @@ export class FFIConcatMuxer {
           }
 
           for (let s = 0; s < nbStreams; s++) {
-            streamPtsOffsets[s] += maxPtsInSeg[s] + 1n;
+            if (maxPtsInSeg[s] > 0n) {
+              streamPtsOffsets[s] += maxPtsInSeg[s];
+            } else if (lastDts[s] >= 0n) {
+              streamPtsOffsets[s] = lastDts[s] + 1n;
+            }
           }
 
           const pCloseSeg = new BigUint64Array([segInCtx]);

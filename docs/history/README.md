@@ -153,15 +153,18 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`139`](139_multi_track_sfx_and_master_audio_timeline.md) | 2026-10-05 | Multi-Track Timeline SFX & Master Audio Track Architecture Integration | Added SFXClipConfig, AudioTrackConfig, timeline strategies, orchestrator mixer, schema, docs, and 8-point sync |
 | [`140`](140_publish_multi_track_timeline_unified_voiceover_spec.md) | 2026-10-05 | Publish Dedicated Multi-Track Timeline & Unified Voiceover Specification | Authored dedicated architectural specification in docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md |
 | [`141`](141_video_edit_pipeline_orchestrator_determinism_and_visual_timeline_feasibility.md) | 2026-10-06 | VideoEditPipelineOrchestrator Determinism & Remotion-Style Visual Timeline Feasibility | Investigated frame rendering determinism and analyzed visual timeline editor feasibility |
-
-
-
-
-
-
-
-
-
 | [142](142_four_stage_generation_brainstorm.md) | 2026-10-06 | Four-Stage Generation Brainstorm | Design doc for config -> AST -> edit -> export architecture |
 | [143](143_mark_process_and_render_experimental.md) | 2026-10-06 | Mark processAndRender Experimental & Parity Backlog | JSDoc experimental flag; backlog 013 with feature gap analysis |
 | [`144`](144_wcag_2_2_aa_caption_contrast_and_accessibility.md) | 2026-10-09 | WCAG 2.2 AA Caption Contrast & Design Token Accessibility Hardening | Calibrated bold-retro outline color, exported sRGB luminance & WCAG contrast utilities, added test suite |
+| [144](144_universal_video_ir_phase1_phase2_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 1 & Phase 2 Execution | V1.0-Stable IR schema, validator, pioneer adapter, two-pass DAG compiler, Bresenham audio clock, interval tree index |
+| [145](145_universal_video_ir_phase3_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 3 Execution | Extensible ModifierPluginRegistry, core bridges (Depth3D, Ducking, SplitEdit, Crossfade, BlendMode), and Command Pattern |
+| [146](146_universal_video_ir_phase4_phase5_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 4 & Phase 5 Execution | IRMasterRenderer, IRPreviewEngine, FrameBackpressureLock, DecoupledAudioMixer, and Pioneer Parity Audit |
+| [147](147_universal_video_ir_phase6_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 6 Execution & Verification | CLI ir-render command, distributed temporal chunking slicing, system architecture sync, and backlog completion |
+| [148](148_consolidate_video_ir_into_packages_ir.md) | 2026-10-09 | Universal Video IR Engine: Consolidate Phases 1-6 into packages/ir | Centralize commands, plugins, renderer into packages/ir to isolate new from old behaviors |
+| [`149`](149_stage1_stage2_ir_dual_sinks_and_concrete_plugins.md) | 2026-10-09 | Stage 1 Adapter Registry, Concrete Plugins & Stage 2 Dual Sinks with Native bun:ffi FFIVideoEncoder | Dynamic input adapters, concrete 4-phase plugins, PreviewCanvasSink & FFIVideoEncoderSink MP4 rendering |
+| [`150`](150_voiceover_audio_muxing_and_active_word_highlighted_subtitles.md) | 2026-10-09 | Voiceover Audio Track Muxing & Active Word-Highlighted Subtitles in Video IR Pipeline | DecoupledAudioMixer real asset mix & WAV export, FFIVideoEncoderStream #1 AAC muxing, BoundedAcousticCaptionStrategy karaoke subtitles |
+| [`151`](151_regression_audit_and_legacy_pipeline_verification.md) | 2026-10-09 | Zero-Regression Audit & Verification of Legacy Video Rendering Pipelines | Validated all 6 pipelines, 28-scene 3D Depth multi-worker stress render, FFI concat, fixed StoryFolderResolutionStage async await & CLI options pass-through |
+| [`152`](152_token_optimization_and_rules_refactoring.md) | 2026-10-09 | Token Optimization & System Refactoring of `.agents/rules/` | Compacted all rule files into high-density constraints, reducing context footprint from 12KB to 6.9KB (~42% reduction) |
+| [`153`](153_auto_register_core_modifier_plugins.md) | 2026-10-09 | Auto-Register Core Modifier Plugins & Composite Execution in IRMasterRenderer | Auto-registered 6 foundational plugins in IRMasterRenderer, integrated Phase 2 & Phase 4 composite hooks, updated Depth3D parallax and CLI entrypoint |
+| [`154`](154_fix_concat_muxer_pts_and_ir_pause_duration.md) | 2026-10-09 | Fix Concat Muxer PTS Runaway & Synchronize Video IR Pause Duration | Normalized segment PTS offsets in FFIConcatMuxer, added -shortest to BGM mixing, and added relational offsetFrames pause mapping in Video IR |
+
