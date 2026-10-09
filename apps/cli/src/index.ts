@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { runWorkerDaemon } from './commands/WorkerCommand';
 import fs from 'fs';
 import {
