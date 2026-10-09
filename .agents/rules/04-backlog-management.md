@@ -1,7 +1,6 @@
 ---
 trigger: always_on
 ---
-
 rule: backlog_tracking
 constraints:
   - id: sequential 3-digit (001, 002); no unnumbered dumps
