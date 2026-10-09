@@ -61,6 +61,56 @@ importers:
         specifier: ^2.4.4
         version: 2.11.7
 
+  apps/cli:
+    dependencies:
+      '@acc/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@acc/effect-engines':
+        specifier: workspace:*
+        version: link:../../packages/effect-engines
+      '@acc/ir':
+        specifier: workspace:*
+        version: link:../../packages/ir
+
+  apps/python-backend: {}
+
+  packages/core: {}
+
+  packages/effect-engines:
+    dependencies:
+      '@acc/core':
+        specifier: workspace:*
+        version: link:../core
+      '@acc/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@huggingface/transformers':
+        specifier: ^4.3.0
+        version: 4.3.0(@types/node@26.6.4)
+      '@napi-rs/canvas':
+        specifier: ^1.0.9
+        version: 1.0.10
+      simplex-noise:
+        specifier: ^4.0.3
+        version: 4.0.3
+
+  packages/exporters:
+    dependencies:
+      '@acc/core':
+        specifier: workspace:*
+        version: link:../core
+      '@acc/ir':
+        specifier: workspace:*
+        version: link:../ir
+      '@napi-rs/canvas':
+        specifier: ^1.0.9
+        version: 1.0.10
+
+  packages/ir: {}
+
+  packages/proto: {}
+
 packages:
 
   '@clack/core@1.5.1':
