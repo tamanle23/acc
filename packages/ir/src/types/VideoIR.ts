@@ -105,6 +105,7 @@ export interface ResolvedSequence {
 export interface ResolvedTrack {
   id: string;
   type: TrackType;
+  style?: Record<string, unknown>;
   modifiers?: ModifierNode[];
   sequences: ResolvedSequence[];
 }

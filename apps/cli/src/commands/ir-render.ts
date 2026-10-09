@@ -25,7 +25,14 @@ export interface IrRenderCliOptions {
  */
 export async function handleIrRenderCommand(options: IrRenderCliOptions): Promise<void> {
   await FFmpegManager.prepare();
-  const inputPath = path.resolve(options.input);
+  let inputPath = path.resolve(options.input);
+  if (fs.existsSync(inputPath) && fs.statSync(inputPath).isDirectory()) {
+    const candidate = path.join(inputPath, 'story-config.json');
+    if (fs.existsSync(candidate)) {
+      inputPath = candidate;
+    }
+  }
+
   if (!fs.existsSync(inputPath)) {
     Logger.error('IRRenderCommand', `Input file does not exist: ${inputPath}`);
     process.exit(1);
@@ -73,11 +80,12 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   }
 
   // Handle temporal chunking slicing if specified
+  let chunkStart: number | undefined;
+  let chunkEnd: number | undefined;
   if (options.chunkStart !== undefined || options.chunkEnd !== undefined) {
-    const start = options.chunkStart || 0;
-    const end = options.chunkEnd || timeline.totalFrames;
-    timeline.totalFrames = Math.max(1, end - start);
-    Logger.info('IRRenderCommand', `Temporal chunking active: rendering frames ${start} -> ${end} (${timeline.totalFrames} frames)`);
+    chunkStart = options.chunkStart || 0;
+    chunkEnd = options.chunkEnd || timeline.totalFrames;
+    Logger.info('IRRenderCommand', `Temporal chunking active: rendering frames ${chunkStart} -> ${chunkEnd} (${Math.max(0, chunkEnd - chunkStart)} frames)`);
   }
 
   // Stage 2: Dual Target Sink Resolution
@@ -96,6 +104,8 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     sink,
     outputPath,
     baseDir,
+    chunkStart,
+    chunkEnd,
     generateFrameHash: true,
     onProgress: (p) => {
       Logger.info('IRRenderCommand', `[Render Progress] Frame ${p.currentFrame}/${p.totalFrames} (${p.percent}%)`);

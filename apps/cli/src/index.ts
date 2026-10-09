@@ -79,7 +79,7 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.conductorSandbox = true;
       continue;
     }
-    if (arg === '-c' || arg === '--config') {
+    if (arg === '-c' || arg === '--config' || arg === '-i' || arg === '--input') {
       options.configPath = args[++i];
       continue;
     }

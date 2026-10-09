@@ -8,6 +8,12 @@ import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
 import { DecoupledAudioMixer, type DecoupledAudioMixResult } from './audio/DecoupledAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry } from '../plugins/ModifierPluginRegistry';
+import {
+  BoundedAcousticCaptionStrategy,
+  drawCanvasCaptionsFromSnapshot,
+  type CaptionConfig,
+  type CaptionSettings,
+} from '@acc/effect-engines';
 
 export interface HeadlessRenderOptions {
   sink?: IIRFrameSink;
@@ -16,6 +22,8 @@ export interface HeadlessRenderOptions {
   onProgress?: (progress: { currentFrame: number; totalFrames: number; percent: number }) => void;
   generateFrameHash?: boolean;
   baseDir?: string;
+  chunkStart?: number;
+  chunkEnd?: number;
 }
 
 export interface HeadlessRenderResult {
@@ -43,6 +51,8 @@ export class IRMasterRenderer {
   private lock: FrameBackpressureLock;
   private audioMixer: DecoupledAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
+  private captionStrategy: BoundedAcousticCaptionStrategy;
+  private captionConfigCache: WeakMap<ResolvedSequence, CaptionConfig[]> = new WeakMap();
 
   // Cached assets to prevent disk re-reads in render loop
   private imageCache: Map<string, Image> = new Map();
@@ -53,6 +63,7 @@ export class IRMasterRenderer {
     this.lock = new FrameBackpressureLock();
     this.audioMixer = new DecoupledAudioMixer();
     this.pluginRegistry = ModifierPluginRegistry.getInstance();
+    this.captionStrategy = new BoundedAcousticCaptionStrategy();
   }
 
   /**
@@ -98,7 +109,22 @@ export class IRMasterRenderer {
     }
 
     // 1. Decoupled Asynchronous Audio Mixdown
-    const audioPromise = this.audioMixer.mix(this.timeline);
+    let audioResult: DecoupledAudioMixResult;
+    let tempAudioWavPath: string | undefined;
+
+    // If sink is active and no explicit audioPath was passed, pre-render mixed audio to temp WAV
+    if (sink && !options.audioPath) {
+      audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
+      if (audioResult.totalSamples > 0) {
+        const outDir = options.outputPath ? path.dirname(options.outputPath) : '.';
+        tempAudioWavPath = path.resolve(outDir, `.temp_${Date.now()}_master_audio.wav`);
+        await DecoupledAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+      }
+    } else {
+      audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
+    }
+
+    const effectiveAudioPath = options.audioPath || tempAudioWavPath;
 
     // Initialize Sink if provided
     if (sink) {
@@ -109,7 +135,7 @@ export class IRMasterRenderer {
         totalFrames,
         durationSeconds: this.timeline.durationSeconds,
         outputPath: options.outputPath,
-        audioPath: options.audioPath,
+        audioPath: effectiveAudioPath,
       });
     }
 
@@ -128,20 +154,27 @@ export class IRMasterRenderer {
       canvasCtx = canvas.getContext('2d');
     }
 
-    for (let t = 0; t < totalFrames; t++) {
+    // Calculate frame loop bounds
+    const startFrame = options.chunkStart !== undefined ? Math.max(0, options.chunkStart) : 0;
+    const endFrame = options.chunkEnd !== undefined ? Math.min(totalFrames, options.chunkEnd) : totalFrames;
+    const framesToRender = Math.max(0, endFrame - startFrame);
+
+    for (let f = 0; f < framesToRender; f++) {
+      const globalFrame = startFrame + f;
+
       // Synchronous backpressure acquire
-      await this.lock.acquire(t);
+      await this.lock.acquire(f);
 
       // Evaluate active sequences and procedural/visual rasterization for frame t
       if (canvas && canvasCtx) {
-        this.renderCanvasFrame(t, width, height, canvas, canvasCtx, framePixelBuffer);
+        this.renderCanvasFrame(globalFrame, width, height, canvas, canvasCtx, framePixelBuffer);
       } else {
-        this.rasterizeProceduralFrame(t, width, height, framePixelBuffer);
+        this.rasterizeProceduralFrame(globalFrame, width, height, framePixelBuffer);
       }
 
       // Pass directly to frame sink (FFI Video Encoder or Preview Canvas)
       if (sink) {
-        await sink.consumeFrame(t, framePixelBuffer);
+        await sink.consumeFrame(f, framePixelBuffer);
       }
 
       // Compute cryptographic hash of rendered frame buffer for bit-identical reproducibility
@@ -154,18 +187,17 @@ export class IRMasterRenderer {
       }
 
       // Simulate instantaneous consumer consumption ack
-      this.lock.acknowledge(t);
+      this.lock.acknowledge(f);
 
-      if (options.onProgress && (t % 30 === 0 || t === totalFrames - 1)) {
+      if (options.onProgress && (f % 30 === 0 || f === framesToRender - 1)) {
         options.onProgress({
-          currentFrame: t + 1,
-          totalFrames,
-          percent: parseFloat((((t + 1) / totalFrames) * 100).toFixed(1)),
+          currentFrame: f + 1,
+          totalFrames: framesToRender,
+          percent: parseFloat((((f + 1) / framesToRender) * 100).toFixed(1)),
         });
       }
     }
 
-    const audioResult = await audioPromise;
     const cumulativeHash = hashAccumulator.digest('hex');
 
     // Finalize Sink
@@ -174,9 +206,18 @@ export class IRMasterRenderer {
       sinkResult = await sink.finalize(audioResult);
     }
 
+    // Clean up temporary audio file if generated
+    if (tempAudioWavPath && fs.existsSync(tempAudioWavPath)) {
+      try {
+        await fs.promises.unlink(tempAudioWavPath);
+      } catch {
+        // Ignored
+      }
+    }
+
     return {
-      totalFrames,
-      durationSeconds: this.timeline.durationSeconds,
+      totalFrames: framesToRender,
+      durationSeconds: framesToRender > 0 ? parseFloat((framesToRender / fps).toFixed(3)) : 0,
       width,
       height,
       fps,
@@ -290,32 +331,27 @@ export class IRMasterRenderer {
           }
         }
       } else if (track.type === 'timed_text') {
-        // Render Subtitles / Captions
+        // Render Subtitles / Captions with Karaoke Active Word Highlighting
+        const captionSettings = track.style as CaptionSettings | undefined;
+
         for (const seq of track.sequences) {
-          if (t >= seq.startFrame && t < seq.endFrame && seq.cues) {
-            const elapsedMs = ((t - seq.startFrame) / this.timeline.meta.globalFps) * 1000;
-            // Find active cues
-            const activeWords: string[] = [];
-            for (const cue of seq.cues) {
-              const end = cue.endOffsetMs === 'end' ? Infinity : cue.endOffsetMs;
-              if (elapsedMs >= cue.startOffsetMs && elapsedMs < end) {
-                activeWords.push(cue.text);
-              }
+          if (t >= seq.startFrame && t < seq.endFrame && seq.cues && seq.cues.length > 0) {
+            // Retrieve cached CaptionConfig array to guarantee ZERO-ALLOC-FRAME-LOOP
+            let captionConfigs = this.captionConfigCache.get(seq);
+            if (!captionConfigs) {
+              captionConfigs = seq.cues.map(c => ({
+                text: c.text,
+                start: c.startOffsetMs / 1000,
+                end: c.endOffsetMs === 'end' ? (seq.durationFrames / this.timeline.meta.globalFps) : (c.endOffsetMs / 1000),
+              }));
+              this.captionConfigCache.set(seq, captionConfigs);
             }
 
-            if (activeWords.length > 0) {
-              const lineText = activeWords.join(' ');
-              ctx.save();
-              ctx.font = 'bold 36px sans-serif';
-              ctx.fillStyle = '#ffff00';
-              ctx.strokeStyle = '#000000';
-              ctx.lineWidth = 4;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-              const textY = height - 60;
-              ctx.strokeText(lineText, width / 2, textY);
-              ctx.fillText(lineText, width / 2, textY);
-              ctx.restore();
+            const localTimeSec = (t - seq.startFrame) / this.timeline.meta.globalFps;
+            const snapshot = this.captionStrategy.evaluate(captionConfigs, localTimeSec, captionSettings);
+
+            if (snapshot.shouldRender) {
+              drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
             }
           }
         }

@@ -156,6 +156,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       tracks.push({
         id: 'track_captions',
         type: 'timed_text',
+        style: settings.captions ? (settings.captions as unknown as Record<string, unknown>) : undefined,
         sequences: captionSequences,
       });
     }

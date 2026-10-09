@@ -44,6 +44,7 @@ export class RelationalDAGCompiler {
       trackMap.set(track.id, {
         id: track.id,
         type: track.type,
+        style: track.style,
         modifiers: track.modifiers,
         sequences: [],
       });
