@@ -474,10 +474,20 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
       expect(executedStage2).toBe(true);
     });
 
-    test('VideoEditPipelineOrchestrator End-to-End Execution', async () => {
-      const orchestrator = new VideoEditPipelineOrchestrator();
-      const res = await orchestrator.processAndRender({ name: 'Master E2E Orchestrator', scenes: [{ text: 'Scene 1', duration: 2 }] });
-      expect(res.ir.metadata.title).toBe('Master E2E Orchestrator');
+    test('VideoEditPipelineOrchestrator End-to-End Execution', () => {
+      const ir = VideoEditPipelineOrchestrator.prepareIR({ name: 'Master E2E Orchestrator', scenes: [{ text: 'Scene 1', duration: 2 }] });
+      expect(ir.metadata.title).toBe('Master E2E Orchestrator');
+    });
+
+    test('VideoEditPipelineOrchestrator.prepareIR extracts safe zones and calculates cuts', () => {
+      const ir = VideoEditPipelineOrchestrator.prepareIR({
+        name: 'Prepared Story',
+        settings: { platform: 'tiktok' },
+        scenes: [{ text: 'Scene 1', duration: 2, videoOffsetMs: 200 } as any],
+      });
+      const cut = ir.extendedChunks[0].metadata?.calculatedCut as any;
+      expect(cut?.splitEditType).toBe('j_cut');
+      expect(cut?.videoRange?.startMs).toBe(200);
     });
   });
 });

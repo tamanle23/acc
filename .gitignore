@@ -43,4 +43,4 @@ sample-story/output/
 .venv
 __pycache__/
 *.pyc
-
+pnpm-lock.yaml

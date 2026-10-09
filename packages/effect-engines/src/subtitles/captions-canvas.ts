@@ -1,6 +1,7 @@
 import type { CaptionConfig, CaptionSettings, CaptionTrackSnapshot } from '../types';
 import { PRESETS } from '../styles';
 import { BoundedAcousticCaptionStrategy } from './BoundedAcousticCaptionStrategy';
+import { SafeZoneManager, type SafeZonePlatform } from './SafeZoneManager';
 
 const defaultStrategy = new BoundedAcousticCaptionStrategy();
 
@@ -16,7 +17,8 @@ export function drawCanvasCaptionsFromSnapshot(
   snapshot: CaptionTrackSnapshot,
   settings: CaptionSettings | undefined,
   width: number,
-  height: number
+  height: number,
+  safeZonePlatform?: SafeZonePlatform
 ): void {
   if (!snapshot.shouldRender || !snapshot.phrase || snapshot.phrase.length === 0) return;
 
@@ -49,8 +51,25 @@ export function drawCanvasCaptionsFromSnapshot(
     : 'none';
   const highlightColor = settings?.highlightColor ?? (presetName === 'tiktok' ? '#FFFF00' : '#00FFFF');
 
-  // Compute Vertical Position
-  const marginV = Math.round((settings?.marginV ?? base.marginV ?? 65) * scale);
+  // Compute Vertical Position with Safe Zone Support
+  let rawMarginV = settings?.marginV ?? base.marginV ?? 65;
+  let rawMarginL = settings?.marginL ?? settings?.marginH ?? 50;
+  let rawMarginR = settings?.marginR ?? settings?.marginH ?? 50;
+
+  if (safeZonePlatform) {
+    const safeMargins = SafeZoneManager.getMargins(safeZonePlatform);
+    if (settings?.marginV === undefined) {
+      rawMarginV = Math.max(rawMarginV, safeMargins.bottomMarginPx);
+    }
+    if (settings?.marginL === undefined && settings?.marginH === undefined) {
+      rawMarginL = Math.max(rawMarginL, safeMargins.leftMarginPx);
+    }
+    if (settings?.marginR === undefined && settings?.marginH === undefined) {
+      rawMarginR = Math.max(rawMarginR, safeMargins.rightMarginPx);
+    }
+  }
+
+  const marginV = Math.round(rawMarginV * scale);
   let y = height - marginV;
   if (settings?.position === 'top' || settings?.position === 'top-center') {
     y = marginV + fontSize;
@@ -71,10 +90,10 @@ export function drawCanvasCaptionsFromSnapshot(
   // Compute Horizontal Start Position
   let xStart = (width - totalPhraseWidth) / 2;
   if (settings?.position === 'bottom-left' || settings?.position === 'top-left') {
-    const marginL = Math.round((settings?.marginL ?? settings?.marginH ?? 50) * scale);
+    const marginL = Math.round(rawMarginL * scale);
     xStart = marginL;
   } else if (settings?.position === 'bottom-right' || settings?.position === 'top-right') {
-    const marginR = Math.round((settings?.marginR ?? settings?.marginH ?? 50) * scale);
+    const marginR = Math.round(rawMarginR * scale);
     xStart = width - totalPhraseWidth - marginR;
   }
 

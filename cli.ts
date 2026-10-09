@@ -1,5 +1,5 @@
 import { FFmpegManager, intro, outro, isCancel, cancel } from '@acc/core';
-import { runCli } from '@acc/cli';
+import { run } from '@acc/cli';
 import * as prompt from '@clack/prompts';
 
 async function main() {
@@ -8,7 +8,7 @@ async function main() {
 
   // If arguments are provided, delegate directly to the unified CLI runner
   if (rawArgs.length > 0) {
-    const result = await runCli(rawArgs);
+    const result = await run(rawArgs);
     if (rawArgs[0]?.toLowerCase() !== 'serve') {
       process.exit(result?.success === false ? 1 : 0);
     }
@@ -16,7 +16,7 @@ async function main() {
   }
 
   // Interactive Clack prompt fallback when no arguments are passed
-  intro('Visual Storytelling Generator');
+  intro('--- ACC - Automated Content Creator ---');
 
   const dirPrompt = await prompt.text({
     message: 'Please enter the path to your story folder:',
@@ -36,7 +36,7 @@ async function main() {
   }
 
   try {
-    const result = await runCli(['run', 'story', targetDir]);
+    const result = await run(['run', 'story', targetDir]);
     if (result?.success === false) {
       outro(`Render failed: ${result.error || 'Unknown error'}`);
       process.exit(1);

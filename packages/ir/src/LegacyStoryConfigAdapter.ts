@@ -111,6 +111,8 @@ export class LegacyStoryConfigAdapter {
         text: scene.text,
         spokenAudioPath: scene.audio,
         durationMs: sceneDurationMs,
+        videoOffsetMs: (scene as any).videoOffsetMs,
+        audioOffsetMs: (scene as any).audioOffsetMs,
         visualLayers,
         typographyOverlays,
         transitionToNext: scene.transition?.enabled ? {

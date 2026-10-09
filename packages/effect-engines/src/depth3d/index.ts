@@ -597,7 +597,8 @@ export async function renderDepth3DScene(
               snapshot,
               config.settings.captions,
               width,
-              height
+              height,
+              config.settings.platform as any
             );
           }
 

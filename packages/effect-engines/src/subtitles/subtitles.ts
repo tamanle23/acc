@@ -1,5 +1,6 @@
 import type { CaptionConfig, CaptionSettings, ResolvedSceneConfig } from '../types';
 import { getResolvedCaptionStyle, getHighlightAssTag } from '../styles';
+import { SafeZoneManager, type SafeZonePlatform } from './SafeZoneManager';
 
 function formatAssTimestamp(seconds: number): string {
   const pad = (num: number, size = 2) => String(num).padStart(size, '0');
@@ -42,12 +43,32 @@ export function generateAssContent(
   captions: CaptionConfig[],
   captionSettings: CaptionSettings | undefined,
   width: number,
-  height: number
+  height: number,
+  safeZonePlatform?: SafeZonePlatform
 ): string {
   const style = getResolvedCaptionStyle(captionSettings);
   const wordsPerPhrase = captionSettings?.wordsPerPhrase || 1;
   const activeWordHighlight = captionSettings?.activeWordHighlight ?? (captionSettings as any)?.['active-word-highlight'] ?? false;
   
+  // Safe zone margin calculation
+  let effectiveMarginV = style.marginV;
+  let effectiveMarginL = style.marginL;
+  let effectiveMarginR = style.marginR;
+
+  if (safeZonePlatform) {
+    const scale = height / 1080;
+    const safeMargins = SafeZoneManager.getMargins(safeZonePlatform);
+    if (captionSettings?.marginV === undefined) {
+      effectiveMarginV = Math.max(style.marginV, Math.round(safeMargins.bottomMarginPx * scale));
+    }
+    if (captionSettings?.marginL === undefined && captionSettings?.marginH === undefined) {
+      effectiveMarginL = Math.max(style.marginL, Math.round(safeMargins.leftMarginPx * scale));
+    }
+    if (captionSettings?.marginR === undefined && captionSettings?.marginH === undefined) {
+      effectiveMarginR = Math.max(style.marginR, Math.round(safeMargins.rightMarginPx * scale));
+    }
+  }
+
   const effectiveHighlightPreset = activeWordHighlight
     ? (captionSettings?.highlightPreset && captionSettings.highlightPreset !== 'none' ? captionSettings.highlightPreset : 'color')
     : (captionSettings?.highlightPreset || 'none');
@@ -64,7 +85,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${style.fontName},${style.fontSize},${style.primaryColor},&H000000FF,${style.outlineColor},${style.shadowColor},-1,0,0,0,100,100,0,0,${style.borderStyle},${style.outlineSize},${style.shadowSize},${style.alignment},${style.marginL},${style.marginR},${style.marginV},1
+Style: Default,${style.fontName},${style.fontSize},${style.primaryColor},&H000000FF,${style.outlineColor},${style.shadowColor},-1,0,0,0,100,100,0,0,${style.borderStyle},${style.outlineSize},${style.shadowSize},${style.alignment},${effectiveMarginL},${effectiveMarginR},${effectiveMarginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

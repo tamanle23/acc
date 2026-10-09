@@ -6,7 +6,8 @@ import { FFI, initFFI, makeAVRational, AV_PIX_FMT_RGBA, Structs } from "./index"
 import { FFIVideoEncoder } from "./FFIVideoEncoder";
 import type { ResolvedStoryConfig, ResolvedSceneConfig, CaptionConfig, CaptionSettings, CaptionTrackSnapshot } from "../types";
 import { TimelineEngine } from "../timeline/TimelineEngine";
-import { drawCanvasCaptionsFromSnapshot, BoundedAcousticCaptionStrategy } from "../../../effect-engines/src/subtitles";
+import { drawCanvasCaptionsFromSnapshot, BoundedAcousticCaptionStrategy, type SafeZonePlatform } from "../../../effect-engines/src/subtitles";
+import { ColorGradingEngine } from "../../../effect-engines/src/styles/ColorGradingEngine";
 
 export interface SceneEngineOptions {
   scene: ResolvedSceneConfig;
@@ -32,6 +33,9 @@ export class FFISceneEngine {
     const hasAudio = fs.existsSync(scene.resolvedAudio);
     const audioInput = hasAudio ? scene.resolvedAudio : fallbackAudioPath;
 
+    const platform = config.settings.platform as SafeZonePlatform | undefined;
+    const colorGrading = (scene as any).colorGrading || (config.settings as any).colorGrading;
+
     if (hasVideo) {
       return await this.renderVideoScene({
         videoPath: scene.resolvedVideo!,
@@ -42,7 +46,9 @@ export class FFISceneEngine {
         height,
         fps,
         captions: scene.captions,
-        captionSettings: config.settings.captions
+        captionSettings: config.settings.captions,
+        platform,
+        colorGrading,
       });
     } else {
       const imagePath = (scene.resolvedImage && fs.existsSync(scene.resolvedImage)) ? scene.resolvedImage : fallbackImagePath;
@@ -55,7 +61,9 @@ export class FFISceneEngine {
         height,
         fps,
         captions: scene.captions,
-        captionSettings: config.settings.captions
+        captionSettings: config.settings.captions,
+        platform,
+        colorGrading,
       });
     }
   }
@@ -73,10 +81,17 @@ export class FFISceneEngine {
     fps: number;
     captions?: CaptionConfig[];
     captionSettings?: CaptionSettings;
+    platform?: SafeZonePlatform;
+    colorGrading?: any;
   }): Promise<{ path: string; duration: number }> {
-    const { imagePath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings } = options;
+    const { imagePath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings, platform, colorGrading } = options;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
+
+    if (colorGrading) {
+      const colorEngine = new ColorGradingEngine();
+      colorEngine.applyCanvasTransform(ctx, colorGrading);
+    }
 
     const img = await loadImage(imagePath);
 
@@ -110,6 +125,12 @@ export class FFISceneEngine {
     if (captions && captions.length > 0) {
       const bgCanvas = createCanvas(width, height);
       const bgCtx = bgCanvas.getContext("2d");
+
+      if (colorGrading) {
+        const colorEngine = new ColorGradingEngine();
+        colorEngine.applyCanvasTransform(bgCtx, colorGrading);
+      }
+
       bgCtx.fillStyle = "#000000";
       bgCtx.fillRect(0, 0, width, height);
       bgCtx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -138,7 +159,7 @@ export class FFISceneEngine {
         // Only redraw canvas and allocate new buffer if the active subtitle state changed!
         if (activePhraseIdx !== lastPhraseIdx || activeWordIdx !== lastActiveWordIdx || !cachedRgbaBuffer) {
           ctx.drawImage(bgCanvas, 0, 0);
-          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
+          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height, platform);
           cachedRgbaBuffer = canvas.data();
           lastPhraseIdx = activePhraseIdx;
           lastActiveWordIdx = activeWordIdx;
@@ -181,8 +202,10 @@ export class FFISceneEngine {
     fps: number;
     captions?: CaptionConfig[];
     captionSettings?: CaptionSettings;
+    platform?: SafeZonePlatform;
+    colorGrading?: any;
   }): Promise<{ path: string; duration: number }> {
-    const { videoPath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings } = options;
+    const { videoPath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings, platform, colorGrading } = options;
     initFFI();
 
     // 1. Open Input Video
@@ -275,7 +298,7 @@ export class FFISceneEngine {
           ctx.putImageData(imgData, 0, 0);
           const timeSec = framesEncoded / fps;
           const snapshot = timeline.getTrackState<CaptionTrackSnapshot>("subtitles", timeSec, captionSettings);
-          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
+          drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height, platform);
           encoder.encodeRgbaFrame(canvas.data());
         } else {
           encoder.encodeRawFrame(f, srcW, srcH, srcFmt);

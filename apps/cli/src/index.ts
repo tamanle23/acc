@@ -542,5 +542,5 @@ async function runPipeline(pipelineSelection: string, configLocation?: string, c
   };
 }
 
-export const runCli = run;
+
 
