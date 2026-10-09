@@ -44,6 +44,8 @@ export class FFIConcatMuxer {
         if (ret < 0) throw new Error(`FFIConcatMuxer: Failed to create output context for ${outputPath}`);
         const outCtx = outCtxPtr[0];
 
+        // Record output stream codec types for stream matching
+        const outStreamCodecTypes: number[] = [];
         // 3. Clone streams and codec parameters into output context
         for (let i = 0; i < nbStreams; i++) {
           const inStream = inStreamsArray.getBigUint64(i * 8, true);
@@ -56,6 +58,10 @@ export class FFIConcatMuxer {
           const outStreamCodecpar = outStreamView.getBigUint64(16, true);
 
           FFI.avcodec.avcodec_parameters_copy(outStreamCodecpar, inStreamCodecpar);
+
+          // Track codec_type (0 = video, 1 = audio, etc.)
+          const inCpView = new DataView(safeArrayBuffer(inStreamCodecpar, 0, 64));
+          outStreamCodecTypes.push(inCpView.getInt32(0, true));
 
           // Copy timebase
           outStreamView.setInt32(32, inStreamView.getInt32(32, true), true);
@@ -95,42 +101,63 @@ export class FFIConcatMuxer {
           const segInCtx = segInPtr[0];
           FFI.avformat.avformat_find_stream_info(segInCtx, 0n);
 
+          const segView = new DataView(safeArrayBuffer(segInCtx, 0, 64));
+          const segNbStreams = segView.getUint32(44, true);
+          const segStreamsPtr = segView.getBigUint64(48, true);
+          const segStreamsArray = new DataView(safeArrayBuffer(segStreamsPtr, 0, segNbStreams * 8));
+
+          // Map segment stream index -> output stream index by matching codec_type
+          const segStreamMap = new Int32Array(segNbStreams).fill(-1);
+          for (let s = 0; s < segNbStreams; s++) {
+            const sPtr = segStreamsArray.getBigUint64(s * 8, true);
+            const sCp = new DataView(safeArrayBuffer(sPtr, 0, 64)).getBigUint64(16, true);
+            const sCodecType = new DataView(safeArrayBuffer(sCp, 0, 64)).getInt32(0, true);
+            for (let o = 0; o < nbStreams; o++) {
+              if (outStreamCodecTypes[o] === sCodecType) {
+                segStreamMap[s] = o;
+                break;
+              }
+            }
+          }
+
           const firstPtsInSeg: Array<bigint | null> = new Array(nbStreams).fill(null);
           const maxPtsInSeg = new Array(nbStreams).fill(0n);
 
           while (FFI.avformat.av_read_frame(segInCtx, pkt) >= 0) {
-            const pktView = new DataView(safeArrayBuffer(pkt, 0, 64));
-            const streamIdx = pktView.getInt32(36, true);
+            const pktView = new DataView(safeArrayBuffer(pkt, 0, 128));
+            const inStreamIdx = pktView.getInt32(36, true);
+            const targetStreamIdx = inStreamIdx < segNbStreams ? segStreamMap[inStreamIdx] : -1;
 
-            if (streamIdx < nbStreams) {
+            if (targetStreamIdx >= 0 && targetStreamIdx < nbStreams) {
               const rawPts = pktView.getBigInt64(8, true);
               const rawDts = pktView.getBigInt64(16, true);
               const rawDuration = pktView.getBigInt64(64, true);
 
-              if (firstPtsInSeg[streamIdx] === null) {
-                firstPtsInSeg[streamIdx] = rawPts >= 0n ? rawPts : (rawDts >= 0n ? rawDts : 0n);
+              if (firstPtsInSeg[targetStreamIdx] === null) {
+                firstPtsInSeg[targetStreamIdx] = rawPts >= 0n ? rawPts : (rawDts >= 0n ? rawDts : 0n);
               }
 
-              const basePts = firstPtsInSeg[streamIdx] ?? 0n;
+              const basePts = firstPtsInSeg[targetStreamIdx] ?? 0n;
               const relPts = rawPts >= basePts ? rawPts - basePts : 0n;
               const relDts = rawDts >= basePts ? rawDts - basePts : relPts;
 
               const pktSpan = relPts + (rawDuration > 0n ? rawDuration : 1n);
-              if (pktSpan > maxPtsInSeg[streamIdx]) {
-                maxPtsInSeg[streamIdx] = pktSpan;
+              if (pktSpan > maxPtsInSeg[targetStreamIdx]) {
+                maxPtsInSeg[targetStreamIdx] = pktSpan;
               }
 
-              let newPts = relPts + streamPtsOffsets[streamIdx];
-              let newDts = relDts + streamPtsOffsets[streamIdx];
+              let newPts = relPts + streamPtsOffsets[targetStreamIdx];
+              let newDts = relDts + streamPtsOffsets[targetStreamIdx];
 
-              if (newDts <= lastDts[streamIdx]) {
-                newDts = lastDts[streamIdx] + 1n;
+              if (newDts <= lastDts[targetStreamIdx]) {
+                newDts = lastDts[targetStreamIdx] + 1n;
               }
               if (newPts < newDts) {
                 newPts = newDts;
               }
-              lastDts[streamIdx] = newDts;
+              lastDts[targetStreamIdx] = newDts;
 
+              pktView.setInt32(36, targetStreamIdx, true); // Update stream index to target stream
               pktView.setBigInt64(8, newPts, true);
               pktView.setBigInt64(16, newDts, true);
 

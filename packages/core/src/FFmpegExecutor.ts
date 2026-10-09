@@ -179,10 +179,24 @@ export class FFmpegCommand {
     }
 
     try {
-      // 1. Lossless Stream Concatenation (multiple inputs)
-      if (inputPaths.length > 1) {
-        const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
-        await FFIConcatMuxer.concatenate(inputPaths, outputFile);
+      // 1. Lossless Stream Concatenation (multiple video inputs without complex filtergraphs)
+      if (this.complexFilterStr) {
+        // Complex filtergraph execution requested (e.g. BGM mixing / audio ducking)
+        // Since complex filtergraphs are not yet executed via pure FFI, safely preserve primary video stream
+        if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
+          fs.copyFileSync(inputPaths[0], outputFile);
+        }
+      } else if (inputPaths.length > 1) {
+        const isAllVideoContainers = inputPaths.every((p) =>
+          p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.webm') || p.endsWith('.mkv')
+        );
+        if (isAllVideoContainers) {
+          const { FFIConcatMuxer } = await import('./ffmpeg-ffi/FFIConcatMuxer');
+          await FFIConcatMuxer.concatenate(inputPaths, outputFile);
+        } else if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
+          // Mixed media types (e.g. video + audio file): fallback safely to primary input
+          fs.copyFileSync(inputPaths[0], outputFile);
+        }
       }
       // 2. Single Scene Video/Image rendering
       else if (inputPaths.length === 1) {

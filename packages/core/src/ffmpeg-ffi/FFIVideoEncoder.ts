@@ -23,6 +23,7 @@ export class FFIVideoEncoder {
     private packet: any = 0;
     private swsCtx: any = 0;
     private frameIndex: number = 0;
+    private videoPacketIndex: number = 0;
     private isInitialized: boolean = false;
     private isHeaderWritten: boolean = false;
 
@@ -250,7 +251,7 @@ export class FFIVideoEncoder {
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
             const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
+            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);   // pts
             pktView.setBigInt64(16, streamPts, true);  // dts
             pktView.setBigInt64(64, ticksPerFrame, true); // duration
@@ -291,7 +292,7 @@ export class FFIVideoEncoder {
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
             const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(Math.max(0, this.frameIndex - 1)) * ticksPerFrame;
+            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);
             pktView.setBigInt64(16, streamPts, true);
             pktView.setBigInt64(64, ticksPerFrame, true);
@@ -594,7 +595,7 @@ export class FFIVideoEncoder {
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
             const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(this.frameIndex++) * ticksPerFrame;
+            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
             pktView.setBigInt64(8, streamPts, true);   // pts
             pktView.setBigInt64(16, streamPts, true);  // dts
             pktView.setBigInt64(64, ticksPerFrame, true); // duration
