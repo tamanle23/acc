@@ -153,17 +153,9 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`139`](139_multi_track_sfx_and_master_audio_timeline.md) | 2026-10-05 | Multi-Track Timeline SFX & Master Audio Track Architecture Integration | Added SFXClipConfig, AudioTrackConfig, timeline strategies, orchestrator mixer, schema, docs, and 8-point sync |
 | [`140`](140_publish_multi_track_timeline_unified_voiceover_spec.md) | 2026-10-05 | Publish Dedicated Multi-Track Timeline & Unified Voiceover Specification | Authored dedicated architectural specification in docs/MULTI_TRACK_TIMELINE_AND_UNIFIED_VOICEOVER_SPEC.md |
 | [`141`](141_video_edit_pipeline_orchestrator_determinism_and_visual_timeline_feasibility.md) | 2026-10-06 | VideoEditPipelineOrchestrator Determinism & Remotion-Style Visual Timeline Feasibility | Investigated frame rendering determinism and analyzed visual timeline editor feasibility |
-
-
-
-
-
-
-
-
-
 | [142](142_four_stage_generation_brainstorm.md) | 2026-10-06 | Four-Stage Generation Brainstorm | Design doc for config -> AST -> edit -> export architecture |
 | [143](143_mark_process_and_render_experimental.md) | 2026-10-06 | Mark processAndRender Experimental & Parity Backlog | JSDoc experimental flag; backlog 013 with feature gap analysis |
+| [`144`](144_wcag_2_2_aa_caption_contrast_and_accessibility.md) | 2026-10-09 | WCAG 2.2 AA Caption Contrast & Design Token Accessibility Hardening | Calibrated bold-retro outline color, exported sRGB luminance & WCAG contrast utilities, added test suite |
 | [144](144_universal_video_ir_phase1_phase2_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 1 & Phase 2 Execution | V1.0-Stable IR schema, validator, pioneer adapter, two-pass DAG compiler, Bresenham audio clock, interval tree index |
 | [145](145_universal_video_ir_phase3_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 3 Execution | Extensible ModifierPluginRegistry, core bridges (Depth3D, Ducking, SplitEdit, Crossfade, BlendMode), and Command Pattern |
 | [146](146_universal_video_ir_phase4_phase5_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 4 & Phase 5 Execution | IRMasterRenderer, IRPreviewEngine, FrameBackpressureLock, DecoupledAudioMixer, and Pioneer Parity Audit |

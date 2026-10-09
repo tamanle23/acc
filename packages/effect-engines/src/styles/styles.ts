@@ -4,6 +4,45 @@ import { CaptionSettings, CaptionPreset, CaptionPosition } from './types';
  * Converts standard HTML Hex Color (e.g. #FFCC00) to ASS format (&H0000CCFF)
  * ASS format is &HAABBGGRR
  */
+/**
+ * Calculates sRGB relative luminance according to W3C WCAG 2.1/2.2 guidelines.
+ * L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+ */
+export function getLuminance(hex: string): number {
+  if (!hex) return 1.0;
+  let cleanHex = hex.replace('#', '').toUpperCase();
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex.split('').map((c) => c + c).join('');
+  }
+  if (cleanHex.length !== 6) return 1.0;
+
+  const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+  const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+  const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+  const R = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+  const G = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+  const B = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+
+/**
+ * Calculates WCAG 2.2 contrast ratio between two hex colors.
+ * Contrast Ratio = (L1 + 0.05) / (L2 + 0.05) where L1 > L2.
+ */
+export function calculateContrastRatio(hex1: string, hex2: string): number {
+  const l1 = getLuminance(hex1);
+  const l2 = getLuminance(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * Converts standard HTML Hex Color (e.g. #FFCC00) to ASS format (&H0000CCFF)
+ * ASS format is &HAABBGGRR
+ */
 export function hexToAss(hex: string): string {
   if (!hex) return '&H00FFFFFF';
 
@@ -92,7 +131,7 @@ export const PRESETS: Record<CaptionPreset, RequiredCaptionSettings> = {
     fontName: 'Segoe UI Black',
     fontSize: 54,
     primaryColor: '#FF7700', // Bright Orange
-    outlineColor: '#FFFFFF', // White Outline
+    outlineColor: '#000000', // Black Outline (Calibrated for WCAG 2.2 AA ≥ 4.5:1 text contrast)
     shadowColor: '#000000', // Black Shadow
     outlineSize: 3,
     shadowSize: 3,
