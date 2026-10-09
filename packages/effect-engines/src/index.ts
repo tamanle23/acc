@@ -10,5 +10,6 @@ export * from './subtitles';
 export * from './vision';
 export * from './types';
 export * from './editing';
+export * from './styles';
 export * from './plugins';
 export * from './commands/RenderCommand';
