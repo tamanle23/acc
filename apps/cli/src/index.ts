@@ -7,7 +7,7 @@ import {
 import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions } from '@acc/core';
 
 export interface CliOptions {
-  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker';
+  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render';
   pipelineId?: string;
   configPath?: string;
   outDir?: string;
@@ -19,6 +19,8 @@ export interface CliOptions {
   duration?: number;
   conductorUrl?: string;
   conductorSandbox?: boolean;
+  chunkStart?: number;
+  chunkEnd?: number;
 }
 import { cancel, intro, isCancel, outro, select, spinner, text } from '@clack/prompts';
 
@@ -42,7 +44,7 @@ export function parseCliArgs(args: string[]): CliOptions {
   const firstArg = args[0].toLowerCase();
   let startIndex = 0;
 
-  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'help', '--help', '-h'].includes(firstArg)) {
+  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'ir-render', 'help', '--help', '-h'].includes(firstArg)) {
     if (firstArg === '--help' || firstArg === '-h') {
       options.command = 'help';
     } else {
@@ -107,6 +109,14 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.dryRun = true;
       continue;
     }
+    if (arg === '--chunk-start') {
+      options.chunkStart = parseInt(args[++i] || '0', 10);
+      continue;
+    }
+    if (arg === '--chunk-end') {
+      options.chunkEnd = parseInt(args[++i] || '0', 10);
+      continue;
+    }
     if (arg === '-h' || arg === '--help') {
       options.command = 'help';
       break;
@@ -125,6 +135,7 @@ ACC (Automated Content Creator) - Multi-Pipeline Engine CLI v3.0
 
 USAGE:
   acc run <pipeline_id> [options]
+  acc ir-render --config <ir.json|story_dir> [options]
   acc stream <pipeline_id> --rtmp <url> [options]
   acc serve [--port <number>]
   acc list
@@ -149,6 +160,8 @@ OPTIONS:
   -p, --port <port>          Webhook listener HTTP port (Default: 3000)
   -d, --duration <seconds>   Stream or loop duration limit in seconds
   -n, --dry-run              Inspect and validate pipeline AST & assets without file encoding
+  --chunk-start <frame>      Start frame index for distributed temporal chunk rendering
+  --chunk-end <frame>        End frame index for distributed temporal chunk rendering
   -h, --help                 Display this CLI guide
 `);
 }
@@ -284,15 +297,80 @@ function extractOutputPaths(results: any): string[] {
 
 export async function run(): Promise<any> {
   const rawArgs = process.argv.slice(2);
-  // If arguments are provided, delegate directly to the unified CLI runner
+  const options = parseCliArgs(rawArgs);
+
   if (rawArgs.length > 0) {
-    return await runPipeline('story', rawArgs[0]);
+    if (options.command === 'help') {
+      printHelp();
+      return { success: true, command: 'help' };
+    }
+    if (options.command === 'list') {
+      listPipelines();
+      return { success: true, command: 'list' };
+    }
+    if (options.command === 'overlay') {
+      const { runOverlayCommand } = await import('./commands/overlay');
+      await runOverlayCommand(rawArgs.slice(1));
+      return { success: true, command: 'overlay' };
+    }
+    if (options.command === 'sfx') {
+      const { runSFXCommand } = await import('./commands/sfx');
+      await runSFXCommand(rawArgs.slice(1));
+      return { success: true, command: 'sfx' };
+    }
+    if (options.command === 'worker') {
+      if (!options.conductorUrl && !options.conductorSandbox) {
+        Logger.error('ACC-CLI', 'Error: --conductor-url <url> or --sandbox is required for the worker daemon command.');
+        return { success: false, error: 'Missing configuration for worker' };
+      }
+      await runWorkerDaemon({
+        conductorUrl: options.conductorUrl || 'http://localhost:8080',
+        sandboxMode: options.conductorSandbox,
+      });
+      return { success: true, command: 'worker' };
+    }
+    if (options.command === 'ir-render') {
+      const { handleIrRenderCommand } = await import('./commands/ir-render');
+      await handleIrRenderCommand({
+        input: options.configPath || './sample-story',
+        output: options.outDir,
+        dryRun: options.dryRun,
+        chunkStart: options.chunkStart,
+        chunkEnd: options.chunkEnd,
+      });
+      return { success: true, command: 'ir-render' };
+    }
+    if (options.command === 'stream') {
+      if (!options.rtmpUrl) {
+        Logger.error('ACC-CLI', 'Error: --rtmp <url> is required for stream command.');
+        return { success: false, error: 'Missing --rtmp flag' };
+      }
+      const pipelineId = options.pipelineId || 'ambient';
+      Logger.info('ACC-CLI', `Initializing RTMP Live Stream for pipeline '${pipelineId}' -> ${options.rtmpUrl}`);
+
+      if (pipelineId === '6' || pipelineId === 'ambient') {
+        const ambientPipeline = new AmbientStreamPipeline();
+        const duration = options.duration || 10;
+        const maxFrames = Math.round(duration * 30);
+        const res = await ambientPipeline.streamToRtmp(options.rtmpUrl, undefined, maxFrames);
+        Logger.info('ACC-CLI', `Stream finished successfully. Pushed ${res.framesSent} frames.`);
+        return { success: true, framesSent: res.framesSent };
+      } else {
+        throw new Error(`Pipeline '${pipelineId}' does not support live RTMP streaming.`);
+      }
+    }
+    if (options.command === 'run') {
+      const targetPipeline = options.pipelineId || 'story';
+      const targetConfig = options.configPath || rawArgs[0];
+      return await runPipeline(targetPipeline, targetConfig);
+    }
   }
 
   const commandSelection = await select({
     message: 'ACC CLI command:',
     options: [
       { label: 'Run', value: 'run' },
+      { label: 'IR-Render', value: 'ir-render' },
       { label: 'Stream', value: 'stream' },
       { label: 'Overlay', value: 'overlay' },
       { label: 'SFX', value: 'sfx' },
@@ -304,8 +382,23 @@ export async function run(): Promise<any> {
     process.exit(0);
   }
 
-
   switch (commandSelection) {
+    case 'ir-render': {
+      const configLocation = await text({
+        message: 'Please enter the path to your Video IR document or story folder:',
+        placeholder: './sample-story',
+        validate: async (val) => ((!val || val.trim() === '' || !(await fs.promises.exists(val))) ? 'Path cannot be empty or invalid.' : ''),
+      });
+      if (isCancel(configLocation)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+      const { handleIrRenderCommand } = await import('./commands/ir-render');
+      await handleIrRenderCommand({
+        input: configLocation,
+      });
+      return { success: true, command: 'ir-render' };
+    }
     case 'overlay': {
       const { runOverlayCommand } = await import('./commands/overlay');
       await runOverlayCommand(process.argv.slice(1));
