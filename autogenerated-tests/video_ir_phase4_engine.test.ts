@@ -5,15 +5,13 @@ import {
   StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
-  type LegacyStoryConfig,
-} from '@acc/ir';
-import {
   IRMasterRenderer,
   IRPreviewEngine,
   DeterministicNoiseGenerator,
   FrameBackpressureLock,
   DecoupledAudioMixer,
-} from '@acc/core';
+  type LegacyStoryConfig,
+} from '@acc/ir';
 
 describe('Video IR Phase 4: Deterministic Headless Rasterizer & Interactive Preview Engine', () => {
   it('generates bit-identical frame hashes and cumulative hash across independent runs (Determinism Invariant)', async () => {

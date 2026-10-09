@@ -9,3 +9,6 @@ export * from './adapters/StoryConfigToUniversalIRAdapter';
 export * from './compiler/DeterministicAudioClock';
 export * from './compiler/IntervalTreeIndex';
 export * from './compiler/RelationalDAGCompiler';
+export * from './commands/RenderCommand';
+export * from './plugins';
+export * from './renderer';

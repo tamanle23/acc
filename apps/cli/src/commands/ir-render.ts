@@ -5,10 +5,10 @@ import {
   StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
+  IRMasterRenderer,
   type VideoIRDocument,
   type LegacyStoryConfig,
 } from '@acc/ir';
-import { IRMasterRenderer } from '@acc/core';
 
 export interface IrRenderCliOptions {
   input: string;

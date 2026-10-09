@@ -21,8 +21,11 @@ export function createStoryOrchestratedRenderStage(
 
       // Check if IR backend routing is requested (Phase 5 Pioneer Flywheel)
       if (ctx.metadata?.useIRBackend) {
-        const { StoryConfigToUniversalIRAdapter, RelationalDAGCompiler } = await import('@acc/ir');
-        const { IRMasterRenderer } = await import('@acc/core');
+        const {
+          StoryConfigToUniversalIRAdapter,
+          RelationalDAGCompiler,
+          IRMasterRenderer,
+        } = await import('@acc/ir');
 
         const irDoc = StoryConfigToUniversalIRAdapter.adapt(resolvedConfig);
         const compiler = new RelationalDAGCompiler();

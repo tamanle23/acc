@@ -10,8 +10,9 @@ import {
   MacroRenderCommand,
   type RenderCommand,
   type ModifierContext,
-} from '../packages/effect-engines/src';
-import type { ResolvedTrack, ResolvedSequence } from '@acc/ir';
+  type ResolvedTrack,
+  type ResolvedSequence,
+} from '@acc/ir';
 
 describe('Video IR Phase 3: Modifier Plugin Registry & Extensible Bridges', () => {
   it('registers all core plugins and confirms listTypes', () => {

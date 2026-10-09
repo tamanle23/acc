@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '@acc/ir';
+import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '../types/VideoIR';
 import { FrameBackpressureLock } from './handshake/FrameBackpressureLock';
 import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
 import { DecoupledAudioMixer, type DecoupledAudioMixResult } from './audio/DecoupledAudioMixer';

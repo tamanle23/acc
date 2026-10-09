@@ -1,5 +1,5 @@
-import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
-import { IntervalTreeIndex } from '@acc/ir';
+import type { ResolvedTimeline, ResolvedSequence } from '../../types/VideoIR';
+import { IntervalTreeIndex } from '../../compiler/IntervalTreeIndex';
 
 export interface PreviewFrameResult {
   frame: number;

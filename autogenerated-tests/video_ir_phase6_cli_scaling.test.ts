@@ -5,10 +5,10 @@ import {
   StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
+  IRMasterRenderer,
   type VideoIRDocument,
   type LegacyStoryConfig,
 } from '@acc/ir';
-import { IRMasterRenderer } from '@acc/core';
 import { parseCliArgs } from '../apps/cli/src/index';
 
 describe('Phase 6: Distributed Temporal Slicing & CLI Execution Parity', () => {

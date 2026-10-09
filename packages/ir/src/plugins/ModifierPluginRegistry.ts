@@ -1,4 +1,4 @@
-import type { ResolvedTrack, ResolvedSequence, ModifierNode } from '@acc/ir';
+import type { ResolvedTrack, ResolvedSequence, ModifierNode } from '../types/VideoIR';
 
 export interface ModifierContext {
   targetType: 'track' | 'sequence';

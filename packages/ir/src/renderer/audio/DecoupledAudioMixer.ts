@@ -1,5 +1,5 @@
-import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '@acc/ir';
-import { DeterministicAudioClock } from '@acc/ir';
+import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '../../types/VideoIR';
+import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
 
 export interface DecoupledAudioMixResult {
   totalSamples: number;
