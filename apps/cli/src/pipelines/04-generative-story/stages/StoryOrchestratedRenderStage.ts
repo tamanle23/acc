@@ -25,13 +25,20 @@ export function createStoryOrchestratedRenderStage(
           StoryConfigToUniversalIRAdapter,
           RelationalDAGCompiler,
           IRMasterRenderer,
+          FFIVideoEncoderSink,
         } = await import('@acc/ir');
 
         const irDoc = StoryConfigToUniversalIRAdapter.adapt(resolvedConfig);
         const compiler = new RelationalDAGCompiler();
         const timeline = await compiler.compile(irDoc);
         const renderer = new IRMasterRenderer(timeline);
-        const result = await renderer.render();
+        const sink = new FFIVideoEncoderSink();
+
+        const result = await renderer.render({
+          sink,
+          outputPath: outputFilePath,
+          baseDir: absoluteDir,
+        });
         ctx.metadata.irRenderResult = result;
       } else {
         // Delegate video rendering to the consolidated VideoEditPipelineOrchestrator

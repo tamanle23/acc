@@ -217,10 +217,24 @@ export class VideoEditPipelineOrchestrator {
     baseDir: string = process.cwd()
   ): Promise<void> {
     await FFmpegManager.prepare();
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'story-render-'));
     const { width, height, container, captions, concurrency } = config.settings;
     const totalScenes = config.scenes.length;
-    const activeConcurrency = Math.max(1, Math.min(concurrency || 1, totalScenes));
+    // Step C1: Dynamic Worker Memory Throttling (RAM Bounds)
+    // Constrain worker concurrency based on available system RAM (~1.5GB per concurrent worker)
+    const freeRamGB = os.freemem() / (1024 * 1024 * 1024);
+    const cpuCount = os.cpus().length || 4;
+    const memoryBoundWorkers = Math.max(1, Math.floor(freeRamGB / 1.5));
+    const requestedConcurrency = concurrency || 1;
+    const activeConcurrency = Math.max(1, Math.min(requestedConcurrency, totalScenes, cpuCount, memoryBoundWorkers));
+
+    if (activeConcurrency < requestedConcurrency) {
+      Logger.warn(
+        'VideoEditPipelineOrchestrator',
+        `[Memory Guard] Concurrency throttled from ${requestedConcurrency} to ${activeConcurrency} (Available RAM: ${freeRamGB.toFixed(1)}GB, CPUs: ${cpuCount})`
+      );
+    }
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'story-render-'));
 
     const renderContext: RenderContext = {
       config,

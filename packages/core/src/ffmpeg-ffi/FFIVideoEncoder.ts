@@ -102,9 +102,16 @@ export class FFIVideoEncoder {
         // Delegate codec settings (GOP, latency tune, presets, rate control) to Strategy
         this.strategy.configureCodec(this.codecCtx, isNvenc, this.fps, this.crf);
 
-        // 4. Open video codec
-        let openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
+        // 4. Open video codec with Defensive Fallback (NVENC -> libx264)
+        let openRet = -1;
+        try {
+            openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
+        } catch {
+            openRet = -1;
+        }
+
         if (openRet < 0 && isNvenc) {
+            console.warn('[FFIVideoEncoder] NVENC initialization failed or device unavailable. Defensively falling back to CPU libx264.');
             codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("libx264\0")));
             if (codec) {
                 const p = new BigUint64Array([BigInt(this.codecCtx)]);

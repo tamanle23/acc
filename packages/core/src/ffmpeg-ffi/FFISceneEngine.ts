@@ -186,6 +186,13 @@ export class FFISceneEngine {
     }
 
     encoder.close();
+
+    // Step C2: Explicit Memory Scoping & Asset Release
+    cachedRgbaBuffer = null;
+    if (typeof Bun !== 'undefined' && (Bun as any).gc) {
+      (Bun as any).gc(true);
+    }
+
     return { path: outputPath, duration };
   }
 

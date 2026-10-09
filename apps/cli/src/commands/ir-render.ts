@@ -39,7 +39,7 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   }
 
   Logger.info('IRRenderCommand', `Loading input from: ${inputPath}`);
-  const rawContent = fs.readFileSync(inputPath, 'utf-8');
+  const rawContent = await fs.promises.readFile(inputPath, 'utf-8');
   let irDoc: VideoIRDocument;
 
   try {
@@ -55,8 +55,8 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   // If user requested exporting/dumping the transformed Video IR JSON document
   if (options.exportIr) {
     const exportPath = path.resolve(options.exportIr);
-    fs.mkdirSync(path.dirname(exportPath), { recursive: true });
-    fs.writeFileSync(exportPath, JSON.stringify(irDoc, null, 2), 'utf-8');
+    await fs.promises.mkdir(path.dirname(exportPath), { recursive: true });
+    await fs.promises.writeFile(exportPath, JSON.stringify(irDoc, null, 2), 'utf-8');
     Logger.info('IRRenderCommand', `✓ Transformed Video IR JSON saved to: ${exportPath}`);
   }
 

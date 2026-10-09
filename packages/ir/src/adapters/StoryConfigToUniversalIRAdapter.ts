@@ -97,6 +97,19 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         });
       }
 
+      // Step D1: Forward Color Grading / LUT modifier
+      const colorGrading = (scene as any).colorGrading || (settings as any).colorGrading;
+      if (colorGrading) {
+        videoModifiers.push({
+          type: 'vfx/color_grading',
+          params: {
+            lutPath: colorGrading.lutPath || colorGrading.lut,
+            contrast: colorGrading.contrast ?? 1.05,
+            saturation: colorGrading.saturation ?? 1.1,
+          },
+        });
+      }
+
       if (scene.transition?.enabled) {
         videoModifiers.push({
           type: 'transition/crossfade',
@@ -108,11 +121,16 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       }
 
       const videoSeqId = `${sceneId}_vis`;
+      // Step D1: Forward J/L-cut offset timing (videoOffsetMs / audioOffsetMs)
+      const videoOffsetFrames = (scene as any).videoOffsetMs ? Math.round(((scene as any).videoOffsetMs / 1000) * fps) : 0;
+
       videoSequences.push({
         id: videoSeqId,
         assetId: visualSrc ? visualAssetId : undefined,
         time: {
-          start: audioSrc ? { syncWith: audioSeqId } : index === 0 ? 0 : { after: `seq_${index}_vis` },
+          start: audioSrc
+            ? (videoOffsetFrames !== 0 ? { syncWith: audioSeqId, offsetFrames: videoOffsetFrames } : { syncWith: audioSeqId })
+            : index === 0 ? 0 : { after: `seq_${index}_vis` },
           duration: audioSrc ? { matchLengthOf: audioSeqId } : Math.round((scene.duration || 5.0) * fps),
         },
         modifiers: videoModifiers.length > 0 ? videoModifiers : undefined,
@@ -154,13 +172,51 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       });
     }
 
-    // Track Captions
+    // Track Captions (Forward safe-zone platform)
     if (captionSequences.length > 0) {
+      const captionStyle = settings.captions ? { ...settings.captions } : {};
+      if (settings.platform) {
+        (captionStyle as any).platform = settings.platform;
+      }
+
       tracks.push({
         id: 'track_captions',
         type: 'timed_text',
-        style: settings.captions ? (settings.captions as unknown as Record<string, unknown>) : undefined,
+        style: captionStyle as Record<string, unknown>,
         sequences: captionSequences,
+      });
+    }
+
+    // Track A3: Sound Effects (SFX) Track
+    const sfxSequences: IRSequence[] = [];
+    rawScenes.forEach((scene, index) => {
+      const sfxClips = (scene as any).sfx;
+      if (sfxClips && Array.isArray(sfxClips)) {
+        sfxClips.forEach((clip: any, cIdx: number) => {
+          if (clip.source) {
+            const sfxAssetId = `asset_sfx_${index + 1}_${cIdx + 1}`;
+            assets[sfxAssetId] = {
+              src: clip.source,
+              type: 'audio',
+            };
+            sfxSequences.push({
+              id: `seq_sfx_${index + 1}_${cIdx + 1}`,
+              assetId: sfxAssetId,
+              time: {
+                start: { syncWith: `seq_${index + 1}_vo`, offsetFrames: Math.round((clip.time || 0) * fps) },
+                duration: clip.duration ? Math.round(clip.duration * fps) : { matchAssetDuration: true },
+              },
+            });
+          }
+        });
+      }
+    });
+
+    if (sfxSequences.length > 0) {
+      tracks.push({
+        id: 'track_a3_sfx',
+        type: 'audio',
+        sequences: sfxSequences,
       });
     }
 
