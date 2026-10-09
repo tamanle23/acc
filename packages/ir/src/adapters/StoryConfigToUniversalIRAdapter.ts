@@ -71,12 +71,15 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
 
       // 1. Audio Voiceover Anchor Sequence
       const audioSeqId = `${sceneId}_vo`;
+      const pauseSec = scene.pauseAfter !== undefined ? scene.pauseAfter : (settings.pauseBetweenScenes || 0);
+      const pauseFrames = Math.round(pauseSec * fps);
+
       if (audioSrc) {
         audioSequences.push({
           id: audioSeqId,
           assetId: audioAssetId,
           time: {
-            start: index === 0 ? 0 : { after: `seq_${index}_vo` },
+            start: index === 0 ? 0 : { after: `seq_${index}_vo`, offsetFrames: pauseFrames },
             duration: scene.duration ? Math.round(scene.duration * fps) : { matchAssetDuration: true },
           },
         });

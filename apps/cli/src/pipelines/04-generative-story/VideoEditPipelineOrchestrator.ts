@@ -701,6 +701,7 @@ export class VideoEditPipelineOrchestrator {
               '-c:v copy',
               `-c:a ${config.settings.audioCodec}`,
               `-b:a ${config.settings.audioBitrate}`,
+              '-shortest',
             ])
             .output(nextVideoPath)
             .on('end', () => resolve())

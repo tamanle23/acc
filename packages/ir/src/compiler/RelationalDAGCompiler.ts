@@ -241,7 +241,8 @@ export class RelationalDAGCompiler {
           const target = resolvedSequences.get(rs.after);
           if (!target) throw new Error(`Dependency target "${rs.after}" not resolved`);
           const overlap = rs.overlapFrames || 0;
-          startFrame = Math.max(0, target.endFrame - overlap);
+          const offset = rs.offsetFrames || 0;
+          startFrame = Math.max(0, target.endFrame - overlap + offset);
         } else if (rs.syncWith) {
           const target = resolvedSequences.get(rs.syncWith);
           if (!target) throw new Error(`Sync target "${rs.syncWith}" not resolved`);
