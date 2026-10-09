@@ -302,8 +302,8 @@ function extractOutputPaths(results: any): string[] {
   return paths;
 }
 
-export async function run(): Promise<any> {
-  const rawArgs = process.argv.slice(2);
+export async function run(customArgs?: string[]): Promise<any> {
+  const rawArgs = customArgs !== undefined ? customArgs : process.argv.slice(2);
   const options = parseCliArgs(rawArgs);
 
   if (rawArgs.length > 0) {
@@ -367,10 +367,18 @@ export async function run(): Promise<any> {
         throw new Error(`Pipeline '${pipelineId}' does not support live RTMP streaming.`);
       }
     }
+    if (options.command === 'serve') {
+      const port = options.port || 3000;
+      Logger.info('ACC-CLI', `Starting Webhook Ingestion Daemon on port ${port}...`);
+      const scraper = new ScraperEngine();
+      const server = scraper.startWebhookServer(port);
+      Logger.info('ACC-CLI', `Webhook Ingestion Daemon active on http://127.0.0.1:${port}/webhook`);
+      return { success: true, server, port };
+    }
     if (options.command === 'run') {
       const targetPipeline = options.pipelineId || 'story';
       const targetConfig = options.configPath || rawArgs[0];
-      return await runPipeline(targetPipeline, targetConfig);
+      return await runPipeline(targetPipeline, targetConfig, options);
     }
   }
 
@@ -505,12 +513,19 @@ if (import.meta.main) {
   });
 }
 
-async function runPipeline(pipelineSelection: string, configLocation: string) {
+async function runPipeline(pipelineSelection: string, configLocation?: string, cliOptions: CliOptions = {}) {
   const pipelineId = (pipelineSelection || 'story').toLowerCase();
   Logger.info('ACC-CLI', `Executing Pipeline [${pipelineId}] via Orchestrator...`);
 
-  const input = resolvePipelineInput(pipelineId, { command: 'run', pipelineId, configPath: configLocation! });
-  const executionResult = await DefaultPipelineRegistry.execute(pipelineId, input);
+  const mergedOptions: CliOptions = { command: 'run', pipelineId, configPath: configLocation, ...cliOptions };
+  const input = await resolvePipelineInput(pipelineId, mergedOptions);
+  const executionResult = await DefaultPipelineRegistry.execute(pipelineId, input, {
+    outDir: cliOptions.outDir,
+    format: cliOptions.format,
+    duration: cliOptions.duration,
+    exporters: cliOptions.exporters,
+    dryRun: cliOptions.dryRun,
+  });
 
   const outputPaths = executionResult.exportResults ? extractOutputPaths(executionResult.exportResults) : [];
   if ((executionResult as any).outputFilePath && !outputPaths.includes((executionResult as any).outputFilePath)) {
@@ -518,5 +533,10 @@ async function runPipeline(pipelineSelection: string, configLocation: string) {
   }
 
   Logger.info('ACC-CLI', `Pipeline [${pipelineId}] completed. Output: ${JSON.stringify(outputPaths)}`);
-  return { executionResult, outputPaths };
+  return {
+    ...executionResult,
+    executionResult,
+    outputPaths,
+    success: true,
+  };
 }
