@@ -164,3 +164,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 
 | [142](142_four_stage_generation_brainstorm.md) | 2026-10-06 | Four-Stage Generation Brainstorm | Design doc for config -> AST -> edit -> export architecture |
 | [143](143_mark_process_and_render_experimental.md) | 2026-10-06 | Mark processAndRender Experimental & Parity Backlog | JSDoc experimental flag; backlog 013 with feature gap analysis |
+| [`144`](144_wcag_2_2_aa_caption_contrast_and_accessibility.md) | 2026-10-09 | WCAG 2.2 AA Caption Contrast & Design Token Accessibility Hardening | Calibrated bold-retro outline color, exported sRGB luminance & WCAG contrast utilities, added test suite |
