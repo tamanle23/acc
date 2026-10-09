@@ -8,6 +8,7 @@ export * from './overlay-effects';
 export * from './sound-effects';
 export * from './subtitles';
 export * from './vision';
-export * from './styles';
 export * from './types';
 export * from './editing';
+export * from './plugins';
+export * from './commands/RenderCommand';
