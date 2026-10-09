@@ -10,7 +10,7 @@ export function createStoryFolderResolutionStage(): IPipelineMiddleware<Generati
     name: 'StoryFolderResolutionStage',
     async execute(ctx: GenerativeStoryContext, next: () => Promise<void>): Promise<void> {
       const storyDir = typeof ctx.input === 'string' ? ctx.input : ctx.baseDir;
-      const resolved = resolveStoryFolder(storyDir, { outDir: ctx.outDir, dryRun: ctx.dryRun });
+      const resolved = await resolveStoryFolder(storyDir, { outDir: ctx.outDir, dryRun: ctx.dryRun });
 
       ctx.rawConfig = resolved.rawConfig;
       ctx.resolvedConfig = resolved.resolvedConfig;

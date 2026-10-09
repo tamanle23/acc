@@ -41,27 +41,30 @@ turbo run build
 
 ---
 
-## 🚀 Unified CLI v3.0 (`cli.ts` / `@acc/cli`)
+## 🚀 Unified CLI v3.0 (`apps/cli` / `@acc/cli`)
 
-Hệ thống CLI mới hợp nhất toàn bộ 6 Pipeline sản xuất nội dung và các công cụ bổ trợ vào một điểm vào duy nhất:
+Hệ thống CLI mới hợp nhất toàn bộ 6 Pipeline sản xuất nội dung, Universal Video IR renderer và các công cụ bổ trợ vào một điểm vào duy nhất:
 
 ```bash
-bun run cli.ts <command> [pipeline_id] [options]
-# Hoặc phím tắt qua package script:
-bun run cli <command> [pipeline_id] [options]
+bun run acc <command> [pipeline_id] [options]
+# Hoặc thực thi trực tiếp:
+bun run apps/cli/src/index.ts <command> [pipeline_id] [options]
+# Hoặc render trực tiếp qua Universal Video IR:
+bun run ir-render --config ./sample-story/story-config.json
 ```
 
 ### 📋 Danh mục Lệnh (Commands)
 
 | Lệnh | Mô tả | Cú pháp ví dụ |
 | :--- | :--- | :--- |
-| `list` | Xem danh sách 6 Pipeline và các kênh Exporter hỗ trợ | `bun run cli.ts list` |
-| `run` | Thực thi Pipeline sản xuất nội dung | `bun run cli.ts run story -c ./sample-story` |
-| `stream` | Phát luồng trực tiếp RTMP 24/7 (GOP 2.0s YouTube/Twitch) | `bun run cli.ts stream ambient --rtmp <url>` |
-| `serve` | Khởi động Webhook Ingestion HTTP Server daemon | `bun run cli.ts serve --port 3000` |
-| `overlay` | Sinh video hiệu ứng lớp phủ (Mưa, Tuyết, Khói, Lửa, VHS...) | `bun run cli.ts overlay -e rain -v storm` |
-| `sfx` | Sinh hiệu ứng âm thanh (Smart Router: AI/Synth/Freesound) | `bun run cli.ts sfx -p "laser beam blast"` |
-| `<story_folder>` | Shorthand tương thích ngược chạy Generative Story | `bun run cli.ts ./sample-story` |
+| `list` | Xem danh sách 6 Pipeline và các kênh Exporter hỗ trợ | `bun run acc list` |
+| `run` | Thực thi Pipeline sản xuất nội dung | `bun run acc run story -c ./sample-story` |
+| `ir-render` | Render trực tiếp qua Universal Video IR Engine (Phases 1-6) | `bun run ir-render --config ./sample-story/story-config.json` |
+| `stream` | Phát luồng trực tiếp RTMP 24/7 (GOP 2.0s YouTube/Twitch) | `bun run acc stream ambient --rtmp <url>` |
+| `serve` | Khởi động Webhook Ingestion HTTP Server daemon | `bun run acc serve --port 3000` |
+| `overlay` | Sinh video hiệu ứng lớp phủ (Mưa, Tuyết, Khói, Lửa, VHS...) | `bun run acc overlay -e rain -v storm` |
+| `sfx` | Sinh hiệu ứng âm thanh (Smart Router: AI/Synth/Freesound) | `bun run acc sfx -p "laser beam blast"` |
+| `<story_folder>` | Shorthand tương thích ngược chạy Generative Story | `bun run acc ./sample-story` |
 
 👉 **Xem hướng dẫn chi tiết từng tham số & recipes tại [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md)**.
 
