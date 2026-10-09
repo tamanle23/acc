@@ -17,6 +17,7 @@ export interface IrRenderCliOptions {
   chunkStart?: number;
   chunkEnd?: number;
   seed?: number;
+  exportIr?: string;
 }
 
 /**
@@ -45,6 +46,14 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   } catch (err: any) {
     Logger.error('IRRenderCommand', `Failed to parse input document: ${err.message}`);
     process.exit(1);
+  }
+
+  // If user requested exporting/dumping the transformed Video IR JSON document
+  if (options.exportIr) {
+    const exportPath = path.resolve(options.exportIr);
+    fs.mkdirSync(path.dirname(exportPath), { recursive: true });
+    fs.writeFileSync(exportPath, JSON.stringify(irDoc, null, 2), 'utf-8');
+    Logger.info('IRRenderCommand', `✓ Transformed Video IR JSON saved to: ${exportPath}`);
   }
 
   const baseDir = path.dirname(inputPath);
