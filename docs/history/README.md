@@ -164,3 +164,4 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 
 | [142](142_four_stage_generation_brainstorm.md) | 2026-10-06 | Four-Stage Generation Brainstorm | Design doc for config -> AST -> edit -> export architecture |
 | [143](143_mark_process_and_render_experimental.md) | 2026-10-06 | Mark processAndRender Experimental & Parity Backlog | JSDoc experimental flag; backlog 013 with feature gap analysis |
+| [144](144_universal_video_ir_phase1_phase2_execution.md) | 2026-10-09 | Universal Video IR Rendering Engine: Phase 1 & Phase 2 Execution | V1.0-Stable IR schema, validator, pioneer adapter, two-pass DAG compiler, Bresenham audio clock, interval tree index |
