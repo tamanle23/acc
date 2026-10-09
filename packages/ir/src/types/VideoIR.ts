@@ -111,6 +111,7 @@ export interface ResolvedTrack {
 
 export interface ResolvedTimeline {
   meta: IRMeta;
+  assets?: Record<string, AssetDefinition>;
   tracks: Map<string, ResolvedTrack>;
   sequences: Map<string, ResolvedSequence>;
   totalFrames: number;

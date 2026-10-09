@@ -1,4 +1,4 @@
-import type { ModifierPlugin, ModifierContext } from '../ModifierPluginRegistry';
+import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 
 export interface TransitionCrossfadeParams {
   durationFrames: number;
@@ -8,10 +8,12 @@ export interface TransitionCrossfadeParams {
 /**
  * TransitionCrossfadePlugin:
  * Implements video/audio crossfade transitions (`transition/crossfade`).
+ * Phase 2: Sequence-Level Execution (Clip Space).
  */
 export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCrossfadeParams> {
   public readonly type = 'transition/crossfade';
   public readonly targetScope = 'sequence';
+  public readonly targetPhase = 2;
 
   public validate(params: unknown): params is TransitionCrossfadeParams {
     return Boolean(
@@ -30,4 +32,21 @@ export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCross
       overlapTarget: params.overlapTarget,
     };
   }
+
+  public renderClipSpace(ctx: ClipRenderContext, params: TransitionCrossfadeParams): void {
+    const { ctx: canvasCtx, localFrame, sequence } = ctx;
+    const dur = params.durationFrames;
+    const totalSeqFrames = sequence.durationFrames;
+
+    // Fade in at start
+    if (localFrame < dur) {
+      canvasCtx.globalAlpha = Math.max(0, Math.min(1, localFrame / dur));
+    }
+    // Fade out at end
+    else if (localFrame > totalSeqFrames - dur) {
+      const remaining = totalSeqFrames - localFrame;
+      canvasCtx.globalAlpha = Math.max(0, Math.min(1, remaining / dur));
+    }
+  }
 }
+

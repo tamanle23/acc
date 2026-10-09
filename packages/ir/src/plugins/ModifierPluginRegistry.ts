@@ -1,4 +1,18 @@
-import type { ResolvedTrack, ResolvedSequence, ModifierNode } from '../types/VideoIR';
+import type {
+  IVideoPluginStrategy,
+  PluginTargetPhase,
+  ClipRenderContext,
+  StreamRenderContext,
+  MasterCompositeContext,
+} from './IVideoPluginStrategy';
+
+export type {
+  IVideoPluginStrategy,
+  PluginTargetPhase,
+  ClipRenderContext,
+  StreamRenderContext,
+  MasterCompositeContext,
+};
 
 export interface ModifierContext {
   targetType: 'track' | 'sequence';
@@ -11,9 +25,14 @@ export interface ModifierContext {
 
 export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly type: string;
-  readonly targetScope: 'track' | 'sequence' | 'both';
+  readonly targetScope: 'track' | 'sequence' | 'master' | 'audio' | 'both';
+  readonly targetPhase?: PluginTargetPhase;
   validate?(params: unknown): params is TParams;
-  execute(context: ModifierContext, params: TParams): Promise<void> | void;
+  execute?(context: ModifierContext, params: TParams): Promise<void> | void;
+  // Support 4-phase lifecycle methods
+  renderClipSpace?(ctx: ClipRenderContext, params: TParams, state?: any): void | Promise<void>;
+  renderStreamSpace?(ctx: StreamRenderContext, params: TParams, state?: any): void | Promise<void>;
+  renderMasterComposite?(ctx: MasterCompositeContext, params: TParams, state?: any): void | Promise<void>;
 }
 
 /**

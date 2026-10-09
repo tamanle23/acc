@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { Logger } from '@acc/core';
+import { Logger, FFmpegManager } from '@acc/core';
 import {
-  StoryConfigToUniversalIRAdapter,
+  IRConfigAdapterRegistry,
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
+  FFIVideoEncoderSink,
   type VideoIRDocument,
-  type LegacyStoryConfig,
 } from '@acc/ir';
 
 export interface IrRenderCliOptions {
@@ -24,6 +24,7 @@ export interface IrRenderCliOptions {
  * Handles the 'ir-render' command line execution.
  */
 export async function handleIrRenderCommand(options: IrRenderCliOptions): Promise<void> {
+  await FFmpegManager.prepare();
   const inputPath = path.resolve(options.input);
   if (!fs.existsSync(inputPath)) {
     Logger.error('IRRenderCommand', `Input file does not exist: ${inputPath}`);
@@ -36,15 +37,11 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
 
   try {
     const parsed = JSON.parse(rawContent);
-    if (parsed.version && parsed.version.includes('stable')) {
-      irDoc = parsed as VideoIRDocument;
-    } else {
-      // Automatically adapt legacy story-config.json
-      Logger.info('IRRenderCommand', 'Detected legacy story-config format. Adapting to Video IR V1.0-Stable via Pioneer Adapter...');
-      irDoc = StoryConfigToUniversalIRAdapter.adapt(parsed as LegacyStoryConfig);
-    }
+    // Use Stage 1 Config Adapter Registry to auto-detect and transform input format
+    const registry = IRConfigAdapterRegistry.getInstance();
+    irDoc = registry.transform(parsed);
   } catch (err: any) {
-    Logger.error('IRRenderCommand', `Failed to parse input document: ${err.message}`);
+    Logger.error('IRRenderCommand', `Failed to parse or transform input document: ${err.message}`);
     process.exit(1);
   }
 
@@ -83,10 +80,22 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     Logger.info('IRRenderCommand', `Temporal chunking active: rendering frames ${start} -> ${end} (${timeline.totalFrames} frames)`);
   }
 
+  // Stage 2: Dual Target Sink Resolution
+  // If output path is specified, instantiate hardware-accelerated FFIVideoEncoderSink
+  let sink: FFIVideoEncoderSink | undefined;
+  const outputPath = options.output ? path.resolve(options.output) : undefined;
+  if (outputPath) {
+    sink = new FFIVideoEncoderSink();
+    Logger.info('IRRenderCommand', `Configured Output Video Sink: FFIVideoEncoder -> ${outputPath}`);
+  }
+
   Logger.info('IRRenderCommand', 'Starting deterministic headless rasterization loop...');
   const renderer = new IRMasterRenderer(timeline, options.seed ?? 42);
 
   const result = await renderer.render({
+    sink,
+    outputPath,
+    baseDir,
     generateFrameHash: true,
     onProgress: (p) => {
       Logger.info('IRRenderCommand', `[Render Progress] Frame ${p.currentFrame}/${p.totalFrames} (${p.percent}%)`);
@@ -96,4 +105,10 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   Logger.info('IRRenderCommand', `✓ Render completed with bit-identical determinism:`);
   Logger.info('IRRenderCommand', ` - Cumulative Hash: ${result.cumulativeHash}`);
   Logger.info('IRRenderCommand', ` - Audio Samples:   ${result.audioResult.totalSamples} (${result.audioResult.sampleRate}Hz)`);
+
+  if (result.sinkResult && result.sinkResult.outputPath) {
+    Logger.info('IRRenderCommand', ` - Output File:     ${result.sinkResult.outputPath}`);
+    Logger.info('IRRenderCommand', ` - Frames Encoded:  ${result.sinkResult.framesConsumed}`);
+    Logger.info('IRRenderCommand', ` - File Size:       ${((result.sinkResult.fileSizeBytes ?? 0) / 1024 / 1024).toFixed(2)} MB`);
+  }
 }

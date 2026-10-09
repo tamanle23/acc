@@ -96,6 +96,7 @@ export class RelationalDAGCompiler {
 
     return {
       meta: doc.meta,
+      assets: doc.assets,
       tracks: trackMap,
       sequences: resolvedSequences,
       totalFrames,

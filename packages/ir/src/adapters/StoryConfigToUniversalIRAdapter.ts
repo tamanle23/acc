@@ -7,13 +7,33 @@ import type {
 } from '../types/VideoIR';
 import type { LegacyStoryConfig, LegacySceneConfig } from './LegacyStoryConfigAdapter';
 
+import type { IConfigToIRAdapter, AdapterOptions } from './IConfigToIRAdapter';
+
 /**
  * StoryConfigToUniversalIRAdapter:
  * Bridges existing story_config.json / LegacyStoryConfig formats into
  * canonical V1.0-Stable Video IR documents.
  * Establishes the pioneer end-to-end verification baseline.
  */
-export class StoryConfigToUniversalIRAdapter {
+export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<LegacyStoryConfig> {
+  public readonly id = 'story-config-pioneer';
+  public readonly name = 'Legacy StoryConfig Pioneer Adapter';
+  public readonly version = '1.0.0';
+
+  public canAdapt(config: unknown): boolean {
+    if (!config || typeof config !== 'object') return false;
+    const c = config as Record<string, unknown>;
+    return Boolean(
+      (c.scenes && Array.isArray(c.scenes)) ||
+      (c.slides && Array.isArray(c.slides)) ||
+      (c.settings && typeof c.settings === 'object')
+    );
+  }
+
+  public adapt(legacyConfig: LegacyStoryConfig, options?: AdapterOptions): VideoIRDocument {
+    return StoryConfigToUniversalIRAdapter.adapt(legacyConfig, options?.contentId);
+  }
+
   public static adapt(legacyConfig: LegacyStoryConfig, contentId = `story_${Date.now()}`): VideoIRDocument {
     const settings = legacyConfig.settings || {};
     const rawScenes: LegacySceneConfig[] = legacyConfig.scenes || legacyConfig.slides || [];

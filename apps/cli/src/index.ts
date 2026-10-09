@@ -87,7 +87,7 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.exporters = (args[++i] || '').split(',').map((s) => s.trim().toLowerCase());
       continue;
     }
-    if (arg === '-o' || arg === '--out') {
+    if (arg === '-o' || arg === '--out' || arg === '--output') {
       options.outDir = args[++i];
       continue;
     }
