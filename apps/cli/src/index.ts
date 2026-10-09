@@ -306,6 +306,7 @@ export async function run(customArgs?: string[]): Promise<any> {
   const rawArgs = customArgs !== undefined ? customArgs : process.argv.slice(2);
   const options = parseCliArgs(rawArgs);
 
+
   if (rawArgs.length > 0) {
     if (options.command === 'help') {
       printHelp();
@@ -540,3 +541,6 @@ async function runPipeline(pipelineSelection: string, configLocation?: string, c
     success: true,
   };
 }
+
+export const runCli = run;
+

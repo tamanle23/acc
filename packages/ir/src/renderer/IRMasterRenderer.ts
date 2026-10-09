@@ -7,7 +7,7 @@ import { FrameBackpressureLock } from './handshake/FrameBackpressureLock';
 import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
 import { DecoupledAudioMixer, type DecoupledAudioMixResult } from './audio/DecoupledAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
-import { ModifierPluginRegistry } from '../plugins/ModifierPluginRegistry';
+import { ModifierPluginRegistry, registerCoreModifierPlugins } from '../plugins';
 import {
   BoundedAcousticCaptionStrategy,
   drawCanvasCaptionsFromSnapshot,
@@ -62,7 +62,8 @@ export class IRMasterRenderer {
     this.noiseGen = new DeterministicNoiseGenerator(seed);
     this.lock = new FrameBackpressureLock();
     this.audioMixer = new DecoupledAudioMixer();
-    this.pluginRegistry = ModifierPluginRegistry.getInstance();
+    // Auto-register core plugins to ensure concrete plugin engines are available
+    this.pluginRegistry = registerCoreModifierPlugins();
     this.captionStrategy = new BoundedAcousticCaptionStrategy();
   }
 
@@ -264,48 +265,54 @@ export class IRMasterRenderer {
             activeSeqs.push(seq);
             const localFrame = t - seq.startFrame;
 
-            // Draw base asset if available
-            if (seq.assetId && this.imageCache.has(seq.assetId)) {
-              const img = this.imageCache.get(seq.assetId)!;
-              const imgAspect = img.width / img.height;
-              const canvasAspect = width / height;
-              let drawW = width;
-              let drawH = height;
-              let drawX = 0;
-              let drawY = 0;
-
-              if (imgAspect > canvasAspect) {
-                drawW = width;
-                drawH = width / imgAspect;
-                drawY = (height - drawH) / 2;
-              } else {
-                drawH = height;
-                drawW = height * imgAspect;
-                drawX = (width - drawW) / 2;
-              }
-
-              ctx.drawImage(img, drawX, drawY, drawW, drawH);
-            }
-
             // Phase 2: Sequence-level modifiers (e.g. Depth3D, TransitionCrossfade)
-            if (seq.modifiers) {
-              for (const mod of seq.modifiers) {
-                const plugin = this.pluginRegistry.get(mod.type);
-                if (plugin && plugin.renderClipSpace) {
-                  plugin.renderClipSpace(
-                    {
-                      canvas,
-                      ctx,
-                      frame: t,
-                      localFrame,
-                      width,
-                      height,
-                      sequence: seq,
-                    },
-                    mod.params
-                  );
+            ctx.save();
+            try {
+              if (seq.modifiers) {
+                for (const mod of seq.modifiers) {
+                  const plugin = this.pluginRegistry.get(mod.type);
+                  if (plugin && plugin.renderClipSpace) {
+                    plugin.renderClipSpace(
+                      {
+                        canvas,
+                        ctx,
+                        frame: t,
+                        localFrame,
+                        width,
+                        height,
+                        sequence: seq,
+                        baseAsset: seq.assetId ? this.imageCache.get(seq.assetId) : undefined,
+                      },
+                      mod.params
+                    );
+                  }
                 }
               }
+
+              // Draw base asset if available (within sequence modifier context)
+              if (seq.assetId && this.imageCache.has(seq.assetId)) {
+                const img = this.imageCache.get(seq.assetId)!;
+                const imgAspect = img.width / img.height;
+                const canvasAspect = width / height;
+                let drawW = width;
+                let drawH = height;
+                let drawX = 0;
+                let drawY = 0;
+
+                if (imgAspect > canvasAspect) {
+                  drawW = width;
+                  drawH = width / imgAspect;
+                  drawY = (height - drawH) / 2;
+                } else {
+                  drawH = height;
+                  drawW = height * imgAspect;
+                  drawX = (width - drawW) / 2;
+                }
+
+                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+              }
+            } finally {
+              ctx.restore();
             }
           }
         }
@@ -359,6 +366,27 @@ export class IRMasterRenderer {
     }
 
     // Phase 4: Master Canvas Composite
+    for (const track of this.timeline.tracks.values()) {
+      if (track.modifiers) {
+        for (const mod of track.modifiers) {
+          const plugin = this.pluginRegistry.get(mod.type);
+          if (plugin && plugin.renderMasterComposite) {
+            plugin.renderMasterComposite(
+              {
+                canvas,
+                ctx,
+                frame: t,
+                width,
+                height,
+                pixelBuffer: buffer,
+              },
+              mod.params
+            );
+          }
+        }
+      }
+    }
+
     const imgData = ctx.getImageData(0, 0, width, height);
     // Copy into preallocated framePixelBuffer directly to preserve ZERO-ALLOC-FRAME-LOOP
     buffer.set(imgData.data);

@@ -41,19 +41,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     const style = params.frameStyle || 'polaroid';
     const intensity = params.popOutIntensity ?? 1.0;
 
-    // Draw stylized card border around the frame
-    const margin = Math.round(Math.min(width, height) * 0.05);
-    const cardW = width - margin * 2;
-    const cardH = height - margin * 2;
-
-    canvasCtx.save();
-    canvasCtx.lineWidth = style === 'comic' ? 8 : 4;
-    canvasCtx.strokeStyle = style === 'comic' ? '#ffffff' : '#e2e8f0';
-
-    // Draw card boundary
-    canvasCtx.strokeRect(margin, margin, cardW, cardH);
-
-    // Subtle breathing parallax zoom
+    // Subtle breathing parallax zoom applied to the canvas context
     const zoom = 1.0 + Math.sin(localFrame * 0.05) * 0.015 * intensity;
     const centerX = width / 2;
     const centerY = height / 2;
@@ -61,7 +49,17 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     canvasCtx.translate(centerX, centerY);
     canvasCtx.scale(zoom, zoom);
     canvasCtx.translate(-centerX, -centerY);
-    canvasCtx.restore();
+
+    // Draw stylized card border around the frame
+    const margin = Math.round(Math.min(width, height) * 0.05);
+    const cardW = width - margin * 2;
+    const cardH = height - margin * 2;
+
+    canvasCtx.lineWidth = style === 'comic' ? 8 : 4;
+    canvasCtx.strokeStyle = style === 'comic' ? '#ffffff' : '#e2e8f0';
+
+    // Draw card boundary
+    canvasCtx.strokeRect(margin, margin, cardW, cardH);
   }
 }
 
