@@ -22,6 +22,7 @@ export function AssumeTenantBar() {
 
   const handleExitSubSession = () => {
     localStorage.removeItem('unipost_assumed_tenant');
+    localStorage.removeItem('unipost_assumed_token');
     setActiveTenant('SYSTEM');
     toast.info('Exited Assume-Tenant session. Returned to Sovereign Root context (SYSTEM).');
     window.location.reload();

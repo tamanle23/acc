@@ -317,6 +317,28 @@ public class SystemFleetService {
         return new ArrayList<>(roleMatrixStore.values());
     }
 
+    public RoleWithPermissionsDto createRole(CreateRoleRequest request) {
+        if (roleMatrixStore.containsKey(request.getRoleId())) {
+            throw new MetadataConflictException("Role already exists with identifier: " + request.getRoleId());
+        }
+
+        RoleWithPermissionsDto role = RoleWithPermissionsDto.builder()
+                .roleId(request.getRoleId())
+                .roleName(request.getRoleName())
+                .description(request.getDescription() != null ? request.getDescription() : "")
+                .systemRole(false)
+                .permissions(request.getPermissions() != null ? new ArrayList<>(request.getPermissions()) : new ArrayList<>())
+                .inheritedRoles(request.getInheritedRoles() != null ? new ArrayList<>(request.getInheritedRoles()) : List.of("ROLE_USER"))
+                .userCount(0)
+                .createdDate(LocalDateTime.now())
+                .build();
+
+        roleMatrixStore.put(request.getRoleId(), role);
+        log.info("SOVEREIGN AUDIT: Role '{}' ({}) successfully provisioned with {} permissions.",
+                role.getRoleId(), role.getRoleName(), role.getPermissions().size());
+        return role;
+    }
+
     public RoleWithPermissionsDto updateRolePermissions(String roleId, UpdateRolePermissionsRequest request) {
         RoleWithPermissionsDto existing = roleMatrixStore.get(roleId);
         if (existing == null) {

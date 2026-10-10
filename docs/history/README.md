@@ -23,5 +23,7 @@
 | [018](018_comprehensive_e2e_integration_tests.md) | 2026-10-10 | Multi-Tenant Full-Stack E2E & Integration Test Suites | Implemented comprehensive end-to-end and integration tests across backend and console covering public acquisition, blueprint cloning, workspace hierarchy isolation, payOS VietQR checkout, and dynamic feature gating. |
 | [019](019_billing_subscription_tiers_full_rollout.md) | 2026-10-10 | Billing & Subscription Tiers: Full-Stack Rollout (Phases 1–6) | 4-tier subscription system (Basic/Pro/Pro Max/Enterprise) across backend entitlements, landing pricing, unified sandbox handler, settings billing UI (7 components), nav/i18n/living docs, and routeTree fix — 93/93 tests green. |
 | [020](020_system_tenant_sovereign_custody.md) | 2026-10-10 | SYSTEM Tenant (Sovereign Root Custodian) Implementation (Phases 1–4) | Resolved PostgreSQL RLS Write Paradox via changelog-7, dual-context principal, sovereign control REST APIs & DTOs, unified sandbox handler with system persona, fleet table, quota drawers, and RBAC matrix studio. |
+| [021](021_system_tenant_end_to_end_resolution.md) | 2026-10-11 | SYSTEM Tenant Sovereign Custody End-to-End Resolution | Resolved canonical schema editing for custodian, wired custom role provisioning end-to-end, added user inspector drawer, propagated dual-context impersonation headers, and synchronized sandbox tokens. |
+
 
 

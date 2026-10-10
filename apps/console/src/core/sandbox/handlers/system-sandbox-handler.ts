@@ -407,6 +407,33 @@ class MockFleetRepository {
     return this.roles;
   }
 
+  createRole(role: {
+    roleId: string;
+    roleName: string;
+    description?: string;
+    permissions?: string[];
+    inheritedRoles?: string[];
+  }): SandboxRoleWithPermissions {
+    const existing = this.roles.find((r) => r.roleId === role.roleId);
+    if (existing) {
+      throw new Error(`Role '${role.roleId}' already exists`);
+    }
+
+    const newRole: SandboxRoleWithPermissions = {
+      roleId: role.roleId,
+      roleName: role.roleName,
+      description: role.description || '',
+      systemRole: false,
+      permissions: role.permissions || [],
+      inheritedRoles: role.inheritedRoles || ['ROLE_USER'],
+      userCount: 0,
+      createdDate: new Date().toISOString(),
+    };
+
+    this.roles.push(newRole);
+    return newRole;
+  }
+
   updateRolePermissions(roleId: string, permissions: string[], inheritedRoles?: string[]): SandboxRoleWithPermissions {
     const role = this.roles.find((r) => r.roleId === roleId);
     if (!role) throw new Error(`Role '${roleId}' not found`);
@@ -589,6 +616,28 @@ export const systemSandboxHandler: SandboxRouteHandler = {
           body: mockFleetStore.getRoles(),
         },
       };
+    }
+
+    // 8b. POST /api/v1/system/roles
+    if (method === 'POST' && path === '/api/v1/system/roles') {
+      try {
+        const created = mockFleetStore.createRole(req.data || {});
+        return {
+          status: 200,
+          data: {
+            header: { success: true },
+            body: created,
+          },
+        };
+      } catch (err: any) {
+        return {
+          status: 400,
+          data: {
+            header: { success: false },
+            message: err.message || 'Failed to create role',
+          },
+        };
+      }
     }
 
     // 9. PUT /api/v1/system/roles/{id}/permissions

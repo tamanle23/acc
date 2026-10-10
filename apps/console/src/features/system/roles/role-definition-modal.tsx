@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, Sparkles, Layers, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { useCreateSystemRole } from '../api/use-system-fleet';
 
 interface RoleDefinitionModalProps {
   open: boolean;
@@ -22,11 +23,29 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
   const [roleName, setRoleName] = useState('');
   const [roleId, setRoleId] = useState('');
   const [description, setDescription] = useState('');
-  const [parentRole, setParentRole] = useState('ROLE_USER');
+  const createRoleMutation = useCreateSystemRole();
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    onOpenChange(false);
+    if (!roleName.trim() || !roleId.trim()) return;
+
+    createRoleMutation.mutate(
+      {
+        roleId,
+        roleName: roleName.trim(),
+        description: description.trim(),
+        inheritedRoles: ['ROLE_USER'],
+        permissions: [],
+      },
+      {
+        onSuccess: () => {
+          setRoleName('');
+          setRoleId('');
+          setDescription('');
+          onOpenChange(false);
+        },
+      }
+    );
   };
 
   return (
@@ -96,12 +115,30 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={createRoleMutation.isPending}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={!roleName.trim()} className="gap-1.5">
-              <Sparkles className="h-4 w-4" />
-              Create Role
+            <Button
+              type="submit"
+              disabled={!roleName.trim() || createRoleMutation.isPending}
+              className="gap-1.5"
+            >
+              {createRoleMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Provisioning...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Create Role
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>

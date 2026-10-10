@@ -113,15 +113,29 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     context.init(authenticationToken);
 
     String tenantId = authentication.getTenantId();
+    String actorTenantId = null;
+    if (authentication.getCredentials() instanceof Claims claims) {
+      Object actorTidObj = claims.get("actor_tid");
+      if (actorTidObj != null) {
+        actorTenantId = actorTidObj.toString();
+      }
+    }
+
     try {
       if (tenantId != null && !tenantId.isBlank()) {
-        com.unipost.fw.tenancy.TenantContextHolder.setTenantId(tenantId);
+        if (actorTenantId != null && !actorTenantId.isBlank()) {
+          com.unipost.fw.tenancy.TenantContextHolder.setDualContext(tenantId, actorTenantId);
+          org.slf4j.MDC.put("actorTenantId", actorTenantId);
+        } else {
+          com.unipost.fw.tenancy.TenantContextHolder.setTenantId(tenantId);
+        }
         org.slf4j.MDC.put("tenantId", tenantId);
       }
       filterChain.doFilter(request, response);
     } finally {
       com.unipost.fw.tenancy.TenantContextHolder.clear();
       org.slf4j.MDC.remove("tenantId");
+      org.slf4j.MDC.remove("actorTenantId");
       context.clear();
     }
   }

@@ -74,9 +74,11 @@ export const authSandboxHandler: SandboxRouteHandler = {
         const roles = SANDBOX_AUTH_USERS[username];
         const sub = username.split('_')[0];
 
+        const tenantId = username === 'custodian_root' ? 'SYSTEM' : 'default-tenant';
         const token = createMockJwt({
           sub,
           roles,
+          tenantId,
           isSandbox: true,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
@@ -102,10 +104,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
       if (refreshToken && refreshToken in SANDBOX_REFRESH_TOKENS) {
         const roles = SANDBOX_REFRESH_TOKENS[refreshToken];
         const sub = refreshToken.split('_').pop();
+        const tenantId = sub === 'custodian' || sub === 'root' ? 'SYSTEM' : 'default-tenant';
 
         const token = createMockJwt({
           sub,
           roles,
+          tenantId,
           isSandbox: true,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,

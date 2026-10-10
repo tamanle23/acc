@@ -30,13 +30,23 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
-// 1. Request Interceptor: Attach Access Token
+// 1. Request Interceptor: Attach Access Token & Impersonation Headers
 springApiClient.interceptors.request.use(
   (config) => {
     const { accessToken } = useSpringAuthStore.getState();
-    if (accessToken && config.headers) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_token') : null;
+    const effectiveToken = assumedToken || accessToken;
+
+    if (effectiveToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
+
+    const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+    if (assumedTenant && config.headers) {
+      config.headers['X-Assumed-Tenant'] = assumedTenant;
+      config.headers['X-Tenant-Id'] = assumedTenant;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

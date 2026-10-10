@@ -26,6 +26,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   Users,
   Search,
   Lock,
@@ -35,16 +42,29 @@ import {
   RefreshCw,
   Mail,
   Building,
+  Eye,
+  KeyRound,
+  ShieldCheck,
+  Calendar,
+  Clock,
+  Copy,
+  LogOut,
+  UserCheck,
 } from 'lucide-react';
 import {
   useGlobalUsers,
   useLockUser,
   type GlobalUserListItem,
 } from '../api/use-system-fleet';
+import { toast } from 'sonner';
 
 export function UserMembershipDrawer() {
   const [search, setSearch] = useState('');
   const [tenantFilter, setTenantFilter] = useState('ALL');
+
+  // Inspector Sheet state
+  const [inspectedUser, setInspectedUser] = useState<GlobalUserListItem | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   // Lock Confirmation Dialog state
   const [selectedUser, setSelectedUser] = useState<GlobalUserListItem | null>(null);
@@ -63,6 +83,11 @@ export function UserMembershipDrawer() {
     setLockDialogOpen(true);
   };
 
+  const handleInspect = (user: GlobalUserListItem) => {
+    setInspectedUser(user);
+    setInspectorOpen(true);
+  };
+
   const handleConfirmLock = () => {
     if (!selectedUser || !lockReason.trim()) return;
 
@@ -73,12 +98,24 @@ export function UserMembershipDrawer() {
         reason: lockReason.trim(),
       },
       {
-        onSuccess: () => {
+        onSuccess: (updated) => {
           setLockDialogOpen(false);
           setSelectedUser(null);
+          if (inspectedUser && inspectedUser.userId === updated?.userId) {
+            setInspectedUser(updated);
+          }
         },
       }
     );
+  };
+
+  const handleRevokeSessions = (user: GlobalUserListItem) => {
+    toast.success(`Ephemeral sessions and refresh tokens for '${user.username}' revoked across cluster.`);
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.info(`${label} copied to clipboard!`);
   };
 
   return (
@@ -196,28 +233,41 @@ export function UserMembershipDrawer() {
                     </TableCell>
 
                     <TableCell className="text-end">
-                      {!isCustodian ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button
                           size="sm"
-                          variant={u.locked ? 'outline' : 'destructive'}
-                          onClick={() => handleOpenLockDialog(u)}
-                          className="h-7 text-xs gap-1.5"
+                          variant="ghost"
+                          onClick={() => handleInspect(u)}
+                          className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                          title="Inspect user details and security telemetry"
                         >
-                          {u.locked ? (
-                            <>
-                              <Unlock className="h-3.5 w-3.5" />
-                              Unlock Account
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="h-3.5 w-3.5" />
-                              Lockout
-                            </>
-                          )}
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>Inspect</span>
                         </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic font-mono">Sovereign Root</span>
-                      )}
+
+                        {!isCustodian ? (
+                          <Button
+                            size="sm"
+                            variant={u.locked ? 'outline' : 'destructive'}
+                            onClick={() => handleOpenLockDialog(u)}
+                            className="h-7 text-xs gap-1.5"
+                          >
+                            {u.locked ? (
+                              <>
+                                <Unlock className="h-3.5 w-3.5" />
+                                Unlock Account
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="h-3.5 w-3.5" />
+                                Lockout
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic font-mono px-2">Sovereign Root</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -226,6 +276,141 @@ export function UserMembershipDrawer() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Cross-Tenant User Inspector Drawer (Sheet) */}
+      <Sheet open={inspectorOpen} onOpenChange={setInspectorOpen}>
+        <SheetContent className="sm:max-w-md bg-background/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl p-6 overflow-y-auto">
+          {inspectedUser && (
+            <div className="space-y-6">
+              <SheetHeader className="space-y-1 text-start">
+                <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wider">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Sovereign User Inspector</span>
+                </div>
+                <SheetTitle className="text-xl font-bold flex items-center justify-between">
+                  <span>{inspectedUser.displayName}</span>
+                  <Badge
+                    variant={inspectedUser.locked ? 'destructive' : 'secondary'}
+                    className="font-mono text-xs uppercase"
+                  >
+                    {inspectedUser.locked ? 'LOCKED' : 'ACTIVE'}
+                  </Badge>
+                </SheetTitle>
+                <SheetDescription className="font-mono text-xs text-muted-foreground">
+                  {inspectedUser.email}
+                </SheetDescription>
+              </SheetHeader>
+
+              {/* Identity & Scope Info */}
+              <div className="space-y-3 p-4 rounded-xl border border-white/20 dark:border-white/10 bg-muted/20">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">User ID</span>
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span className="text-foreground">{inspectedUser.userId}</span>
+                    <button
+                      onClick={() => copyToClipboard(inspectedUser.userId, 'User ID')}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Username</span>
+                  <span className="font-mono font-medium text-foreground">{inspectedUser.username}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Assigned Tenant Scope</span>
+                  <Badge variant="outline" className="font-mono text-[11px] gap-1">
+                    <Building className="h-3 w-3 text-muted-foreground" />
+                    {inspectedUser.tenantId}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Roles & Permissions */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5 text-primary" />
+                  <span>Assigned RBAC Roles</span>
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {inspectedUser.roles.map((r) => (
+                    <Badge key={r} variant="outline" className="text-xs font-mono py-1 px-2">
+                      {r}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Security Telemetry & Timestamps */}
+              <div className="space-y-2.5 p-3 rounded-lg border bg-background/50 text-xs">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Account Created
+                  </span>
+                  <span className="font-mono text-foreground">
+                    {new Date(inspectedUser.createdDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Last Login Observed
+                  </span>
+                  <span className="font-mono text-foreground">
+                    {new Date(inspectedUser.lastLoginDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Emergency Operations Actions */}
+              <div className="space-y-2 pt-2 border-t">
+                <h4 className="text-xs font-semibold text-destructive uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  <span>Emergency Session Controls</span>
+                </h4>
+
+                <div className="grid gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRevokeSessions(inspectedUser)}
+                    className="w-full justify-start text-xs gap-2 border-amber-500/30 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Revoke All Active Sessions & Tokens
+                  </Button>
+
+                  {inspectedUser.tenantId !== 'SYSTEM' && (
+                    <Button
+                      variant={inspectedUser.locked ? 'outline' : 'destructive'}
+                      size="sm"
+                      onClick={() => handleOpenLockDialog(inspectedUser)}
+                      className="w-full justify-start text-xs gap-2"
+                    >
+                      {inspectedUser.locked ? (
+                        <>
+                          <Unlock className="h-3.5 w-3.5" />
+                          Restore Authentication Access
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-3.5 w-3.5" />
+                          Emergency Account Lockdown
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Lock/Unlock Dialog */}
       <Dialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>

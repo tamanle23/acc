@@ -53,6 +53,7 @@ export class UnifiedSandboxManager {
     const accessToken = createMockJwt({
       sub,
       roles: persona.roles,
+      tenantId: persona.defaultTenantId,
       isSandbox: true,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 15,

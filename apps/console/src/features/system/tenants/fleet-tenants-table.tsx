@@ -93,6 +93,9 @@ export function FleetTenantsTable() {
       {
         onSuccess: (res) => {
           localStorage.setItem('unipost_assumed_tenant', res.effectiveTenantId);
+          if (res.ephemeralToken) {
+            localStorage.setItem('unipost_assumed_token', res.ephemeralToken);
+          }
           window.location.reload();
         },
       }

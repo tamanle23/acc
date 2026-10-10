@@ -34,13 +34,14 @@ describe('Sovereign Cockpit UI Components', () => {
     expect(screen.getByRole('button', { name: /provision tenant/i })).toBeTruthy();
   });
 
-  it('renders RbacMatrixGrid with permission matrix table', () => {
+  it('renders RbacMatrixGrid with permission matrix table and create role button', () => {
     renderWithClient(<RbacMatrixGrid />);
     expect(screen.getByPlaceholderText(/search permissions/i)).toBeTruthy();
     expect(screen.getByText(/permission atom/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /create custom role/i })).toBeTruthy();
   });
 
-  it('renders UserMembershipDrawer with universal user directory', () => {
+  it('renders UserMembershipDrawer with universal user directory and inspect action', () => {
     renderWithClient(<UserMembershipDrawer />);
     expect(screen.getByPlaceholderText(/search users by name/i)).toBeTruthy();
     expect(screen.getByText(/emergency custody/i)).toBeTruthy();

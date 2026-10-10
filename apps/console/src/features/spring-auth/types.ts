@@ -1,6 +1,9 @@
 export interface JwtPayload {
   sub: string;
   roles: string[];
+  tenantId?: string;
+  tid?: string;
+  actor_tid?: string;
   iat: number;
   exp: number;
   isSandbox?: boolean;
@@ -11,6 +14,7 @@ export interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: JwtPayload | null;
+  currentTenantId: string | null;
   isAuthenticated: boolean;
   isHydrating: boolean;
   isSandbox: boolean;

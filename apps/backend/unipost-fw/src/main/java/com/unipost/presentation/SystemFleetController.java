@@ -125,6 +125,17 @@ public class SystemFleetController {
     }
 
     /**
+     * Provisions a new custom RBAC role with DAG inheritance.
+     */
+    @PostMapping("/roles")
+    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:roles:manage') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, RoleWithPermissionsDto>> createRole(
+            @Valid @RequestBody CreateRoleRequest request) {
+        RoleWithPermissionsDto created = fleetService.createRole(request);
+        return responseBuilder.success(created);
+    }
+
+    /**
      * Update role permission bindings in RBAC matrix studio.
      */
     @PutMapping("/roles/{id}/permissions")
