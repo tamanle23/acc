@@ -463,11 +463,13 @@ export async function run(customArgs?: string[]): Promise<any> {
     case 'run': {
       const pipelineId = await select({
         message: 'Pipeline:',
-        options: DefaultPipelineRegistry.list().map(pipeline => {
+        options: DefaultPipelineRegistry.getSummaries().map((p) => {
+          const aliasHint = p.aliases.length > 0 ? `Aliases: ${p.aliases.join(', ')}` : p.description || p.id;
           return {
-            label: pipeline.name,
-            value: pipeline.id,
-          }
+            label: `${p.name} (${p.id})`,
+            value: p.id,
+            hint: aliasHint,
+          };
         }),
 
       });
