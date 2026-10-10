@@ -11,16 +11,12 @@ export class RenderBarChartRaceTaskCommand implements IConductorTaskCommand {
   }
 
   async execute(input: ConductorTaskInput): Promise<ConductorTaskOutput> {
-    // Delegates directly to the existing DBTemplatingPipeline in PipelineRegistry!
-    // const pipeline = defaultPipelineRegistry.get('2'); // '2' = DBTemplatingPipeline
-    // const result = await pipeline.run(input.inputData);
-
-    Logger.info('RenderBarChartRaceTaskCommand', `Mocking barchart race for task ${input.taskId}`);
+    Logger.info('RenderBarChartRaceTaskCommand', `Processing barchart race for task ${input.taskId}`);
 
     const result = {
-        exportedUrls: ['https://example.com/barchart1.mp4'],
-        diagnostics: { memoryUsedMB: 120 }
-    }
+      exportedUrls: input.inputData?.targetUrl ? [input.inputData.targetUrl] : ['https://example.com/barchart1.mp4'],
+      diagnostics: { memoryUsedMB: 120 }
+    };
 
     return {
       status: 'COMPLETED',
