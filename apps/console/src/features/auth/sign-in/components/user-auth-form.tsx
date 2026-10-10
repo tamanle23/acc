@@ -180,6 +180,13 @@ export function UserAuthForm({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-[var(--radix-dropdown-menu-trigger-width)]">
               <DropdownMenuItem
+                onClick={() => handleSandboxBypass('system')}
+                className="cursor-pointer flex items-center justify-between text-amber-600 dark:text-amber-400 font-semibold bg-amber-500/10 focus:bg-amber-500/20"
+              >
+                <span>👑 {t('auth.sandbox.systemRole', 'Sovereign Custodian (SYSTEM)')}</span>
+                <span className="text-[10px] text-amber-700 dark:text-amber-300 font-mono">ROOT ∞</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onClick={() => handleSandboxBypass('admin')}
                 className="cursor-pointer flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-medium"
               >

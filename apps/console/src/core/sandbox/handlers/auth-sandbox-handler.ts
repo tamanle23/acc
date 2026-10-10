@@ -13,6 +13,8 @@ export const createMockJwt = (payload: Record<string, unknown>) => {
 };
 
 export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
+  custodian_root: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+  system_bypass: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
   admin_bypass: ['ROLE_USER', 'ROLE_ADMIN'],
   creator_bypass: ['ROLE_USER', 'ROLE_CREATOR'],
   user_bypass: ['ROLE_USER'],
@@ -20,6 +22,8 @@ export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
 };
 
 export const SANDBOX_REFRESH_TOKENS: Record<string, string[]> = {
+  mock_refresh_token_custodian: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+  mock_refresh_token_system: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
   mock_refresh_token_admin: ['ROLE_USER', 'ROLE_ADMIN'],
   mock_refresh_token_creator: ['ROLE_USER', 'ROLE_CREATOR'],
   mock_refresh_token_user: ['ROLE_USER'],
