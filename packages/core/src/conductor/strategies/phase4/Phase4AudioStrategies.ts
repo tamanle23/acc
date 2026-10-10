@@ -417,6 +417,7 @@ export const PHASE_4_DESCRIPTORS: StrategyDescriptor[] = [
     contentTypeId: 'item_195_infinite_pink_noise_sleep_aid',
     pipelineId: '6',
     targetModality: 'audio',
+    supportedModalities: ['audio', 'video'],
     feasibilityTier: 'Tier A',
     interventionStage: 'Before',
     defaultTitle: 'Continuous Pink & Brown Noise Sleep Sound',

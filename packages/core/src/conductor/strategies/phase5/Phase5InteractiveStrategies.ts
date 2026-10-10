@@ -214,6 +214,7 @@ export const PHASE_5_DESCRIPTORS: StrategyDescriptor[] = [
     contentTypeId: 'item_223_mortgage_calculators',
     pipelineId: '5',
     targetModality: 'interactive-web',
+    supportedModalities: ['interactive-web', 'static-web'],
     feasibilityTier: 'Tier A',
     interventionStage: 'Before',
     defaultTitle: 'Fixed-Rate Home Mortgage Amortization Schedule',

@@ -105,4 +105,84 @@ describe('Omnichannel 1-to-N Dynamic Fan-Out: Multi-Modality Validation', () => 
     expect(result.deliverables.audio).toBeUndefined();
     expect(result.deliverables.staticWeb).toBeUndefined();
   });
+
+  test('should throw validation error when caller requests an incompatible modality for a content type', async () => {
+    // Mortgage calculator only supports interactive-web and static-web
+    const mortgageStrategy = ContentStrategyRegistry.getOrThrow('item_223_mortgage_calculators');
+    expect(mortgageStrategy.supportedModalities).toEqual(['interactive-web', 'static-web']);
+
+    const ctx = createUnifiedPipelineContext({
+      input: {
+        title: 'Mortgage Amortization',
+        summary: '30-year fixed rate schedule.',
+        // Requesting audio podcast for a DOM mortgage calculator is invalid!
+        modalities: ['audio'],
+      },
+      assetContext: new AssetContext({
+        storyId: 'mortgage_story',
+        workDir: './scratch/mortgage_test',
+      }),
+      metadata: {
+        taskId: 'mortgage_task',
+        workflowInstanceId: 'wf_mortgage',
+        taskDefName: 'acc.content.render_strategy',
+        startTime: Date.now(),
+      },
+    });
+
+    expect(mortgageStrategy.process(ctx)).rejects.toThrow(
+      "[item_223_mortgage_calculators] Modality 'audio' is incompatible with this content type. Supported modalities: interactive-web, static-web"
+    );
+  });
+
+  test('should respect fine-grained modality-specific configurations (videoConfig, audioConfig, socialConfig)', async () => {
+    const cryptoStrategy = ContentStrategyRegistry.getOrThrow('item_002_market_crypto_recap');
+
+    const ctx = createUnifiedPipelineContext({
+      input: {
+        title: 'Ethereum Staking Metrics Surge',
+        summary: 'Total staked ETH reaches 35 million tokens.',
+        modalities: ['video', 'audio', 'social'],
+        // Fine-grained modality configs:
+        videoConfig: {
+          aspectRatio: '16:9',
+          fps: 60,
+          durationMs: 25000,
+        },
+        audioConfig: {
+          format: 'wav',
+          targetLoudnessLufs: -16.0,
+        },
+        socialConfig: {
+          customHashtags: ['#Ethereum', '#Web3', '#DeFi'],
+        },
+      },
+      assetContext: new AssetContext({
+        storyId: 'eth_story',
+        workDir: './scratch/eth_test',
+      }),
+      metadata: {
+        taskId: 'eth_task',
+        workflowInstanceId: 'wf_eth',
+        taskDefName: 'acc.content.render_strategy',
+        startTime: Date.now(),
+      },
+    });
+
+    const result = (await cryptoStrategy.process(ctx)) as unknown as OmnichannelOutput;
+
+    // Verify fine-grained video configs were applied
+    expect(result.deliverables.video?.videoSettings.aspectRatio).toBe('16:9');
+    expect(result.deliverables.video?.videoSettings.fps).toBe(60);
+    expect(result.deliverables.video?.videoSettings.durationMs).toBe(25000);
+
+    // Verify fine-grained audio configs were applied
+    expect(result.deliverables.audio?.audioSpecs.format).toBe('wav');
+    expect(result.deliverables.audio?.audioSpecs.loudnessLufs).toBe(-16.0);
+
+    // Verify fine-grained social configs were applied
+    expect(result.deliverables.social?.quoteCard.hashtags).toContain('#Ethereum');
+    expect(result.deliverables.social?.quoteCard.hashtags).toContain('#DeFi');
+  });
 });
+

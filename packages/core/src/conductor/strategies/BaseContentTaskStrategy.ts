@@ -159,24 +159,34 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
       ? input.modalities
       : [this.defaultModality];
 
+    // Strict Compatibility Enforcement:
+    // Reject any requested modality that is semantically or technically incompatible with this content type
+    for (const mod of requestedModalities) {
+      if (!this.supportedModalities.includes(mod)) {
+        throw new Error(
+          `[${this.contentTypeId}] Modality '${mod}' is incompatible with this content type. Supported modalities: ${this.supportedModalities.join(', ')}`
+        );
+      }
+    }
+
     const deliverables: OmnichannelOutput['deliverables'] = {};
 
     for (const mod of requestedModalities) {
       switch (mod) {
         case 'static-web':
-          deliverables.staticWeb = this.renderStaticWeb(ctx, ir);
+          deliverables.staticWeb = this.renderStaticWeb(ctx, ir, input?.staticWebConfig);
           break;
         case 'social':
-          deliverables.social = this.renderSocial(ctx, ir);
+          deliverables.social = this.renderSocial(ctx, ir, input?.socialConfig);
           break;
         case 'video':
-          deliverables.video = this.renderVideo(ctx, ir);
+          deliverables.video = this.renderVideo(ctx, ir, input?.videoConfig);
           break;
         case 'audio':
-          deliverables.audio = this.renderAudio(ctx, ir);
+          deliverables.audio = this.renderAudio(ctx, ir, input?.audioConfig);
           break;
         case 'interactive-web':
-          deliverables.interactiveWeb = this.renderInteractive(ctx, ir);
+          deliverables.interactiveWeb = this.renderInteractive(ctx, ir, input?.interactiveWebConfig);
           break;
       }
     }
@@ -202,7 +212,11 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
 
   // --- Modality Rendering Sub-Routines ---
 
-  protected renderStaticWeb(ctx: UnifiedPipelineContext<TInput>, ir: PipelineIR): StaticWebOutput {
+  protected renderStaticWeb(
+    ctx: UnifiedPipelineContext<TInput>,
+    ir: PipelineIR,
+    config?: { format?: string; slug?: string }
+  ): StaticWebOutput {
     const title = ir.metadata.title;
     const bodyText = ir.chunks[0]?.text || '';
     const keywords = (ir.metadata.tags || []).concat(['cms', 'ssg', 'static-web']);
@@ -223,11 +237,15 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
     };
   }
 
-  protected renderSocial(ctx: UnifiedPipelineContext<TInput>, ir: PipelineIR): SocialMediaOutput {
+  protected renderSocial(
+    ctx: UnifiedPipelineContext<TInput>,
+    ir: PipelineIR,
+    config?: { platforms?: string[]; customHashtags?: string[] }
+  ): SocialMediaOutput {
     const title = ir.metadata.title;
     const bodyText = ir.chunks[0]?.text || '';
     const tags = ir.metadata.tags || [];
-    const hashtags = tags.map((t) => `#${t.replace(/[^a-zA-Z0-9]/g, '')}`).concat(['#ACC', '#ContentAI']);
+    const hashtags = (config?.customHashtags || tags.map((t) => `#${t.replace(/[^a-zA-Z0-9]/g, '')}`)).concat(['#ACC', '#ContentAI']);
 
     return {
       contentTypeId: this.contentTypeId,
@@ -250,10 +268,15 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
     };
   }
 
-  protected renderVideo(ctx: UnifiedPipelineContext<TInput>, ir: PipelineIR): VideoContentOutput {
-    const requestedAspect = (ctx.input as any)?.aspectRatio;
+  protected renderVideo(
+    ctx: UnifiedPipelineContext<TInput>,
+    ir: PipelineIR,
+    config?: { aspectRatio?: '9:16' | '16:9'; fps?: number; durationMs?: number }
+  ): VideoContentOutput {
+    const requestedAspect = config?.aspectRatio || (ctx.input as any)?.aspectRatio;
     const aspectRatio: '9:16' | '16:9' = requestedAspect === '16:9' ? '16:9' : '9:16';
-    const durationMs = ir.chunks[0]?.durationMs || 15000;
+    const durationMs = config?.durationMs || ir.chunks[0]?.durationMs || 15000;
+    const fps = config?.fps || 30;
 
     const videoIRDoc = PipelineIRToUniversalIRAdapter.adapt(
       ir,
@@ -268,7 +291,7 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
       ir,
       videoSettings: {
         aspectRatio,
-        fps: videoIRDoc.meta.globalFps || 30,
+        fps,
         durationMs,
         hasVoiceover: Boolean(ir.chunks[0]?.spokenAudioPath),
         hasSubtitles: true,
@@ -277,9 +300,14 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
     };
   }
 
-  protected renderAudio(ctx: UnifiedPipelineContext<TInput>, ir: PipelineIR): AudioPodcastOutput {
+  protected renderAudio(
+    ctx: UnifiedPipelineContext<TInput>,
+    ir: PipelineIR,
+    config?: { format?: 'mp3' | 'wav' | 'flac' | 'aac'; targetLoudnessLufs?: number }
+  ): AudioPodcastOutput {
     const durationMs = ir.chunks[0]?.durationMs || 60000;
-    const format = (ctx.input as any)?.audioFormat || 'mp3';
+    const format = config?.format || (ctx.input as any)?.audioFormat || 'mp3';
+    const loudnessLufs = config?.targetLoudnessLufs || -14.0;
 
     return {
       contentTypeId: this.contentTypeId,
@@ -291,7 +319,7 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
         format,
         sampleRate: 48000,
         channels: 2,
-        loudnessLufs: -14.0,
+        loudnessLufs,
         durationMs,
         hasBgm: Boolean(ir.audioComposition?.backgroundMusic),
         sfxCount: ir.audioComposition?.sfxMarkers?.length || 0,
@@ -300,7 +328,11 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
     };
   }
 
-  protected renderInteractive(ctx: UnifiedPipelineContext<TInput>, ir: PipelineIR): InteractiveWebOutput {
+  protected renderInteractive(
+    ctx: UnifiedPipelineContext<TInput>,
+    ir: PipelineIR,
+    config?: { initialState?: Record<string, unknown>; theme?: string }
+  ): InteractiveWebOutput {
     const input = ctx.input as any;
     const title = ir.metadata.title;
     const summary = ir.chunks[0]?.text || '';
@@ -322,7 +354,7 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
       bundlePayload: {
         html,
         jsBundle,
-        initialState: input?.initialState || { title, summary },
+        initialState: config?.initialState || input?.initialState || { title, summary },
       },
       ir,
       timestamp: Date.now(),
