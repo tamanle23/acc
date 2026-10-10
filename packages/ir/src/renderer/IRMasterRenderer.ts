@@ -234,8 +234,6 @@ export class IRMasterRenderer {
         const frameHash = crypto.createHash('sha256').update(framePixelBuffer).digest('hex');
         frameHashes.push(frameHash);
         hashAccumulator.update(frameHash);
-      } else {
-        hashAccumulator.update(framePixelBuffer);
       }
 
       // Simulate instantaneous consumer consumption ack
@@ -456,9 +454,8 @@ export class IRMasterRenderer {
       }
     }
 
-    const imgData = ctx.getImageData(0, 0, width, height);
     // Copy into preallocated framePixelBuffer directly to preserve ZERO-ALLOC-FRAME-LOOP
-    buffer.set(imgData.data);
+    buffer.set(canvas.data());
   }
 
   private rasterizeProceduralFrame(t: number, width: number, height: number, buffer: Uint8Array): void {

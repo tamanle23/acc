@@ -700,6 +700,33 @@ export async function resolveSubjectCutout(
           if (meta.boundingBox) subjectBBox = meta.boundingBox;
         } catch {}
       }
+
+      // Pre-compute bounding box once to guarantee ZERO-ALLOC-FRAME-LOOP
+      if (!subjectBBox && !(subjectImg as any)._bbox) {
+        try {
+          const c = createCanvas(subjectImg.width, subjectImg.height);
+          const cctx = c.getContext("2d");
+          cctx.drawImage(subjectImg, 0, 0);
+          const data = cctx.getImageData(0, 0, subjectImg.width, subjectImg.height).data;
+          let minX = subjectImg.width, maxX = 0, minY = subjectImg.height, maxY = 0;
+          for (let y = 2; y < subjectImg.height - 2; y += 4) {
+            for (let x = 2; x < subjectImg.width - 2; x += 4) {
+              const a = data[(y * subjectImg.width + x) * 4 + 3];
+              if (a >= 80) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+          if (maxX > minX && maxY > minY) {
+            subjectBBox = { minX, maxX, minY, maxY };
+            (subjectImg as any)._bbox = subjectBBox;
+          }
+        } catch {}
+      }
+
       return { subjectImg, subjectBBox };
     }
 

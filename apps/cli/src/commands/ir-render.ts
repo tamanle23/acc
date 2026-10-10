@@ -106,7 +106,7 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     baseDir,
     chunkStart,
     chunkEnd,
-    generateFrameHash: true,
+    generateFrameHash: false,
     onProgress: (p) => {
       Logger.info('IRRenderCommand', `[Render Progress] Frame ${p.currentFrame}/${p.totalFrames} (${p.percent}%)`);
     },
