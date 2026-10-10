@@ -8,7 +8,7 @@ export const Route = createFileRoute('/')({
     const { isAuthenticated, accessToken } = useSpringAuthStore.getState();
     if (isAuthenticated || accessToken) {
       throw redirect({
-        to: '/_authenticated/metadata/',
+        to: '/dashboard',
       });
     }
   },

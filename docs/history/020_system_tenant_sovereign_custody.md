@@ -30,12 +30,23 @@ The multi-tenant architecture previously treated the `SYSTEM` tenant with identi
   - Created `RbacMatrixGrid`, `RoleDefinitionModal`, and `UserMembershipDrawer` with universal user lockouts.
   - Configured dedicated routes `/system/tenants` and `/system/roles`.
   - Added test suite `sovereign-cockpit-ui.test.tsx` (3/3 PASS).
+- **Phase 5: Navigation, Living Specifications & i18n**:
+  - Integrated Sovereign Custody into `sidebar-data.ts` restricted to `ROLE_SYSTEM_CUSTODIAN`.
+  - Added sovereign context option (👑 Sovereign Platform) in `profile-switcher.tsx`.
+  - Synchronized `apps/console/ROUTE.md` (Section 3.9 Sovereign Custody Fleet & RBAC Matrix) and `apps/console/DESIGN.md` (Amber Liquid Glass styling tokens).
+  - Synchronized bilingual locales `locales/en/console.json` and `locales/vi/console.json`.
+- **Phase 6: Comprehensive Verification & Sovereign Test Suites**:
+  - Authored `SovereignCustodyAndRlsTest.java` validating dual-context tenancy flags, session aspect SQL execution (`SET LOCAL app.is_system_custodian = 'true'`), and caller-aware mutation/deletion overrides on canonical schemas vs. standard commercial tenant rejection (`MetadataConflictException`).
+  - Executed all backend and console test suites end-to-end with 100% pass rate.
 
 ## Verification & Test Results
-- Backend:
+- Backend (`mvn test`):
+  - `SovereignCustodyAndRlsTest`: 4/4 PASS.
   - `TenantContextAndAspectTest`: 6/6 PASS.
   - `SystemFleetControllerTest`: 10/10 PASS.
-- Console Frontend:
+  - Total backend tests: 20/20 PASS.
+- Console Frontend (`vitest run src/core/sandbox src/features/system`):
   - `system-sandbox.test.ts`: 7/7 PASS.
   - `sovereign-cockpit-ui.test.tsx`: 3/3 PASS.
   - Full sandbox & system test suite: 9 test files passed (56/56 tests PASS).
+
