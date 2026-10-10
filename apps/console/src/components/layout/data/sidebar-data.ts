@@ -77,31 +77,6 @@ export const useSidebarData = (): SidebarData => {
     },
     teams: sidebarTeams,
     navGroups: [
-      ...(isSovereign
-        ? [
-            {
-              title: t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
-              items: [
-                {
-                  title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
-                  url: '/system/tenants',
-                  icon: Building2,
-                  badge: 'ROOT',
-                },
-                {
-                  title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
-                  url: '/system/roles',
-                  icon: KeyRound,
-                },
-                {
-                  title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
-                  url: '/metadata',
-                  icon: Settings2,
-                },
-              ],
-            },
-          ]
-        : []),
       {
         title: t('sidebar.groups.workspace', 'Workspace'),
         items: [
@@ -146,13 +121,42 @@ export const useSidebarData = (): SidebarData => {
             url: '/storage',
             icon: Database,
           },
-          {
-            title: t('sidebar.items.metadata', 'Metadata'),
-            url: '/metadata',
-            icon: Settings2,
-          },
+          ...(!isSovereign
+            ? [
+                {
+                  title: t('sidebar.items.metadata', 'Metadata'),
+                  url: '/metadata',
+                  icon: Settings2,
+                },
+              ]
+            : []),
         ],
       },
+      ...(isSovereign
+        ? [
+            {
+              title: t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
+              items: [
+                {
+                  title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
+                  url: '/system/tenants',
+                  icon: Building2,
+                  badge: 'ROOT',
+                },
+                {
+                  title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
+                  url: '/system/roles',
+                  icon: KeyRound,
+                },
+                {
+                  title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
+                  url: '/metadata',
+                  icon: Settings2,
+                },
+              ],
+            },
+          ]
+        : []),
       {
         title: t('sidebar.groups.pages', 'Pages'),
         items: [
