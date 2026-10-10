@@ -109,6 +109,46 @@ export class IRMasterRenderer {
       await this.preloadAssets(options.baseDir || '.');
     }
 
+    // Pre-flight execution for all modifiers (e.g. Depth3D cutout pre-resolution, asset analysis)
+    for (const track of this.timeline.tracks.values()) {
+      if (track.modifiers) {
+        for (const mod of track.modifiers) {
+          const plugin = this.pluginRegistry.get(mod.type);
+          if (plugin && plugin.execute) {
+            await plugin.execute(
+              {
+                targetType: 'track',
+                targetEntity: track,
+                timeline: new Map(),
+                fps,
+                canvas: { width, height },
+              },
+              mod.params
+            );
+          }
+        }
+      }
+      for (const seq of track.sequences) {
+        if (seq.modifiers) {
+          for (const mod of seq.modifiers) {
+            const plugin = this.pluginRegistry.get(mod.type);
+            if (plugin && plugin.execute) {
+              await plugin.execute(
+                {
+                  targetType: 'sequence',
+                  targetEntity: seq,
+                  timeline: new Map(),
+                  fps,
+                  canvas: { width, height },
+                },
+                mod.params
+              );
+            }
+          }
+        }
+      }
+    }
+
     // 1. Decoupled Asynchronous Audio Mixdown
     let audioResult: DecoupledAudioMixResult;
     let tempAudioWavPath: string | undefined;

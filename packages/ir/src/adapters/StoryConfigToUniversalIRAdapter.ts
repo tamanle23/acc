@@ -91,8 +91,9 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         videoModifiers.push({
           type: 'vfx/depth3d',
           params: {
+            ...scene.depth3d,
             mode: scene.depth3d.mode || 'frame_breaker',
-            frameStyle: scene.depth3d.frameStyle,
+            imagePath: visualSrc,
           },
         });
       }

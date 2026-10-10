@@ -16,7 +16,7 @@ import { TimelineEngine, type CaptionTrackSnapshot } from "@acc/core";
 import { SubjectSegmentationContext, DepthEstimationContext } from "../vision";
 import { Depth3DFactory } from "./factory";
 
-async function checkExists(p: string): Promise<boolean> {
+export async function checkExists(p: string): Promise<boolean> {
   try {
     await fs.promises.access(p, fs.constants.F_OK);
     return true;
@@ -39,7 +39,7 @@ export interface Depth3DSceneOptions {
   useHighQualityIntermediate?: boolean;
 }
 
-async function getStoryRootAndCacheDir(
+export async function getStoryRootAndCacheDir(
   resolvedImagePath: string,
 ): Promise<{ storyRoot: string; depthCacheDir: string }> {
   let currDir = path.dirname(resolvedImagePath);
@@ -630,4 +630,69 @@ export async function renderDepth3DScene(
   );
 
   return renderPromise;
+}
+
+/**
+ * Resolves cached or auto-segmented subject cutout image and bounding box for a given image path.
+ */
+export async function resolveSubjectCutout(
+  imagePath: string,
+  depthConfig?: Depth3DConfig
+): Promise<{ subjectImg: Image | null; subjectBBox: any | null }> {
+  try {
+    const imgBuffer = await fs.promises.readFile(imagePath);
+    const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
+    const sceneDir = path.dirname(imagePath);
+    const baseName = path.parse(imagePath).name;
+    const imageChecksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
+    const segContext = SubjectSegmentationContext.getInstance();
+    const segStratName = segContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
+
+    let resolvedSubPath: string | null = null;
+    if (depthConfig?.subjectImage) {
+      const candidate = path.isAbsolute(depthConfig.subjectImage)
+        ? depthConfig.subjectImage
+        : path.resolve(sceneDir, depthConfig.subjectImage);
+      if (await checkExists(candidate)) resolvedSubPath = candidate;
+      else {
+        const rootCand = path.resolve(storyRoot, depthConfig.subjectImage);
+        if (await checkExists(rootCand)) resolvedSubPath = rootCand;
+        else {
+          const cacheCand = path.resolve(depthCacheDir, depthConfig.subjectImage);
+          if (await checkExists(cacheCand)) resolvedSubPath = cacheCand;
+        }
+      }
+    }
+
+    if (!resolvedSubPath) {
+      const candidates = [
+        path.resolve(depthCacheDir, `${baseName}_subject_${segStratName}_${imageChecksum}.png`),
+        path.resolve(depthCacheDir, `${baseName}_subject_${imageChecksum}.png`),
+        path.resolve(depthCacheDir, `${baseName}_subject.png`),
+        path.resolve(sceneDir, `${baseName}_subject.png`),
+        path.resolve(storyRoot, `${baseName}_subject.png`),
+      ];
+      for (const cand of candidates) {
+        if (await checkExists(cand)) {
+          resolvedSubPath = cand;
+          break;
+        }
+      }
+    }
+
+    if (resolvedSubPath) {
+      const subjectImg = await loadImage(await fs.promises.readFile(resolvedSubPath));
+      let subjectBBox: any = null;
+      const jsonCandidate = resolvedSubPath.replace(/\.png$/i, ".json");
+      if (await checkExists(jsonCandidate)) {
+        try {
+          const meta = JSON.parse(await fs.promises.readFile(jsonCandidate, "utf-8"));
+          if (meta.boundingBox) subjectBBox = meta.boundingBox;
+        } catch {}
+      }
+      return { subjectImg, subjectBBox };
+    }
+  } catch {}
+
+  return { subjectImg: null, subjectBBox: null };
 }
