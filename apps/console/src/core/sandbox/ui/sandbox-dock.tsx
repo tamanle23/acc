@@ -109,6 +109,7 @@ export function SandboxDock() {
   };
 
   const tenants = [
+    'SYSTEM',
     'tenant-us-east-1',
     'tenant-us-west-2',
     'tenant-eu-central-1',
@@ -239,23 +240,28 @@ export function SandboxDock() {
             <label className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
               <Users className="size-3.5 text-blue-500" /> Active Persona
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {(['admin', 'creator', 'user'] as SandboxPersonaId[]).map((pId) => {
+            <div className="grid grid-cols-4 gap-1.5">
+              {(['system', 'admin', 'creator', 'user'] as SandboxPersonaId[]).map((pId) => {
                 const persona = DEFAULT_SANDBOX_PERSONAS[pId];
                 const isActive = activePersonaId === pId;
+                const isSys = pId === 'system';
                 return (
                   <button
                     key={pId}
                     onClick={() => sandboxManager.switchPersona(pId)}
                     className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
                       isActive
-                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-xs'
+                        ? isSys
+                          ? 'border-amber-500 bg-amber-500/15 text-amber-950 dark:text-amber-200 font-semibold shadow-xs ring-1 ring-amber-500/40'
+                          : 'border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-xs'
                         : 'border-border/60 hover:border-border hover:bg-muted/40'
                     }`}
                   >
-                    <span>{persona.name.split(' ')[0]}</span>
-                    <span className="text-[9px] text-muted-foreground font-normal">
-                      {persona.roles[persona.roles.length - 1].replace('ROLE_', '')}
+                    <span className="truncate max-w-full text-[11px]">
+                      {isSys ? '👑 System' : persona.name.split(' ')[0]}
+                    </span>
+                    <span className="text-[8px] text-muted-foreground font-normal truncate max-w-full">
+                      {isSys ? 'CUSTODIAN' : persona.roles[persona.roles.length - 1].replace('ROLE_', '')}
                     </span>
                   </button>
                 );
