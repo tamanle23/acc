@@ -78,6 +78,9 @@ public class DefaultTenantEntitlementService implements TenantEntitlementService
         if (tenantId == null) {
             return Collections.emptySet();
         }
+        if ("SYSTEM".equalsIgnoreCase(tenantId)) {
+            return Collections.unmodifiableSet(ENTERPRISE_FEATURES);
+        }
 
         return cache.computeIfAbsent(tenantId, tid -> {
             Set<String> granted = new HashSet<>();

@@ -72,11 +72,12 @@ public class PayOsBillingService {
         Optional<TenantBilling> billingOpt = billingRepository.findByTenantId(tenantId);
         Set<String> features = entitlementService.getEntitledFeatures(tenantId);
 
-        String planTier = billingOpt.map(TenantBilling::getPlanTier).orElse("BASIC");
+        boolean isSystem = "SYSTEM".equalsIgnoreCase(tenantId);
+        String planTier = isSystem ? "ENTERPRISE" : billingOpt.map(TenantBilling::getPlanTier).orElse("BASIC");
         String cadence = billingOpt.map(TenantBilling::getBillingCadence).orElse("MONTHLY");
         String status = billingOpt.map(TenantBilling::getStatus).orElse("ACTIVE");
         Long amountPaid = billingOpt.map(TenantBilling::getAmountPaid).orElse(0L);
-        LocalDateTime expiresAt = billingOpt.map(TenantBilling::getExpiresAt).orElse(null);
+        LocalDateTime expiresAt = isSystem ? null : billingOpt.map(TenantBilling::getExpiresAt).orElse(null);
 
         QuotaUsageDto quotas = buildQuotaUsage(tenantId, planTier);
         VatInvoiceDto vatInvoice = getVatInvoice(tenantId);
