@@ -1,7 +1,9 @@
-import { ShieldAlert, ArrowRight, X } from 'lucide-react';
+import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useSandboxStore } from '@/core/sandbox';
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { createMockJwt } from '@/core/sandbox/handlers/auth-sandbox-handler';
 import { toast } from 'sonner';
 
 /**
@@ -9,14 +11,12 @@ import { toast } from 'sonner';
  * an ephemeral Assume-Tenant impersonation sub-session.
  */
 export function AssumeTenantBar() {
-  const { currentTenantId, user } = useSpringAuthStore();
+  const { currentTenantId } = useSpringAuthStore();
   const { activeTenantId, setActiveTenant } = useSandboxStore();
 
-  const effectiveTenant = currentTenantId || activeTenantId;
-  const isAssumed = effectiveTenant && effectiveTenant !== 'SYSTEM' && (
-    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
-    localStorage.getItem('unipost_assumed_tenant') === effectiveTenant
-  );
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+  const effectiveTenant = assumedTenant || currentTenantId || activeTenantId;
+  const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
 
   if (!isAssumed) return null;
 
@@ -24,8 +24,23 @@ export function AssumeTenantBar() {
     localStorage.removeItem('unipost_assumed_tenant');
     localStorage.removeItem('unipost_assumed_token');
     setActiveTenant('SYSTEM');
+    useMetadataUiStore.getState().setActiveTenant('SYSTEM', 'Sovereign Root System');
+
+    if (import.meta.env.DEV) {
+      const rootToken = createMockJwt({
+        sub: 'custodian_root',
+        username: 'custodian_root',
+        roles: ['ROLE_SYSTEM_CUSTODIAN', 'ROLE_ADMIN', 'ROLE_USER'],
+        tenantId: 'SYSTEM',
+        isSandbox: true,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60,
+      });
+      useSpringAuthStore.getState().setTokens(rootToken, 'mock_refresh_token_custodian');
+    }
+
     toast.info('Exited Assume-Tenant session. Returned to Sovereign Root context (SYSTEM).');
-    window.location.reload();
+    window.location.href = '/system/tenants';
   };
 
   return (

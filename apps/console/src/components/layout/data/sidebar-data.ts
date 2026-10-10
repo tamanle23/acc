@@ -64,6 +64,7 @@ export const useSidebarData = (): SidebarData => {
   const { user } = useSpringAuthStore();
   const { activePersonaId } = useSandboxStore();
 
+  const isAssumed = typeof window !== 'undefined' && Boolean(localStorage.getItem('unipost_assumed_tenant'));
   const isSovereign = Boolean(
     user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
     activePersonaId === 'system'
@@ -121,7 +122,7 @@ export const useSidebarData = (): SidebarData => {
             url: '/storage',
             icon: Database,
           },
-          ...(!isSovereign
+          ...((!isSovereign || isAssumed)
             ? [
                 {
                   title: t('sidebar.items.metadata', 'Metadata'),
@@ -135,7 +136,9 @@ export const useSidebarData = (): SidebarData => {
       ...(isSovereign
         ? [
             {
-              title: t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
+              title: isAssumed
+                ? t('sidebar.groups.sovereignDelegated', 'Sovereign Custody (Delegated)')
+                : t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
               items: [
                 {
                   title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
@@ -148,11 +151,15 @@ export const useSidebarData = (): SidebarData => {
                   url: '/system/roles',
                   icon: KeyRound,
                 },
-                {
-                  title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
-                  url: '/metadata',
-                  icon: Settings2,
-                },
+                ...(!isAssumed
+                  ? [
+                      {
+                        title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
+                        url: '/metadata',
+                        icon: Settings2,
+                      },
+                    ]
+                  : []),
               ],
             },
           ]

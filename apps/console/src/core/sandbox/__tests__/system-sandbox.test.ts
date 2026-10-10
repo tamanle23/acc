@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { systemSandboxHandler, mockFleetStore } from '../handlers/system-sandbox-handler';
+import { decodeJwt } from '@/features/spring-auth/utils/jwt';
 import type { SandboxRouteMatcherContext } from '../types';
 
 describe('SystemFleet Sandbox Handler', () => {
@@ -123,7 +124,12 @@ describe('SystemFleet Sandbox Handler', () => {
     expect(res.status).toBe(200);
     expect(res.data.body.actorTenantId).toBe('SYSTEM');
     expect(res.data.body.effectiveTenantId).toBe('tenant-us-east-1');
-    expect(res.data.body.ephemeralToken).toContain('sb_assume_tenant-us-east-1');
+    expect(res.data.body.ephemeralToken).toBeTruthy();
+
+    const decoded = decodeJwt(res.data.body.ephemeralToken);
+    expect(decoded?.tenantId).toBe('tenant-us-east-1');
+    expect(decoded?.actor_tid).toBe('SYSTEM');
+    expect(decoded?.roles).toContain('ROLE_SYSTEM_CUSTODIAN');
     expect(res.data.body.authorities).toContain('ROLE_SYSTEM_CUSTODIAN');
   });
 

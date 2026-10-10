@@ -54,6 +54,9 @@ import { CreateTenantModal } from './create-tenant-modal';
 import { SubscriptionOverrideDrawer } from './subscription-override-drawer';
 import { QuotaTuningDrawer } from './quota-tuning-drawer';
 import { SuspendTenantDialog } from './suspend-tenant-dialog';
+import { useSandboxStore } from '@/core/sandbox';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 
 export function FleetTenantsTable() {
   const [search, setSearch] = useState('');
@@ -87,6 +90,9 @@ export function FleetTenantsTable() {
     setSuspendDialogOpen(true);
   };
 
+  const { setActiveTenant } = useSandboxStore();
+  const { setActiveTenant: setMetadataTenant } = useMetadataUiStore();
+
   const handleAssumeTenant = (tenant: FleetTenantSummary) => {
     assumeMutation.mutate(
       { tenantId: tenant.tenantId, durationMinutes: 60 },
@@ -95,8 +101,13 @@ export function FleetTenantsTable() {
           localStorage.setItem('unipost_assumed_tenant', res.effectiveTenantId);
           if (res.ephemeralToken) {
             localStorage.setItem('unipost_assumed_token', res.ephemeralToken);
+            useSpringAuthStore.getState().setTokens(res.ephemeralToken, 'mock_refresh_token_custodian');
           }
-          window.location.reload();
+          setActiveTenant(res.effectiveTenantId);
+          setMetadataTenant(res.effectiveTenantId, tenant.name);
+
+          toast.success(`Assumed tenant '${tenant.name}' (${res.effectiveTenantId}). Navigating to organization workspace...`);
+          window.location.href = '/metadata';
         },
       }
     );

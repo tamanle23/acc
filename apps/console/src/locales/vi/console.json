@@ -11,6 +11,7 @@
   "sidebar": {
     "groups": {
       "sovereign": "Chủ quyền Hệ thống (Gốc)",
+      "sovereignDelegated": "Ủy quyền Quản trị Tối cao (Giả lập)",
       "workspace": "Không gian làm việc",
       "general": "Chung",
       "admin": "Quản trị",

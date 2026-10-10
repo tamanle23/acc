@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FleetTenantsTable } from '../tenants/fleet-tenants-table';
 import { RbacMatrixGrid } from '../roles/rbac-matrix-grid';
 import { UserMembershipDrawer } from '../roles/user-membership-drawer';
+import { AssumeTenantBar } from '@/components/layout/assume-tenant-bar';
 
 // Mock TanStack Router
 vi.mock('@tanstack/react-router', () => ({
@@ -28,6 +29,10 @@ function renderWithClient(ui: React.ReactElement) {
 }
 
 describe('Sovereign Cockpit UI Components', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('renders FleetTenantsTable with search and filters', () => {
     renderWithClient(<FleetTenantsTable />);
     expect(screen.getByPlaceholderText(/search fleet tenants/i)).toBeTruthy();
@@ -45,5 +50,18 @@ describe('Sovereign Cockpit UI Components', () => {
     renderWithClient(<UserMembershipDrawer />);
     expect(screen.getByPlaceholderText(/search users by name/i)).toBeTruthy();
     expect(screen.getByText(/emergency custody/i)).toBeTruthy();
+  });
+
+  it('renders AssumeTenantBar when assumed tenant session is active in localStorage', () => {
+    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
+    renderWithClient(<AssumeTenantBar />);
+    expect(screen.getByText(/assume-tenant active:/i)).toBeTruthy();
+    expect(screen.getByText('tenant-acme')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /exit sub-session/i })).toBeTruthy();
+  });
+
+  it('does not render AssumeTenantBar when no assumed session is active', () => {
+    const { container } = renderWithClient(<AssumeTenantBar />);
+    expect(container.firstChild).toBeNull();
   });
 });
