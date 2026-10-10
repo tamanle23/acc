@@ -310,3 +310,24 @@ Hệ thống video hỗ trợ hai mô hình trục thời gian (Timebase Models)
 **Context**: As the ACC project scales across multiple workspaces, pipelines, and the Python gRPC backend, it is critical to maintain a single, cohesive architectural master blueprint. `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` was created to serve exactly this purpose. It contains detailed breakdowns of the Turborepo structure, Netflix Conductor OSS stateless orchestration, the 6 Canonical Pipelines (with step-by-step processing flows), AI Subsystems, UI control planes, and performance standards.
 **Actionable Requirement**: Any future modifications, feature additions, or structural refactors that fundamentally alter the system's architecture, pipeline data flow, or structural dependencies must be accompanied by a synchronous update to `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md`. This ensures the master blueprint never falls out of sync with the codebase.
 ---
+
+## 17. Deterministic Headless Rendering & Handshake Backpressure Protocol
+
+### Context & Rationale
+Trong kiến trúc Universal Video IR (`packages/ir`), công đoạn rasterize khung hình headless (`IRMasterRenderer`) và encoder sink (`FFIVideoEncoderSink`) là nền tảng cốt lõi của tính năng Render phân tán (Distributed Temporal Chunking).
+Để đảm bảo kết quả render trên mọi máy chủ, cloud worker hoặc luồng render cục bộ cho ra kết quả bit-identical (trùng khớp từng bit màu và từng byte âm thanh), hệ thống đặt ra 2 ràng buộc tuyệt đối (Hard Constraints):
+1. **Deterministic Rendering (Không phụ thuộc Wall-Clock)**:
+   - Mọi phép toán biến đổi hình ảnh, chuyển động góc xoay, scale, camera dolly, hạt bụi lơ lửng, gradient và karaoke highlight BẮT BUỘC phải là hàm số thuần túy (pure mathematical function) của chỉ số khung hình nguyên `globalFrame` hoặc đồng hồ thời gian rời rạc `timeSec = globalFrame / fps`.
+   - TUYỆT ĐỐI KHÔNG sử dụng `Date.now()`, `performance.now()`, `Math.random()`, `setTimeout`, hoặc bất kỳ nguồn biến thiên thời gian thực tế nào bên trong render loop hoặc modifier plugin.
+   - Mọi yếu tố ngẫu nhiên phải được sinh ra qua bộ giả ngẫu nhiên có seed cố định (`DeterministicNoiseGenerator`).
+2. **Synchronous Frame Handshake Backpressure (`FrameBackpressureLock`)**:
+   - Khung hình $t+1$ TUYỆT ĐỐI KHÔNG được phép render hoặc ghi đè buffer trước khi khung hình $t$ được xác nhận tiêu thụ hoàn tất (`acknowledge`) bởi Encoder Sink.
+   - Cơ chế handshake này ngăn chặn 100% tình trạng frame drop (mất khung hình), biến dạng video do chạy đua bộ nhớ, hoặc rò rỉ buffer không kiểm soát khi producer chạy nhanh hơn consumer.
+3. **Temporal Chunking Seamless Concatenation**:
+   - Khi chia video thành các temporal chunks (`--chunk-start` / `--chunk-end`), khung hình tại biên giao nhau của chunk phải khớp hoàn toàn về trạng thái đồ họa và âm thanh với frame kế tiếp, cho phép nối chuỗi (FFmpeg concat) mà không bị giật, đen, hay lệch nhịp phụ đề.
+
+### Detailed Requirements
+1. **PURE-FRAME-DISCRETE**: Mọi biểu thức modifier trong `renderClipSpace`, `renderStreamSpace`, `renderMasterComposite` chỉ được nhận `timeSec = localFrame / fps` hoặc `localFrame`. Cấm dùng wall-clock thời gian thực.
+2. **HANDSHAKE-INTEGRITY**: Trong `IRMasterRenderer.render`, cặp lệnh `await this.lock.acquire(f)` và `this.lock.acknowledge(f)` là bất khả xâm phạm. Không được phép bypass hoặc gọi bất đồng bộ chạy nền không đợi ack.
+3. **BIT-IDENTICAL HASH VERIFICATION**: Bất kỳ tối ưu hóa hiệu năng nào trong tương lai đối với `IRMasterRenderer` hoặc modifier plugin đều BẮT BUỘC phải vượt qua bài kiểm tra `res1.cumulativeHash === res2.cumulativeHash` với 100% độ chính xác bit-identical.
+

@@ -22,4 +22,8 @@ trigger: always_on
   1. Zero heap cloning: never use `Buffer.from(rgbaBuffer)`. Pass raw `ptr(rgbaBuffer)` directly.
   2. Pre-allocated native C memory (`av_malloc`) for FFI pointer/stride arrays (`srcDataC`, `srcStrideC`). No nursery heap allocations per frame.
   3. Cache structural phrases/regex calculations across frames (e.g. `WeakMap`).
+- **DETERMINISTIC-HANDSHAKE-BACKPRESSURE**: In headless IR rendering & modifier plugins:
+  1. Pure frame math only: `timeSec = globalFrame / fps`. NEVER use `Date.now()`, `performance.now()`, or `Math.random()`. Randomness via seeded `DeterministicNoiseGenerator`.
+  2. Inviolable handshake backpressure: Every frame `f` must `await lock.acquire(f)` and be acked by sink before `f+1`.
+  3. Bit-identical parity: Future performance tunings must preserve `res1.cumulativeHash === res2.cumulativeHash` across runs.
 - **System Architecture Anchor**: `docs/SYSTEM_ARCHITECTURE_DOCUMENT.md` is primary architectural SSOT. Must sync on any structural/pipeline change.
