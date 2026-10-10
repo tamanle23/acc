@@ -68,10 +68,18 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
     navigate({ to: '/system/tenants' })
   }
 
+  // When inside an assumed tenant sub-session, strictly isolate the workspace list to the assumed tenant only
+  const displayProfiles = useMemo(() => {
+    if (isAssumed && assumedTenant) {
+      return availableProfiles.filter((p) => p.tenantId === assumedTenant)
+    }
+    return availableProfiles
+  }, [availableProfiles, isAssumed, assumedTenant])
+
   // Group workspaces by parent Tenant
   const groupedByTenant = useMemo(() => {
     const map = new Map<string, { tenantName: string; workspaces: Profile[] }>()
-    availableProfiles.forEach((p) => {
+    displayProfiles.forEach((p) => {
       const tenantId = (p.tenantId as string) || 'default-tenant'
       const tenantName = (p.tenantName as string) || 'Organization'
       if (!map.has(tenantId)) {
@@ -79,16 +87,11 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
       }
       map.get(tenantId)!.workspaces.push(p)
     })
-    const groups = Array.from(map.entries()).map(([tenantId, data]) => ({
+    return Array.from(map.entries()).map(([tenantId, data]) => ({
       tenantId,
       ...data,
     }))
-
-    if (isAssumed) {
-      groups.sort((a, b) => (a.tenantId === assumedTenant ? -1 : b.tenantId === assumedTenant ? 1 : 0))
-    }
-    return groups
-  }, [availableProfiles, isAssumed, assumedTenant])
+  }, [displayProfiles])
 
   const handleSelectWorkspace = (profile: Profile) => {
     const tenantId = (profile.tenantId as string) || 'default-tenant'

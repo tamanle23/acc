@@ -67,4 +67,19 @@ describe('ProfileSwitcher Component', () => {
     expect(screen.getByText('Acme Prod')).toBeDefined();
     expect(screen.getByText(/Delegated: Acme International Corp/i)).toBeDefined();
   });
+
+  it('strictly isolates workspace dropdown to assumed tenant workspaces only, excluding Default Organization', () => {
+    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
+    localStorage.setItem('unipost_assumed_tenant_name', 'Acme International Corp');
+    useProfileStore.getState().syncAssumedTenant('tenant-acme', 'Acme International Corp');
+
+    renderSwitcher();
+
+    // Trigger button shows Acme context
+    expect(screen.getByText('Acme Prod')).toBeDefined();
+
+    // Default Organization and Unipost Main must NOT be rendered when inside assumed tenant
+    expect(screen.queryByText('Unipost Main')).toBeNull();
+    expect(screen.queryByText('Default Organization')).toBeNull();
+  });
 });
