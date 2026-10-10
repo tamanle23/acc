@@ -66,6 +66,36 @@ export class ScraperEngine {
       port,
       async fetch(req) {
         const url = new URL(req.url);
+
+        // K8s Liveness Probe
+        if (url.pathname === '/healthz/liveness') {
+          return new Response(JSON.stringify({ status: 'UP', uptimeSec: process.uptime() }), {
+            headers: { 'Content-Type': 'application/json' },
+            status: 200,
+          });
+        }
+
+        // K8s Readiness Probe
+        if (url.pathname === '/healthz/readiness') {
+          const { AdaptiveResourceGovernor } = await import('@acc/core');
+          const snapshot = AdaptiveResourceGovernor.getInstance().probeSnapshot();
+          const isReady = !snapshot.isMemoryConstrained;
+          return new Response(JSON.stringify({ status: isReady ? 'READY' : 'DEGRADED', snapshot }), {
+            headers: { 'Content-Type': 'application/json' },
+            status: isReady ? 200 : 503,
+          });
+        }
+
+        // Prometheus Metrics Scrape Endpoint
+        if (url.pathname === '/metrics') {
+          const { MetricsRegistry } = await import('@acc/core');
+          const prometheusText = MetricsRegistry.getInstance().toPrometheusText();
+          return new Response(prometheusText, {
+            headers: { 'Content-Type': 'text/plain; version=0.0.4' },
+            status: 200,
+          });
+        }
+
         if (req.method === 'POST' && url.pathname === path) {
           try {
             const body = await req.json();

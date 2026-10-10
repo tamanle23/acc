@@ -50,3 +50,6 @@ export * from './resilience/AdaptiveResourceGovernor';
 export * from './resilience/RenderCircuitBreaker';
 export * from './models/ModelHandleRegistry';
 export * from './saga/ConductorSagaOrchestrator';
+export * from './telemetry/TraceContext';
+export * from './telemetry/MetricsRegistry';
+export * from './security/DynamicSecretsManager';

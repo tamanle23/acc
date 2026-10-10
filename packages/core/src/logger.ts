@@ -14,7 +14,12 @@ export class Logger {
 
   private static formatMessage(namespace: string, message: string): string {
     const timestamp = new Date().toISOString();
-    return `[${timestamp}] [${namespace}] ${message}`;
+    let sanitized = message;
+    try {
+      const { DynamicSecretsManager } = require('./security/DynamicSecretsManager');
+      sanitized = DynamicSecretsManager.getInstance().sanitize(message);
+    } catch {}
+    return `[${timestamp}] [${namespace}] ${sanitized}`;
   }
 
   public static debug(namespace: string, message: string, ...optionalParams: any[]) {

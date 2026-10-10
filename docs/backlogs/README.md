@@ -26,6 +26,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`020`](020_canonical_pipeline_4_ir_migration.md) | Canonical Pipeline 4 Migration & Legacy Deprecation (Phase 2) | Core Architecture / Generative Story Pipeline | ✅ `Completed` | 2026-10-11 | [`170_canonical_pipeline_4_ir_migration.md`](../history/170_canonical_pipeline_4_ir_migration.md) |
 | [`021`](021_enterprise_resilience_phase3.md) | Enterprise Resilience, VRAM Isolation & SAGA Workflows (Phase 3) | Core Architecture / Resilience & Resource Isolation | ✅ `Completed` | 2026-10-11 | [`171_enterprise_resilience_phase3.md`](../history/171_enterprise_resilience_phase3.md) |
 | [`022`](022_omnichannel_pipelines_phase4.md) | Omnichannel Pipelines 1, 2, 3 Expansion via Output Modality Routing (Phase 4) | Omnichannel Pipelines / Universal IR | ✅ `Completed` | 2026-10-11 | [`172_omnichannel_pipelines_phase4.md`](../history/172_omnichannel_pipelines_phase4.md) |
+| [`023`](023_enterprise_telemetry_security_phase5.md) | Zero-Trust Security, Dynamic Secrets & Observability (Phase 5) | Core Architecture / Telemetry & Security | ✅ `Completed` | 2026-10-11 | [`173_enterprise_telemetry_security_phase5.md`](../history/173_enterprise_telemetry_security_phase5.md) |
 
 ---
 
