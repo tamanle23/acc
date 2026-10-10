@@ -108,6 +108,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
             ...scene.depth3d,
             mode: scene.depth3d.mode || 'frame_breaker',
             imagePath: visualSrc,
+            captions: scene.captions,
           },
         });
       }

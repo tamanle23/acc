@@ -99,11 +99,15 @@ export function drawSandwichFrame(ctx: any, state: SandwichState) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillText(activeText.toUpperCase(), textX + 4, textY + 6);
 
-    const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
-    textGrad.addColorStop(0, '#FFFFFF');
-    textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
+    if (sandwichSettings.textColor) {
+      ctx.fillStyle = sandwichSettings.textColor;
+    } else {
+      const textGrad = ctx.createLinearGradient(0, textY - fontSize / 2, 0, textY + fontSize / 2);
+      textGrad.addColorStop(0, '#FFFFFF');
+      textGrad.addColorStop(1, 'rgba(230, 240, 255, 0.85)');
+      ctx.fillStyle = textGrad;
+    }
 
-    ctx.fillStyle = textGrad;
     ctx.fillText(activeText.toUpperCase(), textX, textY);
     ctx.restore();
   }

@@ -178,4 +178,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`163`](163_fix_ir_transition_gap_and_broll_video_decoder.md) | 2026-10-10 | Fix IR Transition Gap Black Frames & Native B-Roll Video Decoding | Built native FFIVideoDecoder via bun:ffi, added pause padding to visual sequences, eliminated crossfade dip-to-black |
 | [`164`](164_incorporate_ai_segmentation_and_depth_anything.md) | 2026-10-10 | Incorporate AI Segmentation & Depth Anything Models into Canonical IR Pipeline | Wired live SubjectSegmentationContext fallback, DepthEstimationContext multi-plane layers, and absolute resolved paths |
 | [`165`](165_visual_parity_and_transition_overlap_in_canonical_ir.md) | 2026-10-10 | Visual Parity & Full Effect Synchronization in Canonical Video IR Pipeline | Resolved relative asset paths, added DAG transition overlap frames, pre-allocated particle systems, verified visual parity |
+| [`166`](166_volumetric_sandwich_typography_and_text_parity.md) | 2026-10-10 | Volumetric Sandwich Typography & Text Parity in Canonical IR Pipeline | Forwarded sandwich settings & captions to Depth3DPlugin, enabled custom textColor, verified 3D typography behind subject |
 

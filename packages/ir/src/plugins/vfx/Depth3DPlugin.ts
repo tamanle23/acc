@@ -9,10 +9,14 @@ export interface Depth3DPluginParams {
   autoSegment?: boolean;
   autoDepth?: boolean;
   depthMesh?: { motion?: string; displacementScale?: number };
+  sandwich?: any;
+  parallax?: any;
+  captions?: any[];
   imagePath?: string;
   shadow?: boolean;
   floatMotion?: boolean;
   backdropBlur?: number;
+  [key: string]: any;
 }
 
 /**
@@ -152,6 +156,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       popOutIntensity: params.popOutIntensity ?? 1.25,
       shadow: params.shadow !== false,
       floatMotion: params.floatMotion !== false,
+      sandwich: params.sandwich,
+      parallax: params.parallax,
+      depthMesh: params.depthMesh,
     };
 
     const depthLayersData = params.imagePath ? this.depthLayerCache.get(params.imagePath) : undefined;
@@ -182,6 +189,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         depthLayers: depthLayersData?.depthLayers || null,
         particles,
         dustParticles,
+        captions: params.captions,
         width,
         height,
         frame: localFrame,
