@@ -1,6 +1,7 @@
 import type { VideoIRDocument } from '../types/VideoIR';
 import type { IConfigToIRAdapter, AdapterOptions } from './IConfigToIRAdapter';
 import { StoryConfigToUniversalIRAdapter } from './StoryConfigToUniversalIRAdapter';
+import { PipelineIRToUniversalIRAdapter } from './PipelineIRToUniversalIRAdapter';
 
 /**
  * IRConfigAdapterRegistry:
@@ -15,6 +16,8 @@ export class IRConfigAdapterRegistry {
   private constructor() {
     // Register the pioneer legacy story-config adapter by default
     this.register(new StoryConfigToUniversalIRAdapter());
+    // Register the omnichannel pipeline-ir adapter by default
+    this.register(new PipelineIRToUniversalIRAdapter());
   }
 
   public static getInstance(): IRConfigAdapterRegistry {

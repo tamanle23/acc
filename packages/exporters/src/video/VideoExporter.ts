@@ -3,7 +3,7 @@ import path from 'path';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
-import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists } from '@acc/core';
+import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists, Logger } from '@acc/core';
 
 export interface VideoExportOptions extends ExportOptions {
   width?: number;
@@ -37,7 +37,54 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
     const prefix = options.fileNamePrefix || ir.metadata.jobId || 'video';
     const outputPath = path.join(outDir, `${prefix}.${container}`);
 
-    // Prepare audio track if available
+    // Phase 4 Omnichannel Upgrade: Route video output directly through Universal Video IR
+    try {
+      const {
+        PipelineIRToUniversalIRAdapter,
+        RelationalDAGCompiler,
+        AssetMetadataProber,
+        IRMasterRenderer,
+        FFIVideoEncoderSink,
+      } = await import('@acc/ir');
+
+      Logger.info('VideoExporter', `⚡ Compiling PipelineIR [${ir.pipelineId}] to Universal Video IR...`);
+      const irDoc = PipelineIRToUniversalIRAdapter.adapt(ir, undefined, outDir);
+      irDoc.meta.canvasSize = { w: width, h: height };
+      irDoc.meta.globalFps = fps;
+
+      const prober = new AssetMetadataProber(outDir);
+      const compiler = new RelationalDAGCompiler({ prober });
+      const timeline = await compiler.compile(irDoc);
+
+      const renderer = new IRMasterRenderer(timeline, 42);
+      const sink = new FFIVideoEncoderSink();
+
+      const renderResult = await renderer.render({
+        sink,
+        outputPath,
+        baseDir: outDir,
+      });
+
+      return {
+        exporterId: this.id,
+        outputPath,
+        format: container,
+        durationMs: Math.round(renderResult.durationSeconds * 1000),
+        metadata: {
+          width,
+          height,
+          fps,
+          totalFrames: renderResult.totalFrames,
+          aspectRatio: isVertical ? '9:16' : '16:9',
+          container,
+          irCumulativeHash: renderResult.cumulativeHash,
+        },
+      };
+    } catch (irErr: any) {
+      Logger.warn('VideoExporter', `Universal Video IR export fallback triggered: ${irErr.message}. Running canvas encoder...`);
+    }
+
+    // Fallback path
     let primaryAudio: string | undefined = undefined;
     for (const chunk of ir.chunks) {
       if (chunk.spokenAudioPath && (await fileExists(chunk.spokenAudioPath))) {

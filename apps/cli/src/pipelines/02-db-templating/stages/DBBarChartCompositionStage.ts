@@ -43,9 +43,10 @@ export function createDBBarChartCompositionStage(): IPipelineMiddleware<DBTempla
       renderCtx.fillText(payload.title.slice(0, 35), 80, 280);
 
       // Subtitle
+      const highlightMetricName = (payload as any).highlightMetric || (sorted[0]?.highlightMetric) || 'METRIC';
       renderCtx.font = '30px sans-serif';
       renderCtx.fillStyle = '#94a3b8';
-      renderCtx.fillText(`Ranking sorted by: ${payload.highlightMetric.toUpperCase()}`, 80, 340);
+      renderCtx.fillText(`Ranking sorted by: ${highlightMetricName.toUpperCase()}`, 80, 340);
 
       // Bar Chart Rows
       let y = 440;
