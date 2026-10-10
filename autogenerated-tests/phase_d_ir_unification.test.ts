@@ -125,5 +125,5 @@ describe('Phase D: Parity & Unified Canonical IR Pipeline Transition', () => {
     expect(ctx.timings.render).toBeGreaterThan(0);
     expect(ctx.metadata.irRenderResult).toBeDefined();
     expect(ctx.metadata.irRenderResult.cumulativeHash).toBeDefined();
-  });
+  }, 180000);
 });

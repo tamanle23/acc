@@ -209,7 +209,9 @@ export class VideoEditPipelineOrchestrator {
   }
 
   /**
-   * Native Multi-Scene Rendering Engine: Worker pool, 3D depth, transitions, overlays, and BGM.
+   * Native Multi-Scene Rendering Engine: Canonical Universal Video IR transition.
+   * Routes seamlessly into IRChunkWorkerPool with zero intermediate disk files,
+   * while maintaining a backward-compatible interface.
    */
   public static async renderStoryVideo(
     config: ResolvedStoryConfig,
@@ -217,6 +219,53 @@ export class VideoEditPipelineOrchestrator {
     baseDir: string = process.cwd()
   ): Promise<void> {
     await FFmpegManager.prepare();
+
+    try {
+      Logger.info('VideoEditPipelineOrchestrator', '⚡ Routing via Canonical Universal Video IR Engine & IRChunkWorkerPool...');
+      const {
+        StoryConfigToUniversalIRAdapter,
+        RelationalDAGCompiler,
+        AssetMetadataProber,
+        IRChunkWorkerPool,
+        IRMasterRenderer,
+        FFIVideoEncoderSink,
+      } = await import('@acc/ir');
+
+      const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);
+      const prober = new AssetMetadataProber(baseDir);
+      const compiler = new RelationalDAGCompiler({ prober });
+      const timeline = await compiler.compile(irDoc);
+
+      const cpuCount = os.cpus().length || 4;
+      const requestedConcurrency = typeof config.settings.concurrency === 'number'
+        ? config.settings.concurrency
+        : (config.settings.concurrency === 'auto' ? cpuCount : 1);
+      const concurrency = Math.max(1, Math.min(requestedConcurrency, cpuCount));
+
+      if (concurrency > 1) {
+        const pool = new IRChunkWorkerPool(timeline, 42);
+        await pool.render({
+          concurrency,
+          outputPath: outputFilePath,
+          baseDir,
+          seed: 42,
+          generateFrameHash: false,
+        });
+      } else {
+        const renderer = new IRMasterRenderer(timeline, 42);
+        const sink = new FFIVideoEncoderSink();
+        await renderer.render({
+          sink,
+          outputPath: outputFilePath,
+          baseDir,
+        });
+      }
+      Logger.info('VideoEditPipelineOrchestrator', `✅ Canonical IR rendering completed: ${outputFilePath}`);
+      return;
+    } catch (irErr: any) {
+      Logger.warn('VideoEditPipelineOrchestrator', `Canonical IR render fallback triggered: ${irErr.message}. Executing legacy engine...`);
+    }
+
     const { width, height, container, captions, concurrency } = config.settings;
     const totalScenes = config.scenes.length;
     // Step C1: Dynamic Worker Memory Throttling (RAM Bounds)

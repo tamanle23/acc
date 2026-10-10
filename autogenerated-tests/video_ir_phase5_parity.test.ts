@@ -14,7 +14,8 @@ describe('Video IR Phase 5: Pioneer End-to-End Parity Audit', () => {
     const rawJson = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8')) as LegacyStoryConfig;
 
     // 1. Adapt and Compile IR
-    const irDoc = StoryConfigToUniversalIRAdapter.adapt(rawJson);
+    const baseDir = path.resolve('sample-story');
+    const irDoc = StoryConfigToUniversalIRAdapter.adapt(rawJson, undefined, baseDir);
     const compiler = new RelationalDAGCompiler();
     const timeline = await compiler.compile(irDoc);
 
