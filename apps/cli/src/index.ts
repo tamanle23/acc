@@ -5,7 +5,7 @@ import {
   AmbientStreamPipeline,
   ScraperEngine,
 } from './pipelines';
-import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions } from '@acc/core';
+import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions, fileExists } from '@acc/core';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render';
@@ -207,8 +207,8 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       receivedAt: new Date().toISOString(),
       timestamp: new Date().toISOString(),
     };
-    if (options.configPath && fs.existsSync(options.configPath)) {
-      event = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    if (options.configPath && (await fileExists(options.configPath))) {
+      event = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return event;
   }
@@ -225,8 +225,8 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
         { id: '4', name: 'Go', category: 'Cloud', metrics: { popularity: 68 }, highlightMetric: 'popularity' },
       ],
     };
-    if (options.configPath && fs.existsSync(options.configPath)) {
-      dataset = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    if (options.configPath && (await fileExists(options.configPath))) {
+      dataset = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return dataset;
   }
@@ -241,8 +241,8 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       ],
       activeSpeakerPosition: { x: 0.5, y: 0.35 },
     };
-    if (options.configPath && fs.existsSync(options.configPath)) {
-      repurposeOpts = { ...repurposeOpts, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
+    if (options.configPath && (await fileExists(options.configPath))) {
+      repurposeOpts = { ...repurposeOpts, ...JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8')) };
     }
     return repurposeOpts;
   }
@@ -263,8 +263,8 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       ],
       finalAnswer: 'a^2 + b^2 = c^2 (Q.E.D.)',
     };
-    if (options.configPath && fs.existsSync(options.configPath)) {
-      proof = JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+    if (options.configPath && (await fileExists(options.configPath))) {
+      proof = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return proof;
   }
@@ -276,15 +276,15 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       loopDurationSeconds: options.duration || 5,
       particleCount: 150,
     };
-    if (options.configPath && fs.existsSync(options.configPath)) {
-      config = { ...config, ...JSON.parse(fs.readFileSync(options.configPath, 'utf-8')) };
+    if (options.configPath && (await fileExists(options.configPath))) {
+      config = { ...config, ...JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8')) };
     }
     return config;
   }
 
-  if (options.configPath && fs.existsSync(options.configPath)) {
+  if (options.configPath && (await fileExists(options.configPath))) {
     try {
-      return JSON.parse(fs.readFileSync(options.configPath, 'utf-8'));
+      return JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     } catch {
       return options.configPath;
     }
