@@ -24,6 +24,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`018`](018_universal_video_ir_rendering_engine.md) | Universal Video IR Rendering Engine (Phases 1-6) | Core Architecture / Universal IR | ✅ `Completed` | 2026-10-09 | [`147_universal_video_ir_phase6_execution.md`](../history/147_universal_video_ir_phase6_execution.md) |
 | [`019`](019_enterprise_ir_phase1_parallel_chunking.md) | Enterprise Universal IR High-Throughput Parallel Temporal Chunking (Phase 1) | Core Architecture / Universal IR | ✅ `Completed` | 2026-10-10 | [`169_enterprise_ir_phase1_parallel_chunking.md`](../history/169_enterprise_ir_phase1_parallel_chunking.md) |
 | [`020`](020_canonical_pipeline_4_ir_migration.md) | Canonical Pipeline 4 Migration & Legacy Deprecation (Phase 2) | Core Architecture / Generative Story Pipeline | ✅ `Completed` | 2026-10-11 | [`170_canonical_pipeline_4_ir_migration.md`](../history/170_canonical_pipeline_4_ir_migration.md) |
+| [`021`](021_enterprise_resilience_phase3.md) | Enterprise Resilience, VRAM Isolation & SAGA Workflows (Phase 3) | Core Architecture / Resilience & Resource Isolation | ✅ `Completed` | 2026-10-11 | [`171_enterprise_resilience_phase3.md`](../history/171_enterprise_resilience_phase3.md) |
 
 ---
 

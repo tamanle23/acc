@@ -102,10 +102,12 @@ export class IRChunkWorkerPool {
     const { w: width, h: height } = this.timeline.meta.canvasSize;
     const fps = this.timeline.meta.globalFps;
 
-    // Detect hardware concurrency
+    // Detect hardware concurrency and govern memory bounds
     const maxSystemCores = Math.max(1, os.cpus().length);
-    const requestedConcurrency = options.concurrency ?? Math.min(4, maxSystemCores);
-    const concurrency = Math.max(1, Math.min(requestedConcurrency, totalFrames > 0 ? totalFrames : 1));
+    const { AdaptiveResourceGovernor } = await import('@acc/core');
+    const governor = AdaptiveResourceGovernor.getInstance();
+    const safeConcurrency = governor.resolveSafeConcurrency(options.concurrency ?? Math.min(4, maxSystemCores));
+    const concurrency = Math.max(1, Math.min(safeConcurrency, totalFrames > 0 ? totalFrames : 1));
 
     const slices = this.calculateSlices(concurrency);
     const chunkCount = slices.length;
