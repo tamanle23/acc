@@ -1,5 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
-import { Depth3DFactory, drawFrameBreakerFrame, resolveSubjectCutout } from '@acc/effect-engines';
+import { Depth3DFactory, drawFrameBreakerFrame, resolveSubjectCutout, resolveDepthMapData } from '@acc/effect-engines';
 import { createCanvas, type Image, type Canvas } from '@napi-rs/canvas';
 
 export interface Depth3DPluginParams {
@@ -7,6 +7,8 @@ export interface Depth3DPluginParams {
   frameStyle?: string;
   popOutIntensity?: number;
   autoSegment?: boolean;
+  autoDepth?: boolean;
+  depthMesh?: { motion?: string; displacementScale?: number };
   imagePath?: string;
   shadow?: boolean;
   floatMotion?: boolean;
@@ -15,7 +17,7 @@ export interface Depth3DPluginParams {
 
 /**
  * Depth3DPlugin:
- * Bridges existing 3D depth renderers (frame-breaker, sandwich, parallax)
+ * Bridges existing 3D depth renderers (frame-breaker, sandwich, parallax, depth-mesh)
  * into a canonical IR visual modifier (`vfx/depth3d`).
  * Implements Phase 2: Sequence-Level Execution (Clip Space).
  */
@@ -24,8 +26,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public readonly targetScope = 'sequence';
   public readonly targetPhase = 2;
 
-  // Cache resolved cutouts per sequence to maintain ZERO-ALLOC-FRAME-LOOP
+  // Cache resolved cutouts and depth layers per sequence to maintain ZERO-ALLOC-FRAME-LOOP
   private cutoutCache = new Map<string, { subjectImg: Image | null; subjectBBox: any | null }>();
+  private depthLayerCache = new Map<string, { srcCanvas: Canvas; depthLayers: any }>();
   private bgCanvasCache = new Map<string, Canvas>();
 
   public validate(params: unknown): params is Depth3DPluginParams {
@@ -41,10 +44,21 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       active: true,
     };
 
-    // Pre-resolve subject cutout during timeline compilation / preflight
+    // Pre-resolve AI subject cutout and Depth Anything layers during preflight
     if (params.imagePath) {
       const cutout = await resolveSubjectCutout(params.imagePath, params as any);
       this.cutoutCache.set(params.imagePath, cutout);
+
+      const mode = params.mode || 'frame_breaker';
+      if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth) {
+        const depthData = await resolveDepthMapData(
+          params.imagePath,
+          context.canvas.width,
+          context.canvas.height,
+          params as any
+        );
+        this.depthLayerCache.set(params.imagePath, depthData);
+      }
     }
   }
 
@@ -111,6 +125,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       floatMotion: params.floatMotion !== false,
     };
 
+    const depthLayersData = params.imagePath ? this.depthLayerCache.get(params.imagePath) : undefined;
+
     const renderer = Depth3DFactory.getRenderer(mode);
     if (renderer) {
       renderer.renderFrame(canvasCtx, {
@@ -118,6 +134,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         subjectImg: cutout?.subjectImg || null,
         subjectBBox: cutout?.subjectBBox || null,
         bgCanvas: bgCanvas || null,
+        srcCanvas: depthLayersData?.srcCanvas || null,
+        depthLayers: depthLayersData?.depthLayers || null,
         width,
         height,
         frame: localFrame,

@@ -52,8 +52,8 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       const visualAssetId = `asset_vis_${index + 1}`;
       const audioAssetId = `asset_aud_${index + 1}`;
 
-      const visualSrc = scene.video || scene.image || '';
-      const audioSrc = scene.audio || '';
+      const visualSrc = (scene as any).resolvedVideo || (scene as any).resolvedImage || scene.video || scene.image || '';
+      const audioSrc = (scene as any).resolvedAudio || scene.audio || '';
 
       if (visualSrc) {
         assets[visualAssetId] = {

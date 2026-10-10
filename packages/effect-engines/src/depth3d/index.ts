@@ -692,7 +692,162 @@ export async function resolveSubjectCutout(
       }
       return { subjectImg, subjectBBox };
     }
+
+    // Auto-segmentation using AI (SAM, BiRefNet, RMBG) if allowed and not cached
+    const shouldAutoSegment = depthConfig?.autoSegment !== false;
+    if (shouldAutoSegment) {
+      const segRes = await segContext.segment(imgBuffer);
+      if (segRes && segRes.maskRgbaBuffer && segRes.maskRgbaBuffer.length > 0) {
+        const subjectImg = await loadImage(segRes.maskRgbaBuffer);
+        const subjectBBox = segRes.boundingBox;
+        const cachePath = path.resolve(
+          depthCacheDir,
+          `${baseName}_subject_${segStratName}_${imageChecksum}.png`,
+        );
+        const metaPath = path.resolve(
+          depthCacheDir,
+          `${baseName}_subject_${segStratName}_${imageChecksum}.json`,
+        );
+        try {
+          await fs.promises.writeFile(cachePath, segRes.maskRgbaBuffer);
+          await fs.promises.writeFile(
+            metaPath,
+            JSON.stringify({ boundingBox: segRes.boundingBox, strategy: segStratName }, null, 2),
+          );
+        } catch {}
+        return { subjectImg, subjectBBox };
+      }
+    }
   } catch {}
 
   return { subjectImg: null, subjectBBox: null };
+}
+
+/**
+ * Resolves or computes Depth Anything depth map and multi-plane depth layers for a given scene image.
+ */
+export async function resolveDepthMapData(
+  imagePath: string,
+  width: number,
+  height: number,
+  depthConfig?: Depth3DConfig
+): Promise<{ srcCanvas: Canvas; depthLayers: any }> {
+  const imgBuffer = await fs.promises.readFile(imagePath);
+  const img = await loadImage(imgBuffer);
+  const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
+  const sceneDir = path.dirname(imagePath);
+  const baseName = path.parse(imagePath).name;
+  const imageChecksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
+  const depthContext = DepthEstimationContext.getInstance();
+  const depthStratName = depthContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  const srcCanvas = createCanvas(width, height);
+  const sCtx = srcCanvas.getContext("2d");
+  drawImageCover(sCtx, img, 0, 0, width, height);
+
+  const depthCanvas = createCanvas(width, height);
+  const dCtx = depthCanvas.getContext("2d");
+  let loadedDepth = false;
+
+  const candidates = [
+    path.resolve(depthCacheDir, `${baseName}_depth_${depthStratName}_${imageChecksum}.png`),
+    path.resolve(depthCacheDir, `${baseName}_depth_${imageChecksum}.png`),
+    path.resolve(depthCacheDir, `${baseName}_depth.png`),
+    path.resolve(sceneDir, `${baseName}_depth.png`),
+    path.resolve(storyRoot, `${baseName}_depth.png`),
+  ];
+  for (const cand of candidates) {
+    if (await checkExists(cand)) {
+      try {
+        const dm = await loadImage(await fs.promises.readFile(cand));
+        drawImageCover(dCtx, dm, 0, 0, width, height);
+        loadedDepth = true;
+        break;
+      } catch {}
+    }
+  }
+
+  if (!loadedDepth && (depthConfig?.autoDepth !== false)) {
+    try {
+      const depthRes = await depthContext.estimateDepth(imgBuffer);
+      if (depthRes && depthRes.depth16Buffer && depthRes.depth16Buffer.length > 0) {
+        const dm = await loadImage(depthRes.depth16Buffer);
+        drawImageCover(dCtx, dm, 0, 0, width, height);
+        loadedDepth = true;
+        const cacheDepthPath = path.resolve(
+          depthCacheDir,
+          `${baseName}_depth_${depthStratName}_${imageChecksum}.png`,
+        );
+        try {
+          await fs.promises.writeFile(cacheDepthPath, depthRes.depth16Buffer);
+        } catch {}
+      }
+    } catch {}
+  }
+
+  if (!loadedDepth) {
+    const radGrad = dCtx.createRadialGradient(
+      width / 2,
+      height * 0.52,
+      width * 0.05,
+      width / 2,
+      height * 0.52,
+      width * 0.65,
+    );
+    radGrad.addColorStop(0, "rgb(255, 255, 255)");
+    radGrad.addColorStop(0.5, "rgb(180, 180, 180)");
+    radGrad.addColorStop(1, "rgb(30, 30, 30)");
+    dCtx.fillStyle = radGrad;
+    dCtx.fillRect(0, 0, width, height);
+  }
+
+  const depthDataFull = dCtx.getImageData(0, 0, width, height).data;
+  const srcDataFull = sCtx.getImageData(0, 0, width, height).data;
+
+  const mgCanvas = createCanvas(width, height);
+  const mgCtx = mgCanvas.getContext("2d");
+  const mgImgData = mgCtx.createImageData(width, height);
+  const mgData = mgImgData.data;
+
+  const fgCanvas = createCanvas(width, height);
+  const fgCtx = fgCanvas.getContext("2d");
+  const fgImgData = fgCtx.createImageData(width, height);
+  const fgData = fgImgData.data;
+
+  for (let i = 0; i < depthDataFull.length; i += 4) {
+    const d = depthDataFull[i] / 255.0;
+    const r = srcDataFull[i];
+    const g = srcDataFull[i + 1];
+    const b = srcDataFull[i + 2];
+
+    let mgAlpha = 0;
+    if (d >= 0.25 && d <= 0.75) {
+      mgAlpha = Math.sin(((d - 0.25) / 0.5) * Math.PI) * 255;
+    }
+    mgData[i] = r;
+    mgData[i + 1] = g;
+    mgData[i + 2] = b;
+    mgData[i + 3] = mgAlpha;
+
+    let fgAlpha = 0;
+    if (d > 0.48) {
+      fgAlpha = Math.min(255, ((d - 0.48) / 0.35) * 255);
+    }
+    fgData[i] = r;
+    fgData[i + 1] = g;
+    fgData[i + 2] = b;
+    fgData[i + 3] = fgAlpha;
+  }
+
+  mgCtx.putImageData(mgImgData, 0, 0);
+  fgCtx.putImageData(fgImgData, 0, 0);
+
+  return {
+    srcCanvas,
+    depthLayers: {
+      bgCanvas: srcCanvas,
+      mgCanvas,
+      fgCanvas,
+    },
+  };
 }
