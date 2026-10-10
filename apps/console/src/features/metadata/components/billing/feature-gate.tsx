@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useSandboxStore } from '@/core/sandbox';
+import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
+
 interface Props {
   featureKey: string;
   featureTitle: string;
@@ -23,6 +27,20 @@ export const FeatureGate: React.FC<Props> = ({
 }) => {
   const { data: billing, isLoading } = useTenantBilling();
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const { user } = useSpringAuthStore();
+  const { activePersonaId } = useSandboxStore();
+  const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
+
+  // Sovereign Custodian (SYSTEM) holds total entitlement across all features unconditionally
+  const isSovereignCustodian = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system' ||
+    activeTenantId === 'SYSTEM'
+  );
+
+  if (isSovereignCustodian) {
+    return <>{children}</>;
+  }
 
   // If loading, render children in defensive mode or loading state
   if (isLoading) {
