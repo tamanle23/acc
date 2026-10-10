@@ -45,13 +45,17 @@ export class ModifierPluginRegistry {
   private static instance: ModifierPluginRegistry;
   private plugins: Map<string, ModifierPlugin<any>> = new Map();
 
-  private constructor() {}
+  public constructor() {}
 
   public static getInstance(): ModifierPluginRegistry {
     if (!ModifierPluginRegistry.instance) {
       ModifierPluginRegistry.instance = new ModifierPluginRegistry();
     }
     return ModifierPluginRegistry.instance;
+  }
+
+  public static createIsolated(): ModifierPluginRegistry {
+    return new ModifierPluginRegistry();
   }
 
   public register(plugin: ModifierPlugin<any>): void {

@@ -7,7 +7,7 @@ import { FrameBackpressureLock } from './handshake/FrameBackpressureLock';
 import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
 import { DecoupledAudioMixer, type DecoupledAudioMixResult } from './audio/DecoupledAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
-import { ModifierPluginRegistry, registerCoreModifierPlugins } from '../plugins';
+import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
 import {
   BoundedAcousticCaptionStrategy,
   drawCanvasCaptionsFromSnapshot,
@@ -25,6 +25,7 @@ export interface HeadlessRenderOptions {
   baseDir?: string;
   chunkStart?: number;
   chunkEnd?: number;
+  skipAudio?: boolean;
 }
 
 export interface HeadlessRenderResult {
@@ -59,13 +60,13 @@ export class IRMasterRenderer {
   private imageCache: Map<string, Image> = new Map();
   private videoDecoders: Map<string, FFIVideoDecoder> = new Map();
 
-  constructor(timeline: ResolvedTimeline, seed: number = 42) {
+  constructor(timeline: ResolvedTimeline, seed: number = 42, pluginRegistry?: ModifierPluginRegistry) {
     this.timeline = timeline;
     this.noiseGen = new DeterministicNoiseGenerator(seed);
     this.lock = new FrameBackpressureLock();
     this.audioMixer = new DecoupledAudioMixer();
-    // Auto-register core plugins to ensure concrete plugin engines are available
-    this.pluginRegistry = registerCoreModifierPlugins();
+    // Use passed isolated registry or create an isolated one for deterministic multi-worker safety
+    this.pluginRegistry = pluginRegistry ?? createIsolatedCoreModifierPlugins();
     this.captionStrategy = new BoundedAcousticCaptionStrategy();
   }
 
@@ -161,22 +162,29 @@ export class IRMasterRenderer {
     }
 
     // 1. Decoupled Asynchronous Audio Mixdown
-    let audioResult: DecoupledAudioMixResult;
+    let audioResult: DecoupledAudioMixResult = {
+      sampleRate: 48000,
+      channels: 2,
+      totalSamples: 0,
+      channelData: [new Float32Array(0), new Float32Array(0)],
+    };
     let tempAudioWavPath: string | undefined;
 
-    // If sink is active and no explicit audioPath was passed, pre-render mixed audio to temp WAV
-    if (sink && !options.audioPath) {
-      audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
-      if (audioResult.totalSamples > 0) {
-        const outDir = options.outputPath ? path.dirname(options.outputPath) : '.';
-        tempAudioWavPath = path.resolve(outDir, `.temp_${Date.now()}_master_audio.wav`);
-        await DecoupledAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+    if (!options.skipAudio) {
+      // If sink is active and no explicit audioPath was passed, pre-render mixed audio to temp WAV
+      if (sink && !options.audioPath) {
+        audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
+        if (audioResult.totalSamples > 0) {
+          const outDir = options.outputPath ? path.dirname(options.outputPath) : '.';
+          tempAudioWavPath = path.resolve(outDir, `.temp_${Date.now()}_master_audio.wav`);
+          await DecoupledAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+        }
+      } else {
+        audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
       }
-    } else {
-      audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
     }
 
-    const effectiveAudioPath = options.audioPath || tempAudioWavPath;
+    const effectiveAudioPath = !options.skipAudio ? (options.audioPath || tempAudioWavPath) : undefined;
 
     // Initialize Sink if provided
     if (sink) {

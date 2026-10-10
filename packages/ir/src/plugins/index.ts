@@ -31,3 +31,19 @@ export function registerCoreModifierPlugins(): ModifierPluginRegistry {
   registry.register(new CanvasParticleOverlayPlugin());
   return registry;
 }
+
+/**
+ * Creates a fresh, isolated ModifierPluginRegistry with new plugin instances
+ * (crucial for multi-worker parallel rendering to prevent cache cross-contamination).
+ */
+export function createIsolatedCoreModifierPlugins(): ModifierPluginRegistry {
+  const registry = ModifierPluginRegistry.createIsolated();
+  registry.register(new Depth3DPlugin());
+  registry.register(new ColorGradingPlugin());
+  registry.register(new DynamicDuckingPlugin());
+  registry.register(new SplitEditPlugin());
+  registry.register(new TransitionCrossfadePlugin());
+  registry.register(new BlendModePlugin());
+  registry.register(new CanvasParticleOverlayPlugin());
+  return registry;
+}

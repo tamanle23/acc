@@ -619,8 +619,13 @@ export class FFIVideoEncoder {
             FFI.avformat.av_write_trailer(this.formatCtx);
         }
 
-        // Free resources in correct FFmpeg lifecycle order (Format Context first, then Codec Contexts)
+        // Close output AVIO pb buffer if opened
         if (this.formatCtx) {
+            const outView = new DataView(safeArrayBuffer(this.formatCtx, 0, 64));
+            const pb = outView.getBigUint64(32, true);
+            if (pb) {
+                FFI.avformat.avio_close(pb);
+            }
             FFI.avformat.avformat_free_context(this.formatCtx);
             this.formatCtx = 0n;
         }

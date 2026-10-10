@@ -6,6 +6,7 @@ import {
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
+  IRChunkWorkerPool,
   FFIVideoEncoderSink,
   type VideoIRDocument,
 } from '@acc/ir';
@@ -16,6 +17,7 @@ export interface IrRenderCliOptions {
   dryRun?: boolean;
   chunkStart?: number;
   chunkEnd?: number;
+  concurrency?: number;
   seed?: number;
   exportIr?: string;
 }
@@ -88,10 +90,36 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     Logger.info('IRRenderCommand', `Temporal chunking active: rendering frames ${chunkStart} -> ${chunkEnd} (${Math.max(0, chunkEnd - chunkStart)} frames)`);
   }
 
-  // Stage 2: Dual Target Sink Resolution
-  // If output path is specified, instantiate hardware-accelerated FFIVideoEncoderSink
-  let sink: FFIVideoEncoderSink | undefined;
   const outputPath = options.output ? path.resolve(options.output) : undefined;
+  const concurrency = options.concurrency ?? 1;
+
+  // Multi-Worker Parallel Temporal Chunking Engine (Phase 1)
+  if (concurrency > 1 && chunkStart === undefined && chunkEnd === undefined && outputPath) {
+    Logger.info('IRRenderCommand', `Starting multi-worker parallel temporal chunk rendering (concurrency: ${concurrency})...`);
+    const workerPool = new IRChunkWorkerPool(timeline, options.seed ?? 42);
+
+    const poolResult = await workerPool.render({
+      concurrency,
+      outputPath,
+      baseDir,
+      seed: options.seed ?? 42,
+      generateFrameHash: false,
+      onProgress: (p) => {
+        Logger.info('IRRenderCommand', `[Parallel Render] Chunks ${p.completedChunks}/${p.totalChunks} | Frames ${p.completedFrames}/${p.totalFrames} (${p.percent}%)`);
+      },
+    });
+
+    Logger.info('IRRenderCommand', `✓ Parallel render completed successfully:`);
+    Logger.info('IRRenderCommand', ` - Total Frames:     ${poolResult.totalFrames} (${poolResult.durationSeconds}s)`);
+    Logger.info('IRRenderCommand', ` - Active Workers:   ${poolResult.concurrency} (${poolResult.chunkCount} chunks)`);
+    Logger.info('IRRenderCommand', ` - Merkle Root Hash: ${poolResult.merkleRootHash}`);
+    Logger.info('IRRenderCommand', ` - Output File:      ${poolResult.outputPath}`);
+    Logger.info('IRRenderCommand', ` - Execution Time:   ${(poolResult.executionTimeMs / 1000).toFixed(2)}s`);
+    return;
+  }
+
+  // Stage 2: Single-Worker Target Sink Resolution
+  let sink: FFIVideoEncoderSink | undefined;
   if (outputPath) {
     sink = new FFIVideoEncoderSink();
     Logger.info('IRRenderCommand', `Configured Output Video Sink: FFIVideoEncoder -> ${outputPath}`);

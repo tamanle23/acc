@@ -14,3 +14,4 @@ export * from './compiler/RelationalDAGCompiler';
 export * from './commands/RenderCommand';
 export * from './plugins';
 export * from './renderer';
+export * from './workers';

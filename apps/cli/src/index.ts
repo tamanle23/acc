@@ -22,6 +22,7 @@ export interface CliOptions {
   conductorSandbox?: boolean;
   chunkStart?: number;
   chunkEnd?: number;
+  concurrency?: number;
   exportIr?: string;
 }
 import { cancel, intro, isCancel, outro, select, spinner, text } from '@clack/prompts';
@@ -117,6 +118,10 @@ export function parseCliArgs(args: string[]): CliOptions {
     }
     if (arg === '--chunk-end') {
       options.chunkEnd = parseInt(args[++i] || '0', 10);
+      continue;
+    }
+    if (arg === '-j' || arg === '--concurrency' || arg === '--threads') {
+      options.concurrency = parseInt(args[++i] || '1', 10);
       continue;
     }
     if (arg === '--export-ir' || arg === '--dump-ir') {
@@ -345,6 +350,7 @@ export async function run(customArgs?: string[]): Promise<any> {
         dryRun: options.dryRun,
         chunkStart: options.chunkStart,
         chunkEnd: options.chunkEnd,
+        concurrency: options.concurrency,
         exportIr: options.exportIr,
       });
       return { success: true, command: 'ir-render' };
