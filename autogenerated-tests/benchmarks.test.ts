@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { ptr } from 'bun:ffi';
 import { createCanvas } from '@napi-rs/canvas';
-import { ModelHandleRegistry } from '../packages/core/src/AssetContext';
+import { ModelHandleRegistry } from '../packages/core/src';
 import { BoundedQueue } from '../packages/core/src/BoundedQueue';
 import { LegacyStoryConfigAdapter } from '../packages/ir/src/LegacyStoryConfigAdapter';
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
