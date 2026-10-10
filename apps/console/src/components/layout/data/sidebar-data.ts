@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { useSandboxStore } from '@/core/sandbox'
+import { useProfileStore } from '@/stores/profile-store'
 
 export const sidebarTeams = [
   {
@@ -63,6 +64,7 @@ export const useSidebarData = (): SidebarData => {
   const { t } = useTranslation('console');
   const { user } = useSpringAuthStore();
   const { activePersonaId } = useSandboxStore();
+  const profiles = useProfileStore((state) => state.profiles);
 
   const isAssumed = typeof window !== 'undefined' && Boolean(localStorage.getItem('unipost_assumed_tenant'));
   const isSovereign = Boolean(
@@ -76,7 +78,7 @@ export const useSidebarData = (): SidebarData => {
       email: 'satnaingdev@gmail.com',
       avatar: '/avatars/shadcn.jpg',
     },
-    teams: sidebarTeams,
+    teams: (profiles && profiles.length > 0 ? profiles : sidebarTeams) as typeof sidebarTeams,
     navGroups: [
       {
         title: t('sidebar.groups.workspace', 'Workspace'),
@@ -269,5 +271,5 @@ export const useSidebarData = (): SidebarData => {
         ],
       },
     ],
-  }), [t, isSovereign])
+  }), [t, isSovereign, isAssumed, profiles])
 }

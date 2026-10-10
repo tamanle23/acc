@@ -2,9 +2,7 @@ import { ShieldAlert, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useSandboxStore } from '@/core/sandbox';
-import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
-import { createMockJwt } from '@/core/sandbox/handlers/auth-sandbox-handler';
-import { toast } from 'sonner';
+import { exitAssumeTenantSubSession } from '@/features/system/utils/assume-tenant-session';
 
 /**
  * Top viewport banner displayed when Sovereign Custodian is running under
@@ -12,7 +10,7 @@ import { toast } from 'sonner';
  */
 export function AssumeTenantBar() {
   const { currentTenantId } = useSpringAuthStore();
-  const { activeTenantId, setActiveTenant } = useSandboxStore();
+  const { activeTenantId } = useSandboxStore();
 
   const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
   const effectiveTenant = assumedTenant || currentTenantId || activeTenantId;
@@ -21,26 +19,7 @@ export function AssumeTenantBar() {
   if (!isAssumed) return null;
 
   const handleExitSubSession = () => {
-    localStorage.removeItem('unipost_assumed_tenant');
-    localStorage.removeItem('unipost_assumed_token');
-    setActiveTenant('SYSTEM');
-    useMetadataUiStore.getState().setActiveTenant('SYSTEM', 'Sovereign Root System');
-
-    if (import.meta.env.DEV) {
-      const rootToken = createMockJwt({
-        sub: 'custodian_root',
-        username: 'custodian_root',
-        roles: ['ROLE_SYSTEM_CUSTODIAN', 'ROLE_ADMIN', 'ROLE_USER'],
-        tenantId: 'SYSTEM',
-        isSandbox: true,
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 60 * 60,
-      });
-      useSpringAuthStore.getState().setTokens(rootToken, 'mock_refresh_token_custodian');
-    }
-
-    toast.info('Exited Assume-Tenant session. Returned to Sovereign Root context (SYSTEM).');
-    window.location.href = '/system/tenants';
+    exitAssumeTenantSubSession('/system/tenants');
   };
 
   return (

@@ -121,12 +121,16 @@ interface MetadataUiState {
 }
 
 
+const initialAssumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+const initialAssumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null;
+const hasAssumedTenant = Boolean(initialAssumedTenant && initialAssumedTenant !== 'SYSTEM');
+
 export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
   // Multi-Tenancy & Workspace Mode
-  activeTenantId: 'default-tenant',
-  activeTenantName: 'Default Organization',
-  activeWorkspaceId: 'ws-main',
-  activeWorkspaceName: 'Production Workspace',
+  activeTenantId: hasAssumedTenant ? (initialAssumedTenant as string) : 'default-tenant',
+  activeTenantName: hasAssumedTenant ? (initialAssumedTenantName || initialAssumedTenant as string) : 'Default Organization',
+  activeWorkspaceId: hasAssumedTenant ? `ws-${initialAssumedTenant}` : 'ws-main',
+  activeWorkspaceName: hasAssumedTenant ? `${initialAssumedTenantName || initialAssumedTenant} Workspace` : 'Production Workspace',
   currentUserRole: 'TENANT_ADMIN',
   workspaceMode: 'architect',
 

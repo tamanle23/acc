@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert, ArrowRight } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-st
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { useSandboxStore } from '@/core/sandbox'
 import { CreateWorkspaceModal } from '@/features/settings/workspaces/create-workspace-modal'
+import { exitAssumeTenantSubSession } from '@/features/system/utils/assume-tenant-session'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -42,15 +43,30 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
     activePersonaId === 'system'
   )
 
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null
+  const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
+
+  const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
+  let activeProfile = currentProfile ?? availableProfiles[0]
+
+  // Defensive fallback: if assumed tenant active, ensure active profile matches assumed tenant
+  if (isAssumed && activeProfile?.tenantId !== assumedTenant) {
+    const matched = availableProfiles.find((p) => p.tenantId === assumedTenant)
+    if (matched) {
+      activeProfile = matched
+    }
+  }
+
   const handleSwitchToSovereign = () => {
+    if (isAssumed) {
+      exitAssumeTenantSubSession('/system/tenants')
+      return
+    }
     setSandboxTenant('SYSTEM')
     setActiveTenant('SYSTEM', 'Sovereign Root System')
     toast.info('Switched context to Sovereign Platform (SYSTEM)')
     navigate({ to: '/system/tenants' })
   }
-
-  const availableProfiles = propProfiles ?? contextProfiles
-  const activeProfile = currentProfile ?? availableProfiles[0]
 
   // Group workspaces by parent Tenant
   const groupedByTenant = useMemo(() => {
@@ -63,21 +79,37 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
       }
       map.get(tenantId)!.workspaces.push(p)
     })
-    return Array.from(map.entries()).map(([tenantId, data]) => ({
+    const groups = Array.from(map.entries()).map(([tenantId, data]) => ({
       tenantId,
       ...data,
     }))
-  }, [availableProfiles])
+
+    if (isAssumed) {
+      groups.sort((a, b) => (a.tenantId === assumedTenant ? -1 : b.tenantId === assumedTenant ? 1 : 0))
+    }
+    return groups
+  }, [availableProfiles, isAssumed, assumedTenant])
 
   const handleSelectWorkspace = (profile: Profile) => {
-    setCurrentProfile(profile)
     const tenantId = (profile.tenantId as string) || 'default-tenant'
     const tenantName = (profile.tenantName as string) || profile.name
     const workspaceId = (profile.id as string) || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
 
+    if (isAssumed && tenantId !== assumedTenant) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('unipost_assumed_tenant')
+        localStorage.removeItem('unipost_assumed_token')
+        localStorage.removeItem('unipost_assumed_tenant_name')
+      }
+      toast.info(`Exited delegated sub-session. Switched to workspace "${profile.name}".`)
+    } else {
+      toast.success(`Đã chuyển sang workspace "${profile.name}" (${tenantName})`)
+    }
+
+    setCurrentProfile(profile)
+    setSandboxTenant(tenantId)
     setActiveTenant(tenantId, tenantName)
     setActiveWorkspace(workspaceId, profile.name)
-    toast.success(`Đã chuyển sang workspace "${profile.name}" (${tenantName})`)
   }
 
   return (
@@ -87,21 +119,42 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size='lg'
-              className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground transition-all duration-200'
+              className={cn(
+                'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground transition-all duration-200',
+                isAssumed && 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15'
+              )}
             >
-              <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm'>
-                {activeProfile?.logo ? (
+              <div
+                className={cn(
+                  'flex aspect-square size-8 items-center justify-center rounded-lg shadow-sm',
+                  isAssumed
+                    ? 'bg-amber-500 text-white shadow-amber-500/20'
+                    : 'bg-sidebar-primary text-sidebar-primary-foreground'
+                )}
+              >
+                {isAssumed ? (
+                  <ShieldAlert className='size-4' />
+                ) : activeProfile?.logo ? (
                   <activeProfile.logo className='size-4' />
                 ) : (
                   <LayoutGrid className='size-4' />
                 )}
               </div>
               <div className='grid flex-1 text-start text-sm leading-tight'>
-                <span className='truncate font-semibold'>
-                  {activeProfile?.name}
-                </span>
+                <div className='flex items-center gap-1.5 truncate'>
+                  <span className='truncate font-semibold'>
+                    {activeProfile?.name}
+                  </span>
+                  {isAssumed && (
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                      ASSUMED
+                    </span>
+                  )}
+                </div>
                 <span className='truncate text-xs text-muted-foreground'>
-                  {(activeProfile?.tenantName as string) || activeProfile?.plan || 'Workspace'}
+                  {isAssumed
+                    ? `Delegated: ${(activeProfile?.tenantName as string) || assumedTenant}`
+                    : ((activeProfile?.tenantName as string) || activeProfile?.plan || 'Workspace')}
                 </span>
               </div>
               <ChevronsUpDown className='ms-auto size-4 text-muted-foreground' />
@@ -113,7 +166,29 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
             side={isMobile ? 'bottom' : 'right'}
             sideOffset={4}
           >
-            {isSovereign && (
+            {isAssumed ? (
+              <div className='mb-2 pb-2 border-b border-border/40 bg-amber-500/10 -mx-1 -mt-1 p-2 rounded-t-lg'>
+                <div className='flex items-center justify-between mb-1'>
+                  <span className='text-[10px] uppercase font-bold tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1'>
+                    <ShieldAlert className='size-3 text-amber-600 dark:text-amber-400' />
+                    Delegated Sub-Session
+                  </span>
+                  <span className='text-[10px] font-mono text-amber-800 dark:text-amber-200 font-semibold'>
+                    Actor: SYSTEM
+                  </span>
+                </div>
+                <div className='text-xs text-amber-900 dark:text-amber-100 font-medium mb-2 truncate'>
+                  Impersonating: <strong className='font-mono'>{activeProfile?.tenantName || assumedTenant}</strong>
+                </div>
+                <DropdownMenuItem
+                  onClick={() => exitAssumeTenantSubSession('/system/tenants')}
+                  className='gap-2 p-1.5 rounded-md cursor-pointer bg-amber-500/20 hover:bg-amber-500/30 text-amber-950 dark:text-amber-100 font-semibold text-xs transition-colors'
+                >
+                  <ArrowRight className='size-3.5 text-amber-600 dark:text-amber-300' />
+                  <span>Exit Sub-Session & Return to Root</span>
+                </DropdownMenuItem>
+              </div>
+            ) : isSovereign ? (
               <div className='mb-1 pb-1 border-b border-border/40'>
                 <DropdownMenuLabel className='text-[10px] uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5 px-2 py-1'>
                   <Crown className='size-3 text-amber-500' />
@@ -132,7 +207,8 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                   </div>
                 </DropdownMenuItem>
               </div>
-            )}
+            ) : null}
+
             {groupedByTenant.map((group, groupIdx) => (
               <div key={group.tenantId} className={cn(groupIdx > 0 && 'mt-1 pt-1 border-t border-border/40')}>
                 <DropdownMenuLabel className='text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1.5 px-2 py-1'>
@@ -198,4 +274,3 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
     </SidebarMenu>
   )
 }
-

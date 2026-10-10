@@ -25,6 +25,7 @@
 | [020](020_system_tenant_sovereign_custody.md) | 2026-10-10 | SYSTEM Tenant (Sovereign Root Custodian) Implementation (Phases 1–4) | Resolved PostgreSQL RLS Write Paradox via changelog-7, dual-context principal, sovereign control REST APIs & DTOs, unified sandbox handler with system persona, fleet table, quota drawers, and RBAC matrix studio. |
 | [021](021_system_tenant_end_to_end_resolution.md) | 2026-10-11 | SYSTEM Tenant Sovereign Custody End-to-End Resolution | Resolved canonical schema editing for custodian, wired custom role provisioning end-to-end, added user inspector drawer, propagated dual-context impersonation headers, and synchronized sandbox tokens. |
 | [022](022_assume_tenant_session_lifecycle_fix.md) | 2026-10-11 | Assume-Tenant Session Lifecycle & Viewport Banner Fix | Resolved silent page refresh on Assume-Tenant by generating valid cryptographic mock JWTs, synchronizing active tenant stores, navigating to /metadata, and fixing AssumeTenantBar detection. |
+| [023](023_workspace_switcher_assume_tenant_sync.md) | 2026-10-11 | ProfileSwitcher & Workspace Synchronization with Assumed Tenant Context | Synchronized ProfileSwitcher with assumed tenant context via profile-store resolver, dynamic delegated workspace synthesis, amber badge UI indicators, and centralized sub-session cleanup. |
 
 
 

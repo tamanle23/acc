@@ -57,6 +57,7 @@ import { SuspendTenantDialog } from './suspend-tenant-dialog';
 import { useSandboxStore } from '@/core/sandbox';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { useProfileStore } from '@/stores/profile-store';
 
 export function FleetTenantsTable() {
   const [search, setSearch] = useState('');
@@ -99,12 +100,14 @@ export function FleetTenantsTable() {
       {
         onSuccess: (res) => {
           localStorage.setItem('unipost_assumed_tenant', res.effectiveTenantId);
+          localStorage.setItem('unipost_assumed_tenant_name', tenant.name);
           if (res.ephemeralToken) {
             localStorage.setItem('unipost_assumed_token', res.ephemeralToken);
             useSpringAuthStore.getState().setTokens(res.ephemeralToken, 'mock_refresh_token_custodian');
           }
           setActiveTenant(res.effectiveTenantId);
           setMetadataTenant(res.effectiveTenantId, tenant.name);
+          useProfileStore.getState().syncAssumedTenant(res.effectiveTenantId, tenant.name);
 
           toast.success(`Assumed tenant '${tenant.name}' (${res.effectiveTenantId}). Navigating to organization workspace...`);
           window.location.href = '/metadata';
