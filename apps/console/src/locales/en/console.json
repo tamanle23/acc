@@ -10,6 +10,7 @@
   },
   "sidebar": {
     "groups": {
+      "sovereign": "Sovereign Custody (Root)",
       "workspace": "Workspace",
       "general": "General",
       "admin": "Admin",
@@ -17,6 +18,9 @@
       "other": "Other"
     },
     "items": {
+      "fleetTenants": "Fleet Tenants Ledger",
+      "rbacMatrix": "RBAC & Global Users",
+      "canonicalSchemas": "Canonical Schemas",
       "dashboard": "Dashboard",
       "tasks": "Tasks",
       "apps": "Apps",

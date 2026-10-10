@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,8 @@ import {
 } from '@/components/ui/sidebar'
 import { useProfile, type Profile } from '@/context/profile-provider'
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
+import { useSpringAuthStore } from '@/features/spring-auth'
+import { useSandboxStore } from '@/core/sandbox'
 import { CreateWorkspaceModal } from '@/features/settings/workspaces/create-workspace-modal'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -29,7 +32,21 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const { isMobile } = useSidebar()
   const { currentProfile, setCurrentProfile, profiles: contextProfiles } = useProfile()
   const { setActiveTenant, setActiveWorkspace } = useMetadataUiStore()
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const { user } = useSpringAuthStore()
+  const { activePersonaId, setActiveTenant: setSandboxTenant } = useSandboxStore()
+  const navigate = useNavigate()
+
+  const isSovereign = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system'
+  )
+
+  const handleSwitchToSovereign = () => {
+    setSandboxTenant('SYSTEM')
+    setActiveTenant('SYSTEM', 'Sovereign Root System')
+    toast.info('Switched context to Sovereign Platform (SYSTEM)')
+    navigate({ to: '/system/tenants' })
+  }
 
   const availableProfiles = propProfiles ?? contextProfiles
   const activeProfile = currentProfile ?? availableProfiles[0]
@@ -95,6 +112,26 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
             side={isMobile ? 'bottom' : 'right'}
             sideOffset={4}
           >
+            {isSovereign && (
+              <div className='mb-1 pb-1 border-b border-border/40'>
+                <DropdownMenuLabel className='text-[10px] uppercase font-bold tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5 px-2 py-1'>
+                  <Crown className='size-3 text-amber-500' />
+                  <span>Sovereign Root Custody</span>
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={handleSwitchToSovereign}
+                  className='gap-2 p-2 rounded-lg cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-950 dark:text-amber-200 font-medium transition-colors'
+                >
+                  <div className='flex size-6 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/20 text-amber-600 dark:text-amber-300 shadow-xs'>
+                    <Crown className='size-3.5 shrink-0' />
+                  </div>
+                  <div className='flex flex-col flex-1 leading-tight'>
+                    <span className='text-sm font-semibold'>👑 Sovereign Platform</span>
+                    <span className='text-[10px] text-amber-700/80 dark:text-amber-300/70 font-mono'>SYSTEM Tenant (Fleet Root)</span>
+                  </div>
+                </DropdownMenuItem>
+              </div>
+            )}
             {groupedByTenant.map((group, groupIdx) => (
               <div key={group.tenantId} className={cn(groupIdx > 0 && 'mt-1 pt-1 border-t border-border/40')}>
                 <DropdownMenuLabel className='text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1.5 px-2 py-1'>

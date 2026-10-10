@@ -10,6 +10,7 @@
   },
   "sidebar": {
     "groups": {
+      "sovereign": "Chủ quyền Hệ thống (Gốc)",
       "workspace": "Không gian làm việc",
       "general": "Chung",
       "admin": "Quản trị",
@@ -17,6 +18,9 @@
       "other": "Khác"
     },
     "items": {
+      "fleetTenants": "Sổ cái Tổ chức Khách thuê",
+      "rbacMatrix": "Ma trận Quyền & Người dùng Toàn cục",
+      "canonicalSchemas": "Lược đồ Chuẩn mực (Gốc)",
       "dashboard": "Bảng điều khiển",
       "tasks": "Nhiệm vụ",
       "apps": "Ứng dụng",

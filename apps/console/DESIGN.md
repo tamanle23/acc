@@ -57,6 +57,12 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-intensity, 0.2) * 0.2));
 --glass-specular: rgba(255, 255, 255, calc(var(--glass-specular-alpha, 0.2) * 0.65));
 --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+/* Sovereign Amber Liquid Glass Tokens (Assume-Tenant & Custody Badges) */
+--glass-amber-bg: rgba(245, 158, 11, 0.15);
+--glass-amber-border: rgba(245, 158, 11, 0.35);
+--glass-amber-specular: rgba(254, 243, 199, 0.65);
+--glass-amber-shadow: 0 4px 20px 0 rgba(245, 158, 11, 0.12);
 ```
 
 - **Backdrop Blur Levels:**

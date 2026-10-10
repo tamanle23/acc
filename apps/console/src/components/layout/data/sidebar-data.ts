@@ -23,10 +23,14 @@ import {
   Database,
   Building2,
   CreditCard,
+  Crown,
+  KeyRound,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
+import { useSpringAuthStore } from '@/features/spring-auth'
+import { useSandboxStore } from '@/core/sandbox'
 
 export const sidebarTeams = [
   {
@@ -57,6 +61,13 @@ export const sidebarTeams = [
 
 export const useSidebarData = (): SidebarData => {
   const { t } = useTranslation('console');
+  const { user } = useSpringAuthStore();
+  const { activePersonaId } = useSandboxStore();
+
+  const isSovereign = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system'
+  );
 
   return useMemo(() => ({
     user: {
@@ -66,6 +77,31 @@ export const useSidebarData = (): SidebarData => {
     },
     teams: sidebarTeams,
     navGroups: [
+      ...(isSovereign
+        ? [
+            {
+              title: t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
+              items: [
+                {
+                  title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
+                  url: '/system/tenants',
+                  icon: Building2,
+                  badge: 'ROOT',
+                },
+                {
+                  title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
+                  url: '/system/roles',
+                  icon: KeyRound,
+                },
+                {
+                  title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
+                  url: '/metadata',
+                  icon: Settings2,
+                },
+              ],
+            },
+          ]
+        : []),
       {
         title: t('sidebar.groups.workspace', 'Workspace'),
         items: [
@@ -222,5 +258,5 @@ export const useSidebarData = (): SidebarData => {
         ],
       },
     ],
-  }), [t])
+  }), [t, isSovereign])
 }
