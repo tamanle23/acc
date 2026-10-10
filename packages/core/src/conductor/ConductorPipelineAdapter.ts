@@ -1,4 +1,4 @@
-import { UnifiedPipelineContext } from '../pipeline/types';
+import { UnifiedPipelineContext } from '../pipeline/UnifiedPipelineContext';
 import { AssetContext } from '../AssetContext';
 import { ConductorTaskInput } from './interfaces/IConductorTaskCommand';
 
