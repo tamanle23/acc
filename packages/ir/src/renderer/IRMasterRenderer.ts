@@ -14,6 +14,7 @@ import {
   type CaptionConfig,
   type CaptionSettings,
 } from '@acc/effect-engines';
+import { FFIVideoDecoder } from '@acc/core';
 
 export interface HeadlessRenderOptions {
   sink?: IIRFrameSink;
@@ -56,6 +57,7 @@ export class IRMasterRenderer {
 
   // Cached assets to prevent disk re-reads in render loop
   private imageCache: Map<string, Image> = new Map();
+  private videoDecoders: Map<string, FFIVideoDecoder> = new Map();
 
   constructor(timeline: ResolvedTimeline, seed: number = 42) {
     this.timeline = timeline;
@@ -86,6 +88,15 @@ export class IRMasterRenderer {
             if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
               const img = await loadImage(resolvedPath);
               this.imageCache.set(assetId, img);
+            } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
+              const decoder = new FFIVideoDecoder(
+                resolvedPath,
+                this.timeline.meta.canvasSize.w,
+                this.timeline.meta.canvasSize.h
+              );
+              if (await decoder.open()) {
+                this.videoDecoders.set(assetId, decoder);
+              }
             }
           } catch {
             // Non-critical, fallback to procedural rasterizer
@@ -208,7 +219,7 @@ export class IRMasterRenderer {
 
       // Evaluate active sequences and procedural/visual rasterization for frame t
       if (canvas && canvasCtx) {
-        this.renderCanvasFrame(globalFrame, width, height, canvas, canvasCtx, framePixelBuffer);
+        await this.renderCanvasFrame(globalFrame, width, height, canvas, canvasCtx, framePixelBuffer);
       } else {
         this.rasterizeProceduralFrame(globalFrame, width, height, framePixelBuffer);
       }
@@ -256,6 +267,14 @@ export class IRMasterRenderer {
       }
     }
 
+    // Close all open video decoders
+    for (const decoder of this.videoDecoders.values()) {
+      try {
+        decoder.close();
+      } catch {}
+    }
+    this.videoDecoders.clear();
+
     return {
       totalFrames: framesToRender,
       durationSeconds: framesToRender > 0 ? parseFloat((framesToRender / fps).toFixed(3)) : 0,
@@ -282,14 +301,14 @@ export class IRMasterRenderer {
    * Zero-Allocation Frame Loop:
    * Composites active visual and timed-text layers onto reusable canvas and copies raw bytes into preallocated buffer.
    */
-  private renderCanvasFrame(
+  private async renderCanvasFrame(
     t: number,
     width: number,
     height: number,
     canvas: Canvas,
     ctx: SKRSContext2D,
     buffer: Uint8Array
-  ): void {
+  ): Promise<void> {
     // Clear canvas
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1.0;
@@ -332,26 +351,34 @@ export class IRMasterRenderer {
               const hasDepth3DModifier = seq.modifiers?.some(m => m.type === 'vfx/depth3d');
 
               // Draw base asset if available and not already drawn by specialized 3D depth modifier
-              if (!hasDepth3DModifier && seq.assetId && this.imageCache.has(seq.assetId)) {
-                const img = this.imageCache.get(seq.assetId)!;
-                const imgAspect = img.width / img.height;
-                const canvasAspect = width / height;
-                let drawW = width;
-                let drawH = height;
-                let drawX = 0;
-                let drawY = 0;
-
-                if (imgAspect > canvasAspect) {
-                  drawW = width;
-                  drawH = width / imgAspect;
-                  drawY = (height - drawH) / 2;
-                } else {
-                  drawH = height;
-                  drawW = height * imgAspect;
-                  drawX = (width - drawW) / 2;
+              if (!hasDepth3DModifier && seq.assetId) {
+                let frameSource: Canvas | Image | null = null;
+                if (this.videoDecoders.has(seq.assetId)) {
+                  frameSource = await this.videoDecoders.get(seq.assetId)!.readNextFrame();
+                } else if (this.imageCache.has(seq.assetId)) {
+                  frameSource = this.imageCache.get(seq.assetId)!;
                 }
 
-                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                if (frameSource) {
+                  const srcAspect = frameSource.width / frameSource.height;
+                  const canvasAspect = width / height;
+                  let drawW = width;
+                  let drawH = height;
+                  let drawX = 0;
+                  let drawY = 0;
+
+                  if (srcAspect > canvasAspect) {
+                    drawW = width;
+                    drawH = width / srcAspect;
+                    drawY = (height - drawH) / 2;
+                  } else {
+                    drawH = height;
+                    drawW = height * srcAspect;
+                    drawX = (width - drawW) / 2;
+                  }
+
+                  ctx.drawImage(frameSource, drawX, drawY, drawW, drawH);
+                }
               }
             } finally {
               ctx.restore();

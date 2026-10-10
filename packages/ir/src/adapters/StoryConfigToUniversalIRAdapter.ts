@@ -132,7 +132,9 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
           start: audioSrc
             ? (videoOffsetFrames !== 0 ? { syncWith: audioSeqId, offsetFrames: videoOffsetFrames } : { syncWith: audioSeqId })
             : index === 0 ? 0 : { after: `seq_${index}_vis` },
-          duration: audioSrc ? { matchLengthOf: audioSeqId } : Math.round((scene.duration || 5.0) * fps),
+          duration: audioSrc
+            ? (pauseFrames > 0 ? { matchLengthOf: audioSeqId, paddingFrames: pauseFrames } : { matchLengthOf: audioSeqId })
+            : Math.round(((scene.duration || 5.0) + pauseSec) * fps),
         },
         modifiers: videoModifiers.length > 0 ? videoModifiers : undefined,
       });

@@ -17,6 +17,7 @@ export * from './ffmpeg-ffi/FFIVideoEncoder';
 export * from './ffmpeg-ffi/FFAudioMuxer';
 export * from './ffmpeg-ffi/FFIConcatMuxer';
 export * from './ffmpeg-ffi/FFISceneEngine';
+export * from './ffmpeg-ffi/FFIVideoDecoder';
 export * from './ffmpeg-ffi/FFIAudioDecoder';
 export * from './ffmpeg-ffi/FFIAudioDSP';
 export * from './ffmpeg-ffi/AudioDuckingDSP';

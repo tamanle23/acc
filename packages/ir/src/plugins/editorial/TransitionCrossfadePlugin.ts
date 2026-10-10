@@ -36,16 +36,10 @@ export class TransitionCrossfadePlugin implements ModifierPlugin<TransitionCross
   public renderClipSpace(ctx: ClipRenderContext, params: TransitionCrossfadeParams): void {
     const { ctx: canvasCtx, localFrame, sequence } = ctx;
     const dur = params.durationFrames;
-    const totalSeqFrames = sequence.durationFrames;
 
-    // Fade in at start
-    if (localFrame < dur) {
+    // Crossfade: incoming sequence smoothly fades in over the outgoing sequence
+    if (params.overlapTarget && localFrame < dur) {
       canvasCtx.globalAlpha = Math.max(0, Math.min(1, localFrame / dur));
-    }
-    // Fade out at end
-    else if (localFrame > totalSeqFrames - dur) {
-      const remaining = totalSeqFrames - localFrame;
-      canvasCtx.globalAlpha = Math.max(0, Math.min(1, remaining / dur));
     }
   }
 }

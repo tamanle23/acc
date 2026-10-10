@@ -175,4 +175,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`160`](160_phase_d_ir_unification.md) | 2026-10-10 | Phase D: Parity & Unified Canonical IR Pipeline Transition | Lossless StoryConfig-to-IR adapter, SFX/LUT/J-Cut forwarding, direct IR backend routing in StoryOrchestratedRenderStage |
 | [`161`](161_fix_ir_effect_rendering_depth3d_color_grading_overlays.md) | 2026-10-10 | Fix Canonical IR Effect Rendering: 3D Depth, Color Grading & Procedural Overlays | Connected Depth3DFactory, registered ColorGradingPlugin, fixed draw overwrite in IRMasterRenderer, mapped overlayComposite |
 | [`162`](162_visual_parity_alignment_ir_depth3d.md) | 2026-10-10 | Visual Parity Alignment: True Subject Cutout & Backdrop Plate for IR Depth3D | Exported resolveSubjectCutout, wired true cutout & bgCanvas into Depth3DPlugin, added pre-flight execution in IRMasterRenderer |
+| [`163`](163_fix_ir_transition_gap_and_broll_video_decoder.md) | 2026-10-10 | Fix IR Transition Gap Black Frames & Native B-Roll Video Decoding | Built native FFIVideoDecoder via bun:ffi, added pause padding to visual sequences, eliminated crossfade dip-to-black |
 
