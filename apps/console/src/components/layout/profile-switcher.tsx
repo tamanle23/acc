@@ -36,6 +36,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const { activePersonaId, setActiveTenant: setSandboxTenant } = useSandboxStore()
   const navigate = useNavigate()
 
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
   const isSovereign = Boolean(
     user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
     activePersonaId === 'system'
