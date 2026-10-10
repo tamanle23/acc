@@ -54,6 +54,15 @@ import { CreateTenantModal } from './create-tenant-modal';
 import { SubscriptionOverrideDrawer } from './subscription-override-drawer';
 import { QuotaTuningDrawer } from './quota-tuning-drawer';
 import { SuspendTenantDialog } from './suspend-tenant-dialog';
+import { TenantWorkspacesDrawer } from './tenant-workspaces-drawer';
+import { UserMembershipDrawer } from '../roles/user-membership-drawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Users as UsersIcon } from 'lucide-react';
 import { useSandboxStore } from '@/core/sandbox';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
@@ -69,6 +78,8 @@ export function FleetTenantsTable() {
   const [selectedTenant, setSelectedTenant] = useState<FleetTenantSummary | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
   const [quotaDrawerOpen, setQuotaDrawerOpen] = useState(false);
+  const [workspacesDrawerOpen, setWorkspacesDrawerOpen] = useState(false);
+  const [usersDialogOpen, setUsersDialogOpen] = useState(false);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [targetSuspendStatus, setTargetSuspendStatus] = useState<SovereignTenantStatus>('SUSPENDED');
 
@@ -83,6 +94,16 @@ export function FleetTenantsTable() {
   const handleOpenQuotas = (tenant: FleetTenantSummary) => {
     setSelectedTenant(tenant);
     setQuotaDrawerOpen(true);
+  };
+
+  const handleOpenWorkspaces = (tenant: FleetTenantSummary) => {
+    setSelectedTenant(tenant);
+    setWorkspacesDrawerOpen(true);
+  };
+
+  const handleOpenUsers = (tenant: FleetTenantSummary) => {
+    setSelectedTenant(tenant);
+    setUsersDialogOpen(true);
   };
 
   const handleToggleSuspend = (tenant: FleetTenantSummary) => {
@@ -337,6 +358,22 @@ export function FleetTenantsTable() {
                           )}
 
                           <DropdownMenuItem
+                            onClick={() => handleOpenWorkspaces(tenant)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Layers className="h-4 w-4" />
+                            Manage Workspaces
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleOpenUsers(tenant)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <UsersIcon className="h-4 w-4" />
+                            Manage Users
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
                             onClick={() => handleOpenSubscription(tenant)}
                             className="gap-2 cursor-pointer"
                           >
@@ -404,6 +441,25 @@ export function FleetTenantsTable() {
         open={suspendDialogOpen}
         onOpenChange={setSuspendDialogOpen}
       />
+      <TenantWorkspacesDrawer
+        tenant={selectedTenant}
+        open={workspacesDrawerOpen}
+        onOpenChange={setWorkspacesDrawerOpen}
+      />
+      <Dialog open={usersDialogOpen} onOpenChange={setUsersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-background/95 backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UsersIcon className="h-5 w-5 text-primary" />
+              <span>Assigned Users for {selectedTenant?.name}</span>
+              <span className="text-xs font-mono text-muted-foreground">({selectedTenant?.tenantId})</span>
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTenant && (
+            <UserMembershipDrawer initialTenantId={selectedTenant.tenantId} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

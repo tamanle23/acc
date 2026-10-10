@@ -5,6 +5,7 @@ import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-st
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreateWorkspaceModal } from './create-workspace-modal';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   Building2,
   Plus,
@@ -12,13 +13,15 @@ import {
   ShieldCheck,
   LayoutGrid,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const WorkspacesPanel: React.FC = () => {
-  const { profiles, currentProfile, setCurrentProfile } = useProfileStore();
+  const { profiles, setProfiles, currentProfile, setCurrentProfile } = useProfileStore();
   const { activeTenantId, activeTenantName, setActiveTenant, setActiveWorkspace } = useMetadataUiStore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [workspaceToDelete, setWorkspaceToDelete] = useState<Profile | null>(null);
 
   const handleSwitchWorkspace = (p: Profile) => {
     setCurrentProfile(p);
@@ -29,6 +32,25 @@ export const WorkspacesPanel: React.FC = () => {
     setActiveTenant(tenantId, tenantName);
     setActiveWorkspace(workspaceId, p.name);
     toast.success(`Đã chuyển sang workspace "${p.name}" (${tenantName})`);
+  };
+
+  const handleDeleteWorkspace = (ws: Profile) => {
+    const updated = profiles.filter((p) => p.id !== ws.id);
+    setProfiles(updated);
+
+    if (currentProfile?.id === ws.id) {
+      const remainingForTenant = updated.filter((p) => p.tenantId === ws.tenantId);
+      if (remainingForTenant.length > 0) {
+        setCurrentProfile(remainingForTenant[0]);
+        setActiveWorkspace(remainingForTenant[0].id || '', remainingForTenant[0].name);
+      } else {
+        // All workspaces for this tenant deleted -> Orphaned Tenant state
+        setActiveWorkspace('', '');
+      }
+    }
+
+    toast.success(`Đã xóa workspace "${ws.name}".`);
+    setWorkspaceToDelete(null);
   };
 
   return (
@@ -136,21 +158,32 @@ export const WorkspacesPanel: React.FC = () => {
                     <span>RLS Enforced</span>
                   </div>
 
-                  {isCurrent ? (
-                    <span className="text-xs font-semibold text-primary flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span>Không gian hiện tại</span>
-                    </span>
-                  ) : (
+                  <div className="flex items-center gap-1.5">
+                    {isCurrent ? (
+                      <span className="text-xs font-semibold text-primary flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Không gian hiện tại</span>
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleSwitchWorkspace(p)}
+                        className="h-8 text-xs font-semibold text-primary hover:bg-primary/10"
+                      >
+                        <span>Chuyển sang workspace này →</span>
+                      </Button>
+                    )}
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
-                      onClick={() => handleSwitchWorkspace(p)}
-                      className="h-8 text-xs font-semibold text-primary hover:bg-primary/10"
+                      onClick={() => setWorkspaceToDelete(p)}
+                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                      title="Xóa workspace"
                     >
-                      <span>Chuyển sang workspace này →</span>
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
+                  </div>
                 </div>
               </div>
             );
@@ -161,6 +194,30 @@ export const WorkspacesPanel: React.FC = () => {
         <CreateWorkspaceModal
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          open={Boolean(workspaceToDelete)}
+          onOpenChange={(open) => !open && setWorkspaceToDelete(null)}
+          handleConfirm={() => workspaceToDelete && handleDeleteWorkspace(workspaceToDelete)}
+          title="Xác nhận xóa Workspace"
+          desc={
+            workspaceToDelete ? (
+              <span>
+                Bạn có chắc chắn muốn xóa không gian làm việc{' '}
+                <strong className="font-semibold text-foreground">
+                  "{workspaceToDelete.name}"
+                </strong>{' '}
+                thuộc tổ chức <strong className="font-semibold text-foreground">{(workspaceToDelete.tenantName as string) || (workspaceToDelete.tenantId as string)}</strong> không?
+                Nếu đây là workspace cuối cùng, tổ chức sẽ chuyển sang trạng thái <em>Orphaned Tenant</em> (không có workspace) và các chức năng workspace sẽ bị ẩn.
+              </span>
+            ) : (
+              ''
+            )
+          }
+          confirmText="Xác nhận xóa"
+          destructive
         />
       </div>
     </ContentSection>

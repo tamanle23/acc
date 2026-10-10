@@ -58,9 +58,13 @@ import {
 } from '../api/use-system-fleet';
 import { toast } from 'sonner';
 
-export function UserMembershipDrawer() {
+export interface UserMembershipDrawerProps {
+  initialTenantId?: string;
+}
+
+export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerProps = {}) {
   const [search, setSearch] = useState('');
-  const [tenantFilter, setTenantFilter] = useState('ALL');
+  const [tenantFilter, setTenantFilter] = useState(initialTenantId || 'ALL');
 
   // Inspector Sheet state
   const [inspectedUser, setInspectedUser] = useState<GlobalUserListItem | null>(null);

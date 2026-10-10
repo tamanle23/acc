@@ -27,6 +27,7 @@
 | [022](022_assume_tenant_session_lifecycle_fix.md) | 2026-10-11 | Assume-Tenant Session Lifecycle & Viewport Banner Fix | Resolved silent page refresh on Assume-Tenant by generating valid cryptographic mock JWTs, synchronizing active tenant stores, navigating to /metadata, and fixing AssumeTenantBar detection. |
 | [023](023_workspace_switcher_assume_tenant_sync.md) | 2026-10-11 | ProfileSwitcher & Workspace Synchronization with Assumed Tenant Context | Synchronized ProfileSwitcher with assumed tenant context via profile-store resolver, dynamic delegated workspace synthesis, amber badge UI indicators, and centralized sub-session cleanup. |
 | [024](024_workspace_switcher_tenant_isolation.md) | 2026-10-11 | Workspace Switcher Multi-Tenant Isolation in Assume-Tenant Mode | Strictly filtered ProfileSwitcher workspace list to assumed tenant only, eliminating cross-tenant leakage of Default Organization. |
+| [025](025_orphaned_tenant_and_fleet_workspace_user_management.md) | 2026-10-11 | Orphaned Tenant State Handling & Fleet Workspace/User Management | Enforced user-belongs-to-tenant and tenant-has-workspaces hierarchy; handled orphaned tenant state with hidden workspace nav and NO WORKSPACE badge; added TenantWorkspacesDrawer and user membership management to Fleet Ledger. |
 
 
 

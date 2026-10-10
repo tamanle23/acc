@@ -82,4 +82,16 @@ describe('ProfileSwitcher Component', () => {
     expect(screen.queryByText('Unipost Main')).toBeNull();
     expect(screen.queryByText('Default Organization')).toBeNull();
   });
+
+  it('renders orphaned tenant state with NO WORKSPACE badge when a tenant has 0 workspaces', () => {
+    // Empty out all profiles
+    useProfileStore.getState().setProfiles([]);
+    localStorage.setItem('unipost_assumed_tenant', 'tenant-empty');
+    localStorage.setItem('unipost_assumed_tenant_name', 'Empty Org');
+
+    renderSwitcher();
+
+    expect(screen.getByText('NO WORKSPACE')).toBeDefined();
+    expect(screen.getByText('Tenant: Empty Org')).toBeDefined();
+  });
 });

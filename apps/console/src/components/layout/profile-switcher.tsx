@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert, ArrowRight } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert, ArrowRight, AlertTriangle } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   DropdownMenu,
@@ -47,14 +47,20 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
-  let activeProfile = currentProfile ?? availableProfiles[0]
+  const effectiveTenantId = isAssumed ? assumedTenant : (useMetadataUiStore.getState().activeTenantId || 'default-tenant')
+  const tenantWorkspaces = availableProfiles.filter((p) => p.tenantId === effectiveTenantId)
+  const isOrphanedTenant = tenantWorkspaces.length === 0
+
+  let activeProfile: Profile | null = currentProfile ?? availableProfiles[0]
 
   // Defensive fallback: if assumed tenant active, ensure active profile matches assumed tenant
   if (isAssumed && activeProfile?.tenantId !== assumedTenant) {
     const matched = availableProfiles.find((p) => p.tenantId === assumedTenant)
-    if (matched) {
-      activeProfile = matched
-    }
+    activeProfile = matched || null
+  } else if (!isAssumed && tenantWorkspaces.length > 0 && activeProfile?.tenantId !== effectiveTenantId) {
+    activeProfile = tenantWorkspaces[0]
+  } else if (isOrphanedTenant) {
+    activeProfile = null
   }
 
   const handleSwitchToSovereign = () => {
@@ -132,11 +138,15 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                   'flex aspect-square size-8 items-center justify-center rounded-lg shadow-sm',
                   isAssumed
                     ? 'bg-amber-500 text-white shadow-amber-500/20'
+                    : isOrphanedTenant
+                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                     : 'bg-sidebar-primary text-sidebar-primary-foreground'
                 )}
               >
                 {isAssumed ? (
                   <ShieldAlert className='size-4' />
+                ) : isOrphanedTenant ? (
+                  <Building2 className='size-4' />
                 ) : activeProfile?.logo ? (
                   <activeProfile.logo className='size-4' />
                 ) : (
@@ -146,17 +156,26 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
               <div className='grid flex-1 text-start text-sm leading-tight'>
                 <div className='flex items-center gap-1.5 truncate'>
                   <span className='truncate font-semibold'>
-                    {activeProfile?.name}
+                    {activeProfile?.name ||
+                      (isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) ||
+                      useMetadataUiStore.getState().activeTenantName ||
+                      'Orphaned Tenant'}
                   </span>
-                  {isAssumed && (
+                  {isOrphanedTenant ? (
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                      NO WORKSPACE
+                    </span>
+                  ) : isAssumed ? (
                     <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
                       ASSUMED
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 <span className='truncate text-xs text-muted-foreground'>
-                  {isAssumed
-                    ? `Delegated: ${(activeProfile?.tenantName as string) || assumedTenant}`
+                  {isOrphanedTenant
+                    ? `Tenant: ${(isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) || useMetadataUiStore.getState().activeTenantName || effectiveTenantId}`
+                    : isAssumed
+                    ? `Delegated: ${(activeProfile?.tenantName as string) || (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant}`
                     : ((activeProfile?.tenantName as string) || activeProfile?.plan || 'Workspace')}
                 </span>
               </div>
@@ -211,6 +230,25 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                 </DropdownMenuItem>
               </div>
             ) : null}
+
+            {isOrphanedTenant && !isSovereign && (
+              <div className='p-3 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200'>
+                <div className='flex items-center gap-1.5 font-semibold text-xs mb-1'>
+                  <AlertTriangle className='size-3.5 text-amber-600 dark:text-amber-400 shrink-0' />
+                  <span>No Workspaces in Organization</span>
+                </div>
+                <p className='text-[11px] text-muted-foreground mb-2.5 leading-relaxed'>
+                  All workspaces in this tenant have been wiped out. Workspace navigation is suspended until a workspace is created.
+                </p>
+                <DropdownMenuItem
+                  onClick={() => setIsCreateOpen(true)}
+                  className='w-full justify-center gap-1.5 p-1.5 rounded-lg cursor-pointer bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-colors shadow-sm'
+                >
+                  <Plus className='size-3.5' />
+                  <span>Provision First Workspace</span>
+                </DropdownMenuItem>
+              </div>
+            )}
 
             {groupedByTenant.map((group, groupIdx) => (
               <div key={group.tenantId} className={cn(groupIdx > 0 && 'mt-1 pt-1 border-t border-border/40')}>

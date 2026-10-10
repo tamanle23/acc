@@ -32,6 +32,7 @@ import { useMemo } from 'react'
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { useSandboxStore } from '@/core/sandbox'
 import { useProfileStore } from '@/stores/profile-store'
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
 
 export const sidebarTeams = [
   {
@@ -63,14 +64,22 @@ export const sidebarTeams = [
 export const useSidebarData = (): SidebarData => {
   const { t } = useTranslation('console');
   const { user } = useSpringAuthStore();
-  const { activePersonaId } = useSandboxStore();
+  const { activePersonaId, activeTenantId: sandboxTenantId } = useSandboxStore();
   const profiles = useProfileStore((state) => state.profiles);
+  const activeWorkspaceId = useMetadataUiStore((state) => state.activeWorkspaceId);
+  const activeTenantId = useMetadataUiStore((state) => state.activeTenantId);
 
-  const isAssumed = typeof window !== 'undefined' && Boolean(localStorage.getItem('unipost_assumed_tenant'));
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+  const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
   const isSovereign = Boolean(
     user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
     activePersonaId === 'system'
   );
+
+  const effectiveTenantId = isAssumed ? assumedTenant : (activeTenantId || sandboxTenantId);
+  const tenantWorkspaces = profiles.filter((p) => p.tenantId === effectiveTenantId);
+  // An orphaned tenant has zero workspaces or empty workspace id
+  const hasActiveWorkspace = Boolean(activeWorkspaceId && activeWorkspaceId.trim() !== '' && tenantWorkspaces.length > 0);
 
   return useMemo(() => ({
     user: {
@@ -80,37 +89,39 @@ export const useSidebarData = (): SidebarData => {
     },
     teams: (profiles && profiles.length > 0 ? profiles : sidebarTeams) as typeof sidebarTeams,
     navGroups: [
-      {
-        title: t('sidebar.groups.workspace', 'Workspace'),
-        items: [
-          {
-            title: t('sidebar.items.dashboard', 'Dashboard'),
-            url: '/',
-            icon: LayoutDashboard,
-          },
-          {
-            title: t('sidebar.items.tasks', 'Tasks'),
-            url: '/tasks',
-            icon: ListTodo,
-          },
-          {
-            title: t('sidebar.items.apps', 'Apps'),
-            url: '/apps',
-            icon: Package,
-          },
-          {
-            title: t('sidebar.items.chats', 'Chats'),
-            url: '/chats',
-            badge: '3',
-            icon: MessagesSquare,
-          },
-          {
-            title: 'Customer Accounts',
-            url: '/customer-accounts',
-            icon: Building2,
-          },
-        ],
-      },
+      ...(hasActiveWorkspace ? [
+        {
+          title: t('sidebar.groups.workspace', 'Workspace'),
+          items: [
+            {
+              title: t('sidebar.items.dashboard', 'Dashboard'),
+              url: '/',
+              icon: LayoutDashboard,
+            },
+            {
+              title: t('sidebar.items.tasks', 'Tasks'),
+              url: '/tasks',
+              icon: ListTodo,
+            },
+            {
+              title: t('sidebar.items.apps', 'Apps'),
+              url: '/apps',
+              icon: Package,
+            },
+            {
+              title: t('sidebar.items.chats', 'Chats'),
+              url: '/chats',
+              badge: '3',
+              icon: MessagesSquare,
+            },
+            {
+              title: 'Customer Accounts',
+              url: '/customer-accounts',
+              icon: Building2,
+            },
+          ],
+        },
+      ] : []),
       {
         title: t('sidebar.groups.admin', 'Admin'),
         items: [
@@ -271,5 +282,5 @@ export const useSidebarData = (): SidebarData => {
         ],
       },
     ],
-  }), [t, isSovereign, isAssumed, profiles])
+  }), [t, isSovereign, isAssumed, profiles, hasActiveWorkspace])
 }
