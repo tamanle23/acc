@@ -30,6 +30,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   private cutoutCache = new Map<string, { subjectImg: Image | null; subjectBBox: any | null }>();
   private depthLayerCache = new Map<string, { srcCanvas: Canvas; depthLayers: any }>();
   private bgCanvasCache = new Map<string, Canvas>();
+  private particlesCache = new Map<string, any[]>();
+  private dustParticlesCache = new Map<string, any[]>();
+  private baseCanvasCache = new Map<string, Canvas>();
 
   public validate(params: unknown): params is Depth3DPluginParams {
     return Boolean(params && typeof params === 'object' && 'mode' in params);
@@ -50,14 +53,40 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       this.cutoutCache.set(params.imagePath, cutout);
 
       const mode = params.mode || 'frame_breaker';
+      const width = context.canvas.width;
+      const height = context.canvas.height;
+
       if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth) {
         const depthData = await resolveDepthMapData(
           params.imagePath,
-          context.canvas.width,
-          context.canvas.height,
+          width,
+          height,
           params as any
         );
         this.depthLayerCache.set(params.imagePath, depthData);
+      }
+
+      if (mode === 'parallax_25d' || mode === 'parallax_dolly') {
+        const particles = Array.from({ length: 28 }, (_, i) => ({
+          x: (Math.sin(i * 99) * 0.5 + 0.5) * width,
+          y: (Math.cos(i * 33) * 0.5 + 0.5) * height,
+          size: 3 + (i % 6) * 3,
+          speedX: (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1),
+          speedY: -0.5 - (i % 4) * 0.4,
+          opacity: 0.2 + (i % 5) * 0.12,
+          pulseSpeed: 1.5 + (i % 3),
+        }));
+        this.particlesCache.set(params.imagePath, particles);
+      } else if (mode === 'volumetric_sandwich' || mode === 'sandwich') {
+        const dustParticles = Array.from({ length: 35 }, (_, i) => ({
+          x: (Math.sin(i * 47) * 0.5 + 0.5) * width,
+          y: (Math.cos(i * 83) * 0.5 + 0.5) * height,
+          size: 2 + (i % 4) * 2,
+          speedX: (0.2 + (i % 3) * 0.2) * (i % 2 === 0 ? 1 : -1),
+          speedY: -0.3 - (i % 3) * 0.2,
+          opacity: 0.15 + (i % 4) * 0.1,
+        }));
+        this.dustParticlesCache.set(params.imagePath, dustParticles);
       }
     }
   }
@@ -126,6 +155,20 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     const depthLayersData = params.imagePath ? this.depthLayerCache.get(params.imagePath) : undefined;
+    const particles = params.imagePath ? this.particlesCache.get(params.imagePath) : undefined;
+    const dustParticles = params.imagePath ? this.dustParticlesCache.get(params.imagePath) : undefined;
+
+    // Build or retrieve cached baseCanvas (e.g. for wigglegram)
+    let baseCanvas: Canvas | undefined;
+    if (mode === 'wigglegram' && params.imagePath) {
+      baseCanvas = this.baseCanvasCache.get(params.imagePath);
+      if (!baseCanvas) {
+        baseCanvas = createCanvas(width, height);
+        const bCtx = baseCanvas.getContext('2d');
+        bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
+        this.baseCanvasCache.set(params.imagePath, baseCanvas);
+      }
+    }
 
     const renderer = Depth3DFactory.getRenderer(mode);
     if (renderer) {
@@ -135,7 +178,10 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         subjectBBox: cutout?.subjectBBox || null,
         bgCanvas: bgCanvas || null,
         srcCanvas: depthLayersData?.srcCanvas || null,
+        baseCanvas: baseCanvas || null,
         depthLayers: depthLayersData?.depthLayers || null,
+        particles,
+        dustParticles,
         width,
         height,
         frame: localFrame,

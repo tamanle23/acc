@@ -224,7 +224,7 @@ export class VideoEditPipelineOrchestrator {
     const freeRamGB = os.freemem() / (1024 * 1024 * 1024);
     const cpuCount = os.cpus().length || 4;
     const memoryBoundWorkers = Math.max(1, Math.floor(freeRamGB / 1.5));
-    const requestedConcurrency = concurrency || 1;
+    const requestedConcurrency = typeof concurrency === 'number' ? concurrency : (concurrency === 'auto' ? cpuCount : 1);
     const activeConcurrency = Math.max(1, Math.min(requestedConcurrency, totalScenes, cpuCount, memoryBoundWorkers));
 
     if (activeConcurrency < requestedConcurrency) {

@@ -42,11 +42,12 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   const rawContent = await fs.promises.readFile(inputPath, 'utf-8');
   let irDoc: VideoIRDocument;
 
+  const baseDir = path.dirname(inputPath);
   try {
     const parsed = JSON.parse(rawContent);
     // Use Stage 1 Config Adapter Registry to auto-detect and transform input format
     const registry = IRConfigAdapterRegistry.getInstance();
-    irDoc = registry.transform(parsed);
+    irDoc = registry.transform(parsed, { baseDir });
   } catch (err: any) {
     Logger.error('IRRenderCommand', `Failed to parse or transform input document: ${err.message}`);
     process.exit(1);
@@ -60,7 +61,6 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     Logger.info('IRRenderCommand', `✓ Transformed Video IR JSON saved to: ${exportPath}`);
   }
 
-  const baseDir = path.dirname(inputPath);
   const prober = new AssetMetadataProber(baseDir);
   const compiler = new RelationalDAGCompiler({ prober });
 

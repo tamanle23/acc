@@ -1,3 +1,4 @@
+import path from 'path';
 import type {
   VideoIRDocument,
   IRTrack,
@@ -31,10 +32,14 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
   }
 
   public adapt(legacyConfig: LegacyStoryConfig, options?: AdapterOptions): VideoIRDocument {
-    return StoryConfigToUniversalIRAdapter.adapt(legacyConfig, options?.contentId);
+    return StoryConfigToUniversalIRAdapter.adapt(legacyConfig, options?.contentId, options?.baseDir as string | undefined);
   }
 
-  public static adapt(legacyConfig: LegacyStoryConfig, contentId = `story_${Date.now()}`): VideoIRDocument {
+  public static adapt(
+    legacyConfig: LegacyStoryConfig,
+    contentId = `story_${Date.now()}`,
+    baseDir?: string
+  ): VideoIRDocument {
     const settings = legacyConfig.settings || {};
     const rawScenes: LegacySceneConfig[] = legacyConfig.scenes || legacyConfig.slides || [];
 
@@ -47,18 +52,27 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
     const audioSequences: IRSequence[] = [];
     const captionSequences: IRSequence[] = [];
 
+    const resolvePath = (p: string | undefined): string => {
+      if (!p) return '';
+      if (!baseDir || path.isAbsolute(p)) return p;
+      return path.resolve(baseDir, p);
+    };
+
     rawScenes.forEach((scene, index) => {
       const sceneId = `seq_${index + 1}`;
       const visualAssetId = `asset_vis_${index + 1}`;
       const audioAssetId = `asset_aud_${index + 1}`;
 
-      const visualSrc = (scene as any).resolvedVideo || (scene as any).resolvedImage || scene.video || scene.image || '';
-      const audioSrc = (scene as any).resolvedAudio || scene.audio || '';
+      const rawVisualSrc = (scene as any).resolvedVideo || (scene as any).resolvedImage || scene.video || scene.image || '';
+      const rawAudioSrc = (scene as any).resolvedAudio || scene.audio || '';
+
+      const visualSrc = resolvePath(rawVisualSrc);
+      const audioSrc = resolvePath(rawAudioSrc);
 
       if (visualSrc) {
         assets[visualAssetId] = {
           src: visualSrc,
-          type: scene.video ? 'media' : 'image',
+          type: (scene.video || (scene as any).resolvedVideo) ? 'media' : 'image',
         };
       }
 
@@ -104,18 +118,21 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         videoModifiers.push({
           type: 'vfx/color_grading',
           params: {
-            lutPath: colorGrading.lutPath || colorGrading.lut,
+            lutPath: resolvePath(colorGrading.lutPath || colorGrading.lut),
             contrast: colorGrading.contrast ?? 1.05,
             saturation: colorGrading.saturation ?? 1.1,
           },
         });
       }
 
-      if (scene.transition?.enabled) {
+      const transitionConfig = scene.transition || (settings.transition?.enabled ? settings.transition : undefined);
+      let transitionDurationFrames = 0;
+      if (transitionConfig?.enabled) {
+        transitionDurationFrames = Math.round((transitionConfig.duration || 1.0) * fps);
         videoModifiers.push({
           type: 'transition/crossfade',
           params: {
-            durationFrames: Math.round((scene.transition.duration || 1.0) * fps),
+            durationFrames: transitionDurationFrames,
             overlapTarget: index > 0 ? `seq_${index}_vis` : undefined,
           },
         });
@@ -125,16 +142,31 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       // Step D1: Forward J/L-cut offset timing (videoOffsetMs / audioOffsetMs)
       const videoOffsetFrames = (scene as any).videoOffsetMs ? Math.round(((scene as any).videoOffsetMs / 1000) * fps) : 0;
 
+      // When transition overlap is active on incoming scene (index > 0), overlap with previous scene
+      const overlapFrames = (index > 0 && transitionDurationFrames > 0) ? transitionDurationFrames : 0;
+
       videoSequences.push({
         id: videoSeqId,
         assetId: visualSrc ? visualAssetId : undefined,
         time: {
           start: audioSrc
-            ? (videoOffsetFrames !== 0 ? { syncWith: audioSeqId, offsetFrames: videoOffsetFrames } : { syncWith: audioSeqId })
-            : index === 0 ? 0 : { after: `seq_${index}_vis` },
+            ? (videoOffsetFrames !== 0
+                ? { syncWith: audioSeqId, offsetFrames: videoOffsetFrames }
+                : (overlapFrames > 0
+                    ? { after: `seq_${index}_vis`, overlapFrames }
+                    : { syncWith: audioSeqId }))
+            : (index === 0
+                ? 0
+                : (overlapFrames > 0
+                    ? { after: `seq_${index}_vis`, overlapFrames }
+                    : { after: `seq_${index}_vis` })),
           duration: audioSrc
-            ? (pauseFrames > 0 ? { matchLengthOf: audioSeqId, paddingFrames: pauseFrames } : { matchLengthOf: audioSeqId })
-            : Math.round(((scene.duration || 5.0) + pauseSec) * fps),
+            ? (pauseFrames > 0
+                ? { matchLengthOf: audioSeqId, paddingFrames: pauseFrames + overlapFrames }
+                : (overlapFrames > 0
+                    ? { matchLengthOf: audioSeqId, paddingFrames: overlapFrames }
+                    : { matchLengthOf: audioSeqId }))
+            : Math.round(((scene.duration || 5.0) + pauseSec) * fps) + overlapFrames,
         },
         modifiers: videoModifiers.length > 0 ? videoModifiers : undefined,
       });
@@ -220,8 +252,9 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         sfxClips.forEach((clip: any, cIdx: number) => {
           if (clip.source) {
             const sfxAssetId = `asset_sfx_${index + 1}_${cIdx + 1}`;
+            const sfxSrc = resolvePath(clip.source);
             assets[sfxAssetId] = {
-              src: clip.source,
+              src: sfxSrc,
               type: 'audio',
             };
             sfxSequences.push({
@@ -249,7 +282,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
     if (settings.bgm?.source) {
       const bgmAssetId = 'asset_bgm';
       assets[bgmAssetId] = {
-        src: settings.bgm.source,
+        src: resolvePath(settings.bgm.source),
         type: 'audio',
       };
 
