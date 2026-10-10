@@ -289,8 +289,10 @@ export class IRMasterRenderer {
                 }
               }
 
-              // Draw base asset if available (within sequence modifier context)
-              if (seq.assetId && this.imageCache.has(seq.assetId)) {
+              const hasDepth3DModifier = seq.modifiers?.some(m => m.type === 'vfx/depth3d');
+
+              // Draw base asset if available and not already drawn by specialized 3D depth modifier
+              if (!hasDepth3DModifier && seq.assetId && this.imageCache.has(seq.assetId)) {
                 const img = this.imageCache.get(seq.assetId)!;
                 const imgAspect = img.width / img.height;
                 const canvasAspect = width / height;

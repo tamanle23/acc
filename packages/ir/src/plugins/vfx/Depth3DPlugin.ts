@@ -1,4 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import { Depth3DFactory, drawFrameBreakerFrame } from '@acc/effect-engines';
 
 export interface Depth3DPluginParams {
   mode: string; // 'frame_breaker' | 'volumetric_sandwich' | 'parallax' | 'depth_mesh' | ...
@@ -34,32 +35,57 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
   /**
    * Phase 2: Clip Space Rendering.
-   * Renders the 3D frame border and pop-out effect directly onto the canvas.
+   * Renders the 3D frame border, floating motion, and pop-out effect directly onto the canvas.
    */
   public renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): void {
-    const { ctx: canvasCtx, width, height, localFrame } = ctx;
-    const style = params.frameStyle || 'polaroid';
-    const intensity = params.popOutIntensity ?? 1.0;
+    const { ctx: canvasCtx, width, height, localFrame, sequence, baseAsset } = ctx;
+    if (!baseAsset) return;
 
-    // Subtle breathing parallax zoom applied to the canvas context
-    const zoom = 1.0 + Math.sin(localFrame * 0.05) * 0.015 * intensity;
-    const centerX = width / 2;
-    const centerY = height / 2;
+    const mode = params.mode || 'frame_breaker';
+    const totalSeqFrames = sequence.durationFrames || 1;
+    const progress = localFrame / totalSeqFrames;
+    const timeSec = localFrame / 30; // Approx 30fps
 
-    canvasCtx.translate(centerX, centerY);
-    canvasCtx.scale(zoom, zoom);
-    canvasCtx.translate(-centerX, -centerY);
-
-    // Draw stylized card border around the frame
-    const margin = Math.round(Math.min(width, height) * 0.05);
-    const cardW = width - margin * 2;
-    const cardH = height - margin * 2;
-
-    canvasCtx.lineWidth = style === 'comic' ? 8 : 4;
-    canvasCtx.strokeStyle = style === 'comic' ? '#ffffff' : '#e2e8f0';
-
-    // Draw card boundary
-    canvasCtx.strokeRect(margin, margin, cardW, cardH);
+    const renderer = Depth3DFactory.getRenderer(mode);
+    if (renderer) {
+      renderer.renderFrame(canvasCtx, {
+        img: baseAsset,
+        subjectImg: null,
+        width,
+        height,
+        frame: localFrame,
+        totalFrames: totalSeqFrames,
+        timeSec,
+        progress,
+        depthConfig: {
+          enabled: true,
+          mode: mode as any,
+          frameStyle: (params.frameStyle || 'card') as any,
+          popOutIntensity: params.popOutIntensity ?? 1.2,
+          shadow: true,
+          floatMotion: true,
+        },
+      });
+    } else {
+      drawFrameBreakerFrame(canvasCtx, {
+        img: baseAsset,
+        subjectImg: null,
+        width,
+        height,
+        frame: localFrame,
+        totalFrames: totalSeqFrames,
+        timeSec,
+        progress,
+        depthConfig: {
+          enabled: true,
+          mode: 'frame_breaker',
+          frameStyle: (params.frameStyle || 'card') as any,
+          popOutIntensity: params.popOutIntensity ?? 1.2,
+          shadow: true,
+          floatMotion: true,
+        },
+      });
+    }
   }
 }
 

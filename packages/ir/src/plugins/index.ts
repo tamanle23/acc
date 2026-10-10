@@ -5,10 +5,12 @@ import { SplitEditPlugin } from './editorial/SplitEditPlugin';
 import { TransitionCrossfadePlugin } from './editorial/TransitionCrossfadePlugin';
 import { BlendModePlugin } from './overlay/BlendModePlugin';
 import { CanvasParticleOverlayPlugin } from './overlay/CanvasParticleOverlayPlugin';
+import { ColorGradingPlugin } from './vfx/ColorGradingPlugin';
 
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
 export * from './vfx/Depth3DPlugin';
+export * from './vfx/ColorGradingPlugin';
 export * from './sfx/DynamicDuckingPlugin';
 export * from './editorial/SplitEditPlugin';
 export * from './editorial/TransitionCrossfadePlugin';
@@ -21,6 +23,7 @@ export * from './overlay/CanvasParticleOverlayPlugin';
 export function registerCoreModifierPlugins(): ModifierPluginRegistry {
   const registry = ModifierPluginRegistry.getInstance();
   registry.register(new Depth3DPlugin());
+  registry.register(new ColorGradingPlugin());
   registry.register(new DynamicDuckingPlugin());
   registry.register(new SplitEditPlugin());
   registry.register(new TransitionCrossfadePlugin());

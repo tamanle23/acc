@@ -156,10 +156,32 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
 
     const tracks: IRTrack[] = [];
 
-    // Track V1: Main Video
+    // Track V1: Main Video (with Track-level Overlay Modifiers if configured)
+    const videoTrackModifiers: ModifierNode[] = [];
+    if (settings.overlayComposite) {
+      const comp = settings.overlayComposite.toLowerCase();
+      let particleType: 'rain' | 'snow' | 'dust' | 'embers' | 'light_leak' | 'vhs' = 'dust';
+      if (comp.includes('rain')) particleType = 'rain';
+      else if (comp.includes('snow') || comp.includes('blizzard')) particleType = 'snow';
+      else if (comp.includes('ember') || comp.includes('fire')) particleType = 'embers';
+      else if (comp.includes('leak') || comp.includes('sun')) particleType = 'light_leak';
+      else if (comp.includes('vhs') || comp.includes('retro')) particleType = 'vhs';
+
+      videoTrackModifiers.push({
+        type: 'overlay/canvas_particles',
+        params: {
+          type: particleType,
+          variant: comp,
+          intensity: 1.0,
+          opacity: 0.65,
+        },
+      });
+    }
+
     tracks.push({
       id: 'track_v1_main',
       type: 'video',
+      modifiers: videoTrackModifiers.length > 0 ? videoTrackModifiers : undefined,
       sequences: videoSequences,
     });
 
