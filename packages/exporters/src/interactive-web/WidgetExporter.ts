@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileExists } from '@acc/core';
 import type { ExtendedPipelineIR } from '@acc/ir';
 
 export interface WidgetExporterOptions {
@@ -9,9 +10,9 @@ export interface WidgetExporterOptions {
 }
 
 export class WidgetExporter {
-  public static exportInteractiveWidget(ir: ExtendedPipelineIR, options: WidgetExporterOptions): { htmlPath: string; jsonPath: string } {
-    if (!fs.existsSync(options.outputDir)) {
-      fs.mkdirSync(options.outputDir, { recursive: true });
+  public static async exportInteractiveWidget(ir: ExtendedPipelineIR, options: WidgetExporterOptions): Promise<{ htmlPath: string; jsonPath: string }> {
+    if (!(await fileExists(options.outputDir))) {
+      await fs.promises.mkdir(options.outputDir, { recursive: true });
     }
 
     const jsonPath = path.join(options.outputDir, 'interactive-tree.json');
@@ -30,7 +31,7 @@ export class WidgetExporter {
       })),
     };
 
-    fs.writeFileSync(jsonPath, JSON.stringify(treeData, null, 2), 'utf-8');
+    await fs.promises.writeFile(jsonPath, JSON.stringify(treeData, null, 2), 'utf-8');
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -87,7 +88,7 @@ export class WidgetExporter {
 </body>
 </html>`;
 
-    fs.writeFileSync(htmlPath, htmlContent, 'utf-8');
+    await fs.promises.writeFile(htmlPath, htmlContent, 'utf-8');
 
     return { htmlPath, jsonPath };
   }
