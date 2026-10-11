@@ -11,5 +11,7 @@ public record TenantProvisioningResult(
         int createdAttributesCount,
         int createdRelationshipsCount,
         List<String> createdEntityTypeNames,
+        String defaultWorkspaceUid,
+        String defaultWorkspaceName,
         long executionTimeMs
 ) {}

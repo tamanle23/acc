@@ -3,10 +3,12 @@ package com.unipost.tenant.service;
 import com.unipost.domain.metadata.AttributeDefinition;
 import com.unipost.domain.metadata.EntityType;
 import com.unipost.domain.metadata.RelationshipType;
+import com.unipost.domain.workspace.Workspace;
 import com.unipost.fw.tenancy.TenantContextHolder;
 import com.unipost.repository.jpa.AttributeDefinitionRepository;
 import com.unipost.repository.jpa.EntityTypeRepository;
 import com.unipost.repository.jpa.RelationshipTypeRepository;
+import com.unipost.repository.jpa.WorkspaceRepository;
 import com.unipost.service.SchemaValidationService;
 import com.unipost.service.exception.MetadataConflictException;
 import com.unipost.service.exception.MetadataNotFoundException;
@@ -30,6 +32,7 @@ public class TenantProvisioningService {
     private final EntityTypeRepository entityTypeRepository;
     private final AttributeDefinitionRepository attributeDefinitionRepository;
     private final RelationshipTypeRepository relationshipTypeRepository;
+    private final WorkspaceRepository workspaceRepository;
     private final SchemaValidationService schemaValidationService;
 
     @Transactional
@@ -123,6 +126,22 @@ public class TenantProvisioningService {
                 }
             }
 
+            // 5. Auto-provision Tenant Primary Default Workspace (Immutable)
+            Workspace defaultWorkspace = workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull(targetTenantId)
+                    .orElseGet(() -> {
+                        Workspace ws = new Workspace();
+                        ws.setTenantId(targetTenantId);
+                        ws.setCode("MAIN");
+                        ws.setName(request.tenantName() + " Primary");
+                        ws.setDescription("System auto-provisioned default primary workspace for " + request.tenantName());
+                        ws.setPlanTier("STANDARD");
+                        ws.setIsDefault(true);
+                        ws.setIsImmutable(true);
+                        return workspaceRepository.save(ws);
+                    });
+            log.info("Provisioned default immutable workspace '{}' (uid: '{}') for tenant '{}'",
+                    defaultWorkspace.getName(), defaultWorkspace.getUid(), targetTenantId);
+
             long elapsed = System.currentTimeMillis() - startTime;
             log.info("Tenant '{}' successfully provisioned with {} entities, {} attributes, {} edges in {}ms",
                     targetTenantId, createdEntitiesBySystemName.size(), totalAttributesCreated, totalRelationshipsCreated, elapsed);
@@ -136,6 +155,8 @@ public class TenantProvisioningService {
                     totalAttributesCreated,
                     totalRelationshipsCreated,
                     createdEntityNames,
+                    defaultWorkspace.getUid(),
+                    defaultWorkspace.getName(),
                     elapsed
             );
         } finally {

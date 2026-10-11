@@ -36,6 +36,7 @@
 | [031](031_phase_6_legacy_tenant_purge_and_production_build.md) | 2026-10-11 | Legacy Tenant Purge & Production Build Verification (Phase 6) | Verified 0 occurrences of default-tenant and Default Organization across runtime source, fixed toast import and mock types, and verified production vite build. |
 | [032](032_sovereign_root_resolution_in_profile_switcher.md) | 2026-10-11 | Sovereign Root Resolution in ProfileSwitcher | Fixed SYSTEM Custodian defaulting to Acme Prod by resolving Sovereign Root Platform context with Crown icon and ROOT badge. |
 | [033](033_align_unified_sandbox_with_console_ui.md) | 2026-10-11 | Align Unified Sandbox Platform with Console UI | Bi-directional store synchronization in sandboxManager, pristine localStorage reset, enriched tenant scope with tenant-acme, and edge-case diagnostics in SandboxDock. |
+| [034](034_backend_workspace_entity_and_provisioning.md) | 2026-10-11 | Backend Workspace Entity, Liquibase RLS & Auto-Provisioning Pipeline | Created UNIPOST_WORKSPACES table with RLS and partial default index, Workspace JPA entity/repository, and integrated default immutable workspace auto-provisioning into TenantProvisioningService. |
 
 
 
