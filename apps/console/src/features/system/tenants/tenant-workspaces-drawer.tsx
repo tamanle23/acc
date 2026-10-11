@@ -14,6 +14,7 @@ import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-st
 import { type FleetTenantSummary } from '../api/use-system-fleet';
 import { CreateWorkspaceModal } from '@/features/settings/workspaces/create-workspace-modal';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface TenantWorkspacesDrawerProps {
@@ -39,6 +40,15 @@ export function TenantWorkspacesDrawer({
   const tenantWorkspaces = profiles.filter((p) => p.tenantId === tenant.tenantId);
 
   const handleDeleteWorkspace = (workspace: Profile) => {
+    if (workspace.isDefault) {
+      toast.error(`Workspace "${workspace.name}" is the immutable default workspace and cannot be deleted.`);
+      return;
+    }
+    if (tenantWorkspaces.length <= 1) {
+      toast.error(`Workspace "${workspace.name}" is the sole workspace of ${tenant.name} and cannot be deleted.`);
+      return;
+    }
+
     const updated = profiles.filter((p) => p.id !== workspace.id);
     setProfiles(updated);
 
@@ -126,6 +136,9 @@ export function TenantWorkspacesDrawer({
               tenantWorkspaces.map((ws) => {
                 const isActive = (ws.id && ws.id === currentProfile?.id) || ws.id === activeWorkspaceId;
                 const Logo = ws.logo || LayoutGrid;
+                const isDefault = Boolean(ws.isDefault);
+                const isSoleWorkspace = tenantWorkspaces.length <= 1;
+                const isProtected = isDefault || isSoleWorkspace;
 
                 return (
                   <div
@@ -143,6 +156,11 @@ export function TenantWorkspacesDrawer({
                       <div className="truncate">
                         <div className="flex items-center gap-1.5 truncate">
                           <span className="font-semibold text-sm truncate">{ws.name}</span>
+                          {isDefault && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 font-mono bg-primary/10 text-primary border-primary/30">
+                              DEFAULT
+                            </Badge>
+                          )}
                           {isActive && (
                             <Badge variant="default" className="text-[9px] px-1 py-0 h-4 font-mono">
                               ACTIVE
@@ -169,9 +187,19 @@ export function TenantWorkspacesDrawer({
                       <Button
                         size="icon"
                         variant="ghost"
+                        disabled={isProtected}
                         onClick={() => setWorkspaceToDelete(ws)}
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                        title="Delete workspace"
+                        className={cn(
+                          "h-8 w-8 text-destructive hover:bg-destructive/10",
+                          isProtected && "opacity-40 cursor-not-allowed hover:bg-transparent"
+                        )}
+                        title={
+                          isDefault
+                            ? "Default workspace (Protected from deletion)"
+                            : isSoleWorkspace
+                            ? "Sole remaining workspace (Protected from deletion)"
+                            : "Delete workspace"
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ContentSection } from '../components/content-section';
-import { useProfileStore, type Profile } from '@/stores/profile-store';
+import { useProfileStore, getUserDefaultWorkspace, type Profile } from '@/stores/profile-store';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,18 +14,20 @@ import {
   LayoutGrid,
   Sparkles,
   Trash2,
+  Star,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export const WorkspacesPanel: React.FC = () => {
-  const { profiles, setProfiles, currentProfile, setCurrentProfile } = useProfileStore();
+  const { profiles, setProfiles, currentProfile, setCurrentProfile, setUserDefault } = useProfileStore();
   const { activeTenantId, activeTenantName, setActiveTenant, setActiveWorkspace } = useMetadataUiStore();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<Profile | null>(null);
 
   const handleSwitchWorkspace = (p: Profile) => {
     setCurrentProfile(p);
-    const tenantId = (p.tenantId as string) || 'default-tenant';
+    const tenantId = (p.tenantId as string) || activeTenantId || 'tenant-acme';
     const tenantName = (p.tenantName as string) || p.name;
     const workspaceId = (p.id as string) || p.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
@@ -35,6 +37,16 @@ export const WorkspacesPanel: React.FC = () => {
   };
 
   const handleDeleteWorkspace = (ws: Profile) => {
+    if (ws.isDefault) {
+      toast.error('Không thể xóa workspace mặc định của tổ chức.');
+      return;
+    }
+    const tenantWorkspaces = profiles.filter((p) => p.tenantId === ws.tenantId);
+    if (tenantWorkspaces.length <= 1) {
+      toast.error('Không thể xóa workspace duy nhất còn lại của tổ chức.');
+      return;
+    }
+
     const updated = profiles.filter((p) => p.id !== ws.id);
     setProfiles(updated);
 
@@ -75,7 +87,7 @@ export const WorkspacesPanel: React.FC = () => {
                 </Badge>
               </div>
               <h3 className="text-base font-bold text-foreground">
-                {activeTenantName || 'Default Organization'}
+                {activeTenantName || 'Acme International Corp'}
               </h3>
             </div>
           </div>
@@ -105,7 +117,16 @@ export const WorkspacesPanel: React.FC = () => {
             const isCurrent =
               (p.id && p.id === currentProfile?.id) || p.name === currentProfile?.name;
             const Logo = p.logo || LayoutGrid;
-            const belongsToActiveTenant = (p.tenantId || 'default-tenant') === activeTenantId;
+            const profileTenantId = (p.tenantId as string) || activeTenantId || 'tenant-acme';
+            const belongsToActiveTenant = profileTenantId === activeTenantId;
+
+            const isTenantDefault = Boolean(p.isDefault);
+            const tenantProfiles = profiles.filter((ws) => ws.tenantId === p.tenantId);
+            const isLastWorkspace = tenantProfiles.length <= 1;
+            const isProtectedWorkspace = isTenantDefault || isLastWorkspace;
+
+            const userDefaultWsId = profileTenantId ? getUserDefaultWorkspace(profileTenantId) : null;
+            const isUserDefault = userDefaultWsId ? p.id === userDefaultWsId : Boolean(p.isDefault);
 
             return (
               <div
@@ -123,9 +144,19 @@ export const WorkspacesPanel: React.FC = () => {
                         <Logo className="h-5 w-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-bold text-sm text-foreground">{p.name}</h4>
-                          {belongsToActiveTenant && (
+                          {isTenantDefault && (
+                            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                              DEFAULT
+                            </Badge>
+                          )}
+                          {isUserDefault && (
+                            <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30">
+                              MY DEFAULT
+                            </Badge>
+                          )}
+                          {belongsToActiveTenant && !isTenantDefault && (
                             <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
                               (Cùng tổ chức)
                             </span>
@@ -152,15 +183,38 @@ export const WorkspacesPanel: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>RLS Enforced</span>
+                <div className="mt-5 pt-3 border-t border-white/10 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-mono">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>RLS Enforced</span>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (profileTenantId && p.id) {
+                          setUserDefault(profileTenantId, p.id);
+                          toast.success(`Đã đặt "${p.name}" làm workspace mặc định của bạn`);
+                        }
+                      }}
+                      className={cn(
+                        "h-7 px-2 text-[11px] gap-1 font-medium transition-colors",
+                        isUserDefault
+                          ? "text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                          : "text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10"
+                      )}
+                      title={isUserDefault ? 'Workspace mặc định của bạn' : 'Đặt làm workspace mặc định của bạn'}
+                    >
+                      <Star className={cn("h-3.5 w-3.5", isUserDefault && "fill-amber-500 text-amber-500")} />
+                      <span>{isUserDefault ? 'Mặc định của tôi' : 'Đặt làm mặc định'}</span>
+                    </Button>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-white/5">
                     {isCurrent ? (
-                      <span className="text-xs font-semibold text-primary flex items-center gap-1">
+                      <span className="text-xs font-semibold text-primary flex items-center gap-1 mr-auto">
                         <CheckCircle2 className="h-4 w-4" />
                         <span>Không gian hiện tại</span>
                       </span>
@@ -169,7 +223,7 @@ export const WorkspacesPanel: React.FC = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleSwitchWorkspace(p)}
-                        className="h-8 text-xs font-semibold text-primary hover:bg-primary/10"
+                        className="h-8 text-xs font-semibold text-primary hover:bg-primary/10 mr-auto"
                       >
                         <span>Chuyển sang workspace này →</span>
                       </Button>
@@ -177,9 +231,19 @@ export const WorkspacesPanel: React.FC = () => {
                     <Button
                       size="icon"
                       variant="ghost"
+                      disabled={isProtectedWorkspace}
                       onClick={() => setWorkspaceToDelete(p)}
-                      className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                      title="Xóa workspace"
+                      className={cn(
+                        "h-8 w-8 text-destructive hover:bg-destructive/10",
+                        isProtectedWorkspace && "opacity-40 cursor-not-allowed hover:bg-transparent"
+                      )}
+                      title={
+                        isTenantDefault
+                          ? "Workspace mặc định của tổ chức (Không thể xóa)"
+                          : isLastWorkspace
+                          ? "Workspace duy nhất của tổ chức (Không thể xóa)"
+                          : "Xóa workspace"
+                      }
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -56,8 +56,8 @@ export const CreateWorkspaceModal: React.FC<Props> = ({
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '') || `ws-${Date.now()}`;
 
-    const effectiveTenantId = activeTenantId || 'default-tenant';
-    const effectiveTenantName = activeTenantName || 'Default Organization';
+    const effectiveTenantId = activeTenantId || 'tenant-acme';
+    const effectiveTenantName = activeTenantName || 'Acme International Corp';
 
     setIsProvisioning(true);
     try {
@@ -108,7 +108,7 @@ export const CreateWorkspaceModal: React.FC<Props> = ({
                   Tạo Workspace Mới
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Khởi tạo một không gian làm việc mới trực thuộc tổ chức <span className="font-semibold text-foreground">{activeTenantName || 'Default Organization'}</span>.
+                  Khởi tạo một không gian làm việc mới trực thuộc tổ chức <span className="font-semibold text-foreground">{activeTenantName || 'Acme International Corp'}</span>.
                 </DialogDescription>
               </div>
             </div>
@@ -119,7 +119,7 @@ export const CreateWorkspaceModal: React.FC<Props> = ({
             <div className="p-3 rounded-xl bg-muted/40 border border-border/60 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Tổ chức sở hữu (Tenant):</span>
-                <span className="font-bold text-foreground">{activeTenantName || 'Default Organization'}</span>
+                <span className="font-bold text-foreground">{activeTenantName || 'Acme International Corp'}</span>
               </div>
               <Badge variant="outline" className="font-mono text-[10px]">
                 {activeTenantId}

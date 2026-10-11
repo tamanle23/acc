@@ -19,7 +19,7 @@ import java.util.Map;
 public class EntityRelationship extends BaseModel {
 
     @Column(name = "tenant_id", nullable = false)
-    private String tenantId = "default-tenant";
+    private String tenantId;
 
     @ManyToOne
     @JoinColumn(name = "source_entity_id", nullable = false)

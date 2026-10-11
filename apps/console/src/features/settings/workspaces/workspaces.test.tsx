@@ -18,8 +18,9 @@ describe('WorkspacesPanel Component', () => {
 
     expect(screen.getByText('Workspaces & Organizations')).toBeDefined();
     expect(screen.getByText('Tạo Workspace Mới')).toBeDefined();
-    expect(screen.getByText('Unipost Main')).toBeDefined();
+    expect(screen.getByText('Acme Prod')).toBeDefined();
     expect(screen.getByText('Đang chọn')).toBeDefined();
+    expect(screen.getAllByText('DEFAULT').length).toBeGreaterThanOrEqual(1);
   });
 
   it('switches active workspace when clicking Switch button', () => {

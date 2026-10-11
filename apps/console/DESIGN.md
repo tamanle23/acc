@@ -133,6 +133,11 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 - **VietQR Transaction Ledger:** Translucent table container `bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl` with localized timestamps and Napas247 receipt download actions.
 - **Corporate E-Invoice Form:** Vietnamese VAT compliance panel with monospace tax code (MST) input and auto-invoice dispatch toggle.
 
+### 3.7 Sovereign Fleet Drawers (`TenantWorkspacesDrawer` & `TenantUsersDrawer`)
+- **Slide-Over Sheet Shell:** `w-full sm:max-w-xl bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6` with right-side slide-over motion. Symmetrical UX ergonomics for both workspace and user fleet administration.
+- **Member & Workspace Cards:** `bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 hover:border-white/40 rounded-xl p-4 transition-all`.
+- **Status & RBAC Badges:** Monospace role badges (`ADMIN`, `USER`, `CREATOR`), status badges (`ACTIVE` in emerald, `LOCKED` in rose), and immutable `DEFAULT` workspace badges in primary/indigo.
+
 ---
 
 ## 4. Google Stitch Prompting Blueprint (Zoom-Out-Zoom-In)

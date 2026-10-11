@@ -24,7 +24,7 @@ public class AttributeDefinition extends BaseModel {
     private EntityType entityType;
 
     @Column(name = "tenant_id", nullable = false)
-    private String tenantId = "default-tenant";
+    private String tenantId;
 
     @Column(nullable = false)
     private String name;

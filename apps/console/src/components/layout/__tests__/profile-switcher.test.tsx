@@ -51,8 +51,8 @@ describe('ProfileSwitcher Component', () => {
 
   it('renders standard workspace switcher when not assumed', () => {
     renderSwitcher();
-    expect(screen.getByText('Unipost Main')).toBeDefined();
-    expect(screen.getByText('Default Organization')).toBeDefined();
+    expect(screen.getByText('Acme Prod')).toBeDefined();
+    expect(screen.getByText('Acme International Corp')).toBeDefined();
     expect(screen.queryByText('ASSUMED')).toBeNull();
   });
 
@@ -68,7 +68,7 @@ describe('ProfileSwitcher Component', () => {
     expect(screen.getByText(/Delegated: Acme International Corp/i)).toBeDefined();
   });
 
-  it('strictly isolates workspace dropdown to assumed tenant workspaces only, excluding Default Organization', () => {
+  it('strictly isolates workspace dropdown to assumed tenant workspaces only, excluding unrelated organizations', () => {
     localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
     localStorage.setItem('unipost_assumed_tenant_name', 'Acme International Corp');
     useProfileStore.getState().syncAssumedTenant('tenant-acme', 'Acme International Corp');
@@ -78,9 +78,17 @@ describe('ProfileSwitcher Component', () => {
     // Trigger button shows Acme context
     expect(screen.getByText('Acme Prod')).toBeDefined();
 
-    // Default Organization and Unipost Main must NOT be rendered when inside assumed tenant
-    expect(screen.queryByText('Unipost Main')).toBeNull();
-    expect(screen.queryByText('Default Organization')).toBeNull();
+    // Unrelated tenant workspaces must NOT be rendered when inside assumed tenant
+    expect(screen.queryByText('US-East Production')).toBeNull();
+  });
+
+  it('respects user personal default workspace preference within active tenant', () => {
+    localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
+    useProfileStore.getState().syncAssumedTenant(null);
+
+    renderSwitcher();
+
+    expect(screen.getByText('Acme Staging')).toBeDefined();
   });
 
   it('renders orphaned tenant state with NO WORKSPACE badge when a tenant has 0 workspaces', () => {

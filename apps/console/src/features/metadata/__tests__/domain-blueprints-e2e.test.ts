@@ -11,8 +11,8 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
 
   beforeEach(() => {
     mockMetadataStore.resetToInitialState();
-    useMetadataUiStore.getState().setActiveTenant('default-tenant', 'Default Org');
-    useMetadataUiStore.getState().setActiveWorkspace('ws-main', 'Production Workspace');
+    useMetadataUiStore.getState().setActiveTenant('tenant-acme', 'Acme Corp');
+    useMetadataUiStore.getState().setActiveWorkspace('ws-acme-prod', 'Acme Prod');
     useSandboxStore.getState().setActiveTenant(TENANT_E2E);
   });
 

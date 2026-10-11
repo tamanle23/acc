@@ -134,9 +134,9 @@ src/routes/
   - `/system/tenants`: `src/routes/_authenticated/system.tenants.tsx`
   - `/system/roles`: `src/routes/_authenticated/system.roles.tsx`
 - **Component Stack:**
-  - `FleetTenantsTable`, `CreateTenantModal`, `SubscriptionOverrideDrawer`, `QuotaTuningDrawer`, `SuspendTenantDialog`.
+  - `FleetTenantsTable`, `CreateTenantModal`, `SubscriptionOverrideDrawer`, `QuotaTuningDrawer`, `SuspendTenantDialog`, `TenantWorkspacesDrawer`, `TenantUsersDrawer`.
   - `RbacMatrixGrid`, `RoleDefinitionModal`, `UserMembershipDrawer`, `AssumeTenantBar`.
-- **Layout:** Liquid Glass data table layout with multi-filter action bar, slide-over configuration drawers, and full-viewport warning bar when impersonating.
+- **Layout:** Liquid Glass data table layout with multi-filter action bar, slide-over sovereign drawers (symmetrical right-side slide-overs for both Workspaces and Users), and full-viewport warning bar when impersonating.
 - **Glass Spec:** Amber liquid glass tokens for sovereign alerts (`bg-amber-500/15 backdrop-blur-xl border-amber-500/30`), frosted modal dialogs with specular highlights.
 - **State & Stores:** Backed by `useSystemFleet` hooks (`useFleetTenants`, `useFleetTenantDiagnostics`, `useUpdateTenantQuotas`, `useAssumeTenant`, `useSystemRoles`, `useGlobalUsers`) and integrated with Unified Sandbox `mockFleetStore`.
 - **Features:** Live telemetry dials, unconstrained volume quota tuning ($\infty$), commercial tier promotion, soft kill-switches, declarative RBAC permission matrix studio, and instant Assume-Tenant session delegation.

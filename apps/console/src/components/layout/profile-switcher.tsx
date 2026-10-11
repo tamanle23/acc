@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert, ArrowRight, AlertTriangle } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, Building2, LayoutGrid, Crown, ShieldAlert, ArrowRight, AlertTriangle, Star } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   DropdownMenu,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/sidebar'
 import { useProfile, type Profile } from '@/context/profile-provider'
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
+import { useProfileStore, getUserDefaultWorkspace } from '@/stores/profile-store'
 import { useSpringAuthStore } from '@/features/spring-auth'
 import { useSandboxStore } from '@/core/sandbox'
 import { CreateWorkspaceModal } from '@/features/settings/workspaces/create-workspace-modal'
@@ -33,6 +34,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const { isMobile } = useSidebar()
   const { currentProfile, setCurrentProfile, profiles: contextProfiles } = useProfile()
   const { setActiveTenant, setActiveWorkspace } = useMetadataUiStore()
+  const { setUserDefault } = useProfileStore()
   const { user } = useSpringAuthStore()
   const { activePersonaId, setActiveTenant: setSandboxTenant } = useSandboxStore()
   const navigate = useNavigate()
@@ -47,7 +49,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
-  const effectiveTenantId = isAssumed ? assumedTenant : (useMetadataUiStore.getState().activeTenantId || 'default-tenant')
+  const effectiveTenantId = isAssumed ? assumedTenant : (useMetadataUiStore.getState().activeTenantId || 'tenant-acme')
   const tenantWorkspaces = availableProfiles.filter((p) => p.tenantId === effectiveTenantId)
   const isOrphanedTenant = tenantWorkspaces.length === 0
 
@@ -86,7 +88,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const groupedByTenant = useMemo(() => {
     const map = new Map<string, { tenantName: string; workspaces: Profile[] }>()
     displayProfiles.forEach((p) => {
-      const tenantId = (p.tenantId as string) || 'default-tenant'
+      const tenantId = (p.tenantId as string) || effectiveTenantId
       const tenantName = (p.tenantName as string) || 'Organization'
       if (!map.has(tenantId)) {
         map.set(tenantId, { tenantName, workspaces: [] })
@@ -97,10 +99,10 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
       tenantId,
       ...data,
     }))
-  }, [displayProfiles])
+  }, [displayProfiles, effectiveTenantId])
 
   const handleSelectWorkspace = (profile: Profile) => {
-    const tenantId = (profile.tenantId as string) || 'default-tenant'
+    const tenantId = (profile.tenantId as string) || effectiveTenantId
     const tenantName = (profile.tenantName as string) || profile.name
     const workspaceId = (profile.id as string) || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
 
@@ -260,12 +262,17 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                   const isSelected =
                     (profile.id && profile.id === activeProfile?.id) ||
                     profile.name === activeProfile?.name
+                  const profileTenantId = (profile.tenantId as string) || group.tenantId
+                  const userDefaultWsId = profileTenantId ? getUserDefaultWorkspace(profileTenantId) : null
+                  const isPersonalDefault = userDefaultWsId ? profile.id === userDefaultWsId : Boolean(profile.isDefault)
+                  const isTenantDefault = Boolean(profile.isDefault)
+
                   return (
                     <DropdownMenuItem
                       key={profile.id ?? profile.name}
                       onClick={() => handleSelectWorkspace(profile)}
                       className={cn(
-                        'gap-2 p-2 rounded-lg cursor-pointer transition-colors',
+                        'group/ws-item gap-2 p-2 rounded-lg cursor-pointer transition-colors relative',
                         isSelected && 'bg-accent/60 font-medium'
                       )}
                     >
@@ -276,19 +283,52 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                           <LayoutGrid className='size-3.5 shrink-0' />
                         )}
                       </div>
-                      <div className='flex flex-col flex-1 leading-tight'>
-                        <span className='text-sm'>{profile.name}</span>
+                      <div className='flex flex-col flex-1 leading-tight min-w-0'>
+                        <div className='flex items-center gap-1.5'>
+                          <span className='text-sm truncate'>{profile.name}</span>
+                          {isPersonalDefault && (
+                            <span className='text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30 shrink-0'>
+                              My Default
+                            </span>
+                          )}
+                          {!isPersonalDefault && isTenantDefault && (
+                            <span className='text-[9px] px-1 py-0.2 rounded bg-primary/10 text-primary font-semibold border border-primary/20 shrink-0'>
+                              Default
+                            </span>
+                          )}
+                        </div>
                         {profile.plan && (
-                          <span className='text-[10px] text-muted-foreground'>
+                          <span className='text-[10px] text-muted-foreground truncate'>
                             {profile.plan}
                           </span>
                         )}
                       </div>
-                      {isSelected ? (
-                        <Check className='size-4 text-primary shrink-0' />
-                      ) : (
-                        <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
-                      )}
+                      <div className='flex items-center gap-1 shrink-0'>
+                        <button
+                          type='button'
+                          title={isPersonalDefault ? 'Workspace mặc định của bạn' : 'Đặt làm workspace mặc định'}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (profileTenantId && profile.id) {
+                              setUserDefault(profileTenantId, profile.id)
+                              toast.success(`Đã đặt "${profile.name}" làm workspace mặc định`)
+                            }
+                          }}
+                          className={cn(
+                            'p-1 rounded hover:bg-white/10 transition-colors',
+                            isPersonalDefault
+                              ? 'text-amber-500 opacity-100'
+                              : 'text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover/ws-item:opacity-100'
+                          )}
+                        >
+                          <Star className={cn('size-3.5', isPersonalDefault && 'fill-amber-500')} />
+                        </button>
+                        {isSelected ? (
+                          <Check className='size-4 text-primary shrink-0' />
+                        ) : (
+                          <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+                        )}
+                      </div>
                     </DropdownMenuItem>
                   )
                 })}

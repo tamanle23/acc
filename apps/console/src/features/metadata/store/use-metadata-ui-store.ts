@@ -121,16 +121,34 @@ interface MetadataUiState {
 }
 
 
+const DEFAULT_TENANT_ID = 'tenant-acme';
+const DEFAULT_TENANT_NAME = 'Acme International Corp';
+const DEFAULT_WS_ID = 'ws-acme-prod';
+const DEFAULT_WS_NAME = 'Acme Prod';
+
 const initialAssumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
 const initialAssumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null;
 const hasAssumedTenant = Boolean(initialAssumedTenant && initialAssumedTenant !== 'SYSTEM');
 
+const initialTenantId = hasAssumedTenant ? (initialAssumedTenant as string) : DEFAULT_TENANT_ID;
+const initialTenantName = hasAssumedTenant ? (initialAssumedTenantName || initialAssumedTenant as string) : DEFAULT_TENANT_NAME;
+
+let initialWorkspaceId = hasAssumedTenant ? `ws-${initialAssumedTenant}` : DEFAULT_WS_ID;
+let initialWorkspaceName = hasAssumedTenant ? `${initialTenantName} Workspace` : DEFAULT_WS_NAME;
+
+if (typeof window !== 'undefined') {
+  const userPref = localStorage.getItem(`unipost_user_default_ws_${initialTenantId}`);
+  if (userPref) {
+    initialWorkspaceId = userPref;
+  }
+}
+
 export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
   // Multi-Tenancy & Workspace Mode
-  activeTenantId: hasAssumedTenant ? (initialAssumedTenant as string) : 'default-tenant',
-  activeTenantName: hasAssumedTenant ? (initialAssumedTenantName || initialAssumedTenant as string) : 'Default Organization',
-  activeWorkspaceId: hasAssumedTenant ? `ws-${initialAssumedTenant}` : 'ws-main',
-  activeWorkspaceName: hasAssumedTenant ? `${initialAssumedTenantName || initialAssumedTenant} Workspace` : 'Production Workspace',
+  activeTenantId: initialTenantId,
+  activeTenantName: initialTenantName,
+  activeWorkspaceId: initialWorkspaceId,
+  activeWorkspaceName: initialWorkspaceName,
   currentUserRole: 'TENANT_ADMIN',
   workspaceMode: 'architect',
 

@@ -47,7 +47,10 @@ public class TenantRateLimitService {
      * Window: 1 minute (60,000 ms).
      */
     public RateLimitResult consumeToken(String tenantId, String planTier) {
-        String tid = (tenantId != null && !tenantId.isBlank()) ? tenantId.trim().toLowerCase() : "default-tenant";
+        if (tenantId == null || tenantId.isBlank()) {
+            throw new IllegalArgumentException("Tenant ID is required for rate limit accounting.");
+        }
+        String tid = tenantId.trim().toLowerCase();
         int capacity = getCapacityForTier(planTier);
 
         try {

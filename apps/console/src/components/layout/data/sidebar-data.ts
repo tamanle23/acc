@@ -36,20 +36,13 @@ import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-st
 
 export const sidebarTeams = [
   {
-    id: 'ws-main',
-    name: 'Unipost Main',
-    logo: Command,
-    plan: 'Production Workspace',
-    tenantId: 'default-tenant',
-    tenantName: 'Default Organization',
-  },
-  {
     id: 'ws-acme-prod',
     name: 'Acme Prod',
     logo: GalleryVerticalEnd,
     plan: 'Production Workspace',
     tenantId: 'tenant-acme',
     tenantName: 'Acme International Corp',
+    isDefault: true,
   },
   {
     id: 'ws-acme-staging',
@@ -58,6 +51,16 @@ export const sidebarTeams = [
     plan: 'Staging Environment',
     tenantId: 'tenant-acme',
     tenantName: 'Acme International Corp',
+    isDefault: false,
+  },
+  {
+    id: 'ws-us-east-prod',
+    name: 'US-East Production',
+    logo: Command,
+    plan: 'Production Workspace',
+    tenantId: 'tenant-us-east-1',
+    tenantName: 'US East Operations Ltd',
+    isDefault: true,
   },
 ];
 

@@ -43,7 +43,8 @@ public class TenantRateLimitFilter extends OncePerRequestFilter {
 
         String tenantId = TenantContextHolder.getTenantId();
         if (tenantId == null || tenantId.isBlank()) {
-            tenantId = "default-tenant";
+            filterChain.doFilter(request, response);
+            return;
         }
 
         // Determine plan tier: can be injected via header or defaults to BASIC

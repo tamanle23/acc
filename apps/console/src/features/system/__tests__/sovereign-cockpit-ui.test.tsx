@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FleetTenantsTable } from '../tenants/fleet-tenants-table';
 import { RbacMatrixGrid } from '../roles/rbac-matrix-grid';
 import { UserMembershipDrawer } from '../roles/user-membership-drawer';
+import { TenantUsersDrawer } from '../tenants/tenant-users-drawer';
 import { AssumeTenantBar } from '@/components/layout/assume-tenant-bar';
 
 // Mock TanStack Router
@@ -63,5 +64,32 @@ describe('Sovereign Cockpit UI Components', () => {
   it('does not render AssumeTenantBar when no assumed session is active', () => {
     const { container } = renderWithClient(<AssumeTenantBar />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it('renders TenantUsersDrawer when opened with tenant details', () => {
+    const mockTenant = {
+      tenantId: 'tenant-acme',
+      name: 'Acme International Corp',
+      tier: 'ENTERPRISE' as const,
+      status: 'ACTIVE' as const,
+      workspacesCount: 2,
+      maxWorkspaces: 10,
+      schemasCount: 4,
+      maxSchemas: -1,
+      recordsCount: 1200,
+      maxRecords: -1,
+      rateLimitBurst: 200,
+      rateLimitReplenishRate: 100,
+      createdDate: '2026-01-01',
+      lastAssumedDate: null,
+    };
+    renderWithClient(
+      <TenantUsersDrawer
+        tenant={mockTenant}
+        open={true}
+        onOpenChange={() => {}}
+      />
+    );
+    expect(screen.getByText(/assigned users for acme international corp/i)).toBeTruthy();
   });
 });

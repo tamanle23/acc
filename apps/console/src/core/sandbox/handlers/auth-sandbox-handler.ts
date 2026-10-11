@@ -74,7 +74,13 @@ export const authSandboxHandler: SandboxRouteHandler = {
         const roles = SANDBOX_AUTH_USERS[username];
         const sub = username.split('_')[0];
 
-        const tenantId = username === 'custodian_root' ? 'SYSTEM' : 'default-tenant';
+        let tenantId = 'tenant-acme';
+        if (username === 'custodian_root' || username === 'system_bypass') {
+          tenantId = 'SYSTEM';
+        } else if (username === 'custom_bypass') {
+          tenantId = 'tenant-us-east-1';
+        }
+
         const token = createMockJwt({
           sub,
           roles,
@@ -104,7 +110,12 @@ export const authSandboxHandler: SandboxRouteHandler = {
       if (refreshToken && refreshToken in SANDBOX_REFRESH_TOKENS) {
         const roles = SANDBOX_REFRESH_TOKENS[refreshToken];
         const sub = refreshToken.split('_').pop();
-        const tenantId = sub === 'custodian' || sub === 'root' ? 'SYSTEM' : 'default-tenant';
+        let tenantId = 'tenant-acme';
+        if (sub === 'custodian' || sub === 'root' || sub === 'system') {
+          tenantId = 'SYSTEM';
+        } else if (sub === 'custom') {
+          tenantId = 'tenant-us-east-1';
+        }
 
         const token = createMockJwt({
           sub,

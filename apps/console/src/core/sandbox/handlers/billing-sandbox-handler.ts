@@ -99,9 +99,9 @@ mockBillingStore.set('SYSTEM', {
   history: [],
 });
 
-// Seed default tenant with PRO features in sandbox for seamless testing
-mockBillingStore.set('default-tenant', {
-  tenantId: 'default-tenant',
+// Seed commercial tenant tenant-acme with PRO features in sandbox for seamless testing
+mockBillingStore.set('tenant-acme', {
+  tenantId: 'tenant-acme',
   planTier: 'PRO',
   billingCadence: 'MONTHLY',
   status: 'ACTIVE',
@@ -147,7 +147,7 @@ export const billingSandboxHandler: SandboxRouteHandler = {
     ctx.pathname.startsWith('/api/billing'),
   handler: async (req: SandboxRequest, ctx) => {
     const { pathname } = ctx;
-    const activeTenantId = useSandboxStore.getState().activeTenantId || 'default-tenant';
+    const activeTenantId = useSandboxStore.getState().activeTenantId || 'tenant-acme';
     const subPath = pathname.replace(/^\/(api\/v1\/billing|api\/billing)/, '');
 
     // 1. GET /summary

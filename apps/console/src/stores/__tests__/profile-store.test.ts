@@ -31,10 +31,18 @@ describe('profile-store and tenant resolution', () => {
       const { profile, allProfiles } = resolveTenantProfile('tenant-custom-99', 'Custom Logistics');
       expect(profile.id).toBe('ws-tenant-custom-99');
       expect(profile.name).toBe('Custom Logistics Workspace');
-      expect(profile.plan).toBe('Delegated Workspace');
+      expect(profile.plan).toBe('Default Workspace');
       expect(profile.tenantId).toBe('tenant-custom-99');
       expect(profile.tenantName).toBe('Custom Logistics');
+      expect(profile.isDefault).toBe(true);
       expect(allProfiles.some((p) => p.id === 'ws-tenant-custom-99')).toBe(true);
+    });
+
+    it('resolves user personal default workspace if set in localStorage', () => {
+      localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
+      const { profile } = resolveTenantProfile('tenant-acme', 'Acme Corp');
+      expect(profile.id).toBe('ws-acme-staging');
+      expect(profile.name).toBe('Acme Staging');
     });
   });
 
@@ -48,22 +56,22 @@ describe('profile-store and tenant resolution', () => {
     });
 
     it('creates and activates a delegated profile for brand new fleet tenant', () => {
-      useProfileStore.getState().syncAssumedTenant('tenant-us-east-1', 'NorthStar Express');
+      useProfileStore.getState().syncAssumedTenant('tenant-custom-99', 'NorthStar Express');
       const state = useProfileStore.getState();
 
-      expect(state.currentProfile.tenantId).toBe('tenant-us-east-1');
+      expect(state.currentProfile.tenantId).toBe('tenant-custom-99');
       expect(state.currentProfile.name).toBe('NorthStar Express Workspace');
-      expect(state.profiles.some((p) => p.tenantId === 'tenant-us-east-1')).toBe(true);
+      expect(state.profiles.some((p) => p.tenantId === 'tenant-custom-99')).toBe(true);
     });
 
     it('cleanly restores default profile when syncAssumedTenant is called with null or SYSTEM', () => {
-      useProfileStore.getState().syncAssumedTenant('tenant-acme', 'Acme Corp');
-      expect(useProfileStore.getState().currentProfile.tenantId).toBe('tenant-acme');
+      useProfileStore.getState().syncAssumedTenant('tenant-custom-99', 'NorthStar Express');
+      expect(useProfileStore.getState().currentProfile.tenantId).toBe('tenant-custom-99');
 
       useProfileStore.getState().syncAssumedTenant(null);
       const restored = useProfileStore.getState();
-      expect(restored.currentProfile.id).toBe('ws-main');
-      expect(restored.currentProfile.tenantId).toBe('default-tenant');
+      expect(restored.currentProfile.id).toBe('ws-acme-prod');
+      expect(restored.currentProfile.tenantId).toBe('tenant-acme');
     });
   });
 });

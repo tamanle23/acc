@@ -60,12 +60,19 @@ class SchemaValidationServiceTest {
 
     @BeforeEach
     void setUp() {
+        com.unipost.fw.tenancy.TenantContextHolder.setTenantId("tenant-acme");
         entityType = new EntityType();
         entityType.setId(1L);
         entityType.setSchemaVersion(1L);
+        entityType.setTenantId("tenant-acme");
 
         lenient().doReturn(schemaMap).when(hazelcastInstance).getMap(HazelcastConfiguration.METADATA_SCHEMAS_MAP);
         lenient().when(entityTypeRepository.findByIdAndDeletedDateIsNull(1L)).thenReturn(Optional.of(entityType));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        com.unipost.fw.tenancy.TenantContextHolder.clear();
     }
 
     @Test
@@ -76,7 +83,7 @@ class SchemaValidationServiceTest {
 
         String cachedSchema = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}}, \"required\": [\"name\"]}";
 
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(cachedSchema);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(cachedSchema);
 
         assertDoesNotThrow(() -> schemaValidationService.validatePayload(entityTypeId, payload));
     }
@@ -92,12 +99,12 @@ class SchemaValidationServiceTest {
         attr.setDataType("integer");
         attr.setIsRequired(false);
 
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(null);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(null);
         when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId)).thenReturn(Collections.singletonList(attr));
 
         assertDoesNotThrow(() -> schemaValidationService.validatePayload(entityTypeId, payload));
 
-        verify(schemaMap).putIfAbsent(eq("schema:default-tenant:1:v1_s1"), anyString(), eq(1L), eq(TimeUnit.HOURS));
+        verify(schemaMap).putIfAbsent(eq("schema:tenant-acme:1:v1_s1"), anyString(), eq(1L), eq(TimeUnit.HOURS));
     }
 
     @Test
@@ -106,7 +113,7 @@ class SchemaValidationServiceTest {
         Map<String, Object> payload = new HashMap<>();
 
         String cachedSchema = "{\"$schema\": \"http://json-schema.org/draft-07/schema#\", \"type\": \"object\", \"properties\": {\"name\": {\"type\": \"string\"}}, \"required\": [\"name\"]}";
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(cachedSchema);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(cachedSchema);
 
         SchemaValidationException ex = assertThrows(SchemaValidationException.class,
                 () -> schemaValidationService.validatePayload(entityTypeId, payload));
@@ -123,7 +130,7 @@ class SchemaValidationServiceTest {
         attr.setUiComponent("switch");
         attr.setIsRequired(true);
 
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(null);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(null);
         when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId)).thenReturn(Collections.singletonList(attr));
 
         Map<String, Object> payload = Map.of("isActive", true);
@@ -139,7 +146,7 @@ class SchemaValidationServiceTest {
         attr.setDataType("string");
         attr.setIsRequired(false);
 
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(null);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(null);
         when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId)).thenReturn(Collections.singletonList(attr));
 
         Map<String, Object> payload = Map.of("name", "Valid", "unknownField", "Should Fail");
@@ -170,7 +177,7 @@ class SchemaValidationServiceTest {
         attr.setUiComponent("text");
         attr.setDataType("string");
 
-        when(schemaMap.get("schema:default-tenant:1:v1_s1")).thenReturn(null);
+        when(schemaMap.get("schema:tenant-acme:1:v1_s1")).thenReturn(null);
         when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId))
                 .thenReturn(List.of(attr));
 
@@ -208,7 +215,7 @@ class SchemaValidationServiceTest {
 
         // DB attribute repository findByEntityTypeId must only be invoked exactly ONCE
         verify(attributeDefinitionRepository, times(1)).findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId);
-        verify(schemaMap, times(1)).putIfAbsent(eq("schema:default-tenant:1:v1_s1"), anyString(), eq(1L), eq(TimeUnit.HOURS));
+        verify(schemaMap, times(1)).putIfAbsent(eq("schema:tenant-acme:1:v1_s1"), anyString(), eq(1L), eq(TimeUnit.HOURS));
     }
 }
 

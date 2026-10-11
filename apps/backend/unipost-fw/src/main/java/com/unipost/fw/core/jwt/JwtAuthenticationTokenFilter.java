@@ -60,7 +60,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                    .map(c -> {
                      Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
                      List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
-                     String tenantId = jwtTokenHelper.getTenantId(c).orElse("default-tenant");
+                     Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
+                     if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
+                       logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.", usernameOpt.orElse("anonymous"));
+                       return null;
+                     }
+                     String tenantId = tenantIdOpt.get().trim();
                      if(usernameOpt.isPresent()) {
                        JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities, tenantId);
                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
