@@ -372,6 +372,12 @@ importers:
       '@tailwindcss/typography':
         specifier: ^0.5.19
         version: 0.5.20(tailwindcss@4.2.4)
+      '@unipost/client':
+        specifier: workspace:*
+        version: link:../../packages/client
+      '@unipost/sandbox':
+        specifier: workspace:*
+        version: link:../../packages/sandbox
       '@unipost/ui':
         specifier: workspace:^
         version: link:../../packages/ui

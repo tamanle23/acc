@@ -2,16 +2,15 @@
 /* eslint-disable prettier/prettier */
  
 import { slug } from 'github-slugger'
-import { allCoreContent, sortPosts } from '@/lib/content'
+import { allCoreContent } from '@/lib/content'
 import ListLayout from '@/layouts/ListLayoutWithTags'
-import { allBlogs } from '@/lib/content'
-import { tagData } from '@/lib/content'
+import { contentProvider } from '@/lib/cms/content-provider'
 import { notFound } from 'next/navigation'
 
 const POSTS_PER_PAGE = 5
 
 export const generateStaticParams = async () => {
-  const tagCounts = tagData as Record<string, number>
+  const tagCounts = await contentProvider.getTagData()
   return Object.keys(tagCounts).flatMap((tag) => {
     const postCount = tagCounts[tag]
     const totalPages = Math.max(1, Math.ceil(postCount / POSTS_PER_PAGE))
@@ -27,8 +26,9 @@ export default async function TagPage(props: { params: Promise<{ tag: string; pa
   const tag = decodeURI(params.tag)
   const title = tag[0].toUpperCase() + tag.split(' ').join('-').slice(1)
   const pageNumber = parseInt(params.page)
+  const allBlogs = await contentProvider.getAllBlogs()
   const filteredPosts = allCoreContent(
-    sortPosts(allBlogs.filter((post) => post.tags && post.tags.map((t) => slug(t)).includes(tag)) as any) as any
+    allBlogs.filter((post) => post.tags && post.tags.map((t) => slug(t)).includes(tag)) as any
   )
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
 

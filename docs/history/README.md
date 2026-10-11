@@ -46,4 +46,5 @@
 | [040](040_mobile_ui_dynamic_form_engine_and_media_pipeline.md) | 2026-10-11 | mobile-ui Dynamic Form Engine & Media Pipeline (Phase 5) | Implemented DynamicFieldRenderer, MediaPickerInput, and RelationPickerBottomSheet with Liquid Glass styling and full dynamic schema mapping. |
 | [041](041_mobile_ui_zero_data_loss_encrypted_outbox.md) | 2026-10-11 | mobile-ui Zero-Data-Loss Encrypted Outbox (Phase 6) | Implemented useOutboxStore with idempotency tracking, sequential dispatch, HTTP 409 conflict detection, and ConflictResolutionModal. |
 | [042](042_backend_public_cms_gateway_and_publishable_keys.md) | 2026-10-11 | Backend Public Ingestion Gateway & Publishable Key Protocol (Phase 7) | Implemented PublishableKeyFilter, PublishableKeyAuthenticationToken, and PublicCmsGatewayController enforcing status = PUBLISHED and tenant RLS isolation. |
+| [043](043_tekgo_headless_cms_ingestion_and_dual_mode_provider.md) | 2026-10-11 | tekgo-ui Headless CMS Ingestion & Dual-Mode Provider (Phase 8) | Integrated @unipost/client with Next.js 15 ISR revalidation tags, publishable key authentication, and dual-mode ContentProvider with local fallback. |
 

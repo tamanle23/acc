@@ -1,12 +1,10 @@
-/* eslint-disable prettier/prettier */
- 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { sortPosts, allCoreContent } from '@/lib/content'
-import { allBlogs } from '@/lib/content'
+import { allCoreContent } from '@/lib/content'
+import { contentProvider } from '@/lib/cms/content-provider'
 import Main from './Main'
 
 export default async function Page() {
-  const sortedPosts = sortPosts(allBlogs)
-  const posts = allCoreContent(sortedPosts)
+  const blogs = await contentProvider.getAllBlogs()
+  const posts = allCoreContent(blogs)
   return <Main posts={posts as any} />
 }
