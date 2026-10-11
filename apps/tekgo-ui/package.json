@@ -17,6 +17,7 @@
     "@portabletext/react": "^8.0.1",
     "@unipost/client": "workspace:*",
     "@unipost/sandbox": "workspace:*",
+    "@unipost/tokens": "workspace:*",
     "@unipost/ui": "workspace:^",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/postcss": "^4.1.18",

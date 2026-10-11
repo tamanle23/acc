@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { useSettingsStore } from './src/store/useSettingsStore';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import './src/i18n';
 import { initMobileSandbox } from './src/sandbox/mobile-sandbox';
 
 // Attach unified sandbox in development
