@@ -193,10 +193,12 @@ class SchemaValidationServiceTest {
                 readyLatch.countDown();
                 try {
                     startLatch.await();
+                    com.unipost.fw.tenancy.TenantContextHolder.setTenantId("tenant-acme");
                     results.add(schemaValidationService.getOrCompileJsonSchema(entityTypeId, 1L));
                 } catch (Exception e) {
                     fail("Concurrent getOrCompileJsonSchema failed: " + e.getMessage());
                 } finally {
+                    com.unipost.fw.tenancy.TenantContextHolder.clear();
                     doneLatch.countDown();
                 }
             });
