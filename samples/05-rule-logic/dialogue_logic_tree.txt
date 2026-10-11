@@ -1,0 +1,7 @@
+[Decision Node: Logic Proof Architecture]
+Choice 1: Construct Euclidean outer square with side length (a + b)
+  Condition: Right angle guaranteed (theta = 90 deg)
+  Branch 1A: Area = (a + b)^2 = a^2 + 2ab + b^2
+Choice 2: Decompose inner region into four right triangles and central square c^2
+  Branch 2A: Inner area = 4 * (1/2 * a * b) + c^2 = 2ab + c^2
+Evaluation: a^2 + 2ab + b^2 = 2ab + c^2 => a^2 + b^2 = c^2 (Q.E.D.)

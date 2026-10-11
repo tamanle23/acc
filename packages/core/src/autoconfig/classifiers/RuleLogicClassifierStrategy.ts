@@ -11,16 +11,18 @@ export class RuleLogicClassifierStrategy implements IPipelineClassifierStrategy 
 
   public calculateConfidence(manifest: DiscoveredAssetManifest): number {
     const hasBranchingKeywords = manifest.scripts.some((s) =>
-      /(choice|branch|decision|option\s*\d+|quiz|if\s*\(|condition)/i.test(s.content)
+      /(choice|branch|decision|option\s*\d+|quiz|if\s*\(|condition|theorem|proof|q\.e\.d|qed|problemstatement)/i.test(
+        s.content
+      )
     );
 
     const hasRuleData = manifest.data.some((d) => {
       const sampleStr = JSON.stringify(d.sampleData || '');
-      return /(rules|conditions|nextStep|targetNode|branches|choices)/i.test(sampleStr);
+      return /(rules|conditions|nextStep|targetNode|branches|choices|steps|proof)/i.test(sampleStr);
     });
 
-    if (hasRuleData) return 0.95;
-    if (hasBranchingKeywords) return 0.85;
+    if (hasRuleData) return 0.98;
+    if (hasBranchingKeywords) return 0.92;
 
     return 0.05;
   }

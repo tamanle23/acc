@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "3.0.0",
+  "pipelineId": "scraper-summarizer",
+  "metadata": {
+    "jobId": "job-1791688323904-9q62nq",
+    "title": "01 scraper summarizer",
+    "createdAt": "2026-10-11T03:12:03.905Z",
+    "tags": [
+      "auto-config"
+    ],
+    "overlayEffect": "camera_ui",
+    "depth3d": {
+      "enabled": true,
+      "mode": "isometric_billboard",
+      "frameStyle": "card",
+      "popOutIntensity": 1.2,
+      "shadow": true
+    }
+  },
+  "chunks": [
+    {
+      "id": "chunk-1",
+      "order": 1,
+      "text": "The AI landscape shifted dramatically today as major research laboratories unveiled next-generation autonomous architectures featuring real-time perceptual grounding and sub-second reasoning loops.",
+      "durationMs": 12000,
+      "visualAsset": {
+        "type": "image",
+        "sourcePathOrBuffer": "assets/editorial_cover.png",
+        "resolution": {
+          "width": 1080,
+          "height": 1920
+        }
+      },
+      "metadata": {
+        "sourceVisual": "editorial_cover.png"
+      }
+    }
+  ],
+  "audioComposition": {
+    "ducking": {
+      "enabled": true,
+      "attenuationDb": -14,
+      "attackMs": 200,
+      "releaseMs": 350
+    },
+    "sfxMarkers": [
+      {
+        "timeMs": 100,
+        "sfxPath": "assets/sfx_notification.wav",
+        "volume": 0.8,
+        "category": "scene_sfx"
+      }
+    ],
+    "backgroundMusic": {
+      "audioPath": "assets/bgm_tech.mp3",
+      "volume": 0.25,
+      "loop": true
+    }
+  },
+  "distributionHints": {
+    "supportedExporters": [
+      "social",
+      "audio",
+      "video"
+    ],
+    "targetAspectRatios": [
+      "9:16"
+    ]
+  }
+}

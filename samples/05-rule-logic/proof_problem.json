@@ -1,0 +1,29 @@
+{
+  "problemTitle": "Pythagorean Theorem Proof",
+  "category": "calculus",
+  "problemStatement": "Prove that for every right-angled triangle with sides a, b and hypotenuse c: a^2 + b^2 = c^2.",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "explanation": "Construct an outer square with side (a + b)",
+      "latexFormula": "Area_{total} = (a + b)^2"
+    },
+    {
+      "stepNumber": 2,
+      "explanation": "Expand the algebraic square",
+      "latexFormula": "a^2 + 2ab + b^2"
+    },
+    {
+      "stepNumber": 3,
+      "explanation": "Subtract the four enclosed right triangles",
+      "latexFormula": "4 \\times \\frac{1}{2}ab = 2ab"
+    },
+    {
+      "stepNumber": 4,
+      "explanation": "Equate remaining area to hypotenuse square",
+      "latexFormula": "a^2 + b^2 = c^2",
+      "evaluatedResult": "c^2"
+    }
+  ],
+  "finalAnswer": "a^2 + b^2 = c^2 (Q.E.D.)"
+}

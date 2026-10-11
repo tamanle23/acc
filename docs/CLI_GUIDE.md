@@ -247,30 +247,38 @@ bun run auto-config.ts ./my-story
 # 2. Tự động hóa tạo cấu hình không cần bấm phím (CI/CD)
 bun run auto-config.ts ./my-story --yes --aspect 9:16 --fps 30
 
-# 3. Render Story Video theo chuẩn Legacy Shorthand
+# 3. Chạy thử nghiệm các mẫu chuẩn trong ./samples/ (Đầy đủ SFX, VFX Overlays & 3D Depth)
+bun run cli.ts run scraper -c ./samples/01-scraper-summarizer/source_feed.json -n
+bun run cli.ts run db -c ./samples/02-db-templating/database_payload.json -n
+bun run cli.ts run repurposing -c ./samples/03-repurposing-recycler/repurpose_transcript.json -n
+bun run cli.ts ./samples/04-generative-storytelling -n
+bun run cli.ts run rule -c ./samples/05-rule-logic/proof_problem.json -n
+bun run cli.ts run ambient -c ./samples/06-ambient-loops/ambient_config.json -n
+
+# 4. Render Story Video theo chuẩn Legacy Shorthand
 bun run cli.ts ./my-story
 
-# 4. Render trực tiếp qua Canonical Universal Video IR Engine (4 threads song song)
+# 5. Render trực tiếp qua Canonical Universal Video IR Engine (4 threads song song)
 bun run cli.ts ir-render -c ./my-story/story-config.json -j 4 --format mp4
 
-# 5. Xuất đồng thời 4 kênh phân phối (Omnichannel Video, Audio, Social, Web)
+# 6. Xuất đồng thời 4 kênh phân phối (Omnichannel Video, Audio, Social, Web)
 bun run cli.ts run scraper -c ./event.json -e video,audio,social,web -o ./dist
 
-# 6. Chạy Webhook Daemon đón sự kiện tự động
+# 7. Chạy Webhook Daemon đón sự kiện tự động
 bun run cli.ts serve --port 3000
 
-# 7. Khởi động Conductor Worker Daemon
+# 8. Khởi động Conductor Worker Daemon
 bun run cli.ts worker --conductor-url http://localhost:8080/api
 
-# 8. Phát trực tiếp 24/7 RTMP Ambient Stream
+# 9. Phát trực tiếp 24/7 RTMP Ambient Stream
 bun run cli.ts stream ambient --rtmp "rtmp://..." --duration 7200
 
-# 9. Sinh lớp phủ Overlay Mưa Bão Full HD
+# 10. Sinh lớp phủ Overlay Mưa Bão Full HD
 bun run cli.ts overlay -e rain -v storm -d 3
 
-# 10. Sinh âm thanh SFX qua Prompt AI
+# 11. Sinh âm thanh SFX qua Prompt AI
 bun run cli.ts sfx -p "futuristic sci-fi portal open" -d 4.0
 
-# 11. Chạy toàn bộ Test Suite của Monorepo
+# 12. Chạy toàn bộ Test Suite của Monorepo
 bun run test
 ```

@@ -1,0 +1,46 @@
+{
+  "title": "Programming Language Adoption 2026",
+  "category": "Technology",
+  "highlightMetric": "market_share",
+  "entities": [
+    {
+      "id": "1",
+      "name": "TypeScript",
+      "category": "Frontend/Fullstack",
+      "metrics": {
+        "market_share": 94.2
+      },
+      "highlightMetric": "market_share",
+      "badge": "TOP 1"
+    },
+    {
+      "id": "2",
+      "name": "Python",
+      "category": "AI/Data",
+      "metrics": {
+        "market_share": 91.8
+      },
+      "highlightMetric": "market_share",
+      "badge": "FASTEST"
+    },
+    {
+      "id": "3",
+      "name": "Rust",
+      "category": "Systems",
+      "metrics": {
+        "market_share": 78.5
+      },
+      "highlightMetric": "market_share"
+    },
+    {
+      "id": "4",
+      "name": "Go",
+      "category": "Cloud Infrastructure",
+      "metrics": {
+        "market_share": 72.1
+      },
+      "highlightMetric": "market_share"
+    }
+  ],
+  "summaryConclusion": "TypeScript and Python dominate modern software engineering stacks in 2026."
+}

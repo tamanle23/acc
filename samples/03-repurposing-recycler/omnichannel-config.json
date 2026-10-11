@@ -1,0 +1,86 @@
+{
+  "title": "03 repurposing recycler",
+  "pipelineId": "3",
+  "canonicalPipeline": "repurposing-recycler",
+  "suggestedModalities": [
+    "video",
+    "social"
+  ],
+  "videoConfig": {
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "canvas": {
+      "aspectRatio": "9:16",
+      "fps": 30,
+      "resolution": "1080p",
+      "colorGrading": {
+        "lutPreset": "cyberpunk_neon",
+        "contrast": 1.1,
+        "saturation": 1.05,
+        "vignette": 0.08
+      }
+    },
+    "audioStaging": {
+      "autoDucking": true,
+      "duckingAttenuationDb": -16,
+      "masterBgmVolume": 0.22,
+      "masterSfxVolume": 0.5
+    },
+    "typography": {
+      "preset": "tiktok_karaoke_glow",
+      "placement": "center",
+      "fontSize": 34,
+      "primaryColor": "#FFFFFF",
+      "highlightColor": "#FFE600"
+    },
+    "archetypeDirectives": {
+      "talkingHead": {
+        "autoReframe": "center_face",
+        "punchInOnEmphasis": true,
+        "waveformStyle": "bars"
+      }
+    },
+    "roleDirectives": {
+      "hook": {
+        "cameraMotion": {
+          "type": "dolly_zoom",
+          "intensity": 0.6
+        },
+        "captions": {
+          "enabled": true,
+          "style": "kinetic_pop"
+        },
+        "sfxCues": [
+          {
+            "sfxType": "whoosh",
+            "offsetMs": 0,
+            "volume": 0.6
+          }
+        ]
+      }
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "gyro_focal_tilt",
+      "popOutIntensity": 1.25,
+      "shadow": true
+    },
+    "overlayComposite": "vhs",
+    "sfx": [
+      {
+        "source": "assets/sfx_pop.wav",
+        "time": 0.3,
+        "duration": 0.4,
+        "volume": 0.8,
+        "duckBgm": false
+      },
+      {
+        "source": "assets/sfx_whoosh.wav",
+        "time": 1.5,
+        "duration": 0.8,
+        "volume": 0.7,
+        "duckBgm": true
+      }
+    ]
+  }
+}

@@ -198,4 +198,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`183`](183_universal_autoconfig_phase4_legacy_bridge_adapter.md) | 2026-10-11 | Universal Auto-Config Phase 4: Legacy Bridge Adapter | Lossless bi-directional AutoConfigLegacyBridgeAdapter between PipelineIR and StoryConfig |
 | [`184`](184_universal_autoconfig_phase5_facade_and_cli.md) | 2026-10-11 | Universal Auto-Config Phase 5: Facade & CLI Modernization | AutoConfigEngineFacade in core and modernized interactive Clack UI CLI wrapper |
 | [`185`](185_universal_autoconfig_phase6_qa_and_documentation.md) | 2026-10-11 | Universal Auto-Config Phase 6: E2E QA & Master Documentation Sync | Verified 78 test suites, synced SYSTEM_ARCHITECTURE_DOCUMENT.md and README.md |
+| [`186`](186_concrete_samples_for_all_pipelines.md) | 2026-10-11 | Concrete Sample Materials for All 6 Pipelines (SFX, VFX & 3D Depth) | Scaffolding samples for Pipelines 1-6 with SFX, VFX Overlays, 3D Depth, and triple-emission artifacts |
 

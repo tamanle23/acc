@@ -11,6 +11,10 @@ export class ScriptProberHandler extends BaseMediaAssetProberHandler {
 
   protected canHandle(filePath: string): boolean {
     const ext = this.getExtension(filePath);
+    const fileName = path.basename(filePath);
+    if (/^readme\./i.test(fileName)) {
+      return false;
+    }
     return SCRIPT_EXTENSIONS.has(ext);
   }
 

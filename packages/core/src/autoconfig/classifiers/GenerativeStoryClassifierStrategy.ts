@@ -12,9 +12,20 @@ export class GenerativeStoryClassifierStrategy implements IPipelineClassifierStr
   public readonly description = 'Sequential visual storyboards, AI illustrated scenes, paired narrations, and 3D depth.';
 
   public calculateConfidence(manifest: DiscoveredAssetManifest): number {
-    // Definitive indicator: If folder already contains story-config.json, it's Pipeline 4
-    if (fs.existsSync(path.join(manifest.baseDir, 'story-config.json'))) {
-      return 1.0;
+    // Definitive indicator: If folder already contains native story-config.json (not bridge-adapted from another pipeline)
+    const storyConfigPath = path.join(manifest.baseDir, 'story-config.json');
+    if (fs.existsSync(storyConfigPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8'));
+        const desc = raw.description || '';
+        // If adapted from another pipeline, don't hijack classification
+        const match = desc.match(/Adapted from Pipeline \[([^\]]+)\]/);
+        if (!match || match[1] === '4' || match[1] === 'generative-storytelling') {
+          return 1.0;
+        }
+      } catch {
+        return 1.0;
+      }
     }
 
     const images = manifest.visuals.filter((v) => v.type === 'image');

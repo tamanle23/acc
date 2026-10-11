@@ -1,0 +1,70 @@
+{
+  "title": "06 ambient loops",
+  "pipelineId": "6",
+  "canonicalPipeline": "ambient-loops",
+  "suggestedModalities": [
+    "video",
+    "audio"
+  ],
+  "videoConfig": {
+    "aspectRatio": "16:9",
+    "fps": 30,
+    "canvas": {
+      "aspectRatio": "16:9",
+      "fps": 30,
+      "resolution": "1080p",
+      "colorGrading": {
+        "lutPreset": "warm_golden",
+        "contrast": 0.95,
+        "saturation": 0.9,
+        "vignette": 0.2
+      }
+    },
+    "audioStaging": {
+      "autoDucking": false,
+      "masterBgmVolume": 0.85,
+      "masterSfxVolume": 0.1
+    },
+    "typography": {
+      "preset": "classic_subtitle",
+      "placement": "bottom",
+      "fontSize": 22,
+      "primaryColor": "#E2E8F0"
+    },
+    "roleDirectives": {
+      "hook": {
+        "cameraMotion": {
+          "type": "pan_left",
+          "intensity": 0.2
+        },
+        "transition": {
+          "type": "crossfade",
+          "durationMs": 1200
+        }
+      }
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "macro_bokeh",
+      "popOutIntensity": 1.1,
+      "shadow": false
+    },
+    "overlayComposite": "rain_on_glass",
+    "sfx": [
+      {
+        "source": "assets/sfx_rain_sound.wav",
+        "time": 0,
+        "duration": 8,
+        "volume": 0.7,
+        "duckBgm": false
+      },
+      {
+        "source": "assets/sfx_tape_hiss.wav",
+        "time": 0,
+        "duration": 5,
+        "volume": 0.3,
+        "duckBgm": false
+      }
+    ]
+  }
+}

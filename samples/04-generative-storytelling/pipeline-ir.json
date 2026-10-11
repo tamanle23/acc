@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "3.0.0",
+  "pipelineId": "generative-storytelling",
+  "metadata": {
+    "jobId": "job-1791688323923-t4qbmq",
+    "title": "04 generative storytelling",
+    "createdAt": "2026-10-11T03:12:03.923Z",
+    "tags": [
+      "auto-config"
+    ],
+    "overlayEffect": "dust",
+    "depth3d": {
+      "enabled": true,
+      "mode": "volumetric_sandwich",
+      "popOutIntensity": 1.2,
+      "shadow": true,
+      "sandwich": {
+        "textBehindSubject": true,
+        "ambientDust": true,
+        "vignette": true,
+        "textColor": "#F59E0B"
+      }
+    }
+  },
+  "chunks": [
+    {
+      "id": "chunk-1",
+      "order": 1,
+      "text": "Deep in the forgotten mountains, an ancient dragon awakened from centuries of slumber.",
+      "spokenAudioPath": "assets/voiceover1.mp3",
+      "durationMs": 5000,
+      "visualAsset": {
+        "type": "image",
+        "sourcePathOrBuffer": "assets/scene1.png",
+        "resolution": {
+          "width": 1080,
+          "height": 1920
+        }
+      },
+      "metadata": {
+        "sourceVisual": "scene1.png",
+        "sourceAudio": "voiceover1.mp3"
+      }
+    },
+    {
+      "id": "chunk-2",
+      "order": 2,
+      "text": "",
+      "spokenAudioPath": "assets/voiceover2.mp3",
+      "durationMs": 5000,
+      "visualAsset": {
+        "type": "image",
+        "sourcePathOrBuffer": "assets/scene2.png",
+        "resolution": {
+          "width": 1080,
+          "height": 1920
+        }
+      },
+      "metadata": {
+        "sourceVisual": "scene2.png",
+        "sourceAudio": "voiceover2.mp3"
+      }
+    }
+  ],
+  "audioComposition": {
+    "ducking": {
+      "enabled": true,
+      "attenuationDb": -14,
+      "attackMs": 200,
+      "releaseMs": 350
+    },
+    "sfxMarkers": [
+      {
+        "timeMs": 0,
+        "sfxPath": "assets/sfx_cinematic_hit.wav",
+        "volume": 1,
+        "category": "scene_sfx"
+      }
+    ],
+    "backgroundMusic": {
+      "audioPath": "assets/bgm.mp3",
+      "volume": 0.25,
+      "loop": true
+    },
+    "narrationTrack": {
+      "sampleRate": 44100,
+      "channels": 2,
+      "loudnessLufs": -14
+    }
+  },
+  "distributionHints": {
+    "supportedExporters": [
+      "video",
+      "social",
+      "audio"
+    ],
+    "targetAspectRatios": [
+      "9:16"
+    ]
+  }
+}

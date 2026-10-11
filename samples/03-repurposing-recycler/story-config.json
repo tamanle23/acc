@@ -1,0 +1,70 @@
+{
+  "name": "03 repurposing recycler",
+  "description": "Adapted from Pipeline [repurposing-recycler] via Universal AutoConfigLegacyBridgeAdapter",
+  "settings": {
+    "platform": "tiktok",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "container": "mp4",
+    "videoCodec": "h264",
+    "crf": 20,
+    "preset": "p4",
+    "pixelFormat": "yuv420p",
+    "audioCodec": "aac",
+    "audioBitrate": "192k",
+    "gpuAcceleration": "auto",
+    "concurrency": "auto",
+    "fastIntermediate": true,
+    "fastStart": true,
+    "pauseBetweenScenes": 0.5,
+    "bgm": {
+      "source": "assets/bgm_viral.mp3",
+      "volume": 0.25,
+      "loop": true,
+      "fadeIn": 1.5,
+      "fadeOut": 2,
+      "autoDucking": true
+    },
+    "captions": {
+      "preset": "tiktok",
+      "subtitleMode": "burn",
+      "position": "center",
+      "fontSize": 34,
+      "primaryColor": "#FFFFFF",
+      "highlightColor": "#FFE600",
+      "activeWordHighlight": true,
+      "autoTranscribe": true
+    },
+    "overlayComposite": "vhs",
+    "depth3d": {
+      "enabled": true,
+      "mode": "gyro_focal_tilt",
+      "popOutIntensity": 1.25,
+      "shadow": true
+    },
+    "sfx": [
+      {
+        "source": "assets/sfx_pop.wav",
+        "time": 0.3,
+        "duration": 0.4,
+        "volume": 0.8,
+        "duckBgm": false
+      },
+      {
+        "source": "assets/sfx_whoosh.wav",
+        "time": 1.5,
+        "duration": 0.8,
+        "volume": 0.7,
+        "duckBgm": true
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "duration": 30,
+      "text": "Stop doing repetitive software development manually. Automate your engineering pipelines with universal IR architectures.",
+      "video": "assets/podcast_clip.mp4"
+    }
+  ]
+}

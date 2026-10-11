@@ -36,11 +36,13 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`030`](030_universal_autoconfig_phase4_legacy_bridge_adapter.md) | Universal Auto-Config Phase 4: Legacy Bridge Adapter | Core Architecture / Autoconfig / Legacy Bridge Adapter | ✅ `Completed` | 2026-10-11 | [`183_universal_autoconfig_phase4_legacy_bridge_adapter.md`](../history/183_universal_autoconfig_phase4_legacy_bridge_adapter.md) |
 | [`031`](031_universal_autoconfig_phase5_facade_and_cli.md) | Universal Auto-Config Phase 5: Facade & CLI Modernization | Core Architecture / Autoconfig / Facade & CLI | ✅ `Completed` | 2026-10-11 | [`184_universal_autoconfig_phase5_facade_and_cli.md`](../history/184_universal_autoconfig_phase5_facade_and_cli.md) |
 | [`032`](032_universal_autoconfig_phase6_qa_and_documentation.md) | Universal Auto-Config Phase 6: E2E QA & Master Documentation Sync | Core Architecture / Autoconfig / Documentation & QA | ✅ `Completed` | 2026-10-11 | [`185_universal_autoconfig_phase6_qa_and_documentation.md`](../history/185_universal_autoconfig_phase6_qa_and_documentation.md) |
+| [`033`](033_concrete_samples_for_all_pipelines.md) | Concrete Sample Materials for All 6 Pipelines (SFX, VFX & 3D Depth) | Core Architecture / Samples & Scaffolding | ✅ `Completed` | 2026-10-11 | [`186_concrete_samples_for_all_pipelines.md`](../history/186_concrete_samples_for_all_pipelines.md) |
 
 ---
 
 ## 📌 Chuyên đề Kỹ thuật Mở rộng (Deep Specifications)
 - 🧊 **Đặc tả Toán học & Thuật toán 3D Depth**: Xem chi tiết tại [`3D_DEPTH_BACKLOG.md`](3D_DEPTH_BACKLOG.md).
+- 🎨 **Bộ Tài Nguyên Mẫu 6 Pipelines**: Xem chi tiết tại [`CONCRETE_SAMPLE_MATERIALS_FOR_ALL_PIPELINES_SPEC.md`](../CONCRETE_SAMPLE_MATERIALS_FOR_ALL_PIPELINES_SPEC.md).
 
 ---
 

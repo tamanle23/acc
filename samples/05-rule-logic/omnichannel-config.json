@@ -1,0 +1,75 @@
+{
+  "title": "05 rule logic",
+  "pipelineId": "5",
+  "canonicalPipeline": "rule-logic",
+  "suggestedModalities": [
+    "interactive-web",
+    "static-web"
+  ],
+  "videoConfig": {
+    "aspectRatio": "16:9",
+    "fps": 30,
+    "canvas": {
+      "aspectRatio": "16:9",
+      "fps": 30,
+      "resolution": "1080p",
+      "colorGrading": {
+        "lutPreset": "cyberpunk_neon",
+        "contrast": 1.2,
+        "saturation": 1.2,
+        "vignette": 0.12
+      }
+    },
+    "audioStaging": {
+      "autoDucking": true,
+      "duckingAttenuationDb": -14,
+      "masterBgmVolume": 0.28,
+      "masterSfxVolume": 0.6
+    },
+    "typography": {
+      "preset": "bold_headline",
+      "placement": "center",
+      "fontSize": 36,
+      "primaryColor": "#38BDF8",
+      "highlightColor": "#F43F5E"
+    },
+    "roleDirectives": {
+      "hook": {
+        "transition": {
+          "type": "glitch",
+          "durationMs": 300
+        },
+        "sfxCues": [
+          {
+            "sfxType": "notification",
+            "offsetMs": 100,
+            "volume": 0.7
+          }
+        ]
+      }
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "extruded_text_3d",
+      "popOutIntensity": 1.3,
+      "shadow": true
+    },
+    "overlayComposite": "confetti",
+    "sfx": [
+      {
+        "source": "assets/sfx_chalk.wav",
+        "time": 0.2,
+        "duration": 0.9,
+        "volume": 0.8,
+        "duckBgm": false
+      },
+      {
+        "source": "assets/sfx_success_bell.wav",
+        "time": 3,
+        "duration": 1.5,
+        "volume": 0.9,
+        "duckBgm": true
+      }
+    ]
+  }
+}

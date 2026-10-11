@@ -12,9 +12,19 @@ export class RepurposingClassifierStrategy implements IPipelineClassifierStrateg
   public readonly description = 'Long-form podcasts, webinars, interviews, and video highlights recycled into vertical shorts.';
 
   public calculateConfidence(manifest: DiscoveredAssetManifest): number {
-    // If folder has story-config.json, it's explicitly Pipeline 4
-    if (fs.existsSync(path.join(manifest.baseDir, 'story-config.json'))) {
-      return 0.05;
+    // If folder has native story-config.json (not bridge-adapted from another pipeline), it's explicitly Pipeline 4
+    const storyConfigPath = path.join(manifest.baseDir, 'story-config.json');
+    if (fs.existsSync(storyConfigPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8'));
+        const desc = raw.description || '';
+        const match = desc.match(/Adapted from Pipeline \[([^\]]+)\]/);
+        if (!match || match[1] === '4' || match[1] === 'generative-storytelling') {
+          return 0.05;
+        }
+      } catch {
+        return 0.05;
+      }
     }
 
     // Ignore rendered output video files (e.g. final.mp4, test_*.mp4, .temp_*)
