@@ -39,6 +39,7 @@
 | [034](034_backend_workspace_entity_and_provisioning.md) | 2026-10-11 | Backend Workspace Entity, Liquibase RLS & Auto-Provisioning Pipeline | Created UNIPOST_WORKSPACES table with RLS and partial default index, Workspace JPA entity/repository, and integrated default immutable workspace auto-provisioning into TenantProvisioningService. |
 | [035](035_backend_workspace_controller_and_sandbox_alignment.md) | 2026-10-11 | Backend Workspace REST Controller & Unified Sandbox Handler Alignment | Implemented WorkspaceController, WorkspaceService, WorkspaceDto, along with workspaceSandboxHandler in Console Unified Sandbox Platform with full invariant test coverage. |
 | [036](036_console_http_client_hardening_and_context_injection.md) | 2026-10-11 | Console HTTP Client Hardening & Context Injection (Phase 1) | Eliminated raw axios calls in use-blueprints.ts, routed all blueprint queries through springApiClient, and injected X-Tenant-Id and X-Workspace-Id context headers. |
+| [037](037_universal_client_sdk_extraction.md) | 2026-10-11 | Universal Client SDK (@unipost/client) Extraction (Phase 2) | Extracted domain DTOs and universal fetch-based UnipostClient with W3C traceparent generation and context injection into packages/client. |
 
 
 

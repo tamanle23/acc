@@ -19,6 +19,7 @@
     "paths": {
       "react": ["./node_modules/@types/react"],
       "@/*": ["./src/*"],
+      "@unipost/client": ["../../packages/client/src/index.ts"],
       "@hookform/resolvers/zod": ["./src/lib/zod-resolver.ts"]
     },
 
