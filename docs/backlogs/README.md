@@ -33,6 +33,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`027`](027_universal_autoconfig_phase1_prober_chain.md) | Universal Auto-Config Phase 1: Headless Prober Chain & Asset Manifest | Core Architecture / Autoconfig / Media Probers | ✅ `Completed` | 2026-10-11 | [`180_universal_autoconfig_phase1_prober_chain.md`](../history/180_universal_autoconfig_phase1_prober_chain.md) |
 | [`028`](028_universal_autoconfig_phase2_classifier_strategies.md) | Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Registry | Core Architecture / Autoconfig / Pipeline Classifiers | ✅ `Completed` | 2026-10-11 | [`181_universal_autoconfig_phase2_classifier_strategies.md`](../history/181_universal_autoconfig_phase2_classifier_strategies.md) |
 | [`029`](029_universal_autoconfig_phase3_builder_and_preset_factory.md) | Universal Auto-Config Phase 3: Builder & Director Preset Factory | Core Architecture / Autoconfig / Builders & Factories | ✅ `Completed` | 2026-10-11 | [`182_universal_autoconfig_phase3_builder_and_preset_factory.md`](../history/182_universal_autoconfig_phase3_builder_and_preset_factory.md) |
+| [`030`](030_universal_autoconfig_phase4_legacy_bridge_adapter.md) | Universal Auto-Config Phase 4: Legacy Bridge Adapter | Core Architecture / Autoconfig / Legacy Bridge Adapter | ✅ `Completed` | 2026-10-11 | [`183_universal_autoconfig_phase4_legacy_bridge_adapter.md`](../history/183_universal_autoconfig_phase4_legacy_bridge_adapter.md) |
 
 ---
 
