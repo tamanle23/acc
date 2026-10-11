@@ -59,6 +59,11 @@ public class SecurityConfiguration {
   }
 
   @Bean
+  public com.unipost.fw.security.PublishableKeyFilter publishableKeyFilter() {
+    return new com.unipost.fw.security.PublishableKeyFilter();
+  }
+
+  @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     if (!this.environment.acceptsProfiles(Profiles.of("nonsecured"))) {
       http
@@ -67,16 +72,20 @@ public class SecurityConfiguration {
         .logout(logout -> logout.permitAll());
 
       http.authorizeHttpRequests(authz -> {
+        authz.requestMatchers("/api/v1/public/**").permitAll();
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           authz.requestMatchers(applicationProperties.getSecurity().getPermitAlls()).permitAll();
         }
         authz.anyRequest().authenticated();
       });
       http.csrf(csrf -> {
+        csrf.ignoringRequestMatchers("/api/v1/public/**");
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           csrf.ignoringRequestMatchers(applicationProperties.getSecurity().getPermitAlls());
         }
       });
+
+      http.addFilterBefore(publishableKeyFilter(), UsernamePasswordAuthenticationFilter.class);
 
       if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getJwtTokenSecret() != null) {
         http.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);

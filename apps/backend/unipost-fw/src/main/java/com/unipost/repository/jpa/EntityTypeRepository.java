@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface EntityTypeRepository extends BaseRepository<EntityType> {
     Optional<EntityType> findByIdAndDeletedDateIsNull(Long id);
+    Optional<EntityType> findBySystemNameAndDeletedDateIsNull(String systemName);
+    Optional<EntityType> findByTenantIdAndSystemNameAndDeletedDateIsNull(String tenantId, String systemName);
     boolean existsBySystemNameAndDeletedDateIsNull(String systemName);
     Page<EntityType> findAllByDeletedDateIsNull(Pageable pageable);
     long countByDeletedDateIsNull();
