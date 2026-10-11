@@ -54,4 +54,6 @@
 | [048](048_cross_platform_liquid_glass_tokens_and_i18n.md) | 2026-10-11 | Cross-Platform Liquid Glass Tokens & i18n Integration (Phase 13) | Created @unipost/tokens package with unified WCAG 2.2 AA Liquid Glass tokens, linked across console, tekgo-ui, and mobile-ui, and wired @unipost/i18n into mobile-ui. |
 | [049](049_end_to_end_observability_and_sre_verification.md) | 2026-10-11 | End-to-End Observability & SRE Production Verification (Phase 14) | Implemented full-stack W3C traceparent propagation, standardized [trace_id] [tenant_id] [user_id] [workspace_id] MDC logging, outbox trace injection, and tekgo edge revalidation tracing. |
 | [050](050_full_spectrum_multi_tier_testing_matrix.md) | 2026-10-11 | Full-Spectrum Multi-Tier Testing Matrix & Automation Framework (Phase 15) | Implemented L1 unit slice, L2 Modulith/DB concurrency hardening, L3 client/Jackson contract tests, L4 4 Golden E2E flows, and L5 SRE/WCAG audit. |
+| [051](051_remove_zero_unauthorized_installs_and_playwright_e2e.md) | 2026-10-11 | Remove Zero Unauthorized Installs & Implement Playwright Browser E2E Suite | Removed Zero Unauthorized Installs constraint, audited Phases 1-15, and implemented real Playwright browser automation with @axe-core/playwright WCAG 2.2 AA testing in @unipost/console. |
+
 
