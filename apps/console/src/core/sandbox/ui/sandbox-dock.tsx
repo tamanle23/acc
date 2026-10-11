@@ -21,6 +21,7 @@ import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 import { usersSandboxRepo } from '../handlers/users-sandbox-handler';
 import { tasksSandboxRepo } from '../handlers/tasks-sandbox-handler';
 import { mockFleetStore } from '../handlers/system-sandbox-handler';
+import { sandboxWorkspaceRepository } from '../handlers/workspace-sandbox-handler';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import type { SandboxPersonaId } from '../types';
 
@@ -81,6 +82,7 @@ export function SandboxDock() {
     usersSandboxRepo.reset();
     tasksSandboxRepo.reset();
     mockFleetStore.reset();
+    sandboxWorkspaceRepository.reset();
 
     // Clear all user default workspace selections and active assumed tenant sessions from localStorage
     if (typeof window !== 'undefined') {

@@ -37,6 +37,7 @@
 | [032](032_sovereign_root_resolution_in_profile_switcher.md) | 2026-10-11 | Sovereign Root Resolution in ProfileSwitcher | Fixed SYSTEM Custodian defaulting to Acme Prod by resolving Sovereign Root Platform context with Crown icon and ROOT badge. |
 | [033](033_align_unified_sandbox_with_console_ui.md) | 2026-10-11 | Align Unified Sandbox Platform with Console UI | Bi-directional store synchronization in sandboxManager, pristine localStorage reset, enriched tenant scope with tenant-acme, and edge-case diagnostics in SandboxDock. |
 | [034](034_backend_workspace_entity_and_provisioning.md) | 2026-10-11 | Backend Workspace Entity, Liquibase RLS & Auto-Provisioning Pipeline | Created UNIPOST_WORKSPACES table with RLS and partial default index, Workspace JPA entity/repository, and integrated default immutable workspace auto-provisioning into TenantProvisioningService. |
+| [035](035_backend_workspace_controller_and_sandbox_alignment.md) | 2026-10-11 | Backend Workspace REST Controller & Unified Sandbox Handler Alignment | Implemented WorkspaceController, WorkspaceService, WorkspaceDto, along with workspaceSandboxHandler in Console Unified Sandbox Platform with full invariant test coverage. |
 
 
 
