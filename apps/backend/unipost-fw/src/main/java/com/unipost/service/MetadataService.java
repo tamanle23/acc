@@ -43,10 +43,16 @@ public class MetadataService {
     private final PageBuilder pageBuilder;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     private com.unipost.outbox.OutboxEventPublisher outboxEventPublisher;
+    private com.unipost.service.workflow.EntityLifecycleService entityLifecycleService;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setOutboxEventPublisher(com.unipost.outbox.OutboxEventPublisher outboxEventPublisher) {
         this.outboxEventPublisher = outboxEventPublisher;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setEntityLifecycleService(com.unipost.service.workflow.EntityLifecycleService entityLifecycleService) {
+        this.entityLifecycleService = entityLifecycleService;
     }
 
     private static final long MAX_RECORD_PAYLOAD_BYTES = 1024 * 1024; // 1 MB limit
@@ -625,6 +631,9 @@ public class MetadataService {
 
         validatePayloadSize(request.attributes());
         Map<String, Object> finalAttributes = applyAttributeDefaults(entityTypeId, request.attributes());
+        if (entityLifecycleService != null) {
+            entityLifecycleService.initializeStateOnCreation(entityType, finalAttributes);
+        }
         validateRelationPickerAttributes(entityTypeId, finalAttributes);
         schemaValidationService.validatePayload(entityTypeId, finalAttributes);
 
@@ -678,6 +687,41 @@ public class MetadataService {
         record.setAttributes(finalAttributes);
         record.setSchemaVersion(entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L);
         EntityRecord saved = entityRecordRepository.save(record);
+        if (outboxEventPublisher != null) {
+            outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_UPDATED", saved.getTenantId(), saved.getAttributes());
+        }
+        return MetadataDtoMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public EntityRecordResponse transitionRecordState(Long entityTypeId, Long recordId, String action, Map<String, Object> additionalAttributes) {
+        EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
+                .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
+
+        EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
+                .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
+
+        Map<String, Object> currentAttributes = new HashMap<>(record.getAttributes() != null ? record.getAttributes() : Map.of());
+        if (additionalAttributes != null && !additionalAttributes.isEmpty()) {
+            currentAttributes.putAll(additionalAttributes);
+        }
+
+        if (entityLifecycleService != null) {
+            entityLifecycleService.validateAndExecuteTransition(record, action, currentAttributes);
+        }
+
+        validatePayloadSize(currentAttributes);
+        validateRelationPickerAttributes(entityTypeId, currentAttributes);
+        schemaValidationService.validatePayload(entityTypeId, currentAttributes);
+
+        record.setAttributes(currentAttributes);
+        record.setSchemaVersion(entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L);
+        EntityRecord saved = entityRecordRepository.save(record);
+
+        if (outboxEventPublisher != null) {
+            outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_TRANSITIONED", saved.getTenantId(), saved.getAttributes());
+        }
+
         return MetadataDtoMapper.toResponse(saved);
     }
 

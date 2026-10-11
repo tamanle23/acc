@@ -258,6 +258,25 @@ class MetadataControllerTest {
     }
 
     @Test
+    void testTransitionRecordState() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        String action = "SUBMIT";
+        Map<String, Object> extra = Map.of("comment", "Ready for review");
+        EntityRecordResponse mockResponse = new EntityRecordResponse(recordId, "rec-uid", typeId, "tenant-alpha", 1L, Map.of("status", "SUBMITTED"), 0L, null, null);
+
+        when(metadataService.transitionRecordState(typeId, recordId, action, extra)).thenReturn(mockResponse);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> response =
+                metadataController.transitionRecordState(typeId, recordId, action, extra);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(mockResponse, response.getBody().getBody());
+        verify(metadataService).transitionRecordState(typeId, recordId, action, extra);
+    }
+
+    @Test
     void testGetEntityRecords_WithFiltersAndSort() {
         Long typeId = 1L;
         PageRequest pageRequest = new PageRequest();

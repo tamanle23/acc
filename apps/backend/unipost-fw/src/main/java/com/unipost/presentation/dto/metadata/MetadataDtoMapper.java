@@ -21,7 +21,8 @@ public final class MetadataDtoMapper {
                 entityType.getSchemaVersion(),
                 entityType.getVersion(),
                 entityType.getCreatedDate(),
-                entityType.getLastUpdatedDate()
+                entityType.getLastUpdatedDate(),
+                entityType.getLifecycleConfig()
         );
     }
 

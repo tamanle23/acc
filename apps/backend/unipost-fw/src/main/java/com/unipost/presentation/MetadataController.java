@@ -269,6 +269,17 @@ public class MetadataController {
         return responseBuilder.success(null);
     }
 
+    @PostMapping("/entity-types/{id}/records/{recordId}/transition")
+    @PreAuthorize("hasAuthority('METADATA_RECORD_WRITE') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> transitionRecordState(
+            @PathVariable Long id,
+            @PathVariable Long recordId,
+            @RequestParam String action,
+            @RequestBody(required = false) Map<String, Object> additionalAttributes) {
+        EntityRecordResponse transitioned = metadataService.transitionRecordState(id, recordId, action, additionalAttributes);
+        return responseBuilder.success(transitioned);
+    }
+
     // ==========================================
     // Relationship Types Endpoints
     // ==========================================

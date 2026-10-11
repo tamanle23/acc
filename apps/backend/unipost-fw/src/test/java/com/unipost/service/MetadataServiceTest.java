@@ -924,4 +924,33 @@ class MetadataServiceTest {
         assertEquals("primary", outdatedRecord.getAttributes().get("cluster"));
         verify(entityRecordRepository).save(outdatedRecord);
     }
+
+    @Test
+    void testTransitionRecordState_Success() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+        type.setSystemName("incident");
+
+        EntityRecord record = new EntityRecord();
+        record.setId(recordId);
+        record.setEntityType(type);
+        record.setTenantId("tenant-alpha");
+        record.setAttributes(new HashMap<>(Map.of("status", "OPEN", "priority", "HIGH")));
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(typeId, recordId)).thenReturn(Optional.of(record));
+        when(entityRecordRepository.save(any(EntityRecord.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        com.unipost.service.workflow.EntityLifecycleService mockLifecycle = mock(com.unipost.service.workflow.EntityLifecycleService.class);
+        metadataService.setEntityLifecycleService(mockLifecycle);
+
+        EntityRecordResponse response = metadataService.transitionRecordState(typeId, recordId, "RESOLVE", Map.of("resolution", "Fixed"));
+
+        assertNotNull(response);
+        verify(mockLifecycle).validateAndExecuteTransition(eq(record), eq("RESOLVE"), anyMap());
+        verify(entityRecordRepository).save(record);
+        verify(schemaValidationService).validatePayload(eq(typeId), anyMap());
+    }
 }

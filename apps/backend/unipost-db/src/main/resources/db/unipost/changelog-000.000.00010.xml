@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="add-lifecycle-config-to-entity-types-10" author="antigravity">
+        <comment>Add lifecycle_config JSONB column to UNIPOST_ENTITY_TYPES for Declarative State Machine workflows</comment>
+
+        <addColumn tableName="UNIPOST_ENTITY_TYPES">
+            <column name="lifecycle_config" type="JSONB">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <sql dbms="postgresql">
+            COMMENT ON COLUMN UNIPOST_ENTITY_TYPES.lifecycle_config IS
+            'JSONB schema storing state machine definitions, initial state, states list, transition rules, required attributes, allowed roles, and guard expressions';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

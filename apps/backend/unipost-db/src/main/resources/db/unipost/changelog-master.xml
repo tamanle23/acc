@@ -18,5 +18,6 @@
   <include file="db/unipost/changelog-000.000.00007.xml"/>
   <include file="db/unipost/changelog-000.000.00008.xml"/>
   <include file="db/unipost/changelog-000.000.00009.xml"/>
+  <include file="db/unipost/changelog-000.000.00010.xml"/>
 
 </databaseChangeLog>

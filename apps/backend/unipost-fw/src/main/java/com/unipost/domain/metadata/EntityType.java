@@ -27,4 +27,8 @@ public class EntityType extends BaseModel {
 
     @Column(name = "schema_version", nullable = false)
     private Long schemaVersion = 1L;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "lifecycle_config", columnDefinition = "jsonb")
+    private LifecycleConfig lifecycleConfig;
 }
