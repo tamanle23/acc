@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="transactional-event-outbox-09" author="antigravity">
+        <comment>Create UNIPOST_EVENT_OUTBOX table for at-least-once distributed event publishing with skip-locked polling</comment>
+
+        <!-- 1. Outbox Table -->
+        <createTable tableName="UNIPOST_EVENT_OUTBOX">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uid" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="event_type" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aggregate_type" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aggregate_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tenant_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="retry_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="max_retries" type="INT" defaultValueNumeric="5">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_error" type="TEXT"/>
+            <column name="next_retry_at" type="TIMESTAMP"/>
+            <column name="processed_at" type="TIMESTAMP"/>
+
+            <!-- Audit & Base Model columns -->
+            <column name="createdBy_uid" type="VARCHAR(255)"/>
+            <column name="createdDate" type="TIMESTAMP"/>
+            <column name="lastUpdatedBy_uid" type="VARCHAR(255)"/>
+            <column name="lastUpdatedDate" type="TIMESTAMP"/>
+            <column name="version" type="BIGINT"/>
+            <column name="deletedDate" type="TIMESTAMP"/>
+            <column name="mode" type="VARCHAR(50)"/>
+            <column name="state" type="VARCHAR(20)"/>
+        </createTable>
+
+        <sql dbms="postgresql">
+            -- 2. Partial index for fast pending event polling (SKIP LOCKED)
+            CREATE INDEX IF NOT EXISTS idx_outbox_pending_polling
+            ON UNIPOST_EVENT_OUTBOX (createdDate)
+            WHERE status = 'PENDING' AND "deletedDate" IS NULL;
+
+            -- 3. Index for aggregate idempotency and tracking
+            CREATE INDEX IF NOT EXISTS idx_outbox_aggregate
+            ON UNIPOST_EVENT_OUTBOX (aggregate_type, aggregate_id, tenant_id)
+            WHERE "deletedDate" IS NULL;
+
+            -- 4. Enable Row-Level Security (RLS) on Outbox
+            ALTER TABLE UNIPOST_EVENT_OUTBOX ENABLE ROW LEVEL SECURITY;
+
+            -- 5. Outbox isolation policy
+            DROP POLICY IF EXISTS tenant_isolation_outbox ON UNIPOST_EVENT_OUTBOX;
+            CREATE POLICY tenant_isolation_outbox ON UNIPOST_EVENT_OUTBOX
+                FOR ALL
+                USING (
+                    current_setting('app.current_tenant_id', true) = 'SYSTEM'
+                    OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+                    OR tenant_id = 'SYSTEM'
+                )
+                WITH CHECK (
+                    current_setting('app.current_tenant_id', true) = 'SYSTEM'
+                    OR (
+                        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+                        AND tenant_id != 'SYSTEM'
+                    )
+                );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -42,6 +42,12 @@ public class MetadataService {
     private final ApplicationEventPublisher eventPublisher;
     private final PageBuilder pageBuilder;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private com.unipost.outbox.OutboxEventPublisher outboxEventPublisher;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setOutboxEventPublisher(com.unipost.outbox.OutboxEventPublisher outboxEventPublisher) {
+        this.outboxEventPublisher = outboxEventPublisher;
+    }
 
     private static final long MAX_RECORD_PAYLOAD_BYTES = 1024 * 1024; // 1 MB limit
     private static final Pattern DANGEROUS_REGEX_PATTERN = Pattern.compile("(\\(.*[+*]\\)[+*]|\\([a-zA-Z0-9_\\[\\]|-]+[+*]\\)[+*])");
@@ -636,6 +642,9 @@ public class MetadataService {
         record.setTenantId(effectiveTenantId);
         record.setSchemaVersion(entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L);
         EntityRecord saved = entityRecordRepository.save(record);
+        if (outboxEventPublisher != null) {
+            outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_CREATED", effectiveTenantId, saved.getAttributes());
+        }
         return MetadataDtoMapper.toResponse(saved);
     }
 
@@ -709,6 +718,9 @@ public class MetadataService {
         record.setAttributes(finalAttributes);
         record.setSchemaVersion(entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L);
         EntityRecord saved = entityRecordRepository.save(record);
+        if (outboxEventPublisher != null) {
+            outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_UPDATED", saved.getTenantId(), saved.getAttributes());
+        }
         return MetadataDtoMapper.toResponse(saved);
     }
 
@@ -783,6 +795,9 @@ public class MetadataService {
 
         record.setDeletedDate(LocalDateTime.now());
         entityRecordRepository.save(record);
+        if (outboxEventPublisher != null) {
+            outboxEventPublisher.publish("entity_record", String.valueOf(record.getId()), "RECORD_DELETED", record.getTenantId(), Map.of("id", recordId, "entityTypeId", entityTypeId));
+        }
     }
 
     private void validateRelationPickerAttributes(Long entityTypeId, Map<String, Object> attributes) {
