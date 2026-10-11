@@ -81,8 +81,21 @@ export function SandboxDock() {
     usersSandboxRepo.reset();
     tasksSandboxRepo.reset();
     mockFleetStore.reset();
+
+    // Clear all user default workspace selections and active assumed tenant sessions from localStorage
+    if (typeof window !== 'undefined') {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('unipost_user_default_ws_') || key.startsWith('unipost_assumed_'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    }
+
     sandboxManager.syncPersonaAuthTokens(activePersonaId);
-    toast.success('Unified Sandbox: Reset all domain records to pristine baseline');
+    toast.success('Unified Sandbox: Reset all domain records and user preferences to pristine baseline');
   };
 
   const handleTestDashboard = async () => {
@@ -109,13 +122,11 @@ export function SandboxDock() {
   };
 
   const tenants = [
-    'SYSTEM',
-    'tenant-us-east-1',
-    'tenant-us-west-2',
-    'tenant-eu-central-1',
-    'tenant-eu-west-1',
-    'tenant-ap-southeast-1',
-    'tenant-ap-northeast-1',
+    { id: 'SYSTEM', label: '👑 SYSTEM (Sovereign Root System)' },
+    { id: 'tenant-acme', label: 'Acme International Corp (tenant-acme)' },
+    { id: 'tenant-us-east-1', label: 'US East Operations Ltd (tenant-us-east-1)' },
+    { id: 'tenant-eu-central-1', label: 'EU Central Publishing (tenant-eu-central-1)' },
+    { id: 'tenant-us-west-2', label: 'West Coast Media (tenant-us-west-2)' },
   ];
 
   // Sandbox Dock is strictly unavailable in production builds or when disabled
@@ -275,12 +286,12 @@ export function SandboxDock() {
             </label>
             <select
               value={activeTenantId}
-              onChange={(e) => setActiveTenant(e.target.value)}
+              onChange={(e) => sandboxManager.switchTenant(e.target.value)}
               className="w-full text-xs rounded-md border border-input bg-background/80 px-2 py-1.5 shadow-xs focus:outline-hidden focus:ring-1 focus:ring-ring"
             >
               {tenants.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+                <option key={t.id} value={t.id}>
+                  {t.label}
                 </option>
               ))}
             </select>
@@ -290,6 +301,52 @@ export function SandboxDock() {
             Current Persona: <strong className="text-foreground">{DEFAULT_SANDBOX_PERSONAS[activePersonaId]?.name}</strong>
             <br />
             Tenant: <strong className="text-foreground">{activeTenantId}</strong>
+          </div>
+
+          {/* Quick Simulation Diagnostics */}
+          <div className="pt-2 border-t border-border/40 space-y-1.5">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+              Edge-Case Diagnostics
+            </span>
+            <div className="grid grid-cols-2 gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  useSpringAuthStore.setState({
+                    user: {
+                      sub: 'unassigned_test_user',
+                      roles: ['ROLE_USER'],
+                      tenantId: undefined,
+                      tid: undefined,
+                      iat: Math.floor(Date.now() / 1000),
+                      exp: Math.floor(Date.now() / 1000) + 3600,
+                    },
+                    currentTenantId: null,
+                    isAuthenticated: true,
+                  });
+                  toast.info('Simulated unassigned user: tenant removed from session context');
+                }}
+                className="text-[10px] h-7 px-2 justify-start border-amber-500/30 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                title="Bar user from entering workspace and trigger intervention screen"
+              >
+                <ShieldAlert className="size-3 mr-1 text-amber-500" />
+                Unassigned User
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  sandboxManager.switchTenant('tenant-empty', 'Empty Org Without Workspaces');
+                  toast.info('Simulated orphaned tenant with 0 workspaces');
+                }}
+                className="text-[10px] h-7 px-2 justify-start border-blue-500/30 hover:bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                title="Switch to orphaned tenant state with 0 workspaces"
+              >
+                <Database className="size-3 mr-1 text-blue-500" />
+                Orphaned Tenant
+              </Button>
+            </div>
           </div>
         </div>
       )}

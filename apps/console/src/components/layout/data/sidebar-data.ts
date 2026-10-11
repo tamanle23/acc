@@ -30,7 +30,7 @@ import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { useSpringAuthStore } from '@/features/spring-auth'
-import { useSandboxStore } from '@/core/sandbox'
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store'
 import { useProfileStore } from '@/stores/profile-store'
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
 
