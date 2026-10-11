@@ -34,6 +34,7 @@
 | [029](029_user_default_workspace_selection_tests.md) | 2026-10-11 | User Personal Default Workspace Selection Test Suite | Added automated Vitest test suite for Phase 4 verifying user personal default workspace selection, localStorage persistence, and immediate reflection in ProfileSwitcher. |
 | [030](030_tenant_users_drawer_tests.md) | 2026-10-11 | Tenant Users Sovereign Drawer Test Suite (Phase 5) | Added comprehensive Vitest test suite for Phase 5 verifying symmetrical right-side slide-over TenantUsersDrawer, search filtering, emergency lockout, session revocation, and clipboard ID copying. |
 | [031](031_phase_6_legacy_tenant_purge_and_production_build.md) | 2026-10-11 | Legacy Tenant Purge & Production Build Verification (Phase 6) | Verified 0 occurrences of default-tenant and Default Organization across runtime source, fixed toast import and mock types, and verified production vite build. |
+| [032](032_sovereign_root_resolution_in_profile_switcher.md) | 2026-10-11 | Sovereign Root Resolution in ProfileSwitcher | Fixed SYSTEM Custodian defaulting to Acme Prod by resolving Sovereign Root Platform context with Crown icon and ROOT badge. |
 
 
 

@@ -49,14 +49,26 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
-  const effectiveTenantId = isAssumed ? assumedTenant : (useMetadataUiStore.getState().activeTenantId || 'tenant-acme')
+  const effectiveTenantId = isAssumed
+    ? assumedTenant
+    : isSovereign
+    ? 'SYSTEM'
+    : (useMetadataUiStore.getState().activeTenantId || 'tenant-acme')
   const tenantWorkspaces = availableProfiles.filter((p) => p.tenantId === effectiveTenantId)
-  const isOrphanedTenant = tenantWorkspaces.length === 0
+  const isOrphanedTenant = !isSovereign && tenantWorkspaces.length === 0
 
   let activeProfile: Profile | null = currentProfile ?? availableProfiles[0]
 
-  // Defensive fallback: if assumed tenant active, ensure active profile matches assumed tenant
-  if (isAssumed && activeProfile?.tenantId !== assumedTenant) {
+  if (isSovereign && !isAssumed) {
+    activeProfile = availableProfiles.find((p) => p.tenantId === 'SYSTEM' || p.id === 'ws-sovereign-root') || {
+      id: 'ws-sovereign-root',
+      name: '👑 Sovereign Platform',
+      logo: Crown,
+      plan: 'Fleet Custody',
+      tenantId: 'SYSTEM',
+      tenantName: 'Sovereign Root System',
+    }
+  } else if (isAssumed && activeProfile?.tenantId !== assumedTenant) {
     const matched = availableProfiles.find((p) => p.tenantId === assumedTenant)
     activeProfile = matched || null
   } else if (!isAssumed && tenantWorkspaces.length > 0 && activeProfile?.tenantId !== effectiveTenantId) {
@@ -140,6 +152,8 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                   'flex aspect-square size-8 items-center justify-center rounded-lg shadow-sm',
                   isAssumed
                     ? 'bg-amber-500 text-white shadow-amber-500/20'
+                    : isSovereign
+                    ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30'
                     : isOrphanedTenant
                     ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                     : 'bg-sidebar-primary text-sidebar-primary-foreground'
@@ -147,6 +161,8 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
               >
                 {isAssumed ? (
                   <ShieldAlert className='size-4' />
+                ) : isSovereign ? (
+                  <Crown className='size-4 text-amber-500' />
                 ) : isOrphanedTenant ? (
                   <Building2 className='size-4' />
                 ) : activeProfile?.logo ? (
@@ -158,10 +174,12 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
               <div className='grid flex-1 text-start text-sm leading-tight'>
                 <div className='flex items-center gap-1.5 truncate'>
                   <span className='truncate font-semibold'>
-                    {activeProfile?.name ||
-                      (isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) ||
-                      useMetadataUiStore.getState().activeTenantName ||
-                      'Orphaned Tenant'}
+                    {isSovereign && !isAssumed
+                      ? '👑 Sovereign Platform'
+                      : activeProfile?.name ||
+                        (isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) ||
+                        useMetadataUiStore.getState().activeTenantName ||
+                        'Orphaned Tenant'}
                   </span>
                   {isOrphanedTenant ? (
                     <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
@@ -171,10 +189,16 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                     <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
                       ASSUMED
                     </span>
+                  ) : isSovereign ? (
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                      ROOT
+                    </span>
                   ) : null}
                 </div>
                 <span className='truncate text-xs text-muted-foreground'>
-                  {isOrphanedTenant
+                  {isSovereign && !isAssumed
+                    ? 'SYSTEM Tenant (Fleet Root)'
+                    : isOrphanedTenant
                     ? `Tenant: ${(isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) || useMetadataUiStore.getState().activeTenantName || effectiveTenantId}`
                     : isAssumed
                     ? `Delegated: ${(activeProfile?.tenantName as string) || (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant}`

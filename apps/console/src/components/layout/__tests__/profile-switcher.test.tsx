@@ -4,6 +4,7 @@ import { ProfileSwitcher } from '../profile-switcher';
 import { ProfileProvider } from '@/context/profile-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useProfileStore } from '@/stores/profile-store';
+import { useSpringAuthStore } from '@/features/spring-auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -112,5 +113,25 @@ describe('ProfileSwitcher Component', () => {
 
     expect(screen.getByText('NO WORKSPACE')).toBeDefined();
     expect(screen.getByText('Tenant: Empty Org')).toBeDefined();
+  });
+
+  it('renders Sovereign Root Platform context with ROOT badge when logged in as SYSTEM Custodian without active assume', () => {
+    useSpringAuthStore.setState({
+      user: {
+        sub: 'custodian_root',
+        roles: ['ROLE_SYSTEM_CUSTODIAN'],
+        tenantId: 'SYSTEM',
+        iat: 1234567890,
+        exp: 9999999999,
+      },
+      isAuthenticated: true,
+      currentTenantId: 'SYSTEM',
+    });
+
+    renderSwitcher();
+
+    expect(screen.getByText('👑 Sovereign Platform')).toBeDefined();
+    expect(screen.getByText('ROOT')).toBeDefined();
+    expect(screen.getByText('SYSTEM Tenant (Fleet Root)')).toBeDefined();
   });
 });
