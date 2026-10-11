@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -12,13 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
-  ShieldCheck,
   Search,
   RotateCcw,
   Sparkles,
   Lock,
-  Layers,
-  KeyRound,
   Info,
   PlusCircle,
 } from 'lucide-react';
@@ -52,8 +49,12 @@ export function RbacMatrixGrid() {
 
   const [activeRoleChanges, setActiveRoleChanges] = useState<Record<string, string[]>>({});
 
+  // Optimization: Pre-index roles by roleId into a Map in O(M) time to convert inner loop
+  // role lookups from O(M) array scans to O(1) constant time hash accesses.
+  const roleMap = useMemo(() => new Map(roles.map((r) => [r.roleId, r])), [roles]);
+
   const handleToggle = (roleId: string, permKey: string) => {
-    const role = roles.find((r) => r.roleId === roleId);
+    const role = roleMap.get(roleId);
     if (!role) return;
 
     const currentPerms = activeRoleChanges[roleId] ?? role.permissions;
@@ -90,12 +91,17 @@ export function RbacMatrixGrid() {
     );
   };
 
-  const filteredPerms = PERMISSION_ATOMS.filter(
-    (p) =>
-      p.label.toLowerCase().includes(search.toLowerCase()) ||
-      p.key.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  // Optimization: Memoize search-filtered permission atoms to prevent redundant array filtering
+  // on unrelated component re-renders (such as role modification staging).
+  const filteredPerms = useMemo(() => {
+    const query = search.toLowerCase();
+    return PERMISSION_ATOMS.filter(
+      (p) =>
+        p.label.toLowerCase().includes(query) ||
+        p.key.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query)
+    );
+  }, [search]);
 
   return (
     <div className="space-y-4">
@@ -175,9 +181,10 @@ export function RbacMatrixGrid() {
                   {roles.map((role) => {
                     const currentPerms = activeRoleChanges[role.roleId] ?? role.permissions;
                     const isChecked = currentPerms.includes(atom.key);
+                    // Optimization: Use O(1) roleMap lookup instead of O(M) array search inside the nested render loop.
                     const isInherited =
                       role.inheritedRoles?.some((inherited) =>
-                        roles.find((r) => r.roleId === inherited)?.permissions.includes(atom.key)
+                        roleMap.get(inherited)?.permissions.includes(atom.key)
                       ) ?? false;
 
                     return (
