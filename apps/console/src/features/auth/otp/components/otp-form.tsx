@@ -68,6 +68,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
               <FormControl>
                 <InputOTP
                   maxLength={6}
+                  autoComplete='one-time-code'
                   {...field}
                   containerClassName='justify-between sm:[&>[data-slot="input-otp-group"]>div]:w-12'
                 >

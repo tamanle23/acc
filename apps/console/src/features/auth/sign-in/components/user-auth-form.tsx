@@ -135,7 +135,7 @@ export function UserAuthForm({
             <FormItem>
               <FormLabel>Email or Username</FormLabel>
               <FormControl>
-                <Input placeholder='name@example.com' {...field} />
+                <Input placeholder='name@example.com' autoComplete='username' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -148,7 +148,7 @@ export function UserAuthForm({
             <FormItem className='relative'>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <PasswordInput placeholder='********' {...field} />
+                <PasswordInput placeholder='********' autoComplete='current-password' {...field} />
               </FormControl>
               <FormMessage />
               <Link

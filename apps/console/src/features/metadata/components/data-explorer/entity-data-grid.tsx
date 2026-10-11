@@ -299,17 +299,18 @@ export const EntityDataGrid: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => handleSortToggle('id')}
+            aria-label={`Sort by ID ${sortField === 'id' ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
             className="flex items-center gap-1.5 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] hover:text-foreground transition-colors group"
           >
             <span>ID</span>
             {sortField === 'id' ? (
               sortDirection === 'asc' ? (
-                <ArrowUp className="h-3 w-3 text-primary" />
+                <ArrowUp className="h-3 w-3 text-primary" aria-hidden="true" />
               ) : (
-                <ArrowDown className="h-3 w-3 text-primary" />
+                <ArrowDown className="h-3 w-3 text-primary" aria-hidden="true" />
               )
             ) : (
-              <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+              <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" aria-hidden="true" />
             )}
           </button>
         ),
@@ -332,17 +333,18 @@ export const EntityDataGrid: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => handleSortToggle(attr.systemName)}
+                aria-label={`Sort by ${attr.name} ${sortField === attr.systemName ? (sortDirection === 'asc' ? 'descending' : 'ascending') : 'ascending'}`}
                 className="flex items-center gap-1.5 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] hover:text-foreground transition-colors group"
               >
                 <span>{attr.name}</span>
                 {sortField === attr.systemName ? (
                   sortDirection === 'asc' ? (
-                    <ArrowUp className="h-3 w-3 text-primary" />
+                    <ArrowUp className="h-3 w-3 text-primary" aria-hidden="true" />
                   ) : (
-                    <ArrowDown className="h-3 w-3 text-primary" />
+                    <ArrowDown className="h-3 w-3 text-primary" aria-hidden="true" />
                   )
                 ) : (
-                  <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+                  <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" aria-hidden="true" />
                 )}
               </button>
             ),
@@ -419,9 +421,10 @@ export const EntityDataGrid: React.FC<Props> = ({
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label={`Actions for record #${String(row.original.id)}`}
                 className="liquid-glass-interactive h-7 w-7 p-0 rounded-lg border border-white/20 dark:border-white/10 text-muted-foreground hover:text-foreground active:scale-95 shadow-xs"
               >
-                <MoreVertical className="h-3.5 w-3.5" />
+                <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="text-xs">
@@ -546,8 +549,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                 onClick={handleClearSearch}
                 className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
                 title="Clear search"
+                aria-label="Clear search"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -565,6 +569,7 @@ export const EntityDataGrid: React.FC<Props> = ({
               variant={isFacetOpen ? 'default' : 'outline'}
               size="sm"
               onClick={() => setIsFacetOpen(!isFacetOpen)}
+              aria-label="Toggle Faceted Search sidebar"
               className={cn(
                 'h-9 gap-1.5 text-xs transition-all font-medium',
                 isFacetOpen
@@ -573,7 +578,7 @@ export const EntityDataGrid: React.FC<Props> = ({
               )}
               title="Toggle Faceted Search sidebar"
             >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Facets</span>
             </Button>
           )}
@@ -595,8 +600,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                   });
                 }}
                 className="ml-1 hover:text-destructive"
+                aria-label="Clear active sorting"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </Badge>
           )}
@@ -608,9 +614,10 @@ export const EntityDataGrid: React.FC<Props> = ({
             size="sm"
             onClick={handleExportJson}
             disabled={records.length === 0}
+            aria-label="Export entity records as JSON"
             className="h-9 gap-1.5 text-xs bg-white/40 dark:bg-white/5 border-white/20"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4" aria-hidden="true" />
             <span>Export JSON</span>
           </Button>
 
@@ -646,8 +653,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                   type="button"
                   onClick={() => handleRemoveAttributeFilter(clause.id)}
                   className="ml-1 hover:text-destructive transition-colors"
+                  aria-label={`Remove filter for ${attr?.name || clause.field}`}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3 w-3" aria-hidden="true" />
                 </button>
               </Badge>
             );
@@ -656,6 +664,7 @@ export const EntityDataGrid: React.FC<Props> = ({
             variant="ghost"
             size="sm"
             onClick={() => handleAttributeFiltersChange([])}
+            aria-label="Clear all active filters"
             className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive"
           >
             Clear all
@@ -688,9 +697,21 @@ export const EntityDataGrid: React.FC<Props> = ({
                   >
                     {headerGroup.headers.map((header) => {
                       const isAction = header.column.id === 'actions';
+                      const colId = header.column.id;
+                      const isSortable = colId !== 'actions';
+                      const ariaSort = isSortable
+                        ? sortField === colId
+                          ? sortDirection === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : 'none'
+                        : undefined;
+
                       return (
                         <th
                           key={header.id}
+                          scope="col"
+                          aria-sort={ariaSort}
                           className={cn(
                             'p-3 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] whitespace-nowrap',
                             isAction &&
@@ -788,40 +809,44 @@ export const EntityDataGrid: React.FC<Props> = ({
                   size="sm"
                   onClick={() => handlePageChange(1)}
                   disabled={page <= 1}
+                  aria-label="Go to first page"
                   className="h-7 w-7 p-0 bg-white/40 dark:bg-white/5"
                   title="First page"
                 >
-                  <ChevronsLeft className="h-3.5 w-3.5" />
+                  <ChevronsLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(Math.max(1, page - 1))}
                   disabled={page <= 1}
+                  aria-label="Go to previous page"
                   className="h-7 w-7 p-0 bg-white/40 dark:bg-white/5"
                   title="Previous page"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
+                  aria-label="Go to next page"
                   className="h-7 w-7 p-0 bg-white/40 dark:bg-white/5"
                   title="Next page"
                 >
-                  <ChevronRight className="h-3.5 w-3.5" />
+                  <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(totalPages)}
                   disabled={page >= totalPages}
+                  aria-label="Go to last page"
                   className="h-7 w-7 p-0 bg-white/40 dark:bg-white/5"
                   title="Last page"
                 >
-                  <ChevronsRight className="h-3.5 w-3.5" />
+                  <ChevronsRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
             </div>
