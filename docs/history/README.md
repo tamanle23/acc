@@ -43,6 +43,7 @@
 | [038](038_unified_sandbox_platform_extraction.md) | 2026-10-11 | Unified Sandbox Platform Extraction (@unipost/sandbox) (Phase 3) | Extracted the Unified Sandbox engine, registry, simulation decorator, and fetch/axios adapters into packages/sandbox for multi-client sharing. |
 | [039](039_mobile_ui_sandbox_integration_and_context_store.md) | 2026-10-11 | mobile-ui Sandbox Integration & Context Store (Phase 4) | Purged rogue mockData.ts, linked @unipost/client and @unipost/sandbox, implemented useMobileContextStore and mobile-sandbox handler, and refactored usePostStore. |
 | [040](040_mobile_ui_dynamic_form_engine_and_media_pipeline.md) | 2026-10-11 | mobile-ui Dynamic Form Engine & Media Pipeline (Phase 5) | Implemented DynamicFieldRenderer, MediaPickerInput, and RelationPickerBottomSheet with Liquid Glass styling and full dynamic schema mapping. |
+| [041](041_mobile_ui_zero_data_loss_encrypted_outbox.md) | 2026-10-11 | mobile-ui Zero-Data-Loss Encrypted Outbox (Phase 6) | Implemented useOutboxStore with idempotency tracking, sequential dispatch, HTTP 409 conflict detection, and ConflictResolutionModal. |
 
 
 

@@ -46,25 +46,37 @@ export const usePostStore = create<PostState>()(
 
       addPost: async (postData) => {
         set({ isLoading: true, error: null });
+        const localId = postData.id || `local-${Date.now()}`;
+        const newPost: Post = {
+          id: localId,
+          timestamp: postData.timestamp || Date.now(),
+          ...postData,
+        };
+
+        // 1. Optimistic local state update
+        set((state) => ({ posts: [newPost, ...state.posts] }));
+
+        // 2. Enqueue mutation job in zero-data-loss outbox
+        const { useOutboxStore } = await import('./useOutboxStore');
+        const idempotencyKey = `idemp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const clientTransactionId = `tx_${Date.now()}`;
+
+        useOutboxStore.getState().enqueueMutation({
+          idempotencyKey,
+          clientTransactionId,
+          entityType: 'post',
+          operation: 'CREATE',
+          targetId: localId,
+          payload: newPost as any,
+        });
+
+        // 3. Attempt synchronous dispatch via outbox
         try {
-          const created = await mobileApiClient.post<Post>(
-            '/v1/metadata/records',
-            postData,
-            { params: { entityType: 'post' } }
-          );
-          set((state) => ({ posts: [created, ...state.posts], isLoading: false }));
+          await useOutboxStore.getState().processOutbox();
+          set({ isLoading: false });
         } catch (err: any) {
-          // Optimistic fallback for offline / disconnected states
-          const fallbackPost: Post = {
-            id: postData.id || `local-${Date.now()}`,
-            timestamp: postData.timestamp || Date.now(),
-            ...postData,
-          };
-          set((state) => ({
-            posts: [fallbackPost, ...state.posts],
-            isLoading: false,
-            error: err.message,
-          }));
+          // Safe: job remains persisted in outbox for subsequent sync attempts
+          set({ isLoading: false, error: err.message });
         }
       },
 
