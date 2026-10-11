@@ -22,9 +22,13 @@ export function ProfileDropdown() {
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
+          <Button
+            variant='ghost'
+            className='relative h-8 w-8 rounded-full'
+            aria-label='User profile and account settings'
+          >
             <Avatar className='h-8 w-8'>
-              <AvatarImage src='/avatars/01.png' alt='@shadcn' />
+              <AvatarImage src='/avatars/01.png' alt="satnaing's avatar" />
               <AvatarFallback>SN</AvatarFallback>
             </Avatar>
           </Button>

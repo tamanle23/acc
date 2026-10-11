@@ -7,7 +7,7 @@ import {
   useArchiveAttributeDefinition,
   useUnarchiveAttributeDefinition,
 } from '../../api/metadata-api';
-import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ShieldCheck } from 'lucide-react';
+import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ArrowUp, ArrowDown, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useSpringAuthStore } from '@/features/spring-auth';
@@ -16,9 +16,20 @@ import { useSandboxStore } from '@/core/sandbox';
 interface Props {
   attribute: AttributeDefinition;
   entityTypeId: string | number;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-export const AttributeCard: React.FC<Props> = ({ attribute, entityTypeId }) => {
+export const AttributeCard: React.FC<Props> = ({
+  attribute,
+  entityTypeId,
+  onMoveUp,
+  onMoveDown,
+  isFirst = false,
+  isLast = false,
+}) => {
   const { openEditAttributeDialog, openDeleteAttributeDialog } = useMetadataUiStore();
   const { user, currentTenantId } = useSpringAuthStore();
   const { activePersonaId, activeTenantId } = useSandboxStore();
@@ -146,6 +157,34 @@ export const AttributeCard: React.FC<Props> = ({ attribute, entityTypeId }) => {
       </div>
 
       <div className="flex items-center gap-1 self-end md:self-center">
+        {/* Single-Pointer / Keyboard Reorder Controls (WCAG 2.2 SC 2.5.7) */}
+        {onMoveUp && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onMoveUp}
+            disabled={isFirst}
+            aria-label={`Move field ${attribute.name} up`}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10 disabled:opacity-30"
+            title="Move field up"
+          >
+            <ArrowUp className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+        {onMoveDown && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onMoveDown}
+            disabled={isLast}
+            aria-label={`Move field ${attribute.name} down`}
+            className="h-8 px-2 text-muted-foreground hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10 disabled:opacity-30"
+            title="Move field down"
+          >
+            <ArrowDown className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        )}
+
         {/* Archive Button */}
         <Button
           variant="ghost"

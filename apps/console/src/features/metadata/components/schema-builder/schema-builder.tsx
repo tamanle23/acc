@@ -20,10 +20,39 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
   const { openCreateAttributeDialog, openJsonSchemaPreview } = useMetadataUiStore();
 
   const [fieldSearch, setFieldSearch] = useState('');
+  const [orderedAttributes, setOrderedAttributes] = useState<AttributeDefinition[]>([]);
+  const [a11yStatus, setA11yStatus] = useState<string>('');
 
-  const attributes = useMemo(() => {
+  const serverAttributes = useMemo(() => {
     return attributesResponse?.content || [];
   }, [attributesResponse]);
+
+  // Keep local ordered state synchronized with fetched response
+  React.useEffect(() => {
+    setOrderedAttributes(serverAttributes);
+  }, [serverAttributes]);
+
+  const attributes = orderedAttributes.length > 0 ? orderedAttributes : serverAttributes;
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return;
+    const newOrdered = [...attributes];
+    const item = newOrdered[index];
+    newOrdered[index] = newOrdered[index - 1];
+    newOrdered[index - 1] = item;
+    setOrderedAttributes(newOrdered);
+    setA11yStatus(`Moved field ${item.name} up to position ${index} of ${newOrdered.length}.`);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= attributes.length - 1) return;
+    const newOrdered = [...attributes];
+    const item = newOrdered[index];
+    newOrdered[index] = newOrdered[index + 1];
+    newOrdered[index + 1] = item;
+    setOrderedAttributes(newOrdered);
+    setA11yStatus(`Moved field ${item.name} down to position ${index + 2} of ${newOrdered.length}.`);
+  };
 
   const filteredAttributes = useMemo(() => {
     if (!fieldSearch.trim()) return attributes;
@@ -102,6 +131,11 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
         </div>
       </div>
 
+      {/* Accessible Live Region for Reordering Announcements (SC 2.5.7) */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {a11yStatus}
+      </div>
+
       {/* Attributes List */}
       <div className="space-y-3">
         {attributes.length === 0 ? (
@@ -122,11 +156,15 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
             No fields match your search filter "{fieldSearch}".
           </div>
         ) : (
-          filteredAttributes.map((attr) => (
+          filteredAttributes.map((attr, idx) => (
             <AttributeCard
               key={attr.id}
               attribute={attr}
               entityTypeId={entityTypeId}
+              onMoveUp={() => handleMoveUp(idx)}
+              onMoveDown={() => handleMoveDown(idx)}
+              isFirst={idx === 0}
+              isLast={idx === filteredAttributes.length - 1}
             />
           ))
         )}
