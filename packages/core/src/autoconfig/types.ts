@@ -95,7 +95,7 @@ export interface IMediaAssetProberHandler {
 }
 
 import type { ContentModality } from '../conductor/interfaces/IContentTaskStrategy';
-import type { PipelineIR } from '@acc/ir';
+import type { PipelineIR, FineGrainedVideoDirectorConfig } from '@acc/ir';
 
 export interface ArchetypeScaffoldConfig {
   pipelineId: '1' | '2' | '3' | '4' | '5' | '6';
@@ -127,4 +127,29 @@ export interface PipelineResolutionResult {
     name: string;
     confidence: number;
   }>;
+}
+
+export interface AutoScaffoldOptions {
+  pipelineOverride?: 'auto' | '1' | '2' | '3' | '4' | '5' | '6';
+  requestedModalities?: ContentModality[];
+  aspectRatio?: '9:16' | '16:9' | '1:1' | '4:5';
+  fps?: 24 | 30 | 60;
+  enableDepth3D?: boolean;
+  enableTransitions?: boolean;
+  exportLegacyStoryConfig?: boolean;
+  autoTranscribeWhisper?: boolean;
+  dryRun?: boolean;
+}
+
+export interface AutoScaffoldResult {
+  pipelineId: string;
+  pipelineIR: PipelineIR;
+  videoConfig: FineGrainedVideoDirectorConfig;
+  suggestedModalities: ContentModality[];
+  legacyStoryConfig?: Record<string, unknown>;
+  savedFiles: {
+    pipelineIRPath?: string;
+    omnichannelConfigPath?: string;
+    storyConfigPath?: string;
+  };
 }

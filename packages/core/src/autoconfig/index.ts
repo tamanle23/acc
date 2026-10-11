@@ -13,3 +13,5 @@ export * from './classifiers/GenerativeStoryClassifierStrategy';
 export * from './classifiers/RuleLogicClassifierStrategy';
 export * from './classifiers/AmbientLoopClassifierStrategy';
 export * from './PipelineClassifierRegistry';
+export * from './builders/PipelineIRBuilder';
+export * from './factories/DirectorPresetFactory';
