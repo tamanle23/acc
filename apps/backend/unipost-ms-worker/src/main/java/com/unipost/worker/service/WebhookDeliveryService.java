@@ -58,6 +58,18 @@ public class WebhookDeliveryService {
      * @return boolean true if successfully delivered with HTTP 200
      */
     public boolean triggerEdgeRevalidation(String slug, String tag) {
+        return triggerEdgeRevalidation(slug, tag, null);
+    }
+
+    /**
+     * Dispatches edge cache invalidation for a published or mutated slug/tag with W3C traceparent propagation.
+     *
+     * @param slug the article slug to revalidate
+     * @param tag optional tag to revalidate
+     * @param traceparent optional W3C traceparent header to propagate downstream
+     * @return boolean true if successfully delivered with HTTP 200
+     */
+    public boolean triggerEdgeRevalidation(String slug, String tag, String traceparent) {
         try {
             Map<String, String> payloadMap = new java.util.HashMap<>();
             if (slug != null) payloadMap.put("slug", slug);
@@ -67,12 +79,18 @@ public class WebhookDeliveryService {
             String timestamp = String.valueOf(Instant.now().getEpochSecond());
             String signature = calculateHmac(webhookSecret, timestamp + "." + payload);
 
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(tekgoWebhookUrl))
                     .timeout(Duration.ofSeconds(5))
                     .header("Content-Type", "application/json")
                     .header("x-unipost-signature", signature)
-                    .header("x-unipost-timestamp", timestamp)
+                    .header("x-unipost-timestamp", timestamp);
+
+            if (traceparent != null && !traceparent.isBlank()) {
+                requestBuilder.header("traceparent", traceparent.trim());
+            }
+
+            HttpRequest request = requestBuilder
                     .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8))
                     .build();
 

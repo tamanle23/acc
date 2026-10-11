@@ -46,6 +46,11 @@ public class ContextFilter extends CommonsRequestLoggingFilter  {
   private static final String X_AUTHORIZATION = "Authorization";
   private static final String X_APPLICATION = "X-APPLICATION";
   private static final String X_SESSION_ID = "X-SESSION-ID";
+  private static final String HEADER_TRACEPARENT = "traceparent";
+  private static final String HEADER_WORKSPACE_ID = "X-Workspace-Id";
+  private static final String HEADER_TENANT_ID = "X-Tenant-Id";
+  private static final java.util.regex.Pattern TRACEPARENT_PATTERN =
+      java.util.regex.Pattern.compile("^00-([a-f0-9]{32})-([a-f0-9]{16})-([a-f0-9]{2})$");
 
   private long warnHandlingNanos;
   private Context contextHelper;
@@ -88,6 +93,51 @@ public class ContextFilter extends CommonsRequestLoggingFilter  {
       requestContext.setRequestAtClient(ZonedDateTime.parse(request.getHeader(X_REQUEST_AT)));
     }
     requestContext.setRequestAtServer(ZonedDateTime.now());
+    String rawTraceparent = request.getHeader(HEADER_TRACEPARENT);
+    String traceId = null;
+    String spanId = null;
+    String flags = "01";
+    if (StringUtils.isNotBlank(rawTraceparent)) {
+      java.util.regex.Matcher m = TRACEPARENT_PATTERN.matcher(rawTraceparent.trim());
+      if (m.matches()) {
+        traceId = m.group(1);
+        spanId = m.group(2);
+        flags = m.group(3);
+      }
+    }
+
+    if (traceId == null) {
+      // Generate standard W3C compliant 32-char hex traceId and 16-char hex spanId
+      traceId = java.util.UUID.randomUUID().toString().replace("-", "");
+      spanId = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+      rawTraceparent = String.format("00-%s-%s-%s", traceId, spanId, flags);
+    }
+
+    requestContext.setTraceparent(rawTraceparent);
+    requestContext.setTraceId(traceId);
+
+    // Standardized MDC logging variables: [trace_id] [tenant_id] [user_id] [workspace_id]
+    MDC.put("trace_id", traceId);
+    MDC.put("traceId", traceId);
+
+    String incomingTenant = request.getHeader(HEADER_TENANT_ID);
+    if (StringUtils.isNotBlank(incomingTenant)) {
+      MDC.put("tenant_id", incomingTenant.trim());
+      MDC.put("tenantId", incomingTenant.trim());
+    }
+
+    String incomingWorkspace = request.getHeader(HEADER_WORKSPACE_ID);
+    if (StringUtils.isNotBlank(incomingWorkspace)) {
+      MDC.put("workspace_id", incomingWorkspace.trim());
+      MDC.put("workspaceId", incomingWorkspace.trim());
+    }
+
+    String incomingUser = request.getHeader(X_USER_ID);
+    if (StringUtils.isNotBlank(incomingUser)) {
+      MDC.put("user_id", incomingUser.trim());
+      MDC.put("userId", incomingUser.trim());
+    }
+
     MDC.put(MDC_APPLICATION_ID, applicationName);
     MDC.put(MDC_TRACKING_ID, String.format("%s_%s", requestContext.getTransactionId()
                                           , requestContext.getRequestId()));
@@ -117,6 +167,7 @@ public class ContextFilter extends CommonsRequestLoggingFilter  {
         response = new ContentCachingResponseWrapper(response);
       }
     }
+    response.setHeader(HEADER_TRACEPARENT, rawTraceparent);
     response.setHeader(X_REQUEST_ID, requestContext.getRequestId());
     response.setHeader(X_TRANSACTION_ID, requestContext.getTransactionId());
     response.setHeader(X_TIMEZONE, requestContext.getTimeZone());

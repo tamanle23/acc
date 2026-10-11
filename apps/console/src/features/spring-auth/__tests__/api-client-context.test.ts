@@ -66,4 +66,29 @@ describe('springApiClient Context Header Injection', () => {
     expect(capturedConfig.headers['X-Tenant-Id']).toBe('tenant-assumed-xyz');
     expect(capturedConfig.headers['X-Assumed-Tenant']).toBe('tenant-assumed-xyz');
   });
+
+  it('automatically injects a valid W3C traceparent header on outbound requests', async () => {
+    let capturedConfig: any = null;
+    const originalAdapter = springApiClient.defaults.adapter;
+    springApiClient.defaults.adapter = async (config) => {
+      capturedConfig = config;
+      return {
+        data: { success: true },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    };
+
+    try {
+      await springApiClient.get('/test-endpoint-tracing');
+    } finally {
+      springApiClient.defaults.adapter = originalAdapter;
+    }
+
+    const traceparent = capturedConfig.headers['traceparent'];
+    expect(traceparent).toBeDefined();
+    expect(traceparent).toMatch(/^00-[a-f0-9]{32}-[a-f0-9]{16}-01$/);
+  });
 });

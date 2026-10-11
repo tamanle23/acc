@@ -46,11 +46,20 @@ export async function POST(req: NextRequest) {
     revalidatePath('/blog')
     revalidatePath('/')
 
-    return NextResponse.json({
+    const traceparent = req.headers.get('traceparent')
+
+    const response = NextResponse.json({
       revalidated: true,
       timestamp: Date.now(),
       target: { slug, tag },
+      traceparent: traceparent || undefined,
     })
+
+    if (traceparent) {
+      response.headers.set('traceparent', traceparent)
+    }
+
+    return response
   } catch (err) {
     return NextResponse.json({ error: 'Malformed JSON payload' }, { status: 400 })
   }

@@ -3,7 +3,7 @@
   <include resource="org/springframework/boot/logging/logback/base.xml"/>
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} %X{MDC_TRACKING_ID} - %msg%n</pattern>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{trace_id:-}] [%X{tenant_id:-}] [%X{user_id:-}] [%X{workspace_id:-}] - %msg%n</pattern>
     </encoder>
   </appender>
   <appender name="COUNTER_FILE"
@@ -13,7 +13,7 @@
       <fileNamePattern>./logs/app-%d{yyyy-MM-dd-HH}.log</fileNamePattern>
     </rollingPolicy>
     <encoder>
-      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger %X{MDC_TRACKING_ID} - %msg%n</pattern>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger [%X{trace_id:-}] [%X{tenant_id:-}] [%X{user_id:-}] [%X{workspace_id:-}] - %msg%n</pattern>
     </encoder>
   </appender>
   <appender name="ASYNC_COUNTER_FILE" class="ch.qos.logback.classic.AsyncAppender">

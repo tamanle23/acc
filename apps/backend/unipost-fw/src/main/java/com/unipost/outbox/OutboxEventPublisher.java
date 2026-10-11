@@ -57,14 +57,29 @@ public class OutboxEventPublisher {
         String eventId = UUID.randomUUID().toString();
         String jsonPayload;
         try {
-            if (payload instanceof String str) {
-                jsonPayload = str;
+            java.util.Map<String, Object> payloadMap;
+            if (payload instanceof java.util.Map<?, ?> map) {
+                payloadMap = new java.util.HashMap<>((java.util.Map<String, Object>) map);
+            } else if (payload instanceof String str && !str.isBlank()) {
+                payloadMap = objectMapper.readValue(str, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
             } else {
-                jsonPayload = objectMapper.writeValueAsString(payload);
+                payloadMap = objectMapper.convertValue(payload, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
             }
+
+            // Propagate active W3C traceparent into outbox event payload metadata
+            String traceId = org.slf4j.MDC.get("trace_id");
+            if (traceId == null) {
+                traceId = org.slf4j.MDC.get("traceId");
+            }
+            if (traceId != null && !payloadMap.containsKey("traceparent")) {
+                String spanId = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+                payloadMap.put("traceparent", String.format("00-%s-%s-01", traceId, spanId));
+                payloadMap.put("trace_id", traceId);
+            }
+            jsonPayload = objectMapper.writeValueAsString(payloadMap);
         } catch (Exception e) {
             log.error("Failed to serialize outbox event payload for aggregate {}/{}", aggregateType, aggregateId, e);
-            jsonPayload = "{}";
+            jsonPayload = payload instanceof String str ? str : "{}";
         }
 
         OutboxEvent event = new OutboxEvent();

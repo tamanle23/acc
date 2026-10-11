@@ -20,6 +20,8 @@ public class ContextHeader {
   String authorization;
   String userId;
   String clientType;
+  String traceparent;
+  String traceId;
   ZonedDateTime requestAtClient;
   ZonedDateTime requestAtServer;
   ZonedDateTime responseAtServer;

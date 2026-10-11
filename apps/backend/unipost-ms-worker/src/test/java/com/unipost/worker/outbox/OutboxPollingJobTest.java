@@ -44,7 +44,7 @@ class OutboxPollingJobTest {
         event.setMaxRetries(5);
 
         when(outboxEventRepository.findPendingEventsForProcessing(50)).thenReturn(List.of(event));
-        when(webhookDeliveryService.triggerEdgeRevalidation(eq("tech-article"), eq("news"))).thenReturn(true);
+        when(webhookDeliveryService.triggerEdgeRevalidation(eq("tech-article"), eq("news"), any())).thenReturn(true);
 
         int processed = outboxPollingJob.processBatch();
 
@@ -53,7 +53,7 @@ class OutboxPollingJobTest {
         assertNotNull(event.getProcessedAt());
         assertNull(event.getLastError());
         verify(outboxEventRepository).save(event);
-        verify(webhookDeliveryService).triggerEdgeRevalidation("tech-article", "news");
+        verify(webhookDeliveryService).triggerEdgeRevalidation(eq("tech-article"), eq("news"), any());
     }
 
     @Test
@@ -69,7 +69,7 @@ class OutboxPollingJobTest {
         event.setMaxRetries(5);
 
         when(outboxEventRepository.findPendingEventsForProcessing(50)).thenReturn(List.of(event));
-        when(webhookDeliveryService.triggerEdgeRevalidation(eq("failing-slug"), any())).thenReturn(false);
+        when(webhookDeliveryService.triggerEdgeRevalidation(eq("failing-slug"), any(), any())).thenReturn(false);
 
         int processed = outboxPollingJob.processBatch();
 
@@ -94,7 +94,7 @@ class OutboxPollingJobTest {
         event.setMaxRetries(5);
 
         when(outboxEventRepository.findPendingEventsForProcessing(50)).thenReturn(List.of(event));
-        when(webhookDeliveryService.triggerEdgeRevalidation(eq("broken-slug"), any())).thenReturn(false);
+        when(webhookDeliveryService.triggerEdgeRevalidation(eq("broken-slug"), any(), any())).thenReturn(false);
 
         int processed = outboxPollingJob.processBatch();
 
@@ -117,7 +117,7 @@ class OutboxPollingJobTest {
 
         assertEquals(1, processed);
         // Should not have dispatched or saved
-        verify(webhookDeliveryService, never()).triggerEdgeRevalidation(any(), any());
+        verify(webhookDeliveryService, never()).triggerEdgeRevalidation(any(), any(), any());
         verify(outboxEventRepository, never()).save(event);
     }
 }

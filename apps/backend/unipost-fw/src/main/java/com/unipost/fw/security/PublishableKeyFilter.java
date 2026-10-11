@@ -89,12 +89,14 @@ public class PublishableKeyFilter extends OncePerRequestFilter {
             if (effectiveTenantId != null && !effectiveTenantId.isBlank()) {
                 TenantContextHolder.setTenantId(effectiveTenantId);
                 MDC.put("tenantId", effectiveTenantId);
+                MDC.put("tenant_id", effectiveTenantId);
             }
             filterChain.doFilter(request, response);
         } finally {
             if (effectiveTenantId != null) {
                 TenantContextHolder.clear();
                 MDC.remove("tenantId");
+                MDC.remove("tenant_id");
             }
         }
     }

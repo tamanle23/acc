@@ -77,7 +77,26 @@ public class OutboxPollingJob {
                 continue;
             }
 
+            String eventTenant = event.getTenantId();
+            Map<String, Object> payloadMap = parsePayload(event.getPayload());
+            String eventTrace = (String) payloadMap.get("trace_id");
+            if (eventTrace == null && payloadMap.get("traceparent") instanceof String tp) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("^00-([a-f0-9]{32})-").matcher(tp);
+                if (m.find()) {
+                    eventTrace = m.group(1);
+                }
+            }
+
             try {
+                if (eventTenant != null) {
+                    org.slf4j.MDC.put("tenant_id", eventTenant);
+                    org.slf4j.MDC.put("tenantId", eventTenant);
+                }
+                if (eventTrace != null) {
+                    org.slf4j.MDC.put("trace_id", eventTrace);
+                    org.slf4j.MDC.put("traceId", eventTrace);
+                }
+
                 dispatchEvent(event);
                 event.setStatus("PUBLISHED");
                 event.setProcessedAt(LocalDateTime.now());
@@ -104,6 +123,11 @@ public class OutboxPollingJob {
                             event.getEventId(), event.getAggregateType(), event.getAggregateId(), retryCount, backoffSeconds, e.getMessage());
                 }
                 outboxEventRepository.save(event);
+            } finally {
+                org.slf4j.MDC.remove("tenant_id");
+                org.slf4j.MDC.remove("tenantId");
+                org.slf4j.MDC.remove("trace_id");
+                org.slf4j.MDC.remove("traceId");
             }
         }
 
@@ -120,7 +144,8 @@ public class OutboxPollingJob {
         String slug = extractSlug(payloadMap);
         if (slug != null || "article".equalsIgnoreCase(event.getAggregateType())) {
             String tag = (String) payloadMap.getOrDefault("category", "all");
-            boolean delivered = webhookDeliveryService.triggerEdgeRevalidation(slug, tag);
+            String traceparent = (String) payloadMap.get("traceparent");
+            boolean delivered = webhookDeliveryService.triggerEdgeRevalidation(slug, tag, traceparent);
             if (!delivered) {
                 throw new IllegalStateException("Edge revalidation webhook delivery returned non-200 status or timed out");
             }

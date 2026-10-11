@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { generateTraceparent } from '@unipost/client';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
 import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
@@ -59,6 +60,10 @@ springApiClient.interceptors.request.use(
       } catch {
         // Fallback gracefully if store is uninitialized
       }
+    }
+
+    if (config.headers && !config.headers['traceparent']) {
+      config.headers['traceparent'] = generateTraceparent();
     }
 
     return config;
