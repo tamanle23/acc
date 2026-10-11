@@ -21,7 +21,11 @@ export type UiComponentType =
   | 'multiselect'
   | 'datepicker'
   | 'json_editor'
-  | 'relation_picker';
+  | 'relation_picker'
+  | 'signature_pad'
+  | 'geo_location'
+  | 'barcode_scanner'
+  | (string & {});
 
 export type CardinalityType =
   | 'ONE_TO_ONE'

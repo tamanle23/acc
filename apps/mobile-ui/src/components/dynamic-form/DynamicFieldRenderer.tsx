@@ -16,6 +16,7 @@ import {
   RelationRecordItem,
 } from './RelationPickerBottomSheet';
 import { colors } from '../../theme/colors';
+import { MobileWidgetRegistry } from './MobileWidgetRegistry';
 
 export interface DynamicFieldRendererProps {
   attribute: AttributeDefinition;
@@ -38,10 +39,6 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
   disabled = false,
   relationRecords = [],
 }) => {
-  const { dark } = useTheme();
-  const themeColors = dark ? colors.dark : colors.light;
-  const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
-
   const {
     name,
     systemName,
@@ -50,6 +47,24 @@ export const DynamicFieldRenderer: React.FC<DynamicFieldRendererProps> = ({
     isRequired,
     options = {},
   } = attribute;
+
+  // 0. OCP Invariant: Pluggable Mobile Widget Check (checked before local hooks)
+  const CustomMobileWidget = MobileWidgetRegistry.get(uiComponent);
+  if (CustomMobileWidget) {
+    return (
+      <CustomMobileWidget
+        attribute={attribute}
+        value={value}
+        onChange={onChange}
+        error={error}
+        disabled={disabled}
+      />
+    );
+  }
+
+  const { dark } = useTheme();
+  const themeColors = dark ? colors.dark : colors.light;
+  const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
 
   const placeholder = options?.placeholder as string || `Enter ${name}...`;
 

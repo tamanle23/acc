@@ -4,6 +4,7 @@ import { AttributeDefinition } from '@unipost/client';
 import { DynamicFieldRenderer } from '../components/dynamic-form/DynamicFieldRenderer';
 import { MediaPickerInput } from '../components/dynamic-form/MediaPickerInput';
 import { RelationPickerBottomSheet } from '../components/dynamic-form/RelationPickerBottomSheet';
+import { MobileWidgetRegistry } from '../components/dynamic-form/MobileWidgetRegistry';
 
 describe('mobile-ui Dynamic Form Engine & Media Pipeline', () => {
   it('instantiates DynamicFieldRenderer for string and number attributes', () => {
@@ -80,5 +81,30 @@ describe('mobile-ui Dynamic Form Engine & Media Pipeline', () => {
     expect(element.props.visible).toBe(true);
     expect(element.props.records.length).toBe(2);
     expect(element.props.selectedId).toBe('101');
+  });
+
+  it('delegates to MobileWidgetRegistry when custom widget is registered', () => {
+    const mockCustomWidget = vi.fn((props) => React.createElement('View', props));
+    MobileWidgetRegistry.register('signature_pad', mockCustomWidget);
+
+    const customAttr: AttributeDefinition = {
+      id: 'attr-custom-1',
+      name: 'Client Signature',
+      systemName: 'client_sig',
+      dataType: 'STRING',
+      uiComponent: 'signature_pad',
+      isRequired: true,
+    };
+
+    const handleChange = vi.fn();
+    const rendered = DynamicFieldRenderer({
+      attribute: customAttr,
+      value: 'data:image/svg+xml;base64,mockSig',
+      onChange: handleChange,
+    });
+
+    expect(rendered.type).toBe(mockCustomWidget);
+    expect(rendered.props.value).toBe('data:image/svg+xml;base64,mockSig');
+    expect(rendered.props.attribute.name).toBe('Client Signature');
   });
 });

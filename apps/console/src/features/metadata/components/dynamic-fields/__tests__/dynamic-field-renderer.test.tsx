@@ -129,4 +129,98 @@ describe('DynamicFieldRenderer UI Component Unit Tests', () => {
       screen.getByText(/Select or enter Target Entity Record ID|Search target entity/i)
     ).toBeDefined();
   });
+
+  describe('Phase 16 Pluggable Widget Registry (OCP)', () => {
+    it('renders SignaturePadWidget when uiComponent is signature_pad', () => {
+      const attr: AttributeDefinition = {
+        id: '10',
+        entityTypeId: '1',
+        name: 'Inspector Signature',
+        systemName: 'inspector_sig',
+        dataType: 'STRING',
+        uiComponent: 'signature_pad',
+        isRequired: true,
+      };
+
+      render(
+        <DynamicFieldRenderer
+          attribute={attr}
+          value=""
+          onChange={vi.fn()}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('signature-pad-container')).toBeDefined();
+      expect(screen.getByText('Sign here with cursor or touch')).toBeDefined();
+    });
+
+    it('renders GeoLocationWidget when uiComponent is geo_location', () => {
+      const attr: AttributeDefinition = {
+        id: '11',
+        entityTypeId: '1',
+        name: 'Warehouse Location',
+        systemName: 'warehouse_geo',
+        dataType: 'JSON',
+        uiComponent: 'geo_location',
+        isRequired: true,
+      };
+
+      const handleChange = vi.fn();
+      render(
+        <DynamicFieldRenderer
+          attribute={attr}
+          value=""
+          onChange={handleChange}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('geo-location-container')).toBeDefined();
+      expect(screen.getByText('Reverse Geocoded Address')).toBeDefined();
+
+      const gpsBtn = screen.getByText(/Acquire GPS/i);
+      fireEvent.click(gpsBtn);
+      expect(handleChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 10.7769,
+          longitude: 106.7009,
+          address: 'Ho Chi Minh City, District 1',
+        })
+      );
+    });
+
+    it('renders BarcodeScannerWidget and simulates scanning code', () => {
+      const attr: AttributeDefinition = {
+        id: '12',
+        entityTypeId: '1',
+        name: 'Asset Barcode',
+        systemName: 'asset_barcode',
+        dataType: 'STRING',
+        uiComponent: 'barcode_scanner',
+        isRequired: true,
+      };
+
+      const handleChange = vi.fn();
+      render(
+        <DynamicFieldRenderer
+          attribute={attr}
+          value=""
+          onChange={handleChange}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('barcode-scanner-container')).toBeDefined();
+
+      // Open camera simulation chamber
+      const scanBtn = screen.getByText(/Scan Code/i);
+      fireEvent.click(scanBtn);
+
+      const simBtn = screen.getByText('Simulate QR Code');
+      fireEvent.click(simBtn);
+
+      expect(handleChange).toHaveBeenCalledWith('UNIPOST-QR-DOC-99214');
+    });
+  });
 });

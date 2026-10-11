@@ -15,6 +15,10 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useEntityRecords } from '../../api/metadata-api';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
+import { WidgetRegistry, registerStandardWidgets } from '@unipost/ui';
+
+// Initialize standard pluggable widgets once
+registerStandardWidgets();
 
 import {
   Popover,
@@ -222,6 +226,8 @@ interface Props {
   value: unknown;
   onChange: (value: unknown) => void;
   error?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
 }
 
 export const DynamicFieldRenderer: React.FC<Props> = ({
@@ -229,6 +235,8 @@ export const DynamicFieldRenderer: React.FC<Props> = ({
   value,
   onChange,
   error,
+  disabled = false,
+  readOnly = false,
 }) => {
   const { name, systemName, uiComponent, isRequired, options } = attribute;
 
@@ -435,7 +443,24 @@ export const DynamicFieldRenderer: React.FC<Props> = ({
         );
       }
 
-      default:
+      default: {
+        // OCP Invariant: Check if a pluggable widget is registered in WidgetRegistry
+        const CustomWidget = WidgetRegistry.get(uiComponent);
+        if (CustomWidget) {
+          return (
+            <CustomWidget
+              value={value}
+              onChange={onChange}
+              attribute={attribute}
+              disabled={disabled}
+              readOnly={readOnly}
+              error={error}
+              errorClass={errorClass}
+              placeholder={options?.placeholder}
+            />
+          );
+        }
+
         return (
           <Input
             id={systemName}
@@ -444,6 +469,7 @@ export const DynamicFieldRenderer: React.FC<Props> = ({
             className={cn('bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm', errorClass)}
           />
         );
+      }
     }
   };
 
