@@ -1,86 +1,38 @@
-# Walkthrough - WCAG 2.2 AA Compliance: Milestone 1 (Design Tokens & Contrast Hardening)
+# Walkthrough 59 - WCAG 2.2 Level AA Compliance Implementation: Milestone 4
 
-This walkthrough documents the changes made to achieve **WCAG 2.2 Level AA compliance** for Milestone 1 across `@unipost/console` and `@unipost/ui`.
+## Executive Summary
 
----
-
-## 1. Objectives Completed
-
-1. **Design Token Calibration (SC 1.4.3 Contrast Minimum & SC 1.4.11 Non-text Contrast)**
-   - Re-calibrated `--muted-foreground` in `apps/console/src/styles/theme.css` for both Light Mode and Dark Mode.
-   - Guaranteed ≥ 4.5:1 text contrast on light/dark glass scrims.
-   - Enhanced `--border` and `--input` opacity/lightness to improve UI boundaries against frosted scrims.
-
-2. **Global Focus & Scroll Padding (SC 2.4.11 Focus Not Obscured)**
-   - Configured `scroll-padding-top: calc(var(--header-height, 4rem) + 1rem)` across `html` and `main` in `apps/console/src/styles/index.css`.
-   - Verified default `:focus-visible` ring parameters satisfy visible focus indicator requirements without obscuring interactive controls under sticky headers.
-
-3. **Pointer Target Sizing (SC 2.5.8 Target Size Minimum)**
-   - Inspected and enforced minimum `28×28px` target bounds (`min-w-[28px] min-h-[28px]` or `min-w-[32px] min-h-[32px]`) across small icon buttons and pagination triggers in:
-     - `apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx`
-     - `apps/console/src/components/password-input.tsx`
-     - `apps/console/src/core/sandbox/ui/sandbox-dock.tsx`
-     - `apps/console/src/features/metadata/components/data-explorer/faceted-search-sidebar.tsx`
+Milestone 4 concludes the execution of the WCAG 2.2 Level AA compliance engine for `@unipost/console`. This milestone establishes automated accessibility governance within static analysis and component testing pipelines to continuously safeguard accessibility standards across the codebase.
 
 ---
 
-## 2. Key Code Changes
+## Changes Made
 
-### `apps/console/src/styles/theme.css`
-```css
-:root {
-  /* Calibrated --muted-foreground to oklch(0.42 0.045 257.4) for >= 4.8:1 contrast ratio */
-  --muted-foreground: oklch(0.42 0.045 257.4);
-  --border: oklch(0.82 0.02 255 / 65%);
-  --input: oklch(0.82 0.02 255 / 70%);
-}
+### 1. Static Analysis Configuration (`eslint-plugin-jsx-a11y`)
+- Added `eslint-plugin-jsx-a11y` configuration to `apps/console/eslint.config.js`.
+- Configured recommended JSX accessibility rules under the `jsx-a11y` plugin namespace to enforce best practices statically (e.g. required alt text, valid ARIA attributes and roles).
 
-.dark {
-  /* Calibrated dark mode --muted-foreground to oklch(0.75 0.035 256.8) for >= 5.1:1 contrast ratio */
-  --muted-foreground: oklch(0.75 0.035 256.8);
-  --border: oklch(1 0 0 / 22%);
-  --input: oklch(1 0 0 / 25%);
-}
-```
-
-### `apps/console/src/styles/index.css`
-```css
-html,
-main {
-  /* Ensure focused controls are never obscured by sticky/fixed header regions (SC 2.4.11) */
-  scroll-padding-top: calc(var(--header-height, 4rem) + 1rem);
-}
-
-:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-```
+### 2. Component Automated Accessibility Testing (`vitest-axe`)
+- Extended Vitest expect matchers with `vitest-axe` in `apps/console/src/test/setup.ts`.
+- Created automated accessibility test suite `apps/console/src/components/__tests__/a11y.test.tsx` running `axe` assertions on core UI components (`SkipToMain`, `Main`, `PasswordInput`, `ConfirmDialog`).
+- Executed component accessibility tests with 0 accessibility violations.
 
 ---
 
-## 3. Verification Results
+## Verification Results
 
-All automated checks passed with **0 errors**:
+### Mandatory Verification Pipeline
+1. `pnpm --filter @unipost/console exec tsc -b` -> Passed (0 errors)
+2. `pnpm --filter @unipost/console test` -> Passed (31 test files, 151 tests passed)
+3. `pnpm --filter @unipost/console build:web` -> Passed (Bundle built successfully)
 
-1. **TypeScript Compilation:**
-   ```bash
-   pnpm --filter @unipost/console exec tsc -b
-   # Result: Passed cleanly (0 errors)
-   ```
+---
 
-2. **Unit Tests:**
-   ```bash
-   pnpm --filter @unipost/console test
-   # Result: Passed 7/7 tests across 2 test suites
-   ```
+## Summary of All 4 Completed Milestones
 
-3. **Production Web Build:**
-   ```bash
-   pnpm --filter @unipost/console build:web
-   # Result: Built successfully in 7.91s
-   ```
-
-4. **Visual Inspection:**
-   - Captured screenshot via Playwright frontend verification.
-   - Inspected UI layout: Liquid Glass frosted glass panels and Bento Box responsiveness remain intact.
+| Milestone | Key Achievements | Verification |
+| :--- | :--- | :--- |
+| **Milestone 1** | Calibrated `--muted-foreground` OKLCH tokens, added global `scroll-padding-top` for SC 2.4.11 focus visibility, enforced SC 2.5.8 minimum target sizing. | Green |
+| **Milestone 2** | Wired `<SkipToMain>` bypass block to `<main id="content" tabIndex={-1}>`, standardized ARIA landmark roles/labels, normalized heading hierarchy. | Green |
+| **Milestone 3** | Enhanced `EntityDataGrid` semantics (`scope="col"`, `aria-sort`), added Move Up/Down keyboard alternatives for SC 2.5.7 dragging in `SchemaBuilder`, enabled autocomplete & paste on auth inputs. | Green |
+| **Milestone 4** | Configured `eslint-plugin-jsx-a11y` lint rules, integrated `vitest-axe` component assertions, created `a11y.test.tsx` suite. | Green |
