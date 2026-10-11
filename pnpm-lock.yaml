@@ -94,6 +94,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@unipost/client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@unipost/i18n':
         specifier: workspace:^
         version: link:../../packages/i18n
@@ -547,6 +550,25 @@ importers:
       '@unipost/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+
+  packages/sandbox:
+    dependencies:
+      '@unipost/client':
+        specifier: workspace:*
+        version: link:../client
+    devDependencies:
+      '@unipost/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      axios:
+        specifier: ^1.13.6
+        version: 1.15.2
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.7
+        version: 3.2.7(@types/debug@4.1.13)(@types/node@25.6.0)(jiti@2.7.0)(jsdom@30.1.2)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.21.0)(yaml@2.8.3)
 
   packages/typescript-config: {}
 
@@ -14418,12 +14440,12 @@ snapshots:
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 9.6.1
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
     optional: true
 
   '@types/eslint@9.6.1':
     dependencies:
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
     optional: true
 
@@ -17026,7 +17048,7 @@ snapshots:
       call-bound: 1.0.4
       define-properties: 1.2.1
       functions-have-names: 1.2.3
-      hasown: 2.0.3
+      hasown: 2.0.4
       is-callable: 1.2.7
 
   functions-have-names@1.2.3: {}
@@ -21571,7 +21593,7 @@ snapshots:
   webpack@5.106.2(esbuild@0.18.20):
     dependencies:
       '@types/eslint-scope': 3.7.7
-      '@types/estree': 1.0.8
+      '@types/estree': 1.0.9
       '@types/json-schema': 7.0.15
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1

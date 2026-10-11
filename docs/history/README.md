@@ -40,6 +40,7 @@
 | [035](035_backend_workspace_controller_and_sandbox_alignment.md) | 2026-10-11 | Backend Workspace REST Controller & Unified Sandbox Handler Alignment | Implemented WorkspaceController, WorkspaceService, WorkspaceDto, along with workspaceSandboxHandler in Console Unified Sandbox Platform with full invariant test coverage. |
 | [036](036_console_http_client_hardening_and_context_injection.md) | 2026-10-11 | Console HTTP Client Hardening & Context Injection (Phase 1) | Eliminated raw axios calls in use-blueprints.ts, routed all blueprint queries through springApiClient, and injected X-Tenant-Id and X-Workspace-Id context headers. |
 | [037](037_universal_client_sdk_extraction.md) | 2026-10-11 | Universal Client SDK (@unipost/client) Extraction (Phase 2) | Extracted domain DTOs and universal fetch-based UnipostClient with W3C traceparent generation and context injection into packages/client. |
+| [038](038_unified_sandbox_platform_extraction.md) | 2026-10-11 | Unified Sandbox Platform Extraction (@unipost/sandbox) (Phase 3) | Extracted the Unified Sandbox engine, registry, simulation decorator, and fetch/axios adapters into packages/sandbox for multi-client sharing. |
 
 
 
