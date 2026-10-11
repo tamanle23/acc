@@ -173,28 +173,39 @@ Iteration 2 Master Execution Map
 
 ---
 
-## 5. Workstream 3: Native Client Deepening & Stress Hardening
+## 5. Workstream 3: Mobile UI & Desktop Native Testing & Hardening (Option 2)
 
-### Phase 20: `mobile-ui` Offline Outbox Chaos & SQLite Conflict Simulation
-- **Objective:** Stress-test mobile offline resiliency under simulated edge network failure conditions.
-- **Implementation:**
-  - Replace ephemeral async-storage backing with a durable SQLite storage layer (`expo-sqlite` or hardened encrypted adapter) for zero data loss on mobile OS process kills.
-  - Create automated chaos test suite in `apps/mobile-ui/__tests__/outbox-chaos.test.ts`:
-    - **Network Cut Simulation**: Enqueue 50 concurrent entity mutations while network is completely severed.
-    - **Replay Order Invariant**: Verify that mutations execute strictly sequentially by sequence number once connectivity returns.
-    - **Concurrent Edit Conflict (409 Conflict)**: Simulate another operator editing the same entity concurrently; assert that `ConflictResolutionModal` surfaces with 3-way visual diff (Local, Server, Base).
-    - **Exponential Backoff & Idempotency**: Verify that failed HTTP 500 requests retry with jitter and never duplicate records due to `X-Idempotency-Key` tracking.
+### Phase 20: `mobile-ui` Component & Offline Outbox Testing & Stress Hardening
+- **Objective:** Provide robust automated test coverage and stress hardening for Expo SDK 57 / React Native 0.86 components and the offline outbox pipeline.
+- **Component Testing (`apps/mobile-ui` with `@testing-library/react-native` / Vitest):**
+  - **Dynamic Form Renderer Suite (`DynamicFieldRenderer.test.tsx`)**:
+    - Test schema-driven rendering across text, number, enum picker, media picker, and relation bottom sheet.
+    - Test validation errors, required field constraints, and disabled state styling with Liquid Glass tokens.
+  - **Media Pipeline Suite (`MediaPickerInput.test.tsx`)**:
+    - Test image selection, preview thumbnail rendering, and mock upload simulation.
+  - **Relation Picker Bottom Sheet Suite (`RelationPickerBottomSheet.test.tsx`)**:
+    - Test search filtering of target records, single vs multi-cardinality selection, and sheet dismissal.
+- **Outbox Chaos & SQLite Hardening (`outbox-chaos.test.ts`):**
+  - **Durable Storage Layer**: Integrate durable persistence to guarantee zero mutation loss across app process termination.
+  - **Network Interruption Simulation**: Enqueue 50 concurrent entity mutations while network is completely severed.
+  - **Replay Order Invariant**: Verify that queued mutations replay strictly sequentially by sequence timestamp once connectivity is restored.
+  - **Conflict Resolution Modal**: Simulate HTTP 409 conflict responses; assert that `ConflictResolutionModal` surfaces with 3-way visual merge (Local, Server, Base).
+  - **Exponential Backoff & Idempotency**: Verify that failed HTTP 500 requests retry with exponential backoff and jitter without creating duplicate records (`X-Idempotency-Key`).
 
-### Phase 21: `apps/desktop-console` Electrobun Native Bridge & System Vibrancy
-- **Objective:** Modernize the desktop application tier to leverage native OS capabilities and the unified `@unipost/tokens` glass aesthetic.
-- **Implementation:**
-  - Update `apps/desktop-console`:
-    - Configure window vibrancy and acrylic blur effects matching macOS (NSVisualEffectView) and Windows 11 (Mica/Acrylic).
-    - Implement Electrobun RPC bridge connecting web views with native OS capabilities:
-      - Local SQLite offline cache mirror.
-      - Native OS file dialog for batch schema imports/exports.
-      - System tray status indicators showing real-time background outbox sync progress.
-  - Link desktop console with `@unipost/tokens` and verify that glass contrast tokens adapt smoothly to system dark/light vibrancy changes.
+### Phase 21: `apps/desktop-console` Electrobun Native Bridge, Packaging & Hardening
+- **Objective:** Elevate Electrobun desktop console into a production-grade, hardened desktop application with native window vibrancy and local bridges.
+- **Implementation & Verification:**
+  - **Window Vibrancy & Theming**:
+    - Configure window vibrancy matching macOS `NSVisualEffectView` and Windows 11 Mica/Acrylic styling.
+    - Synchronize dark/light theme switching with `@unipost/tokens` glass blur tokens.
+  - **Electrobun RPC Native Bridge**:
+    - Implement type-safe RPC bridge connecting Electrobun main process with the webview UI:
+      - Native OS file picker dialog for bulk schema JSON export and import.
+      - Native system notifications for background outbox synchronization completion.
+      - System tray integration with quick-access tenant status and offline synchronization state.
+  - **Desktop Build & Packaging Pipeline**:
+    - Add `"test"` and `"build"` scripts in `apps/desktop-console/package.json` integrated with Turborepo.
+    - Test packaging pipeline (`electrobun build`) and verify seamless bundle resolution of `@unipost/console` static assets.
 
 ---
 
