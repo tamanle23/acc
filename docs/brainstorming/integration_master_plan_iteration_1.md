@@ -878,12 +878,12 @@ In `@unipost/backend`, generic CQRS command handlers resolve target types using 
 
 Before any pull request is merged into `main`, it must satisfy these non-negotiable invariants:
 
-- [ ] **RLS Invariant**: Every SQL query must execute within an active `TenantContext` bounded by PostgreSQL Row-Level Security.
-- [ ] **FSM Invariant**: Record lifecycle state changes must execute via `EntityLifecycleService` and satisfy all 5 validation gates.
-- [ ] **Facade Invariant**: No direct `fetch`/`axios` calls inside UI components; all data access must route through typed Facade hooks.
-- [ ] **Selector Invariant**: Zustand subscriptions must use granular atomic selectors (`useStore(s => s.prop)`).
-- [ ] **Idempotency Invariant**: All background jobs, outbox dispatches, and mobile mutations must provide unique idempotency keys.
-- [ ] **Zero-Rogue-Mock Invariant**: No mock data arrays embedded in UI components or tests; all simulation must route through `SandboxRegistry`.
-- [ ] **Traceability Invariant**: Every outgoing client request must include standard `traceparent` headers.
-- [ ] **Accessibility Invariant**: Every text element on a frosted glass card must achieve WCAG 2.2 AA contrast ($\ge 4.5:1$).
-- [ ] **Type Integrity Invariant**: Zero usage of `any` in TypeScript; all payload contracts shared via `@unipost/client`.
+- [x] **RLS Invariant**: Every SQL query must execute within an active `TenantContext` bounded by PostgreSQL Row-Level Security.
+- [x] **FSM Invariant**: Record lifecycle state changes must execute via `EntityLifecycleService` and satisfy all 5 validation gates.
+- [x] **Facade Invariant**: No direct `fetch`/`axios` calls inside UI components; all data access must route through typed Facade hooks.
+- [x] **Selector Invariant**: Zustand subscriptions must use granular atomic selectors (`useStore(s => s.prop)`).
+- [x] **Idempotency Invariant**: All background jobs, outbox dispatches, and mobile mutations must provide unique idempotency keys.
+- [x] **Zero-Rogue-Mock Invariant**: No mock data arrays embedded in UI components or tests; all simulation must route through `SandboxRegistry`.
+- [x] **Traceability Invariant**: Every outgoing client request must include standard `traceparent` headers.
+- [x] **Accessibility Invariant**: Every text element on a frosted glass card must achieve WCAG 2.2 AA contrast ($\ge 4.5:1$).
+- [x] **Type Integrity Invariant**: Zero usage of `any` in TypeScript; all payload contracts shared via `@unipost/client`.

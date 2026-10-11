@@ -159,8 +159,10 @@ export const LandingShowcase: React.FC = () => {
               {activeModel === 'article' && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-muted-foreground">Tiêu đề bài viết *</label>
+                    <label htmlFor="showcase-article-title" className="text-[11px] font-medium text-muted-foreground">Tiêu đề bài viết *</label>
                     <input
+                      id="showcase-article-title"
+                      aria-label="Tiêu đề bài viết"
                       type="text"
                       disabled
                       value="Kiến trúc Multi-Tenant Dynamic Metadata với Unipost"
@@ -185,8 +187,10 @@ export const LandingShowcase: React.FC = () => {
               {activeModel === 'vehicle' && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-muted-foreground">Biển kiểm soát *</label>
+                    <label htmlFor="showcase-plate-number" className="text-[11px] font-medium text-muted-foreground">Biển kiểm soát *</label>
                     <input
+                      id="showcase-plate-number"
+                      aria-label="Biển kiểm soát"
                       type="text"
                       disabled
                       value="29C-888.99"
@@ -194,8 +198,10 @@ export const LandingShowcase: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-muted-foreground">Tải trọng tối đa (KG)</label>
+                    <label htmlFor="showcase-payload-cap" className="text-[11px] font-medium text-muted-foreground">Tải trọng tối đa (KG)</label>
                     <input
+                      id="showcase-payload-cap"
+                      aria-label="Tải trọng tối đa"
                       type="text"
                       disabled
                       value="3500 KG"
@@ -207,8 +213,10 @@ export const LandingShowcase: React.FC = () => {
               {activeModel === 'invoice' && (
                 <>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-muted-foreground">Số hóa đơn *</label>
+                    <label htmlFor="showcase-invoice-num" className="text-[11px] font-medium text-muted-foreground">Số hóa đơn *</label>
                     <input
+                      id="showcase-invoice-num"
+                      aria-label="Số hóa đơn"
                       type="text"
                       disabled
                       value="INV-2026-0042"
@@ -216,8 +224,10 @@ export const LandingShowcase: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-muted-foreground">Tổng thanh toán (USD)</label>
+                    <label htmlFor="showcase-total-amount" className="text-[11px] font-medium text-muted-foreground">Tổng thanh toán (USD)</label>
                     <input
+                      id="showcase-total-amount"
+                      aria-label="Tổng thanh toán"
                       type="text"
                       disabled
                       value="$ 12,450.00"

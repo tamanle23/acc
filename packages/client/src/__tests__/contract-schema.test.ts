@@ -64,9 +64,9 @@ describe('L3 Contract Tests: @unipost/client and Spring Jackson Model Compatibil
       entityTypeId: 12,
       name: 'Content Slug',
       systemName: 'slug',
-      dataType: 'STRING',
-      uiComponent: 'text',
-      required: true,
+      dataType: 'STRING' as const,
+      uiComponent: 'text' as const,
+      isRequired: true,
       options: { min: 3, max: 100 },
       optionsJson: '{"min":3,"max":100}',
       version: 1,
@@ -80,7 +80,7 @@ describe('L3 Contract Tests: @unipost/client and Spring Jackson Model Compatibil
     expect(attr.systemName).toBe('slug');
     expect(attr.dataType).toBe('STRING');
     expect(attr.uiComponent).toBe('text');
-    expect(attr.required).toBe(true);
+    expect(attr.isRequired).toBe(true);
   });
 
   it('deserializes Spring RFC 7807 ProblemDetail into client ProblemDetail contract', () => {

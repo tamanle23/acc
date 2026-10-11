@@ -78,7 +78,7 @@ describe('Axios Sandbox Adapter', () => {
 
     useSandboxStore.getState().setEnabled(false);
 
-    // Should bypass mock and try live network (failing in jsdom)
-    await expect(testClient.get('/v1/ping')).rejects.toThrow();
+    // Should bypass mock and try live network (failing fast in jsdom)
+    await expect(testClient.get('/v1/ping', { timeout: 200 })).rejects.toThrow();
   });
 });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { springApiClient } from '@/features/spring-auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +57,7 @@ export const DataPrivacyPanel: React.FC = () => {
       setIsExporting(true);
       toast.info('Generating streaming data bundle (.ZIP)...');
 
-      const response = await axios.get(
+      const response = await springApiClient.get(
         `/api/v1/metadata/tenants/${activeTenantId}/export`,
         {
           responseType: 'blob',
@@ -92,7 +92,7 @@ export const DataPrivacyPanel: React.FC = () => {
 
     try {
       setIsPurging(true);
-      const res = await axios.post(`/api/v1/metadata/tenants/${activeTenantId}/purge`);
+      const res = await springApiClient.post(`/api/v1/metadata/tenants/${activeTenantId}/purge`);
       const certData: CertificateOfErasure = res.data?.data || res.data;
       setCertificate(certData);
       toast.success('GDPR Article 17 Hard-Purge completed!');
