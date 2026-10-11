@@ -34,6 +34,10 @@ export class MediaAssetProberChain {
     this.rootHandler = customRootHandler || MediaAssetProberChain.buildDefaultChain();
   }
 
+  public static createDefault(): MediaAssetProberChain {
+    return new MediaAssetProberChain();
+  }
+
   public static buildDefaultChain(): IMediaAssetProberHandler {
     const imageProber = new ImageProberHandler();
     const videoProber = new VideoProberHandler();

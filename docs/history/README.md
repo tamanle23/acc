@@ -196,4 +196,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`181`](181_universal_autoconfig_phase2_classifier_strategies.md) | 2026-10-11 | Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Registry | Built IPipelineClassifierStrategy, 6 canonical classifier strategies, and PipelineClassifierRegistry |
 | [`182`](182_universal_autoconfig_phase3_builder_and_preset_factory.md) | 2026-10-11 | Universal Auto-Config Phase 3: Builder & Director Preset Factory | Built PipelineIRBuilder, DirectorPresetFactory for all 6 pipelines, and AutoScaffoldOptions |
 | [`183`](183_universal_autoconfig_phase4_legacy_bridge_adapter.md) | 2026-10-11 | Universal Auto-Config Phase 4: Legacy Bridge Adapter | Lossless bi-directional AutoConfigLegacyBridgeAdapter between PipelineIR and StoryConfig |
+| [`184`](184_universal_autoconfig_phase5_facade_and_cli.md) | 2026-10-11 | Universal Auto-Config Phase 5: Facade & CLI Modernization | AutoConfigEngineFacade in core and modernized interactive Clack UI CLI wrapper |
 

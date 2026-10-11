@@ -34,6 +34,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`028`](028_universal_autoconfig_phase2_classifier_strategies.md) | Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Registry | Core Architecture / Autoconfig / Pipeline Classifiers | ✅ `Completed` | 2026-10-11 | [`181_universal_autoconfig_phase2_classifier_strategies.md`](../history/181_universal_autoconfig_phase2_classifier_strategies.md) |
 | [`029`](029_universal_autoconfig_phase3_builder_and_preset_factory.md) | Universal Auto-Config Phase 3: Builder & Director Preset Factory | Core Architecture / Autoconfig / Builders & Factories | ✅ `Completed` | 2026-10-11 | [`182_universal_autoconfig_phase3_builder_and_preset_factory.md`](../history/182_universal_autoconfig_phase3_builder_and_preset_factory.md) |
 | [`030`](030_universal_autoconfig_phase4_legacy_bridge_adapter.md) | Universal Auto-Config Phase 4: Legacy Bridge Adapter | Core Architecture / Autoconfig / Legacy Bridge Adapter | ✅ `Completed` | 2026-10-11 | [`183_universal_autoconfig_phase4_legacy_bridge_adapter.md`](../history/183_universal_autoconfig_phase4_legacy_bridge_adapter.md) |
+| [`031`](031_universal_autoconfig_phase5_facade_and_cli.md) | Universal Auto-Config Phase 5: Facade & CLI Modernization | Core Architecture / Autoconfig / Facade & CLI | ✅ `Completed` | 2026-10-11 | [`184_universal_autoconfig_phase5_facade_and_cli.md`](../history/184_universal_autoconfig_phase5_facade_and_cli.md) |
 
 ---
 

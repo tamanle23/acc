@@ -16,3 +16,4 @@ export * from './PipelineClassifierRegistry';
 export * from './builders/PipelineIRBuilder';
 export * from './factories/DirectorPresetFactory';
 export * from './adapters/AutoConfigLegacyBridgeAdapter';
+export * from './AutoConfigEngineFacade';
