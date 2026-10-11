@@ -40,5 +40,22 @@ describe('WorkspacesPanel Component', () => {
     expect(disabledDeleteBtns.length).toBeGreaterThanOrEqual(1);
     expect((disabledDeleteBtns[0] as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('allows user to set personal default workspace and displays MY DEFAULT badge', () => {
+    localStorage.clear();
+    const { unmount } = renderWithQueryClient(<WorkspacesPanel />);
+
+    const setMyDefaultBtns = screen.getAllByRole('button', { name: /Đặt làm mặc định/i });
+    expect(setMyDefaultBtns.length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(setMyDefaultBtns[0]);
+
+    const stored = localStorage.getItem('unipost_user_default_ws_tenant-acme');
+    expect(stored).toBeDefined();
+
+    unmount();
+    renderWithQueryClient(<WorkspacesPanel />);
+    expect(screen.getAllByText('MY DEFAULT').length).toBeGreaterThanOrEqual(1);
+  });
 });
 

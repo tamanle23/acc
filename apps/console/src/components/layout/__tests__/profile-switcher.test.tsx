@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ProfileSwitcher } from '../profile-switcher';
 import { ProfileProvider } from '@/context/profile-provider';
@@ -88,6 +88,17 @@ describe('ProfileSwitcher Component', () => {
 
     renderSwitcher();
 
+    expect(screen.getByText('Acme Staging')).toBeDefined();
+  });
+
+  it('updates personal default workspace in profile store and localStorage via setUserDefault', () => {
+    localStorage.clear();
+    useProfileStore.getState().setUserDefault('tenant-acme', 'ws-acme-staging');
+
+    expect(localStorage.getItem('unipost_user_default_ws_tenant-acme')).toBe('ws-acme-staging');
+    expect(useProfileStore.getState().currentProfile.id).toBe('ws-acme-staging');
+
+    renderSwitcher();
     expect(screen.getByText('Acme Staging')).toBeDefined();
   });
 
