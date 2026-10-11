@@ -47,4 +47,5 @@
 | [041](041_mobile_ui_zero_data_loss_encrypted_outbox.md) | 2026-10-11 | mobile-ui Zero-Data-Loss Encrypted Outbox (Phase 6) | Implemented useOutboxStore with idempotency tracking, sequential dispatch, HTTP 409 conflict detection, and ConflictResolutionModal. |
 | [042](042_backend_public_cms_gateway_and_publishable_keys.md) | 2026-10-11 | Backend Public Ingestion Gateway & Publishable Key Protocol (Phase 7) | Implemented PublishableKeyFilter, PublishableKeyAuthenticationToken, and PublicCmsGatewayController enforcing status = PUBLISHED and tenant RLS isolation. |
 | [043](043_tekgo_headless_cms_ingestion_and_dual_mode_provider.md) | 2026-10-11 | tekgo-ui Headless CMS Ingestion & Dual-Mode Provider (Phase 8) | Integrated @unipost/client with Next.js 15 ISR revalidation tags, publishable key authentication, and dual-mode ContentProvider with local fallback. |
+| [044](044_real_time_edge_invalidation_via_hmac_signed_webhooks.md) | 2026-10-11 | Real-Time Edge Invalidation via HMAC Signed Webhooks (Phase 9) | Implemented WebhookDeliveryService in unipost-ms-worker and /api/revalidate route in tekgo-ui with HMAC-SHA256 verification and replay protection. |
 
