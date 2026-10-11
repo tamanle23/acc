@@ -11,6 +11,7 @@
 > 2. **Track 2:** Enterprise Regulatory Privacy Hardening (GDPR Art. 17 5-Stage Purge Cascade & Art. 20 Streaming ZIP Pipeline).
 > 3. **Track 3:** Cross-Platform Native Client Hardening (Expo Offline Outbox Stress Testing & Electrobun Desktop Console Integration).
 > 4. **Track 4:** Production CI/CD Industrialization & GitHub Actions Multi-Tier Automated Gatekeeper.
+> 5. **Track 5:** Enterprise User & Domain Customization (Self-Service Schema Designer, Custom Blueprint Studio & Tenant Theming Engine).
 
 ---
 
@@ -22,12 +23,12 @@ In **Iteration 1**, we successfully established the foundational multi-tier mono
 - Implemented backend 3-way auto-merge (OCC), Liquibase transactional outbox, declarative 5-gate FSM state machines, and end-to-end W3C distributed tracing.
 - Enforced all 9 Section 13 Architectural Invariants and configured Playwright browser automation with `@axe-core/playwright` WCAG 2.2 AA testing.
 
-In **Iteration 2**, the objective is to elevate Unipost into an **extensible, agent-accessible, regulation-compliant, and fully automated production ecosystem**:
+In **Iteration 2**, the objective is to elevate Unipost into an **extensible, agent-accessible, regulation-compliant, customizable, and fully automated production ecosystem**:
 
 ```mermaid
 flowchart TD
     subgraph MultiClient["Heterogeneous Multi-Client Tier"]
-        Console["@unipost/console (React 19 / Vite 8)<br/>Enterprise Architect Studio"]
+        Console["@unipost/console (React 19 / Vite 8)<br/>Enterprise Architect Studio & Blueprint Designer"]
         Desktop["@unipost/desktop (Electrobun Native)<br/>Vibrancy Window + Local File System Bridge"]
         Mobile["mobile-ui (Expo SDK 57)<br/>Hardened Offline Outbox + SQLite Cache"]
         Tekgo["tekgo-ui (Next.js 15 App Router)<br/>Self-Service Privacy Ingestion Portal"]
@@ -36,6 +37,7 @@ flowchart TD
     subgraph AutonomousAgents["Agent & Developer Ecosystem"]
         MCP["Model Context Protocol (MCP) Server<br/>Dynamic Tool Manifest Synthesis"]
         WidgetReg["Open/Closed Widget Registry<br/>(SignaturePad, GeoMap, BarcodeScanner)"]
+        DomainStudio["Domain Blueprint Customization Studio<br/>Visual Schema & FSM Workflow Designer"]
     end
 
     subgraph BackendCore["@unipost/backend (Java 21 / Spring Modulith)"]
@@ -43,6 +45,7 @@ flowchart TD
         FSM["5-Gate Entity Lifecycle Service (FSM)"]
         GDPR_Export["GDPR Art. 20 Non-Blocking Streaming ZIP"]
         GDPR_Purge["GDPR Art. 17 5-Stage Purge Cascade"]
+        TenantTheme["Tenant Dynamic Branding & Schema Seeder"]
         OutboxWorker["SKIP LOCKED Transactional Outbox Worker"]
     end
 
@@ -56,11 +59,14 @@ flowchart TD
     end
 
     Console --> WidgetReg
+    Console --> DomainStudio
     Console --> Dispatch
     Desktop --> Console
     Mobile --> WidgetReg
     Mobile --> Dispatch
     Tekgo --> GDPR_Purge
+    DomainStudio --> TenantTheme
+    TenantTheme --> Postgres
     MCP --> BackendCore
     BackendCore --> Postgres
     BackendCore --> S3
@@ -70,9 +76,9 @@ flowchart TD
 
 ---
 
-## 2. Master Workstream Breakdown (The 4 Core Pillars)
+## 2. Master Workstream Breakdown (The 5 Core Pillars)
 
-Iteration 2 is structured into **4 comprehensive workstreams**, divided into **8 actionable execution phases** (Phases 16 through 23):
+Iteration 2 is structured into **5 comprehensive workstreams**, divided into **10 actionable execution phases** (Phases 16 through 25):
 
 ```
 Iteration 2 Master Execution Map
@@ -82,12 +88,15 @@ Iteration 2 Master Execution Map
 ├── Workstream 2: GDPR Articles 17 & 20 Regulatory Hardening (Phases 18 - 19)
 │   ├── Phase 18: GDPR Article 20 Streaming ZIP Archive Pipeline (Zero JVM Heap OOM)
 │   └── Phase 19: GDPR Article 17 5-Stage Right-to-be-Forgotten Cryptographic Erasure Cascade
-├── Workstream 3: Native Client Deepening & Stress Hardening (Phases 20 - 21)
-│   ├── Phase 20: mobile-ui Offline Outbox Chaos & SQLite Conflict Simulation
-│   └── Phase 21: apps/desktop-console Electrobun Vibrancy Integration & Native File Bridge
-└── Workstream 4: CI/CD Pipeline & Autonomous Industrialization (Phases 22 - 23)
-    ├── Phase 22: Unified GitHub Actions Quality Gatekeeper (Turborepo + Playwright Matrix)
-    └── Phase 23: Automated Penetration Fuzzing & Multi-Tenant Chaos Hardening
+├── Workstream 3: Mobile UI & Desktop Native Testing & Hardening (Phases 20 - 21)
+│   ├── Phase 20: mobile-ui Component & Offline Outbox Testing & Stress Hardening
+│   └── Phase 21: apps/desktop-console Electrobun Native Bridge, Packaging & Hardening
+├── Workstream 4: Enterprise User & Domain Customization Engine (Phases 22 - 23)
+│   ├── Phase 22: Visual Dynamic Schema & State Machine Workflow Studio
+│   └── Phase 23: Tenant Custom Theming, White-Labeling & Dynamic Domain Blueprint Seeding
+└── Workstream 5: Production CI/CD Industrialization & Quality Gatekeeper (Phases 24 - 25)
+    ├── Phase 24: Unified GitHub Actions Quality Gatekeeper (Turborepo + Playwright Matrix)
+    └── Phase 25: Automated Penetration Fuzzing & Multi-Tenant Chaos Hardening
 ```
 
 ---
@@ -209,9 +218,37 @@ Iteration 2 Master Execution Map
 
 ---
 
-## 6. Workstream 4: Production CI/CD Industrialization & Quality Gatekeeper
+## 6. Workstream 4: Enterprise User & Domain Customization Engine (Option 4)
 
-### Phase 22: Unified GitHub Actions Quality Gatekeeper
+### Phase 22: Visual Dynamic Schema & State Machine Workflow Studio
+- **Objective:** Enable tenant administrators and domain operators to design custom entities, attributes, and FSM lifecycle state machines visually without writing code.
+- **Console Studio Architecture (`apps/console/src/features/metadata/studio/`):**
+  - **Visual Schema Canvas**:
+    - Drag-and-drop dynamic attribute palette (Text, Number, Date, Media, Relations, Custom Widgets).
+    - Attribute property inspector: JSON Schema constraints (`pattern`, `minimum`, `maximum`, `required`, default values).
+    - Instant live preview rendering the dynamic form using `<DynamicEntityForm />`.
+  - **Interactive FSM State Machine Workflow Designer**:
+    - React Flow visual state graph diagram displaying states (`DRAFT`, `SUBMITTED`, `APPROVED`, `PUBLISHED`, `ARCHIVED`) and transitions.
+    - Transition inspector: SpEL guard expression builder with syntax hinting (e.g. `attributes['total_amount'] < 50000`).
+    - Direct synchronization with backend `lifecycle_config` schema in PostgreSQL.
+
+### Phase 23: Tenant Custom Theming, White-Labeling & Dynamic Domain Blueprint Seeding
+- **Objective:** Support multi-tenant white-labeling and extensible domain blueprint packages for diverse industry verticals.
+- **White-Labeling & Theming (`@unipost/tokens` & `@unipost/console`):**
+  - Tenant dynamic theme overrides: Brand color palettes (Primary, Accent, Glass Tint Scrims), custom logos, and typography tokens stored in tenant configuration JSONB.
+  - CSS variable injection on tenant switch: Seamlessly updates Liquid Glass tokens across Web and Desktop without page reload.
+- **Dynamic Domain Blueprint Seeding Engine:**
+  - Pluggable blueprint catalog loader in `@unipost/backend` (`classpath:metadata/blueprints/*.json`):
+    - Real Estate MLS (`Property`, `ListingAgent`, `TourSchedule`).
+    - Healthcare Records (`PatientRecord`, `ClinicalNote`, `Prescription`).
+    - Logistics Fleet Management (`DispatchOrder`, `DriverProfile`, `TelemetryPoint`).
+  - Tenant onboarding one-click blueprint provisioning pipeline with transactional schema compilation and default view generation.
+
+---
+
+## 7. Workstream 5: Production CI/CD Industrialization & Quality Gatekeeper (Option 3)
+
+### Phase 24: Unified GitHub Actions Quality Gatekeeper
 - **Objective:** Enforce non-negotiable architectural invariants and prevent regressions automatically on every Pull Request.
 - **Workflow Architecture (`.github/workflows/ci.yml`):**
   - **Job 1: Monorepo Lint & Strict Typecheck**:
@@ -228,7 +265,7 @@ Iteration 2 Master Execution Map
   - **Job 5: Production Build Verification**:
     - Verifies production builds of Console (Vite 8), Tekgo (Next.js 15 SSG/ISR 95 pages), and Client SDK bundles.
 
-### Phase 23: Automated Multi-Tenant Penetration Fuzzing & Chaos Hardening
+### Phase 25: Automated Multi-Tenant Penetration Fuzzing & Chaos Hardening
 - **Objective:** Continuously verify that no data leakage can ever occur across tenants.
 - **Fuzzing Engine (`autogenerated-tests/security-penetration-fuzzing.test.ts`):**
   - **Cross-Tenant Horizontal Infiltration**: Automatically generates 100 random API requests using Tenant A's JWT token against Tenant B's entity IDs and schema endpoints; asserts **100% reject with HTTP 403/404**.
@@ -237,7 +274,7 @@ Iteration 2 Master Execution Map
 
 ---
 
-## 7. Execution Schedule & Milestone Tracking
+## 8. Execution Schedule & Milestone Tracking
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
@@ -247,12 +284,14 @@ Iteration 2 Master Execution Map
 | **Phase 19** | GDPR Art. 17 5-Stage Erasure Cascade | 5-stage purge service, RLS table wipe, SHA-256 certificate of erasure | Integration test verifying zero records remain and receipt signature passes |
 | **Phase 20** | `mobile-ui` Offline Outbox Chaos | SQLite durable queue, network disconnect simulator, 409 conflict resolver | Vitest chaos simulation test suite under simulated packet drop |
 | **Phase 21** | `apps/desktop-console` Electrobun Bridge | Electrobun RPC bridge, OS vibrancy window, native file import/export | Desktop build verification and IPC contract test |
-| **Phase 22** | Unified GitHub Actions CI Pipeline | `.github/workflows/ci.yml`, matrix test runners, Playwright container | Local workflow validation using `act` / Turborepo pipeline dry-run |
-| **Phase 23** | Multi-Tenant Penetration Fuzzing | Cross-tenant security fuzzer, ReDoS guard test, concurrent idempotency lock | Automated security test suite in `autogenerated-tests/` |
+| **Phase 22** | Visual Schema & FSM Workflow Studio | Studio canvas, attribute palette, React Flow state machine designer | Vitest studio canvas test & state graph validation |
+| **Phase 23** | Tenant Theming & Domain Blueprint Seeding | Dynamic theme CSS variables, industry blueprint packs (MLS, Health, Fleet) | Tenant switcher theme test & template provisioning verification |
+| **Phase 24** | Unified GitHub Actions CI Pipeline | `.github/workflows/ci.yml`, matrix test runners, Playwright container | Local workflow validation using `act` / Turborepo pipeline dry-run |
+| **Phase 25** | Multi-Tenant Penetration Fuzzing | Cross-tenant security fuzzer, ReDoS guard test, concurrent idempotency lock | Automated security test suite in `autogenerated-tests/` |
 
 ---
 
-## 8. Non-Negotiable Iteration 2 Architectural Invariants
+## 9. Non-Negotiable Iteration 2 Architectural Invariants
 
 In addition to the 9 invariants verified in Iteration 1, all Iteration 2 PRs must satisfy:
 
@@ -260,4 +299,6 @@ In addition to the 9 invariants verified in Iteration 1, all Iteration 2 PRs mus
 2. **Streaming Invariant**: Data exports exceeding 1,000 records must never buffer entire collections into JVM heap or Node.js memory; streaming response bodies are mandatory.
 3. **Cryptographic Erasure Invariant**: Any GDPR hard-purge must produce a tamper-evident Certificate of Erasure containing SHA-256 digests of destroyed entities.
 4. **Offline Durability Invariant**: Mobile outbox mutations must persist to durable disk storage immediately upon creation to survive mobile OS termination.
-5. **Zero-Flake CI Invariant**: All automated Playwright and integration test suites in CI must achieve 100% deterministic reproducibility without race-condition flakes.
+5. **Theme Scrim Isolation Invariant**: Tenant custom branding colors must dynamically compute WCAG 2.2 AA compliant glass text contrast scrims ($\ge 4.5:1$) via `@unipost/tokens`.
+6. **Zero-Flake CI Invariant**: All automated Playwright and integration test suites in CI must achieve 100% deterministic reproducibility without race-condition flakes.
+
