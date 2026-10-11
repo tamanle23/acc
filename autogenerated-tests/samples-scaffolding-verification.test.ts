@@ -69,10 +69,16 @@ describe('Sample Materials & Auto-Config Scaffolding Verification', () => {
       const dirPath = path.join(samplesDir, def.dir);
       expect(fs.existsSync(dirPath)).toBe(true);
       expect(fs.existsSync(path.join(dirPath, 'assets'))).toBe(true);
-      expect(fs.existsSync(path.join(dirPath, 'story-config.json'))).toBe(true);
       expect(fs.existsSync(path.join(dirPath, 'pipeline-ir.json'))).toBe(true);
       expect(fs.existsSync(path.join(dirPath, 'omnichannel-config.json'))).toBe(true);
       expect(fs.existsSync(path.join(dirPath, 'README.md'))).toBe(true);
+
+      // Only Pipeline 4 maintains legacy story-config.json
+      if (def.expectedPipelineId === '4') {
+        expect(fs.existsSync(path.join(dirPath, 'story-config.json'))).toBe(true);
+      } else {
+        expect(fs.existsSync(path.join(dirPath, 'story-config.json'))).toBe(false);
+      }
     }
   });
 
@@ -88,22 +94,31 @@ describe('Sample Materials & Auto-Config Scaffolding Verification', () => {
     }
   });
 
-  it('should verify 3D depth, overlay effects, and SFX cues across story-config.json', () => {
+  it('should verify 3D depth, overlay effects, and SFX cues across omnichannel-config.json and legacy story-config.json', () => {
     for (const def of sampleDefinitions) {
       const dirPath = path.join(samplesDir, def.dir);
-      const sc = JSON.parse(fs.readFileSync(path.join(dirPath, 'story-config.json'), 'utf-8'));
+      const omni = JSON.parse(fs.readFileSync(path.join(dirPath, 'omnichannel-config.json'), 'utf-8'));
 
       // 3D Depth
-      expect(sc.settings?.depth3d?.enabled).toBe(true);
-      expect(sc.settings?.depth3d?.mode).toBe(def.expected3dMode);
+      expect(omni.videoConfig?.depth3d?.enabled).toBe(true);
+      expect(omni.videoConfig?.depth3d?.mode).toBe(def.expected3dMode);
 
       // VFX Overlay
-      expect(sc.settings?.overlayComposite).toBe(def.expectedOverlay);
+      expect(omni.videoConfig?.overlayComposite).toBe(def.expectedOverlay);
 
       // SFX Design
-      expect(Array.isArray(sc.settings?.sfx)).toBe(true);
-      expect(sc.settings?.sfx.length).toBeGreaterThan(0);
-      expect(sc.settings?.sfx.some((s: any) => s.source === def.expectedSfx)).toBe(true);
+      expect(Array.isArray(omni.videoConfig?.sfx)).toBe(true);
+      expect(omni.videoConfig?.sfx.length).toBeGreaterThan(0);
+      expect(omni.videoConfig?.sfx.some((s: any) => s.source === def.expectedSfx)).toBe(true);
+
+      // For Pipeline 4, verify legacy story-config.json parity
+      if (def.expectedPipelineId === '4') {
+        const sc = JSON.parse(fs.readFileSync(path.join(dirPath, 'story-config.json'), 'utf-8'));
+        expect(sc.settings?.depth3d?.enabled).toBe(true);
+        expect(sc.settings?.depth3d?.mode).toBe(def.expected3dMode);
+        expect(sc.settings?.overlayComposite).toBe(def.expectedOverlay);
+        expect(sc.settings?.sfx.some((s: any) => s.source === def.expectedSfx)).toBe(true);
+      }
     }
   });
 
