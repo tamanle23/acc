@@ -23,8 +23,14 @@ export class DataProberHandler extends BaseMediaAssetProberHandler {
       const ext = this.getExtension(filePath);
       const relativePath = this.getRelativePath(filePath, baseDir);
 
-      // Avoid probing pipeline-ir.json or story-config.json or package.json as dataset files
-      if (/^(package|tsconfig|story-config|pipeline-ir|omnichannel-config)/i.test(fileName)) {
+      // Avoid probing pipeline-ir.json, story-config.json, schema files, or package.json as datasets
+      if (
+        /^(package|tsconfig|story-config|pipeline-ir|omnichannel-config|video-ir)/i.test(
+          fileName
+        ) ||
+        fileName.includes('schema') ||
+        fileName.includes('transformed')
+      ) {
         return false;
       }
 
@@ -44,11 +50,22 @@ export class DataProberHandler extends BaseMediaAssetProberHandler {
         return true;
       } else if (ext === '.json') {
         const parsed = JSON.parse(content);
-        const isArray = Array.isArray(parsed);
-        const rowCount = isArray ? parsed.length : 1;
-        const headers = isArray && parsed[0] && typeof parsed[0] === 'object'
-          ? Object.keys(parsed[0] as Record<string, unknown>)
-          : undefined;
+        if (parsed.$schema || parsed.scenes || parsed.tracks || parsed.settings) {
+          return false;
+        }
+
+        const isArray =
+          Array.isArray(parsed) &&
+          parsed.length > 0 &&
+          typeof parsed[0] === 'object' &&
+          parsed[0] !== null;
+
+        if (!isArray) {
+          return false;
+        }
+
+        const rowCount = parsed.length;
+        const headers = Object.keys(parsed[0] as Record<string, unknown>);
 
         manifest.data.push({
           relativePath,

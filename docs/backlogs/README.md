@@ -31,6 +31,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`025`](025_concrete_strategies_250_content_types.md) | Concrete Content Task Strategies for All 250 Content Variations | Core Architecture / Content Strategies | ✅ `Completed` | 2026-10-11 | [`176_concrete_strategies_250_content_variations.md`](../history/176_concrete_strategies_250_content_variations.md) |
 | [`026`](026_fine_grained_polymorphic_video_director.md) | Fine-Grained Polymorphic Video Director Control for Content Strategies | Core Architecture / Universal IR | ✅ `Completed` | 2026-10-11 | [`179_fine_grained_polymorphic_video_director.md`](../history/179_fine_grained_polymorphic_video_director.md) |
 | [`027`](027_universal_autoconfig_phase1_prober_chain.md) | Universal Auto-Config Phase 1: Headless Prober Chain & Asset Manifest | Core Architecture / Autoconfig / Media Probers | ✅ `Completed` | 2026-10-11 | [`180_universal_autoconfig_phase1_prober_chain.md`](../history/180_universal_autoconfig_phase1_prober_chain.md) |
+| [`028`](028_universal_autoconfig_phase2_classifier_strategies.md) | Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Registry | Core Architecture / Autoconfig / Pipeline Classifiers | ✅ `Completed` | 2026-10-11 | [`181_universal_autoconfig_phase2_classifier_strategies.md`](../history/181_universal_autoconfig_phase2_classifier_strategies.md) |
 
 ---
 

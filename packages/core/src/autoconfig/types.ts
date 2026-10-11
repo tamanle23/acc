@@ -93,3 +93,38 @@ export interface IMediaAssetProberHandler {
   setNext(handler: IMediaAssetProberHandler): IMediaAssetProberHandler;
   handle(filePath: string, baseDir: string, manifest: DiscoveredAssetManifest, options?: ProberScanOptions): Promise<boolean>;
 }
+
+import type { ContentModality } from '../conductor/interfaces/IContentTaskStrategy';
+import type { PipelineIR } from '@acc/ir';
+
+export interface ArchetypeScaffoldConfig {
+  pipelineId: '1' | '2' | '3' | '4' | '5' | '6';
+  canonicalPipelineId: PipelineIR['pipelineId'];
+  suggestedTitle: string;
+  suggestedModalities: ContentModality[];
+  defaultAspect: '9:16' | '16:9' | '1:1';
+  defaultFps: number;
+  chunkDurationMs: number;
+  theme?: string;
+  archetypeNotes?: string;
+}
+
+export interface IPipelineClassifierStrategy {
+  readonly pipelineId: '1' | '2' | '3' | '4' | '5' | '6';
+  readonly name: string;
+  readonly description: string;
+  calculateConfidence(manifest: DiscoveredAssetManifest): number;
+  generateArchetypeDefaults(manifest: DiscoveredAssetManifest): ArchetypeScaffoldConfig;
+}
+
+export interface PipelineResolutionResult {
+  strategy: IPipelineClassifierStrategy;
+  confidence: number;
+  isOverride: boolean;
+  defaults: ArchetypeScaffoldConfig;
+  allCandidates: Array<{
+    pipelineId: string;
+    name: string;
+    confidence: number;
+  }>;
+}

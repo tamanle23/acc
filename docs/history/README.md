@@ -193,4 +193,5 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`178`](178_content_dependent_modality_constraints_and_configs.md) | 2026-10-11 | Content-Dependent Modality Constraints & Fine-Grained Configurations | Enforced semantic compatibility guardrails, rejected incompatible modalities per content type, and supported video/audio/social config blocks |
 | [`179`](179_fine_grained_polymorphic_video_director.md) | 2026-10-11 | Fine-Grained Polymorphic Video Director Control for Content Strategies | 3-Tier Director architecture, Canvas & LUT color grading, BGM & SFX staging, 3D depth, Ken Burns, transitions, and typography overrides |
 | [`180`](180_universal_autoconfig_phase1_prober_chain.md) | 2026-10-11 | Universal Auto-Config Phase 1: Headless Prober Chain & Asset Manifest | Decoupled media discovery into Chain of Responsibility probers, technical probing, and DiscoveredAssetManifest |
+| [`181`](181_universal_autoconfig_phase2_classifier_strategies.md) | 2026-10-11 | Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Registry | Built IPipelineClassifierStrategy, 6 canonical classifier strategies, and PipelineClassifierRegistry |
 
