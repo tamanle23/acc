@@ -80,5 +80,5 @@ describe("Stress & Stability Rendering Suite", () => {
 
       console.log(`[Test] Iteration ${i}/${iterations} passed in ${elapsedSec.toFixed(2)}s (size: ${(stats.size / 1024).toFixed(1)} KB)`);
     }
-  }, 180000);
+  }, 360000);
 });

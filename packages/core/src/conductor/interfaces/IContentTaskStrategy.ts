@@ -1,24 +1,19 @@
 import { UnifiedPipelineContext } from '../../pipeline/UnifiedPipelineContext';
-import type { PipelineIR } from '@acc/ir';
-import type { VideoIRDocument } from '@acc/ir';
+import type { PipelineIR, VideoIRDocument, FineGrainedVideoDirectorConfig } from '@acc/ir';
 import type { StaticWebOutput } from '../strategies/archetypes/StaticWebContentStrategy';
 import type { SocialMediaOutput } from '../strategies/archetypes/SocialMediaContentStrategy';
 import type { VideoContentOutput } from '../strategies/archetypes/VideoContentStrategy';
 import type { AudioPodcastOutput } from '../strategies/archetypes/AudioPodcastContentStrategy';
 import type { InteractiveWebOutput } from '../strategies/archetypes/InteractiveWebContentStrategy';
 
+export type { FineGrainedVideoDirectorConfig };
 export type ContentModality = 'static-web' | 'social' | 'video' | 'audio' | 'interactive-web';
 
 /**
  * Modality-Specific Fine-Grained Configuration Blocks
  */
 export interface ModalityConfigurations {
-  videoConfig?: {
-    aspectRatio?: '9:16' | '16:9';
-    fps?: number;
-    durationMs?: number;
-    theme?: string;
-  };
+  videoConfig?: FineGrainedVideoDirectorConfig;
   audioConfig?: {
     format?: 'mp3' | 'wav' | 'flac' | 'aac';
     targetLoudnessLufs?: number;

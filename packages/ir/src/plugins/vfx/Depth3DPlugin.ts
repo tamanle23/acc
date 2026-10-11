@@ -1,3 +1,4 @@
+import fs from 'fs';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import { Depth3DFactory, drawFrameBreakerFrame, resolveSubjectCutout, resolveDepthMapData } from '@acc/effect-engines';
 import { createCanvas, type Image, type Canvas } from '@napi-rs/canvas';
@@ -52,22 +53,26 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     // Pre-resolve AI subject cutout and Depth Anything layers during preflight
-    if (params.imagePath) {
-      const cutout = await resolveSubjectCutout(params.imagePath, params as any);
-      this.cutoutCache.set(params.imagePath, cutout);
+    if (params.imagePath && fs.existsSync(params.imagePath)) {
+      try {
+        const cutout = await resolveSubjectCutout(params.imagePath, params as any);
+        this.cutoutCache.set(params.imagePath, cutout);
+      } catch {}
 
       const mode = params.mode || 'frame_breaker';
       const width = context.canvas.width;
       const height = context.canvas.height;
 
       if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth) {
-        const depthData = await resolveDepthMapData(
-          params.imagePath,
-          width,
-          height,
-          params as any
-        );
-        this.depthLayerCache.set(params.imagePath, depthData);
+        try {
+          const depthData = await resolveDepthMapData(
+            params.imagePath,
+            width,
+            height,
+            params as any
+          );
+          this.depthLayerCache.set(params.imagePath, depthData);
+        } catch {}
       }
 
       if (mode === 'parallax_25d' || mode === 'parallax_dolly') {

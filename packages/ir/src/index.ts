@@ -3,6 +3,7 @@ export * from './LegacyStoryConfigAdapter';
 
 // Universal Video IR V1.0-Stable Exports
 export * from './types/VideoIR';
+export * from './types/FineGrainedVideoDirectorConfig';
 export * from './schema/VideoIRSchemaValidator';
 export * from './prober/AssetMetadataProber';
 export * from './adapters/IConfigToIRAdapter';

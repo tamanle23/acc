@@ -1,4 +1,4 @@
-import type { PipelineIR, ContentChunk, VideoIRDocument } from '@acc/ir';
+import type { PipelineIR, ContentChunk, VideoIRDocument, FineGrainedVideoDirectorConfig } from '@acc/ir';
 import { PipelineIRToUniversalIRAdapter } from '@acc/ir';
 import type { UnifiedPipelineContext } from '../../pipeline/UnifiedPipelineContext';
 import type {
@@ -155,9 +155,11 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
     ir: PipelineIR
   ): Promise<TOutput> {
     const input = ctx.input as any;
-    const requestedModalities: ContentModality[] = Array.isArray(input?.modalities) && input.modalities.length > 0
-      ? input.modalities
-      : [this.defaultModality];
+    const rawModalities = input?.modalities || input?.requestedModalities;
+    const requestedModalities: ContentModality[] =
+      Array.isArray(rawModalities) && rawModalities.length > 0
+        ? rawModalities
+        : [this.defaultModality];
 
     // Strict Compatibility Enforcement:
     // Reject any requested modality that is semantically or technically incompatible with this content type
@@ -271,16 +273,18 @@ export class BaseContentTaskStrategy<TInput = any, TOutput = OmnichannelOutput>
   protected renderVideo(
     ctx: UnifiedPipelineContext<TInput>,
     ir: PipelineIR,
-    config?: { aspectRatio?: '9:16' | '16:9'; fps?: number; durationMs?: number }
+    config?: FineGrainedVideoDirectorConfig
   ): VideoContentOutput {
-    const requestedAspect = config?.aspectRatio || (ctx.input as any)?.aspectRatio;
+    const requestedAspect = config?.canvas?.aspectRatio || config?.aspectRatio || (ctx.input as any)?.aspectRatio;
     const aspectRatio: '9:16' | '16:9' = requestedAspect === '16:9' ? '16:9' : '9:16';
     const durationMs = config?.durationMs || ir.chunks[0]?.durationMs || 15000;
-    const fps = config?.fps || 30;
+    const fps = config?.canvas?.fps || config?.fps || 30;
 
     const videoIRDoc = PipelineIRToUniversalIRAdapter.adapt(
       ir,
-      ctx.metadata?.workflowInstanceId || `video_${this.contentTypeId}_${Date.now()}`
+      ctx.metadata?.workflowInstanceId || `video_${this.contentTypeId}_${Date.now()}`,
+      undefined,
+      config
     );
 
     return {

@@ -29,6 +29,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`023`](023_enterprise_telemetry_security_phase5.md) | Zero-Trust Security, Dynamic Secrets & Observability (Phase 5) | Core Architecture / Telemetry & Security | ✅ `Completed` | 2026-10-11 | [`173_enterprise_telemetry_security_phase5.md`](../history/173_enterprise_telemetry_security_phase5.md) |
 | [`024`](024_enterprise_tier5_chaos_hardening.md) | 5-Tier Continuous Quality Engineering & Chaos Hardening (Phase 6) | Enterprise QA / Chaos Hardening | ✅ `Completed` | 2026-10-11 | [`174_enterprise_tier5_chaos_hardening.md`](../history/174_enterprise_tier5_chaos_hardening.md) |
 | [`025`](025_concrete_strategies_250_content_types.md) | Concrete Content Task Strategies for All 250 Content Variations | Core Architecture / Content Strategies | ✅ `Completed` | 2026-10-11 | [`176_concrete_strategies_250_content_variations.md`](../history/176_concrete_strategies_250_content_variations.md) |
+| [`026`](026_fine_grained_polymorphic_video_director.md) | Fine-Grained Polymorphic Video Director Control for Content Strategies | Core Architecture / Universal IR | ✅ `Completed` | 2026-10-11 | [`179_fine_grained_polymorphic_video_director.md`](../history/179_fine_grained_polymorphic_video_director.md) |
 
 ---
 

@@ -42,7 +42,7 @@ describe('Phase 6: Distributed Temporal Slicing & CLI Execution Parity', () => {
     const timeline = await compiler.compile(irDoc);
 
     const totalFramesOriginal = timeline.totalFrames;
-    expect(totalFramesOriginal).toBe(3588); // 2778 raw frames + 27 scenes * 30 frames pauseBetweenScenes
+    expect(totalFramesOriginal).toBe(3618); // 2778 raw frames + 28 scenes * 30 frames pauseBetweenScenes
 
     // Simulate Chunk 0: Frames 0..5
     const chunk0Timeline = await compiler.compile(irDoc);

@@ -360,10 +360,10 @@ describe('Systematic Video Editing Engine Master Design Pattern Test Suite', () 
 
   // GROUP 11: INTERACTIVE MEDIA & DAM
   describe('Group 11: Interactive Media & DAM', () => {
-    test('11.1: Interactive Branching Widget', () => {
+    test('11.1: Interactive Branching Widget', async () => {
       const tmpDir = path.join(os.tmpdir(), `acc_widget_g11_${Date.now()}`);
       const ir = LegacyStoryConfigAdapter.adapt({ name: 'Interactive G11', scenes: [{ text: 'Branch 1', duration: 2 }] });
-      const { htmlPath } = WidgetExporter.exportInteractiveWidget(ir, { outputDir: tmpDir });
+      const { htmlPath } = await WidgetExporter.exportInteractiveWidget(ir, { outputDir: tmpDir });
       expect(fs.existsSync(htmlPath)).toBe(true);
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });
