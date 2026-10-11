@@ -30,6 +30,7 @@
 | [025](025_orphaned_tenant_and_fleet_workspace_user_management.md) | 2026-10-11 | Orphaned Tenant State Handling & Fleet Workspace/User Management | Enforced user-belongs-to-tenant and tenant-has-workspaces hierarchy; handled orphaned tenant state with hidden workspace nav and NO WORKSPACE badge; added TenantWorkspacesDrawer and user membership management to Fleet Ledger. |
 | [026](026_default_tenant_purge_user_default_workspace_fleet_drawers.md) | 2026-10-11 | Default Tenant Purge, User Default Workspace Selection & Fleet Sovereign Drawer Standardization | Purged default-tenant across backend/console; added unassigned tenant intervention screen; enforced tenant immutable default workspaces; enabled user default workspace selection; standardized slide-over TenantUsersDrawer in Fleet Ledger. |
 | [027](027_protected_route_unassigned_tenant_guard_tests.md) | 2026-10-11 | ProtectedRoute Unassigned Tenant Guard & Intervention Screen Test Suite | Implemented comprehensive automated Vitest test suite covering ProtectedRoute tenant assignment guard, unassigned intervention screen rendering, sign-out actions, and sovereign bypass. |
+| [028](028_tenant_immutable_default_workspace_tests.md) | 2026-10-11 | Tenant Immutable Default Workspace Protection Test Suite | Added automated Vitest test suite for Phase 3 verifying default workspace protection, disabled deletion for default/sole workspaces, and DEFAULT badge rendering. |
 
 
 

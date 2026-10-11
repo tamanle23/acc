@@ -32,5 +32,13 @@ describe('WorkspacesPanel Component', () => {
     const activeTenant = useMetadataUiStore.getState().activeTenantId;
     expect(activeTenant).toBeDefined();
   });
+
+  it('disables deletion of tenant immutable default workspace', () => {
+    renderWithQueryClient(<WorkspacesPanel />);
+
+    const disabledDeleteBtns = screen.getAllByTitle('Workspace mặc định của tổ chức (Không thể xóa)');
+    expect(disabledDeleteBtns.length).toBeGreaterThanOrEqual(1);
+    expect((disabledDeleteBtns[0] as HTMLButtonElement).disabled).toBe(true);
+  });
 });
 
