@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
+import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
 
 export const springApiClient = axios.create({
   baseURL: '/api',
@@ -30,13 +31,36 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
-// 1. Request Interceptor: Attach Access Token
+// 1. Request Interceptor: Attach Access Token, Tenant & Workspace Context Headers
 springApiClient.interceptors.request.use(
   (config) => {
     const { accessToken } = useSpringAuthStore.getState();
-    if (accessToken && config.headers) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_token') : null;
+    const effectiveToken = assumedToken || accessToken;
+
+    if (effectiveToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
+
+    const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+    if (assumedTenant && config.headers) {
+      config.headers['X-Assumed-Tenant'] = assumedTenant;
+      config.headers['X-Tenant-Id'] = assumedTenant;
+    } else {
+      // Inject context from active metadata UI store if available
+      try {
+        const metadataState = useMetadataUiStore.getState();
+        if (metadataState.activeTenantId && config.headers && !config.headers['X-Tenant-Id']) {
+          config.headers['X-Tenant-Id'] = metadataState.activeTenantId;
+        }
+        if (metadataState.activeWorkspaceId && config.headers && !config.headers['X-Workspace-Id']) {
+          config.headers['X-Workspace-Id'] = metadataState.activeWorkspaceId;
+        }
+      } catch {
+        // Fallback gracefully if store is uninitialized
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

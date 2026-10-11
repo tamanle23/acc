@@ -59,7 +59,10 @@ public class SchemaValidationService {
      * Build composite cache key: schema:{tenant_id}:{entity_type_id}:v{tenantVer}_s{systemVer}
      */
     public String buildCacheKey(String tenantId, Long entityTypeId, Long schemaVersion) {
-        String tid = (tenantId != null && !tenantId.isBlank()) ? tenantId : "default-tenant";
+        String tid = (tenantId != null && !tenantId.isBlank()) ? tenantId : com.unipost.fw.tenancy.TenantContextHolder.getTenantId();
+        if (tid == null || tid.isBlank()) {
+            throw new SecurityException("Tenant context required for cache key compilation.");
+        }
         long version = schemaVersion != null ? schemaVersion : 1L;
         // In dual-layer versioning, schema key encodes tenant identity and versions:
         // schema:{tenant_id}:{entity_type_id}:v{tenantVer}_s{systemVer}
@@ -214,10 +217,12 @@ public class SchemaValidationService {
         }
 
         // Second pass: include or overlay tenant's own attributes
-        String activeTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : "default-tenant";
-        for (AttributeDefinition attr : allVisible) {
-            if (activeTenant.equalsIgnoreCase(attr.getTenantId())) {
-                compositeMap.put(attr.getSystemName(), attr);
+        String activeTenant = (tenantId != null && !tenantId.isBlank()) ? tenantId : com.unipost.fw.tenancy.TenantContextHolder.getTenantId();
+        if (activeTenant != null && !activeTenant.isBlank()) {
+            for (AttributeDefinition attr : allVisible) {
+                if (activeTenant.equalsIgnoreCase(attr.getTenantId())) {
+                    compositeMap.put(attr.getSystemName(), attr);
+                }
             }
         }
 

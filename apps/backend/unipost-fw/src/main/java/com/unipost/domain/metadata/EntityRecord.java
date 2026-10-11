@@ -24,7 +24,7 @@ public class EntityRecord extends BaseModel {
     private EntityType entityType;
 
     @Column(name = "tenant_id", nullable = false)
-    private String tenantId = "default-tenant";
+    private String tenantId;
 
     @Column(name = "schema_version")
     private Long schemaVersion = 1L;

@@ -102,6 +102,14 @@ export interface SystemRoleWithPermissions {
   createdDate: string;
 }
 
+export interface CreateRolePayload {
+  roleId: string;
+  roleName: string;
+  description?: string;
+  permissions?: string[];
+  inheritedRoles?: string[];
+}
+
 export interface UpdateRolePermissionsPayload {
   roleId: string;
   permissions: string[];
@@ -370,6 +378,31 @@ export function useUpdateRolePermissions() {
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.message || 'Failed to update role permissions';
+      toast.error(msg);
+    },
+  });
+}
+
+/**
+ * Sovereign mutation: Provision a new custom role with declarative DAG inheritance.
+ */
+export function useCreateSystemRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreateRolePayload) => {
+      const response = await springApiClient.post<{
+        header: { success: boolean };
+        body: SystemRoleWithPermissions;
+      }>('/v1/system/roles', payload);
+      return response.data?.body;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: SYSTEM_FLEET_QUERY_KEYS.roles() });
+      toast.success(`Role '${data?.roleName || 'Custom'}' successfully provisioned!`);
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to create role';
       toast.error(msg);
     },
   });

@@ -44,6 +44,9 @@ class TenantProvisioningServiceTest {
   private com.unipost.repository.jpa.RelationshipTypeRepository relationshipTypeRepository;
 
   @Mock
+  private com.unipost.repository.jpa.WorkspaceRepository workspaceRepository;
+
+  @Mock
   private SchemaValidationService schemaValidationService;
 
   @Mock
@@ -64,6 +67,7 @@ class TenantProvisioningServiceTest {
         entityTypeRepository,
         attributeDefinitionRepository,
         relationshipTypeRepository,
+        workspaceRepository,
         schemaValidationService);
   }
 
@@ -92,6 +96,13 @@ class TenantProvisioningServiceTest {
     when(relationshipTypeRepository.save(any(RelationshipType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(schemaValidationService.getOrCompileJsonSchema(anyString(), anyLong(), anyLong())).thenReturn(mockJsonSchema);
+    when(workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull(anyString())).thenReturn(java.util.Optional.empty());
+    when(workspaceRepository.save(any(com.unipost.domain.workspace.Workspace.class))).thenAnswer(inv -> {
+      com.unipost.domain.workspace.Workspace ws = inv.getArgument(0);
+      ws.setId(999L);
+      ws.setUid("ws-auto-provisioned-uid");
+      return ws;
+    });
 
     TenantProvisioningResult result = tenantProvisioningService.provisionTenant(request);
 
@@ -101,8 +112,20 @@ class TenantProvisioningServiceTest {
     assertEquals(2, result.createdEntityTypesCount());
     assertEquals(7, result.createdAttributesCount());
     assertEquals(1, result.createdRelationshipsCount());
+    assertEquals("ws-auto-provisioned-uid", result.defaultWorkspaceUid());
+    assertEquals("Fleet Alpha Logistics Primary", result.defaultWorkspaceName());
     assertTrue(result.createdEntityTypeNames().contains("Fleet Vehicle"));
     assertTrue(result.createdEntityTypeNames().contains("Dispatch Order"));
+
+    // Verify default immutable workspace was saved
+    ArgumentCaptor<com.unipost.domain.workspace.Workspace> wsCaptor = ArgumentCaptor.forClass(com.unipost.domain.workspace.Workspace.class);
+    verify(workspaceRepository).save(wsCaptor.capture());
+    com.unipost.domain.workspace.Workspace savedWs = wsCaptor.getValue();
+    assertEquals("tenant-fleet-alpha", savedWs.getTenantId());
+    assertEquals("MAIN", savedWs.getCode());
+    assertEquals("Fleet Alpha Logistics Primary", savedWs.getName());
+    assertTrue(savedWs.getIsDefault());
+    assertTrue(savedWs.getIsImmutable());
 
     // Verify entity types were saved with tenant_id = 'tenant-fleet-alpha'
     ArgumentCaptor<EntityType> entityTypeCaptor = ArgumentCaptor.forClass(EntityType.class);
@@ -127,12 +150,20 @@ class TenantProvisioningServiceTest {
   }
 
   @Test
-  @DisplayName("Should provision blank workspace blueprint successfully with zero entities")
+  @DisplayName("Should provision blank workspace blueprint successfully with zero entities and default workspace")
   void provisionBlankWorkspaceSuccessfully() {
     TenantProvisioningRequest request = new TenantProvisioningRequest(
         "tenant-clean-slate",
         "Clean Workspace Co",
         "bp_blank_v1");
+
+    when(workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull(anyString())).thenReturn(java.util.Optional.empty());
+    when(workspaceRepository.save(any(com.unipost.domain.workspace.Workspace.class))).thenAnswer(inv -> {
+      com.unipost.domain.workspace.Workspace ws = inv.getArgument(0);
+      ws.setId(888L);
+      ws.setUid("ws-blank-uid");
+      return ws;
+    });
 
     TenantProvisioningResult result = tenantProvisioningService.provisionTenant(request);
 
@@ -142,8 +173,11 @@ class TenantProvisioningServiceTest {
     assertEquals(0, result.createdEntityTypesCount());
     assertEquals(0, result.createdAttributesCount());
     assertEquals(0, result.createdRelationshipsCount());
+    assertEquals("ws-blank-uid", result.defaultWorkspaceUid());
+    assertEquals("Clean Workspace Co Primary", result.defaultWorkspaceName());
     assertTrue(result.createdEntityTypeNames().isEmpty());
 
+    verify(workspaceRepository, times(1)).save(any(com.unipost.domain.workspace.Workspace.class));
     verify(entityTypeRepository, never()).save(any());
     verify(attributeDefinitionRepository, never()).save(any());
     verify(relationshipTypeRepository, never()).save(any());
@@ -195,6 +229,13 @@ class TenantProvisioningServiceTest {
     when(relationshipTypeRepository.save(any(RelationshipType.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(schemaValidationService.getOrCompileJsonSchema(anyString(), anyLong(), anyLong())).thenReturn(mockJsonSchema);
+    when(workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull(anyString())).thenReturn(java.util.Optional.empty());
+    when(workspaceRepository.save(any(com.unipost.domain.workspace.Workspace.class))).thenAnswer(inv -> {
+      com.unipost.domain.workspace.Workspace ws = inv.getArgument(0);
+      ws.setId(777L);
+      ws.setUid("ws-cms-uid");
+      return ws;
+    });
 
     TenantProvisioningResult result = tenantProvisioningService.provisionTenant(request);
 
@@ -204,6 +245,8 @@ class TenantProvisioningServiceTest {
     assertEquals(3, result.createdEntityTypesCount());
     assertEquals(15, result.createdAttributesCount());
     assertEquals(2, result.createdRelationshipsCount());
+    assertEquals("ws-cms-uid", result.defaultWorkspaceUid());
+    assertEquals("Global Tech Daily Primary", result.defaultWorkspaceName());
     assertTrue(result.createdEntityTypeNames().contains("Article & Editorial Post"));
     assertTrue(result.createdEntityTypeNames().contains("Content Category"));
     assertTrue(result.createdEntityTypeNames().contains("Media Asset"));

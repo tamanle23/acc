@@ -40,7 +40,7 @@ interface CertificateOfErasure {
 
 export const DataPrivacyPanel: React.FC = () => {
   const authUser = useAuthStore((state) => state.auth.user);
-  const activeTenantId = (authUser as any)?.tenantId || 'default-tenant';
+  const activeTenantId = (authUser as any)?.tenantId || 'tenant-acme';
 
   // Export state
   const [isExporting, setIsExporting] = useState(false);

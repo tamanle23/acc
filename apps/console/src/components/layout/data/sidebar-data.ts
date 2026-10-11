@@ -23,20 +23,18 @@ import {
   Database,
   Building2,
   CreditCard,
+  Crown,
+  KeyRound,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
+import { useSpringAuthStore } from '@/features/spring-auth'
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store'
+import { useProfileStore } from '@/stores/profile-store'
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store'
 
 export const sidebarTeams = [
-  {
-    id: 'ws-main',
-    name: 'Unipost Main',
-    logo: Command,
-    plan: 'Production Workspace',
-    tenantId: 'default-tenant',
-    tenantName: 'Default Organization',
-  },
   {
     id: 'ws-acme-prod',
     name: 'Acme Prod',
@@ -44,6 +42,7 @@ export const sidebarTeams = [
     plan: 'Production Workspace',
     tenantId: 'tenant-acme',
     tenantName: 'Acme International Corp',
+    isDefault: true,
   },
   {
     id: 'ws-acme-staging',
@@ -52,11 +51,38 @@ export const sidebarTeams = [
     plan: 'Staging Environment',
     tenantId: 'tenant-acme',
     tenantName: 'Acme International Corp',
+    isDefault: false,
+  },
+  {
+    id: 'ws-us-east-prod',
+    name: 'US-East Production',
+    logo: Command,
+    plan: 'Production Workspace',
+    tenantId: 'tenant-us-east-1',
+    tenantName: 'US East Operations Ltd',
+    isDefault: true,
   },
 ];
 
 export const useSidebarData = (): SidebarData => {
   const { t } = useTranslation('console');
+  const { user } = useSpringAuthStore();
+  const { activePersonaId, activeTenantId: sandboxTenantId } = useSandboxStore();
+  const profiles = useProfileStore((state) => state.profiles);
+  const activeWorkspaceId = useMetadataUiStore((state) => state.activeWorkspaceId);
+  const activeTenantId = useMetadataUiStore((state) => state.activeTenantId);
+
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+  const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
+  const isSovereign = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system'
+  );
+
+  const effectiveTenantId = isAssumed ? assumedTenant : (activeTenantId || sandboxTenantId);
+  const tenantWorkspaces = profiles.filter((p) => p.tenantId === effectiveTenantId);
+  // An orphaned tenant has zero workspaces or empty workspace id
+  const hasActiveWorkspace = Boolean(activeWorkspaceId && activeWorkspaceId.trim() !== '' && tenantWorkspaces.length > 0);
 
   return useMemo(() => ({
     user: {
@@ -64,39 +90,41 @@ export const useSidebarData = (): SidebarData => {
       email: 'satnaingdev@gmail.com',
       avatar: '/avatars/shadcn.jpg',
     },
-    teams: sidebarTeams,
+    teams: (profiles && profiles.length > 0 ? profiles : sidebarTeams) as typeof sidebarTeams,
     navGroups: [
-      {
-        title: t('sidebar.groups.workspace', 'Workspace'),
-        items: [
-          {
-            title: t('sidebar.items.dashboard', 'Dashboard'),
-            url: '/',
-            icon: LayoutDashboard,
-          },
-          {
-            title: t('sidebar.items.tasks', 'Tasks'),
-            url: '/tasks',
-            icon: ListTodo,
-          },
-          {
-            title: t('sidebar.items.apps', 'Apps'),
-            url: '/apps',
-            icon: Package,
-          },
-          {
-            title: t('sidebar.items.chats', 'Chats'),
-            url: '/chats',
-            badge: '3',
-            icon: MessagesSquare,
-          },
-          {
-            title: 'Customer Accounts',
-            url: '/customer-accounts',
-            icon: Building2,
-          },
-        ],
-      },
+      ...(hasActiveWorkspace ? [
+        {
+          title: t('sidebar.groups.workspace', 'Workspace'),
+          items: [
+            {
+              title: t('sidebar.items.dashboard', 'Dashboard'),
+              url: '/',
+              icon: LayoutDashboard,
+            },
+            {
+              title: t('sidebar.items.tasks', 'Tasks'),
+              url: '/tasks',
+              icon: ListTodo,
+            },
+            {
+              title: t('sidebar.items.apps', 'Apps'),
+              url: '/apps',
+              icon: Package,
+            },
+            {
+              title: t('sidebar.items.chats', 'Chats'),
+              url: '/chats',
+              badge: '3',
+              icon: MessagesSquare,
+            },
+            {
+              title: 'Customer Accounts',
+              url: '/customer-accounts',
+              icon: Building2,
+            },
+          ],
+        },
+      ] : []),
       {
         title: t('sidebar.groups.admin', 'Admin'),
         items: [
@@ -110,13 +138,48 @@ export const useSidebarData = (): SidebarData => {
             url: '/storage',
             icon: Database,
           },
-          {
-            title: t('sidebar.items.metadata', 'Metadata'),
-            url: '/metadata',
-            icon: Settings2,
-          },
+          ...((!isSovereign || isAssumed)
+            ? [
+                {
+                  title: t('sidebar.items.metadata', 'Metadata'),
+                  url: '/metadata',
+                  icon: Settings2,
+                },
+              ]
+            : []),
         ],
       },
+      ...(isSovereign
+        ? [
+            {
+              title: isAssumed
+                ? t('sidebar.groups.sovereignDelegated', 'Sovereign Custody (Delegated)')
+                : t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
+              items: [
+                {
+                  title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
+                  url: '/system/tenants',
+                  icon: Building2,
+                  badge: 'ROOT',
+                },
+                {
+                  title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
+                  url: '/system/roles',
+                  icon: KeyRound,
+                },
+                ...(!isAssumed
+                  ? [
+                      {
+                        title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
+                        url: '/metadata',
+                        icon: Settings2,
+                      },
+                    ]
+                  : []),
+              ],
+            },
+          ]
+        : []),
       {
         title: t('sidebar.groups.pages', 'Pages'),
         items: [
@@ -222,5 +285,5 @@ export const useSidebarData = (): SidebarData => {
         ],
       },
     ],
-  }), [t])
+  }), [t, isSovereign, isAssumed, profiles, hasActiveWorkspace])
 }

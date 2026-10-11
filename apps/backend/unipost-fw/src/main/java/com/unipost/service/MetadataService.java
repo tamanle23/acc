@@ -625,7 +625,11 @@ public class MetadataService {
         String activeTenantId = com.unipost.fw.tenancy.TenantContextHolder.getTenantId();
         String effectiveTenantId = (activeTenantId != null && !activeTenantId.isBlank()) 
                 ? activeTenantId 
-                : (request.tenantId() != null && !request.tenantId().isBlank() ? request.tenantId() : "default-tenant");
+                : request.tenantId();
+
+        if (effectiveTenantId == null || effectiveTenantId.isBlank()) {
+            throw new SecurityException("Tenant context required. Cannot create record without an active tenant boundary.");
+        }
 
         CreateRecordRequest finalRequest = new CreateRecordRequest(finalAttributes, effectiveTenantId);
         EntityRecord record = MetadataDtoMapper.toEntity(finalRequest, entityType);

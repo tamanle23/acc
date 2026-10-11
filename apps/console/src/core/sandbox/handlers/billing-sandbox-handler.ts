@@ -72,9 +72,36 @@ const ENTERPRISE_FEATURES = [
 // In-memory tenant billing repository partitioned by tenantId
 const mockBillingStore = new Map<string, TenantBillingRecord>();
 
-// Seed default tenant with PRO features in sandbox for seamless testing
-mockBillingStore.set('default-tenant', {
-  tenantId: 'default-tenant',
+// Seed SYSTEM root sovereign custodian with unlimited tier and all features
+mockBillingStore.set('SYSTEM', {
+  tenantId: 'SYSTEM',
+  planTier: 'ENTERPRISE',
+  billingCadence: 'YEARLY',
+  status: 'ACTIVE',
+  amountPaid: 0,
+  expiresAt: null,
+  entitledFeatures: [...ENTERPRISE_FEATURES],
+  quotas: {
+    workspacesUsed: 1,
+    maxWorkspaces: -1,
+    schemasUsed: 12,
+    maxSchemas: -1,
+    recordsUsed: 50000,
+    maxRecords: -1,
+  },
+  vatInvoice: {
+    companyName: 'Unipost Sovereign Platform Core',
+    taxCode: '0000000000',
+    address: 'Global Root Platform',
+    email: 'root@unipost.vn',
+    isAutoInvoice: true,
+  },
+  history: [],
+});
+
+// Seed commercial tenant tenant-acme with PRO features in sandbox for seamless testing
+mockBillingStore.set('tenant-acme', {
+  tenantId: 'tenant-acme',
   planTier: 'PRO',
   billingCadence: 'MONTHLY',
   status: 'ACTIVE',
@@ -120,7 +147,7 @@ export const billingSandboxHandler: SandboxRouteHandler = {
     ctx.pathname.startsWith('/api/billing'),
   handler: async (req: SandboxRequest, ctx) => {
     const { pathname } = ctx;
-    const activeTenantId = useSandboxStore.getState().activeTenantId || 'default-tenant';
+    const activeTenantId = useSandboxStore.getState().activeTenantId || 'tenant-acme';
     const subPath = pathname.replace(/^\/(api\/v1\/billing|api\/billing)/, '');
 
     // 1. GET /summary

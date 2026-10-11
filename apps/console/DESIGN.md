@@ -57,6 +57,12 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-intensity, 0.2) * 0.2));
 --glass-specular: rgba(255, 255, 255, calc(var(--glass-specular-alpha, 0.2) * 0.65));
 --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+/* Sovereign Amber Liquid Glass Tokens (Assume-Tenant & Custody Badges) */
+--glass-amber-bg: rgba(245, 158, 11, 0.15);
+--glass-amber-border: rgba(245, 158, 11, 0.35);
+--glass-amber-specular: rgba(254, 243, 199, 0.65);
+--glass-amber-shadow: 0 4px 20px 0 rgba(245, 158, 11, 0.12);
 ```
 
 - **Backdrop Blur Levels:**
@@ -126,6 +132,11 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 - **4-Tier Pricing Grid:** 4-column responsive grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4`) with popular highlight `ring-2 ring-blue-500/40 bg-blue-500/15` and annual discount pill `-20%`.
 - **VietQR Transaction Ledger:** Translucent table container `bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl` with localized timestamps and Napas247 receipt download actions.
 - **Corporate E-Invoice Form:** Vietnamese VAT compliance panel with monospace tax code (MST) input and auto-invoice dispatch toggle.
+
+### 3.7 Sovereign Fleet Drawers (`TenantWorkspacesDrawer` & `TenantUsersDrawer`)
+- **Slide-Over Sheet Shell:** `w-full sm:max-w-xl bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6` with right-side slide-over motion. Symmetrical UX ergonomics for both workspace and user fleet administration.
+- **Member & Workspace Cards:** `bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 hover:border-white/40 rounded-xl p-4 transition-all`.
+- **Status & RBAC Badges:** Monospace role badges (`ADMIN`, `USER`, `CREATOR`), status badges (`ACTIVE` in emerald, `LOCKED` in rose), and immutable `DEFAULT` workspace badges in primary/indigo.
 
 ---
 

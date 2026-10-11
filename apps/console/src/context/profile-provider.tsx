@@ -8,6 +8,7 @@ type ProfileContextType = {
   profiles: Profile[]
   setCurrentProfile: (profile: Profile) => void
   setProfiles: (profiles: Profile[]) => void
+  syncAssumedTenant: (tenantId: string | null, tenantName?: string | null) => void
 }
 
 const ProfileContext = React.createContext<ProfileContextType | null>(null)
@@ -26,6 +27,7 @@ export function ProfileProvider({ children, defaultProfiles }: ProfileProviderPr
   const profiles = useProfileStore((state) => state.profiles)
   const setCurrentProfile = useProfileStore((state) => state.setCurrentProfile)
   const setProfiles = useProfileStore((state) => state.setProfiles)
+  const syncAssumedTenant = useProfileStore((state) => state.syncAssumedTenant)
 
   React.useEffect(() => {
     if (defaultProfiles && defaultProfiles.length > 0) {
@@ -39,8 +41,9 @@ export function ProfileProvider({ children, defaultProfiles }: ProfileProviderPr
       profiles,
       setCurrentProfile,
       setProfiles,
+      syncAssumedTenant,
     }),
-    [currentProfile, profiles, setCurrentProfile, setProfiles]
+    [currentProfile, profiles, setCurrentProfile, setProfiles, syncAssumedTenant]
   )
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>

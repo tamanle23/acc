@@ -16,9 +16,9 @@ import {
 import { useSpringAuthStore } from '../../spring-auth/store';
 import { useMetadataUiStore } from '../../metadata/store/use-metadata-ui-store';
 import { BlueprintCard } from '../../metadata/components/blueprint-gallery/blueprint-card';
-import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
 import { useNavigate } from '@tanstack/react-router';
-import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Mail, Key, Layers } from 'lucide-react';
+import { useProfileStore } from '@/stores/profile-store';
+import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Mail, Key, Layers, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -88,7 +88,7 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
       .trim()
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'ws-main';
+      .replace(/^-|-$/g, '') || `ws-${tenantSlug}-default`;
 
     try {
       // 1. Provision chosen blueprint for this tenant
@@ -109,6 +109,22 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
           isSandbox: true,
         })
       )}.mock_signature`;
+
+      // Register default workspace into profile store
+      const initialWsProfile = {
+        id: workspaceSlug,
+        name: effectiveWorkspaceName,
+        logo: LayoutGrid,
+        plan: 'Default Workspace',
+        tenantId: tenantSlug,
+        tenantName: organizationName,
+        isDefault: true,
+      };
+      useProfileStore.getState().setProfiles([
+        ...useProfileStore.getState().profiles,
+        initialWsProfile,
+      ]);
+      useProfileStore.getState().setCurrentProfile(initialWsProfile);
 
       setTokens(demoToken, `mock_refresh_${Date.now()}`);
       setActiveTenant(tenantSlug, organizationName);

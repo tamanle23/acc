@@ -18,8 +18,9 @@ describe('WorkspacesPanel Component', () => {
 
     expect(screen.getByText('Workspaces & Organizations')).toBeDefined();
     expect(screen.getByText('Tạo Workspace Mới')).toBeDefined();
-    expect(screen.getByText('Unipost Main')).toBeDefined();
+    expect(screen.getByText('Acme Prod')).toBeDefined();
     expect(screen.getByText('Đang chọn')).toBeDefined();
+    expect(screen.getAllByText('DEFAULT').length).toBeGreaterThanOrEqual(1);
   });
 
   it('switches active workspace when clicking Switch button', () => {
@@ -30,6 +31,31 @@ describe('WorkspacesPanel Component', () => {
 
     const activeTenant = useMetadataUiStore.getState().activeTenantId;
     expect(activeTenant).toBeDefined();
+  });
+
+  it('disables deletion of tenant immutable default workspace', () => {
+    renderWithQueryClient(<WorkspacesPanel />);
+
+    const disabledDeleteBtns = screen.getAllByTitle('Workspace mặc định của tổ chức (Không thể xóa)');
+    expect(disabledDeleteBtns.length).toBeGreaterThanOrEqual(1);
+    expect((disabledDeleteBtns[0] as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('allows user to set personal default workspace and displays MY DEFAULT badge', () => {
+    localStorage.clear();
+    const { unmount } = renderWithQueryClient(<WorkspacesPanel />);
+
+    const setMyDefaultBtns = screen.getAllByRole('button', { name: /Đặt làm mặc định/i });
+    expect(setMyDefaultBtns.length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(setMyDefaultBtns[0]);
+
+    const stored = localStorage.getItem('unipost_user_default_ws_tenant-acme');
+    expect(stored).toBeDefined();
+
+    unmount();
+    renderWithQueryClient(<WorkspacesPanel />);
+    expect(screen.getAllByText('MY DEFAULT').length).toBeGreaterThanOrEqual(1);
   });
 });
 

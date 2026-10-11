@@ -8,6 +8,7 @@ export const useSpringAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   refreshToken: localStorage.getItem(REFRESH_STORAGE_KEY),
   user: null,
+  currentTenantId: null,
   isAuthenticated: false,
   isHydrating: true, // Start in hydrating mode
   isSandbox: false,
@@ -24,10 +25,12 @@ export const useSpringAuthStore = create<AuthState>((set, get) => ({
       access?.endsWith('.mock_signature') ||
       refresh?.startsWith('mock_refresh_token_')
     );
+    const tenantId = (user?.tenantId as string) || (user?.tid as string) || null;
     set({
       accessToken: access,
       refreshToken: refresh,
       user,
+      currentTenantId: tenantId,
       isAuthenticated: !!user,
       isSandbox,
     });
@@ -39,6 +42,7 @@ export const useSpringAuthStore = create<AuthState>((set, get) => ({
       accessToken: null,
       refreshToken: null,
       user: null,
+      currentTenantId: null,
       isAuthenticated: false,
       isSandbox: false,
     });

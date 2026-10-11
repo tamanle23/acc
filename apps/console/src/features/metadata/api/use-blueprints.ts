@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { springApiClient } from '@/features/spring-auth/api-client';
 import type {
   BlueprintManifest,
   BlueprintSummaryDto,
@@ -12,9 +12,9 @@ export const useBlueprintCatalog = () => {
   return useQuery({
     queryKey: ['metadata', 'blueprints'],
     queryFn: async (): Promise<BlueprintSummaryDto[]> => {
-      const res = await axios.get('/api/v1/metadata/blueprints');
+      const res = await springApiClient.get('/v1/metadata/blueprints');
       // Unwrap standard ResponseWrapper if present
-      return res.data?.data || res.data || [];
+      return res.data?.body ?? res.data?.data ?? res.data ?? [];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
@@ -25,8 +25,8 @@ export const useBlueprintDetails = (blueprintId: string | null) => {
     queryKey: ['metadata', 'blueprint', blueprintId],
     queryFn: async (): Promise<BlueprintManifest | null> => {
       if (!blueprintId) return null;
-      const res = await axios.get(`/api/v1/metadata/blueprints/${blueprintId}`);
-      return res.data?.data || res.data || null;
+      const res = await springApiClient.get(`/v1/metadata/blueprints/${blueprintId}`);
+      return res.data?.body ?? res.data?.data ?? res.data ?? null;
     },
     enabled: Boolean(blueprintId),
     staleTime: 30 * 60 * 1000,
@@ -38,8 +38,8 @@ export const useProvisionTenantBlueprint = () => {
 
   return useMutation({
     mutationFn: async (payload: TenantProvisioningRequest): Promise<TenantProvisioningResult> => {
-      const res = await axios.post('/api/v1/metadata/tenants/provision', payload);
-      return res.data?.data || res.data;
+      const res = await springApiClient.post('/v1/metadata/tenants/provision', payload);
+      return res.data?.body ?? res.data?.data ?? res.data;
     },
     onSuccess: (data) => {
       // Invalidate metadata queries so left rail and relationship graphs update immediately

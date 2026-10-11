@@ -34,7 +34,7 @@ export const BillingPanel: React.FC = () => {
         {/* Active Subscription & Quota Gauges */}
         <CurrentSubscriptionCard
           billing={billing}
-          tenantName={activeTenantName || 'Default Organization'}
+          tenantName={activeTenantName || 'Acme International Corp'}
         />
 
         {/* 4-Tier Plan Pricing Selector */}
@@ -51,7 +51,7 @@ export const BillingPanel: React.FC = () => {
         <VatInvoiceForm initialData={billing?.vatInvoice} />
 
         {/* Developer Sandbox Dock */}
-        <SandboxBillingDock activeTenantId={activeTenantId || 'default-tenant'} />
+        <SandboxBillingDock activeTenantId={activeTenantId || 'tenant-acme'} />
 
         {/* payOS Dynamic VietQR Modal */}
         <PayOsQrModal
@@ -66,7 +66,7 @@ export const BillingPanel: React.FC = () => {
         <ContactEnterpriseModal
           isOpen={isContactEnterpriseOpen}
           onClose={() => setIsContactEnterpriseOpen(false)}
-          tenantName={activeTenantName || 'Default Organization'}
+          tenantName={activeTenantName || 'Acme International Corp'}
         />
       </div>
     </ContentSection>

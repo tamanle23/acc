@@ -7,9 +7,11 @@ import {
   useArchiveAttributeDefinition,
   useUnarchiveAttributeDefinition,
 } from '../../api/metadata-api';
-import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ArrowUp, ArrowDown } from 'lucide-react';
+import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ArrowUp, ArrowDown, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useSandboxStore } from '@/core/sandbox';
 
 interface Props {
   attribute: AttributeDefinition;
@@ -29,15 +31,25 @@ export const AttributeCard: React.FC<Props> = ({
   isLast = false,
 }) => {
   const { openEditAttributeDialog, openDeleteAttributeDialog } = useMetadataUiStore();
+  const { user, currentTenantId } = useSpringAuthStore();
+  const { activePersonaId, activeTenantId } = useSandboxStore();
+
+  const isSovereign =
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system' ||
+    currentTenantId === 'SYSTEM' ||
+    activeTenantId === 'SYSTEM';
+
   const createAttributeMutation = useCreateAttributeDefinition(entityTypeId);
   const archiveMutation = useArchiveAttributeDefinition(entityTypeId);
   const unarchiveMutation = useUnarchiveAttributeDefinition(entityTypeId);
 
   const isArchiving = archiveMutation.isPending || unarchiveMutation.isPending;
   const isSystemField = attribute.tenantId === 'SYSTEM';
+  const isLocked = isSystemField && !isSovereign;
 
   const handleToggleArchive = () => {
-    if (isSystemField) return;
+    if (isLocked) return;
     if (attribute.isArchived) {
       unarchiveMutation.mutate(attribute.id);
     } else {
@@ -90,9 +102,16 @@ export const AttributeCard: React.FC<Props> = ({
 
             {/* System Locked Badge vs Custom Attribute Badge */}
             {isSystemField ? (
-              <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0 font-medium text-sky-700 dark:text-sky-300 bg-sky-500/15 border-sky-500/30">
-                <Lock className="h-2.5 w-2.5" />
-                <span>System Field</span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] gap-1 px-1.5 py-0 font-medium ${
+                  isSovereign
+                    ? 'text-primary dark:text-primary-foreground bg-primary/10 border-primary/30'
+                    : 'text-sky-700 dark:text-sky-300 bg-sky-500/15 border-sky-500/30'
+                }`}
+              >
+                {isSovereign ? <ShieldCheck className="h-2.5 w-2.5 text-primary" /> : <Lock className="h-2.5 w-2.5" />}
+                <span>{isSovereign ? 'Canonical (Editable)' : 'System Field'}</span>
               </Badge>
             ) : (
               <Badge variant="outline" className="text-[10px] gap-1 px-1.5 py-0 font-medium text-purple-700 dark:text-purple-300 bg-purple-500/15 border-purple-500/30">
@@ -171,16 +190,16 @@ export const AttributeCard: React.FC<Props> = ({
           variant="ghost"
           size="sm"
           onClick={handleToggleArchive}
-          disabled={isArchiving || isSystemField}
+          disabled={isArchiving || isLocked}
           className={`h-8 px-2 transition-colors ${
-            isSystemField
+            isLocked
               ? 'opacity-40 cursor-not-allowed text-muted-foreground'
               : attribute.isArchived
               ? 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'
               : 'text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-500/10'
           }`}
           title={
-            isSystemField
+            isLocked
               ? 'System attributes are protected and cannot be archived'
               : attribute.isArchived
               ? 'Restore / Unarchive attribute'
@@ -198,14 +217,14 @@ export const AttributeCard: React.FC<Props> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => !isSystemField && openEditAttributeDialog(attribute)}
-          disabled={isSystemField}
+          onClick={() => !isLocked && openEditAttributeDialog(attribute)}
+          disabled={isLocked}
           className={`h-8 px-2 text-muted-foreground ${
-            isSystemField
+            isLocked
               ? 'opacity-40 cursor-not-allowed'
               : 'hover:text-foreground hover:bg-white/30 dark:hover:bg-white/10'
           }`}
-          title={isSystemField ? 'System attributes are protected and cannot be modified' : 'Edit attribute definition'}
+          title={isLocked ? 'System attributes are protected and cannot be modified' : 'Edit attribute definition'}
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -226,14 +245,14 @@ export const AttributeCard: React.FC<Props> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => !isSystemField && openDeleteAttributeDialog(attribute)}
-          disabled={isSystemField}
+          onClick={() => !isLocked && openDeleteAttributeDialog(attribute)}
+          disabled={isLocked}
           className={`h-8 px-2 text-destructive ${
-            isSystemField
+            isLocked
               ? 'opacity-40 cursor-not-allowed text-muted-foreground'
               : 'hover:text-destructive hover:bg-destructive/10'
           }`}
-          title={isSystemField ? 'System attributes are immutable and cannot be deleted' : 'Delete attribute'}
+          title={isLocked ? 'System attributes are immutable and cannot be deleted' : 'Delete attribute'}
         >
           <Trash2 className="h-4 w-4" />
         </Button>

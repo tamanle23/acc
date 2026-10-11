@@ -3,6 +3,8 @@ import { sandboxRegistry } from './sandbox-registry';
 import { withSimulationDecorator } from './simulation-decorator';
 import { createMockJwt } from '../handlers/auth-sandbox-handler';
 import { useSpringAuthStore } from '../../../features/spring-auth/store';
+import { useMetadataUiStore } from '../../../features/metadata/store/use-metadata-ui-store';
+import { useProfileStore } from '../../../stores/profile-store';
 import type {
   SandboxPersona,
   SandboxPersonaId,
@@ -53,6 +55,7 @@ export class UnifiedSandboxManager {
     const accessToken = createMockJwt({
       sub,
       roles: persona.roles,
+      tenantId: persona.defaultTenantId,
       isSandbox: true,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 15,
@@ -63,18 +66,25 @@ export class UnifiedSandboxManager {
   }
 
   /**
-   * Switch the active persona, sync active tenant, and update spring auth store tokens
+   * Switch the active persona, sync active tenant, and update spring auth store tokens & UI profile context
    */
   public switchPersona(personaId: SandboxPersonaId): void {
+    const persona = DEFAULT_SANDBOX_PERSONAS[personaId] || DEFAULT_SANDBOX_PERSONAS.admin;
     useSandboxStore.getState().setActivePersona(personaId);
     this.syncPersonaAuthTokens(personaId);
+
+    const tenantId = persona.defaultTenantId;
+    useMetadataUiStore.getState().setActiveTenant(tenantId, persona.name);
+    useProfileStore.getState().syncAssumedTenant(tenantId === 'SYSTEM' ? null : tenantId, persona.name);
   }
 
   /**
-   * Switch the active tenant
+   * Switch the active tenant and synchronize UI profile and metadata stores
    */
-  public switchTenant(tenantId: string): void {
+  public switchTenant(tenantId: string, tenantName?: string): void {
     useSandboxStore.getState().setActiveTenant(tenantId);
+    useMetadataUiStore.getState().setActiveTenant(tenantId, tenantName || tenantId);
+    useProfileStore.getState().syncAssumedTenant(tenantId === 'SYSTEM' ? null : tenantId, tenantName || tenantId);
   }
 
   /**

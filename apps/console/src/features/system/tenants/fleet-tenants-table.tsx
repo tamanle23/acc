@@ -42,6 +42,7 @@ import {
   Database,
   Layers,
   Infinity as InfinityIcon,
+  UsersIcon,
 } from 'lucide-react';
 import {
   useFleetTenants,
@@ -54,6 +55,13 @@ import { CreateTenantModal } from './create-tenant-modal';
 import { SubscriptionOverrideDrawer } from './subscription-override-drawer';
 import { QuotaTuningDrawer } from './quota-tuning-drawer';
 import { SuspendTenantDialog } from './suspend-tenant-dialog';
+import { TenantWorkspacesDrawer } from './tenant-workspaces-drawer';
+import { TenantUsersDrawer } from './tenant-users-drawer';
+import { useSandboxStore } from '@/core/sandbox';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { useProfileStore } from '@/stores/profile-store';
+import { toast } from 'sonner';
 
 export function FleetTenantsTable() {
   const [search, setSearch] = useState('');
@@ -65,6 +73,8 @@ export function FleetTenantsTable() {
   const [selectedTenant, setSelectedTenant] = useState<FleetTenantSummary | null>(null);
   const [subscriptionDrawerOpen, setSubscriptionDrawerOpen] = useState(false);
   const [quotaDrawerOpen, setQuotaDrawerOpen] = useState(false);
+  const [workspacesDrawerOpen, setWorkspacesDrawerOpen] = useState(false);
+  const [usersDrawerOpen, setUsersDrawerOpen] = useState(false);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [targetSuspendStatus, setTargetSuspendStatus] = useState<SovereignTenantStatus>('SUSPENDED');
 
@@ -81,11 +91,24 @@ export function FleetTenantsTable() {
     setQuotaDrawerOpen(true);
   };
 
+  const handleOpenWorkspaces = (tenant: FleetTenantSummary) => {
+    setSelectedTenant(tenant);
+    setWorkspacesDrawerOpen(true);
+  };
+
+  const handleOpenUsers = (tenant: FleetTenantSummary) => {
+    setSelectedTenant(tenant);
+    setUsersDrawerOpen(true);
+  };
+
   const handleToggleSuspend = (tenant: FleetTenantSummary) => {
     setSelectedTenant(tenant);
     setTargetSuspendStatus(tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
     setSuspendDialogOpen(true);
   };
+
+  const { setActiveTenant } = useSandboxStore();
+  const { setActiveTenant: setMetadataTenant } = useMetadataUiStore();
 
   const handleAssumeTenant = (tenant: FleetTenantSummary) => {
     assumeMutation.mutate(
@@ -93,7 +116,17 @@ export function FleetTenantsTable() {
       {
         onSuccess: (res) => {
           localStorage.setItem('unipost_assumed_tenant', res.effectiveTenantId);
-          window.location.reload();
+          localStorage.setItem('unipost_assumed_tenant_name', tenant.name);
+          if (res.ephemeralToken) {
+            localStorage.setItem('unipost_assumed_token', res.ephemeralToken);
+            useSpringAuthStore.getState().setTokens(res.ephemeralToken, 'mock_refresh_token_custodian');
+          }
+          setActiveTenant(res.effectiveTenantId);
+          setMetadataTenant(res.effectiveTenantId, tenant.name);
+          useProfileStore.getState().syncAssumedTenant(res.effectiveTenantId, tenant.name);
+
+          toast.success(`Assumed tenant '${tenant.name}' (${res.effectiveTenantId}). Navigating to organization workspace...`);
+          window.location.href = '/metadata';
         },
       }
     );
@@ -199,11 +232,10 @@ export function FleetTenantsTable() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                            isSystem
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border ${isSystem
                               ? 'bg-primary/15 border-primary/30 text-primary'
                               : 'bg-muted/40 border-white/20 dark:border-white/10 text-muted-foreground'
-                          }`}
+                            }`}
                         >
                           <Building2 className="h-4 w-4" />
                         </div>
@@ -230,8 +262,8 @@ export function FleetTenantsTable() {
                             tenant.tier === 'ENTERPRISE'
                               ? 'default'
                               : tenant.tier === 'PRO_MAX'
-                              ? 'secondary'
-                              : 'outline'
+                                ? 'secondary'
+                                : 'outline'
                           }
                           className="font-mono text-[10px]"
                         >
@@ -320,6 +352,22 @@ export function FleetTenantsTable() {
                           )}
 
                           <DropdownMenuItem
+                            onClick={() => handleOpenWorkspaces(tenant)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Layers className="h-4 w-4" />
+                            Manage Workspaces
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleOpenUsers(tenant)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <UsersIcon className="h-4 w-4" />
+                            Manage Users
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
                             onClick={() => handleOpenSubscription(tenant)}
                             className="gap-2 cursor-pointer"
                           >
@@ -340,9 +388,8 @@ export function FleetTenantsTable() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleToggleSuspend(tenant)}
-                                className={`gap-2 cursor-pointer ${
-                                  tenant.status === 'ACTIVE' ? 'text-destructive' : 'text-emerald-600'
-                                }`}
+                                className={`gap-2 cursor-pointer ${tenant.status === 'ACTIVE' ? 'text-destructive' : 'text-emerald-600'
+                                  }`}
                               >
                                 {tenant.status === 'ACTIVE' ? (
                                   <>
@@ -386,6 +433,16 @@ export function FleetTenantsTable() {
         targetStatus={targetSuspendStatus}
         open={suspendDialogOpen}
         onOpenChange={setSuspendDialogOpen}
+      />
+      <TenantWorkspacesDrawer
+        tenant={selectedTenant}
+        open={workspacesDrawerOpen}
+        onOpenChange={setWorkspacesDrawerOpen}
+      />
+      <TenantUsersDrawer
+        tenant={selectedTenant}
+        open={usersDrawerOpen}
+        onOpenChange={setUsersDrawerOpen}
       />
     </div>
   );

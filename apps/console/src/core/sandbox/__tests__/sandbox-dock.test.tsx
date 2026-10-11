@@ -56,4 +56,36 @@ describe('SandboxDock UI Component', () => {
 
     expect(useSandboxStore.getState().networkSimulation.latencyMaxMs).toBe(2000);
   });
+
+  it('should support switching scope tenant to tenant-acme and synchronizing active tenant', () => {
+    render(<SandboxDock />);
+
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'tenant-acme' } });
+
+    expect(useSandboxStore.getState().activeTenantId).toBe('tenant-acme');
+  });
+
+  it('should simulate unassigned user edge-case with warning toast', () => {
+    render(<SandboxDock />);
+
+    const unassignedBtn = screen.getByText('Unassigned User');
+    fireEvent.click(unassignedBtn);
+
+    expect(useSpringAuthStore.getState().currentTenantId).toBeNull();
+    expect(useSpringAuthStore.getState().user?.tenantId).toBeUndefined();
+  });
+
+  it('should clear localStorage user defaults and assumed session on reset all data', () => {
+    localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
+    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
+
+    render(<SandboxDock />);
+
+    const resetBtn = screen.getByTitle('Reset all mock data across all features');
+    fireEvent.click(resetBtn);
+
+    expect(localStorage.getItem('unipost_user_default_ws_tenant-acme')).toBeNull();
+    expect(localStorage.getItem('unipost_assumed_tenant')).toBeNull();
+  });
 });

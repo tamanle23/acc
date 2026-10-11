@@ -13,6 +13,8 @@ export const createMockJwt = (payload: Record<string, unknown>) => {
 };
 
 export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
+  custodian_root: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+  system_bypass: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
   admin_bypass: ['ROLE_USER', 'ROLE_ADMIN'],
   creator_bypass: ['ROLE_USER', 'ROLE_CREATOR'],
   user_bypass: ['ROLE_USER'],
@@ -20,6 +22,8 @@ export const SANDBOX_AUTH_USERS: Record<string, string[]> = {
 };
 
 export const SANDBOX_REFRESH_TOKENS: Record<string, string[]> = {
+  mock_refresh_token_custodian: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+  mock_refresh_token_system: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
   mock_refresh_token_admin: ['ROLE_USER', 'ROLE_ADMIN'],
   mock_refresh_token_creator: ['ROLE_USER', 'ROLE_CREATOR'],
   mock_refresh_token_user: ['ROLE_USER'],
@@ -70,9 +74,17 @@ export const authSandboxHandler: SandboxRouteHandler = {
         const roles = SANDBOX_AUTH_USERS[username];
         const sub = username.split('_')[0];
 
+        let tenantId = 'tenant-acme';
+        if (username === 'custodian_root' || username === 'system_bypass') {
+          tenantId = 'SYSTEM';
+        } else if (username === 'custom_bypass') {
+          tenantId = 'tenant-us-east-1';
+        }
+
         const token = createMockJwt({
           sub,
           roles,
+          tenantId,
           isSandbox: true,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,
@@ -98,10 +110,17 @@ export const authSandboxHandler: SandboxRouteHandler = {
       if (refreshToken && refreshToken in SANDBOX_REFRESH_TOKENS) {
         const roles = SANDBOX_REFRESH_TOKENS[refreshToken];
         const sub = refreshToken.split('_').pop();
+        let tenantId = 'tenant-acme';
+        if (sub === 'custodian' || sub === 'root' || sub === 'system') {
+          tenantId = 'SYSTEM';
+        } else if (sub === 'custom') {
+          tenantId = 'tenant-us-east-1';
+        }
 
         const token = createMockJwt({
           sub,
           roles,
+          tenantId,
           isSandbox: true,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + 60 * 15,

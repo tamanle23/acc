@@ -984,7 +984,7 @@ export class MockMetadataService implements MetadataDataSource {
     const newRec: EntityRecord = {
       id: newId,
       entityTypeId: strId,
-      tenantId: dto.tenantId || 'default-tenant',
+      tenantId: dto.tenantId || 'tenant-acme',
       attributes: dto.attributes || {},
       version: 1,
       createdDate: new Date().toISOString(),

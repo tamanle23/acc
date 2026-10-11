@@ -287,6 +287,39 @@ class SystemFleetControllerTest {
     }
 
     @Test
+    void testCreateRole_ReturnsSuccess() {
+        CreateRoleRequest request = CreateRoleRequest.builder()
+                .roleId("ROLE_COMPLIANCE_AUDITOR")
+                .roleName("Compliance Auditor")
+                .description("Audit compliance inspector")
+                .permissions(List.of("platform:fleet:read", "METADATA_SCHEMA_READ"))
+                .inheritedRoles(List.of("ROLE_USER"))
+                .build();
+
+        RoleWithPermissionsDto created = RoleWithPermissionsDto.builder()
+                .roleId("ROLE_COMPLIANCE_AUDITOR")
+                .roleName("Compliance Auditor")
+                .description("Audit compliance inspector")
+                .systemRole(false)
+                .permissions(List.of("platform:fleet:read", "METADATA_SCHEMA_READ"))
+                .inheritedRoles(List.of("ROLE_USER"))
+                .userCount(0)
+                .build();
+
+        when(fleetService.createRole(any(CreateRoleRequest.class))).thenReturn(created);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, RoleWithPermissionsDto>> response =
+                controller.createRole(request);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("ROLE_COMPLIANCE_AUDITOR", response.getBody().getBody().getRoleId());
+        assertEquals("Compliance Auditor", response.getBody().getBody().getRoleName());
+        assertFalse(response.getBody().getBody().isSystemRole());
+        verify(fleetService, times(1)).createRole(request);
+    }
+
+    @Test
     void testLockUser_MutatesLockedStatus() {
         LockUserRequest request = LockUserRequest.builder()
                 .locked(true)

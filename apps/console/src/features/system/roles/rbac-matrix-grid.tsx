@@ -20,7 +20,9 @@ import {
   Layers,
   KeyRound,
   Info,
+  PlusCircle,
 } from 'lucide-react';
+import { RoleDefinitionModal } from './role-definition-modal';
 import {
   useSystemRoles,
   useUpdateRolePermissions,
@@ -44,6 +46,7 @@ const PERMISSION_ATOMS = [
 
 export function RbacMatrixGrid() {
   const [search, setSearch] = useState('');
+  const [createRoleOpen, setCreateRoleOpen] = useState(false);
   const { data: roles = [], isLoading } = useSystemRoles();
   const updateRoleMutation = useUpdateRolePermissions();
 
@@ -108,9 +111,20 @@ export function RbacMatrixGrid() {
           />
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Info className="h-4 w-4 text-primary" />
-          <span>Interactive Sovereign RBAC Matrix. Changes are staged per role.</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+            <Info className="h-4 w-4 text-primary" />
+            <span>Interactive Sovereign RBAC Matrix. Changes are staged per role.</span>
+          </div>
+
+          <Button
+            size="sm"
+            onClick={() => setCreateRoleOpen(true)}
+            className="gap-1.5 shadow-md"
+          >
+            <PlusCircle className="h-4 w-4" />
+            <span>Create Custom Role</span>
+          </Button>
         </div>
       </div>
 
@@ -219,6 +233,11 @@ export function RbacMatrixGrid() {
           </div>
         </div>
       )}
+
+      <RoleDefinitionModal
+        open={createRoleOpen}
+        onOpenChange={setCreateRoleOpen}
+      />
     </div>
   );
 }

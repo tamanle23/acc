@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="tenant-workspaces-table-08" author="antigravity">
+        <comment>Create UNIPOST_WORKSPACES table with RLS, partial default index, and sovereign SYSTEM support</comment>
+
+        <!-- 1. Workspaces Table -->
+        <createTable tableName="UNIPOST_WORKSPACES">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uid" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="tenant_id" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="plan_tier" type="VARCHAR(50)" defaultValue="STANDARD">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_default" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_immutable" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Audit & Base Model columns -->
+            <column name="createdBy_uid" type="VARCHAR(255)"/>
+            <column name="createdDate" type="TIMESTAMP"/>
+            <column name="lastUpdatedBy_uid" type="VARCHAR(255)"/>
+            <column name="lastUpdatedDate" type="TIMESTAMP"/>
+            <column name="version" type="BIGINT"/>
+            <column name="deletedDate" type="TIMESTAMP"/>
+            <column name="mode" type="VARCHAR(50)"/>
+            <column name="state" type="VARCHAR(20)"/>
+        </createTable>
+
+        <sql dbms="postgresql">
+            -- 2. Partial unique index: Exactly 1 active default workspace per tenant
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_tenant_default_workspace
+            ON UNIPOST_WORKSPACES (tenant_id)
+            WHERE is_default = TRUE AND "deletedDate" IS NULL;
+
+            -- 3. Unique workspace code per tenant
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_tenant_workspace_code
+            ON UNIPOST_WORKSPACES (tenant_id, code)
+            WHERE "deletedDate" IS NULL;
+
+            -- 4. Enable Row-Level Security (RLS) on Workspaces
+            ALTER TABLE UNIPOST_WORKSPACES ENABLE ROW LEVEL SECURITY;
+
+            -- 5. Strict Tenant Isolation Policy with Sovereign SYSTEM Root Custody
+            DROP POLICY IF EXISTS tenant_isolation_workspaces ON UNIPOST_WORKSPACES;
+            CREATE POLICY tenant_isolation_workspaces ON UNIPOST_WORKSPACES
+                FOR ALL
+                USING (
+                    current_setting('app.current_tenant_id', true) = 'SYSTEM'
+                    OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+                    OR tenant_id = 'SYSTEM'
+                )
+                WITH CHECK (
+                    current_setting('app.current_tenant_id', true) = 'SYSTEM'
+                    OR (
+                        tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+                        AND tenant_id != 'SYSTEM'
+                    )
+                );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

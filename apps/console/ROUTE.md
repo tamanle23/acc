@@ -63,6 +63,8 @@ src/routes/
 | `/settings/data-privacy` | `_authenticated/settings/data-privacy.tsx` | Yes | Settings Layout | GDPR Art. 20 streaming export & Art. 17 hard-purge |
 | `/settings/workspaces`   | `_authenticated/settings/workspaces.tsx`   | Yes | Settings Layout | Manage multi-workspace environments & create new workspace with blueprint seeding |
 | `/settings/billing`      | `_authenticated/settings/billing.tsx`      | Yes | Settings Layout | Manage tenant subscription tiers, VietQR payments, VAT invoice, and quota telemetry |
+| `/system/tenants`        | `_authenticated/system.tenants.tsx`        | Yes (Sovereign Custodian) | Authenticated Shell | Fleet Tenants ledger, live resource dials, unconstrained quota tuning (∞), and Assume-Tenant impersonation |
+| `/system/roles`          | `_authenticated/system.roles.tsx`          | Yes (Sovereign Custodian) | Authenticated Shell | Declarative RBAC permission matrix studio, inheritance DAG configuration, and universal user directory lockout |
 | `/help-center` | `_authenticated/help-center/index.tsx` | Yes | Authenticated Shell | Browse docs, search FAQs, submit support tickets |
 
 | `/sign-in` | `(auth)/sign-in.tsx` | No | Fullscreen Canvas | Authenticate with credentials or OAuth |
@@ -126,6 +128,18 @@ src/routes/
 - **Glass Spec:** Multi-layer frosted translucent cards (`backdrop-blur-xl bg-white/45 dark:bg-slate-900/45 border border-white/30 dark:border-white/10 shadow-lg`), frosted tab triggers, and monospace key tags.
 - **State & Stores:** `useMetadataUiStore` tracks active entity selection, view tab (`schema` | `data`), search filter, and dialogs. TanStack Query caching backed by `springApiClient` with sandbox fallback.
 - **Features:** 9 UI component types, auto-slugging system keys, live Draft-07 JSON Schema compiler, dynamic Zod validation, record pagination and JSON export.
+
+### 3.9 Sovereign Platform Cockpits (`/system/*`)
+- **Routes:**
+  - `/system/tenants`: `src/routes/_authenticated/system.tenants.tsx`
+  - `/system/roles`: `src/routes/_authenticated/system.roles.tsx`
+- **Component Stack:**
+  - `FleetTenantsTable`, `CreateTenantModal`, `SubscriptionOverrideDrawer`, `QuotaTuningDrawer`, `SuspendTenantDialog`, `TenantWorkspacesDrawer`, `TenantUsersDrawer`.
+  - `RbacMatrixGrid`, `RoleDefinitionModal`, `UserMembershipDrawer`, `AssumeTenantBar`.
+- **Layout:** Liquid Glass data table layout with multi-filter action bar, slide-over sovereign drawers (symmetrical right-side slide-overs for both Workspaces and Users), and full-viewport warning bar when impersonating.
+- **Glass Spec:** Amber liquid glass tokens for sovereign alerts (`bg-amber-500/15 backdrop-blur-xl border-amber-500/30`), frosted modal dialogs with specular highlights.
+- **State & Stores:** Backed by `useSystemFleet` hooks (`useFleetTenants`, `useFleetTenantDiagnostics`, `useUpdateTenantQuotas`, `useAssumeTenant`, `useSystemRoles`, `useGlobalUsers`) and integrated with Unified Sandbox `mockFleetStore`.
+- **Features:** Live telemetry dials, unconstrained volume quota tuning ($\infty$), commercial tier promotion, soft kill-switches, declarative RBAC permission matrix studio, and instant Assume-Tenant session delegation.
 
 ---
 

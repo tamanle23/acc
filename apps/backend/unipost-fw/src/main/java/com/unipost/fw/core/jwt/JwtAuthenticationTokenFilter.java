@@ -60,7 +60,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                    .map(c -> {
                      Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
                      List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
-                     String tenantId = jwtTokenHelper.getTenantId(c).orElse("default-tenant");
+                     Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
+                     if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
+                       logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.", usernameOpt.orElse("anonymous"));
+                       return null;
+                     }
+                     String tenantId = tenantIdOpt.get().trim();
                      if(usernameOpt.isPresent()) {
                        JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities, tenantId);
                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -113,15 +118,29 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     context.init(authenticationToken);
 
     String tenantId = authentication.getTenantId();
+    String actorTenantId = null;
+    if (authentication.getCredentials() instanceof Claims claims) {
+      Object actorTidObj = claims.get("actor_tid");
+      if (actorTidObj != null) {
+        actorTenantId = actorTidObj.toString();
+      }
+    }
+
     try {
       if (tenantId != null && !tenantId.isBlank()) {
-        com.unipost.fw.tenancy.TenantContextHolder.setTenantId(tenantId);
+        if (actorTenantId != null && !actorTenantId.isBlank()) {
+          com.unipost.fw.tenancy.TenantContextHolder.setDualContext(tenantId, actorTenantId);
+          org.slf4j.MDC.put("actorTenantId", actorTenantId);
+        } else {
+          com.unipost.fw.tenancy.TenantContextHolder.setTenantId(tenantId);
+        }
         org.slf4j.MDC.put("tenantId", tenantId);
       }
       filterChain.doFilter(request, response);
     } finally {
       com.unipost.fw.tenancy.TenantContextHolder.clear();
       org.slf4j.MDC.remove("tenantId");
+      org.slf4j.MDC.remove("actorTenantId");
       context.clear();
     }
   }
