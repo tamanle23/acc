@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -34,7 +35,7 @@ public class TenantDataLifecycleController {
     private final ResponseEntityBuilder responseBuilder;
 
     /**
-     * Streams the complete tenant metadata and data archive directly as an encrypted ZIP file.
+     * Streams the complete tenant metadata and data archive directly as a compressed ZIP file.
      * Prevents JVM heap exhaustion by utilizing non-blocking line-delimited streaming chunks.
      */
     @GetMapping("/{tenantId}/export")
@@ -51,6 +52,28 @@ public class TenantDataLifecycleController {
 
         tenantExportService.streamTenantArchive(tenantId, response.getOutputStream());
         response.flushBuffer();
+    }
+
+    /**
+     * Non-blocking asynchronous streaming export returning ResponseEntity<StreamingResponseBody>
+     * for GDPR Article 20 data portability.
+     */
+    @GetMapping("/{tenantId}/export-stream")
+    @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasRole('ADMIN')")
+    public ResponseEntity<StreamingResponseBody> exportTenantArchiveStream(
+            @PathVariable String tenantId) {
+
+        String filename = "tenant_export_" + tenantId + "_" + Instant.now().toEpochMilli() + ".zip";
+
+        StreamingResponseBody responseBody = outputStream -> {
+            tenantExportService.streamTenantArchive(tenantId, outputStream);
+        };
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header("X-Tenant-Export-Version", "1.0.0")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(responseBody);
     }
 
     /**
