@@ -53,3 +53,4 @@ export * from './saga/ConductorSagaOrchestrator';
 export * from './telemetry/TraceContext';
 export * from './telemetry/MetricsRegistry';
 export * from './security/DynamicSecretsManager';
+export * from './autoconfig';
