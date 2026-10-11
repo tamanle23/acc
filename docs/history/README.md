@@ -38,6 +38,7 @@
 | [033](033_align_unified_sandbox_with_console_ui.md) | 2026-10-11 | Align Unified Sandbox Platform with Console UI | Bi-directional store synchronization in sandboxManager, pristine localStorage reset, enriched tenant scope with tenant-acme, and edge-case diagnostics in SandboxDock. |
 | [034](034_backend_workspace_entity_and_provisioning.md) | 2026-10-11 | Backend Workspace Entity, Liquibase RLS & Auto-Provisioning Pipeline | Created UNIPOST_WORKSPACES table with RLS and partial default index, Workspace JPA entity/repository, and integrated default immutable workspace auto-provisioning into TenantProvisioningService. |
 | [035](035_backend_workspace_controller_and_sandbox_alignment.md) | 2026-10-11 | Backend Workspace REST Controller & Unified Sandbox Handler Alignment | Implemented WorkspaceController, WorkspaceService, WorkspaceDto, along with workspaceSandboxHandler in Console Unified Sandbox Platform with full invariant test coverage. |
+| [036](036_console_http_client_hardening_and_context_injection.md) | 2026-10-11 | Console HTTP Client Hardening & Context Injection (Phase 1) | Eliminated raw axios calls in use-blueprints.ts, routed all blueprint queries through springApiClient, and injected X-Tenant-Id and X-Workspace-Id context headers. |
 
 
 

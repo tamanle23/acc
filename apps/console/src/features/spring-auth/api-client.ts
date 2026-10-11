@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
+import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
 
 export const springApiClient = axios.create({
   baseURL: '/api',
@@ -30,7 +31,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
-// 1. Request Interceptor: Attach Access Token & Impersonation Headers
+// 1. Request Interceptor: Attach Access Token, Tenant & Workspace Context Headers
 springApiClient.interceptors.request.use(
   (config) => {
     const { accessToken } = useSpringAuthStore.getState();
@@ -45,6 +46,19 @@ springApiClient.interceptors.request.use(
     if (assumedTenant && config.headers) {
       config.headers['X-Assumed-Tenant'] = assumedTenant;
       config.headers['X-Tenant-Id'] = assumedTenant;
+    } else {
+      // Inject context from active metadata UI store if available
+      try {
+        const metadataState = useMetadataUiStore.getState();
+        if (metadataState.activeTenantId && config.headers && !config.headers['X-Tenant-Id']) {
+          config.headers['X-Tenant-Id'] = metadataState.activeTenantId;
+        }
+        if (metadataState.activeWorkspaceId && config.headers && !config.headers['X-Workspace-Id']) {
+          config.headers['X-Workspace-Id'] = metadataState.activeWorkspaceId;
+        }
+      } catch {
+        // Fallback gracefully if store is uninitialized
+      }
     }
 
     return config;
