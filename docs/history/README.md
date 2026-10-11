@@ -42,6 +42,7 @@
 | [037](037_universal_client_sdk_extraction.md) | 2026-10-11 | Universal Client SDK (@unipost/client) Extraction (Phase 2) | Extracted domain DTOs and universal fetch-based UnipostClient with W3C traceparent generation and context injection into packages/client. |
 | [038](038_unified_sandbox_platform_extraction.md) | 2026-10-11 | Unified Sandbox Platform Extraction (@unipost/sandbox) (Phase 3) | Extracted the Unified Sandbox engine, registry, simulation decorator, and fetch/axios adapters into packages/sandbox for multi-client sharing. |
 | [039](039_mobile_ui_sandbox_integration_and_context_store.md) | 2026-10-11 | mobile-ui Sandbox Integration & Context Store (Phase 4) | Purged rogue mockData.ts, linked @unipost/client and @unipost/sandbox, implemented useMobileContextStore and mobile-sandbox handler, and refactored usePostStore. |
+| [040](040_mobile_ui_dynamic_form_engine_and_media_pipeline.md) | 2026-10-11 | mobile-ui Dynamic Form Engine & Media Pipeline (Phase 5) | Implemented DynamicFieldRenderer, MediaPickerInput, and RelationPickerBottomSheet with Liquid Glass styling and full dynamic schema mapping. |
 
 
 
