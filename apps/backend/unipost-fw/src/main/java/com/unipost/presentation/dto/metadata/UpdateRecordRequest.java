@@ -7,5 +7,11 @@ public record UpdateRecordRequest(
         @NotNull(message = "attributes map is required")
         Map<String, Object> attributes,
 
-        Long version
-) {}
+        Long version,
+
+        Map<String, Object> baseAttributes
+) {
+    public UpdateRecordRequest(Map<String, Object> attributes, Long version) {
+        this(attributes, version, null);
+    }
+}

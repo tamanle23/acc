@@ -228,7 +228,7 @@ class MetadataControllerTest {
 
     @Test
     void testUpdateEntityRecord() {
-        UpdateRecordRequest request = new UpdateRecordRequest(Map.of("name", "New"), 0L);
+        UpdateRecordRequest request = new UpdateRecordRequest(Map.of("name", "New"), 0L, null);
         EntityRecordResponse mockResponse = new EntityRecordResponse(100L, "rec-1", 1L, "tenant-1", 1L, Map.of("name", "New"), 0L, LocalDateTime.now(), LocalDateTime.now());
         when(metadataService.updateEntityRecord(1L, 100L, request)).thenReturn(mockResponse);
 
@@ -240,7 +240,7 @@ class MetadataControllerTest {
 
     @Test
     void testPatchEntityRecord() {
-        PatchRecordRequest request = new PatchRecordRequest(Map.of("name", "Patched"), 0L);
+        PatchRecordRequest request = new PatchRecordRequest(Map.of("name", "Patched"), 0L, null);
         EntityRecordResponse mockResponse = new EntityRecordResponse(100L, "rec-1", 1L, "tenant-1", 1L, Map.of("name", "Patched"), 0L, LocalDateTime.now(), LocalDateTime.now());
         when(metadataService.patchEntityRecord(1L, 100L, request)).thenReturn(mockResponse);
 

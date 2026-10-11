@@ -647,14 +647,22 @@ public class MetadataService {
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
 
-        // Optimistic locking check
+        // Optimistic locking check with 3-Way Auto-Merge Engine
+        Map<String, Object> finalAttributes;
         if (request.version() != null && !request.version().equals(record.getVersion())) {
-            throw new MetadataConflictException("Optimistic lock conflict: EntityRecord version mismatch (expected: " 
-                    + record.getVersion() + ", actual: " + request.version() + ")");
+            if (request.baseAttributes() != null) {
+                // Perform 3-way auto-merge: base (original read), current (persisted in DB), incoming (user edits)
+                finalAttributes = autoMergeAttributes(request.baseAttributes(), record.getAttributes(), request.attributes());
+            } else {
+                throw new MetadataConflictException("Optimistic lock conflict: EntityRecord version mismatch (expected: " 
+                        + record.getVersion() + ", actual: " + request.version() + ")");
+            }
+        } else {
+            finalAttributes = request.attributes();
         }
 
-        validatePayloadSize(request.attributes());
-        Map<String, Object> finalAttributes = applyAttributeDefaults(entityTypeId, request.attributes());
+        validatePayloadSize(finalAttributes);
+        finalAttributes = applyAttributeDefaults(entityTypeId, finalAttributes);
         validateRelationPickerAttributes(entityTypeId, finalAttributes);
         schemaValidationService.validatePayload(entityTypeId, finalAttributes);
 
@@ -672,25 +680,96 @@ public class MetadataService {
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
 
-        // Optimistic locking check
+        Map<String, Object> currentAttributes = record.getAttributes() != null ? record.getAttributes() : Map.of();
+        Map<String, Object> finalAttributes;
+
+        // Optimistic locking check with 3-Way Auto-Merge Engine
         if (request.version() != null && !request.version().equals(record.getVersion())) {
-            throw new MetadataConflictException("Optimistic lock conflict: EntityRecord version mismatch (expected: " 
-                    + record.getVersion() + ", actual: " + request.version() + ")");
+            if (request.baseAttributes() != null) {
+                Map<String, Object> incomingFull = new HashMap<>(request.baseAttributes());
+                if (request.attributes() != null) {
+                    incomingFull.putAll(request.attributes());
+                }
+                finalAttributes = autoMergeAttributes(request.baseAttributes(), currentAttributes, incomingFull);
+            } else {
+                throw new MetadataConflictException("Optimistic lock conflict: EntityRecord version mismatch (expected: " 
+                        + record.getVersion() + ", actual: " + request.version() + ")");
+            }
+        } else {
+            finalAttributes = new HashMap<>(currentAttributes);
+            if (request.attributes() != null) {
+                finalAttributes.putAll(request.attributes());
+            }
         }
 
-        Map<String, Object> merged = new HashMap<>(record.getAttributes() != null ? record.getAttributes() : Map.of());
-        if (request.attributes() != null) {
-            merged.putAll(request.attributes());
-        }
+        validatePayloadSize(finalAttributes);
+        validateRelationPickerAttributes(entityTypeId, finalAttributes);
+        schemaValidationService.validatePayload(entityTypeId, finalAttributes);
 
-        validatePayloadSize(merged);
-        validateRelationPickerAttributes(entityTypeId, merged);
-        schemaValidationService.validatePayload(entityTypeId, merged);
-
-        record.setAttributes(merged);
+        record.setAttributes(finalAttributes);
         record.setSchemaVersion(entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L);
         EntityRecord saved = entityRecordRepository.save(record);
         return MetadataDtoMapper.toResponse(saved);
+    }
+
+    /**
+     * Executes a 3-way auto-merge across disjoint attribute mutations.
+     * If an attribute was modified by both incoming client and current database state with conflicting values,
+     * throws {@link MetadataConflictException}.
+     *
+     * @param base original state when client loaded the record
+     * @param current current state in the database
+     * @param incoming new changes from the client
+     * @return successfully merged attributes
+     */
+    public Map<String, Object> autoMergeAttributes(
+            Map<String, Object> base,
+            Map<String, Object> current,
+            Map<String, Object> incoming) {
+        Map<String, Object> safeBase = base != null ? base : Map.of();
+        Map<String, Object> safeCurrent = current != null ? current : Map.of();
+        Map<String, Object> safeIncoming = incoming != null ? incoming : Map.of();
+
+        Set<String> allKeys = new HashSet<>();
+        allKeys.addAll(safeBase.keySet());
+        allKeys.addAll(safeCurrent.keySet());
+        allKeys.addAll(safeIncoming.keySet());
+
+        Map<String, Object> merged = new HashMap<>();
+
+        for (String key : allKeys) {
+            Object baseVal = safeBase.get(key);
+            Object curVal = safeCurrent.get(key);
+            Object incVal = safeIncoming.get(key);
+
+            boolean clientChanged = !Objects.equals(baseVal, incVal);
+            boolean serverChanged = !Objects.equals(baseVal, curVal);
+
+            if (clientChanged && serverChanged) {
+                // If both changed to identical value, accept it
+                if (Objects.equals(curVal, incVal)) {
+                    if (incVal != null) {
+                        merged.put(key, incVal);
+                    }
+                } else {
+                    // True collision on same attribute
+                    throw new MetadataConflictException(
+                            "Concurrent modification conflict on field '" + key + "': database value is '"
+                            + curVal + "', incoming value is '" + incVal + "'");
+                }
+            } else if (clientChanged) {
+                if (incVal != null) {
+                    merged.put(key, incVal);
+                }
+            } else {
+                // Server changed or neither changed
+                if (curVal != null) {
+                    merged.put(key, curVal);
+                }
+            }
+        }
+
+        return merged;
     }
 
     @Transactional
