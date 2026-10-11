@@ -8,6 +8,12 @@
     "paths": {
       "~/*": [
         "src/*"
+      ],
+      "@unipost/client": [
+        "../../packages/client/src/index.ts"
+      ],
+      "@unipost/sandbox": [
+        "../../packages/sandbox/src/index.ts"
       ]
     }
   },

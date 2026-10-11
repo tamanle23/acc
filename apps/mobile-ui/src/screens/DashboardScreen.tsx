@@ -21,8 +21,15 @@ export const DashboardScreen = () => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const posts = usePostStore((state) => state.posts);
+  const fetchPosts = usePostStore((state) => state.fetchPosts);
   const resetPosts = usePostStore((state) => state.resetPosts);
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    if (posts.length === 0) {
+      fetchPosts();
+    }
+  }, [posts.length, fetchPosts]);
 
   const toggleLike = (postId: string) => {
     setLikedPosts((prev) => ({

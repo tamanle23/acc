@@ -41,6 +41,7 @@
 | [036](036_console_http_client_hardening_and_context_injection.md) | 2026-10-11 | Console HTTP Client Hardening & Context Injection (Phase 1) | Eliminated raw axios calls in use-blueprints.ts, routed all blueprint queries through springApiClient, and injected X-Tenant-Id and X-Workspace-Id context headers. |
 | [037](037_universal_client_sdk_extraction.md) | 2026-10-11 | Universal Client SDK (@unipost/client) Extraction (Phase 2) | Extracted domain DTOs and universal fetch-based UnipostClient with W3C traceparent generation and context injection into packages/client. |
 | [038](038_unified_sandbox_platform_extraction.md) | 2026-10-11 | Unified Sandbox Platform Extraction (@unipost/sandbox) (Phase 3) | Extracted the Unified Sandbox engine, registry, simulation decorator, and fetch/axios adapters into packages/sandbox for multi-client sharing. |
+| [039](039_mobile_ui_sandbox_integration_and_context_store.md) | 2026-10-11 | mobile-ui Sandbox Integration & Context Store (Phase 4) | Purged rogue mockData.ts, linked @unipost/client and @unipost/sandbox, implemented useMobileContextStore and mobile-sandbox handler, and refactored usePostStore. |
 
 
 
