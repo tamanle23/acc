@@ -85,11 +85,24 @@ bun run ir-render --config ./sample-story/story-config.json
 
 ## 🛠️ Bộ Công Cụ CLI Chuyên Biệt
 
-### 1. Tool Tự Động Sinh Cấu Hình Story (`auto-config.ts`)
-Interactive Wizard quét tài nguyên thư mục, tự động tạo `story-config.json`, chọn Preset nền tảng/phụ đề và trích xuất word-level timestamps tiếng Việt qua Whisper AI:
+### 1. Tool Tự Động Sinh Cấu Hình Universal Auto-Config (`auto-config.ts`)
+Interactive Clack UI Wizard xây dựng trên kiến trúc **Universal Auto-Config Engine (v3.0)** với 6 Enterprise GoF Design Patterns (`MediaAssetProberChain`, `PipelineClassifierRegistry`, `PipelineIRBuilder`, `DirectorPresetFactory`, `AutoConfigLegacyBridgeAdapter`, `AutoConfigEngineFacade`).
+
+Tự động quét tài nguyên thư mục, nhận diện chính xác Pipeline (Pipelines 1–6), thiết lập Fine-Grained Director Video Config, và sinh đồng thời 3 artifacts:
+- `pipeline-ir.json`: Universal PipelineIR (v3.0.0) DAG AST cho rendering đa kênh.
+- `omnichannel-config.json`: Cấu hình đạo diễn đa kênh (Social, Video, Audio, Web, Interactive).
+- `story-config.json`: File cấu hình Legacy Bridge đảm bảo tương thích ngược 100%.
 
 ```bash
+# Wizard tương tác thông minh (@clack/prompts):
 bun run auto-config.ts ./sample-story
+
+# Tự động hóa không tương tác (Headless CI/CD):
+bun run auto-config.ts ./sample-story --yes
+
+# Chỉ định tham số trực tiếp:
+bun run auto-config.ts ./my-project --pipeline 4 --aspect 9:16 --fps 30 --depth --transitions
+bun run auto-config.ts ./my-project --dry-run
 ```
 
 ### 2. Tool Sinh Hiệu Ứng Lớp Phủ (`overlay`)

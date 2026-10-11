@@ -148,3 +148,62 @@ The system enforces performance profiling across 3 explicit tiers:
 *   **Strict Facade & Middlewares**: Heavy systems (`MulticamFacade`, `MatchmoveVisionFacade`, `MoCapVTubeFacade`) are hidden behind Facades. Processing runs through `EditingStageMiddleware` / `EditingStageRunner`.
 *   **CLI Interactions**: Handled exclusively using `@clack/prompts` wrappers from `@acc/core` for clean interactive CLI states.
 *   **Logging**: Standard `console.log` is strictly prohibited. The system enforces the custom `@acc/core` `Logger` which requires namespace scoping for structured, trace-friendly output.
+
+---
+
+## 7. Universal Auto-Config Engine Architecture
+
+The **Universal Auto-Config Engine** (`@acc/core/autoconfig`) provides autonomous, zero-configuration project scaffolding for raw media asset directories across all 6 Canonical Pipelines. It replaces manual JSON authored setups with autonomous detection, pipeline classification, and AST synthesis.
+
+### 7.1 Architecture & GoF Design Patterns
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                        AutoConfigEngineFacade                          │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+      ┌────────────────────────────┼────────────────────────────┐
+      ▼                            ▼                            ▼
+┌──────────────────┐     ┌──────────────────┐         ┌──────────────────┐
+│ MediaAssetProber │     │PipelineClassifier│         │PipelineIRBuilder │
+│      Chain       │────►│     Registry     │────────►│   (Builder v3)   │
+│(Chain of Resp.)  │     │(Strategy Pattern)│         └────────┬─────────┘
+└──────────────────┘     └──────────────────┘                  │
+                                                               ▼
+                         ┌──────────────────┐         ┌──────────────────┐
+                         │AutoConfigLegacy  │         │ DirectorPreset   │
+                         │  Bridge Adapter  │◄────────│     Factory      │
+                         │ (Adapter Pattern)│         │(Factory Pattern) │
+                         └────────┬─────────┘         └────────┬─────────┘
+                                  │                            │
+                                  ▼                            ▼
+                         ┌──────────────────┐         ┌──────────────────┐
+                         │story-config.json │         │pipeline-ir.json  │
+                         │ (Legacy Bridge)  │         │omnichannel-config│
+                         └──────────────────┘         └──────────────────┘
+```
+
+1. **Facade Pattern (`AutoConfigEngineFacade`)**:
+   - Single, robust orchestrating entrypoint providing `inspectDirectory()` and `scaffoldDirectory()`.
+   - Used uniformly across the interactive CLI (`auto-config.ts`), headless microservices, and Conductor task workers.
+2. **Chain of Responsibility (`MediaAssetProberChain`)**:
+   - Decoupled media inspection chain comprising `ImageProberHandler`, `VideoProberHandler`, `AudioProberHandler`, `ScriptProberHandler`, and `DataProberHandler`.
+   - Emits a standardized `DiscoveredAssetManifest` with technical dimensions, audio classifications, durations, and chronological pairings.
+3. **Strategy Pattern (`IPipelineClassifierStrategy` & `PipelineClassifierRegistry`)**:
+   - Classifies asset manifest signatures into Pipelines 1–6 with normalized confidence scores `[0.0, 1.0]`.
+   - Supports manual overrides, alternative ranking, and safe fallback to Pipeline 4.
+4. **Builder Pattern (`PipelineIRBuilder`)**:
+   - Progressively constructs schema-validated `PipelineIR` (v3.0.0) documents.
+   - Pairs media chunks, maps speech audio, configures BGM tracks, and sets audio ducking envelopes (`-14dB`).
+5. **Factory Pattern (`DirectorPresetFactory`)**:
+   - Synthesizes domain-specialized `FineGrainedVideoDirectorConfig` envelopes across 3 cinematography tiers (Canvas LUTs, Audio Staging, and Segment/Role Overrides).
+6. **Adapter Pattern (`AutoConfigLegacyBridgeAdapter`)**:
+   - Losslessly bridges modern `PipelineIR` ASTs and director configurations to legacy `StoryConfig` schemas.
+   - Ensures zero regressions for commands like `bun run cli.ts ./sample-story`.
+
+### 7.2 Dual-Emission Guarantee
+When scaffolding directories, the engine simultaneously emits:
+1. `pipeline-ir.json`: Modern DAG AST for multi-channel video, social, audio, and web rendering.
+2. `omnichannel-config.json`: Fine-grained cinematography directives and deliverable modalities.
+3. `story-config.json`: Exact backward-compatible config for classical single-video rendering pipelines.
+
