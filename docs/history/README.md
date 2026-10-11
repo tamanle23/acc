@@ -32,6 +32,7 @@
 | [027](027_protected_route_unassigned_tenant_guard_tests.md) | 2026-10-11 | ProtectedRoute Unassigned Tenant Guard & Intervention Screen Test Suite | Implemented comprehensive automated Vitest test suite covering ProtectedRoute tenant assignment guard, unassigned intervention screen rendering, sign-out actions, and sovereign bypass. |
 | [028](028_tenant_immutable_default_workspace_tests.md) | 2026-10-11 | Tenant Immutable Default Workspace Protection Test Suite | Added automated Vitest test suite for Phase 3 verifying default workspace protection, disabled deletion for default/sole workspaces, and DEFAULT badge rendering. |
 | [029](029_user_default_workspace_selection_tests.md) | 2026-10-11 | User Personal Default Workspace Selection Test Suite | Added automated Vitest test suite for Phase 4 verifying user personal default workspace selection, localStorage persistence, and immediate reflection in ProfileSwitcher. |
+| [030](030_tenant_users_drawer_tests.md) | 2026-10-11 | Tenant Users Sovereign Drawer Test Suite (Phase 5) | Added comprehensive Vitest test suite for Phase 5 verifying symmetrical right-side slide-over TenantUsersDrawer, search filtering, emergency lockout, session revocation, and clipboard ID copying. |
 
 
 
