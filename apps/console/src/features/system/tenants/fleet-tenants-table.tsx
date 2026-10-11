@@ -42,6 +42,7 @@ import {
   Database,
   Layers,
   Infinity as InfinityIcon,
+  UsersIcon,
 } from 'lucide-react';
 import {
   useFleetTenants,
@@ -60,6 +61,7 @@ import { useSandboxStore } from '@/core/sandbox';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { useProfileStore } from '@/stores/profile-store';
+import { toast } from 'sonner';
 
 export function FleetTenantsTable() {
   const [search, setSearch] = useState('');
@@ -230,11 +232,10 @@ export function FleetTenantsTable() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-lg border ${
-                            isSystem
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border ${isSystem
                               ? 'bg-primary/15 border-primary/30 text-primary'
                               : 'bg-muted/40 border-white/20 dark:border-white/10 text-muted-foreground'
-                          }`}
+                            }`}
                         >
                           <Building2 className="h-4 w-4" />
                         </div>
@@ -261,8 +262,8 @@ export function FleetTenantsTable() {
                             tenant.tier === 'ENTERPRISE'
                               ? 'default'
                               : tenant.tier === 'PRO_MAX'
-                              ? 'secondary'
-                              : 'outline'
+                                ? 'secondary'
+                                : 'outline'
                           }
                           className="font-mono text-[10px]"
                         >
@@ -387,9 +388,8 @@ export function FleetTenantsTable() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleToggleSuspend(tenant)}
-                                className={`gap-2 cursor-pointer ${
-                                  tenant.status === 'ACTIVE' ? 'text-destructive' : 'text-emerald-600'
-                                }`}
+                                className={`gap-2 cursor-pointer ${tenant.status === 'ACTIVE' ? 'text-destructive' : 'text-emerald-600'
+                                  }`}
                               >
                                 {tenant.status === 'ACTIVE' ? (
                                   <>
