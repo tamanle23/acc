@@ -71,35 +71,39 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0 @max-md/content:hidden'
+            aria-label='Go to first page'
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
           >
             <span className='sr-only'>Go to first page</span>
-            <ChevronsLeft className='h-4 w-4' />
+            <ChevronsLeft className='h-4 w-4' aria-hidden='true' />
           </Button>
           <Button
             variant='outline'
             className='size-8 p-0'
+            aria-label='Go to previous page'
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <span className='sr-only'>Go to previous page</span>
-            <ChevronLeft className='h-4 w-4' />
+            <ChevronLeft className='h-4 w-4' aria-hidden='true' />
           </Button>
 
           {/* Page number buttons */}
           {pageNumbers.map((pageNumber, index) => (
             <div key={`${pageNumber}-${index}`} className='flex items-center'>
               {pageNumber === '...' ? (
-                <span className='px-1 text-sm text-muted-foreground'>...</span>
+                <span className='px-1 text-sm text-muted-foreground' aria-hidden='true'>...</span>
               ) : (
                 <Button
                   variant={currentPage === pageNumber ? 'default' : 'outline'}
                   className='h-8 min-w-8 px-2'
+                  aria-label={`Page ${pageNumber}`}
+                  aria-current={currentPage === pageNumber ? 'page' : undefined}
                   onClick={() => table.setPageIndex((pageNumber as number) - 1)}
                 >
                   <span className='sr-only'>Go to page {pageNumber}</span>
-                  {pageNumber}
+                  <span aria-hidden='true'>{pageNumber}</span>
                 </Button>
               )}
             </div>
@@ -108,20 +112,22 @@ export function DataTablePagination<TData>({
           <Button
             variant='outline'
             className='size-8 p-0'
+            aria-label='Go to next page'
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             <span className='sr-only'>Go to next page</span>
-            <ChevronRight className='h-4 w-4' />
+            <ChevronRight className='h-4 w-4' aria-hidden='true' />
           </Button>
           <Button
             variant='outline'
             className='size-8 p-0 @max-md/content:hidden'
+            aria-label='Go to last page'
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
           >
             <span className='sr-only'>Go to last page</span>
-            <ChevronsRight className='h-4 w-4' />
+            <ChevronsRight className='h-4 w-4' aria-hidden='true' />
           </Button>
         </div>
       </div>
