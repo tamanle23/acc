@@ -10,3 +10,6 @@
 ## 2026-10-10 - [Avoid synchronous I/O blocking the event loop in CLI pipeline configuration]
 **Learning:** Found that `fs.readFileSync` and `fs.existsSync` were being used in `resolvePipelineInput` within `apps/cli/src/index.ts` to read pipeline configuration files. This blocks the Node.js event loop, which can degrade performance, especially when the CLI is acting as a Conductor worker or webhook server handling concurrent requests.
 **Action:** Replaced these synchronous calls with `await fileExists` from `@acc/core` and `await fs.promises.readFile` to ensure non-blocking file I/O operations, adhering to the codebase's PERFORMANCE-TUNING rule.
+## 2026-10-11 - [Avoid synchronous I/O blocking the event loop in overlay-effects/engine.ts]
+**Learning:** The `renderEffectLayer` function in `packages/effect-engines/src/overlay-effects/engine.ts` used synchronous `fs.existsSync`, `fs.mkdirSync`, and `fs.writeFileSync` operations for managing output directories and metadata JSON caching. These synchronous operations block the Node.js event loop, which violates the PERFORMANCE-TUNING rule, and degrades concurrency in rendering workflows.
+**Action:** Replaced these calls with `await fileExists` from `@acc/core`, `await fs.promises.mkdir`, and `await fs.promises.writeFile`. Also converted the `writeMetadataJson` helper into an async function.

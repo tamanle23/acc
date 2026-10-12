@@ -1,4 +1,4 @@
-import { RegistryManager } from '@acc/core';
+import { RegistryManager, fileExists } from '@acc/core';
 import path from 'path';
 import { BaseEffectEngine } from '@acc/core';
 import { pathToFileURL } from 'url';
@@ -23,8 +23,10 @@ export async function renderEffectLayer(
   const effectConfig = registry.getEffectConfig(effectName);
   const pipelineConfig = registry.getPipelineConfig(effectConfig.pipeline);
   
-  if (!fs.existsSync(outDir)) {
-    fs.mkdirSync(outDir, { recursive: true });
+  // ⚡ Bolt: Replaced synchronous fs.existsSync and fs.mkdirSync with async fileExists and fs.promises.mkdir
+  // Why: Prevents blocking the Node.js event loop during overlay effect generation, increasing overall concurrency and throughput.
+  if (!await fileExists(outDir)) {
+    await fs.promises.mkdir(outDir, { recursive: true });
   }
 
   const outputPath = path.join(outDir, `${effectName}_${variantName}_${duration}s.${pipelineConfig.format}`);
@@ -35,7 +37,7 @@ export async function renderEffectLayer(
   const fps = options?.fps || 30;
 
   // Helper to write companion metadata JSON
-  const writeMetadataJson = () => {
+  const writeMetadataJson = async () => {
     const isWebm = pipelineConfig.format === 'webm';
     const bg = typeof pipelineConfig.background === 'string'
       ? { type: pipelineConfig.background === 'transparent' ? 'transparent' : 'solid', color: pipelineConfig.background === 'transparent' ? 'rgba(0,0,0,0)' : '#000000' }
@@ -60,11 +62,13 @@ export async function renderEffectLayer(
       video_file: path.basename(outputPath)
     };
 
-    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+    // ⚡ Bolt: Replaced synchronous fs.writeFileSync with async fs.promises.writeFile
+    await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
   };
 
   // Skip generation if both video and metadata exist (caching for speed)
-  if (fs.existsSync(outputPath) && fs.existsSync(metadataPath)) {
+  // ⚡ Bolt: Replaced synchronous fs.existsSync with async fileExists
+  if (await fileExists(outputPath) && await fileExists(metadataPath)) {
     return outputPath;
   }
 
@@ -93,7 +97,7 @@ export async function renderEffectLayer(
   }
 
   await engine.renderAndPipe(outputPath);
-  writeMetadataJson();
+  await writeMetadataJson();
   
   return outputPath;
 }
