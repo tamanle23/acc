@@ -24,6 +24,11 @@ export function DatePicker({
       <PopoverTrigger asChild>
         <Button
           variant='outline'
+          aria-label={
+            selected
+              ? `Selected date: ${format(selected, 'MMM d, yyyy')}`
+              : placeholder
+          }
           data-empty={!selected}
           className='w-[240px] justify-start text-start font-normal data-[empty=true]:text-muted-foreground'
         >
