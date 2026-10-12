@@ -57,6 +57,7 @@ import { QuotaTuningDrawer } from './quota-tuning-drawer';
 import { SuspendTenantDialog } from './suspend-tenant-dialog';
 import { TenantWorkspacesDrawer } from './tenant-workspaces-drawer';
 import { TenantUsersDrawer } from './tenant-users-drawer';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useSandboxStore } from '@/core/sandbox';
 import { useSpringAuthStore } from '@/features/spring-auth';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
@@ -78,7 +79,11 @@ export function FleetTenantsTable() {
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [targetSuspendStatus, setTargetSuspendStatus] = useState<SovereignTenantStatus>('SUSPENDED');
 
-  const { data: tenants = [], isLoading, refetch } = useFleetTenants(search, tierFilter, statusFilter);
+  // Performance optimization (⚡ Bolt): Debounce search query by 300ms to avoid firing queries
+  // and re-rendering the fleet tenants data grid on every keypress.
+  const debouncedSearch = useDebounce(search, 300);
+
+  const { data: tenants = [], isLoading, refetch } = useFleetTenants(debouncedSearch, tierFilter, statusFilter);
   const assumeMutation = useAssumeTenant();
 
   const handleOpenSubscription = (tenant: FleetTenantSummary) => {
