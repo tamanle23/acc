@@ -1,4 +1,0 @@
-jobConstants:
-  - key: "TRUYEN_CUOI_VIET_SCRAPING"
-    name: "TRUYEN_CUOI_VIET_SCRAPING"
-    description: "This is a job to scrape truyencuoiviet.com's content"

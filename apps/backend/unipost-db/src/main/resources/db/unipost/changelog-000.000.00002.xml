@@ -32,7 +32,7 @@
         </sql>
 
         <!-- 5. Replace EntityType system_name unique constraint with partial unique index for soft-delete support -->
-        <sql dbms="postgresql" endDelimiter="END $$;">
+        <sql dbms="postgresql" splitStatements="false">
           <![CDATA[
               DO $$
               DECLARE r RECORD;
@@ -46,7 +46,8 @@
                   ) LOOP
                       EXECUTE 'ALTER TABLE UNIPOST_ENTITY_TYPES DROP CONSTRAINT ' || quote_ident(r.conname);
                   END LOOP;
-              END $$;
+              END;
+              $$;
           ]]>
         </sql>
         <sql dbms="postgresql">

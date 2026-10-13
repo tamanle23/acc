@@ -13,22 +13,22 @@ import com.unipost.domain.BaseModel;
 @Table(name = "UNIPOST_ENTITY_TYPES")
 public class EntityType extends BaseModel {
 
-    @Column(nullable = false)
-    private String name;
+  @Column(nullable = false)
+  private String name;
 
-    @Column(name = "system_name", nullable = false)
-    private String systemName;
+  @Column(name = "system_name", nullable = false)
+  private String systemName;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Column(name = "tenant_id", nullable = false)
-    private String tenantId;
+  @Column(name = "tenant_id", nullable = false)
+  private String tenantId;
 
-    @Column(name = "schema_version", nullable = false)
-    private Long schemaVersion = 1L;
+  @Column(name = "schema_version", nullable = false)
+  private Long schemaVersion = 1L;
 
-    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
-    @Column(name = "lifecycle_config", columnDefinition = "jsonb")
-    private LifecycleConfig lifecycleConfig;
+  @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+  @Column(name = "lifecycle_config", columnDefinition = "jsonb")
+  private LifecycleConfig lifecycleConfig;
 }

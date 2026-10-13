@@ -4,13 +4,13 @@
   "private": true,
   "description": "Unipost Java Spring Modulith backend with unipost-ms-aio wrapper application",
   "scripts": {
-    "build": "node mvnw.cjs clean package -DskipTests",
+    "build": "node mvnw.cjs clean install -DskipTests",
     "dev": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local \"-Dspring-boot.run.jvmArguments=-Djava.net.preferIPv4Stack=true\"",
     "test": "node mvnw.cjs test",
-    "test:modulith": "node mvnw.cjs -pl unipost-ms-aio test -Dtest=ModularityTests",
+    "test:modulith": "node mvnw.cjs -am -pl unipost-ms-aio test -Dtest=ModularityTests",
     "lint": "node mvnw.cjs test-compile -DskipTests",
     "check-types": "node mvnw.cjs test-compile -DskipTests",
     "clean": "node mvnw.cjs clean",
-    "db-migrate-local": "node mvnw.cjs -pl unipost-db spring-boot:run -Dspring-boot.run.profiles=local \"-Dspring-boot.run.jvmArguments=-Dschema=unipost -DLIQUIBASE_CONTEXTS=dev\""
+    "db-migrate-local": "node mvnw.cjs -pl unipost-db spring-boot:run -Dspring-boot.run.profiles=local \"-Dspring-boot.run.jvmArguments=-Dschema=identity -DLIQUIBASE_CONTEXTS=dev\""
   }
 }

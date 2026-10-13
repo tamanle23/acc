@@ -17,12 +17,6 @@
   </settings>
   <typeHandlers>
     <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.user.model.enums.UserType" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.workflow.RecordState" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.domain.enums.RecordMode" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.worker.model.enums.TaskFrequency" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.worker.model.enums.TaskType" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.worker.model.enums.TriggerType" />
-    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.unipost.worker.model.enums.TaskStatus" />
 
   </typeHandlers>
 </configuration>

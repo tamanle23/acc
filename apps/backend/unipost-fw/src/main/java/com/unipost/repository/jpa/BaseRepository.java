@@ -13,19 +13,19 @@ import org.springframework.data.repository.NoRepositoryBean;
 
 @NoRepositoryBean
 public interface BaseRepository<T extends BaseModel>
-        extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
+    extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
 
   @Override
-  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL)")
+  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL")
   List<T> findAll();
 
-  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL) AND A.id IN ?1")
+  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL AND A.id IN ?1")
   List<T> findAllByIdIn(List<Long> ids);
 
-  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL) AND A.uid IN ?1")
+  @Query("SELECT A FROM #{#entityName} A WHERE A.deletedDate IS NULL AND A.uid IN ?1")
   List<T> findAllByUidIn(Set<String> uids);
 
-  @Query("SELECT A FROM #{#entityName} A WHERE A.id=?1 AND A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL)")
+  @Query("SELECT A FROM #{#entityName} A WHERE A.id=?1 AND A.deletedDate IS NULL")
   T findOne(Long id);
 
   @Modifying
@@ -48,9 +48,9 @@ public interface BaseRepository<T extends BaseModel>
   @Query("UPDATE #{#entityName} A SET A.deletedDate = ?#{T(com.unipost.core.helper.DateTimeHelper).getCurrentDateTime()} WHERE A.uid = ?1 AND A.deletedDate IS NULL")
   Integer deleteByUid(String uid);
 
-  @Query("SELECT A FROM #{#entityName} A WHERE A.uid=?1 AND A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL)")
+  @Query("SELECT A FROM #{#entityName} A WHERE A.uid=?1 AND A.deletedDate IS NULL")
   T findOneByUid(String uid);
 
-  @Query("SELECT A.uid FROM #{#entityName} A WHERE A.uid in (?1) AND A.deletedDate IS NULL AND (A.mode IS NULL OR A.mode = FINAL)")
+  @Query("SELECT A.uid FROM #{#entityName} A WHERE A.uid in (?1) AND A.deletedDate IS NULL")
   List<String> findUidsByUidIn(Set<String> uids);
 }

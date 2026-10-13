@@ -24,7 +24,6 @@ import com.unipost.user.model.*;
 import com.unipost.user.model.enums.UserType;
 import com.unipost.identity.infra.user.repository.jpa.*;
 import com.unipost.user.repository.mybatis.UserSearchRepository;
-import com.unipost.workflow.RecordState;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -43,7 +42,6 @@ import com.unipost.core.exception.ErrorCodes;
 import com.unipost.core.io.Page;
 import com.unipost.core.io.RequestWrapper;
 import com.unipost.user.model.enums.UserStatus;
-import com.unipost.repository.jpa.ProjectRepository;
 import com.unipost.user.service.UserService;
 import org.springframework.validation.Errors;
 
@@ -72,8 +70,6 @@ public class UserServiceImpl extends BaseModelService<User, UserRepository> impl
   private PasswordResetTokenRepository passwordTokenRepository;
   @Autowired
   UserPermissionRepository userPermissionRepository;
-  @Autowired
-  ProjectRepository projectRepository;
   @Autowired
   PermissionRepository permissionRepository;
   @Autowired
@@ -373,10 +369,6 @@ public class UserServiceImpl extends BaseModelService<User, UserRepository> impl
 
     if (!com.google.common.base.Objects.equal(user.getVersion(), existingUser.getVersion())) {
       throw new BusinessException("User's data was old. Try to fetch new data before make approval.");
-    }
-
-    if (!Objects.equal(existingUser.getState(), RecordState.PENDING_APPROVE)) {
-      throw new BusinessException("This user already have approval.");
     }
 
     return existingUser;

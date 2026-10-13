@@ -17,7 +17,6 @@ import jakarta.persistence.PreRemove;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
 
-import com.unipost.workflow.RecordState;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.annotation.CreatedBy;
@@ -25,7 +24,6 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.unipost.domain.enums.RecordMode;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -36,7 +34,7 @@ import lombok.Setter;
 @EntityListeners(AuditingEntityListener.class)
 @DynamicInsert
 @DynamicUpdate
-public abstract class BaseModel implements  Serializable {
+public abstract class BaseModel implements Serializable {
 
   private static final long serialVersionUID = 6096136186065185680L;
 
@@ -51,7 +49,7 @@ public abstract class BaseModel implements  Serializable {
   @Column(name = "createdBy_uid")
   protected String createdBy;
 
-//  @CreatedDate
+  // @CreatedDate
   @Column(precision = 3)
   protected LocalDateTime createdDate;
 
@@ -59,7 +57,7 @@ public abstract class BaseModel implements  Serializable {
   @LastModifiedBy
   private String lastUpdatedBy;
 
-//  @LastModifiedDate
+  // @LastModifiedDate
   @Column(precision = 3)
   private LocalDateTime lastUpdatedDate;
 
@@ -69,19 +67,11 @@ public abstract class BaseModel implements  Serializable {
   @JsonIgnore
   private LocalDateTime deletedDate;
 
-  @Column(length = 50)
-  @Enumerated(EnumType.STRING)
-  private RecordMode mode;
-
-  @Column(length = 20)
-  @Enumerated(EnumType.STRING)
-  private RecordState state;
-
   @PrePersist
   private void prePersist() {
     this.createdDate = LocalDateTime.now();
     this.lastUpdatedDate = this.createdDate;
-//    this.uid = UUID.randomUUID().toString().replace("-", "");
+    // this.uid = UUID.randomUUID().toString().replace("-", "");
     this.uid = UUID.randomUUID().toString();
   }
 

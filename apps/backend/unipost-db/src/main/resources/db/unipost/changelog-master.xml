@@ -8,7 +8,6 @@
   <property name="schema" value="UNIPOST"/>
   <property name="table_prefix" value="UNIPOST_"/>
 
-  <include file="db/unipost/changelog-000.000.00000.xml"/>
   <include file="db/unipost/changelog-000.000.00001.xml"/>
   <include file="db/unipost/changelog-000.000.00002.xml"/>
   <include file="db/unipost/changelog-000.000.00003.xml"/>

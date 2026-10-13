@@ -43,7 +43,7 @@ public class OutboxPollingJob {
      * Periodically polls pending events and dispatches them.
      * Runs every 1 second with a 5-second initial delay.
      */
-    @Scheduled(fixedDelayString = "${application.outbox.poll-interval-ms:1000}", initialDelay = 5000)
+    @Scheduled(fixedRateString = "${application.outbox.poll-interval-ms:2000}", initialDelay = 5000)
     public void pollAndProcessOutboxEvents() {
         if (!outboxEnabled) {
             return;

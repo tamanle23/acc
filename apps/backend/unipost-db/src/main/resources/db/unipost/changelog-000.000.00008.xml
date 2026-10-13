@@ -43,8 +43,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <sql dbms="postgresql">

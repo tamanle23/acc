@@ -16,23 +16,23 @@ export function useAuthHydration() {
         return;
       }
 
-      try {
-        const { data } = await springApiClient.post('/auth/refresh', {
-          refreshToken,
-        });
-        
-        if (mounted) {
-          setTokens(data.accessToken, data.refreshToken || refreshToken);
-        }
-      } catch (_error) {
-        if (mounted) {
-          clearTokens();
-        }
-      } finally {
-        if (mounted) {
-          setHydrating(false);
-        }
-      }
+      // try {
+      //   const { data } = await springApiClient.post('/auth/refresh', {
+      //     refreshToken,
+      //   });
+
+      //   if (mounted) {
+      //     setTokens(data.accessToken, data.refreshToken || refreshToken);
+      //   }
+      // } catch (_error) {
+      //   if (mounted) {
+      //     clearTokens();
+      //   }
+      // } finally {
+      //   if (mounted) {
+      //     setHydrating(false);
+      //   }
+      // }
     };
 
     hydrate();

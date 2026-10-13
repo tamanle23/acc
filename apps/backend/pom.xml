@@ -10,12 +10,10 @@
 
   <modules>
     <module>./unipost-core</module>
-    <module>./unipost-resources</module>
     <module>./unipost-fw</module>
     <module>./unipost-db</module>
     <module>./unipost-ms-fs</module>
     <module>./unipost-ms-identity</module>
-    <module>./unipost-report-engine</module>
     <module>./unipost-ms-worker</module>
     <module>./unipost-ms-aio</module>
   </modules>
@@ -210,6 +208,11 @@
             <goals>deploy</goals>
             <autoVersionSubmodules>true</autoVersionSubmodules>
           </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <version>${springboot.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

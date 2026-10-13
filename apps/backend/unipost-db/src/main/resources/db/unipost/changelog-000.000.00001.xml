@@ -20,8 +20,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <!-- 2. Attribute Definitions -->
@@ -46,8 +44,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <!-- Add unique constraint on entity_type + system_name -->
@@ -72,8 +68,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <!-- 4. Relationship Types -->
@@ -89,8 +83,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <!-- 5. Entity Relationships (Pattern C - Edge Table) -->
@@ -116,8 +108,6 @@
             <column name="lastUpdatedDate" type="TIMESTAMP"/>
             <column name="version" type="BIGINT"/>
             <column name="deletedDate" type="TIMESTAMP"/>
-            <column name="mode" type="VARCHAR(50)"/>
-            <column name="state" type="VARCHAR(20)"/>
         </createTable>
 
         <addUniqueConstraint tableName="UNIPOST_ENTITY_RELATIONSHIPS" columnNames="source_entity_id, target_entity_id, relationship_type_id" constraintName="uk_entity_rel_triplet"/>

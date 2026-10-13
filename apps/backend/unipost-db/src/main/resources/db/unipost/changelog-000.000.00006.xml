@@ -57,7 +57,7 @@
             CREATE INDEX IF NOT EXISTS idx_tenant_billing_status
             ON UNIPOST_TENANT_BILLING (tenant_id, status);
 
-            -- 4. Enable Row-Level Security (RLS) on Billing & Features
+            -- 4. Enable Row-Level Security (RLS) on Billing &amp; Features
             ALTER TABLE UNIPOST_TENANT_BILLING ENABLE ROW LEVEL SECURITY;
             ALTER TABLE UNIPOST_TENANT_FEATURES ENABLE ROW LEVEL SECURITY;
 

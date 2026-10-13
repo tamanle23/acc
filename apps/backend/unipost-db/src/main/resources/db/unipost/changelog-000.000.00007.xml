@@ -60,7 +60,7 @@
                     )
                 );
 
-            -- 4. Data Plane Entity Records Policy (Permits SYSTEM cross-tenant read & audit)
+            -- 4. Data Plane Entity Records Policy (Permits SYSTEM cross-tenant read &amp; audit)
             DROP POLICY IF EXISTS tenant_isolation_entities ON UNIPOST_ENTITIES;
             CREATE POLICY tenant_isolation_entities ON UNIPOST_ENTITIES
                 FOR ALL
@@ -86,7 +86,7 @@
                     OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
                 );
 
-            -- 6. Billing & Entitlements Policy (Permits SYSTEM cross-tenant billing overrides)
+            -- 6. Billing &amp; Entitlements Policy (Permits SYSTEM cross-tenant billing overrides)
             DROP POLICY IF EXISTS tenant_isolation_billing ON UNIPOST_TENANT_BILLING;
             CREATE POLICY tenant_isolation_billing ON UNIPOST_TENANT_BILLING
                 FOR ALL
