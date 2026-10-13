@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
 import {
   useRecordRelationships,
@@ -48,6 +48,24 @@ export const RecordRelationshipsInspector: React.FC = () => {
   const relationshipTypes = relTypesResponse?.content || [];
   const entityTypes = entityTypesResponse?.content || [];
 
+  // Optimization: Pre-index entityTypes and relationshipTypes into Map lookups
+  // to convert O(N) array scans into O(1) constant-time lookups during list rendering.
+  const entityTypeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes) {
+      map.set(String(et.id), et.name);
+    }
+    return map;
+  }, [entityTypes]);
+
+  const relTypeMap = useMemo(() => {
+    const map = new Map<string, { name: string; targetEntityTypeId: string | number }>();
+    for (const rt of relationshipTypes) {
+      map.set(String(rt.id), { name: rt.name, targetEntityTypeId: rt.targetEntityTypeId });
+    }
+    return map;
+  }, [relationshipTypes]);
+
   const createRelMutation = useCreateEntityRelationship(recordId || '');
   const deleteRelMutation = useDeleteEntityRelationship(recordId || '');
 
@@ -56,10 +74,8 @@ export const RecordRelationshipsInspector: React.FC = () => {
   const [targetRecordId, setTargetRecordId] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
 
-  // When a relationship type is selected, determine the target entity type
-  const selectedRelType = relationshipTypes.find(
-    (rt) => String(rt.id) === String(selectedRelTypeId)
-  );
+  // O(1) lookup for selected relationship type
+  const selectedRelType = selectedRelTypeId ? relTypeMap.get(String(selectedRelTypeId)) : null;
 
   const targetEntityTypeId = selectedRelType ? selectedRelType.targetEntityTypeId : null;
   const { data: targetRecordsResponse } = useEntityRecords(
@@ -105,15 +121,14 @@ export const RecordRelationshipsInspector: React.FC = () => {
     });
   };
 
-  const getEntityName = (id: string | number) => {
-    const found = entityTypes.find((et) => String(et.id) === String(id));
-    return found ? found.name : `Entity #${id}`;
-  };
+  const getEntityName = useCallback((id: string | number) => {
+    return entityTypeMap.get(String(id)) || `Entity #${id}`;
+  }, [entityTypeMap]);
 
-  const getRelTypeName = (id: string | number) => {
-    const found = relationshipTypes.find((rt) => String(rt.id) === String(id));
+  const getRelTypeName = useCallback((id: string | number) => {
+    const found = relTypeMap.get(String(id));
     return found ? found.name : `Edge #${id}`;
-  };
+  }, [relTypeMap]);
 
   return (
     <Dialog
