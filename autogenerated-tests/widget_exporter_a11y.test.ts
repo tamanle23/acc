@@ -66,6 +66,8 @@ describe('WidgetExporter Accessibility & UX Verification', () => {
     expect(htmlContent).toContain("btn.type = 'button'");
     expect(htmlContent).toContain("btn.setAttribute('aria-label', c.label)");
     expect(htmlContent).toContain('firstBtn.focus()');
+    expect(htmlContent).toContain('kbd-badge');
+    expect(htmlContent).toContain("document.addEventListener('keydown'");
 
     // Cleanup
     await fs.promises.rm(tmpDir, { recursive: true, force: true });
