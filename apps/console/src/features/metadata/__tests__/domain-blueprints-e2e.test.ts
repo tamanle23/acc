@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { mockBlueprintSummaries, mockBlueprintManifests } from '@/features/metadata/data/mock-blueprints';
@@ -75,7 +74,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
     it('should return default basic tier with restricted features for fresh tenants', async () => {
       const res = await billingSandboxHandler.handler(
         { method: 'GET', url: '/api/v1/billing/summary' },
-        { pathname: '/api/v1/billing/summary', searchParams: new URLSearchParams() }
+        { pathname: '/api/v1/billing/summary', searchParams: new URLSearchParams(), url: '/api/v1/billing/summary', method: 'GET', headers: {} }
       );
 
       expect(res).not.toBeNull();
@@ -92,7 +91,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
           url: '/api/v1/billing/checkout',
           data: { planTier: 'PRO', cadence: 'MONTHLY' },
         },
-        { pathname: '/api/v1/billing/checkout', searchParams: new URLSearchParams() }
+        { pathname: '/api/v1/billing/checkout', searchParams: new URLSearchParams(), url: '/api/v1/billing/checkout', method: 'POST', headers: {} }
       );
 
       expect(res).not.toBeNull();
@@ -119,7 +118,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
             },
           },
         },
-        { pathname: '/api/v1/billing/payos/webhook', searchParams: new URLSearchParams() }
+        { pathname: '/api/v1/billing/payos/webhook', searchParams: new URLSearchParams(), url: '/api/v1/billing/payos/webhook', method: 'POST', headers: {} }
       );
 
       expect(webhookRes?.status).toBe(200);
@@ -128,7 +127,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
       // 2. Fetch updated billing summary
       const summaryRes = await billingSandboxHandler.handler(
         { method: 'GET', url: '/api/v1/billing/summary' },
-        { pathname: '/api/v1/billing/summary', searchParams: new URLSearchParams() }
+        { pathname: '/api/v1/billing/summary', searchParams: new URLSearchParams(), url: '/api/v1/billing/summary', method: 'GET', headers: {} }
       );
 
       expect(summaryRes?.data.planTier).toBe('PRO');
