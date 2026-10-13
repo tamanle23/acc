@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { springApiClient } from '@/features/spring-auth';
 import { toast } from 'sonner';
+import { downloadTenantExport } from './export-download';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,27 +58,16 @@ export const DataPrivacyPanel: React.FC = () => {
       setIsExporting(true);
       toast.info('Generating streaming data bundle (.ZIP)...');
 
-      const response = await springApiClient.get(
-        `/api/v1/metadata/tenants/${activeTenantId}/export`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      // Trigger browser download of ZIP file
-      const blob = new Blob([response.data], { type: 'application/zip' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', `tenant_export_${activeTenantId}_${Date.now()}.zip`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      await downloadTenantExport(activeTenantId);
 
       toast.success('Tenant data archive downloaded successfully!');
     } catch (err: unknown) {
-      toast.error('Failed to generate export archive. Please try again.');
+      // Dismissing the save dialog is a user choice, not a failure.
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        toast.info('Export cancelled.');
+      } else {
+        toast.error('Failed to generate export archive. Please try again.');
+      }
     } finally {
       setIsExporting(false);
     }
@@ -92,7 +82,7 @@ export const DataPrivacyPanel: React.FC = () => {
 
     try {
       setIsPurging(true);
-      const res = await springApiClient.post(`/api/v1/metadata/tenants/${activeTenantId}/purge`);
+      const res = await springApiClient.post(`/v1/metadata/tenants/${activeTenantId}/purge`);
       const certData: CertificateOfErasure = res.data?.data || res.data;
       setCertificate(certData);
       toast.success('GDPR Article 17 Hard-Purge completed!');
