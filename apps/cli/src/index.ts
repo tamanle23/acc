@@ -392,12 +392,12 @@ export async function run(customArgs?: string[]): Promise<any> {
   const commandSelection = await select({
     message: 'ACC CLI command:',
     options: [
-      { label: 'Run', value: 'run' },
-      { label: 'IR-Render', value: 'ir-render' },
-      { label: 'Stream', value: 'stream' },
-      { label: 'Overlay', value: 'overlay' },
-      { label: 'SFX', value: 'sfx' },
-      { label: 'Worker', value: 'worker' },
+      { label: 'Run', value: 'run', hint: 'Execute a canonical pipeline (scraper, db, repurposing, story, rule, ambient)' },
+      { label: 'IR-Render', value: 'ir-render', hint: 'Render directly from a Video IR v3.1 AST document or story folder' },
+      { label: 'Stream', value: 'stream', hint: 'Stream live video output to RTMP ingestion endpoint' },
+      { label: 'Overlay', value: 'overlay', hint: 'Generate dynamic canvas procedural visual lower thirds or overlays' },
+      { label: 'SFX', value: 'sfx', hint: 'Synthesize procedural audio DSP sound effects and foley markers' },
+      { label: 'Worker', value: 'worker', hint: 'Start Conductor OSS stateless task worker daemon' },
     ],
   });
   if (isCancel(commandSelection)) {
@@ -410,7 +410,7 @@ export async function run(customArgs?: string[]): Promise<any> {
       const configLocation = await text({
         message: 'Please enter the path to your Video IR document or story folder:',
         placeholder: './sample-story',
-        validate: async (val) => ((!val || val.trim() === '' || !(await fs.promises.exists(val))) ? 'Path cannot be empty or invalid.' : ''),
+        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ''),
       });
       if (isCancel(configLocation)) {
         cancel('Operation cancelled.');
@@ -486,7 +486,7 @@ export async function run(customArgs?: string[]): Promise<any> {
       const configLocation = await text({
         message: 'Please enter the path to your story-config folder:',
         placeholder: './sample-story',
-        validate: async (val) => ((!val || val.trim() === '' || !(await fs.promises.exists(val))) ? 'Path cannot be empty or invalid.' : ""),
+        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ""),
       });
       if (isCancel(configLocation)) {
         cancel('Operation cancelled.');
