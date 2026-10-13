@@ -9,3 +9,7 @@
 ## 2026-10-07 - Context Value Object Memoization
 **Learning:** In React 19 / Vite applications with context providers (`SearchProvider`, `TasksProvider`, `UsersProvider`), passing unmemoized object literals directly to `<Context value={{ open, setOpen }}>` creates a new object reference on every render, triggering unnecessary re-renders in all subscribed consumer components across the feature component tree.
 **Action:** Always memoize context values with `useMemo` in provider components to maintain referential stability.
+
+## 2026-10-11 - Pre-Indexing Array Lookups in Matrix/Grid Component Loops
+**Learning:** In matrix/grid table rendering components like `RbacMatrixGrid` that iterate over $N$ items and $M$ columns, performing nested array operations like `roles.find(...)` inside table cells creates an $O(N \cdot M \cdot K)$ overhead on every render pass.
+**Action:** Pre-index entity arrays into a Map with `useMemo` (`roleMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])`) before rendering the table. This reduces nested inner-loop entity lookups from $O(M)$ array scans to $O(1)$ constant time Map accesses.
