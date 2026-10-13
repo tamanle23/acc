@@ -61,8 +61,4 @@
 | [054](054_pluggable_dynamic_widget_registry.md) | 2026-10-11 | Pluggable Dynamic Widget Registry & Custom Input Extensibility (Phase 16) | Implemented WidgetRegistry in @unipost/ui and MobileWidgetRegistry in mobile-ui adhering to OCP; created SignaturePad, GeoLocation, and BarcodeScanner widgets, extended UiComponentType, and added widgetSandboxHandler in @unipost/sandbox. |
 | [055](055_mcp_dynamic_tool_synthesis_and_resolvable_type.md) | 2026-10-11 | MCP Dynamic Tool Synthesis & ResolvableType Dynamic Dispatch (Phase 17) | Implemented dynamic Model Context Protocol (MCP) server & synthesis in @unipost/client with JSON-RPC 2.0 (unipost_get_schema, unipost_query_entities, unipost_create_entity, unipost_execute_transition) and Spring ResolvableType-safe DynamicCommandDispatcher in unipost-core. |
 | [056](056_gdpr_art_20_streaming_zip_archive_pipeline.md) | 2026-10-12 | GDPR Art. 20 Streaming ZIP Archive Pipeline (Phase 18) | Implemented non-blocking zero JVM Heap OOM streaming ZIP export in TenantExportService with SHA-256 manifest, Draft-07 schemas, JSONL/CSV records, media catalog, and ResponseEntity<StreamingResponseBody> in TenantDataLifecycleController. |
-
-
-
-
-
+| [057](057_gdpr_art_17_cryptographic_erasure_cascade.md) | 2026-10-13 | GDPR Art. 17 5-Stage Cryptographic Erasure Cascade (Phase 19) | Added purge ingress lockdown (HTTP 423), streaming SHA-256 digest of destroyed IDs, and HMAC-SHA256 signed Certificate of Erasure with verification. |

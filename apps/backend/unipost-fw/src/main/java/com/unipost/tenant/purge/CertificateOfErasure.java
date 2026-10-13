@@ -1,10 +1,9 @@
 package com.unipost.tenant.purge;
 
-import java.time.Instant;
-
 /**
  * Immutable audit receipt generated upon completion of a GDPR Article 17 hard-purge.
- * Contains no PII, storing only cryptographic tenant hash and deletion counts.
+ * Contains no PII: only a tenant hash, deletion counts, a SHA-256 digest over the destroyed
+ * record identifiers, and an HMAC-SHA256 signature making the receipt tamper-evident.
  */
 public record CertificateOfErasure(
         String certificateId,
@@ -16,5 +15,8 @@ public record CertificateOfErasure(
         long entityTypesDeleted,
         long relationshipTypesDeleted,
         String status,
-        String executedBy
+        String executedBy,
+        String deletedRecordsDigest,
+        String signatureAlgorithm,
+        String signature
 ) {}

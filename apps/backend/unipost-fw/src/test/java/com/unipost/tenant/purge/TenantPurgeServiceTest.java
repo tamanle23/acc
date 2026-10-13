@@ -49,6 +49,8 @@ class TenantPurgeServiceTest {
     @Mock
     private TransactionStatus transactionStatus;
 
+    private final TenantPurgeLockRegistry lockRegistry = new TenantPurgeLockRegistry();
+
     private TenantPurgeService purgeService;
 
     @BeforeEach
@@ -63,7 +65,8 @@ class TenantPurgeServiceTest {
                 entityTypeRepository,
                 schemaValidationService,
                 null, // hazelcastInstance
-                transactionManager
+                transactionManager,
+                lockRegistry
         );
     }
 
@@ -135,5 +138,48 @@ class TenantPurgeServiceTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> purgeService.executeTenantPurge("SYSTEM", "test-operator"));
         assertTrue(ex.getMessage().contains("SYSTEM tenant cannot be purged"));
+    }
+
+    @Test
+    @DisplayName("Certificate carries deleted-ID digest and a verifiable HMAC signature; tampering is detected")
+    void testCertificateSignatureAndDigest() {
+        String tenantId = "tenant-sig";
+        EntityRecord r1 = new EntityRecord();
+        r1.setId(7L);
+        when(entityRecordRepository.findByTenantIdAndDeletedDateIsNull(eq(tenantId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(r1)))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(entityRelationshipRepository.findByTenantIdAndDeletedDateIsNull(eq(tenantId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        CertificateOfErasure cert = purgeService.executeTenantPurge(tenantId, "op");
+
+        assertTrue(cert.deletedRecordsDigest().startsWith("sha256:"));
+        assertEquals("HmacSHA256", cert.signatureAlgorithm());
+        assertTrue(purgeService.verifyCertificate(cert));
+
+        CertificateOfErasure tampered = new CertificateOfErasure(cert.certificateId(), cert.tenantIdHash(),
+                cert.purgedAt(), 0L, cert.relationshipsDeleted(), cert.attributesDeleted(),
+                cert.entityTypesDeleted(), cert.relationshipTypesDeleted(), cert.status(), cert.executedBy(),
+                cert.deletedRecordsDigest(), cert.signatureAlgorithm(), cert.signature());
+        assertFalse(purgeService.verifyCertificate(tampered));
+    }
+
+    @Test
+    @DisplayName("Tenant is locked during purge and unlocked afterwards; concurrent purge is rejected")
+    void testLockdownLifecycle() {
+        String tenantId = "tenant-lock";
+        when(entityRelationshipRepository.findByTenantIdAndDeletedDateIsNull(eq(tenantId), any(PageRequest.class)))
+                .thenAnswer(inv -> {
+                    assertTrue(lockRegistry.isPurging(tenantId));
+                    assertThrows(IllegalStateException.class, () -> purgeService.executeTenantPurge(tenantId, "op2"));
+                    return new PageImpl<>(Collections.emptyList());
+                });
+        when(entityRecordRepository.findByTenantIdAndDeletedDateIsNull(eq(tenantId), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
+
+        purgeService.executeTenantPurge(tenantId, "op");
+
+        assertFalse(lockRegistry.isPurging(tenantId));
     }
 }
