@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
+import { GlassCard, GlassButton } from '@unipost/ui';
 import { SkipToMain } from '../skip-to-main';
 import { Main } from '../layout/main';
 import { PasswordInput } from '../password-input';
@@ -8,6 +9,27 @@ import { ConfirmDialog } from '../confirm-dialog';
 import { DataTablePagination } from '../data-table/pagination';
 
 describe('Component Accessibility Test Suite (axe-core)', () => {
+  it('GlassCard component from @unipost/ui should have zero a11y violations', async () => {
+    const { container } = render(
+      <GlassCard intensity="medium">
+        <h2>Card Title</h2>
+        <p>Accessible frosted glass card content.</p>
+      </GlassCard>
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('GlassButton component from @unipost/ui should have zero a11y violations', async () => {
+    const { container } = render(
+      <GlassButton variant="primary" type="button">
+        Click Me
+      </GlassButton>
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
   it('SkipToMain component should have zero a11y violations', async () => {
     const { container } = render(<SkipToMain />);
     const results = await axe(container);

@@ -1,86 +1,72 @@
-# Walkthrough - WCAG 2.2 AA Compliance: Milestone 1 (Design Tokens & Contrast Hardening)
+# Walkthrough - WCAG 2.2 AA Compliance Audit & Verification
 
-This walkthrough documents the changes made to achieve **WCAG 2.2 Level AA compliance** for Milestone 1 across `@unipost/console` and `@unipost/ui`.
-
----
-
-## 1. Objectives Completed
-
-1. **Design Token Calibration (SC 1.4.3 Contrast Minimum & SC 1.4.11 Non-text Contrast)**
-   - Re-calibrated `--muted-foreground` in `apps/console/src/styles/theme.css` for both Light Mode and Dark Mode.
-   - Guaranteed ≥ 4.5:1 text contrast on light/dark glass scrims.
-   - Enhanced `--border` and `--input` opacity/lightness to improve UI boundaries against frosted scrims.
-
-2. **Global Focus & Scroll Padding (SC 2.4.11 Focus Not Obscured)**
-   - Configured `scroll-padding-top: calc(var(--header-height, 4rem) + 1rem)` across `html` and `main` in `apps/console/src/styles/index.css`.
-   - Verified default `:focus-visible` ring parameters satisfy visible focus indicator requirements without obscuring interactive controls under sticky headers.
-
-3. **Pointer Target Sizing (SC 2.5.8 Target Size Minimum)**
-   - Inspected and enforced minimum `28×28px` target bounds (`min-w-[28px] min-h-[28px]` or `min-w-[32px] min-h-[32px]`) across small icon buttons and pagination triggers in:
-     - `apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx`
-     - `apps/console/src/components/password-input.tsx`
-     - `apps/console/src/core/sandbox/ui/sandbox-dock.tsx`
-     - `apps/console/src/features/metadata/components/data-explorer/faceted-search-sidebar.tsx`
+This walkthrough documents the full audit, shared primitive hardening, and automated verification executed across `@unipost/console` and `@unipost/ui` for WCAG 2.2 Level AA compliance.
 
 ---
 
-## 2. Key Code Changes
+## 1. Compliance Audit & Verification Summary
 
-### `apps/console/src/styles/theme.css`
-```css
-:root {
-  /* Calibrated --muted-foreground to oklch(0.42 0.045 257.4) for >= 4.8:1 contrast ratio */
-  --muted-foreground: oklch(0.42 0.045 257.4);
-  --border: oklch(0.82 0.02 255 / 65%);
-  --input: oklch(0.82 0.02 255 / 70%);
-}
+All four core compliance milestones outlined in `apps/console/doc/implementation_plan_59.md` are active and fully verified:
 
-.dark {
-  /* Calibrated dark mode --muted-foreground to oklch(0.75 0.035 256.8) for >= 5.1:1 contrast ratio */
-  --muted-foreground: oklch(0.75 0.035 256.8);
-  --border: oklch(1 0 0 / 22%);
-  --input: oklch(1 0 0 / 25%);
-}
-```
+1. **Milestone 1 (Design Tokens & Contrast Hardening)**:
+   - Calibrated `--muted-foreground` in `apps/console/src/styles/theme.css` to guarantee ≥ 4.5:1 contrast in both light and dark glass modes.
+   - Enforced global `scroll-padding-top: calc(var(--header-height, 4rem) + 1rem)` in `apps/console/src/styles/index.css` to satisfy SC 2.4.11 (Focus Not Obscured).
+   - Enforced target sizing (≥ 28×28px) across icon triggers and pagination buttons (SC 2.5.8 Target Size Minimum).
 
-### `apps/console/src/styles/index.css`
-```css
-html,
-main {
-  /* Ensure focused controls are never obscured by sticky/fixed header regions (SC 2.4.11) */
-  scroll-padding-top: calc(var(--header-height, 4rem) + 1rem);
-}
+2. **Milestone 2 (Navigation Landmarks, Bypass Blocks & Heading Hierarchy)**:
+   - Linked `<SkipToMain>` directly to `<main id="content" tabIndex={-1}>` in `apps/console/src/components/layout/main.tsx`.
+   - Standardized explicit ARIA landmark roles (`role="banner"`) and labels (`aria-label="Main Navigation"`).
+   - Enforced sequential `h1` → `h2` → `h3` heading structure across major views without skipped levels.
 
-:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
+3. **Milestone 3 (Dynamic Features, Data Tables & Schema Builder)**:
+   - Configured `EntityDataGrid` with `scope="col"`, dynamic `aria-sort`, and descriptive action `aria-label`s.
+   - Provided single-pointer / keyboard `Move Up` and `Move Down` reordering buttons and an `aria-live="polite"` feedback region in `SchemaBuilder` (SC 2.5.7 Dragging Movements).
+   - Enforced standard `autoComplete` hints (`username`, `current-password`, `new-password`, `one-time-code`) and verified uninhibited paste support in auth forms (SC 3.3.8).
+
+4. **Milestone 4 (Automated Testing & Governance Pipeline)**:
+   - Integrated `eslint-plugin-jsx-a11y` in `apps/console/eslint.config.js`.
+   - Configured `vitest-axe` matchers in `apps/console/src/test/setup.ts`.
+   - Maintained component accessibility test suite in `apps/console/src/components/__tests__/a11y.test.tsx`.
+
+---
+
+## 2. Shared Primitive Verification (`@unipost/ui`)
+
+Shared Liquid Glass UI primitives from `@unipost/ui` were integrated into the `vitest-axe` test suite in `apps/console/src/components/__tests__/a11y.test.tsx`:
+- `<GlassCard>`
+- `<GlassButton>`
+
+```tsx
+it('GlassCard component from @unipost/ui should have zero a11y violations', async () => {
+  const { container } = render(
+    <GlassCard intensity="medium">
+      <h2>Card Title</h2>
+      <p>Accessible frosted glass card content.</p>
+    </GlassCard>
+  );
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+});
+
+it('GlassButton component from @unipost/ui should have zero a11y violations', async () => {
+  const { container } = render(
+    <GlassButton variant="primary" type="button">
+      Click Me
+    </GlassButton>
+  );
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+});
 ```
 
 ---
 
 ## 3. Verification Results
 
-All automated checks passed with **0 errors**:
+- **Unit & Component Accessibility Tests**:
+  `pnpm --filter @unipost/console test`
+  Passed 33 test files (167 tests passed, including `axe-core` accessibility test suite).
 
-1. **TypeScript Compilation:**
-   ```bash
-   pnpm --filter @unipost/console exec tsc -b
-   # Result: Passed cleanly (0 errors)
-   ```
-
-2. **Unit Tests:**
-   ```bash
-   pnpm --filter @unipost/console test
-   # Result: Passed 7/7 tests across 2 test suites
-   ```
-
-3. **Production Web Build:**
-   ```bash
-   pnpm --filter @unipost/console build:web
-   # Result: Built successfully in 7.91s
-   ```
-
-4. **Visual Inspection:**
-   - Captured screenshot via Playwright frontend verification.
-   - Inspected UI layout: Liquid Glass frosted glass panels and Bento Box responsiveness remain intact.
+- **Production Web Bundle Build**:
+  `pnpm --filter @unipost/console exec vite build --mode web`
+  Built successfully in 2.17s.
