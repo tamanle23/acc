@@ -51,6 +51,26 @@ export const DEFAULT_FSM_TRANSITIONS: FsmTransitionEdge[] = [
     actionType: 'NOTIFICATION_DISPATCH',
   },
   {
+    id: 't-submit-reject',
+    sourceState: 'SUBMITTED',
+    targetState: 'DRAFT',
+    triggerEvent: 'REJECT',
+    label: 'Reject & Request Revisions',
+    guardExpression: "attributes['rejection_reason'] != null",
+    requiredRole: 'TENANT_ADMIN',
+    actionType: 'NOTIFICATION_DISPATCH',
+  },
+  {
+    id: 't-submit-fasttrack',
+    sourceState: 'SUBMITTED',
+    targetState: 'PUBLISHED',
+    triggerEvent: 'FAST_TRACK',
+    label: 'Fast-Track Direct Publish',
+    guardExpression: "attributes['total_amount'] < 5000 && attributes['is_verified'] == true",
+    requiredRole: 'ROLE_SUPER_ADMIN',
+    actionType: 'OUTBOX_EVENT_EMIT',
+  },
+  {
     id: 't-approve-publish',
     sourceState: 'APPROVED',
     targetState: 'PUBLISHED',
@@ -107,13 +127,34 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
   }, [initialStates]);
 
   const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
-    return initialTransitions.map((t) => ({
-      id: t.id,
-      source: t.sourceState,
-      target: t.targetState,
-      type: 'fsmTransition',
-      data: t,
-    }));
+    // Group transitions by pair of nodes to offset parallel multi-actions cleanly
+    const pairGroups: Record<string, FsmTransitionEdge[]> = {};
+    initialTransitions.forEach((t) => {
+      const key = `${t.sourceState}->${t.targetState}`;
+      if (!pairGroups[key]) pairGroups[key] = [];
+      pairGroups[key].push(t);
+    });
+
+    const result: Edge<FsmEdgeData>[] = [];
+    Object.values(pairGroups).forEach((group) => {
+      const multiTotal = group.length;
+      group.forEach((t, multiIndex) => {
+        result.push({
+          id: t.id,
+          source: t.sourceState,
+          target: t.targetState,
+          type: 'fsmTransition',
+          data: {
+            ...t,
+            multiIndex,
+            multiTotal,
+            hasSiblings: multiTotal > 1,
+          },
+        });
+      });
+    });
+
+    return result;
   }, [initialTransitions]);
 
   const [nodes, setNodes] = useState<Node<FsmNodeData>[]>(initialNodes);
