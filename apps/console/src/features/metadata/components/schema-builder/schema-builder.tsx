@@ -8,7 +8,8 @@ import { SchemaJsonPreview } from './schema-json-preview';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Code, Search, Layers, Sparkles } from 'lucide-react';
+import { Plus, Code, Search, Layers, Sparkles, LayoutPanelTop, List } from 'lucide-react';
+import { VisualSchemaStudio } from '../studio';
 
 interface Props {
   entityTypeId: string | number;
@@ -22,6 +23,7 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
   const [fieldSearch, setFieldSearch] = useState('');
   const [orderedAttributes, setOrderedAttributes] = useState<AttributeDefinition[]>([]);
   const [a11yStatus, setA11yStatus] = useState<string>('');
+  const [isStudioMode, setIsStudioMode] = useState(false);
 
   const serverAttributes = useMemo(() => {
     return attributesResponse?.content || [];
@@ -111,6 +113,25 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setIsStudioMode((prev) => !prev)}
+            className="h-9 gap-1.5 text-xs bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60 text-sky-600 dark:text-sky-400 font-semibold"
+          >
+            {isStudioMode ? (
+              <>
+                <List className="h-4 w-4" />
+                <span>Standard List</span>
+              </>
+            ) : (
+              <>
+                <LayoutPanelTop className="h-4 w-4" />
+                <span>Visual Studio</span>
+              </>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={openJsonSchemaPreview}
             className="h-9 gap-1.5 text-xs bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60"
           >
@@ -131,10 +152,14 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
         </div>
       </div>
 
-      {/* Accessible Live Region for Reordering Announcements (SC 2.5.7) */}
-      <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {a11yStatus}
-      </div>
+      {isStudioMode ? (
+        <VisualSchemaStudio entityTypeId={entityTypeId} />
+      ) : (
+        <>
+          {/* Accessible Live Region for Reordering Announcements (SC 2.5.7) */}
+          <div className="sr-only" aria-live="polite" aria-atomic="true">
+            {a11yStatus}
+          </div>
 
       {/* Attributes List */}
       <div className="space-y-3">
@@ -169,6 +194,8 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
           ))
         )}
       </div>
+      </>
+      )}
 
       {/* Dialogs */}
       <AttributeDialog entityTypeId={entityTypeId} />
