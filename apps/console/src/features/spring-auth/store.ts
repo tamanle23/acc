@@ -13,8 +13,8 @@ export const useSpringAuthStore = create<AuthState>()(
       user: null,
       currentTenantId: null,
       isAuthenticated: false,
-      isHydrating: true, // Start in hydrating mode
       isSandbox: false,
+      isHydrating: false,
       setTokens: (access: string, refresh: string) => {
         const user = decodeJwt(access);
         if (refresh) {
@@ -34,6 +34,20 @@ export const useSpringAuthStore = create<AuthState>()(
           isAuthenticated: !!user,
           isSandbox,
         });
+      },
+      clearTokens: () => {
+        localStorage.removeItem(REFRESH_STORAGE_KEY);
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+          currentTenantId: null,
+          isAuthenticated: false,
+          isSandbox: false,
+        });
+      },
+      setHydrating: (hydrating: boolean) => {
+        set({ isHydrating: hydrating });
       },
     }),
     {

@@ -20,7 +20,7 @@ export function ProtectedRoute({
   fallbackUnauthorized,
   fallbackForbidden,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, currentTenantId } = useSpringAuthStore();
+  const { isAuthenticated, user, currentTenantId, clearTokens } = useSpringAuthStore();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isHydrating = !useSpringAuthStore.persist.hasHydrated();

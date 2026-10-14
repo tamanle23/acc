@@ -17,8 +17,11 @@ export interface AuthState {
   currentTenantId: string | null;
   isAuthenticated: boolean;
   isSandbox: boolean;
+  isHydrating: boolean;
 
   setTokens: (access: string, refresh: string) => void;
+  clearTokens: () => void;
+  setHydrating: (hydrating: boolean) => void;
 }
 
 export interface LoginResponse {
