@@ -24,6 +24,7 @@
       "canonicalSchemas": "Lược đồ Chuẩn mực (Gốc)",
       "dashboard": "Bảng điều khiển",
       "tasks": "Nhiệm vụ",
+      "workflows": "Quy trình (Workflows)",
       "apps": "Ứng dụng",
       "chats": "Trò chuyện",
       "users": "Người dùng",
@@ -154,5 +155,9 @@
       "customField": "Thuộc tính Tùy biến",
       "systemProtected": "Thuộc tính hệ thống được bảo vệ, không thể sửa đổi hoặc xóa"
     }
+  },
+  "workflows": {
+    "title": "Xưởng Điều phối Quy trình (Workflow Studio)",
+    "description": "Thiết kế, mô phỏng và quan sát luồng quy trình đồ thị DAG phân tán với hàng đợi lease đơn cột và worker Virtual Threads."
   }
 }

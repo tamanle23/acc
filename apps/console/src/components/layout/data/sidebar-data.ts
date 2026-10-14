@@ -25,6 +25,7 @@ import {
   CreditCard,
   Crown,
   KeyRound,
+  Workflow,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
@@ -105,6 +106,11 @@ export const useSidebarData = (): SidebarData => {
               title: t('sidebar.items.tasks', 'Tasks'),
               url: '/tasks',
               icon: ListTodo,
+            },
+            {
+              title: t('sidebar.items.workflows', 'Workflows'),
+              url: '/workflows',
+              icon: Workflow,
             },
             {
               title: t('sidebar.items.apps', 'Apps'),

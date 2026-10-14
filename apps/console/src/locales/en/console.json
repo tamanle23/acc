@@ -24,6 +24,7 @@
       "canonicalSchemas": "Canonical Schemas",
       "dashboard": "Dashboard",
       "tasks": "Tasks",
+      "workflows": "Workflows",
       "apps": "Apps",
       "chats": "Chats",
       "users": "Users",
@@ -154,5 +155,9 @@
       "customField": "Custom Attribute",
       "systemProtected": "System attributes are protected and cannot be deleted or modified"
     }
+  },
+  "workflows": {
+    "title": "Workflow Orchestration Studio",
+    "description": "Design, simulate, and observe distributed DAG workflows with single-column lease queues and virtual-thread workers."
   }
 }

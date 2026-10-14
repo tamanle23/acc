@@ -1,4 +1,4 @@
-import { SandboxRouteHandler } from '@unipost/sandbox';
+import type { SandboxRouteHandler, SandboxResponse } from '../types';
 
 interface WorkflowExecution {
   workflowId: string;
@@ -18,17 +18,17 @@ const mockExecutions = new Map<string, WorkflowExecution>();
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',
   name: 'Workflow Orchestration Sandbox Simulator',
-  matcher: (url, method) => {
-    return url.includes('/api/v1/workflow');
+  matcher: (ctx) => {
+    return ctx.pathname.startsWith('/api/v1/workflow');
   },
-  handler: async (url, options) => {
-    const method = options?.method?.toUpperCase() || 'GET';
-    const parsedUrl = new URL(url, 'http://localhost');
+  handler: (req, context): SandboxResponse => {
+    const method = req.method.toUpperCase();
+    const { pathname, searchParams } = context;
 
     // 1. Poll tasks
-    if (parsedUrl.pathname.endsWith('/poll') && method === 'GET') {
-      const taskType = parsedUrl.searchParams.get('taskType') || 'SIMPLE';
-      const tenantId = parsedUrl.searchParams.get('tenantId') || 'system';
+    if (pathname.endsWith('/poll') && method === 'GET') {
+      const taskType = searchParams.get('taskType') || 'SIMPLE';
+      const tenantId = searchParams.get('tenantId') || 'system';
 
       // Find any scheduled tasks
       for (const exec of mockExecutions.values()) {
@@ -60,10 +60,10 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     }
 
     // 2. Report task result
-    if (parsedUrl.pathname.includes('/tasks/') && parsedUrl.pathname.endsWith('/result') && method === 'POST') {
-      const parts = parsedUrl.pathname.split('/');
+    if (pathname.includes('/tasks/') && pathname.endsWith('/result') && method === 'POST') {
+      const parts = pathname.split('/');
       const taskId = parts[parts.length - 2];
-      const body = options?.body ? JSON.parse(String(options.body)) : {};
+      const body = (req.data || {}) as Record<string, any>;
 
       for (const exec of mockExecutions.values()) {
         const task = exec.tasks.find((t) => t.taskId === taskId);
@@ -82,13 +82,13 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     }
 
     // 3. Heartbeat
-    if (parsedUrl.pathname.includes('/tasks/') && parsedUrl.pathname.endsWith('/heartbeat') && method === 'POST') {
+    if (pathname.includes('/tasks/') && pathname.endsWith('/heartbeat') && method === 'POST') {
       return { status: 200, data: { renewed: true } };
     }
 
     // 4. Start workflow
-    if (parsedUrl.pathname.endsWith('/executions') && method === 'POST') {
-      const body = options?.body ? JSON.parse(String(options.body)) : {};
+    if (pathname.endsWith('/executions') && method === 'POST') {
+      const body = (req.data || {}) as Record<string, any>;
       const workflowId = `wf_sim_${Date.now()}`;
       const exec: WorkflowExecution = {
         workflowId,
@@ -107,9 +107,10 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
       return { status: 201, data: exec };
     }
 
-    return null;
-  },
-  reset: () => {
-    mockExecutions.clear();
+    return { status: 404, data: { error: 'Workflow endpoint not found' } };
   },
 };
+
+export function resetWorkflowSandbox(): void {
+  mockExecutions.clear();
+}
