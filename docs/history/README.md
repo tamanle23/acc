@@ -208,6 +208,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`193`](193_master_integration_plan_iteration2_phase2_hardware_encoders.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 2: Hardware Accelerated Encoders (Option C) | Implemented dynamic GPU hardware encoder resolver (NVENC, VideoToolbox, VAAPI, QSV, AMF) with libx264 fallback, GpuVideoEncodingStrategy, and zero-alloc FFI encoding |
 | [`194`](194_master_integration_plan_iteration2_phase3_hardware_benchmarking.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 3: Hardware Benchmarking & Optimization | Validated CPU vs NVENC throughput, memory RSS stability, container demuxing, concurrent multi-chunk encoding, and byte parity |
 | [`195`](195_master_integration_plan_iteration2_phase4_studio_preview.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 4: Dual-Engine Studio Preview & JSON-Patch AST Bridge (Option D) | Implemented StudioTimelineState, RFC 6902 JSON-Patch executor, UIStudioPreviewEngine, and native Bun StudioServer with HTML5 Canvas preview |
+| [`196`](196_master_integration_plan_iteration2_phase5_master_sync.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 5: Master Architecture Sync & End-to-End Validation | Synced SYSTEM_ARCHITECTURE_DOCUMENT.md with Sections 8, 9, 10, verified all test suites, and completed Master Integration Plan Iteration 2 |
+
 
 
 

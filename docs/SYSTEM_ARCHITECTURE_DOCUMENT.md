@@ -207,3 +207,86 @@ When scaffolding directories, the engine simultaneously emits:
 2. `omnichannel-config.json`: Fine-grained cinematography directives and deliverable modalities.
 3. `story-config.json`: Exact backward-compatible config for classical single-video rendering pipelines.
 
+---
+
+## 8. Narrative Scripting Frameworks Architecture (Option B)
+
+The narrative scripting framework subsystem (`@acc/core/autoconfig/scripting/`) generates domain-calibrated pacing structures, emotional tension arcs, and A/V staging cues. It operates via the Strategy Pattern, allowing content creators and automated pipelines to apply distinct narrative paradigms:
+
+### 8.1 The 6 Master Scripting Strategies
+1. **Mystery Box / Epistemic Gap (`MysteryBoxExplainerStrategy`)**:
+   - Delays core revelations, constructs high-contrast A/B narrative arcs, and stages whiteboard/void reset beats with heavy sub-bass transitions.
+2. **Breadcrumb Trail Digital Investigation (`BreadcrumbTrailDigitalStrategy`)**:
+   - Forensic pacing with rapid-fire terminal/UI clips, keyboard typing SFX markers, and document highlight annotations.
+3. **Stakes & Escalation / Challenge (`StakesAndEscalationStrategy`)**:
+   - High-velocity stakes progression with dynamic countdown timers, progress indicators, kinetic typography, and audio build-ups.
+4. **Intimate Confessional / Authentic Take (`IntimateConfessionalStrategy`)**:
+   - Conversational, vulnerability-driven pacing with long takes, conversational breathing room, gentle background bokeh, and emotional audio ducking.
+5. **Historical Parallels / Archival Dual Timeline (`HistoricalParallelsStrategy`)**:
+   - Dual-timeline split screens, archival parchment LUT color grading, and chronological progress pacing.
+6. **Contrarian Thesis / Myth-Buster (`ContrarianThesisStrategy`)**:
+   - Provocative opening thesis, myth busting badges, evidence receipts, and punchy resolution beats.
+
+### 8.2 Strategy Registry & PipelineIR Integration
+- **`ScriptingFrameworkRegistry`**: Central lookup and auto-classification engine that matches content prompts, keywords, or explicit `--framework` CLI flags to concrete strategies.
+- **`PipelineIRBuilder`**: Ingests generated narrative beats, adjusts chunk durations, maps typography styles, and stages audio SFX markers seamlessly into the AST.
+
+---
+
+## 9. Hardware Accelerated Encoding Suite (Option C)
+
+The hardware acceleration subsystem (`@acc/core/src/ffmpeg-ffi/`) eliminates CPU encoding bottlenecks by dynamically routing video compression through native GPU encoders via pure `bun:ffi` without child-process overhead.
+
+### 9.1 Dynamic Resolver & Defensive Fallback Chain
+`GPUEncoderResolver` dynamically probes loaded FFmpeg shared libraries (`avcodec`) for available hardware codecs across operating systems:
+- **Windows / Linux**: `h264_nvenc` / `hevc_nvenc` (NVIDIA CUDA / NVENC), `h264_qsv` / `hevc_qsv` (Intel QuickSync), `h264_amf` / `hevc_amf` (AMD AMF).
+- **macOS (Apple Silicon / Intel)**: `h264_videotoolbox` / `hevc_videotoolbox`.
+- **Linux**: `h264_vaapi` / `hevc_vaapi`.
+- **Universal Fallback**: Automatic, zero-crash fallback to CPU `libx264` / `libx265` whenever GPU hardware contexts fail to open or are unsupported.
+
+### 9.2 Zero-Allocation Frame Loop & Hardware Tuning
+- **`GpuVideoEncodingStrategy`**: Applies hardware-specific `av_opt_set` configurations (e.g. `preset=p4/p6`, `tune=hq`, `rc=vbr_hq`, `spatial_aq=1`, `temporal_aq=1`).
+- **Memory Invariance**: Maintains zero nursery heap allocations per frame by passing raw memory pointers (`ptr(rgbaBuffer)`) directly into pre-allocated C memory buffers (`srcDataC`, `srcStrideC`), preserving the **ZERO-ALLOC-FRAME-LOOP** mandate.
+
+---
+
+## 10. Dual-Engine Web/UI Studio Preview Architecture (Option D)
+
+Bridging headless batch rendering with interactive real-time editing, the Studio architecture (`apps/cli/src/studio/`) implements a Hybrid Dual-Pipeline design:
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                   Interactive Browser UI (Studio HTML5)                │
+│   (Real-time Canvas Rendering, Draggable Scrubber, JSON-Patch Log)     │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP / WebSocket REST API
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Bun Native StudioServer                         │
+│             (/api/timeline, /api/scrub, /api/patch, /api/render)       │
+└──────────────────┬─────────────────────────────────┬───────────────────┘
+                   │                                 │
+                   ▼                                 ▼
+       ┌────────────────────────┐        ┌────────────────────────┐
+       │  StudioTimelineState   │        │ UIStudioPreviewEngine  │
+       │ (Playhead & RFC 6902)  │        │(Dual-Pipeline Resolver)│
+       └───────────┬────────────┘        └───────────┬────────────┘
+                   │                                 │
+                   ▼                                 ▼
+       ┌────────────────────────┐        ┌────────────────────────┐
+       │   VideoIRDocument AST  │        │   IRMasterRenderer     │
+       │   (Immutable Timeline) │        │ (Deterministic Export) │
+       └────────────────────────┘        └────────────────────────┘
+```
+
+1. **Frontend Preview (Real-Time)**:
+   - Uses HTML5 Canvas + WebGL shaders for instant playback and responsive scrubbing at variable frame rates.
+   - Decoupled from heavy FFI encoder locks, allowing instant interactive feedback.
+2. **Backend Dispatch (Deterministic Export)**:
+   - Dispatches headless batch rendering via `IRMasterRenderer` using the exact patched `VideoIRDocument`.
+   - Adheres strictly to **DETERMINISTIC-HANDSHAKE-BACKPRESSURE** and monotonic DTS/PTS timestamp guarantees.
+3. **RFC 6902 JSON-Patch AST Synchronization**:
+   - Every UI edit (moving clip in/out points, modifying subtitle typography, toggling `depth_3d` or `canvas_particle_overlay`) is expressed as an atomic JSON-Patch operation.
+   - Built-in undo/redo history stack guarantees bidirectional state consistency and instant rollbacks.
+
+
