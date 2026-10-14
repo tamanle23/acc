@@ -34,6 +34,13 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
    - Stream real-time task progress and state transitions from the engine to the console canvas via Server-Sent Events (SSE) or WebSockets.
 6. **End-to-End Polyglot Distributed Execution Verification**:
    - Live end-to-end multi-tenant validation where visual authoring triggers distributed tasks executed cooperatively by Java 21 Virtual-Thread workers and pure TypeScript (`@unipost/worker`) workers, with automatic Saga rollback upon failure.
+7. **Unified Sandbox Orchestration & Cross-Domain Synchronizer (`@unipost/sandbox`)**:
+   - Update and elevate the Unified Sandbox Platform to natively simulate the entire distributed engine lifecycle in browser/local dev without a live backend:
+     - In-memory workflow definitions catalog (`POST /api/v1/workflow/definitions`, `GET /api/v1/workflow/definitions`).
+     - State-machine decider simulation with Kahn/Tarjan validation, parameter resolution, and branching.
+     - Live synchronization between Visual DAG Studio execution instances and `/tasks` execution unit rows.
+     - Mock SSE event stream dispatch (`GET /api/v1/workflow/executions/{id}/events`) simulating real-time task progress.
+     - State reset integration with `SandboxDock` wiping mock executions and task leases simultaneously.
 
 ---
 
@@ -41,11 +48,11 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Task Execution Unit Ledger Refactor** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Execution Units (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio. | Vitest tests in `@unipost/console` verifying palette drag-drop, node creation, and `/tasks` execution unit ledger rendering with workflow links. |
-| **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Task Payload & Lease Inspector dialog in `/tasks`. | Vitest tests verifying node attribute mutations, JSON IR compilation, and round-trip fidelity without coordinate loss. |
+| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Task Execution Unit Ledger Refactor** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Execution Units (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; **Synchronize `@unipost/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@unipost/console` and `@unipost/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution unit ledger rendering with workflow links. |
+| **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Task Payload & Lease Inspector dialog in `/tasks`; **Unified Sandbox mock workflow definitions catalog** (`/api/v1/workflow/definitions`). | Vitest tests verifying node attribute mutations, JSON IR compilation, sandbox definition storage, and round-trip fidelity without coordinate loss. |
 | **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/backend`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
-| **Phase 34** | **Live Console API Client & Server-Sent Events (SSE) Execution Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
-| **Phase 35** | **Polyglot End-to-End Orchestration & Automated Saga Verification** | Full end-to-end integration scenario (E-commerce fulfillment DAG): visual authoring $\to$ API registration $\to$ Java worker inventory check $\to$ TypeScript worker label generation $\to$ simulated payment failure $\to$ reverse Saga compensation. | Automated end-to-end multi-worker test validating cross-language task completion, audit logs, and successful rollback of state. |
+| **Phase 34** | **Live Console API Client, Server-Sent Events (SSE) & Sandbox Mock Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; **Unified Sandbox mock SSE event stream** simulating real-time task progress; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
+| **Phase 35** | **Polyglot End-to-End Orchestration & Automated Saga Verification** | Full end-to-end integration scenario (E-commerce fulfillment DAG): visual authoring $\to$ API registration $\to$ Java worker inventory check $\to$ TypeScript worker label generation $\to$ simulated payment failure $\to$ reverse Saga compensation; **Sandbox Dock master reset** clearing all polyglot executions. | Automated end-to-end multi-worker test validating cross-language task completion, audit logs, and successful rollback of state. |
 
 ---
 
@@ -83,9 +90,14 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - Column 7: `Actions` (**View in Visual DAG Studio**, **Inspect Payload**, **Retry Lease**).
   - **Dual-Mode Filter**:
     - Segmented tab toggle: **Workflow Tasks** (Default) vs **Manual Tasks**.
+- **Unified Sandbox Platform Synchronization (`@unipost/sandbox` & `tasks-sandbox-handler.ts`)**:
+  - Connect `TasksSandboxRepository` with `mockExecutions` from `packages/sandbox/src/handlers/workflow-handler.ts`.
+  - When a workflow is started or stepped in Visual DAG Studio, matching `Task` execution units automatically populate the sandbox tasks store with consistent `workflowId`, `taskType`, and statuses.
+  - Wire state reset to `SandboxDock` `handleResetAllData()`.
 - **Verification Gate 31**:
   - Vitest test suite in `apps/console/src/features/metadata/components/studio/` verifying node dragging, drop coordinate translation, node creation, and deletion.
   - Vitest test suite in `apps/console/src/features/tasks/` verifying workflow execution unit table rendering and cross-navigation action.
+  - Vitest test suite in `@unipost/sandbox` asserting synchronized task creation on workflow execution.
 
 ---
 
@@ -156,8 +168,13 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - Pulsing red border with error tooltip for `FAILED`.
 - **Execution Run Drawer**:
   - Bottom slide-over panel displaying real-time task logs, execution duration, payload inspect modals, and error traces.
+- **Unified Sandbox Real-Time Mock Stream Adapter**:
+  - `workflowSandboxHandler` implements mock SSE stream simulating staggered task state advances:
+    - Automatically streams `TASK_SCHEDULED` $\to$ `TASK_IN_PROGRESS` $\to$ `TASK_COMPLETED` with configurable jitter.
+    - Allows offline development and deterministic UI test automation without backend network infrastructure.
 - **Verification Gate 34**:
   - Vitest component tests in `@unipost/console` mocking SSE events and asserting that canvas node badges dynamically update from `PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`.
+  - Vitest test in `@unipost/sandbox` verifying mock SSE event generator.
 
 ---
 
