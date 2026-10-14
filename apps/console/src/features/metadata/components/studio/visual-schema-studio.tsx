@@ -172,7 +172,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
           }
         />
       ) : (
-        /* Phase 30 Distributed Conductor DAG Studio */
+        /* Phase 30 Distributed Visual DAG Studio */
         <ConductorWorkflowStudio />
       )}
     </div>

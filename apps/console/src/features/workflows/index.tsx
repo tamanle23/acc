@@ -39,7 +39,7 @@ export const WorkflowsFeature: React.FC = () => {
                   {t('workflows.title', 'Visual DAG Studio')}
                 </h1>
                 <Badge variant="outline" className="text-[11px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20">
-                  Conductor OSS Core
+                  Distributed Workflow Core
                 </Badge>
               </div>
               <p className="text-muted-foreground text-xs md:text-sm">

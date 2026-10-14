@@ -3,12 +3,12 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { Play, Split, GitMerge, Clock, Repeat, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
-export type ConductorNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'WAIT' | 'DO_WHILE';
+export type DagNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'WAIT' | 'DO_WHILE';
 export type ExecutionState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
 
-export interface ConductorNodeData {
+export interface DagNodeData {
   taskReferenceName: string;
-  taskType: ConductorNodeType;
+  taskType: DagNodeType;
   label?: string;
   description?: string;
   executionState?: ExecutionState;
@@ -18,7 +18,11 @@ export interface ConductorNodeData {
   condition?: string;
 }
 
-export const ConductorWorkflowNodeComponent = memo(({ data, selected }: NodeProps<ConductorNodeData>) => {
+// Aliases for backward compatibility if imported elsewhere
+export type ConductorNodeType = DagNodeType;
+export type ConductorNodeData = DagNodeData;
+
+export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
   const getNodeIcon = () => {
     switch (data.taskType) {
       case 'SWITCH':
@@ -124,4 +128,5 @@ export const ConductorWorkflowNodeComponent = memo(({ data, selected }: NodeProp
   );
 });
 
-ConductorWorkflowNodeComponent.displayName = 'ConductorWorkflowNodeComponent';
+DagWorkflowNodeComponent.displayName = 'DagWorkflowNodeComponent';
+export const ConductorWorkflowNodeComponent = DagWorkflowNodeComponent;

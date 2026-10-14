@@ -53,7 +53,7 @@ src/routes/
 | `/dashboard` | `_authenticated/index.tsx` | Yes | Authenticated Shell | System health telemetry, quick stats, operational overview |
 
 | `/tasks` | `_authenticated/tasks/index.tsx` | Yes | Authenticated Shell | Manage backlog tasks, filter priority, update status |
-| `/workflows` | `_authenticated/workflows/index.tsx` | Yes | Authenticated Shell | Visual Conductor DAG Studio, distributed task orchestration & execution playback |
+| `/workflows` | `_authenticated/workflows/index.tsx` | Yes | Authenticated Shell | Visual DAG Studio, distributed task orchestration & execution playback |
 | `/apps` | `_authenticated/apps/index.tsx` | Yes | Authenticated Shell | Browse connected services, toggle integrations |
 | `/chats` | `_authenticated/chats/index.tsx` | Yes | Authenticated Shell | Direct and channel messaging with team members |
 | `/users` | `_authenticated/users/index.tsx` | Yes (Admin) | Authenticated Shell | User directory CRUD, role assignments, invite links |

@@ -12,19 +12,20 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ConductorWorkflowNodeComponent, type ConductorNodeData } from './conductor-node';
+import { DagWorkflowNodeComponent, type DagNodeData } from './conductor-node';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, RotateCcw, Activity } from 'lucide-react';
 
 const nodeTypes = {
-  conductorNode: ConductorWorkflowNodeComponent,
+  dagNode: DagWorkflowNodeComponent,
+  conductorNode: DagWorkflowNodeComponent,
 };
 
-const INITIAL_NODES: Node<ConductorNodeData>[] = [
+const INITIAL_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-inventory',
-    type: 'conductorNode',
+    type: 'dagNode',
     position: { x: 50, y: 150 },
     data: {
       taskReferenceName: 'checkInventory',
@@ -37,7 +38,7 @@ const INITIAL_NODES: Node<ConductorNodeData>[] = [
   },
   {
     id: 'node-route',
-    type: 'conductorNode',
+    type: 'dagNode',
     position: { x: 320, y: 150 },
     data: {
       taskReferenceName: 'routeShipping',
@@ -49,7 +50,7 @@ const INITIAL_NODES: Node<ConductorNodeData>[] = [
   },
   {
     id: 'node-courier',
-    type: 'conductorNode',
+    type: 'dagNode',
     position: { x: 600, y: 70 },
     data: {
       taskReferenceName: 'expressCourier',
@@ -61,7 +62,7 @@ const INITIAL_NODES: Node<ConductorNodeData>[] = [
   },
   {
     id: 'node-ground',
-    type: 'conductorNode',
+    type: 'dagNode',
     position: { x: 600, y: 230 },
     data: {
       taskReferenceName: 'groundPostal',
@@ -153,7 +154,7 @@ export function ConductorWorkflowStudio() {
         <MiniMap
           className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl"
           nodeColor={(n) => {
-            const data = n.data as ConductorNodeData;
+            const data = n.data as DagNodeData;
             if (data.executionState === 'COMPLETED') return '#10b981';
             if (data.executionState === 'IN_PROGRESS') return '#0284c7';
             if (data.executionState === 'FAILED') return '#ef4444';
