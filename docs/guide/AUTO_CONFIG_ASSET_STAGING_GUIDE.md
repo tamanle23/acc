@@ -242,20 +242,28 @@ bun run auto-config.ts ./my-project-folder --dry-run
 
 The ACC Omnichannel Engine maps **250 distinct content variations** across **5 publishing formats** (Static Web, Social, Video, Audio, Interactive HTML) powered by the **6 Canonical Pipelines** (`Scraper`, `DBTemplating`, `Repurposing`, `GenerativeStory`, `RuleLogic`, `AmbientStream`).
 
-Each content variation can be scaffolded using `auto-config` by providing appropriate asset indicators or specifying its canonical pipeline.
+### 7.1 Semantic Capability Envelopes & Omnichannel Fan-Out
+Content generation is neither a rigid 1-to-1 silo nor a blind 1-to-all broadcast. Instead, every content type defines a **semantic capability envelope** (`supportedModalities`), a primary default (`defaultModality`), and an **incompatibility guard**:
 
 ```
-                           [ 250 Content Variations ]
-                                       │
-        ┌───────────────┬──────────────┼───────────────┬───────────────┐
-        ▼               ▼              ▼               ▼               ▼
- ┌─────────────┐ ┌─────────────┐ ┌───────────┐  ┌─────────────┐ ┌─────────────┐
- │  Format 1   │ │  Format 2   │ │ Format 3  │  │  Format 4   │ │  Format 5   │
- │ Static Web  │ │Social Media │ │   Video   │  │   Audio     │ │ Interactive │
- │ (Items 1-50)│ │(Items 51-100│ │(Items 101-│  │ (Items 151-│ │ (Items 201- │
- │             │ │             │ │    150)   │  │     200)    │ │    250)     │
- └─────────────┘ └─────────────┘ └───────────┘  └─────────────┘ └─────────────┘
+                       [ Input Source / Folder Assets ]
+                                      │
+                                      ▼
+                        [ Content Type Strategy ]
+            ├── primaryModality: ContentModality
+            ├── supportedModalities: ContentModality[]
+            └── Incompatibility Guard (e.g. throws if asking audio for pure DOM calculator)
+                                      │
+        ┌───────────────┬─────────────┼───────────────┬───────────────┐
+        ▼               ▼             ▼               ▼               ▼
+ ┌─────────────┐ ┌─────────────┐┌───────────┐  ┌─────────────┐ ┌─────────────┐
+ │ Static Web  │ │Social Media ││   Video   │  │   Audio     │ │ Interactive │
+ │ (Markdown/  │ │(Threads/    ││ (4K/NVENC │  │ (EBU R128   │ │ (HTML5/D3/  │
+ │  SSG/Ghost) │ │  Carousel)  ││  VideoIR) │  │  Speech/BGM)│ │  Three.js)  │
+ └─────────────┘ └─────────────┘└───────────┘  └─────────────┘ └─────────────┘
 ```
+
+When `auto-config` scaffolds a project, it writes `distributionHints.supportedExporters` into [`pipeline-ir.json`](file:///c:/Users/Admin/workspace/git/acc/schema/pipeline-ir.schema.json). Exporters then selectively fan out into every eligible format using fine-grained blocks in [`omnichannel-config.json`](file:///c:/Users/Admin/workspace/git/acc/schema/omnichannel-config.schema.json).
 
 ---
 
@@ -267,13 +275,13 @@ Each content variation can be scaffolded using `auto-config` by providing approp
   - Optional: `featured-image.png` or `thumbnail.jpg` (Aspect ratio: `16:9` or `1.91:1`).
   - Optional: `metadata.json` with author, tags, and category.
 
-| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Real-Time Digests** | 1–10 | Daily industry tech news, crypto market recap, real estate digest, weather bulletins, regulatory updates. | Drop RSS export, raw news text file, or markdown digest ($\ge 50$ words). | **Pipeline 1** |
-| **Programmatic SEO** | 11–20 | Product A vs Product B, Top 10 alternatives, discount code aggregator, historical price tracker. | Drop `comparison.csv` with columns: `Item_A`, `Item_B`, `Specs`, `Winner`. | **Pipeline 2** |
-| **Reference & Educational**| 21–30 | Developer glossary, math theorem sheets, "On This Day" history facts, programming snippet cards. | Drop markdown file with structured definitions or formulas (`# Term\nDefinition`). | **Pipeline 5** / **1** |
-| **Curation & Reviews** | 31–40 | 3-day travel itineraries, local restaurant guides, flight deal alerts, non-fiction book chapter summaries. | Drop numbered itinerary text or book breakdown markdown notes. | **Pipeline 1** |
-| **Specs & Documentation** | 41–50 | Hardware specs comparison matrices, FAQ knowledge base, API changelog notes, software release digests. | Drop `specs.json` or `changelog.md` with version headers. | **Pipeline 2** / **1** |
+| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline | Omnichannel Fan-Out Capability (`supportedModalities`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Real-Time Digests** | 1–10 | Daily industry tech news, crypto market recap, real estate digest, weather bulletins, regulatory updates. | Drop RSS export, raw news text file, or markdown digest ($\ge 50$ words). | **Pipeline 1** | `['static-web', 'social', 'audio', 'video']` *(Full fan-out: post, tweet thread, TTS brief, alert card video)* |
+| **Programmatic SEO** | 11–20 | Product A vs Product B, Top 10 alternatives, discount code aggregator, historical price tracker. | Drop `comparison.csv` with columns: `Item_A`, `Item_B`, `Specs`, `Winner`. | **Pipeline 2** | `['static-web', 'social', 'interactive-web']` *(Table page, carousel card, searchable filter widget)* |
+| **Reference & Educational**| 21–30 | Developer glossary, math theorem sheets, "On This Day" history facts, programming snippet cards. | Drop markdown file with structured definitions or formulas (`# Term\nDefinition`). | **Pipeline 5** / **1** | `['static-web', 'social', 'video']` *(Reference doc, daily fact graphic, chalkboard explainer)* |
+| **Curation & Reviews** | 31–40 | 3-day travel itineraries, local restaurant guides, flight deal alerts, non-fiction book chapter summaries. | Drop numbered itinerary text or book breakdown markdown notes. | **Pipeline 1** | `['static-web', 'social', 'audio']` *(Long-form review, Pinterest/IG carousel, audio recap)* |
+| **Specs & Documentation** | 41–50 | Hardware specs comparison matrices, FAQ knowledge base, API changelog notes, software release digests. | Drop `specs.json` or `changelog.md` with version headers. | **Pipeline 2** / **1** | `['static-web', 'social', 'interactive-web']` *(Interactive specs matrix, social changelog card)* |
 
 ---
 
@@ -285,13 +293,13 @@ Each content variation can be scaffolded using `auto-config` by providing approp
   - Square (`1:1`) or Portrait (`4:5`) background graphics (`card_bg.png`, `brand.svg`).
   - Optional: `quotes.csv` with columns: `Quote`, `Author`, `Topic`.
 
-| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Bite-Sized Quotes & Threads** | 51–60 | Viral Twitter/X threads from long articles, philosophical quote cards, LinkedIn 5-slide PDF carousels. | Drop article text + run `auto-config` with `--aspect 1:1` or `--aspect 4:5`. | **Pipeline 1** / **4** |
-| **Comparison & Stat Callouts** | 61–70 | Visual metric cards (e.g. "92% vs 45%"), feature checklist graphics, weekly digest recap slides. | Drop `stats.csv` with key metric rows or short structured JSON. | **Pipeline 2** |
-| **Community & Testimonials** | 71–80 | Customer review cards, user of the week highlights, curated viral meme templates, community Q&A cards. | Drop customer reviews list (`reviews.txt`) and headshot photos. | **Pipeline 4** |
-| **Financial & Ticker Alerts** | 81–90 | Real-time stock breakout alerts, crypto RSI overbought warnings, sports score updates, SaaS uptime alerts. | Drop data webhook payload (`alert.json` with ticker and change %). | **Pipeline 1** / **2** |
-| **Micro-Promotions & Drops** | 91–100 | Flash discount promo codes, affiliate deal callouts, daily micro-horoscopes, daily AI hot takes. | Short text file with coupon, expiration time, and CTA text. | **Pipeline 1** |
+| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline | Omnichannel Fan-Out Capability (`supportedModalities`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Bite-Sized Quotes & Threads** | 51–60 | Viral Twitter/X threads from long articles, philosophical quote cards, LinkedIn 5-slide PDF carousels. | Drop article text + run `auto-config` with `--aspect 1:1` or `--aspect 4:5`. | **Pipeline 1** / **4** | `['social', 'static-web', 'video']` *(Thread cards, blog quotes, 9:16 quote video)* |
+| **Comparison & Stat Callouts** | 61–70 | Visual metric cards (e.g. "92% vs 45%"), feature checklist graphics, weekly digest recap slides. | Drop `stats.csv` with key metric rows or short structured JSON. | **Pipeline 2** | `['social', 'static-web', 'interactive-web']` *(Infographic card, HTML widget)* |
+| **Community & Testimonials** | 71–80 | Customer review cards, user of the week highlights, curated viral meme templates, community Q&A cards. | Drop customer reviews list (`reviews.txt`) and headshot photos. | **Pipeline 4** | `['social', 'video']` *(Instagram testimonial reel, LinkedIn review card)* |
+| **Financial & Ticker Alerts** | 81–90 | Real-time stock breakout alerts, crypto RSI overbought warnings, sports score updates, SaaS uptime alerts. | Drop data webhook payload (`alert.json` with ticker and change %). | **Pipeline 1** / **2** | `['social', 'video', 'static-web']` *(Breaking alert graphic, automated reel, ticker digest)* |
+| **Micro-Promotions & Drops** | 91–100 | Flash discount promo codes, affiliate deal callouts, daily micro-horoscopes, daily AI hot takes. | Short text file with coupon, expiration time, and CTA text. | **Pipeline 1** | `['social', 'static-web']` *(Story promo card, newsletter snippet)* |
 
 ---
 
@@ -303,13 +311,13 @@ Each content variation can be scaffolded using `auto-config` by providing approp
   - **Option B (Chart Race)**: `ranking_data.csv` with historical year/month metric values.
   - **Option C (Long Video Repurpose)**: `interview.mp4` + optional `captions.srt`.
 
-| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Faceless Stories & Lore** | 101–110 | Reddit TTS horror stories, creepypasta tales, historical drama vignettes, daily tarot reading videos. | Visual slides + voiceover audio (`01.png` + `01.mp3`) + `--framework mystery_box`. | **Pipeline 4** |
-| **Dynamic Data Visualizers** | 111–120 | Animated bar chart races, GDP evolution, crypto market dominance race, split-screen comparison videos. | Drop `history.csv` with year/date column and ranked entities. | **Pipeline 2** |
-| **Cinematic 3D Explanations**| 121–130 | 3D Depth parallax scientific explainers, war documentary timelines, space exploration visual journeys. | High-res scene photos + voiceover + `--depth` flag enabled. | **Pipeline 4** |
-| **Viral Repurposed Clips** | 131–140 | Podcast short highlights, keynote speech golden nuggets, stream reaction clips, interview soundbites. | Raw video file (`podcast.mp4`) + run with `--pipeline 3 --aspect 9:16`. | **Pipeline 3** |
-| **Atmospheric Video Loops** | 141–150 | Lo-fi chill visualizers, rain window loops, cyber city drive loops, motivational quote slow-burn loops. | Seamless background visual (`scene.png`) + continuous audio (`beat.mp3`). | **Pipeline 6** |
+| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline | Omnichannel Fan-Out Capability (`supportedModalities`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Faceless Stories & Lore** | 101–110 | Reddit TTS horror stories, creepypasta tales, historical drama vignettes, daily tarot reading videos. | Visual slides + voiceover audio (`01.png` + `01.mp3`) + `--framework mystery_box`. | **Pipeline 4** | `['video', 'audio', 'social']` *(Full 9:16 reel, standalone audio play, teaser card)* |
+| **Dynamic Data Visualizers** | 111–120 | Animated bar chart races, GDP evolution, crypto market dominance race, split-screen comparison videos. | Drop `history.csv` with year/date column and ranked entities. | **Pipeline 2** | `['video', 'social', 'interactive-web']` *(60 FPS video race, static winner card, D3 race)* |
+| **Cinematic 3D Explanations**| 121–130 | 3D Depth parallax scientific explainers, war documentary timelines, space exploration visual journeys. | High-res scene photos + voiceover + `--depth` flag enabled. | **Pipeline 4** | `['video', 'social']` *(High-res 3D depth video, 3D parallax social loop)* |
+| **Viral Repurposed Clips** | 131–140 | Podcast short highlights, keynote speech golden nuggets, stream reaction clips, interview soundbites. | Raw video file (`podcast.mp4`) + run with `--pipeline 3 --aspect 9:16`. | **Pipeline 3** | `['video', 'audio', 'social']` *(TikTok vertical short, soundbite snippet, quote card)* |
+| **Atmospheric Video Loops** | 141–150 | Lo-fi chill visualizers, rain window loops, cyber city drive loops, motivational quote slow-burn loops. | Seamless background visual (`scene.png`) + continuous audio (`beat.mp3`). | **Pipeline 6** | `['video', 'audio', 'live-stream']` *(Continuous MP4, Spotify track, YouTube Live stream)* |
 
 ---
 
@@ -321,13 +329,13 @@ Each content variation can be scaffolded using `auto-config` by providing approp
   - Optional: `bgm.mp3` (Background music for automated ducking at `-14dB`).
   - Optional: Sound effect markers or cues in `sfx/` folder.
 
-| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Talk Shows & Podcasts** | 151–160 | Solo monologue podcasts, AI two-speaker debates, automated interview format shows, morning news radio. | Transcript file or dual-channel voice files (`host.mp3`, `guest.mp3`). | **Pipeline 4** / **1** |
-| **Atmospheric & Wellness** | 161–170 | Lo-fi study beat compilations, guided mindfulness meditation, yoga flow audio guides, nature rain soundscapes. | Looping audio file (`rain.wav`, `lofi.mp3`) + zero voiceover files. | **Pipeline 6** |
-| **Audiobooks & Drama** | 171–180 | Public domain audiobooks, web novel dramatized narrations, creepypasta audio plays, bedtime stories. | Long narrative text or chapter audio + ambient tension drone track. | **Pipeline 4** |
-| **Education & Habit Loops** | 181–190 | Spaced repetition vocabulary drills, language shadowing audio, commuter traffic audio bulletins. | Word pronunciation audio files or vocabulary list text file. | **Pipeline 1** / **4** |
-| **Functional Audio & ASMR** | 191–200 | HIIT workout interval whistles, Pomodoro work/rest audio bells, 3D binaural whispering ASMR, pink/brown noise. | Rhythmic audio loops or interval cue audio files. | **Pipeline 6** |
+| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline | Omnichannel Fan-Out Capability (`supportedModalities`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Talk Shows & Podcasts** | 151–160 | Solo monologue podcasts, AI two-speaker debates, automated interview format shows, morning news radio. | Transcript file or dual-channel voice files (`host.mp3`, `guest.mp3`). | **Pipeline 4** / **1** | `['audio', 'video', 'static-web']` *(RSS audio feed, waveform audiogram video, transcript post)* |
+| **Atmospheric & Wellness** | 161–170 | Lo-fi study beat compilations, guided mindfulness meditation, yoga flow audio guides, nature rain soundscapes. | Looping audio file (`rain.wav`, `lofi.mp3`) + zero voiceover files. | **Pipeline 6** | `['audio', 'video', 'live-stream']` *(Pure FLAC/MP3 loop, relaxing video backdrop, 24/7 stream)* |
+| **Audiobooks & Drama** | 171–180 | Public domain audiobooks, web novel dramatized narrations, creepypasta audio plays, bedtime stories. | Long narrative text or chapter audio + ambient tension drone track. | **Pipeline 4** | `['audio', 'video', 'static-web']` *(Audiobook chapter, visual novel video, readable web chapter)* |
+| **Education & Habit Loops** | 181–190 | Spaced repetition vocabulary drills, language shadowing audio, commuter traffic audio bulletins. | Word pronunciation audio files or vocabulary list text file. | **Pipeline 1** / **4** | `['audio', 'static-web', 'interactive-web']` *(Audio pronunciation drill, flashcard deck, quiz widget)* |
+| **Functional Audio & ASMR** | 191–200 | HIIT workout interval whistles, Pomodoro work/rest audio bells, 3D binaural whispering ASMR, pink/brown noise. | Rhythmic audio loops or interval cue audio files. | **Pipeline 6** | `['audio', 'video']` *(Pure sound track, minimal timer video display)* |
 
 ---
 
@@ -339,10 +347,10 @@ Each content variation can be scaffolded using `auto-config` by providing approp
   - Or `scenario.txt` with branching markers (`Choice 1: ... -> Goto Step 2`).
   - Or `calculator.json` defining input variables, formulas, and metric outputs.
 
-| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **Branching Fiction & RPG** | 201–210 | Choose-Your-Own-Adventure game trees, visual novel state machines, interactive escape room puzzles. | Drop `story_tree.json` with nodes, dialogue, and choice branches. | **Pipeline 5** / **4** |
-| **Scrollytelling & Globes** | 211–220 | Journalistic interactive scrollytelling articles, interactive 3D WebGL crisis globes, animated timeline trees. | Chronological events dataset (`timeline.json`) + event images. | **Pipeline 2** / **1** |
-| **Interactive Calculators** | 221–230 | Mortgage payment calculators, SaaS ROI estimators, tax deduction simulators, fitness calorie counters. | Drop `formula.json` defining inputs, sliders, and mathematical equations. | **Pipeline 5** |
-| **Interactive Knowledge** | 231–240 | Multiple-choice trivia quizzes, interactive periodic table, election result live predictor maps. | Drop `quiz.json` with questions, options, and correct answers. | **Pipeline 5** |
-| **Visual Computing & Code** | 241–250 | Interactive code sandboxes, algorithm step visualizers (sorting/trees), interactive web comic carousels. | Step-by-step code tutorial markdown with executable code blocks. | **Pipeline 5** |
+| Sub-Category | Item Range | Example Content Types | How to Stage in Folder | Primary Pipeline | Omnichannel Fan-Out Capability (`supportedModalities`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Branching Fiction & RPG** | 201–210 | Choose-Your-Own-Adventure game trees, visual novel state machines, interactive escape room puzzles. | Drop `story_tree.json` with nodes, dialogue, and choice branches. | **Pipeline 5** / **4** | `['interactive-web', 'video', 'static-web']` *(Playable HTML game, branching video preview, text game)* |
+| **Scrollytelling & Globes** | 211–220 | Journalistic interactive scrollytelling articles, interactive 3D WebGL crisis globes, animated timeline trees. | Chronological events dataset (`timeline.json`) + event images. | **Pipeline 2** / **1** | `['interactive-web', 'video', 'static-web']` *(Interactive D3 article, teaser video reel, static report)* |
+| **Interactive Calculators** | 221–230 | Mortgage payment calculators, SaaS ROI estimators, tax deduction simulators, fitness calorie counters. | Drop `formula.json` defining inputs, sliders, and mathematical equations. | **Pipeline 5** | `['interactive-web', 'static-web']` *(Interactive calculator embed, static calculation table)* |
+| **Interactive Knowledge** | 231–240 | Multiple-choice trivia quizzes, interactive periodic table, election result live predictor maps. | Drop `quiz.json` with questions, options, and correct answers. | **Pipeline 5** | `['interactive-web', 'video', 'social']` *(Playable quiz widget, TikTok quiz video, quiz card)* |
+| **Visual Computing & Code** | 241–250 | Interactive code sandboxes, algorithm step visualizers (sorting/trees), interactive web comic carousels. | Step-by-step code tutorial markdown with executable code blocks. | **Pipeline 5** | `['interactive-web', 'static-web', 'video']` *(Live playground, tutorial article, step-by-step video)* |
