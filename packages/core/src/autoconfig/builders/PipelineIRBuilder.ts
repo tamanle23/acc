@@ -9,6 +9,11 @@ import type {
   DiscoveredAssetManifest,
   ArchetypeScaffoldConfig,
 } from '../types';
+import type {
+  IScriptingFrameworkStrategy,
+  ScriptBeat,
+} from '../scripting/IScriptingFrameworkStrategy';
+import { ScriptingFrameworkRegistry } from '../scripting/ScriptingFrameworkRegistry';
 
 /**
  * PipelineIRBuilder (GoF Builder Pattern)
@@ -29,6 +34,8 @@ export class PipelineIRBuilder {
   private structuredData?: Record<string, unknown>;
   private supportedExporters: Array<'video' | 'audio' | 'social' | 'static-web' | 'interactive-web' | 'live-stream'> = ['video'];
   private targetAspectRatios: Array<'9:16' | '16:9' | '1:1'> = ['9:16'];
+  private scriptingFramework?: IScriptingFrameworkStrategy;
+  private scriptBeats?: ScriptBeat[];
 
   constructor(pipelineId: PipelineId = 'generative-storytelling') {
     this.pipelineId = pipelineId;
@@ -116,6 +123,30 @@ export class PipelineIRBuilder {
     if (hints.targetAspectRatios) {
       this.targetAspectRatios = [...hints.targetAspectRatios];
     }
+    return this;
+  }
+
+  public applyScriptingFramework(
+    framework: IScriptingFrameworkStrategy | string,
+    beats?: ScriptBeat[]
+  ): this {
+    if (typeof framework === 'string') {
+      const resolved = ScriptingFrameworkRegistry.get(framework);
+      if (!resolved) {
+        throw new Error(`PipelineIRBuilder: Unknown scripting framework '${framework}'`);
+      }
+      this.scriptingFramework = resolved;
+    } else {
+      this.scriptingFramework = framework;
+    }
+    if (beats && beats.length > 0) {
+      this.scriptBeats = [...beats];
+    }
+    return this;
+  }
+
+  public setScriptBeats(beats: ScriptBeat[]): this {
+    this.scriptBeats = [...beats];
     return this;
   }
 
@@ -295,7 +326,16 @@ export class PipelineIRBuilder {
       throw new Error('PipelineIRBuilder: jobId must be specified.');
     }
     if (this.chunks.length === 0) {
-      throw new Error('PipelineIRBuilder: At least one chunk must be defined.');
+      if (this.scriptingFramework || (this.scriptBeats && this.scriptBeats.length > 0)) {
+        this.addChunk({
+          id: 'chunk-1',
+          order: 1,
+          text: this.title,
+          durationMs: 4000,
+        });
+      } else {
+        throw new Error('PipelineIRBuilder: At least one chunk must be defined.');
+      }
     }
 
     // Ensure chunks are sorted by order and have valid non-negative durations
@@ -328,6 +368,20 @@ export class PipelineIRBuilder {
       },
     };
 
-    return result;
+    let finalResult = result;
+    if (this.scriptingFramework) {
+      let beats = this.scriptBeats;
+      if (!beats && this.scriptingFramework.generateBeatsSync) {
+        beats = this.scriptingFramework.generateBeatsSync({ topic: this.title });
+      }
+      if (beats && beats.length > 0) {
+        finalResult = this.scriptingFramework.applyToPipelineIR(finalResult, beats);
+      }
+    } else if (this.scriptBeats && this.scriptBeats.length > 0) {
+      const defaultFramework = ScriptingFrameworkRegistry.resolveForStyle('');
+      finalResult = defaultFramework.applyToPipelineIR(finalResult, this.scriptBeats);
+    }
+
+    return finalResult;
   }
 }

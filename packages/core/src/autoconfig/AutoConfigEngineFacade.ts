@@ -5,6 +5,7 @@ import { PipelineClassifierRegistry } from './PipelineClassifierRegistry';
 import { PipelineIRBuilder } from './builders/PipelineIRBuilder';
 import { DirectorPresetFactory } from './factories/DirectorPresetFactory';
 import { AutoConfigLegacyBridgeAdapter } from './adapters/AutoConfigLegacyBridgeAdapter';
+import { ScriptingFrameworkRegistry } from './scripting/ScriptingFrameworkRegistry';
 import type {
   AutoScaffoldOptions,
   AutoScaffoldResult,
@@ -89,6 +90,20 @@ export class AutoConfigEngineFacade {
     if (options.aspectRatio) {
       builder.setDistributionHints({ targetAspectRatios: [options.aspectRatio] });
     }
+
+    if (options.scriptingFramework) {
+      const frameworkStrategy = ScriptingFrameworkRegistry.get(options.scriptingFramework);
+      if (frameworkStrategy) {
+        const beats = frameworkStrategy.generateBeatsSync
+          ? frameworkStrategy.generateBeatsSync({
+              topic: projectTitle,
+              targetDurationSec: options.targetDurationSec,
+            })
+          : undefined;
+        builder.applyScriptingFramework(frameworkStrategy, beats);
+      }
+    }
+
     const pipelineIR = builder.build();
 
     // 4. Fine-Grained Video Director Config Synthesis via Factory

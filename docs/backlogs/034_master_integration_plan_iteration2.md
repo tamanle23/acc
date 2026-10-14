@@ -4,8 +4,8 @@
 - **Status**: [ ] Planned
 - **Component**: Core Architecture / Autoconfig / FFI GPU / UI Studio
 - **Created Date**: 2026-10-14
-- **Completed Date**: N/A
-- **Linked History**: N/A
+- **Completed Date**: In Progress (Phase 1 Completed 2026-10-14)
+- **Linked History**: [`191_master_integration_plan_iteration2_phase1_scripting_frameworks.md`](../history/191_master_integration_plan_iteration2_phase1_scripting_frameworks.md)
 
 ---
 
@@ -28,8 +28,8 @@ See the master specification in [`docs/master_integration_plan_iteration2.md`](.
 ---
 
 ## Acceptance Criteria
-- [ ] **Pillar 1**: 6 Master Scripting Framework strategies implemented and registered in `ScriptingFrameworkRegistry`.
-- [ ] **Pillar 1**: Automated A/V beat synchronization wired into `PipelineIRBuilder` and verified by tests.
+- [x] **Pillar 1**: 6 Master Scripting Framework strategies implemented and registered in `ScriptingFrameworkRegistry`.
+- [x] **Pillar 1**: Automated A/V beat synchronization wired into `PipelineIRBuilder` and verified by tests.
 - [ ] **Pillar 2**: Dynamic hardware encoder probing for NVENC, VideoToolbox, and VAAPI in `GPUEncoderResolver`.
 - [ ] **Pillar 2**: Seamless zero-copy fallback to `libx264` when hardware encoders are absent.
 - [ ] **Pillar 2**: Throughput benchmark demonstrating $\ge 2\times$ speedup on supported hardware with zero memory leaks.

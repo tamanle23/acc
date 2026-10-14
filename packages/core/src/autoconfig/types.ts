@@ -139,6 +139,8 @@ export interface AutoScaffoldOptions {
   exportLegacyStoryConfig?: boolean;
   autoTranscribeWhisper?: boolean;
   dryRun?: boolean;
+  scriptingFramework?: string;
+  targetDurationSec?: number;
 }
 
 export interface AutoScaffoldResult {
