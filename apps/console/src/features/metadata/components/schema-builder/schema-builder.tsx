@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Code, Search, Layers, Sparkles, LayoutPanelTop, List } from 'lucide-react';
 import { VisualSchemaStudio } from '../studio';
 import { useTenantBilling } from '../../api/use-billing';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useSandboxStore } from '@/core/sandbox';
 
 interface Props {
   entityTypeId: string | number;
@@ -79,8 +81,15 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
   }
 
   const { data: billing } = useTenantBilling();
+  const { user } = useSpringAuthStore();
+  const { activePersonaId } = useSandboxStore();
   const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
-  const isSovereignRoot = activeTenantId === 'SYSTEM' || billing?.quotas?.maxSchemas === -1;
+  const isSovereignRoot = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system' ||
+    activeTenantId === 'SYSTEM' ||
+    billing?.quotas?.maxSchemas === -1
+  );
   const isFieldQuotaExceeded = !isSovereignRoot && attributes.length >= 100;
 
   return (

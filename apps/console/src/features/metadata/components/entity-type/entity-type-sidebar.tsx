@@ -36,6 +36,8 @@ import {
   Infinity as InfinityIcon,
 } from 'lucide-react';
 import { useTenantBilling } from '../../api/use-billing';
+import { useSpringAuthStore } from '@/features/spring-auth';
+import { useSandboxStore } from '@/core/sandbox';
 import { cn } from '@/lib/utils';
 
 export const EntityTypeSidebar: React.FC = () => {
@@ -87,7 +89,15 @@ export const EntityTypeSidebar: React.FC = () => {
   }, [selectedEntityTypeId, entityTypes, setSelectedEntityTypeId]);
 
   const { data: billing } = useTenantBilling();
-  const maxSchemas = billing?.quotas?.maxSchemas ?? 50;
+  const { user } = useSpringAuthStore();
+  const { activePersonaId } = useSandboxStore();
+  const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
+  const isSovereignCustodian = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system' ||
+    activeTenantId === 'SYSTEM'
+  );
+  const maxSchemas = isSovereignCustodian ? -1 : (billing?.quotas?.maxSchemas ?? 50);
   const isUnlimitedSchemas = maxSchemas === -1;
   const isQuotaExceeded = !isUnlimitedSchemas && totalElements >= maxSchemas;
 
