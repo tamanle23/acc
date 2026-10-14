@@ -120,7 +120,7 @@ export const BlueprintGalleryDialog: React.FC = () => {
         <DialogContent
           style={dialogStyle}
           className={cn(
-            'max-w-none flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl relative select-none',
+            'max-w-none top-auto left-auto translate-x-0 translate-y-0 flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl relative select-none',
             isResizing && 'transition-none select-none cursor-grabbing',
             !isResizing && 'transition-[width,height] duration-150 ease-out'
           )}

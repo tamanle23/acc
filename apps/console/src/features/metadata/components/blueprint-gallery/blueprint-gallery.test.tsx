@@ -191,9 +191,9 @@ describe('useResizableDialog & DialogResizeHandles', () => {
 
     expect(result.current.dialogStyle.margin).toBe(0);
     expect(result.current.dialogStyle.position).toBe('fixed');
-    expect(result.current.dialogStyle.top).toBe('3.5rem');
-    expect(result.current.dialogStyle.left).toBe('50%');
-    expect(result.current.dialogStyle.transform).toBe('translateX(-50%)');
+    expect(result.current.dialogStyle.top).toBe('max(1rem, 3.5rem)');
+    expect(result.current.dialogStyle.left).toContain('max(1rem,');
+    expect(result.current.dialogStyle.transform).toBe('none');
     expect(result.current.dialogStyle.width).toBeDefined();
     expect(result.current.dialogStyle.height).toBeDefined();
 
@@ -214,8 +214,9 @@ describe('useResizableDialog & DialogResizeHandles', () => {
       result.current.resetToDefault();
     });
     expect(result.current.isMaximized).toBe(false);
-    expect(result.current.dialogStyle.top).toBe('3.5rem');
-    expect(result.current.dialogStyle.transform).toBe('translateX(-50%)');
+    expect(result.current.dialogStyle.top).toBe('max(1rem, 3.5rem)');
+    expect(result.current.dialogStyle.left).toContain('max(1rem,');
+    expect(result.current.dialogStyle.transform).toBe('none');
     expect(result.current.dialogStyle.margin).toBe(0);
   });
 });

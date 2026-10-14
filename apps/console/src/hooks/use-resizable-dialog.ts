@@ -208,12 +208,14 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
     };
   }, [isResizing, maxWidthRatio, maxHeightRatio, minWidth, minHeight, anchor]);
 
-  // Compute inline styles for the DialogContent element
+  // Compute inline styles for the DialogContent element with guaranteed viewport boundary clamping
   const dialogStyle: React.CSSProperties = isMaximized
     ? {
         position: 'fixed',
         top: '1.5vh',
         left: '1vw',
+        right: '1vw',
+        bottom: '1.5vh',
         width: '98vw',
         height: '97vh',
         maxWidth: '98vw',
@@ -223,12 +225,15 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
       }
     : {
         position: 'fixed',
-        top: anchor === 'top' ? topOffset : '50%',
-        left: '50%',
-        transform: anchor === 'top' ? 'translateX(-50%)' : 'translate(-50%, -50%)',
-        width: `min(${size.width}px, ${Math.round(maxWidthRatio * 100)}vw)`,
+        // Clamped top position: ensures modal is never clipped off the top of the viewport
+        top: anchor === 'top' ? `max(1rem, ${topOffset})` : `max(1rem, calc(50% - min(${Math.round(size.height / 2)}px, 45vh)))`,
+        // Clamped left position: horizontally centers while guaranteeing at least 1rem (16px) left margin
+        left: `max(1rem, calc(50% - min(${Math.round(size.width / 2)}px, ${Math.round((maxWidthRatio * 100) / 2)}vw)))`,
+        // transform: 'none' eliminates translate conflicts with Radix dialog and prevents negative left coordinate clipping
+        transform: 'none',
+        width: `min(${size.width}px, calc(100vw - 2rem))`,
         height: `min(${size.height}px, ${Math.round(maxHeightRatio * 100)}vh)`,
-        maxWidth: `${Math.round(maxWidthRatio * 100)}vw`,
+        maxWidth: 'calc(100vw - 2rem)',
         maxHeight: `${Math.round(maxHeightRatio * 100)}vh`,
         margin: 0,
       };
