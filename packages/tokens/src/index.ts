@@ -195,3 +195,115 @@ export function isWcagAaCompliant(textHex: string, bgHex: string): boolean {
 
   return getContrastRatio(textLum, bgLum) >= 4.5;
 }
+
+/**
+ * Enterprise Multi-Tenant White-Labeling & Dynamic Theming Configuration
+ */
+export interface TenantThemeConfig {
+  tenantId: string;
+  brandName?: string;
+  logoUrl?: string;
+  primaryColor?: string; // Hex or OKLCH CSS color
+  primaryForeground?: string;
+  accentColor?: string;
+  ringColor?: string;
+  glassScrimTint?: string; // Custom glass background tint
+  glassScrimOpacity?: number; // 0.1 to 0.95
+  borderRadius?: string; // e.g. '0.5rem', '0.75rem'
+  fontFamily?: string;
+}
+
+/**
+ * Standard default tenant theme presets for instant switching
+ */
+export const defaultTenantThemes: Record<string, TenantThemeConfig> = {
+  'tenant-acme': {
+    tenantId: 'tenant-acme',
+    brandName: 'Acme International Corp',
+    primaryColor: 'oklch(0.208 0.042 265.755)',
+    primaryForeground: 'oklch(0.984 0.003 247.858)',
+    accentColor: 'oklch(0.968 0.007 247.896 / 60%)',
+    ringColor: 'oklch(0.704 0.04 256.788)',
+    glassScrimTint: 'rgba(255, 255, 255, 0.70)',
+    borderRadius: '0.75rem',
+  },
+  'tenant-healthcare': {
+    tenantId: 'tenant-healthcare',
+    brandName: 'St. Jude Health & LifeSciences',
+    primaryColor: '#059669', // Emerald medical green
+    primaryForeground: '#FFFFFF',
+    accentColor: '#D1FAE5',
+    ringColor: '#10B981',
+    glassScrimTint: 'rgba(240, 253, 244, 0.75)',
+    borderRadius: '0.5rem',
+  },
+  'tenant-realestate': {
+    tenantId: 'tenant-realestate',
+    brandName: 'Prestige Realty & MLS',
+    primaryColor: '#7C3AED', // Royal violet
+    primaryForeground: '#FFFFFF',
+    accentColor: '#EDE9FE',
+    ringColor: '#8B5CF6',
+    glassScrimTint: 'rgba(245, 243, 255, 0.75)',
+    borderRadius: '1rem',
+  },
+  'tenant-fleet': {
+    tenantId: 'tenant-fleet',
+    brandName: 'Apex Global Logistics & Telematics',
+    primaryColor: '#EA580C', // High-visibility amber orange
+    primaryForeground: '#FFFFFF',
+    accentColor: '#FFEDD5',
+    ringColor: '#F97316',
+    glassScrimTint: 'rgba(255, 247, 237, 0.75)',
+    borderRadius: '0.375rem',
+  },
+};
+
+/**
+ * Applies tenant-specific dynamic CSS variable overrides without page reload.
+ * Modifies :root custom properties safely.
+ */
+export function applyTenantThemeOverrides(
+  theme: Partial<TenantThemeConfig> | null,
+  targetElement: HTMLElement | null = typeof window !== 'undefined' ? window.document.documentElement : null
+): void {
+  if (!targetElement) return;
+
+  if (!theme) {
+    // Reset to defaults
+    targetElement.style.removeProperty('--primary');
+    targetElement.style.removeProperty('--primary-foreground');
+    targetElement.style.removeProperty('--accent');
+    targetElement.style.removeProperty('--ring');
+    targetElement.style.removeProperty('--glass-bg');
+    targetElement.style.removeProperty('--radius');
+    targetElement.style.removeProperty('--font-sans');
+    return;
+  }
+
+  if (theme.primaryColor) {
+    targetElement.style.setProperty('--primary', theme.primaryColor);
+    targetElement.style.setProperty('--sidebar-primary', theme.primaryColor);
+  }
+  if (theme.primaryForeground) {
+    targetElement.style.setProperty('--primary-foreground', theme.primaryForeground);
+    targetElement.style.setProperty('--sidebar-primary-foreground', theme.primaryForeground);
+  }
+  if (theme.accentColor) {
+    targetElement.style.setProperty('--accent', theme.accentColor);
+    targetElement.style.setProperty('--sidebar-accent', theme.accentColor);
+  }
+  if (theme.ringColor) {
+    targetElement.style.setProperty('--ring', theme.ringColor);
+    targetElement.style.setProperty('--sidebar-ring', theme.ringColor);
+  }
+  if (theme.glassScrimTint) {
+    targetElement.style.setProperty('--glass-bg', theme.glassScrimTint);
+  }
+  if (theme.borderRadius) {
+    targetElement.style.setProperty('--radius', theme.borderRadius);
+  }
+  if (theme.fontFamily) {
+    targetElement.style.setProperty('--font-sans', theme.fontFamily);
+  }
+}

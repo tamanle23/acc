@@ -7,6 +7,8 @@ import {
   Newspaper,
   Briefcase,
   Layers,
+  HeartPulse,
+  Home,
   ArrowRight,
   Eye,
   GitFork,
@@ -27,6 +29,8 @@ const iconMap: Record<string, any> = {
   Newspaper,
   Briefcase,
   Layers,
+  HeartPulse,
+  Home,
 };
 
 export const BlueprintCard: React.FC<Props> = ({

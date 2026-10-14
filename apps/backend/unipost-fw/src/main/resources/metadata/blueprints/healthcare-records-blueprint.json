@@ -1,0 +1,149 @@
+{
+  "id": "bp_healthcare_records_v1",
+  "name": "Healthcare & Patient Records",
+  "category": "HEALTHCARE",
+  "description": "HIPAA-aligned clinical patient profiles, medical consultation encounters, and electronic prescriptions.",
+  "icon": "HeartPulse",
+  "entityTypes": [
+    {
+      "systemName": "ent_patient",
+      "name": "Patient Profile",
+      "description": "Patient master demographic and insurance record",
+      "attributes": [
+        {
+          "systemName": "mrn",
+          "name": "Medical Record Number (MRN)",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "full_name",
+          "name": "Patient Full Name",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "date_of_birth",
+          "name": "Date of Birth",
+          "dataType": "DATE",
+          "uiComponent": "datepicker",
+          "isRequired": true,
+          "displayOrder": 3
+        },
+        {
+          "systemName": "blood_group",
+          "name": "Blood Group",
+          "dataType": "STRING",
+          "uiComponent": "select",
+          "isRequired": false,
+          "displayOrder": 4,
+          "options": {
+            "choices": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+          }
+        },
+        {
+          "systemName": "is_confidential",
+          "name": "Restricted Access",
+          "dataType": "BOOLEAN",
+          "uiComponent": "switch",
+          "isRequired": true,
+          "displayOrder": 5,
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "systemName": "ent_clinical_note",
+      "name": "Clinical Encounter Note",
+      "description": "Physician SOAP notes and diagnostic assessments",
+      "attributes": [
+        {
+          "systemName": "encounter_title",
+          "name": "Encounter Reason",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "soap_notes",
+          "name": "SOAP Clinical Notes",
+          "dataType": "STRING",
+          "uiComponent": "textarea",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "icd10_code",
+          "name": "Primary ICD-10 Diagnosis Code",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": false,
+          "displayOrder": 3
+        },
+        {
+          "systemName": "encounter_date",
+          "name": "Consultation Timestamp",
+          "dataType": "DATETIME",
+          "uiComponent": "datepicker",
+          "isRequired": true,
+          "displayOrder": 4
+        }
+      ]
+    },
+    {
+      "systemName": "ent_prescription",
+      "name": "Electronic Prescription",
+      "description": "Medication orders, dosages, and pharmacy dispensation orders",
+      "attributes": [
+        {
+          "systemName": "medication_name",
+          "name": "Medication Name & Dosage",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "frequency",
+          "name": "Dispensation Frequency",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "refills_allowed",
+          "name": "Refills Permitted",
+          "dataType": "INTEGER",
+          "uiComponent": "number",
+          "isRequired": true,
+          "displayOrder": 3,
+          "defaultValue": "0"
+        }
+      ]
+    }
+  ],
+  "relationshipTypes": [
+    {
+      "systemName": "rel_patient_to_clinical_notes",
+      "name": "Patient Encounters",
+      "description": "Associates clinical consultation notes with a patient",
+      "sourceEntityType": "ent_patient",
+      "targetEntityType": "ent_clinical_note",
+      "cardinality": "ONE_TO_MANY"
+    },
+    {
+      "systemName": "rel_patient_to_prescriptions",
+      "name": "Active Prescriptions",
+      "description": "Prescribed pharmaceutical medications for the patient",
+      "sourceEntityType": "ent_patient",
+      "targetEntityType": "ent_prescription",
+      "cardinality": "ONE_TO_MANY"
+    }
+  ]
+}

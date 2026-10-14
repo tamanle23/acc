@@ -1,0 +1,160 @@
+{
+  "id": "bp_real_estate_mls_v1",
+  "name": "Real Estate MLS & Property Management",
+  "category": "REAL_ESTATE",
+  "description": "Property listings, realtor broker profiles, property tour schedules, and closing escrow documents.",
+  "icon": "Home",
+  "entityTypes": [
+    {
+      "systemName": "ent_property_listing",
+      "name": "Property Listing",
+      "description": "Residential and commercial real estate properties",
+      "attributes": [
+        {
+          "systemName": "mls_number",
+          "name": "MLS ID Number",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "property_title",
+          "name": "Listing Title",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "listing_price_usd",
+          "name": "Listing Price ($ USD)",
+          "dataType": "DECIMAL",
+          "uiComponent": "number",
+          "isRequired": true,
+          "displayOrder": 3
+        },
+        {
+          "systemName": "property_type",
+          "name": "Property Classification",
+          "dataType": "STRING",
+          "uiComponent": "select",
+          "isRequired": true,
+          "displayOrder": 4,
+          "options": {
+            "choices": ["SINGLE_FAMILY", "CONDOMINIUM", "TOWNHOUSE", "COMMERCIAL_RETAIL", "INDUSTRIAL_WAREHOUSE"]
+          }
+        },
+        {
+          "systemName": "bedrooms",
+          "name": "Bedrooms Count",
+          "dataType": "INTEGER",
+          "uiComponent": "number",
+          "isRequired": false,
+          "displayOrder": 5
+        },
+        {
+          "systemName": "is_featured",
+          "name": "Featured Showcase",
+          "dataType": "BOOLEAN",
+          "uiComponent": "switch",
+          "isRequired": true,
+          "displayOrder": 6,
+          "defaultValue": "false"
+        }
+      ]
+    },
+    {
+      "systemName": "ent_listing_agent",
+      "name": "Licensed Realtor Agent",
+      "description": "Real estate broker and listing agent profiles",
+      "attributes": [
+        {
+          "systemName": "license_number",
+          "name": "Realtor License Number",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "agent_name",
+          "name": "Full Name",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "brokerage_agency",
+          "name": "Brokerage Firm",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 3
+        },
+        {
+          "systemName": "contact_email",
+          "name": "Agent Email",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 4
+        }
+      ]
+    },
+    {
+      "systemName": "ent_tour_schedule",
+      "name": "Property Tour Appointment",
+      "description": "Prospective buyer walkthrough appointments and open houses",
+      "attributes": [
+        {
+          "systemName": "appointment_time",
+          "name": "Tour Date & Time",
+          "dataType": "DATETIME",
+          "uiComponent": "datepicker",
+          "isRequired": true,
+          "displayOrder": 1
+        },
+        {
+          "systemName": "client_name",
+          "name": "Prospective Buyer Name",
+          "dataType": "STRING",
+          "uiComponent": "text",
+          "isRequired": true,
+          "displayOrder": 2
+        },
+        {
+          "systemName": "tour_status",
+          "name": "Appointment Status",
+          "dataType": "STRING",
+          "uiComponent": "select",
+          "isRequired": true,
+          "displayOrder": 3,
+          "options": {
+            "choices": ["REQUESTED", "CONFIRMED", "COMPLETED", "CANCELED"]
+          },
+          "defaultValue": "REQUESTED"
+        }
+      ]
+    }
+  ],
+  "relationshipTypes": [
+    {
+      "systemName": "rel_agent_to_listings",
+      "name": "Represented Listings",
+      "description": "Properties represented by the listing agent",
+      "sourceEntityType": "ent_listing_agent",
+      "targetEntityType": "ent_property_listing",
+      "cardinality": "ONE_TO_MANY"
+    },
+    {
+      "systemName": "rel_listing_to_tours",
+      "name": "Scheduled Walkthroughs",
+      "description": "Tour bookings for a given property",
+      "sourceEntityType": "ent_property_listing",
+      "targetEntityType": "ent_tour_schedule",
+      "cardinality": "ONE_TO_MANY"
+    }
+  ]
+}

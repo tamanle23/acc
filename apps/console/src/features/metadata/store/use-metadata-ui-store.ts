@@ -5,6 +5,7 @@ import type {
   EntityType,
   RelationshipType,
 } from '../api/types';
+import { applyTenantThemeOverrides, defaultTenantThemes } from '@unipost/tokens';
 
 export interface AttributeFilterClause {
   id: string;
@@ -177,6 +178,15 @@ export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
   },
 
   setActiveTenant: (tenantId: string, tenantName?: string) => {
+    // Dynamic White-Label Theming: Inject CSS variable overrides without page reload
+    const tenantTheme = defaultTenantThemes[tenantId];
+    if (tenantTheme) {
+      applyTenantThemeOverrides(tenantTheme);
+    } else {
+      // Revert to default base tokens if no custom white-label theme registered
+      applyTenantThemeOverrides(null);
+    }
+
     set({
       activeTenantId: tenantId,
       activeTenantName: tenantName || tenantId,
