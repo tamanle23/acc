@@ -143,6 +143,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
     it('executes draft -> review -> publish transition and triggers edge revalidation webhook payload', async () => {
       // 1. Create Article Draft
       const article = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
         attributes: {
           title: 'Zero Downtime SRE Architecture',
           slug: 'zero-downtime-sre',
@@ -179,6 +180,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
     it('strictly isolates records between tenant-acme and tenant-hooli preventing cross-tenant leakage', async () => {
       // Create record in tenant-acme
       const acmeRecord = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
         tenantId: 'tenant-acme',
         attributes: {
           title: 'Acme Proprietary Report',
@@ -203,6 +205,7 @@ describe('Multi-Tenant & Domain Blueprints Full E2E Integration Suite', () => {
     it('auto-merges concurrent disjoint property updates on identical base version', async () => {
       // Base Record Version 1
       const initial = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
         attributes: {
           title: 'Original Title',
           author: 'Alice',

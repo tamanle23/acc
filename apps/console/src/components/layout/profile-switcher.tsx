@@ -49,7 +49,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
-  const effectiveTenantId = isAssumed
+  const effectiveTenantId = (isAssumed && assumedTenant)
     ? assumedTenant
     : isSovereign
     ? 'SYSTEM'

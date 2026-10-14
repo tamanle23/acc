@@ -27,7 +27,7 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { LanguageSwitch } from '@/components/language-switch'
 import { NewChat } from './components/new-chat'
-import { type ChatUser, type Convo } from './data/chat-types'
+import { type Convo } from './data/chat-types'
 import { useChatsQuery, useSendMessageMutation } from './api/use-chats'
 
 export function Chats() {
@@ -193,7 +193,7 @@ export function Chats() {
                     size='icon'
                     variant='ghost'
                     className='-ms-2 h-full sm:hidden'
-                    onClick={() => setMobileSelectedUser(null)}
+                    onClick={() => setMobileSelectedUserId(null)}
                   >
                     <ArrowLeft className='rtl:rotate-180' />
                   </Button>

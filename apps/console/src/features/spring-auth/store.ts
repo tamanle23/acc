@@ -35,6 +35,21 @@ export const useSpringAuthStore = create<AuthState>()(
           isSandbox,
         });
       },
+      clearTokens: () => {
+        localStorage.removeItem(REFRESH_STORAGE_KEY);
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+          currentTenantId: null,
+          isAuthenticated: false,
+          isSandbox: false,
+          isHydrating: false,
+        });
+      },
+      setHydrating: (hydrating: boolean) => {
+        set({ isHydrating: hydrating });
+      },
     }),
     {
       name: 'sandbox_auth_store',

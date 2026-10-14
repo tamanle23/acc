@@ -1082,6 +1082,26 @@ export class MockMetadataService implements MetadataDataSource {
     };
   }
 
+  async transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord> {
+    const record = await this.getEntityRecord(entityTypeId, recordId);
+    if (!record) {
+      throw new Error(`Record #${recordId} not found`);
+    }
+    const updated = await this.updateEntityRecord(entityTypeId, recordId, {
+      attributes: {
+        ...(record.attributes || {}),
+        ...(additionalAttributes || {}),
+        status: action,
+      },
+    });
+    return updated;
+  }
+
   async validateEntityRecord(
     entityTypeId: string | number,
     dto: CreateEntityRecordDto

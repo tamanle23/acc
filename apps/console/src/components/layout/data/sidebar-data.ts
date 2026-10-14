@@ -23,7 +23,6 @@ import {
   Database,
   Building2,
   CreditCard,
-  Crown,
   KeyRound,
 } from 'lucide-react'
 import { type SidebarData } from '../types'

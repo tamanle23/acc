@@ -85,7 +85,7 @@ describe('Sovereign Cockpit UI Components', () => {
     };
     renderWithClient(
       <TenantUsersDrawer
-        tenant={mockTenant}
+        tenant={mockTenant as any}
         open={true}
         onOpenChange={() => {}}
       />

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -52,7 +52,7 @@ describe('TenantWorkspacesDrawer - Phase 3 Immutable Default Workspace Invariant
   it('renders default workspace with DEFAULT badge and disabled delete button', () => {
     renderWithClient(
       <TenantWorkspacesDrawer
-        tenant={mockTenant}
+        tenant={mockTenant as any}
         open={true}
         onOpenChange={() => {}}
       />
@@ -86,7 +86,7 @@ describe('TenantWorkspacesDrawer - Phase 3 Immutable Default Workspace Invariant
 
     renderWithClient(
       <TenantWorkspacesDrawer
-        tenant={mockTenant}
+        tenant={mockTenant as any}
         open={true}
         onOpenChange={() => {}}
       />
