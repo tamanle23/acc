@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Props {
   entityTypeId: string | number;
