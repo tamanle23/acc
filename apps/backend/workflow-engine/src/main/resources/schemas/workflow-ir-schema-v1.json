@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CanonicalWorkflowIR",
+  "type": "object",
+  "required": ["workflowKey", "version", "name", "tasks"],
+  "properties": {
+    "workflowKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9-_]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "default": 3600
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["taskReferenceName", "taskType"],
+        "properties": {
+          "taskReferenceName": {
+            "type": "string"
+          },
+          "taskType": {
+            "type": "string",
+            "enum": ["SIMPLE", "SWITCH", "FORK_JOIN", "DYNAMIC_FORK", "WAIT", "DO_WHILE"]
+          },
+          "domain": {
+            "type": "string",
+            "default": "default"
+          },
+          "timeoutSeconds": {
+            "type": "integer",
+            "default": 30
+          },
+          "retryCount": {
+            "type": "integer",
+            "default": 3
+          },
+          "retryDelaySeconds": {
+            "type": "integer",
+            "default": 2
+          },
+          "backoffRate": {
+            "type": "number",
+            "default": 2.0
+          },
+          "inputParameters": {
+            "type": "object"
+          },
+          "compensateHandlerRef": {
+            "type": "string"
+          },
+          "decisionCases": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array"
+            }
+          },
+          "defaultCase": {
+            "type": "array"
+          },
+          "forkTasks": {
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "joinOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "loopCondition": {
+            "type": "string"
+          },
+          "loopOver": {
+            "type": "array"
+          }
+        }
+      }
+    },
+    "layoutMetadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "x": { "type": "number" },
+          "y": { "type": "number" }
+        }
+      }
+    }
+  }
+}
