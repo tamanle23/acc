@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  applyNodeChanges,
+  applyEdgeChanges,
+  type Node,
+  type Edge,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type OnSelectionChangeParams,
+} from '@xyflow/react';
 import type { FsmStateNode, FsmTransitionEdge, FsmWorkflowDefinition } from './studio-types';
-import { GitFork, ArrowRight, ShieldAlert, Sparkles, Plus, Play, RefreshCw, Zap } from 'lucide-react';
+import { FsmStateNodeComponent, type FsmNodeData } from './fsm-state-node';
+import { FsmTransitionEdgeComponent, type FsmEdgeData } from './fsm-transition-edge';
+import { GitFork, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 
 export const DEFAULT_FSM_STATES: FsmStateNode[] = [
   { id: 'DRAFT', label: 'Draft', isInitial: true, color: '#94A3B8', description: 'Initial uncommitted state' },
@@ -63,174 +76,160 @@ interface Props {
   onSaveWorkflow?: (def: FsmWorkflowDefinition) => void;
 }
 
+const nodeTypes = {
+  fsmState: FsmStateNodeComponent,
+};
+
+const edgeTypes = {
+  fsmTransition: FsmTransitionEdgeComponent,
+};
+
 export const FsmWorkflowDesigner: React.FC<Props> = ({
   entityTypeName,
   workflow,
-  onSaveWorkflow,
 }) => {
-  const [states, setStates] = useState<FsmStateNode[]>(workflow?.states || DEFAULT_FSM_STATES);
-  const [transitions, setTransitions] = useState<FsmTransitionEdge[]>(
-    workflow?.transitions || DEFAULT_FSM_TRANSITIONS
-  );
+  const initialStates = workflow?.states || DEFAULT_FSM_STATES;
+  const initialTransitions = workflow?.transitions || DEFAULT_FSM_TRANSITIONS;
+
+  // Compute clean initial layout: horizontal DAG layout with alternate vertical stagger
+  const initialNodes: Node<FsmNodeData>[] = useMemo(() => {
+    const spacingX = 220;
+    return initialStates.map((state, index) => ({
+      id: state.id,
+      type: 'fsmState',
+      position: {
+        x: 60 + index * spacingX,
+        y: index % 2 === 0 ? 100 : 170,
+      },
+      data: state,
+    }));
+  }, [initialStates]);
+
+  const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
+    return initialTransitions.map((t) => ({
+      id: t.id,
+      source: t.sourceState,
+      target: t.targetState,
+      type: 'fsmTransition',
+      data: t,
+    }));
+  }, [initialTransitions]);
+
+  const [nodes, setNodes] = useState<Node<FsmNodeData>[]>(initialNodes);
+  const [edges, setEdges] = useState<Edge<FsmEdgeData>[]>(initialEdges);
   const [selectedTransitionId, setSelectedTransitionId] = useState<string>(
-    transitions[0]?.id || ''
+    initialTransitions[0]?.id || ''
   );
 
-  const selectedTransition = transitions.find((t) => t.id === selectedTransitionId) || transitions[0];
+  const onNodesChange: OnNodesChange<Node<FsmNodeData>> = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    []
+  );
+
+  const onEdgesChange: OnEdgesChange<Edge<FsmEdgeData>> = useCallback(
+    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    []
+  );
+
+  const onSelectionChange = useCallback((params: OnSelectionChangeParams) => {
+    if (params.edges.length > 0) {
+      setSelectedTransitionId(params.edges[0].id);
+    }
+  }, []);
+
+  const selectedTransition = useMemo(() => {
+    const edge = edges.find((e) => e.id === selectedTransitionId);
+    return edge?.data || initialTransitions.find((t) => t.id === selectedTransitionId) || initialTransitions[0];
+  }, [edges, selectedTransitionId, initialTransitions]);
 
   const handleUpdateTransition = (updated: Partial<FsmTransitionEdge>) => {
     if (!selectedTransition) return;
-    setTransitions((prev) =>
-      prev.map((t) => (t.id === selectedTransition.id ? { ...t, ...updated } : t))
+    setEdges((prev) =>
+      prev.map((e) => {
+        if (e.id === selectedTransition.id && e.data) {
+          return {
+            ...e,
+            data: { ...e.data, ...updated },
+          };
+        }
+        return e;
+      })
     );
   };
 
-  // Node positions in circular / sequential DAG layout
-  const width = 760;
-  const height = 360;
-  const nodeWidth = 120;
-  const nodeHeight = 56;
-  const positions: Record<string, { x: number; y: number }> = {};
-
-  states.forEach((state, idx) => {
-    const total = states.length;
-    // Sequential curved pipeline
-    const x = 50 + (idx / (total - 1)) * (width - 100 - nodeWidth);
-    const y = height / 2 - nodeHeight / 2 + (idx % 2 === 0 ? -35 : 35);
-    positions[state.id] = { x, y };
-  });
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Visual Canvas Area */}
-      <div className="relative w-full h-[400px] rounded-3xl bg-slate-950/30 dark:bg-slate-950/60 backdrop-blur-2xl border border-white/20 dark:border-white/10 overflow-hidden shadow-2xl flex flex-col">
-        {/* Canvas Toolbar */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
-          <Badge className="bg-primary/20 text-primary border-primary/30 backdrop-blur-md px-2.5 py-1 text-xs font-semibold gap-1.5 shadow-sm">
+      {/* React Flow Visual Canvas Area */}
+      <div className="relative w-full h-[460px] rounded-3xl bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 overflow-hidden shadow-2xl flex flex-col">
+        {/* Canvas Toolbar Badge */}
+        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
+          <Badge className="bg-primary/20 text-primary border-primary/30 backdrop-blur-md px-2.5 py-1 text-xs font-semibold gap-1.5 shadow-sm pointer-events-auto">
             <Zap className="h-3.5 w-3.5" />
             <span>FSM Workflow: {entityTypeName}</span>
           </Badge>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline">
-            Click edge or transition to inspect SpEL guards
+          <span className="text-[11px] text-muted-foreground hidden sm:inline bg-slate-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/10 pointer-events-auto">
+            Drag nodes to rearrange · Click transition pill to inspect SpEL guards
           </span>
         </div>
 
-        {/* SVG Diagram Connections */}
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
-          <defs>
-            <linearGradient id="fsmEdgeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#818CF8" stopOpacity="0.8" />
-            </linearGradient>
-            <marker
-              id="fsmArrow"
-              viewBox="0 0 10 10"
-              refX="6"
-              refY="5"
-              markerWidth="6"
-              markerHeight="6"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 1 L 8 5 L 0 9 z" fill="#818CF8" />
-            </marker>
-          </defs>
-
-          {transitions.map((trans) => {
-            const src = positions[trans.sourceState];
-            const dst = positions[trans.targetState];
-            if (!src || !dst) return null;
-
-            const isSelected = selectedTransition?.id === trans.id;
-            const sx = src.x + nodeWidth;
-            const sy = src.y + nodeHeight / 2;
-            const tx = dst.x;
-            const ty = dst.y + nodeHeight / 2;
-            const mx = (sx + tx) / 2;
-            const my = (sy + ty) / 2 - 25;
-
-            return (
-              <g
-                key={trans.id}
-                onClick={() => setSelectedTransitionId(trans.id)}
-                className="cursor-pointer group"
-              >
-                <path
-                  d={`M ${sx} ${sy} Q ${mx} ${my} ${tx} ${ty}`}
-                  fill="none"
-                  stroke={isSelected ? '#38BDF8' : 'url(#fsmEdgeGradient)'}
-                  strokeWidth={isSelected ? '3' : '2'}
-                  strokeDasharray={trans.guardExpression ? '5 3' : undefined}
-                  markerEnd="url(#fsmArrow)"
-                  className="transition-all duration-200"
-                />
-                {/* Edge Label */}
-                <foreignObject x={mx - 50} y={my - 16} width="100" height="28">
-                  <div className="flex items-center justify-center">
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-tight shadow-md transition-all',
-                        isSelected
-                          ? 'bg-sky-500 text-white shadow-sky-500/30 ring-2 ring-sky-300'
-                          : 'bg-slate-900/90 text-sky-200 border border-sky-500/30'
-                      )}
-                    >
-                      {trans.triggerEvent}
-                    </span>
-                  </div>
-                </foreignObject>
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* State Machine Nodes */}
-        {states.map((state) => {
-          const pos = positions[state.id];
-          if (!pos) return null;
-
-          return (
-            <div
-              key={state.id}
-              style={{
-                position: 'absolute',
-                left: `${(pos.x / width) * 100}%`,
-                top: `${(pos.y / height) * 100}%`,
-                width: `${(nodeWidth / width) * 100}%`,
-              }}
-              className={cn(
-                'p-2.5 rounded-2xl backdrop-blur-xl border flex flex-col items-center justify-center text-center shadow-lg transition-all hover:scale-105',
-                state.isInitial
-                  ? 'bg-sky-500/15 border-sky-400/40 text-sky-300 shadow-sky-500/10'
-                  : state.isTerminal
-                  ? 'bg-pink-500/15 border-pink-400/40 text-pink-300 shadow-pink-500/10'
-                  : 'bg-white/70 dark:bg-slate-900/80 border-white/30 dark:border-white/10 text-foreground'
-              )}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: state.color }} />
-                <span className="text-xs font-bold tracking-tight">{state.label}</span>
-              </div>
-              <span className="text-[9px] font-mono text-muted-foreground uppercase">
-                {state.id}
-              </span>
-            </div>
-          );
-        })}
+        {/* React Flow Canvas */}
+        <div className="w-full h-full">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onEdgeClick={(_, edge) => setSelectedTransitionId(edge.id)}
+            onSelectionChange={onSelectionChange}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            defaultEdgeOptions={{
+              type: 'fsmTransition',
+            }}
+            proOptions={{ hideAttribution: true }}
+            className="fsm-workflow-flow"
+          >
+            <Background color="#64748b" gap={20} size={1} />
+            <Controls className="bg-slate-900/80 border-white/20 fill-white text-white rounded-xl shadow-lg !m-3" />
+            <MiniMap
+              nodeColor={(n) => (n.data as FsmNodeData)?.color || '#38bdf8'}
+              className="!bg-slate-950/80 !border !border-white/15 !rounded-xl !overflow-hidden !m-3"
+              maskColor="rgba(15, 23, 42, 0.7)"
+            />
+          </ReactFlow>
+        </div>
       </div>
 
       {/* Transition Guard & Action Inspector */}
       {selectedTransition && (
         <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-border/40">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/40">
             <div className="flex items-center gap-2">
               <GitFork className="h-4 w-4 text-sky-500" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Transition Rule: {selectedTransition.sourceState} → {selectedTransition.targetState}
               </h4>
             </div>
-            <Badge variant="outline" className="text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300">
-              EVENT: {selectedTransition.triggerEvent}
-            </Badge>
+
+            {/* Quick Transition Selector Pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {initialTransitions.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setSelectedTransitionId(t.id)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                    selectedTransition.id === t.id
+                      ? 'bg-sky-500 text-white shadow-xs'
+                      : 'bg-muted/80 hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {t.triggerEvent}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

@@ -133,8 +133,36 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
           </div>
         </div>
       ) : (
-        /* FSM State Machine Workflow Designer */
-        <FsmWorkflowDesigner entityTypeName={entityType?.name || 'Entity'} />
+        /* FSM State Machine Workflow Designer with React Flow */
+        <FsmWorkflowDesigner
+          entityTypeName={entityType?.name || 'Entity'}
+          workflow={
+            entityType?.lifecycleConfig
+              ? {
+                  entityTypeId: entityType.id,
+                  entityTypeSystemName: entityType.systemName,
+                  version: entityType.version || 1,
+                  initialState: entityType.lifecycleConfig.initial_state || 'DRAFT',
+                  states: (entityType.lifecycleConfig.states || []).map((s, idx) => ({
+                    id: s,
+                    label: s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' '),
+                    isInitial: s === (entityType.lifecycleConfig?.initial_state || 'DRAFT'),
+                    isTerminal: ['ARCHIVED', 'DECOMMISSIONED', 'RETIRED', 'CANCELLED', 'CLOSED'].includes(s),
+                    color: ['#38BDF8', '#34D399', '#818CF8', '#F59E0B', '#F472B6', '#10B981'][idx % 6],
+                  })),
+                  transitions: (entityType.lifecycleConfig.transitions || []).map((t, idx) => ({
+                    id: `trans-${idx}-${t.action.toLowerCase()}`,
+                    sourceState: t.from === '*' ? (entityType.lifecycleConfig?.initial_state || 'DRAFT') : t.from,
+                    targetState: t.to,
+                    triggerEvent: t.action,
+                    label: t.action,
+                    guardExpression: t.guard_expression,
+                    requiredRole: t.allowed_roles?.[0],
+                  })),
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   );
