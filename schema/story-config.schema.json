@@ -649,8 +649,13 @@
             "realesrgan-x4plus",
             "realesrgan-x4plus-anime",
             "realesrnet-x4plus",
+            "realesr-animevideov3",
             "4x-UltraSharp"
           ]
+        },
+        "ratio": {
+          "type": "number",
+          "description": "Tỉ lệ upscale (mặc định: 4)"
         }
       }
     },

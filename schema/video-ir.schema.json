@@ -1,0 +1,395 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://acc.io/schemas/video-ir.schema.json",
+  "title": "Universal Video IR Document Schema",
+  "description": "JSON Schema for Universal Video Intermediate Representation (VideoIR) Document V1.0-Stable adhering to the Extensible Entity-Component Architecture.",
+  "type": "object",
+  "required": [
+    "version",
+    "meta",
+    "tracks"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Video IR specification version (e.g., '1.0.0-stable' or '1.0.0')",
+      "examples": ["1.0.0-stable", "1.0.0"]
+    },
+    "meta": {
+      "$ref": "#/definitions/IRMeta"
+    },
+    "assets": {
+      "type": "object",
+      "description": "Dictionary of registered media, audio, visual, and font assets keyed by unique asset ID",
+      "additionalProperties": {
+        "$ref": "#/definitions/AssetDefinition"
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "description": "Ordered collection of rendering and composition tracks (video, audio, data, timed_text)",
+      "items": {
+        "$ref": "#/definitions/IRTrack"
+      }
+    }
+  },
+  "definitions": {
+    "TrackType": {
+      "type": "string",
+      "enum": [
+        "video",
+        "audio",
+        "data",
+        "timed_text"
+      ],
+      "description": "Functional classification of the track"
+    },
+    "AssetType": {
+      "type": "string",
+      "enum": [
+        "media",
+        "image",
+        "audio",
+        "font",
+        "lottie",
+        "text_cues"
+      ],
+      "description": "Asset source format and content classification"
+    },
+    "SourceTrim": {
+      "type": "object",
+      "description": "Source asset frame range trimming boundaries",
+      "properties": {
+        "startFrame": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Starting frame offset within the source asset"
+        },
+        "durationFrames": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of frames to extract from the source asset"
+        }
+      }
+    },
+    "ColorProfile": {
+      "type": "object",
+      "description": "Input color space and LUT transformations for asset color science",
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Input color profile or gamut (e.g., 'sRGB', 'Rec709', 'DCI-P3', 'slog3')"
+        },
+        "lut": {
+          "type": "string",
+          "description": "Path or identifier for 3D LUT grading table"
+        }
+      }
+    },
+    "AssetDefinition": {
+      "type": "object",
+      "required": [
+        "src",
+        "type"
+      ],
+      "properties": {
+        "src": {
+          "type": "string",
+          "description": "URI, local filesystem path, or asset identifier"
+        },
+        "type": {
+          "$ref": "#/definitions/AssetType"
+        },
+        "streams": {
+          "type": "array",
+          "description": "Active audio/video stream identifiers inside container",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fontFamily": {
+          "type": "string",
+          "description": "Custom font family name when type is font"
+        },
+        "sourceTrim": {
+          "$ref": "#/definitions/SourceTrim"
+        },
+        "colorProfile": {
+          "$ref": "#/definitions/ColorProfile"
+        }
+      }
+    },
+    "RelationalStart": {
+      "type": "object",
+      "description": "Dynamic relational start timing relative to another sequence",
+      "properties": {
+        "after": {
+          "type": "string",
+          "description": "ID of preceding sequence after which this sequence begins"
+        },
+        "syncWith": {
+          "type": "string",
+          "description": "ID of sequence with which this sequence synchronizes start frame"
+        },
+        "offsetFrames": {
+          "type": "integer",
+          "description": "Frame offset (positive delay or negative lead-in)"
+        },
+        "overlapFrames": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of transition overlap frames"
+        }
+      }
+    },
+    "RelationalDuration": {
+      "type": "object",
+      "description": "Dynamic relational duration calculation",
+      "properties": {
+        "matchLengthOf": {
+          "type": "string",
+          "description": "ID of sequence whose resolved duration determines this sequence length"
+        },
+        "matchAssetDuration": {
+          "type": "boolean",
+          "description": "Derive duration dynamically from underlying audio/video asset metadata"
+        },
+        "paddingFrames": {
+          "type": "integer",
+          "description": "Additional padding frames appended to matched duration"
+        }
+      }
+    },
+    "SequenceTime": {
+      "type": "object",
+      "required": [
+        "start"
+      ],
+      "properties": {
+        "start": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Explicit absolute start frame index"
+            },
+            {
+              "$ref": "#/definitions/RelationalStart"
+            }
+          ]
+        },
+        "duration": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Explicit fixed frame count"
+            },
+            {
+              "$ref": "#/definitions/RelationalDuration"
+            }
+          ]
+        }
+      }
+    },
+    "TimedTextCue": {
+      "type": "object",
+      "required": [
+        "startOffsetMs",
+        "endOffsetMs",
+        "text"
+      ],
+      "properties": {
+        "startOffsetMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Start offset in milliseconds relative to sequence beginning"
+        },
+        "endOffsetMs": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "string",
+              "enum": [
+                "end"
+              ]
+            }
+          ],
+          "description": "End offset in milliseconds or literal 'end'"
+        },
+        "text": {
+          "type": "string",
+          "description": "Subtitle / caption cue text"
+        }
+      }
+    },
+    "ModifierNode": {
+      "type": "object",
+      "required": [
+        "type",
+        "params"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Modifier plugin identifier (e.g., 'transform/scale', 'color/lut', 'transition/crossfade', 'depth3d/parallax', 'audio/compressor', 'overlay/composite')"
+        },
+        "params": {
+          "type": "object",
+          "description": "Arbitrary parameter dictionary passed to modifier execution node",
+          "additionalProperties": true
+        }
+      }
+    },
+    "IRSequence": {
+      "type": "object",
+      "required": [
+        "id",
+        "time"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique sequence identifier within the document"
+        },
+        "assetId": {
+          "type": "string",
+          "description": "Reference key to an asset declared in the root assets dictionary"
+        },
+        "compositionId": {
+          "type": "string",
+          "description": "Optional nested sub-composition identifier"
+        },
+        "activeStreams": {
+          "type": "array",
+          "description": "Stream IDs active for this sequence instance",
+          "items": {
+            "type": "string"
+          }
+        },
+        "time": {
+          "$ref": "#/definitions/SequenceTime"
+        },
+        "cues": {
+          "type": "array",
+          "description": "Timed text cues (for timed_text tracks)",
+          "items": {
+            "$ref": "#/definitions/TimedTextCue"
+          }
+        },
+        "modifiers": {
+          "type": "array",
+          "description": "Sequence-level effect modifiers and transitions",
+          "items": {
+            "$ref": "#/definitions/ModifierNode"
+          }
+        }
+      }
+    },
+    "IRTrack": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "sequences"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique track identifier (e.g., 'track_video_main', 'track_audio_bgm')"
+        },
+        "type": {
+          "$ref": "#/definitions/TrackType"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable track display name"
+        },
+        "routeTo": {
+          "type": "string",
+          "description": "Audio bus routing destination or composite layer target"
+        },
+        "parentTrack": {
+          "type": "string",
+          "description": "Hierarchical parent group track ID"
+        },
+        "blendMode": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "screen",
+            "multiply",
+            "overlay",
+            "add"
+          ],
+          "default": "normal",
+          "description": "Compositing blend mode for video/visual tracks"
+        },
+        "style": {
+          "type": "object",
+          "description": "Track-level styling directives (typography, font size, default position)",
+          "additionalProperties": true
+        },
+        "modifiers": {
+          "type": "array",
+          "description": "Global track-level modifier chain",
+          "items": {
+            "$ref": "#/definitions/ModifierNode"
+          }
+        },
+        "sequences": {
+          "type": "array",
+          "description": "Sequences executed within this track",
+          "items": {
+            "$ref": "#/definitions/IRSequence"
+          }
+        }
+      }
+    },
+    "IRMeta": {
+      "type": "object",
+      "required": [
+        "contentId",
+        "globalFps",
+        "canvasSize"
+      ],
+      "properties": {
+        "contentId": {
+          "type": "string",
+          "description": "Unique project or render job identifier"
+        },
+        "globalFps": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Global composition frame rate (FPS)"
+        },
+        "canvasSize": {
+          "type": "object",
+          "required": [
+            "w",
+            "h"
+          ],
+          "properties": {
+            "w": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Canvas width in pixels"
+            },
+            "h": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Canvas height in pixels"
+            }
+          }
+        },
+        "colorSpace": {
+          "type": "string",
+          "description": "Target color space (e.g. 'rec709', 'bt2020', 'hdr10')"
+        }
+      }
+    }
+  }
+}

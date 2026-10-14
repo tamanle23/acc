@@ -1,0 +1,552 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://acc.io/schemas/omnichannel-config.schema.json",
+  "title": "Omnichannel Director Configuration Schema",
+  "description": "JSON Schema for omnichannel-config.json, specifying 1-to-N modality routing and the 3-Tier Fine-Grained Polymorphic Video Director specifications.",
+  "type": "object",
+  "required": [
+    "title",
+    "pipelineId",
+    "canonicalPipeline",
+    "suggestedModalities"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Human-readable project title"
+    },
+    "pipelineId": {
+      "type": "string",
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "description": "Numeric archetype pipeline index"
+    },
+    "canonicalPipeline": {
+      "type": "string",
+      "enum": [
+        "scraper-summarizer",
+        "db-templating",
+        "repurposing-recycler",
+        "generative-storytelling",
+        "rule-logic",
+        "ambient-loops"
+      ],
+      "description": "Canonical kebab-case identifier of the pipeline"
+    },
+    "suggestedModalities": {
+      "type": "array",
+      "description": "Target modalities to produce in the 1-to-N fan-out",
+      "items": {
+        "$ref": "#/definitions/ContentModality"
+      }
+    },
+    "videoConfig": {
+      "$ref": "#/definitions/FineGrainedVideoDirectorConfig"
+    },
+    "audioConfig": {
+      "$ref": "#/definitions/AudioModalityConfig"
+    },
+    "socialConfig": {
+      "$ref": "#/definitions/SocialModalityConfig"
+    },
+    "staticWebConfig": {
+      "$ref": "#/definitions/StaticWebModalityConfig"
+    },
+    "interactiveWebConfig": {
+      "$ref": "#/definitions/InteractiveWebModalityConfig"
+    }
+  },
+  "definitions": {
+    "ContentModality": {
+      "type": "string",
+      "enum": [
+        "static-web",
+        "social",
+        "video",
+        "audio",
+        "interactive-web"
+      ],
+      "description": "Supported deliverable output modalities"
+    },
+    "AspectRatioPreset": {
+      "type": "string",
+      "enum": [
+        "9:16",
+        "16:9",
+        "1:1",
+        "4:5"
+      ]
+    },
+    "CameraMotionType": {
+      "type": "string",
+      "enum": [
+        "static",
+        "ken_burns_zoom_in",
+        "ken_burns_zoom_out",
+        "pan_left",
+        "pan_right",
+        "dolly_zoom",
+        "tilt_up"
+      ]
+    },
+    "TransitionDirectiveType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "crossfade",
+        "wipeleft",
+        "wiperight",
+        "match_cut",
+        "glitch",
+        "zoom_blur"
+      ]
+    },
+    "SFXType": {
+      "type": "string",
+      "enum": [
+        "whoosh",
+        "impact_bass",
+        "subtle_click",
+        "cash_register",
+        "riser",
+        "notification",
+        "glitch"
+      ]
+    },
+    "Depth3DModeDirective": {
+      "type": "string",
+      "enum": [
+        "none",
+        "parallax_2_5d",
+        "parallax_25d",
+        "frame_breaker",
+        "sandwich",
+        "volumetric_sandwich",
+        "depth_map_3d",
+        "wigglegram",
+        "isometric_podium",
+        "isometric_billboard",
+        "gyro_focal_tilt",
+        "extruded_text_3d",
+        "macro_bokeh"
+      ]
+    },
+    "Depth3DDirective": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "$ref": "#/definitions/Depth3DModeDirective"
+        },
+        "enabled": { "type": "boolean" },
+        "parallaxFactor": { "type": "number" },
+        "focusDepth": { "type": "number" },
+        "depthMapUrl": { "type": "string" },
+        "frameStyle": { "type": "string" },
+        "popOutIntensity": { "type": "number" },
+        "shadow": { "type": "boolean" },
+        "sandwich": {
+          "type": "object",
+          "properties": {
+            "textBehindSubject": { "type": "boolean" },
+            "ambientDust": { "type": "boolean" },
+            "vignette": { "type": "boolean" },
+            "textColor": { "type": "string" }
+          }
+        }
+      }
+    },
+    "CameraMotionDirective": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/CameraMotionType"
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1.0
+        }
+      }
+    },
+    "TransitionDirective": {
+      "type": "object",
+      "required": [
+        "type",
+        "durationMs"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/TransitionDirectiveType"
+        },
+        "durationMs": { "type": "number" },
+        "easing": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "ease-in-out",
+            "cubic-bezier"
+          ]
+        }
+      }
+    },
+    "SFXCueDirective": {
+      "type": "object",
+      "required": [
+        "sfxType",
+        "offsetMs"
+      ],
+      "properties": {
+        "sfxType": {
+          "$ref": "#/definitions/SFXType"
+        },
+        "offsetMs": { "type": "number" },
+        "volume": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "customAssetPath": { "type": "string" }
+      }
+    },
+    "SegmentCaptionDirective": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "text": { "type": "string" },
+        "style": {
+          "type": "string",
+          "enum": [
+            "sandwich_behind_subject",
+            "glow_karaoke",
+            "kinetic_pop",
+            "minimal_editorial"
+          ]
+        },
+        "highlightColor": { "type": "string" },
+        "yPositionRatio": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "SegmentDirectorOverride": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "description": "Target segment index (0-based or 1-based)"
+        },
+        "durationMs": { "type": "number" },
+        "depth3d": {
+          "$ref": "#/definitions/Depth3DDirective"
+        },
+        "cameraMotion": {
+          "$ref": "#/definitions/CameraMotionDirective"
+        },
+        "transition": {
+          "$ref": "#/definitions/TransitionDirective"
+        },
+        "captions": {
+          "$ref": "#/definitions/SegmentCaptionDirective"
+        },
+        "sfxCues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SFXCueDirective"
+          }
+        }
+      }
+    },
+    "CanvasDirectorConfig": {
+      "type": "object",
+      "properties": {
+        "aspectRatio": {
+          "$ref": "#/definitions/AspectRatioPreset"
+        },
+        "fps": {
+          "type": "integer",
+          "enum": [
+            24,
+            30,
+            60
+          ]
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "720p",
+            "1080p",
+            "4k"
+          ]
+        },
+        "colorGrading": {
+          "type": "object",
+          "properties": {
+            "lutPreset": {
+              "type": "string",
+              "enum": [
+                "cinematic_teal_orange",
+                "clean_tech",
+                "cyberpunk_neon",
+                "vintage_film",
+                "warm_golden"
+              ]
+            },
+            "lutPath": { "type": "string" },
+            "contrast": { "type": "number" },
+            "saturation": { "type": "number" },
+            "vignette": { "type": "number" }
+          }
+        }
+      }
+    },
+    "AudioStagingDirectorConfig": {
+      "type": "object",
+      "properties": {
+        "bgmTrack": { "type": "string" },
+        "autoDucking": { "type": "boolean" },
+        "duckingAttenuationDb": { "type": "number" },
+        "masterSfxVolume": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "masterBgmVolume": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "TypographyDirectorConfig": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "string",
+          "enum": [
+            "tiktok_karaoke_glow",
+            "minimal_editorial",
+            "bold_headline",
+            "3d_sandwich",
+            "classic_subtitle"
+          ]
+        },
+        "primaryColor": { "type": "string" },
+        "highlightColor": { "type": "string" },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "center",
+            "bottom",
+            "top"
+          ]
+        },
+        "fontSize": { "type": "number" }
+      }
+    },
+    "ArchetypeVisualDirectives": {
+      "type": "object",
+      "properties": {
+        "chartVisuals": {
+          "type": "object",
+          "properties": {
+            "animationCurve": {
+              "type": "string",
+              "enum": [
+                "cubic-bezier(0.4, 0, 0.2, 1)",
+                "linear",
+                "ease-out"
+              ]
+            },
+            "cameraZoomOnLeaderChange": { "type": "boolean" },
+            "glowIntensity": { "type": "number" },
+            "showGridLines": { "type": "boolean" }
+          }
+        },
+        "cryptoVisuals": {
+          "type": "object",
+          "properties": {
+            "tickerStyle": {
+              "type": "string",
+              "enum": [
+                "floating_hud",
+                "bottom_ticker_tape",
+                "neon_pill"
+              ]
+            },
+            "sentimentColorCoding": { "type": "boolean" },
+            "highlightTopGainers": { "type": "boolean" }
+          }
+        },
+        "talkingHead": {
+          "type": "object",
+          "properties": {
+            "autoReframe": {
+              "type": "string",
+              "enum": [
+                "center_face",
+                "smart_speaker_switch"
+              ]
+            },
+            "punchInOnEmphasis": { "type": "boolean" },
+            "waveformStyle": {
+              "type": "string",
+              "enum": [
+                "circular",
+                "bars",
+                "line"
+              ]
+            }
+          }
+        },
+        "narrativeStory": {
+          "type": "object",
+          "properties": {
+            "cinematicBars": { "type": "boolean" },
+            "fogDensity": { "type": "number" },
+            "ambientDustParticles": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "FineGrainedVideoDirectorConfig": {
+      "type": "object",
+      "properties": {
+        "aspectRatio": {
+          "$ref": "#/definitions/AspectRatioPreset"
+        },
+        "fps": { "type": "number" },
+        "durationMs": { "type": "number" },
+        "canvas": {
+          "$ref": "#/definitions/CanvasDirectorConfig"
+        },
+        "audioStaging": {
+          "$ref": "#/definitions/AudioStagingDirectorConfig"
+        },
+        "typography": {
+          "$ref": "#/definitions/TypographyDirectorConfig"
+        },
+        "archetypeDirectives": {
+          "$ref": "#/definitions/ArchetypeVisualDirectives"
+        },
+        "roleDirectives": {
+          "type": "object",
+          "properties": {
+            "hook": {
+              "$ref": "#/definitions/SegmentDirectorOverride"
+            },
+            "body": {
+              "$ref": "#/definitions/SegmentDirectorOverride"
+            },
+            "outro": {
+              "$ref": "#/definitions/SegmentDirectorOverride"
+            }
+          }
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SegmentDirectorOverride"
+          }
+        },
+        "depth3d": {
+          "$ref": "#/definitions/Depth3DDirective"
+        },
+        "overlayComposite": { "type": "string" },
+        "sfx": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source"
+            ],
+            "properties": {
+              "source": { "type": "string" },
+              "time": { "type": "number" },
+              "duration": { "type": "number" },
+              "volume": { "type": "number" },
+              "duckBgm": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "AudioModalityConfig": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "mp3",
+            "wav",
+            "flac",
+            "aac"
+          ]
+        },
+        "targetLoudnessLufs": { "type": "number" },
+        "duckingDb": { "type": "number" },
+        "voiceId": { "type": "string" }
+      }
+    },
+    "SocialModalityConfig": {
+      "type": "object",
+      "properties": {
+        "platforms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "twitter",
+              "linkedin",
+              "instagram"
+            ]
+          }
+        },
+        "customHashtags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "StaticWebModalityConfig": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "html",
+            "both"
+          ]
+        },
+        "slug": { "type": "string" }
+      }
+    },
+    "InteractiveWebModalityConfig": {
+      "type": "object",
+      "properties": {
+        "initialState": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "light"
+          ]
+        }
+      }
+    }
+  }
+}

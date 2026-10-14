@@ -6,6 +6,27 @@
         "**/story-config.json"
       ],
       "url": "./schema/story-config.schema.json"
+    },
+    {
+      "fileMatch": [
+        "omnichannel-config.json",
+        "**/omnichannel-config.json"
+      ],
+      "url": "./schema/omnichannel-config.schema.json"
+    },
+    {
+      "fileMatch": [
+        "pipeline-ir.json",
+        "**/pipeline-ir.json"
+      ],
+      "url": "./schema/pipeline-ir.schema.json"
+    },
+    {
+      "fileMatch": [
+        "video-ir.json",
+        "**/video-ir.json"
+      ],
+      "url": "./schema/video-ir.schema.json"
     }
   ]
 }
