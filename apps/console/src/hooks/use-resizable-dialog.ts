@@ -27,9 +27,21 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
     defaultHeight = 780,
     minWidth = 560,
     minHeight = 440,
-    maxWidthRatio = 0.98,
-    maxHeightRatio = 0.96,
+    maxWidthRatio = 0.96,
+    maxHeightRatio = 0.88,
   } = options;
+
+  // Compute responsive defaults based on available window space
+  const getResponsiveDefault = useCallback(() => {
+    const winW = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const calcW = Math.min(defaultWidth, Math.round(winW * 0.92));
+    const calcH = Math.min(defaultHeight, Math.round(winH * 0.82));
+    return {
+      width: Math.max(minWidth, calcW),
+      height: Math.max(minHeight, calcH),
+    };
+  }, [defaultWidth, defaultHeight, minWidth, minHeight]);
 
   // Track maximized state
   const [isMaximized, setIsMaximized] = useState<boolean>(() => {
@@ -42,21 +54,26 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
 
   // Track custom size
   const [size, setSize] = useState<{ width: number; height: number }>(() => {
+    const responsive = getResponsiveDefault();
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (typeof parsed.width === 'number' && typeof parsed.height === 'number') {
+          const winW = typeof window !== 'undefined' ? window.innerWidth : 1280;
+          const winH = typeof window !== 'undefined' ? window.innerHeight : 800;
+          const maxAllowedW = Math.round(winW * maxWidthRatio);
+          const maxAllowedH = Math.round(winH * maxHeightRatio);
           return {
-            width: Math.max(minWidth, parsed.width),
-            height: Math.max(minHeight, parsed.height),
+            width: Math.min(maxAllowedW, Math.max(minWidth, parsed.width)),
+            height: Math.min(maxAllowedH, Math.max(minHeight, parsed.height)),
           };
         }
       }
     } catch {
       // LocalStorage unavailable or corrupt
     }
-    return { width: defaultWidth, height: defaultHeight };
+    return responsive;
   });
 
   const [isResizing, setIsResizing] = useState(false);
@@ -94,8 +111,8 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
 
   const resetToDefault = useCallback(() => {
     setIsMaximized(false);
-    setSize({ width: defaultWidth, height: defaultHeight });
-  }, [defaultWidth, defaultHeight]);
+    setSize(getResponsiveDefault());
+  }, [getResponsiveDefault]);
 
   const startResize = useCallback(
     (direction: ResizeDirection, e: React.MouseEvent) => {
@@ -195,12 +212,14 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
         height: '96vh',
         maxWidth: '98vw',
         maxHeight: '96vh',
+        margin: 0,
       }
     : {
         width: `min(${size.width}px, ${Math.round(maxWidthRatio * 100)}vw)`,
         height: `min(${size.height}px, ${Math.round(maxHeightRatio * 100)}vh)`,
         maxWidth: `${Math.round(maxWidthRatio * 100)}vw`,
         maxHeight: `${Math.round(maxHeightRatio * 100)}vh`,
+        margin: 0,
       };
 
   return {

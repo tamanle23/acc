@@ -176,6 +176,40 @@ describe('useResizableDialog & DialogResizeHandles', () => {
 
     expect(queryByTestId('resize-handle-bottom-right')).toBeNull();
   });
+
+  it('computes centered dialogStyle with margin 0 and responsive constraints', async () => {
+    const { useResizableDialog } = await import('@/hooks/use-resizable-dialog');
+    const { renderHook, act } = await import('@testing-library/react');
+
+    const { result } = renderHook(() =>
+      useResizableDialog({
+        storageKey: 'test:dialog:centering',
+        defaultWidth: 1000,
+        defaultHeight: 700,
+      })
+    );
+
+    expect(result.current.dialogStyle.margin).toBe(0);
+    expect(result.current.dialogStyle.width).toBeDefined();
+    expect(result.current.dialogStyle.height).toBeDefined();
+
+    // Toggle maximize
+    act(() => {
+      result.current.toggleMaximize();
+    });
+
+    expect(result.current.isMaximized).toBe(true);
+    expect(result.current.dialogStyle.width).toBe('98vw');
+    expect(result.current.dialogStyle.height).toBe('96vh');
+    expect(result.current.dialogStyle.margin).toBe(0);
+
+    // Reset to default
+    act(() => {
+      result.current.resetToDefault();
+    });
+    expect(result.current.isMaximized).toBe(false);
+    expect(result.current.dialogStyle.margin).toBe(0);
+  });
 });
 
 
