@@ -36,7 +36,7 @@ export const WorkflowsFeature: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                  {t('workflows.title', 'Workflow Orchestration Studio')}
+                  {t('workflows.title', 'Visual DAG Studio')}
                 </h1>
                 <Badge variant="outline" className="text-[11px] font-mono bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20">
                   Conductor OSS Core

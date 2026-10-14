@@ -107,7 +107,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
               className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              <span>Conductor DAG Studio</span>
+              <span>Visual DAG Studio</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>

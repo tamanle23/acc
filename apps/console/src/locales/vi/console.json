@@ -157,7 +157,7 @@
     }
   },
   "workflows": {
-    "title": "Xưởng Điều phối Quy trình (Workflow Studio)",
+    "title": "Visual DAG Studio (Xưởng Quy trình DAG)",
     "description": "Thiết kế, mô phỏng và quan sát luồng quy trình đồ thị DAG phân tán với hàng đợi lease đơn cột và worker Virtual Threads."
   }
 }

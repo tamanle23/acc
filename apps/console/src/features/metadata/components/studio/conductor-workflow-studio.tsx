@@ -118,7 +118,7 @@ export function ConductorWorkflowStudio() {
       <div className="absolute top-4 left-4 z-10 flex items-center gap-3 p-2 rounded-xl backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/30 dark:border-white/10 shadow-lg">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-xs font-bold text-foreground">Conductor Workflow Studio</span>
+          <span className="text-xs font-bold text-foreground">Visual DAG Studio</span>
           <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">
             Phase 30
           </Badge>
