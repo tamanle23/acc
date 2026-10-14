@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import type { AttributeDefinition } from '../../api/types';
 import { useAttributeDefinitions, useEntityType } from '../../api/metadata-api';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
 import { AttributeCard } from './attribute-card';

@@ -1082,6 +1082,34 @@ export class MockMetadataService implements MetadataDataSource {
     };
   }
 
+  async transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord> {
+    const record = await this.getEntityRecord(entityTypeId, recordId);
+    if (!record) {
+      throw new Error(`Record with id ${recordId} not found`);
+    }
+
+    const currentStatus = (record.attributes?.status as string) || 'DRAFT';
+    let nextStatus = currentStatus;
+
+    if (action === 'SUBMIT') nextStatus = 'PENDING_REVIEW';
+    else if (action === 'APPROVE') nextStatus = 'APPROVED';
+    else if (action === 'REJECT') nextStatus = 'REJECTED';
+    else if (action === 'ARCHIVE') nextStatus = 'ARCHIVED';
+
+    return this.updateEntityRecord(entityTypeId, recordId, {
+      attributes: {
+        ...record.attributes,
+        status: nextStatus,
+        ...(additionalAttributes || {}),
+      },
+    });
+  }
+
   async validateEntityRecord(
     entityTypeId: string | number,
     dto: CreateEntityRecordDto

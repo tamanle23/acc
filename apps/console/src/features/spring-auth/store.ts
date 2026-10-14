@@ -7,13 +7,13 @@ const REFRESH_STORAGE_KEY = 'sandbox_refresh_token';
 
 export const useSpringAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       accessToken: null,
       refreshToken: localStorage.getItem(REFRESH_STORAGE_KEY),
       user: null,
       currentTenantId: null,
       isAuthenticated: false,
-      isHydrating: true, // Start in hydrating mode
+      isHydrating: false,
       isSandbox: false,
       setTokens: (access: string, refresh: string) => {
         const user = decodeJwt(access);
@@ -34,6 +34,24 @@ export const useSpringAuthStore = create<AuthState>()(
           isAuthenticated: !!user,
           isSandbox,
         });
+      },
+      clearTokens: () => {
+        localStorage.removeItem(REFRESH_STORAGE_KEY);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('unipost_assumed_token');
+          localStorage.removeItem('unipost_assumed_tenant');
+        }
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+          currentTenantId: null,
+          isAuthenticated: false,
+          isSandbox: false,
+        });
+      },
+      setHydrating: (hydrating: boolean) => {
+        set({ isHydrating: hydrating });
       },
     }),
     {

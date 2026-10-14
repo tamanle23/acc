@@ -5,7 +5,7 @@ import { Settings } from './index';
 
 // ResizeObserver is required by @radix-ui/react-scroll-area but not available in JSDOM
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
+  globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}
