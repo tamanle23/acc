@@ -39,6 +39,7 @@ import {
   type FacebookPage,
 } from '../services/facebook-service'
 import { FACEBOOK_ENV_CONFIG, useFacebookStore } from '../stores/facebook-store'
+import { springApiClient } from '@/features/spring-auth'
 
 type FacebookConnectModalProps = {
   open: boolean
@@ -89,13 +90,23 @@ export function FacebookConnectModal({
     try {
       if (useSandbox) {
         setIsDemoMode(true)
-        const mock = simulateDemoFacebookLogin()
+        const res = await springApiClient.post<{
+          success: boolean;
+          accessToken: string;
+          details: { pages: FacebookPage[] };
+        }>('/api/integrations/facebook/exchange', {
+          mode: 'login',
+        })
+        const mock = {
+          userAccessToken: res.data.accessToken,
+          pages: res.data.details?.pages || simulateDemoFacebookLogin().pages,
+        }
         setUserToken(mock.userAccessToken)
         setAvailablePages(mock.pages)
         if (mock.pages.length > 0) {
           setConnectedPage(mock.pages[0])
         }
-        toast.success('Connected via Sandbox Mode with 3 demo Facebook Pages!')
+        toast.success('Connected via Unified Sandbox with 3 demo Facebook Pages!')
         return
       }
 
@@ -150,8 +161,15 @@ export function FacebookConnectModal({
     setIsExchanging(true)
     try {
       if (isDemoMode) {
-        const exchanged = simulateDemoLongLivedExchange(connectedPage.id)
-        upgradeToLongLived(exchanged.longLivedPageToken, exchanged.expiresAt)
+        const res = await springApiClient.post<{
+          success: boolean;
+          accessToken: string;
+        }>('/api/integrations/facebook/exchange', {
+          mode: 'long-lived',
+          pageId: connectedPage.id,
+        })
+        const mockToken = res.data.accessToken || simulateDemoLongLivedExchange(connectedPage.id).longLivedPageToken
+        upgradeToLongLived(mockToken, null)
         toast.success(
           'Token successfully upgraded to Long-Lived (Never Expires) in Sandbox!'
         )

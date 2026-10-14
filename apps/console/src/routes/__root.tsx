@@ -7,7 +7,7 @@ import { NavigationProgress } from '@/components/navigation-progress'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 
-import { SandboxPanel, useAuthHydration } from '@/features/spring-auth';
+import { SandboxPanel } from '@/features/spring-auth';
 
 const isDevtoolsDisabled =
   import.meta.env.MODE === 'production' ||
@@ -16,28 +16,26 @@ const isDevtoolsDisabled =
 const ReactQueryDevtools = isDevtoolsDisabled
   ? () => null
   : React.lazy(() =>
-      import('@tanstack/react-query-devtools').then((res) => ({
-        default: res.ReactQueryDevtools,
-      }))
-    )
+    import('@tanstack/react-query-devtools').then((res) => ({
+      default: res.ReactQueryDevtools,
+    }))
+  )
 
 const TanStackRouterDevtools = isDevtoolsDisabled
   ? () => null
   : React.lazy(() =>
-      import('@tanstack/react-router-devtools').then((res) => ({
-        default: res.TanStackRouterDevtools,
-      }))
-    )
+    import('@tanstack/react-router-devtools').then((res) => ({
+      default: res.TanStackRouterDevtools,
+    }))
+  )
 
 function RootComponent() {
-  useAuthHydration(); // Hydrate the Spring Security token on app boot
-
   return (
     <>
       <NavigationProgress />
       <Outlet />
       <SandboxPanel />
-      <Toaster duration={5000} />
+      <Toaster duration={5000} position="bottom-right" />
       {!isDevtoolsDisabled && import.meta.env.MODE === 'development' && (
         <Suspense fallback={null}>
           <ReactQueryDevtools buttonPosition='bottom-left' />

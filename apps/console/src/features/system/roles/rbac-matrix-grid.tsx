@@ -18,6 +18,8 @@ import {
   Lock,
   Info,
   PlusCircle,
+  Building2,
+  UserKey,
 } from 'lucide-react';
 import { RoleDefinitionModal } from './role-definition-modal';
 import {
@@ -166,7 +168,10 @@ export function RbacMatrixGrid() {
             ) : (
               filteredPerms.map((atom) => (
                 <TableRow key={atom.key} className="hover:bg-muted/30">
-                  <TableCell>
+                  <TableCell className="flex items-center gap-2.5">
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg border`}>
+                      <UserKey className="h-4 w-4" />
+                    </div>
                     <div className="grid gap-0.5">
                       <span className="text-sm font-medium">{atom.label}</span>
                       <code className="text-[11px] text-muted-foreground font-mono">{atom.key}</code>

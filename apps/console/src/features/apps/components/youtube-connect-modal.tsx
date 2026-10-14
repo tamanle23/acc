@@ -38,6 +38,7 @@ import {
   simulateDemoYouTubeAuthCode,
 } from '../services/youtube-service'
 import { useYouTubeStore, YOUTUBE_ENV_CONFIG } from '../stores/youtube-store'
+import { springApiClient } from '@/features/spring-auth'
 
 type YouTubeConnectModalProps = {
   open: boolean
@@ -187,11 +188,21 @@ export function YouTubeConnectModal({
     setIsExchanging(true)
     try {
       if (isDemoMode) {
+        const res = await springApiClient.post<{
+          success: boolean;
+          accessToken: string;
+          details: { channel: any };
+        }>('/api/integrations/youtube/exchange', {
+          authCode: codeToUse,
+        })
         const demo = simulateDemoTokenExchange()
-        setTokens(demo.tokens)
-        setConnectedChannel(demo.channel)
+        setTokens({
+          ...demo.tokens,
+          accessToken: res.data.accessToken || demo.tokens.accessToken,
+        })
+        setConnectedChannel(res.data.details?.channel || demo.channel)
         toast.success(
-          'Exchanged code for Access Token & Refresh Token! Connected to demo channel.'
+          'Exchanged code for Access Token & Refresh Token! Connected to demo channel via Unified Sandbox.'
         )
         return
       }

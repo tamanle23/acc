@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { enableSandboxMockEngine } from '@/features/spring-auth/sandbox/mock-engine'
 
 const formSchema = z.object({
   email: z.string().min(1, 'Please enter your email or username'),
@@ -66,7 +67,6 @@ export function UserAuthForm({
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-
     try {
       const response = await springApiClient.post('/auth/token', {
         userName: data.email,
@@ -90,7 +90,10 @@ export function UserAuthForm({
     setIsLoading(true);
     try {
       const persona = DEFAULT_SANDBOX_PERSONAS[personaId] || DEFAULT_SANDBOX_PERSONAS.admin;
-
+      // Attach Unified Sandbox Interceptor in development mode
+      if (import.meta.env.DEV) {
+        enableSandboxMockEngine(springApiClient);
+      }
       // The mock engine intercepts this request and checks for username + password === 'bypass'
       const response = await springApiClient.post('/auth/token', {
         username: persona.username,

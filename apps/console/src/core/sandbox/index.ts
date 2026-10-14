@@ -12,6 +12,8 @@ export * from './handlers/tasks-sandbox-handler';
 export * from './handlers/billing-sandbox-handler';
 export * from './handlers/system-sandbox-handler';
 export * from './handlers/workspace-sandbox-handler';
+export * from './handlers/chats-sandbox-handler';
+export * from './handlers/apps-sandbox-handler';
 export * from './adapters/axios-sandbox-adapter';
 export * from './adapters/fetch-sandbox-adapter';
 
@@ -24,6 +26,8 @@ import { tasksSandboxHandler } from './handlers/tasks-sandbox-handler';
 import { billingSandboxHandler } from './handlers/billing-sandbox-handler';
 import { systemSandboxHandler } from './handlers/system-sandbox-handler';
 import { workspaceSandboxHandler } from './handlers/workspace-sandbox-handler';
+import { chatsSandboxHandler } from './handlers/chats-sandbox-handler';
+import { appsSandboxHandler } from './handlers/apps-sandbox-handler';
 import { widgetSandboxHandler } from '@unipost/sandbox';
 import { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
 
@@ -34,6 +38,8 @@ sandboxRegistry.register(tasksSandboxHandler);
 sandboxRegistry.register(billingSandboxHandler);
 sandboxRegistry.register(systemSandboxHandler);
 sandboxRegistry.register(workspaceSandboxHandler);
+sandboxRegistry.register(chatsSandboxHandler);
+sandboxRegistry.register(appsSandboxHandler);
 sandboxRegistry.register(widgetSandboxHandler);
 
 // Attach fetch interceptor in development

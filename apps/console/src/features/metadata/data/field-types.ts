@@ -10,6 +10,9 @@ import {
   Code,
   Link2,
   type LucideIcon,
+  Barcode,
+  LocateIcon,
+  Signature,
 } from 'lucide-react';
 
 export interface FieldTypeDefinition {
@@ -113,6 +116,34 @@ export const FIELD_TYPE_REGISTRY: Record<UiComponentType, FieldTypeDefinition> =
     supportsOptions: true,
     hasTargetEntity: true,
   },
+  barcode_scanner: {
+    type: 'barcode_scanner',
+    label: 'Barcode Scanner',
+    description: 'Patterns of bars, spaces, or 2D codes',
+    icon: Barcode,
+    defaultDataType: 'STRING',
+    compatibleDataTypes: ['STRING'],
+    supportsOptions: false,
+  },
+  geo_location: {
+    type: 'geo_location',
+    label: 'Geo Location',
+    description: 'Geo location input field.',
+    icon: LocateIcon,
+    defaultDataType: 'STRING',
+    compatibleDataTypes: ['STRING'],
+    supportsOptions: false,
+  },
+  signature_pad: {
+    type: 'signature_pad',
+    label: 'Signature Pad',
+    description: 'Signature pad input field.',
+    icon: Signature,
+    defaultDataType: 'STRING',
+    compatibleDataTypes: ['STRING'],
+    supportsOptions: false,
+  },
+
 };
 
 export const FIELD_TYPE_LIST = Object.values(FIELD_TYPE_REGISTRY);

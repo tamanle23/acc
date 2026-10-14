@@ -14,7 +14,7 @@ export const useBlueprintCatalog = () => {
     queryFn: async (): Promise<BlueprintSummaryDto[]> => {
       const res = await springApiClient.get('/v1/metadata/blueprints');
       // Unwrap standard ResponseWrapper if present
-      return res.status == 200 ? res.data?.body ?? res.data?.data ?? res.data ?? [] : [];
+      return res.status == 200 ? res.data?.body ?? [] : [];
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
@@ -26,7 +26,7 @@ export const useBlueprintDetails = (blueprintId: string | null) => {
     queryFn: async (): Promise<BlueprintManifest | null> => {
       if (!blueprintId) return null;
       const res = await springApiClient.get(`/v1/metadata/blueprints/${blueprintId}`);
-      return res.data?.body ?? res.data?.data ?? res.data ?? null;
+      return res.status == 200 ? res.data?.body ?? null : null;
     },
     enabled: Boolean(blueprintId),
     staleTime: 30 * 60 * 1000,

@@ -25,6 +25,7 @@ application:
       - /graphql
       - /graphiql
       - /graphiql/**
+      - /api/v1/public/**
       - /api/v1/metadata/blueprints
       - /api/v1/metadata/blueprints/**
       - /api/v1/billing/payos/webhook

@@ -34,6 +34,7 @@ import {
   simulateDemoTikTokAuthCode,
 } from '../services/tiktok-service'
 import { useTikTokStore, TIKTOK_ENV_CONFIG } from '../stores/tiktok-store'
+import { springApiClient } from '@/features/spring-auth'
 
 type TikTokConnectModalProps = {
   open: boolean
@@ -110,16 +111,22 @@ export function TikTokConnectModal({
 
     try {
       if (isDemoMode) {
-        // Fast-path sandbox mode
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        // Unified Sandbox mode
+        const res = await springApiClient.post<{
+          success: boolean;
+          accessToken: string;
+          details: { profile: any };
+        }>('/api/integrations/tiktok/exchange', {
+          authCode,
+        })
         const demoData = simulateDemoTokenExchange()
         setTokens(
-          demoData.tokens.accessToken,
+          res.data.accessToken || demoData.tokens.accessToken,
           demoData.tokens.refreshToken,
           demoData.tokens.expiresAt
         )
-        setConnectedProfile(demoData.profile)
-        toast.success('Sandbox token exchange successful')
+        setConnectedProfile(res.data.details?.profile || demoData.profile)
+        toast.success('Unified Sandbox token exchange successful')
       } else {
         // Live token exchange
         if (!activeClientSecret) {

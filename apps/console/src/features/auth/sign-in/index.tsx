@@ -33,7 +33,7 @@ export function SignIn() {
               href='/terms'
               className='underline underline-offset-4 hover:text-primary'
             >
-              Terms of Service
+              Terms of                                                                                                                     Service
             </a>{' '}
             and{' '}
             <a

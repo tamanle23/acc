@@ -28,17 +28,34 @@ import { ThemeSwitch } from '@/components/theme-switch'
 import { LanguageSwitch } from '@/components/language-switch'
 import { NewChat } from './components/new-chat'
 import { type ChatUser, type Convo } from './data/chat-types'
-// Fake Data
-import { conversations } from './data/convo.json'
+import { useChatsQuery, useSendMessageMutation } from './api/use-chats'
 
 export function Chats() {
   const [search, setSearch] = useState('')
-  const [selectedUser, setSelectedUser] = useState<ChatUser | null>(null)
-  const [mobileSelectedUser, setMobileSelectedUser] = useState<ChatUser | null>(
+  const [messageText, setMessageText] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [mobileSelectedUserId, setMobileSelectedUserId] = useState<string | null>(
     null
   )
   const [createConversationDialogOpened, setCreateConversationDialog] =
     useState(false)
+
+  const { data: conversations = [] } = useChatsQuery()
+  const sendMessageMutation = useSendMessageMutation()
+
+  const selectedUser = conversations.find((c) => c.id === (selectedUserId || conversations[0]?.id)) || null
+  const mobileSelectedUser = conversations.find((c) => c.id === mobileSelectedUserId) || null
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!messageText.trim() || !selectedUser) return
+    const text = messageText
+    setMessageText('')
+    await sendMessageMutation.mutateAsync({
+      convoId: selectedUser.id,
+      message: text,
+    })
+  }
 
   // Filtered data based on the search query
   const filteredChatList = conversations.filter(({ fullName }) =>
@@ -134,8 +151,8 @@ export function Chats() {
                         selectedUser?.id === id && 'sm:bg-muted'
                       )}
                       onClick={() => {
-                        setSelectedUser(chatUsr)
-                        setMobileSelectedUser(chatUsr)
+                        setSelectedUserId(id)
+                        setMobileSelectedUserId(id)
                       }}
                     >
                       <div className='flex gap-2'>
@@ -261,7 +278,7 @@ export function Chats() {
                     </div>
                   </div>
                 </div>
-                <form className='flex w-full flex-none gap-2'>
+                <form onSubmit={handleSendMessage} className='flex w-full flex-none gap-2'>
                   <div className='flex flex-1 items-center gap-2 rounded-md border border-input bg-card px-2 py-1 focus-within:ring-1 focus-within:ring-ring focus-within:outline-hidden lg:gap-4'>
                     <div className='space-x-1'>
                       <Button
@@ -299,6 +316,8 @@ export function Chats() {
                       <span className='sr-only'>Chat Text Box</span>
                       <input
                         type='text'
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
                         placeholder='Type your messages...'
                         className='h-8 w-full bg-inherit focus-visible:outline-hidden'
                       />
@@ -306,12 +325,14 @@ export function Chats() {
                     <Button
                       variant='ghost'
                       size='icon'
+                      type='submit'
+                      disabled={!messageText.trim() || sendMessageMutation.isPending}
                       className='hidden sm:inline-flex'
                     >
                       <Send size={20} />
                     </Button>
                   </div>
-                  <Button className='h-full sm:hidden'>
+                  <Button type='submit' disabled={!messageText.trim() || sendMessageMutation.isPending} className='h-full sm:hidden'>
                     <Send size={18} /> Send
                   </Button>
                 </form>

@@ -13,7 +13,7 @@ interface SignOutDialogProps {
 export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   // Keep legacy store for compatibility if needed, but primary is Spring Auth
   const { auth } = useAuthStore()
   const { clearTokens } = useSpringAuthStore()
@@ -23,7 +23,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     setIsLoading(true);
     try {
       // Call backend to invalidate refresh token cookie / session
-      await springApiClient.post('/api/auth/logout');
+      await springApiClient.post('/auth/logout');
     } catch (error) {
       console.warn('Logout API failed, proceeding with local clear', error);
     } finally {
@@ -32,9 +32,9 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       auth.reset(); // Legacy auth state
       setIsLoading(false);
       onOpenChange(false);
-      
+
       toast.success('Successfully signed out');
-      
+
       // Preserve current location for redirect after sign-in
       const currentPath = location.href
       navigate({

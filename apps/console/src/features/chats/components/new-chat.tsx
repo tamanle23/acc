@@ -26,8 +26,24 @@ type NewChatProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
+import { useCreateConversationMutation } from '../api/use-chats'
+
 export function NewChat({ users, onOpenChange, open }: NewChatProps) {
   const [selectedUsers, setSelectedUsers] = useState<User[]>([])
+  const createConversationMutation = useCreateConversationMutation()
+
+  const handleStartChat = async () => {
+    if (selectedUsers.length === 0) return
+    const target = selectedUsers[0]
+    await createConversationMutation.mutateAsync({
+      username: target.username,
+      fullName: target.fullName,
+      title: target.title,
+      profile: target.profile,
+      messages: [],
+    })
+    handleOpenChange(false)
+  }
 
   const handleSelectUser = (user: User) => {
     if (!selectedUsers.find((u) => u.id === user.id)) {
@@ -115,8 +131,8 @@ export function NewChat({ users, onOpenChange, open }: NewChatProps) {
           </Command>
           <Button
             variant={'default'}
-            onClick={() => showSubmittedData(selectedUsers)}
-            disabled={selectedUsers.length === 0}
+            onClick={handleStartChat}
+            disabled={selectedUsers.length === 0 || createConversationMutation.isPending}
           >
             Chat
           </Button>

@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import type { DynamicWidgetProps } from './widget-registry';
 
 /**
  * Pluggable BarcodeScanner Dynamic Widget.
  * Simulates and captures 1D/2D optical codes (QR, EAN-13, Code-128).
  */
-export const BarcodeScannerWidget: React.FC<DynamicWidgetProps<string>> = ({
+export const BarcodeScannerWidget = ({
   value,
   onChange,
   attribute,
   disabled = false,
   readOnly = false,
   error,
-}) => {
+}: DynamicWidgetProps<string>): ReactElement => {
   const [isScanning, setIsScanning] = useState(false);
 
   const handleSimulateScan = (mockCode: string) => {

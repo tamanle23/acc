@@ -9,9 +9,12 @@ import { TasksDialogs } from './components/tasks-dialogs'
 import { TasksPrimaryButtons } from './components/tasks-primary-buttons'
 import { TasksProvider } from './components/tasks-provider'
 import { TasksTable } from './components/tasks-table'
-import { tasks } from './data/tasks'
+import { useTasksQuery } from './api/use-tasks'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function Tasks() {
+  const { data: tasks = [], isLoading } = useTasksQuery()
+
   return (
     <TasksProvider>
       <Header fixed>
@@ -34,7 +37,14 @@ export function Tasks() {
           </div>
           <TasksPrimaryButtons />
         </div>
-        <TasksTable data={tasks} />
+        {isLoading ? (
+          <div className='space-y-4'>
+            <Skeleton className='h-10 w-full' />
+            <Skeleton className='h-96 w-full' />
+          </div>
+        ) : (
+          <TasksTable data={tasks} />
+        )}
       </Main>
 
       <TasksDialogs />

@@ -12,6 +12,11 @@ export function attachSandboxAxiosInterceptor(apiClient: AxiosInstance): void {
     return;
   }
 
+  if ((apiClient as any).__sandbox_interceptor_attached__) {
+    return;
+  }
+  (apiClient as any).__sandbox_interceptor_attached__ = true;
+
   apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
     if (!sandboxManager.isEnabled()) {
       return config;
@@ -21,11 +26,18 @@ export function attachSandboxAxiosInterceptor(apiClient: AxiosInstance): void {
     const baseURL = config.baseURL || '';
     const isAbsolute = /^https?:\/\//i.test(rawUrl);
 
-    // Resolve full path considering baseURL
-    const fullUrl =
-      isAbsolute || !baseURL
-        ? rawUrl
-        : `${baseURL.replace(/\/$/, '')}/${rawUrl.replace(/^\//, '')}`;
+    // Resolve full path considering baseURL without duplicate prefixes
+    let fullUrl = rawUrl;
+    if (!isAbsolute && baseURL) {
+      const cleanBase = baseURL.replace(/\/$/, '');
+      const cleanRaw = rawUrl.replace(/^\//, '');
+      const cleanBaseWithoutSlash = cleanBase.replace(/^\//, '');
+      if (cleanRaw.startsWith(cleanBaseWithoutSlash + '/') || cleanRaw === cleanBaseWithoutSlash) {
+        fullUrl = `/${cleanRaw}`;
+      } else {
+        fullUrl = `${cleanBase}/${cleanRaw}`;
+      }
+    }
 
     const method = config.method?.toUpperCase() || 'GET';
 

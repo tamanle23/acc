@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { type Table } from '@tanstack/react-table'
 import { Trash2, UserX, UserCheck, Mail } from 'lucide-react'
-import { toast } from 'sonner'
-import { sleep } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -12,6 +10,10 @@ import {
 import { DataTableBulkActions as BulkActionsToolbar } from '@/components/data-table'
 import { type User } from '../data/schema'
 import { UsersMultiDeleteDialog } from './users-multi-delete-dialog'
+import {
+  useBulkUpdateUsersStatusMutation,
+  useInviteUserMutation,
+} from '../api/use-users'
 
 type DataTableBulkActionsProps<TData> = {
   table: Table<TData>
@@ -21,32 +23,28 @@ export function DataTableBulkActions<TData>({
   table,
 }: DataTableBulkActionsProps<TData>) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const bulkStatusMutation = useBulkUpdateUsersStatusMutation()
+  const inviteMutation = useInviteUserMutation()
   const selectedRows = table.getFilteredSelectedRowModel().rows
 
-  const handleBulkStatusChange = (status: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (status: 'active' | 'inactive') => {
     const selectedUsers = selectedRows.map((row) => row.original as User)
-    toast.promise(sleep(2000), {
-      loading: `${status === 'active' ? 'Activating' : 'Deactivating'} users...`,
-      success: () => {
-        table.resetRowSelection()
-        return `${status === 'active' ? 'Activated' : 'Deactivated'} ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`
-      },
-      error: `Error ${status === 'active' ? 'activating' : 'deactivating'} users`,
-    })
+    const ids = selectedUsers.map((u) => u.id)
     table.resetRowSelection()
+    await bulkStatusMutation.mutateAsync({ ids, status })
   }
 
-  const handleBulkInvite = () => {
+  const handleBulkInvite = async () => {
     const selectedUsers = selectedRows.map((row) => row.original as User)
-    toast.promise(sleep(2000), {
-      loading: 'Inviting users...',
-      success: () => {
-        table.resetRowSelection()
-        return `Invited ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`
-      },
-      error: 'Error inviting users',
-    })
     table.resetRowSelection()
+    await Promise.all(
+      selectedUsers.map((u) =>
+        inviteMutation.mutateAsync({
+          email: u.email,
+          role: u.role,
+        })
+      )
+    )
   }
 
   return (

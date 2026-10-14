@@ -72,14 +72,12 @@ public class SecurityConfiguration {
         .logout(logout -> logout.permitAll());
 
       http.authorizeHttpRequests(authz -> {
-        authz.requestMatchers("/api/v1/public/**").permitAll();
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           authz.requestMatchers(applicationProperties.getSecurity().getPermitAlls()).permitAll();
         }
         authz.anyRequest().authenticated();
       });
       http.csrf(csrf -> {
-        csrf.ignoringRequestMatchers("/api/v1/public/**");
         if (applicationProperties.getSecurity() != null && applicationProperties.getSecurity().getPermitAlls() != null) {
           csrf.ignoringRequestMatchers(applicationProperties.getSecurity().getPermitAlls());
         }

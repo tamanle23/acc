@@ -19,12 +19,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import com.unipost.boot.config.properties.ApplicationProperties;
 import com.unipost.core.context.Context;
 
 import io.jsonwebtoken.Claims;
@@ -50,52 +50,61 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
   @Inject
   private Context context;
 
-  public Optional<JwtAuthenticationToken> attemptAuthentication(HttpServletRequest request, String authenticationToken) {
+  private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+  @Inject
+  ApplicationProperties applicationProperties;
+
+  public Optional<JwtAuthenticationToken> attemptAuthentication(HttpServletRequest request,
+      String authenticationToken) {
     String userAgent = request.getHeader("User-Agent");
     return Optional.ofNullable(authenticationToken)
-                   .map(t -> jwtTokenHelper.getClaims(t))
-                   .filter(Optional::isPresent)
-                   .map(Optional::get)
-                   .filter(c -> jwtTokenHelper.validate(c, userAgent))
-                   .map(c -> {
-                     Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
-                     List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
-                     Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
-                     if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
-                       logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.", usernameOpt.orElse("anonymous"));
-                       return null;
-                     }
-                     String tenantId = tenantIdOpt.get().trim();
-                     if(usernameOpt.isPresent()) {
-                       JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities, tenantId);
-                       authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                       if(logger.isDebugEnabled()) {
-                         logger.debug("authenticated user {}, tenant {}, setting security context", usernameOpt.get(), tenantId);
-                       }
-                       return authentication;
-                     }
-                     return null;
-                   });
+        .map(t -> jwtTokenHelper.getClaims(t))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .filter(c -> jwtTokenHelper.validate(c, userAgent))
+        .map(c -> {
+          Optional<String> usernameOpt = jwtTokenHelper.getUsername(c);
+          List<GrantedAuthority> authorities = jwtTokenHelper.getAuthorities(c);
+          Optional<String> tenantIdOpt = jwtTokenHelper.getTenantId(c);
+          if (tenantIdOpt.isEmpty() || tenantIdOpt.get().trim().isEmpty()) {
+            logger.warn("Authentication rejected for user {}: Missing or unassigned tenant ID.",
+                usernameOpt.orElse("anonymous"));
+            return null;
+          }
+          String tenantId = tenantIdOpt.get().trim();
+          if (usernameOpt.isPresent()) {
+            JwtAuthenticationToken authentication = new JwtAuthenticationToken(usernameOpt.get(), c, authorities,
+                tenantId);
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            if (logger.isDebugEnabled()) {
+              logger.debug("authenticated user {}, tenant {}, setting security context", usernameOpt.get(), tenantId);
+            }
+            return authentication;
+          }
+          return null;
+        });
   }
 
-  private Optional<String> readCookie(HttpServletRequest request,String key) {
+  private Optional<String> readCookie(HttpServletRequest request, String key) {
     return Optional.ofNullable(request.getCookies())
-                    .map(Arrays::stream)
-                    .orElse(Stream.empty())
-                    .filter(c -> key.equals(c.getName()))
-                    .map(Cookie::getValue)
-                    .findAny();
+        .map(Arrays::stream)
+        .orElse(Stream.empty())
+        .filter(c -> key.equals(c.getName()))
+        .map(Cookie::getValue)
+        .findAny();
   }
 
   @Override
-  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+  protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws ServletException, IOException {
     String header = Optional.ofNullable(this.tokenHeaderName)
-                            .map(request::getHeader)
-                            .map(String.class::cast)
-                            .filter(Objects::nonNull)
-                            .filter(t -> t.startsWith("Bearer "))
-                            .map(t -> t.substring(7))
-                            .orElse(null);
+        .map(request::getHeader)
+        .map(String.class::cast)
+        .filter(Objects::nonNull)
+        .filter(t -> t.startsWith("Bearer "))
+        .map(t -> t.substring(7))
+        .orElse(null);
     String authenticationToken = this.readCookie(request, jwtCookieName).orElse(header);
     String path = request.getRequestURI();
 
@@ -152,5 +161,12 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
       org.slf4j.MDC.remove("user_id");
       context.clear();
     }
+  }
+
+  @Override
+  protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    String servletPath = request.getServletPath();
+    return Arrays.stream(applicationProperties.getSecurity().getPermitAlls())
+        .anyMatch(pattern -> pathMatcher.match(pattern, servletPath));
   }
 }

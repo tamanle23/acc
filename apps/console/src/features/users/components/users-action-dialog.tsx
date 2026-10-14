@@ -3,7 +3,6 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,6 +25,7 @@ import { PasswordInput } from '@/components/password-input'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
+import { useCreateUserMutation, useUpdateUserMutation } from '../api/use-users'
 
 const formSchema = z
   .object({
@@ -105,6 +105,9 @@ export function UsersActionDialog({
   onOpenChange,
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
+  const createUserMutation = useCreateUserMutation()
+  const updateUserMutation = useUpdateUserMutation()
+
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
@@ -127,9 +130,16 @@ export function UsersActionDialog({
         },
   })
 
-  const onSubmit = (values: UserForm) => {
+  const onSubmit = async (values: UserForm) => {
+    if (isEdit && currentRow) {
+      await updateUserMutation.mutateAsync({
+        id: currentRow.id,
+        ...values,
+      } as any)
+    } else {
+      await createUserMutation.mutateAsync(values as any)
+    }
     form.reset()
-    showSubmittedData(values)
     onOpenChange(false)
   }
 
