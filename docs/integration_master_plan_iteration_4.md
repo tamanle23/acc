@@ -31,8 +31,8 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 31** | **Visual DAG Studio: Interactive Drag-and-Drop Canvas & Task Palette** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK`, `JOIN`, `WAIT`, `DO_WHILE`); drag-and-drop canvas drop handler with viewport coordinate projection; automatic edge creation; canvas toolbar with validation & layout actions. | Vitest component tests in `@unipost/console` verifying palette drag events, node insertion, and canvas graph state updates. |
-| **Phase 32** | **Visual DAG Studio: Task Property Inspector & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation. | Vitest tests verifying node attribute mutations, JSON IR compilation, and round-trip fidelity without coordinate loss. |
+| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Task Execution Unit Ledger Refactor** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Execution Units (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio. | Vitest tests in `@unipost/console` verifying palette drag-drop, node creation, and `/tasks` execution unit ledger rendering with workflow links. |
+| **Phase 32** | **Visual DAG Studio: Task Property Inspector & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Task Payload & Lease Inspector dialog in `/tasks`. | Vitest tests verifying node attribute mutations, JSON IR compilation, and round-trip fidelity without coordinate loss. |
 | **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/backend`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
 | **Phase 34** | **Live Console API Client & Server-Sent Events (SSE) Execution Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
 | **Phase 35** | **Polyglot End-to-End Orchestration & Automated Saga Verification** | Full end-to-end integration scenario (E-commerce fulfillment DAG): visual authoring $\to$ API registration $\to$ Java worker inventory check $\to$ TypeScript worker label generation $\to$ simulated payment failure $\to$ reverse Saga compensation. | Automated end-to-end multi-worker test validating cross-language task completion, audit logs, and successful rollback of state. |
@@ -59,8 +59,14 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 - **Topological Edge Routing & Layout Controls**:
   - Dagre or ELK automatic layout button to organize complex graphs into clean top-to-bottom or left-to-right topological flows.
   - Delete selected nodes or edges with keyboard shortcuts (`Delete`, `Backspace`) with confirmation toast.
+- **Refactor `/tasks` into Workflow Execution Units Ledger**:
+  - Update `taskSchema` to reflect workflow execution units (`taskId`, `workflowId`, `taskReferenceName`, `taskType`, `status`, `leaseOwner`, `attempt`, `visibleAtEpochMs`, `durationMs`).
+  - Update `tasks-columns.tsx` to render workflow reference links, task types, execution state badges, worker lease status, and actions.
+  - Direct cross-navigation: Row action **"View in Visual DAG Studio"** navigates to `/workflows?workflowId={workflowId}` with node focus.
+  - Dual-mode tab toggle: Operators can switch between **Workflow Execution Units** (default) and **Manual Tasks**.
 - **Verification Gate 31**:
   - Vitest test suite in `apps/console/src/features/metadata/components/studio/` verifying node dragging, drop coordinate translation, node creation, and deletion.
+  - Vitest test suite in `apps/console/src/features/tasks/` verifying workflow execution unit table rendering and cross-navigation action.
 
 ---
 
