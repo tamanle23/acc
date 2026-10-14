@@ -13,8 +13,8 @@ export const useSpringAuthStore = create<AuthState>()(
       user: null,
       currentTenantId: null,
       isAuthenticated: false,
-      isSandbox: false,
       isHydrating: false,
+      isSandbox: false,
       setTokens: (access: string, refresh: string) => {
         const user = decodeJwt(access);
         if (refresh) {

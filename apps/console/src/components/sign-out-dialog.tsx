@@ -24,8 +24,8 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
     try {
       // Call backend to invalidate refresh token cookie / session
       await springApiClient.post('/auth/logout');
-    } catch (error) {
-      console.warn('Logout API failed, proceeding with local clear', error);
+    } catch {
+      // Proceed with local clear on logout API error
     } finally {
       // Clear local states
       clearTokens();
