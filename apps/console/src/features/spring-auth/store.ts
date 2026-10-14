@@ -35,6 +35,28 @@ export const useSpringAuthStore = create<AuthState>()(
           isSandbox,
         });
       },
+      setHydrating: (val: boolean) => set({ isHydrating: val }),
+      clearTokens: () => {
+        localStorage.removeItem(REFRESH_STORAGE_KEY);
+        set({
+          accessToken: null,
+          refreshToken: null,
+          user: null,
+          currentTenantId: null,
+          isAuthenticated: false,
+          isSandbox: false,
+        });
+      },
+      expireAccessToken: () => {
+        const { accessToken } = get();
+        if (accessToken) {
+          set({ accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJleHBpcmVkIiwiZXhwIjoxMDAwMDAwfQ.invalid' });
+        }
+      },
+      expireRefreshToken: () => {
+        localStorage.setItem(REFRESH_STORAGE_KEY, 'expired_mock_refresh_token');
+        set({ refreshToken: 'expired_mock_refresh_token' });
+      },
     }),
     {
       name: 'sandbox_auth_store',
