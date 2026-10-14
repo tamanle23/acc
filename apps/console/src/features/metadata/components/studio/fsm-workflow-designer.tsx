@@ -6,6 +6,7 @@ import {
   MiniMap,
   Position,
   Panel,
+  MarkerType,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -259,6 +260,12 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
   }, [initialStates, initialTransitions]);
 
   const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
+    // Map state indices for topological backward/forward detection
+    const stateIndexMap: Record<string, number> = {};
+    initialStates.forEach((s, idx) => {
+      stateIndexMap[s.id] = idx;
+    });
+
     // Group transitions by pair of nodes to offset parallel multi-actions cleanly
     const pairGroups: Record<string, FsmTransitionEdge[]> = {};
     initialTransitions.forEach((t) => {
@@ -271,6 +278,11 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     Object.values(pairGroups).forEach((group) => {
       const multiTotal = group.length;
       group.forEach((t, multiIndex) => {
+        const srcIdx = stateIndexMap[t.sourceState] ?? 0;
+        const tgtIdx = stateIndexMap[t.targetState] ?? 0;
+        const isBackward = tgtIdx < srcIdx;
+        const isSelfLoop = tgtIdx === srcIdx;
+
         result.push({
           id: t.id,
           source: t.sourceState,
@@ -278,18 +290,26 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
           sourceHandle: `source-${t.id}`,
           targetHandle: `target-${t.id}`,
           type: 'fsmTransition',
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 18,
+            height: 18,
+            color: isBackward ? 'oklch(0.65 0.20 25 / 85%)' : 'oklch(0.62 0.16 260 / 80%)',
+          },
           data: {
             ...t,
             multiIndex,
             multiTotal,
             hasSiblings: multiTotal > 1,
+            isBackward,
+            isSelfLoop,
           },
         });
       });
     });
 
     return result;
-  }, [initialTransitions]);
+  }, [initialStates, initialTransitions]);
 
   const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<FsmNodeData>, Edge<FsmEdgeData>> | null>(null);
   const [layoutMode, setLayoutMode] = useState<'dag' | 'stagger' | 'compact'>('stagger');

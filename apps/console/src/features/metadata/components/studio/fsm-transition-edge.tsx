@@ -55,6 +55,9 @@ export const FsmTransitionEdgeComponent = memo(
     targetPosition,
     data,
     selected,
+    markerEnd,
+    markerStart,
+    style,
   }: EdgeProps<FsmEdgeData>) => {
     const multiIndex = data?.multiIndex ?? 0;
     const multiTotal = data?.multiTotal ?? 1;
@@ -86,16 +89,25 @@ export const FsmTransitionEdgeComponent = memo(
 
     const ActionIcon = getActionIcon(data?.triggerEvent || '');
 
+    const strokeColor = selected
+      ? 'var(--primary)'
+      : data?.isBackward
+      ? 'oklch(0.65 0.20 25 / 75%)'
+      : 'oklch(0.62 0.16 260 / 65%)';
+
     return (
       <>
         <BaseEdge
           id={id}
           path={edgePath}
+          markerEnd={markerEnd || `url(#fsm-arrow-${selected ? 'active' : 'default'})`}
+          markerStart={markerStart}
           style={{
-            stroke: selected ? 'var(--primary)' : 'oklch(0.62 0.16 260 / 65%)',
+            stroke: strokeColor,
             strokeWidth: selected ? 2.5 : 2,
             strokeDasharray: data?.guardExpression ? '6, 4' : undefined,
             transition: 'stroke 0.2s cubic-bezier(0.16, 1, 0.3, 1), stroke-width 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            ...style,
           }}
         />
         <EdgeLabelRenderer>
