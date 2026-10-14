@@ -3,11 +3,42 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { FsmStateNode } from './studio-types';
 
+export interface DynamicHandleConfig {
+  id: string;
+  type: 'source' | 'target';
+  position: Position;
+  offsetPct: number; // 0 to 100 percentage along the side
+  actionName?: string;
+  label?: string;
+}
+
 export interface FsmNodeData extends FsmStateNode {
   isCurrent?: boolean;
+  incomingHandles?: DynamicHandleConfig[];
+  outgoingHandles?: DynamicHandleConfig[];
 }
 
 export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNodeData>) => {
+  const incoming = data.incomingHandles || [
+    { id: 'target-left', type: 'target', position: Position.Left, offsetPct: 50 },
+  ];
+  const outgoing = data.outgoingHandles || [
+    { id: 'source-right', type: 'source', position: Position.Right, offsetPct: 50 },
+  ];
+
+  const getHandleStyle = (handle: DynamicHandleConfig) => {
+    switch (handle.position) {
+      case Position.Top:
+        return { left: `${handle.offsetPct}%`, top: '-4px' };
+      case Position.Bottom:
+        return { left: `${handle.offsetPct}%`, bottom: '-4px' };
+      case Position.Left:
+        return { top: `${handle.offsetPct}%`, left: '-4px' };
+      case Position.Right:
+        return { top: `${handle.offsetPct}%`, right: '-4px' };
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -25,31 +56,18 @@ export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNode
         'cursor-grab active:cursor-grabbing'
       )}
     >
-      {/* 4-Way Ingress / Target Handles */}
-      {/* Top Target Handle */}
-      <Handle
-        type="target"
-        id="target-top"
-        position={Position.Top}
-        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -top-1.5 transition-transform hover:scale-150 shadow-xs"
-        title="Incoming top connection"
-      />
-      {/* Left Target Handle (Main) */}
-      <Handle
-        type="target"
-        id="target-left"
-        position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -left-1.5 transition-transform hover:scale-150 shadow-xs"
-        title="Incoming forward connection"
-      />
-      {/* Bottom Target Handle */}
-      <Handle
-        type="target"
-        id="target-bottom"
-        position={Position.Bottom}
-        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -bottom-1.5 transition-transform hover:scale-150 shadow-xs"
-        title="Incoming return/rejection connection"
-      />
+      {/* Dynamically Generated Ingress (Target) Handles based on Lifecycle Config */}
+      {incoming.map((h) => (
+        <Handle
+          key={h.id}
+          type="target"
+          id={h.id}
+          position={h.position}
+          style={getHandleStyle(h)}
+          className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full transition-transform hover:scale-150 shadow-xs z-10"
+          title={h.label || `Ingress: ${h.id}`}
+        />
+      ))}
 
       {/* State Node Content */}
       <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -83,31 +101,18 @@ export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNode
         </span>
       </div>
 
-      {/* 4-Way Egress / Source Handles */}
-      {/* Top Source Handle (for loops or high loops) */}
-      <Handle
-        type="source"
-        id="source-top"
-        position={Position.Top}
-        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -top-1.5 left-3/4 transition-transform hover:scale-150 shadow-xs"
-        title="Outgoing loop connection"
-      />
-      {/* Right Source Handle (Main forward) */}
-      <Handle
-        type="source"
-        id="source-right"
-        position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -right-1.5 transition-transform hover:scale-150 shadow-xs"
-        title="Outgoing forward connection"
-      />
-      {/* Bottom Source Handle (for rejections, rollbacks, fast-tracks) */}
-      <Handle
-        type="source"
-        id="source-bottom"
-        position={Position.Bottom}
-        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -bottom-1.5 left-1/4 transition-transform hover:scale-150 shadow-xs"
-        title="Outgoing return/rejection connection"
-      />
+      {/* Dynamically Generated Egress (Source) Handles based on Lifecycle Config */}
+      {outgoing.map((h) => (
+        <Handle
+          key={h.id}
+          type="source"
+          id={h.id}
+          position={h.position}
+          style={getHandleStyle(h)}
+          className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full transition-transform hover:scale-150 shadow-xs z-10"
+          title={h.label || `Egress Action: ${h.actionName || h.id}`}
+        />
+      ))}
     </div>
   );
 });

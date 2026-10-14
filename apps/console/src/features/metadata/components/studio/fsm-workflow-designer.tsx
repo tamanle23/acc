@@ -4,6 +4,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  Position,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -113,26 +114,148 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
   const initialTransitions = workflow?.transitions || DEFAULT_FSM_TRANSITIONS;
 
   // Compute clean initial layout: horizontal DAG layout with alternate vertical stagger
+  // and dynamically generated ingress/egress handles derived directly from lifecycle transitions
   const initialNodes: Node<FsmNodeData>[] = useMemo(() => {
-    const spacingX = 220;
-    return initialStates.map((state, index) => ({
-      id: state.id,
-      type: 'fsmState',
-      position: {
-        x: 60 + index * spacingX,
-        y: index % 2 === 0 ? 100 : 170,
-      },
-      data: state,
-    }));
-  }, [initialStates]);
-
-  const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
-    // Map state indices for topological direction comparison
+    const spacingX = 230;
     const stateIndexMap: Record<string, number> = {};
     initialStates.forEach((s, idx) => {
       stateIndexMap[s.id] = idx;
     });
 
+    return initialStates.map((state, index) => {
+      // Find incoming & outgoing transitions for this state
+      const outgoingTransitions = initialTransitions.filter(
+        (t) => t.sourceState === state.id
+      );
+      const incomingTransitions = initialTransitions.filter(
+        (t) => t.targetState === state.id
+      );
+
+      // Distribute outgoing handles along card edges based on topology
+      // - Forward transitions -> Position.Right
+      // - Backward/rejection transitions -> Position.Bottom
+      // - Self-loops -> Position.Top
+      const forwardOut = outgoingTransitions.filter((t) => {
+        const tgtIdx = stateIndexMap[t.targetState] ?? index;
+        return tgtIdx > index;
+      });
+      const backwardOut = outgoingTransitions.filter((t) => {
+        const tgtIdx = stateIndexMap[t.targetState] ?? index;
+        return tgtIdx < index;
+      });
+      const loopOut = outgoingTransitions.filter(
+        (t) => t.targetState === state.id
+      );
+
+      const outgoingHandles: DynamicHandleConfig[] = [];
+
+      forwardOut.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (forwardOut.length + 1)) * 100);
+        outgoingHandles.push({
+          id: `source-${t.id}`,
+          type: 'source',
+          position: Position.Right,
+          offsetPct,
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      backwardOut.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (backwardOut.length + 1)) * 100);
+        outgoingHandles.push({
+          id: `source-${t.id}`,
+          type: 'source',
+          position: Position.Bottom,
+          offsetPct,
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      loopOut.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (loopOut.length + 1)) * 60) + 20;
+        outgoingHandles.push({
+          id: `source-${t.id}`,
+          type: 'source',
+          position: Position.Top,
+          offsetPct: Math.min(offsetPct + 15, 85),
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      // Distribute incoming handles along card edges based on topology
+      // - Forward incoming -> Position.Left
+      // - Backward incoming -> Position.Bottom
+      // - Self-loops incoming -> Position.Top
+      const forwardIn = incomingTransitions.filter((t) => {
+        const srcIdx = stateIndexMap[t.sourceState] ?? index;
+        return srcIdx < index;
+      });
+      const backwardIn = incomingTransitions.filter((t) => {
+        const srcIdx = stateIndexMap[t.sourceState] ?? index;
+        return srcIdx > index;
+      });
+      const loopIn = incomingTransitions.filter(
+        (t) => t.sourceState === state.id
+      );
+
+      const incomingHandles: DynamicHandleConfig[] = [];
+
+      forwardIn.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (forwardIn.length + 1)) * 100);
+        incomingHandles.push({
+          id: `target-${t.id}`,
+          type: 'target',
+          position: Position.Left,
+          offsetPct,
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      backwardIn.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (backwardIn.length + 1)) * 100);
+        incomingHandles.push({
+          id: `target-${t.id}`,
+          type: 'target',
+          position: Position.Bottom,
+          offsetPct,
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      loopIn.forEach((t, i) => {
+        const offsetPct = Math.round(((i + 1) / (loopIn.length + 1)) * 60) + 20;
+        incomingHandles.push({
+          id: `target-${t.id}`,
+          type: 'target',
+          position: Position.Top,
+          offsetPct: Math.max(offsetPct - 15, 15),
+          actionName: t.triggerEvent,
+          label: t.label,
+        });
+      });
+
+      return {
+        id: state.id,
+        type: 'fsmState',
+        position: {
+          x: 60 + index * spacingX,
+          y: index % 2 === 0 ? 100 : 180,
+        },
+        data: {
+          ...state,
+          outgoingHandles,
+          incomingHandles,
+        },
+      };
+    });
+  }, [initialStates, initialTransitions]);
+
+  const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
     // Group transitions by pair of nodes to offset parallel multi-actions cleanly
     const pairGroups: Record<string, FsmTransitionEdge[]> = {};
     initialTransitions.forEach((t) => {
@@ -145,36 +268,12 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     Object.values(pairGroups).forEach((group) => {
       const multiTotal = group.length;
       group.forEach((t, multiIndex) => {
-        const srcIdx = stateIndexMap[t.sourceState] ?? 0;
-        const tgtIdx = stateIndexMap[t.targetState] ?? 0;
-        const isBackward = tgtIdx < srcIdx;
-        const isSelfLoop = tgtIdx === srcIdx;
-
-        // Choose dedicated source & target handle ports
-        let sourceHandle = 'source-right';
-        let targetHandle = 'target-left';
-
-        if (isSelfLoop) {
-          sourceHandle = 'source-top';
-          targetHandle = 'target-top';
-        } else if (isBackward) {
-          // Rejections / rollbacks route via bottom handles
-          sourceHandle = 'source-bottom';
-          targetHandle = 'target-bottom';
-        } else if (multiTotal > 1) {
-          // Parallel forward paths spread across handles
-          if (multiIndex % 2 === 1) {
-            sourceHandle = 'source-top';
-            targetHandle = 'target-top';
-          }
-        }
-
         result.push({
           id: t.id,
           source: t.sourceState,
           target: t.targetState,
-          sourceHandle,
-          targetHandle,
+          sourceHandle: `source-${t.id}`,
+          targetHandle: `target-${t.id}`,
           type: 'fsmTransition',
           data: {
             ...t,
@@ -187,7 +286,7 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     });
 
     return result;
-  }, [initialStates, initialTransitions]);
+  }, [initialTransitions]);
 
   const [nodes, setNodes] = useState<Node<FsmNodeData>[]>(initialNodes);
   const [edges, setEdges] = useState<Edge<FsmEdgeData>[]>(initialEdges);
