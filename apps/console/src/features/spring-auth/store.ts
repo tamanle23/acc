@@ -7,7 +7,7 @@ const REFRESH_STORAGE_KEY = 'sandbox_refresh_token';
 
 export const useSpringAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       accessToken: null,
       refreshToken: localStorage.getItem(REFRESH_STORAGE_KEY),
       user: null,
