@@ -19,6 +19,7 @@ import { GitFork, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 export const DEFAULT_FSM_STATES: FsmStateNode[] = [
   { id: 'DRAFT', label: 'Draft', isInitial: true, color: '#94A3B8', description: 'Initial uncommitted state' },
@@ -160,15 +161,16 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
   return (
     <div className="flex flex-col gap-4">
       {/* React Flow Visual Canvas Area */}
-      <div className="relative w-full h-[460px] rounded-3xl bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-2xl border border-white/20 dark:border-white/10 overflow-hidden shadow-2xl flex flex-col">
+      <div className="relative w-full h-[520px] rounded-3xl bg-white/40 dark:bg-slate-950/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/40 flex flex-col">
         {/* Canvas Toolbar Badge */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
-          <Badge className="bg-primary/20 text-primary border-primary/30 backdrop-blur-md px-2.5 py-1 text-xs font-semibold gap-1.5 shadow-sm pointer-events-auto">
-            <Zap className="h-3.5 w-3.5" />
-            <span>FSM Workflow: {entityTypeName}</span>
+        <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
+          <Badge className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-foreground border border-white/50 dark:border-white/15 px-3 py-1.5 text-xs font-semibold gap-2 shadow-md shadow-black/5 pointer-events-auto">
+            <Zap className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-bold">FSM Workflow: {entityTypeName}</span>
           </Badge>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline bg-slate-900/60 backdrop-blur-sm px-2 py-0.5 rounded-full border border-white/10 pointer-events-auto">
-            Drag nodes to rearrange · Click transition pill to inspect SpEL guards
+          <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-1.5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/30 dark:border-white/10 shadow-xs pointer-events-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Drag nodes to layout · Click transition pill to inspect SpEL guards
           </span>
         </div>
 
@@ -184,19 +186,19 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
-            fitViewOptions={{ padding: 0.2 }}
+            fitViewOptions={{ padding: 0.25 }}
             defaultEdgeOptions={{
               type: 'fsmTransition',
             }}
             proOptions={{ hideAttribution: true }}
             className="fsm-workflow-flow"
           >
-            <Background color="#64748b" gap={20} size={1} />
-            <Controls className="bg-slate-900/80 border-white/20 fill-white text-white rounded-xl shadow-lg !m-3" />
+            <Background color="var(--border)" gap={24} size={1.25} />
+            <Controls className="!m-4" />
             <MiniMap
               nodeColor={(n) => (n.data as FsmNodeData)?.color || '#38bdf8'}
-              className="!bg-slate-950/80 !border !border-white/15 !rounded-xl !overflow-hidden !m-3"
-              maskColor="rgba(15, 23, 42, 0.7)"
+              className="!m-4"
+              maskColor="rgba(15, 23, 42, 0.4)"
             />
           </ReactFlow>
         </div>
@@ -204,27 +206,36 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
 
       {/* Transition Guard & Action Inspector */}
       {selectedTransition && (
-        <div className="p-4 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border/40">
-            <div className="flex items-center gap-2">
-              <GitFork className="h-4 w-4 text-sky-500" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Transition Rule: {selectedTransition.sourceState} → {selectedTransition.targetState}
-              </h4>
+        <div className="p-5 rounded-3xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-xl shadow-black/5 dark:shadow-black/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/40">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/20 shadow-xs">
+                <GitFork className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                  Transition Rule: {selectedTransition.sourceState} → {selectedTransition.targetState}
+                </h4>
+                <p className="text-[10px] text-muted-foreground">
+                  Active lifecycle event trigger
+                </p>
+              </div>
             </div>
 
             {/* Quick Transition Selector Pills */}
             <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] uppercase font-bold text-muted-foreground mr-1">Events:</span>
               {initialTransitions.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setSelectedTransitionId(t.id)}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  className={cn(
+                    'px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer border shadow-xs',
                     selectedTransition.id === t.id
-                      ? 'bg-sky-500 text-white shadow-xs'
-                      : 'bg-muted/80 hover:bg-muted text-muted-foreground'
-                  }`}
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20 scale-105'
+                      : 'bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-800 text-muted-foreground hover:text-foreground border-white/30 dark:border-white/10'
+                  )}
                 >
                   {t.triggerEvent}
                 </button>
@@ -234,16 +245,16 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             {/* Guard Expression */}
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium text-muted-foreground flex items-center justify-between">
-                <span>SpEL Guard Expression</span>
-                <span className="text-[10px] text-sky-500 font-mono">attributes['field'] condition</span>
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white/40 dark:bg-slate-800/40 border border-white/30 dark:border-white/10">
+              <Label className="text-[11px] font-medium text-foreground flex items-center justify-between">
+                <span className="font-semibold">SpEL Guard Expression</span>
+                <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono">attributes['field'] condition</span>
               </Label>
               <Input
                 value={selectedTransition.guardExpression || ''}
                 placeholder="attributes['total_amount'] < 50000"
                 onChange={(e) => handleUpdateTransition({ guardExpression: e.target.value })}
-                className="h-8 text-xs font-mono bg-white/70 dark:bg-slate-800/70 border-white/30"
+                className="h-8 text-xs font-mono bg-white/80 dark:bg-slate-900/80 border-white/30 dark:border-white/10 focus-visible:ring-1"
               />
               <p className="text-[10px] text-muted-foreground">
                 Evaluated atomically by Spring Boot prior to transition commit. Rejects invalid requests with 422.
@@ -251,15 +262,15 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
             </div>
 
             {/* Transactional Outbox Action */}
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium text-muted-foreground">
+            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white/40 dark:bg-slate-800/40 border border-white/30 dark:border-white/10">
+              <Label className="text-[11px] font-medium text-foreground font-semibold">
                 Transactional Outbox Action
               </Label>
               <Input
                 value={selectedTransition.actionType || ''}
                 placeholder="e.g. NOTIFICATION_DISPATCH"
                 onChange={(e) => handleUpdateTransition({ actionType: e.target.value })}
-                className="h-8 text-xs font-mono bg-white/70 dark:bg-slate-800/70 border-white/30"
+                className="h-8 text-xs font-mono bg-white/80 dark:bg-slate-900/80 border-white/30 dark:border-white/10 focus-visible:ring-1"
               />
               <p className="text-[10px] text-muted-foreground">
                 Side-effect staged atomically in outbox_events to avoid dual-write hazards.

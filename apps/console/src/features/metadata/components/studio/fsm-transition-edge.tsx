@@ -28,7 +28,7 @@ export const FsmTransitionEdgeComponent = memo(
       sourcePosition,
       targetX,
       targetY,
-      curvature: 0.25,
+      curvature: 0.3,
     });
 
     return (
@@ -37,7 +37,7 @@ export const FsmTransitionEdgeComponent = memo(
           id={id}
           path={edgePath}
           style={{
-            stroke: selected ? '#38BDF8' : '#818CF8',
+            stroke: selected ? 'var(--primary)' : 'oklch(0.65 0.15 260 / 60%)',
             strokeWidth: selected ? 2.5 : 1.75,
             strokeDasharray: data?.guardExpression ? '6, 4' : undefined,
             transition: 'stroke 0.2s, stroke-width 0.2s',
@@ -55,16 +55,19 @@ export const FsmTransitionEdgeComponent = memo(
             <button
               type="button"
               className={cn(
-                'group flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-tight shadow-lg transition-all',
-                'cursor-pointer active:scale-95',
+                'group flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-tight shadow-md transition-all duration-200 select-none cursor-pointer',
+                'backdrop-blur-xl border',
                 selected
-                  ? 'bg-sky-500 text-white shadow-sky-500/40 ring-2 ring-sky-300 scale-105'
-                  : 'bg-slate-900/90 hover:bg-slate-800 text-sky-200 border border-sky-500/40 shadow-black/40'
+                  ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30 scale-105 ring-2 ring-primary/40'
+                  : 'bg-white/80 dark:bg-slate-900/85 hover:bg-white dark:hover:bg-slate-900 text-foreground border-white/40 dark:border-white/10 hover:border-primary/50 shadow-black/5 hover:scale-105'
               )}
             >
               <span>{data?.triggerEvent || id}</span>
               {data?.guardExpression && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" title="Protected by SpEL Guard" />
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0 ring-1 ring-amber-400/50"
+                  title={`Protected by SpEL Guard: ${data.guardExpression}`}
+                />
               )}
             </button>
           </div>

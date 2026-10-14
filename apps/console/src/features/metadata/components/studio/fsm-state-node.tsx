@@ -11,52 +11,63 @@ export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNode
   return (
     <div
       className={cn(
-        'relative px-4 py-3 min-w-[140px] rounded-2xl backdrop-blur-xl border flex flex-col items-center justify-center text-center shadow-lg transition-all',
+        'group relative px-4 py-3 min-w-[160px] rounded-2xl backdrop-blur-xl border transition-all duration-200 select-none',
+        'shadow-xl shadow-black/5 dark:shadow-black/30',
+        'shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
         data.isInitial
-          ? 'bg-sky-500/20 border-sky-400/50 text-sky-200 shadow-sky-500/20'
+          ? 'bg-sky-500/15 dark:bg-sky-500/20 border-sky-400/40 dark:border-sky-400/30'
           : data.isTerminal
-          ? 'bg-pink-500/20 border-pink-400/50 text-pink-200 shadow-pink-500/20'
-          : 'bg-slate-900/80 border-white/20 text-foreground',
-        selected && 'ring-2 ring-sky-400 border-sky-400 scale-105 shadow-xl shadow-sky-500/25',
-        'hover:scale-102 hover:border-white/40 cursor-grab active:cursor-grabbing'
+          ? 'bg-rose-500/15 dark:bg-rose-500/20 border-rose-400/40 dark:border-rose-400/30'
+          : 'bg-white/75 dark:bg-slate-900/75 border-white/40 dark:border-white/10',
+        selected
+          ? 'ring-2 ring-primary border-primary scale-105 shadow-2xl shadow-primary/20'
+          : 'hover:scale-[1.02] hover:border-white/60 dark:hover:border-white/25',
+        'cursor-grab active:cursor-grabbing'
       )}
     >
-      {/* Target input handle (Left) */}
+      {/* Target handle (Left) */}
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-slate-950 !rounded-full -left-1.5 transition-transform hover:scale-125"
+        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -left-1.5 transition-transform hover:scale-150 shadow-xs"
       />
 
-      {/* State Badge and Color Accent */}
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
-          style={{ backgroundColor: data.color || '#38BDF8' }}
-        />
-        <span className="text-xs font-bold tracking-tight text-white">{data.label}</span>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs ring-2 ring-white/50 dark:ring-black/50"
+            style={{ backgroundColor: data.color || '#38BDF8' }}
+          />
+          <span className="text-xs font-bold tracking-tight text-foreground truncate">
+            {data.label}
+          </span>
+        </div>
+
+        {data.isInitial ? (
+          <span className="px-1.5 py-0.2 rounded-md text-[9px] font-mono font-bold bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-400/30">
+            INIT
+          </span>
+        ) : data.isTerminal ? (
+          <span className="px-1.5 py-0.2 rounded-md text-[9px] font-mono font-bold bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-400/30">
+            TERM
+          </span>
+        ) : null}
       </div>
 
-      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-        {data.id}
-      </span>
-
-      {data.isInitial && (
-        <span className="mt-1 px-1.5 py-0.2 rounded text-[8px] font-mono bg-sky-400/20 text-sky-300 border border-sky-400/30">
-          INITIAL
+      <div className="flex items-center justify-between pt-1 border-t border-border/30 text-[10px]">
+        <span className="font-mono text-muted-foreground uppercase tracking-wider font-semibold">
+          {data.id}
         </span>
-      )}
-      {data.isTerminal && (
-        <span className="mt-1 px-1.5 py-0.2 rounded text-[8px] font-mono bg-pink-400/20 text-pink-300 border border-pink-400/30">
-          TERMINAL
+        <span className="text-[9px] text-muted-foreground/75 italic truncate max-w-[80px]">
+          {data.description || 'State'}
         </span>
-      )}
+      </div>
 
-      {/* Source output handle (Right) */}
+      {/* Source handle (Right) */}
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-indigo-400 !border-2 !border-slate-950 !rounded-full -right-1.5 transition-transform hover:scale-125"
+        className="!w-3 !h-3 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -right-1.5 transition-transform hover:scale-150 shadow-xs"
       />
     </div>
   );
