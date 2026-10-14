@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { runWorkerDaemon } from './commands/WorkerCommand';
 import fs from 'fs';
+import path from 'path';
 import {
   AmbientStreamPipeline,
   ScraperEngine,
@@ -196,8 +197,34 @@ export function listPipelines(): void {
 `);
 }
 
+async function probeCanonicalConfig(dirPath: string): Promise<any | null> {
+  const candidates = ['pipeline-ir.json', 'story-config.json', 'omnichannel-config.json'];
+  for (const filename of candidates) {
+    const candidatePath = path.join(dirPath, filename);
+    if (fs.existsSync(candidatePath)) {
+      try {
+        return JSON.parse(await fs.promises.readFile(candidatePath, 'utf-8'));
+      } catch {}
+    }
+  }
+  return null;
+}
+
 export async function resolvePipelineInput(pipelineId: string, options: CliOptions): Promise<any> {
   const normId = pipelineId.toLowerCase();
+
+  // If a config path is specified, check if it's a directory
+  let isDirectory = false;
+  let parsedFromDir: any = null;
+  if (options.configPath && fs.existsSync(options.configPath)) {
+    try {
+      const stats = fs.statSync(options.configPath);
+      isDirectory = stats.isDirectory();
+      if (isDirectory) {
+        parsedFromDir = await probeCanonicalConfig(options.configPath);
+      }
+    } catch {}
+  }
 
   if (normId === '1' || normId === 'scraper' || normId === 'scraper-summarizer') {
     let event: any = {
@@ -207,7 +234,10 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       receivedAt: new Date().toISOString(),
       timestamp: new Date().toISOString(),
     };
-    if (options.configPath && (await fileExists(options.configPath))) {
+    if (parsedFromDir) {
+      return parsedFromDir;
+    }
+    if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
       event = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return event;
@@ -225,7 +255,10 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
         { id: '4', name: 'Go', category: 'Cloud', metrics: { popularity: 68 }, highlightMetric: 'popularity' },
       ],
     };
-    if (options.configPath && (await fileExists(options.configPath))) {
+    if (parsedFromDir) {
+      return parsedFromDir;
+    }
+    if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
       dataset = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return dataset;
@@ -241,7 +274,10 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       ],
       activeSpeakerPosition: { x: 0.5, y: 0.35 },
     };
-    if (options.configPath && (await fileExists(options.configPath))) {
+    if (parsedFromDir) {
+      return { ...repurposeOpts, ...parsedFromDir };
+    }
+    if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
       repurposeOpts = { ...repurposeOpts, ...JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8')) };
     }
     return repurposeOpts;
@@ -263,7 +299,10 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       ],
       finalAnswer: 'a^2 + b^2 = c^2 (Q.E.D.)',
     };
-    if (options.configPath && (await fileExists(options.configPath))) {
+    if (parsedFromDir) {
+      return parsedFromDir;
+    }
+    if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
       proof = JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     }
     return proof;
@@ -276,20 +315,26 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       loopDurationSeconds: options.duration || 5,
       particleCount: 150,
     };
-    if (options.configPath && (await fileExists(options.configPath))) {
+    if (parsedFromDir) {
+      return { ...config, ...parsedFromDir };
+    }
+    if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
       config = { ...config, ...JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8')) };
     }
     return config;
   }
 
-  if (options.configPath && (await fileExists(options.configPath))) {
+  if (parsedFromDir) {
+    return parsedFromDir;
+  }
+  if (options.configPath && !isDirectory && (await fileExists(options.configPath))) {
     try {
       return JSON.parse(await fs.promises.readFile(options.configPath, 'utf-8'));
     } catch {
       return options.configPath;
     }
   }
-  return {};
+  return options.configPath || {};
 }
 
 function extractOutputPaths(results: any): string[] {

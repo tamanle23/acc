@@ -11,6 +11,7 @@ trigger: always_on
 - **IMPORT-INTEGRITY**: Verify imports at top of file when adding dependencies. Never truncate import blocks.
 - **ZERO-REGRESSION**: Never break existing working flows. Verify call sites & preserve backward compatibility.
 - **PERFORMANCE-TUNING**: Never block Event Loop with sync I/O. Use `await fs.promises`. Yield CPU-bound loops.
+- **NO-STUBS-ORPHANED-CODE**: Zero placeholder/dummy functions (`TODO`, fake objects, stubs). Every created class/strategy/plugin MUST have active production call-sites and registry wiring. No dead or "put-aside" code.
 
 # Autonomous Coding Directives
 - **Behavior & Output**: Principal Software Engineer. Exact, runnable, copy-pasteable solutions; no placeholders (`// ...rest`, `TODO`); minimize prose.

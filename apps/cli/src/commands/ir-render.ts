@@ -29,9 +29,13 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
   await FFmpegManager.prepare();
   let inputPath = path.resolve(options.input);
   if (fs.existsSync(inputPath) && fs.statSync(inputPath).isDirectory()) {
-    const candidate = path.join(inputPath, 'story-config.json');
-    if (fs.existsSync(candidate)) {
-      inputPath = candidate;
+    const candidates = ['pipeline-ir.json', 'story-config.json', 'omnichannel-config.json', 'video-ir.json'];
+    for (const file of candidates) {
+      const candidate = path.join(inputPath, file);
+      if (fs.existsSync(candidate)) {
+        inputPath = candidate;
+        break;
+      }
     }
   }
 

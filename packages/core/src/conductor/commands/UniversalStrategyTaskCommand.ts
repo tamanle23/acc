@@ -32,9 +32,11 @@ export class UniversalStrategyTaskCommand implements IConductorTaskCommand {
     const strategy = ContentStrategyRegistry.getOrThrow(contentTypeId);
     const ctx = ConductorPipelineAdapter.createContext(input);
 
+    const modality = (strategy as any).defaultModality || (strategy as any).targetModality || 'video';
+
     Logger.info(
       'UniversalStrategyTaskCommand',
-      `Dispatching task ${input.taskId} to strategy ${contentTypeId} [Pipeline ${strategy.pipelineId} -> ${strategy.targetModality}]`
+      `Dispatching task ${input.taskId} to strategy ${contentTypeId} [Pipeline ${strategy.pipelineId} -> ${modality}]`
     );
 
     const result = await strategy.process(ctx);
@@ -44,12 +46,12 @@ export class UniversalStrategyTaskCommand implements IConductorTaskCommand {
       outputData: {
         contentTypeId,
         pipelineId: strategy.pipelineId,
-        targetModality: strategy.targetModality,
+        targetModality: modality,
         result,
       },
       logs: [
         `Executed strategy ${contentTypeId}`,
-        `Target modality: ${strategy.targetModality}`,
+        `Target modality: ${modality}`,
       ],
     };
   }

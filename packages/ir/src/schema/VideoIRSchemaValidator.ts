@@ -129,6 +129,29 @@ export class VideoIRSchemaValidator {
     };
   }
 
+  /**
+   * Serializes a VideoIRDocument to a formatted JSON string for export or Visual Video Editor consumption.
+   */
+  public static serialize(doc: VideoIRDocument, pretty: boolean = true): string {
+    const validation = this.validate(doc);
+    if (!validation.valid) {
+      throw new Error(`[VideoIRSchemaValidator] Cannot serialize invalid VideoIRDocument: ${validation.errors.join('; ')}`);
+    }
+    return pretty ? JSON.stringify(doc, null, 2) : JSON.stringify(doc);
+  }
+
+  /**
+   * Deserializes and validates a JSON string into a compliant VideoIRDocument.
+   */
+  public static deserialize(jsonStr: string): VideoIRDocument {
+    const parsed = JSON.parse(jsonStr);
+    const validation = this.validate(parsed);
+    if (!validation.valid) {
+      throw new Error(`[VideoIRSchemaValidator] Deserialization validation failed: ${validation.errors.join('; ')}`);
+    }
+    return parsed as VideoIRDocument;
+  }
+
   private static validateModifiers(modifiers: unknown, context: string, errors: string[]): void {
     if (!Array.isArray(modifiers)) {
       errors.push(`Modifiers on ${context} must be an array`);

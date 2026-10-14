@@ -3,8 +3,34 @@ import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../Modi
 import { Depth3DFactory, drawFrameBreakerFrame, resolveSubjectCutout, resolveDepthMapData } from '@acc/effect-engines';
 import { createCanvas, type Image, type Canvas } from '@napi-rs/canvas';
 
+export type Depth3DMode =
+  | 'frame_breaker'
+  | 'parallax_25d'
+  | 'parallax_dolly'
+  | 'volumetric_sandwich'
+  | 'sandwich'
+  | 'depth_map_3d'
+  | 'mesh_displacement'
+  | 'wigglegram'
+  | 'isometric_podium'
+  | 'cutout_portal'
+  | 'gyro_focal_tilt'
+  | 'flythrough_carousel'
+  | 'diffuse_shadow'
+  | 'glassmorphic_fresnel'
+  | 'silhouette_rim_light'
+  | 'plane_cast_shadow'
+  | 'macro_bokeh'
+  | 'aerial_mist'
+  | 'rack_focus'
+  | 'vignette_tunnel'
+  | 'perspective_grid'
+  | 'extruded_text_3d'
+  | 'isometric_billboard'
+  | 'tunneling_text';
+
 export interface Depth3DPluginParams {
-  mode: string; // 'frame_breaker' | 'volumetric_sandwich' | 'parallax' | 'depth_mesh' | ...
+  mode: Depth3DMode | string;
   frameStyle?: string;
   popOutIntensity?: number;
   autoSegment?: boolean;
@@ -22,8 +48,7 @@ export interface Depth3DPluginParams {
 
 /**
  * Depth3DPlugin:
- * Bridges existing 3D depth renderers (frame-breaker, sandwich, parallax, depth-mesh)
- * into a canonical IR visual modifier (`vfx/depth3d`).
+ * Bridges all 17 3D depth renderers into a canonical IR visual modifier (`vfx/depth3d`).
  * Implements Phase 2: Sequence-Level Execution (Clip Space).
  */
 export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {

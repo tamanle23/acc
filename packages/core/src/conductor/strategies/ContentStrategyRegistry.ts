@@ -42,7 +42,11 @@ export class ContentStrategyRegistry {
   }
 
   public static getByModality(modality: string): IContentTaskStrategy<any, any>[] {
-    return Array.from(this.strategies.values()).filter((s) => s.targetModality === modality);
+    return Array.from(this.strategies.values()).filter((s) => {
+      const defMod = (s as any).defaultModality || (s as any).targetModality;
+      const supp = (s as any).supportedModalities;
+      return defMod === modality || (Array.isArray(supp) && supp.includes(modality));
+    });
   }
 
   public static getAll(): IContentTaskStrategy<any, any>[] {
