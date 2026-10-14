@@ -1,0 +1,189 @@
+name: Production CI/CD Quality Gatekeeper
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Monorepo Lint & Strict Typecheck
+  # ---------------------------------------------------------------------------
+  lint-and-typecheck:
+    name: Lint & Strict Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Turbo Monorepo Typecheck & Lint
+        run: pnpm turbo run check-types lint
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Backend Spring Modulith & Database Verification
+  # ---------------------------------------------------------------------------
+  backend-modulith-verify:
+    name: Backend Modulith & RLS Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Setup Testcontainers / Docker
+        run: |
+          docker --version
+
+      - name: Build and Test Spring Backend
+        working-directory: apps/backend
+        run: |
+          mvn clean test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationTest" --batch-mode
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Vitest Multi-Client Test Suites
+  # ---------------------------------------------------------------------------
+  vitest-multi-client:
+    name: Vitest Multi-Client Test Suites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Client Packages Tests (@unipost/tokens, @unipost/client, @unipost/sandbox)
+        run: |
+          pnpm --filter @unipost/tokens test
+          pnpm --filter @unipost/client test
+          pnpm --filter @unipost/sandbox test
+
+      - name: Run Frontend Tests (@unipost/console)
+        run: |
+          pnpm --filter @unipost/console test
+
+      - name: Run Mobile & Desktop Tests (mobile-ui Outbox Chaos, Desktop Bridge)
+        run: |
+          pnpm --filter mobile-ui test
+          pnpm --filter @unipost/desktop test
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Headless Playwright Browser E2E & WCAG 2.2 AA Audit
+  # ---------------------------------------------------------------------------
+  playwright-e2e-wcag:
+    name: Playwright E2E & WCAG 2.2 AA Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers with Dependencies
+        run: |
+          pnpm --filter @unipost/console exec playwright install --with-deps chromium
+
+      - name: Run Playwright E2E & Axe WCAG 2.2 AA Scan
+        run: |
+          pnpm --filter @unipost/console test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: apps/console/playwright-report/
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Job 5: Production Build Verification
+  # ---------------------------------------------------------------------------
+  production-builds:
+    name: Production Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Web Console (@unipost/console)
+        run: pnpm --filter @unipost/console build:web
+
+      - name: Build Tekgo Portal (tekgo-ui Next.js 15)
+        run: pnpm --filter tekgo-ui build
