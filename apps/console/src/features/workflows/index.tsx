@@ -7,7 +7,7 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
-import { ConductorWorkflowStudio } from '@/features/metadata/components/studio';
+import { VisualDagStudio } from '@/features/metadata/components/studio';
 import { Workflow } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -54,7 +54,7 @@ export const WorkflowsFeature: React.FC = () => {
 
         {/* Full-bleed Liquid Glass Studio Canvas */}
         <div className="flex-1 w-full min-w-0 min-h-0 rounded-2xl border border-white/30 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-lg p-2 sm:p-4 overflow-hidden flex flex-col">
-          <ConductorWorkflowStudio />
+          <VisualDagStudio />
         </div>
       </Main>
     </>

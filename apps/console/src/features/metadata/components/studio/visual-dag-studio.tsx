@@ -12,14 +12,13 @@ import {
   applyEdgeChanges,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { DagWorkflowNodeComponent, type DagNodeData } from './conductor-node';
+import { DagWorkflowNodeComponent, type DagNodeData } from './dag-node';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, RotateCcw, Activity } from 'lucide-react';
 
 const nodeTypes = {
   dagNode: DagWorkflowNodeComponent,
-  conductorNode: DagWorkflowNodeComponent,
 };
 
 const INITIAL_NODES: Node<DagNodeData>[] = [
@@ -80,12 +79,12 @@ const INITIAL_EDGES: Edge[] = [
   { id: 'e3', source: 'node-route', target: 'node-ground', label: 'STANDARD' },
 ];
 
-export function ConductorWorkflowStudio() {
-  const [nodes, setNodes] = useState<Node<ConductorNodeData>[]>(INITIAL_NODES);
+export function VisualDagStudio() {
+  const [nodes, setNodes] = useState<Node<DagNodeData>[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  const onNodesChange: OnNodesChange<Node<ConductorNodeData>> = (changes) => {
+  const onNodesChange: OnNodesChange<Node<DagNodeData>> = (changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   };
 
@@ -165,3 +164,5 @@ export function ConductorWorkflowStudio() {
     </div>
   );
 }
+
+export const ConductorWorkflowStudio = VisualDagStudio;

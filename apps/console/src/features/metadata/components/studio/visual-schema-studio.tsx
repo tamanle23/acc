@@ -5,7 +5,7 @@ import { AttributePalette } from './attribute-palette';
 import { AttributePropertyInspector } from './attribute-property-inspector';
 import { DynamicFormLivePreview } from './dynamic-form-live-preview';
 import { FsmWorkflowDesigner } from './fsm-workflow-designer';
-import { ConductorWorkflowStudio } from './conductor-workflow-studio';
+import { VisualDagStudio } from './visual-dag-studio';
 import type { PaletteFieldItem } from './studio-types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -173,7 +173,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
         />
       ) : (
         /* Phase 30 Distributed Visual DAG Studio */
-        <ConductorWorkflowStudio />
+        <VisualDagStudio />
       )}
     </div>
   );

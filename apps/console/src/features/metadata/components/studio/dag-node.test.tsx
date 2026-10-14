@@ -1,12 +1,12 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ConductorWorkflowNodeComponent, type ConductorNodeData } from './conductor-node';
+import { DagWorkflowNodeComponent, type DagNodeData } from './dag-node';
 import { ReactFlowProvider } from '@xyflow/react';
 
-describe('ConductorWorkflowNodeComponent Unit Tests', () => {
+describe('DagWorkflowNodeComponent Unit Tests', () => {
   it('renders node details and execution status correctly', () => {
-    const data: ConductorNodeData = {
+    const data: DagNodeData = {
       taskReferenceName: 'checkInventory',
       taskType: 'SIMPLE',
       label: 'Inventory Check',
@@ -17,9 +17,9 @@ describe('ConductorWorkflowNodeComponent Unit Tests', () => {
 
     render(
       <ReactFlowProvider>
-        <ConductorWorkflowNodeComponent
+        <DagWorkflowNodeComponent
           id="test-node"
-          type="conductorNode"
+          type="dagNode"
           data={data}
           selected={false}
           zIndex={0}
@@ -38,7 +38,7 @@ describe('ConductorWorkflowNodeComponent Unit Tests', () => {
   });
 
   it('renders switch node with condition details', () => {
-    const data: ConductorNodeData = {
+    const data: DagNodeData = {
       taskReferenceName: 'routeShipping',
       taskType: 'SWITCH',
       label: 'Route Order',
@@ -47,9 +47,9 @@ describe('ConductorWorkflowNodeComponent Unit Tests', () => {
 
     render(
       <ReactFlowProvider>
-        <ConductorWorkflowNodeComponent
+        <DagWorkflowNodeComponent
           id="switch-node"
-          type="conductorNode"
+          type="dagNode"
           data={data}
           selected={false}
           zIndex={0}
