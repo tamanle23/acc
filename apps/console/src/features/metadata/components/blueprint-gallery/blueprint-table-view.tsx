@@ -80,10 +80,10 @@ export const BlueprintTableView: React.FC<BlueprintTableViewProps> = ({
   return (
     <div className="w-full overflow-hidden rounded-xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl shadow-md">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-left text-xs border-collapse table-fixed">
           <thead>
             <tr className="border-b border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 font-semibold text-muted-foreground uppercase tracking-wider text-[11px]">
-              <th scope="col" className="p-3 pl-4">
+              <th scope="col" className="p-2.5 pl-4 w-[28%] min-w-[180px]">
                 <button
                   type="button"
                   onClick={() => handleSort('name')}
@@ -93,20 +93,20 @@ export const BlueprintTableView: React.FC<BlueprintTableViewProps> = ({
                   {renderSortIndicator('name')}
                 </button>
               </th>
-              <th scope="col" className="p-3">
+              <th scope="col" className="p-2.5 w-[18%] min-w-[130px]">
                 <button
                   type="button"
                   onClick={() => handleSort('category')}
                   className="group flex items-center gap-1.5 hover:text-foreground transition-colors"
                 >
-                  <span>Domain Category</span>
+                  <span>Category</span>
                   {renderSortIndicator('category')}
                 </button>
               </th>
-              <th scope="col" className="p-3">
+              <th scope="col" className="p-2.5 w-[30%] min-w-[180px]">
                 <span>Description</span>
               </th>
-              <th scope="col" className="p-3 text-center">
+              <th scope="col" className="p-2.5 text-center w-[8%] min-w-[65px]">
                 <button
                   type="button"
                   onClick={() => handleSort('entityTypesCount')}
@@ -116,7 +116,7 @@ export const BlueprintTableView: React.FC<BlueprintTableViewProps> = ({
                   {renderSortIndicator('entityTypesCount')}
                 </button>
               </th>
-              <th scope="col" className="p-3 text-center">
+              <th scope="col" className="p-2.5 text-center w-[8%] min-w-[65px]">
                 <button
                   type="button"
                   onClick={() => handleSort('relationshipTypesCount')}
@@ -126,7 +126,7 @@ export const BlueprintTableView: React.FC<BlueprintTableViewProps> = ({
                   {renderSortIndicator('relationshipTypesCount')}
                 </button>
               </th>
-              <th scope="col" className="p-3 pr-4 text-right">
+              <th scope="col" className="p-2.5 pr-4 text-right w-[16%] min-w-[130px]">
                 <span>Actions</span>
               </th>
             </tr>

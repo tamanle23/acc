@@ -22,10 +22,10 @@ export const BlueprintGraphCanvas: React.FC<Props> = ({
   }
 
   // Calculate dynamic 2D positions for entity nodes in a clean DAG circle / row layout
-  const width = 640;
-  const height = 300;
-  const nodeWidth = 150;
-  const nodeHeight = 60;
+  const width = 800;
+  const height = 400;
+  const nodeWidth = 160;
+  const nodeHeight = 65;
 
   const positions: Record<string, { x: number; y: number }> = {};
   const total = entityTypes.length;
@@ -34,13 +34,13 @@ export const BlueprintGraphCanvas: React.FC<Props> = ({
     if (total === 1) {
       positions[et.systemName] = { x: width / 2 - nodeWidth / 2, y: height / 2 - nodeHeight / 2 };
     } else if (total === 2) {
-      const x = index === 0 ? 80 : width - 80 - nodeWidth;
+      const x = index === 0 ? 100 : width - 100 - nodeWidth;
       positions[et.systemName] = { x, y: height / 2 - nodeHeight / 2 };
     } else {
-      // Semi-elliptical placement
+      // Semi-elliptical placement with generous padding so nodes never get cut off
       const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
-      const radiusX = 190;
-      const radiusY = 85;
+      const radiusX = 260;
+      const radiusY = 120;
       const cx = width / 2;
       const cy = height / 2;
       positions[et.systemName] = {
@@ -51,10 +51,11 @@ export const BlueprintGraphCanvas: React.FC<Props> = ({
   });
 
   return (
-    <div className="relative w-full h-[320px] md:h-[380px] lg:h-[420px] min-h-[300px] rounded-2xl bg-slate-950/20 dark:bg-slate-950/50 backdrop-blur-md border border-white/20 dark:border-white/10 overflow-hidden shadow-inner flex items-center justify-center">
+    <div className="relative w-full h-[280px] md:h-[340px] rounded-2xl bg-slate-950/20 dark:bg-slate-950/50 backdrop-blur-md border border-white/20 dark:border-white/10 overflow-hidden shadow-inner flex items-center justify-center">
       {/* SVG Canvas for Relationship Edges */}
       <svg
         viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
         className="absolute inset-0 w-full h-full pointer-events-none"
       >
         <defs>

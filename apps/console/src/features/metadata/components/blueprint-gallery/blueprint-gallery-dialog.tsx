@@ -177,7 +177,12 @@ export const BlueprintGalleryDialog: React.FC = () => {
           </div>
 
           {/* Dynamic Catalog View Container */}
-          <div className="flex-1 min-h-0 overflow-y-auto mt-2 pr-1">
+          <div
+            className={cn(
+              'flex-1 min-h-0 mt-2 pr-1',
+              layoutMode === 'split' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+            )}
+          >
             {isLoading ? (
               <div className="flex flex-col items-center justify-center p-16 gap-3 text-muted-foreground">
                 <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />

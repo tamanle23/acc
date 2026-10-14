@@ -57,9 +57,9 @@ export const BlueprintSplitView: React.FC<BlueprintSplitViewProps> = ({
   const relationshipTypes = blueprintDetails?.relationshipTypes || [];
 
   return (
-    <div className="flex flex-col md:flex-row flex-1 h-full min-h-[520px] rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-lg">
-      {/* Left Master Rail (30% Width on desktop) */}
-      <div className="w-full md:w-[32%] lg:w-[28%] flex flex-col border-b md:border-b-0 md:border-r border-white/20 dark:border-white/10 bg-white/20 dark:bg-slate-900/20 shrink-0">
+    <div className="flex flex-col md:flex-row flex-1 min-h-0 h-full rounded-2xl border border-white/20 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-lg">
+      {/* Left Master Rail */}
+      <div className="w-full md:w-[32%] lg:w-[28%] flex flex-col border-b md:border-b-0 md:border-r border-white/20 dark:border-white/10 bg-white/20 dark:bg-slate-900/20 shrink-0 min-h-0">
         <div className="p-3 border-b border-white/10 flex items-center justify-between shrink-0">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Templates ({blueprints.length})

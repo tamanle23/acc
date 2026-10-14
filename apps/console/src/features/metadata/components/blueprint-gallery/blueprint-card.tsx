@@ -44,7 +44,7 @@ export const BlueprintCard: React.FC<Props> = ({
 
   return (
     <div
-      className={`group relative p-5 rounded-2xl flex flex-col justify-between transition-all duration-300
+      className={`group relative p-4 sm:p-5 rounded-2xl flex flex-col justify-between transition-all duration-300 min-w-0 overflow-hidden
         backdrop-blur-xl border 
         ${
           isSelected
@@ -53,12 +53,12 @@ export const BlueprintCard: React.FC<Props> = ({
         }
       `}
     >
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
             <IconComponent className="w-5 h-5" />
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 flex-wrap justify-end shrink-0">
             <Badge variant="secondary" className="text-[10px] font-mono px-2 py-0.5">
               {blueprint.entityTypesCount} Models
             </Badge>
@@ -68,10 +68,15 @@ export const BlueprintCard: React.FC<Props> = ({
           </div>
         </div>
 
-        <h4 className="mt-3.5 font-bold text-slate-900 dark:text-white text-base tracking-tight">
+        <h4 className="mt-3 font-bold text-slate-900 dark:text-white text-base tracking-tight truncate" title={blueprint.name}>
           {blueprint.name}
         </h4>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+        <div className="mt-0.5 mb-1.5">
+          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+            {blueprint.category}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed" title={blueprint.description}>
           {blueprint.description}
         </p>
       </div>
