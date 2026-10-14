@@ -77,6 +77,16 @@ public record WorkflowDefinition(
             return this;
         }
 
+        public Builder addTask(TaskDefinition task) {
+            if (this.tasks == null || this.tasks.isEmpty()) {
+                this.tasks = new java.util.ArrayList<>();
+            } else if (!(this.tasks instanceof java.util.ArrayList)) {
+                this.tasks = new java.util.ArrayList<>(this.tasks);
+            }
+            this.tasks.add(task);
+            return this;
+        }
+
         public Builder layoutMetadata(Map<String, Object> layoutMetadata) {
             this.layoutMetadata = layoutMetadata;
             return this;

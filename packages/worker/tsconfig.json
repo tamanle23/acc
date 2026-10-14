@@ -1,0 +1,9 @@
+{
+  "extends": "@unipost/typescript-config/base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}
