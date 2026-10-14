@@ -145,13 +145,13 @@ export const sandboxWorkspaceRepository = new SandboxWorkspaceRepository();
 export const workspaceSandboxHandler: SandboxRouteHandler = {
   id: 'workspace-sandbox-handler',
   name: 'Unified Workspace Engine',
-  matcher: (req: SandboxRequest) => {
-    return req.url.startsWith('/api/v1/workspaces');
+  matcher: (ctx) => {
+    return ctx.pathname.startsWith('/api/v1/workspaces') || ctx.url.startsWith('/api/v1/workspaces');
   },
-  handler: async (req: SandboxRequest) => {
+  handler: async (req: SandboxRequest, ctx) => {
     const activeTenantId = useSandboxStore.getState().activeTenantId || 'tenant-acme';
     const method = req.method.toUpperCase();
-    const url = req.url.split('?')[0];
+    const url = (ctx?.pathname || req.url).split('?')[0];
 
     // 1. GET /api/v1/workspaces
     if (method === 'GET' && url === '/api/v1/workspaces') {
@@ -169,7 +169,7 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
     // 2. POST /api/v1/workspaces
     if (method === 'POST' && url === '/api/v1/workspaces') {
       try {
-        const payload = req.body || {};
+        const payload = req.data || (req as any).body || {};
         const created = sandboxWorkspaceRepository.create(activeTenantId, payload);
         return {
           status: 201,
