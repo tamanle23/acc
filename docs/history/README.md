@@ -206,5 +206,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`191`](191_master_integration_plan_iteration2_phase1_scripting_frameworks.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 1: Narrative Scripting Frameworks (Option B) | Built IScriptingFrameworkStrategy, 6 concrete narrative strategies, ScriptingFrameworkRegistry, and integrated with PipelineIRBuilder and AutoConfigEngineFacade |
 | [`192`](192_formalize_option_b_pure_history_archival.md) | 2026-10-14 | Formalize Option B: Pure History Archival & Deprecate Per-Phase Micro-Backlogs | Updated Rule 04, Rule 01, and master rules reference to eliminate redundant per-phase micro-backlogs |
 | [`193`](193_master_integration_plan_iteration2_phase2_hardware_encoders.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 2: Hardware Accelerated Encoders (Option C) | Implemented dynamic GPU hardware encoder resolver (NVENC, VideoToolbox, VAAPI, QSV, AMF) with libx264 fallback, GpuVideoEncodingStrategy, and zero-alloc FFI encoding |
+| [`194`](194_master_integration_plan_iteration2_phase3_hardware_benchmarking.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 3: Hardware Benchmarking & Optimization | Validated CPU vs NVENC throughput, memory RSS stability, container demuxing, concurrent multi-chunk encoding, and byte parity |
+
 
 
