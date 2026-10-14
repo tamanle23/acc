@@ -9,7 +9,7 @@ import {
 import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions, fileExists } from '@acc/core';
 
 export interface CliOptions {
-  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render';
+  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render' | 'studio';
   pipelineId?: string;
   configPath?: string;
   outDir?: string;
@@ -48,7 +48,7 @@ export function parseCliArgs(args: string[]): CliOptions {
   const firstArg = args[0].toLowerCase();
   let startIndex = 0;
 
-  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'ir-render', 'help', '--help', '-h'].includes(firstArg)) {
+  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'ir-render', 'studio', 'help', '--help', '-h'].includes(firstArg)) {
     if (firstArg === '--help' || firstArg === '-h') {
       options.command = 'help';
     } else {
@@ -400,6 +400,14 @@ export async function run(customArgs?: string[]): Promise<any> {
       });
       return { success: true, command: 'ir-render' };
     }
+    if (options.command === 'studio') {
+      const { handleStudioCommand } = await import('./commands/studio');
+      const studio = await handleStudioCommand({
+        input: options.configPath || rawArgs[1] || './sample-story',
+        port: options.port || 3300,
+      });
+      return { success: true, command: 'studio', serverUrl: studio.getUrl() };
+    }
     if (options.command === 'stream') {
       if (!options.rtmpUrl) {
         Logger.error('ACC-CLI', 'Error: --rtmp <url> is required for stream command.');
@@ -438,6 +446,7 @@ export async function run(customArgs?: string[]): Promise<any> {
     message: 'ACC CLI command:',
     options: [
       { label: 'Run', value: 'run', hint: 'Execute a canonical pipeline (scraper, db, repurposing, story, rule, ambient)' },
+      { label: 'Studio', value: 'studio', hint: 'Launch interactive Web/UI Studio preview server with live playhead scrubbing' },
       { label: 'IR-Render', value: 'ir-render', hint: 'Render directly from a Video IR v3.1 AST document or story folder' },
       { label: 'Stream', value: 'stream', hint: 'Stream live video output to RTMP ingestion endpoint' },
       { label: 'Overlay', value: 'overlay', hint: 'Generate dynamic canvas procedural visual lower thirds or overlays' },
@@ -451,6 +460,23 @@ export async function run(customArgs?: string[]): Promise<any> {
   }
 
   switch (commandSelection) {
+    case 'studio': {
+      const configLocation = await text({
+        message: 'Please enter the path to your Video IR document or story folder:',
+        placeholder: './sample-story',
+        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ''),
+      });
+      if (isCancel(configLocation)) {
+        cancel('Operation cancelled.');
+        process.exit(0);
+      }
+      const { handleStudioCommand } = await import('./commands/studio');
+      const studio = await handleStudioCommand({
+        input: configLocation,
+        port: options.port || 3300,
+      });
+      return { success: true, command: 'studio', serverUrl: studio.getUrl() };
+    }
     case 'ir-render': {
       const configLocation = await text({
         message: 'Please enter the path to your Video IR document or story folder:',
