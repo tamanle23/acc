@@ -127,6 +127,12 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
   }, [initialStates]);
 
   const initialEdges: Edge<FsmEdgeData>[] = useMemo(() => {
+    // Map state indices for topological direction comparison
+    const stateIndexMap: Record<string, number> = {};
+    initialStates.forEach((s, idx) => {
+      stateIndexMap[s.id] = idx;
+    });
+
     // Group transitions by pair of nodes to offset parallel multi-actions cleanly
     const pairGroups: Record<string, FsmTransitionEdge[]> = {};
     initialTransitions.forEach((t) => {
@@ -139,10 +145,36 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     Object.values(pairGroups).forEach((group) => {
       const multiTotal = group.length;
       group.forEach((t, multiIndex) => {
+        const srcIdx = stateIndexMap[t.sourceState] ?? 0;
+        const tgtIdx = stateIndexMap[t.targetState] ?? 0;
+        const isBackward = tgtIdx < srcIdx;
+        const isSelfLoop = tgtIdx === srcIdx;
+
+        // Choose dedicated source & target handle ports
+        let sourceHandle = 'source-right';
+        let targetHandle = 'target-left';
+
+        if (isSelfLoop) {
+          sourceHandle = 'source-top';
+          targetHandle = 'target-top';
+        } else if (isBackward) {
+          // Rejections / rollbacks route via bottom handles
+          sourceHandle = 'source-bottom';
+          targetHandle = 'target-bottom';
+        } else if (multiTotal > 1) {
+          // Parallel forward paths spread across handles
+          if (multiIndex % 2 === 1) {
+            sourceHandle = 'source-top';
+            targetHandle = 'target-top';
+          }
+        }
+
         result.push({
           id: t.id,
           source: t.sourceState,
           target: t.targetState,
+          sourceHandle,
+          targetHandle,
           type: 'fsmTransition',
           data: {
             ...t,
@@ -155,7 +187,7 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     });
 
     return result;
-  }, [initialTransitions]);
+  }, [initialStates, initialTransitions]);
 
   const [nodes, setNodes] = useState<Node<FsmNodeData>[]>(initialNodes);
   const [edges, setEdges] = useState<Edge<FsmEdgeData>[]>(initialEdges);

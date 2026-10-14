@@ -25,13 +25,33 @@ export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNode
         'cursor-grab active:cursor-grabbing'
       )}
     >
-      {/* Target handle (Left) */}
+      {/* 4-Way Ingress / Target Handles */}
+      {/* Top Target Handle */}
       <Handle
         type="target"
+        id="target-top"
+        position={Position.Top}
+        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -top-1.5 transition-transform hover:scale-150 shadow-xs"
+        title="Incoming top connection"
+      />
+      {/* Left Target Handle (Main) */}
+      <Handle
+        type="target"
+        id="target-left"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -left-1.5 transition-transform hover:scale-150 shadow-xs"
+        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -left-1.5 transition-transform hover:scale-150 shadow-xs"
+        title="Incoming forward connection"
+      />
+      {/* Bottom Target Handle */}
+      <Handle
+        type="target"
+        id="target-bottom"
+        position={Position.Bottom}
+        className="!w-2.5 !h-2.5 !bg-sky-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -bottom-1.5 transition-transform hover:scale-150 shadow-xs"
+        title="Incoming return/rejection connection"
       />
 
+      {/* State Node Content */}
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           <span
@@ -63,11 +83,30 @@ export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNode
         </span>
       </div>
 
-      {/* Source handle (Right) */}
+      {/* 4-Way Egress / Source Handles */}
+      {/* Top Source Handle (for loops or high loops) */}
       <Handle
         type="source"
+        id="source-top"
+        position={Position.Top}
+        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -top-1.5 left-3/4 transition-transform hover:scale-150 shadow-xs"
+        title="Outgoing loop connection"
+      />
+      {/* Right Source Handle (Main forward) */}
+      <Handle
+        type="source"
+        id="source-right"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -right-1.5 transition-transform hover:scale-150 shadow-xs"
+        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -right-1.5 transition-transform hover:scale-150 shadow-xs"
+        title="Outgoing forward connection"
+      />
+      {/* Bottom Source Handle (for rejections, rollbacks, fast-tracks) */}
+      <Handle
+        type="source"
+        id="source-bottom"
+        position={Position.Bottom}
+        className="!w-2.5 !h-2.5 !bg-indigo-400 !border-2 !border-white dark:!border-slate-900 !rounded-full -bottom-1.5 left-1/4 transition-transform hover:scale-150 shadow-xs"
+        title="Outgoing return/rejection connection"
       />
     </div>
   );
