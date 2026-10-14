@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Code, Search, Layers, Sparkles, LayoutPanelTop, List } from 'lucide-react';
 import { VisualSchemaStudio } from '../studio';
+import { useTenantBilling } from '../../api/use-billing';
 
 interface Props {
   entityTypeId: string | number;
@@ -77,6 +78,11 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
     );
   }
 
+  const { data: billing } = useTenantBilling();
+  const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
+  const isSovereignRoot = activeTenantId === 'SYSTEM' || billing?.quotas?.maxSchemas === -1;
+  const isFieldQuotaExceeded = !isSovereignRoot && attributes.length >= 100;
+
   return (
     <div className="space-y-6 w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
       {/* Schema Header & Action Bar */}
@@ -87,11 +93,17 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
               {entityType ? entityType.name : 'Entity'} Schema
             </h2>
             <Badge 
-              variant={attributes.length >= 100 ? "destructive" : "secondary"} 
+              variant={isFieldQuotaExceeded ? "destructive" : "secondary"} 
               className="px-2 py-0.5 text-xs font-semibold"
-              title={attributes.length >= 100 ? "Maximum limit of 100 attributes reached" : `${attributes.length} of 100 attributes used`}
+              title={
+                isSovereignRoot
+                  ? `Unlimited attributes permitted (${attributes.length} defined)`
+                  : isFieldQuotaExceeded
+                  ? "Maximum limit of 100 attributes reached"
+                  : `${attributes.length} of 100 attributes used`
+              }
             >
-              {attributes.length}/100 Fields
+              {attributes.length}/{isSovereignRoot ? '∞' : '100'} Fields
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -142,9 +154,9 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
           <Button
             size="sm"
             onClick={openCreateAttributeDialog}
-            disabled={attributes.length >= 100}
+            disabled={isFieldQuotaExceeded}
             className="h-9 gap-1.5 text-xs shadow-md shadow-primary/20 disabled:opacity-50"
-            title={attributes.length >= 100 ? "Maximum limit of 100 attributes reached for this model" : "Add Field"}
+            title={isFieldQuotaExceeded ? "Maximum limit of 100 attributes reached for this model" : "Add Field"}
           >
             <Plus className="h-4 w-4" />
             <span>Add Field</span>

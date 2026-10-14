@@ -201,12 +201,19 @@ export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
   },
 
   canManageSchema: () => {
-    const { currentUserRole, workspaceMode } = get();
+    const { currentUserRole, workspaceMode, activeTenantId } = get();
+    // Sovereign root custodian (SYSTEM tenant) possesses absolute schema authority unconditionally
+    if (activeTenantId === 'SYSTEM') {
+      return true;
+    }
     return currentUserRole === 'TENANT_ADMIN' && workspaceMode === 'architect';
   },
 
   canMutateRecords: () => {
-    const { currentUserRole } = get();
+    const { currentUserRole, activeTenantId } = get();
+    if (activeTenantId === 'SYSTEM') {
+      return true;
+    }
     return currentUserRole !== 'TENANT_VIEWER';
   },
 

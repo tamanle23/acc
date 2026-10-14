@@ -33,7 +33,9 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Infinity as InfinityIcon,
 } from 'lucide-react';
+import { useTenantBilling } from '../../api/use-billing';
 import { cn } from '@/lib/utils';
 
 export const EntityTypeSidebar: React.FC = () => {
@@ -84,6 +86,11 @@ export const EntityTypeSidebar: React.FC = () => {
     }
   }, [selectedEntityTypeId, entityTypes, setSelectedEntityTypeId]);
 
+  const { data: billing } = useTenantBilling();
+  const maxSchemas = billing?.quotas?.maxSchemas ?? 50;
+  const isUnlimitedSchemas = maxSchemas === -1;
+  const isQuotaExceeded = !isUnlimitedSchemas && totalElements >= maxSchemas;
+
   return (
     <aside aria-label="Entity Models Rail" className="w-full lg:w-76 shrink-0 flex flex-col gap-3 p-4 rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 min-h-0 overflow-hidden">
       {/* Header */}
@@ -92,11 +99,23 @@ export const EntityTypeSidebar: React.FC = () => {
           <Database className="h-5 w-5 text-primary shrink-0" />
           <h2 className="font-bold text-foreground text-sm tracking-tight truncate">Entity Models</h2>
           <Badge 
-            variant={totalElements >= 50 ? "destructive" : "secondary"} 
-            className="text-[10px] h-5 px-1.5 font-mono shrink-0"
-            title={totalElements >= 50 ? "Maximum limit of 50 models reached" : `${totalElements} of 50 models used`}
+            variant={isQuotaExceeded ? "destructive" : "secondary"} 
+            className="text-[10px] h-5 px-1.5 font-mono shrink-0 flex items-center gap-0.5"
+            title={
+              isUnlimitedSchemas
+                ? `Unlimited models tier (${totalElements} active)`
+                : isQuotaExceeded
+                ? `Maximum limit of ${maxSchemas} models reached`
+                : `${totalElements} of ${maxSchemas} models used`
+            }
           >
-            {totalElements}/50
+            <span>{totalElements}</span>
+            <span>/</span>
+            {isUnlimitedSchemas ? (
+              <InfinityIcon className="h-3 w-3 inline text-emerald-500" />
+            ) : (
+              <span>{maxSchemas}</span>
+            )}
           </Badge>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -115,9 +134,9 @@ export const EntityTypeSidebar: React.FC = () => {
                 size="sm"
                 variant="outline"
                 onClick={openBlueprintGallery}
-                disabled={totalElements >= 50}
-                className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700"
-                title="Browse Domain Blueprint Catalog"
+                disabled={isQuotaExceeded}
+                className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50"
+                title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Browse Domain Blueprint Catalog"}
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Templates</span>
@@ -126,9 +145,9 @@ export const EntityTypeSidebar: React.FC = () => {
                 size="sm"
                 variant="outline"
                 onClick={openCreateEntityTypeDialog}
-                disabled={totalElements >= 50}
+                disabled={isQuotaExceeded}
                 className="h-8 px-2 gap-1 text-xs bg-white/40 dark:bg-white/5 border-white/20 shrink-0 disabled:opacity-50"
-                title={totalElements >= 50 ? "Workspace model quota reached (max 50 models)" : "Create New Entity Model"}
+                title={isQuotaExceeded ? `Model quota reached (${maxSchemas} max)` : "Create New Entity Model"}
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>New</span>
