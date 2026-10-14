@@ -68,7 +68,95 @@ import {
   ShieldAlert,
   Play,
   CheckCircle2,
+  Send,
+  Check,
+  Zap,
+  PauseCircle,
+  Archive,
+  Ban,
+  RotateCcw,
+  Rocket,
+  ShieldCheck,
+  ArrowRight,
 } from 'lucide-react';
+
+/**
+ * Returns contextual icon and Liquid Glass styling for FSM transition actions.
+ */
+function getTransitionActionVisual(action: string, targetState: string) {
+  const normAction = action.toUpperCase();
+  const normTarget = targetState.toUpperCase();
+
+  if (normAction.includes('SUBMIT') || normAction.includes('SEND')) {
+    return {
+      icon: Send,
+      iconClass: 'text-sky-500 dark:text-sky-400',
+      badgeClass: 'bg-sky-500/10 text-sky-600 dark:text-sky-300 border-sky-500/20',
+    };
+  }
+  if (normAction.includes('APPROVE') || normAction.includes('VERIFY') || normAction.includes('VALIDATE')) {
+    return {
+      icon: ShieldCheck,
+      iconClass: 'text-emerald-500 dark:text-emerald-400',
+      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20',
+    };
+  }
+  if (normAction.includes('ACTIVATE') || normAction.includes('PROVISION') || normAction.includes('DEPLOY') || normAction.includes('PUBLISH')) {
+    return {
+      icon: Rocket,
+      iconClass: 'text-indigo-500 dark:text-indigo-400',
+      badgeClass: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20',
+    };
+  }
+  if (normAction.includes('ENFORCE') || normAction.includes('STAGE')) {
+    return {
+      icon: Zap,
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20',
+    };
+  }
+  if (normAction.includes('SUSPEND') || normAction.includes('PAUSE') || normAction.includes('HOLD')) {
+    return {
+      icon: PauseCircle,
+      iconClass: 'text-amber-500 dark:text-amber-400',
+      badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20',
+    };
+  }
+  if (normAction.includes('REACTIVATE') || normAction.includes('RESUME') || normAction.includes('REINSTATE') || normAction.includes('REOPEN') || normAction.includes('REVERT')) {
+    return {
+      icon: RotateCcw,
+      iconClass: 'text-teal-500 dark:text-teal-400',
+      badgeClass: 'bg-teal-500/10 text-teal-600 dark:text-teal-300 border-teal-500/20',
+    };
+  }
+  if (normAction.includes('ARCHIVE') || normAction.includes('RETIRE') || normAction.includes('DEPRECATE')) {
+    return {
+      icon: Archive,
+      iconClass: 'text-purple-500 dark:text-purple-400',
+      badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20',
+    };
+  }
+  if (normAction.includes('REJECT') || normAction.includes('CANCEL') || normAction.includes('CLOSE') || normAction.includes('TERMINATE') || normAction.includes('DECOMMISSION')) {
+    return {
+      icon: Ban,
+      iconClass: 'text-rose-500 dark:text-rose-400',
+      badgeClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/20',
+    };
+  }
+  if (normTarget.includes('ACTIVE') || normTarget.includes('APPROVED')) {
+    return {
+      icon: Check,
+      iconClass: 'text-emerald-500 dark:text-emerald-400',
+      badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20',
+    };
+  }
+
+  return {
+    icon: Play,
+    iconClass: 'text-primary',
+    badgeClass: 'bg-primary/10 text-primary border-primary/20',
+  };
+}
 
 interface Props {
   entityTypeId: string | number;
@@ -469,29 +557,45 @@ export const EntityDataGrid: React.FC<Props> = ({
                         <Play className="h-3.5 w-3.5" />
                         <span>FSM Transition</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="text-xs min-w-[170px]">
+                      <DropdownMenuSubContent className="text-xs min-w-[200px] p-1.5 space-y-0.5">
                         {availableTransitions.length > 0 ? (
-                          availableTransitions.map((t) => (
-                            <DropdownMenuItem
-                              key={t.action}
-                              disabled={transitionMutation.isPending}
-                              onClick={() =>
-                                handleRecordTransition(row.original.id, t.action, t.to)
-                              }
-                              className="gap-2 cursor-pointer"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                              <div className="flex flex-col">
-                                <span className="font-semibold">{t.action}</span>
-                                <span className="text-[10px] text-muted-foreground">
-                                  to {t.to}
+                          availableTransitions.map((t) => {
+                            const visual = getTransitionActionVisual(t.action, t.to);
+                            const ActionIcon = visual.icon;
+
+                            return (
+                              <DropdownMenuItem
+                                key={t.action}
+                                disabled={transitionMutation.isPending}
+                                onClick={() =>
+                                  handleRecordTransition(row.original.id, t.action, t.to)
+                                }
+                                className="group flex items-center justify-between gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg hover:bg-accent/80 transition-colors"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={cn('p-1 rounded-md bg-muted/60 shrink-0 group-hover:scale-105 transition-transform', visual.iconClass)}>
+                                    <ActionIcon className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-semibold text-foreground tracking-tight text-xs leading-none">
+                                      {t.action}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                      <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/60 shrink-0" />
+                                      <span className="truncate">{t.to}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className={cn('px-1.5 py-0.5 rounded text-[9px] font-mono border shrink-0', visual.badgeClass)}>
+                                  {t.to}
                                 </span>
-                              </div>
-                            </DropdownMenuItem>
-                          ))
+                              </DropdownMenuItem>
+                            );
+                          })
                         ) : (
-                          <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
-                            No transitions from '{currentState}'
+                          <div className="px-2.5 py-2 text-[11px] text-muted-foreground italic flex items-center gap-1.5">
+                            <Ban className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                            <span>No transitions from '{currentState}'</span>
                           </div>
                         )}
                       </DropdownMenuSubContent>
