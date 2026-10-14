@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
   Position,
+  Panel,
   applyNodeChanges,
   applyEdgeChanges,
   type Node,
@@ -12,12 +13,14 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type OnSelectionChangeParams,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import type { FsmStateNode, FsmTransitionEdge, FsmWorkflowDefinition } from './studio-types';
-import { FsmStateNodeComponent, type FsmNodeData } from './fsm-state-node';
+import { FsmStateNodeComponent, type FsmNodeData, type DynamicHandleConfig } from './fsm-state-node';
 import { FsmTransitionEdgeComponent, type FsmEdgeData } from './fsm-transition-edge';
-import { GitFork, Zap } from 'lucide-react';
+import { GitFork, Zap, Sparkles, RotateCw, LayoutGrid, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -288,10 +291,80 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     return result;
   }, [initialTransitions]);
 
+  const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<FsmNodeData>, Edge<FsmEdgeData>> | null>(null);
+  const [layoutMode, setLayoutMode] = useState<'dag' | 'stagger' | 'compact'>('stagger');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Layout algorithm: computes coordinates based on selected layout mode
+  const computeLayoutCoordinates = useCallback(
+    (
+      states: FsmStateNode[],
+      mode: 'dag' | 'stagger' | 'compact'
+    ): Record<string, { x: number; y: number }> => {
+      const positions: Record<string, { x: number; y: number }> = {};
+      const total = states.length;
+
+      states.forEach((state, index) => {
+        if (mode === 'dag') {
+          // Linear DAG horizontal flow with generous spacing for smooth edge arcs
+          positions[state.id] = {
+            x: 80 + index * 260,
+            y: 160,
+          };
+        } else if (mode === 'stagger') {
+          // Staggered horizontal flow to create natural breathing space for parallel actions
+          positions[state.id] = {
+            x: 80 + index * 240,
+            y: index % 2 === 0 ? 110 : 210,
+          };
+        } else if (mode === 'compact') {
+          // Compact 2D Grid / Matrix layout (e.g. 3 columns per row)
+          const cols = Math.min(3, Math.max(2, Math.ceil(Math.sqrt(total))));
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          positions[state.id] = {
+            x: 80 + col * 280,
+            y: 90 + row * 160,
+          };
+        }
+      });
+
+      return positions;
+    },
+    []
+  );
+
   const [nodes, setNodes] = useState<Node<FsmNodeData>[]>(initialNodes);
   const [edges, setEdges] = useState<Edge<FsmEdgeData>[]>(initialEdges);
   const [selectedTransitionId, setSelectedTransitionId] = useState<string>(
     initialTransitions[0]?.id || ''
+  );
+
+  // Force Refresh / Beautiful Auto Layout function
+  const handleForceAutoLayout = useCallback(
+    (modeToApply: 'dag' | 'stagger' | 'compact' = layoutMode) => {
+      setIsRefreshing(true);
+      const coords = computeLayoutCoordinates(initialStates, modeToApply);
+
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => {
+          const newPos = coords[node.id];
+          return newPos ? { ...node, position: { ...newPos } } : node;
+        })
+      );
+
+      // Smoothly re-fit the viewport to center all nodes and edges beautifully
+      setTimeout(() => {
+        if (reactFlowInstanceRef.current) {
+          reactFlowInstanceRef.current.fitView({
+            padding: 0.28,
+            duration: 600,
+          });
+        }
+        setIsRefreshing(false);
+      }, 50);
+    },
+    [layoutMode, computeLayoutCoordinates, initialStates]
   );
 
   const onNodesChange: OnNodesChange<Node<FsmNodeData>> = useCallback(
@@ -334,7 +407,7 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
     <div className="flex flex-col gap-4">
       {/* React Flow Visual Canvas Area */}
       <div className="relative w-full h-[520px] rounded-3xl bg-white/40 dark:bg-slate-950/60 backdrop-blur-2xl border border-white/40 dark:border-white/10 overflow-hidden shadow-2xl shadow-black/5 dark:shadow-black/40 flex flex-col">
-        {/* Canvas Toolbar Badge */}
+        {/* Canvas Toolbar Header */}
         <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
           <Badge className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-foreground border border-white/50 dark:border-white/15 px-3 py-1.5 text-xs font-semibold gap-2 shadow-md shadow-black/5 pointer-events-auto">
             <Zap className="h-3.5 w-3.5 text-amber-500" />
@@ -346,11 +419,91 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
           </span>
         </div>
 
+        {/* Top-Right Glass Auto Layout Action Bar */}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 pointer-events-auto">
+          {/* Layout Mode Selector */}
+          <div className="flex items-center p-1 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/40 dark:border-white/15 shadow-md shadow-black/5 gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setLayoutMode('stagger');
+                handleForceAutoLayout('stagger');
+              }}
+              title="Staggered Flow (Alternating breathing space)"
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer',
+                layoutMode === 'stagger'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50'
+              )}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>Staggered</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLayoutMode('dag');
+                handleForceAutoLayout('dag');
+              }}
+              title="Horizontal Linear DAG Flow"
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer',
+                layoutMode === 'dag'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50'
+              )}
+            >
+              <GitFork className="h-3.5 w-3.5" />
+              <span>Linear DAG</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLayoutMode('compact');
+                handleForceAutoLayout('compact');
+              }}
+              title="Compact Matrix Grid"
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer',
+                layoutMode === 'compact'
+                  ? 'bg-primary text-primary-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-slate-800/50'
+              )}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span>Compact</span>
+            </button>
+          </div>
+
+          {/* Force Refresh Layout Button */}
+          <Button
+            type="button"
+            variant="glass"
+            size="sm"
+            onClick={() => handleForceAutoLayout(layoutMode)}
+            disabled={isRefreshing}
+            className="h-8 px-3 rounded-xl border border-white/50 dark:border-white/15 bg-white/85 dark:bg-slate-900/85 hover:bg-white dark:hover:bg-slate-900 text-foreground shadow-md shadow-black/5 gap-1.5 font-semibold text-xs active:scale-95 transition-all"
+          >
+            <RotateCw
+              className={cn(
+                'h-3.5 w-3.5 text-sky-500 transition-transform duration-500',
+                isRefreshing && 'animate-spin text-primary'
+              )}
+            />
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <span>Auto Layout</span>
+          </Button>
+        </div>
+
         {/* React Flow Canvas */}
         <div className="w-full h-full">
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            onInit={(instance) => {
+              reactFlowInstanceRef.current = instance;
+            }}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onEdgeClick={(_, edge) => setSelectedTransitionId(edge.id)}
@@ -358,7 +511,7 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
-            fitViewOptions={{ padding: 0.25 }}
+            fitViewOptions={{ padding: 0.28 }}
             defaultEdgeOptions={{
               type: 'fsmTransition',
             }}

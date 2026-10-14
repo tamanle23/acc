@@ -124,5 +124,23 @@ describe('Phase 22: Visual Schema & State Machine (FSM) Workflow Studio', () => 
       expect(screen.getByDisplayValue("attributes['total_amount'] < 50000")).toBeDefined();
       expect(screen.getByDisplayValue('NOTIFICATION_DISPATCH')).toBeDefined();
     });
+
+    it('renders Auto Layout controls and responds to Force Refresh button click', () => {
+      render(<FsmWorkflowDesigner entityTypeName="PurchaseOrder" />);
+
+      // Verify layout controls rendered
+      expect(screen.getByText('Staggered')).toBeDefined();
+      expect(screen.getByText('Linear DAG')).toBeDefined();
+      expect(screen.getByText('Compact')).toBeDefined();
+      const autoLayoutBtn = screen.getByRole('button', { name: /Auto Layout/i });
+      expect(autoLayoutBtn).toBeDefined();
+
+      // Trigger force auto layout
+      fireEvent.click(autoLayoutBtn);
+
+      // Switch to Linear DAG layout mode
+      const dagBtn = screen.getByText('Linear DAG');
+      fireEvent.click(dagBtn);
+    });
   });
 });
