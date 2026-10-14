@@ -49,11 +49,11 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
-  const effectiveTenantId = isAssumed
+  const effectiveTenantId: string = (isAssumed
     ? assumedTenant
     : isSovereign
     ? 'SYSTEM'
-    : (useMetadataUiStore.getState().activeTenantId || 'tenant-acme')
+    : (useMetadataUiStore.getState().activeTenantId || 'tenant-acme')) || 'tenant-acme'
   const tenantWorkspaces = availableProfiles.filter((p) => p.tenantId === effectiveTenantId)
   const isOrphanedTenant = !isSovereign && tenantWorkspaces.length === 0
 

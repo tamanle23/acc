@@ -16,6 +16,7 @@ import {
 import { useSpringAuthStore } from '../../spring-auth/store';
 import { useMetadataUiStore } from '../../metadata/store/use-metadata-ui-store';
 import { BlueprintCard } from '../../metadata/components/blueprint-gallery/blueprint-card';
+import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
 import { useNavigate } from '@tanstack/react-router';
 import { useProfileStore } from '@/stores/profile-store';
 import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Mail, Key, Layers, LayoutGrid } from 'lucide-react';
@@ -134,7 +135,7 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
       onClose();
 
       // 3. Smooth transition redirect into metadata studio
-      navigate({ to: '/_authenticated/metadata/' });
+      navigate({ to: '/_authenticated/metadata/' as any });
     } catch (err: any) {
       toast.error('Khởi tạo workspace thất bại. Vui lòng thử lại.');
     } finally {

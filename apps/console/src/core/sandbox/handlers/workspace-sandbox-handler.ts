@@ -1,4 +1,4 @@
-import type { SandboxRouteHandler, SandboxRequest } from '../types';
+import type { SandboxRouteHandler, SandboxRequest, SandboxRouteMatcherContext } from '../types';
 import { useSandboxStore } from '../store/sandbox-store';
 
 export interface SandboxWorkspaceRecord {
@@ -145,10 +145,10 @@ export const sandboxWorkspaceRepository = new SandboxWorkspaceRepository();
 export const workspaceSandboxHandler: SandboxRouteHandler = {
   id: 'workspace-sandbox-handler',
   name: 'Unified Workspace Engine',
-  matcher: (req: SandboxRequest) => {
-    return req.url.startsWith('/api/v1/workspaces');
+  matcher: (ctx: SandboxRouteMatcherContext) => {
+    return ctx.pathname.startsWith('/api/v1/workspaces');
   },
-  handler: async (req: SandboxRequest) => {
+  handler: async (req: SandboxRequest, _ctx: SandboxRouteMatcherContext) => {
     const activeTenantId = useSandboxStore.getState().activeTenantId || 'tenant-acme';
     const method = req.method.toUpperCase();
     const url = req.url.split('?')[0];
@@ -169,7 +169,7 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
     // 2. POST /api/v1/workspaces
     if (method === 'POST' && url === '/api/v1/workspaces') {
       try {
-        const payload = req.body || {};
+        const payload = req.data || {};
         const created = sandboxWorkspaceRepository.create(activeTenantId, payload);
         return {
           status: 201,
@@ -239,6 +239,12 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    return null;
+    return {
+      status: 404,
+      data: {
+        code: 'NOT_FOUND',
+        message: 'Endpoint not found in sandbox workspace handler',
+      },
+    };
   },
 };

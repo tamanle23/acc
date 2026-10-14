@@ -303,6 +303,12 @@ export const billingSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    return null;
+    return {
+      status: 404,
+      data: {
+        code: 'NOT_FOUND',
+        message: 'Endpoint not found in billing sandbox handler',
+      },
+    };
   },
 };

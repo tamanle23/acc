@@ -116,6 +116,16 @@ export function SandboxDock() {
     }
   };
 
+  const expireAccessToken = () => {
+    useSpringAuthStore.setState({ accessToken: 'expired_access_token' });
+    toast.info('Access Token expired manually (silent refresh test)');
+  };
+
+  const expireRefreshToken = () => {
+    useSpringAuthStore.setState({ accessToken: null, refreshToken: null, isAuthenticated: false });
+    toast.info('Refresh Token expired manually (hard logout test)');
+  };
+
   const handleHardLogout = async () => {
     try {
       await springApiClient.post('/auth/logout');

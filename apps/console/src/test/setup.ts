@@ -1,11 +1,14 @@
 // vitest setup file
 import '@testing-library/dom';
+import 'vitest-axe/extend-expect';
 import { expect } from 'vitest';
+import * as matchers from 'vitest-axe/matchers';
 
-try {
-  // @ts-ignore
-  const matchers = await import('vitest-axe/matchers');
-  expect.extend(matchers);
-} catch {
-  // vitest-axe optional in environments where it is not installed
+// Fix undici/jsdom Node.js 20 webidl compatibility in Vitest worker threads
+if (typeof (globalThis as any).webidl === 'undefined' || !(globalThis as any).webidl?.util?.markAsUncloneable) {
+  (globalThis as any).webidl = (globalThis as any).webidl || { util: {} };
+  (globalThis as any).webidl.util = (globalThis as any).webidl.util || {};
+  (globalThis as any).webidl.util.markAsUncloneable = () => {};
 }
+
+expect.extend(matchers);

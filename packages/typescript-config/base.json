@@ -3,6 +3,8 @@
     "target": "ESNext",
     "module": "esnext",
     "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "skipLibCheck": true
   },
   "exclude": ["node_modules"]
