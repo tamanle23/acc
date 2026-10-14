@@ -16,14 +16,9 @@ export interface AuthState {
   user: JwtPayload | null;
   currentTenantId: string | null;
   isAuthenticated: boolean;
-  isHydrating: boolean;
   isSandbox: boolean;
 
   setTokens: (access: string, refresh: string) => void;
-  clearTokens: () => void;
-  expireAccessToken: () => void; // Dev helper
-  expireRefreshToken: () => void; // Dev helper
-  setHydrating: (val: boolean) => void;
 }
 
 export interface LoginResponse {

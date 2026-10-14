@@ -91,9 +91,7 @@ export function UserAuthForm({
     try {
       const persona = DEFAULT_SANDBOX_PERSONAS[personaId] || DEFAULT_SANDBOX_PERSONAS.admin;
       // Attach Unified Sandbox Interceptor in development mode
-      if (import.meta.env.DEV) {
-        enableSandboxMockEngine(springApiClient);
-      }
+      enableSandboxMockEngine(springApiClient);
       // The mock engine intercepts this request and checks for username + password === 'bypass'
       const response = await springApiClient.post('/auth/token', {
         username: persona.username,

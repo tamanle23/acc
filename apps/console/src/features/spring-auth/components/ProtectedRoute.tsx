@@ -20,9 +20,10 @@ export function ProtectedRoute({
   fallbackUnauthorized,
   fallbackForbidden,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, user, isHydrating, currentTenantId, clearTokens } = useSpringAuthStore();
+  const { isAuthenticated, user, currentTenantId } = useSpringAuthStore();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isHydrating = !useSpringAuthStore.persist.hasHydrated();
 
   React.useEffect(() => {
     if (!isHydrating && (!isAuthenticated || !user) && !fallbackUnauthenticated) {
