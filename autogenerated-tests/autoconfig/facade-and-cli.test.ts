@@ -62,7 +62,7 @@ describe('Universal Auto-Config Phase 5: Facade & CLI Modernization', () => {
       expect(result.pipelineIR.schemaVersion).toBe('3.0.0');
       expect(result.pipelineIR.chunks.length).toBe(2);
       expect(result.videoConfig.canvas?.colorGrading?.lutPreset).toBe('cinematic_teal_orange');
-      expect(result.legacyStoryConfig).toBeDefined();
+      expect(result.legacyStoryConfig).toBeUndefined();
 
       // No files saved in dry run
       expect(result.savedFiles.pipelineIRPath).toBeUndefined();
@@ -73,7 +73,11 @@ describe('Universal Auto-Config Phase 5: Facade & CLI Modernization', () => {
   });
 
   describe('scaffoldDirectory Real File Emission', () => {
-    it('should scaffold directory emitting pipeline-ir.json, omnichannel-config.json, and story-config.json', async () => {
+    it('should scaffold directory emitting pipeline-ir.json and omnichannel-config.json, omitting story-config.json for new directories', async () => {
+      // Ensure no story-config exists initially
+      const storyPath = path.join(tempTestDir, 'story-config.json');
+      if (fs.existsSync(storyPath)) fs.unlinkSync(storyPath);
+
       const result = await AutoConfigEngineFacade.scaffoldDirectory(tempTestDir, {
         aspectRatio: '9:16',
         fps: 30,
@@ -82,7 +86,9 @@ describe('Universal Auto-Config Phase 5: Facade & CLI Modernization', () => {
 
       expect(result.savedFiles.pipelineIRPath).toBeDefined();
       expect(result.savedFiles.omnichannelConfigPath).toBeDefined();
-      expect(result.savedFiles.storyConfigPath).toBeDefined();
+      // story-config.json is deprecated: should NOT be generated for new directories
+      expect(result.savedFiles.storyConfigPath).toBeUndefined();
+      expect(fs.existsSync(storyPath)).toBe(false);
 
       // Verify pipeline-ir.json on disk
       const irPath = result.savedFiles.pipelineIRPath!;
@@ -92,21 +98,58 @@ describe('Universal Auto-Config Phase 5: Facade & CLI Modernization', () => {
       expect(parsedIR.pipelineId).toBe('generative-storytelling');
       expect(parsedIR.chunks.length).toBe(2);
 
-      // Verify story-config.json on disk
-      const storyPath = result.savedFiles.storyConfigPath!;
-      expect(fs.existsSync(storyPath)).toBe(true);
-      const parsedStory = JSON.parse(fs.readFileSync(storyPath, 'utf-8'));
-      expect(parsedStory.settings.width).toBe(1080);
-      expect(parsedStory.settings.height).toBe(1920);
-      expect(parsedStory.settings.platform).toBe('tiktok');
-      expect(parsedStory.scenes.length).toBe(2);
-
       // Verify omnichannel-config.json on disk
       const omnichannelPath = result.savedFiles.omnichannelConfigPath!;
       expect(fs.existsSync(omnichannelPath)).toBe(true);
       const parsedOmni = JSON.parse(fs.readFileSync(omnichannelPath, 'utf-8'));
       expect(parsedOmni.pipelineId).toBe('4');
       expect(parsedOmni.videoConfig.canvas.colorGrading.lutPreset).toBe('cinematic_teal_orange');
+    });
+
+    it('should update and merge story-config.json when it already exists in the directory (update/merge mode)', async () => {
+      const storyPath = path.join(tempTestDir, 'story-config.json');
+      // Pre-create existing legacy story-config with custom properties
+      fs.writeFileSync(
+        storyPath,
+        JSON.stringify(
+          {
+            name: 'Original Legacy Story',
+            customAuthorField: 'Antigravity Studio',
+            settings: {
+              customBitrate: '8000k',
+            },
+          },
+          null,
+          2
+        ),
+        'utf-8'
+      );
+
+      const result = await AutoConfigEngineFacade.scaffoldDirectory(tempTestDir, {
+        aspectRatio: '9:16',
+        fps: 30,
+      });
+
+      // In update/merge mode, storyConfigPath is populated and merged
+      expect(result.savedFiles.storyConfigPath).toBeDefined();
+      expect(fs.existsSync(storyPath)).toBe(true);
+      const parsed = JSON.parse(fs.readFileSync(storyPath, 'utf-8'));
+      expect(parsed.customAuthorField).toBe('Antigravity Studio'); // Preserved
+      expect(parsed.settings.customBitrate).toBe('8000k'); // Preserved
+      expect(parsed.settings.width).toBe(1080); // Synced from scaffold
+      expect(parsed.settings.height).toBe(1920); // Synced from scaffold
+    });
+
+    it('should explicitly generate story-config.json when exportLegacyStoryConfig is true', async () => {
+      const storyPath = path.join(tempTestDir, 'story-config.json');
+      if (fs.existsSync(storyPath)) fs.unlinkSync(storyPath);
+
+      const result = await AutoConfigEngineFacade.scaffoldDirectory(tempTestDir, {
+        exportLegacyStoryConfig: true,
+      });
+
+      expect(result.savedFiles.storyConfigPath).toBeDefined();
+      expect(fs.existsSync(storyPath)).toBe(true);
     });
 
     it('should respect pipelineOverride when explicitly specified', async () => {
@@ -120,17 +163,15 @@ describe('Universal Auto-Config Phase 5: Facade & CLI Modernization', () => {
       expect(result.videoConfig.canvas?.colorGrading?.lutPreset).toBe('clean_tech');
     });
 
-    it('should omit story-config.json when exportLegacyStoryConfig is false', async () => {
-      // Remove previous story-config.json
+    it('should omit story-config.json when exportLegacyStoryConfig is false even if file exists', async () => {
       const storyPath = path.join(tempTestDir, 'story-config.json');
-      if (fs.existsSync(storyPath)) fs.unlinkSync(storyPath);
+      fs.writeFileSync(storyPath, JSON.stringify({ test: true }), 'utf-8');
 
       const result = await AutoConfigEngineFacade.scaffoldDirectory(tempTestDir, {
         exportLegacyStoryConfig: false,
       });
 
       expect(result.savedFiles.storyConfigPath).toBeUndefined();
-      expect(fs.existsSync(storyPath)).toBe(false);
       expect(result.savedFiles.pipelineIRPath).toBeDefined();
     });
   });

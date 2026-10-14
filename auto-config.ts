@@ -210,7 +210,7 @@ async function run(): Promise<void> {
       prompt.log.message(`  ✔ ${result.savedFiles.omnichannelConfigPath} (Director Video Config)`);
     }
     if (result.savedFiles.storyConfigPath) {
-      prompt.log.message(`  ✔ ${result.savedFiles.storyConfigPath} (Legacy story-config.json Bridge)`);
+      prompt.log.message(`  ✔ ${result.savedFiles.storyConfigPath} (Legacy story-config.json [Merged Update])`);
     }
 
     prompt.log.info(
