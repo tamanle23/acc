@@ -10,8 +10,7 @@ import {
 import { Edit2, Trash2, Copy, Archive, ArchiveRestore, Lock, Sparkles, ArrowUp, ArrowDown, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useSpringAuthStore } from '@/features/spring-auth';
-import { useSandboxStore } from '@/core/sandbox';
+import { usePermissions } from '@/features/spring-auth';
 
 interface Props {
   attribute: AttributeDefinition;
@@ -31,14 +30,7 @@ export const AttributeCard: React.FC<Props> = ({
   isLast = false,
 }) => {
   const { openEditAttributeDialog, openDeleteAttributeDialog } = useMetadataUiStore();
-  const { user, currentTenantId } = useSpringAuthStore();
-  const { activePersonaId, activeTenantId } = useSandboxStore();
-
-  const isSovereign =
-    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
-    activePersonaId === 'system' ||
-    currentTenantId === 'SYSTEM' ||
-    activeTenantId === 'SYSTEM';
+  const { isSovereignCustodian: isSovereign } = usePermissions();
 
   const createAttributeMutation = useCreateAttributeDefinition(entityTypeId);
   const archiveMutation = useArchiveAttributeDefinition(entityTypeId);

@@ -7,7 +7,6 @@ import type {
 } from '../api/types';
 import { applyTenantThemeOverrides, defaultTenantThemes } from '@unipost/tokens';
 import { useSpringAuthStore } from '@/features/spring-auth';
-import { useSandboxStore } from '@/core/sandbox';
 
 export interface AttributeFilterClause {
   id: string;
@@ -207,12 +206,13 @@ export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
 
     // Dynamically derive sovereign custodian status from authenticated user credentials
     const authState = useSpringAuthStore.getState();
-    const sandboxState = useSandboxStore.getState();
-    const userRoles = authState.user?.roles || [];
+    const user = authState.user;
+    const userRoles = user?.roles || [];
     const isSovereignCustodian = Boolean(
       userRoles.includes('ROLE_SYSTEM_CUSTODIAN') ||
-      sandboxState.activePersonaId === 'system' ||
-      activeTenantId === 'SYSTEM'
+      activeTenantId === 'SYSTEM' ||
+      user?.tenantId === 'SYSTEM' ||
+      user?.tid === 'SYSTEM'
     );
 
     // Sovereign root custodian possesses absolute schema authority unconditionally
@@ -228,12 +228,13 @@ export const useMetadataUiStore = create<MetadataUiState>((set, get) => ({
 
     // Dynamically derive sovereign custodian status from authenticated user credentials
     const authState = useSpringAuthStore.getState();
-    const sandboxState = useSandboxStore.getState();
-    const userRoles = authState.user?.roles || [];
+    const user = authState.user;
+    const userRoles = user?.roles || [];
     const isSovereignCustodian = Boolean(
       userRoles.includes('ROLE_SYSTEM_CUSTODIAN') ||
-      sandboxState.activePersonaId === 'system' ||
-      activeTenantId === 'SYSTEM'
+      activeTenantId === 'SYSTEM' ||
+      user?.tenantId === 'SYSTEM' ||
+      user?.tid === 'SYSTEM'
     );
 
     if (isSovereignCustodian) {
