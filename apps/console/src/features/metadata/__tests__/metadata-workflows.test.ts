@@ -319,4 +319,67 @@ describe('Metadata Management Full E2E & Flow Test Suite', () => {
       });
     });
   });
+
+  describe('Workflow 6: Unified Sandbox FSM State Machine Transition Engine', () => {
+    it('should transition record from DRAFT to SUBMITTED via SUBMIT action', async () => {
+      const draftRecord = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
+        tenantId: 'tenant-acme',
+        attributes: {
+          legal_name: 'FSM Test Corp',
+          contact_email: 'fsm@test.com',
+          status: 'DRAFT',
+        },
+      });
+      expect(draftRecord.attributes.status).toBe('DRAFT');
+
+      const transitioned = await mockMetadataStore.transitionRecordState('1', draftRecord.id, 'SUBMIT');
+      expect(transitioned.attributes.status).toBe('SUBMITTED');
+      expect(transitioned.version).toBeGreaterThan(draftRecord.version || 1);
+    });
+
+    it('should reject invalid transition action not permitted from current state', async () => {
+      const draftRecord = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
+        tenantId: 'tenant-acme',
+        attributes: {
+          legal_name: 'Invalid Action Corp',
+          contact_email: 'invalid@test.com',
+          status: 'DRAFT',
+        },
+      });
+
+      // APPROVE is only allowed from SUBMITTED, not DRAFT
+      await expect(
+        mockMetadataStore.transitionRecordState('1', draftRecord.id, 'APPROVE')
+      ).rejects.toThrow(/Invalid FSM transition action 'APPROVE'/);
+    });
+
+    it('should enforce role-based authority gate respecting active sandbox persona', async () => {
+      const { useSandboxStore } = await import('../../../core/sandbox/store/sandbox-store');
+      
+      const submittedRecord = await mockMetadataStore.createEntityRecord('1', {
+        entityTypeId: '1',
+        tenantId: 'tenant-acme',
+        attributes: {
+          legal_name: 'Role Test Corp',
+          contact_email: 'role@test.com',
+          status: 'SUBMITTED',
+        },
+      });
+
+      // 1. Switch persona to standard 'user' (only has ROLE_USER, lacks ROLE_ADMIN)
+      useSandboxStore.getState().setActivePersona('user');
+
+      await expect(
+        mockMetadataStore.transitionRecordState('1', submittedRecord.id, 'APPROVE')
+      ).rejects.toThrow(/Access Denied: Caller lacks required authority/);
+
+      // 2. Switch persona to 'admin' (has ROLE_ADMIN)
+      useSandboxStore.getState().setActivePersona('admin');
+
+      const approved = await mockMetadataStore.transitionRecordState('1', submittedRecord.id, 'APPROVE');
+      expect(approved.attributes.status).toBe('APPROVED');
+    });
+  });
 });

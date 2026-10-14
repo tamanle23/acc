@@ -39,6 +39,42 @@ export const initialMockEntityTypes: EntityType[] = [
     description: 'Profiles, corporate identities, and billing configurations for enterprise customers.',
     schemaVersion: 2,
     version: 2,
+    lifecycleConfig: {
+      state_field: 'status',
+      initial_state: 'DRAFT',
+      states: ['DRAFT', 'SUBMITTED', 'APPROVED', 'ACTIVE', 'SUSPENDED'],
+      transitions: [
+        {
+          from: 'DRAFT',
+          to: 'SUBMITTED',
+          action: 'SUBMIT',
+          required_attributes: ['legal_name', 'contact_email'],
+        },
+        {
+          from: 'SUBMITTED',
+          to: 'APPROVED',
+          action: 'APPROVE',
+          allowed_roles: ['ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+        },
+        {
+          from: 'APPROVED',
+          to: 'ACTIVE',
+          action: 'ACTIVATE',
+        },
+        {
+          from: 'ACTIVE',
+          to: 'SUSPENDED',
+          action: 'SUSPEND',
+          allowed_roles: ['ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+        },
+        {
+          from: 'SUSPENDED',
+          to: 'ACTIVE',
+          action: 'REACTIVATE',
+          allowed_roles: ['ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+        },
+      ],
+    },
     createdDate: new Date('2026-01-10').toISOString(),
     updatedDate: new Date('2026-03-15').toISOString(),
   },
@@ -182,6 +218,21 @@ export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
       defaultValue: 'SOC2_TYPE_II',
       options: {
         choices: ['SOC2_TYPE_II', 'HIPAA', 'PCI_DSS', 'FEDRAMP_MODERATE', 'ISO_27001'],
+      },
+    },
+    {
+      id: '110',
+      entityTypeId: '1',
+      name: 'Lifecycle Status',
+      systemName: 'status',
+      dataType: 'STRING',
+      uiComponent: 'select',
+      isRequired: false,
+      displayOrder: 10,
+      version: 1,
+      defaultValue: 'DRAFT',
+      options: {
+        choices: ['DRAFT', 'SUBMITTED', 'APPROVED', 'ACTIVE', 'SUSPENDED'],
       },
     },
   ],
@@ -350,6 +401,7 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
             : i % 2 === 0
             ? `Standard enterprise support plan. Automated backup verified.`
             : `Active billing cycle renewal on quarterly schedule.`,
+        status: ['DRAFT', 'SUBMITTED', 'APPROVED', 'ACTIVE', 'SUSPENDED'][i % 5],
       },
       createdDate: new Date(2026, 0, (i % 60) + 1, 10, i % 60).toISOString(),
       updatedDate: new Date(2026, 2, (i % 25) + 1, 14, i % 60).toISOString(),
@@ -1192,6 +1244,131 @@ export class MockMetadataService implements MetadataDataSource {
       schemaVersion,
       errors,
     };
+  }
+
+  async transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord> {
+    const strId = String(entityTypeId);
+    const recId = String(recordId);
+    const entityType = this.entityTypes.find((e) => String(e.id) === strId);
+    if (!entityType) {
+      throw new Error(`EntityType with id ${entityTypeId} not found`);
+    }
+
+    const list = this.records[strId] || [];
+    const index = list.findIndex((r) => String(r.id) === recId);
+    if (index === -1) {
+      throw new Error(`EntityRecord #${recordId} not found for entity type #${entityTypeId}`);
+    }
+
+    const currentRecord = list[index];
+    const lifecycle = entityType.lifecycleConfig;
+    if (!lifecycle) {
+      throw new Error(`No FSM lifecycle configuration defined for entity type #${entityTypeId}`);
+    }
+
+    const stateField = lifecycle.state_field || 'status';
+    const currentState =
+      (currentRecord.attributes?.[stateField] as string) ||
+      lifecycle.initial_state ||
+      'DRAFT';
+
+    // Gate 2: State Graph Transition Validity Gate
+    const transitions = lifecycle.transitions || [];
+    const matchedTransition = transitions.find(
+      (t) =>
+        t.action.toUpperCase() === action.trim().toUpperCase() &&
+        (t.from === '*' || t.from.toUpperCase() === currentState.toUpperCase())
+    );
+
+    if (!matchedTransition) {
+      const err = new Error(
+        `Invalid FSM transition action '${action}' for entity record #${recordId} in current state '${currentState}'`
+      );
+      (err as any).status = 409;
+      throw err;
+    }
+
+    // Gate 3: Role-Based Authority Gate (Respect Sandbox active persona)
+    if (matchedTransition.allowed_roles && matchedTransition.allowed_roles.length > 0) {
+      const { activePersonaId } = (await import('../../../core/sandbox/store/sandbox-store')).useSandboxStore.getState();
+      const { DEFAULT_SANDBOX_PERSONAS } = await import('../../../core/sandbox/store/sandbox-store');
+      const currentPersona = DEFAULT_SANDBOX_PERSONAS[activePersonaId];
+      const callerRoles = currentPersona?.roles || [];
+      const isAuthorized = matchedTransition.allowed_roles.some((r) => callerRoles.includes(r));
+      if (!isAuthorized) {
+        const err = new Error(
+          `Access Denied: Caller lacks required authority for FSM action '${action}'. Allowed roles: ${matchedTransition.allowed_roles.join(', ')}`
+        );
+        (err as any).status = 403;
+        throw err;
+      }
+    }
+
+    // Prepare updated attributes
+    const mergedAttributes = {
+      ...(currentRecord.attributes || {}),
+      ...(additionalAttributes || {}),
+    };
+
+    // Gate 4: Required Attribute Presence Gate
+    if (matchedTransition.required_attributes && matchedTransition.required_attributes.length > 0) {
+      for (const reqAttr of matchedTransition.required_attributes) {
+        const val = mergedAttributes[reqAttr];
+        const isMissing =
+          val === undefined ||
+          val === null ||
+          val === '' ||
+          (Array.isArray(val) && val.length === 0);
+        if (isMissing) {
+          const err = new Error(
+            `Transition Gate Violation: Attribute '${reqAttr}' is mandatory for action '${action}' to transition state to '${matchedTransition.to}'`
+          );
+          (err as any).status = 409;
+          throw err;
+        }
+      }
+    }
+
+    // Gate 5: Dynamic Guard Expression Gate (Evaluates simple expressions if present)
+    if (matchedTransition.guard_expression) {
+      try {
+        const expr = matchedTransition.guard_expression
+          .replace(/#attributes\['([^']+)'\]/g, 'attributes["$1"]')
+          .replace(/attributes\['([^']+)'\]/g, 'attributes["$1"]');
+        const evalFn = new Function('attributes', `return Boolean(${expr});`);
+        const passed = evalFn(mergedAttributes);
+        if (!passed) {
+          const err = new Error(
+            `FSM Guard Gate Violation: Rule expression '${matchedTransition.guard_expression}' failed for action '${action}'`
+          );
+          (err as any).status = 409;
+          throw err;
+        }
+      } catch (e: any) {
+        if (e?.status === 409) throw e;
+        // If complex expression syntax isn't pure JS, allow safe pass-through in simulation
+      }
+    }
+
+    // Execute state mutation
+    const targetState = matchedTransition.to;
+    mergedAttributes[stateField] = targetState;
+
+    const updatedRecord: EntityRecord = {
+      ...currentRecord,
+      attributes: mergedAttributes,
+      version: (currentRecord.version || 1) + 1,
+      schemaVersion: entityType.schemaVersion || 1,
+      updatedDate: new Date().toISOString(),
+    };
+
+    list[index] = updatedRecord;
+    return updatedRecord;
   }
 
   // ==========================================

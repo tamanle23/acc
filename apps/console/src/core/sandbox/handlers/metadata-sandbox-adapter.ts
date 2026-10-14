@@ -200,6 +200,29 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       return { status: 200, data: res };
     }
 
+    // 9.1 Entity Record FSM State Transition
+    const transitionMatch = subPath.match(/^\/entity-types\/([^/]+)\/records\/([^/]+)\/transition$/);
+    if (transitionMatch && req.method === 'POST') {
+      const typeId = transitionMatch[1];
+      const recordId = transitionMatch[2];
+      const action = searchParams.get('action') || (req.data && req.data.action);
+      if (!action) {
+        return { status: 400, data: { message: 'Transition action is required as a query parameter or body field' } };
+      }
+      try {
+        const transitioned = await mockMetadataStore.transitionRecordState(
+          typeId,
+          recordId,
+          action,
+          req.data
+        );
+        return { status: 200, data: transitioned };
+      } catch (err: any) {
+        const status = err.status || 400;
+        return { status, data: { message: err.message || 'FSM Transition Failed' } };
+      }
+    }
+
     // 10. Entity Record Detail (GET, PUT, PATCH, DELETE)
     const recordDetailMatch = subPath.match(/^\/entity-types\/([^/]+)\/records\/([^/]+)$/);
     if (recordDetailMatch) {
