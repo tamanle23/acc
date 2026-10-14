@@ -462,32 +462,38 @@ export const EntityDataGrid: React.FC<Props> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="text-xs">
-                {availableTransitions.length > 0 && (
+                {lifecycle && (
                   <>
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="gap-2 text-primary focus:text-primary">
                         <Play className="h-3.5 w-3.5" />
                         <span>FSM Transition</span>
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="text-xs min-w-[160px]">
-                        {availableTransitions.map((t) => (
-                          <DropdownMenuItem
-                            key={t.action}
-                            disabled={transitionMutation.isPending}
-                            onClick={() =>
-                              handleRecordTransition(row.original.id, t.action, t.to)
-                            }
-                            className="gap-2 cursor-pointer"
-                          >
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                            <div className="flex flex-col">
-                              <span className="font-semibold">{t.action}</span>
-                              <span className="text-[10px] text-muted-foreground">
-                                to {t.to}
-                              </span>
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
+                      <DropdownMenuSubContent className="text-xs min-w-[170px]">
+                        {availableTransitions.length > 0 ? (
+                          availableTransitions.map((t) => (
+                            <DropdownMenuItem
+                              key={t.action}
+                              disabled={transitionMutation.isPending}
+                              onClick={() =>
+                                handleRecordTransition(row.original.id, t.action, t.to)
+                              }
+                              className="gap-2 cursor-pointer"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                              <div className="flex flex-col">
+                                <span className="font-semibold">{t.action}</span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  to {t.to}
+                                </span>
+                              </div>
+                            </DropdownMenuItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
+                            No transitions from '{currentState}'
+                          </div>
+                        )}
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator />

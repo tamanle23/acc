@@ -85,6 +85,30 @@ export const initialMockEntityTypes: EntityType[] = [
     description: 'Hardware, topology, and regional availability for managed virtual clusters.',
     schemaVersion: 1,
     version: 1,
+    lifecycleConfig: {
+      state_field: 'status',
+      initial_state: 'DRAFT',
+      states: ['DRAFT', 'ACTIVE', 'DECOMMISSIONED'],
+      transitions: [
+        {
+          from: 'DRAFT',
+          to: 'ACTIVE',
+          action: 'PROVISION',
+        },
+        {
+          from: 'ACTIVE',
+          to: 'DECOMMISSIONED',
+          action: 'DECOMMISSION',
+          allowed_roles: ['ROLE_ADMIN'],
+        },
+        {
+          from: 'DECOMMISSIONED',
+          to: 'ACTIVE',
+          action: 'REINSTATE',
+          allowed_roles: ['ROLE_ADMIN'],
+        },
+      ],
+    },
     createdDate: new Date('2026-01-15').toISOString(),
     updatedDate: new Date('2026-03-20').toISOString(),
   },
@@ -95,6 +119,30 @@ export const initialMockEntityTypes: EntityType[] = [
     description: 'Governance rules, canary thresholds, and cluster isolation directives.',
     schemaVersion: 1,
     version: 1,
+    lifecycleConfig: {
+      state_field: 'status',
+      initial_state: 'DRAFT',
+      states: ['DRAFT', 'STAGED', 'ENFORCED', 'RETIRED'],
+      transitions: [
+        {
+          from: 'DRAFT',
+          to: 'STAGED',
+          action: 'STAGE',
+        },
+        {
+          from: 'STAGED',
+          to: 'ENFORCED',
+          action: 'ENFORCE',
+          allowed_roles: ['ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
+        },
+        {
+          from: 'ENFORCED',
+          to: 'RETIRED',
+          action: 'RETIRE',
+          allowed_roles: ['ROLE_ADMIN'],
+        },
+      ],
+    },
     createdDate: new Date('2026-02-01').toISOString(),
     updatedDate: new Date('2026-03-25').toISOString(),
   },
