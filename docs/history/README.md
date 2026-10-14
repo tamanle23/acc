@@ -214,6 +214,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`199`](199_auto_config_asset_staging_and_narrative_frameworks_guide.md) | 2026-10-14 | Auto-Config Asset Staging & Narrative Frameworks Developer Guide | Created comprehensive guide in docs/guide/AUTO_CONFIG_ASSET_STAGING_GUIDE.md detailing asset requirements for Pipelines 1-6 and 6 Narrative Frameworks |
 | [`200`](200_append_250_content_variations_guide_to_asset_staging_guide.md) | 2026-10-14 | Append 250 Content Variations Guide to Asset Staging Guide | Expanded AUTO_CONFIG_ASSET_STAGING_GUIDE.md with Section 7 covering all 250 content types across 5 publishing formats |
 | [`201`](201_document_omnichannel_capability_envelopes_for_250_content_variations.md) | 2026-10-14 | Document Omnichannel Capability Envelopes for 250 Content Variations | Added semantic capability envelopes (supportedModalities) and omnichannel fan-out columns to all 250 content types in AUTO_CONFIG_ASSET_STAGING_GUIDE.md |
+| [`202`](202_document_heuristic_scoring_engine_in_asset_staging_guide.md) | 2026-10-14 | Document Heuristic Scoring Engine in Asset Staging Guide | Added Section 2 detailing the 3-step evaluation cycle, exact confidence threshold tables (Pipelines 1-6), and fallback resolution logic in AUTO_CONFIG_ASSET_STAGING_GUIDE.md |
 
 
 

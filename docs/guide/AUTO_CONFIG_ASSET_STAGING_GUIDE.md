@@ -6,12 +6,13 @@ This guide details the asset requirements, heuristic classification rules, and C
 
 ## 📑 Table of Contents
 1. [Overview & Execution Workflow](#1-overview--execution-workflow)
-2. [Target Folder Requirements by Pipeline Archetype](#2-target-folder-requirements-by-pipeline-archetype)
-3. [Target Folder Requirements by Narrative Scripting Framework](#3-target-folder-requirements-by-narrative-scripting-framework)
-4. [Generated Artifacts & File Schemas](#4-generated-artifacts--file-schemas)
-5. [CLI Usage & Flag Reference](#5-cli-usage--flag-reference)
-6. [Troubleshooting & Best Practices](#6-troubleshooting--best-practices)
-7. [Comprehensive Guide for 250 Content Variations & Publishing Formats](#7-comprehensive-guide-for-250-content-variations--publishing-formats)
+2. [Heuristic Scoring Engine & Probabilistic Evaluation](#2-heuristic-scoring-engine--probabilistic-evaluation)
+3. [Target Folder Requirements by Pipeline Archetype](#3-target-folder-requirements-by-pipeline-archetype)
+4. [Target Folder Requirements by Narrative Scripting Framework](#4-target-folder-requirements-by-narrative-scripting-framework)
+5. [Generated Artifacts & File Schemas](#5-generated-artifacts--file-schemas)
+6. [CLI Usage & Flag Reference](#6-cli-usage--flag-reference)
+7. [Troubleshooting & Best Practices](#7-troubleshooting--best-practices)
+8. [Comprehensive Guide for 250 Content Variations & Publishing Formats](#8-comprehensive-guide-for-250-content-variations--publishing-formats)
 
 ---
 
@@ -57,7 +58,57 @@ The **ACC Universal Auto-Config Engine** inspects any media directory using a mo
 
 ---
 
-## 2. Target Folder Requirements by Pipeline Archetype
+## 2. Heuristic Scoring Engine & Probabilistic Evaluation
+
+In `auto-config`, the **Heuristic Score** is a multi-strategy probabilistic evaluation system ([`PipelineClassifierRegistry`](file:///c:/Users/Admin/workspace/git/acc/packages/core/src/autoconfig/PipelineClassifierRegistry.ts)) that calculates a confidence score from `0.0` (0%) to `1.0` (100%) for each of the 6 canonical pipelines based on the **Discovered Asset Manifest**.
+
+### 2.1 The 3-Step Evaluation Cycle
+```
+┌────────────────────────────────────────────────────────┐
+│ Step 1: MediaAssetProberChain Crawl & Probe            │
+│ - Counts images vs videos, aspect ratios, resolutions  │
+│ - Classifies audio: voiceover vs bgm vs ambient        │
+│ - Parses tabular data: CSV/JSON rows and column keys   │
+│ - Analyzes text scripts: word count, keywords, lines   │
+│ - Identifies paired pairs (e.g. 01.png + 01.mp3)       │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Step 2: Multi-Strategy Scoring (Pipelines 1-6)         │
+│ - Each IPipelineClassifierStrategy calculates score    │
+│ - Deterministic boolean rules & threshold weights      │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│ Step 3: Descending Candidate Sort & Archetype Selection│
+│ - Candidates sorted by confidence descending           │
+│ - Winner selected if confidence > 0.10                 │
+│ - Fallback to Pipeline 4 at 0.50 if folder is empty    │
+└────────────────────────────────────────────────────────┘
+```
+
+### 2.2 Exact Confidence Scoring Thresholds by Pipeline
+
+| Pipeline | Target Archetype | Confidence Score | Triggering Manifest Conditions |
+| :--- | :--- | :--- | :--- |
+| **Pipeline 1** | **Scraper & Summarizer** | **0.95 (95%)**<br>**0.85 (85%)**<br>**0.75 (75%)**<br>**0.55 (55%)**<br>**0.05 (5%)** | • Text script $\ge 50$ words, 0 data files, and 0 visuals.<br>• Text script $\ge 50$ words and $\le 2$ visuals (e.g. logo/background only).<br>• Text script $>300$ words with visuals.<br>• Text script $\ge 50$ words with multiple visuals.<br>• No text scripts or tabular data dominates. |
+| **Pipeline 2** | **DB & Dynamic Templating** | **0.95 (95%)**<br>**0.85 (85%)**<br>**0.70 (70%)**<br>**0.40 (40%)**<br>**0.02 (2%)** | • Tabular data exists (`.csv`, `.json`, `.tsv`) with $\ge 5$ data rows.<br>• Tabular data exists with $\ge 1$ data rows.<br>• Tabular data present with unknown row count.<br>• Tabular data present, but $\ge 3$ images and $\ge 2$ paired pairs take priority.<br>• Zero tabular data files found. |
+| **Pipeline 3** | **Repurposing Recycler** | **0.95 (95%)**<br>**0.85 (85%)**<br>**0.20 (20%)**<br>**0.05 (5%)** | • Long-form video file exists with duration $>60$ seconds.<br>• Any non-output raw video file exists with duration $>15$ seconds.<br>• Video exists, but sequential images ($\ge 2$) dominate.<br>• Zero video files found (or folder contains native `story-config.json`). |
+| **Pipeline 4** | **Generative Storytelling** | **1.00 (100%)**<br>**0.98 (98%)**<br>**0.92 (92%)**<br>**0.88 (88%)**<br>**0.65 (65%)**<br>**0.25 (25%)** | • Target directory already contains native `story-config.json`.<br>• $\ge 2$ images paired with voiceover files or script lines.<br>• Multiple images found with voiceover or background music (`bgm.mp3`).<br>• Multiple images found sequentially without audio.<br>• At least 1 image found without video files.<br>• Baseline universal fallback score. |
+| **Pipeline 5** | **Rule-Logic & Procedural** | **0.98 (98%)**<br>**0.92 (92%)**<br>**0.05 (5%)** | • Structured data contains state tree keys (`rules`, `conditions`, `branches`, `choices`, `proof`).<br>• Script text contains decision keywords (`choice`, `branch`, `quiz`, `if (`, `proof`, `q.e.d`).<br>• Zero logic or branching indicators detected. |
+| **Pipeline 6** | **Ambient Loops** | **0.96 (96%)**<br>**0.92 (92%)**<br>**0.85 (85%)**<br>**0.75 (75%)**<br>**0.05 (5%)** | • Audio has loop keywords (`lofi`, `relax`, `meditation`, `ambient`, `drone`) AND zero voiceover speech files.<br>• Audio classified as `ambient`/`music`, zero voiceovers, and $\le 2$ visuals.<br>• Loop keywords found in audio title, zero voiceovers.<br>• Ambient audio found with multiple visuals.<br>• Voiceover audio or narrative script files exist (disqualifies ambient loops). |
+
+### 2.3 Winner Resolution & Fallback Logic
+In [`PipelineClassifierRegistry.resolve()`](file:///c:/Users/Admin/workspace/git/acc/packages/core/src/autoconfig/PipelineClassifierRegistry.ts#L104-L115):
+1. **Manual User Override**: If `--pipeline <id>` is provided (e.g. `--pipeline 2`), the registry skips scoring and returns that strategy with `confidence: 1.0` and `isOverride: true`.
+2. **Confidence Winner**: The candidate with the highest confidence score wins.
+3. **Empty Folder Fallback**: When scaffolding an empty folder, all candidate scores are $\le 0.10$. The registry falls back to **Pipeline 4 (Generative Storytelling)** at a nominal 50% baseline confidence.
+
+---
+
+## 3. Target Folder Requirements by Pipeline Archetype
 
 The heuristic classifier assigns a confidence score ($0.0 \dots 1.0$) based on file types, metadata, word counts, and naming patterns found in the target directory:
 
@@ -142,7 +193,7 @@ The heuristic classifier assigns a confidence score ($0.0 \dots 1.0$) based on f
 
 ---
 
-## 3. Target Folder Requirements by Narrative Scripting Framework
+## 4. Target Folder Requirements by Narrative Scripting Framework
 
 When configuring **Pipeline 4 (Generative Storytelling)** or passing `--framework <id>`, the framework orchestrates the pacing, camera behavior, audio ducking, and SFX cues:
 
@@ -157,7 +208,7 @@ When configuring **Pipeline 4 (Generative Storytelling)** or passing `--framewor
 
 ---
 
-## 4. Generated Artifacts & File Schemas
+## 5. Generated Artifacts & File Schemas
 
 When `auto-config` runs on a folder, it emits the following artifacts:
 
@@ -178,7 +229,7 @@ When `auto-config` runs on a folder, it emits the following artifacts:
 
 ---
 
-## 5. CLI Usage & Flag Reference
+## 6. CLI Usage & Flag Reference
 
 ### Running the Auto-Config Engine
 
@@ -214,7 +265,7 @@ bun run auto-config.ts ./my-project-folder --dry-run
 
 ---
 
-## 6. Troubleshooting & Best Practices
+## 7. Troubleshooting & Best Practices
 
 1. **Why does an empty directory default to Pipeline 4?**
    - When no CSV data, video files, or text files are present, the classifier falls back to Canonical Pipeline 4 (Generative Storytelling) as the universal base. Use `--pipeline <id>` if you wish to scaffold a specific pipeline from scratch.
@@ -238,11 +289,11 @@ bun run auto-config.ts ./my-project-folder --dry-run
 
 ---
 
-## 7. Comprehensive Guide for 250 Content Variations & Publishing Formats
+## 8. Comprehensive Guide for 250 Content Variations & Publishing Formats
 
 The ACC Omnichannel Engine maps **250 distinct content variations** across **5 publishing formats** (Static Web, Social, Video, Audio, Interactive HTML) powered by the **6 Canonical Pipelines** (`Scraper`, `DBTemplating`, `Repurposing`, `GenerativeStory`, `RuleLogic`, `AmbientStream`).
 
-### 7.1 Semantic Capability Envelopes & Omnichannel Fan-Out
+### 8.1 Semantic Capability Envelopes & Omnichannel Fan-Out
 Content generation is neither a rigid 1-to-1 silo nor a blind 1-to-all broadcast. Instead, every content type defines a **semantic capability envelope** (`supportedModalities`), a primary default (`defaultModality`), and an **incompatibility guard**:
 
 ```
