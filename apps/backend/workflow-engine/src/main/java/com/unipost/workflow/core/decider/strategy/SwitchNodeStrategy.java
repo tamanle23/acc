@@ -73,6 +73,7 @@ public final class SwitchNodeStrategy implements NodeEvaluatorStrategy {
                     nowEpochMs,
                     (long) firstBranchTask.timeoutSeconds() * 1000L
                 ));
+                return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, true);
             }
 
             return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, false);

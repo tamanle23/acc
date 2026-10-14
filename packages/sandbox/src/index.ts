@@ -6,3 +6,4 @@ export * from './engine';
 export * from './adapters/fetch-adapter';
 export * from './adapters/axios-adapter';
 export * from './handlers/widget-handler';
+export * from './handlers/workflow-handler';

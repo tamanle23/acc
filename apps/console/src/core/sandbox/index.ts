@@ -28,7 +28,7 @@ import { systemSandboxHandler } from './handlers/system-sandbox-handler';
 import { workspaceSandboxHandler } from './handlers/workspace-sandbox-handler';
 import { chatsSandboxHandler } from './handlers/chats-sandbox-handler';
 import { appsSandboxHandler } from './handlers/apps-sandbox-handler';
-import { widgetSandboxHandler } from '@unipost/sandbox';
+import { widgetSandboxHandler, workflowSandboxHandler } from '@unipost/sandbox';
 import { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
 
 sandboxRegistry.register(authSandboxHandler);
@@ -41,6 +41,7 @@ sandboxRegistry.register(workspaceSandboxHandler);
 sandboxRegistry.register(chatsSandboxHandler);
 sandboxRegistry.register(appsSandboxHandler);
 sandboxRegistry.register(widgetSandboxHandler);
+sandboxRegistry.register(workflowSandboxHandler);
 
 // Attach fetch interceptor in development
 attachSandboxFetchInterceptor();
