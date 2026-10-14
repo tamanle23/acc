@@ -22,6 +22,16 @@ export interface OutboxMutationJob {
   retries: number;
   status: OutboxJobStatus;
   errorMessage?: string;
+  nextRetryAt?: number;
+}
+
+export const BACKOFF_BASE_MS = 1000;
+export const BACKOFF_CAP_MS = 300000;
+
+/** Equal-jitter exponential backoff: avoids thundering-herd on reconnect. */
+export function computeBackoffMs(retries: number, random: () => number = Math.random): number {
+  const exp = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** Math.max(0, retries - 1));
+  return Math.round(exp / 2 + random() * (exp / 2));
 }
 
 interface OutboxState {
@@ -78,6 +88,9 @@ export const useOutboxStore = create<OutboxState>()(
 
         for (const job of currentQueue) {
           if (job.status === 'SYNCED' || job.status === 'CONFLICT') {
+            continue;
+          }
+          if (job.status === 'FAILED' && job.nextRetryAt !== undefined && job.nextRetryAt > Date.now()) {
             continue;
           }
 
@@ -138,6 +151,7 @@ export const useOutboxStore = create<OutboxState>()(
                         ...j,
                         retries: j.retries + 1,
                         status: 'FAILED',
+                        nextRetryAt: Date.now() + computeBackoffMs(j.retries + 1),
                         errorMessage: err.message || 'Network sync failed',
                       }
                     : j

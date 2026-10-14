@@ -107,4 +107,96 @@ describe('mobile-ui Dynamic Form Engine & Media Pipeline', () => {
     expect(rendered.props.value).toBe('data:image/svg+xml;base64,mockSig');
     expect(rendered.props.attribute.name).toBe('Client Signature');
   });
+
+  it('passes validation error and disabled state to DynamicFieldRenderer', () => {
+    const attr: AttributeDefinition = {
+      id: 'attr-err-1',
+      name: 'Serial Number',
+      systemName: 'serial_no',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: true,
+    };
+
+    const handleChange = vi.fn();
+    const element = React.createElement(DynamicFieldRenderer, {
+      attribute: attr,
+      value: 'SN-001',
+      onChange: handleChange,
+      error: 'Invalid serial format',
+      disabled: true,
+    });
+
+    expect(element.props.error).toBe('Invalid serial format');
+    expect(element.props.disabled).toBe(true);
+    expect(element.props.attribute.isRequired).toBe(true);
+  });
+
+  it('renders select option and relation picker attributes via DynamicFieldRenderer', () => {
+    const relationAttr: AttributeDefinition = {
+      id: 'attr-rel-1',
+      name: 'Assigned Warehouse',
+      systemName: 'warehouse_id',
+      dataType: 'RELATION',
+      uiComponent: 'relation_picker',
+      isRequired: false,
+    };
+
+    const element = React.createElement(DynamicFieldRenderer, {
+      attribute: relationAttr,
+      value: 'wh-north-1',
+      onChange: vi.fn(),
+      relationRecords: [
+        { id: 'wh-north-1', label: 'North Hub' },
+        { id: 'wh-south-2', label: 'South Depot' },
+      ],
+    });
+
+    expect(element.props.attribute.uiComponent).toBe('relation_picker');
+    expect(element.props.relationRecords?.length).toBe(2);
+    expect(element.props.value).toBe('wh-north-1');
+  });
+
+  it('MediaPickerInput handles disabled state and error messaging', () => {
+    const handleChange = vi.fn();
+    const element = React.createElement(MediaPickerInput, {
+      label: 'Storefront Banner',
+      value: '',
+      disabled: true,
+      required: true,
+      error: 'Image is required',
+      onChange: handleChange,
+    });
+
+    expect(element.props.disabled).toBe(true);
+    expect(element.props.required).toBe(true);
+    expect(element.props.error).toBe('Image is required');
+  });
+
+  it('RelationPickerBottomSheet handles empty record lists and selection callbacks', () => {
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+
+    const emptyElement = React.createElement(RelationPickerBottomSheet, {
+      visible: true,
+      records: [],
+      onClose,
+      onSelect,
+      targetEntityType: 'Customer',
+    });
+
+    expect(emptyElement.props.records).toEqual([]);
+    expect(emptyElement.props.targetEntityType).toBe('Customer');
+
+    const populatedElement = React.createElement(RelationPickerBottomSheet, {
+      visible: true,
+      records: [{ id: 'cust-1', label: 'Acme Corp', sublabel: 'Enterprise' }],
+      selectedId: 'cust-1',
+      onClose,
+      onSelect,
+    });
+
+    expect(populatedElement.props.records.length).toBe(1);
+    expect(populatedElement.props.selectedId).toBe('cust-1');
+  });
 });
