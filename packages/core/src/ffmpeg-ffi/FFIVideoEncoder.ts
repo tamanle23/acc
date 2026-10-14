@@ -24,6 +24,8 @@ export class FFIVideoEncoder {
     private swsCtx: any = 0;
     private frameIndex: number = 0;
     private videoPacketIndex: number = 0;
+    private tbCodec: bigint = 0n;
+    private tbStream: bigint = 0n;
     private isInitialized: boolean = false;
     private isHeaderWritten: boolean = false;
 
@@ -150,6 +152,8 @@ export class FFIVideoEncoder {
         // Set stream time base to match packet ticks (1/90000)
         streamView.setInt32(32, 1, true);
         streamView.setInt32(36, 90000, true);
+        this.tbCodec = makeAVRational(1, this.fps);
+        this.tbStream = makeAVRational(1, 90000);
 
         // 7. Optional: Setup Audio Stream (stream #1) if audioPath exists
         if (this.audioPath && fs.existsSync(this.audioPath)) {
@@ -254,14 +258,9 @@ export class FFIVideoEncoder {
         FFI.avcodec.avcodec_send_frame(this.codecCtx, this.frame);
 
         // Drain encoded packets
-        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
-            pktView.setBigInt64(8, streamPts, true);   // pts
-            pktView.setBigInt64(16, streamPts, true);  // dts
-            pktView.setBigInt64(64, ticksPerFrame, true); // duration
+            FFI.avcodec.av_packet_rescale_ts(BigInt(this.packet), this.tbCodec, this.tbStream);
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
         }
     }
@@ -295,14 +294,9 @@ export class FFIVideoEncoder {
         Structs.AVFrame.setPts(this.frame, BigInt(this.frameIndex++));
         FFI.avcodec.avcodec_send_frame(this.codecCtx, this.frame);
 
-        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
-            pktView.setBigInt64(8, streamPts, true);
-            pktView.setBigInt64(16, streamPts, true);
-            pktView.setBigInt64(64, ticksPerFrame, true);
+            FFI.avcodec.av_packet_rescale_ts(BigInt(this.packet), this.tbCodec, this.tbStream);
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
         }
     }
@@ -597,15 +591,10 @@ export class FFIVideoEncoder {
         if (!this.isInitialized) return;
 
         // Flush remaining frames in encoder
-        const ticksPerFrame = BigInt(Math.round(90000 / this.fps));
         FFI.avcodec.avcodec_send_frame(this.codecCtx, 0n);
         while (FFI.avcodec.avcodec_receive_packet(this.codecCtx, this.packet) === 0) {
             Structs.AVPacket.setStreamIndex(this.packet, 0);
-            const pktView = new DataView(safeArrayBuffer(this.packet, 0, 128));
-            const streamPts = BigInt(this.videoPacketIndex++) * ticksPerFrame;
-            pktView.setBigInt64(8, streamPts, true);   // pts
-            pktView.setBigInt64(16, streamPts, true);  // dts
-            pktView.setBigInt64(64, ticksPerFrame, true); // duration
+            FFI.avcodec.av_packet_rescale_ts(BigInt(this.packet), this.tbCodec, this.tbStream);
             FFI.avformat.av_interleaved_write_frame(this.formatCtx, this.packet);
         }
 

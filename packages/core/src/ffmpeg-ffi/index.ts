@@ -104,6 +104,7 @@ export function initFFI() {
         avcodec_parameters_copy: { args: [FFIType.u64, FFIType.u64], returns: FFIType.i32 },
         avcodec_flush_buffers: { args: [FFIType.u64], returns: FFIType.void },
         av_packet_unref: { args: [FFIType.u64], returns: FFIType.void },
+        av_packet_rescale_ts: { args: [FFIType.u64, FFIType.i64, FFIType.i64], returns: FFIType.void },
     });
 
     avformat = dlopen(avformatPath, {

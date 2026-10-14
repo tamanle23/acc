@@ -48,7 +48,8 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       } = await import('@acc/ir');
 
       Logger.info('VideoExporter', `⚡ Compiling PipelineIR [${ir.pipelineId}] to Universal Video IR...`);
-      const irDoc = PipelineIRToUniversalIRAdapter.adapt(ir, undefined, outDir);
+      const directorConfig = (options as any)?.directorConfig || (options as any)?.videoConfig;
+      const irDoc = PipelineIRToUniversalIRAdapter.adapt(ir, undefined, outDir, directorConfig);
       irDoc.meta.canvasSize = { w: width, h: height };
       irDoc.meta.globalFps = fps;
 

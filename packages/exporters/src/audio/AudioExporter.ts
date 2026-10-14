@@ -33,11 +33,29 @@ export class AudioExporter implements IExporter<AudioExportOptions> {
     }
 
     if (validAudioChunks.length === 0) {
-      const sampleBgm = path.resolve(process.cwd(), 'sample-story', 'bgm.mp3');
-      if (await fileExists(sampleBgm)) {
-        await fs.promises.copyFile(sampleBgm, outputPath);
+      // Check if IR specifies backgroundMusic audioPath
+      const bgmCandidate = ir.audioComposition?.backgroundMusic?.audioPath;
+      const sampleStoryBgm = path.resolve(process.cwd(), 'sample-story', 'assets', 'bgm.mp3');
+      const pipelineBgm = path.resolve(process.cwd(), 'samples', '02-db-templating', 'assets', 'bgm_synth.mp3');
+
+      let fallbackAudio: string | null = null;
+      if (bgmCandidate && (await fileExists(bgmCandidate))) {
+        fallbackAudio = bgmCandidate;
+      } else if (await fileExists(sampleStoryBgm)) {
+        fallbackAudio = sampleStoryBgm;
+      } else if (await fileExists(pipelineBgm)) {
+        fallbackAudio = pipelineBgm;
+      }
+
+      if (fallbackAudio) {
+        await fs.promises.copyFile(fallbackAudio, outputPath);
       } else {
-        const silentBuf = Buffer.alloc(4096, 0);
+        const { FFIAudioDSP } = await import('@acc/core');
+        const totalDurationSec = Math.max(
+          3,
+          Math.ceil(ir.chunks.reduce((acc, c) => acc + (c.durationMs || 3000), 0) / 1000)
+        );
+        const silentBuf = FFIAudioDSP.createSilentMp3Buffer(totalDurationSec);
         await fs.promises.writeFile(outputPath, silentBuf);
       }
     } else if (validAudioChunks.length === 1) {
