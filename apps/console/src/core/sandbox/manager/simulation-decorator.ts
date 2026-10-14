@@ -7,14 +7,14 @@ export const sleep = (ms: number): Promise<void> =>
  * Decorates an async response supplier with simulated latency and fault injection.
  */
 export async function withSimulationDecorator<T>(
-  action: () => Promise<SandboxResponse<T>> | SandboxResponse<T>,
+  action: () => Promise<SandboxResponse<T> | null> | SandboxResponse<T> | null,
   options: {
     latencyMinMs: number;
     latencyMaxMs: number;
     faultRate: number;
     faultStatusCode: number;
   }
-): Promise<SandboxResponse<T>> {
+): Promise<SandboxResponse<T> | null> {
   // 1. Fault injection check
   if (options.faultRate > 0 && Math.random() < options.faultRate) {
     const status = options.faultStatusCode || 500;

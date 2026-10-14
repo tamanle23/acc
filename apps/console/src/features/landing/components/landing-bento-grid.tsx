@@ -4,8 +4,6 @@ import {
   GitFork,
   ShieldCheck,
   Zap,
-  Lock,
-  Layers,
   Sparkles,
   DownloadCloud,
 } from 'lucide-react';

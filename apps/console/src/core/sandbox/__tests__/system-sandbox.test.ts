@@ -29,9 +29,9 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants')
     );
 
-    expect(res.status).toBe(200);
-    expect(res.data.body.content.length).toBeGreaterThanOrEqual(3);
-    const systemTenant = res.data.body.content.find((t: any) => t.tenantId === 'SYSTEM');
+    expect(res?.status).toBe(200);
+    expect(res?.data.body.content.length).toBeGreaterThanOrEqual(3);
+    const systemTenant = res?.data.body.content.find((t: any) => t.tenantId === 'SYSTEM');
     expect(systemTenant).toBeDefined();
     expect(systemTenant.tier).toBe('ENTERPRISE');
     expect(systemTenant.maxWorkspaces).toBe(-1);
@@ -54,11 +54,11 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants', 'POST')
     );
 
-    expect(res.status).toBe(200);
-    expect(res.data.body.tenantId).toBe('tenant-nebula');
-    expect(res.data.body.tier).toBe('PRO');
-    expect(res.data.body.maxWorkspaces).toBe(5);
-    expect(res.data.body.maxSchemas).toBe(50);
+    expect(res?.status).toBe(200);
+    expect(res?.data.body.tenantId).toBe('tenant-nebula');
+    expect(res?.data.body.tier).toBe('PRO');
+    expect(res?.data.body.maxWorkspaces).toBe(5);
+    expect(res?.data.body.maxSchemas).toBe(50);
   });
 
   it('toggles tenant status and blocks SYSTEM suspension', async () => {
@@ -72,8 +72,8 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants/tenant-acme/status', 'PUT')
     );
 
-    expect(res.status).toBe(200);
-    expect(res.data.body.status).toBe('SUSPENDED');
+    expect(res?.status).toBe(200);
+    expect(res?.data.body.status).toBe('SUSPENDED');
 
     // 2. Reject SYSTEM suspension
     expect(() => {
@@ -92,8 +92,8 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants/tenant-acme/subscription', 'PUT')
     );
 
-    expect(subRes.status).toBe(200);
-    expect(subRes.data.body.tier).toBe('ENTERPRISE');
+    expect(subRes?.status).toBe(200);
+    expect(subRes?.data.body.tier).toBe('ENTERPRISE');
 
     // 2. Inject custom quota grants
     const quotaRes = await systemSandboxHandler.handler(
@@ -105,10 +105,10 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants/tenant-acme/quotas', 'PUT')
     );
 
-    expect(quotaRes.status).toBe(200);
-    expect(quotaRes.data.body.maxWorkspaces).toBe(50);
-    expect(quotaRes.data.body.maxSchemas).toBe(1000);
-    expect(quotaRes.data.body.maxRecords).toBe(10000000);
+    expect(quotaRes?.status).toBe(200);
+    expect(quotaRes?.data.body.maxWorkspaces).toBe(50);
+    expect(quotaRes?.data.body.maxSchemas).toBe(1000);
+    expect(quotaRes?.data.body.maxRecords).toBe(10000000);
   });
 
   it('issues ephemeral assume-tenant token with dual-context claims', async () => {
@@ -121,16 +121,16 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/tenants/tenant-us-east-1/assume', 'POST')
     );
 
-    expect(res.status).toBe(200);
-    expect(res.data.body.actorTenantId).toBe('SYSTEM');
-    expect(res.data.body.effectiveTenantId).toBe('tenant-us-east-1');
-    expect(res.data.body.ephemeralToken).toBeTruthy();
+    expect(res?.status).toBe(200);
+    expect(res?.data.body.actorTenantId).toBe('SYSTEM');
+    expect(res?.data.body.effectiveTenantId).toBe('tenant-us-east-1');
+    expect(res?.data.body.ephemeralToken).toBeTruthy();
 
-    const decoded = decodeJwt(res.data.body.ephemeralToken);
+    const decoded = decodeJwt(res?.data.body.ephemeralToken || '');
     expect(decoded?.tenantId).toBe('tenant-us-east-1');
     expect(decoded?.actor_tid).toBe('SYSTEM');
     expect(decoded?.roles).toContain('ROLE_SYSTEM_CUSTODIAN');
-    expect(res.data.body.authorities).toContain('ROLE_SYSTEM_CUSTODIAN');
+    expect(res?.data.body.authorities).toContain('ROLE_SYSTEM_CUSTODIAN');
   });
 
   it('manages RBAC matrix and universal users lockdown', async () => {
@@ -139,8 +139,8 @@ describe('SystemFleet Sandbox Handler', () => {
       { url: '/api/v1/system/roles', method: 'GET' },
       createContext('/api/v1/system/roles')
     );
-    expect(rolesRes.status).toBe(200);
-    expect(rolesRes.data.body.length).toBeGreaterThanOrEqual(4);
+    expect(rolesRes?.status).toBe(200);
+    expect(rolesRes?.data.body.length).toBeGreaterThanOrEqual(4);
 
     // 2. Lock user
     const lockRes = await systemSandboxHandler.handler(
@@ -152,7 +152,7 @@ describe('SystemFleet Sandbox Handler', () => {
       createContext('/api/v1/system/users/usr-acme-admin/lock', 'PUT')
     );
 
-    expect(lockRes.status).toBe(200);
-    expect(lockRes.data.body.locked).toBe(true);
+    expect(lockRes?.status).toBe(200);
+    expect(lockRes?.data.body.locked).toBe(true);
   });
 });

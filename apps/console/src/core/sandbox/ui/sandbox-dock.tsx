@@ -21,6 +21,7 @@ import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 import { usersSandboxRepo } from '../handlers/users-sandbox-handler';
 import { tasksSandboxRepo } from '../handlers/tasks-sandbox-handler';
 import { mockFleetStore } from '../handlers/system-sandbox-handler';
+import { createMockJwt } from '../handlers/auth-sandbox-handler';
 import { sandboxWorkspaceRepository } from '../handlers/workspace-sandbox-handler';
 import { chatsSandboxRepo } from '../handlers/chats-sandbox-handler';
 import { appsSandboxRepo } from '../handlers/apps-sandbox-handler';
@@ -114,6 +115,24 @@ export function SandboxDock() {
       toast.error(`Dashboard Access Failed: ${status}`);
       setDashboardData(null);
     }
+  };
+
+  const expireAccessToken = () => {
+    const { refreshToken } = useSpringAuthStore.getState();
+    const expiredAccess = createMockJwt({
+      sub: 'expired_user',
+      roles: ['ROLE_USER'],
+      isSandbox: true,
+      iat: Math.floor(Date.now() / 1000) - 7200,
+      exp: Math.floor(Date.now() / 1000) - 3600,
+    });
+    useSpringAuthStore.getState().setTokens(expiredAccess, refreshToken || '');
+    toast.info('Access token manually expired');
+  };
+
+  const expireRefreshToken = () => {
+    clearTokens();
+    toast.info('Refresh token manually expired / cleared');
   };
 
   const handleHardLogout = async () => {
