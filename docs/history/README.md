@@ -211,6 +211,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`196`](196_master_integration_plan_iteration2_phase5_master_sync.md) | 2026-10-14 | Master Integration Plan (Iteration 2) Phase 5: Master Architecture Sync & End-to-End Validation | Synced SYSTEM_ARCHITECTURE_DOCUMENT.md with Sections 8, 9, 10, verified all test suites, and completed Master Integration Plan Iteration 2 |
 | [`197`](197_enterprise_telemetry_non_invasive_tracing_ir_render.md) | 2026-10-14 | Enterprise Telemetry: Non-Invasive Distributed Tracing for IR-Render Execution | Implemented ambient Tracer with AsyncLocalStorage, automatic Logger correlation, coarse-phase spans for ir-render, and --traceparent CLI support |
 | [`198`](198_deprecate_new_story_config_emission_and_add_update_merge_mode.md) | 2026-10-14 | Deprecate New Story-Config Emission & Enforce Update/Merge Mode in Auto-Config | Omit story-config.json for new project scaffolding, retain update/merge mode when existing, support explicit export overrides |
+| [`199`](199_auto_config_asset_staging_and_narrative_frameworks_guide.md) | 2026-10-14 | Auto-Config Asset Staging & Narrative Frameworks Developer Guide | Created comprehensive guide in docs/guide/AUTO_CONFIG_ASSET_STAGING_GUIDE.md detailing asset requirements for Pipelines 1-6 and 6 Narrative Frameworks |
 
 
 

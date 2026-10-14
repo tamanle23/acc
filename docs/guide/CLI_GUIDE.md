@@ -23,6 +23,7 @@ acc/
 ├── docs/                      # Tài liệu kỹ thuật, hướng dẫn & đặc tả hệ thống
 │   ├── guide/
 │   │   ├── CLI_GUIDE.md       # Sách hướng dẫn toàn diện Unified CLI & Monorepo
+│   │   ├── AUTO_CONFIG_ASSET_STAGING_GUIDE.md # Hướng dẫn chuẩn bị Asset & Narrative Frameworks
 │   │   ├── SOUND_EFFECTS_CLI_GUIDE.md
 │   │   └── OVERLAY_EFFECTS_CLI.md
 │   ├── SYSTEM_ARCHITECTURE_DOCUMENT.md
