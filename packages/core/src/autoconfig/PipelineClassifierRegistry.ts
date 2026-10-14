@@ -61,6 +61,10 @@ export class PipelineClassifierRegistry {
     return Array.from(this.strategies.values());
   }
 
+  public static listAll(): IPipelineClassifierStrategy[] {
+    return this.list();
+  }
+
   public static resolve(
     manifest: DiscoveredAssetManifest,
     overridePipelineId?: string

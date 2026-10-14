@@ -104,7 +104,7 @@ async function run(): Promise<void> {
   }
 
   if (!confirmPipeline) {
-    const allStrategies = PipelineClassifierRegistry.listAll();
+    const allStrategies = PipelineClassifierRegistry.list();
     const selection = await prompt.select({
       message: 'Select target Canonical Pipeline archetype:',
       options: allStrategies.map((s) => ({
