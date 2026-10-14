@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { useMetadataUiStore } from '../store/use-metadata-ui-store';
 import {
   useEntityType,
@@ -34,6 +35,9 @@ export const MetadataFeature: React.FC = () => {
   const navigate = route.useNavigate();
   const searchParams = route.useSearch();
 
+  // Optimization: Use granular Zustand selector with `useShallow` instead of full store subscription (`useMetadataUiStore()`).
+  // Subscribing to the entire store causes `MetadataFeature` to re-render whenever ANY store property changes (e.g. dialog states,
+  // grid pagination, or search query), even if those changes do not affect this component layout.
   const {
     selectedEntityTypeId,
     setSelectedEntityTypeId,
@@ -45,7 +49,20 @@ export const MetadataFeature: React.FC = () => {
     canManageSchema,
     openBlueprintGallery,
     openCreateEntityTypeDialog,
-  } = useMetadataUiStore();
+  } = useMetadataUiStore(
+    useShallow((state) => ({
+      selectedEntityTypeId: state.selectedEntityTypeId,
+      setSelectedEntityTypeId: state.setSelectedEntityTypeId,
+      activeTab: state.activeTab,
+      setActiveTab: state.setActiveTab,
+      workspaceMode: state.workspaceMode,
+      toggleWorkspaceMode: state.toggleWorkspaceMode,
+      currentUserRole: state.currentUserRole,
+      canManageSchema: state.canManageSchema,
+      openBlueprintGallery: state.openBlueprintGallery,
+      openCreateEntityTypeDialog: state.openCreateEntityTypeDialog,
+    }))
+  );
 
 
   // 1. Initial Sync from URL to Store

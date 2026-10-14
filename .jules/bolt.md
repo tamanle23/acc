@@ -13,3 +13,7 @@
 ## 2026-10-11 - Pre-Indexing Array Lookups in Matrix/Grid Component Loops
 **Learning:** In matrix/grid table rendering components like `RbacMatrixGrid` that iterate over $N$ items and $M$ columns, performing nested array operations like `roles.find(...)` inside table cells creates an $O(N \cdot M \cdot K)$ overhead on every render pass.
 **Action:** Pre-index entity arrays into a Map with `useMemo` (`roleMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])`) before rendering the table. This reduces nested inner-loop entity lookups from $O(M)$ array scans to $O(1)$ constant time Map accesses.
+
+## 2026-10-12 - Granular Zustand Store Selectors with `useShallow`
+**Learning:** In feature root components like `MetadataFeature` that subscribe to Zustand stores containing many UI modal dialog flags, pagination states, and CRUD actions, calling `useStore()` without a selector causes the root component and its tree to re-render on every single state mutation (e.g. opening an edit modal or changing page size in a child dialog).
+**Action:** Wrap selected Zustand state slices in `useShallow` (from `zustand/react/shallow`) in feature components (`useStore(useShallow((state) => ({ ... })))`) to preserve shallow object equality and prevent unnecessary re-renders when unrelated store properties update.
