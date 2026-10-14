@@ -4,6 +4,7 @@ import React from 'react';
 import { BlueprintCard } from '../../components/blueprint-gallery/blueprint-card';
 import { BlueprintGraphCanvas } from '../../components/blueprint-gallery/blueprint-graph-canvas';
 import { BlueprintTableView } from '../../components/blueprint-gallery/blueprint-table-view';
+import { DialogResizeHandles } from '@/components/dialog-resize-handles';
 import { LayoutModeSwitcher } from '@/components/layout-switcher';
 import type { BlueprintSummaryDto, BlueprintEntityType, BlueprintRelationship } from '../../api/types';
 
@@ -146,6 +147,34 @@ describe('LayoutModeSwitcher & BlueprintTableView Components', () => {
     const useButtons = screen.getAllByRole('button', { name: /Use/i });
     fireEvent.click(useButtons[0]);
     expect(handleSelect).toHaveBeenCalledWith('bp_ecommerce_v1');
+  });
+});
+
+describe('useResizableDialog & DialogResizeHandles', () => {
+  it('renders resize handles and supports dragging to resize', () => {
+    const handleStartResize = vi.fn();
+    const { getByTestId } = render(
+      <div style={{ position: 'relative', width: 400, height: 300 }}>
+        <DialogResizeHandles onStartResize={handleStartResize} isMaximized={false} />
+      </div>
+    );
+
+    const cornerHandle = getByTestId('resize-handle-bottom-right');
+    expect(cornerHandle).toBeDefined();
+
+    fireEvent.mouseDown(cornerHandle, { clientX: 100, clientY: 100 });
+    expect(handleStartResize).toHaveBeenCalledWith('bottom-right', expect.anything());
+  });
+
+  it('hides resize handles when maximized', () => {
+    const handleStartResize = vi.fn();
+    const { queryByTestId } = render(
+      <div style={{ position: 'relative', width: 400, height: 300 }}>
+        <DialogResizeHandles onStartResize={handleStartResize} isMaximized={true} />
+      </div>
+    );
+
+    expect(queryByTestId('resize-handle-bottom-right')).toBeNull();
   });
 });
 

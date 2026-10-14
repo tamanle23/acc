@@ -18,7 +18,9 @@ import { BlueprintTableView } from './blueprint-table-view';
 import { BlueprintSplitView } from './blueprint-split-view';
 import { TemplatePreviewModal } from './template-preview-modal';
 import { LayoutModeSwitcher, type LayoutMode } from '@/components/layout-switcher';
-import { Search, BookTemplate, Sparkles, Filter, X } from 'lucide-react';
+import { DialogResizeHandles } from '@/components/dialog-resize-handles';
+import { useResizableDialog } from '@/hooks/use-resizable-dialog';
+import { Search, BookTemplate, Sparkles, Filter, X, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY_LAYOUT = 'console:layout:blueprint-catalog';
@@ -37,6 +39,23 @@ export const BlueprintGalleryDialog: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [previewBlueprintId, setPreviewBlueprintId] = useState<string | null>(null);
+
+  // Modal Resizing & Maximize / Restore Controls
+  const {
+    size,
+    isMaximized,
+    isResizing,
+    toggleMaximize,
+    resetToDefault,
+    startResize,
+    dialogStyle,
+  } = useResizableDialog({
+    storageKey: 'console:dialog:blueprint-catalog:dimensions',
+    defaultWidth: 1150,
+    defaultHeight: 780,
+    minWidth: 640,
+    minHeight: 480,
+  });
 
   // Initialize layout mode from localStorage or fallback to 'grid'
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
@@ -98,22 +117,66 @@ export const BlueprintGalleryDialog: React.FC = () => {
         open={isBlueprintGalleryOpen}
         onOpenChange={(open) => !open && closeBlueprintGallery()}
       >
-        <DialogContent className="max-w-6xl w-[95vw] h-[88vh] flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl overflow-hidden">
-          <DialogHeader className="space-y-1 shrink-0 pb-3 border-b border-border/40">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                <BookTemplate className="h-5 w-5" />
+        <DialogContent
+          style={dialogStyle}
+          className={cn(
+            'flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl relative select-none',
+            isResizing && 'transition-none select-none cursor-grabbing',
+            !isResizing && 'transition-[width,height] duration-150 ease-out'
+          )}
+        >
+          {/* Freeform Edge & Corner Resize Drag Handles */}
+          <DialogResizeHandles onStartResize={startResize} isMaximized={isMaximized} />
+
+          <DialogHeader className="space-y-1 shrink-0 pb-3 border-b border-border/40 pr-16">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 shrink-0">
+                  <BookTemplate className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 truncate">
+                    <span>Domain Blueprint Catalog</span>
+                    <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
+                      Sub-250ms Seeding
+                    </span>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground truncate">
+                    Jump-start your workspace with production-ready schemas, attributes, and graph relationships.
+                  </DialogDescription>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                  <span>Domain Blueprint Catalog</span>
-                  <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                    Sub-250ms Seeding
-                  </span>
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
-                  Jump-start your workspace with production-ready schemas, attributes, and graph relationships.
-                </DialogDescription>
+
+              {/* Window Controls: Maximize/Restore & Reset Dimensions */}
+              <div className="flex items-center gap-1 shrink-0 -mr-6">
+                {!isMaximized && (size.width !== 1150 || size.height !== 780) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={resetToDefault}
+                    title="Reset to default window size"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
+                    aria-label="Reset window size"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleMaximize}
+                  title={isMaximized ? 'Restore window size' : 'Maximize window'}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
+                  aria-label={isMaximized ? 'Restore window size' : 'Maximize window'}
+                >
+                  {isMaximized ? (
+                    <Minimize2 className="h-4 w-4" />
+                  ) : (
+                    <Maximize2 className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
           </DialogHeader>
