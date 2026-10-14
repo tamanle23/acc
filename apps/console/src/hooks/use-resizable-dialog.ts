@@ -8,6 +8,8 @@ export interface UseResizableOptions {
   minHeight?: number;
   maxWidthRatio?: number; // e.g. 0.98 of window
   maxHeightRatio?: number; // e.g. 0.96 of window
+  anchor?: 'top' | 'center';
+  topOffset?: string; // CSS top offset when anchored to top, e.g. '3.5rem' or '5vh'
 }
 
 export type ResizeDirection =
@@ -29,6 +31,8 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
     minHeight = 440,
     maxWidthRatio = 0.96,
     maxHeightRatio = 0.88,
+    anchor = 'top',
+    topOffset = '3.5rem',
   } = options;
 
   // Compute responsive defaults based on available window space
@@ -148,12 +152,11 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
       let newWidth = startWidth;
       let newHeight = startHeight;
 
-      // Because dialog is centered via translate(-50%, -50%), dragging right adds 2 * deltaX for symmetrical,
-      // or if we resize from corner, each 1px mouse movement increases width/height by 2x if center-anchored,
-      // OR 1x if we drag right edge. With standard transform translate(-50%, -50%), expanding by delta expands around center.
-      // 2 * deltaX produces natural 1:1 cursor-following resize behavior on centered modals!
+      // Because dialog is horizontally centered via translate-x-[-50%], dragging left/right adds 2 * deltaX for symmetrical resize.
       const factorX = 2;
-      const factorY = 2;
+      // When anchored to top (natural desktop window layout), dragging the bottom edge increases height directly by 1 * deltaY.
+      // When center-anchored, dragging from bottom/top expands around center with 2 * deltaY.
+      const factorY = anchor === 'top' ? 1 : 2;
 
       switch (direction) {
         case 'right':
@@ -203,18 +206,26 @@ export function useResizableDialog(options: UseResizableOptions = {}) {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isResizing, maxWidthRatio, maxHeightRatio, minWidth, minHeight]);
+  }, [isResizing, maxWidthRatio, maxHeightRatio, minWidth, minHeight, anchor]);
 
   // Compute inline styles for the DialogContent element
   const dialogStyle: React.CSSProperties = isMaximized
     ? {
+        position: 'fixed',
+        top: '1.5vh',
+        left: '1vw',
         width: '98vw',
-        height: '96vh',
+        height: '97vh',
         maxWidth: '98vw',
-        maxHeight: '96vh',
+        maxHeight: '97vh',
+        transform: 'none',
         margin: 0,
       }
     : {
+        position: 'fixed',
+        top: anchor === 'top' ? topOffset : '50%',
+        left: '50%',
+        transform: anchor === 'top' ? 'translateX(-50%)' : 'translate(-50%, -50%)',
         width: `min(${size.width}px, ${Math.round(maxWidthRatio * 100)}vw)`,
         height: `min(${size.height}px, ${Math.round(maxHeightRatio * 100)}vh)`,
         maxWidth: `${Math.round(maxWidthRatio * 100)}vw`,

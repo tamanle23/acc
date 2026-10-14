@@ -177,7 +177,7 @@ describe('useResizableDialog & DialogResizeHandles', () => {
     expect(queryByTestId('resize-handle-bottom-right')).toBeNull();
   });
 
-  it('computes centered dialogStyle with margin 0 and responsive constraints', async () => {
+  it('computes top-anchored dialogStyle with margin 0 and responsive constraints', async () => {
     const { useResizableDialog } = await import('@/hooks/use-resizable-dialog');
     const { renderHook, act } = await import('@testing-library/react');
 
@@ -190,6 +190,10 @@ describe('useResizableDialog & DialogResizeHandles', () => {
     );
 
     expect(result.current.dialogStyle.margin).toBe(0);
+    expect(result.current.dialogStyle.position).toBe('fixed');
+    expect(result.current.dialogStyle.top).toBe('3.5rem');
+    expect(result.current.dialogStyle.left).toBe('50%');
+    expect(result.current.dialogStyle.transform).toBe('translateX(-50%)');
     expect(result.current.dialogStyle.width).toBeDefined();
     expect(result.current.dialogStyle.height).toBeDefined();
 
@@ -200,7 +204,9 @@ describe('useResizableDialog & DialogResizeHandles', () => {
 
     expect(result.current.isMaximized).toBe(true);
     expect(result.current.dialogStyle.width).toBe('98vw');
-    expect(result.current.dialogStyle.height).toBe('96vh');
+    expect(result.current.dialogStyle.height).toBe('97vh');
+    expect(result.current.dialogStyle.top).toBe('1.5vh');
+    expect(result.current.dialogStyle.transform).toBe('none');
     expect(result.current.dialogStyle.margin).toBe(0);
 
     // Reset to default
@@ -208,6 +214,8 @@ describe('useResizableDialog & DialogResizeHandles', () => {
       result.current.resetToDefault();
     });
     expect(result.current.isMaximized).toBe(false);
+    expect(result.current.dialogStyle.top).toBe('3.5rem');
+    expect(result.current.dialogStyle.transform).toBe('translateX(-50%)');
     expect(result.current.dialogStyle.margin).toBe(0);
   });
 });
