@@ -34,6 +34,8 @@ const targetDir = path.resolve(process.cwd(), targetDirArg);
 
 // CLI Flags
 const pipelineOverride = getArgValue('--pipeline') as AutoScaffoldOptions['pipelineOverride'];
+const frameworkOverride = getArgValue('--framework');
+const durationOverride = getArgValue('--duration') ? parseFloat(getArgValue('--duration')!) : undefined;
 const aspectOverride = getArgValue('--aspect') as AutoScaffoldOptions['aspectRatio'];
 const fpsOverride = getArgValue('--fps') ? (parseInt(getArgValue('--fps')!, 10) as 24 | 30 | 60) : undefined;
 const depthArg = args.includes('--depth') ? true : args.includes('--no-depth') ? false : undefined;
@@ -49,12 +51,14 @@ async function run(): Promise<void> {
     // Non-interactive automated execution
     Logger.info('auto-config', `Running in non-interactive mode for: ${targetDir}`);
     const result = await AutoConfigEngineFacade.scaffoldDirectory(targetDir, {
-      pipelineOverride: pipelineOverride || 'auto',
+      pipelineOverride: pipelineOverride || (frameworkOverride ? '4' : 'auto'),
       aspectRatio: aspectOverride,
       fps: fpsOverride,
       enableDepth3D: depthArg,
       enableTransitions: transitionsArg,
       dryRun: isDryRun,
+      scriptingFramework: frameworkOverride,
+      targetDurationSec: durationOverride,
     });
 
     Logger.info('auto-config', `✅ Scaffolding complete for Pipeline ${result.pipelineId}`);
@@ -156,6 +160,30 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
+  // Narrative Scripting Framework resolution
+  let chosenFramework = frameworkOverride;
+  if (!chosenFramework && (chosenPipeline === '4' || (chosenModalities as string[]).includes('video'))) {
+    const { ScriptingFrameworkRegistry } = await import('@acc/core');
+    const frameworks = ScriptingFrameworkRegistry.list();
+    const selectFramework = await prompt.select({
+      message: 'Select Narrative Scripting Framework (Pacing & Emotional Arc):',
+      options: [
+        { label: 'Auto (Heuristic classification from topic/content)', value: 'auto' },
+        ...frameworks.map((f) => ({
+          label: `${f.name} (${f.id}) - ${f.targetStyles.join(', ')}`,
+          value: f.id,
+        })),
+      ],
+      initialValue: 'auto',
+    });
+
+    if (prompt.isCancel(selectFramework)) {
+      prompt.cancel('Operation cancelled.');
+      process.exit(0);
+    }
+    chosenFramework = selectFramework === 'auto' ? undefined : (selectFramework as string);
+  }
+
   const scaffoldSpin = prompt.spinner();
   scaffoldSpin.start('Synthesizing Universal PipelineIR, Director Config, and Legacy Bridge...');
 
@@ -167,6 +195,8 @@ async function run(): Promise<void> {
     enableDepth3D: depthArg,
     enableTransitions: transitionsArg,
     dryRun: isDryRun,
+    scriptingFramework: chosenFramework,
+    targetDurationSec: durationOverride,
   });
 
   scaffoldSpin.stop('Synthesized project configurations successfully!');
