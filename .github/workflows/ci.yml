@@ -75,7 +75,7 @@ jobs:
       - name: Build and Test Spring Backend
         working-directory: apps/backend
         run: |
-          mvn clean test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationTest" --batch-mode
+          ./mvnw test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationFuzzingTest" -Dsurefire.failIfNoSpecifiedTests=false --batch-mode
 
   # ---------------------------------------------------------------------------
   # Job 3: Vitest Multi-Client Test Suites

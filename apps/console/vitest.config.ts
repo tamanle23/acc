@@ -8,7 +8,6 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@unipost/tokens': path.resolve(__dirname, '../../packages/tokens/src/index.ts'),
-      '@unipost/sandbox': path.resolve(__dirname, '../../packages/sandbox/src/index.ts'),
     },
   },
   test: {
