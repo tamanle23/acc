@@ -1,11 +1,11 @@
 # Integration Master Plan (Iteration 3)
-## Workstream 6: Battle-Tested Distributed Workflow Orchestration Engine (Netflix Conductor OSS & Local-First Architecture)
+## Workstream 6: Battle-Tested Distributed Workflow Orchestration Engine (Netflix Conductor OSS, Local-First Architecture & Pure TypeScript Worker SDK)
 
 ---
 
 ## 1. Executive Summary & Architectural Vision
 
-Iteration 3 advances the UniPost platform from metadata-driven data persistence and visual state machines to a **battle-tested, distributed Workflow Orchestration Engine**. Drawing architectural patterns directly from **Netflix Conductor OSS** and modern **Local-First / Hexagonal Systems**, this engine delivers deterministic execution, zero-loss snapshot isolation, and unified multi-cloud/local deployment capabilities.
+Iteration 3 advances the UniPost platform from metadata-driven data persistence and visual state machines to a **battle-tested, distributed Workflow Orchestration Engine**. Drawing architectural patterns directly from **Netflix Conductor OSS** and modern **Local-First / Hexagonal Systems**, this engine delivers deterministic execution, zero-loss snapshot isolation, unified multi-cloud/local deployment capabilities, and a **first-class Pure TypeScript Worker SDK (`@unipost/worker`)**.
 
 While State Machines (FSM) govern lifecycle state transitions on individual aggregate entities (e.g. `DRAFT -> SUBMITTED -> APPROVED`), enterprise operations require high-throughput multi-step orchestration across distributed systems:
 - Parallel task fan-out and synchronization barriers (`FORK_JOIN`, `DYNAMIC_FORK`)
@@ -14,57 +14,62 @@ While State Machines (FSM) govern lifecycle state transitions on individual aggr
 - Relational lease queueing with auto-heartbeat lease extensions
 - Automated compensating actions (Distributed Sagas)
 - Zero-I/O deterministic decider loops
+- **Polyglot Worker Execution**: Native execution of tasks via Java 21 Virtual Threads AND lightweight, cross-platform TypeScript workers (Web, Node.js, Bun, React Native/Mobile, and Edge).
 
 The engine is implemented as a dedicated Maven submodule (`workflow-engine`) within `apps/backend/` and organized around **Hexagonal Architecture (Ports & Adapters)**, strictly separating a 100% deterministic, zero-I/O functional core (`PureDecider`) from pluggable imperative persistence and worker transport adapters. It bridges **code-first developer authoring** with **zero-code visual builder authoring** (`@xyflow/react` in `@unipost/console`) via a bidirectional **Canonical Intermediate Representation (IR)**.
 
 ```
-       +-------------------------------------------------------+
-       |               Authoring Interfaces                    |
-       |                                                       |
-       |   [ Developer IDE ]            [ Web Canvas (React Flow) ]
-       |   Java Fluent DSL              Visual Workflow Studio |
-       |   (.builder().build())         (Drag, Drop, Connect)  |
-       +---------------------------+---------------------------+
-                                   |
-                                   v
-       +-------------------------------------------------------+
-       |       Canonical Workflow Intermediate Representation   |
-       |                       (IR / JSONB)                    |
-       |   - nodes: Task key, handlerRef, timeout, retries     |
-       |   - nodeTypes: SIMPLE, SWITCH, FORK_JOIN, WAIT, etc.  |
-       |   - layoutMetadata: (x, y) coordinates & zoom         |
-       +---------------------------+---------------------------+
-                                   |
-                Topological Sorter & Acyclicity Verifier
-                       (Kahn's Algorithm + Tarjan)
-                                   |
-                                   v
-       +-------------------------------------------------------+
-       |             PureDecider (Zero-I/O Core)               |
-       |   - 100% Pure & Deterministic State Machine Evaluator |
-       |   - Strategy Pattern per Node Type                    |
-       |   - Emits Sealed Engine Commands                      |
-       +---------------------------+---------------------------+
-                                   |
-                     UnitOfWork & Storage Adapters
-         (PostgreSQL RLS SKIP LOCKED / SQLite WAL Local-First)
-                                   |
-                                   v
-       +-------------------------------------------------------+
-       |       Single-Column Lease Queue (task_queue)          |
-       |   - visible_at_epoch_ms governs schedule, lease,      |
-       |     async callback deferrals, and retry backoffs      |
-       +---------------------------+---------------------------+
-                                   |
-               Pull-Based Worker Transport (In-Process / HTTP)
-                                   |
-                                   v
-       +-------------------------------------------------------+
-       |     Virtual-Thread Conductor Worker SDK & Host        |
-       |   - Semaphore-governed max concurrency per task type  |
-       |   - Composable Middleware: Heartbeat, Validation, Err |
-       |   - TaskOutcome: Completed, InProgress, Failed        |
-       +-------------------------------------------------------+
+       +-------------------------------------------------------------------+
+       |                       Authoring Interfaces                        |
+       |                                                                   |
+       |   [ Developer IDE ]            [ Web Canvas (React Flow) ]         |
+       |   Java Fluent DSL              Visual Workflow Studio             |
+       |   TypeScript Fluent Builder    (Drag, Drop, Connect)              |
+       +---------------------------------+---------------------------------+
+                                         |
+                                         v
+       +-------------------------------------------------------------------+
+       |             Canonical Workflow Intermediate Representation         |
+       |                             (IR / JSONB)                          |
+       |   - nodes: Task key, handlerRef, timeout, retries                 |
+       |   - nodeTypes: SIMPLE, SWITCH, FORK_JOIN, WAIT, etc.              |
+       |   - layoutMetadata: (x, y) coordinates & zoom                     |
+       +---------------------------------+---------------------------------+
+                                         |
+                      Topological Sorter & Acyclicity Verifier
+                             (Kahn's Algorithm + Tarjan)
+                                         |
+                                         v
+       +-------------------------------------------------------------------+
+       |                   PureDecider (Zero-I/O Core)                     |
+       |   - 100% Pure & Deterministic State Machine Evaluator             |
+       |   - Strategy Pattern per Node Type                                |
+       |   - Emits Sealed Engine Commands                                  |
+       +---------------------------------+---------------------------------+
+                                         |
+                           UnitOfWork & Storage Adapters
+               (PostgreSQL RLS SKIP LOCKED / SQLite WAL Local-First)
+                                         |
+                                         v
+       +-------------------------------------------------------------------+
+       |             Single-Column Lease Queue (task_queue)                |
+       |   - visible_at_epoch_ms governs schedule, lease,                  |
+       |     async callback deferrals, and retry backoffs                  |
+       +---------------------------------+---------------------------------+
+                                         |
+                     Pull-Based Worker Transport Port (HTTP / In-Process)
+                                         |
+                     +-------------------+-------------------+
+                     |                                       |
+                     v                                       v
+       +---------------------------+       +-------------------------------+
+       | Java Virtual-Thread Host  |       | Pure TypeScript Worker SDK    |
+       | (apps/backend/wf-engine)  |       | (@unipost/worker package)     |
+       | - Virtual-Thread per Task |       | - Universal (Node/Bun/Browser)|
+       | - Semaphore Concurrency   |       | - Promise-based Concurrency   |
+       | - Java Middleware Chain   |       | - Composable Async Middleware |
+       | - TaskOutcome: Sealed Rec |       | - Discriminated TaskOutcome   |
+       +---------------------------+       +-------------------------------+
 ```
 
 ---
@@ -84,21 +89,23 @@ The engine is implemented as a dedicated Maven submodule (`workflow-engine`) wit
    - State updates and queue scheduling occur inside a single atomic transaction (`UnitOfWork`).
    - Relational `task_queue` outbox table uses a single unified `visible_at_epoch_ms` column governing initial scheduling (`now`), worker lease lock (`now + responseTimeoutMs`), async deferral (`now + callbackAfterMs`), and exponential retry backoff (`now + backoffMs`).
    - Supports PostgreSQL `FOR UPDATE SKIP LOCKED` for cloud-native clusters and SQLite WAL mode for local-first/desktop execution. Zero external broker dependency (no mandatory Kafka/Redis/RabbitMQ).
-5. **Stateless Polling Workers with Virtual Threads & Middleware Chain**:
-   - Pull-based `WorkerTransportPort` (`pollBatch`, `reportTaskResult`, `heartbeat`) executed by `WorkerHost` using Java 21 Virtual Threads and `java.util.concurrent.Semaphore` concurrency controls.
+5. **Polyglot Stateless Polling Workers with Symmetric Middleware Chains**:
+   - Both Java `WorkerHost` and TypeScript `WorkflowWorkerHost` adhere to the exact same pull-based protocol (`pollBatch`, `reportTaskResult`, `heartbeat`).
    - Execution runs through composable middleware:
      - `SchemaValidationMiddleware` (validates task input/output contracts)
      - `AutoHeartbeatMiddleware` (periodically extends lease timestamp in background during long operations)
      - `ErrorClassificationMiddleware` (differentiates transient retryable errors from terminal failures).
 6. **Multi-Tenant RLS & Sovereign Context Preservation**:
    - All workflow definition, execution, and task queue records strictly partition by `tenant_id` and `workspace_id`.
-   - W3C traceparent context (`trace_id`, `tenant_id`, `workspace_id`, `task_id`) propagates through every decider step, worker execution log, and outbox event.
+   - W3C traceparent context (`trace_id`, `tenant_id`, `workspace_id`, `task_id`) propagates through every decider step, worker execution log, and outbox event across Java and TypeScript boundaries.
 7. **Zero-Synthetic-Mocks & Active Runtime Execution Invariant**:
    - In accordance with monorepo rules, tests must exercise real production classes, real SQLite/PostgreSQL schemas, and real deciders. Golden trace replay suites guarantee zero regressions.
 
 ---
 
-## 3. Submodule Layout: `apps/backend/workflow-engine/`
+## 3. Directory Layouts (Backend & Pure TypeScript SDK)
+
+### 3.1 Backend Module: `apps/backend/workflow-engine/`
 
 ```text
 apps/backend/
@@ -143,8 +150,9 @@ apps/backend/
         │   │   │   │   ├── SqliteJdbcPersistenceAdapter.java # Pure JDBC + SQLite WAL mode (Local-First)
         │   │   │   │   └── PostgresJdbcPersistenceAdapter.java # PostgreSQL RLS + FOR UPDATE SKIP LOCKED
         │   │   │   └── transport/
-        │   │   │       └── InProcessTransportAdapter.java
-        │   │   └── worker/                              # WORKER SDK & MIDDLEWARE PIPELINE
+        │   │   │       ├── InProcessTransportAdapter.java
+        │   │   │       └── HttpWorkerApiAdapter.java    # Spring MVC endpoints for TypeScript workers
+        │   │   └── worker/                              # JAVA WORKER SDK & MIDDLEWARE PIPELINE
         │   │       ├── WorkerHost.java                  # Virtual-thread poller, Semaphore concurrency & adaptive backoff
         │   │       ├── WorkerConfig.java                # Record for taskType, domain, concurrency, poll intervals
         │   │       ├── TaskContext.java                 # Context passed to worker handler (input, attempt, heartbeat, log)
@@ -172,186 +180,168 @@ apps/backend/
                     └── WorkflowLifecycleE2ETest.java    # End-to-end: retries, callbackAfterSeconds, lease recovery
 ```
 
+### 3.2 Pure TypeScript Worker SDK: `packages/worker/`
+
+Packaged as a lightweight, zero-external-dependency TypeScript package (`@unipost/worker`) linked via pnpm workspace (`workspace:*`).
+
+```text
+packages/worker/
+├── package.json                                         # Package config (@unipost/worker, types, exports)
+├── tsconfig.json                                        # Extends @unipost/typescript-config/base.json
+└── src/
+    ├── index.ts                                         # Public API export barrel
+    ├── types.ts                                         # Pure TypeScript types & Discriminated Unions
+    │   ├── TaskStatus.ts                                # 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT'
+    │   ├── TaskContext.ts                               # Type-safe context passed to TypeScript worker
+    │   ├── TaskOutcome.ts                               # Discriminated union: Completed | InProgress | Failed
+    │   └── WorkerConfig.ts                              # Concurrency, pollIntervals, domain, batchSize
+    ├── client/
+    │   ├── WorkerTransportClient.ts                     # Fetch-based or In-Process client protocol
+    │   └── HttpWorkerTransportClient.ts                 # Real HTTP polling client wired to backend endpoints
+    ├── host/
+    │   ├── WorkflowWorkerHost.ts                        # Master worker host managing concurrency & lifecycle
+    │   ├── TaskPoller.ts                                # Adaptive exponential backoff poller per taskType
+    │   └── ConcurrencyLimiter.ts                        # In-flight async promise concurrency limiter
+    ├── middleware/
+    │   ├── Middleware.ts                                # Composable middleware interface
+    │   ├── MiddlewarePipeline.ts                        # Chain of responsibility executor
+    │   ├── AutoHeartbeatMiddleware.ts                   # Periodic timer triggering heartbeat while task runs
+    │   ├── SchemaValidationMiddleware.ts                # Invariant & Zod/JSON Schema validation
+    │   └── ErrorClassificationMiddleware.ts             # Maps errors to retryable vs terminal TaskOutcome
+    └── __tests__/
+        ├── worker-host.test.ts                          # Unit tests verifying registration, polling, shutdown
+        ├── middleware.test.ts                           # Middleware execution order & auto-heartbeat timer tests
+        └── e2e-worker.test.ts                           # End-to-end task execution with mock transport
+```
+
 ---
 
-## 4. Core Domain Contracts & Data Structures
+## 4. Pure TypeScript Worker SDK Specifications (`packages/worker/`)
 
-### 4.1 Sealed Interface Commands (`EngineCommand.java`)
-Java 21 `sealed interface` and `record` types model all side-effects requested by `PureDecider`:
-```java
-package com.unipost.workflow.core.model;
+### 4.1 Type-Safe Discriminated Task Outcome (`src/types.ts`)
 
-import java.util.Map;
+```typescript
+export type TaskStatus = 
+  | 'SCHEDULED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'TIMED_OUT'
+  | 'SKIPPED';
 
-public sealed interface EngineCommand permits
-    EngineCommand.ScheduleTask,
-    EngineCommand.UpdateTaskStatus,
-    EngineCommand.DeferTaskCallback,
-    EngineCommand.TransitionWorkflow {
+export type TaskOutcome =
+  | { status: 'COMPLETED'; output?: Record<string, unknown> }
+  | { status: 'IN_PROGRESS'; callbackAfterSeconds: number; partialOutput?: Record<string, unknown> }
+  | { status: 'FAILED'; errorMessage: string; retryable: boolean; output?: Record<string, unknown> };
 
-    record ScheduleTask(
-        String taskId,
-        String taskType,
-        String referenceName,
-        String domain,
-        Map<String, Object> input,
-        int attempt,
-        long visibleAtEpochMs,
-        long responseTimeoutMs
-    ) implements EngineCommand {}
+export const TaskOutcome = {
+  completed: (output?: Record<string, unknown>): TaskOutcome => ({
+    status: 'COMPLETED',
+    output: output ?? {},
+  }),
+  inProgress: (callbackAfterSeconds: number, partialOutput?: Record<string, unknown>): TaskOutcome => ({
+    status: 'IN_PROGRESS',
+    callbackAfterSeconds,
+    partialOutput: partialOutput ?? {},
+  }),
+  failedRetryable: (errorMessage: string, output?: Record<string, unknown>): TaskOutcome => ({
+    status: 'FAILED',
+    errorMessage,
+    retryable: true,
+    output: output ?? {},
+  }),
+  failedTerminal: (errorMessage: string, output?: Record<string, unknown>): TaskOutcome => ({
+    status: 'FAILED',
+    errorMessage,
+    retryable: false,
+    output: output ?? {},
+  }),
+};
+```
 
-    record UpdateTaskStatus(
-        String taskId,
-        String referenceName,
-        TaskStatus status,
-        Map<String, Object> output,
-        String error
-    ) implements EngineCommand {}
+### 4.2 TypeScript `TaskContext` Interface
 
-    record DeferTaskCallback(
-        String taskId,
-        String referenceName,
-        long visibleAtEpochMs,
-        Map<String, Object> output
-    ) implements EngineCommand {}
+```typescript
+export interface TaskContext<TInput = Record<string, unknown>> {
+  readonly taskId: string;
+  readonly workflowId: string;
+  readonly tenantId: string;
+  readonly workspaceId: string;
+  readonly taskType: string;
+  readonly referenceName: string;
+  readonly domain: string;
+  readonly attempt: number;
+  readonly input: TInput;
+  readonly traceparent?: string;
 
-    record TransitionWorkflow(
-        WorkflowStatus status,
-        Map<String, Object> output,
-        String reason
-    ) implements EngineCommand {}
+  /** Appends a timestamped log to the remote task execution audit trail */
+  log(message: string): void;
+  getLogs(): readonly string[];
+
+  /** Manually signals to the engine that the task is still processing, extending the lease */
+  heartbeat(): Promise<void>;
+
+  /** AbortSignal triggered if the task lease expires or the worker host shuts down */
+  readonly signal: AbortSignal;
 }
 ```
 
-### 4.2 Relational Hybrid Schema (`schema-sqlite.sql` & `schema-postgres.sql`)
-```sql
-CREATE TABLE IF NOT EXISTS workflow_executions (
-  workflow_id TEXT PRIMARY KEY,
-  tenant_id TEXT NOT NULL DEFAULT 'system',
-  workspace_id TEXT NOT NULL DEFAULT 'default',
-  workflow_name TEXT NOT NULL,
-  version INTEGER NOT NULL,
-  status TEXT NOT NULL,
-  definition_snapshot TEXT NOT NULL, -- Frozen JSON WorkflowDefinition (Memento)
-  input_payload TEXT NOT NULL,       -- JSON
-  output_payload TEXT,               -- JSON
-  failure_reason TEXT,
-  created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL
-);
+### 4.3 Task Handler & Worker Configuration
 
-CREATE TABLE IF NOT EXISTS task_executions (
-  task_id TEXT PRIMARY KEY,
-  workflow_id TEXT NOT NULL,
-  tenant_id TEXT NOT NULL DEFAULT 'system',
-  workspace_id TEXT NOT NULL DEFAULT 'default',
-  reference_name TEXT NOT NULL,
-  task_type TEXT NOT NULL,
-  domain TEXT NOT NULL DEFAULT 'default',
-  status TEXT NOT NULL,
-  attempt INTEGER NOT NULL DEFAULT 1,
-  worker_id TEXT,
-  input_payload TEXT NOT NULL,       -- JSON
-  output_payload TEXT,               -- JSON
-  error_details TEXT,
-  task_logs TEXT,                    -- JSON array of timestamped worker logs
-  response_timeout_ms INTEGER NOT NULL DEFAULT 30000,
-  created_at_ms INTEGER NOT NULL,
-  updated_at_ms INTEGER NOT NULL,
-  FOREIGN KEY (workflow_id) REFERENCES workflow_executions(workflow_id)
-);
+```typescript
+export type TaskHandler<TInput = Record<string, unknown>> = (
+  context: TaskContext<TInput>
+) => Promise<TaskOutcome> | TaskOutcome;
 
-CREATE TABLE IF NOT EXISTS task_queue (
-  task_id TEXT PRIMARY KEY,
-  workflow_id TEXT NOT NULL,
-  tenant_id TEXT NOT NULL DEFAULT 'system',
-  workspace_id TEXT NOT NULL DEFAULT 'default',
-  task_type TEXT NOT NULL,
-  domain TEXT NOT NULL DEFAULT 'default',
-  priority INTEGER NOT NULL DEFAULT 0,
-  visible_at_epoch_ms INTEGER NOT NULL,
-  lease_owner TEXT
-);
+export type SimpleTaskHandler<TInput = Record<string, unknown>, TOutput = Record<string, unknown>> = (
+  context: TaskContext<TInput>
+) => Promise<TOutput> | TOutput;
 
-CREATE INDEX IF NOT EXISTS idx_queue_poll 
-  ON task_queue (tenant_id, task_type, domain, visible_at_epoch_ms, priority DESC);
-```
-
-### 4.3 Atomic Queue Polling & Lease Acquisition
-When a worker polls for up to `batchSize` tasks of `taskType` in `domain` at `nowMs`:
-1. Inside an explicit transaction, select eligible `task_id` rows where `tenant_id = ? AND task_type = ? AND domain = ? AND visible_at_epoch_ms <= ?` ordered by `priority DESC, visible_at_epoch_ms ASC LIMIT ?` (using `FOR UPDATE SKIP LOCKED` in PostgreSQL or indexed transaction in SQLite).
-2. Atomically update `task_queue` (`SET visible_at_epoch_ms = nowMs + response_timeout_ms, lease_owner = workerId`) and `task_executions` (`SET status = 'IN_PROGRESS', worker_id = workerId, updated_at_ms = nowMs`).
-3. Commit transaction and return hydrated task payloads to worker.
-
-### 4.4 Worker Contract & Developer Ergonomics (`worker/`)
-
-```java
-package com.unipost.workflow.worker;
-
-import java.util.List;
-import java.util.Map;
-
-public interface TaskContext {
-    String taskId();
-    String workflowId();
-    String tenantId();
-    String workspaceId();
-    String taskType();
-    String referenceName();
-    String domain();
-    int attempt();
-    Map<String, Object> input();
-    <T> T bindInput(Class<T> type); // Jackson conversion helper
-    void log(String message);       // Appends timestamped log to task execution
-    List<String> logs();
-    void heartbeat();               // Manual lease extension trigger
-}
-
-public sealed interface TaskOutcome permits
-    TaskOutcome.Completed,
-    TaskOutcome.InProgress,
-    TaskOutcome.Failed {
-
-    record Completed(Map<String, Object> output) implements TaskOutcome {}
-
-    /** Returns task to queue invisible for callbackAfterSeconds without consuming a retry attempt */
-    record InProgress(long callbackAfterSeconds, Map<String, Object> partialOutput) implements TaskOutcome {}
-
-    /** Explicit failure control: retryable=false maps to FAILED_WITH_TERMINAL_ERROR */
-    record Failed(String errorMessage, boolean retryable, Map<String, Object> output) implements TaskOutcome {}
-
-    static TaskOutcome completed(Map<String, Object> output) {
-        return new Completed(output != null ? output : Map.of());
-    }
-    static TaskOutcome inProgress(long callbackAfterSeconds, Map<String, Object> partialOutput) {
-        return new InProgress(callbackAfterSeconds, partialOutput != null ? partialOutput : Map.of());
-    }
-    static TaskOutcome failedRetryable(String reason) {
-        return new Failed(reason, true, Map.of());
-    }
-    static TaskOutcome failedTerminal(String reason) {
-        return new Failed(reason, false, Map.of());
-    }
-}
-
-@FunctionalInterface
-public interface TaskHandler {
-    TaskOutcome execute(TaskContext context) throws Exception;
-}
-
-public record WorkerConfig(
-    String taskType,
-    String domain,
-    int maxConcurrency,
-    long basePollIntervalMs,
-    long maxPollIntervalMs,
-    int pollBatchSize
-) {
-    public static WorkerConfig defaults(String taskType) {
-        return new WorkerConfig(taskType, "default", 10, 50L, 2000L, 5);
-    }
+export interface WorkerConfig {
+  taskType: string;
+  domain?: string;
+  maxConcurrency?: number;       // Default: 10
+  basePollIntervalMs?: number;   // Default: 100ms
+  maxPollIntervalMs?: number;    // Default: 3000ms
+  pollBatchSize?: number;        // Default: 5
+  autoHeartbeatIntervalMs?: number; // Default: 10000ms (10s)
 }
 ```
+
+### 4.4 High-Ergonomics `WorkflowWorkerHost` API
+
+```typescript
+export class WorkflowWorkerHost {
+  constructor(private readonly transport: WorkerTransportClient) {}
+
+  /** Register task handler with full Conductor control (TaskOutcome) */
+  register<TInput = Record<string, unknown>>(
+    config: WorkerConfig,
+    handler: TaskHandler<TInput>
+  ): this;
+
+  /** Register ergonomic shorthand returning output object directly */
+  registerSimple<TInput = Record<string, unknown>, TOutput = Record<string, unknown>>(
+    taskType: string,
+    handler: SimpleTaskHandler<TInput, TOutput>,
+    options?: Partial<WorkerConfig>
+  ): this;
+
+  /** Attach composable middleware (Validation, Heartbeat, Metrics) */
+  use(middleware: WorkerMiddleware): this;
+
+  /** Start background polling loops across all registered task types */
+  start(): Promise<void>;
+
+  /** Graceful shutdown: ceases polling and awaits in-flight promises */
+  shutdown(timeoutMs?: number): Promise<void>;
+}
+```
+
+### 4.5 Auto-Heartbeat & Concurrency Controls
+- **Adaptive Polling Delay**: When a poll returns `tasks.length > 0`, the poller immediately schedules the next batch (`0ms` delay) to drain queues rapidly. When empty, backoff scales exponentially from `basePollIntervalMs` to `maxPollIntervalMs`.
+- **Async Concurrency Limiter**: Limits active concurrent task executions per `taskType` using an internal promise queue, preserving backpressure without starving the Node/Browser event loop.
+- **AutoHeartbeatMiddleware**: Spawns an interval timer every `autoHeartbeatIntervalMs` that sends `POST /api/v1/workflow/tasks/{taskId}/heartbeat` while the handler promise is pending. On task completion, the timer is cleared immediately.
 
 ---
 
@@ -362,7 +352,7 @@ public record WorkerConfig(
 | **Phase 26** | **Submodule Setup, Canonical Workflow IR & Zero-I/O PureDecider** | `apps/backend/workflow-engine` POM, `workflow-ir-schema-v1.json`, Memento snapshots, sealed `EngineCommand`s, immutable models, pure state machine decider core. | Pure JUnit 5 record-in / command-out unit test suite executing in <1ms without mocks or Spring context. |
 | **Phase 27** | **Conductor Node Strategies, Topological Frontiers & Parameter Resolver** | `NodeStrategyRegistry` implementing `SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, and `DO_WHILE`; Kahn's topological frontier calculation; Tarjan cycle detection; JSONPath / SpEL `ParameterResolver`. | Cycle detection tests asserting cycle path traces; parameter resolution tests evaluating `${workflow.input.*}` and `${taskRef.output.*}`; branch resolution tests. |
 | **Phase 28** | **Hexagonal Engine, Single-Column Lease Queue & Storage Adapters** | Hexagonal ports (`PersistencePort`, `UnitOfWork`, `WorkerTransportPort`); `WorkflowEngineService`; atomic single-column lease queue (`visible_at_epoch_ms`); dual storage adapters (`PostgresJdbcPersistenceAdapter` with RLS/SKIP LOCKED and `SqliteJdbcPersistenceAdapter` with WAL mode); lease sweeper for automatic timeout recovery. | Multi-threaded lease contention contract test suite run against both SQLite WAL and PostgreSQL Testcontainers; worker crash lease recovery test. |
-| **Phase 29** | **Virtual-Thread Worker SDK, Middleware Chain & Distributed Saga Compensation** | Conductor-style worker contract (`TaskContext`, `TaskOutcome`, `TaskHandler`); `WorkerHost` with virtual threads and adaptive backoff; composable middleware chain (`AutoHeartbeatMiddleware`, `SchemaValidationMiddleware`); reverse topological Saga compensator with rollback audit trails. | Automated worker test suite verifying heartbeats extending leases, `TaskOutcome.inProgress` deferrals, retry backoffs, and reverse Saga compensation traversal on terminal failures. |
+| **Phase 29** | **Polyglot Worker SDKs (Java Virtual-Thread & Pure TypeScript `@unipost/worker`) & Distributed Saga** | Java Virtual-Thread `WorkerHost`; **Pure TypeScript `@unipost/worker`** package with `WorkflowWorkerHost`, middleware chain, adaptive polling, and auto-heartbeat; reverse topological Saga compensator. | Java and TypeScript test suites verifying worker registration, lease extensions via auto-heartbeat, `TaskOutcome.inProgress` deferrals, retry backoffs, and reverse Saga compensation. |
 | **Phase 30** | **Visual React Flow Studio, Unified Sandbox Simulator & Chaos Replay Suite** | Visual Workflow Studio in `@unipost/console` with custom Conductor nodes (`SWITCH`, `FORK_JOIN`, `WAIT`); live execution overlay; Unified Sandbox platform workflow adapter; Golden Trace Replay regression suite (100 concurrent chaos runs with random task failures). | Vitest component tests in `@unipost/console`; Golden trace replay suite verifying 100% deterministic state reproduction; full production build pass. |
 
 ---
@@ -413,31 +403,31 @@ public record WorkerConfig(
   - `PostgresJdbcPersistenceAdapter`: Multi-tenant RLS-aware PostgreSQL adapter with `FOR UPDATE SKIP LOCKED`.
   - `SqliteJdbcPersistenceAdapter`: Pure JDBC SQLite adapter with `PRAGMA journal_mode = WAL;` and `PRAGMA busy_timeout = 5000;`.
   - `InMemoryPersistenceAdapter`: Thread-safe in-memory adapter for unit testing.
+  - `HttpWorkerApiAdapter`: Exposes `/api/v1/workflow/tasks/poll`, `/api/v1/workflow/tasks/{id}/result`, `/api/v1/workflow/tasks/{id}/heartbeat` for remote and TypeScript workers.
 - **Imperative Shell (`WorkflowEngineService`)**:
   - Orchestrates transactions, triggers `PureDecider`, and runs background lease sweeping (`sweepExpiredTasks`) to detect hung workers and re-queue timed-out tasks.
 - **Verification Gate 28**:
   - Multi-threaded lease contention contract test suite run against both SQLite WAL and PostgreSQL Testcontainers; worker crash lease recovery test.
   - `mvn test -pl workflow-engine` passes 100%.
 
-### Phase 29: Virtual-Thread Worker SDK, Middleware Chain & Distributed Saga Compensation
-- **Worker SDK Contracts**:
-  - `TaskContext`: Typed input binding (`bindInput(Class<T>)`), contextual logging (`log(message)`), and explicit heartbeat triggers.
-  - `TaskOutcome`: Sealed records for `Completed(output)`, `InProgress(callbackAfterSeconds, partialOutput)`, and `Failed(errorMessage, retryable)`.
-  - `TaskHandler`: Functional interface `TaskOutcome execute(TaskContext context) throws Exception;`.
-- **Worker Host & Middleware Pipeline (`WorkerHost`)**:
+### Phase 29: Polyglot Worker SDKs (Java & Pure TypeScript `@unipost/worker`) & Distributed Saga
+- **Java Virtual-Thread Worker SDK**:
   - Virtual thread execution via `Executors.newVirtualThreadPerTaskExecutor()`.
   - Per-task-type concurrency limits enforced by `Semaphore(maxConcurrency)`.
-  - Adaptive backoff: instantaneous draining (`0ms` delay) when tasks are found, scaling exponentially up to `maxPollIntervalMs` when queues are idle.
-  - Middleware Chain:
-    - `SchemaValidationMiddleware`: Invariant checking on task inputs/outputs.
-    - `AutoHeartbeatMiddleware`: Background virtual thread periodically extending the lease timestamp on `task_queue` while long-running jobs process.
-    - `ErrorClassificationMiddleware`: Maps uncaught exceptions to retryable or terminal failure outcomes.
+  - Java Middleware Chain (`SchemaValidationMiddleware`, `AutoHeartbeatMiddleware`, `ErrorClassificationMiddleware`).
+- **Pure TypeScript Worker SDK (`packages/worker/`)**:
+  - Standalone monorepo package `@unipost/worker`.
+  - `WorkflowWorkerHost` supporting `register()` and `registerSimple()`.
+  - Async promise concurrency limiter with adaptive exponential backoff polling.
+  - TypeScript middleware pipeline with `AutoHeartbeatMiddleware`, `SchemaValidationMiddleware`, and `ErrorClassificationMiddleware`.
+  - Full W3C `traceparent` propagation and contextual audit logging.
 - **Distributed Saga Compensation**:
   - On unrecoverable task failure, the engine computes the reverse topological execution path of all completed tasks with registered `compensateHandlerRef` actions.
   - Sequentially dispatches compensation tasks to rollback side-effects with full MDC execution auditing.
 - **Verification Gate 29**:
-  - Automated worker test suite verifying heartbeats extending leases, `TaskOutcome.inProgress` deferrals, retry backoffs, and reverse Saga compensation traversal on terminal failures.
-  - `mvn test -pl workflow-engine` passes 100%.
+  - Vitest test suite in `packages/worker/` testing registration, adaptive polling, heartbeat extension, and graceful shutdown.
+  - Java test suite in `workflow-engine/` testing Virtual-Thread worker host and Saga rollback.
+  - Cross-language integration test where a TypeScript worker completes task A and a Java worker completes task B in the same workflow.
 
 ### Phase 30: Visual React Flow Studio, Unified Sandbox Simulator & Chaos Replay Suite
 - **Visual Workflow Studio (`@unipost/console`)**:
@@ -466,5 +456,6 @@ public record WorkerConfig(
 | **3** | **Single-Column Lease Queue** | `visible_at_epoch_ms` governs dispatch, lease locks, async callbacks, and retry backoff. |
 | **4** | **Transactional Outbox** | State transitions and queue events commit inside the exact same `UnitOfWork` database transaction. |
 | **5** | **Zero-Loss Visual Round-Trip** | Visual builder edits and code DSL preserve all node attributes and `layoutMetadata` coordinates. |
-| **6** | **Zero Synthetic Mocks** | Production classes, real SQLite WAL/PostgreSQL schemas, and real deciders are tested without artificial test doubles. |
-| **7** | **Multi-Tenant Context** | Every workflow, execution, task, and log is strictly partitioned by `tenant_id` and `workspace_id`. |
+| **6** | **Polyglot Worker Parity** | Java Virtual-Thread workers and Pure TypeScript (`@unipost/worker`) workers share identical protocol, middleware, and outcome semantics. |
+| **7** | **Zero Synthetic Mocks** | Production classes, real SQLite WAL/PostgreSQL schemas, and real deciders are tested without artificial test doubles. |
+| **8** | **Multi-Tenant Context** | Every workflow, execution, task, and log is strictly partitioned by `tenant_id` and `workspace_id`. |
