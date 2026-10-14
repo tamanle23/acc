@@ -90,3 +90,9 @@ typings/
 
 # Electron-Forge
 out/
+
+# Electrobun build and synced resources
+build/
+resources/console-web/
+.hutch/locks/
+

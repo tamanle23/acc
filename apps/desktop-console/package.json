@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "cross-env APP_ENV=LOCAL electrobun dev",
     "build": "electrobun build",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "test": "pnpm --filter mobile-ui exec vitest run --config ../desktop-console/vitest.config.ts"
   },
   "keywords": [],
   "author": {

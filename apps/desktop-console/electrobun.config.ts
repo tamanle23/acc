@@ -12,7 +12,9 @@ export default {
 			entrypoint: "src/bun/index.ts",
 		},
 		views: {},
-		copy: {},
+		copy: {
+			"resources/console-web": "views/electron-web",
+		},
 		mac: {
 			bundleCEF: false,
 		},
