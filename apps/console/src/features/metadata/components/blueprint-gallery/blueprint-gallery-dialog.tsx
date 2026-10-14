@@ -98,7 +98,7 @@ export const BlueprintGalleryDialog: React.FC = () => {
         open={isBlueprintGalleryOpen}
         onOpenChange={(open) => !open && closeBlueprintGallery()}
       >
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-6 rounded-3xl bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl">
+        <DialogContent className="max-w-6xl w-[95vw] h-[88vh] flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl overflow-hidden">
           <DialogHeader className="space-y-1 shrink-0 pb-3 border-b border-border/40">
             <div className="flex items-center gap-2.5">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20">
@@ -203,7 +203,7 @@ export const BlueprintGalleryDialog: React.FC = () => {
                 isImporting={provisionMutation.isPending}
               />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-2">
                 {filteredBlueprints.map((bp) => (
                   <BlueprintCard
                     key={bp.id}

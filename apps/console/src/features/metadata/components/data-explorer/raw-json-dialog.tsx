@@ -29,8 +29,8 @@ export const RawJsonDialog: React.FC<Props> = ({ record, open, onOpenChange }) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl w-[90vw] max-h-[85vh] flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-6 rounded-3xl">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center justify-between pr-6">
             <div className="flex items-center gap-2">
               <Code className="h-5 w-5 text-primary" />
@@ -60,7 +60,7 @@ export const RawJsonDialog: React.FC<Props> = ({ record, open, onOpenChange }) =
           </DialogDescription>
         </DialogHeader>
 
-        <pre className="max-h-[500px] overflow-auto p-4 rounded-xl font-mono text-xs bg-slate-950 text-emerald-400 border border-white/10 shadow-inner">
+        <pre className="flex-1 min-h-[300px] overflow-auto p-4 rounded-xl font-mono text-xs bg-slate-950 text-emerald-400 border border-white/10 shadow-inner">
           <code>{jsonString}</code>
         </pre>
       </DialogContent>

@@ -51,7 +51,7 @@ export const BlueprintGraphCanvas: React.FC<Props> = ({
   });
 
   return (
-    <div className="relative w-full h-[320px] rounded-2xl bg-slate-950/20 dark:bg-slate-950/50 backdrop-blur-md border border-white/20 dark:border-white/10 overflow-hidden shadow-inner flex items-center justify-center">
+    <div className="relative w-full h-[320px] md:h-[380px] lg:h-[420px] min-h-[300px] rounded-2xl bg-slate-950/20 dark:bg-slate-950/50 backdrop-blur-md border border-white/20 dark:border-white/10 overflow-hidden shadow-inner flex items-center justify-center">
       {/* SVG Canvas for Relationship Edges */}
       <svg
         viewBox={`0 0 ${width} ${height}`}

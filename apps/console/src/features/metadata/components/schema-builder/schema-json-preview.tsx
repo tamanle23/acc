@@ -49,8 +49,8 @@ export const SchemaJsonPreview: React.FC<Props> = ({ entityTypeId, entityTypeNam
 
   return (
     <Dialog open={isJsonSchemaPreviewOpen} onOpenChange={(open) => !open && closeJsonSchemaPreview()}>
-      <DialogContent className="max-w-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl w-[92vw] max-h-[88vh] flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-6 rounded-3xl">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center justify-between pr-6">
             <div className="flex items-center gap-2">
               <Code className="h-5 w-5 text-primary" />
@@ -87,7 +87,7 @@ export const SchemaJsonPreview: React.FC<Props> = ({ entityTypeId, entityTypeNam
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative mt-2">
+        <div className="relative mt-2 flex-1 min-h-0 flex flex-col">
           {isLoading ? (
             <p className="p-4 text-sm text-muted-foreground">Loading compiled schema...</p>
           ) : isError ? (
@@ -96,7 +96,7 @@ export const SchemaJsonPreview: React.FC<Props> = ({ entityTypeId, entityTypeNam
               {error instanceof Error ? `: ${error.message}` : '.'}
             </p>
           ) : (
-            <pre className="max-h-[500px] overflow-auto p-4 rounded-xl font-mono text-xs bg-slate-950 text-slate-100 border border-white/10 shadow-inner">
+            <pre className="flex-1 h-full min-h-[300px] overflow-auto p-4 rounded-xl font-mono text-xs bg-slate-950 text-slate-100 border border-white/10 shadow-inner">
               <code>{jsonString}</code>
             </pre>
           )}

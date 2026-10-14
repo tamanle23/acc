@@ -240,8 +240,8 @@ export const RecordEditorDialog: React.FC<Props> = ({ entityTypeId }) => {
 
   return (
     <Dialog open={isRecordEditorDialogOpen} onOpenChange={(open) => !open && closeRecordEditorDialog()}>
-      <DialogContent className="max-w-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl">
-        <form onSubmit={handleSubmit}>
+      <DialogContent className="max-w-3xl lg:max-w-4xl w-[92vw] max-h-[90vh] flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl p-6 rounded-3xl overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <DialogHeader className="mb-4">
             <DialogTitle className="text-xl font-bold">
               {isEditMode ? 'Edit Entity Record' : `Create ${entityType?.name || 'Entity'} Record`}
@@ -267,21 +267,29 @@ export const RecordEditorDialog: React.FC<Props> = ({ entityTypeId }) => {
             </div>
           )}
 
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className="flex-1 min-h-[300px] pr-4">
             {attributes.length === 0 ? (
               <p className="text-sm text-muted-foreground py-6 text-center">
                 This entity type has no defined attributes. Please define attributes in the Schema Builder first.
               </p>
             ) : (
-              <div className="space-y-4 py-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 {attributes.map((attr) => (
-                  <DynamicFieldRenderer
+                  <div
                     key={attr.id}
-                    attribute={attr}
-                    value={formData[attr.systemName]}
-                    onChange={(val) => handleFieldChange(attr.systemName, val)}
-                    error={errors[attr.systemName]}
-                  />
+                    className={cn(
+                      attr.uiComponent === 'textarea' || attr.dataType === 'JSON'
+                        ? 'col-span-1 md:col-span-2'
+                        : 'col-span-1'
+                    )}
+                  >
+                    <DynamicFieldRenderer
+                      attribute={attr}
+                      value={formData[attr.systemName]}
+                      onChange={(val) => handleFieldChange(attr.systemName, val)}
+                      error={errors[attr.systemName]}
+                    />
+                  </div>
                 ))}
               </div>
             )}

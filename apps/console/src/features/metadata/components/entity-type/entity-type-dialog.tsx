@@ -136,7 +136,7 @@ export const EntityTypeDialog: React.FC = () => {
 
   return (
     <Dialog open={isEntityTypeDialogOpen} onOpenChange={(open) => !open && closeEntityTypeDialog()}>
-      <DialogContent className="max-w-md bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl">
+      <DialogContent className="max-w-lg w-[90vw] p-6 rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/20 dark:border-white/10 shadow-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="mb-4">
             <DialogTitle className="text-xl font-bold">

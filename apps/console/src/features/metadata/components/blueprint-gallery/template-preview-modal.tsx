@@ -62,7 +62,7 @@ export const TemplatePreviewModal: React.FC<Props> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-6 rounded-3xl bg-white/85 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl">
+      <DialogContent className="max-w-6xl w-[95vw] h-[88vh] flex flex-col p-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl border border-white/30 dark:border-white/10 shadow-2xl overflow-hidden">
         <DialogHeader className="space-y-1 shrink-0 pb-3 border-b border-border/40">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
