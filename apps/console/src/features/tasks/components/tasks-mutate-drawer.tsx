@@ -63,9 +63,13 @@ export function TasksMutateDrawer({
       await updateTaskMutation.mutateAsync({
         id: currentRow.id,
         ...data,
+        status: data.status as Task['status'],
       })
     } else {
-      await createTaskMutation.mutateAsync(data)
+      await createTaskMutation.mutateAsync({
+        ...data,
+        status: data.status as Task['status'],
+      })
     }
     onOpenChange(false)
     form.reset()

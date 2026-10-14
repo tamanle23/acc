@@ -1,5 +1,5 @@
 import { type Row } from '@tanstack/react-table'
-import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Trash2, Eye, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import {
 import { labels } from '../data/data'
 import { taskSchema } from '../data/schema'
 import { useTasks } from './tasks-provider'
+import { useNavigate } from '@tanstack/react-router'
 
 type DataTableRowActionsProps<TData> = {
   row: Row<TData>
@@ -26,8 +27,14 @@ export function DataTableRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const task = taskSchema.parse(row.original)
-
   const { setOpen, setCurrentRow } = useTasks()
+  const navigate = useNavigate()
+
+  const handleOpenStudio = () => {
+    navigate({
+      to: '/workflows' as any,
+    })
+  }
 
   return (
     <DropdownMenu modal={false}>
@@ -40,7 +47,28 @@ export function DataTableRowActions<TData>({
           <span className='sr-only'>Open menu</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-[160px]'>
+      <DropdownMenuContent align='end' className='w-[200px]'>
+        <DropdownMenuItem
+          onClick={() => {
+            setCurrentRow(task)
+            setOpen('inspect')
+          }}
+          className='gap-2'
+        >
+          <Eye className='size-4 text-primary' />
+          Inspect Execution
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={handleOpenStudio}
+          className='gap-2'
+        >
+          <ExternalLink className='size-4 text-emerald-500' />
+          View in Visual DAG
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         <DropdownMenuItem
           onClick={() => {
             setCurrentRow(task)

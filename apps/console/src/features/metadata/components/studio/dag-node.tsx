@@ -1,9 +1,9 @@
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import { Play, Split, GitMerge, Clock, Repeat, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Play, Split, GitMerge, Clock, Repeat, CheckCircle2, AlertCircle, Loader2, GitFork } from 'lucide-react';
 
-export type DagNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'WAIT' | 'DO_WHILE';
+export type DagNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'DYNAMIC_FORK' | 'WAIT' | 'DO_WHILE';
 export type ExecutionState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
 
 export interface DagNodeData {
@@ -29,6 +29,8 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         return <Split className="w-4 h-4 text-amber-500" />;
       case 'FORK_JOIN':
         return <GitMerge className="w-4 h-4 text-indigo-500" />;
+      case 'DYNAMIC_FORK':
+        return <GitFork className="w-4 h-4 text-purple-500" />;
       case 'WAIT':
         return <Clock className="w-4 h-4 text-sky-500" />;
       case 'DO_WHILE':

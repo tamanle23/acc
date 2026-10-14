@@ -1,6 +1,7 @@
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { TasksImportDialog } from './tasks-import-dialog'
 import { TasksMutateDrawer } from './tasks-mutate-drawer'
+import { TaskPayloadInspectorDialog } from './task-payload-inspector-dialog'
 import { useTasks } from './tasks-provider'
 import { useDeleteTaskMutation } from '../api/use-tasks'
 
@@ -24,6 +25,20 @@ export function TasksDialogs() {
 
       {currentRow && (
         <>
+          <TaskPayloadInspectorDialog
+            key={`task-inspect-${currentRow.id}`}
+            task={currentRow}
+            open={open === 'inspect'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setOpen(null)
+                setTimeout(() => {
+                  setCurrentRow(null)
+                }, 300)
+              }
+            }}
+          />
+
           <TasksMutateDrawer
             key={`task-update-${currentRow.id}`}
             open={open === 'update'}

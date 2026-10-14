@@ -19,13 +19,26 @@ export function useCreateTaskMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (newTask: Omit<Task, 'id'> & { id?: string }): Promise<Task> => {
+    mutationFn: async (
+      newTask: Partial<Task> & { title: string; status: Task['status']; label?: string; priority?: string }
+    ): Promise<Task> => {
       const payload: Task = {
         id: newTask.id || `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
         title: newTask.title,
         status: newTask.status,
-        label: newTask.label,
-        priority: newTask.priority,
+        label: newTask.label || 'workflow',
+        priority: newTask.priority || 'medium',
+        taskType: newTask.taskType || 'MANUAL',
+        attempt: newTask.attempt ?? 1,
+        maxRetries: newTask.maxRetries ?? 3,
+        pollDomain: newTask.pollDomain || 'default',
+        workflowId: newTask.workflowId,
+        workflowName: newTask.workflowName,
+        taskReferenceName: newTask.taskReferenceName,
+        leaseOwner: newTask.leaseOwner,
+        durationMs: newTask.durationMs,
+        inputData: newTask.inputData,
+        outputData: newTask.outputData,
       };
       const response = await springApiClient.post<Task>('/api/tasks', payload);
       return response.data;

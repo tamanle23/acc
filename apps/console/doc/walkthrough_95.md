@@ -1,28 +1,46 @@
-# Walkthrough 95: Domain Blueprint Catalog Viewport Safe Clamping & Top-Left Clipping Fix
+# Walkthrough 95: Phase 31 - Visual DAG Drag-and-Drop & Tasks Execution Units Ledger
 
-## Problem
-In small viewports, high display scaling factors (e.g. 125% or 150% DPI zoom), or when the dialog dimensions stored in `localStorage` exceeded the available screen width, the Domain Blueprint Catalog modal was pushed off the left and/or top edges of the viewport (`left < 0`). Additionally, lingering base styles in `DialogContent` (`top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]`) caused CSS transforms to clash with inline styles, leading to the top-left area (including the title, icon, and corner resize handles) being hidden or clipped off-screen.
+## 1. Executive Summary
+Phase 31 has been implemented and verified:
+1. **Drag-and-Drop Task Authoring in Visual DAG Studio (`/workflows`)**:
+   - Implemented [`dag-palette.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.tsx) featuring standard workflow task types: `SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`.
+   - Enhanced [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx) with HTML5 drag-and-drop support, `screenToFlowPosition` coordinate translation, edge connect snapping, and node deletion controls.
+2. **Refactored `/tasks` into the Workflow Execution Units Ledger**:
+   - Transformed task data model in [`schema.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/schema.ts) to represent distributed workflow task instances (`workflowId`, `taskReferenceName`, `taskType`, `leaseOwner`, `attempt`, `maxRetries`, `pollDomain`, `durationMs`, `inputData`, `outputData`).
+   - Added dual-mode tab switching in [`index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/index.tsx): **Workflow Tasks** (active/historical workflow execution units) vs **Manual Backlog** (legacy tasks).
+   - Upgraded [`tasks-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-columns.tsx) with workflow plan badges, node type badges, status icons, worker lease information, and telemetry duration.
+   - Built [`task-payload-inspector-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/task-payload-inspector-dialog.tsx) to inspect input/output JSON payloads, worker heartbeats, and error logs.
+   - Added direct **"Inspect Execution"** and **"View in Visual DAG"** cross-navigation actions in [`data-table-row-actions.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/data-table-row-actions.tsx) to inspect corresponding workflow graphs at `/workflows`.
 
-## Root Cause
-1. **Unbounded Translation Centering**: Relying on `left: '50%'` with `transform: 'translateX(-50%)'` on narrow viewports calculates `left = (viewport - modalWidth) / 2`. When `modalWidth > viewport - 32px`, the left edge becomes negative, pushing the top-left corner past `x=0`.
-2. **Transform Conflicts**: Combining `translate-y-[-50%]` and `translate-x-[-50%]` in Radix DialogContent CSS classes with inline top/left offsets created conflicting positioning rules.
+---
 
-## Changes
+## 2. Key Changes Summary
 
-### 1. `apps/console/src/hooks/use-resizable-dialog.ts`
-- Replaced `transform: translateX(-50%)` with safe coordinate clamping:
-  - `top`: `max(1rem, ${topOffset})` (never less than 16px from top edge).
-  - `left`: `max(1rem, calc(50% - min(${Math.round(size.width / 2)}px, ${Math.round((maxWidthRatio * 100) / 2)}vw)))` (guarantees a minimum 1rem / 16px gutter on the left edge).
-  - `width`: `min(${size.width}px, calc(100vw - 2rem))` (prevents dialog from overflowing viewport width).
-  - `transform`: `'none'` (eliminates sub-pixel blur and conflicting Radix transforms).
-  - Maximized mode includes explicit `right: '1vw'` and `bottom: '1.5vh'` alongside `top: '1.5vh'` and `left: '1vw'`.
+### Visual DAG Studio
+- [`dag-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-node.tsx): Added `DYNAMIC_FORK` task type and icon.
+- [`dag-palette.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.tsx): Created draggable palette component.
+- [`dag-palette.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.test.tsx): Unit tests covering palette items and drag data.
+- [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx): Wrapped canvas with `ReactFlowProvider`, wired `onDrop`, `onDragOver`, node connection handler `onConnect`, and delete buttons.
 
-### 2. `apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx`
-- Added explicit utility overrides `top-auto left-auto translate-x-0 translate-y-0` to `DialogContent` className to ensure Radix default 50% translate classes are cleanly overridden.
+### Tasks Execution Units Ledger
+- [`schema.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/schema.ts): Exported `taskExecutionStatusSchema`, `workflowTaskExecutionSchema`, and unified `Task` type.
+- [`data.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/data.tsx): Extended statuses with workflow execution states (`SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `TIMED_OUT`, `SKIPPED`) and defined `taskTypeMeta`.
+- [`tasks.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/tasks.ts): Seeded initial workflow execution units (`order-fulfillment-v1`, `checkout-pipeline-v2`, `invoice-billing-v1`, `batch-etl-v3`).
+- [`index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/index.tsx): Integrated dual-tab filtering (**Workflow Tasks** vs **Manual Backlog**) and Visual DAG engine badge.
+- [`tasks-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-columns.tsx): Added workflow plan links, type badges, lease owner information, and execution status styling.
+- [`task-payload-inspector-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/task-payload-inspector-dialog.tsx): Detailed modal inspecting JSON payload input/output and lease telemetry.
+- [`data-table-row-actions.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/data-table-row-actions.tsx): Cross-navigation and inspection triggers.
+- [`tasks-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-provider.tsx) & [`tasks-dialogs.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-dialogs.tsx): Added `inspect` dialog state.
+- [`schema.test.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/schema.test.ts): Unit tests validating workflow task schema parsing and backward compatibility.
 
-### 3. `apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`
-- Updated test assertions in `blueprint-gallery.test.tsx` to verify clamped viewport styles (`max(1rem, ...)`, `transform: 'none'`).
+---
 
-## Verification Results
-- **Vitest**: `pnpm --filter @unipost/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx` passed (7/7 tests passed).
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` exited 0 with zero errors.
+## 3. Verification Results
+- **Vitest Suite**: 40 test files passed, 197 tests passed cleanly:
+  ```bash
+  pnpm --filter @unipost/console test
+  ```
+- **Sandbox Test Suite**: 5/5 tests passed in `@unipost/sandbox`.
+  ```bash
+  pnpm --filter @unipost/sandbox test
+  ```
