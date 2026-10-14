@@ -17,6 +17,8 @@ Workflow:
 - **STATE-IMMUTABILITY**: NEVER mutate original assets/config in-place. Preserve original files on asset generation.
 - **IMPORT-INTEGRITY**: MUST verify `import` statements at top of file when introducing functions/dependencies. NEVER truncate import blocks during edits.
 - **ZERO-REGRESSION**: NEVER break existing working flows. MUST verify side-effects & maintain backward compatibility for all options.
+- **ZERO-STUB-PROHIBITION**: NEVER use synthetic mocks, stubs, fake adapters, or deterministic pass-throughs when validating backend, security, multi-tenancy, RLS, cryptographic, or architectural invariants. Tests MUST exercise actual production classes, filters, and engines.
+- **NO-ORPHANED-CODE**: NEVER create features, services, or utilities that are put aside or disconnected from the active runtime graph. Every implementation MUST be wired into real consumers, registries, stores, or router pipelines.
 
 # SYSTEM DIRECTIVES: AUTONOMOUS CODING AGENT
 ## 0. BEHAVIOR & OUTPUT

@@ -209,3 +209,22 @@ To ensure visual consistency, architectural predictability, and seamless collabo
    - Entity relationships must strictly enforce cardinality (`ONE_TO_ONE`, `ONE_TO_MANY`, `MANY_TO_ONE`, `MANY_TO_MANY`).
    - Cross-tenant relationship linking is strictly forbidden.
 
+---
+
+## 10. Production-Grade Implementation & Zero-Stub / Mock Invariant
+
+### Core Rationale
+When executing implementation plans, tasks, or user requests, writing synthetic mocks, temporary stubs, fake assertions, or "implemented but put aside" orphaned code leads to severe technical debt, deceptive green test suites, and unverified architectural invariants. All delivered code must be production-grade, wired into the active execution path, and verified against real system components.
+
+### Non-Negotiable Directives
+1. **NO FAKE / SYNTHETIC TEST TARGETS**:
+   - Tests asserting system properties (security, multi-tenancy, RLS, schemas, crypto, idempotency) MUST exercise actual production classes, filters, and engines (e.g. real Spring Security filter chains, real Jackson compilers, real DB/RLS sessions), NEVER in-memory mock adapters or standalone synthetic stub engines like `@unipost/sandbox` when testing backend or core system invariants.
+   - Vitest and JUnit tests must assert against the real domain contracts.
+2. **NO ORPHANED / "PUT ASIDE" IMPLEMENTATIONS**:
+   - NEVER write features, utilities, components, or handlers that are left disconnected from the active application graph.
+   - If a new engine, service, or widget is created, it MUST be actively registered, imported, and wired into the live execution path (e.g. registered in `WidgetRegistry`, routed in `ROUTE.md`, wired in store actions, or added to build/CI pipelines).
+   - "Placeholder implementations", unused dummy methods, commented-out dead code, or files created without consumers are strictly prohibited.
+3. **NO DETERMINISTIC MOCK BYPASSES IN QUALITY GATES**:
+   - CI/CD and penetration testing suites must never use hardcoded success responses, trivial mock returns (`status: 200` without real validation), or short-circuited checks.
+   - Penetration fuzzing, chaos tests, and performance benchmarks must execute against actual parsing, token validation, regex matching, and atomic locking logic.
+
