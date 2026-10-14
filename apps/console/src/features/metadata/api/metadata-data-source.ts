@@ -104,6 +104,12 @@ export interface MetadataDataSource {
     entityTypeId: string | number,
     dto: CreateEntityRecordDto
   ): Promise<ValidateRecordResponse>;
+  transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord>;
 
   // 4. Relationship Types
   getRelationshipTypes(params?: PageRequestParams): Promise<PageResponse<RelationshipType>>;

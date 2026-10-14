@@ -279,6 +279,22 @@ export class HttpMetadataService implements MetadataDataSource {
     return true;
   }
 
+  async transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord> {
+    const res = await springApiClient.post(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/transition`,
+      additionalAttributes || {},
+      {
+        params: { action },
+      }
+    );
+    return unwrapResponse(res.data);
+  }
+
   async getEntityFacets(
     entityTypeId: string | number,
     params?: PageRequestParams

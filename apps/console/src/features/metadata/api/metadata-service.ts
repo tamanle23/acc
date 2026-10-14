@@ -140,6 +140,15 @@ class MetadataServiceStrategy implements MetadataDataSource {
     return this.activeService.validateEntityRecord(entityTypeId, dto);
   }
 
+  transitionRecordState(
+    entityTypeId: string | number,
+    recordId: string | number,
+    action: string,
+    additionalAttributes?: Record<string, unknown>
+  ) {
+    return this.activeService.transitionRecordState(entityTypeId, recordId, action, additionalAttributes);
+  }
+
   // 4. Relationship Types
   getRelationshipTypes(params?: any) {
     return this.activeService.getRelationshipTypes(params);

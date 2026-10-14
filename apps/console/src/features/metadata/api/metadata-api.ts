@@ -337,6 +337,28 @@ export const useValidateEntityRecord = (entityTypeId: string | number) => {
   });
 };
 
+export const useTransitionEntityRecord = (entityTypeId: string | number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      recordId,
+      action,
+      additionalAttributes,
+    }: {
+      recordId: string | number;
+      action: string;
+      additionalAttributes?: Record<string, unknown>;
+    }): Promise<EntityRecord> =>
+      metadataService.transitionRecordState(entityTypeId, recordId, action, additionalAttributes),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['metadata', 'records', entityTypeId] });
+      queryClient.invalidateQueries({
+        queryKey: ['metadata', 'record', entityTypeId, variables.recordId],
+      });
+    },
+  });
+};
+
 // ==========================================
 // 4. Relationship Types Hooks
 // ==========================================

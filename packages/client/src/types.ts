@@ -47,6 +47,22 @@ export interface AttributeDefinitionOptions {
 // 2. Core Dynamic Entities
 // ==========================================
 
+export interface TransitionConfig {
+  from: string;
+  to: string;
+  action: string;
+  required_attributes?: string[];
+  guard_expression?: string;
+  allowed_roles?: string[];
+}
+
+export interface LifecycleConfig {
+  state_field?: string;
+  initial_state?: string;
+  states?: string[];
+  transitions?: TransitionConfig[];
+}
+
 export interface EntityType {
   id: string | number;
   name: string;
@@ -54,6 +70,7 @@ export interface EntityType {
   description?: string;
   tenantId?: string;
   schemaVersion?: number;
+  lifecycleConfig?: LifecycleConfig;
   version?: number;
   createdDate?: string;
   updatedDate?: string;

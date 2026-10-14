@@ -6,6 +6,7 @@ import {
   useSchemaDriftAnalysis,
   useExecuteSchemaBackfill,
   useEntityFacets,
+  useTransitionEntityRecord,
 } from '../../api/metadata-api';
 import { useMetadataUiStore, type AttributeFilterClause } from '../../store/use-metadata-ui-store';
 import type { AttributeDefinition, EntityRecord } from '../../api/types';
@@ -28,8 +29,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -60,6 +66,8 @@ import {
   SlidersHorizontal,
   RefreshCw,
   ShieldAlert,
+  Play,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface Props {
@@ -120,8 +128,21 @@ export const EntityDataGrid: React.FC<Props> = ({
   const { data: entityType } = useEntityType(entityTypeId);
   const { data: driftAnalysis } = useSchemaDriftAnalysis(entityTypeId);
   const backfillMutation = useExecuteSchemaBackfill(entityTypeId);
+  const transitionMutation = useTransitionEntityRecord(entityTypeId);
   const [backfillFeedback, setBackfillFeedback] = useState<string | null>(null);
   const [isBackfillDialogOpen, setIsBackfillDialogOpen] = useState<boolean>(false);
+
+  const handleRecordTransition = async (recordId: string | number, action: string, targetState: string) => {
+    try {
+      await transitionMutation.mutateAsync({
+        recordId,
+        action,
+      });
+      toast.success(`Record transitioned via '${action}' to state: ${targetState}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : `Failed to transition record via '${action}'`);
+    }
+  };
 
   const attributes = useMemo(() => {
     return attributesResponse?.content || [];
@@ -414,52 +435,106 @@ export const EntityDataGrid: React.FC<Props> = ({
     const actionCol = columnHelper.display({
       id: 'actions',
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Actions for record #${String(row.original.id)}`}
-                className="liquid-glass-interactive h-7 w-7 p-0 rounded-lg border border-white/20 dark:border-white/10 text-muted-foreground hover:text-foreground active:scale-95 shadow-xs"
-              >
-                <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="text-xs">
-              <DropdownMenuItem
-                onClick={() => openEditRecordDialog(row.original)}
-                className="gap-2"
-              >
-                <Edit2 className="h-3.5 w-3.5" /> Edit Record
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => openRecordRelationshipsInspector(row.original)}
-                className="gap-2 text-primary focus:text-primary"
-              >
-                <GitFork className="h-3.5 w-3.5" /> Connected Edges
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setInspectingRecord(row.original)}
-                className="gap-2"
-              >
-                <Code className="h-3.5 w-3.5" /> View Raw JSON
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => openDeleteRecordDialog(row.original)}
-                className="gap-2 text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Delete Record
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const lifecycle = entityType?.lifecycleConfig;
+        const stateField = lifecycle?.state_field || 'status';
+        const currentState =
+          (row.original.attributes?.[stateField] as string) ||
+          lifecycle?.initial_state ||
+          'DRAFT';
+
+        // Filter valid transitions originating from currentState or wildcard '*'
+        const availableTransitions = (lifecycle?.transitions || []).filter(
+          (t) => t.from === '*' || t.from.toUpperCase() === currentState.toUpperCase()
+        );
+
+        return (
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Actions for record #${String(row.original.id)}`}
+                  className="liquid-glass-interactive h-7 w-7 p-0 rounded-lg border border-white/20 dark:border-white/10 text-muted-foreground hover:text-foreground active:scale-95 shadow-xs"
+                >
+                  <MoreVertical className="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="text-xs">
+                {availableTransitions.length > 0 && (
+                  <>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2 text-primary focus:text-primary">
+                        <Play className="h-3.5 w-3.5" />
+                        <span>FSM Transition</span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="text-xs min-w-[160px]">
+                        {availableTransitions.map((t) => (
+                          <DropdownMenuItem
+                            key={t.action}
+                            disabled={transitionMutation.isPending}
+                            onClick={() =>
+                              handleRecordTransition(row.original.id, t.action, t.to)
+                            }
+                            className="gap-2 cursor-pointer"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{t.action}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                to {t.to}
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem
+                  onClick={() => openEditRecordDialog(row.original)}
+                  className="gap-2"
+                >
+                  <Edit2 className="h-3.5 w-3.5" /> Edit Record
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openRecordRelationshipsInspector(row.original)}
+                  className="gap-2 text-primary focus:text-primary"
+                >
+                  <GitFork className="h-3.5 w-3.5" /> Connected Edges
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setInspectingRecord(row.original)}
+                  className="gap-2"
+                >
+                  <Code className="h-3.5 w-3.5" /> View Raw JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openDeleteRecordDialog(row.original)}
+                  className="gap-2 text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete Record
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
     });
 
     return [...baseCols, ...dynamicCols, actionCol];
-  }, [attributes, sortField, sortDirection, openEditRecordDialog, openDeleteRecordDialog, openRecordRelationshipsInspector]);
+  }, [
+    attributes,
+    sortField,
+    sortDirection,
+    entityType,
+    transitionMutation.isPending,
+    openEditRecordDialog,
+    openDeleteRecordDialog,
+    openRecordRelationshipsInspector,
+  ]);
 
   const table = useReactTable({
     data: records,
