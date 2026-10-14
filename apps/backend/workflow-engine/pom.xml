@@ -28,6 +28,13 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <!-- SQLite JDBC for Local-First Storage Adapter -->
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.45.1.0</version>
+    </dependency>
+
     <!-- Testing: Pure JUnit 5 & AssertJ with Zero External Frameworks in Core -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
