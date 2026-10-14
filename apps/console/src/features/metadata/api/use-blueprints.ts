@@ -8,13 +8,25 @@ import type {
 } from './types';
 import { toast } from 'sonner';
 
+import { mockBlueprintManifests, mockBlueprintSummaries } from '../data/mock-blueprints';
+
 export const useBlueprintCatalog = () => {
   return useQuery({
     queryKey: ['metadata', 'blueprints'],
     queryFn: async (): Promise<BlueprintSummaryDto[]> => {
-      const res = await springApiClient.get('/v1/metadata/blueprints');
-      // Unwrap standard ResponseWrapper if present
-      return res.status == 200 ? res.data?.body ?? [] : [];
+      try {
+        const res = await springApiClient.get('/v1/metadata/blueprints');
+        if (res.status === 200) {
+          const body = res.data?.body ?? res.data?.data ?? res.data;
+          if (Array.isArray(body) && body.length > 0) {
+            return body;
+          }
+        }
+        return mockBlueprintSummaries;
+      } catch (err) {
+        console.warn('Failed to load blueprint catalog from API, falling back to local blueprints:', err);
+        return mockBlueprintSummaries;
+      }
     },
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
@@ -25,8 +37,19 @@ export const useBlueprintDetails = (blueprintId: string | null) => {
     queryKey: ['metadata', 'blueprint', blueprintId],
     queryFn: async (): Promise<BlueprintManifest | null> => {
       if (!blueprintId) return null;
-      const res = await springApiClient.get(`/v1/metadata/blueprints/${blueprintId}`);
-      return res.status == 200 ? res.data?.body ?? null : null;
+      try {
+        const res = await springApiClient.get(`/v1/metadata/blueprints/${blueprintId}`);
+        if (res.status === 200) {
+          const body = res.data?.body ?? res.data?.data ?? res.data;
+          if (body && typeof body === 'object' && body.id) {
+            return body;
+          }
+        }
+        return mockBlueprintManifests.find((b) => b.id === blueprintId) ?? null;
+      } catch (err) {
+        console.warn(`Failed to fetch blueprint details for ${blueprintId}, falling back to local manifest:`, err);
+        return mockBlueprintManifests.find((b) => b.id === blueprintId) ?? null;
+      }
     },
     enabled: Boolean(blueprintId),
     staleTime: 30 * 60 * 1000,

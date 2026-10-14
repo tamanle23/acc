@@ -92,6 +92,9 @@ export function UserAuthForm({
       const persona = DEFAULT_SANDBOX_PERSONAS[personaId] || DEFAULT_SANDBOX_PERSONAS.admin;
       // Attach Unified Sandbox Interceptor in development mode
       enableSandboxMockEngine(springApiClient);
+      // Synchronize Unified Sandbox persona and tenant scope
+      useSandboxStore.getState().setEnabled(true);
+      useSandboxStore.getState().setActivePersona(personaId);
       // The mock engine intercepts this request and checks for username + password === 'bypass'
       const response = await springApiClient.post('/auth/token', {
         username: persona.username,
@@ -101,11 +104,6 @@ export function UserAuthForm({
           'X-Sandbox-Mock': 'true'
         }
       });
-
-      // Synchronize Unified Sandbox persona and tenant scope
-      useSandboxStore.getState().setEnabled(true);
-      useSandboxStore.getState().setActivePersona(personaId);
-
       setTokens(response.data.accessToken, response.data.refreshToken);
       toast.success(
         t('auth.sandbox.successToast', 'Sandbox Login Successful ({{role}})', {
