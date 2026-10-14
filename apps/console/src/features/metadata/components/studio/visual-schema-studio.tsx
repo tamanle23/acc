@@ -5,6 +5,7 @@ import { AttributePalette } from './attribute-palette';
 import { AttributePropertyInspector } from './attribute-property-inspector';
 import { DynamicFormLivePreview } from './dynamic-form-live-preview';
 import { FsmWorkflowDesigner } from './fsm-workflow-designer';
+import { ConductorWorkflowStudio } from './conductor-workflow-studio';
 import type { PaletteFieldItem } from './studio-types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +27,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
   const [selectedAttributeId, setSelectedAttributeId] = useState<string | number | null>(
     attributes[0]?.id || null
   );
-  const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow'>('canvas');
+  const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'conductor'>('canvas');
 
   const selectedAttribute = attributes.find((a) => String(a.id) === String(selectedAttributeId)) || null;
 
@@ -101,6 +102,13 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
               <GitFork className="h-3.5 w-3.5 text-indigo-500" />
               <span>FSM Workflow Studio</span>
             </TabsTrigger>
+            <TabsTrigger
+              value="conductor"
+              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span>Conductor DAG Studio</span>
+            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -132,7 +140,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
             />
           </div>
         </div>
-      ) : (
+      ) : activeStudioTab === 'workflow' ? (
         /* FSM State Machine Workflow Designer with React Flow */
         <FsmWorkflowDesigner
           entityTypeName={entityType?.name || 'Entity'}
@@ -163,6 +171,9 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
               : undefined
           }
         />
+      ) : (
+        /* Phase 30 Distributed Conductor DAG Studio */
+        <ConductorWorkflowStudio />
       )}
     </div>
   );
