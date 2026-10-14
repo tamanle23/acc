@@ -22,6 +22,10 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
   const { data: attributesResponse, isLoading } = useAttributeDefinitions(entityTypeId);
   const { data: entityType } = useEntityType(entityTypeId);
   const { openCreateAttributeDialog, openJsonSchemaPreview } = useMetadataUiStore();
+  const { data: billing } = useTenantBilling();
+  const { user } = useSpringAuthStore();
+  const { activePersonaId } = useSandboxStore();
+  const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
 
   const [fieldSearch, setFieldSearch] = useState('');
   const [orderedAttributes, setOrderedAttributes] = useState<AttributeDefinition[]>([]);
@@ -71,6 +75,14 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
     );
   }, [attributes, fieldSearch]);
 
+  const isSovereignRoot = Boolean(
+    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
+    activePersonaId === 'system' ||
+    activeTenantId === 'SYSTEM' ||
+    billing?.quotas?.maxSchemas === -1
+  );
+  const isFieldQuotaExceeded = !isSovereignRoot && attributes.length >= 100;
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-muted-foreground gap-3">
@@ -79,18 +91,6 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
       </div>
     );
   }
-
-  const { data: billing } = useTenantBilling();
-  const { user } = useSpringAuthStore();
-  const { activePersonaId } = useSandboxStore();
-  const activeTenantId = useMetadataUiStore((s) => s.activeTenantId);
-  const isSovereignRoot = Boolean(
-    user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||
-    activePersonaId === 'system' ||
-    activeTenantId === 'SYSTEM' ||
-    billing?.quotas?.maxSchemas === -1
-  );
-  const isFieldQuotaExceeded = !isSovereignRoot && attributes.length >= 100;
 
   return (
     <div className="space-y-6 w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
