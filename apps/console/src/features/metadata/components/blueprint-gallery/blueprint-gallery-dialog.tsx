@@ -14,9 +14,14 @@ import {
 } from '../../api/use-blueprints';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
 import { BlueprintCard } from './blueprint-card';
+import { BlueprintTableView } from './blueprint-table-view';
+import { BlueprintSplitView } from './blueprint-split-view';
 import { TemplatePreviewModal } from './template-preview-modal';
+import { LayoutModeSwitcher, type LayoutMode } from '@/components/layout-switcher';
 import { Search, BookTemplate, Sparkles, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const STORAGE_KEY_LAYOUT = 'console:layout:blueprint-catalog';
 
 export const BlueprintGalleryDialog: React.FC = () => {
   const {
@@ -32,6 +37,28 @@ export const BlueprintGalleryDialog: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [previewBlueprintId, setPreviewBlueprintId] = useState<string | null>(null);
+
+  // Initialize layout mode from localStorage or fallback to 'grid'
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_LAYOUT);
+      if (stored === 'grid' || stored === 'table' || stored === 'split') {
+        return stored;
+      }
+    } catch {
+      // LocalStorage unavailable
+    }
+    return 'grid';
+  });
+
+  const handleLayoutChange = (mode: LayoutMode) => {
+    setLayoutMode(mode);
+    try {
+      localStorage.setItem(STORAGE_KEY_LAYOUT, mode);
+    } catch {
+      // Ignore storage errors
+    }
+  };
 
   // Extract unique categories
   const categories = useMemo(() => {
@@ -91,25 +118,34 @@ export const BlueprintGalleryDialog: React.FC = () => {
             </div>
           </DialogHeader>
 
-          {/* Search & Category Filter Toolbar */}
+          {/* Search, Category Filter, and Layout Switcher Toolbar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 shrink-0">
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search templates (e.g. CMS, Fleet, CRM)..."
-                className="pl-8 pr-7 h-8 text-xs bg-white/50 dark:bg-white/5 border-white/20"
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search templates (e.g. CMS, Fleet)..."
+                  className="pl-8 pr-7 h-8 text-xs bg-white/50 dark:bg-white/5 border-white/20"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-2 p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Layout Mode Segmented Control */}
+              <LayoutModeSwitcher
+                value={layoutMode}
+                onChange={handleLayoutChange}
+                ariaLabel="Blueprint catalog view layout"
               />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="absolute right-2 top-2 p-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
             </div>
 
             {/* Category Filter Pills */}
@@ -140,7 +176,7 @@ export const BlueprintGalleryDialog: React.FC = () => {
             </div>
           </div>
 
-          {/* Catalog Grid View */}
+          {/* Dynamic Catalog View Container */}
           <div className="flex-1 min-h-0 overflow-y-auto mt-2 pr-1">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center p-16 gap-3 text-muted-foreground">
@@ -153,6 +189,19 @@ export const BlueprintGalleryDialog: React.FC = () => {
                 <h4 className="font-semibold text-sm text-foreground">No blueprints match your search</h4>
                 <p className="text-xs mt-1">Try clearing your search query or choosing another category.</p>
               </div>
+            ) : layoutMode === 'table' ? (
+              <BlueprintTableView
+                blueprints={filteredBlueprints}
+                onPreview={(id) => setPreviewBlueprintId(id)}
+                onSelect={handleSelectBlueprint}
+                isImporting={provisionMutation.isPending}
+              />
+            ) : layoutMode === 'split' ? (
+              <BlueprintSplitView
+                blueprints={filteredBlueprints}
+                onSelect={handleSelectBlueprint}
+                isImporting={provisionMutation.isPending}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 {filteredBlueprints.map((bp) => (

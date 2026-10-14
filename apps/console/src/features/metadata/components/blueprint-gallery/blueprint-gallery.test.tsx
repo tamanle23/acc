@@ -3,6 +3,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { BlueprintCard } from '../../components/blueprint-gallery/blueprint-card';
 import { BlueprintGraphCanvas } from '../../components/blueprint-gallery/blueprint-graph-canvas';
+import { BlueprintTableView } from '../../components/blueprint-gallery/blueprint-table-view';
+import { LayoutModeSwitcher } from '@/components/layout-switcher';
 import type { BlueprintSummaryDto, BlueprintEntityType, BlueprintRelationship } from '../../api/types';
 
 describe('BlueprintCard Component', () => {
@@ -96,3 +98,55 @@ describe('BlueprintGraphCanvas Component', () => {
     expect(container.querySelector('svg')).toBeDefined();
   });
 });
+
+describe('LayoutModeSwitcher & BlueprintTableView Components', () => {
+  const sampleSummaries: BlueprintSummaryDto[] = [
+    {
+      id: 'bp_cms_publishing_v1',
+      name: 'Headless CMS',
+      category: 'MEDIA_PUBLISHING',
+      description: 'Articles and taxonomy.',
+      icon: 'Newspaper',
+      entityTypesCount: 3,
+      relationshipTypesCount: 2,
+    },
+    {
+      id: 'bp_ecommerce_v1',
+      name: 'E-Commerce Retail',
+      category: 'COMMERCE',
+      description: 'Catalogs and orders.',
+      icon: 'Briefcase',
+      entityTypesCount: 4,
+      relationshipTypesCount: 3,
+    },
+  ];
+
+  it('renders BlueprintTableView with tabular rows and triggers actions', () => {
+    const handlePreview = vi.fn();
+    const handleSelect = vi.fn();
+
+    render(
+      <BlueprintTableView
+        blueprints={sampleSummaries}
+        onPreview={handlePreview}
+        onSelect={handleSelect}
+      />
+    );
+
+    expect(screen.getByText('Headless CMS')).toBeDefined();
+    expect(screen.getByText('E-Commerce Retail')).toBeDefined();
+    expect(screen.getByText('MEDIA_PUBLISHING')).toBeDefined();
+    expect(screen.getByText('COMMERCE')).toBeDefined();
+
+    // Trigger actions in table (alphabetical by name: 'E-Commerce Retail' is first)
+    const previewButtons = screen.getAllByTitle('Preview Blueprint Graph');
+    fireEvent.click(previewButtons[0]);
+    expect(handlePreview).toHaveBeenCalledWith('bp_ecommerce_v1');
+
+    const useButtons = screen.getAllByRole('button', { name: /Use/i });
+    fireEvent.click(useButtons[0]);
+    expect(handleSelect).toHaveBeenCalledWith('bp_ecommerce_v1');
+  });
+});
+
+
