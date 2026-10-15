@@ -5,7 +5,7 @@ import { sandboxResetRegistry } from '../reset-registry';
 import type { WorkflowExecution } from '@unipost/client';
 
 export class WorkflowExecutionsSandboxRepository {
-  private tenantTasks: Map<string, WorkflowExecution[]> = new Map();
+  private tenantWorkflowExecutions: Map<string, WorkflowExecution[]> = new Map();
 
   constructor() {
     this.reset();
@@ -18,17 +18,17 @@ export class WorkflowExecutionsSandboxRepository {
 
   private getTenantList(tenantId?: string): WorkflowExecution[] {
     const tid = tenantId || this.getActiveTenantId();
-    if (!this.tenantTasks.has(tid)) {
-      this.tenantTasks.set(tid, JSON.parse(JSON.stringify(workflowExecutions)));
+    if (!this.tenantWorkflowExecutions.has(tid)) {
+      this.tenantWorkflowExecutions.set(tid, JSON.parse(JSON.stringify(workflowExecutions)));
     }
-    return this.tenantTasks.get(tid)!;
+    return this.tenantWorkflowExecutions.get(tid)!;
   }
 
   public reset(): void {
-    this.tenantTasks.clear();
-    this.tenantTasks.set('SYSTEM', JSON.parse(JSON.stringify(workflowExecutions)));
-    this.tenantTasks.set('tenant-acme', JSON.parse(JSON.stringify(workflowExecutions)));
-    this.tenantTasks.set(
+    this.tenantWorkflowExecutions.clear();
+    this.tenantWorkflowExecutions.set('SYSTEM', JSON.parse(JSON.stringify(workflowExecutions)));
+    this.tenantWorkflowExecutions.set('tenant-acme', JSON.parse(JSON.stringify(workflowExecutions)));
+    this.tenantWorkflowExecutions.set(
       'tenant-us-east-1',
       (workflowExecutions as WorkflowExecution[]).slice(0, 5).map((t, idx) => ({
         ...t,
@@ -65,7 +65,7 @@ export class WorkflowExecutionsSandboxRepository {
     const list = this.getTenantList(tid);
     const beforeLen = list.length;
     const filtered = list.filter((t) => t.id !== id);
-    this.tenantTasks.set(tid, filtered);
+    this.tenantWorkflowExecutions.set(tid, filtered);
     return filtered.length < beforeLen;
   }
 }

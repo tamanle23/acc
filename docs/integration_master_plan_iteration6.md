@@ -11,10 +11,10 @@ In strict adherence to the canonical architecture defined in `docs/hybrid_metada
 - **No Redundant View Tables**: There is **no separate `UNIPOST_COMPOSITE_VIEWS` table**. A Composite Entity **IS** a first-class entity type in `UNIPOST_ENTITY_TYPES` where `is_composite = true`.
 - **Relational Symmetry**: Composite entities share identical identity, multi-tenant isolation, versioning (`schema_version`), permissions, and caching mechanics as base entity types.
 - **Strict Read-Only Composite Projections**: Composite entities are purely queryable, denormalized aggregate projections. Direct mutations on composite entities are strictly prohibited (`405 Method Not Allowed`).
-- **Maximum-Care CRUD Pipeline on Base Records**: All write operations (Create, Update, Delete) target base entity records and execute through a hardened, 6-stage transaction-bound pipeline with strict Optimistic Concurrency Control (OCC), pre-commit schema and referential validation, declarative cascade policies, an immutable in-transaction audit ledger (`UNIPOST_RECORD_AUDIT_LOG`), and zero-loss domain event publishing.
-- **3-Pattern Relationship Model**: Traverses Unipost's canonical relationship architecture:
+- **Maximum-Care CRUD Pipeline on Base Records**: All write operations (Create, Update, Delete) target base entity records and execute through a hardened, 6-stage transaction-bound pipeline with strict Optimistic Concurrency Control (OCC), pre-commit schema and referential validation, declarative cascade policies, an immutable monthly-partitioned audit ledger (`UNIPOST_RECORD_AUDIT_LOG`), and zero-loss domain event publishing.
+- **3-Pattern Relationship Model & Dynamic Indexing**:
   - **Pattern A (Hard Foreign Key)**: Infrastructure-level ownership (`tenant_id`, `created_by_user_id`, `entity_type_id`).
-  - **Pattern B (Entity Reference 🔗)**: Inline JSONB attribute pointers (`record.attributes->>'target_id'`).
+  - **Pattern B (Entity Reference 🔗)**: Inline JSONB attribute pointers (`record.attributes->>'target_id'`) with automated dynamic provisioning of partial B-Tree functional indexes.
   - **Pattern C (Connected Edges ᛦ)**: Dedicated graph edge table (`UNIPOST_ENTITY_RELATIONSHIPS`) with multi-cardinality, edge context metadata, and lifecycle cascade deletes.
 
 ---
@@ -28,11 +28,13 @@ In strict adherence to the canonical architecture defined in `docs/hybrid_metada
 | **3** | **Strict Optimistic Concurrency Control (OCC)** | All base record mutations require a monotonically increasing `version` check (HTTP `If-Match` / ETag), failing fast with `409 Conflict` on race conditions to prevent lost updates. |
 | **4** | **Pre-Commit Validation & Referential Integrity** | Server-side defaults are applied prior to JSON Schema validation (`additionalProperties: false`). Relationship pointers (Pattern B & C) must pass target existence, cross-tenant rejection, and cardinality validation before write. |
 | **5** | **Declarative Delete Cascades & Referential Guards** | Soft-deletes enforce relationship cascade policies (`RESTRICT`, `CASCADE`, `SET_NULL`) across Pattern B JSONB references and Pattern C edge tables in the same atomic transaction. |
-| **6** | **Immutable In-Transaction Audit Ledger** | Every base record Create, Update, and Soft-Delete writes an append-only row to `UNIPOST_RECORD_AUDIT_LOG` capturing before/after deltas, actor, and version within the same DB transaction. |
-| **7** | **Existing 3-Pattern Relationship Fidelity** | Must strictly leverage Unipost's established relationship model: Pattern A (relational columns), Pattern B (inline JSONB `attributes` pointers), and Pattern C (`UNIPOST_ENTITY_RELATIONSHIPS` edge table). |
-| **8** | **Transaction-Bound Event Ingestion** | Entity mutations publish domain events via Spring Modulith's Event Publication Registry in the exact same database transaction, eliminating 2PC overhead and guaranteeing zero event loss. |
-| **9** | **Strict Multi-Tenancy & Soft Deletion** | All registry queries, generic record scans, lateral joins, and materialized caches MUST enforce `tenant_id = :tenantId` and `deleted_date IS NULL` with partial unique indexes. |
-| **10** | **Zero Synthetic Mocks in Verification** | All integration tests execute against real production classes, real database engines, and actual transactional listeners. |
+| **6** | **Partitioned In-Transaction Audit Ledger** | Every base record Create, Update, and Soft-Delete writes an append-only row to `UNIPOST_RECORD_AUDIT_LOG` (monthly range partitioned by `created_at`) capturing before/after deltas, actor, and version. |
+| **7** | **Automated Dynamic B-Tree Index Provisioning** | When a Pattern B relationship is registered in `UNIPOST_RELATIONSHIP_TYPES`, the backend automatically provisions a partial B-Tree functional index (`CREATE INDEX CONCURRENTLY IF NOT EXISTS (((attributes->>'fk')::uuid)) WHERE deleted_date IS NULL`). |
+| **8** | **Native Child Collection Pagination & Safety Caps** | Dynamic SQL pushdown queries for 1:N relations natively support pagination parameters (`limit`, `offset` / `cursor`) with a default of 50 and hard ceiling of 250 to protect database `work_mem`. |
+| **9** | **Sliding-Window Invalidation Coalescing** | Invalidation events for the same root record are coalesced over a 500ms sliding window, collapsing rapid child batch updates into exactly one composite document recalculation. |
+| **10** | **Materialization OCC Retry with Jitter & Soft-Delete Skip** | On concurrent materialization collisions, workers retry up to 3 times with exponential backoff and jitter. If the root record is soft-deleted, the materialized document is safely purged. |
+| **11** | **Strict Multi-Tenancy & Soft Deletion** | All registry queries, generic record scans, lateral joins, and materialized caches MUST enforce `tenant_id = :tenantId` and `deleted_date IS NULL` with partial unique indexes. |
+| **12** | **Zero Synthetic Mocks in Verification** | All integration tests execute against real production classes, real database engines, and actual transactional listeners. |
 
 ---
 
@@ -40,17 +42,17 @@ In strict adherence to the canonical architecture defined in `docs/hybrid_metada
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 41** | **Composite Entity Type Registry & Specification DSL** | Extend `UNIPOST_ENTITY_TYPES` with `composite_spec JSONB`; AST compiler supporting Pattern B & C relationships; versioned L1 Caffeine / L2 Redis cache (`schema:{id}:v{version}`). | JUnit 5 tests asserting AST compilation, relationship type validation, cycle detection, and L1/L2 cache invalidation. |
-| **Phase 42** | **Maximum-Care Base Entity CRUD Pipeline & In-Transaction Audit Ledger** | 6-stage mutation pipeline for base entities; strict OCC (`version` / ETag); Draft-07 validation with `additionalProperties: false`; Pattern B & C referential existence & cardinality checks; declarative delete cascade engine (`RESTRICT`, `CASCADE`, `SET_NULL`); append-only `UNIPOST_RECORD_AUDIT_LOG`. | JUnit 5 integration tests asserting concurrent update collision handling (`409 Conflict`), cross-tenant referential rejection, cascade delete propagation, and audit log delta capture. |
-| **Phase 43** | **Adaptive Read-Time Resolution Engine (Dynamic SQL Pushdown & DataLoader)** | `DynamicQueryCompiler` compiling composite view ASTs into single-roundtrip PostgreSQL queries with `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` traversing Pattern B inline keys or Pattern C edge tables; bounded guardrails (max recursion depth 4, statement timeout 1,500ms); `DataLoaderBatchResolver` fallback. | Integration tests asserting query execution plan, zero N+1 round trips, sub-15ms latency for 3-level nested graphs, and graceful statement timeout handling. |
-| **Phase 44** | **Transaction-Bound Asynchronous Denormalization Pipeline** | Spring Modulith Event Publication integration; Inverted Dependency Graph (`DependencyGraph`) indexing Pattern B & C relations; `InvalidationRouter` reverse-resolving root record IDs; idempotent `CascadingMaterializerWorker` with optimistic locking in `UNIPOST_MATERIALIZED_COMPOSITE_DOCUMENTS`. | Concurrency tests validating correct root document recalculation under rapid parallel child updates without deadlocks or missed invalidations. |
+| **Phase 41** | **Composite Entity Type Registry & Specification DSL** | Extend `UNIPOST_ENTITY_TYPES` with `composite_spec JSONB`; AST compiler supporting Pattern B & C relationships; automated dynamic partial B-Tree index provisioner; versioned L1 Caffeine / L2 Redis cache (`schema:{id}:v{version}`). | JUnit 5 tests asserting AST compilation, relationship type validation, cycle detection, automatic functional index generation, and L1/L2 cache invalidation. |
+| **Phase 42** | **Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger** | 6-stage mutation pipeline for base entities; strict OCC (`version` / ETag); Draft-07 validation with `additionalProperties: false`; Pattern B & C referential existence & cardinality checks; declarative delete cascade engine (`RESTRICT`, `CASCADE`, `SET_NULL`); monthly-partitioned `UNIPOST_RECORD_AUDIT_LOG`. | JUnit 5 integration tests asserting concurrent update collision handling (`409 Conflict`), cross-tenant referential rejection, cascade delete propagation, and audit log partition routing. |
+| **Phase 43** | **Adaptive Read-Time Resolution Engine (Dynamic SQL Pushdown & Pagination)** | `DynamicQueryCompiler` compiling composite view ASTs into single-roundtrip PostgreSQL queries with `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` traversing Pattern B inline keys or Pattern C edge tables; native child pagination (`limit`, `offset`); bounded guardrails (max recursion depth 4, statement timeout 1,500ms); `DataLoaderBatchResolver` fallback. | Integration tests asserting query execution plan, zero N+1 round trips, sub-15ms latency for 3-level nested graphs, child slice pagination, and graceful statement timeout handling. |
+| **Phase 44** | **Transaction-Bound Asynchronous Denormalization Pipeline with Coalescing** | Spring Modulith Event Publication integration; Inverted Dependency Graph (`DependencyGraph`) indexing Pattern B & C relations; 500ms sliding-window invalidation debouncer; reverse foreign-key path resolver; idempotent `CascadingMaterializerWorker` with OCC retries & jitter updating `UNIPOST_MATERIALIZED_COMPOSITE_DOCUMENTS`. | Concurrency tests validating storm coalescing (100 child writes $\to$ 1 recalculation), OCC retry resilience, and correct root document state without deadlocks. |
 | **Phase 45** | **Enterprise Resilience, Performance Benchmarking & Chaos Verification** | Stress testing with 100,000 generic records and 1,000 concurrent composite queries; chaos injection (worker crash during materialization, transaction rollback, Redis cache failure); full monorepo build and lint verification. | Performance benchmark reporting p95/p99 query latencies under load; chaos test verifying 100% recovery of pending events via Modulith event publication log. |
 
 ---
 
 ## 4. Deep Dive Technical Specifications & Architecture
 
-### 4.1 Schema Consolidation & Audit Ledger DDL
+### 4.1 Schema Consolidation & Partitioned Audit Ledger DDL
 
 ```sql
 -- 1. Base Entity Types Registry (Unified for both Base and Composite Entities)
@@ -95,9 +97,9 @@ CREATE INDEX idx_entities_tenant_type
 CREATE INDEX idx_entities_attributes_gin 
     ON UNIPOST_ENTITIES USING GIN (attributes);
 
--- 3. Immutable In-Transaction Record Audit Log
+-- 3. Monthly Range-Partitioned Immutable Audit Log
 CREATE TABLE IF NOT EXISTS UNIPOST_RECORD_AUDIT_LOG (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID NOT NULL DEFAULT gen_random_uuid(),
     tenant_id VARCHAR(64) NOT NULL,
     record_id UUID NOT NULL,
     entity_type_id UUID NOT NULL REFERENCES UNIPOST_ENTITY_TYPES(id),
@@ -107,8 +109,14 @@ CREATE TABLE IF NOT EXISTS UNIPOST_RECORD_AUDIT_LOG (
     old_attributes JSONB NULL,
     new_attributes JSONB NULL,
     delta JSONB NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
-);
+    created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+    PRIMARY KEY (id, created_at)
+) PARTITION BY RANGE (created_at);
+
+-- Example initial monthly partition
+CREATE TABLE IF NOT EXISTS unipost_record_audit_log_2026_10 
+    PARTITION OF UNIPOST_RECORD_AUDIT_LOG 
+    FOR VALUES FROM ('2026-10-01 00:00:00+00') TO ('2026-11-01 00:00:00+00');
 
 CREATE INDEX idx_record_audit_lookup 
     ON UNIPOST_RECORD_AUDIT_LOG(tenant_id, record_id, created_at DESC);
@@ -136,42 +144,83 @@ CREATE INDEX idx_mat_doc_dirty
 
 ---
 
-### 4.2 Maximum-Care Base Entity CRUD Mutation Pipeline
+### 4.2 Dynamic Query Pushdown with Child Pagination
 
-```mermaid
-flowchart TD
-    Req["Mutation Request<br/>(Create/Update/Delete)"] --> Stage1["Stage 1: Guard & Permissions<br/>• Enforce tenant_id<br/>• Reject if is_composite=TRUE (405 Method Not Allowed)"]
-    
-    Stage1 --> Stage2["Stage 2: Default Injection<br/>• Inject server-side defaults from UNIPOST_ATTRIBUTE_DEFINITIONS"]
-    
-    Stage2 --> Stage3["Stage 3: Strict Schema Validation<br/>• Validate against compiled Draft-07 schema<br/>• additionalProperties: false"]
-    
-    Stage3 --> Stage4["Stage 4: Referential & Cardinality Guard<br/>• Validate target record existence (deleted_date IS NULL)<br/>• Reject cross-tenant relation pointers<br/>• Enforce cardinality limits (1:1, 1:N, N:N)"]
-    
-    Stage4 --> Stage5["Stage 5: Atomic DB Transaction<br/>• OCC Check: UPDATE WHERE id=:id AND version=:expectedVersion<br/>• Enforce Cascade Policy (RESTRICT/CASCADE/SET_NULL)<br/>• Append to UNIPOST_RECORD_AUDIT_LOG<br/>• Write to Spring Modulith event_publication"]
-    
-    Stage5 --> Stage6["Stage 6: Post-Commit Event Dispatch<br/>• Dispatch RecordChangedDomainEvent<br/>• InvalidationRouter resolves affected Composite Roots<br/>• Async Materializer marks dirty / refreshes document"]
+When executing a dynamic pushdown query with child collection pagination:
+
+```sql
+SELECT 
+    jsonb_build_object(
+        'customerId', root.id,
+        'companyName', root.attributes->>'company_name',
+        'tier', root.attributes->>'tier',
+        'orders', COALESCE(ord_agg.orders, '[]'::jsonb)
+    ) AS composite_document
+FROM UNIPOST_ENTITIES root
+LEFT JOIN LATERAL (
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'orderId', ord.id,
+            'orderNo', ord.attributes->>'order_no',
+            'totalAmount', (ord.attributes->>'total')::numeric,
+            'items', COALESCE(item_agg.items, '[]'::jsonb)
+        ) ORDER BY (ord.attributes->>'order_date') DESC
+    ) AS orders
+    FROM (
+        SELECT ord_sub.* 
+        FROM UNIPOST_ENTITIES ord_sub
+        WHERE ord_sub.tenant_id = root.tenant_id
+          AND ord_sub.entity_type_id = :orderEntityTypeId
+          AND (ord_sub.attributes->>'customer_id')::uuid = root.id
+          AND ord_sub.attributes->>'status' != 'CANCELLED'
+          AND ord_sub.deleted_date IS NULL
+        ORDER BY (ord_sub.attributes->>'order_date') DESC
+        LIMIT :orderLimit OFFSET :orderOffset -- Native child slice pagination
+    ) ord
+    LEFT JOIN LATERAL (
+        SELECT jsonb_agg(
+            jsonb_build_object(
+                'sku', itm.attributes->>'sku',
+                'quantity', (itm.attributes->>'qty')::numeric,
+                'unitPrice', (itm.attributes->>'unit_price')::numeric
+            )
+        ) AS items
+        FROM UNIPOST_ENTITIES itm
+        WHERE itm.tenant_id = ord.tenant_id
+          AND itm.entity_type_id = :itemEntityTypeId
+          AND (itm.attributes->>'order_id')::uuid = ord.id
+          AND itm.deleted_date IS NULL
+        LIMIT 50 -- Bounded sub-collection ceiling
+    ) item_agg ON TRUE
+) ord_agg ON TRUE
+WHERE root.tenant_id = :tenantId
+  AND root.entity_type_id = :customerEntityTypeId
+  AND root.id = :rootRecordId
+  AND root.deleted_date IS NULL;
 ```
 
 ---
 
-### 4.3 Read Path: Dynamic SQL Pushdown with Pattern B & Pattern C Support
+### 4.3 Invalidation Debouncing & Coalescing Pipeline
 
 ```mermaid
 flowchart TD
-    Req["Request: getComposite(tenantId, compositeCode, rootRecordId)"] --> Resolver["CompositeQueryResolver"]
-    Resolver --> Cache["L1 Caffeine / L2 Redis Cache"]
-    Cache -->|Hit| Spec["UNIPOST_ENTITY_TYPES.composite_spec AST"]
+    E1["Child Mutation 1"] --> Coalescer["500ms Sliding Window Coalescer<br/>Key: (tenantId, compositeTypeId, rootId)"]
+    E2["Child Mutation 2"] --> Coalescer
+    E3["Child Mutation 100"] --> Coalescer
     
-    Resolver --> CheckPolicy{"Materialization Policy?"}
+    Coalescer -->|Single Task Dispatched| Worker["CascadingMaterializerWorker"]
     
-    CheckPolicy -->|ASYNC_MATERIALIZED| FetchMat["SELECT document FROM UNIPOST_MATERIALIZED_COMPOSITE_DOCUMENTS"]
-    FetchMat --> Resp["Return Composite Document JSON"]
+    Worker --> CheckRoot{"Is Root Soft-Deleted?"}
+    CheckRoot -->|Yes| Purge["DELETE/SOFT-DELETE Document from UNIPOST_MATERIALIZED_DOCUMENTS"]
     
-    CheckPolicy -->|ON_DEMAND / Cache Miss| Compiler["DynamicQueryCompiler"]
-    Compiler --> GenSQL["Generate Dynamic Lateral Join Query<br/>• Root from UNIPOST_ENTITIES<br/>• Pattern B: JOIN child WHERE (child.attributes->>'fk')::uuid = parent.id<br/>• Pattern C: JOIN UNIPOST_ENTITY_RELATIONSHIPS edge + target"]
-    GenSQL --> Exec["Execute Query with statement_timeout=1500ms"]
-    Exec --> Resp
+    CheckRoot -->|No| Recalc["Execute Dynamic Pushdown Query for Root"]
+    Recalc --> Upsert["Optimistic Upsert WHERE version = :expectedVersion"]
+    
+    Upsert --> OCCCheck{"OCC Conflict?"}
+    OCCCheck -->|Yes| Retry["Exponential Jitter Retry (up to 3x)"]
+    Retry --> Recalc
+    OCCCheck -->|No| Done["Mark Event Publication Complete"]
 ```
 
 ---
@@ -182,8 +231,8 @@ flowchart TD
 # 1. Backend Core & Database Test Suite
 cd apps/backend; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
 
-# 2. Maximum-Care CRUD & Concurrency Integration Tests
-cd apps/backend; ./mvnw.cmd test -Dtest=RecordMutationPipelineTest,OptimisticLockingConcurrencyTest,ReferentialCascadeTest
+# 2. Maximum-Care CRUD, Pagination & Invalidation Storm Tests
+cd apps/backend; ./mvnw.cmd test -Dtest=RecordMutationPipelineTest,DynamicQueryPaginationTest,InvalidationCoalescingTest
 
 # 3. Monorepo-Wide Integrity Check
 pnpm check-types
