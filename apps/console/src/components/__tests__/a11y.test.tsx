@@ -1,6 +1,9 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+import * as matchers from 'vitest-axe/matchers';
+
+expect.extend(matchers);
 
 vi.mock('@/components/command-menu', () => ({
   CommandMenu: () => null,
