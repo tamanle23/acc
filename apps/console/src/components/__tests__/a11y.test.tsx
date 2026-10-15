@@ -1,11 +1,17 @@
 import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+
+vi.mock('@/components/command-menu', () => ({
+  CommandMenu: () => null,
+}));
 import { SkipToMain } from '../skip-to-main';
 import { Main } from '../layout/main';
 import { PasswordInput } from '../password-input';
 import { ConfirmDialog } from '../confirm-dialog';
 import { DataTablePagination } from '../data-table/pagination';
+import { Search } from '../search';
+import { SearchProvider } from '@/context/search-provider';
 
 describe('Component Accessibility Test Suite (axe-core)', () => {
   it('SkipToMain component should have zero a11y violations', async () => {
@@ -78,5 +84,19 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
     expect(getByLabelText('Go to previous page')).toBeDefined();
     expect(getByLabelText('Go to next page')).toBeDefined();
     expect(getByLabelText('Go to last page')).toBeDefined();
+  });
+
+  it('Search trigger component should have zero a11y violations and accurate ARIA label', async () => {
+    const { container, getByRole } = render(
+      <SearchProvider>
+        <Search placeholder="Search docs" />
+      </SearchProvider>
+    );
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+
+    const button = getByRole('button', { name: /Search docs \(Press Ctrl\+K or Cmd\+K\)/i });
+    expect(button).toBeDefined();
   });
 });
