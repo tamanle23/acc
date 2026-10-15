@@ -21,31 +21,38 @@ export function ThemeSwitch() {
     if (metaThemeColor) metaThemeColor.setAttribute('content', themeColor)
   }, [theme])
 
+  const currentThemeLabel = theme.charAt(0).toUpperCase() + theme.slice(1)
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon' className='scale-95 rounded-full'>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='scale-95 rounded-full'
+          aria-label={`Select theme (current: ${currentThemeLabel})`}
+        >
           <Sun className='size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90' />
           <Moon className='absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0' />
           <span className='sr-only'>Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
-        <DropdownMenuItem onClick={() => setTheme('light')}>
+        <DropdownMenuItem onClick={() => setTheme('light')} aria-label='Light theme'>
           Light{' '}
           <Check
             size={14}
             className={cn('ms-auto', theme !== 'light' && 'hidden')}
           />
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
+        <DropdownMenuItem onClick={() => setTheme('dark')} aria-label='Dark theme'>
           Dark
           <Check
             size={14}
             className={cn('ms-auto', theme !== 'dark' && 'hidden')}
           />
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
+        <DropdownMenuItem onClick={() => setTheme('system')} aria-label='System theme'>
           System
           <Check
             size={14}
