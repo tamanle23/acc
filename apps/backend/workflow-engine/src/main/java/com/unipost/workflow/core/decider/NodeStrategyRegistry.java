@@ -9,14 +9,18 @@ import com.unipost.workflow.core.decider.strategy.SwitchNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.WaitNodeStrategy;
 import com.unipost.workflow.core.model.TaskType;
 
+import com.unipost.workflow.core.decider.strategy.CallMcpToolStrategy;
 import com.unipost.workflow.core.decider.strategy.DynamicTaskStrategy;
 import com.unipost.workflow.core.decider.strategy.EventNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.ExclusiveJoinStrategy;
 import com.unipost.workflow.core.decider.strategy.HttpNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.HumanNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.InlineExpressionStrategy;
+import com.unipost.workflow.core.decider.strategy.JdbcNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.JsonTransformStrategy;
+import com.unipost.workflow.core.decider.strategy.KafkaPublishStrategy;
 import com.unipost.workflow.core.decider.strategy.LlmChatCompleteStrategy;
+import com.unipost.workflow.core.decider.strategy.NoopNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.SetVariableStrategy;
 import com.unipost.workflow.core.decider.strategy.StartWorkflowStrategy;
 import com.unipost.workflow.core.decider.strategy.SubWorkflowStrategy;
@@ -57,6 +61,10 @@ public final class NodeStrategyRegistry {
         register(TaskType.EVENT, new EventNodeStrategy());
         register(TaskType.DYNAMIC, new DynamicTaskStrategy());
         register(TaskType.LLM_CHAT_COMPLETE, new LlmChatCompleteStrategy());
+        register(TaskType.NOOP, new NoopNodeStrategy());
+        register(TaskType.JDBC, new JdbcNodeStrategy());
+        register(TaskType.KAFKA_PUBLISH, new KafkaPublishStrategy());
+        register(TaskType.CALL_MCP_TOOL, new CallMcpToolStrategy());
     }
 
     public void register(TaskType taskType, NodeEvaluatorStrategy strategy) {

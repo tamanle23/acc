@@ -19,5 +19,9 @@ public enum TaskType {
     START_WORKFLOW,
     EVENT,
     DYNAMIC,
-    LLM_CHAT_COMPLETE
+    LLM_CHAT_COMPLETE,
+    NOOP,
+    JDBC,
+    KAFKA_PUBLISH,
+    CALL_MCP_TOOL
 }
