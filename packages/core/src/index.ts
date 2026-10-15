@@ -44,13 +44,14 @@ export * from './ai-backend/python/PythonBackend';
 export * from './SceneWorker';
 export * from './pipeline';
 export * from './conductor';
-export * from './conductor/commands';
 export * from './timeline';
 export * from './resilience/AdaptiveResourceGovernor';
 export * from './resilience/RenderCircuitBreaker';
 export * from './models/ModelHandleRegistry';
 export * from './saga/ConductorSagaOrchestrator';
 export * from './telemetry/TraceContext';
+export * from './telemetry/Tracer';
 export * from './telemetry/MetricsRegistry';
 export * from './security/DynamicSecretsManager';
 export * from './autoconfig';
+

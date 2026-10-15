@@ -4,6 +4,7 @@ trigger: always_on
 rule: backlog_tracking
 constraints:
   - id: sequential 3-digit (001, 002); no unnumbered dumps
+  - scope: macro-epics and high-level roadmaps only. NEVER create per-phase micro-backlogs (Option B: execution logs live strictly in docs/history/)
   - create: docs/backlogs/XXX_<epic>.md
     meta: [Status ( [ ] Planned), Component, Created Date, Completed Date, Linked History]
     sections: [Context & Problem, Proposed Design, Acceptance Criteria (checkboxes)]

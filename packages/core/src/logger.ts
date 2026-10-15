@@ -19,7 +19,17 @@ export class Logger {
       const { DynamicSecretsManager } = require('./security/DynamicSecretsManager');
       sanitized = DynamicSecretsManager.getInstance().sanitize(message);
     } catch {}
-    return `[${timestamp}] [${namespace}] ${sanitized}`;
+
+    let traceTag = '';
+    try {
+      const { Tracer } = require('./telemetry/Tracer');
+      const ctx = Tracer.currentContext();
+      if (ctx) {
+        traceTag = ` [trace:${ctx.traceId.slice(0, 8)} span:${ctx.spanId.slice(0, 8)}]`;
+      }
+    } catch {}
+
+    return `[${timestamp}]${traceTag} [${namespace}] ${sanitized}`;
   }
 
   public static debug(namespace: string, message: string, ...optionalParams: any[]) {

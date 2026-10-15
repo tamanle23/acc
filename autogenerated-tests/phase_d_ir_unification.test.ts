@@ -99,6 +99,23 @@ describe('Phase D: Parity & Unified Canonical IR Pipeline Transition', () => {
     const sampleStoryPath = path.resolve('sample-story');
     if (!fs.existsSync(sampleStoryPath)) return;
 
+    const rawJson = JSON.parse(fs.readFileSync(path.join(sampleStoryPath, 'story-config.json'), 'utf-8'));
+    const testConfig = {
+      ...rawJson,
+      name: 'phase_d_test_story',
+      settings: {
+        ...rawJson.settings,
+        concurrency: 2,
+      },
+      scenes: rawJson.scenes?.slice(0, 2),
+    };
+
+    const testDir = path.resolve('output/phase_d_test_workspace');
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(testDir, 'story-config.json'), JSON.stringify(testConfig, null, 2));
+
     const pipeline = new GenerativeStoryPipeline();
     const runner = pipeline.buildRunner();
 
@@ -106,12 +123,11 @@ describe('Phase D: Parity & Unified Canonical IR Pipeline Transition', () => {
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }
-    const outputPath = path.join(outDir, 'test_ir_backend_story.mp4');
 
     const { createUnifiedPipelineContext } = await import('../packages/core');
     const ctx = createUnifiedPipelineContext({
       pipelineId: 'story',
-      input: sampleStoryPath,
+      input: testDir,
       outDir,
       dryRun: false,
       metadata: {

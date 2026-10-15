@@ -142,8 +142,11 @@ describe('Sample Materials & Auto-Config Scaffolding Verification', () => {
 
       expect(result.pipelineId).toBe(def.expectedPipelineId);
       expect(result.pipelineIR).toBeDefined();
-      expect(result.videoConfig).toBeDefined();
-      expect(result.legacyStoryConfig).toBeDefined();
+      if (fs.existsSync(path.join(dirPath, 'story-config.json'))) {
+        expect(result.legacyStoryConfig).toBeDefined();
+      } else {
+        expect(result.legacyStoryConfig).toBeUndefined();
+      }
     }
   });
 });

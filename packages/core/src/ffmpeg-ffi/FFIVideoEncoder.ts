@@ -6,9 +6,11 @@ import {
     FileVideoEncodingStrategy,
     RtmpLiveStreamEncodingStrategy
 } from "./EncodingStrategies";
+import { GPUEncoderResolver, type HardwareEncoderType, type EncoderResolutionResult } from "./GPUEncoderResolver";
+import { GpuVideoEncodingStrategy, type GpuVideoEncodingOptions } from "./GpuVideoEncodingStrategy";
 
-export type { IVideoEncodingStrategy, FileVideoEncodingOptions };
-export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy };
+export type { IVideoEncodingStrategy, FileVideoEncodingOptions, HardwareEncoderType, EncoderResolutionResult };
+export { FileVideoEncodingStrategy, RtmpLiveStreamEncodingStrategy, GPUEncoderResolver, GpuVideoEncodingStrategy };
 
 function safeArrayBuffer(ptrVal: bigint | number, offset: number, length: number): ArrayBuffer {
   const numPtr = typeof ptrVal === 'bigint' ? Number(ptrVal) : ptrVal;
@@ -37,6 +39,9 @@ export class FFIVideoEncoder {
     private srcStrideC: any = 0;
     private pinnedFrameBuf: Buffer | null = null;
     private strategy: IVideoEncodingStrategy;
+    private activeEncoderName: string = '';
+    private isHardware: boolean = false;
+    private hardwareType: HardwareEncoderType = 'cpu';
 
     constructor(
         private width: number,
@@ -46,7 +51,9 @@ export class FFIVideoEncoder {
         private crf: number = 20,
         private audioPath?: string,
         strategy?: IVideoEncodingStrategy,
-        fileOptions?: FileVideoEncodingOptions
+        fileOptions?: FileVideoEncodingOptions,
+        private hardwarePreference?: HardwareEncoderType,
+        private targetCodec: 'h264' | 'hevc' = 'h264'
     ) {
         if (strategy) {
             this.strategy = strategy;
@@ -57,13 +64,34 @@ export class FFIVideoEncoder {
             } else {
                 const ext = outputPath.split('.').pop()?.toLowerCase();
                 const container = fileOptions?.container || (ext && ['mp4', 'mkv', 'mov', 'webm'].includes(ext) ? ext : 'mp4');
-                this.strategy = new FileVideoEncodingStrategy({
-                    container,
-                    fastStart: fileOptions?.fastStart,
-                    preset: fileOptions?.preset
-                });
+                if (hardwarePreference) {
+                    this.strategy = new GpuVideoEncodingStrategy({
+                        container,
+                        fastStart: fileOptions?.fastStart,
+                        preset: fileOptions?.preset,
+                        hardwareType: hardwarePreference,
+                    });
+                } else {
+                    this.strategy = new FileVideoEncodingStrategy({
+                        container,
+                        fastStart: fileOptions?.fastStart,
+                        preset: fileOptions?.preset,
+                    });
+                }
             }
         }
+    }
+
+    public getActiveEncoderName(): string {
+        return this.activeEncoderName;
+    }
+
+    public isHardwareAccelerated(): boolean {
+        return this.isHardware;
+    }
+
+    public getHardwareType(): HardwareEncoderType {
+        return this.hardwareType;
     }
 
     public getStrategy(): IVideoEncodingStrategy {
@@ -77,15 +105,15 @@ export class FFIVideoEncoder {
     public initialize() {
         if (this.isInitialized) return;
 
-        // 1. Hardware Encoder Selection (NVENC GPU first, CPU libx264 fallback)
-        let codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("h264_nvenc\0")));
-        let isNvenc = true;
+        // 1. Hardware Encoder Selection via GPUEncoderResolver
+        const resolved = GPUEncoderResolver.resolveSync(this.targetCodec, this.hardwarePreference);
+        let codec = resolved.handle;
+        let isHardware = resolved.isHardwareAccelerated;
+        let activeEncoderName = resolved.encoderName;
+        let hardwareType = resolved.type;
+
         if (!codec) {
-            codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("libx264\0")));
-            isNvenc = false;
-        }
-        if (!codec) {
-            throw new Error("No compatible H.264 video encoder found in FFmpeg shared libraries.");
+            throw new Error(`No compatible video encoder found for codec '${this.targetCodec}' in FFmpeg shared libraries.`);
         }
 
         // 2. Allocate & configure AVCodecContext dimensions & pixel format
@@ -102,9 +130,9 @@ export class FFIVideoEncoder {
         FFI.avutil.av_opt_set(this.codecCtx, ptr(Buffer.from("flags\0")), ptr(Buffer.from("+global_header\0")), 0);
 
         // Delegate codec settings (GOP, latency tune, presets, rate control) to Strategy
-        this.strategy.configureCodec(this.codecCtx, isNvenc, this.fps, this.crf);
+        this.strategy.configureCodec(this.codecCtx, isHardware, this.fps, this.crf);
 
-        // 4. Open video codec with Defensive Fallback (NVENC -> libx264)
+        // 4. Open video codec with Defensive Fallback (Hardware -> CPU fallback)
         let openRet = -1;
         try {
             openRet = FFI.avcodec.avcodec_open2(this.codecCtx, codec, 0n);
@@ -112,9 +140,14 @@ export class FFIVideoEncoder {
             openRet = -1;
         }
 
-        if (openRet < 0 && isNvenc) {
-            console.warn('[FFIVideoEncoder] NVENC initialization failed or device unavailable. Defensively falling back to CPU libx264.');
-            codec = FFI.avcodec.avcodec_find_encoder_by_name(ptr(Buffer.from("libx264\0")));
+        if (openRet < 0 && isHardware) {
+            console.warn(`[FFIVideoEncoder] Hardware encoder '${activeEncoderName}' failed to open (code ${openRet}). Defensively falling back to CPU encoder.`);
+            const cpuFallback = GPUEncoderResolver.resolveSync(this.targetCodec, 'cpu');
+            codec = cpuFallback.handle;
+            activeEncoderName = cpuFallback.encoderName;
+            hardwareType = 'cpu';
+            isHardware = false;
+
             if (codec) {
                 const p = new BigUint64Array([BigInt(this.codecCtx)]);
                 FFI.avcodec.avcodec_free_context(ptr(p.buffer));
@@ -130,8 +163,12 @@ export class FFIVideoEncoder {
             }
         }
         if (openRet < 0) {
-            throw new Error(`Failed to open video codec context (code ${openRet})`);
+            throw new Error(`Failed to open video codec context for '${activeEncoderName}' (code ${openRet})`);
         }
+
+        this.activeEncoderName = activeEncoderName;
+        this.isHardware = isHardware;
+        this.hardwareType = hardwareType;
 
         // 5. Delegate container format context allocation & configuration to Strategy
         this.formatCtx = this.strategy.allocateFormatContext(this.outputPath);

@@ -9,7 +9,8 @@ async function main() {
   // If arguments are provided, delegate directly to the unified CLI runner
   if (rawArgs.length > 0) {
     const result = await run(rawArgs);
-    if (rawArgs[0]?.toLowerCase() !== 'serve') {
+    const cmd = rawArgs[0]?.toLowerCase();
+    if (cmd !== 'serve' && cmd !== 'studio') {
       process.exit(result?.success === false ? 1 : 0);
     }
     return;

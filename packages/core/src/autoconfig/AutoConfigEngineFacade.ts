@@ -115,15 +115,43 @@ export class AutoConfigEngineFacade {
       options
     );
 
-    // 5. Legacy StoryConfig Synthesis via Adapter (if requested)
+    // 5. Legacy StoryConfig Synthesis & Update/Merge Mode
+    // Note: story-config.json is deprecated in favor of omnichannel-config.json and pipeline-ir.json.
+    // It is ONLY updated/merged if it already exists in the directory, or if explicitly requested via exportLegacyStoryConfig: true.
     let legacyStoryConfig: Record<string, unknown> | undefined;
-    if (options.exportLegacyStoryConfig !== false) {
-      const storyConfig = AutoConfigLegacyBridgeAdapter.toStoryConfig(
+    const storyConfigPath = path.join(resolvedDir, 'story-config.json');
+    const storyConfigExists = fs.existsSync(storyConfigPath);
+
+    const shouldHandleStoryConfig =
+      options.exportLegacyStoryConfig === true ||
+      (options.exportLegacyStoryConfig !== false && storyConfigExists);
+
+    if (shouldHandleStoryConfig) {
+      const generatedStoryConfig = AutoConfigLegacyBridgeAdapter.toStoryConfig(
         pipelineIR,
         videoConfig,
         manifest
       );
-      legacyStoryConfig = storyConfig as unknown as Record<string, unknown>;
+
+      if (storyConfigExists) {
+        // Update/Merge Mode: preserve existing custom properties while merging updated directives
+        try {
+          const rawExisting = fs.readFileSync(storyConfigPath, 'utf-8');
+          const existing = JSON.parse(rawExisting);
+          legacyStoryConfig = {
+            ...existing,
+            ...generatedStoryConfig,
+            settings: {
+              ...(existing.settings || {}),
+              ...(generatedStoryConfig.settings || {}),
+            },
+          };
+        } catch {
+          legacyStoryConfig = generatedStoryConfig as unknown as Record<string, unknown>;
+        }
+      } else {
+        legacyStoryConfig = generatedStoryConfig as unknown as Record<string, unknown>;
+      }
     }
 
     // 6. Persistence & File Output (unless dryRun)
@@ -147,9 +175,8 @@ export class AutoConfigEngineFacade {
       fs.writeFileSync(omnichannelConfigPath, JSON.stringify(omnichannelPayload, null, 2), 'utf-8');
       savedFiles.omnichannelConfigPath = omnichannelConfigPath;
 
-      // 6c. Emit story-config.json
+      // 6c. Update story-config.json (only in update/merge mode or if explicitly requested)
       if (legacyStoryConfig) {
-        const storyConfigPath = path.join(resolvedDir, 'story-config.json');
         fs.writeFileSync(storyConfigPath, JSON.stringify(legacyStoryConfig, null, 2), 'utf-8');
         savedFiles.storyConfigPath = storyConfigPath;
       }
