@@ -34,19 +34,21 @@ import {
 } from '../api/workflow-api';
 
 interface WorkflowCatalogTableProps {
-  definitions: WorkflowDefinitionSummary[];
+  data: WorkflowDefinitionSummary[];
+  search: Record<string, unknown>
   isLoading: boolean;
   onDesignWorkflow: (workflowKey: string) => void;
   onCreateNew: () => void;
 }
 
 export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
-  definitions,
+  data: definitions,
+  search,
   isLoading,
   onDesignWorkflow,
   onCreateNew,
 }) => {
-  const [search, setSearch] = useState('');
+  
   const toggleMutation = useToggleWorkflowStatus();
   const deleteMutation = useDeleteWorkflowDefinition();
 

@@ -104,7 +104,7 @@ export const useSidebarData = (): SidebarData => {
             },
             {
               title: t('sidebar.items.workflowExecutions', 'Workflow Executions'),
-              url: '/tasks',
+              url: '/workflow-executions',
               icon: ListTodo,
             },
             {
@@ -146,45 +146,45 @@ export const useSidebarData = (): SidebarData => {
           },
           ...((!isSovereign || isAssumed)
             ? [
-                {
-                  title: t('sidebar.items.metadata', 'Metadata'),
-                  url: '/metadata',
-                  icon: Settings2,
-                },
-              ]
+              {
+                title: t('sidebar.items.metadata', 'Metadata'),
+                url: '/metadata',
+                icon: Settings2,
+              },
+            ]
             : []),
         ],
       },
       ...(isSovereign
         ? [
-            {
-              title: isAssumed
-                ? t('sidebar.groups.sovereignDelegated', 'Sovereign Custody (Delegated)')
-                : t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
-              items: [
-                {
-                  title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
-                  url: '/system/tenants',
-                  icon: Building2,
-                  badge: 'ROOT',
-                },
-                {
-                  title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
-                  url: '/system/roles',
-                  icon: KeyRound,
-                },
-                ...(!isAssumed
-                  ? [
-                      {
-                        title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
-                        url: '/metadata',
-                        icon: Settings2,
-                      },
-                    ]
-                  : []),
-              ],
-            },
-          ]
+          {
+            title: isAssumed
+              ? t('sidebar.groups.sovereignDelegated', 'Sovereign Custody (Delegated)')
+              : t('sidebar.groups.sovereign', 'Sovereign Custody (Root)'),
+            items: [
+              {
+                title: t('sidebar.items.fleetTenants', 'Fleet Tenants Ledger'),
+                url: '/system/tenants',
+                icon: Building2,
+                badge: 'ROOT',
+              },
+              {
+                title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
+                url: '/system/roles',
+                icon: KeyRound,
+              },
+              ...(!isAssumed
+                ? [
+                  {
+                    title: t('sidebar.items.canonicalSchemas', 'Canonical Schemas'),
+                    url: '/metadata',
+                    icon: Settings2,
+                  },
+                ]
+                : []),
+            ],
+          },
+        ]
         : []),
       {
         title: t('sidebar.groups.pages', 'Pages'),

@@ -150,4 +150,43 @@ describe('UnipostClient Universal HTTP Client', () => {
     expect(callUrl).toContain('size=20');
     expect(callUrl).toContain('filter=%7B%22status%22%3A%22ACTIVE%22%7D');
   });
+
+  it('supports rawResponse option to preserve standard ResponseWrapper envelopes', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({
+        header: { tenantId: 'tenant-acme', version: 1 },
+        body: { id: 'entity-1' },
+      }),
+    });
+
+    const client = new UnipostClient({ fetch: mockFetch });
+    const res = await client.get('/v1/entities/1', { rawResponse: true });
+    expect(res).toEqual({
+      header: { tenantId: 'tenant-acme', version: 1 },
+      body: { id: 'entity-1' },
+    });
+  });
+
+  it('routes domain namespace calls correctly', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'content-type': 'application/json' }),
+      json: async () => ({ accessToken: 'mock-token', refreshToken: 'mock-refresh' }),
+    });
+
+    const client = new UnipostClient({ fetch: mockFetch });
+    const authRes = await client.auth.login({ username: 'admin', password: 'password' });
+    expect(authRes.accessToken).toBe('mock-token');
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/auth/token',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ username: 'admin', password: 'password' }),
+      })
+    );
+  });
 });
+

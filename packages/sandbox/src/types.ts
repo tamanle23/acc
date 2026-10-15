@@ -41,7 +41,7 @@ export type SandboxRouteMatcher = (context: SandboxRouteMatcherContext) => boole
 export type SandboxRouteHandlerFn = (
   req: SandboxRequest,
   context: SandboxRouteMatcherContext
-) => Promise<SandboxResponse> | SandboxResponse;
+) => Promise<SandboxResponse | null> | SandboxResponse | null;
 
 export interface SandboxRouteHandler {
   id: string;

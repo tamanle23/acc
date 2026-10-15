@@ -366,7 +366,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
               <div className='flex size-6 items-center justify-center rounded-md border border-dashed border-border bg-background/50'>
                 <Plus className='size-3.5' />
               </div>
-              <div className='font-medium text-xs'>+ Tạo Workspace Mới</div>
+              <div className='font-medium text-xs'>Tạo Workspace Mới</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,44 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
 import type { WorkflowIR } from '@/features/metadata/components/studio/workflow-ir-converter';
+import type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot } from '@unipost/client';
 import { toast } from 'sonner';
 
-export interface WorkflowDefinitionSummary {
-  workflowKey: string;
-  name: string;
-  version: number;
-  description?: string;
-  tasks?: any[];
-  layoutMetadata?: Record<string, { x: number; y: number }>;
-  status?: 'ACTIVE' | 'DISABLED';
-  updatedAt?: string;
-}
-
-export interface WorkflowExecutionSnapshot {
-  workflowId: string;
-  tenantId: string;
-  workspaceId?: string;
-  workflowKey: string;
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TERMINATED' | 'TIMED_OUT';
-  currentStep?: string;
-  input?: Record<string, unknown>;
-  output?: Record<string, unknown>;
-  tasksByRef?: Record<
-    string,
-    {
-      taskId: string;
-      taskReferenceName: string;
-      taskType: string;
-      status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
-      output?: Record<string, unknown>;
-      error?: string;
-      startTimeEpochMs?: number;
-      endTimeEpochMs?: number;
-    }
-  >;
-  startTimeEpochMs?: number;
-  endTimeEpochMs?: number;
-}
+export type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot };
 
 // 1. Fetch Workflow Definitions
 export const useWorkflowDefinitions = () => {

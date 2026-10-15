@@ -1,6 +1,4 @@
 import type {
-  SandboxRequest,
-  SandboxResponse,
   SandboxRouteHandler,
   SandboxRouteMatcherContext,
 } from './types';

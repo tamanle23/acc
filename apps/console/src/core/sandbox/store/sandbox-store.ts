@@ -126,3 +126,16 @@ export const useSandboxStore = create<SandboxStore>()(
     }
   )
 );
+
+// Two-way synchronization with @unipost/sandbox defaultSandboxStore
+import { defaultSandboxStore } from '@unipost/sandbox';
+useSandboxStore.subscribe((state) => {
+  defaultSandboxStore.setState({
+    enabled: state.enabled,
+    activePersonaId: state.activePersonaId,
+    activeTenantId: state.activeTenantId,
+    networkSimulation: state.networkSimulation,
+    activeFeatures: state.activeFeatures,
+  });
+});
+

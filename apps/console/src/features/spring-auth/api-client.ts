@@ -3,6 +3,7 @@ import { generateTraceparent } from '@unipost/client';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
 import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
+import { useSandboxStore } from '../../core/sandbox/store/sandbox-store';
 
 export const springApiClient = axios.create({
   baseURL: '/api',
@@ -48,7 +49,13 @@ springApiClient.interceptors.request.use(
       config.headers['X-Assumed-Tenant'] = assumedTenant;
       config.headers['X-Tenant-Id'] = assumedTenant;
     } else {
-      // Inject context from active metadata UI store if available
+      // If sandbox is active and running, respect its active tenant
+      const sandboxState = import.meta.env.DEV ? useSandboxStore.getState() : null;
+      if (sandboxState?.enabled && sandboxState.activeTenantId && config.headers) {
+        config.headers['X-Tenant-Id'] = sandboxState.activeTenantId;
+      }
+
+      // Inject context from active metadata UI store if available and not yet set
       try {
         const metadataState = useMetadataUiStore.getState();
         if (metadataState.activeTenantId && config.headers && !config.headers['X-Tenant-Id']) {

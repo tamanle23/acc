@@ -22,7 +22,7 @@ This document records the architectural refinement and UI refactoring to enforce
 - **`ProfileSwitcher` (`src/components/layout/profile-switcher.tsx`)**:
   - Workspaces are grouped by their parent **Organization (Tenant)** using sticky headers with `Building2` icons.
   - Selecting a workspace synchronizes both `setActiveTenant` and `setActiveWorkspace`.
-  - Renamed "+ Add workspace profile" to "+ Tạo Workspace Mới".
+  - Renamed "+ Add workspace profile" to "Tạo Workspace Mới".
 - **`WorkspacesPanel` (`src/features/settings/workspaces/workspaces-panel.tsx`)**:
   - Added an **Active Tenant Context Card** at the top showing the current Organization name, `tenant_id` badge, and Multi-Tenant RLS Active badge.
   - Updated descriptions to clarify that Workspaces belong to an Organization (Tenant).

@@ -18,13 +18,7 @@ import { toast } from 'sonner';
 import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../store/sandbox-store';
 import { sandboxManager } from '../manager/sandbox-manager';
 import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
-import { usersSandboxRepo } from '../handlers/users-sandbox-handler';
-import { tasksSandboxRepo } from '../handlers/tasks-sandbox-handler';
-import { mockFleetStore } from '../handlers/system-sandbox-handler';
-import { sandboxWorkspaceRepository } from '../handlers/workspace-sandbox-handler';
-import { chatsSandboxRepo } from '../handlers/chats-sandbox-handler';
-import { appsSandboxRepo } from '../handlers/apps-sandbox-handler';
-import { workflowSandboxRepo } from '@unipost/sandbox';
+import { sandboxResetRegistry } from '@unipost/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import type { SandboxPersonaId } from '../types';
 
@@ -82,13 +76,7 @@ export function SandboxDock() {
 
   const handleResetAllData = () => {
     mockMetadataStore.resetToInitialState();
-    usersSandboxRepo.reset();
-    tasksSandboxRepo.reset();
-    mockFleetStore.reset();
-    sandboxWorkspaceRepository.reset();
-    chatsSandboxRepo.reset();
-    appsSandboxRepo.reset();
-    workflowSandboxRepo.reset();
+    sandboxResetRegistry.resetAll();
 
     // Clear all user default workspace selections and active assumed tenant sessions from localStorage
     if (typeof window !== 'undefined') {
@@ -221,8 +209,8 @@ export function SandboxDock() {
         <button
           onClick={() => setActiveTab('persona')}
           className={`flex-1 py-1 px-2 rounded-md font-medium transition-all ${activeTab === 'persona'
-              ? 'bg-background shadow-xs text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-background shadow-xs text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           Persona & Scope
@@ -230,8 +218,8 @@ export function SandboxDock() {
         <button
           onClick={() => setActiveTab('network')}
           className={`flex-1 py-1 px-2 rounded-md font-medium transition-all ${activeTab === 'network'
-              ? 'bg-background shadow-xs text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-background shadow-xs text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
             }`}
         >
           Network / Chaos
@@ -240,8 +228,8 @@ export function SandboxDock() {
           <button
             onClick={() => setActiveTab('auth')}
             className={`flex-1 py-1 px-2 rounded-md font-medium transition-all ${activeTab === 'auth'
-                ? 'bg-background shadow-xs text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-background shadow-xs text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             Auth Engine
@@ -266,10 +254,10 @@ export function SandboxDock() {
                     key={pId}
                     onClick={() => sandboxManager.switchPersona(pId)}
                     className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${isActive
-                        ? isSys
-                          ? 'border-amber-500 bg-amber-500/15 text-amber-950 dark:text-amber-200 font-semibold shadow-xs ring-1 ring-amber-500/40'
-                          : 'border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-xs'
-                        : 'border-border/60 hover:border-border hover:bg-muted/40'
+                      ? isSys
+                        ? 'border-amber-500 bg-amber-500/15 text-amber-950 dark:text-amber-200 font-semibold shadow-xs ring-1 ring-amber-500/40'
+                        : 'border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-200 font-semibold shadow-xs'
+                      : 'border-border/60 hover:border-border hover:bg-muted/40'
                       }`}
                   >
                     <span className="truncate max-w-full text-[11px]">
@@ -378,8 +366,8 @@ export function SandboxDock() {
                   key={opt.label}
                   onClick={() => setNetworkLatency(opt.min, opt.max)}
                   className={`py-1 rounded border text-[10px] transition-all ${networkSimulation.latencyMaxMs === opt.max && networkSimulation.latencyMinMs === opt.min
-                      ? 'border-amber-500 bg-amber-500/10 font-medium text-amber-900 dark:text-amber-200'
-                      : 'border-border/60 hover:bg-muted/40'
+                    ? 'border-amber-500 bg-amber-500/10 font-medium text-amber-900 dark:text-amber-200'
+                    : 'border-border/60 hover:bg-muted/40'
                     }`}
                 >
                   {opt.label}
@@ -406,8 +394,8 @@ export function SandboxDock() {
                   key={opt.label}
                   onClick={() => setFaultInjection(opt.rate, opt.code)}
                   className={`py-1 rounded border text-[10px] transition-all ${networkSimulation.faultRate === opt.rate && networkSimulation.faultStatusCode === opt.code
-                      ? 'border-rose-500 bg-rose-500/10 font-medium text-rose-900 dark:text-rose-200'
-                      : 'border-border/60 hover:bg-muted/40'
+                    ? 'border-rose-500 bg-rose-500/10 font-medium text-rose-900 dark:text-rose-200'
+                    : 'border-border/60 hover:bg-muted/40'
                     }`}
                 >
                   {opt.label}
@@ -425,7 +413,7 @@ export function SandboxDock() {
             <Button
               variant="outline"
               size="sm"
-              onClick={expireAccessToken}
+              onClick={clearTokens}
               className="text-[10px] h-8"
               title="Force Access Token Expiration (Silent Refresh Test)"
             >
@@ -434,7 +422,7 @@ export function SandboxDock() {
             <Button
               variant="outline"
               size="sm"
-              onClick={expireRefreshToken}
+              onClick={clearTokens}
               className="text-[10px] h-8"
               title="Force Refresh Token Expiration (Hard Logout Test)"
             >

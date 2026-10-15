@@ -88,10 +88,10 @@ describe('Users & Tasks Sandbox Endpoints via SandboxManager', () => {
     });
   });
 
-  describe('Tasks Endpoints (/api/tasks)', () => {
-    it('should list tasks via GET /api/tasks', async () => {
+  describe('Tasks Endpoints (/api/workflow-executions)', () => {
+    it('should list tasks via GET /api/workflow-executions', async () => {
       const res = await sandboxManager.handleRequest({
-        url: '/api/tasks',
+        url: '/api/workflow-executions',
         method: 'GET',
       });
 
@@ -100,9 +100,9 @@ describe('Users & Tasks Sandbox Endpoints via SandboxManager', () => {
       expect(res?.data.length).toBeGreaterThan(0);
     });
 
-    it('should create task via POST /api/tasks', async () => {
+    it('should create task via POST /api/workflow-executions', async () => {
       const res = await sandboxManager.handleRequest({
-        url: '/api/tasks',
+        url: '/api/workflow-executions',
         method: 'POST',
         data: {
           id: 'TASK-1111',
@@ -117,13 +117,13 @@ describe('Users & Tasks Sandbox Endpoints via SandboxManager', () => {
       expect(res?.data.id).toBe('TASK-1111');
     });
 
-    it('should patch and delete task via /api/tasks/:id', async () => {
+    it('should patch and delete task via /api/workflow-executions/:id', async () => {
       const all = tasksSandboxRepo.getAll();
       const firstId = all[0].id;
 
       // Patch
       const patchRes = await sandboxManager.handleRequest({
-        url: `/api/tasks/${firstId}`,
+        url: `/api/workflow-executions/${firstId}`,
         method: 'PATCH',
         data: { priority: 'low' },
       });
@@ -132,7 +132,7 @@ describe('Users & Tasks Sandbox Endpoints via SandboxManager', () => {
 
       // Delete
       const delRes = await sandboxManager.handleRequest({
-        url: `/api/tasks/${firstId}`,
+        url: `/api/workflow-executions/${firstId}`,
         method: 'DELETE',
       });
       expect(delRes?.status).toBe(200);

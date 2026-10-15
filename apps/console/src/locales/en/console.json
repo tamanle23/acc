@@ -158,7 +158,7 @@
     }
   },
   "workflows": {
-    "title": "Visual DAG Studio",
+    "title": "Workflow Definitions",
     "description": "Design, simulate, and observe distributed DAG workflows with single-column lease queues and virtual-thread workers."
   }
 }

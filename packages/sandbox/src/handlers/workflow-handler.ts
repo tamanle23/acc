@@ -1,5 +1,6 @@
 import type { SandboxRouteHandler, SandboxResponse, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
+import { sandboxResetRegistry } from '../reset-registry';
 
 export interface WorkflowDefinitionIR {
   workflowKey: string;
@@ -152,6 +153,7 @@ export class WorkflowSandboxRepository {
 
   constructor() {
     this.reset();
+    sandboxResetRegistry.register(() => this.reset());
   }
 
   private getActiveTenantId(): string {
@@ -288,7 +290,7 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   },
   handler: (req: SandboxRequest, context): SandboxResponse => {
     const method = req.method.toUpperCase();
-    const { pathname, searchParams } = context;
+    const { pathname } = context;
     const cleanPath = pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     const tenantId = (req.headers?.['x-tenant-id'] as string) || defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
 

@@ -1,14 +1,6 @@
-export interface JwtPayload {
-  sub: string;
-  roles: string[];
-  tenantId?: string;
-  tid?: string;
-  actor_tid?: string;
-  iat: number;
-  exp: number;
-  isSandbox?: boolean;
-  [key: string]: unknown;
-}
+import type { JwtPayload, LoginResponse, TokenRefreshResponse as RefreshResponse } from '@unipost/client';
+
+export type { JwtPayload, LoginResponse, RefreshResponse };
 
 export interface AuthState {
   accessToken: string | null;
@@ -23,14 +15,4 @@ export interface AuthState {
   clearTokens: () => void;
   expireAccessToken: () => void;
   expireRefreshToken: () => void;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface RefreshResponse {
-  accessToken: string;
-  refreshToken?: string;
 }

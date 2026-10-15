@@ -35,17 +35,17 @@ describe('Phase A & Phase B End-to-End Wired API & Multi-Tenant Sandbox Flow', (
     appsSandboxRepo.reset();
   });
 
-  describe('Tasks API End-to-End Flow (/api/tasks)', () => {
+  describe('Tasks API End-to-End Flow (/api/workflow-executions)', () => {
     it('fetches tasks for active tenant and handles CRUD mutations', async () => {
-      // 1. GET /api/tasks
-      const listRes = await springApiClient.get('/api/tasks');
+      // 1. GET /api/workflow-executions
+      const listRes = await springApiClient.get('/api/workflow-executions');
       expect(listRes.status).toBe(200);
       expect(Array.isArray(listRes.data)).toBe(true);
       const initialCount = listRes.data.length;
 
-      // 2. POST /api/tasks (Create)
+      // 2. POST /api/workflow-executions (Create)
       const newTaskId = `TASK-TEST-${Date.now()}`;
-      const createRes = await springApiClient.post('/api/tasks', {
+      const createRes = await springApiClient.post('/api/workflow-executions', {
         id: newTaskId,
         title: 'End-to-End Test Task',
         status: 'in-progress',
@@ -55,8 +55,8 @@ describe('Phase A & Phase B End-to-End Wired API & Multi-Tenant Sandbox Flow', (
       expect(createRes.status).toBe(201);
       expect(createRes.data.id).toBe(newTaskId);
 
-      // 3. PATCH /api/tasks/:id (Update)
-      const patchRes = await springApiClient.patch(`/api/tasks/${newTaskId}`, {
+      // 3. PATCH /api/workflow-executions/:id (Update)
+      const patchRes = await springApiClient.patch(`/api/workflow-executions/${newTaskId}`, {
         status: 'done',
       });
       expect(patchRes.status).toBe(200);
@@ -64,16 +64,16 @@ describe('Phase A & Phase B End-to-End Wired API & Multi-Tenant Sandbox Flow', (
 
       // 4. Multi-Tenant Isolation
       useSandboxStore.getState().setActiveTenant('tenant-us-east-1');
-      const usRes = await springApiClient.get('/api/tasks');
+      const usRes = await springApiClient.get('/api/workflow-executions');
       expect(usRes.data.some((t: any) => t.id === newTaskId)).toBe(false);
 
-      // 5. DELETE /api/tasks/:id
+      // 5. DELETE /api/workflow-executions/:id
       useSandboxStore.getState().setActiveTenant('tenant-acme');
-      const deleteRes = await springApiClient.delete(`/api/tasks/${newTaskId}`);
+      const deleteRes = await springApiClient.delete(`/api/workflow-executions/${newTaskId}`);
       expect(deleteRes.status).toBe(200);
       expect(deleteRes.data.success).toBe(true);
 
-      const afterDeleteRes = await springApiClient.get('/api/tasks');
+      const afterDeleteRes = await springApiClient.get('/api/workflow-executions');
       expect(afterDeleteRes.data.length).toBe(initialCount);
     });
   });

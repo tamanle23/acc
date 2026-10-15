@@ -106,7 +106,7 @@ export function compileDraft07Schema(
  */
 export function synthesizeMcpManifest(
   entityTypes: EntityType[],
-  attributeMap: Record<string | number, AttributeDefinition[]> = {},
+  _attributeMap: Record<string | number, AttributeDefinition[]> = {},
   tenantId?: string
 ): McpManifest {
   const entityTypeEnum = entityTypes.map((et) => et.systemName);

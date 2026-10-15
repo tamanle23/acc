@@ -24,8 +24,8 @@ import { Route as authOtpRouteImport } from './routes/(auth)/otp'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
 import { Route as AuthenticatedWorkflowsIndexRouteImport } from './routes/_authenticated/workflows/index'
+import { Route as AuthenticatedWorkflowExecutionsIndexRouteImport } from './routes/_authenticated/workflow-executions/index'
 import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
-import { Route as AuthenticatedTasksIndexRouteImport } from './routes/_authenticated/tasks/index'
 import { Route as AuthenticatedStorageIndexRouteImport } from './routes/_authenticated/storage/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedMetadataIndexRouteImport } from './routes/_authenticated/metadata/index'
@@ -119,14 +119,15 @@ const AuthenticatedWorkflowsIndexRoute =
     path: '/workflows/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedWorkflowExecutionsIndexRoute =
+  AuthenticatedWorkflowExecutionsIndexRouteImport.update({
+    id: '/workflow-executions/',
+    path: '/workflow-executions/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedTasksIndexRoute = AuthenticatedTasksIndexRouteImport.update({
-  id: '/tasks/',
-  path: '/tasks/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedStorageIndexRoute =
@@ -254,8 +255,8 @@ export interface FileRoutesByFullPath {
   '/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/storage/': typeof AuthenticatedStorageIndexRoute
-  '/tasks/': typeof AuthenticatedTasksIndexRoute
   '/users/': typeof AuthenticatedUsersIndexRoute
+  '/workflow-executions/': typeof AuthenticatedWorkflowExecutionsIndexRoute
   '/workflows/': typeof AuthenticatedWorkflowsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -287,8 +288,8 @@ export interface FileRoutesByTo {
   '/metadata': typeof AuthenticatedMetadataIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/storage': typeof AuthenticatedStorageIndexRoute
-  '/tasks': typeof AuthenticatedTasksIndexRoute
   '/users': typeof AuthenticatedUsersIndexRoute
+  '/workflow-executions': typeof AuthenticatedWorkflowExecutionsIndexRoute
   '/workflows': typeof AuthenticatedWorkflowsIndexRoute
 }
 export interface FileRoutesById {
@@ -323,8 +324,8 @@ export interface FileRoutesById {
   '/_authenticated/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/storage/': typeof AuthenticatedStorageIndexRoute
-  '/_authenticated/tasks/': typeof AuthenticatedTasksIndexRoute
   '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/workflow-executions/': typeof AuthenticatedWorkflowExecutionsIndexRoute
   '/_authenticated/workflows/': typeof AuthenticatedWorkflowsIndexRoute
 }
 export interface FileRouteTypes {
@@ -359,8 +360,8 @@ export interface FileRouteTypes {
     | '/metadata/'
     | '/settings/'
     | '/storage/'
-    | '/tasks/'
     | '/users/'
+    | '/workflow-executions/'
     | '/workflows/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -392,8 +393,8 @@ export interface FileRouteTypes {
     | '/metadata'
     | '/settings'
     | '/storage'
-    | '/tasks'
     | '/users'
+    | '/workflow-executions'
     | '/workflows'
   id:
     | '__root__'
@@ -427,8 +428,8 @@ export interface FileRouteTypes {
     | '/_authenticated/metadata/'
     | '/_authenticated/settings/'
     | '/_authenticated/storage/'
-    | '/_authenticated/tasks/'
     | '/_authenticated/users/'
+    | '/_authenticated/workflow-executions/'
     | '/_authenticated/workflows/'
   fileRoutesById: FileRoutesById
 }
@@ -555,18 +556,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkflowsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/workflow-executions/': {
+      id: '/_authenticated/workflow-executions/'
+      path: '/workflow-executions'
+      fullPath: '/workflow-executions/'
+      preLoaderRoute: typeof AuthenticatedWorkflowExecutionsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/users/': {
       id: '/_authenticated/users/'
       path: '/users'
       fullPath: '/users/'
       preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/tasks/': {
-      id: '/_authenticated/tasks/'
-      path: '/tasks'
-      fullPath: '/tasks/'
-      preLoaderRoute: typeof AuthenticatedTasksIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/storage/': {
@@ -722,8 +723,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedMetadataIndexRoute: typeof AuthenticatedMetadataIndexRoute
   AuthenticatedStorageIndexRoute: typeof AuthenticatedStorageIndexRoute
-  AuthenticatedTasksIndexRoute: typeof AuthenticatedTasksIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+  AuthenticatedWorkflowExecutionsIndexRoute: typeof AuthenticatedWorkflowExecutionsIndexRoute
   AuthenticatedWorkflowsIndexRoute: typeof AuthenticatedWorkflowsIndexRoute
 }
 
@@ -740,8 +741,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedMetadataIndexRoute: AuthenticatedMetadataIndexRoute,
   AuthenticatedStorageIndexRoute: AuthenticatedStorageIndexRoute,
-  AuthenticatedTasksIndexRoute: AuthenticatedTasksIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedWorkflowExecutionsIndexRoute:
+    AuthenticatedWorkflowExecutionsIndexRoute,
   AuthenticatedWorkflowsIndexRoute: AuthenticatedWorkflowsIndexRoute,
 }
 

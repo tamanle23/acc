@@ -68,7 +68,7 @@ The system enforces a clean **Tenant $\rightarrow$ Workspace** hierarchy:
 
 Inside **Settings $\rightarrow$ Workspaces** & the Header **ProfileSwitcher**:
 1. Workspaces are clearly grouped under their parent **Organization (Tenant)**.
-2. In **"+ Tạo Workspace Mới"**:
+2. In **"Tạo Workspace Mới"**:
    - The admin creates a workspace scoped under the currently active Tenant (or an explicit parent organization).
    - The admin selects a domain template to seed the initial schema models for that space.
 3. The UI synchronizes both `setActiveTenant(tenantId, tenantName)` and `setActiveWorkspace(workspaceId, workspaceName)` without clobbering organizational boundaries.

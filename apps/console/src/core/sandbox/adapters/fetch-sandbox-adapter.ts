@@ -107,7 +107,19 @@ export function attachSandboxFetchInterceptor(): void {
       );
     }
 
-    return originalFetch!(input, init);
+    if (originalFetch) {
+      try {
+        const fullUrl =
+          typeof input === 'string' && input.startsWith('/')
+            ? `${typeof window !== 'undefined' ? window.location?.origin || 'http://localhost' : 'http://localhost'}${input}`
+            : input;
+        return originalFetch(fullUrl, init);
+      } catch {
+        return originalFetch(input, init);
+      }
+    }
+
+    return new Response(JSON.stringify({ message: 'Unhandled sandbox request' }), { status: 404 });
   };
 }
 

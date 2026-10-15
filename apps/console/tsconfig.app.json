@@ -3,10 +3,13 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
-
     /* Bundler mode */
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
@@ -14,16 +17,24 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Alias */
     "paths": {
-      "react": ["./node_modules/@types/react"],
-      "@/*": ["./src/*"],
-      "@unipost/client": ["../../packages/client/src/index.ts"],
-      "@unipost/sandbox": ["../../packages/sandbox/src/index.ts"],
-      "@hookform/resolvers/zod": ["./src/lib/zod-resolver.ts"]
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "@/*": [
+        "./src/*"
+      ],
+      "@unipost/client": [
+        "../../packages/client/src/index.ts"
+      ],
+      "@unipost/sandbox": [
+        "../../packages/sandbox/src/index.ts"
+      ],
+      "@hookform/resolvers/zod": [
+        "./src/lib/zod-resolver.ts"
+      ]
     },
-
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
@@ -31,5 +42,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "../../packages/sandbox/src/handlers/workflow-executions-sandbox-handler.ts",
+    "../../packages/sandbox/src/handlers/data"
+  ]
 }
