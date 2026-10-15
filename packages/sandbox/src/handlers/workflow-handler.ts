@@ -13,7 +13,17 @@ interface WorkflowExecution {
   }>;
 }
 
+export interface WorkflowDefinitionIR {
+  workflowKey: string;
+  version: number;
+  name: string;
+  description?: string;
+  tasks: any[];
+  layoutMetadata?: Record<string, { x: number; y: number }>;
+}
+
 const mockExecutions = new Map<string, WorkflowExecution>();
+const mockDefinitions = new Map<string, WorkflowDefinitionIR>();
 
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',
@@ -24,6 +34,34 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   handler: (req, context): SandboxResponse => {
     const method = req.method.toUpperCase();
     const { pathname, searchParams } = context;
+
+    // 0. Workflow Definitions Catalog
+    if (pathname === '/api/v1/workflow/definitions') {
+      if (method === 'GET') {
+        return {
+          status: 200,
+          data: Array.from(mockDefinitions.values()),
+        };
+      }
+      if (method === 'POST') {
+        const body = (req.data || {}) as WorkflowDefinitionIR;
+        if (!body.workflowKey) {
+          return { status: 400, data: { error: 'workflowKey is required' } };
+        }
+        mockDefinitions.set(body.workflowKey, body);
+        return { status: 201, data: body };
+      }
+    }
+
+    if (pathname.startsWith('/api/v1/workflow/definitions/') && method === 'GET') {
+      const parts = pathname.split('/');
+      const key = parts[parts.length - 1];
+      const found = mockDefinitions.get(key);
+      if (found) {
+        return { status: 200, data: found };
+      }
+      return { status: 404, data: { error: `Workflow definition ${key} not found` } };
+    }
 
     // 1. Poll tasks
     if (pathname.endsWith('/poll') && method === 'GET') {
@@ -113,4 +151,5 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
 
 export function resetWorkflowSandbox(): void {
   mockExecutions.clear();
+  mockDefinitions.clear();
 }

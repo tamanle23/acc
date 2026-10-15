@@ -117,4 +117,41 @@ describe('Unified Sandbox Engine Package', () => {
     const res = await engine.handleRequest({ url: '/test', method: 'GET' });
     expect(res).toBeNull();
   });
+
+  it('manages workflow definitions catalog via workflowSandboxHandler', async () => {
+    const { workflowSandboxHandler, resetWorkflowSandbox } = await import('../handlers/workflow-handler');
+    resetWorkflowSandbox();
+    registry.register(workflowSandboxHandler);
+
+    // 1. Initial list should be empty
+    const listRes = await engine.handleRequest({
+      url: '/api/v1/workflow/definitions',
+      method: 'GET',
+    });
+    expect(listRes?.status).toBe(200);
+    expect(listRes?.data).toEqual([]);
+
+    // 2. Create definition
+    const postRes = await engine.handleRequest({
+      url: '/api/v1/workflow/definitions',
+      method: 'POST',
+      data: {
+        workflowKey: 'order-fulfillment-v1',
+        version: 1,
+        name: 'Order Fulfillment V1',
+        tasks: [{ taskReferenceName: 'validateOrder', taskType: 'SIMPLE' }],
+        layoutMetadata: { validateOrder: { x: 100, y: 200 } },
+      },
+    });
+    expect(postRes?.status).toBe(201);
+    expect(postRes?.data).toMatchObject({ workflowKey: 'order-fulfillment-v1' });
+
+    // 3. Query by key
+    const getRes = await engine.handleRequest({
+      url: '/api/v1/workflow/definitions/order-fulfillment-v1',
+      method: 'GET',
+    });
+    expect(getRes?.status).toBe(200);
+    expect(getRes?.data.layoutMetadata?.validateOrder).toEqual({ x: 100, y: 200 });
+  });
 });

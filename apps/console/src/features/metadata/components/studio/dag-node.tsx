@@ -11,11 +11,19 @@ export interface DagNodeData {
   taskType: DagNodeType;
   label?: string;
   description?: string;
+  domain?: string;
   executionState?: ExecutionState;
   inputParameters?: Record<string, unknown>;
   retryCount?: number;
+  retryDelaySeconds?: number;
+  backoffRate?: number;
   timeoutSeconds?: number;
+  compensateHandlerRef?: string;
   condition?: string;
+  decisionCases?: Record<string, string[]>;
+  defaultCase?: string[];
+  loopCondition?: string;
+  validationError?: string;
 }
 
 // Aliases for backward compatibility if imported elsewhere
@@ -83,6 +91,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         data.executionState === 'COMPLETED' && 'border-emerald-500/40 bg-emerald-500/5',
         data.executionState === 'IN_PROGRESS' && 'border-sky-500/50 bg-sky-500/5 ring-1 ring-sky-500/30',
         data.executionState === 'FAILED' && 'border-rose-500/50 bg-rose-500/5',
+        data.validationError && 'border-rose-500 ring-2 ring-rose-500/40',
         selected ? 'ring-2 ring-primary border-primary scale-105' : 'hover:scale-[1.02]',
         'cursor-grab active:cursor-grabbing'
       )}
@@ -116,6 +125,14 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       {data.timeoutSeconds && (
         <div className="text-[10px] text-muted-foreground/70">
           Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
+        </div>
+      )}
+
+      {/* Validation Error Banner */}
+      {data.validationError && (
+        <div className="mt-2 flex items-center gap-1 p-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-[10px] font-medium leading-tight">
+          <AlertCircle className="w-3 h-3 shrink-0" />
+          <span className="truncate">{data.validationError}</span>
         </div>
       )}
 
