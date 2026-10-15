@@ -62,7 +62,7 @@ public final class SagaCompensator {
             if (executedSnapshot != null && executedSnapshot.status() == TaskStatus.COMPLETED) {
                 if (taskDef.compensateHandlerRef() != null && !taskDef.compensateHandlerRef().isBlank()) {
                     String compTaskId = snapshot.workflowId() + "_" + taskDef.taskReferenceName() + "_compensate";
-                    Map<String, Object> compInput = new HashMap<>(taskDef.inputParameters());
+                    Map<String, Object> compInput = new HashMap<>(executedSnapshot.inputData());
                     compInput.put("_originalOutput", executedSnapshot.outputData());
                     compInput.put("_originalTaskId", executedSnapshot.taskId());
 

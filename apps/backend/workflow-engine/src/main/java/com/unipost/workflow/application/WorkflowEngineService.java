@@ -93,6 +93,31 @@ public class WorkflowEngineService {
                 WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(workflowId).orElseThrow();
                 DecisionResult decision = decider.decide(definition, snapshot, nowEpochMs);
                 applyCommands(workflowId, snapshot.tenantId(), snapshot.workspaceId(), decision.commands(), nowEpochMs);
+
+                // If the workflow failed as a result of this task failure, trigger distributed Saga reverse compensation
+                if (decision.workflowStatus() == WorkflowStatus.FAILED) {
+                    WorkflowSnapshot failedSnapshot = persistencePort.getWorkflowSnapshot(workflowId).orElse(snapshot);
+                    SagaCompensator compensator = new SagaCompensator();
+                    List<EngineCommand.ScheduleTask> compCommands = compensator.planCompensation(definition, failedSnapshot, nowEpochMs);
+                    if (!compCommands.isEmpty()) {
+                        for (EngineCommand.ScheduleTask compCmd : compCommands) {
+                            persistencePort.saveTaskExecution(
+                                compCmd.taskId(), workflowId, snapshot.tenantId(), snapshot.workspaceId(),
+                                compCmd.referenceName(), compCmd.taskType(), compCmd.domain(),
+                                TaskStatus.SCHEDULED, compCmd.attempt(), compCmd.input(),
+                                Collections.emptyMap(), null, compCmd.responseTimeoutMs(), nowEpochMs
+                            );
+                            persistencePort.enqueueTask(
+                                compCmd.taskId(), workflowId, snapshot.tenantId(), snapshot.workspaceId(),
+                                compCmd.taskType(), compCmd.domain(), 0, compCmd.visibleAtEpochMs()
+                            );
+                        }
+                        persistencePort.updateWorkflowStatus(
+                            workflowId, WorkflowStatus.COMPENSATED_FAILED, failedSnapshot.outputPayload(),
+                            "Compensating workflow after failure: " + decision.failureReason(), nowEpochMs
+                        );
+                    }
+                }
             }
 
             uow.commit();

@@ -133,4 +133,57 @@ public class WorkflowExecutionController {
 
         return ResponseEntity.ok(Map.of("terminated", true, "workflowId", id));
     }
+
+    @PostMapping("/{id}/compensate")
+    public ResponseEntity<?> compensateExecution(
+        @PathVariable("id") String id,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        long now = System.currentTimeMillis();
+
+        WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
+        if (snapshot == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+
+        WorkflowDefinition def = registry.get(tenantId, snapshot.workflowKey()).orElse(null);
+        if (def == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
+        }
+
+        var compensator = new com.unipost.workflow.application.SagaCompensator();
+        var compCommands = compensator.planCompensation(def, snapshot, now);
+
+        for (var compCmd : compCommands) {
+            persistencePort.saveTaskExecution(
+                compCmd.taskId(), id, snapshot.tenantId(), snapshot.workspaceId(),
+                compCmd.referenceName(), compCmd.taskType(), compCmd.domain(),
+                com.unipost.workflow.core.model.TaskStatus.SCHEDULED, compCmd.attempt(), compCmd.input(),
+                Collections.emptyMap(), null, compCmd.responseTimeoutMs(), now
+            );
+            persistencePort.enqueueTask(
+                compCmd.taskId(), id, snapshot.tenantId(), snapshot.workspaceId(),
+                compCmd.taskType(), compCmd.domain(), 0, compCmd.visibleAtEpochMs()
+            );
+        }
+
+        persistencePort.updateWorkflowStatus(
+            id, WorkflowStatus.COMPENSATED_FAILED, snapshot.outputPayload(),
+            "Manual reverse compensation triggered", now
+        );
+
+        broadcaster.broadcast(id, "WORKFLOW_COMPENSATING", Map.of(
+            "workflowId", id,
+            "status", "COMPENSATED_FAILED",
+            "scheduledCompensations", compCommands.size(),
+            "timestamp", now
+        ));
+
+        return ResponseEntity.ok(Map.of(
+            "compensated", true,
+            "workflowId", id,
+            "scheduledCompensations", compCommands.size()
+        ));
+    }
 }

@@ -5,9 +5,10 @@ public enum WorkflowStatus {
     COMPLETED,
     FAILED,
     TERMINATED,
-    PAUSED;
+    PAUSED,
+    COMPENSATED_FAILED;
 
     public boolean isTerminal() {
-        return this == COMPLETED || this == FAILED || this == TERMINATED;
+        return this == COMPLETED || this == FAILED || this == TERMINATED || this == COMPENSATED_FAILED;
     }
 }
