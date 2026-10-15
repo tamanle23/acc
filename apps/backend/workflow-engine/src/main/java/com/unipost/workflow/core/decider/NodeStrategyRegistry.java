@@ -9,12 +9,18 @@ import com.unipost.workflow.core.decider.strategy.SwitchNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.WaitNodeStrategy;
 import com.unipost.workflow.core.model.TaskType;
 
+import com.unipost.workflow.core.decider.strategy.DynamicTaskStrategy;
+import com.unipost.workflow.core.decider.strategy.EventNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.ExclusiveJoinStrategy;
 import com.unipost.workflow.core.decider.strategy.HttpNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.HumanNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.InlineExpressionStrategy;
 import com.unipost.workflow.core.decider.strategy.JsonTransformStrategy;
+import com.unipost.workflow.core.decider.strategy.LlmChatCompleteStrategy;
 import com.unipost.workflow.core.decider.strategy.SetVariableStrategy;
+import com.unipost.workflow.core.decider.strategy.StartWorkflowStrategy;
+import com.unipost.workflow.core.decider.strategy.SubWorkflowStrategy;
+import com.unipost.workflow.core.decider.strategy.TerminateNodeStrategy;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -45,6 +51,12 @@ public final class NodeStrategyRegistry {
         register(TaskType.HUMAN, new HumanNodeStrategy());
         register(TaskType.JOIN, new ForkJoinStrategy());
         register(TaskType.EXCLUSIVE_JOIN, new ExclusiveJoinStrategy());
+        register(TaskType.TERMINATE, new TerminateNodeStrategy());
+        register(TaskType.SUB_WORKFLOW, new SubWorkflowStrategy());
+        register(TaskType.START_WORKFLOW, new StartWorkflowStrategy());
+        register(TaskType.EVENT, new EventNodeStrategy());
+        register(TaskType.DYNAMIC, new DynamicTaskStrategy());
+        register(TaskType.LLM_CHAT_COMPLETE, new LlmChatCompleteStrategy());
     }
 
     public void register(TaskType taskType, NodeEvaluatorStrategy strategy) {

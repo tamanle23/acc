@@ -128,6 +128,19 @@ public final class PureDecider {
             }
         }
 
+        // If any strategy emitted an explicit TransitionWorkflow (e.g. TERMINATE), return that decision immediately
+        for (EngineCommand cmd : accumulatedCommands) {
+            if (cmd instanceof EngineCommand.TransitionWorkflow tw) {
+                if (tw.status() == WorkflowStatus.COMPLETED) {
+                    return DecisionResult.completed(accumulatedCommands, tw.output() != null ? tw.output() : aggregatedOutput);
+                } else if (tw.status() == WorkflowStatus.FAILED) {
+                    return DecisionResult.failed(accumulatedCommands, tw.reason());
+                } else {
+                    return new DecisionResult(tw.status(), accumulatedCommands, tw.output() != null ? tw.output() : aggregatedOutput, tw.reason());
+                }
+            }
+        }
+
         // A workflow cannot be completed if any task was scheduled in this decision pass
         boolean hasScheduledTasks = accumulatedCommands.stream()
             .anyMatch(c -> c instanceof EngineCommand.ScheduleTask);
