@@ -48,8 +48,8 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Task Execution Unit Ledger Refactor** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Execution Units (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; **Synchronize `@unipost/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@unipost/console` and `@unipost/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution unit ledger rendering with workflow links. |
-| **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Task Payload & Lease Inspector dialog in `/tasks`; **Unified Sandbox mock workflow definitions catalog** (`/api/v1/workflow/definitions`). | Vitest tests verifying node attribute mutations, JSON IR compilation, sandbox definition storage, and round-trip fidelity without coordinate loss. |
+| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Workflow Executions Ledger** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Executions Ledger (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; lifecycle status tabs (**All**, **In Progress**, **Completed**, **Failed**); **Synchronize `@unipost/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@unipost/console` and `@unipost/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution ledger rendering with workflow links. |
+| **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Workflow Execution Instance Details dialog in `/tasks`; **Unified Sandbox mock workflow definitions catalog** (`/api/v1/workflow/definitions`). | Vitest tests verifying node attribute mutations, JSON IR compilation, sandbox definition storage, and round-trip fidelity without coordinate loss. |
 | **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/backend`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
 | **Phase 34** | **Live Console API Client, Server-Sent Events (SSE) & Sandbox Mock Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; **Unified Sandbox mock SSE event stream** simulating real-time task progress; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
 | **Phase 35** | **Polyglot End-to-End Orchestration & Automated Saga Verification** | Full end-to-end integration scenario (E-commerce fulfillment DAG): visual authoring $\to$ API registration $\to$ Java worker inventory check $\to$ TypeScript worker label generation $\to$ simulated payment failure $\to$ reverse Saga compensation; **Sandbox Dock master reset** clearing all polyglot executions. | Automated end-to-end multi-worker test validating cross-language task completion, audit logs, and successful rollback of state. |
@@ -77,26 +77,26 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
   - Algorithmic layout button to organize complex graphs into clean top-to-bottom or left-to-right topological flows.
   - Interactive edge creation (`onConnect`) preventing cyclic self-connections on non-`DO_WHILE` nodes.
   - Delete selected nodes or edges with keyboard shortcuts (`Delete`, `Backspace`) with confirmation toast.
-- **Refactor `/tasks` into Workflow Execution Units Ledger**:
+- **Refactor `/tasks` into Workflow Executions Ledger**:
   - **Schema Modernization (`schema.ts`)**:
     - Add `workflowTaskExecutionSchema` defining: `taskId`, `workflowId`, `workflowName`, `taskReferenceName`, `taskType`, `status`, `leaseOwner`, `attempt`, `maxRetries`, `pollDomain`, `visibleAtEpochMs`, `durationMs`, `startedAt`, `completedAt`.
   - **Table Columns (`tasks-columns.tsx`)**:
-    - Column 1: `Task Ref` & `Task ID` with copy icon.
-    - Column 2: `Parent Workflow Plan` badge linking to `/workflows?workflowId={workflowId}`.
+    - Column 1: `Execution Unit / ID` with copy icon.
+    - Column 2: `Workflow Definition` badge linking to `/workflows?workflowId={workflowId}`.
     - Column 3: `Task Type` pill (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `WAIT`, `DO_WHILE`).
     - Column 4: `Execution Status` (`SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `TIMED_OUT`).
     - Column 5: `Worker Lease Telemetry` (`worker-node-1` / `lease: 15s left`).
     - Column 6: `Duration / Retries` (`attempt 1/3`, `245ms`).
-    - Column 7: `Actions` (**View in Visual DAG Studio**, **Inspect Payload**, **Retry Lease**).
-  - **Dual-Mode Filter**:
-    - Segmented tab toggle: **Workflow Tasks** (Default) vs **Manual Tasks**.
+    - Column 7: `Actions` (**View in Visual DAG Studio**, **Inspect Execution**, **Retry Lease**).
+  - **Execution Lifecycle Filtering**:
+    - Segmented tabs: **All Executions**, **In Progress**, **Completed**, **Failed / Action Required** (eliminating synthetic demo backlog tasks).
 - **Unified Sandbox Platform Synchronization (`@unipost/sandbox` & `tasks-sandbox-handler.ts`)**:
   - Connect `TasksSandboxRepository` with `mockExecutions` from `packages/sandbox/src/handlers/workflow-handler.ts`.
   - When a workflow is started or stepped in Visual DAG Studio, matching `Task` execution units automatically populate the sandbox tasks store with consistent `workflowId`, `taskType`, and statuses.
   - Wire state reset to `SandboxDock` `handleResetAllData()`.
 - **Verification Gate 31**:
   - Vitest test suite in `apps/console/src/features/metadata/components/studio/` verifying node dragging, drop coordinate translation, node creation, and deletion.
-  - Vitest test suite in `apps/console/src/features/tasks/` verifying workflow execution unit table rendering and cross-navigation action.
+  - Vitest test suite in `apps/console/src/features/tasks/` verifying workflow executions table rendering, lifecycle tab filtering, and cross-navigation action.
   - Vitest test suite in `@unipost/sandbox` asserting synchronized task creation on workflow execution.
 
 ---

@@ -103,7 +103,7 @@ export const useSidebarData = (): SidebarData => {
               icon: LayoutDashboard,
             },
             {
-              title: t('sidebar.items.tasks', 'Tasks'),
+              title: t('sidebar.items.workflowExecutions', 'Workflow Executions'),
               url: '/tasks',
               icon: ListTodo,
             },

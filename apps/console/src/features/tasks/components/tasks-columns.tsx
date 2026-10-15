@@ -36,7 +36,7 @@ export const tasksColumns: ColumnDef<Task>[] = [
   {
     accessorKey: 'id',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Task ID' />
+      <DataTableColumnHeader column={column} title='Execution Unit / ID' />
     ),
     cell: ({ row }) => (
       <div className='flex flex-col'>
@@ -54,12 +54,12 @@ export const tasksColumns: ColumnDef<Task>[] = [
   {
     accessorKey: 'workflowId',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Workflow Plan' />
+      <DataTableColumnHeader column={column} title='Workflow Definition' />
     ),
     cell: ({ row }) => {
       const wfId = row.original.workflowId;
       if (!wfId) {
-        return <span className='text-xs text-muted-foreground italic'>Manual Backlog</span>;
+        return <span className='text-xs text-muted-foreground italic'>Direct Execution</span>;
       }
       return (
         <Link

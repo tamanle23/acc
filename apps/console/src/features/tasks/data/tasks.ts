@@ -1,11 +1,10 @@
-import tasksData from './tasks-mock.json'
 import { type Task } from './schema'
 
-export const INITIAL_WORKFLOW_TASKS: Task[] = [
+export const INITIAL_WORKFLOW_EXECUTIONS: Task[] = [
   {
-    id: 'tsk_wf_9101_inventory',
-    taskId: 'tsk_wf_9101_inventory',
-    title: 'Validate inventory reservation for order #9101',
+    id: 'wf_exec_9101_inventory',
+    taskId: 'wf_exec_9101_inventory',
+    title: 'Order Fulfillment: Validate inventory reservation for order #9101',
     status: 'COMPLETED',
     label: 'workflow',
     priority: 'high',
@@ -24,9 +23,9 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     completedAt: new Date(Date.now() - 3599850).toISOString(),
   },
   {
-    id: 'tsk_wf_9101_route',
-    taskId: 'tsk_wf_9101_route',
-    title: 'Determine courier routing condition',
+    id: 'wf_exec_9101_route',
+    taskId: 'wf_exec_9101_route',
+    title: 'Order Fulfillment: Determine courier routing condition',
     status: 'COMPLETED',
     label: 'workflow',
     priority: 'high',
@@ -45,9 +44,9 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     completedAt: new Date(Date.now() - 3589985).toISOString(),
   },
   {
-    id: 'tsk_wf_9101_courier',
-    taskId: 'tsk_wf_9101_courier',
-    title: 'Dispatch express courier pickup',
+    id: 'wf_exec_9101_courier',
+    taskId: 'wf_exec_9101_courier',
+    title: 'Order Fulfillment: Dispatch express courier pickup',
     status: 'IN_PROGRESS',
     label: 'workflow',
     priority: 'critical',
@@ -64,9 +63,9 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     startedAt: new Date(Date.now() - 60000).toISOString(),
   },
   {
-    id: 'tsk_wf_9102_wait',
-    taskId: 'tsk_wf_9102_wait',
-    title: 'Wait for customer payment confirmation callback',
+    id: 'wf_exec_9102_wait',
+    taskId: 'wf_exec_9102_wait',
+    title: 'Checkout Pipeline: Wait for customer payment confirmation callback',
     status: 'SCHEDULED',
     label: 'workflow',
     priority: 'medium',
@@ -81,9 +80,9 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     inputData: { timeoutSeconds: 300, paymentId: 'pay_99410' },
   },
   {
-    id: 'tsk_wf_9103_fork',
-    taskId: 'tsk_wf_9103_fork',
-    title: 'Parallel customer notify and invoice generation',
+    id: 'wf_exec_9103_fork',
+    taskId: 'wf_exec_9103_fork',
+    title: 'Invoice Billing: Parallel customer notification and invoice generation',
     status: 'COMPLETED',
     label: 'workflow',
     priority: 'medium',
@@ -97,11 +96,13 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     pollDomain: 'default',
     durationMs: 35,
     outputData: { spawnedBranches: ['sendEmail', 'generatePdf'] },
+    startedAt: new Date(Date.now() - 7200000).toISOString(),
+    completedAt: new Date(Date.now() - 7199965).toISOString(),
   },
   {
-    id: 'tsk_wf_9104_dynamic',
-    taskId: 'tsk_wf_9104_dynamic',
-    title: 'Dynamic fan-out batch processing',
+    id: 'wf_exec_9104_dynamic',
+    taskId: 'wf_exec_9104_dynamic',
+    title: 'Batch ETL: Dynamic fan-out chunk ingestion',
     status: 'SCHEDULED',
     label: 'workflow',
     priority: 'low',
@@ -115,14 +116,26 @@ export const INITIAL_WORKFLOW_TASKS: Task[] = [
     pollDomain: 'etl-domain',
     inputData: { partitionsCount: 16 },
   },
+  {
+    id: 'wf_exec_9105_payment',
+    taskId: 'wf_exec_9105_payment',
+    title: 'Subscription Renewal: Charge recurring customer card',
+    status: 'FAILED',
+    label: 'workflow',
+    priority: 'critical',
+    workflowId: 'subscription-billing-v1',
+    workflowName: 'Subscription Billing V1',
+    taskReferenceName: 'chargeRecurringCard',
+    taskType: 'SIMPLE',
+    leaseOwner: 'worker-payment-gateway',
+    attempt: 3,
+    maxRetries: 3,
+    pollDomain: 'payment-domain',
+    durationMs: 1250,
+    errorMessage: 'Card issuer declined transaction (insufficient funds)',
+    startedAt: new Date(Date.now() - 1800000).toISOString(),
+    completedAt: new Date(Date.now() - 1798750).toISOString(),
+  },
 ]
 
-const legacyTasks: Task[] = (tasksData as any[]).map((task) => ({
-  ...task,
-  taskType: 'MANUAL',
-  createdAt: new Date(task.createdAt),
-  updatedAt: new Date(task.updatedAt),
-  dueDate: new Date(task.dueDate),
-}))
-
-export const tasks: Task[] = [...INITIAL_WORKFLOW_TASKS, ...legacyTasks]
+export const tasks: Task[] = [...INITIAL_WORKFLOW_EXECUTIONS]

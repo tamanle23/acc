@@ -42,7 +42,7 @@ export function TaskPayloadInspectorDialog({
             <div className="flex items-center gap-2">
               <Terminal className="w-5 h-5 text-primary" />
               <DialogTitle className="text-base font-bold">
-                Task Execution Details: {task.id}
+                Workflow Execution Instance Details: {task.id}
               </DialogTitle>
             </div>
             <Badge variant="outline" className="text-xs">
@@ -50,9 +50,9 @@ export function TaskPayloadInspectorDialog({
             </Badge>
           </div>
           <DialogDescription className="text-xs text-muted-foreground mt-1">
-            Reference: <span className="font-mono text-foreground font-semibold">{task.taskReferenceName || task.id}</span>
+            Execution Unit: <span className="font-mono text-foreground font-semibold">{task.taskReferenceName || task.id}</span>
             {task.workflowId && (
-              <> · Workflow Plan: <span className="font-mono text-foreground">{task.workflowId}</span></>
+              <> · Workflow Definition: <span className="font-mono text-foreground">{task.workflowName || task.workflowId}</span></>
             )}
           </DialogDescription>
         </DialogHeader>
