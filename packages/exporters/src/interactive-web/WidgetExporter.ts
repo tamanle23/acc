@@ -44,9 +44,10 @@ export class WidgetExporter {
     .player-card { width: ${ir.settings.resolution.width > ir.settings.resolution.height ? '960px' : '400px'}; height: ${ir.settings.resolution.width > ir.settings.resolution.height ? '540px' : '711px'}; position: relative; background: #000; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
     video { width: 100%; height: 100%; object-fit: cover; }
     .choices-overlay { position: absolute; bottom: 30px; left: 0; right: 0; display: flex; flex-direction: column; gap: 12px; padding: 0 24px; z-index: 10; }
-    .choice-btn { background: rgba(0, 255, 255, 0.2); border: 2px solid #00ffff; color: #fff; padding: 14px 20px; min-height: 44px; border-radius: 30px; backdrop-filter: blur(10px); font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.2s, outline 0.2s; }
+    .choice-btn { background: rgba(0, 255, 255, 0.2); border: 2px solid #00ffff; color: #fff; padding: 14px 20px; min-height: 44px; border-radius: 30px; backdrop-filter: blur(10px); font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.2s, outline 0.2s; display: flex; align-items: center; justify-content: space-between; }
     .choice-btn:hover { background: rgba(0, 255, 255, 0.5); transform: scale(1.03); }
     .choice-btn:focus-visible { outline: 3px solid #00ffff; outline-offset: 3px; background: rgba(0, 255, 255, 0.4); }
+    .kbd-badge { background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 255, 255, 0.6); color: #00ffff; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -67,6 +68,16 @@ export class WidgetExporter {
       video.play().catch(() => {});
     }
 
+    document.addEventListener('keydown', (e) => {
+      if (overlay.style.display === 'flex') {
+        const num = parseInt(e.key, 10);
+        if (!isNaN(num) && num >= 1) {
+          const btns = overlay.querySelectorAll('.choice-btn');
+          if (btns[num - 1]) btns[num - 1].click();
+        }
+      }
+    });
+
     video.addEventListener('ended', () => {
       if (currentNode && currentNode.choices && currentNode.choices.length > 0) {
         overlay.innerHTML = '';
@@ -74,8 +85,15 @@ export class WidgetExporter {
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'choice-btn';
-          btn.innerText = c.label;
-          btn.setAttribute('aria-label', \`\${c.label} (Choice \${idx + 1} of \${currentNode.choices.length})\`);
+          const labelSpan = document.createElement('span');
+          labelSpan.textContent = c.label;
+          const kbd = document.createElement('kbd');
+          kbd.className = 'kbd-badge';
+          kbd.setAttribute('aria-hidden', 'true');
+          kbd.textContent = (idx + 1).toString();
+          btn.appendChild(labelSpan);
+          btn.appendChild(kbd);
+          btn.setAttribute('aria-label', c.label);
           btn.onclick = () => {
             const nextNode = tree.nodes.find(n => n.id === c.targetChunkId);
             if (nextNode) playNode(nextNode);

@@ -177,6 +177,10 @@ export class ScriptingFrameworkRegistry {
     return ScriptingFrameworkRegistry.getInstance().getAll();
   }
 
+  public static list(): IScriptingFrameworkStrategy[] {
+    return this.getAll();
+  }
+
   public static resolveForStyle(styleId: string): IScriptingFrameworkStrategy {
     return ScriptingFrameworkRegistry.getInstance().resolveForStyle(styleId);
   }

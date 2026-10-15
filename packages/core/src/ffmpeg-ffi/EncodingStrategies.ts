@@ -152,3 +152,68 @@ export class RtmpLiveStreamEncodingStrategy implements IVideoEncodingStrategy {
     }
   }
 }
+
+export interface GpuVideoEncodingOptions extends FileVideoEncodingOptions {
+  hardwareType?: 'nvenc' | 'videotoolbox' | 'vaapi' | 'qsv' | 'amf' | 'cpu';
+  encoderName?: string;
+  gpuTune?: 'hq' | 'll' | 'ull' | 'lossless';
+  spatialAq?: boolean;
+  temporalAq?: boolean;
+}
+
+export class GpuVideoEncodingStrategy extends FileVideoEncodingStrategy {
+  public readonly hardwareType: 'nvenc' | 'videotoolbox' | 'vaapi' | 'qsv' | 'amf' | 'cpu';
+  public readonly encoderName: string;
+  private gpuPreset?: string;
+  private gpuTune: string;
+  private spatialAq: boolean;
+  private temporalAq: boolean;
+
+  constructor(options: GpuVideoEncodingOptions = {}) {
+    super(options);
+    this.hardwareType = options.hardwareType || 'nvenc';
+    this.encoderName = options.encoderName || 'h264_nvenc';
+    this.gpuPreset = options.preset;
+    this.gpuTune = options.gpuTune || 'hq';
+    this.spatialAq = options.spatialAq ?? true;
+    this.temporalAq = options.temporalAq ?? true;
+  }
+
+  public override configureCodec(codecCtx: bigint, isNvenc: boolean, fps: number, crf: number): void {
+    const enc = this.encoderName.toLowerCase();
+
+    if (isNvenc || enc.includes('nvenc')) {
+      const p = this.gpuPreset || 'p4';
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('preset\0')), ptr(Buffer.from(`${p}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('tune\0')), ptr(Buffer.from(`${this.gpuTune}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('rc\0')), ptr(Buffer.from('vbr\0')), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('cq\0')), ptr(Buffer.from(`${crf}\0`)), 0);
+
+      if (this.spatialAq) {
+        FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('spatial_aq\0')), ptr(Buffer.from('1\0')), 0);
+      }
+      if (this.temporalAq) {
+        FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('temporal_aq\0')), ptr(Buffer.from('1\0')), 0);
+      }
+    } else if (enc.includes('videotoolbox')) {
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('profile\0')), ptr(Buffer.from('high\0')), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('realtime\0')), ptr(Buffer.from('0\0')), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('q\0')), ptr(Buffer.from(`${crf}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('allow_sw\0')), ptr(Buffer.from('0\0')), 0);
+    } else if (enc.includes('vaapi')) {
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('preset\0')), ptr(Buffer.from('fast\0')), 0);
+    } else if (enc.includes('qsv')) {
+      const p = this.gpuPreset || 'fast';
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('preset\0')), ptr(Buffer.from(`${p}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('global_quality\0')), ptr(Buffer.from(`${crf}\0`)), 0);
+    } else if (enc.includes('amf')) {
+      const p = this.gpuPreset || 'speed';
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('usage\0')), ptr(Buffer.from('transcoding\0')), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('quality\0')), ptr(Buffer.from(`${p}\0`)), 0);
+    } else {
+      const p = this.gpuPreset || 'fast';
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('preset\0')), ptr(Buffer.from(`${p}\0`)), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('crf\0')), ptr(Buffer.from(`${crf}\0`)), 0);
+    }
+  }
+}

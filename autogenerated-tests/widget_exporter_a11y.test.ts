@@ -68,6 +68,8 @@ describe('WidgetExporter Accessibility & UX Verification', () => {
     expect(htmlContent).toContain("btn.type = 'button'");
     expect(htmlContent).toContain("Choice ${idx + 1} of ${currentNode.choices.length}");
     expect(htmlContent).toContain('firstBtn.focus()');
+    expect(htmlContent).toContain('kbd-badge');
+    expect(htmlContent).toContain("document.addEventListener('keydown'");
 
     // Cleanup
     await fs.promises.rm(tmpDir, { recursive: true, force: true });

@@ -232,3 +232,7 @@ export function getMediaDurationFFI(filePath: string): number {
         return 0;
     }
 }
+
+export * from './EncodingStrategies';
+export * from './GPUEncoderResolver';
+export * from './GpuVideoEncodingStrategy';
