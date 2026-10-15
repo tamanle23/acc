@@ -9,6 +9,13 @@ import com.unipost.workflow.core.decider.strategy.SwitchNodeStrategy;
 import com.unipost.workflow.core.decider.strategy.WaitNodeStrategy;
 import com.unipost.workflow.core.model.TaskType;
 
+import com.unipost.workflow.core.decider.strategy.ExclusiveJoinStrategy;
+import com.unipost.workflow.core.decider.strategy.HttpNodeStrategy;
+import com.unipost.workflow.core.decider.strategy.HumanNodeStrategy;
+import com.unipost.workflow.core.decider.strategy.InlineExpressionStrategy;
+import com.unipost.workflow.core.decider.strategy.JsonTransformStrategy;
+import com.unipost.workflow.core.decider.strategy.SetVariableStrategy;
+
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -31,6 +38,13 @@ public final class NodeStrategyRegistry {
         register(TaskType.DYNAMIC_FORK, new DynamicForkStrategy());
         register(TaskType.WAIT, new WaitNodeStrategy());
         register(TaskType.DO_WHILE, new DoWhileStrategy());
+        register(TaskType.SET_VARIABLE, new SetVariableStrategy());
+        register(TaskType.JSON_JQ_TRANSFORM, new JsonTransformStrategy());
+        register(TaskType.INLINE, new InlineExpressionStrategy());
+        register(TaskType.HTTP, new HttpNodeStrategy());
+        register(TaskType.HUMAN, new HumanNodeStrategy());
+        register(TaskType.JOIN, new ForkJoinStrategy());
+        register(TaskType.EXCLUSIVE_JOIN, new ExclusiveJoinStrategy());
     }
 
     public void register(TaskType taskType, NodeEvaluatorStrategy strategy) {

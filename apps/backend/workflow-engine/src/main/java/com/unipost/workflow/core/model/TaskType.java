@@ -6,5 +6,12 @@ public enum TaskType {
     FORK_JOIN,
     DYNAMIC_FORK,
     WAIT,
-    DO_WHILE
+    DO_WHILE,
+    SET_VARIABLE,
+    JSON_JQ_TRANSFORM,
+    INLINE,
+    HTTP,
+    HUMAN,
+    JOIN,
+    EXCLUSIVE_JOIN
 }

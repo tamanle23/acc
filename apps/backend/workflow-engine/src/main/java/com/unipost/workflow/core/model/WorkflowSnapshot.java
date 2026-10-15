@@ -18,9 +18,25 @@ public record WorkflowSnapshot(
     WorkflowStatus status,
     Map<String, Object> inputPayload,
     Map<String, Object> outputPayload,
+    Map<String, Object> variables,
     String failureReason,
     Map<String, TaskSnapshot> tasksByRef
 ) {
+    public WorkflowSnapshot(
+        String workflowId,
+        String tenantId,
+        String workspaceId,
+        String workflowKey,
+        int version,
+        WorkflowStatus status,
+        Map<String, Object> inputPayload,
+        Map<String, Object> outputPayload,
+        String failureReason,
+        Map<String, TaskSnapshot> tasksByRef
+    ) {
+        this(workflowId, tenantId, workspaceId, workflowKey, version, status, inputPayload, outputPayload, Collections.emptyMap(), failureReason, tasksByRef);
+    }
+
     public WorkflowSnapshot {
         if (workflowId == null || workflowId.isBlank()) {
             throw new IllegalArgumentException("workflowId is required");
@@ -42,6 +58,7 @@ public record WorkflowSnapshot(
         }
         inputPayload = inputPayload != null ? Collections.unmodifiableMap(inputPayload) : Collections.emptyMap();
         outputPayload = outputPayload != null ? Collections.unmodifiableMap(outputPayload) : Collections.emptyMap();
+        variables = variables != null ? Collections.unmodifiableMap(variables) : Collections.emptyMap();
         tasksByRef = tasksByRef != null ? Collections.unmodifiableMap(tasksByRef) : Collections.emptyMap();
     }
 

@@ -7,6 +7,7 @@ import com.unipost.workflow.core.model.EngineCommand;
 import com.unipost.workflow.core.model.TaskDefinition;
 import com.unipost.workflow.core.model.TaskSnapshot;
 import com.unipost.workflow.core.model.TaskStatus;
+import com.unipost.workflow.core.model.TaskType;
 import com.unipost.workflow.core.model.WorkflowDefinition;
 import com.unipost.workflow.core.model.WorkflowSnapshot;
 import com.unipost.workflow.core.model.WorkflowStatus;
@@ -87,6 +88,36 @@ public final class PureDecider {
                 if (result.output() != null && !result.output().isEmpty()) {
                     aggregatedOutput.putAll(result.output());
                 }
+                // Record the completed task into tasksByRef so downstream tasks in the same pass can reference its output
+                Map<String, TaskSnapshot> updatedTasks = new HashMap<>(snapshot.tasksByRef());
+                TaskSnapshot completedTaskSnap = new TaskSnapshot(
+                    snapshot.workflowId() + "_" + taskDef.taskReferenceName(),
+                    taskDef.taskReferenceName(),
+                    taskDef.taskType(),
+                    taskDef.domain(),
+                    TaskStatus.COMPLETED,
+                    1,
+                    taskDef.inputParameters(),
+                    result.output() != null ? result.output() : Collections.emptyMap(),
+                    null,
+                    nowEpochMs,
+                    0L,
+                    null
+                );
+                updatedTasks.put(taskDef.taskReferenceName(), completedTaskSnap);
+
+                Map<String, Object> updatedVars = snapshot.variables();
+                if (taskDef.taskType() == TaskType.SET_VARIABLE && result.output() != null) {
+                    updatedVars = new HashMap<>(snapshot.variables());
+                    updatedVars.putAll(result.output());
+                }
+
+                snapshot = new WorkflowSnapshot(
+                    snapshot.workflowId(), snapshot.tenantId(), snapshot.workspaceId(),
+                    snapshot.workflowKey(), snapshot.version(), snapshot.status(),
+                    snapshot.inputPayload(), aggregatedOutput, updatedVars,
+                    snapshot.failureReason(), updatedTasks
+                );
             } else if (result.nodeStatus() != TaskStatus.SKIPPED) {
                 allCompleted = false;
             }

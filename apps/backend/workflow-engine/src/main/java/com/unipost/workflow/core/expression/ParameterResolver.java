@@ -113,6 +113,8 @@ public final class ParameterResolver {
                 current = snapshot.inputPayload();
             } else if ("output".equalsIgnoreCase(scope)) {
                 current = snapshot.outputPayload();
+            } else if ("variables".equalsIgnoreCase(scope) || "vars".equalsIgnoreCase(scope)) {
+                current = snapshot.variables();
             } else if ("id".equalsIgnoreCase(scope) || "workflowId".equalsIgnoreCase(scope)) {
                 return snapshot.workflowId();
             } else if ("status".equalsIgnoreCase(scope)) {

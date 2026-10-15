@@ -198,40 +198,80 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 ---
 
-### Phase 35: Polyglot End-to-End Orchestration & Automated Saga Verification
+### Phase 35: Standardized Task Node Types Engine & Comprehensive Polyglot Orchestration
 
-- **Comprehensive End-to-End Fulfillment DAG Scenario**:
-  ```
-  [Start] 
-     │
-     v
-  [1. Validate Order (Java Virtual Thread)]
-     │
-     v
-  [2. Branch on Shipping Tier (SWITCH: express vs ground)]
-    ├── express: [3a. Express Dispatch (TypeScript @unipost/worker)]
-    └── ground:  [3b. Ground Cargo (TypeScript @unipost/worker)]
-     │
-     v
-  [4. Parallel Fan-out (FORK_JOIN)]
-    ├── [5a. Generate Digital Invoice (Java Virtual Thread)]
-    └── [5b. Dispatch Warehouse Packing Event (TypeScript @unipost/worker)]
-     │
-     v
-  [6. Payment Capture (Fault-Injected)]
-     │ (Throws PaymentDeclinedException)
-     v
-  [7. Reverse Saga Compensation Flow]
-    ├── Compensate 5b: Cancel Packing Job
-    ├── Compensate 5a: Void Digital Invoice
-    └── Compensate 1:  Release Inventory Hold
-  ```
-- **Execution Matrix**:
-  - Java workers register using `WorkerHost`.
-  - TypeScript workers register using `@unipost/worker` running in Node/Bun or Vite runtime.
-  - Engine coordinates leases, dispatches to matching workers, tracks heartbeat renewals, and triggers `SagaCompensator` upon failure.
-- **Verification Gate 35**:
-  - Automated integration test asserting all 7 steps execute in order, compensation reverses completed steps in exact reverse topological order, and final execution status reaches `COMPENSATED_FAILED`.
+- **Strategic Objective**:
+  Prioritize, implement, and verify native workflow task node types based strictly on **Frequency of Use** (High $\to$ Medium $\to$ Low) derived from `docs/brainstorming/workflow_task_types.md`, eliminating the need for ad-hoc custom worker boilerplate for common operations before verifying polyglot DAGs and reverse distributed Saga compensation.
+
+- **Phase Breakdown & Prioritization Pipeline**:
+
+  #### Sub-phase 35.1: High-Frequency Task Node Types (Core Orchestration Engine)
+  1. **`SET_VARIABLE` (Operator - High Frequency)**:
+     - Pure, in-memory workflow state management in `PureDecider`.
+     - Supports parameter resolution (`${workflow.input.x}`, `${taskRef.output.y}`) and mutates/merges variables into `workflowSnapshot.variables()`.
+     - Extends `TaskType` enum and registers `SetVariableStrategy` in `NodeStrategyRegistry`.
+  2. **`JSON_JQ_TRANSFORM` (System Task - High Frequency)**:
+     - In-engine JSON payload reshaping, extraction, and aggregation without worker network overhead.
+     - Evaluates queries (e.g. JSONPath/JQ expressions) against input payloads and emits transformed `outputData`.
+     - Implements `JsonTransformStrategy`.
+  3. **`INLINE` (System Task - High Frequency)**:
+     - Serverless evaluation of lightweight dynamic expressions (SpEL/MVEL or JavaScript engine) directly on the engine server.
+     - Implements `InlineExpressionStrategy` with sandbox execution safeguards and timeouts.
+  4. **`HTTP` (System Task - High Frequency)**:
+     - First-class built-in HTTP/REST connector (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`).
+     - Zero worker queue latency: executes via Java 21 `HttpClient` / Virtual Threads with configurable `uri`, `method`, `headers`, `body`, `readTimeoutMs`, and status assertions (`validStatuses`).
+     - Implements `HttpNodeStrategy` and engine async execution bridge.
+  5. **`HUMAN` (System Task - High Frequency)**:
+     - Pauses workflow execution for manual review/approval gates without worker polling leases.
+     - Transitions task to `IN_PROGRESS` and waits for external resolution signal (`POST /api/v1/workflow/tasks/{id}/ack` or human approval action from Console UI).
+     - Implements `HumanNodeStrategy`.
+  6. **`JOIN` / `EXCLUSIVE_JOIN` (Operator - High Frequency)**:
+     - Refines fork branch completion: standard `JOIN` waits for all incoming branches; `EXCLUSIVE_JOIN` completes as soon as the first winning branch finishes.
+
+  #### Sub-phase 35.2: Medium-Frequency Task Node Types (Lifecycle, Inter-Workflow & Messaging)
+  1. **`TERMINATE` (Operator - Medium Frequency)**:
+     - Fast-exit operator that immediately transitions workflow to a terminal state (`COMPLETED` or `FAILED`) with explicit exit reason, halting any pending sibling nodes.
+     - Implements `TerminateNodeStrategy`.
+  2. **`SUB_WORKFLOW` (Operator - Medium Frequency)**:
+     - Synchronously triggers another workflow definition as a child subroutine, propagating tenant/workspace context, waiting for child completion, and aggregating child output into parent.
+     - Implements `SubWorkflowStrategy`.
+  3. **`START_WORKFLOW` (Operator - Medium Frequency)**:
+     - Asynchronously fires a new workflow in background "fire-and-forget" mode and returns immediately with child `executionId`.
+  4. **`EVENT` (System Task - Medium Frequency)**:
+     - Publishes domain event payloads to internal Spring ApplicationEventPublisher / outbox event queue.
+  5. **`DYNAMIC` (Operator - Medium/Low Frequency)**:
+     - Dynamically resolves and invokes task definitions computed at runtime from upstream task outputs.
+  6. **`LLM_CHAT_COMPLETE` (AI Task - Medium Frequency)**:
+     - Direct LLM completion node supporting provider integrations (OpenAI, Gemini, Anthropic) via structured inputs.
+
+  #### Sub-phase 35.3: Low-Frequency Task Node Types (Specialized Adapters)
+  1. **`NOOP` (System Task - Low Frequency)**:
+     - No-operation pass-through node for clean graph edge routing and canvas wiring.
+  2. **`JDBC` (System Task - Low Frequency)**:
+     - Direct SQL execution against configured relational datasources.
+  3. **`KAFKA_PUBLISH` (System Task - Low Frequency)**:
+     - Dedicated Kafka topic producer node.
+  4. **`CALL_MCP_TOOL` (AI/Emerging - Low Frequency)**:
+     - Model Context Protocol tool invocation node.
+
+  #### Sub-phase 35.4: Polyglot End-to-End Orchestration & Automated Saga Verification
+  - **Comprehensive Multi-Node Fulfillment DAG**:
+    - Compose an end-to-end workflow utilizing:
+      1. `HTTP` (System node to fetch order metadata).
+      2. `SET_VARIABLE` (Set initial calculation variables).
+      3. `INLINE` / `JSON_JQ_TRANSFORM` (Extract order totals).
+      4. `SWITCH` (Evaluate tier branching).
+      5. `SIMPLE` (Java Virtual-Thread worker for inventory reservation with compensation).
+      6. `FORK_JOIN` (Parallel fan-out).
+      7. `SIMPLE` (TypeScript `@unipost/worker` for dispatch packaging).
+      8. `HTTP` / `SIMPLE` (Fault-injected node triggering unrecoverable error).
+      9. `TERMINATE` or automatic Saga reverse compensation rollbacks.
+  - **Reverse Topological Saga Compensation Execution**:
+    - Validate that unrecoverable failures trigger `SagaCompensator` to unwind completed nodes in strict reverse topological sequence (`cancel-packing` $\to$ `release-inventory`).
+  - **Verification Gate 35**:
+    - Complete suite of automated JUnit 5 / Spring Boot integration tests in `unipost-ms-aio` testing all new task strategies without mocks.
+    - Contract test in `@unipost/worker` verifying TypeScript worker execution and compensation integration.
+    - Console UI & Unified Sandbox updates showcasing all new node types in the catalog and canvas.
 
 ---
 
