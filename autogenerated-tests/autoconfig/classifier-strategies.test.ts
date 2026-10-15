@@ -63,7 +63,7 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
   });
 
   describe('Heuristic Classification Accuracy', () => {
-    it('should classify text-heavy folder as Pipeline 1 (Scraper & Summarizer)', () => {
+    it('should classify text-heavy folder as Pipeline 1 (Scraper & Summarizer)', async () => {
       const manifest = createBaseManifest();
       manifest.scripts.push({
         relativePath: 'article.md',
@@ -76,14 +76,14 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
         estimatedSpeechDurationMs: 60000,
       });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('1');
       expect(res.confidence).toBeGreaterThanOrEqual(0.85);
       expect(res.defaults.canonicalPipelineId).toBe('scraper-summarizer');
       expect(res.defaults.suggestedModalities).toContain('static-web');
     });
 
-    it('should classify tabular dataset as Pipeline 2 (DB-Templating)', () => {
+    it('should classify tabular dataset as Pipeline 2 (DB-Templating)', async () => {
       const manifest = createBaseManifest();
       manifest.data.push({
         relativePath: 'crypto_rankings.csv',
@@ -94,14 +94,14 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
         headers: ['token', 'price', 'market_cap'],
       });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('2');
       expect(res.confidence).toBeGreaterThanOrEqual(0.9);
       expect(res.defaults.canonicalPipelineId).toBe('db-templating');
       expect(res.defaults.defaultFps).toBe(60); // 60 FPS for data animations
     });
 
-    it('should classify long video as Pipeline 3 (Repurposing Recycler)', () => {
+    it('should classify long video as Pipeline 3 (Repurposing Recycler)', async () => {
       const manifest = createBaseManifest();
       manifest.visuals.push({
         relativePath: 'interview_podcast.mp4',
@@ -114,7 +114,7 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
         durationMs: 180000,
       });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('3');
       expect(res.confidence).toBeGreaterThanOrEqual(0.95);
       expect(res.defaults.canonicalPipelineId).toBe('repurposing-recycler');
@@ -128,14 +128,14 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
       const prober = new MediaAssetProberChain();
       const manifest = await prober.probeDirectory(sampleStoryDir, { probeDeepMetadata: false });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('4');
       expect(res.confidence).toBeGreaterThanOrEqual(0.9);
       expect(res.defaults.canonicalPipelineId).toBe('generative-storytelling');
       expect(res.defaults.suggestedModalities).toContain('video');
     });
 
-    it('should classify decision tree script as Pipeline 5 (Rule-Logic)', () => {
+    it('should classify decision tree script as Pipeline 5 (Rule-Logic)', async () => {
       const manifest = createBaseManifest();
       manifest.scripts.push({
         relativePath: 'dialogue_tree.txt',
@@ -148,14 +148,14 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
         estimatedSpeechDurationMs: 12000,
       });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('5');
       expect(res.confidence).toBeGreaterThanOrEqual(0.85);
       expect(res.defaults.canonicalPipelineId).toBe('rule-logic');
       expect(res.defaults.suggestedModalities).toContain('interactive-web');
     });
 
-    it('should classify relaxation beat / lofi audio without speech as Pipeline 6 (Ambient Loops)', () => {
+    it('should classify relaxation beat / lofi audio without speech as Pipeline 6 (Ambient Loops)', async () => {
       const manifest = createBaseManifest();
       manifest.audio.push({
         relativePath: 'lofi_sleep_beat_loop.mp3',
@@ -167,7 +167,7 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
         classification: 'music',
       });
 
-      const res = PipelineClassifierRegistry.resolve(manifest);
+      const res = await PipelineClassifierRegistry.resolve(manifest);
       expect(res.strategy.pipelineId).toBe('6');
       expect(res.confidence).toBeGreaterThanOrEqual(0.9);
       expect(res.defaults.canonicalPipelineId).toBe('ambient-loops');
@@ -176,7 +176,7 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
   });
 
   describe('Manual Override Handling', () => {
-    it('should enforce explicit manual override regardless of detected files', () => {
+    it('should enforce explicit manual override regardless of detected files', async () => {
       const manifest = createBaseManifest();
       // Manifest contains data which would normally select Pipeline 2
       manifest.data.push({
@@ -188,7 +188,7 @@ describe('Universal Auto-Config Phase 2: Pipeline Classifier Strategies & Regist
       });
 
       // User explicitly forces Pipeline 3 (Repurposing)
-      const res = PipelineClassifierRegistry.resolve(manifest, '3');
+      const res = await PipelineClassifierRegistry.resolve(manifest, '3');
       expect(res.strategy.pipelineId).toBe('3');
       expect(res.isOverride).toBe(true);
       expect(res.confidence).toBe(1.0);

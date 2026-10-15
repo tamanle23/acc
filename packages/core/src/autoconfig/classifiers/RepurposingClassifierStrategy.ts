@@ -5,18 +5,20 @@ import type {
   DiscoveredAssetManifest,
   ArchetypeScaffoldConfig,
 } from '../types';
+import { fileExists } from '../../utils';
 
 export class RepurposingClassifierStrategy implements IPipelineClassifierStrategy {
   public readonly pipelineId = '3';
   public readonly name = 'Repurposing Recycler Pipeline';
   public readonly description = 'Long-form podcasts, webinars, interviews, and video highlights recycled into vertical shorts.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     // If folder has native story-config.json (not bridge-adapted from another pipeline), it's explicitly Pipeline 4
     const storyConfigPath = path.join(manifest.baseDir, 'story-config.json');
-    if (fs.existsSync(storyConfigPath)) {
+    if (await fileExists(storyConfigPath)) {
       try {
-        const raw = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8'));
+        const rawData = await fs.promises.readFile(storyConfigPath, 'utf-8');
+        const raw = JSON.parse(rawData);
         const desc = raw.description || '';
         const match = desc.match(/Adapted from Pipeline \[([^\]]+)\]/);
         if (!match || match[1] === '4' || match[1] === 'generative-storytelling') {

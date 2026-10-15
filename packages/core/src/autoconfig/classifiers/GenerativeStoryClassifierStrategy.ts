@@ -5,18 +5,20 @@ import type {
   DiscoveredAssetManifest,
   ArchetypeScaffoldConfig,
 } from '../types';
+import { fileExists } from '../../utils';
 
 export class GenerativeStoryClassifierStrategy implements IPipelineClassifierStrategy {
   public readonly pipelineId = '4';
   public readonly name = 'Generative Storytelling Pipeline';
   public readonly description = 'Sequential visual storyboards, AI illustrated scenes, paired narrations, and 3D depth.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     // Definitive indicator: If folder already contains native story-config.json (not bridge-adapted from another pipeline)
     const storyConfigPath = path.join(manifest.baseDir, 'story-config.json');
-    if (fs.existsSync(storyConfigPath)) {
+    if (await fileExists(storyConfigPath)) {
       try {
-        const raw = JSON.parse(fs.readFileSync(storyConfigPath, 'utf-8'));
+        const rawData = await fs.promises.readFile(storyConfigPath, 'utf-8');
+        const raw = JSON.parse(rawData);
         const desc = raw.description || '';
         // If adapted from another pipeline, don't hijack classification
         const match = desc.match(/Adapted from Pipeline \[([^\]]+)\]/);

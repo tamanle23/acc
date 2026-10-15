@@ -113,7 +113,7 @@ export interface IPipelineClassifierStrategy {
   readonly pipelineId: '1' | '2' | '3' | '4' | '5' | '6';
   readonly name: string;
   readonly description: string;
-  calculateConfidence(manifest: DiscoveredAssetManifest): number;
+  calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number>;
   generateArchetypeDefaults(manifest: DiscoveredAssetManifest): ArchetypeScaffoldConfig;
 }
 
