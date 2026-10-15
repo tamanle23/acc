@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
-export const taskExecutionStatusSchema = z.enum([
+export const workflowExecutionStatusSchema = z.enum([
   'SCHEDULED',
   'IN_PROGRESS',
   'COMPLETED',
   'FAILED',
   'TIMED_OUT',
   'SKIPPED',
-  // legacy status mappings
+  // legacy status mappings for backward compatibility
   'backlog',
   'todo',
   'in progress',
@@ -15,22 +15,25 @@ export const taskExecutionStatusSchema = z.enum([
   'canceled',
 ])
 
-export type TaskExecutionStatus = z.infer<typeof taskExecutionStatusSchema>
+export type WorkflowExecutionStatus = z.infer<typeof workflowExecutionStatusSchema>
+export type TaskExecutionStatus = WorkflowExecutionStatus
 
-export const workflowTaskExecutionSchema = z.object({
+export const workflowExecutionSchema = z.object({
   id: z.string(),
   taskId: z.string().optional(),
   title: z.string(),
-  status: taskExecutionStatusSchema,
+  status: workflowExecutionStatusSchema,
   label: z.string().default('workflow'),
   priority: z.string().default('medium'),
-  // Workflow Execution Unit Attributes
+  // Workflow Execution Level Attributes
   workflowId: z.string().optional(),
   workflowName: z.string().optional(),
-  taskReferenceName: z.string().optional(),
+  activeStep: z.string().optional(), // Current node / milestone in DAG
+  taskReferenceName: z.string().optional(), // Internal node reference for telemetry
+  // Internal engine implementation metadata (encapsulated from primary table)
   taskType: z
     .enum(['SIMPLE', 'SWITCH', 'FORK_JOIN', 'DYNAMIC_FORK', 'WAIT', 'DO_WHILE', 'MANUAL'])
-    .default('SIMPLE'),
+    .optional(),
   leaseOwner: z.string().nullable().optional(),
   attempt: z.number().default(1),
   maxRetries: z.number().default(3),
@@ -46,7 +49,9 @@ export const workflowTaskExecutionSchema = z.object({
   updatedAt: z.union([z.string(), z.date()]).optional(),
 })
 
-export const taskSchema = workflowTaskExecutionSchema
+export const taskSchema = workflowExecutionSchema
+export const workflowTaskExecutionSchema = workflowExecutionSchema
 
-export type Task = z.infer<typeof taskSchema>
-export type WorkflowTaskExecution = z.infer<typeof workflowTaskExecutionSchema>
+export type WorkflowExecution = z.infer<typeof workflowExecutionSchema>
+export type Task = WorkflowExecution
+export type WorkflowTaskExecution = WorkflowExecution

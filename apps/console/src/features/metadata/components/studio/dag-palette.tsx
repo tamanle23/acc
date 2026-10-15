@@ -95,7 +95,7 @@ export function DagPalette() {
   return (
     <div className="flex flex-col gap-2 p-3 w-56 rounded-2xl backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/30 dark:border-white/10 shadow-lg">
       <div className="flex items-center justify-between pb-1 border-b border-border/40">
-        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Task Palette</span>
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Node Palette</span>
         <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/40">Drag & Drop</Badge>
       </div>
       <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[380px] pr-0.5">

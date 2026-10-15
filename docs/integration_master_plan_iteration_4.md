@@ -81,13 +81,16 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
   - **Schema Modernization (`schema.ts`)**:
     - Add `workflowTaskExecutionSchema` defining: `taskId`, `workflowId`, `workflowName`, `taskReferenceName`, `taskType`, `status`, `leaseOwner`, `attempt`, `maxRetries`, `pollDomain`, `visibleAtEpochMs`, `durationMs`, `startedAt`, `completedAt`.
   - **Table Columns (`tasks-columns.tsx`)**:
-    - Column 1: `Execution Unit / ID` with copy icon.
+    - Column 1: `Execution ID` with copy icon.
     - Column 2: `Workflow Definition` badge linking to `/workflows?workflowId={workflowId}`.
-    - Column 3: `Task Type` pill (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `WAIT`, `DO_WHILE`).
-    - Column 4: `Execution Status` (`SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `TIMED_OUT`).
-    - Column 5: `Worker Lease Telemetry` (`worker-node-1` / `lease: 15s left`).
-    - Column 6: `Duration / Retries` (`attempt 1/3`, `245ms`).
-    - Column 7: `Actions` (**View in Visual DAG Studio**, **Inspect Execution**, **Retry Lease**).
+    - Column 3: `Active Step / Milestone` (current execution frontier in DAG, e.g. `expressCourier` or `Completed`).
+    - Column 4: `Execution Description` / intent.
+    - Column 5: `Execution Status` (`SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `TIMED_OUT`).
+    - Column 6: `Worker / Lease Telemetry` (`worker-node-1` / `lease: 15s left`).
+    - Column 7: `Duration / Retries` (`attempt 1/3`, `245ms`).
+    - Column 8: `Actions` (**View in Visual DAG Studio**, **Inspect Execution**, **Retry Lease**).
+  - **Encapsulation Invariant**:
+    - Low-level internal `TaskType` implementations (`SIMPLE`, `SWITCH`, `FORK_JOIN`, etc.) are encapsulated from the primary execution ledger and visible only in debug telemetry modals.
   - **Execution Lifecycle Filtering**:
     - Segmented tabs: **All Executions**, **In Progress**, **Completed**, **Failed / Action Required** (eliminating synthetic demo backlog tasks).
 - **Unified Sandbox Platform Synchronization (`@unipost/sandbox` & `tasks-sandbox-handler.ts`)**:

@@ -19,16 +19,16 @@ Phase 31 has been implemented and refined to enforce strict domain boundaries:
 
 ### Visual DAG Studio
 - [`dag-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-node.tsx): Added `DYNAMIC_FORK` task type and icon.
-- [`dag-palette.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.tsx): Created draggable palette component.
+- [`dag-palette.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.tsx): Rebranded to **Node Palette** for designing workflow steps.
 - [`dag-palette.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-palette.test.tsx): Unit tests covering palette items and drag data.
 - [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx): Wrapped canvas with `ReactFlowProvider`, wired `onDrop`, `onDragOver`, node connection handler `onConnect`, and delete buttons.
 
 ### Workflow Executions Ledger
 - [`sidebar-data.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/data/sidebar-data.ts): Updated navigation item to **Workflow Executions**.
 - [`en/console.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/en/console.json) & [`vi/console.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/vi/console.json): Added `workflowExecutions` translation keys.
-- [`tasks.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/tasks.ts): Seeded pure workflow execution instances, discarding synthetic template mocks.
+- [`tasks.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/tasks.ts): Seeded pure workflow execution instances with `activeStep`, discarding synthetic template mocks.
 - [`index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/index.tsx): Integrated lifecycle filtering (**All**, **In Progress**, **Completed**, **Failed**) and Visual DAG engine badge.
-- [`tasks-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-columns.tsx): Added `Workflow Definition` links, type badges, lease owner information, and execution status styling.
+- [`tasks-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-columns.tsx): Added `Workflow Definition` links, `Active Step / Milestone` badges, lease owner information, and execution status styling (encapsulating low-level task types).
 - [`task-payload-inspector-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/task-payload-inspector-dialog.tsx): Detailed modal inspecting JSON payload input/output and lease telemetry.
 - [`data-table-row-actions.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/data-table-row-actions.tsx): Cross-navigation and inspection triggers.
 - [`schema.test.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/data/schema.test.ts): Unit tests validating workflow task schema parsing.

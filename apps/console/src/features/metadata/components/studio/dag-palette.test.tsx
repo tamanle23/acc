@@ -7,7 +7,7 @@ describe('DagPalette Component Unit Tests', () => {
   it('renders all workflow DAG node items', () => {
     render(<DagPalette />);
 
-    expect(screen.getByText('Task Palette')).toBeDefined();
+    expect(screen.getByText('Node Palette')).toBeDefined();
     expect(screen.getByText('Drag & Drop')).toBeDefined();
     expect(screen.getByText('Simple Task')).toBeDefined();
     expect(screen.getByText('Switch Node')).toBeDefined();

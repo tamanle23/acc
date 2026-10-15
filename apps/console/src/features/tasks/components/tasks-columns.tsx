@@ -2,7 +2,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DataTableColumnHeader } from '@/components/data-table'
-import { priorities, statuses, taskTypeMeta } from '../data/data'
+import { priorities, statuses } from '../data/data'
 import { type Task } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
 import { GitBranch, Cpu, Clock } from 'lucide-react'
@@ -71,21 +71,26 @@ export const tasksColumns: ColumnDef<Task>[] = [
         </Link>
       );
     },
-  },
   {
-    accessorKey: 'taskType',
+    accessorKey: 'activeStep',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Type' />
+      <DataTableColumnHeader column={column} title='Active Step / Milestone' />
     ),
     cell: ({ row }) => {
-      const type = row.original.taskType || 'SIMPLE';
-      const meta = taskTypeMeta[type] || taskTypeMeta.SIMPLE;
-      const Icon = meta.icon;
+      const step = row.original.activeStep || row.original.taskReferenceName;
+      const isCompleted = row.original.status === 'COMPLETED' || row.original.status === 'done';
 
       return (
-        <Badge variant='outline' className={`text-[11px] gap-1 font-semibold ${meta.color}`}>
-          <Icon className='w-3 h-3' />
-          {meta.label}
+        <Badge
+          variant='outline'
+          className={`text-[11px] gap-1 font-mono font-medium ${
+            isCompleted
+              ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+              : 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/20'
+          }`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+          {step || 'Initializing'}
         </Badge>
       );
     },
