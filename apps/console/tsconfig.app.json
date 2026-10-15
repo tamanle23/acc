@@ -44,7 +44,6 @@
   },
   "include": [
     "src",
-    "../../packages/sandbox/src/handlers/workflow-executions-sandbox-handler.ts",
     "../../packages/sandbox/src/handlers/data"
   ]
 }

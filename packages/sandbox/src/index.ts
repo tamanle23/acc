@@ -11,7 +11,6 @@ export * from './adapters/axios-adapter';
 // Centralized Domain Handlers & Repositories
 export * from './handlers/auth-sandbox-handler';
 export * from './handlers/users-sandbox-handler';
-export * from './handlers/workflow-executions-sandbox-handler';
 export * from './handlers/workflow-handler';
 export * from './handlers/billing-sandbox-handler';
 export * from './handlers/system-sandbox-handler';
@@ -24,7 +23,6 @@ export * from './handlers/widget-handler';
 import { sandboxRegistry } from './registry';
 import { authSandboxHandler } from './handlers/auth-sandbox-handler';
 import { usersSandboxHandler } from './handlers/users-sandbox-handler';
-import { workflowExecutionsSandboxHandler } from './handlers/workflow-executions-sandbox-handler';
 import { workflowSandboxHandler } from './handlers/workflow-handler';
 import { billingSandboxHandler } from './handlers/billing-sandbox-handler';
 import { systemSandboxHandler } from './handlers/system-sandbox-handler';
@@ -36,7 +34,6 @@ import { widgetSandboxHandler } from './handlers/widget-handler';
 export function registerDefaultSandboxHandlers(): void {
   sandboxRegistry.register(authSandboxHandler);
   sandboxRegistry.register(usersSandboxHandler);
-  sandboxRegistry.register(workflowExecutionsSandboxHandler);
   sandboxRegistry.register(workflowSandboxHandler);
   sandboxRegistry.register(billingSandboxHandler);
   sandboxRegistry.register(systemSandboxHandler);

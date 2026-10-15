@@ -1,6 +1,76 @@
 import type { SandboxRouteHandler, SandboxResponse, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
+import { workflowExecutions } from './data/workflow-executions';
+import type { WorkflowExecution as ClientWorkflowExecution } from '@unipost/client';
+
+export class WorkflowExecutionsSandboxRepository {
+  private tenantWorkflowExecutions: Map<string, ClientWorkflowExecution[]> = new Map();
+
+  constructor() {
+    this.reset();
+    sandboxResetRegistry.register(() => this.reset());
+  }
+
+  private getActiveTenantId(): string {
+    return defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
+  }
+
+  private getTenantList(tenantId?: string): ClientWorkflowExecution[] {
+    const tid = tenantId || this.getActiveTenantId();
+    if (!this.tenantWorkflowExecutions.has(tid)) {
+      this.tenantWorkflowExecutions.set(tid, JSON.parse(JSON.stringify(workflowExecutions)));
+    }
+    return this.tenantWorkflowExecutions.get(tid)!;
+  }
+
+  public reset(): void {
+    this.tenantWorkflowExecutions.clear();
+    this.tenantWorkflowExecutions.set('SYSTEM', JSON.parse(JSON.stringify(workflowExecutions)));
+    this.tenantWorkflowExecutions.set('tenant-acme', JSON.parse(JSON.stringify(workflowExecutions)));
+    this.tenantWorkflowExecutions.set(
+      'tenant-us-east-1',
+      (workflowExecutions as ClientWorkflowExecution[]).slice(0, 5).map((t, idx) => ({
+        ...t,
+        id: `TASK-US-${1000 + idx}`,
+        title: `[US-EAST] ${t.title}`,
+      }))
+    );
+  }
+
+  public getAll(tenantId?: string): ClientWorkflowExecution[] {
+    return [...this.getTenantList(tenantId)];
+  }
+
+  public getById(id: string, tenantId?: string): ClientWorkflowExecution | undefined {
+    return this.getTenantList(tenantId).find((t) => t.id === id);
+  }
+
+  public create(task: ClientWorkflowExecution, tenantId?: string): ClientWorkflowExecution {
+    const list = this.getTenantList(tenantId);
+    list.unshift(task);
+    return task;
+  }
+
+  public update(id: string, patch: Partial<ClientWorkflowExecution>, tenantId?: string): ClientWorkflowExecution | null {
+    const list = this.getTenantList(tenantId);
+    const idx = list.findIndex((t) => t.id === id);
+    if (idx === -1) return null;
+    list[idx] = { ...list[idx], ...patch, updatedAt: new Date() };
+    return list[idx];
+  }
+
+  public delete(id: string, tenantId?: string): boolean {
+    const tid = tenantId || this.getActiveTenantId();
+    const list = this.getTenantList(tid);
+    const beforeLen = list.length;
+    const filtered = list.filter((t) => t.id !== id);
+    this.tenantWorkflowExecutions.set(tid, filtered);
+    return filtered.length < beforeLen;
+  }
+}
+
+export const workflowExecutionsSandboxRepo = new WorkflowExecutionsSandboxRepository();
 
 export interface WorkflowDefinitionIR {
   workflowKey: string;
@@ -286,7 +356,7 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   priority: 95,
   matcher: (ctx) => {
     const cleanPath = ctx.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
-    return cleanPath.startsWith('/workflow');
+    return cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions');
   },
   handler: (req: SandboxRequest, context): SandboxResponse => {
     const method = req.method.toUpperCase();
@@ -346,37 +416,26 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    // 1. Start Workflow Execution: POST /workflow/executions
-    if (cleanPath === '/workflow/executions' && method === 'POST') {
-      const body = (req.data || {}) as Record<string, any>;
-      const workflowKey = body.workflowKey || 'order-fulfillment-v1';
-      const execution = workflowSandboxRepo.startExecution(workflowKey, body.input || {}, tenantId);
-      return { status: 201, data: execution };
-    }
-
-    // 2. Query Execution Snapshot: GET /workflow/executions/{id}
-    const execSnapshotMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)$/);
-    if (execSnapshotMatch && method === 'GET') {
-      const execId = execSnapshotMatch[1];
-      const found = workflowSandboxRepo.getExecution(execId, tenantId);
-      if (found) {
-        return { status: 200, data: found };
+    // 1. Workflow Executions Collection: GET & POST /workflow/executions or /workflow-executions
+    if (cleanPath === '/workflow/executions' || cleanPath === '/workflow/executions/' || cleanPath === '/workflow-executions' || cleanPath === '/workflow-executions/') {
+      if (method === 'GET') {
+        return { status: 200, data: workflowExecutionsSandboxRepo.getAll(tenantId) };
       }
-      return { status: 404, data: { error: `Execution ${execId} not found` } };
-    }
-
-    // 3. Terminate Execution: POST /workflow/executions/{id}/terminate
-    const execTermMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/terminate$/);
-    if (execTermMatch && method === 'POST') {
-      const execId = execTermMatch[1];
-      const success = workflowSandboxRepo.terminateExecution(execId, tenantId);
-      if (success) {
-        return { status: 200, data: { terminated: true, workflowId: execId } };
+      if (method === 'POST') {
+        const body = (req.data || {}) as Record<string, any>;
+        // If it's a tabular task/execution record creation with title
+        if (body.title) {
+          const created = workflowExecutionsSandboxRepo.create(body as ClientWorkflowExecution, tenantId);
+          return { status: 201, data: created };
+        }
+        // Otherwise, start workflow execution via workflowSandboxRepo
+        const workflowKey = body.workflowKey || 'order-fulfillment-v1';
+        const execution = workflowSandboxRepo.startExecution(workflowKey, body.input || {}, tenantId);
+        return { status: 201, data: execution };
       }
-      return { status: 404, data: { error: `Execution ${execId} not found` } };
     }
 
-    // 4. Simulated SSE Events: GET /workflow/executions/{id}/events
+    // 2. Simulated SSE Events: GET /workflow/executions/{id}/events
     const sseMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/events$/);
     if (sseMatch && method === 'GET') {
       const execId = sseMatch[1];
@@ -397,6 +456,48 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
       };
     }
 
+    // 3. Terminate Execution: POST /workflow/executions/{id}/terminate
+    const execTermMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/terminate$/);
+    if (execTermMatch && method === 'POST') {
+      const execId = execTermMatch[1];
+      const success = workflowSandboxRepo.terminateExecution(execId, tenantId);
+      if (success) {
+        return { status: 200, data: { terminated: true, workflowId: execId } };
+      }
+      return { status: 404, data: { error: `Execution ${execId} not found` } };
+    }
+
+    // 4. Single Execution Operations: /workflow/executions/{id} or /workflow-executions/{id}
+    const singleExecMatch = cleanPath.match(/^\/(?:workflow\/executions|workflow-executions)\/([^/]+)$/);
+    if (singleExecMatch) {
+      const execId = singleExecMatch[1];
+
+      if (method === 'GET') {
+        const executionItem = workflowExecutionsSandboxRepo.getById(execId, tenantId);
+        if (executionItem) {
+          return { status: 200, data: executionItem };
+        }
+        const activeInstance = workflowSandboxRepo.getExecution(execId, tenantId);
+        if (activeInstance) {
+          return { status: 200, data: activeInstance };
+        }
+        return { status: 404, data: { error: `Execution ${execId} not found` } };
+      }
+
+      if (method === 'PATCH' || method === 'PUT') {
+        const updated = workflowExecutionsSandboxRepo.update(execId, req.data, tenantId);
+        if (updated) {
+          return { status: 200, data: updated };
+        }
+        return { status: 404, data: { error: `Execution ${execId} not found` } };
+      }
+
+      if (method === 'DELETE') {
+        const deleted = workflowExecutionsSandboxRepo.delete(execId, tenantId);
+        return { status: 200, data: { success: deleted } };
+      }
+    }
+
     // 5. Worker Polling: GET /workflow/tasks/poll
     if (cleanPath.endsWith('/poll') && method === 'GET') {
       return { status: 200, data: [] };
@@ -415,6 +516,8 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     return { status: 404, data: { error: 'Workflow endpoint not found' } };
   },
 };
+
+export const workflowExecutionsSandboxHandler = workflowSandboxHandler;
 
 export function resetWorkflowSandbox(): void {
   workflowSandboxRepo.reset();

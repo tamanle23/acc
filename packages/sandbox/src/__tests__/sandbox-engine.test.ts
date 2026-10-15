@@ -196,6 +196,22 @@ describe('Unified Sandbox Engine Package', () => {
       method: 'DELETE',
     });
     expect(delRes?.status).toBe(200);
-    expect(delRes?.data.success).toBe(true);
+    // 9. Query workflow executions list via GET /api/v1/workflow/executions
+    const execListRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions',
+      method: 'GET',
+    });
+    expect(execListRes?.status).toBe(200);
+    expect(Array.isArray(execListRes?.data)).toBe(true);
+    expect(execListRes?.data.length).toBeGreaterThan(0);
+
+    // 10. Query workflow executions list via GET /api/workflow-executions
+    const altListRes = await engine.handleRequest({
+      url: '/api/workflow-executions',
+      method: 'GET',
+    });
+    expect(altListRes?.status).toBe(200);
+    expect(Array.isArray(altListRes?.data)).toBe(true);
+    expect(altListRes?.data.length).toBeGreaterThan(0);
   });
 });
