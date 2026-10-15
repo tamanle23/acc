@@ -14,11 +14,21 @@ In Phase 34, we delivered the complete live interaction layer for the distribute
   - `TASK_COMPLETED` / `TASK_FAILED`
   - `WORKFLOW_COMPLETED` / `WORKFLOW_FAILED` / `WORKFLOW_TERMINATED`
 
-### 2.2 Unified Sandbox Platform Real-Time Stream Simulation
-- Enhanced `workflowSandboxHandler` in `packages/sandbox/src/handlers/workflow-handler.ts`:
+### 2.2 Unified Sandbox Platform Multi-Tenant Workflows CRUD & Real-Time Stream Simulation
+- Enhanced `workflowSandboxHandler` and created `WorkflowSandboxRepository` in `packages/sandbox/src/handlers/workflow-handler.ts`:
+  - Multi-tenant stateful repository seeded with 3 realistic enterprise workflow definitions:
+    1. `order-fulfillment-v1` (Order Fulfillment Pipeline, v1, Active)
+    2. `checkout-pipeline-v2` (Checkout & Payment Settlement, v2, Active)
+    3. `invoice-billing-v1` (Monthly Billing & Tax Reconciliation, v1, Disabled)
+  - Full CRUD support:
+    - `GET /v1/workflow/definitions`: lists definitions partitioned by active tenant.
+    - `POST /v1/workflow/definitions`: creates new definitions or saves visual canvas updates.
+    - `GET /v1/workflow/definitions/{key}`: retrieves full IR definition and canvas layout metadata.
+    - `PUT /v1/workflow/definitions/{key}`: updates metadata or toggles status (`ACTIVE` vs `DISABLED`).
+    - `DELETE /v1/workflow/definitions/{key}`: deletes workflow definitions.
+  - Wired into `SandboxDock.handleResetAllData()` via `workflowSandboxRepo.reset()`, ensuring pristine state restoration.
   - Implemented mock SSE stream returning staggered events with connection confirmation.
-  - Implemented `GET /api/v1/workflow/executions/{id}` snapshot endpoint for adaptive fallback polling.
-  - Supported `PUT` and `DELETE` on `/api/v1/workflow/definitions/{key}`.
+  - Implemented `GET /v1/workflow/executions/{id}` snapshot endpoint for adaptive fallback polling.
 
 ### 2.3 Resilient Frontend SSE Hook (`useWorkflowExecutionStream`)
 - Created `useWorkflowExecutionStream(executionId)` with automatic fault tolerance:

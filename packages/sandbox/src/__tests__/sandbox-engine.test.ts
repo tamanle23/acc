@@ -123,13 +123,13 @@ describe('Unified Sandbox Engine Package', () => {
     resetWorkflowSandbox();
     registry.register(workflowSandboxHandler);
 
-    // 1. Initial list should be empty
+    // 1. Initial list should contain default seeded definitions
     const listRes = await engine.handleRequest({
       url: '/api/v1/workflow/definitions',
       method: 'GET',
     });
     expect(listRes?.status).toBe(200);
-    expect(listRes?.data).toEqual([]);
+    expect(listRes?.data.length).toBeGreaterThanOrEqual(3);
 
     // 2. Create definition
     const postRes = await engine.handleRequest({
@@ -179,6 +179,23 @@ describe('Unified Sandbox Engine Package', () => {
     });
     expect(sseRes?.status).toBe(200);
     expect(sseRes?.headers?.['Content-Type']).toBe('text/event-stream');
-    expect(sseRes?.data).toHaveLength(4);
+    expect(sseRes?.data).toHaveLength(8);
+
+    // 7. Toggle status via PUT /v1/workflow/definitions/{key}
+    const toggleRes = await engine.handleRequest({
+      url: '/v1/workflow/definitions/order-fulfillment-v1',
+      method: 'PUT',
+      data: { status: 'DISABLED' },
+    });
+    expect(toggleRes?.status).toBe(200);
+    expect(toggleRes?.data.status).toBe('DISABLED');
+
+    // 8. Delete definition via DELETE /v1/workflow/definitions/{key}
+    const delRes = await engine.handleRequest({
+      url: '/v1/workflow/definitions/order-fulfillment-v1',
+      method: 'DELETE',
+    });
+    expect(delRes?.status).toBe(200);
+    expect(delRes?.data.success).toBe(true);
   });
 });

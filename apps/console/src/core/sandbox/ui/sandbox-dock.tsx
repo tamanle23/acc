@@ -24,6 +24,7 @@ import { mockFleetStore } from '../handlers/system-sandbox-handler';
 import { sandboxWorkspaceRepository } from '../handlers/workspace-sandbox-handler';
 import { chatsSandboxRepo } from '../handlers/chats-sandbox-handler';
 import { appsSandboxRepo } from '../handlers/apps-sandbox-handler';
+import { workflowSandboxRepo } from '@unipost/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import type { SandboxPersonaId } from '../types';
 
@@ -87,6 +88,7 @@ export function SandboxDock() {
     sandboxWorkspaceRepository.reset();
     chatsSandboxRepo.reset();
     appsSandboxRepo.reset();
+    workflowSandboxRepo.reset();
 
     // Clear all user default workspace selections and active assumed tenant sessions from localStorage
     if (typeof window !== 'undefined') {

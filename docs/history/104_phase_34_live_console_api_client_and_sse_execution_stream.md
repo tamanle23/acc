@@ -22,9 +22,10 @@ While Phase 33 wired the distributed workflow engine into Spring Boot and expose
   - `WorkflowExecutionController.java`: Added `/api/v1/workflow/executions/{id}/events` and lifecycle broadcast.
   - `TaskWorkerController.java`: Broadcast `TASK_IN_PROGRESS`, `TASK_COMPLETED`, and `TASK_FAILED`.
   - `WorkflowEngineRestApiTest.java`: Verified SSE emitter subscription and event dispatch.
-- **Unified Sandbox (`packages/sandbox`)**:
-  - `workflow-handler.ts`: Added definition PUT/DELETE, execution snapshot GET, and mock SSE events stream.
-  - `sandbox-engine.test.ts`: Added tests for execution lifecycle and SSE events.
+- **Unified Sandbox (`packages/sandbox` & `@unipost/console`)**:
+  - `workflow-handler.ts`: Implemented `WorkflowSandboxRepository` with multi-tenant partitioning, seeded realistic enterprise workflow definitions (`order-fulfillment-v1`, `checkout-pipeline-v2`, `invoice-billing-v1`), full REST CRUD matching (`/workflow/definitions`, `/workflow/definitions/{key}` with `GET`, `POST`, `PUT`, `DELETE`), execution lifecycle and SSE event stream generator.
+  - `sandbox-dock.tsx`: Connected `workflowSandboxRepo.reset()` into `handleResetAllData()`.
+  - `sandbox-engine.test.ts`: Added tests for seeded catalog listing, execution lifecycle, SSE stream events, status toggles, and definition deletion.
 - **Console Frontend (`apps/console`)**:
   - `src/features/workflows/api/workflow-api.ts`: TanStack Query hooks.
   - `src/features/workflows/hooks/use-workflow-execution-stream.ts`: Resilient SSE stream hook with fallback polling.
