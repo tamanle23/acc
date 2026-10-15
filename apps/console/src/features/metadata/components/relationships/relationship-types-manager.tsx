@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   useRelationshipTypes,
   useEntityTypes,
@@ -33,17 +33,28 @@ export const RelationshipTypesManager: React.FC<Props> = ({ entityTypeId }) => {
   const entityTypes = entityTypesResponse?.content || [];
   const allRelTypes = relTypesResponse?.content || [];
 
-  // Filter relationship types relevant to this entity model (either as source or target)
-  const currentRelTypes = allRelTypes.filter(
-    (rt) =>
-      String(rt.sourceEntityTypeId) === String(entityTypeId) ||
-      String(rt.targetEntityTypeId) === String(entityTypeId)
-  );
+  // Optimization: Pre-index entityTypes into Map lookup to avoid O(N) scans per item in render loop
+  const entityTypeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes) {
+      map.set(String(et.id), et.name);
+    }
+    return map;
+  }, [entityTypes]);
 
-  const getEntityName = (id: string | number) => {
-    const found = entityTypes.find((et) => String(et.id) === String(id));
-    return found ? found.name : `Entity #${id}`;
-  };
+  // Filter relationship types relevant to this entity model (either as source or target)
+  const currentRelTypes = useMemo(() => {
+    const idStr = String(entityTypeId);
+    return allRelTypes.filter(
+      (rt) =>
+        String(rt.sourceEntityTypeId) === idStr ||
+        String(rt.targetEntityTypeId) === idStr
+    );
+  }, [allRelTypes, entityTypeId]);
+
+  const getEntityName = useCallback((id: string | number) => {
+    return entityTypeMap.get(String(id)) || `Entity #${id}`;
+  }, [entityTypeMap]);
 
   const getCardinalityBadge = (cardinality: string) => {
     switch (cardinality) {
