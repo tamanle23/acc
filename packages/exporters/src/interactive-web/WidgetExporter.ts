@@ -52,8 +52,8 @@ export class WidgetExporter {
 </head>
 <body>
   <div class="player-card">
-    <video id="activeVideo" playsinline aria-label="${ir.metadata.title || 'Interactive Video'}" ${options.autostart ? 'autoplay' : ''}></video>
-    <div id="choicesOverlay" class="choices-overlay" role="region" aria-label="Interactive branching choices" aria-live="polite" style="display:none;"></div>
+    <video id="activeVideo" playsinline controls aria-label="${ir.metadata.title || 'Interactive Video'}" ${options.autostart ? 'autoplay' : ''}></video>
+    <div id="choicesOverlay" class="choices-overlay" role="region" aria-label="Interactive branching choices" aria-live="polite" aria-controls="activeVideo" style="display:none;"></div>
   </div>
   <script>
     const tree = ${JSON.stringify(treeData)};

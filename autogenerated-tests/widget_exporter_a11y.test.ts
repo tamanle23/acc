@@ -62,9 +62,11 @@ describe('WidgetExporter Accessibility & UX Verification', () => {
     expect(htmlContent).toContain('role="region"');
     expect(htmlContent).toContain('aria-label="Interactive branching choices"');
     expect(htmlContent).toContain('aria-live="polite"');
+    expect(htmlContent).toContain('aria-controls="activeVideo"');
+    expect(htmlContent).toContain('<video id="activeVideo" playsinline controls');
     expect(htmlContent).toContain('aria-label="Interactive Choice Demo"');
     expect(htmlContent).toContain("btn.type = 'button'");
-    expect(htmlContent).toContain("btn.setAttribute('aria-label', c.label)");
+    expect(htmlContent).toContain("Choice ${idx + 1} of ${currentNode.choices.length}");
     expect(htmlContent).toContain('firstBtn.focus()');
     expect(htmlContent).toContain('kbd-badge');
     expect(htmlContent).toContain("document.addEventListener('keydown'");
