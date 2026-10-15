@@ -52,4 +52,17 @@ public record TaskSnapshot(
             visibleAtEpochMs, responseTimeoutMs, workerId
         );
     }
+
+    public String workflowId() {
+        int idx = taskId.lastIndexOf('_');
+        if (idx > 0) {
+            String prefix = taskId.substring(0, idx);
+            int secondIdx = prefix.lastIndexOf('_');
+            if (secondIdx > 0) {
+                return prefix.substring(0, secondIdx);
+            }
+            return prefix;
+        }
+        return taskId;
+    }
 }

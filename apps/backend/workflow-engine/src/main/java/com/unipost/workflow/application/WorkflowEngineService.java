@@ -41,7 +41,7 @@ public class WorkflowEngineService {
         try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
             // 1. Freeze definition snapshot in Memento pattern
             persistencePort.saveWorkflowExecution(
-                workflowId, tenantId, workspaceId, definition.name(), definition.version(),
+                workflowId, tenantId, workspaceId, definition.workflowKey(), definition.version(),
                 WorkflowStatus.RUNNING, definition, input, Collections.emptyMap(), null, nowEpochMs
             );
 
