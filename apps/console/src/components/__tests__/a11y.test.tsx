@@ -5,6 +5,15 @@ import * as matchers from 'vitest-axe/matchers';
 
 expect.extend(matchers);
 
+declare module 'vitest' {
+  export interface Assertion<T = any> {
+    toHaveNoViolations(): T;
+  }
+  export interface AsymmetricMatchersContaining {
+    toHaveNoViolations(): void;
+  }
+}
+
 vi.mock('@/components/command-menu', () => ({
   CommandMenu: () => null,
 }));
