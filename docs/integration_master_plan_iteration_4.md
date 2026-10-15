@@ -156,28 +156,45 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 ### Phase 34: Live Console API Client & Server-Sent Events (SSE) Execution Stream
 
+- **Workflow Definitions Catalog Landing (`/workflows`)**:
+  - Main landing view transforms into an enterprise Workflow Definitions Catalog:
+    - Table / Card grid displaying registered workflow definitions (Key, Name, Version, Node Count, Status active/disabled, Last Updated).
+    - CRUD action toolbar: Create New Workflow, Import IR JSON, Edit Metadata, Enable/Disable toggle, Delete.
+    - "Design / Open Studio" action opens the Visual DAG Studio in **Designer Mode** for authoring and modifying definitions.
+- **Dual-Mode Visual DAG Studio Architecture**:
+  - **Designer Mode** (opened from `/workflows`): Pure definition authoring, node palette drag-and-drop, parameter binding, cycle validation, and saving definitions via `useSaveWorkflowDefinition()`.
+  - **Live Execution Stream Mode** (opened from `/tasks` when inspecting an execution instance): Read-only DAG visualizer with real-time animated node status indicators and the Execution Run Drawer.
 - **TanStack Query Hooks (`apps/console/src/features/workflows/api/`)**:
   - `useWorkflowDefinitions()`: Fetch catalog of registered workflows.
   - `useWorkflowDefinition(key)`: Fetch active definition and layout metadata for Visual DAG Studio canvas.
   - `useSaveWorkflowDefinition()`: Mutation saving visual canvas changes to the backend.
+  - `useToggleWorkflowStatus()`: Mutation enabling/disabling a workflow definition.
   - `useStartWorkflowExecution()`: Mutation starting a live workflow instance with custom input JSON.
-  - `useWorkflowExecutionStatus(executionId)`: Polling or stream hook tracking task statuses.
-- **Real-Time Execution Stream (`useWorkflowExecutionStream`)**:
-  - Connect to `GET /api/v1/workflow/executions/{id}/events` via Server-Sent Events (SSE).
-  - Emits real-time task transition events (`TASK_SCHEDULED`, `TASK_IN_PROGRESS`, `TASK_COMPLETED`, `TASK_FAILED`, `WORKFLOW_COMPLETED`).
-  - Directly updates node execution states on the React Flow canvas with smooth CSS transitions:
-    - Glowing amber border for `IN_PROGRESS`.
-    - Emerald green border for `COMPLETED`.
-    - Pulsing red border with error tooltip for `FAILED`.
+  - `useWorkflowExecutionStatus(executionId)`: Polling or stream hook tracking execution and task statuses.
+- **Real-Time Execution Stream (`useWorkflowExecutionStream`) & Spring Boot SSE**:
+  - Spring Boot Backend Endpoint: `GET /api/v1/workflow/executions/{id}/events` via `SseEmitter` in `WorkflowExecutionController`, broadcasting real-time task lifecycle updates (`TASK_SCHEDULED`, `TASK_IN_PROGRESS`, `TASK_COMPLETED`, `TASK_FAILED`, `WORKFLOW_COMPLETED`).
+  - Frontend Hook `useWorkflowExecutionStream`:
+    - Connects to SSE stream endpoint (`/events`).
+    - Resilient Fallback: Automatically falls back to adaptive polling (`useWorkflowExecutionStatus`) if SSE connection disconnects or errors.
+    - Smooth React Flow Node CSS Transitions:
+      - Glowing amber border & pulse for `IN_PROGRESS`.
+      - Emerald green border & badge for `COMPLETED`.
+      - Pulsing red border with error tooltip for `FAILED`.
 - **Execution Run Drawer**:
-  - Bottom slide-over panel displaying real-time task logs, execution duration, payload inspect modals, and error traces.
+  - Bottom slide-over sheet / drawer on the canvas with collapsible/minimizable height tabs:
+    - Timeline & Duration progression.
+    - Real-time task logs and execution telemetry.
+    - Input/Output payload inspect viewer.
+    - Error stack trace and failure diagnostics.
 - **Unified Sandbox Real-Time Mock Stream Adapter**:
   - `workflowSandboxHandler` implements mock SSE stream simulating staggered task state advances:
     - Automatically streams `TASK_SCHEDULED` $\to$ `TASK_IN_PROGRESS` $\to$ `TASK_COMPLETED` with configurable jitter.
     - Allows offline development and deterministic UI test automation without backend network infrastructure.
 - **Verification Gate 34**:
+  - Spring Boot MockMvc / Controller test verifying `SseEmitter` event emission on task lifecycle transitions.
   - Vitest component tests in `@unipost/console` mocking SSE events and asserting that canvas node badges dynamically update from `PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`.
-  - Vitest test in `@unipost/sandbox` verifying mock SSE event generator.
+  - Vitest test in `@unipost/sandbox` verifying mock SSE event generator and fallback polling.
+
 
 ---
 

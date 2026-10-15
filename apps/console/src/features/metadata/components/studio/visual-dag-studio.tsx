@@ -40,7 +40,20 @@ import {
   CheckCircle2,
   AlertTriangle,
   SlidersHorizontal,
+  Save,
+  Eye,
 } from 'lucide-react';
+import { ExecutionRunDrawer } from '@/features/workflows/components/execution-run-drawer';
+import { useWorkflowExecutionStream } from '@/features/workflows/hooks/use-workflow-execution-stream';
+import { useSaveWorkflowDefinition, useWorkflowDefinition } from '@/features/workflows/api/workflow-api';
+
+export interface VisualDagStudioProps {
+  mode?: 'designer' | 'execution';
+  workflowKey?: string;
+  executionId?: string | null;
+  onCloseExecution?: () => void;
+  onSaveSuccess?: () => void;
+}
 
 const nodeTypes = {
   dagNode: DagWorkflowNodeComponent,
@@ -126,14 +139,63 @@ const INITIAL_EDGES: Edge[] = [
   { id: 'e3', source: 'node-route', target: 'node-ground', label: 'STANDARD' },
 ];
 
-function DagStudioCanvas() {
+function DagStudioCanvas({
+  mode = 'designer',
+  workflowKey,
+  executionId,
+  onCloseExecution,
+  onSaveSuccess,
+}: VisualDagStudioProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const [nodes, setNodes] = useState<Node<DagNodeData>[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [showPalette, setShowPalette] = useState(true);
+  const [showPalette, setShowPalette] = useState(mode === 'designer');
+
+  // Real-time execution stream integration
+  const stream = useWorkflowExecutionStream(executionId || null);
+
+  // Sync execution stream states onto canvas nodes
+  React.useEffect(() => {
+    if (mode === 'execution' && Object.keys(stream.nodeStates).length > 0) {
+      setNodes((nds) =>
+        nds.map((n) => {
+          const taskRef = n.data.taskReferenceName;
+          const liveState = stream.nodeStates[taskRef];
+          if (liveState && liveState !== n.data.executionState) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                executionState: liveState,
+              },
+            };
+          }
+          return n;
+        })
+      );
+    }
+  }, [mode, stream.nodeStates]);
+
+  // Load existing workflow definition if workflowKey is provided
+  const workflowDefQuery = useWorkflowDefinition(workflowKey || null);
+  const saveWorkflowMutation = useSaveWorkflowDefinition();
+
+  React.useEffect(() => {
+    if (workflowDefQuery.data) {
+      try {
+        const { nodes: loadedNodes, edges: loadedEdges } = importFromWorkflowIR(
+          workflowDefQuery.data as any
+        );
+        setNodes(loadedNodes);
+        setEdges(loadedEdges);
+      } catch (e) {
+        console.warn('Failed to parse imported workflow definition:', e);
+      }
+    }
+  }, [workflowDefQuery.data]);
 
   // Property Inspector Sheet State
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -391,6 +453,41 @@ function DagStudioCanvas() {
 
         <div className="h-4 w-[1px] bg-border/50" />
 
+        {mode === 'designer' && (
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm"
+            onClick={() => {
+              const ir = exportToWorkflowIR(nodes, edges);
+              saveWorkflowMutation.mutate(ir, {
+                onSuccess: () => {
+                  if (onSaveSuccess) onSaveSuccess();
+                },
+              });
+            }}
+            disabled={saveWorkflowMutation.isPending}
+            title="Save workflow definition to backend catalog"
+          >
+            <Save className="w-3 h-3" />
+            {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
+          </Button>
+        )}
+
+        {mode === 'execution' && (
+          <div className="flex items-center gap-2">
+            <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px]">
+              <Eye className="w-3 h-3 mr-1" />
+              Live Execution View
+            </Badge>
+            {onCloseExecution && (
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCloseExecution}>
+                Exit View
+              </Button>
+            )}
+          </div>
+        )}
+
         <Button
           size="sm"
           variant="outline"
@@ -402,16 +499,18 @@ function DagStudioCanvas() {
           Simulate
         </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
-          onClick={handleClearSelected}
-          title="Delete selected nodes/edges"
-        >
-          <Trash2 className="w-3 h-3" />
-          Delete
-        </Button>
+        {mode === 'designer' && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
+            onClick={handleClearSelected}
+            title="Delete selected nodes/edges"
+          >
+            <Trash2 className="w-3 h-3" />
+            Delete
+          </Button>
+        )}
 
         <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleReset}>
           <RotateCcw className="w-3 h-3" />
@@ -516,14 +615,24 @@ function DagStudioCanvas() {
         initialJson={irDialogContent}
         onImportJson={handleApplyImportedJson}
       />
+
+      {/* Execution Run Drawer (Active in Execution mode or when executionId is provided) */}
+      {executionId && (
+        <ExecutionRunDrawer
+          executionId={executionId}
+          stream={stream}
+          snapshot={stream.snapshot}
+          onClose={onCloseExecution}
+        />
+      )}
     </div>
   );
 }
 
-export function VisualDagStudio() {
+export function VisualDagStudio(props: VisualDagStudioProps) {
   return (
     <ReactFlowProvider>
-      <DagStudioCanvas />
+      <DagStudioCanvas {...props} />
     </ReactFlowProvider>
   );
 }

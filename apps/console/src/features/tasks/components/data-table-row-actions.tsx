@@ -1,5 +1,5 @@
 import { type Row } from '@tanstack/react-table'
-import { MoreHorizontal, Trash2, Eye, ExternalLink } from 'lucide-react'
+import { MoreHorizontal, Trash2, Eye, ExternalLink, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -60,11 +60,22 @@ export function DataTableRowActions<TData>({
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={handleOpenStudio}
+          onClick={() => {
+            setCurrentRow(task)
+            setOpen('live-stream')
+          }}
           className='gap-2'
         >
           <ExternalLink className='size-4 text-emerald-500' />
-          View in Visual DAG
+          Live Execution Stream
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={handleOpenStudio}
+          className='gap-2'
+        >
+          <SlidersHorizontal className='size-4 text-indigo-500' />
+          Design in Studio
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

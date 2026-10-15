@@ -2,6 +2,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { TasksImportDialog } from './tasks-import-dialog'
 import { TasksMutateDrawer } from './tasks-mutate-drawer'
 import { TaskPayloadInspectorDialog } from './task-payload-inspector-dialog'
+import { TaskExecutionStreamModal } from './task-execution-stream-modal'
 import { useTasks } from './tasks-provider'
 import { useDeleteTaskMutation } from '../api/use-tasks'
 
@@ -25,6 +26,20 @@ export function TasksDialogs() {
 
       {currentRow && (
         <>
+          <TaskExecutionStreamModal
+            key={`task-stream-${currentRow.id}`}
+            task={currentRow}
+            open={open === 'live-stream'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setOpen(null)
+                setTimeout(() => {
+                  setCurrentRow(null)
+                }, 300)
+              }
+            }}
+          />
+
           <TaskPayloadInspectorDialog
             key={`task-inspect-${currentRow.id}`}
             task={currentRow}

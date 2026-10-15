@@ -28,15 +28,18 @@ public class TaskWorkerController {
     private final WorkflowEngineService engineService;
     private final PersistencePort persistencePort;
     private final WorkflowDefinitionRegistry registry;
+    private final ExecutionStreamBroadcaster broadcaster;
 
     public TaskWorkerController(
         WorkflowEngineService engineService,
         PersistencePort persistencePort,
-        WorkflowDefinitionRegistry registry
+        WorkflowDefinitionRegistry registry,
+        ExecutionStreamBroadcaster broadcaster
     ) {
         this.engineService = engineService;
         this.persistencePort = persistencePort;
         this.registry = registry;
+        this.broadcaster = broadcaster;
     }
 
     private String resolveTenantId(String headerTenantId) {
@@ -64,6 +67,19 @@ public class TaskWorkerController {
             30000L,
             now
         );
+
+        for (TaskSnapshot t : tasks) {
+            broadcaster.broadcast(t.workflowId(), "TASK_IN_PROGRESS", Map.of(
+                "workflowId", t.workflowId(),
+                "taskId", t.taskId(),
+                "taskReferenceName", t.taskReferenceName(),
+                "taskType", t.taskType(),
+                "status", "IN_PROGRESS",
+                "workerId", workerId,
+                "timestamp", now
+            ));
+        }
+
         return ResponseEntity.ok(tasks);
     }
 
@@ -116,6 +132,28 @@ public class TaskWorkerController {
             def,
             now
         );
+
+        String eventStatus = request.completed() ? "TASK_COMPLETED" : "TASK_FAILED";
+        broadcaster.broadcast(task.workflowId(), eventStatus, Map.of(
+            "workflowId", task.workflowId(),
+            "taskId", taskId,
+            "taskReferenceName", task.taskReferenceName(),
+            "status", request.completed() ? "COMPLETED" : "FAILED",
+            "output", request.output() != null ? request.output() : Collections.emptyMap(),
+            "error", request.error() != null ? request.error() : "",
+            "timestamp", now
+        ));
+
+        // Check if workflow completed
+        persistencePort.getWorkflowSnapshot(task.workflowId()).ifPresent(updatedWf -> {
+            if (updatedWf.status().isTerminal()) {
+                broadcaster.broadcast(task.workflowId(), "WORKFLOW_" + updatedWf.status().name(), Map.of(
+                    "workflowId", task.workflowId(),
+                    "status", updatedWf.status().name(),
+                    "timestamp", System.currentTimeMillis()
+                ));
+            }
+        });
 
         return ResponseEntity.ok(Map.of("acknowledged", true, "taskId", taskId));
     }

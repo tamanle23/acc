@@ -28,15 +28,18 @@ public class WorkflowExecutionController {
     private final WorkflowEngineService engineService;
     private final PersistencePort persistencePort;
     private final WorkflowDefinitionRegistry registry;
+    private final ExecutionStreamBroadcaster broadcaster;
 
     public WorkflowExecutionController(
         WorkflowEngineService engineService,
         PersistencePort persistencePort,
-        WorkflowDefinitionRegistry registry
+        WorkflowDefinitionRegistry registry,
+        ExecutionStreamBroadcaster broadcaster
     ) {
         this.engineService = engineService;
         this.persistencePort = persistencePort;
         this.registry = registry;
+        this.broadcaster = broadcaster;
     }
 
     private String resolveTenantId(String headerTenantId) {
@@ -85,7 +88,21 @@ public class WorkflowExecutionController {
             now
         );
 
+        broadcaster.broadcast(executionId, "WORKFLOW_STARTED", Map.of(
+            "workflowId", executionId,
+            "status", snapshot.status().name(),
+            "workflowKey", def.workflowKey(),
+            "timestamp", now
+        ));
+
         return ResponseEntity.status(HttpStatus.CREATED).body(snapshot);
+    }
+
+    @GetMapping(value = "/{id}/events", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamExecutionEvents(
+        @PathVariable("id") String id
+    ) {
+        return broadcaster.register(id, 120000L);
     }
 
     @GetMapping("/{id}")
@@ -106,6 +123,14 @@ public class WorkflowExecutionController {
         long now = System.currentTimeMillis();
         String reason = body != null && body.containsKey("reason") ? String.valueOf(body.get("reason")) : "Manually terminated";
         persistencePort.updateWorkflowStatus(id, WorkflowStatus.FAILED, Collections.emptyMap(), reason, now);
+        
+        broadcaster.broadcast(id, "WORKFLOW_TERMINATED", Map.of(
+            "workflowId", id,
+            "status", "FAILED",
+            "reason", reason,
+            "timestamp", now
+        ));
+
         return ResponseEntity.ok(Map.of("terminated", true, "workflowId", id));
     }
 }

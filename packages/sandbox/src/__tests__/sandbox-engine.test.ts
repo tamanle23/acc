@@ -153,5 +153,32 @@ describe('Unified Sandbox Engine Package', () => {
     });
     expect(getRes?.status).toBe(200);
     expect(getRes?.data.layoutMetadata?.validateOrder).toEqual({ x: 100, y: 200 });
+
+    // 4. Start execution
+    const startRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions',
+      method: 'POST',
+      data: { workflowKey: 'order-fulfillment-v1' },
+    });
+    expect(startRes?.status).toBe(201);
+    const execId = startRes?.data.workflowId;
+    expect(execId).toBeDefined();
+
+    // 5. Get execution
+    const getExecRes = await engine.handleRequest({
+      url: `/api/v1/workflow/executions/${execId}`,
+      method: 'GET',
+    });
+    expect(getExecRes?.status).toBe(200);
+    expect(getExecRes?.data.status).toBe('RUNNING');
+
+    // 6. Query SSE events
+    const sseRes = await engine.handleRequest({
+      url: `/api/v1/workflow/executions/${execId}/events`,
+      method: 'GET',
+    });
+    expect(sseRes?.status).toBe(200);
+    expect(sseRes?.headers?.['Content-Type']).toBe('text/event-stream');
+    expect(sseRes?.data).toHaveLength(4);
   });
 });

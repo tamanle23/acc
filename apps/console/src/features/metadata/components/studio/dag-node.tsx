@@ -88,9 +88,9 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'shadow-xl shadow-black/5 dark:shadow-black/30',
         'shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
         'bg-white/75 dark:bg-slate-900/75 border-white/40 dark:border-white/10',
-        data.executionState === 'COMPLETED' && 'border-emerald-500/40 bg-emerald-500/5',
-        data.executionState === 'IN_PROGRESS' && 'border-sky-500/50 bg-sky-500/5 ring-1 ring-sky-500/30',
-        data.executionState === 'FAILED' && 'border-rose-500/50 bg-rose-500/5',
+        data.executionState === 'COMPLETED' && 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
+        data.executionState === 'IN_PROGRESS' && 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.45)] animate-pulse',
+        data.executionState === 'FAILED' && 'border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/50',
         data.validationError && 'border-rose-500 ring-2 ring-rose-500/40',
         selected ? 'ring-2 ring-primary border-primary scale-105' : 'hover:scale-[1.02]',
         'cursor-grab active:cursor-grabbing'

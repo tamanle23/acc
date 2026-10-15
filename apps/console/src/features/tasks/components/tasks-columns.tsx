@@ -71,6 +71,7 @@ export const tasksColumns: ColumnDef<Task>[] = [
         </Link>
       );
     },
+  },
   {
     accessorKey: 'activeStep',
     header: ({ column }) => (

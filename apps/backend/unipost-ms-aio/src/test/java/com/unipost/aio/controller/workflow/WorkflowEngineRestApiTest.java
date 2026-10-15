@@ -28,6 +28,7 @@ class WorkflowEngineRestApiTest {
     private PureDecider pureDecider;
     private WorkflowEngineService engineService;
     private WorkflowDefinitionRegistry registry;
+    private ExecutionStreamBroadcaster broadcaster;
 
     private WorkflowDefinitionController definitionController;
     private WorkflowExecutionController executionController;
@@ -42,10 +43,11 @@ class WorkflowEngineRestApiTest {
         pureDecider = new PureDecider();
         engineService = new WorkflowEngineService(persistencePort, pureDecider);
         registry = new WorkflowDefinitionRegistry();
+        broadcaster = new ExecutionStreamBroadcaster();
 
         definitionController = new WorkflowDefinitionController(registry);
-        executionController = new WorkflowExecutionController(engineService, persistencePort, registry);
-        workerController = new TaskWorkerController(engineService, persistencePort, registry);
+        executionController = new WorkflowExecutionController(engineService, persistencePort, registry, broadcaster);
+        workerController = new TaskWorkerController(engineService, persistencePort, registry, broadcaster);
     }
 
     @Test
@@ -101,6 +103,10 @@ class WorkflowEngineRestApiTest {
         TaskSnapshot task1 = tasks.get(0);
         assertThat(task1.taskReferenceName()).isEqualTo("step1-validate");
         String taskId = task1.taskId();
+
+        // 5. Connect SSE stream for workflowId
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter emitter = executionController.streamExecutionEvents(workflowId);
+        assertThat(emitter).isNotNull();
 
         // 6. Worker heartbeats lease
         ResponseEntity<?> heartbeatResp = workerController.heartbeat(taskId, Map.of("workerId", "worker-node-1"));
