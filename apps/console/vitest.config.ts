@@ -2,6 +2,13 @@ import path from 'path';
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 
+// Fix undici/jsdom Node.js 20 webidl compatibility in Vitest worker threads
+const globalObj = globalThis as unknown as Record<string, Record<string, unknown>>;
+if (typeof globalObj.webidl === 'undefined' || !(globalObj.webidl?.util as Record<string, unknown>)?.markAsUncloneable) {
+  globalObj.webidl = globalObj.webidl || { util: {} };
+  (globalObj.webidl.util as Record<string, unknown>).markAsUncloneable = () => {};
+}
+
 export default defineConfig({
   plugins: [react()],
   resolve: {

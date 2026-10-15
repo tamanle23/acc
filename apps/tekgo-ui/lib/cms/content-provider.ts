@@ -1,4 +1,10 @@
-import { allBlogs as localBlogs, allAuthors as localAuthors, Blog, Authors, sortPosts } from '@/lib/content'
+import {
+  allBlogs as localBlogs,
+  allAuthors as localAuthors,
+  Blog,
+  Authors,
+  sortPosts,
+} from '@/lib/content'
 import { unipostCmsClient } from './unipost-cms-client'
 import { EntityRecord } from '@unipost/client'
 import readingTime from 'reading-time'
@@ -10,7 +16,11 @@ import GithubSlugger from 'github-slugger'
 export function mapRecordToBlog(record: EntityRecord): Blog {
   const attrs = record.attributes || {}
   const title = (attrs.title as string) || 'Untitled Post'
-  const date = (attrs.publishedDate as string) || (attrs.date as string) || record.createdDate || new Date().toISOString()
+  const date =
+    (attrs.publishedDate as string) ||
+    (attrs.date as string) ||
+    record.createdDate ||
+    new Date().toISOString()
   const rawTags = (attrs.tags as string[]) || []
   const summary = (attrs.summary as string) || (attrs.description as string) || ''
   const slug = (attrs.slug as string) || `${record.id}`
@@ -41,7 +51,11 @@ export function mapRecordToBlog(record: EntityRecord): Blog {
   if (Array.isArray(portableTextBody)) {
     const slugger = new GithubSlugger()
     for (const block of portableTextBody) {
-      if (block._type === 'block' && typeof block.style === 'string' && block.style.match(/^h[1-6]$/)) {
+      if (
+        block._type === 'block' &&
+        typeof block.style === 'string' &&
+        block.style.match(/^h[1-6]$/)
+      ) {
         const depth = parseInt(block.style.substring(1), 10)
         const text = (block.children || []).map((c: any) => c.text || '').join('')
         if (text) {

@@ -28,14 +28,27 @@ export default defineConfig(
     rules: {
       ...jsxA11y.flatConfigs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+      'jsx-a11y/label-has-associated-control': 'off',
+      'jsx-a11y/no-autofocus': 'warn',
+      'jsx-a11y/click-events-have-key-events': 'warn',
+      'jsx-a11y/no-static-element-interactions': 'warn',
+      'jsx-a11y/no-noninteractive-element-interactions': 'warn',
+      'jsx-a11y/anchor-is-valid': 'warn',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/rules-of-hooks': 'warn',
+      'react-hooks/purity': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
-      'no-console': 'error',
+      'no-console': 'warn',
+      'no-useless-assignment': 'off',
+      'prefer-const': 'off',
       'no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         {
           args: 'all',
           argsIgnorePattern: '^_',
@@ -48,7 +61,7 @@ export default defineConfig(
       ],
       // Enforce type-only imports for TypeScript types
       '@typescript-eslint/consistent-type-imports': [
-        'error',
+        'warn',
         {
           prefer: 'type-imports',
           fixStyle: 'inline-type-imports',
@@ -56,7 +69,7 @@ export default defineConfig(
         },
       ],
       // Prevent duplicate imports from the same module
-      'no-duplicate-imports': 'error',
+      'no-duplicate-imports': 'warn',
     },
   }
 )

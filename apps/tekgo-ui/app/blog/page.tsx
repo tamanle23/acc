@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
  
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { allCoreContent } from '@/lib/content'
 import { contentProvider } from '@/lib/cms/content-provider'
 import { genPageMetadata } from 'app/seo'

@@ -5,10 +5,10 @@ import { expect } from 'vitest';
 import * as matchers from 'vitest-axe/matchers';
 
 // Fix undici/jsdom Node.js 20 webidl compatibility in Vitest worker threads
-if (typeof (globalThis as any).webidl === 'undefined' || !(globalThis as any).webidl?.util?.markAsUncloneable) {
-  (globalThis as any).webidl = (globalThis as any).webidl || { util: {} };
-  (globalThis as any).webidl.util = (globalThis as any).webidl.util || {};
-  (globalThis as any).webidl.util.markAsUncloneable = () => {};
+const globalObj = globalThis as unknown as Record<string, Record<string, unknown>>;
+if (typeof globalObj.webidl === 'undefined' || !(globalObj.webidl?.util as Record<string, unknown>)?.markAsUncloneable) {
+  globalObj.webidl = globalObj.webidl || { util: {} };
+  (globalObj.webidl.util as Record<string, unknown>).markAsUncloneable = () => {};
 }
 
 expect.extend(matchers);

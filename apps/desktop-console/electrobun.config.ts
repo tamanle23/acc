@@ -1,6 +1,6 @@
 import type { ElectrobunConfig } from "electrobun";
 
-export default {
+const config: ElectrobunConfig = {
 	app: {
 		name: "unipost-desktop",
 		identifier: "dev.unipost.desktop",
@@ -25,4 +25,6 @@ export default {
 			bundleCEF: false,
 		},
 	},
-} satisfies ElectrobunConfig;
+};
+
+export default config;
