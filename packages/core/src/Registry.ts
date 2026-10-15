@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileExists } from './utils';
 
 export interface PipelineBackground {
   type: 'solid' | 'transparent';
@@ -44,13 +45,18 @@ export interface EffectsRegistry {
 export class RegistryManager {
   private registry: EffectsRegistry;
 
-  constructor() {
+  private constructor(registry: EffectsRegistry) {
+    this.registry = registry;
+  }
+
+  public static async create(): Promise<RegistryManager> {
     const registryPath = path.resolve(process.cwd(), 'effects-registry.json');
-    if (!fs.existsSync(registryPath)) {
+    if (!(await fileExists(registryPath))) {
       throw new Error(`Registry file not found at ${registryPath}`);
     }
-    const rawData = fs.readFileSync(registryPath, 'utf-8');
-    this.registry = JSON.parse(rawData);
+    const rawData = await fs.promises.readFile(registryPath, 'utf-8');
+    const registry = JSON.parse(rawData);
+    return new RegistryManager(registry);
   }
 
   public getEffectConfig(effectName: string): EffectConfig {

@@ -9,7 +9,7 @@ export class DbTemplatingClassifierStrategy implements IPipelineClassifierStrate
   public readonly name = 'Database & Dynamic Templating Pipeline';
   public readonly description = 'Tabular datasets, leaderboards, bar chart races, and database-driven data cards.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     const hasData = manifest.data.length > 0;
     const totalRows = manifest.data.reduce((acc, d) => acc + d.rowCount, 0);
 

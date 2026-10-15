@@ -3,6 +3,7 @@ import path from 'path';
 import { MediaAssetProberChain } from './MediaAssetProberChain';
 import { PipelineClassifierRegistry } from './PipelineClassifierRegistry';
 import { PipelineIRBuilder } from './builders/PipelineIRBuilder';
+import { fileExists } from '../utils';
 import { DirectorPresetFactory } from './factories/DirectorPresetFactory';
 import { AutoConfigLegacyBridgeAdapter } from './adapters/AutoConfigLegacyBridgeAdapter';
 import { ScriptingFrameworkRegistry } from './scripting/ScriptingFrameworkRegistry';
@@ -36,7 +37,7 @@ export class AutoConfigEngineFacade {
 
     const proberChain = MediaAssetProberChain.createDefault();
     const manifest = await proberChain.probeDirectory(resolvedDir);
-    const resolution = PipelineClassifierRegistry.resolve(manifest);
+    const resolution = await PipelineClassifierRegistry.resolve(manifest);
 
     return { manifest, resolution };
   }
@@ -66,7 +67,7 @@ export class AutoConfigEngineFacade {
     const manifest = await proberChain.probeDirectory(resolvedDir);
 
     // 2. Heuristic Pipeline Archetype Resolution
-    const resolution = PipelineClassifierRegistry.resolve(manifest, options.pipelineOverride);
+    const resolution = await PipelineClassifierRegistry.resolve(manifest, options.pipelineOverride);
     Logger.info(
       'AutoConfigEngineFacade',
       `Resolved Pipeline ${resolution.strategy.pipelineId} (${resolution.strategy.name}) with ${(resolution.confidence * 100).toFixed(1)}% confidence`
@@ -75,9 +76,10 @@ export class AutoConfigEngineFacade {
     // 3. PipelineIR AST Synthesis via Builder
     let projectTitle = manifest.suggestedTitle || resolution.defaults.suggestedTitle;
     const existingStoryConfigPath = path.join(resolvedDir, 'story-config.json');
-    if (fs.existsSync(existingStoryConfigPath)) {
+    if (await fileExists(existingStoryConfigPath)) {
       try {
-        const raw = JSON.parse(fs.readFileSync(existingStoryConfigPath, 'utf-8'));
+        const rawData = await fs.promises.readFile(existingStoryConfigPath, 'utf-8');
+        const raw = JSON.parse(rawData);
         if (raw?.name) projectTitle = raw.name;
       } catch {
         // Ignore unparseable file

@@ -9,7 +9,7 @@ export class ScraperSummarizerClassifierStrategy implements IPipelineClassifierS
   public readonly name = 'Scraper & Summarizer Pipeline';
   public readonly description = 'Articles, blog posts, news summaries, and text-heavy document digests.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     const hasScripts = manifest.scripts.length > 0;
     const totalWordCount = manifest.scripts.reduce((acc, s) => acc + s.wordCount, 0);
     const hasVisuals = manifest.visuals.length > 0;

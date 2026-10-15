@@ -9,7 +9,7 @@ export class RuleLogicClassifierStrategy implements IPipelineClassifierStrategy 
   public readonly name = 'Rule-Logic & Procedural Engine Pipeline';
   public readonly description = 'Conditional branching scenarios, interactive widgets, quiz logic, and rule trees.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     const hasBranchingKeywords = manifest.scripts.some((s) =>
       /(choice|branch|decision|option\s*\d+|quiz|if\s*\(|condition|theorem|proof|q\.e\.d|qed|problemstatement)/i.test(
         s.content

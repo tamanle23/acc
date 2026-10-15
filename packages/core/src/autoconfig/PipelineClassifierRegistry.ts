@@ -68,7 +68,7 @@ export class PipelineClassifierRegistry {
   public static resolve(
     manifest: DiscoveredAssetManifest,
     overridePipelineId?: string
-  ): PipelineResolutionResult {
+  ): Promise<PipelineResolutionResult> {
     this.initialize();
 
     // 1. Manual User Override Handling
@@ -91,8 +91,8 @@ export class PipelineClassifierRegistry {
     }
 
     // 2. Automated Multi-Strategy Scoring
-    const candidates = Array.from(this.strategies.values()).map((strat) => {
-      const confidence = strat.calculateConfidence(manifest);
+    const candidatePromises = Array.from(this.strategies.values()).map(async (strat) => {
+      const confidence = await strat.calculateConfidence(manifest);
       return {
         strategy: strat,
         pipelineId: strat.pipelineId,
@@ -100,6 +100,8 @@ export class PipelineClassifierRegistry {
         confidence,
       };
     });
+
+    const candidates = await Promise.all(candidatePromises);
 
     // Sort descending by confidence
     candidates.sort((a, b) => b.confidence - a.confidence);

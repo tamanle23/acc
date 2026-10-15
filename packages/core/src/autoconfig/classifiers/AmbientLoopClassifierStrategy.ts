@@ -9,7 +9,7 @@ export class AmbientLoopClassifierStrategy implements IPipelineClassifierStrateg
   public readonly name = 'Ambient Loops & Soundscapes Pipeline';
   public readonly description = 'Seamless looping audio, lo-fi beats, relaxation soundscapes, and atmospheric backgrounds.';
 
-  public calculateConfidence(manifest: DiscoveredAssetManifest): number {
+  public async calculateConfidence(manifest: DiscoveredAssetManifest): Promise<number> {
     const ambientOrMusic = manifest.audio.filter(
       (a) => a.classification === 'ambient' || a.classification === 'music'
     );
