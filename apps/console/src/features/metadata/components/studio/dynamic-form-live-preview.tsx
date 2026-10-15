@@ -37,7 +37,7 @@ export const DynamicFormLivePreview: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col h-full rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg shadow-black/5 overflow-hidden">
+    <div className="flex flex-col h-full rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg shadow-black/5 overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border/40 bg-white/30 dark:bg-slate-800/30">
         <div className="flex items-center gap-2">

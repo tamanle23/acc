@@ -1,10 +1,129 @@
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
-import { Play, Split, GitMerge, Clock, Repeat, CheckCircle2, AlertCircle, Loader2, GitFork } from 'lucide-react';
+import {
+  Play,
+  Split,
+  GitMerge,
+  Clock,
+  Repeat,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  GitFork,
+  Globe,
+  Database,
+  Radio,
+  Zap,
+  Braces,
+  Code,
+  Variable,
+  UserCheck,
+  Bot,
+  Cpu,
+  StopCircle,
+  Layers,
+  PlaySquare,
+  MinusCircle,
+  Sparkles,
+} from 'lucide-react';
 
-export type DagNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'DYNAMIC_FORK' | 'WAIT' | 'DO_WHILE';
-export type ExecutionState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
+export type DagNodeType =
+  // Control Flow (9)
+  | 'SIMPLE'
+  | 'SWITCH'
+  | 'FORK_JOIN'
+  | 'DYNAMIC_FORK'
+  | 'WAIT'
+  | 'DO_WHILE'
+  | 'JOIN'
+  | 'EXCLUSIVE_JOIN'
+  | 'TERMINATE'
+  | 'SUB_WORKFLOW'
+  | 'START_WORKFLOW'
+  // Data & Transformation (3)
+  | 'JSON_JQ_TRANSFORM'
+  | 'INLINE'
+  | 'SET_VARIABLE'
+  // System Connectors & I/O (4)
+  | 'HTTP'
+  | 'JDBC'
+  | 'KAFKA_PUBLISH'
+  | 'EVENT'
+  | 'NOOP'
+  // Human & Governance (1)
+  | 'HUMAN'
+  // AI & Emerging Integrations (3)
+  | 'LLM_CHAT_COMPLETE'
+  | 'CALL_MCP_TOOL'
+  | 'DYNAMIC';
+
+export type ExecutionState = 'PENDING' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED' | 'WAITING_FOR_APPROVAL';
+
+export interface HttpTaskParams {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  url?: string;
+  headers?: Record<string, string>;
+  body?: unknown;
+  timeoutSeconds?: number;
+  expectedStatuses?: number[];
+}
+
+export interface JdbcTaskParams {
+  datasourceId?: string;
+  sql?: string;
+  parameters?: unknown[];
+}
+
+export interface JsonJqTaskParams {
+  queryExpression?: string;
+  inputPayload?: string;
+}
+
+export interface InlineTaskParams {
+  evaluatorType?: 'groovy' | 'mvel' | 'javascript';
+  expression?: string;
+}
+
+export interface LlmTaskParams {
+  provider?: 'openai' | 'gemini' | 'anthropic' | 'local';
+  model?: string;
+  prompt?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export interface McpTaskParams {
+  serverName?: string;
+  toolName?: string;
+  arguments?: Record<string, unknown>;
+}
+
+export interface HumanTaskParams {
+  assignee?: string;
+  role?: string;
+  instructions?: string;
+  slaMinutes?: number;
+  escalationHandlerRef?: string;
+}
+
+export interface TerminateTaskParams {
+  terminationStatus?: 'COMPLETED' | 'FAILED';
+  terminationReason?: string;
+}
+
+export interface SubWorkflowTaskParams {
+  workflowKey?: string;
+  version?: number;
+  inputParameters?: Record<string, unknown>;
+}
+
+export interface KafkaTaskParams {
+  topic?: string;
+  key?: string;
+  message?: unknown;
+}
 
 export interface DagNodeData {
   taskReferenceName: string;
@@ -14,6 +133,7 @@ export interface DagNodeData {
   domain?: string;
   executionState?: ExecutionState;
   inputParameters?: Record<string, unknown>;
+  outputParameters?: Record<string, unknown>;
   retryCount?: number;
   retryDelaySeconds?: number;
   backoffRate?: number;
@@ -24,6 +144,25 @@ export interface DagNodeData {
   defaultCase?: string[];
   loopCondition?: string;
   validationError?: string;
+  // Specialized Parameter Payloads
+  httpParams?: HttpTaskParams;
+  jdbcParams?: JdbcTaskParams;
+  jsonJqParams?: JsonJqTaskParams;
+  inlineParams?: InlineTaskParams;
+  llmParams?: LlmTaskParams;
+  mcpParams?: McpTaskParams;
+  humanParams?: HumanTaskParams;
+  terminateParams?: TerminateTaskParams;
+  subWorkflowParams?: SubWorkflowTaskParams;
+  kafkaParams?: KafkaTaskParams;
+  // Execution Telemetry Data (Read-only mode)
+  durationMs?: number;
+  workerId?: string;
+  leaseId?: string;
+  attemptNumber?: number;
+  startedAt?: number;
+  error?: string;
+  [key: string]: unknown;
 }
 
 // Aliases for backward compatibility if imported elsewhere
@@ -33,16 +172,54 @@ export type ConductorNodeData = DagNodeData;
 export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
   const getNodeIcon = () => {
     switch (data.taskType) {
+      // Control Flow
       case 'SWITCH':
         return <Split className="w-4 h-4 text-amber-500" />;
       case 'FORK_JOIN':
+      case 'JOIN':
         return <GitMerge className="w-4 h-4 text-indigo-500" />;
       case 'DYNAMIC_FORK':
         return <GitFork className="w-4 h-4 text-purple-500" />;
+      case 'EXCLUSIVE_JOIN':
+        return <GitMerge className="w-4 h-4 text-rose-500" />;
       case 'WAIT':
         return <Clock className="w-4 h-4 text-sky-500" />;
       case 'DO_WHILE':
         return <Repeat className="w-4 h-4 text-emerald-500" />;
+      case 'TERMINATE':
+        return <StopCircle className="w-4 h-4 text-red-500" />;
+      case 'SUB_WORKFLOW':
+        return <Layers className="w-4 h-4 text-cyan-500" />;
+      case 'START_WORKFLOW':
+        return <PlaySquare className="w-4 h-4 text-teal-500" />;
+      // Data & Transformation
+      case 'JSON_JQ_TRANSFORM':
+        return <Braces className="w-4 h-4 text-orange-500" />;
+      case 'INLINE':
+        return <Code className="w-4 h-4 text-lime-500" />;
+      case 'SET_VARIABLE':
+        return <Variable className="w-4 h-4 text-violet-500" />;
+      // System Connectors & I/O
+      case 'HTTP':
+        return <Globe className="w-4 h-4 text-blue-500" />;
+      case 'JDBC':
+        return <Database className="w-4 h-4 text-amber-600" />;
+      case 'KAFKA_PUBLISH':
+        return <Radio className="w-4 h-4 text-pink-500" />;
+      case 'EVENT':
+        return <Zap className="w-4 h-4 text-yellow-500" />;
+      case 'NOOP':
+        return <MinusCircle className="w-4 h-4 text-slate-400" />;
+      // Human & Governance
+      case 'HUMAN':
+        return <UserCheck className="w-4 h-4 text-emerald-600" />;
+      // AI & Emerging
+      case 'LLM_CHAT_COMPLETE':
+        return <Bot className="w-4 h-4 text-fuchsia-500" />;
+      case 'CALL_MCP_TOOL':
+        return <Cpu className="w-4 h-4 text-indigo-600" />;
+      case 'DYNAMIC':
+        return <Sparkles className="w-4 h-4 text-amber-400" />;
       case 'SIMPLE':
       default:
         return <Play className="w-4 h-4 text-primary" />;
@@ -122,7 +299,12 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         Ref: <span className="font-mono text-[10px] text-foreground/80">{data.taskReferenceName}</span>
       </div>
 
-      {data.timeoutSeconds && (
+      {data.durationMs !== undefined && (
+        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+          Duration: {data.durationMs}ms {data.attemptNumber ? `· Attempt ${data.attemptNumber}` : ''}
+        </div>
+      )}
+      {data.timeoutSeconds && data.durationMs === undefined && (
         <div className="text-[10px] text-muted-foreground/70">
           Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
         </div>

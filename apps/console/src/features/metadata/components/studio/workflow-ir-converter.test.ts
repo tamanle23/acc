@@ -163,4 +163,114 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
     expect(edges[0].source).toBe('node-taskOne');
     expect(edges[0].target).toBe('node-taskTwo');
   });
+
+  it('losslessly serializes and deserializes all specialized task parameters', () => {
+    const nodes: Node<DagNodeData>[] = [
+      {
+        id: 'n-http',
+        type: 'dagNode',
+        position: { x: 10, y: 20 },
+        data: {
+          taskReferenceName: 'httpCall',
+          taskType: 'HTTP',
+          httpParams: {
+            method: 'POST',
+            url: 'https://api.stripe.com/v1/charges',
+            timeoutSeconds: 30,
+          },
+        },
+      },
+      {
+        id: 'n-jdbc',
+        type: 'dagNode',
+        position: { x: 200, y: 20 },
+        data: {
+          taskReferenceName: 'sqlQuery',
+          taskType: 'JDBC',
+          jdbcParams: {
+            datasourceId: 'billing_db',
+            sql: 'SELECT * FROM invoices WHERE id = ?',
+          },
+        },
+      },
+      {
+        id: 'n-jq',
+        type: 'dagNode',
+        position: { x: 400, y: 20 },
+        data: {
+          taskReferenceName: 'jqTransform',
+          taskType: 'JSON_JQ_TRANSFORM',
+          jsonJqParams: {
+            queryExpression: '{ id: .orderId, total: .amount }',
+          },
+        },
+      },
+      {
+        id: 'n-llm',
+        type: 'dagNode',
+        position: { x: 600, y: 20 },
+        data: {
+          taskReferenceName: 'llmAnalyze',
+          taskType: 'LLM_CHAT_COMPLETE',
+          llmParams: {
+            provider: 'openai',
+            model: 'gpt-4o',
+            temperature: 0.2,
+            prompt: 'Classify sentiment: ${workflow.input.text}',
+          },
+        },
+      },
+      {
+        id: 'n-human',
+        type: 'dagNode',
+        position: { x: 800, y: 20 },
+        data: {
+          taskReferenceName: 'manualReview',
+          taskType: 'HUMAN',
+          humanParams: {
+            role: 'RISK_OFFICER',
+            slaMinutes: 180,
+            instructions: 'Verify high value wire transfer.',
+          },
+        },
+      },
+      {
+        id: 'n-term',
+        type: 'dagNode',
+        position: { x: 1000, y: 20 },
+        data: {
+          taskReferenceName: 'stopFlow',
+          taskType: 'TERMINATE',
+          terminateParams: {
+            terminationStatus: 'COMPLETED',
+            terminationReason: 'Flow executed cleanly',
+          },
+        },
+      },
+    ];
+
+    const edges: Edge[] = [];
+    const exportedIR = exportToWorkflowIR(nodes, edges, {
+      workflowKey: 'specialized-ir-test',
+    });
+
+    expect(exportedIR.tasks).toHaveLength(6);
+    expect(exportedIR.tasks[0].httpParams?.url).toBe('https://api.stripe.com/v1/charges');
+    expect(exportedIR.tasks[1].jdbcParams?.datasourceId).toBe('billing_db');
+    expect(exportedIR.tasks[2].jsonJqParams?.queryExpression).toBe('{ id: .orderId, total: .amount }');
+    expect(exportedIR.tasks[3].llmParams?.model).toBe('gpt-4o');
+    expect(exportedIR.tasks[4].humanParams?.role).toBe('RISK_OFFICER');
+    expect(exportedIR.tasks[5].terminateParams?.terminationStatus).toBe('COMPLETED');
+
+    // Roundtrip back into nodes
+    const { nodes: importedNodes } = importFromWorkflowIR(exportedIR);
+    expect(importedNodes).toHaveLength(6);
+    expect(importedNodes[0].data.httpParams?.method).toBe('POST');
+    expect(importedNodes[1].data.jdbcParams?.sql).toBe('SELECT * FROM invoices WHERE id = ?');
+    expect(importedNodes[2].data.jsonJqParams?.queryExpression).toBe('{ id: .orderId, total: .amount }');
+    expect(importedNodes[3].data.llmParams?.temperature).toBe(0.2);
+    expect(importedNodes[4].data.humanParams?.slaMinutes).toBe(180);
+    expect(importedNodes[5].data.terminateParams?.terminationReason).toBe('Flow executed cleanly');
+  });
 });
+

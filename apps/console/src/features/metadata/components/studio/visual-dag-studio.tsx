@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -16,9 +16,11 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { DagWorkflowNodeComponent, type DagNodeData, type DagNodeType } from './dag-node';
+import { DagWorkflowNodeComponent, type DagNodeData, type DagNodeType, type ExecutionState } from './dag-node';
 import { DagPalette } from './dag-palette';
 import { DagPropertyInspector } from './dag-property-inspector';
+import { TaskTelemetryInspector } from './task-telemetry-inspector';
+import { TimeTravelScrubber } from './time-travel-scrubber';
 import { WorkflowIrDialog } from './workflow-ir-dialog';
 import {
   exportToWorkflowIR,
@@ -39,18 +41,21 @@ import {
   Upload,
   CheckCircle2,
   AlertTriangle,
-  SlidersHorizontal,
   Save,
   Eye,
+  Lock,
 } from 'lucide-react';
-import { ExecutionRunDrawer } from '@/features/workflows/components/execution-run-drawer';
-import { useWorkflowExecutionStream } from '@/features/workflows/hooks/use-workflow-execution-stream';
+import {
+  useWorkflowExecutionStream,
+  type WorkflowStreamEvent,
+} from '@/features/workflows/hooks/use-workflow-execution-stream';
 import { useSaveWorkflowDefinition, useWorkflowDefinition } from '@/features/workflows/api/workflow-api';
 
 export interface VisualDagStudioProps {
-  mode?: 'designer' | 'execution';
+  mode?: 'full' | 'readonly' | 'designer' | 'execution';
   workflowKey?: string;
   executionId?: string | null;
+  initialEvents?: WorkflowStreamEvent[];
   onCloseExecution?: () => void;
   onSaveSuccess?: () => void;
 }
@@ -140,31 +145,81 @@ const INITIAL_EDGES: Edge[] = [
 ];
 
 function DagStudioCanvas({
-  mode = 'designer',
+  mode = 'full',
   workflowKey,
   executionId,
+  initialEvents,
   onCloseExecution,
   onSaveSuccess,
 }: VisualDagStudioProps) {
+  const isReadOnly = mode === 'readonly' || mode === 'execution';
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const [nodes, setNodes] = useState<Node<DagNodeData>[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [showPalette, setShowPalette] = useState(mode === 'designer');
+  const [showPalette, setShowPalette] = useState(!isReadOnly);
 
   // Real-time execution stream integration
   const stream = useWorkflowExecutionStream(executionId || null);
 
-  // Sync execution stream states onto canvas nodes
-  React.useEffect(() => {
-    if (mode === 'execution' && Object.keys(stream.nodeStates).length > 0) {
-      setNodes((nds) =>
-        nds.map((n) => {
+  // Time-travel history & scrubber state
+  const [timelineEvents, setTimelineEvents] = useState<WorkflowStreamEvent[]>(initialEvents || []);
+  const [currentScrubberIndex, setCurrentScrubberIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
+  const [isLiveHead, setIsLiveHead] = useState(true);
+
+  // Property Inspector & Telemetry Sheet States
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
+
+  // IR Dialog State
+  const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
+  const [isIrDialogOpen, setIsIrDialogOpen] = useState(false);
+  const [irDialogContent, setIrDialogContent] = useState('');
+
+  // Validation State
+  const [validationErrors, setValidationErrors] = useState<GraphValidationError[]>([]);
+  const [validationBannerVisible, setValidationBannerVisible] = useState(false);
+
+  // Seed events from snapshot or logs if timelineEvents is empty
+  useEffect(() => {
+    if (timelineEvents.length === 0 && stream.snapshot?.tasksByRef) {
+      const syntheticEvents: WorkflowStreamEvent[] = [];
+      Object.entries(stream.snapshot.tasksByRef).forEach(([ref, t], idx) => {
+        syntheticEvents.push({
+          event: `TASK_${t.status}`,
+          data: {
+            taskReferenceName: ref,
+            taskId: t.taskId,
+            taskType: t.taskType,
+            status: t.status,
+            output: t.output,
+            error: t.error,
+            timestamp: Date.now() - (10 - idx) * 1000,
+          },
+        });
+      });
+      if (syntheticEvents.length > 0) {
+        setTimelineEvents(syntheticEvents);
+        setCurrentScrubberIndex(syntheticEvents.length - 1);
+      }
+    }
+  }, [stream.snapshot, timelineEvents.length]);
+
+  // Sync live execution stream states onto canvas nodes when at live HEAD
+  useEffect(() => {
+    if (isReadOnly && isLiveHead && Object.keys(stream.nodeStates).length > 0) {
+      setNodes((nds) => {
+        let hasChanges = false;
+        const updated = nds.map((n) => {
           const taskRef = n.data.taskReferenceName;
           const liveState = stream.nodeStates[taskRef];
           if (liveState && liveState !== n.data.executionState) {
+            hasChanges = true;
             return {
               ...n,
               data: {
@@ -174,16 +229,101 @@ function DagStudioCanvas({
             };
           }
           return n;
+        });
+        return hasChanges ? updated : nds;
+      });
+    }
+  }, [isReadOnly, isLiveHead, stream.nodeStates]);
+
+  // Apply node states based on timeline scrubber position
+  const applyEventsUpToIndex = useCallback(
+    (targetIndex: number) => {
+      const activeEvents = timelineEvents.slice(0, targetIndex + 1);
+      const stateMap: Record<
+        string,
+        {
+          state: ExecutionState;
+          output?: any;
+          error?: string;
+          durationMs?: number;
+          attemptNumber?: number;
+        }
+      > = {};
+
+      for (const ev of activeEvents) {
+        const ref = ev.data?.taskReferenceName;
+        if (ref) {
+          let state: ExecutionState = 'PENDING';
+          const status = ev.data.status;
+          if (status === 'IN_PROGRESS' || status === 'RUNNING') state = 'IN_PROGRESS';
+          else if (status === 'COMPLETED') state = 'COMPLETED';
+          else if (status === 'FAILED') state = 'FAILED';
+          else if (status === 'TIMED_OUT') state = 'TIMED_OUT';
+          else if (status === 'WAITING_FOR_APPROVAL') state = 'WAITING_FOR_APPROVAL';
+
+          stateMap[ref] = {
+            state,
+            output: ev.data.output as any,
+            error: ev.data.error,
+            durationMs: (ev.data.durationMs as number) || undefined,
+            attemptNumber: (ev.data.attemptNumber as number) || 1,
+          };
+        }
+      }
+
+      setNodes((nds) =>
+        nds.map((n) => {
+          const taskRef = n.data.taskReferenceName;
+          const computed = stateMap[taskRef];
+          if (computed) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                executionState: computed.state,
+                outputParameters: computed.output ?? n.data.outputParameters,
+                error: computed.error ?? n.data.error,
+                durationMs: computed.durationMs ?? n.data.durationMs,
+                attemptNumber: computed.attemptNumber ?? n.data.attemptNumber,
+              },
+            };
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: 'PENDING',
+            },
+          };
         })
       );
-    }
-  }, [mode, stream.nodeStates]);
+    },
+    [timelineEvents]
+  );
+
+  // Playback timer for time-travel scrubber
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      setCurrentScrubberIndex((prev) => {
+        if (prev >= timelineEvents.length - 1) {
+          setIsPlaying(false);
+          return prev;
+        }
+        const next = prev + 1;
+        applyEventsUpToIndex(next);
+        return next;
+      });
+    }, 1000 / playbackSpeed);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, playbackSpeed, timelineEvents.length, applyEventsUpToIndex]);
 
   // Load existing workflow definition if workflowKey is provided
   const workflowDefQuery = useWorkflowDefinition(workflowKey || null);
   const saveWorkflowMutation = useSaveWorkflowDefinition();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (workflowDefQuery.data) {
       try {
         const { nodes: loadedNodes, edges: loadedEdges } = importFromWorkflowIR(
@@ -197,19 +337,6 @@ function DagStudioCanvas({
     }
   }, [workflowDefQuery.data]);
 
-  // Property Inspector Sheet State
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
-
-  // IR Dialog State
-  const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
-  const [isIrDialogOpen, setIsIrDialogOpen] = useState(false);
-  const [irDialogContent, setIrDialogContent] = useState('');
-
-  // Validation State
-  const [validationErrors, setValidationErrors] = useState<GraphValidationError[]>([]);
-  const [validationBannerVisible, setValidationBannerVisible] = useState(false);
-
   const availableTaskRefs = useMemo(
     () => nodes.map((n) => n.data.taskReferenceName),
     [nodes]
@@ -221,27 +348,44 @@ function DagStudioCanvas({
   );
 
   const onNodesChange: OnNodesChange<Node<DagNodeData>> = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    []
+    (changes) => {
+      if (isReadOnly) return;
+      setNodes((nds) => applyNodeChanges(changes, nds));
+    },
+    [isReadOnly]
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes) => {
+      if (isReadOnly) return;
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    [isReadOnly]
   );
 
   const onConnect: OnConnect = useCallback(
-    (params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
-    []
+    (params) => {
+      if (isReadOnly) return;
+      setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+    },
+    [isReadOnly]
   );
 
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    setSelectedNodeId(node.id);
-    setIsInspectorOpen(true);
-  }, []);
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      setSelectedNodeId(node.id);
+      if (isReadOnly) {
+        setIsTelemetryOpen(true);
+      } else {
+        setIsInspectorOpen(true);
+      }
+    },
+    [isReadOnly]
+  );
 
   const handleUpdateNodeData = useCallback(
     (nodeId: string, updatedData: Partial<DagNodeData>) => {
+      if (isReadOnly) return;
       setNodes((nds) =>
         nds.map((n) => {
           if (n.id === nodeId) {
@@ -257,16 +401,21 @@ function DagStudioCanvas({
         })
       );
     },
-    []
+    [isReadOnly]
   );
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
+  const onDragOver = useCallback(
+    (event: React.DragEvent) => {
+      if (isReadOnly) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    },
+    [isReadOnly]
+  );
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
+      if (isReadOnly) return;
       event.preventDefault();
 
       const type = event.dataTransfer.getData('application/dag-node-type') as DagNodeType;
@@ -290,6 +439,7 @@ function DagStudioCanvas({
         position,
         data: {
           taskReferenceName: taskRef,
+          taskType: type,
           executionState: 'PENDING',
           domain: 'default',
           timeoutSeconds: 30,
@@ -303,7 +453,7 @@ function DagStudioCanvas({
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [screenToFlowPosition]
+    [isReadOnly, screenToFlowPosition]
   );
 
   const handleValidateDag = useCallback(() => {
@@ -311,7 +461,6 @@ function DagStudioCanvas({
     setValidationErrors(errors);
     setValidationBannerVisible(true);
 
-    // Apply or clear validation errors on nodes
     const errorMap = new Map<string, string>();
     for (const err of errors) {
       if (err.nodeId) {
@@ -376,13 +525,46 @@ function DagStudioCanvas({
     setEdges(INITIAL_EDGES);
     setSelectedNodeId(null);
     setIsInspectorOpen(false);
+    setIsTelemetryOpen(false);
     setValidationErrors([]);
     setValidationBannerVisible(false);
+    setIsLiveHead(true);
   };
 
   const handleClearSelected = () => {
+    if (isReadOnly) return;
     setNodes((nds) => nds.filter((n) => !n.selected));
     setEdges((eds) => eds.filter((e) => !e.selected));
+  };
+
+  // Time-travel handler callbacks
+  const handleSeek = (index: number) => {
+    setIsLiveHead(false);
+    setIsPlaying(false);
+    setCurrentScrubberIndex(index);
+    applyEventsUpToIndex(index);
+  };
+
+  const handleStepForward = () => {
+    if (currentScrubberIndex < timelineEvents.length - 1) {
+      handleSeek(currentScrubberIndex + 1);
+    }
+  };
+
+  const handleStepBackward = () => {
+    if (currentScrubberIndex > 0) {
+      handleSeek(currentScrubberIndex - 1);
+    }
+  };
+
+  const handleResumeLive = () => {
+    setIsLiveHead(true);
+    setIsPlaying(false);
+    if (timelineEvents.length > 0) {
+      const lastIdx = timelineEvents.length - 1;
+      setCurrentScrubberIndex(lastIdx);
+      applyEventsUpToIndex(lastIdx);
+    }
   };
 
   return (
@@ -396,89 +578,111 @@ function DagStudioCanvas({
       <div className="absolute top-4 left-4 z-10 flex items-center gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-lg flex-wrap">
         <div className="flex items-center gap-2 mr-1">
           <Activity className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-xs font-bold text-foreground">Visual DAG Studio</span>
-          <Badge variant="outline" className="text-[10px] bg-primary/10 border-primary/20">
-            Phase 32
-          </Badge>
+          <span className="text-xs font-bold text-foreground">Visual DAG Studio 2.0</span>
+          {isReadOnly ? (
+            <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1">
+              <Lock className="w-2.5 h-2.5" />
+              Read-Only
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+              Full Authoring
+            </Badge>
+          )}
         </div>
 
         <div className="h-4 w-[1px] bg-border/50" />
 
-        <Button
-          size="sm"
-          variant={showPalette ? 'default' : 'outline'}
-          className="h-7 text-xs gap-1"
-          onClick={() => setShowPalette((prev) => !prev)}
-        >
-          <Plus className="w-3 h-3" />
-          Palette
-        </Button>
+        {/* Full Mode Actions */}
+        {!isReadOnly && (
+          <>
+            <Button
+              size="sm"
+              variant={showPalette ? 'default' : 'outline'}
+              className="h-7 text-xs gap-1"
+              onClick={() => setShowPalette((prev) => !prev)}
+            >
+              <Plus className="w-3 h-3" />
+              Palette
+            </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1"
-          onClick={handleValidateDag}
-          title="Run Kahn & Tarjan cycle checks and binding validation"
-        >
-          {validationErrors.length > 0 ? (
-            <AlertTriangle className="w-3 h-3 text-rose-500" />
-          ) : (
-            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-          )}
-          Validate DAG
-        </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={handleValidateDag}
+              title="Run Kahn & Tarjan cycle checks and binding validation"
+            >
+              {validationErrors.length > 0 ? (
+                <AlertTriangle className="w-3 h-3 text-rose-500" />
+              ) : (
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              )}
+              Validate DAG
+            </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1"
-          onClick={handleExportJson}
-          title="Export graph to canonical workflow-ir-schema-v1.json"
-        >
-          <FileCode className="w-3 h-3 text-sky-500" />
-          Export IR
-        </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={handleExportJson}
+              title="Export graph to canonical workflow-ir-schema-v1.json"
+            >
+              <FileCode className="w-3 h-3 text-sky-500" />
+              Export IR
+            </Button>
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1"
-          onClick={handleOpenImportDialog}
-          title="Import canonical JSON IR onto canvas"
-        >
-          <Upload className="w-3 h-3 text-indigo-500" />
-          Import IR
-        </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={handleOpenImportDialog}
+              title="Import canonical JSON IR onto canvas"
+            >
+              <Upload className="w-3 h-3 text-indigo-500" />
+              Import IR
+            </Button>
 
-        <div className="h-4 w-[1px] bg-border/50" />
+            <div className="h-4 w-[1px] bg-border/50" />
 
-        {mode === 'designer' && (
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm"
-            onClick={() => {
-              const ir = exportToWorkflowIR(nodes, edges);
-              saveWorkflowMutation.mutate(ir, {
-                onSuccess: () => {
-                  if (onSaveSuccess) onSaveSuccess();
-                },
-              });
-            }}
-            disabled={saveWorkflowMutation.isPending}
-            title="Save workflow definition to backend catalog"
-          >
-            <Save className="w-3 h-3" />
-            {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
-          </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm"
+              onClick={() => {
+                const ir = exportToWorkflowIR(nodes, edges);
+                saveWorkflowMutation.mutate(ir, {
+                  onSuccess: () => {
+                    if (onSaveSuccess) onSaveSuccess();
+                  },
+                });
+              }}
+              disabled={saveWorkflowMutation.isPending}
+              title="Save workflow definition to backend catalog"
+            >
+              <Save className="w-3 h-3" />
+              {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
+              onClick={handleClearSelected}
+              title="Delete selected nodes/edges"
+            >
+              <Trash2 className="w-3 h-3" />
+              Delete
+            </Button>
+          </>
         )}
 
-        {mode === 'execution' && (
+        {/* Read-Only Mode Actions */}
+        {isReadOnly && (
           <div className="flex items-center gap-2">
             <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px]">
               <Eye className="w-3 h-3 mr-1" />
-              Live Execution View
+              Execution & Back-Test View
             </Badge>
             {onCloseExecution && (
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCloseExecution}>
@@ -499,19 +703,6 @@ function DagStudioCanvas({
           Simulate
         </Button>
 
-        {mode === 'designer' && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
-            onClick={handleClearSelected}
-            title="Delete selected nodes/edges"
-          >
-            <Trash2 className="w-3 h-3" />
-            Delete
-          </Button>
-        )}
-
         <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleReset}>
           <RotateCcw className="w-3 h-3" />
           Reset
@@ -519,7 +710,7 @@ function DagStudioCanvas({
       </div>
 
       {/* Validation Status Notification Banner */}
-      {validationBannerVisible && (
+      {!isReadOnly && validationBannerVisible && (
         <div className="absolute top-16 right-4 z-20 max-w-sm p-3 rounded-xl backdrop-blur-xl shadow-2xl border transition-all animate-in fade-in slide-in-from-top-2">
           {validationErrors.length === 0 ? (
             <div className="flex items-center justify-between gap-3 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg">
@@ -564,8 +755,8 @@ function DagStudioCanvas({
         </div>
       )}
 
-      {/* Floating Drag-and-Drop Task Palette */}
-      {showPalette && (
+      {/* Floating Drag-and-Drop Task Palette (Full mode only) */}
+      {!isReadOnly && showPalette && (
         <div className="absolute top-16 left-4 z-10">
           <DagPalette />
         </div>
@@ -576,10 +767,13 @@ function DagStudioCanvas({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
+        onNodesChange={isReadOnly ? undefined : onNodesChange}
+        onEdgesChange={isReadOnly ? undefined : onEdgesChange}
+        onConnect={isReadOnly ? undefined : onConnect}
         onNodeClick={onNodeClick}
+        nodesDraggable={!isReadOnly}
+        nodesConnectable={!isReadOnly}
+        elementsSelectable={true}
         fitView
       >
         <Background gap={16} size={1} />
@@ -597,32 +791,56 @@ function DagStudioCanvas({
         />
       </ReactFlow>
 
-      {/* Slide-Over Property Inspector Drawer */}
-      <DagPropertyInspector
-        nodeId={selectedNodeId}
-        nodeData={selectedNode?.data || null}
-        open={isInspectorOpen}
-        onOpenChange={setIsInspectorOpen}
-        onUpdateNodeData={handleUpdateNodeData}
-        availableTaskRefs={availableTaskRefs}
-      />
+      {/* Full Mode Property Inspector Drawer */}
+      {!isReadOnly && (
+        <DagPropertyInspector
+          nodeId={selectedNodeId}
+          nodeData={selectedNode?.data || null}
+          open={isInspectorOpen}
+          onOpenChange={setIsInspectorOpen}
+          onUpdateNodeData={handleUpdateNodeData}
+          availableTaskRefs={availableTaskRefs}
+        />
+      )}
 
-      {/* Workflow IR Dialog (Export / Import) */}
-      <WorkflowIrDialog
-        open={isIrDialogOpen}
-        onOpenChange={setIsIrDialogOpen}
-        mode={irDialogMode}
-        initialJson={irDialogContent}
-        onImportJson={handleApplyImportedJson}
-      />
+      {/* Read-Only Mode Task Telemetry Inspector */}
+      {isReadOnly && (
+        <TaskTelemetryInspector
+          nodeId={selectedNodeId}
+          nodeData={selectedNode?.data || null}
+          open={isTelemetryOpen}
+          onOpenChange={setIsTelemetryOpen}
+          logs={stream.logs}
+        />
+      )}
 
-      {/* Execution Run Drawer (Active in Execution mode or when executionId is provided) */}
-      {executionId && (
-        <ExecutionRunDrawer
-          executionId={executionId}
-          stream={stream}
-          snapshot={stream.snapshot}
-          onClose={onCloseExecution}
+      {/* Read-Only Mode Time-Travel Replay & Back-Test Scrubber */}
+      {isReadOnly && (
+        <TimeTravelScrubber
+          events={timelineEvents}
+          currentIndex={currentScrubberIndex}
+          isPlaying={isPlaying}
+          playbackSpeed={playbackSpeed}
+          isLiveHead={isLiveHead}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onStepForward={handleStepForward}
+          onStepBackward={handleStepBackward}
+          onSeek={handleSeek}
+          onChangeSpeed={setPlaybackSpeed}
+          onResumeLive={handleResumeLive}
+          workflowStatus={stream.workflowStatus}
+        />
+      )}
+
+      {/* Workflow IR Dialog (Export / Import - Full mode only) */}
+      {!isReadOnly && (
+        <WorkflowIrDialog
+          open={isIrDialogOpen}
+          onOpenChange={setIsIrDialogOpen}
+          mode={irDialogMode}
+          initialJson={irDialogContent}
+          onImportJson={handleApplyImportedJson}
         />
       )}
     </div>

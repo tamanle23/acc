@@ -306,19 +306,55 @@ export class WorkflowSandboxRepository {
 
     const workflowId = `wf_exec_${Date.now()}`;
     const tasks = def?.tasks
-      ? def.tasks.map((t: any, idx: number) => ({
-          taskId: `${workflowId}_${t.taskReferenceName}_${idx + 1}`,
-          taskReferenceName: t.taskReferenceName,
-          taskType: t.taskType || 'SIMPLE',
-          status: (idx === 0 ? 'SCHEDULED' : 'PENDING') as any,
-          output: idx === 0 ? { orderId: input.orderId || 'ord_auto' } : undefined,
-        }))
+      ? def.tasks.map((t: any, idx: number) => {
+          const isHuman = t.taskType === 'HUMAN';
+          let initialStatus = idx === 0 ? (isHuman ? 'WAITING_FOR_APPROVAL' : 'SCHEDULED') : 'PENDING';
+          let output: any = undefined;
+          if (idx === 0) {
+            switch (t.taskType) {
+              case 'HTTP':
+                output = { status: 200, body: { success: true, url: t.httpParams?.url || 'https://api.example.com' } };
+                break;
+              case 'JDBC':
+                output = { rows: [{ id: 1, executed: true }], rowsAffected: 1 };
+                break;
+              case 'JSON_JQ_TRANSFORM':
+                output = { transformed: true, data: input };
+                break;
+              case 'INLINE':
+                output = { evalResult: true, script: t.inlineParams?.expression || '' };
+                break;
+              case 'LLM_CHAT_COMPLETE':
+                output = { text: 'Simulated LLM analysis response.', model: t.llmParams?.model || 'gpt-4o' };
+                break;
+              case 'CALL_MCP_TOOL':
+                output = { toolSuccess: true, tool: t.mcpParams?.toolName || 'tool' };
+                break;
+              case 'KAFKA_PUBLISH':
+                output = { topic: t.kafkaParams?.topic || 'order-events', partition: 0, offset: 1042 };
+                break;
+              case 'SET_VARIABLE':
+                output = { variablesSet: input };
+                break;
+              default:
+                output = { orderId: input.orderId || 'ord_auto', executed: true };
+            }
+          }
+          return {
+            taskId: `${workflowId}_${t.taskReferenceName}_${idx + 1}`,
+            taskReferenceName: t.taskReferenceName,
+            taskType: t.taskType || 'SIMPLE',
+            status: initialStatus as any,
+            output,
+          };
+        })
       : [
           {
             taskId: `${workflowId}_step1`,
             taskReferenceName: 'step1',
             taskType: 'SIMPLE',
             status: 'SCHEDULED' as any,
+            output: { orderId: input.orderId || 'ord_auto' },
           },
         ];
 
@@ -517,7 +553,6 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   },
 };
 
-export const workflowExecutionsSandboxHandler = workflowSandboxHandler;
 
 export function resetWorkflowSandbox(): void {
   workflowSandboxRepo.reset();

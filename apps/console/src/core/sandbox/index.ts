@@ -24,12 +24,6 @@ sandboxRegistry.register(metadataSandboxAdapter);
 // Re-export mockMetadataStore for backward compatibility
 export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 
-// Backward-compatibility aliases for legacy task tests
-export {
-  workflowExecutionsSandboxHandler as tasksSandboxHandler,
-  workflowExecutionsSandboxRepo as tasksSandboxRepo,
-} from '@unipost/sandbox';
-
 // Ensure fetch interceptor is attached in development mode
 import { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
 

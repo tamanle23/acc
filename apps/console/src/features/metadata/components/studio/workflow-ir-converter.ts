@@ -1,5 +1,18 @@
 import type { Node, Edge } from '@xyflow/react';
-import type { DagNodeData, DagNodeType } from './dag-node';
+import type {
+  DagNodeData,
+  DagNodeType,
+  HttpTaskParams,
+  JdbcTaskParams,
+  JsonJqTaskParams,
+  InlineTaskParams,
+  LlmTaskParams,
+  McpTaskParams,
+  HumanTaskParams,
+  TerminateTaskParams,
+  SubWorkflowTaskParams,
+  KafkaTaskParams,
+} from './dag-node';
 
 export interface WorkflowTaskIR {
   taskReferenceName: string;
@@ -17,6 +30,17 @@ export interface WorkflowTaskIR {
   joinOn?: string[];
   loopCondition?: string;
   loopOver?: string[];
+  // Specialized Parameter Payloads
+  httpParams?: HttpTaskParams;
+  jdbcParams?: JdbcTaskParams;
+  jsonJqParams?: JsonJqTaskParams;
+  inlineParams?: InlineTaskParams;
+  llmParams?: LlmTaskParams;
+  mcpParams?: McpTaskParams;
+  humanParams?: HumanTaskParams;
+  terminateParams?: TerminateTaskParams;
+  subWorkflowParams?: SubWorkflowTaskParams;
+  kafkaParams?: KafkaTaskParams;
 }
 
 export interface WorkflowIR {
@@ -50,10 +74,11 @@ export function validateBindingExpression(
   }
 
   const inner = trimmed.slice(2, -1).trim();
-  if (inner.startsWith('workflow.input.')) {
-    const field = inner.slice('workflow.input.'.length);
+  if (inner.startsWith('workflow.input.') || inner.startsWith('workflow.variables.')) {
+    const prefix = inner.startsWith('workflow.input.') ? 'workflow.input.' : 'workflow.variables.';
+    const field = inner.slice(prefix.length);
     if (!field || !/^[a-zA-Z0-9_.-]+$/.test(field)) {
-      return { valid: false, error: 'Invalid workflow.input path syntax' };
+      return { valid: false, error: `Invalid ${prefix} path syntax` };
     }
     return { valid: true };
   }
@@ -243,6 +268,18 @@ export function exportToWorkflowIR(
       task.loopCondition = node.data.loopCondition || node.data.condition || '';
     }
 
+    // Preserve specialized payloads
+    if (node.data.httpParams) task.httpParams = node.data.httpParams;
+    if (node.data.jdbcParams) task.jdbcParams = node.data.jdbcParams;
+    if (node.data.jsonJqParams) task.jsonJqParams = node.data.jsonJqParams;
+    if (node.data.inlineParams) task.inlineParams = node.data.inlineParams;
+    if (node.data.llmParams) task.llmParams = node.data.llmParams;
+    if (node.data.mcpParams) task.mcpParams = node.data.mcpParams;
+    if (node.data.humanParams) task.humanParams = node.data.humanParams;
+    if (node.data.terminateParams) task.terminateParams = node.data.terminateParams;
+    if (node.data.subWorkflowParams) task.subWorkflowParams = node.data.subWorkflowParams;
+    if (node.data.kafkaParams) task.kafkaParams = node.data.kafkaParams;
+
     tasks.push(task);
   }
 
@@ -301,6 +338,16 @@ export function importFromWorkflowIR(
         defaultCase: task.defaultCase,
         loopCondition: task.loopCondition,
         condition: task.loopCondition,
+        httpParams: task.httpParams,
+        jdbcParams: task.jdbcParams,
+        jsonJqParams: task.jsonJqParams,
+        inlineParams: task.inlineParams,
+        llmParams: task.llmParams,
+        mcpParams: task.mcpParams,
+        humanParams: task.humanParams,
+        terminateParams: task.terminateParams,
+        subWorkflowParams: task.subWorkflowParams,
+        kafkaParams: task.kafkaParams,
         executionState: 'PENDING',
       },
     });

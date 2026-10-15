@@ -12,9 +12,18 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import type { DagNodeData, DagNodeType } from './dag-node';
+import type { DagNodeData } from './dag-node';
 import { validateBindingExpression } from './workflow-ir-converter';
-import { Plus, Trash2, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldAlert,
+  Sliders,
+  SlidersHorizontal,
+  Settings2,
+} from 'lucide-react';
 
 interface DagPropertyInspectorProps {
   nodeId: string | null;
@@ -23,6 +32,7 @@ interface DagPropertyInspectorProps {
   onOpenChange: (open: boolean) => void;
   onUpdateNodeData: (nodeId: string, updatedData: Partial<DagNodeData>) => void;
   availableTaskRefs: string[];
+  defaultTab?: string;
 }
 
 export function DagPropertyInspector({
@@ -32,6 +42,7 @@ export function DagPropertyInspector({
   onOpenChange,
   onUpdateNodeData,
   availableTaskRefs,
+  defaultTab,
 }: DagPropertyInspectorProps) {
   const [formData, setFormData] = useState<DagNodeData | null>(nodeData);
   const [paramKey, setParamKey] = useState('');
@@ -51,6 +62,26 @@ export function DagPropertyInspector({
     onUpdateNodeData(nodeId, { [field]: value });
   };
 
+  const handleSpecializedChange = (
+    field:
+      | 'httpParams'
+      | 'jdbcParams'
+      | 'jsonJqParams'
+      | 'inlineParams'
+      | 'llmParams'
+      | 'mcpParams'
+      | 'humanParams'
+      | 'terminateParams'
+      | 'subWorkflowParams'
+      | 'kafkaParams',
+    subField: string,
+    val: any
+  ) => {
+    const current = (formData[field] as any) || {};
+    const updated = { ...current, [subField]: val };
+    handleFieldChange(field, updated);
+  };
+
   const handleAddParam = () => {
     if (!paramKey.trim()) return;
     const currentParams = formData.inputParameters || {};
@@ -67,6 +98,434 @@ export function DagPropertyInspector({
     const currentParams = { ...(formData.inputParameters || {}) };
     delete currentParams[keyToRemove];
     handleFieldChange('inputParameters', currentParams);
+  };
+
+  const renderSpecializedConfig = () => {
+    switch (formData.taskType) {
+      case 'HTTP': {
+        const p = formData.httpParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">HTTP Method</Label>
+              <div className="flex gap-1.5">
+                {(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const).map((m) => (
+                  <Button
+                    key={m}
+                    type="button"
+                    size="sm"
+                    variant={p.method === m ? 'default' : 'outline'}
+                    className="h-7 text-[11px] px-2.5 font-mono"
+                    onClick={() => handleSpecializedChange('httpParams', 'method', m)}
+                  >
+                    {m}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="httpUrl" className="text-xs font-semibold">
+                Endpoint URL
+              </Label>
+              <Input
+                id="httpUrl"
+                value={p.url || ''}
+                onChange={(e) => handleSpecializedChange('httpParams', 'url', e.target.value)}
+                placeholder="https://api.example.com/v1/resource"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="httpTimeout" className="text-xs font-semibold">
+                Timeout (seconds)
+              </Label>
+              <Input
+                id="httpTimeout"
+                type="number"
+                value={p.timeoutSeconds ?? 15}
+                onChange={(e) =>
+                  handleSpecializedChange('httpParams', 'timeoutSeconds', parseInt(e.target.value) || 15)
+                }
+                className="text-xs h-8"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'JDBC': {
+        const p = formData.jdbcParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="jdbcDatasource" className="text-xs font-semibold">
+                Datasource ID
+              </Label>
+              <Input
+                id="jdbcDatasource"
+                value={p.datasourceId || 'default'}
+                onChange={(e) => handleSpecializedChange('jdbcParams', 'datasourceId', e.target.value)}
+                placeholder="default"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="jdbcSql" className="text-xs font-semibold">
+                SQL Statement
+              </Label>
+              <Textarea
+                id="jdbcSql"
+                value={p.sql || ''}
+                onChange={(e) => handleSpecializedChange('jdbcParams', 'sql', e.target.value)}
+                placeholder="SELECT * FROM orders WHERE id = ?"
+                rows={4}
+                className="font-mono text-xs"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'JSON_JQ_TRANSFORM': {
+        const p = formData.jsonJqParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="jqExpression" className="text-xs font-semibold">
+                JQ Query Expression
+              </Label>
+              <Textarea
+                id="jqExpression"
+                value={p.queryExpression || ''}
+                onChange={(e) => handleSpecializedChange('jsonJqParams', 'queryExpression', e.target.value)}
+                placeholder="{ orderId: .id, total: .amount }"
+                rows={4}
+                className="font-mono text-xs"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Transforms JSON payload in-memory without worker queue dispatch.
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      case 'INLINE': {
+        const p = formData.inlineParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Script Engine</Label>
+              <div className="flex gap-1.5">
+                {(['javascript', 'groovy', 'mvel'] as const).map((eng) => (
+                  <Button
+                    key={eng}
+                    type="button"
+                    size="sm"
+                    variant={p.evaluatorType === eng ? 'default' : 'outline'}
+                    className="h-7 text-[11px] px-2.5 font-mono capitalize"
+                    onClick={() => handleSpecializedChange('inlineParams', 'evaluatorType', eng)}
+                  >
+                    {eng}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="inlineExpr" className="text-xs font-semibold">
+                Script Expression
+              </Label>
+              <Textarea
+                id="inlineExpr"
+                value={p.expression || ''}
+                onChange={(e) => handleSpecializedChange('inlineParams', 'expression', e.target.value)}
+                placeholder="function eval() { return { ok: true }; }"
+                rows={5}
+                className="font-mono text-xs"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'LLM_CHAT_COMPLETE': {
+        const p = formData.llmParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">LLM Provider</Label>
+              <div className="flex gap-1.5">
+                {(['openai', 'gemini', 'anthropic', 'local'] as const).map((prov) => (
+                  <Button
+                    key={prov}
+                    type="button"
+                    size="sm"
+                    variant={p.provider === prov ? 'default' : 'outline'}
+                    className="h-7 text-[11px] px-2.5 capitalize"
+                    onClick={() => handleSpecializedChange('llmParams', 'provider', prov)}
+                  >
+                    {prov}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="llmModel" className="text-xs font-semibold">
+                Model Name
+              </Label>
+              <Input
+                id="llmModel"
+                value={p.model || 'gpt-4o'}
+                onChange={(e) => handleSpecializedChange('llmParams', 'model', e.target.value)}
+                placeholder="gpt-4o, gemini-1.5-pro"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="llmTemp" className="text-xs font-semibold">
+                  Temperature
+                </Label>
+                <span className="text-[10px] font-mono text-muted-foreground">{p.temperature ?? 0.7}</span>
+              </div>
+              <Input
+                id="llmTemp"
+                type="number"
+                step="0.1"
+                min="0.0"
+                max="1.0"
+                value={p.temperature ?? 0.7}
+                onChange={(e) =>
+                  handleSpecializedChange('llmParams', 'temperature', parseFloat(e.target.value) || 0.7)
+                }
+                className="text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="llmPrompt" className="text-xs font-semibold">
+                Prompt Template
+              </Label>
+              <Textarea
+                id="llmPrompt"
+                value={p.prompt || ''}
+                onChange={(e) => handleSpecializedChange('llmParams', 'prompt', e.target.value)}
+                placeholder="Analyze this payload: ${workflow.input.data}"
+                rows={3}
+                className="font-mono text-xs"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'CALL_MCP_TOOL': {
+        const p = formData.mcpParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="mcpServer" className="text-xs font-semibold">
+                MCP Server Name
+              </Label>
+              <Input
+                id="mcpServer"
+                value={p.serverName || ''}
+                onChange={(e) => handleSpecializedChange('mcpParams', 'serverName', e.target.value)}
+                placeholder="e.g. filesystem"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="mcpTool" className="text-xs font-semibold">
+                Tool Name
+              </Label>
+              <Input
+                id="mcpTool"
+                value={p.toolName || ''}
+                onChange={(e) => handleSpecializedChange('mcpParams', 'toolName', e.target.value)}
+                placeholder="e.g. read_file"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'HUMAN': {
+        const p = formData.humanParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="humanRole" className="text-xs font-semibold">
+                Assignee Role
+              </Label>
+              <Input
+                id="humanRole"
+                value={p.role || 'WORKFLOW_APPROVER'}
+                onChange={(e) => handleSpecializedChange('humanParams', 'role', e.target.value)}
+                placeholder="WORKFLOW_APPROVER"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="humanSla" className="text-xs font-semibold">
+                SLA Timeout (Minutes)
+              </Label>
+              <Input
+                id="humanSla"
+                type="number"
+                value={p.slaMinutes ?? 120}
+                onChange={(e) =>
+                  handleSpecializedChange('humanParams', 'slaMinutes', parseInt(e.target.value) || 120)
+                }
+                className="text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="humanInstructions" className="text-xs font-semibold">
+                Review Instructions
+              </Label>
+              <Textarea
+                id="humanInstructions"
+                value={p.instructions || ''}
+                onChange={(e) => handleSpecializedChange('humanParams', 'instructions', e.target.value)}
+                placeholder="Verify customer KYC documentation before approving."
+                rows={3}
+                className="text-xs"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'TERMINATE': {
+        const p = formData.terminateParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Termination Status</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={p.terminationStatus === 'COMPLETED' ? 'default' : 'outline'}
+                  className="h-7 text-xs"
+                  onClick={() => handleSpecializedChange('terminateParams', 'terminationStatus', 'COMPLETED')}
+                >
+                  COMPLETED
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={p.terminationStatus === 'FAILED' ? 'destructive' : 'outline'}
+                  className="h-7 text-xs"
+                  onClick={() => handleSpecializedChange('terminateParams', 'terminationStatus', 'FAILED')}
+                >
+                  FAILED
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="termReason" className="text-xs font-semibold">
+                Termination Reason
+              </Label>
+              <Input
+                id="termReason"
+                value={p.terminationReason || ''}
+                onChange={(e) => handleSpecializedChange('terminateParams', 'terminationReason', e.target.value)}
+                placeholder="Order cancelled due to out-of-stock items"
+                className="text-xs h-8"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'SUB_WORKFLOW': {
+        const p = formData.subWorkflowParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="subWfKey" className="text-xs font-semibold">
+                Sub-Workflow Key
+              </Label>
+              <Input
+                id="subWfKey"
+                value={p.workflowKey || ''}
+                onChange={(e) => handleSpecializedChange('subWorkflowParams', 'workflowKey', e.target.value)}
+                placeholder="e.g. order-settlement-pipeline"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="subWfVersion" className="text-xs font-semibold">
+                Version
+              </Label>
+              <Input
+                id="subWfVersion"
+                type="number"
+                value={p.version ?? 1}
+                onChange={(e) =>
+                  handleSpecializedChange('subWorkflowParams', 'version', parseInt(e.target.value) || 1)
+                }
+                className="text-xs h-8"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      case 'KAFKA_PUBLISH': {
+        const p = formData.kafkaParams || {};
+        return (
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <Label htmlFor="kafkaTopic" className="text-xs font-semibold">
+                Topic Name
+              </Label>
+              <Input
+                id="kafkaTopic"
+                value={p.topic || ''}
+                onChange={(e) => handleSpecializedChange('kafkaParams', 'topic', e.target.value)}
+                placeholder="order-events"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="kafkaKey" className="text-xs font-semibold">
+                Partition Key
+              </Label>
+              <Input
+                id="kafkaKey"
+                value={p.key || ''}
+                onChange={(e) => handleSpecializedChange('kafkaParams', 'key', e.target.value)}
+                placeholder="${workflow.input.orderId}"
+                className="font-mono text-xs h-8"
+              />
+            </div>
+          </div>
+        );
+      }
+
+      default:
+        return (
+          <p className="text-xs text-muted-foreground italic p-4 text-center border border-dashed rounded-xl">
+            Node type <span className="font-mono font-semibold">{formData.taskType}</span> uses standard worker execution parameters.
+          </p>
+        );
+    }
   };
 
   return (
@@ -89,13 +548,14 @@ export function DagPropertyInspector({
           </SheetDescription>
         </SheetHeader>
 
-        <Tabs defaultValue="general" className="flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue={defaultTab || 'general'} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-2 shrink-0">
-            <TabsList className="grid grid-cols-4 w-full h-9">
-              <TabsTrigger value="general" className="text-xs">General</TabsTrigger>
-              <TabsTrigger value="params" className="text-xs">Bindings</TabsTrigger>
-              <TabsTrigger value="reliability" className="text-xs">Policies</TabsTrigger>
-              <TabsTrigger value="routing" className="text-xs">Routing</TabsTrigger>
+            <TabsList className="grid grid-cols-5 w-full h-9">
+              <TabsTrigger value="general" className="text-[11px]">General</TabsTrigger>
+              <TabsTrigger value="config" className="text-[11px]">Config</TabsTrigger>
+              <TabsTrigger value="params" className="text-[11px]">Bindings</TabsTrigger>
+              <TabsTrigger value="policies" className="text-[11px]">Policies</TabsTrigger>
+              <TabsTrigger value="routing" className="text-[11px]">Routing</TabsTrigger>
             </TabsList>
           </div>
 
@@ -155,117 +615,120 @@ export function DagPropertyInspector({
                   id="description"
                   value={formData.description || ''}
                   onChange={(e) => handleFieldChange('description', e.target.value)}
-                  className="text-xs resize-none h-20"
-                  placeholder="Operational intent and behavior of this node..."
+                  className="text-xs"
+                  placeholder="Operational documentation for this step"
+                  rows={2}
                 />
               </div>
             </TabsContent>
 
-            {/* 2. Parameters & Bindings Tab */}
+            {/* 2. Specialized Config Tab */}
+            <TabsContent value="config" className="mt-0 space-y-4">
+              {renderSpecializedConfig()}
+            </TabsContent>
+
+            {/* 3. Parameter Bindings Tab */}
             <TabsContent value="params" className="mt-0 space-y-4">
-              <div className="p-3 rounded-xl bg-muted/40 border border-border/40 space-y-2">
-                <span className="text-xs font-semibold">Add Input Parameter</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Key (e.g. orderId)"
-                    value={paramKey}
-                    onChange={(e) => setParamKey(e.target.value)}
-                    className="text-xs h-8 font-mono"
-                  />
-                  <Input
-                    placeholder="${workflow.input.id}"
-                    value={paramValue}
-                    onChange={(e) => setParamValue(e.target.value)}
-                    className="text-xs h-8 font-mono"
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  className="w-full h-7 text-xs gap-1"
-                  onClick={handleAddParam}
-                  disabled={!paramKey.trim()}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add Parameter
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold">Configured Parameters</Label>
-                {(!formData.inputParameters || Object.keys(formData.inputParameters).length === 0) ? (
-                  <p className="text-xs text-muted-foreground italic p-2 border border-dashed rounded-lg text-center">
-                    No input parameters bound. Click above to add bindings.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {Object.entries(formData.inputParameters).map(([k, v]) => {
-                      const strVal = String(v);
-                      const isExpr = strVal.includes('${');
-                      const check = isExpr
-                        ? validateBindingExpression(strVal, availableTaskRefs)
-                        : { valid: true };
-
-                      return (
-                        <div
-                          key={k}
-                          className="flex items-center justify-between p-2 rounded-lg bg-card border border-border/50 text-xs"
-                        >
-                          <div className="flex-1 min-w-0 mr-2">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono font-semibold">{k}:</span>
-                              <span className="font-mono text-muted-foreground truncate">{strVal}</span>
-                            </div>
-                            {isExpr && (
-                              <div className="flex items-center gap-1 mt-1 text-[10px]">
-                                {check.valid ? (
-                                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                                    <CheckCircle2 className="w-2.5 h-2.5" /> Valid Binding
-                                  </span>
-                                ) : (
-                                  <span className="text-rose-600 dark:text-rose-400 flex items-center gap-0.5">
-                                    <AlertTriangle className="w-2.5 h-2.5" /> {check.error}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveParam(k)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
+              <div className="space-y-3">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor="paramKey" className="text-[11px] font-medium">Key</Label>
+                    <Input
+                      id="paramKey"
+                      value={paramKey}
+                      onChange={(e) => setParamKey(e.target.value)}
+                      placeholder="e.g. orderId"
+                      className="h-7 text-xs font-mono"
+                    />
                   </div>
-                )}
+                  <div className="flex-[2] space-y-1">
+                    <Label htmlFor="paramVal" className="text-[11px] font-medium">Value Expression</Label>
+                    <Input
+                      id="paramVal"
+                      value={paramValue}
+                      onChange={(e) => setParamValue(e.target.value)}
+                      placeholder="${workflow.input.orderId}"
+                      className="h-7 text-xs font-mono"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 px-2.5 text-xs gap-1"
+                    onClick={handleAddParam}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add
+                  </Button>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-border/40">
+                  <Label className="text-xs font-semibold">Active Input Parameters</Label>
+                  {Object.entries(formData.inputParameters || {}).length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No input parameters bound.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {Object.entries(formData.inputParameters || {}).map(([k, v]) => {
+                        const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+                        const validation = validateBindingExpression(valStr, availableTaskRefs);
+
+                        return (
+                          <div
+                            key={k}
+                            className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/40 gap-2"
+                          >
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="text-xs font-mono font-semibold text-foreground truncate">
+                                {k}
+                              </span>
+                              <span className="text-[10px] font-mono text-muted-foreground truncate">
+                                {valStr}
+                              </span>
+                              {!validation.valid && (
+                                <span className="text-[10px] text-rose-500 font-sans flex items-center gap-1 mt-0.5">
+                                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                                  {validation.error}
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleRemoveParam(k)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
-            {/* 3. Reliability & Policies Tab */}
-            <TabsContent value="reliability" className="mt-0 space-y-4">
+            {/* 4. Policies Tab */}
+            <TabsContent value="policies" className="mt-0 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="timeoutSeconds" className="text-xs font-semibold">
+                  <Label htmlFor="timeoutSec" className="text-xs font-semibold">
                     Timeout (seconds)
                   </Label>
                   <Input
-                    id="timeoutSeconds"
+                    id="timeoutSec"
                     type="number"
                     value={formData.timeoutSeconds ?? 30}
-                    onChange={(e) => handleFieldChange('timeoutSeconds', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleFieldChange('timeoutSeconds', parseInt(e.target.value) || 30)}
                     className="text-xs h-8"
                     min={1}
-                    max={86400}
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="retryCount" className="text-xs font-semibold">
-                    Retry Attempts (0-10)
+                    Max Retries
                   </Label>
                   <Input
                     id="retryCount"
@@ -274,12 +737,9 @@ export function DagPropertyInspector({
                     onChange={(e) => handleFieldChange('retryCount', parseInt(e.target.value) || 0)}
                     className="text-xs h-8"
                     min={0}
-                    max={10}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="retryDelay" className="text-xs font-semibold">
                     Retry Delay (seconds)
@@ -288,15 +748,15 @@ export function DagPropertyInspector({
                     id="retryDelay"
                     type="number"
                     value={formData.retryDelaySeconds ?? 2}
-                    onChange={(e) => handleFieldChange('retryDelaySeconds', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleFieldChange('retryDelaySeconds', parseInt(e.target.value) || 1)}
                     className="text-xs h-8"
-                    min={0}
+                    min={1}
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="backoffRate" className="text-xs font-semibold">
-                    Backoff Multiplier
+                    Backoff Rate
                   </Label>
                   <Input
                     id="backoffRate"
@@ -328,7 +788,7 @@ export function DagPropertyInspector({
               </div>
             </TabsContent>
 
-            {/* 4. Routing & Conditions Tab */}
+            {/* 5. Routing Tab */}
             <TabsContent value="routing" className="mt-0 space-y-4">
               {formData.taskType === 'SWITCH' ? (
                 <div className="space-y-3">

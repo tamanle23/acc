@@ -115,5 +115,6 @@
 | [108](108_phase_35_4_polyglot_orchestration_and_saga_verification.md) | 2026-10-15 | Polyglot End-to-End Orchestration & Automated Saga Verification (Phase 35.4) | Implemented automated reverse topological Saga compensation across Java and TypeScript @unipost/worker SDK, added COMPENSATED_FAILED status, exposed /compensate endpoint, and passed CI integration tests. |
 | [109](109_unify_client_and_sandbox_architecture.md) | 2026-10-15 | Unify Client-Backend Contracts (@unipost/client) & Sandbox Platform (@unipost/sandbox) | Centralized all domain DTOs into @unipost/client contracts and moved mock handlers/repositories into @unipost/sandbox with backward-compatible re-exports in console. |
 | [110](110_eliminate_workflow_executions_sandbox_matcher_collision.md) | 2026-10-15 | Eliminate Workflow Executions Sandbox Matcher Collision & Consolidate Handler | Migrated GET execution list and execution CRUD into workflow-handler.ts, resolved path collision on /workflow/executions, and removed redundant handler file. |
+| [111](111_phase_36_visual_dag_studio_dual_modes.md) | 2026-10-15 | Visual DAG Studio 2.0 (Dual Modes & 23-Node Palette) (Phase 36) | Delivered Visual DAG Studio 2.0 with full 23-node categorized palette, specialized inspectors, docked microsecond TimeTravelScrubber, slide-over TaskTelemetryInspector, and topology locking. |
 
 
