@@ -446,7 +446,7 @@ export class StudioServer {
           '<div class="field-row"><label>Frames:</label><span style="font-size:0.8rem; color:#93c5fd">' + clip.startFrame + ' -> ' + clip.endFrame + ' (' + clip.durationFrames + 'f)</span></div>';
         
         clip.activeCues.forEach((cue, cIdx) => {
-          card.innerHTML += '<div class="field-row"><label>Text:</label><input value="' + cue.text + '" onchange="updateCueText(\x27' + clip.trackId + '\x27, \x27' + clip.sequenceId + '\x27, ' + cIdx + ', this.value)"></div>';
+          card.innerHTML += '<div class="field-row"><label>Text:</label><input value="' + cue.text + '" onchange="updateCueText(' + clip.trackId + ', ' + clip.sequenceId + ', ' + cIdx + ', this.value)"></div>';
         });
         clipsContainer.appendChild(card);
       });
@@ -458,7 +458,7 @@ export class StudioServer {
         const isActive = state.activeModifiers.some(m => m.type === modType);
         const card = document.createElement('div');
         card.className = 'item-card';
-        card.innerHTML = '<div class="toggle-row"><span>' + modType + '</span><input type="checkbox" ' + (isActive ? 'checked' : '') + ' onchange="toggleModifier(\x27' + modType + '\x27, this.checked)"></div>';
+        card.innerHTML = '<div class="toggle-row"><span>' + modType + '</span><input type="checkbox" ' + (isActive ? 'checked' : '') + ' onchange="toggleModifier(' + modType + ', this.checked)"></div>';
         modContainer.appendChild(card);
       });
     }

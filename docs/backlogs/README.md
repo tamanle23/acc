@@ -37,7 +37,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`031`](031_universal_autoconfig_phase5_facade_and_cli.md) | Universal Auto-Config Phase 5: Facade & CLI Modernization | Core Architecture / Autoconfig / Facade & CLI | ✅ `Completed` | 2026-10-11 | [`184_universal_autoconfig_phase5_facade_and_cli.md`](../history/184_universal_autoconfig_phase5_facade_and_cli.md) |
 | [`032`](032_universal_autoconfig_phase6_qa_and_documentation.md) | Universal Auto-Config Phase 6: E2E QA & Master Documentation Sync | Core Architecture / Autoconfig / Documentation & QA | ✅ `Completed` | 2026-10-11 | [`185_universal_autoconfig_phase6_qa_and_documentation.md`](../history/185_universal_autoconfig_phase6_qa_and_documentation.md) |
 | [`033`](033_concrete_samples_for_all_pipelines.md) | Concrete Sample Materials for All 6 Pipelines (SFX, VFX & 3D Depth) | Core Architecture / Samples & Scaffolding | ✅ `Completed` | 2026-10-11 | [`186_concrete_samples_for_all_pipelines.md`](../history/186_concrete_samples_for_all_pipelines.md) |
-| [`034`](034_master_integration_plan_iteration2.md) | Master Integration Plan (Iteration 2): Narrative Scripting, GPU Acceleration & Studio Preview | Core Architecture / Conductor / FFI GPU / UI Studio | 🔄 `In Progress` | 2026-10-14 | [`191`](../history/191_master_integration_plan_iteration2_phase1_scripting_frameworks.md) |
+| [`034`](034_master_integration_plan_iteration2.md) | Master Integration Plan (Iteration 2): Narrative Scripting, GPU Acceleration & Studio Preview | Core Architecture / Conductor / FFI GPU / UI Studio | ✅ `Completed` | 2026-10-14 | [`196`](../history/196_master_integration_plan_iteration2_phase5_master_sync.md) |
 
 ---
 

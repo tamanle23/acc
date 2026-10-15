@@ -10,6 +10,7 @@ import { StudioServer } from '../studio/StudioServer';
 export interface StudioCliOptions {
   input?: string;
   port?: number;
+  keepAlive?: boolean;
 }
 
 /**
@@ -47,5 +48,23 @@ export async function handleStudioCommand(options: StudioCliOptions): Promise<St
   const serverUrl = await studio.start();
 
   Logger.info('StudioCommand', `✨ Dual-Engine Studio Preview live at: ${serverUrl}`);
+
+  if (options.keepAlive) {
+    Logger.info('StudioCommand', 'Studio server is running. Press Ctrl+C to stop.');
+    await new Promise<void>((resolve) => {
+      let isShuttingDown = false;
+      const shutdown = () => {
+        if (isShuttingDown) return;
+        isShuttingDown = true;
+        Logger.info('StudioCommand', 'Shutting down Studio server gracefully...');
+        studio.stop();
+        resolve();
+      };
+
+      process.once('SIGINT', shutdown);
+      process.once('SIGTERM', shutdown);
+    });
+  }
+
   return studio;
 }

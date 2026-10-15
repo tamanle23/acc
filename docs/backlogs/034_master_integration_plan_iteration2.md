@@ -1,11 +1,11 @@
 # 034. Master Integration Plan (Iteration 2): Narrative Scripting, GPU Acceleration & Studio Preview
 
 ## Metadata
-- **Status**: [ ] Planned
+- **Status**: [x] Completed
 - **Component**: Core Architecture / Autoconfig / FFI GPU / UI Studio
 - **Created Date**: 2026-10-14
-- **Completed Date**: In Progress (Phase 1 Completed 2026-10-14)
-- **Linked History**: [`191_master_integration_plan_iteration2_phase1_scripting_frameworks.md`](../history/191_master_integration_plan_iteration2_phase1_scripting_frameworks.md)
+- **Completed Date**: 2026-10-14
+- **Linked History**: [`196_master_integration_plan_iteration2_phase5_master_sync.md`](../history/196_master_integration_plan_iteration2_phase5_master_sync.md)
 
 ---
 
@@ -30,9 +30,9 @@ See the master specification in [`docs/master_integration_plan_iteration2.md`](.
 ## Acceptance Criteria
 - [x] **Pillar 1**: 6 Master Scripting Framework strategies implemented and registered in `ScriptingFrameworkRegistry`.
 - [x] **Pillar 1**: Automated A/V beat synchronization wired into `PipelineIRBuilder` and verified by tests.
-- [ ] **Pillar 2**: Dynamic hardware encoder probing for NVENC, VideoToolbox, and VAAPI in `GPUEncoderResolver`.
-- [ ] **Pillar 2**: Seamless zero-copy fallback to `libx264` when hardware encoders are absent.
-- [ ] **Pillar 2**: Throughput benchmark demonstrating $\ge 2\times$ speedup on supported hardware with zero memory leaks.
-- [ ] **Pillar 3**: Interactive Studio timeline state with JSON-Patch mutations over `VideoIRDocument`.
-- [ ] **Pillar 3**: Real-time DOM/WebGL preview scrubbable at variable frame rates with deterministic export dispatch.
-- [ ] **E2E QA**: All test suites pass cleanly (`bun test`) with zero regressions across Pipelines 1–6.
+- [x] **Pillar 2**: Dynamic hardware encoder probing for NVENC, VideoToolbox, and VAAPI in `GPUEncoderResolver`.
+- [x] **Pillar 2**: Seamless zero-copy fallback to `libx264` when hardware encoders are absent.
+- [x] **Pillar 2**: Throughput benchmark demonstrating $\ge 2\times$ speedup on supported hardware with zero memory leaks.
+- [x] **Pillar 3**: Interactive Studio timeline state with JSON-Patch mutations over `VideoIRDocument`.
+- [x] **Pillar 3**: Real-time DOM/WebGL preview scrubbable at variable frame rates with deterministic export dispatch.
+- [x] **E2E QA**: All test suites pass cleanly (`bun test`) with zero regressions across Pipelines 1–6.
