@@ -13,3 +13,7 @@
 ## 2026-10-11 - Pre-Indexing Array Lookups in Matrix/Grid Component Loops
 **Learning:** In matrix/grid table rendering components like `RbacMatrixGrid` that iterate over $N$ items and $M$ columns, performing nested array operations like `roles.find(...)` inside table cells creates an $O(N \cdot M \cdot K)$ overhead on every render pass.
 **Action:** Pre-index entity arrays into a Map with `useMemo` (`roleMap = useMemo(() => new Map(items.map(i => [i.id, i])), [items])`) before rendering the table. This reduces nested inner-loop entity lookups from $O(M)$ array scans to $O(1)$ constant time Map accesses.
+
+## 2026-10-16 - Safe Array Sorting and Pre-Indexing in Dialog Render Loops
+**Learning:** Calling `array.sort()` directly on state arrays during component render mutates the React state array in place, violating state immutability. Furthermore, repeatedly computing filtered/sorted lists and calling `.find()` inside list item mappings (`assignedProfiles.map(...)`) causes $O(N \cdot M)$ complexity and unnecessary recalculations on unrelated state updates.
+**Action:** Always create a shallow copy before sorting (`[...list].sort(...)`), wrap list sorting/filtering in `useMemo`, and pre-index relational lookups into a `Map` using `useMemo` (`assignmentMap = useMemo(() => new Map(...), [assignments])`) to ensure $O(1)$ constant time lookups during list rendering.

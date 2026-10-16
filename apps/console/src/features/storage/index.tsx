@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from 'react'
+import { type ChangeEvent, useState, useMemo } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { SlidersHorizontal, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -58,30 +58,34 @@ export function StorageIntegration() {
     return 1; // User Provided (Live)
   }
 
-  const filteredStorages = storageList
-    .sort((a, b) => {
-      const weightA = getStorageWeight(a);
-      const weightB = getStorageWeight(b);
-      
-      if (weightA !== weightB) {
-        return weightA - weightB;
-      }
-      
-      // Secondary sort: Provider Name
-      return sort === 'asc'
-        ? a.name.localeCompare(b.name)
-        : b.name.localeCompare(a.name);
-    })
-    .filter((storage) =>
-      filterType === 'all' ? true : storage.storageMode === filterType
-    )
-    .filter((storage) => {
-      const localizedDesc = t(storage.descKey, storage.defaultDesc)
-      return (
-        storage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        localizedDesc.toLowerCase().includes(searchTerm.toLowerCase())
+  // Optimization: Memoize filtered and sorted storage providers to prevent in-place array mutation (`storageList.sort`)
+  // and avoid redundant re-sorting/filtering operations on every render pass.
+  const filteredStorages = useMemo(() => {
+    return [...storageList]
+      .sort((a, b) => {
+        const weightA = getStorageWeight(a)
+        const weightB = getStorageWeight(b)
+
+        if (weightA !== weightB) {
+          return weightA - weightB
+        }
+
+        // Secondary sort: Provider Name
+        return sort === 'asc'
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name)
+      })
+      .filter((storage) =>
+        filterType === 'all' ? true : storage.storageMode === filterType
       )
-    })
+      .filter((storage) => {
+        const localizedDesc = t(storage.descKey, storage.defaultDesc)
+        return (
+          storage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          localizedDesc.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })
+  }, [storageList, sort, filterType, searchTerm, t])
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
