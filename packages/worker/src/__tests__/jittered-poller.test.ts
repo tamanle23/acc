@@ -23,7 +23,7 @@ describe('Phase 38: Worker SDK Jitter & Anti-Thundering Herd Tests', () => {
 
     const poller = new TaskPoller(
       config,
-      async () => ({}),
+      async () => ({ status: 'COMPLETED', outputData: {} }),
       [],
       mockTransport,
       'test-worker-1',

@@ -69,7 +69,8 @@ describe('Polyglot Saga Compensation Contract Tests', () => {
     // Register compensation handler
     host.registerSimple('cancel-packing-worker', (ctx) => {
       expect(ctx.input.packageId).toBe('PKG-7701');
-      expect(ctx.input._originalOutput.trackingNumber).toBe('TRK-9902');
+      const originalOutput = ctx.input._originalOutput as { trackingNumber?: string };
+      expect(originalOutput.trackingNumber).toBe('TRK-9902');
       return { cancelled: true, packageId: ctx.input.packageId };
     }, { domain: 'logistics', basePollIntervalMs: 10 });
 
