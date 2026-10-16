@@ -11,3 +11,7 @@
 ## 2025-05-20 - Global Search Trigger Accessibility & Shortcut Badges
 **Learning:** Global search trigger buttons with visual shortcut badges (like `<kbd>⌘K</kbd>`) need an explicit `aria-label` describing both the action and the keyboard shortcut (e.g., "Search (Press Ctrl+K or Cmd+K)"), while hiding the decorative `<kbd>` tag with `aria-hidden="true"` to avoid screen readers announcing confusing fragments.
 **Action:** Always provide an explicit `aria-label` on trigger buttons that display keyboard shortcut badges, and mark the badge element as `aria-hidden="true"`.
+
+## 2025-05-21 - Sidebar Trigger Accessibility & Dynamic Expanded State
+**Learning:** Collapsible layout trigger controls like `SidebarTrigger` require dynamic `aria-expanded` attributes and state-aware accessible names ("Collapse sidebar" vs "Expand sidebar") rather than static generic labels like "Toggle Sidebar", so screen reader users immediately know the current visibility state and expected outcome when interacting with the button.
+**Action:** Always reflect the current state of collapsible sections/drawers/sidebars on trigger buttons via `aria-expanded={isExpanded}` and state-descriptive `aria-label` text.

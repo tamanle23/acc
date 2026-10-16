@@ -255,7 +255,9 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state, isMobile, openMobile } = useSidebar()
+  const isExpanded = isMobile ? openMobile : state === 'expanded'
+  const label = isExpanded ? 'Collapse sidebar' : 'Expand sidebar'
 
   return (
     <Button
@@ -263,6 +265,8 @@ function SidebarTrigger({
       data-slot='sidebar-trigger'
       variant='ghost'
       size='icon'
+      aria-expanded={isExpanded}
+      aria-label={label}
       className={cn('size-7', className)}
       onClick={(event) => {
         onClick?.(event)
@@ -271,7 +275,7 @@ function SidebarTrigger({
       {...props}
     >
       <PanelLeftIcon />
-      <span className='sr-only'>Toggle Sidebar</span>
+      <span className='sr-only'>{label}</span>
     </Button>
   )
 }
