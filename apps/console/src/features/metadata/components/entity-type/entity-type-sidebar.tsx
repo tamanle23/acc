@@ -33,8 +33,10 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Layers,
   Infinity as InfinityIcon,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useTenantBilling } from '../../api/use-billing';
 import { usePermissions } from '@/features/spring-auth';
 import { cn } from '@/lib/utils';
@@ -43,7 +45,8 @@ export const EntityTypeSidebar: React.FC = () => {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
+  const [compositeOnly, setCompositeOnly] = useState(false);
 
   const {
     selectedEntityTypeId,
@@ -77,15 +80,37 @@ export const EntityTypeSidebar: React.FC = () => {
     return entityTypesResponse?.content || [];
   }, [entityTypesResponse]);
 
+  const compositeCount = useMemo(() => {
+    return entityTypes.filter((et: EntityType) => Boolean(et.isComposite)).length;
+  }, [entityTypes]);
+
+  const displayedEntityTypes = useMemo(() => {
+    if (!compositeOnly) return entityTypes;
+    return entityTypes.filter((et: EntityType) => Boolean(et.isComposite));
+  }, [entityTypes, compositeOnly]);
+
   const totalElements = entityTypesResponse?.totalElements ?? entityTypes.length;
   const totalPages = entityTypesResponse?.totalPages ?? (Math.ceil(totalElements / pageSize) || 1);
 
-  // If no model is selected and we have items, set the first item
-  useEffect(() => {
-    if (!selectedEntityTypeId && entityTypes.length > 0) {
-      setSelectedEntityTypeId(String(entityTypes[0].id));
+  const handleToggleCompositeOnly = (checked: boolean) => {
+    setCompositeOnly(checked);
+    if (checked) {
+      const firstComp = entityTypes.find((et: EntityType) => Boolean(et.isComposite));
+      if (firstComp) {
+        setSelectedEntityTypeId(String(firstComp.id));
+      }
     }
-  }, [selectedEntityTypeId, entityTypes, setSelectedEntityTypeId]);
+  };
+
+  // If no model is selected or current selection is filtered out in compositeOnly mode, select first item
+  useEffect(() => {
+    if (displayedEntityTypes.length > 0) {
+      const currentExists = displayedEntityTypes.some((et) => String(et.id) === String(selectedEntityTypeId));
+      if (!currentExists || !selectedEntityTypeId) {
+        setSelectedEntityTypeId(String(displayedEntityTypes[0].id));
+      }
+    }
+  }, [selectedEntityTypeId, displayedEntityTypes, setSelectedEntityTypeId]);
 
   const { data: billing } = useTenantBilling();
   const { isSovereignCustodian } = usePermissions();
@@ -182,6 +207,30 @@ export const EntityTypeSidebar: React.FC = () => {
         )}
       </div>
 
+      {/* Composite Entities Filter Toggle */}
+      <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-black/[0.03] dark:bg-white/[0.04] border border-white/15 dark:border-white/10 shrink-0">
+        <div className="flex items-center gap-2">
+          <Layers className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs font-medium text-foreground">Composite Entities</span>
+          <Badge
+            variant="outline"
+            className={cn(
+              'text-[10px] font-mono px-1.5 py-0 h-4 rounded-md',
+              compositeCount > 0
+                ? 'bg-primary/10 text-primary border-primary/20'
+                : 'text-muted-foreground border-border'
+            )}
+          >
+            {compositeCount}
+          </Badge>
+        </div>
+        <Switch
+          checked={compositeOnly}
+          onCheckedChange={handleToggleCompositeOnly}
+          aria-label="Filter Composite Entities Only"
+        />
+      </div>
+
       {/* List */}
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-[220px] max-h-[400px] lg:max-h-none pr-1">
         {isLoading ? (
@@ -189,12 +238,16 @@ export const EntityTypeSidebar: React.FC = () => {
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <span>Loading models...</span>
           </div>
-        ) : entityTypes.length === 0 ? (
+        ) : displayedEntityTypes.length === 0 ? (
           <div className="text-xs text-muted-foreground p-6 text-center">
-            {debouncedSearch ? `No models matching "${debouncedSearch}".` : 'No entity models yet.'}
+            {compositeOnly
+              ? 'No composite entities found.'
+              : debouncedSearch
+              ? `No models matching "${debouncedSearch}".`
+              : 'No entity models yet.'}
           </div>
         ) : (
-          entityTypes.map((et: EntityType) => {
+          displayedEntityTypes.map((et: EntityType) => {
             const isSelected = String(selectedEntityTypeId) === String(et.id);
 
             return (
@@ -211,7 +264,21 @@ export const EntityTypeSidebar: React.FC = () => {
                 }`}
               >
                 <div className="flex flex-col gap-0.5 truncate pr-2">
-                  <span className="truncate">{et.name}</span>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="truncate">{et.name}</span>
+                    {et.isComposite && (
+                      <span
+                        className={cn(
+                          'text-[9px] font-mono font-semibold px-1 py-0.2 rounded uppercase tracking-wider shrink-0 border',
+                          isSelected
+                            ? 'bg-white/20 text-white border-white/30'
+                            : 'bg-primary/10 text-primary border-primary/20'
+                        )}
+                      >
+                        Composite
+                      </span>
+                    )}
+                  </div>
                   <span
                     className={`font-mono text-[10px] truncate ${
                       isSelected ? 'text-primary-foreground/75' : 'text-muted-foreground/80'

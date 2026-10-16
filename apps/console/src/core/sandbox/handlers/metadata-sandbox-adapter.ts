@@ -99,7 +99,11 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       if (req.method === 'GET') {
         const page = parseInt(searchParams.get('number') || searchParams.get('page') || '0', 10);
         const size = parseInt(searchParams.get('size') || '50', 10);
-        const data = await mockMetadataStore.getEntityTypes({ page, size });
+        const search = searchParams.get('search') || undefined;
+        const isComposite = searchParams.has('isComposite')
+          ? searchParams.get('isComposite') === 'true'
+          : undefined;
+        const data = await mockMetadataStore.getEntityTypes({ page, size, search, isComposite } as any);
         return { status: 200, data };
       }
       if (req.method === 'POST') {

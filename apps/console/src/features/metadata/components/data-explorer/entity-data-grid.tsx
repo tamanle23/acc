@@ -417,6 +417,13 @@ export const EntityDataGrid: React.FC<Props> = ({
     return recordsResponse?.content || [];
   }, [recordsResponse]);
 
+  // Auto-expand the first composite record when viewing a composite entity so the master-detail view is immediately visible
+  React.useEffect(() => {
+    if (isComposite && records.length > 0 && expandedRowIds.size === 0) {
+      setExpandedRowIds(new Set([records[0].id]));
+    }
+  }, [isComposite, records]);
+
   const handleSortToggle = (field: string) => {
     if (sortField === field) {
       if (sortDirection === 'asc') {

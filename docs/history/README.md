@@ -129,6 +129,8 @@
 | [122](122_phase_41_composite_entity_registry_dsl.md) | 2026-10-16 | Composite Entity Type Registry & Specification DSL (Phase 41) | Implemented single-table composite entities, declarative JSON tree AST, Master-Detail Bento Builder in Visual Studio, dynamic partial functional indexes, strict dependency guards, read-only invariants, and Hazelcast caching. |
 | [123](123_phase_42_base_entity_crud_pipeline_audit_ledger.md) | 2026-10-16 | Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger (Phase 42) | Implemented 6-stage RecordMutationPipeline, dual-mode OCC & ETag headers, 3-way auto-merging, declarative delete cascades, strict tenant blindness, rolling monthly range-partitioned audit table, Sovereign-only version restoration with dry-run diff preview, and Liquid Glass RecordAuditHistoryDrawer. |
 | [124](124_phase_43_adaptive_read_time_resolution_engine.md) | 2026-10-17 | Adaptive Read-Time Resolution Engine (Dynamic SQL Pushdown & Pagination) (Phase 43) | Implemented DynamicQueryCompiler for single-roundtrip PostgreSQL LEFT JOIN LATERAL JSON synthesis with windowed child pagination, resilient 1500ms timeout fallback to DataLoaderBatchResolver, dedicated REST endpoints with bracket notation child pagination, Liquid Glass CompositeMasterDetailRow in EntityDataGrid, and Unified Sandbox parity. |
+| [125](125_composite_entity_sidebar_filter_and_sandbox_master_detail.md) | 2026-10-17 | Composite Entity Sidebar Filter & Sandbox Master-Detail Expandable View | Added high-affordance Composite Entity filter toggle with live count badge to entity sidebar rail, auto-tab switch to records on composite selection, default first-row master-detail expansion, and complete relational sandbox seed dataset for Customer 360 View. |
+
 
 
 

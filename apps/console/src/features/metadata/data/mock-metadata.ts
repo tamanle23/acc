@@ -154,7 +154,7 @@ export const initialMockEntityTypes: EntityType[] = [
     id: 'customer-360-composite',
     name: 'Customer 360 View',
     systemName: 'customer_360_composite',
-    description: 'Real-time synthesized 360-degree customer view joining accounts, cloud resources, and audit logs.',
+    description: 'Real-time synthesized 360-degree customer view joining accounts, cloud resources, and deployment policies.',
     schemaVersion: 1,
     version: 1,
     isComposite: true,
@@ -165,6 +165,7 @@ export const initialMockEntityTypes: EntityType[] = [
       fields: [
         { source_attribute: 'legal_name', alias: 'name', data_type: 'string', required: true },
         { source_attribute: 'contact_email', alias: 'email', data_type: 'string', required: true },
+        { source_attribute: 'subscription_tier', alias: 'tier', data_type: 'string', required: false },
       ],
       children: [
         {
@@ -177,6 +178,21 @@ export const initialMockEntityTypes: EntityType[] = [
           fields: [
             { source_attribute: 'resource_name', alias: 'name', data_type: 'string' },
             { source_attribute: 'region', alias: 'region', data_type: 'string' },
+            { source_attribute: 'vcpu_cores', alias: 'vcpu', data_type: 'number' },
+            { source_attribute: 'ram_gib', alias: 'ram', data_type: 'number' },
+          ],
+        },
+        {
+          target_entity_type_id: '3',
+          target_entity_system_name: 'deployment_policy',
+          alias: 'policies',
+          join_pattern: 'PATTERN_C_ASSOCIATION',
+          relationship_type_id: 1,
+          cardinality: 'ONE_TO_MANY',
+          fields: [
+            { source_attribute: 'policy_id', alias: 'policy_id', data_type: 'string' },
+            { source_attribute: 'rollout_strategy', alias: 'strategy', data_type: 'string' },
+            { source_attribute: 'strict_zero_downtime', alias: 'zero_downtime', data_type: 'boolean' },
           ],
         },
       ],
@@ -189,6 +205,41 @@ export const initialMockEntityTypes: EntityType[] = [
 
 export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
   ...additionalAttributes,
+  'customer-360-composite': [
+    {
+      id: 'comp-101',
+      entityTypeId: 'customer-360-composite',
+      name: 'Account Name',
+      systemName: 'name',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: true,
+      displayOrder: 1,
+      version: 1,
+    },
+    {
+      id: 'comp-102',
+      entityTypeId: 'customer-360-composite',
+      name: 'Primary Contact Email',
+      systemName: 'email',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: true,
+      displayOrder: 2,
+      version: 1,
+    },
+    {
+      id: 'comp-103',
+      entityTypeId: 'customer-360-composite',
+      name: 'Subscription Tier',
+      systemName: 'tier',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: false,
+      displayOrder: 3,
+      version: 1,
+    },
+  ],
   '1': [
     {
       id: '101',
@@ -513,7 +564,10 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
       tenantId: regions[i % regions.length],
       version: 1,
       attributes: {
+        account_id: String(1000 + ((i % 50) + 1)),
+        resource_name: `${family.toUpperCase()} Node #${id}`,
         resource_code: code,
+        region: regions[i % regions.length],
         vcpu_cores: vcpu,
         ram_gib: ram,
         gpu_enabled: isGpu,
@@ -583,24 +637,31 @@ export const initialMockRelationshipTypes: RelationshipType[] = [
   },
 ];
 
-export const initialMockEntityRelationships: EntityRelationship[] = [
-  {
-    id: '1',
-    relationshipTypeId: '1',
-    sourceRecordId: '1001',
-    targetRecordId: '3001',
-    version: 1,
-    createdDate: new Date('2026-02-06').toISOString(),
-  },
-  {
-    id: '2',
-    relationshipTypeId: '2',
-    sourceRecordId: '1001',
-    targetRecordId: '2001',
-    version: 1,
-    createdDate: new Date('2026-02-08').toISOString(),
-  },
-];
+export const initialMockEntityRelationships: EntityRelationship[] = (() => {
+  const rels: EntityRelationship[] = [];
+  for (let i = 1; i <= 50; i++) {
+    const custId = String(1000 + i);
+    const policyId = String(3000 + i);
+    const computeId = String(2000 + i);
+    rels.push({
+      id: String(rels.length + 1),
+      relationshipTypeId: '1',
+      sourceRecordId: custId,
+      targetRecordId: policyId,
+      version: 1,
+      createdDate: new Date('2026-02-06').toISOString(),
+    });
+    rels.push({
+      id: String(rels.length + 1),
+      relationshipTypeId: '2',
+      sourceRecordId: custId,
+      targetRecordId: computeId,
+      version: 1,
+      createdDate: new Date('2026-02-08').toISOString(),
+    });
+  }
+  return rels;
+})();
 
 export class MockMetadataService implements MetadataDataSource {
   private entityTypes: EntityType[] = [...initialMockEntityTypes];
@@ -650,6 +711,11 @@ export class MockMetadataService implements MetadataDataSource {
           et.systemName.toLowerCase().includes(search) ||
           (et.description && et.description.toLowerCase().includes(search))
       );
+    }
+
+    if ((params as any)?.isComposite !== undefined) {
+      const isCompVal = String((params as any).isComposite) === 'true';
+      list = list.filter((et) => Boolean(et.isComposite) === isCompVal);
     }
 
     const totalElements = list.length;
@@ -887,6 +953,23 @@ export class MockMetadataService implements MetadataDataSource {
     const strId = String(entityTypeId);
     let attrs = [...(this.attributes[strId] || [])];
 
+    if (attrs.length === 0) {
+      const et = this.entityTypes.find((e) => String(e.id) === strId);
+      if (et?.isComposite && et.compositeSpec?.fields) {
+        attrs = et.compositeSpec.fields.map((f, idx) => ({
+          id: `comp-attr-${strId}-${idx + 1}`,
+          entityTypeId: strId,
+          name: f.alias ? f.alias.charAt(0).toUpperCase() + f.alias.slice(1) : f.source_attribute,
+          systemName: f.alias || f.source_attribute,
+          dataType: (f.data_type?.toUpperCase() as any) || 'STRING',
+          uiComponent: 'text',
+          isRequired: Boolean(f.required),
+          displayOrder: idx + 1,
+          version: 1,
+        }));
+      }
+    }
+
     // Sort by displayOrder ascending
     attrs.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
@@ -910,7 +993,11 @@ export class MockMetadataService implements MetadataDataSource {
     attrId: string | number
   ): Promise<AttributeDefinition | null> {
     const strId = String(entityTypeId);
-    const attrs = this.attributes[strId] || [];
+    let attrs = this.attributes[strId] || [];
+    if (attrs.length === 0) {
+      const res = await this.getAttributeDefinitions(entityTypeId);
+      attrs = res.content;
+    }
     const found = attrs.find((a) => String(a.id) === String(attrId));
     return found || null;
   }

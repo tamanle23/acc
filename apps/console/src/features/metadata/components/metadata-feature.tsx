@@ -77,6 +77,13 @@ export const MetadataFeature: React.FC = () => {
 
   const { data: activeEntity } = useEntityType(selectedEntityTypeId);
 
+  // 3. Auto-switch to 'data' (Records) tab when a composite entity is selected
+  React.useEffect(() => {
+    if (activeEntity?.isComposite && activeTab === 'schema') {
+      setActiveTab('data');
+    }
+  }, [activeEntity?.id, activeEntity?.isComposite]);
+
   // Live Metric Counts for High-Affordance Badges
   const { data: attributesResponse } = useAttributeDefinitions(selectedEntityTypeId, { size: 1 });
   const { data: recordsResponse } = useEntityRecords(selectedEntityTypeId, { size: 1 });
@@ -166,6 +173,12 @@ export const MetadataFeature: React.FC = () => {
                       <code className="text-xs font-mono text-muted-foreground bg-muted/60 dark:bg-white/5 px-2 py-0.5 rounded border border-white/20">
                         {activeEntity.systemName}
                       </code>
+                      {activeEntity.isComposite && (
+                        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/25 rounded px-2 py-0.5 flex items-center gap-1">
+                          <Layers className="h-3 w-3" />
+                          <span>Composite Entity</span>
+                        </span>
+                      )}
                     </div>
                     {activeEntity.description && (
                       <p className="text-xs text-muted-foreground leading-relaxed pl-0 sm:pl-9">
