@@ -16,6 +16,14 @@ import {
   Plus,
   Check,
   Flame,
+  Square,
+  Circle,
+  ArrowUpRight,
+  Eye,
+  Sun,
+  Zap,
+  GripVertical,
+  Library,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Card } from './ui/card';
@@ -39,10 +47,11 @@ import {
   DropdownMenuGroup,
 } from './ui/dropdown-menu';
 import { IRStateManager } from '../lib/ir/irState';
+import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
 
 interface SidebarProps {
-  activeTab: 'vault' | 'inspector';
-  setActiveTab: (tab: 'vault' | 'inspector') => void;
+  activeTab: 'library' | 'vault' | 'inspector';
+  setActiveTab: (tab: 'library' | 'vault' | 'inspector') => void;
   assets?: { inputs: any[]; outputs: any[] };
 }
 
@@ -313,26 +322,167 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     (a) => a.id.toLowerCase().includes(filterQuery.toLowerCase()) || a.src.toLowerCase().includes(filterQuery.toLowerCase())
   );
 
+  // Library State & Filter
+  const [libraryFilterQuery, setLibraryFilterQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | PresetCategory>('all');
+
+  const insertPresetAtCenter = (preset: StagingPreset) => {
+    const seq = preset.createSequence({
+      startFrame: 0,
+      normX: 0.5,
+      normY: 0.5,
+    });
+    IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
+      trackTypeFallback: preset.targetTrackType,
+      trackNameFallback: preset.targetTrackName,
+    });
+    setActiveTab('inspector');
+  };
+
+  const filteredPresets = STAGING_PRESETS.filter((p) => {
+    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const matchesQuery =
+      p.name.toLowerCase().includes(libraryFilterQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(libraryFilterQuery.toLowerCase()) ||
+      p.badge.toLowerCase().includes(libraryFilterQuery.toLowerCase());
+    return matchesCat && matchesQuery;
+  });
+
+  const renderPresetIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Type':
+        return <Type className="w-3.5 h-3.5 text-indigo-600" />;
+      case 'Square':
+        return <Square className="w-3.5 h-3.5 text-violet-600" />;
+      case 'Circle':
+        return <Circle className="w-3.5 h-3.5 text-cyan-600" />;
+      case 'ArrowUpRight':
+        return <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" />;
+      case 'Eye':
+        return <Eye className="w-3.5 h-3.5 text-sky-600" />;
+      case 'Sun':
+        return <Sun className="w-3.5 h-3.5 text-amber-500" />;
+      case 'Zap':
+        return <Zap className="w-3.5 h-3.5 text-amber-500" />;
+      case 'Sparkles':
+      default:
+        return <Sparkles className="w-3.5 h-3.5 text-pink-500" />;
+    }
+  };
+
   return (
     <aside className="w-84 bg-white border-l border-slate-200 flex flex-col h-full select-none shadow-xs">
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val as 'vault' | 'inspector')}
+        onValueChange={(val) => setActiveTab(val as 'library' | 'vault' | 'inspector')}
         className="flex flex-col h-full"
       >
         {/* Tabs Header */}
         <div className="p-3 border-b border-slate-200 bg-slate-50/50">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="vault" className="gap-2">
-              <Folder className="w-3.5 h-3.5" />
-              IR Assets
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="library" className="gap-1.5 text-xs">
+              <Library className="w-3.5 h-3.5" />
+              Library
             </TabsTrigger>
-            <TabsTrigger value="inspector" className="gap-2">
+            <TabsTrigger value="vault" className="gap-1.5 text-xs">
+              <Folder className="w-3.5 h-3.5" />
+              Assets
+            </TabsTrigger>
+            <TabsTrigger value="inspector" className="gap-1.5 text-xs">
               <Sliders className="w-3.5 h-3.5" />
               Inspector
             </TabsTrigger>
           </TabsList>
         </div>
+
+        {/* Tab 0: Staging Library */}
+        <TabsContent value="library" className="flex-1 flex flex-col m-0 overflow-hidden">
+          <div className="p-3 border-b border-slate-100 bg-white space-y-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Input
+                placeholder="Search presets & partial VFX..."
+                value={libraryFilterQuery}
+                onChange={(e) => setLibraryFilterQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-slate-50/50"
+              />
+            </div>
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1">
+              {(['all', 'text', 'shape', 'vfx'] as const).map((cat) => (
+                <Button
+                  key={cat}
+                  variant={selectedCategory === cat ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`h-6 text-[10px] px-2 capitalize ${
+                    selectedCategory === cat
+                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                      : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {cat === 'all' ? 'All' : cat === 'vfx' ? 'Partial VFX' : cat + 's'}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 p-3">
+            <div className="space-y-2.5 pb-4">
+              {filteredPresets.map((preset) => (
+                <div
+                  key={preset.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify({ presetId: preset.id }));
+                    e.dataTransfer.effectAllowed = 'copy';
+                  }}
+                  className="p-3 border border-slate-200 rounded-lg hover:border-indigo-400 bg-white shadow-2xs hover:shadow-xs transition-all cursor-grab active:cursor-grabbing group select-none"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 rounded bg-slate-100 group-hover:bg-indigo-50 transition-colors">
+                        {renderPresetIcon(preset.iconName)}
+                      </div>
+                      <span className="font-semibold text-slate-800 text-xs">
+                        {preset.name}
+                      </span>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] font-mono border-slate-200">
+                      {preset.badge}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight mb-2.5">
+                    {preset.description}
+                  </p>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
+                    <span className="text-slate-400 font-mono flex items-center gap-1">
+                      <GripVertical className="w-3 h-3 text-slate-300" />
+                      Drag to stage
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        insertPresetAtCenter(preset);
+                      }}
+                      className="h-5 px-2 text-[10px] font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Insert
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {filteredPresets.length === 0 && (
+                <p className="text-xs text-slate-400 italic text-center py-6">
+                  No presets found matching "{libraryFilterQuery}".
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
 
         {/* Tab 1: Video IR Asset Vault */}
         <TabsContent value="vault" className="flex-1 flex flex-col m-0 overflow-hidden">

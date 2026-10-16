@@ -21,7 +21,7 @@ import { IRStateManager } from './lib/ir/irState';
 export default function App() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [currentFrame, setCurrentFrame] = useState(0);
-  const [activeTab, setActiveTab] = useState<'vault' | 'inspector'>('inspector');
+  const [activeTab, setActiveTab] = useState<'library' | 'vault' | 'inspector'>('library');
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<number>(0);

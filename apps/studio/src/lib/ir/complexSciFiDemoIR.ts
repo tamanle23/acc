@@ -34,15 +34,15 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-voice-pilot': {
-      src: 'https://actions.google.com/sounds/v1/science_fiction/alien_spaceship_siren.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/ringing_ambient_background.ogg',
       type: 'audio',
     },
     'asset-laser-impact': {
-      src: 'https://actions.google.com/sounds/v1/weapons/laser_cannon.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/windchime_drone.ogg',
       type: 'audio',
     },
     'asset-synth-bgm': {
-      src: 'https://actions.google.com/sounds/v1/ambient/rain_heavy.ogg',
+      src: 'https://actions.google.com/sounds/v1/science_fiction/electric_ring_long.ogg',
       type: 'audio',
     },
   },

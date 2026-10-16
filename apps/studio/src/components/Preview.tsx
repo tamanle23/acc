@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
-import { Monitor, Sparkles, Box, Move, RotateCw } from 'lucide-react';
+import { Monitor, Sparkles, Box, Move, RotateCw, Type, ArrowUpRight } from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
@@ -13,6 +13,7 @@ import {
   type SnappingGuide,
   type TransformHandleType,
 } from '@acc/effect-engines/client';
+import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 
 interface PreviewProps {
   playhead: {
@@ -46,6 +47,11 @@ export function Preview({ playhead }: PreviewProps) {
   const [activeGuides, setActiveGuides] = useState<SnappingGuide[]>([]);
   const [startPointer, setStartPointer] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [startTransform, setStartTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
+
+  // Drag-and-Drop Staging & Inline Text Editing State
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
+  const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
 
@@ -372,16 +378,79 @@ export function Preview({ playhead }: PreviewProps) {
     setActiveGuides([]);
   };
 
-  // Active cues for subtitles and HUD telemetry
-  const activeCues = (irState.intervalTree?.queryActive(currentFrame) || [])
+  // Drag-and-Drop Staging Handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect) {
+      const normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
+      const normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
+      setDragCoords({ normX, normY });
+    }
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragOver(false);
+    setDragCoords(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    setDragCoords(null);
+    try {
+      const raw = e.dataTransfer.getData('application/json');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const preset = STAGING_PRESETS.find((p) => p.id === data.presetId);
+      if (!preset) return;
+
+      const rect = canvasRef.current?.getBoundingClientRect();
+      let normX = 0.5;
+      let normY = 0.5;
+      if (rect) {
+        normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
+        normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
+      }
+
+      const seq = preset.createSequence({
+        startFrame: currentFrame,
+        normX,
+        normY,
+      });
+      IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
+        trackTypeFallback: preset.targetTrackType,
+        trackNameFallback: preset.targetTrackName,
+      });
+    } catch (err) {
+      console.error('[Preview] Drop error:', err);
+    }
+  };
+
+  // Active cues and staged sequences
+  const activeSequences = irState.intervalTree?.queryActive(currentFrame) || [];
+  const activeCues = activeSequences
     .filter((s) => s.cues && s.cues.length > 0)
     .flatMap((s) => s.cues || []);
+
+  const activePartialVFX = activeSequences.filter((s) =>
+    s.modifiers?.some((m) => m.type === 'vfx/partial')
+  );
+  const activeShapes = activeSequences.filter((s) =>
+    s.modifiers?.some((m) => m.type === 'shape/vector')
+  );
 
   return (
     <Card
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className="relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden border-slate-800 bg-slate-950/90 shadow-2xl select-none"
     >
       {/* Top Monitor Status Bar */}
@@ -426,13 +495,193 @@ export function Preview({ playhead }: PreviewProps) {
         )}
       </div>
 
-      {/* Main Video Viewport Canvas with Mouse Interactive Parallax */}
+      {/* Main Video Viewport Canvas with Mouse Interactive Parallax & Staging Drop Target */}
       <div className="relative flex items-center justify-center">
         <canvas
           ref={canvasRef}
           className="max-h-[70vh] max-w-[80vw] object-contain rounded-lg shadow-inner cursor-crosshair"
           style={{ aspectRatio: '16/9' }}
         />
+
+        {/* Drag-and-Drop Staging Target Indicator */}
+        {isDragOver && dragCoords && (
+          <div
+            style={{
+              left: `${dragCoords.normX * 100}%`,
+              top: `${dragCoords.normY * 100}%`,
+            }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-cyan-500/20 rounded-md p-4 flex flex-col items-center justify-center pointer-events-none z-30 shadow-[0_0_15px_#06b6d4]"
+          >
+            <Sparkles className="w-5 h-5 text-cyan-300 animate-spin" />
+            <span className="text-[10px] font-mono font-bold text-cyan-200 mt-1 whitespace-nowrap">
+              Drop to stage ({Math.round(dragCoords.normX * 100)}%, {Math.round(dragCoords.normY * 100)}%)
+            </span>
+          </div>
+        )}
+
+        {/* Active Partial VFX Overlays */}
+        {activePartialVFX.map((seq) => {
+          const mod = seq.modifiers?.find((m) => m.type === 'vfx/partial');
+          const trans = seq.modifiers?.find((m) => m.type === 'transform');
+          const p = (mod?.params || {}) as any;
+          const tp = (trans?.params || {}) as any;
+          const normX = tp.normX ?? 0.5;
+          const normY = tp.normY ?? 0.5;
+
+          if (p.vfxType === 'blur') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  width: `${(p.widthNorm ?? 0.35) * 100}%`,
+                  height: `${(p.heightNorm ?? 0.25) * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute border border-dashed border-cyan-400/80 bg-slate-900/60 backdrop-blur-md rounded-xs flex items-center justify-center pointer-events-auto cursor-pointer z-10 shadow-lg"
+              >
+                <span className="text-[9px] font-mono font-bold text-cyan-300 tracking-wider uppercase px-1.5 py-0.5 bg-black/60 rounded">
+                  {p.label || 'REGIONAL BLUR'}
+                </span>
+              </div>
+            );
+          }
+
+          if (p.vfxType === 'spotlight') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  width: `${((p.radius ?? 160) * 2 / 1080) * 100}%`,
+                  aspectRatio: '1',
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute rounded-full pointer-events-auto cursor-pointer z-10 flex items-center justify-center"
+              >
+                <div
+                  className="w-full h-full rounded-full animate-pulse border border-cyan-400/40"
+                  style={{
+                    background: `radial-gradient(circle, ${p.color || '#00d4ff'}55 0%, transparent 70%)`,
+                  }}
+                />
+              </div>
+            );
+          }
+
+          if (p.vfxType === 'glitch') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  width: '30%',
+                  height: '20%',
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute border border-rose-500/80 bg-rose-950/30 flex items-center justify-center pointer-events-auto cursor-pointer z-10 overflow-hidden shadow-lg"
+              >
+                <span className="text-[9px] font-mono font-bold text-rose-300 tracking-wider uppercase px-1.5 py-0.5 bg-black/60 rounded">
+                  {p.label || 'REGIONAL GLITCH'}
+                </span>
+              </div>
+            );
+          }
+
+          if (p.vfxType === 'point_emitter') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute w-8 h-8 rounded-full border-2 border-pink-500 bg-pink-500/20 flex items-center justify-center pointer-events-auto cursor-pointer z-10 animate-ping"
+              >
+                <div className="w-2 h-2 rounded-full bg-pink-400" />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+
+        {/* Active Vector Shapes Overlays */}
+        {activeShapes.map((seq) => {
+          const mod = seq.modifiers?.find((m) => m.type === 'shape/vector');
+          const trans = seq.modifiers?.find((m) => m.type === 'transform');
+          const p = (mod?.params || {}) as any;
+          const tp = (trans?.params || {}) as any;
+          const normX = tp.normX ?? 0.5;
+          const normY = tp.normY ?? 0.5;
+
+          if (p.shapeType === 'rect' || p.shapeType === 'rounded_box') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  width: `${(p.width ?? 320) / 19.2}%`,
+                  height: `${(p.height ?? 180) / 10.8}%`,
+                  borderRadius: p.radius ? `${p.radius}px` : undefined,
+                  border: `${p.strokeWidth || 2}px solid ${p.strokeColor || '#818cf8'}`,
+                  backgroundColor: p.fillColor || 'transparent',
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute pointer-events-auto cursor-pointer z-10 flex items-center justify-center shadow-md backdrop-blur-xs"
+              />
+            );
+          }
+
+          if (p.shapeType === 'circle') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  width: `${((p.radius ?? 90) * 2) / 19.2}%`,
+                  aspectRatio: '1',
+                  borderRadius: '50%',
+                  border: `${p.strokeWidth || 2}px ${p.isDashed ? 'dashed' : 'solid'} ${p.strokeColor || '#06b6d4'}`,
+                  backgroundColor: p.fillColor || 'transparent',
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute pointer-events-auto cursor-pointer z-10 flex items-center justify-center shadow-md"
+              />
+            );
+          }
+
+          if (p.shapeType === 'arrow') {
+            return (
+              <div
+                key={seq.id}
+                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                style={{
+                  left: `${normX * 100}%`,
+                  top: `${normY * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+                className="absolute pointer-events-auto cursor-pointer z-10 text-rose-500 drop-shadow-[0_0_8px_#f43f5e]"
+              >
+                <ArrowUpRight className="w-10 h-10" />
+              </div>
+            );
+          }
+
+          return null;
+        })}
 
         {/* Magnetic Snapping Guidelines Overlay */}
         {activeGuides.map((guide) => (
@@ -463,6 +712,17 @@ export function Preview({ playhead }: PreviewProps) {
         {selectedSeqId && (
           <div
             onMouseDown={(e) => handleHandleMouseDown('body', e)}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
+              if (selectedSeq?.cues && selectedSeq.cues.length > 0) {
+                setEditingCue({
+                  sequenceId: selectedSeq.id,
+                  cueIndex: 0,
+                  text: selectedSeq.cues[0].text,
+                });
+              }
+            }}
             style={{
               transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
               width: '50%',
@@ -534,21 +794,67 @@ export function Preview({ playhead }: PreviewProps) {
         )}
       </div>
 
-      {/* Dynamic Subtitles & HUD Callout Overlay */}
+      {/* Dynamic Subtitles & HUD Callout Overlay with Double-Click Inline Editing */}
       {activeCues.length > 0 && (
-        <div className="absolute bottom-6 left-8 right-8 flex flex-col items-center gap-2 pointer-events-none z-20">
-          {activeCues.map((cue, idx) => (
-            <span
-              key={idx}
-              className={`backdrop-blur-xs px-4 py-1.5 rounded-md border shadow-lg text-center ${
-                cue.text.startsWith('TARGET')
-                  ? 'bg-rose-950/80 border-rose-500/40 text-rose-300 font-mono text-xs tracking-wider'
-                  : 'bg-black/80 border-white/10 text-white font-medium text-base'
-              }`}
-            >
-              {cue.text}
-            </span>
-          ))}
+        <div className="absolute bottom-6 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
+          {activeCues.map((cue, idx) => {
+            const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
+            return (
+              <span
+                key={idx}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  const parentSeq = activeSequences.find((s) => s.cues && s.cues.some((c) => c.text === cue.text));
+                  if (parentSeq) {
+                    const cueIdx = parentSeq.cues?.findIndex((c) => c.text === cue.text) ?? 0;
+                    setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
+                  }
+                }}
+                className={`backdrop-blur-xs px-4 py-1.5 rounded-md border shadow-lg text-center cursor-pointer hover:border-indigo-400 transition-colors ${
+                  isTarget
+                    ? 'bg-rose-950/80 border-rose-500/40 text-rose-300 font-mono text-xs tracking-wider'
+                    : 'bg-black/80 border-white/10 text-white font-medium text-base'
+                }`}
+                title="Double click to edit text"
+              >
+                {cue.text}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Floating Inline Canvas Text Editor Modal */}
+      {editingCue && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-xs pointer-events-auto">
+          <div className="bg-slate-900 border border-indigo-500 rounded-lg p-4 shadow-2xl flex flex-col gap-3 max-w-md w-full mx-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between text-xs text-indigo-300 font-mono">
+              <span className="flex items-center gap-1.5 font-bold">
+                <Type className="w-3.5 h-3.5 text-indigo-400" />
+                Inline Canvas Text Editor
+              </span>
+              <span className="text-[10px] text-slate-400">[Enter to commit, Esc to cancel]</span>
+            </div>
+            <input
+              type="text"
+              autoFocus
+              value={editingCue.text}
+              onChange={(e) => setEditingCue({ ...editingCue, text: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
+                  setEditingCue(null);
+                } else if (e.key === 'Escape') {
+                  setEditingCue(null);
+                }
+              }}
+              onBlur={() => {
+                IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
+                setEditingCue(null);
+              }}
+              className="bg-black/80 border border-indigo-400/80 rounded px-3 py-2 text-white font-mono text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-400 shadow-inner"
+            />
+          </div>
         </div>
       )}
     </Card>

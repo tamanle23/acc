@@ -17,6 +17,9 @@ import { TrimSequenceCommand } from '../commands/TrimSequenceCommand';
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
+import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequenceCommand';
+import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
+import type { IRSequence } from '@acc/ir/client';
 
 export interface IRState {
   doc: VideoIRDocument;
@@ -127,6 +130,8 @@ export class IRStateManager {
   public dispatch(command: ICommand): void {
     const newDoc = this.historyManager.execute(command, this.state.doc);
     this.state.doc = newDoc;
+    this.state.canUndo = this.historyManager.canUndo();
+    this.state.canRedo = this.historyManager.canRedo();
     this.recompile();
   }
 
@@ -134,6 +139,8 @@ export class IRStateManager {
     const rolledBackDoc = this.historyManager.undo(this.state.doc);
     if (rolledBackDoc) {
       this.state.doc = rolledBackDoc;
+      this.state.canUndo = this.historyManager.canUndo();
+      this.state.canRedo = this.historyManager.canRedo();
       this.recompile();
     }
   }
@@ -142,6 +149,8 @@ export class IRStateManager {
     const replayedDoc = this.historyManager.redo(this.state.doc);
     if (replayedDoc) {
       this.state.doc = replayedDoc;
+      this.state.canUndo = this.historyManager.canUndo();
+      this.state.canRedo = this.historyManager.canRedo();
       this.recompile();
     }
   }
@@ -205,5 +214,18 @@ export class IRStateManager {
 
   public removeModifier(sequenceId: string, modifierType: string): void {
     this.dispatch(new RemoveModifierCommand(sequenceId, modifierType));
+  }
+
+  public addSequence(
+    targetTrackId: string,
+    sequence: IRSequence,
+    options?: AddSequenceOptions
+  ): void {
+    this.dispatch(new AddSequenceCommand(targetTrackId, sequence, options));
+    this.setSelectedSequenceId(sequence.id);
+  }
+
+  public updateTextCue(sequenceId: string, cueIndex: number, newText: string): void {
+    this.dispatch(new UpdateTextCueCommand(sequenceId, cueIndex, newText));
   }
 }
