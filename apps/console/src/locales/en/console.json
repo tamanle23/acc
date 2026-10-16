@@ -26,6 +26,7 @@
       "tasks": "Workflow Executions",
       "workflowExecutions": "Workflow Executions",
       "workflows": "Workflows",
+      "approvals": "Task Approvals",
       "apps": "Apps",
       "chats": "Chats",
       "users": "Users",

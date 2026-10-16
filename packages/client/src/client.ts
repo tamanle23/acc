@@ -21,6 +21,8 @@ import type {
   WorkflowSnapshot,
   StartWorkflowRequest,
   ExecutionSseEvent,
+  ApprovalTask,
+  ApprovalDecisionRequest,
   UserVm,
   UserSearchCondition,
   CreateUserRequest,
@@ -520,6 +522,34 @@ export class WorkflowExecutionsNamespace {
     })();
 
     return () => controller.abort();
+  }
+
+  getApprovals(options?: RequestOptions): Promise<ApprovalTask[]> {
+    return this.client.get<ApprovalTask[]>('/v1/workflow/tasks/approvals', options);
+  }
+
+  claimApproval(taskId: string, userId?: string, options?: RequestOptions): Promise<{ claimed: boolean; taskId: string; claimedBy: string }> {
+    return this.client.post<{ claimed: boolean; taskId: string; claimedBy: string }>(
+      `/v1/workflow/tasks/${taskId}/claim`,
+      { userId },
+      options
+    );
+  }
+
+  unclaimApproval(taskId: string, options?: RequestOptions): Promise<{ unclaimed: boolean; taskId: string }> {
+    return this.client.post<{ unclaimed: boolean; taskId: string }>(
+      `/v1/workflow/tasks/${taskId}/unclaim`,
+      {},
+      options
+    );
+  }
+
+  resolveApproval(taskId: string, payload: ApprovalDecisionRequest, options?: RequestOptions): Promise<{ resolved: boolean; taskId: string; action: string }> {
+    return this.client.post<{ resolved: boolean; taskId: string; action: string }>(
+      `/v1/workflow/tasks/${taskId}/resolve`,
+      payload,
+      options
+    );
   }
 }
 

@@ -70,6 +70,7 @@ export function useWorkflowExecutionStream(executionId: string | null) {
   const handleTaskTransition = useCallback((taskRef: string, status: string, _output?: unknown, _error?: string) => {
     let executionState: ExecutionState = 'PENDING';
     if (status === 'IN_PROGRESS') executionState = 'IN_PROGRESS';
+    else if (status === 'WAITING_FOR_APPROVAL') executionState = 'WAITING_FOR_APPROVAL';
     else if (status === 'COMPLETED') executionState = 'COMPLETED';
     else if (status === 'FAILED') executionState = 'FAILED';
     else if (status === 'TIMED_OUT') executionState = 'TIMED_OUT';
@@ -92,6 +93,7 @@ export function useWorkflowExecutionStream(executionId: string | null) {
     if (snap.tasksByRef) {
       Object.entries(snap.tasksByRef).forEach(([ref, t]) => {
         if (t.status === 'IN_PROGRESS') mappedStates[ref] = 'IN_PROGRESS';
+        else if (t.status === 'WAITING_FOR_APPROVAL') mappedStates[ref] = 'WAITING_FOR_APPROVAL';
         else if (t.status === 'COMPLETED') mappedStates[ref] = 'COMPLETED';
         else if (t.status === 'FAILED') mappedStates[ref] = 'FAILED';
         else mappedStates[ref] = 'PENDING';

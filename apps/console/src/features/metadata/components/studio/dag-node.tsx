@@ -249,6 +249,13 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
             FAILED
           </span>
         );
+      case 'WAITING_FOR_APPROVAL':
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
+            <UserCheck className="w-3 h-3" />
+            APPROVAL
+          </span>
+        );
       default:
         return (
           <span className="text-[10px] font-medium text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded-full">
@@ -267,6 +274,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'bg-white/75 dark:bg-slate-900/75 border-white/40 dark:border-white/10',
         data.executionState === 'COMPLETED' && 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
         data.executionState === 'IN_PROGRESS' && 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.45)] animate-pulse',
+        data.executionState === 'WAITING_FOR_APPROVAL' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.55)] animate-pulse',
         data.executionState === 'FAILED' && 'border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/50',
         data.validationError && 'border-rose-500 ring-2 ring-rose-500/40',
         selected ? 'ring-2 ring-primary border-primary scale-105' : 'hover:scale-[1.02]',

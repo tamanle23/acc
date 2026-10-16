@@ -43,12 +43,11 @@ interface WorkflowCatalogTableProps {
 
 export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
   data: definitions,
-  search,
   isLoading,
   onDesignWorkflow,
   onCreateNew,
 }) => {
-  
+  const [search, setSearch] = useState('');
   const toggleMutation = useToggleWorkflowStatus();
   const deleteMutation = useDeleteWorkflowDefinition();
 

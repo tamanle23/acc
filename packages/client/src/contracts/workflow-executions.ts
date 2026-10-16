@@ -5,6 +5,7 @@
 export type WorkflowExecutionStatus =
   | 'SCHEDULED'
   | 'IN_PROGRESS'
+  | 'WAITING_FOR_APPROVAL'
   | 'COMPLETED'
   | 'FAILED'
   | 'TIMED_OUT'
@@ -20,12 +21,41 @@ export type WorkflowExecutionStatus =
   | 'done'
   | 'canceled';
 
+export interface ApprovalTask {
+  id: string;
+  taskId: string;
+  workflowId: string;
+  workflowKey: string;
+  workflowName?: string;
+  taskReferenceName: string;
+  status: 'WAITING_FOR_APPROVAL' | 'COMPLETED' | 'FAILED';
+  assignee?: string;
+  role?: string;
+  instructions?: string;
+  slaMinutes?: number;
+  createdAt: string;
+  dueAt?: string;
+  claimedBy?: string | null;
+  claimedAt?: string | number | null;
+  slaBreached?: boolean;
+  decision?: 'APPROVED' | 'REJECTED';
+  decisionComment?: string;
+  inputData?: Record<string, unknown>;
+  outputData?: Record<string, unknown>;
+}
+
+export interface ApprovalDecisionRequest {
+  action: 'APPROVE' | 'REJECT';
+  comment?: string;
+  formData?: Record<string, unknown>;
+}
+
 export interface TaskSnapshot {
   taskId: string;
   workflowId: string;
   taskReferenceName: string;
   taskType: string;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'WAITING_FOR_APPROVAL' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
   leaseOwner?: string | null;
   attempt?: number;
   maxRetries?: number;

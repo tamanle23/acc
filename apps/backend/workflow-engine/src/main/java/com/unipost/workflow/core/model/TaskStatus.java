@@ -3,6 +3,7 @@ package com.unipost.workflow.core.model;
 public enum TaskStatus {
     SCHEDULED,
     IN_PROGRESS,
+    WAITING_FOR_APPROVAL,
     COMPLETED,
     FAILED,
     TIMED_OUT,

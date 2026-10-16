@@ -168,4 +168,132 @@ public class TaskWorkerController {
         boolean renewed = persistencePort.renewLease(taskId, workerId, newVisibleAt);
         return ResponseEntity.ok(Map.of("renewed", renewed, "taskId", taskId));
     }
+
+    @PostMapping("/{id}/claim")
+    public ResponseEntity<?> claimTask(
+        @PathVariable("id") String taskId,
+        @RequestBody(required = false) Map<String, Object> body,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String principal = body != null && body.containsKey("userId") ? String.valueOf(body.get("userId")) : "operator";
+        long now = System.currentTimeMillis();
+        Map<String, Object> output = new java.util.HashMap<>(task.outputData());
+        output.put("claimedBy", principal);
+        output.put("claimedAt", now);
+
+        persistencePort.updateTaskExecution(taskId, task.status(), output, null, now);
+        broadcaster.broadcast(task.workflowId(), "TASK_CLAIMED", Map.of(
+            "workflowId", task.workflowId(),
+            "taskId", taskId,
+            "taskReferenceName", task.taskReferenceName(),
+            "claimedBy", principal,
+            "claimedAt", now,
+            "timestamp", now
+        ));
+
+        return ResponseEntity.ok(Map.of("claimed", true, "taskId", taskId, "claimedBy", principal));
+    }
+
+    @PostMapping("/{id}/unclaim")
+    public ResponseEntity<?> unclaimTask(
+        @PathVariable("id") String taskId,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+        long now = System.currentTimeMillis();
+        Map<String, Object> output = new java.util.HashMap<>(task.outputData());
+        output.remove("claimedBy");
+        output.remove("claimedAt");
+
+        persistencePort.updateTaskExecution(taskId, task.status(), output, null, now);
+        broadcaster.broadcast(task.workflowId(), "TASK_UNCLAIMED", Map.of(
+            "workflowId", task.workflowId(),
+            "taskId", taskId,
+            "taskReferenceName", task.taskReferenceName(),
+            "timestamp", now
+        ));
+
+        return ResponseEntity.ok(Map.of("unclaimed", true, "taskId", taskId));
+    }
+
+    public record HumanTaskResolutionRequest(
+        String action, // "APPROVE" | "REJECT"
+        String comment,
+        Map<String, Object> formData
+    ) {}
+
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<?> resolveTask(
+        @PathVariable("id") String taskId,
+        @RequestBody HumanTaskResolutionRequest request,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        long now = System.currentTimeMillis();
+
+        TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        WorkflowSnapshot wfSnapshot = persistencePort.getWorkflowSnapshot(task.workflowId()).orElse(null);
+        if (wfSnapshot == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        WorkflowDefinition def = registry.get(tenantId, wfSnapshot.workflowKey())
+            .orElseGet(() -> WorkflowDefinition.builder(wfSnapshot.workflowKey()).build());
+
+        boolean isApproved = "APPROVE".equalsIgnoreCase(request.action());
+        Map<String, Object> resolvedOutput = new java.util.HashMap<>(task.outputData());
+        resolvedOutput.put("decision", isApproved ? "APPROVED" : "REJECTED");
+        if (request.comment() != null) {
+            resolvedOutput.put("decisionComment", request.comment());
+        }
+        if (request.formData() != null) {
+            resolvedOutput.putAll(request.formData());
+        }
+
+        engineService.reportTaskResult(
+            task.workflowId(),
+            taskId,
+            "human-reviewer",
+            isApproved,
+            resolvedOutput,
+            isApproved ? null : (request.comment() != null ? request.comment() : "Rejected by human reviewer"),
+            0,
+            def,
+            now
+        );
+
+        String eventStatus = isApproved ? "TASK_COMPLETED" : "TASK_FAILED";
+        broadcaster.broadcast(task.workflowId(), eventStatus, Map.of(
+            "workflowId", task.workflowId(),
+            "taskId", taskId,
+            "taskReferenceName", task.taskReferenceName(),
+            "status", isApproved ? "COMPLETED" : "FAILED",
+            "decision", isApproved ? "APPROVED" : "REJECTED",
+            "output", resolvedOutput,
+            "timestamp", now
+        ));
+
+        persistencePort.getWorkflowSnapshot(task.workflowId()).ifPresent(updatedWf -> {
+            if (updatedWf.status().isTerminal()) {
+                broadcaster.broadcast(task.workflowId(), "WORKFLOW_" + updatedWf.status().name(), Map.of(
+                    "workflowId", task.workflowId(),
+                    "status", updatedWf.status().name(),
+                    "timestamp", System.currentTimeMillis()
+                ));
+            }
+        });
+
+        return ResponseEntity.ok(Map.of("resolved", true, "taskId", taskId, "action", request.action()));
+    }
 }

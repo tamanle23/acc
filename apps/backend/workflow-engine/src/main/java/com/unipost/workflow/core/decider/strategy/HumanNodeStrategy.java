@@ -32,21 +32,21 @@ public final class HumanNodeStrategy implements NodeEvaluatorStrategy {
         TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
         if (existing == null) {
-            // First encounter: transition to IN_PROGRESS and wait for human review
+            // First encounter: transition to WAITING_FOR_APPROVAL and wait for human review
             String taskId = snapshot.workflowId() + "_" + refName;
             Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
 
             List<EngineCommand> commands = new ArrayList<>();
-            // Save task directly in IN_PROGRESS state without worker lease polling
+            // Save task directly in WAITING_FOR_APPROVAL state without worker lease polling
             commands.add(new EngineCommand.UpdateTaskStatus(
                 taskId,
                 refName,
-                TaskStatus.IN_PROGRESS,
+                TaskStatus.WAITING_FOR_APPROVAL,
                 resolvedInput,
                 null
             ));
 
-            return new NodeEvaluationResult(TaskStatus.IN_PROGRESS, commands, Collections.emptyMap(), true);
+            return new NodeEvaluationResult(TaskStatus.WAITING_FOR_APPROVAL, commands, Collections.emptyMap(), true);
         }
 
         TaskStatus status = existing.status();

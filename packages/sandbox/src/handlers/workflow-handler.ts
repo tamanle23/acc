@@ -217,9 +217,81 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
   },
 ];
 
+export interface SandboxApprovalTask {
+  id: string;
+  taskId: string;
+  workflowId: string;
+  workflowKey: string;
+  workflowName: string;
+  taskReferenceName: string;
+  status: 'WAITING_FOR_APPROVAL' | 'COMPLETED' | 'FAILED';
+  assignee?: string;
+  role?: string;
+  instructions?: string;
+  slaMinutes?: number;
+  createdAt: string;
+  dueAt?: string;
+  claimedBy?: string | null;
+  claimedAt?: string | number | null;
+  slaBreached?: boolean;
+  decision?: 'APPROVED' | 'REJECTED';
+  decisionComment?: string;
+  inputData?: Record<string, unknown>;
+  outputData?: Record<string, unknown>;
+}
+
+const DEFAULT_APPROVALS: SandboxApprovalTask[] = [
+  {
+    id: 'appr_01',
+    taskId: 'task_exec_901_complianceReview',
+    workflowId: 'wf_exec_901',
+    workflowKey: 'order-fulfillment-v1',
+    workflowName: 'Order Fulfillment Pipeline',
+    taskReferenceName: 'complianceReview',
+    status: 'WAITING_FOR_APPROVAL',
+    role: 'ROLE_COMPLIANCE_OFFICER',
+    instructions: 'Verify international export declaration documents and customs clearance certificate.',
+    slaMinutes: 120,
+    createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    dueAt: new Date(Date.now() + 85 * 60 * 1000).toISOString(),
+    claimedBy: null,
+    claimedAt: null,
+    slaBreached: false,
+    inputData: {
+      orderId: 'ORD-2026-9921',
+      country: 'DE',
+      declaredValue: 45000000,
+      customerTier: 'ENTERPRISE',
+    },
+  },
+  {
+    id: 'appr_02',
+    taskId: 'task_exec_902_financeSignoff',
+    workflowId: 'wf_exec_902',
+    workflowKey: 'invoice-billing-v1',
+    workflowName: 'Monthly Billing & Tax Reconciliation',
+    taskReferenceName: 'financeSignoff',
+    status: 'WAITING_FOR_APPROVAL',
+    role: 'ROLE_FINANCE_DIRECTOR',
+    instructions: 'Approve VAT reconciliation exception for quarterly consolidated invoice batch.',
+    slaMinutes: 30,
+    createdAt: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+    dueAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    claimedBy: 'satnaing',
+    claimedAt: Date.now() - 15 * 60 * 1000,
+    slaBreached: true,
+    inputData: {
+      batchId: 'BATCH-2026-Q3-TAX',
+      varianceAmount: 1245000,
+      vatCode: 'VN-VAT-10',
+    },
+  },
+];
+
 export class WorkflowSandboxRepository {
   private tenantDefinitions: Map<string, Map<string, WorkflowDefinitionIR>> = new Map();
   private tenantExecutions: Map<string, Map<string, WorkflowExecution>> = new Map();
+  private tenantApprovals: Map<string, SandboxApprovalTask[]> = new Map();
 
   constructor() {
     this.reset();
@@ -250,9 +322,18 @@ export class WorkflowSandboxRepository {
     return this.tenantExecutions.get(tid)!;
   }
 
+  private getApprovalList(tenantId?: string): SandboxApprovalTask[] {
+    const tid = tenantId || this.getActiveTenantId();
+    if (!this.tenantApprovals.has(tid)) {
+      this.tenantApprovals.set(tid, JSON.parse(JSON.stringify(DEFAULT_APPROVALS)));
+    }
+    return this.tenantApprovals.get(tid)!;
+  }
+
   public reset(): void {
     this.tenantDefinitions.clear();
     this.tenantExecutions.clear();
+    this.tenantApprovals.clear();
 
     const seedTenants = ['SYSTEM', 'tenant-acme', 'tenant-us-east-1', 'tenant-eu-central-1', 'tenant-us-west-2'];
     seedTenants.forEach((tid) => {
@@ -261,7 +342,52 @@ export class WorkflowSandboxRepository {
         defMap.set(d.workflowKey, { ...JSON.parse(JSON.stringify(d)), tenantId: tid });
       });
       this.tenantDefinitions.set(tid, defMap);
+      this.tenantApprovals.set(tid, JSON.parse(JSON.stringify(DEFAULT_APPROVALS)));
     });
+  }
+
+  public getApprovals(tenantId?: string): SandboxApprovalTask[] {
+    return this.getApprovalList(tenantId);
+  }
+
+  public claimApproval(taskId: string, userId: string = 'satnaing', tenantId?: string): SandboxApprovalTask | null {
+    const list = this.getApprovalList(tenantId);
+    const item = list.find((a) => a.taskId === taskId || a.id === taskId);
+    if (!item) return null;
+    item.claimedBy = userId;
+    item.claimedAt = Date.now();
+    return item;
+  }
+
+  public unclaimApproval(taskId: string, tenantId?: string): SandboxApprovalTask | null {
+    const list = this.getApprovalList(tenantId);
+    const item = list.find((a) => a.taskId === taskId || a.id === taskId);
+    if (!item) return null;
+    item.claimedBy = null;
+    item.claimedAt = null;
+    return item;
+  }
+
+  public resolveApproval(
+    taskId: string,
+    action: 'APPROVE' | 'REJECT',
+    comment?: string,
+    formData?: Record<string, unknown>,
+    tenantId?: string
+  ): SandboxApprovalTask | null {
+    const list = this.getApprovalList(tenantId);
+    const item = list.find((a) => a.taskId === taskId || a.id === taskId);
+    if (!item) return null;
+    item.status = action === 'APPROVE' ? 'COMPLETED' : 'FAILED';
+    item.decision = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    item.decisionComment = comment;
+    item.outputData = {
+      decision: item.decision,
+      decisionComment: comment,
+      resolvedAt: Date.now(),
+      ...(formData || {}),
+    };
+    return item;
   }
 
   public getDefinitions(tenantId?: string): WorkflowDefinitionIR[] {
@@ -547,6 +673,47 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     // 7. Worker Heartbeat: POST /workflow/tasks/{id}/heartbeat
     if (cleanPath.includes('/tasks/') && cleanPath.endsWith('/heartbeat') && method === 'POST') {
       return { status: 200, data: { renewed: true } };
+    }
+
+    // 8. Human-in-the-Loop Approval Endpoints:
+    // GET /workflow/tasks/approvals
+    if ((cleanPath === '/workflow/tasks/approvals' || cleanPath === '/workflow/tasks/approvals/') && method === 'GET') {
+      return { status: 200, data: workflowSandboxRepo.getApprovals(tenantId) };
+    }
+
+    // POST /workflow/tasks/{id}/claim
+    const claimMatch = cleanPath.match(/^\/workflow\/tasks\/([^/]+)\/claim$/);
+    if (claimMatch && method === 'POST') {
+      const taskId = claimMatch[1];
+      const userId = (req.data as any)?.userId || 'satnaing';
+      const claimed = workflowSandboxRepo.claimApproval(taskId, userId, tenantId);
+      if (claimed) {
+        return { status: 200, data: { claimed: true, taskId, claimedBy: userId } };
+      }
+      return { status: 404, data: { error: `Approval task ${taskId} not found` } };
+    }
+
+    // POST /workflow/tasks/{id}/unclaim
+    const unclaimMatch = cleanPath.match(/^\/workflow\/tasks\/([^/]+)\/unclaim$/);
+    if (unclaimMatch && method === 'POST') {
+      const taskId = unclaimMatch[1];
+      const unclaimed = workflowSandboxRepo.unclaimApproval(taskId, tenantId);
+      if (unclaimed) {
+        return { status: 200, data: { unclaimed: true, taskId } };
+      }
+      return { status: 404, data: { error: `Approval task ${taskId} not found` } };
+    }
+
+    // POST /workflow/tasks/{id}/resolve
+    const resolveMatch = cleanPath.match(/^\/workflow\/tasks\/([^/]+)\/resolve$/);
+    if (resolveMatch && method === 'POST') {
+      const taskId = resolveMatch[1];
+      const body = (req.data || {}) as { action: 'APPROVE' | 'REJECT'; comment?: string; formData?: Record<string, unknown> };
+      const resolved = workflowSandboxRepo.resolveApproval(taskId, body.action || 'APPROVE', body.comment, body.formData, tenantId);
+      if (resolved) {
+        return { status: 200, data: { resolved: true, taskId, action: body.action } };
+      }
+      return { status: 404, data: { error: `Approval task ${taskId} not found` } };
     }
 
     return { status: 404, data: { error: 'Workflow endpoint not found' } };

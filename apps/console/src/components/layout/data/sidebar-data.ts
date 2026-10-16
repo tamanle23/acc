@@ -26,6 +26,7 @@ import {
   Crown,
   KeyRound,
   Workflow,
+  UserCheck,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
@@ -111,6 +112,11 @@ export const useSidebarData = (): SidebarData => {
               title: t('sidebar.items.workflows', 'Workflows'),
               url: '/workflows',
               icon: Workflow,
+            },
+            {
+              title: t('sidebar.items.approvals', 'Task Approvals'),
+              url: '/approvals',
+              icon: UserCheck,
             },
             {
               title: t('sidebar.items.apps', 'Apps'),
