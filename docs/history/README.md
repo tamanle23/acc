@@ -242,6 +242,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`227`](227_phase2_universal_canvas_engine_and_transform_overlay.md) | 2026-10-17 | Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay Polish | Declarative GSAP timeline compiler (syncTimeline), Pts.js gravitational attractor particle swarm, dual-pass 2.5D parallax relighting, live dimension/angle transform badges, and multi-pass partial VFX |
 | [`228`](228_phase3_liquid_glass_theme_system.md) | 2026-10-17 | Phase 3: Liquid Glass Design System & Theme Provider | Comprehensive Liquid Glass tokens, ThemeProvider with dual-mode Dark/Light and localStorage persistence, SettingsModal with live preview, and workspace styling overhaul |
 | [`229`](229_fix_accordion_trigger_nested_button.md) | 2026-10-17 | Fix AccordionTrigger Nested Button Hierarchy | Enhanced AccordionTrigger with actions prop, refactored RightSidebar and Sidebar accordion items, and eliminated nested button DOM errors |
+| [`230`](230_fix_studio_preview_playback_transport.md) | 2026-10-17 | Fix Studio Preview Playback Transport & Synchronized rAF Loop | Resolved stale-closure setInterval playback freeze in Timeline, lifted isPlaying state to App.tsx with requestAnimationFrame loop, wired WebAudioEngine lifecycle, and added interactive viewport transport controls in Preview.tsx |
 
 
 

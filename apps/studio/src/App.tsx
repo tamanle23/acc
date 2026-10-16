@@ -32,9 +32,14 @@ import type { StagingPreset } from './lib/library/stagingPresets';
 import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { SettingsModal } from './components/SettingsModal';
 
+import { WebAudioEngine } from './lib/audio/WebAudioEngine';
+
 function StudioWorkspace() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const currentFrameRef = useRef(currentFrame);
+  currentFrameRef.current = currentFrame;
 
   // Enterprise Dual-Sidebar Workspace Layout
   const [isLeftOpen, setIsLeftOpen] = useState(true);
@@ -50,7 +55,11 @@ function StudioWorkspace() {
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
-  // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
+  const handleTogglePlay = () => {
+    setIsPlaying((prev) => !prev);
+  };
+
+  // Global Workspace Hotkeys: Space (play/pause), [ (left drawer), ] (right inspector), \ (zen mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -61,7 +70,10 @@ function StudioWorkspace() {
         return;
       }
 
-      if (e.key === '[') {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTogglePlay();
+      } else if (e.key === '[') {
         setIsLeftOpen((prev) => !prev);
       } else if (e.key === ']') {
         setIsRightOpen((prev) => !prev);
@@ -140,8 +152,57 @@ function StudioWorkspace() {
   const height = irState.doc.meta.canvasSize.h || 1080;
 
   const handleScrub = (frame: number) => {
-    setCurrentFrame(Math.max(0, Math.min(frame, totalFrames)));
+    const clamped = Math.max(0, Math.min(frame, totalFrames));
+    setCurrentFrame(clamped);
+    currentFrameRef.current = clamped;
+    if (isPlaying) {
+      WebAudioEngine.getInstance().startPlayback(clamped, fps, irState);
+    } else {
+      WebAudioEngine.getInstance().playScrubFeedback(clamped, fps, irState);
+    }
   };
+
+  // Synchronized requestAnimationFrame playback loop
+  useEffect(() => {
+    if (!isPlaying) {
+      WebAudioEngine.getInstance().stopPlayback();
+      return;
+    }
+
+    WebAudioEngine.getInstance().startPlayback(currentFrameRef.current, fps, irState);
+
+    let rafId: number;
+    let lastTime = performance.now();
+    let accumulatedTime = 0;
+    const frameDurationMs = 1000 / fps;
+
+    const tick = (currentTime: number) => {
+      const delta = currentTime - lastTime;
+      lastTime = currentTime;
+      accumulatedTime += delta;
+
+      if (accumulatedTime >= frameDurationMs) {
+        const framesToAdvance = Math.floor(accumulatedTime / frameDurationMs);
+        accumulatedTime %= frameDurationMs;
+
+        let nextFrame = currentFrameRef.current + framesToAdvance;
+        if (nextFrame >= totalFrames) {
+          nextFrame = 0;
+        }
+        currentFrameRef.current = nextFrame;
+        setCurrentFrame(nextFrame);
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      WebAudioEngine.getInstance().stopPlayback();
+    };
+  }, [isPlaying, fps, totalFrames, irState]);
 
   const handleStartExport = async () => {
     try {
@@ -278,6 +339,9 @@ function StudioWorkspace() {
                 currentTime: currentFrame / fps,
                 fps,
               }}
+              isPlaying={isPlaying}
+              onTogglePlay={handleTogglePlay}
+              onScrub={handleScrub}
             />
 
             {/* Export Progress Modal */}
@@ -332,6 +396,8 @@ function StudioWorkspace() {
             fps,
           }}
           onScrub={handleScrub}
+          isPlaying={isPlaying}
+          onTogglePlay={handleTogglePlay}
         />
 
         {/* 4. Drag Overlay */}

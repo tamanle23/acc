@@ -36,13 +36,30 @@ interface TimelineProps {
     fps: number;
   };
   onScrub: (frame: number) => void;
+  isPlaying?: boolean;
+  onTogglePlay?: () => void;
 }
 
-export function Timeline({ playhead, onScrub }: TimelineProps) {
+export function Timeline({
+  playhead,
+  onScrub,
+  isPlaying: externalIsPlaying,
+  onTogglePlay,
+}: TimelineProps) {
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [localIsPlaying, setLocalIsPlaying] = useState(false);
+  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : localIsPlaying;
+
+  const togglePlay = () => {
+    if (onTogglePlay) {
+      onTogglePlay();
+    } else {
+      setLocalIsPlaying((prev) => !prev);
+    }
+  };
+
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~4px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
@@ -64,22 +81,38 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
     : [];
   const selectedSeqId = irState.selectedSequenceId;
 
-  // Playhead transport animation loop & real audio playback
+  // Standalone fallback playback loop if onTogglePlay was not provided
   useEffect(() => {
-    let interval: any = null;
-    if (isPlaying) {
+    if (onTogglePlay) return; // Managed by parent component
+    let rafId: number;
+    if (localIsPlaying) {
       WebAudioEngine.getInstance().startPlayback(currentFrame, fps, irState);
-      interval = setInterval(() => {
-        onScrub(currentFrame >= totalFrames ? 0 : currentFrame + 1);
-      }, 1000 / fps);
+      let lastTime = performance.now();
+      let acc = 0;
+      const frameDuration = 1000 / fps;
+      let frame = currentFrame;
+
+      const loop = (now: number) => {
+        const delta = now - lastTime;
+        lastTime = now;
+        acc += delta;
+        if (acc >= frameDuration) {
+          const adv = Math.floor(acc / frameDuration);
+          acc %= frameDuration;
+          frame = (frame + adv) % (totalFrames || 300);
+          onScrub(frame);
+        }
+        rafId = requestAnimationFrame(loop);
+      };
+      rafId = requestAnimationFrame(loop);
     } else {
       WebAudioEngine.getInstance().stopPlayback();
     }
     return () => {
-      if (interval) clearInterval(interval);
-      WebAudioEngine.getInstance().stopPlayback();
+      cancelAnimationFrame(rafId);
+      if (!onTogglePlay) WebAudioEngine.getInstance().stopPlayback();
     };
-  }, [isPlaying, fps, irState]);
+  }, [localIsPlaying, fps, totalFrames, irState, onTogglePlay]);
 
   const handleScrub = (frame: number) => {
     WebAudioEngine.getInstance().playScrubFeedback(frame, fps, irState);
@@ -110,7 +143,7 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
 
       if (e.code === 'Space') {
         e.preventDefault();
-        setIsPlaying((p) => !p);
+        togglePlay();
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
         handleScrub(Math.max(0, currentFrame - (e.shiftKey ? fps : 1)));
@@ -132,7 +165,7 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentFrame, totalFrames, fps, selectedSeqId]);
+  }, [currentFrame, totalFrames, fps, selectedSeqId, onTogglePlay, isPlaying]);
 
   const pixelsPerFrame = Math.max(1, 4 * zoomScale);
   const timelineWidth = Math.max(800, totalFrames * pixelsPerFrame);
@@ -204,7 +237,7 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
             <Button
               variant={isPlaying ? 'secondary' : 'default'}
               size="icon"
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={togglePlay}
               className="h-7 w-7"
             >
               {isPlaying ? (

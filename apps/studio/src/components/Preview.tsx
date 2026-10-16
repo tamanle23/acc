@@ -3,7 +3,19 @@ import { useDroppable } from '@dnd-kit/core';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
-import { Monitor, Sparkles, Box, Move, RotateCw, Type, ArrowUpRight } from 'lucide-react';
+import {
+  Monitor,
+  Sparkles,
+  Box,
+  Move,
+  RotateCw,
+  Type,
+  ArrowUpRight,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+} from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
@@ -25,6 +37,9 @@ interface PreviewProps {
     currentTime: number;
     fps: number;
   };
+  isPlaying?: boolean;
+  onTogglePlay?: () => void;
+  onScrub?: (frame: number) => void;
 }
 
 interface TransformState {
@@ -34,7 +49,12 @@ interface TransformState {
   rotation: number; // degrees
 }
 
-export function Preview({ playhead }: PreviewProps) {
+export function Preview({
+  playhead,
+  isPlaying = false,
+  onTogglePlay,
+  onScrub,
+}: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<UniversalCanvasEngine | null>(null);
@@ -69,6 +89,7 @@ export function Preview({ playhead }: PreviewProps) {
   const height = irState.doc?.meta?.canvasSize?.h || 1080;
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
+  const totalFrames = playhead?.totalFrames || irState.timeline?.totalDurationFrames || 300;
   const selectedSeqId = irState.selectedSequenceId;
 
   // Sync transform state from selected sequence modifier if available
@@ -366,11 +387,43 @@ export function Preview({ playhead }: PreviewProps) {
           </Badge>
           <Badge
             variant="outline"
-            className="glass-card text-violet-400 font-mono text-[10px] flex items-center gap-1"
+            className={`glass-card font-mono text-[10px] flex items-center gap-1.5 ${
+              isPlaying ? 'text-emerald-400 border-emerald-500/50' : 'text-slate-400'
+            }`}
           >
-            <Box className="w-2.5 h-2.5" />
-            pts.js Vector Math
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+              }`}
+            />
+            {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
           </Badge>
+
+          {onTogglePlay && (
+            <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
+              <button
+                type="button"
+                onClick={onTogglePlay}
+                className={`glass-card px-2 py-0.5 rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer pointer-events-auto transition-transform active:scale-95 border ${
+                  isPlaying
+                    ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/30 hover:bg-emerald-950/50'
+                    : 'border-white/10 text-slate-300 hover:bg-white/10'
+                }`}
+              >
+                {isPlaying ? (
+                  <>
+                    <Pause className="w-2.5 h-2.5 fill-current" />
+                    <span className="font-bold">PAUSE</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-2.5 h-2.5 fill-current" />
+                    <span className="font-bold">PLAY</span>
+                  </>
+                )}
+              </button>
+            </Tooltip>
+          )}
         </div>
 
         {selectedSeqId && (
@@ -396,6 +449,53 @@ export function Preview({ playhead }: PreviewProps) {
           className="max-h-[70vh] max-w-[80vw] object-contain rounded-lg shadow-inner cursor-crosshair"
           style={{ aspectRatio: '16/9' }}
         />
+
+        {/* Floating Viewport Quick Transport Bar */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 glass-panel px-3 py-1.5 rounded-full shadow-2xl pointer-events-auto border border-white/10 backdrop-blur-xl">
+          <Tooltip content="Step Back 1 Frame">
+            <button
+              type="button"
+              onClick={() => onScrub?.(Math.max(0, currentFrame - 1))}
+              className="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <SkipBack className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip content={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
+            <button
+              type="button"
+              onClick={onTogglePlay}
+              className={`p-2 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer ${
+                isPlaying
+                  ? 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-amber-500/30'
+                  : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-cyan-500/30'
+              }`}
+            >
+              {isPlaying ? (
+                <Pause className="w-3.5 h-3.5 fill-current" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+              )}
+            </button>
+          </Tooltip>
+
+          <Tooltip content="Step Forward 1 Frame">
+            <button
+              type="button"
+              onClick={() => onScrub?.(Math.min(totalFrames, currentFrame + 1))}
+              className="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <SkipForward className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <div className="h-3 w-px bg-white/20 mx-0.5" />
+
+          <span className="text-[10px] font-mono text-slate-300 px-1 select-none">
+            {(currentFrame / fps).toFixed(2)}s
+          </span>
+        </div>
 
         {/* Drag-and-Drop Staging Target Indicator */}
         {(isOver || (isDragOver && dragCoords)) && (
@@ -692,7 +792,7 @@ export function Preview({ playhead }: PreviewProps) {
 
       {/* Dynamic Subtitles & HUD Callout Overlay with Double-Click Inline Editing */}
       {activeCues.length > 0 && (
-        <div className="absolute bottom-6 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
+        <div className="absolute bottom-16 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
           {activeCues.map((cue, idx) => {
             const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
             return (
