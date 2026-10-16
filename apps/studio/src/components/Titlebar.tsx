@@ -1,11 +1,12 @@
 import React, { useRef } from 'react';
-import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight } from 'lucide-react';
+import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { IRStateManager } from '../lib/ir/irState';
+import { useTheme } from '../lib/theme/ThemeProvider';
 
 interface TitlebarProps {
   projectTitle: string;
@@ -37,6 +38,7 @@ export function Titlebar({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const manager = IRStateManager.getInstance();
   const state = manager.getState();
+  const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
 
   const handleDownloadIR = () => {
     const jsonStr = manager.exportJSON();
@@ -68,7 +70,7 @@ export function Titlebar({
   };
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shadow-xs select-none">
+    <header className="h-14 glass-panel px-4 flex items-center justify-between select-none z-20 transition-colors">
       <div className="flex items-center gap-3">
         {onToggleLeft && (
           <Tooltip content={isLeftOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}>
@@ -76,7 +78,7 @@ export function Titlebar({
               variant="ghost"
               size="icon"
               onClick={onToggleLeft}
-              className={`h-8 w-8 text-slate-600 ${isLeftOpen ? 'bg-indigo-50 text-indigo-600' : ''}`}
+              className={`h-8 w-8 text-slate-500 hover:text-slate-200 dark:hover:text-white ${isLeftOpen ? 'bg-indigo-500/10 text-indigo-400' : ''}`}
             >
               <PanelLeft className="w-4 h-4" />
             </Button>
@@ -87,15 +89,15 @@ export function Titlebar({
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold text-slate-900 tracking-tight">{projectTitle}</h1>
+            <h1 className="text-sm font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{projectTitle}</h1>
             <Badge
               variant="secondary"
-              className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-100"
+              className="font-mono text-[10px] text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800"
             >
               Universal Video IR V1.0
             </Badge>
           </div>
-          <span className="text-xs text-slate-500 font-mono">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
             {currentFrame} / {totalFrames} f ({(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s @ {fps}fps)
           </span>
         </div>
@@ -209,6 +211,32 @@ export function Titlebar({
           </div>
         </Tooltip>
 
+        <Separator orientation="vertical" className="h-4 mx-1" />
+
+        {/* Quick Dark/Light Theme Toggle */}
+        <Tooltip content={preferences.mode === 'dark' ? 'Switch to Light Frosted Acrylic' : 'Switch to Dark Obsidian'}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMode}
+            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          >
+            {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-500" />}
+          </Button>
+        </Tooltip>
+
+        {/* Liquid Glass Preferences Modal */}
+        <Tooltip content="Liquid Glass Preferences">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSettingsOpen(true)}
+            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Button>
+        </Tooltip>
+
         {onToggleRight && (
           <>
             <Separator orientation="vertical" className="h-4 mx-1" />
@@ -217,7 +245,7 @@ export function Titlebar({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleRight}
-                className={`h-8 w-8 text-slate-600 ${isRightOpen ? 'bg-indigo-50 text-indigo-600' : ''}`}
+                className={`h-8 w-8 text-slate-600 dark:text-slate-400 ${isRightOpen ? 'bg-indigo-500/10 text-indigo-500' : ''}`}
               >
                 <PanelRight className="w-4 h-4" />
               </Button>

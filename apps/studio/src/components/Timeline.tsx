@@ -145,9 +145,9 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
   };
 
   return (
-    <footer className="h-72 bg-white border-t border-slate-200 flex flex-col select-none shadow-sm">
+    <footer className="h-72 glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
-      <div className="h-11 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/80">
+      <div className="h-11 border-b border-border/40 px-6 flex items-center justify-between bg-background/50">
         <div className="flex items-center gap-1.5">
           {/* Tool Selector Bar */}
           <Tooltip content="Selection Tool (V)">

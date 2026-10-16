@@ -29,8 +29,10 @@ import { MediabunnyClientSink } from '@acc/core/client';
 import { Video, AlertCircle } from 'lucide-react';
 import { IRStateManager } from './lib/ir/irState';
 import type { StagingPreset } from './lib/library/stagingPresets';
+import { ThemeProvider } from './lib/theme/ThemeProvider';
+import { SettingsModal } from './components/SettingsModal';
 
-export default function App() {
+function StudioWorkspace() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [currentFrame, setCurrentFrame] = useState(0);
 
@@ -222,7 +224,8 @@ export default function App() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col h-screen bg-slate-50 text-slate-800">
+      <div className="flex flex-col h-screen select-none liquid-ambient-mesh bg-background text-foreground transition-colors duration-200">
+        <SettingsModal />
         {/* 1. Top Titlebar */}
         <Titlebar
           projectTitle={irState.doc.meta.contentId}
@@ -337,5 +340,13 @@ export default function App() {
         </DragOverlay>
       </div>
     </DndContext>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <StudioWorkspace />
+    </ThemeProvider>
   );
 }

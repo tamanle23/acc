@@ -79,20 +79,20 @@ export function DraggablePresetCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-3 border rounded-lg bg-white shadow-2xs transition-all select-none cursor-grab active:cursor-grabbing group ${
+      className={`p-3 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${
         isDragging
-          ? 'opacity-40 border-indigo-500 scale-[0.98]'
-          : 'border-slate-200 hover:border-indigo-400 hover:shadow-xs'
+          ? 'opacity-40 border-cyan-400 scale-[0.98]'
+          : 'hover:border-cyan-400/60'
       }`}
     >
       <div className="flex items-center justify-between mb-1.5 pointer-events-none">
         <div className="flex items-center gap-2">
-          <div className="p-1 rounded bg-slate-100 group-hover:bg-indigo-50 transition-colors">
+          <div className="p-1 rounded bg-slate-500/10 group-hover:bg-cyan-500/20 transition-colors">
             {renderPresetIcon(preset.iconName)}
           </div>
-          <span className="font-semibold text-slate-800 text-xs">{preset.name}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs">{preset.name}</span>
         </div>
-        <Badge variant="outline" className="text-[9px] font-mono border-slate-200">
+        <Badge variant="outline" className="text-[9px] font-mono border-border/40">
           {preset.badge}
         </Badge>
       </div>
@@ -158,22 +158,22 @@ export function DraggableAssetCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-2.5 border rounded-lg bg-white shadow-2xs transition-all select-none cursor-grab active:cursor-grabbing group ${
+      className={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${
         isDragging
-          ? 'opacity-40 border-indigo-500 scale-[0.98]'
-          : 'border-slate-200 hover:border-indigo-400 hover:shadow-xs'
+          ? 'opacity-40 border-cyan-400 scale-[0.98]'
+          : 'hover:border-cyan-400/60'
       }`}
     >
       <div className="flex items-center justify-between mb-1 pointer-events-none">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="p-1 rounded bg-slate-100 group-hover:bg-indigo-50 transition-colors">
+          <div className="p-1 rounded bg-slate-500/10 group-hover:bg-cyan-500/20 transition-colors">
             {getAssetIcon(asset.type)}
           </div>
-          <span className="font-medium text-slate-900 truncate text-xs font-mono">
+          <span className="font-medium text-slate-800 dark:text-slate-100 truncate text-xs font-mono">
             {assetId}
           </span>
         </div>
-        <Badge variant="outline" className="text-[9px] uppercase font-mono">
+        <Badge variant="outline" className="text-[9px] uppercase font-mono border-border/40">
           {asset.type}
         </Badge>
       </div>
@@ -281,7 +281,7 @@ export function LeftSidebar({
   return (
     <div className="flex h-full select-none z-10 shrink-0">
       {/* 1. 48px Enterprise Activity Rail */}
-      <aside className="w-12 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-3 justify-between shadow-sm z-20">
+      <aside className="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-sm z-20">
         <div className="flex flex-col items-center gap-3">
           <Button
             variant="ghost"
@@ -292,8 +292,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'library' && isOpen
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
             }`}
             title="Library Presets & Partial VFX ([)"
           >
@@ -309,8 +309,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'vault' && isOpen
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
             }`}
             title="Assets Vault ([)"
           >
@@ -323,7 +323,7 @@ export function LeftSidebar({
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          className="w-9 h-9 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors"
           title={isOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}
         >
           {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -332,27 +332,27 @@ export function LeftSidebar({
 
       {/* 2. 300px Slide-out Drawer */}
       {isOpen && (
-        <aside className="w-[300px] bg-white border-r border-slate-200 flex flex-col h-full shadow-xs">
+        <aside className="w-[300px] glass-panel border-r border-border/50 flex flex-col h-full shadow-xs">
           {/* Drawer Header */}
-          <div className="p-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {activeNav === 'library' ? (
                 <>
-                  <Library className="w-4 h-4 text-indigo-600" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  <Library className="w-4 h-4 text-cyan-400" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                     Staging Library
                   </h2>
                 </>
               ) : (
                 <>
-                  <Folder className="w-4 h-4 text-indigo-600" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                  <Folder className="w-4 h-4 text-cyan-400" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                     Assets Vault
                   </h2>
                 </>
               )}
             </div>
-            <Badge variant="outline" className="font-mono text-[10px]">
+            <Badge variant="outline" className="font-mono text-[10px] border-border/40">
               {activeNav === 'library' ? `${filteredPresets.length} items` : `${filteredAssets.length} assets`}
             </Badge>
           </div>
@@ -360,7 +360,7 @@ export function LeftSidebar({
           {activeNav === 'library' ? (
             /* Library View */
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="p-3 border-b border-slate-100 bg-white space-y-2">
+              <div className="p-3 border-b border-border/30 bg-transparent space-y-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                   <Input

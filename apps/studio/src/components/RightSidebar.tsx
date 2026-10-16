@@ -138,11 +138,10 @@ export function ColorPickerRow({ label, value, presets, onChange }: ColorPickerR
           <button
             key={preset.name}
             onClick={() => onChange(preset.hex)}
-            className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
-              value.toLowerCase() === preset.hex.toLowerCase()
-                ? 'ring-2 ring-indigo-500 border-white scale-110'
-                : 'border-slate-300'
-            }`}
+            className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${value.toLowerCase() === preset.hex.toLowerCase()
+              ? 'ring-2 ring-indigo-500 border-white scale-110'
+              : 'border-slate-300'
+              }`}
             style={{ backgroundColor: preset.hex }}
             title={preset.name}
           />
@@ -329,12 +328,12 @@ export function RightSidebar() {
     : irState.doc.tracks.reduce((acc, t) => acc + t.sequences.length, 0);
 
   return (
-    <aside className="w-[336px] bg-white border-l border-slate-200 flex flex-col h-full select-none shadow-xs z-10 shrink-0">
+    <aside className="w-[336px] glass-panel border-l border-border/50 flex flex-col h-full select-none shadow-xs z-10 shrink-0">
       {/* 1. Inspector Header */}
-      <div className="p-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+      <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-indigo-600" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+          <Sliders className="w-4 h-4 text-cyan-400" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
             {selectedSeq ? 'Sequence Inspector' : 'Project Settings'}
           </h2>
         </div>
@@ -432,9 +431,8 @@ export function RightSidebar() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsLocked(!isLocked)}
-                  className={`h-6 px-2 text-[10px] gap-1 border-slate-200 ${
-                    isLocked ? 'bg-amber-50 text-amber-700 border-amber-300' : 'text-slate-600'
-                  }`}
+                  className={`h-6 px-2 text-[10px] gap-1 border-slate-200 ${isLocked ? 'bg-amber-50 text-amber-700 border-amber-300' : 'text-slate-600'
+                    }`}
                   title={isLocked ? 'Locked' : 'Unlocked'}
                 >
                   {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
@@ -461,7 +459,7 @@ export function RightSidebar() {
                       <Move className="w-3.5 h-3.5 text-indigo-600" />
                       <span className="text-xs font-bold text-slate-800">In-Canvas Transform</span>
                     </div>
-                    <Button
+                    <span
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 text-slate-400 hover:text-slate-700"
@@ -472,7 +470,7 @@ export function RightSidebar() {
                       title="Reset transform"
                     >
                       <RotateCcw className="w-3 h-3" />
-                    </Button>
+                    </span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-3 space-y-3">

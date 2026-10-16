@@ -352,21 +352,21 @@ export function Preview({ playhead }: PreviewProps) {
         <div className="flex items-center gap-2">
           <Badge
             variant="secondary"
-            className="bg-slate-900/85 backdrop-blur-xs text-slate-300 border-slate-700/60 font-mono gap-1 text-[10px]"
+            className="glass-card text-slate-300 font-mono gap-1 text-[10px]"
           >
-            <Monitor className="w-3 h-3 text-indigo-400" />
+            <Monitor className="w-3 h-3 text-cyan-400" />
             {width}x{height} (16:9)
           </Badge>
           <Badge
             variant="outline"
-            className="bg-slate-900/85 backdrop-blur-xs text-emerald-400 border-slate-700/60 font-mono text-[10px] flex items-center gap-1"
+            className="glass-card text-emerald-400 font-mono text-[10px] flex items-center gap-1"
           >
             <Sparkles className="w-2.5 h-2.5" />
-            Universal Three.js Scenegraph
+            GSAP Timeline Engine
           </Badge>
           <Badge
             variant="outline"
-            className="bg-slate-900/85 backdrop-blur-xs text-violet-400 border-slate-700/60 font-mono text-[10px] flex items-center gap-1"
+            className="glass-card text-violet-400 font-mono text-[10px] flex items-center gap-1"
           >
             <Box className="w-2.5 h-2.5" />
             pts.js Vector Math
