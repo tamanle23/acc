@@ -19,7 +19,11 @@ export * from './handlers/metadata-sandbox-adapter';
 // Auto-register console-specific metadataSandboxAdapter into sandboxRegistry
 import { sandboxRegistry } from '@unipost/sandbox';
 import { metadataSandboxAdapter } from './handlers/metadata-sandbox-adapter';
+import { workerSandboxHandler, workerFleetMockStore } from './handlers/worker-sandbox-handler';
 sandboxRegistry.register(metadataSandboxAdapter);
+sandboxRegistry.register(workerSandboxHandler);
+
+export { workerFleetMockStore, workerSandboxHandler };
 
 // Re-export mockMetadataStore for backward compatibility
 export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';

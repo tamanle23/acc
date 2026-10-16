@@ -28,6 +28,7 @@
       "workflows": "Quy trình (Workflows)",
       "approvals": "Phê duyệt Tác vụ (Approvals)",
       "dlq": "Hàng đợi Chết (DLQ)",
+      "workerFleet": "Đội ngũ Worker (Worker Fleet)",
       "apps": "Ứng dụng",
       "chats": "Trò chuyện",
       "users": "Người dùng",

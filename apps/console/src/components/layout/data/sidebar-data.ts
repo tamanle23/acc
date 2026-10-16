@@ -28,6 +28,7 @@ import {
   Workflow,
   UserCheck,
   AlertOctagon,
+  Server,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 import { useTranslation } from 'react-i18next'
@@ -184,6 +185,12 @@ export const useSidebarData = (): SidebarData => {
                 title: t('sidebar.items.dlq', 'Dead-Letter Queue'),
                 url: '/system/dlq',
                 icon: AlertOctagon,
+                badge: 'ROOT',
+              },
+              {
+                title: t('sidebar.items.workerFleet', 'Worker Fleet'),
+                url: '/system/workers',
+                icon: Server,
                 badge: 'ROOT',
               },
               ...(!isAssumed

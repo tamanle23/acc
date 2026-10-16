@@ -15,23 +15,31 @@ import {
   XCircle,
   Wifi,
   WifiOff,
+  FileDiff,
 } from 'lucide-react';
 import type { WorkflowExecutionStreamState } from '../hooks/use-workflow-execution-stream';
 import type { WorkflowExecutionSnapshot } from '../api/workflow-api';
+import { PayloadDiffViewer } from './payload-diff-viewer';
 
 interface ExecutionRunDrawerProps {
   executionId: string;
   stream: WorkflowExecutionStreamState;
   snapshot?: WorkflowExecutionSnapshot | null;
+  currentVariables?: Record<string, any>;
+  previousVariables?: Record<string, any>;
+  currentStepIndex?: number;
   onClose?: () => void;
 }
 
-type TabType = 'timeline' | 'logs' | 'payload' | 'diagnostics';
+type TabType = 'timeline' | 'logs' | 'payload' | 'diff' | 'diagnostics';
 
 export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
   executionId,
   stream,
   snapshot,
+  currentVariables,
+  previousVariables,
+  currentStepIndex,
   onClose,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -135,6 +143,15 @@ export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
               >
                 <FileJson className="w-3.5 h-3.5 mr-1" />
                 Payload
+              </Button>
+              <Button
+                variant={activeTab === 'diff' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-7 text-xs px-2.5"
+                onClick={() => setActiveTab('diff')}
+              >
+                <FileDiff className="w-3.5 h-3.5 mr-1 text-primary" />
+                Variable Diff
               </Button>
               <Button
                 variant={activeTab === 'diagnostics' ? 'secondary' : 'ghost'}
@@ -250,6 +267,14 @@ export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
                 </pre>
               </div>
             </div>
+          )}
+
+          {activeTab === 'diff' && (
+            <PayloadDiffViewer
+              currentPayload={currentVariables || snapshot?.output || snapshot?.input || {}}
+              previousPayload={previousVariables || snapshot?.input || {}}
+              stepIndex={currentStepIndex}
+            />
           )}
 
           {activeTab === 'diagnostics' && (

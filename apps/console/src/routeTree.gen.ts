@@ -35,6 +35,7 @@ import { Route as AuthenticatedCustomerAccountsIndexRouteImport } from './routes
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
 import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals/index'
+import { Route as AuthenticatedSystemWorkersRouteImport } from './routes/_authenticated/system.workers'
 import { Route as AuthenticatedSystemTenantsRouteImport } from './routes/_authenticated/system.tenants'
 import { Route as AuthenticatedSystemRolesRouteImport } from './routes/_authenticated/system.roles'
 import { Route as AuthenticatedSystemDlqRouteImport } from './routes/_authenticated/system.dlq'
@@ -184,6 +185,12 @@ const AuthenticatedApprovalsIndexRoute =
     path: '/approvals/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSystemWorkersRoute =
+  AuthenticatedSystemWorkersRouteImport.update({
+    id: '/system/workers',
+    path: '/system/workers',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemTenantsRoute =
   AuthenticatedSystemTenantsRouteImport.update({
     id: '/system/tenants',
@@ -261,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/system/workers': typeof AuthenticatedSystemWorkersRoute
   '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/apps/': typeof AuthenticatedAppsIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
@@ -296,6 +304,7 @@ export interface FileRoutesByTo {
   '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/system/workers': typeof AuthenticatedSystemWorkersRoute
   '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
@@ -334,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/_authenticated/system/roles': typeof AuthenticatedSystemRolesRoute
   '/_authenticated/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/_authenticated/system/workers': typeof AuthenticatedSystemWorkersRoute
   '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
+    | '/system/workers'
     | '/approvals/'
     | '/apps/'
     | '/chats/'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
+    | '/system/workers'
     | '/approvals'
     | '/apps'
     | '/chats'
@@ -444,6 +456,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system/dlq'
     | '/_authenticated/system/roles'
     | '/_authenticated/system/tenants'
+    | '/_authenticated/system/workers'
     | '/_authenticated/approvals/'
     | '/_authenticated/apps/'
     | '/_authenticated/chats/'
@@ -658,6 +671,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApprovalsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/system/workers': {
+      id: '/_authenticated/system/workers'
+      path: '/system/workers'
+      fullPath: '/system/workers'
+      preLoaderRoute: typeof AuthenticatedSystemWorkersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/system/tenants': {
       id: '/_authenticated/system/tenants'
       path: '/system/tenants'
@@ -756,6 +776,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSystemDlqRoute: typeof AuthenticatedSystemDlqRoute
   AuthenticatedSystemRolesRoute: typeof AuthenticatedSystemRolesRoute
   AuthenticatedSystemTenantsRoute: typeof AuthenticatedSystemTenantsRoute
+  AuthenticatedSystemWorkersRoute: typeof AuthenticatedSystemWorkersRoute
   AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
@@ -775,6 +796,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSystemDlqRoute: AuthenticatedSystemDlqRoute,
   AuthenticatedSystemRolesRoute: AuthenticatedSystemRolesRoute,
   AuthenticatedSystemTenantsRoute: AuthenticatedSystemTenantsRoute,
+  AuthenticatedSystemWorkersRoute: AuthenticatedSystemWorkersRoute,
   AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,

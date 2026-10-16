@@ -28,6 +28,7 @@
       "workflows": "Workflows",
       "approvals": "Task Approvals",
       "dlq": "Dead-Letter Queue",
+      "workerFleet": "Worker Fleet",
       "apps": "Apps",
       "chats": "Chats",
       "users": "Users",

@@ -125,6 +125,8 @@
 | [118](118_fix_dlq_sandbox_matcher_and_dock_invalidation.md) | 2026-10-16 | Fix DLQ Sandbox Route Matcher & Dock Query Invalidation for Injected Tasks | Elevated DLQ sandbox handler priority over system fleet handler, normalized routing paths, and wired TanStack Query invalidation upon dock task injection. |
 | [119](119_phase_39_workflow_versioning_hot_migration_audit_ledger.md) | 2026-10-16 | Workflow Definition Versioning, Hot Migration Policies & Tamper-Evident Audit Ledger (Phase 39) | Implemented semantic definition versioning, topological compatibility validation for in-flight execution hot migration, SHA-256 hash-chained tamper-evident audit ledger, Unified Sandbox parity, and Visual DAG Studio graph diff overlays. |
 | [120](120_phase_39_1_hot_migration_hardening_quiescence_fleet_categorization.md) | 2026-10-16 | Hot Migration Hardening, Quiescence Locking & Fleet Categorization Engine (Phase 39.1) | Implemented strict execution quiescence, leased task graceful draining, terminal execution rejection, 3-tier heuristic categorization (FULLY_COMPATIBLE, CONDITIONAL_REQUIRES_MANUAL_REVIEW, INCOMPATIBLE_BLOCK), two-phase fleet migration REST API, Unified Sandbox simulation, and FleetMigrationModal with Bento metrics in Console. |
+| [121](121_visual_time_travel_worker_telemetry_chaos.md) | 2026-10-16 | Visual Time-Travel Execution Replay, Worker Fleet Telemetry & Chaos Verification (Phase 40) | Implemented read-only visual time-travel execution replay with microsecond slider, side-by-side variable diff inspector, Sovereign Worker Fleet Dashboard (/system/workers) with Liquid Glass styling and graceful drain, Unified Sandbox parity, and 1,000-concurrent execution chaos engineering test suite. |
+
 
 
 
