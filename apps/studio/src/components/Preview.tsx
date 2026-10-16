@@ -1,10 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
-import { Monitor, Sparkles, Box } from 'lucide-react';
+import { Monitor, Sparkles, Box, Move, RotateCw } from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
+import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 
 interface PreviewProps {
   playhead: {
@@ -15,12 +16,26 @@ interface PreviewProps {
   };
 }
 
+interface TransformState {
+  x: number; // offset px
+  y: number; // offset px
+  scale: number; // 0.2 to 3.0
+  rotation: number; // degrees
+}
+
 export function Preview({ playhead }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
+  const textureRef = useRef<WebGLTexture | null>(null);
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+  // Transform gizmo state for selected sequence
+  const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
 
@@ -28,12 +43,32 @@ export function Preview({ playhead }: PreviewProps) {
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
-  const width = irState.doc.meta.canvasSize.w || 1920;
-  const height = irState.doc.meta.canvasSize.h || 1080;
+  const width = irState.doc?.meta?.canvasSize?.w || 1920;
+  const height = irState.doc?.meta?.canvasSize?.h || 1080;
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
+  const selectedSeqId = irState.selectedSequenceId;
 
-  // Initialize WebGL 2.0 Shader Pipeline with 3D Depth & VFX capabilities
+  // Sync transform state from selected sequence modifier if available
+  useEffect(() => {
+    if (!selectedSeqId) return;
+    const activeSeqs = irState.timeline?.sequences ? Array.from(irState.timeline.sequences.values()) : [];
+    const seq = activeSeqs.find((s) => s.id === selectedSeqId);
+    if (seq?.modifiers) {
+      const transMod = seq.modifiers.find((m) => m.type === 'transform');
+      if (transMod?.params) {
+        const p = transMod.params as any;
+        setTransform({
+          x: p.x ?? 0,
+          y: p.y ?? 0,
+          scale: p.scale ?? 1.0,
+          rotation: p.rotation ?? 0,
+        });
+      }
+    }
+  }, [selectedSeqId, irState]);
+
+  // Initialize WebGL 2.0 Shader Pipeline with Texture Sampling & 3D Depth
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -43,23 +78,23 @@ export function Preview({ playhead }: PreviewProps) {
 
     const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true });
     if (!gl) {
-      console.warn('[Preview] WebGL2 not supported, falling back to 2D');
+      console.warn('[Preview] WebGL2 not supported');
       return;
     }
     glRef.current = gl;
 
-    // Vertex Shader: Fullscreen quad
+    // Vertex Shader: Fullscreen quad with UV flipping
     const vsSource = `#version 300 es
       in vec2 a_position;
       out vec2 v_texCoord;
       void main() {
         gl_Position = vec4(a_position, 0.0, 1.0);
         v_texCoord = (a_position + 1.0) * 0.5;
-        v_texCoord.y = 1.0 - v_texCoord.y; // Flip Y for screen space
+        v_texCoord.y = 1.0 - v_texCoord.y;
       }
     `;
 
-    // Fragment Shader: Hardware Color Grading, 3D Depth Parallax & Matrix Rain / Vignette
+    // Fragment Shader: Hardware Color Grading, Texture Sampling, 3D Parallax & Vignette
     const fsSource = `#version 300 es
       precision highp float;
       in vec2 v_texCoord;
@@ -72,21 +107,26 @@ export function Preview({ playhead }: PreviewProps) {
       uniform float u_vignette;
       uniform vec2 u_parallax;
       uniform float u_popout;
+      uniform sampler2D u_image;
+      uniform float u_hasTexture;
 
       void main() {
         vec2 uv = v_texCoord;
-
-        // Apply 3D Parallax Perspective Shift on coordinates
         uv += u_parallax * 0.001;
 
-        // Procedural Cyberpunk backdrop (Deep cyber blue into violet)
-        vec3 color = mix(vec3(0.04, 0.06, 0.12), vec3(0.14, 0.08, 0.24), uv.y + sin(uv.x * 3.1415 + u_time * 0.2) * 0.15);
+        vec4 texColor = vec4(0.0);
+        if (u_hasTexture > 0.5) {
+          texColor = texture(u_image, uv);
+        }
 
-        // Perspective grid lines
+        // Procedural Cyberpunk backdrop fallback
+        vec3 backdrop = mix(vec3(0.04, 0.06, 0.12), vec3(0.14, 0.08, 0.24), uv.y + sin(uv.x * 3.1415 + u_time * 0.2) * 0.15);
         vec2 grid = abs(fract(uv * vec2(20.0, 12.0) - 0.5) - 0.5) / fwidth(uv * vec2(20.0, 12.0));
         float line = min(grid.x, grid.y);
         float gridAlpha = 1.0 - min(line, 1.0);
-        color = mix(color, vec3(0.12, 0.45, 0.65), gridAlpha * 0.3);
+        backdrop = mix(backdrop, vec3(0.12, 0.45, 0.65), gridAlpha * 0.3);
+
+        vec3 color = u_hasTexture > 0.5 ? mix(backdrop, texColor.rgb, texColor.a) : backdrop;
 
         // 3D Depth Holographic Subject representation
         vec2 centerDist = uv - vec2(0.5);
@@ -94,20 +134,16 @@ export function Preview({ playhead }: PreviewProps) {
         if (subjectMask > 0.0) {
           vec3 subjectColor = vec3(0.2, 0.85, 0.95);
           float scanline = sin(uv.y * 300.0 + u_time * 15.0) * 0.1;
-          color = mix(color, subjectColor + scanline, subjectMask * 0.85);
+          color = mix(color, subjectColor + scanline, subjectMask * 0.35);
         }
 
-        // Color Grading: Exposure
+        // Color Grading: Exposure, Contrast, Saturation
         color += vec3(u_exposure);
-
-        // Color Grading: Contrast
         color = (color - 0.5) * u_contrast + 0.5;
-
-        // Color Grading: Saturation
         float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
         color = mix(vec3(luma), color, u_saturation);
 
-        // Vignette & Frame Breaker Tunnel
+        // Vignette
         if (u_vignette > 0.0) {
           float dist = distance(uv, vec2(0.5, 0.5));
           float vig = smoothstep(0.85, 0.85 - u_vignette * 0.5, dist);
@@ -148,7 +184,6 @@ export function Preview({ playhead }: PreviewProps) {
 
     programRef.current = program;
 
-    // Set up quad vertices
     const quadVertices = new Float32Array([
       -1, -1,
        1, -1,
@@ -166,10 +201,19 @@ export function Preview({ playhead }: PreviewProps) {
     gl.enableVertexAttribArray(posLoc);
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
+    // Create texture slot
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    textureRef.current = texture;
+
     setGlReady(true);
   }, [width, height]);
 
-  // Event-Driven Render Execution: recalculates uniforms with pts.js math
+  // Event-Driven Render Execution: Binds active layer texture & recalculates uniforms
   useEffect(() => {
     const gl = glRef.current;
     const program = programRef.current;
@@ -182,8 +226,12 @@ export function Preview({ playhead }: PreviewProps) {
     let exposure = 0.0;
     let vignette = 0.35;
     let popOutIntensity = 1.0;
+    let activeAssetId: string | null = null;
 
     for (const seq of activeSeqs) {
+      if (seq.assetId && !activeAssetId) {
+        activeAssetId = seq.assetId;
+      }
       if (seq.modifiers) {
         for (const mod of seq.modifiers) {
           if (mod.type === 'vfx/color_grading') {
@@ -203,7 +251,17 @@ export function Preview({ playhead }: PreviewProps) {
       }
     }
 
-    // Compute pts.js deterministic parallax vectors
+    // Bind texture from AssetTextureCache
+    let hasTexture = 0.0;
+    if (activeAssetId && textureRef.current) {
+      const texCanvas = AssetTextureCache.getInstance().getTextureCanvas(activeAssetId, 640, 360);
+      gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texCanvas);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(gl.getUniformLocation(program, 'u_image'), 0);
+      hasTexture = 1.0;
+    }
+
     const parallax = DepthMathEngine.computeParallax(
       currentFrame,
       fps,
@@ -222,25 +280,62 @@ export function Preview({ playhead }: PreviewProps) {
     gl.uniform1f(gl.getUniformLocation(program, 'u_vignette'), vignette);
     gl.uniform2f(gl.getUniformLocation(program, 'u_parallax'), parallax.offsetX, parallax.offsetY);
     gl.uniform1f(gl.getUniformLocation(program, 'u_popout'), popOutIntensity);
+    gl.uniform1f(gl.getUniformLocation(program, 'u_hasTexture'), hasTexture);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }, [currentFrame, fps, irState, glReady, mousePos]);
+
+  // Drag interaction handlers for bounding box gizmo
+  const handleGizmoMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (rect) {
+        setMousePos({
+          x: (e.clientX - rect.left) / rect.width,
+          y: (e.clientY - rect.top) / rect.height,
+        });
+      }
+
+      if (isDragging && selectedSeqId) {
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+        const newTransform = {
+          ...transform,
+          x: transform.x + dx,
+          y: transform.y + dy,
+        };
+        setTransform(newTransform);
+        setDragStart({ x: e.clientX, y: e.clientY });
+
+        // Coalescing modifier update in IRStateManager
+        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newTransform as any);
+      }
+    },
+    [isDragging, dragStart, transform, selectedSeqId]
+  );
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
   // Active cues for subtitles and HUD telemetry
   const activeCues = (irState.intervalTree?.queryActive(currentFrame) || [])
     .filter((s) => s.cues && s.cues.length > 0)
     .flatMap((s) => s.cues || []);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePos({
-      x: (e.clientX - rect.left) / rect.width,
-      y: (e.clientY - rect.top) / rect.height,
-    });
-  };
-
   return (
-    <Card className="relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden border-slate-800 bg-slate-950/90 shadow-2xl">
+    <Card
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      className="relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden border-slate-800 bg-slate-950/90 shadow-2xl select-none"
+    >
       {/* Top Monitor Status Bar */}
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
         <div className="flex items-center gap-2">
@@ -256,34 +351,80 @@ export function Preview({ playhead }: PreviewProps) {
             className="bg-slate-900/85 backdrop-blur-xs text-emerald-400 border-slate-700/60 font-mono text-[10px] flex items-center gap-1"
           >
             <Sparkles className="w-2.5 h-2.5" />
-            WebGL 2.0 (0 FPS Idle)
+            WebGL 2.0 Textures Active
           </Badge>
           <Badge
             variant="outline"
             className="bg-slate-900/85 backdrop-blur-xs text-violet-400 border-slate-700/60 font-mono text-[10px] flex items-center gap-1"
           >
             <Box className="w-2.5 h-2.5" />
-            pts.js 3D Depth
+            pts.js Vector Math
           </Badge>
         </div>
 
-        <Tooltip content="Viewport Engine">
+        {selectedSeqId && (
           <Badge
             variant="secondary"
-            className="bg-slate-900/85 text-slate-400 border-slate-700/60 font-mono text-[10px]"
+            className="bg-indigo-950/80 text-indigo-300 border-indigo-700/60 font-mono text-[10px] flex items-center gap-1.5"
           >
-            Calibrated GLSL + Vector Math
+            <Move className="w-3 h-3 text-indigo-400" />
+            X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x
           </Badge>
-        </Tooltip>
+        )}
       </div>
 
       {/* Main Video Viewport Canvas with Mouse Interactive Parallax */}
-      <canvas
-        ref={canvasRef}
-        onMouseMove={handleMouseMove}
-        className="max-h-[70vh] max-w-[80vw] object-contain rounded-lg shadow-inner cursor-crosshair"
-        style={{ aspectRatio: '16/9' }}
-      />
+      <div className="relative flex items-center justify-center">
+        <canvas
+          ref={canvasRef}
+          className="max-h-[70vh] max-w-[80vw] object-contain rounded-lg shadow-inner cursor-crosshair"
+          style={{ aspectRatio: '16/9' }}
+        />
+
+        {/* Interactive Transform Bounding Box Gizmo */}
+        {selectedSeqId && (
+          <div
+            onMouseDown={handleGizmoMouseDown}
+            style={{
+              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
+              width: '50%',
+              height: '50%',
+            }}
+            className="absolute border-2 border-indigo-400 bg-indigo-500/10 cursor-move rounded-xs flex items-center justify-center group shadow-lg pointer-events-auto"
+          >
+            {/* Corner Scale Handles */}
+            <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
+            <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
+            <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
+            <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
+
+            {/* Rotation Stem Handle */}
+            <div className="absolute -top-6 flex flex-col items-center">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const nextRot = (transform.rotation + 15) % 360;
+                  setTransform((prev) => ({ ...prev, rotation: nextRot }));
+                  IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', {
+                    ...transform,
+                    rotation: nextRot,
+                  } as any);
+                }}
+                className="w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-500 shadow-xs"
+                title="Rotate 15 deg"
+              >
+                <RotateCw className="w-2.5 h-2.5" />
+              </div>
+              <div className="w-0.5 h-2 bg-indigo-400" />
+            </div>
+
+            {/* Sequence identifier pill */}
+            <span className="text-[10px] font-mono bg-indigo-900/90 text-indigo-200 px-2 py-0.5 rounded shadow-xs select-none">
+              {selectedSeqId}
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Dynamic Subtitles & HUD Callout Overlay */}
       {activeCues.length > 0 && (

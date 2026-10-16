@@ -11,6 +11,7 @@ dependencies = [
     "numpy>=1.26.0",
     "pillow>=10.0.0",
     "pytest>=9.1.1",
+    "grpcio-health-checking>=1.84.0",
 ]
 
 [build-system]

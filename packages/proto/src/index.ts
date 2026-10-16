@@ -31,3 +31,8 @@ export function getLLMServiceClient(endpoint: string, credentials = grpc.credent
   const pkg = loadProtoDefinition('llm.proto') as any;
   return new pkg.acc.v1.LLMService(endpoint, credentials);
 }
+
+export function getAdminServiceClient(endpoint: string, credentials = grpc.credentials.createInsecure()): any {
+  const pkg = loadProtoDefinition('admin.proto') as any;
+  return new pkg.acc.v1.AdminService(endpoint, credentials);
+}

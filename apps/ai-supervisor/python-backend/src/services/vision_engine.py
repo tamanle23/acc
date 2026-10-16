@@ -25,12 +25,25 @@ class VisionEngine:
                 self.device = "cuda"
         except ImportError:
             pass
+        
+        try:
+            from services.model_lifecycle_manager import ModelLifecycleManager
+            mgr = ModelLifecycleManager.get_instance()
+            mgr.register_model("depth_anything_v2", self, estimated_vram_bytes=350 * 1024 * 1024)
+            mgr.register_model("sam_segmenter", self, estimated_vram_bytes=450 * 1024 * 1024)
+        except Exception:
+            pass
 
     def estimate_depth(self, image_bytes: bytes, model_size="small") -> tuple[bytes, float, float]:
         """
         Estimates a 16-bit metric depth map from input image bytes.
         Returns: (png_bytes, min_depth, max_depth)
         """
+        try:
+            from services.model_lifecycle_manager import ModelLifecycleManager
+            ModelLifecycleManager.get_instance().touch("depth_anything_v2")
+        except Exception:
+            pass
         try:
             img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         except Exception:

@@ -158,13 +158,13 @@ export class IRStateManager {
     this.notify();
   }
 
-  public switchTemplate(template: 'scifi' | 'default') {
+  public async switchTemplate(template: 'scifi' | 'default'): Promise<void> {
     this.historyManager.clear();
     const targetDoc = template === 'scifi' ? complexSciFiDemoIR : defaultDemoIR;
     this.state.doc = JSON.parse(JSON.stringify(targetDoc));
     this.state.activeTemplate = template;
     this.state.selectedSequenceId = targetDoc.tracks[0]?.sequences[0]?.id || null;
-    this.recompile();
+    await this.recompile();
   }
 
   public loadFromJSON(jsonString: string): ValidationResult {

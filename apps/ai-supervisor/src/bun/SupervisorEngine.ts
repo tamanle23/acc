@@ -255,7 +255,10 @@ export class SupervisorEngine {
       }
 
       const deviceArg = this.hardwareProfile?.recommendedPythonDevice === "cpu" ? ["--device", "cpu"] : [];
-      const execEnv = this.runtimeManager.getExecutionEnv();
+      const execEnv = {
+        ...this.runtimeManager.getExecutionEnv(),
+        ACC_PARENT_PID: String(process.pid),
+      };
 
       const proc = spawn([uvBin, "run", "python", serverScript, String(config.pythonPort), ...deviceArg], {
         cwd: pythonBackendCwd,
@@ -508,8 +511,27 @@ export class SupervisorEngine {
     // 1. Unload all Ollama models
     await ollamaManager.unloadAllModels();
 
-    // 2. Python backend garbage collection trigger
-    // If gRPC client is configured, call /acc.v1.AdminService/PurgeVRAM
+    // 2. Python backend garbage collection trigger via gRPC AdminService
+    try {
+      const pythonBackend = this.services.get("python-backend");
+      const port = pythonBackend?.port || 50051;
+      const { getAdminServiceClient } = await import("@acc/proto");
+      const client = getAdminServiceClient(`127.0.0.1:${port}`);
+      await new Promise<void>((resolve) => {
+        const deadline = new Date(Date.now() + 5000);
+        client.PurgeVRAM({ force: true }, { deadline }, (err: any, resp: any) => {
+          if (err) {
+            logManager.log("supervisor", `Python backend PurgeVRAM notice: ${err.message}`);
+          } else {
+            logManager.log("supervisor", `Python backend PurgeVRAM: ${resp.message} (freed: ${resp.freed_bytes} bytes)`);
+          }
+          resolve();
+        });
+      });
+    } catch (e: any) {
+      logManager.log("supervisor", `PurgeVRAM dispatch note: ${e?.message}`);
+    }
+
     logManager.log("supervisor", "VRAM purge signal dispatched to Ollama and Python backend.");
   }
 

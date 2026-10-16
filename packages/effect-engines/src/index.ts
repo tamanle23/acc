@@ -11,3 +11,6 @@ export * from './vision';
 export * from './types';
 export * from './editing';
 export * from './styles';
+export * from './three/UniversalThreeScene';
+export * from './audio/ProceduralAudioSynthesizer';
+export * from './audio/UniversalAudioMixer';

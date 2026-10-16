@@ -15,6 +15,10 @@ export class BackendHypervisor {
     return this.adapters.get(id);
   }
 
+  public getAdapters(): IBackendAdapter[] {
+    return Array.from(this.adapters.values());
+  }
+
   public getAdapterForCapability(capability: string): IBackendAdapter | undefined {
     for (const adapter of this.adapters.values()) {
       if (adapter.capabilities.includes(capability)) {

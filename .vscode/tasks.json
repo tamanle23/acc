@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "supervisor:dev",
+            "type": "shell",
+            "command": "bun run supervisor:dev",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "supervisor:dev:electrobun",
+            "type": "shell",
+            "command": "bun run supervisor:dev:electrobun",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "supervisor:build",
+            "type": "shell",
+            "command": "bun run supervisor:build",
+            "problemMatcher": [],
+            "group": "build"
+        }
+    ]
+}

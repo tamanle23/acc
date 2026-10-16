@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { spawn, ChildProcess } from 'child_process';
-import { getTTSServiceClient, getVisionServiceClient, getLLMServiceClient } from '@acc/proto';
+import { getTTSServiceClient, getVisionServiceClient, getLLMServiceClient, getAdminServiceClient } from '@acc/proto';
 
 export interface IAIClientStrategy {
   readonly name: string;
@@ -17,6 +17,7 @@ export class GRPCAIStrategy implements IAIClientStrategy {
   private ttsClient: any = null;
   private visionClient: any = null;
   private llmClient: any = null;
+  private adminClient: any = null;
   private static daemonProcess: ChildProcess | null = null;
 
   constructor(endpoint = process.env.ACC_GRPC_ENDPOINT || '127.0.0.1:50051') {
@@ -28,6 +29,7 @@ export class GRPCAIStrategy implements IAIClientStrategy {
       this.ttsClient = getTTSServiceClient(this.endpoint);
       this.visionClient = getVisionServiceClient(this.endpoint);
       this.llmClient = getLLMServiceClient(this.endpoint);
+      this.adminClient = getAdminServiceClient(this.endpoint);
     }
   }
 
@@ -240,6 +242,37 @@ export class GRPCAIStrategy implements IAIClientStrategy {
 
     return GRPCAIStrategy.bootstrapLock;
   }
+
+  public async purgeVRAM(force = true): Promise<{ success: boolean; freedBytes: number; message: string }> {
+    this.initClients();
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 5000);
+      this.adminClient.PurgeVRAM({ force }, { deadline }, (err: any, response: any) => {
+        if (err) return reject(err);
+        resolve({
+          success: response.success ?? true,
+          freedBytes: Number(response.freed_bytes ?? 0),
+          message: response.message ?? '',
+        });
+      });
+    });
+  }
+
+  public async getVRAMStatus(): Promise<{ totalVramBytes: number; freeVramBytes: number; cachedModelCount: number; activeModels: any[] }> {
+    this.initClients();
+    return new Promise((resolve, reject) => {
+      const deadline = new Date(Date.now() + 5000);
+      this.adminClient.GetVRAMStatus({}, { deadline }, (err: any, response: any) => {
+        if (err) return reject(err);
+        resolve({
+          totalVramBytes: Number(response.total_vram_bytes ?? 0),
+          freeVramBytes: Number(response.free_vram_bytes ?? 0),
+          cachedModelCount: Number(response.cached_model_count ?? 0),
+          activeModels: response.active_models ?? [],
+        });
+      });
+    });
+  }
 }
 
 export class FallbackAIStrategy implements IAIClientStrategy {
@@ -272,6 +305,12 @@ export class FallbackAIStrategy implements IAIClientStrategy {
     text: string
   ): Promise<{ audioBuffer: Buffer; sampleRate: number; channels: number; durationMs: number }> {
     return { audioBuffer: Buffer.alloc(0), sampleRate: 24000, channels: 1, durationMs: 2500 };
+  }
+  public async purgeVRAM(force = true): Promise<{ success: boolean; freedBytes: number; message: string }> {
+    return { success: true, freedBytes: 0, message: 'Fallback in-process VRAM purged (simulated)' };
+  }
+  public async getVRAMStatus(): Promise<{ totalVramBytes: number; freeVramBytes: number; cachedModelCount: number; activeModels: any[] }> {
+    return { totalVramBytes: 0, freeVramBytes: 0, cachedModelCount: 0, activeModels: [] };
   }
 }
 
@@ -350,6 +389,22 @@ export class IPCFacade {
       return (this.strategy as GRPCAIStrategy).synthesizeSpeech(text, voiceId, speed, modelStrategy);
     }
     return (this.strategy as FallbackAIStrategy).synthesizeSpeech(text);
+  }
+
+  public async purgeVRAM(force = true): Promise<{ success: boolean; freedBytes: number; message: string }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return this.strategy.purgeVRAM(force);
+    }
+    return (this.strategy as any).purgeVRAM ? (this.strategy as any).purgeVRAM(force) : { success: true, freedBytes: 0, message: 'Fallback purge' };
+  }
+
+  public async getVRAMStatus(): Promise<{ totalVramBytes: number; freeVramBytes: number; cachedModelCount: number; activeModels: any[] }> {
+    if (this.strategy instanceof GRPCAIStrategy) {
+      await this.strategy.ensureDaemonRunning();
+      return this.strategy.getVRAMStatus();
+    }
+    return (this.strategy as any).getVRAMStatus ? (this.strategy as any).getVRAMStatus() : { totalVramBytes: 0, freeVramBytes: 0, cachedModelCount: 0, activeModels: [] };
   }
 
   public async pingAllServices(message = 'test'): Promise<{ tts: string; vision: string; llm: string }> {

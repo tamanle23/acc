@@ -24,6 +24,7 @@ import { Toggle } from './ui/toggle';
 import { Separator } from './ui/separator';
 import { AudioWaveform } from './timeline/AudioWaveform';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
+import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
@@ -63,21 +64,25 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
     : [];
   const selectedSeqId = irState.selectedSequenceId;
 
-  // Playhead transport animation loop
+  // Playhead transport animation loop & real audio playback
   useEffect(() => {
     let interval: any = null;
     if (isPlaying) {
+      WebAudioEngine.getInstance().startPlayback(currentFrame, fps, irState);
       interval = setInterval(() => {
         onScrub(currentFrame >= totalFrames ? 0 : currentFrame + 1);
       }, 1000 / fps);
+    } else {
+      WebAudioEngine.getInstance().stopPlayback();
     }
     return () => {
       if (interval) clearInterval(interval);
+      WebAudioEngine.getInstance().stopPlayback();
     };
-  }, [isPlaying, currentFrame, totalFrames, fps, onScrub]);
+  }, [isPlaying, fps, irState]);
 
   const handleScrub = (frame: number) => {
-    WebAudioEngine.getInstance().playScrubFeedback(frame);
+    WebAudioEngine.getInstance().playScrubFeedback(frame, fps, irState);
     onScrub(frame);
   };
 
@@ -386,19 +391,25 @@ export function Timeline({ playhead, onScrub }: TimelineProps) {
 
                           {/* Sequence Label & Visuals */}
                           <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full">
-                            {isAudio && (
+                            {isAudio ? (
                               <AudioWaveform
                                 id={seq.id}
                                 durationFrames={seq.durationFrames}
                                 width={widthPx}
                                 height={28}
                               />
+                            ) : (
+                              <FilmstripThumbnail
+                                assetId={seq.assetId || seq.id}
+                                width={widthPx}
+                                height={28}
+                              />
                             )}
-                            <span className="text-[10px] font-mono font-medium truncate relative z-10">
+                            <span className="text-[10px] font-mono font-medium truncate relative z-10 drop-shadow-xs">
                               {seq.id}
                             </span>
                             {seq.modifiers && seq.modifiers.length > 0 && (
-                              <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10">
+                              <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
                                 {seq.modifiers.length} mod
                               </span>
                             )}

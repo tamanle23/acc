@@ -16,6 +16,25 @@
         },
         {
             "type": "bun",
+            "request": "launch",
+            "name": "supervisor:dev",
+            "program": "${workspaceFolder}/apps/ai-supervisor/src/bun/index.ts",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "watchMode": false
+        },
+        {
+            "type": "bun",
+            "request": "launch",
+            "name": "supervisor:dev (electrobun)",
+            "program": "node_modules/.bin/electrobun",
+            "args": ["dev"],
+            "cwd": "${workspaceFolder}/apps/ai-supervisor",
+            "stopOnEntry": false,
+            "watchMode": false
+        },
+        {
+            "type": "bun",
             "internalConsoleOptions": "neverOpen",
             "request": "attach",
             "name": "Attach Bun",

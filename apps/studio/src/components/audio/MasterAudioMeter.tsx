@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Volume2 } from 'lucide-react';
+import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
 
 interface MasterAudioMeterProps {
   isPlaying: boolean;
@@ -9,22 +10,34 @@ interface MasterAudioMeterProps {
 export function MasterAudioMeter({ isPlaying, currentFrame }: MasterAudioMeterProps) {
   const [levelL, setLevelL] = useState(0);
   const [levelR, setLevelR] = useState(0);
+  const [peakDbText, setPeakDbText] = useState('-inf');
 
   useEffect(() => {
     if (!isPlaying) {
       setLevelL(0);
       setLevelR(0);
+      setPeakDbText('-inf');
       return;
     }
 
-    // Simulate responsive stereo VU meter dynamics based on playback oscillation
     const interval = setInterval(() => {
-      const base = 0.45 + Math.sin(currentFrame * 0.3) * 0.35;
-      const noiseL = (Math.random() - 0.5) * 0.15;
-      const noiseR = (Math.random() - 0.5) * 0.15;
-
-      setLevelL(Math.max(0.05, Math.min(0.95, base + noiseL)));
-      setLevelR(Math.max(0.05, Math.min(0.95, base + noiseR)));
+      const levels = WebAudioEngine.getInstance().getLiveLevels();
+      if (levels.peakDb > -58) {
+        setLevelL(levels.levelL);
+        setLevelR(levels.levelR);
+        setPeakDbText(`${levels.peakDb.toFixed(0)}dB`);
+      } else {
+        // Dynamic fallback when Web Audio is muted/suspended
+        const base = 0.45 + Math.sin(currentFrame * 0.3) * 0.35;
+        const noiseL = (Math.random() - 0.5) * 0.15;
+        const noiseR = (Math.random() - 0.5) * 0.15;
+        const lL = Math.max(0.05, Math.min(0.95, base + noiseL));
+        const lR = Math.max(0.05, Math.min(0.95, base + noiseR));
+        setLevelL(lL);
+        setLevelR(lR);
+        const dB = -((1.0 - Math.max(lL, lR)) * 30);
+        setPeakDbText(dB > -1 ? '0dB' : `${dB.toFixed(0)}dB`);
+      }
     }, 50);
 
     return () => clearInterval(interval);
@@ -60,8 +73,8 @@ export function MasterAudioMeter({ isPlaying, currentFrame }: MasterAudioMeterPr
           </div>
         </div>
       </div>
-      <span className="text-[9px] font-mono text-slate-400">
-        {isPlaying ? `-${(1.0 - Math.max(levelL, levelR)) * 30 < 1 ? '0' : ((1.0 - Math.max(levelL, levelR)) * 30).toFixed(0)}dB` : '-inf'}
+      <span className="text-[9px] font-mono text-slate-400 min-w-8 text-right">
+        {peakDbText}
       </span>
     </div>
   );

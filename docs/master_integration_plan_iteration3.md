@@ -345,18 +345,18 @@ def start_parent_watchdog(parent_pid: int):
 ---
 
 ## 4. Verification & Acceptance Criteria
-- [ ] `apps/ai-supervisor` builds and launches as a native Windows tray application using Electrobun (< 30MB RAM footprint).
-- [ ] Closing the dashboard window minimizes to the system tray (`exitOnLastWindowClosed: false`).
-- [ ] If port `:50051` or `:3300` is occupied, the supervisor automatically selects the next available port and updates child processes without crashing.
-- [ ] Simulated daemon crashes auto-restart with exponential backoff (1s, 2s, 4s) up to 3 attempts before setting `CRASH_LOOP` status and alerting via native notification.
-- [ ] Active workloads mark the service status as `BUSY/PROCESSING` without triggering false `OFFLINE` alerts.
-- [ ] Embedded log console displays up to 10,000 lines from RAM ring buffer with instant search, and rotates logs on disk at 10MB.
+- [x] `apps/ai-supervisor` builds and launches as a native Windows tray application using Electrobun (< 30MB RAM footprint).
+- [x] Closing the dashboard window minimizes to the system tray (`exitOnLastWindowClosed: false`).
+- [x] If port `:50051` or `:3300` is occupied, the supervisor automatically selects the next available port and updates child processes without crashing.
+- [x] Simulated daemon crashes auto-restart with exponential backoff (1s, 2s, 4s) up to 3 attempts before setting `CRASH_LOOP` status and alerting via native notification.
+- [x] Active workloads mark the service status as `BUSY/PROCESSING` without triggering false `OFFLINE` alerts.
+- [x] Embedded log console displays up to 10,000 lines from RAM ring buffer with instant search, and rotates logs on disk at 10MB.
 - [x] React Studio viewport runs event-driven (0 FPS at idle, smooth during playback/scrubbing), avoiding redundant CPU/GPU repaints.
 - [x] Clicking "Cancel Export" in React Studio aborts the render job cleanly via `AbortSignal`, deletes temp files, and frees native encoder memory.
 - [x] If Python is offline, `apps/worker` receives `ACC_AI_OFFLINE=1` and falls back cleanly without hanging.
 - [x] `StudioServer` serves media files via HTTP 206 range requests; video elements seek smoothly without stutter.
 - [x] Client Web Audio engine provides zero-latency timeline scrubbing and accurate real-time audio ducking without server dependencies.
-- [ ] Clicking "Purge VRAM" successfully frees Python CUDA/RAM allocations via gRPC admin call.
+- [x] Clicking "Purge VRAM" successfully frees Python CUDA/RAM allocations via gRPC admin call.
 - [x] `apps/worker` and `apps/studio` run as independent standalone packages with dedicated `dev` and `build` commands (worker & studio implemented).
-- [ ] Dual-target scripts allow both source-level live development (`bun run supervisor:dev`) and production standalone packaging (`bun run supervisor:build`).
-- [ ] Terminating the control plane or parent Bun process kills all child processes cleanly without leaving orphaned zombie daemons.
+- [x] Dual-target scripts allow both source-level live development (`bun run supervisor:dev`) and production standalone packaging (`bun run supervisor:build`).
+- [x] Terminating the control plane or parent Bun process kills all child processes cleanly without leaving orphaned zombie daemons.

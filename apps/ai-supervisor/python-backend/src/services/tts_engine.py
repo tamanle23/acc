@@ -16,6 +16,11 @@ class TTSEngine:
     def __init__(self):
         self._kokoro = None
         # In production, kokoro-onnx or transformers can be loaded lazily
+        try:
+            from services.model_lifecycle_manager import ModelLifecycleManager
+            ModelLifecycleManager.get_instance().register_model("kokoro_tts", self, estimated_vram_bytes=180 * 1024 * 1024)
+        except Exception:
+            pass
 
     def synthesize(
         self,
@@ -28,6 +33,11 @@ class TTSEngine:
         Synthesizes speech audio from input text.
         Returns: (wav_audio_bytes, sample_rate, channels, duration_ms)
         """
+        try:
+            from services.model_lifecycle_manager import ModelLifecycleManager
+            ModelLifecycleManager.get_instance().touch("kokoro_tts")
+        except Exception:
+            pass
         sample_rate = 24000
         channels = 1
         speed = max(0.5, min(2.5, speed if speed > 0 else 1.0))
