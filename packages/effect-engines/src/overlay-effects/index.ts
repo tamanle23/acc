@@ -6,3 +6,6 @@ export * from './types';
 export * from './generators';
 export * from './KineticTypography';
 export * from './TrackingCalloutEngine';
+export * from './simulators/SIMDParticleComputeEngine';
+export * from './simulators/PostProcessingShaders';
+export * from './canvas-strategies';

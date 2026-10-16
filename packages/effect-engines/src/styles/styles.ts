@@ -1,4 +1,4 @@
-import { CaptionSettings, CaptionPreset, CaptionPosition } from './types';
+import { CaptionSettings, CaptionPreset, CaptionPosition } from '../types.js';
 
 /**
  * Converts standard HTML Hex Color (e.g. #FFCC00) to ASS format (&H0000CCFF)

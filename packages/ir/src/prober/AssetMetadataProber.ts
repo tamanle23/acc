@@ -13,12 +13,16 @@ export interface AssetMetadata {
   channels?: number;
 }
 
+export interface IAssetMetadataProber {
+  probe(assetId: string, src: string, type: string, fps?: number): Promise<AssetMetadata>;
+}
+
 /**
  * Asset Metadata Prober:
  * Inspects local container headers (and mockable remote stream headers)
  * to establish immutable media dimensions, duration, and channel layouts before DAG compilation.
  */
-export class AssetMetadataProber {
+export class AssetMetadataProber implements IAssetMetadataProber {
   private baseDir: string;
   private cache: Map<string, AssetMetadata> = new Map();
 

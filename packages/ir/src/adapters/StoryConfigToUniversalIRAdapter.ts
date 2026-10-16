@@ -113,6 +113,20 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         });
       }
 
+      if ((scene as any).camera3d) {
+        videoModifiers.push({
+          type: 'vfx/camera_3d',
+          params: (scene as any).camera3d,
+        });
+      }
+
+      if ((scene as any).particleOverlay) {
+        videoModifiers.push({
+          type: 'overlay/canvas_particles',
+          params: (scene as any).particleOverlay,
+        });
+      }
+
       // Step D1: Forward Color Grading / LUT modifier
       const colorGrading = (scene as any).colorGrading || (settings as any).colorGrading;
       if (colorGrading) {

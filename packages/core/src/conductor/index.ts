@@ -12,3 +12,11 @@ export * from './strategies/phase3/Phase3VideoStrategies';
 export * from './strategies/phase4/Phase4AudioStrategies';
 export * from './strategies/phase5/Phase5InteractiveStrategies';
 export * from './strategies/registerAll250ContentStrategies';
+export * from './TaskWorkerFactory';
+export * from './interfaces/IConductorTaskCommand';
+export * from './ConductorPipelineAdapter';
+export * from './ConductorWorkerPoller';
+export * from './commands/index';
+export * from './UniversalStrategyTaskCommand';
+
+

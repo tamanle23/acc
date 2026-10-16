@@ -47,6 +47,56 @@ export interface TimedTextCue {
   text: string;
 }
 
+export interface DepthRelightingModifierParams {
+  enabled: boolean;
+  lightPosition?: [number, number, number];
+  diffuse?: number;
+  specular?: number;
+  shininess?: number;
+  ambient?: number;
+  rimIntensity?: number;
+  lightColor?: string | [number, number, number];
+  normalStrength?: number;
+}
+
+export interface Camera3DKeyframeIR {
+  time: number; // [0, 1]
+  position: [number, number, number];
+  target?: [number, number, number];
+  roll?: number;
+  fov?: number;
+  focalZ?: number;
+  focalAperture?: number;
+}
+
+export interface Camera3DModifierParams {
+  keyframes?: Camera3DKeyframeIR[];
+  rackFocus?: {
+    enabled?: boolean;
+    focalZone?: 'foreground' | 'midground' | 'background' | 'custom';
+    customFocalZ?: number;
+    aperture?: number;
+    blurMaxRadius?: number;
+  };
+  imagePath?: string;
+  depthImagePath?: string;
+  motionBlur?: boolean;
+}
+
+export interface ParticleVfxModifierParams {
+  type: string;
+  variant?: string;
+  intensity?: number;
+  speed?: number;
+  opacity?: number;
+  useSIMD?: boolean;
+  shaders?: {
+    chromaticAberration?: { enabled?: boolean; offsetPx?: number };
+    bloom?: { enabled?: boolean; threshold?: number; intensity?: number };
+    anamorphicFlare?: { enabled?: boolean; intensity?: number; tintColor?: string };
+  };
+}
+
 export interface ModifierNode<TParams = Record<string, unknown>> {
   type: string;
   params: TParams;

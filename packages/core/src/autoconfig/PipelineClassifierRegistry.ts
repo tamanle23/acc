@@ -65,7 +65,7 @@ export class PipelineClassifierRegistry {
     return this.list();
   }
 
-  public static resolve(
+  public static async resolve(
     manifest: DiscoveredAssetManifest,
     overridePipelineId?: string
   ): Promise<PipelineResolutionResult> {

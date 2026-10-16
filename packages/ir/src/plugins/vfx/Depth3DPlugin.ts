@@ -1,7 +1,15 @@
 import fs from 'fs';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
-import { Depth3DFactory, drawFrameBreakerFrame, resolveSubjectCutout, resolveDepthMapData } from '@acc/effect-engines';
-import { createCanvas, type Image, type Canvas } from '@napi-rs/canvas';
+import {
+  Depth3DFactory,
+  drawFrameBreakerFrame,
+  resolveSubjectCutout,
+  resolveDepthMapData,
+  SurfaceNormalGenerator,
+  type SurfaceNormalMap,
+  type RelightingParams,
+} from '@acc/effect-engines';
+import { createCanvas, type Image, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 
 export type Depth3DMode =
   | 'frame_breaker'
@@ -35,6 +43,7 @@ export interface Depth3DPluginParams {
   popOutIntensity?: number;
   autoSegment?: boolean;
   autoDepth?: boolean;
+  relighting?: RelightingParams;
   depthMesh?: { motion?: string; displacementScale?: number };
   sandwich?: any;
   parallax?: any;
@@ -63,6 +72,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   private particlesCache = new Map<string, any[]>();
   private dustParticlesCache = new Map<string, any[]>();
   private baseCanvasCache = new Map<string, Canvas>();
+  private normalMapCache = new Map<string, SurfaceNormalMap>();
+  private relightCanvasCache = new Map<string, { canvas: Canvas; ctx: SKRSContext2D }>();
 
   public validate(params: unknown): params is Depth3DPluginParams {
     return Boolean(params && typeof params === 'object' && 'mode' in params);
@@ -88,7 +99,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       const width = context.canvas.width;
       const height = context.canvas.height;
 
-      if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth) {
+      if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth || params.relighting?.enabled) {
         try {
           const depthData = await resolveDepthMapData(
             params.imagePath,
@@ -97,6 +108,25 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             params as any
           );
           this.depthLayerCache.set(params.imagePath, depthData);
+
+          // If relighting is requested, compute surface normal map once during preflight to adhere to ZERO-ALLOC-FRAME-LOOP
+          if (params.relighting?.enabled && depthData?.srcCanvas) {
+            const dCtx = depthData.srcCanvas.getContext('2d');
+            const depthImgData = dCtx.getImageData(0, 0, width, height);
+            const normalMap = SurfaceNormalGenerator.generateFromDepth(
+              depthImgData.data,
+              width,
+              height,
+              4,
+              params.relighting.normalStrength ?? 2.0
+            );
+            this.normalMapCache.set(params.imagePath, normalMap);
+
+            // Pre-allocate scratch canvas for relight compositing
+            const relightCanvas = createCanvas(width, height);
+            const rCtx = relightCanvas.getContext('2d');
+            this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas, ctx: rCtx });
+          }
         } catch {}
       }
 
@@ -242,6 +272,59 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         progress,
         depthConfig,
       });
+    }
+
+    // Dynamic Relighting Pass (Phase 1)
+    if (params.relighting?.enabled && params.imagePath) {
+      const normalMap = this.normalMapCache.get(params.imagePath);
+      const relightEntry = this.relightCanvasCache.get(params.imagePath);
+
+      if (normalMap && relightEntry) {
+        const { canvas: relightCanvas, ctx: rCtx } = relightEntry;
+
+        // Clear pre-allocated scratch canvas
+        rCtx.clearRect(0, 0, width, height);
+
+        // Draw current canvas snapshot to scratch canvas
+        rCtx.drawImage(canvasCtx.canvas, 0, 0);
+
+        const imgData = rCtx.getImageData(0, 0, width, height);
+
+        // Calculate dynamic light position (interpolated or orbit if needed)
+        const lightPos = params.relighting.lightPosition || [
+          Math.sin(progress * Math.PI * 2) * 0.8,
+          Math.cos(progress * Math.PI * 2) * 0.5 - 0.2,
+          1.2,
+        ];
+
+        const lightColor = SurfaceNormalGenerator.parseColor(params.relighting.lightColor);
+
+        SurfaceNormalGenerator.applyRelightingToRgba(
+          imgData.data,
+          normalMap,
+          null, // Gated by existing alpha in imgData
+          {
+            position: lightPos,
+            diffuse: params.relighting.diffuse ?? 0.8,
+            specular: params.relighting.specular ?? 0.6,
+            shininess: params.relighting.shininess ?? 16.0,
+            ambient: params.relighting.ambient ?? 0.1,
+            rimIntensity: params.relighting.rimIntensity ?? 0.4,
+            color: lightColor,
+          }
+        );
+
+        rCtx.putImageData(imgData, 0, 0);
+
+        // Non-destructive additive screen compositing onto primary canvas context
+        canvasCtx.save();
+        try {
+          canvasCtx.globalCompositeOperation = 'screen';
+          canvasCtx.drawImage(relightCanvas, 0, 0);
+        } finally {
+          canvasCtx.restore();
+        }
+      }
     }
   }
 }

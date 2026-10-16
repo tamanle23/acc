@@ -169,6 +169,18 @@ export class VideoIRSchemaValidator {
       }
       if (mod.params === undefined || typeof mod.params !== 'object' || mod.params === null) {
         errors.push(`Modifier "${mod.type || i}" on ${context} missing "params" object`);
+      } else {
+        // Specialized validator checks for Phase 1 - Phase 3 Visual Modifiers
+        const p = mod.params as Record<string, any>;
+        if (mod.type === 'vfx/camera_3d' && p.keyframes && !Array.isArray(p.keyframes)) {
+          errors.push(`Modifier "vfx/camera_3d" on ${context}: keyframes must be an array`);
+        }
+        if (mod.type === 'vfx/depth3d' && p.relighting && typeof p.relighting.enabled !== 'boolean') {
+          errors.push(`Modifier "vfx/depth3d" on ${context}: relighting.enabled must be a boolean`);
+        }
+        if (mod.type === 'overlay/canvas_particles' && p.type && typeof p.type !== 'string') {
+          errors.push(`Modifier "overlay/canvas_particles" on ${context}: type must be a string`);
+        }
       }
     }
   }

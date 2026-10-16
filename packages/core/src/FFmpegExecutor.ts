@@ -179,10 +179,13 @@ export class FFmpegCommand {
     }
 
     try {
-      // 1. Lossless Stream Concatenation (multiple video inputs without complex filtergraphs)
-      if (this.complexFilterStr) {
-        // Complex filtergraph execution requested (e.g. BGM mixing / audio ducking)
-        // Since complex filtergraphs are not yet executed via pure FFI, safely preserve primary video stream
+      const { MediaEngineRegistry } = await import('./media-engine');
+      const activeStrategy = MediaEngineRegistry.get();
+
+      if (activeStrategy.capabilities.supportsComplexFilters && typeof activeStrategy.executeCommand === 'function') {
+        await activeStrategy.executeCommand(this.buildArgs());
+      } else if (this.complexFilterStr) {
+        // Complex filtergraph execution requested under bun:ffi which does not support arbitrary filtergraphs
         if (inputPaths.length >= 1 && fs.existsSync(inputPaths[0])) {
           fs.copyFileSync(inputPaths[0], outputFile);
         }

@@ -25,6 +25,7 @@ export interface CliOptions {
   concurrency?: number;
   exportIr?: string;
   traceparent?: string;
+  mediaEngine?: 'bun-ffi' | 'fluent-ffmpeg' | 'mediabunny-server' | 'mediabunny-client';
 }
 
 import { cancel, intro, isCancel, outro, select, spinner, text } from '@clack/prompts';
@@ -134,6 +135,10 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.traceparent = args[++i];
       continue;
     }
+    if (arg === '--engine' || arg === '--media-engine') {
+      options.mediaEngine = args[++i] as any;
+      continue;
+    }
     if (arg === '-h' || arg === '--help') {
 
       options.command = 'help';
@@ -178,12 +183,14 @@ OPTIONS:
   -p, --port <port>          Webhook listener HTTP port (Default: 3000)
   -d, --duration <seconds>   Stream or loop duration limit in seconds
   -n, --dry-run              Inspect and validate pipeline AST & assets without file encoding
+  --engine <type>            Media engine backend: bun-ffi, fluent-ffmpeg, mediabunny-server, mediabunny-client (Default: bun-ffi)
   --chunk-start <frame>      Start frame index for distributed temporal chunk rendering
   --chunk-end <frame>        End frame index for distributed temporal chunk rendering
   --export-ir <file.json>    Export adapted/compiled Video IR JSON document to disk
   --traceparent <header>     W3C traceparent distributed tracing header (00-{traceId}-{spanId}-{flags})
   -h, --help                 Display this CLI guide
 `);
+
 
 }
 
@@ -389,6 +396,7 @@ export async function run(customArgs?: string[]): Promise<any> {
       await handleIrRenderCommand({
         input: options.configPath || './sample-story',
         output: options.outDir,
+        engine: options.mediaEngine,
         dryRun: options.dryRun,
         chunkStart: options.chunkStart,
         chunkEnd: options.chunkEnd,

@@ -7,13 +7,16 @@ import {
   AssetMetadataProber,
   IRMasterRenderer,
   IRChunkWorkerPool,
-  FFIVideoEncoderSink,
+  MediaSinkFactory,
+  type IIRFrameSink,
   type VideoIRDocument,
 } from '@acc/ir';
+import type { MediaEngineType } from '@acc/core';
 
 export interface IrRenderCliOptions {
   input: string;
   output?: string;
+  engine?: MediaEngineType;
   dryRun?: boolean;
   chunkStart?: number;
   chunkEnd?: number;
@@ -129,6 +132,7 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
           const workerPool = new IRChunkWorkerPool(timeline, options.seed ?? 42);
 
           const poolResult = await workerPool.render({
+            engine: options.engine,
             concurrency,
             outputPath,
             baseDir,
@@ -149,10 +153,10 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
         }
 
         // Single-Worker Target Sink Resolution
-        let sink: FFIVideoEncoderSink | undefined;
+        let sink: IIRFrameSink | undefined;
         if (outputPath) {
-          sink = new FFIVideoEncoderSink();
-          Logger.info('IRRenderCommand', `Configured Output Video Sink: FFIVideoEncoder -> ${outputPath}`);
+          sink = MediaSinkFactory.createVideoSink(options.engine);
+          Logger.info('IRRenderCommand', `Configured Output Video Sink: ${sink.name} -> ${outputPath}`);
         }
 
         Logger.info('IRRenderCommand', 'Starting deterministic headless rasterization loop...');

@@ -1,5 +1,7 @@
 import { Logger } from '../logger';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import { spawn, ChildProcess } from 'child_process';
 import { getTTSServiceClient, getVisionServiceClient, getLLMServiceClient } from '@acc/proto';
 
@@ -173,14 +175,38 @@ export class GRPCAIStrategy implements IAIClientStrategy {
         if (await this.isAvailable()) return true;
 
         if (!GRPCAIStrategy.daemonProcess) {
-          const pythonBackendDir = path.resolve(__dirname, '../../../../apps/python-backend');
+          const pythonBackendDir = path.resolve(__dirname, '../../../../apps/ai-supervisor/python-backend');
           Logger.info('IPCFacade', `Auto-bootstrapping Python AI Daemon via uv in ${pythonBackendDir}...`);
 
           const port = process.env.ACC_GRPC_PORT || '50051';
-          GRPCAIStrategy.daemonProcess = spawn('bun', ['x', 'uv', 'run', 'python', 'src/server.py', port], {
+          const accDir = path.join(os.homedir(), '.acc');
+          const accBinDir = path.join(accDir, 'bin');
+          const accPythonEnv = path.join(accDir, 'python-env');
+          const extraEnv: Record<string, string> = {
+            PYTHONUNBUFFERED: '1',
+          };
+          if (fs.existsSync(accPythonEnv)) {
+            extraEnv.UV_PYTHON_INSTALL_DIR = accPythonEnv;
+            extraEnv.UV_PYTHON = '3.12';
+          }
+          if (fs.existsSync(accBinDir)) {
+            extraEnv.PATH = `${accBinDir}${path.delimiter}${process.env.PATH || ''}`;
+          }
+
+          const isolatedUv = path.join(accBinDir, process.platform === 'win32' ? 'uv.exe' : 'uv');
+          const spawnCmd = fs.existsSync(isolatedUv) ? isolatedUv : 'bun';
+          const spawnArgs = fs.existsSync(isolatedUv)
+            ? ['run', 'python', 'src/server.py', port]
+            : ['x', 'uv', 'run', 'python', 'src/server.py', port];
+
+          GRPCAIStrategy.daemonProcess = spawn(spawnCmd, spawnArgs, {
             cwd: pythonBackendDir,
             stdio: ['ignore', 'inherit', 'inherit'],
-            shell: process.platform === 'win32',
+            shell: process.platform === 'win32' && !fs.existsSync(isolatedUv),
+            env: {
+              ...process.env,
+              ...extraEnv,
+            },
           });
 
           GRPCAIStrategy.daemonProcess.unref();

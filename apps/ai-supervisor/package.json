@@ -1,0 +1,21 @@
+{
+  "name": "@acc/ai-supervisor",
+  "version": "1.0.0",
+  "description": "Electrobun Desktop Control Plane and Hybrid Multi-Daemon Supervisor for ACC",
+  "type": "module",
+  "main": "src/bun/index.ts",
+  "scripts": {
+    "dev": "bun run src/bun/index.ts",
+    "dev:electrobun": "electrobun dev",
+    "start": "bun run src/bun/index.ts",
+    "build": "bun build src/bun/index.ts --compile --outfile=dist/acc-supervisor.exe",
+    "build:electrobun": "electrobun build"
+  },
+  "dependencies": {
+    "electrobun": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^26.6.2"
+  }
+}

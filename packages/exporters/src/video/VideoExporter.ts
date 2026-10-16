@@ -5,7 +5,10 @@ import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
 import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists, Logger } from '@acc/core';
 
+import type { MediaEngineType } from '@acc/core';
+
 export interface VideoExportOptions extends ExportOptions {
+  engine?: MediaEngineType;
   width?: number;
   height?: number;
   fps?: number;
@@ -44,7 +47,7 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
         RelationalDAGCompiler,
         AssetMetadataProber,
         IRMasterRenderer,
-        FFIVideoEncoderSink,
+        MediaSinkFactory,
       } = await import('@acc/ir');
 
       Logger.info('VideoExporter', `⚡ Compiling PipelineIR [${ir.pipelineId}] to Universal Video IR...`);
@@ -58,7 +61,7 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       const timeline = await compiler.compile(irDoc);
 
       const renderer = new IRMasterRenderer(timeline, 42);
-      const sink = new FFIVideoEncoderSink();
+      const sink = MediaSinkFactory.createVideoSink(options.engine);
 
       const renderResult = await renderer.render({
         sink,

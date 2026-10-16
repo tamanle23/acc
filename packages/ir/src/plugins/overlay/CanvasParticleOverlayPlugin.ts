@@ -1,4 +1,9 @@
-import type { ModifierPlugin, ModifierContext, StreamRenderContext } from '../ModifierPluginRegistry';
+import type { ModifierPlugin, ModifierContext, StreamRenderContext, ClipRenderContext } from '../ModifierPluginRegistry';
+import {
+  SIMDParticleComputeEngine,
+  PostProcessingShaders,
+} from '@acc/effect-engines';
+import { createCanvas, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 
 export type ProceduralParticleType =
   | 'rain'
@@ -16,24 +21,35 @@ export type ProceduralParticleType =
   | 'matrix_rain'
   | 'speed_lines';
 
+export interface PostProcessingShaderParams {
+  chromaticAberration?: { enabled?: boolean; offsetPx?: number };
+  bloom?: { enabled?: boolean; threshold?: number; intensity?: number };
+  anamorphicFlare?: { enabled?: boolean; intensity?: number; tintColor?: string };
+}
+
 export interface CanvasParticleOverlayParams {
   type: ProceduralParticleType | string;
   variant?: string;
   intensity?: number;
   speed?: number;
   opacity?: number;
+  useSIMD?: boolean;
+  shaders?: PostProcessingShaderParams;
 }
 
 /**
  * CanvasParticleOverlayPlugin:
  * Implements Section 3.3 of Document 7 (`overlay/luma_particle_canvas` & `overlay/alpha_particle_canvas`).
- * Renders procedural particles (Rain, Snow, Dust, Embers, Fire, VHS, Glitch, HUD) directly onto the canvas.
- * Phase 3: Track-Level Execution (Stream Space).
+ * Upgraded in Phase 3 with SIMDParticleComputeEngine and PostProcessingShaders.
+ * Phase 3: Track-Level and Sequence-Level Execution (both scopes).
  */
 export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticleOverlayParams> {
   public readonly type = 'overlay/canvas_particles';
   public readonly targetScope = 'both';
   public readonly targetPhase = 3;
+
+  private simdEngineCache = new Map<string, SIMDParticleComputeEngine>();
+  private scratchCanvasCache = new Map<string, { canvas: Canvas; ctx: SKRSContext2D }>();
 
   public validate(params: unknown): params is CanvasParticleOverlayParams {
     return Boolean(params && typeof params === 'object' && 'type' in params);
@@ -47,6 +63,35 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
       intensity: params.intensity ?? 1.0,
       active: true,
     };
+
+    const width = context.canvas.width;
+    const height = context.canvas.height;
+    const key = `${(context.targetEntity as any)?.id || 'default'}_${params.type}`;
+
+    // Initialize SIMD Particle Engine if enabled or high intensity
+    if (params.useSIMD !== false) {
+      const maxParticles = Math.min(20000, Math.round(500 * (params.intensity ?? 1.0)));
+      const engine = new SIMDParticleComputeEngine({
+        maxParticles,
+        spawnRate: Math.max(5, Math.round(15 * (params.intensity ?? 1.0))),
+        type: (params.type || 'snow').toLowerCase() as any,
+        seed: 42,
+      });
+      // Pre-warm initial batch
+      engine.spawn(Math.round(maxParticles * 0.5), width, height);
+      this.simdEngineCache.set(key, engine);
+    }
+
+    // Pre-allocate scratch canvas for post-processing shaders
+    if (params.shaders?.bloom?.enabled || params.shaders?.chromaticAberration?.enabled) {
+      const scratch = createCanvas(width, height);
+      const sCtx = scratch.getContext('2d');
+      this.scratchCanvasCache.set(key, { canvas: scratch, ctx: sCtx });
+    }
+  }
+
+  public renderClipSpace(ctx: ClipRenderContext, params: CanvasParticleOverlayParams): void {
+    this.renderStreamSpace(ctx as any, params);
   }
 
   public renderStreamSpace(ctx: StreamRenderContext, params: CanvasParticleOverlayParams): void {
@@ -172,6 +217,56 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
         const x = (Math.sin(i * 77 + frame * 0.015) * 0.5 + 0.5) * width;
         const y = ((frame * 2 + i * 35) % height);
         canvasCtx.fillRect(x, y, 2, 2);
+      }
+    }
+
+    // High-Throughput SIMD Particle Engine Step & Render
+    const key = `${(ctx as any).track?.id || (ctx as any).sequence?.id || 'default'}_${params.type}`;
+    const simdEngine = this.simdEngineCache.get(key);
+    if (simdEngine) {
+      simdEngine.update(width, height);
+      simdEngine.renderToCanvas(canvasCtx);
+    }
+
+    // Post-Processing Shaders Pass
+    if (params.shaders) {
+      const scratchEntry = this.scratchCanvasCache.get(key);
+
+      // 1. Bloom & Glow
+      if (params.shaders.bloom?.enabled && scratchEntry) {
+        PostProcessingShaders.applyBloom(
+          canvasCtx,
+          scratchEntry.canvas,
+          scratchEntry.ctx,
+          width,
+          height,
+          params.shaders.bloom.threshold ?? 0.7,
+          params.shaders.bloom.intensity ?? 0.5
+        );
+      }
+
+      // 2. Anamorphic Lens Flare
+      if (params.shaders.anamorphicFlare?.enabled) {
+        PostProcessingShaders.applyAnamorphicFlare(
+          canvasCtx,
+          width,
+          height,
+          80,
+          params.shaders.anamorphicFlare.intensity ?? 0.4,
+          params.shaders.anamorphicFlare.tintColor ?? 'rgba(70, 160, 255, 0.4)'
+        );
+      }
+
+      // 3. Chromatic Aberration
+      if (params.shaders.chromaticAberration?.enabled) {
+        const imgData = canvasCtx.getImageData(0, 0, width, height);
+        PostProcessingShaders.applyChromaticAberration(
+          imgData.data,
+          width,
+          height,
+          params.shaders.chromaticAberration.offsetPx ?? 3
+        );
+        canvasCtx.putImageData(imgData, 0, 0);
       }
     }
 

@@ -8,6 +8,10 @@ import { FFIVideoEncoderSink } from '../renderer/sink/FFIVideoEncoderSink';
 import { FFIChunkConcatMuxer } from './FFIChunkConcatMuxer';
 import { DecoupledAudioMixer } from '../renderer/audio/DecoupledAudioMixer';
 
+import type { MediaEngineType } from '@acc/core';
+import type { IIRFrameSink } from '../renderer/sink/IIRFrameSink';
+import { MediaSinkFactory } from '../renderer/sink/MediaSinkFactory';
+
 export interface ChunkSlice {
   chunkIndex: number;
   startFrame: number;
@@ -16,6 +20,7 @@ export interface ChunkSlice {
 }
 
 export interface IRWorkerPoolOptions {
+  engine?: MediaEngineType;
   concurrency?: number;
   baseDir?: string;
   outputPath?: string;
@@ -102,11 +107,16 @@ export class IRChunkWorkerPool {
     const { w: width, h: height } = this.timeline.meta.canvasSize;
     const fps = this.timeline.meta.globalFps;
 
+    // Resolve active media engine strategy and chunk execution policy
+    const { MediaEngineRegistry, AdaptiveResourceGovernor } = await import('@acc/core');
+    const mediaEngine = MediaEngineRegistry.get(options.engine);
+    const chunkPolicy = mediaEngine.getChunkPolicy();
+
     // Detect hardware concurrency and govern memory bounds
     const maxSystemCores = Math.max(1, os.cpus().length);
-    const { AdaptiveResourceGovernor } = await import('@acc/core');
     const governor = AdaptiveResourceGovernor.getInstance();
-    const safeConcurrency = governor.resolveSafeConcurrency(options.concurrency ?? Math.min(4, maxSystemCores));
+    const suggestedConcurrency = options.concurrency ?? chunkPolicy.getOptimalConcurrency(maxSystemCores, maxSystemCores);
+    const safeConcurrency = governor.resolveSafeConcurrency(suggestedConcurrency);
     const concurrency = Math.max(1, Math.min(safeConcurrency, totalFrames > 0 ? totalFrames : 1));
 
     const slices = this.calculateSlices(concurrency);
@@ -162,9 +172,9 @@ export class IRChunkWorkerPool {
       // Each worker gets an isolated renderer instance seeded deterministically with the global seed
       const workerRenderer = new IRMasterRenderer(this.timeline, this.seed);
 
-      let sink: FFIVideoEncoderSink | undefined;
+      let sink: IIRFrameSink | undefined;
       if (chunkMp4Path) {
-        sink = new FFIVideoEncoderSink();
+        sink = MediaSinkFactory.createVideoSink(options.engine);
       }
 
       const chunkResult = await workerRenderer.render({
@@ -218,20 +228,24 @@ export class IRChunkWorkerPool {
           await fs.promises.unlink(validChunkPaths[0]);
         } catch {}
       } else if (validChunkPaths.length > 0) {
-        // First stitch video chunks losslessly
+        // First stitch video chunks losslessly via active media engine strategy
         const tempVideoOnlyPath = path.resolve(
           workingDir,
           `.temp_stitched_video_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp4`
         );
 
-        await FFIChunkConcatMuxer.concatenate(validChunkPaths, tempVideoOnlyPath, {
-          cleanupChunks: true,
-        });
+        await mediaEngine.getConcatStrategy().concatenate(validChunkPaths, tempVideoOnlyPath);
+
+        // Clean up individual chunks after concat
+        for (const p of validChunkPaths) {
+          try {
+            if (fs.existsSync(p)) await fs.promises.unlink(p);
+          } catch {}
+        }
 
         // If master audio exists, mux it with the stitched video
         if (masterAudioWavPath && fs.existsSync(masterAudioWavPath)) {
-          const { FFAudioMuxer } = await import('@acc/core');
-          await FFAudioMuxer.mux(tempVideoOnlyPath, masterAudioWavPath, outPath);
+          await mediaEngine.getAudioMuxerStrategy().muxAudioVideo(tempVideoOnlyPath, masterAudioWavPath, outPath);
 
           // Clean up temp intermediate files
           try {

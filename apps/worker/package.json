@@ -1,0 +1,21 @@
+{
+  "name": "@acc/worker",
+  "version": "1.0.0",
+  "description": "ACC Standalone Task Worker Daemon with Pluggable Workflow Engine Adapter & VRAM Arbitrator",
+  "main": "src/index.ts",
+  "bin": {
+    "acc-worker": "./src/index.ts"
+  },
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --target=bun --outdir=dist",
+    "start": "bun run src/index.ts --sandbox"
+  },
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/ir": "workspace:*",
+    "@acc/effect-engines": "workspace:*"
+  }
+}

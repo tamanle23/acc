@@ -54,4 +54,4 @@ export * from './telemetry/Tracer';
 export * from './telemetry/MetricsRegistry';
 export * from './security/DynamicSecretsManager';
 export * from './autoconfig';
-
+export * from './media-engine';

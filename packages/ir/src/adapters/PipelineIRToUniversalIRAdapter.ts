@@ -119,15 +119,16 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         idx === 0 ? 'hook' : (idx === totalChunks - 1 && totalChunks > 1 ? 'outro' : 'body');
 
       // Resolve Segment Director Directives (Explicit Segment > Role > Defaults)
-      const hasZeroIndex = directorConfig?.segments?.some((s) => s.index === 0);
+      const allSegments = directorConfig?.segments || (directorConfig as any)?.timeline?.segments;
+      const hasZeroIndex = allSegments?.some((s: any) => s.index === 0);
       const explicitOverride =
-        directorConfig?.segments?.find((s) =>
+        allSegments?.find((s: any) =>
           hasZeroIndex ? s.index === idx : s.index === chunkIdx
         ) ||
-        (directorConfig?.segments &&
-        directorConfig.segments[idx] &&
-        directorConfig.segments[idx].index === undefined
-          ? directorConfig.segments[idx]
+        (allSegments &&
+        allSegments[idx] &&
+        allSegments[idx].index === undefined
+          ? allSegments[idx]
           : undefined);
       const roleOverride = directorConfig?.roleDirectives?.[chunkRole];
 
@@ -180,15 +181,25 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         });
       }
 
-      // B. Camera & Cinematography Motion (Ken Burns, Pan, Dolly Zoom)
+      // B. Camera & Cinematography Motion (3D Spline, Ken Burns, Pan, Dolly Zoom)
       if (segmentDir.cameraMotion && segmentDir.cameraMotion.type !== 'static') {
-        seqModifiers.push({
-          type: 'transform/ken_burns',
-          params: {
-            type: segmentDir.cameraMotion.type,
-            intensity: segmentDir.cameraMotion.intensity ?? 0.5,
-          },
-        });
+        if ((segmentDir.cameraMotion as any).type === '3d_spline' || (segmentDir.cameraMotion as any).keyframes) {
+          seqModifiers.push({
+            type: 'vfx/camera_3d',
+            params: {
+              keyframes: (segmentDir.cameraMotion as any).keyframes,
+              rackFocus: (segmentDir.cameraMotion as any).rackFocus,
+            },
+          });
+        } else {
+          seqModifiers.push({
+            type: 'transform/ken_burns',
+            params: {
+              type: segmentDir.cameraMotion.type,
+              intensity: segmentDir.cameraMotion.intensity ?? 0.5,
+            },
+          });
+        }
       }
 
       // C. Transition Modifier (Crossfade, Wipe, Glitch)

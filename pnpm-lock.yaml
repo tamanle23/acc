@@ -61,6 +61,15 @@ importers:
         specifier: ^2.4.4
         version: 2.11.7
 
+  apps/ai-supervisor:
+    devDependencies:
+      '@types/bun':
+        specifier: latest
+        version: 1.4.3
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.4
+
   apps/cli:
     dependencies:
       '@acc/core':
@@ -443,6 +452,9 @@ packages:
   '@types/bun@1.4.2':
     resolution: {integrity: sha512-GimotNn7+ZV0uVArItBbriZsR1oNf0+WTzPkdcFrzShI7k2norL0uzEaJT8T33dWr7O/c9ZDuAFQrctKCi72oQ==}
 
+  '@types/bun@1.4.3':
+    resolution: {integrity: sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw==}
+
   '@types/node@26.6.4':
     resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
 
@@ -586,6 +598,9 @@ packages:
 
   bun-types@1.4.2:
     resolution: {integrity: sha512-bxV1FgK7yBIzjRe5zBozIM4Bem11ZJcCXSrjWRG3YWLt8yFDePu4cLjpebO8OvPeIE9trbyPF4fuj3Cia4Fj3w==}
+
+  bun-types@1.4.3:
+    resolution: {integrity: sha512-tinRJNGOmUN+tEAsn2y2e942n9JHRHR42iUYzDH75NmhJqVBokGSQkkfSFdNWwsANIdrK6ACH9t01M452YyTwg==}
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -1094,6 +1109,10 @@ snapshots:
     dependencies:
       bun-types: 1.4.2
 
+  '@types/bun@1.4.3':
+    dependencies:
+      bun-types: 1.4.3
+
   '@types/node@26.6.4':
     dependencies:
       undici-types: 8.9.0
@@ -1176,6 +1195,11 @@ snapshots:
   bun-types@1.4.2:
     dependencies:
       '@types/node': 26.6.4
+
+  bun-types@1.4.3:
+    dependencies:
+      '@types/node': 26.6.4
+      undici-types: 8.9.0
 
   cliui@8.0.1:
     dependencies:

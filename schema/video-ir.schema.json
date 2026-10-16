@@ -390,6 +390,123 @@
           "description": "Target color space (e.g. 'rec709', 'bt2020', 'hdr10')"
         }
       }
+    },
+    "DepthRelightingParams": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "lightPosition": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "diffuse": { "type": "number" },
+        "specular": { "type": "number" },
+        "shininess": { "type": "number" },
+        "ambient": { "type": "number" },
+        "rimIntensity": { "type": "number" },
+        "lightColor": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          ]
+        },
+        "normalStrength": { "type": "number" }
+      }
+    },
+    "Camera3DModifierParams": {
+      "type": "object",
+      "properties": {
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["time", "position"],
+            "properties": {
+              "time": { "type": "number", "minimum": 0, "maximum": 1 },
+              "position": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "target": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "roll": { "type": "number" },
+              "fov": { "type": "number", "minimum": 1 },
+              "focalZ": { "type": "number", "minimum": 0, "maximum": 1 },
+              "focalAperture": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "rackFocus": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "focalZone": {
+              "type": "string",
+              "enum": ["foreground", "midground", "background", "custom"]
+            },
+            "customFocalZ": { "type": "number" },
+            "aperture": { "type": "number" },
+            "blurMaxRadius": { "type": "number" }
+          }
+        },
+        "imagePath": { "type": "string" },
+        "depthImagePath": { "type": "string" },
+        "motionBlur": { "type": "boolean" }
+      }
+    },
+    "ParticleVfxModifierParams": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "variant": { "type": "string" },
+        "intensity": { "type": "number" },
+        "speed": { "type": "number" },
+        "opacity": { "type": "number" },
+        "useSIMD": { "type": "boolean" },
+        "shaders": {
+          "type": "object",
+          "properties": {
+            "chromaticAberration": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "offsetPx": { "type": "number" }
+              }
+            },
+            "bloom": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "threshold": { "type": "number" },
+                "intensity": { "type": "number" }
+              }
+            },
+            "anamorphicFlare": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "intensity": { "type": "number" },
+                "tintColor": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

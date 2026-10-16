@@ -7,11 +7,11 @@ import type {
   RelationalStart,
   RelationalDuration,
 } from '../types/VideoIR';
-import { AssetMetadataProber, type AssetMetadata } from '../prober/AssetMetadataProber';
+import { AssetMetadataProber, type AssetMetadata, type IAssetMetadataProber } from '../prober/AssetMetadataProber';
 import { VideoIRSchemaValidator } from '../schema/VideoIRSchemaValidator';
 
 export interface DAGCompileOptions {
-  prober?: AssetMetadataProber;
+  prober?: IAssetMetadataProber;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface DAGCompileOptions {
  * Enforces Kahn's algorithm for circular dependency & deadlock detection.
  */
 export class RelationalDAGCompiler {
-  private prober: AssetMetadataProber;
+  private prober: IAssetMetadataProber;
 
   constructor(options: DAGCompileOptions = {}) {
     this.prober = options.prober || new AssetMetadataProber();
