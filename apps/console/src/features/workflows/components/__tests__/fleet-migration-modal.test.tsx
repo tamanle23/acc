@@ -108,7 +108,7 @@ describe('FleetMigrationModal Component', () => {
     expect(screen.getByText('wf_exec_003_blocked')).toBeDefined();
   });
 
-  it('triggers batch migration for compatible executions', async () => {
+  it('triggers batch migration for compatible executions with reaffirmation', async () => {
     render(
       <FleetMigrationModal
         isOpen={true}
@@ -122,7 +122,14 @@ describe('FleetMigrationModal Component', () => {
     const migrateAllBtn = screen.getByRole('button', { name: /Migrate All Compatible/i });
     expect(migrateAllBtn).toBeDefined();
 
+    // Clicking initial button opens reaffirm dialog
     fireEvent.click(migrateAllBtn);
+
+    expect(screen.getByText('Reaffirm Fleet Hot Migration')).toBeDefined();
+
+    // Clicking reaffirm confirm button triggers batch migration
+    const reaffirmBtn = screen.getByRole('button', { name: /Yes, Reaffirm & Migrate All/i });
+    fireEvent.click(reaffirmBtn);
 
     await waitFor(() => {
       expect(mockBatchMigrate).toHaveBeenCalledWith({

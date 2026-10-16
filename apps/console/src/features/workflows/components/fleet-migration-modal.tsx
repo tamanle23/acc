@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Info,
 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   useWorkflowVersions,
   useFleetMigrationPreview,
@@ -54,6 +55,7 @@ export const FleetMigrationModal: React.FC<FleetMigrationModalProps> = ({
   const [tierFilter, setTierFilter] = useState<'ALL' | MigrationTier>('ALL');
   const [selectedExecutionIds, setSelectedExecutionIds] = useState<Set<string>>(new Set());
   const [inspectingExecution, setInspectingExecution] = useState<FleetExecutionPreviewItem | null>(null);
+  const [showConfirmReaffirm, setShowConfirmReaffirm] = useState(false);
 
   const { data: previewData, isLoading: isPreviewLoading, refetch: refetchPreview } = useFleetMigrationPreview(
     workflowKey,
@@ -106,6 +108,7 @@ export const FleetMigrationModal: React.FC<FleetMigrationModalProps> = ({
   };
 
   const handleMigrateAllCompatible = async () => {
+    setShowConfirmReaffirm(false);
     await batchMigrateMutation.mutateAsync({
       workflowKey,
       targetVersion: selectedTargetVersion,
@@ -411,13 +414,13 @@ export const FleetMigrationModal: React.FC<FleetMigrationModalProps> = ({
 
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="destructive"
               size="sm"
-              onClick={handleMigrateAllCompatible}
+              onClick={() => setShowConfirmReaffirm(true)}
               disabled={batchMigrateMutation.isPending || summary.fullyCompatible === 0}
-              className="text-xs gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+              className="text-xs gap-1.5 bg-rose-600 hover:bg-rose-700 text-white border-rose-700/50 shadow-sm"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <AlertTriangle className="w-3.5 h-3.5" />
               Migrate All Compatible ({summary.fullyCompatible})
             </Button>
 
@@ -434,6 +437,31 @@ export const FleetMigrationModal: React.FC<FleetMigrationModalProps> = ({
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmDialog
+        open={showConfirmReaffirm}
+        onOpenChange={setShowConfirmReaffirm}
+        title="Reaffirm Fleet Hot Migration"
+        desc={
+          <div className="space-y-2 text-xs">
+            <p>
+              Are you sure you want to perform in-flight hot migration on all{' '}
+              <strong className="text-foreground">{summary.fullyCompatible}</strong> compatible executions of{' '}
+              <code className="px-1 py-0.5 rounded bg-muted font-mono">{workflowKey}</code> to target version{' '}
+              <strong className="text-foreground">v{selectedTargetVersion}</strong>?
+            </p>
+            <p className="text-muted-foreground">
+              This will acquire an execution quiescence lock on each running instance, drain active worker leases,
+              update the definition snapshot, and append tamper-evident cryptographic audit records.
+            </p>
+          </div>
+        }
+        destructive={true}
+        confirmText="Yes, Reaffirm & Migrate All"
+        cancelBtnText="Cancel"
+        isLoading={batchMigrateMutation.isPending}
+        handleConfirm={handleMigrateAllCompatible}
+      />
     </Dialog>
   );
 };
