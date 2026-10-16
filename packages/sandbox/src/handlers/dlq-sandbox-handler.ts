@@ -105,7 +105,20 @@ export class DlqSandboxRepository {
   }
 
   public list(status?: string, limit = 100, tenantId?: string): TaskDlqRecordDto[] {
-    const list = this.getTenantList(tenantId);
+    let list: TaskDlqRecordDto[] = [];
+    if (!tenantId || tenantId === 'SYSTEM' || tenantId === 'ALL') {
+      // Sovereign platform root: aggregate all DLQ records across all tenants
+      for (const records of this.tenantDlq.values()) {
+        for (const item of records) {
+          if (!list.some((r) => r.dlqId === item.dlqId)) {
+            list.push(item);
+          }
+        }
+      }
+    } else {
+      list = this.getTenantList(tenantId);
+    }
+
     let filtered = list;
     if (status && status.trim() !== '') {
       filtered = filtered.filter((r) => r.status.toLowerCase() === status.toLowerCase());
@@ -114,29 +127,63 @@ export class DlqSandboxRepository {
   }
 
   public getById(id: string, tenantId?: string): TaskDlqRecordDto | undefined {
-    return this.getTenantList(tenantId).find((r) => r.dlqId === id);
+    for (const [tid, list] of this.tenantDlq.entries()) {
+      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+      const existing = list.find((r) => r.dlqId === id);
+      if (existing) return existing;
+    }
+    return undefined;
   }
 
   public replay(id: string, payloadOverrides?: Record<string, unknown>, tenantId?: string): TaskDlqRecordDto | null {
-    const list = this.getTenantList(tenantId);
-    const existing = list.find((r) => r.dlqId === id);
-    if (!existing) return null;
-
-    existing.status = 'REPLAYED';
-    existing.replayedAtMs = Date.now();
-    if (payloadOverrides) {
-      existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
+    for (const [tid, list] of this.tenantDlq.entries()) {
+      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+      const existing = list.find((r) => r.dlqId === id);
+      if (existing) {
+        existing.status = 'REPLAYED';
+        existing.replayedAtMs = Date.now();
+        if (payloadOverrides) {
+          existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
+        }
+        return { ...existing };
+      }
     }
-    return { ...existing };
+    return null;
   }
 
   public discard(id: string, tenantId?: string): boolean {
-    const list = this.getTenantList(tenantId);
-    const existing = list.find((r) => r.dlqId === id);
-    if (!existing) return false;
+    for (const [tid, list] of this.tenantDlq.entries()) {
+      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+      const existing = list.find((r) => r.dlqId === id);
+      if (existing) {
+        existing.status = 'DISCARDED';
+        return true;
+      }
+    }
+    return false;
+  }
 
-    existing.status = 'DISCARDED';
-    return true;
+  public injectPoisonTask(task?: Partial<TaskDlqRecordDto>, tenantId: string = 'tenant-acme'): TaskDlqRecordDto {
+    const list = this.getTenantList(tenantId);
+    const newRecord: TaskDlqRecordDto = {
+      dlqId: `dlq-sim-${Date.now()}`,
+      taskId: `wf-sim-${Math.floor(Math.random() * 9000 + 1000)}_task_${Date.now().toString().slice(-4)}`,
+      workflowId: `wf-sim-${Math.floor(Math.random() * 9000 + 1000)}`,
+      tenantId,
+      workspaceId: 'default',
+      taskType: 'HTTP',
+      domain: 'payment',
+      errorMessage: 'Simulated 504 Gateway Timeout: Gateway connection lost during transaction processing',
+      errorStacktrace: 'java.net.http.HttpTimeoutException: Simulated fault injected from Unified Sandbox\n  at com.unipost.sandbox.FaultInjector.trigger(FaultInjector.java:42)',
+      payloadSnapshot: { simulated: true, amount: 990000, currency: 'VND', triggeredAt: new Date().toISOString() },
+      retryCount: 3,
+      isolatedAtMs: Date.now(),
+      replayedAtMs: null,
+      status: 'ISOLATED',
+      ...task,
+    };
+    list.unshift(newRecord);
+    return newRecord;
   }
 }
 
@@ -153,6 +200,20 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
     const url = new URL(req.url, 'http://localhost');
     const path = url.pathname;
     const tenantId = (req.headers && (req.headers['X-Tenant-Id'] || req.headers['x-tenant-id'])) as string | undefined;
+
+    // POST /api/v1/(system|workflow)/dlq/inject
+    if (req.method === 'POST' && path.endsWith('/inject')) {
+      let customPayload: Partial<TaskDlqRecordDto> | undefined;
+      try {
+        if (req.data) {
+          customPayload = typeof req.data === 'string' ? JSON.parse(req.data) : req.data;
+        }
+      } catch {
+        // ignore parse error
+      }
+      const injected = dlqSandboxRepository.injectPoisonTask(customPayload, tenantId || 'tenant-acme');
+      return { status: 201, data: injected };
+    }
 
     // POST /api/v1/(system|workflow)/dlq/:id/replay
     if (req.method === 'POST' && path.includes('/replay')) {

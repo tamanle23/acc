@@ -246,3 +246,25 @@ Re-inventing existing design patterns by implementing raw HTML/JSX tables, dupli
 4. **ANTI-BOILERPLATE ENFORCEMENT**:
    - Do not implement ad-hoc search inputs or filter button rows outside `DataTableToolbar` when a `DataTable` is already present. Use `DataTableToolbar`'s native search, faceted filters, and reset actions.
 
+---
+
+## 12. Unified Sandbox Parity & Screen Synchronization Mandate
+
+### Core Rationale
+The Unified Sandbox Platform (`@unipost/sandbox` and `apps/console/src/core/sandbox/`) is the central offline execution engine enabling client applications (`@unipost/console`, mobile, desktop) to run, demonstrate, and be automated without a live backend connection. When developers or AI agents create new routes, feature screens, modals, or mutation workflows without adding or updating corresponding sandbox route handlers, the screen renders blank or crashes with unhandled 404/500 errors in development mode (`import.meta.env.DEV`), breaking local-first workflows and automated UI test harnesses.
+
+### Non-Negotiable Directives
+1. **MANDATORY SANDBOX PARITY FOR NEW SCREENS & FEATURES**:
+   - Whenever introducing a new screen, route, or feature that consumes backend REST/GraphQL/SSE APIs, developers and AI agents MUST concurrently create or update a corresponding `SandboxRouteHandler` in `packages/sandbox/src/handlers/`.
+   - The handler MUST implement the `SandboxRouteHandler` contract (`id`, `name`, `priority`, `matcher`, `handler`) and be registered in `packages/sandbox/src/index.ts`.
+2. **MULTI-TENANT & PERSONA AWARENESS**:
+   - Sandbox handlers MUST inspect the request's tenant context (`req.headers['X-Tenant-Id']` or `defaultSandboxStore.getState().activeTenantId`).
+   - Mock data stores MUST partition records by tenant ID. When the active persona is Sovereign Custodian (`SYSTEM`), handlers MUST allow fleet-wide aggregation across all tenants or tenant-scoped filtering.
+3. **STATEFUL IN-MEMORY REPOSITORY & RESET HOOK**:
+   - Every simulated domain MUST maintain an in-memory repository with realistic initial seed data.
+   - Every repository MUST register a `reset()` function with `sandboxResetRegistry` (e.g. `sandboxResetRegistry.register(() => this.reset())`) so clicking "Reset Data" in `SandboxDock` reliably restores clean initial states.
+4. **EDGE-CASE & DIAGNOSTIC SIMULATION SUPPORT**:
+   - Where applicable, sandbox handlers and repositories MUST provide simulation utilities (e.g. `injectPoisonTask`, fault injection, error simulations) callable from `SandboxDock`'s diagnostics panel to facilitate manual and automated edge-case verification.
+5. **ZERO AD-HOC MOCKS IN UI COMPONENTS**:
+   - Components MUST ALWAYS call their standard API hooks (e.g. `useQuery`, `springApiClient`, Axios). Under no circumstances may hardcoded mock arrays or fake in-component switches bypass the Unified Sandbox.
+

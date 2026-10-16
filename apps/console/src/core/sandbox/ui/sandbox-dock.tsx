@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Database,
   LogOut,
+  AlertOctagon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ import { toast } from 'sonner';
 import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../store/sandbox-store';
 import { sandboxManager } from '../manager/sandbox-manager';
 import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
-import { sandboxResetRegistry } from '@unipost/sandbox';
+import { sandboxResetRegistry, dlqSandboxRepository } from '@unipost/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import type { SandboxPersonaId } from '../types';
 
@@ -337,6 +338,19 @@ export function SandboxDock() {
               >
                 <Database className="size-3 mr-1 text-blue-500" />
                 Orphaned Tenant
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const injected = dlqSandboxRepository.injectPoisonTask(undefined, activeTenantId);
+                  toast.error(`Injected DLQ task: ${injected.taskId} (ISOLATED)`);
+                }}
+                className="col-span-2 text-[10px] h-7 px-2 justify-start border-rose-500/30 hover:bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                title="Simulate workflow failure and isolate new poison execution unit into DLQ"
+              >
+                <AlertOctagon className="size-3 mr-1 text-rose-500" />
+                Inject Poison Task (DLQ)
               </Button>
             </div>
           </div>

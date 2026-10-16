@@ -33,3 +33,9 @@ Whenever a new mock domain (e.g. Billing, Notifications, Analytics) is introduce
 - All sandbox engines, adapters, and UI components **MUST strictly be disabled in production builds**:
   - Guard UI components and interceptors with `if (!import.meta.env.DEV) return null;` / `return config;`.
   - Respect CLI/env flags: `VITE_ENABLE_SANDBOX === 'false'` or `pnpm dev:no-sandbox`.
+
+### 5. Mandatory Sandbox Synchronization for New Screens & Features
+- **Zero Blank Screens in Offline Mode**: Every new screen, route, or interactive feature MUST have matching sandbox route handlers and seed data in `packages/sandbox/src/handlers/`.
+- **Fleet & Persona Scope**: Handlers MUST support active tenant switching and Sovereign `SYSTEM` fleet-wide aggregation where applicable.
+- **Reset Registration**: Repositories MUST register `reset()` with `sandboxResetRegistry`.
+- **Diagnostic Utilities**: Features with edge-case failure modes MUST expose simulation triggers in `SandboxDock`.
