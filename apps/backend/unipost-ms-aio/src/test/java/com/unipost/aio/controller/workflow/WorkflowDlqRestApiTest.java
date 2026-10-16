@@ -16,6 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +51,18 @@ class WorkflowDlqRestApiTest {
     }
 
     @Test
+    @DisplayName("Security: WorkflowDlqController must be secured with Sovereign Custodian authority and mapped to /api/v1/system/dlq")
+    void testSecurityAnnotationAndMapping() {
+        PreAuthorize preAuth = WorkflowDlqController.class.getAnnotation(PreAuthorize.class);
+        assertThat(preAuth).isNotNull();
+        assertThat(preAuth.value()).contains("ROLE_SYSTEM_CUSTODIAN");
+
+        RequestMapping mapping = WorkflowDlqController.class.getAnnotation(RequestMapping.class);
+        assertThat(mapping).isNotNull();
+        assertThat(mapping.value()).contains("/api/v1/system/dlq", "/api/v1/workflow/dlq");
+    }
+
+    @Test
     @DisplayName("Phase 38: Should list, retrieve, and discard DLQ records via REST controller")
     void testDlqListAndQueryAndDiscard() {
         TaskDlqRecord record = new TaskDlqRecord(
@@ -59,19 +73,24 @@ class WorkflowDlqRestApiTest {
         );
         persistencePort.quarantineTaskToDlq(record);
 
-        // 1. List DLQ tasks
-        ResponseEntity<List<TaskDlqRecord>> listResp = dlqController.listDlqTasks("ISOLATED", 10, TENANT_ID);
+        // 1. List DLQ tasks with explicit tenant filter
+        ResponseEntity<List<TaskDlqRecord>> listResp = dlqController.listDlqTasks("ISOLATED", TENANT_ID, 10, null);
         assertThat(listResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(listResp.getBody()).hasSize(1);
         assertThat(listResp.getBody().get(0).dlqId()).isEqualTo("dlq-rec-1");
 
-        // 2. Get DLQ task by ID
+        // 2. Sovereign Fleet-wide query (without tenant filter)
+        ResponseEntity<List<TaskDlqRecord>> fleetResp = dlqController.listDlqTasks(null, null, 10, null);
+        assertThat(fleetResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(fleetResp.getBody()).hasSize(1);
+
+        // 3. Get DLQ task by ID
         ResponseEntity<TaskDlqRecord> getResp = dlqController.getDlqTask("dlq-rec-1");
         assertThat(getResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(getResp.getBody()).isNotNull();
         assertThat(getResp.getBody().errorMessage()).contains("404 Not Found");
 
-        // 3. Discard DLQ task
+        // 4. Discard DLQ task
         ResponseEntity<Void> discardResp = dlqController.discardDlqTask("dlq-rec-1");
         assertThat(discardResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
@@ -113,7 +132,7 @@ class WorkflowDlqRestApiTest {
         assertThat(wfSnap.status()).isIn(WorkflowStatus.FAILED, WorkflowStatus.COMPENSATED_FAILED);
 
         // Assert task is quarantined into DLQ
-        ResponseEntity<List<TaskDlqRecord>> dlqListResp = dlqController.listDlqTasks(null, 10, TENANT_ID);
+        ResponseEntity<List<TaskDlqRecord>> dlqListResp = dlqController.listDlqTasks(null, TENANT_ID, 10, null);
         assertThat(dlqListResp.getBody()).hasSize(1);
         String dlqId = dlqListResp.getBody().get(0).dlqId();
 

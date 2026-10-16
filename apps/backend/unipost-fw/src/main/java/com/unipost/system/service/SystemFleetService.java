@@ -286,6 +286,7 @@ public class SystemFleetService {
                 "ROLE_SYSTEM_CUSTODIAN",
                 "ROLE_ADMIN",
                 "ROLE_USER",
+                "platform:dlq:manage",
                 "METADATA_SCHEMA_READ",
                 "METADATA_SCHEMA_WRITE",
                 "METADATA_RECORD_READ",
@@ -508,6 +509,7 @@ public class SystemFleetService {
                         "platform:fleet:read", "platform:fleet:mutate",
                         "platform:tenant:assume", "platform:quotas:override",
                         "platform:roles:manage", "platform:users:lock",
+                        "platform:dlq:manage",
                         "METADATA_SCHEMA_READ", "METADATA_SCHEMA_WRITE",
                         "METADATA_RECORD_READ", "METADATA_RECORD_WRITE"
                 ))

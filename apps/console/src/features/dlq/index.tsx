@@ -11,14 +11,18 @@ import {
   CheckCircle2,
   Archive,
   RefreshCw,
+  Crown,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TaskDlqRecordDto } from '@unipost/client';
+import { usePermissions } from '@/features/spring-auth/hooks/use-permissions';
 import { useDlqQuery, useReplayDlqMutation, useDiscardDlqMutation } from './hooks/use-dlq';
 import { DlqTable } from './components/dlq-table';
 import { DlqInspectorSheet } from './components/dlq-inspector-sheet';
 
 export function DlqFeature() {
+  const { isSovereignCustodian } = usePermissions();
   const [selectedRecord, setSelectedRecord] = useState<TaskDlqRecordDto | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
 
@@ -62,6 +66,22 @@ export function DlqFeature() {
     });
   };
 
+  if (!isSovereignCustodian) {
+    return (
+      <div className="flex h-[80vh] w-full flex-col items-center justify-center p-6 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive mb-4 shadow-inner">
+          <ShieldAlert className="h-8 w-8 animate-pulse" />
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
+          403 Forbidden: Sovereign Custody Restricted
+        </h2>
+        <p className="text-xs text-muted-foreground max-w-md mt-2">
+          Dead-Letter Queue inspection and lease task replaying are strictly restricted to Sovereign Custodians within the SYSTEM Platform Root workspace.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <Header fixed>
@@ -89,12 +109,16 @@ export function DlqFeature() {
       <Main className="space-y-6 p-6">
         {/* Hero Section */}
         <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider">
+            <Crown className="h-4 w-4" />
+            <span>Sovereign Platform Root</span>
+          </div>
           <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <AlertTriangle className="h-6 w-6 text-destructive" />
             Dead-Letter Queue (DLQ)
           </h2>
           <p className="text-sm text-muted-foreground">
-            Quarantine, inspect, and replay poisoned tasks isolated from the distributed single-column lease queue.
+            Cross-tenant quarantine, inspection, and priority recovery for poisoned tasks isolated from the distributed lease queue.
           </p>
         </div>
 

@@ -30,7 +30,6 @@ import { Route as AuthenticatedStorageIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedMetadataIndexRouteImport } from './routes/_authenticated/metadata/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
-import { Route as AuthenticatedDlqIndexRouteImport } from './routes/_authenticated/dlq/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedCustomerAccountsIndexRouteImport } from './routes/_authenticated/customer-accounts/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
@@ -38,6 +37,7 @@ import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals/index'
 import { Route as AuthenticatedSystemTenantsRouteImport } from './routes/_authenticated/system.tenants'
 import { Route as AuthenticatedSystemRolesRouteImport } from './routes/_authenticated/system.roles'
+import { Route as AuthenticatedSystemDlqRouteImport } from './routes/_authenticated/system.dlq'
 import { Route as AuthenticatedSettingsWorkspacesRouteImport } from './routes/_authenticated/settings/workspaces'
 import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
 import { Route as AuthenticatedSettingsDataPrivacyRouteImport } from './routes/_authenticated/settings/data-privacy'
@@ -156,11 +156,6 @@ const AuthenticatedHelpCenterIndexRoute =
     path: '/help-center/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDlqIndexRoute = AuthenticatedDlqIndexRouteImport.update({
-  id: '/dlq/',
-  path: '/dlq/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
     id: '/dashboard/',
@@ -201,6 +196,11 @@ const AuthenticatedSystemRolesRoute =
     path: '/system/roles',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSystemDlqRoute = AuthenticatedSystemDlqRouteImport.update({
+  id: '/system/dlq',
+  path: '/system/dlq',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsWorkspacesRoute =
   AuthenticatedSettingsWorkspacesRouteImport.update({
     id: '/workspaces',
@@ -258,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
   '/approvals/': typeof AuthenticatedApprovalsIndexRoute
@@ -265,7 +266,6 @@ export interface FileRoutesByFullPath {
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
-  '/dlq/': typeof AuthenticatedDlqIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -293,6 +293,7 @@ export interface FileRoutesByTo {
   '/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
   '/approvals': typeof AuthenticatedApprovalsIndexRoute
@@ -300,7 +301,6 @@ export interface FileRoutesByTo {
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts': typeof AuthenticatedCustomerAccountsIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
-  '/dlq': typeof AuthenticatedDlqIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/metadata': typeof AuthenticatedMetadataIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -331,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/_authenticated/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/_authenticated/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/_authenticated/system/roles': typeof AuthenticatedSystemRolesRoute
   '/_authenticated/system/tenants': typeof AuthenticatedSystemTenantsRoute
   '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
@@ -338,7 +339,6 @@ export interface FileRoutesById {
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
-  '/_authenticated/dlq/': typeof AuthenticatedDlqIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -369,6 +369,7 @@ export interface FileRouteTypes {
     | '/settings/data-privacy'
     | '/settings/notifications'
     | '/settings/workspaces'
+    | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
     | '/approvals/'
@@ -376,7 +377,6 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/customer-accounts/'
     | '/dashboard/'
-    | '/dlq/'
     | '/help-center/'
     | '/metadata/'
     | '/settings/'
@@ -404,6 +404,7 @@ export interface FileRouteTypes {
     | '/settings/data-privacy'
     | '/settings/notifications'
     | '/settings/workspaces'
+    | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
     | '/approvals'
@@ -411,7 +412,6 @@ export interface FileRouteTypes {
     | '/chats'
     | '/customer-accounts'
     | '/dashboard'
-    | '/dlq'
     | '/help-center'
     | '/metadata'
     | '/settings'
@@ -441,6 +441,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/data-privacy'
     | '/_authenticated/settings/notifications'
     | '/_authenticated/settings/workspaces'
+    | '/_authenticated/system/dlq'
     | '/_authenticated/system/roles'
     | '/_authenticated/system/tenants'
     | '/_authenticated/approvals/'
@@ -448,7 +449,6 @@ export interface FileRouteTypes {
     | '/_authenticated/chats/'
     | '/_authenticated/customer-accounts/'
     | '/_authenticated/dashboard/'
-    | '/_authenticated/dlq/'
     | '/_authenticated/help-center/'
     | '/_authenticated/metadata/'
     | '/_authenticated/settings/'
@@ -623,13 +623,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHelpCenterIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dlq/': {
-      id: '/_authenticated/dlq/'
-      path: '/dlq'
-      fullPath: '/dlq/'
-      preLoaderRoute: typeof AuthenticatedDlqIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard/': {
       id: '/_authenticated/dashboard/'
       path: '/dashboard'
@@ -677,6 +670,13 @@ declare module '@tanstack/react-router' {
       path: '/system/roles'
       fullPath: '/system/roles'
       preLoaderRoute: typeof AuthenticatedSystemRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/system/dlq': {
+      id: '/_authenticated/system/dlq'
+      path: '/system/dlq'
+      fullPath: '/system/dlq'
+      preLoaderRoute: typeof AuthenticatedSystemDlqRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/workspaces': {
@@ -753,6 +753,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
+  AuthenticatedSystemDlqRoute: typeof AuthenticatedSystemDlqRoute
   AuthenticatedSystemRolesRoute: typeof AuthenticatedSystemRolesRoute
   AuthenticatedSystemTenantsRoute: typeof AuthenticatedSystemTenantsRoute
   AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
@@ -760,7 +761,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedCustomerAccountsIndexRoute: typeof AuthenticatedCustomerAccountsIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
-  AuthenticatedDlqIndexRoute: typeof AuthenticatedDlqIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedMetadataIndexRoute: typeof AuthenticatedMetadataIndexRoute
   AuthenticatedStorageIndexRoute: typeof AuthenticatedStorageIndexRoute
@@ -772,6 +772,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
+  AuthenticatedSystemDlqRoute: AuthenticatedSystemDlqRoute,
   AuthenticatedSystemRolesRoute: AuthenticatedSystemRolesRoute,
   AuthenticatedSystemTenantsRoute: AuthenticatedSystemTenantsRoute,
   AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,
@@ -780,7 +781,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomerAccountsIndexRoute:
     AuthenticatedCustomerAccountsIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
-  AuthenticatedDlqIndexRoute: AuthenticatedDlqIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedMetadataIndexRoute: AuthenticatedMetadataIndexRoute,
   AuthenticatedStorageIndexRoute: AuthenticatedStorageIndexRoute,

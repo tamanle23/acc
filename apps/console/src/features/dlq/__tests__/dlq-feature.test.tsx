@@ -8,13 +8,14 @@ import { DlqInspectorSheet } from '../components/dlq-inspector-sheet';
 import { DlqFeature } from '../index';
 import type { TaskDlqRecordDto } from '@unipost/client';
 import * as dlqHooks from '../hooks/use-dlq';
+import * as permissionsHook from '@/features/spring-auth/hooks/use-permissions';
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
     useNavigate: () => vi.fn(),
-    useLocation: () => ({ pathname: '/dlq' }),
+    useLocation: () => ({ pathname: '/system/dlq' }),
     Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
   };
 });
@@ -67,6 +68,17 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
 
     queryClient = createTestQueryClient();
     vi.clearAllMocks();
+
+    vi.spyOn(permissionsHook, 'usePermissions').mockReturnValue({
+      user: null,
+      roles: ['ROLE_SYSTEM_CUSTODIAN'],
+      currentTenantId: 'SYSTEM',
+      isSovereignCustodian: true,
+      isAdmin: true,
+      isOperator: true,
+      canManageSchema: true,
+      canMutateRecords: true,
+    });
   });
 
   it('renders task details, status, and failure reason in DlqTable', () => {
@@ -129,7 +141,7 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
     expect(onOpenChangeMock).toHaveBeenCalledWith(false);
   });
 
-  it('renders DlqFeature dashboard with metric cards and integrated table', () => {
+  it('renders DlqFeature dashboard with Sovereign Platform Root badge, metric cards and integrated table', () => {
     vi.spyOn(dlqHooks, 'useDlqQuery').mockReturnValue({
       data: [mockDlqRecord],
       isLoading: false,
@@ -153,10 +165,34 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
       </QueryClientProvider>
     );
 
+    expect(screen.getByText('Sovereign Platform Root')).toBeDefined();
     expect(screen.getByText('Dead-Letter Queue (DLQ)')).toBeDefined();
     expect(screen.getByText('Isolated Tasks')).toBeDefined();
     expect(screen.getByText('Replayed Recoveries')).toBeDefined();
     expect(screen.getByText('Discarded Tasks')).toBeDefined();
     expect(screen.getByText('task_exec_fail_99')).toBeDefined();
+  });
+
+  it('blocks non-sovereign tenants with 403 Forbidden message', () => {
+    vi.spyOn(permissionsHook, 'usePermissions').mockReturnValue({
+      user: null,
+      roles: ['ROLE_USER'],
+      currentTenantId: 'tenant-acme',
+      isSovereignCustodian: false,
+      isAdmin: false,
+      isOperator: false,
+      canManageSchema: false,
+      canMutateRecords: false,
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SidebarProvider>
+          <DlqFeature />
+        </SidebarProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText(/403 Forbidden: Sovereign Custody Restricted/i)).toBeDefined();
   });
 });

@@ -147,16 +147,16 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
   name: 'Dead-Letter Queue (DLQ) Mock Handler',
   priority: 15,
   matcher: (req: SandboxRequest) => {
-    return req.url.includes('/api/v1/workflow/dlq');
+    return req.url.includes('/api/v1/workflow/dlq') || req.url.includes('/api/v1/system/dlq');
   },
   handler: async (req: SandboxRequest): Promise<SandboxResponse> => {
     const url = new URL(req.url, 'http://localhost');
     const path = url.pathname;
     const tenantId = (req.headers && (req.headers['X-Tenant-Id'] || req.headers['x-tenant-id'])) as string | undefined;
 
-    // POST /api/v1/workflow/dlq/:id/replay
+    // POST /api/v1/(system|workflow)/dlq/:id/replay
     if (req.method === 'POST' && path.includes('/replay')) {
-      const match = path.match(/\/api\/v1\/workflow\/dlq\/([^/]+)\/replay/);
+      const match = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)\/replay/);
       const id = match ? match[1] : '';
       let payloadOverrides: Record<string, unknown> | undefined;
       try {
@@ -174,9 +174,9 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 200, data: replayed };
     }
 
-    // DELETE /api/v1/workflow/dlq/:id
+    // DELETE /api/v1/(system|workflow)/dlq/:id
     if (req.method === 'DELETE') {
-      const match = path.match(/\/api\/v1\/workflow\/dlq\/([^/]+)$/);
+      const match = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)$/);
       const id = match ? match[1] : '';
       const discarded = dlqSandboxRepository.discard(id, tenantId);
       if (!discarded) {
@@ -185,8 +185,8 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 204, data: null };
     }
 
-    // GET /api/v1/workflow/dlq/:id
-    const singleMatch = path.match(/\/api\/v1\/workflow\/dlq\/([^/]+)$/);
+    // GET /api/v1/(system|workflow)/dlq/:id
+    const singleMatch = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)$/);
     if (req.method === 'GET' && singleMatch && singleMatch[1] !== 'dlq') {
       const id = singleMatch[1];
       const record = dlqSandboxRepository.getById(id, tenantId);
@@ -196,11 +196,12 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 200, data: record };
     }
 
-    // GET /api/v1/workflow/dlq (List)
+    // GET /api/v1/(system|workflow)/dlq (List)
     if (req.method === 'GET') {
       const statusParam = url.searchParams.get('status') || undefined;
       const limitParam = parseInt(url.searchParams.get('limit') || '100', 10);
-      const list = dlqSandboxRepository.list(statusParam, limitParam, tenantId);
+      const queryTenant = url.searchParams.get('tenantId') || tenantId;
+      const list = dlqSandboxRepository.list(statusParam, limitParam, queryTenant);
       return { status: 200, data: list };
     }
 

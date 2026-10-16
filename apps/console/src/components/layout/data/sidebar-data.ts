@@ -142,11 +142,6 @@ export const useSidebarData = (): SidebarData => {
             icon: UserCheck,
           },
           {
-            title: t('sidebar.items.dlq', 'Dead-Letter Queue'),
-            url: '/dlq',
-            icon: AlertOctagon,
-          },
-          {
             title: t('sidebar.items.users', 'Users'),
             url: '/users',
             icon: Users,
@@ -184,6 +179,12 @@ export const useSidebarData = (): SidebarData => {
                 title: t('sidebar.items.rbacMatrix', 'RBAC & Global Users'),
                 url: '/system/roles',
                 icon: KeyRound,
+              },
+              {
+                title: t('sidebar.items.dlq', 'Dead-Letter Queue'),
+                url: '/system/dlq',
+                icon: AlertOctagon,
+                badge: 'ROOT',
               },
               ...(!isAssumed
                 ? [
