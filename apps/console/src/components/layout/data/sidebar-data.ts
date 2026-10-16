@@ -104,21 +104,6 @@ export const useSidebarData = (): SidebarData => {
               icon: LayoutDashboard,
             },
             {
-              title: t('sidebar.items.workflowExecutions', 'Workflow Executions'),
-              url: '/workflow-executions',
-              icon: ListTodo,
-            },
-            {
-              title: t('sidebar.items.workflows', 'Workflows'),
-              url: '/workflows',
-              icon: Workflow,
-            },
-            {
-              title: t('sidebar.items.approvals', 'Task Approvals'),
-              url: '/approvals',
-              icon: UserCheck,
-            },
-            {
               title: t('sidebar.items.apps', 'Apps'),
               url: '/apps',
               icon: Package,
@@ -140,6 +125,21 @@ export const useSidebarData = (): SidebarData => {
       {
         title: t('sidebar.groups.admin', 'Admin'),
         items: [
+          {
+            title: t('sidebar.items.workflowExecutions', 'Workflow Executions'),
+            url: '/workflow-executions',
+            icon: ListTodo,
+          },
+          {
+            title: t('sidebar.items.workflows', 'Workflows'),
+            url: '/workflows',
+            icon: Workflow,
+          },
+          {
+            title: t('sidebar.items.approvals', 'Task Approvals'),
+            url: '/approvals',
+            icon: UserCheck,
+          },
           {
             title: t('sidebar.items.users', 'Users'),
             url: '/users',

@@ -34,6 +34,7 @@ import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedCustomerAccountsIndexRouteImport } from './routes/_authenticated/customer-accounts/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
 import { Route as AuthenticatedAppsIndexRouteImport } from './routes/_authenticated/apps/index'
+import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals/index'
 import { Route as AuthenticatedSystemTenantsRouteImport } from './routes/_authenticated/system.tenants'
 import { Route as AuthenticatedSystemRolesRouteImport } from './routes/_authenticated/system.roles'
 import { Route as AuthenticatedSettingsWorkspacesRouteImport } from './routes/_authenticated/settings/workspaces'
@@ -176,6 +177,12 @@ const AuthenticatedAppsIndexRoute = AuthenticatedAppsIndexRouteImport.update({
   path: '/apps/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedApprovalsIndexRoute =
+  AuthenticatedApprovalsIndexRouteImport.update({
+    id: '/approvals/',
+    path: '/approvals/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemTenantsRoute =
   AuthenticatedSystemTenantsRouteImport.update({
     id: '/system/tenants',
@@ -247,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/apps/': typeof AuthenticatedAppsIndexRoute
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
@@ -280,6 +288,7 @@ export interface FileRoutesByTo {
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/apps': typeof AuthenticatedAppsIndexRoute
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts': typeof AuthenticatedCustomerAccountsIndexRoute
@@ -316,6 +325,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
   '/_authenticated/system/roles': typeof AuthenticatedSystemRolesRoute
   '/_authenticated/system/tenants': typeof AuthenticatedSystemTenantsRoute
+  '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/apps/': typeof AuthenticatedAppsIndexRoute
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
@@ -352,6 +362,7 @@ export interface FileRouteTypes {
     | '/settings/workspaces'
     | '/system/roles'
     | '/system/tenants'
+    | '/approvals/'
     | '/apps/'
     | '/chats/'
     | '/customer-accounts/'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/settings/workspaces'
     | '/system/roles'
     | '/system/tenants'
+    | '/approvals'
     | '/apps'
     | '/chats'
     | '/customer-accounts'
@@ -420,6 +432,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/workspaces'
     | '/_authenticated/system/roles'
     | '/_authenticated/system/tenants'
+    | '/_authenticated/approvals/'
     | '/_authenticated/apps/'
     | '/_authenticated/chats/'
     | '/_authenticated/customer-accounts/'
@@ -626,6 +639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/approvals/': {
+      id: '/_authenticated/approvals/'
+      path: '/approvals'
+      fullPath: '/approvals/'
+      preLoaderRoute: typeof AuthenticatedApprovalsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/system/tenants': {
       id: '/_authenticated/system/tenants'
       path: '/system/tenants'
@@ -716,6 +736,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
   AuthenticatedSystemRolesRoute: typeof AuthenticatedSystemRolesRoute
   AuthenticatedSystemTenantsRoute: typeof AuthenticatedSystemTenantsRoute
+  AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
   AuthenticatedAppsIndexRoute: typeof AuthenticatedAppsIndexRoute
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedCustomerAccountsIndexRoute: typeof AuthenticatedCustomerAccountsIndexRoute
@@ -733,6 +754,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
   AuthenticatedSystemRolesRoute: AuthenticatedSystemRolesRoute,
   AuthenticatedSystemTenantsRoute: AuthenticatedSystemTenantsRoute,
+  AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,
   AuthenticatedAppsIndexRoute: AuthenticatedAppsIndexRoute,
   AuthenticatedChatsIndexRoute: AuthenticatedChatsIndexRoute,
   AuthenticatedCustomerAccountsIndexRoute:
