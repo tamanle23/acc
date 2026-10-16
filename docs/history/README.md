@@ -238,6 +238,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`223`](223_iteration6_phase3_library_staging_inline_text_partial_vfx.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & Partial VFX Catalog | Staging presets catalog (12 presets), HTML5 drag-and-drop onto canvas with normalized coords, inline canvas text editing, AddSequenceCommand, and Three.js partial VFX subsystem |
 | [`224`](224_iteration6_phase4_master_e2e_qa_and_archival.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 4: Master Integration, End-to-End Test Suite & Archival | Full roundtrip verification across all 4 phases, 27/27 tests passing, walkthrough_02, and all acceptance criteria checked off |
 | [`225`](225_studio_enterprise_workspace_and_engine_wiring.md) | 2026-10-16 | Studio Enterprise Dual-Sidebar Workspace, @dnd-kit Staging & Deep Engine Wiring | Left activity rail (48px) + drawer (300px), right property inspector (336px), @dnd-kit PointerSensor & DragOverlay, UniversalThreeScene WebGLRenderer canvas mount, UniversalAudioMixer dynamic ducking sync, and Zen mode |
+| [`226`](226_remove_threejs_and_implement_universal_canvas_engine.md) | 2026-10-17 | Phase 1: Complete Removal of Three.js & Universal Canvas Engine (GSAP + Pts.js) | Removed Three.js across all manifests, created UniversalCanvasEngine with deterministic GSAP seek & Pts.js CanvasForm, refactored Preview.tsx to 2D Canvas, shaved >600KB from client bundle |
 
 
 

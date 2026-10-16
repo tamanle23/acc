@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import * as THREE from 'three';
 import { useDroppable } from '@dnd-kit/core';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -9,7 +8,7 @@ import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import {
-  UniversalThreeScene,
+  UniversalCanvasEngine,
   CanvasTransformOverlay,
   MagneticSnapEngine,
   type BoundingBox2D,
@@ -38,8 +37,7 @@ interface TransformState {
 export function Preview({ playhead }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const scene3dRef = useRef<UniversalThreeScene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const engineRef = useRef<UniversalCanvasEngine | null>(null);
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
@@ -92,7 +90,7 @@ export function Preview({ playhead }: PreviewProps) {
     }
   }, [selectedSeqId, irState]);
 
-  // Initialize UniversalThreeScene & WebGLRenderer
+  // Initialize UniversalCanvasEngine on HTML5 2D Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -100,46 +98,37 @@ export function Preview({ playhead }: PreviewProps) {
     canvas.width = width;
     canvas.height = height;
 
-    const scene3d = new UniversalThreeScene({
+    const engine = new UniversalCanvasEngine({
       width,
       height,
-      fov: 45,
     });
-    scene3d.initDepthMesh(64, 64, 8, 4.5);
-    scene3d.initHologramHUD(6, 3.5);
-    scene3d.initParticleSystem(250);
-    scene3dRef.current = scene3d;
-
-    let renderer: THREE.WebGLRenderer | null = null;
-    try {
-      renderer = new THREE.WebGLRenderer({
-        canvas,
-        antialias: true,
-        alpha: true,
-        preserveDrawingBuffer: true,
-      });
-      renderer.setSize(width, height, false);
-      renderer.setPixelRatio(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
-      rendererRef.current = renderer;
-    } catch (e) {
-      console.warn('[Preview] WebGLRenderer init failed, falling back:', e);
-    }
+    engine.initHologramHUD(0.35, 40);
+    engine.initParticleSystem(250);
+    engineRef.current = engine;
 
     setGlReady(true);
 
     return () => {
-      scene3d.dispose();
-      renderer?.dispose();
+      engine.dispose();
+      engineRef.current = null;
     };
   }, [width, height]);
 
-  // Event-Driven Render Execution: Binds active layer texture & updates UniversalThreeScene
+  // Event-Driven Render Execution on 2D Canvas
   useEffect(() => {
-    const scene3d = scene3dRef.current;
-    const renderer = rendererRef.current;
-    if (!scene3d || !renderer) return;
+    const canvas = canvasRef.current;
+    const engine = engineRef.current;
+    if (!canvas || !engine) return;
 
-    // 1. Query active sequences
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 1. Clear & Background pass
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Query active sequences
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
     let popOutIntensity = 1.0;
     const vfxRegions: PartialVFXRegion[] = [];
@@ -171,12 +160,9 @@ export function Preview({ playhead }: PreviewProps) {
       }
     }
 
-    scene3d.setPartialVFXRegions(vfxRegions);
+    engine.setPartialVFXRegions(vfxRegions);
 
-    const timeSec = currentFrame / fps;
-    scene3d.update(timeSec, popOutIntensity);
-
-    // 2. Synchronize in-canvas transform overlay
+    // 3. Synchronize in-canvas transform overlay
     if (selectedSeqId) {
       const baseW = 0.5;
       const baseH = 0.5;
@@ -187,19 +173,16 @@ export function Preview({ playhead }: PreviewProps) {
         height: baseH * transform.scale,
         rotation: transform.rotation,
       };
-      scene3d.setOverlayVisible(true);
-      scene3d.updateOverlay(normBox, activeGuides);
+      engine.setOverlayVisible(true);
+      engine.updateOverlay(normBox, activeGuides);
     } else {
-      scene3d.setOverlayVisible(false);
-      scene3d.updateOverlay(null, []);
+      engine.setOverlayVisible(false);
+      engine.updateOverlay(null, []);
     }
 
-    // 3. Render 3D Scenegraph & Ortho vector overlay
-    renderer.clear();
-    renderer.render(scene3d.scene, scene3d.camera);
-    renderer.autoClear = false;
-    renderer.render(scene3d.scene, scene3d.orthoCamera);
-    renderer.autoClear = true;
+    // 4. Render 2D Scenegraph, Particles, HUD & Vector Overlay
+    const timeSec = currentFrame / fps;
+    engine.render(ctx, timeSec, popOutIntensity);
   }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height]);
 
   // Direct in-canvas handle interaction handlers

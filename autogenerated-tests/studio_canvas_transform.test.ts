@@ -3,8 +3,8 @@ import {
   CanvasTransformOverlay,
   MagneticSnapEngine,
   type BoundingBox2D,
-} from "../packages/effect-engines/src/three/CanvasTransformOverlay.js";
-import { UniversalThreeScene } from "../packages/effect-engines/src/three/UniversalThreeScene.js";
+} from "../packages/effect-engines/src/canvas/CanvasTransformOverlay.js";
+import { UniversalCanvasEngine as UniversalThreeScene } from "../packages/effect-engines/src/canvas/UniversalCanvasEngine.js";
 
 describe("Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer", () => {
   it("should verify MagneticSnapEngine standard guidelines and snap accuracy", () => {

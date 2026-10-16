@@ -35,10 +35,9 @@
     "@radix-ui/react-toggle": "^1.2.1",
     "@radix-ui/react-toggle-group": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
-    "@types/three": "^0.186.0",
+    "gsap": "^3.12.7",
     "mediabunny": "^1.61.5",
-    "pts": "^1.0.2",
-    "three": "^0.186.1"
+    "pts": "^1.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
