@@ -122,6 +122,7 @@
 | [115](115_phase_38_enterprise_resilient_lease_queue_dlq.md) | 2026-10-16 | Enterprise Resilient Lease Queue, Poison DLQ & Priority Queuing (Phase 38) | Implemented dedicated task_dlq persistence, multi-tenant aged priority polling, zombie worker lease reclamation, anti-thundering herd jittered poller, Unified Sandbox simulation, and Liquid Glass DLQ management console with shared DataTable. |
 | [116](116_move_dlq_to_system_root_workspace_and_backend_auth.md) | 2026-10-16 | Move DLQ Screen to SYSTEM Root Workspace & Update Backend Authorization | Relocated Dead-Letter Queue to Sovereign Platform Root (/system/dlq), added 403 Forbidden sovereign guard, moved sidebar item to Sovereign Custody group with ROOT badge, and secured backend controller with ROLE_SYSTEM_CUSTODIAN and platform:dlq:manage authorities. |
 | [117](117_update_unified_sandbox_dlq_and_agent_parity_rule.md) | 2026-10-16 | Update Unified Sandbox for DLQ Screens & Enforce Sandbox Parity Rule | Enhanced Unified Sandbox with cross-tenant fleet aggregation for /system/dlq, on-demand poison task injection in SandboxDock, and codified SANDBOX-PARITY rule following Rule Management SOP. |
+| [118](118_fix_dlq_sandbox_matcher_and_dock_invalidation.md) | 2026-10-16 | Fix DLQ Sandbox Route Matcher & Dock Query Invalidation for Injected Tasks | Elevated DLQ sandbox handler priority over system fleet handler, normalized routing paths, and wired TanStack Query invalidation upon dock task injection. |
 
 
 

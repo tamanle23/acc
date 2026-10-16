@@ -214,4 +214,44 @@ describe('Unified Sandbox Engine Package', () => {
     expect(Array.isArray(altListRes?.data)).toBe(true);
     expect(altListRes?.data.length).toBeGreaterThan(0);
   });
+
+  it('correctly handles DLQ endpoints and priority over systemSandboxHandler', async () => {
+    const { dlqSandboxHandler, dlqSandboxRepository } = await import('../handlers/dlq-sandbox-handler');
+    const { systemSandboxHandler } = await import('../handlers/system-sandbox-handler');
+    dlqSandboxRepository.reset();
+    registry.register(systemSandboxHandler);
+    registry.register(dlqSandboxHandler);
+
+    // 1. Injected DLQ task via POST /system/dlq/inject
+    const injectRes = await engine.handleRequest({
+      url: '/api/system/dlq/inject',
+      method: 'POST',
+      headers: { 'X-Tenant-Id': 'tenant-acme' },
+      data: { taskId: 'wf-sim-test-99' },
+    });
+    expect(injectRes?.status).toBe(201);
+    expect(injectRes?.data.taskId).toBe('wf-sim-test-99');
+    expect(injectRes?.data.status).toBe('ISOLATED');
+
+    // 2. Fetch DLQ records via GET /system/dlq
+    const listRes = await engine.handleRequest({
+      url: '/api/system/dlq',
+      method: 'GET',
+      headers: { 'X-Tenant-Id': 'tenant-acme' },
+    });
+    expect(listRes?.status).toBe(200);
+    expect(Array.isArray(listRes?.data)).toBe(true);
+    expect(listRes?.data.some((r: any) => r.taskId === 'wf-sim-test-99')).toBe(true);
+
+    // 3. Fetch DLQ records via GET /api/v1/system/dlq
+    const v1ListRes = await engine.handleRequest({
+      url: '/api/v1/system/dlq',
+      method: 'GET',
+      headers: { 'X-Tenant-Id': 'SYSTEM' },
+    });
+    expect(v1ListRes?.status).toBe(200);
+    expect(Array.isArray(v1ListRes?.data)).toBe(true);
+    expect(v1ListRes?.data.some((r: any) => r.taskId === 'wf-sim-test-99')).toBe(true);
+  });
 });
+

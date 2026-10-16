@@ -192,17 +192,19 @@ export const dlqSandboxRepository = new DlqSandboxRepository();
 export const dlqSandboxHandler: SandboxRouteHandler = {
   id: 'dlq-handler',
   name: 'Dead-Letter Queue (DLQ) Mock Handler',
-  priority: 15,
-  matcher: (req: SandboxRequest) => {
-    return req.url.includes('/api/v1/workflow/dlq') || req.url.includes('/api/v1/system/dlq');
+  priority: 99,
+  matcher: (context) => {
+    const cleanPath = context.pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
+    return cleanPath.startsWith('/system/dlq') || cleanPath.startsWith('/workflow/dlq');
   },
-  handler: async (req: SandboxRequest): Promise<SandboxResponse> => {
+  handler: async (req: SandboxRequest, context): Promise<SandboxResponse> => {
+    const rawPath = context.pathname || new URL(req.url, 'http://localhost').pathname;
+    const cleanPath = rawPath.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     const url = new URL(req.url, 'http://localhost');
-    const path = url.pathname;
     const tenantId = (req.headers && (req.headers['X-Tenant-Id'] || req.headers['x-tenant-id'])) as string | undefined;
 
-    // POST /api/v1/(system|workflow)/dlq/inject
-    if (req.method === 'POST' && path.endsWith('/inject')) {
+    // POST /system/dlq/inject or /workflow/dlq/inject
+    if (req.method === 'POST' && cleanPath.endsWith('/inject')) {
       let customPayload: Partial<TaskDlqRecordDto> | undefined;
       try {
         if (req.data) {
@@ -215,9 +217,9 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 201, data: injected };
     }
 
-    // POST /api/v1/(system|workflow)/dlq/:id/replay
-    if (req.method === 'POST' && path.includes('/replay')) {
-      const match = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)\/replay/);
+    // POST /(system|workflow)/dlq/:id/replay
+    if (req.method === 'POST' && cleanPath.includes('/replay')) {
+      const match = cleanPath.match(/^\/(?:system|workflow)\/dlq\/([^/]+)\/replay/);
       const id = match ? match[1] : '';
       let payloadOverrides: Record<string, unknown> | undefined;
       try {
@@ -235,9 +237,9 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 200, data: replayed };
     }
 
-    // DELETE /api/v1/(system|workflow)/dlq/:id
+    // DELETE /(system|workflow)/dlq/:id
     if (req.method === 'DELETE') {
-      const match = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)$/);
+      const match = cleanPath.match(/^\/(?:system|workflow)\/dlq\/([^/]+)$/);
       const id = match ? match[1] : '';
       const discarded = dlqSandboxRepository.discard(id, tenantId);
       if (!discarded) {
@@ -246,8 +248,8 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 204, data: null };
     }
 
-    // GET /api/v1/(system|workflow)/dlq/:id
-    const singleMatch = path.match(/\/api\/v1\/(?:system|workflow)\/dlq\/([^/]+)$/);
+    // GET /(system|workflow)/dlq/:id
+    const singleMatch = cleanPath.match(/^\/(?:system|workflow)\/dlq\/([^/]+)$/);
     if (req.method === 'GET' && singleMatch && singleMatch[1] !== 'dlq') {
       const id = singleMatch[1];
       const record = dlqSandboxRepository.getById(id, tenantId);
@@ -257,7 +259,7 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
       return { status: 200, data: record };
     }
 
-    // GET /api/v1/(system|workflow)/dlq (List)
+    // GET /(system|workflow)/dlq (List)
     if (req.method === 'GET') {
       const statusParam = url.searchParams.get('status') || undefined;
       const limitParam = parseInt(url.searchParams.get('limit') || '100', 10);
@@ -269,3 +271,4 @@ export const dlqSandboxHandler: SandboxRouteHandler = {
     return { status: 404, data: { message: 'DLQ endpoint not found' } };
   },
 };
+

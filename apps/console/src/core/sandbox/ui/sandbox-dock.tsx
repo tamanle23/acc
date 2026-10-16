@@ -21,9 +21,12 @@ import { sandboxManager } from '../manager/sandbox-manager';
 import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 import { sandboxResetRegistry, dlqSandboxRepository } from '@unipost/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
+import { useQueryClient } from '@tanstack/react-query';
+import { DLQ_QUERY_KEY } from '@/features/dlq/hooks/use-dlq';
 import type { SandboxPersonaId } from '../types';
 
 export function SandboxDock() {
+  const queryClient = useQueryClient();
   const {
     enabled,
     activePersonaId,
@@ -92,6 +95,7 @@ export function SandboxDock() {
     }
 
     sandboxManager.syncPersonaAuthTokens(activePersonaId);
+    queryClient.invalidateQueries();
     toast.success('Unified Sandbox: Reset all domain records and user preferences to pristine baseline');
   };
 
@@ -342,9 +346,17 @@ export function SandboxDock() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  const injected = dlqSandboxRepository.injectPoisonTask(undefined, activeTenantId);
-                  toast.error(`Injected DLQ task: ${injected.taskId} (ISOLATED)`);
+                onClick={async () => {
+                  try {
+                    const res = await springApiClient.post('/system/dlq/inject', {});
+                    const injected = res.data;
+                    toast.error(`Injected DLQ task: ${injected.taskId} (ISOLATED)`);
+                  } catch {
+                    const injected = dlqSandboxRepository.injectPoisonTask(undefined, activeTenantId);
+                    toast.error(`Injected DLQ task: ${injected.taskId} (ISOLATED)`);
+                  } finally {
+                    queryClient.invalidateQueries({ queryKey: DLQ_QUERY_KEY });
+                  }
                 }}
                 className="col-span-2 text-[10px] h-7 px-2 justify-start border-rose-500/30 hover:bg-rose-500/10 text-rose-700 dark:text-rose-300"
                 title="Simulate workflow failure and isolate new poison execution unit into DLQ"
