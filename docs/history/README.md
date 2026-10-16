@@ -241,6 +241,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`226`](226_remove_threejs_and_implement_universal_canvas_engine.md) | 2026-10-17 | Phase 1: Complete Removal of Three.js & Universal Canvas Engine (GSAP + Pts.js) | Removed Three.js across all manifests, created UniversalCanvasEngine with deterministic GSAP seek & Pts.js CanvasForm, refactored Preview.tsx to 2D Canvas, shaved >600KB from client bundle |
 | [`227`](227_phase2_universal_canvas_engine_and_transform_overlay.md) | 2026-10-17 | Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay Polish | Declarative GSAP timeline compiler (syncTimeline), Pts.js gravitational attractor particle swarm, dual-pass 2.5D parallax relighting, live dimension/angle transform badges, and multi-pass partial VFX |
 | [`228`](228_phase3_liquid_glass_theme_system.md) | 2026-10-17 | Phase 3: Liquid Glass Design System & Theme Provider | Comprehensive Liquid Glass tokens, ThemeProvider with dual-mode Dark/Light and localStorage persistence, SettingsModal with live preview, and workspace styling overhaul |
+| [`229`](229_fix_accordion_trigger_nested_button.md) | 2026-10-17 | Fix AccordionTrigger Nested Button Hierarchy | Enhanced AccordionTrigger with actions prop, refactored RightSidebar and Sidebar accordion items, and eliminated nested button DOM errors |
 
 
 

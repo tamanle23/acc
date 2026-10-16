@@ -618,13 +618,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 1. 3D Depth Relighting Section */}
                   {relightMod && (
                     <AccordionItem value="relighting" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                            <span className="text-xs font-bold text-slate-800">3D Relighting</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -658,7 +654,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={relightMod.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier(relightMod.type, val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          <span className="text-xs font-bold text-slate-800">3D Relighting</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -747,13 +748,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 2. 3D Camera & Rack Focus Section */}
                   {cameraMod && (
                     <AccordionItem value="camera" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Camera className="w-3.5 h-3.5 text-violet-600" />
-                            <span className="text-xs font-bold text-slate-800">3D Camera & Lens</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -787,7 +784,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={cameraMod.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier(cameraMod.type, val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5 text-violet-600" />
+                          <span className="text-xs font-bold text-slate-800">3D Camera & Lens</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -883,13 +885,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 3. Particle VFX & Shaders Section */}
                   {particleMod && (
                     <AccordionItem value="particles" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-cyan-600" />
-                            <span className="text-xs font-bold text-slate-800">Particle VFX & Shaders</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -922,7 +920,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={particleMod.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier(particleMod.type, val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-cyan-600" />
+                          <span className="text-xs font-bold text-slate-800">Particle VFX & Shaders</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -1014,13 +1017,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 4. Color Grading Section */}
                   {colorGradingMod && (
                     <AccordionItem value="color" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Palette className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-xs font-bold text-slate-800">Color Grading</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1050,7 +1049,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={colorGradingMod.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier(colorGradingMod.type, val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-xs font-bold text-slate-800">Color Grading</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -1100,13 +1104,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 5. Typography & Styling Section (if text sequence) */}
                   {(textStyleMod || selectedSeq.cues || selectedTrack?.type === 'timed_text') && (
                     <AccordionItem value="typography" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Type className="w-3.5 h-3.5 text-amber-600" />
-                            <span className="text-xs font-bold text-slate-800">Typography & Styling</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1132,7 +1132,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={textStyleMod?.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier('text/style', val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Type className="w-3.5 h-3.5 text-amber-600" />
+                          <span className="text-xs font-bold text-slate-800">Typography & Styling</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -1209,13 +1214,9 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   {/* 6. Audio Dynamic Ducking & Pan Section */}
                   {(duckingMod || selectedTrack?.type === 'audio') && (
                     <AccordionItem value="audio" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                      <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                        <div className="flex items-center justify-between w-full pr-2">
-                          <div className="flex items-center gap-1.5">
-                            <Volume2 className="w-3.5 h-3.5 text-rose-600" />
-                            <span className="text-xs font-bold text-slate-800">Audio Ducking & Pan</span>
-                          </div>
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <AccordionTrigger
+                        actions={
+                          <>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1237,7 +1238,12 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               checked={duckingMod?.params?.enabled !== false}
                               onCheckedChange={(val) => toggleModifier('sfx/dynamic_ducking', val)}
                             />
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Volume2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span className="text-xs font-bold text-slate-800">Audio Ducking & Pan</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">

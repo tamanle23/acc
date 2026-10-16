@@ -135,4 +135,36 @@ describe("Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite", () => 
     seq = manager.getState().doc.tracks[0].sequences.find((s) => s.id === seqId);
     expect(seq?.modifiers?.some((m) => m.type === "sfx/dynamic_ducking")).toBe(true);
   });
+
+  it("should ensure no nested buttons or switches are children of AccordionTrigger in RightSidebar", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const rightSidebarPath = path.resolve(__dirname, "../apps/studio/src/components/RightSidebar.tsx");
+    const content = fs.readFileSync(rightSidebarPath, "utf-8");
+
+    // Match each <AccordionItem ... </AccordionItem> block
+    const itemRegex = /<AccordionItem[\s\S]*?<\/AccordionItem>/g;
+    const items = content.match(itemRegex) || [];
+    expect(items.length).toBeGreaterThan(0);
+
+    for (const item of items) {
+      // Find the <AccordionTrigger ... </AccordionTrigger> block within each item
+      const triggerMatch = item.match(/<AccordionTrigger[\s\S]*?<\/AccordionTrigger>/);
+      if (!triggerMatch) continue;
+
+      const triggerBlock = triggerMatch[0];
+
+      // In RightSidebar, AccordionTrigger children are the title div block
+      // Props end before `<div className="flex items-center gap-1.5">`
+      const childrenStartIndex = triggerBlock.indexOf('<div className="flex items-center gap-1.5">');
+      expect(childrenStartIndex).toBeGreaterThan(-1);
+
+      const childrenEndIndex = triggerBlock.lastIndexOf('</AccordionTrigger>');
+      const innerChildren = triggerBlock.slice(childrenStartIndex, childrenEndIndex);
+
+      // Verify that NO Button or Switch is rendered as a child of AccordionTrigger
+      expect(innerChildren).not.toContain("<Button");
+      expect(innerChildren).not.toContain("<Switch");
+    }
+  });
 });

@@ -452,25 +452,23 @@ export function RightSidebar() {
             {/* Accordion Panels */}
             <Accordion type="multiple" defaultValue={['transform', 'relighting', 'camera']} className="space-y-2">
               {/* Transform Section */}
-              <AccordionItem value="transform" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                  <div className="flex items-center justify-between w-full pr-2">
-                    <div className="flex items-center gap-1.5">
-                      <Move className="w-3.5 h-3.5 text-indigo-600" />
-                      <span className="text-xs font-bold text-slate-800">In-Canvas Transform</span>
-                    </div>
-                    <span
+              <AccordionItem value="transform" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                <AccordionTrigger
+                  actions={
+                    <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-slate-400 hover:text-slate-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateModifierParams('transform', { x: 0, y: 0, scale: 1.0, rotation: 0 });
-                      }}
+                      className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                      onClick={() => updateModifierParams('transform', { x: 0, y: 0, scale: 1.0, rotation: 0 })}
                       title="Reset transform"
                     >
                       <RotateCcw className="w-3 h-3" />
-                    </span>
+                    </Button>
+                  }
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Move className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">In-Canvas Transform</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-3 space-y-3">
@@ -519,18 +517,14 @@ export function RightSidebar() {
 
               {/* 3D Relighting Section */}
               {relightMod && (
-                <AccordionItem value="relighting" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
-                        <span className="text-xs font-bold text-slate-800">3D Depth Relighting</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <AccordionItem value="relighting" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                           onClick={() => removeModifier(relightMod.type)}
                           title="Remove modifier"
                         >
@@ -540,7 +534,12 @@ export function RightSidebar() {
                           checked={relightMod.params?.enabled !== false}
                           onCheckedChange={(val) => toggleModifier(relightMod.type, val)}
                         />
-                      </div>
+                      </>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">3D Depth Relighting</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
@@ -616,18 +615,14 @@ export function RightSidebar() {
 
               {/* 3D Camera & Lens Section */}
               {cameraMod && (
-                <AccordionItem value="camera" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Camera className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="text-xs font-bold text-slate-800">3D Camera & Lens</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <AccordionItem value="camera" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                           onClick={() => removeModifier(cameraMod.type)}
                           title="Remove modifier"
                         >
@@ -637,7 +632,12 @@ export function RightSidebar() {
                           checked={cameraMod.params?.enabled !== false}
                           onCheckedChange={(val) => toggleModifier(cameraMod.type, val)}
                         />
-                      </div>
+                      </>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">3D Camera & Lens</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
@@ -677,18 +677,14 @@ export function RightSidebar() {
 
               {/* Particle VFX & Shaders Section */}
               {particleMod && (
-                <AccordionItem value="particles" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-purple-600" />
-                        <span className="text-xs font-bold text-slate-800">Particle VFX & Shaders</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <AccordionItem value="particles" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                           onClick={() => removeModifier(particleMod.type)}
                           title="Remove modifier"
                         >
@@ -698,7 +694,12 @@ export function RightSidebar() {
                           checked={particleMod.params?.enabled !== false}
                           onCheckedChange={(val) => toggleModifier(particleMod.type, val)}
                         />
-                      </div>
+                      </>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Particle VFX & Shaders</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
@@ -736,18 +737,14 @@ export function RightSidebar() {
 
               {/* Color Grading Section */}
               {colorGradingMod && (
-                <AccordionItem value="color" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Palette className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-xs font-bold text-slate-800">Color Grading</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <AccordionItem value="color" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                           onClick={() => removeModifier(colorGradingMod.type)}
                           title="Remove modifier"
                         >
@@ -757,7 +754,12 @@ export function RightSidebar() {
                           checked={colorGradingMod.params?.enabled !== false}
                           onCheckedChange={(val) => toggleModifier(colorGradingMod.type, val)}
                         />
-                      </div>
+                      </>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Color Grading</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
@@ -806,28 +808,27 @@ export function RightSidebar() {
 
               {/* Typography & Styling Section */}
               {(textStyleMod || selectedSeq.cues || selectedTrack?.type === 'timed_text') && (
-                <AccordionItem value="typography" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Type className="w-3.5 h-3.5 text-amber-600" />
-                        <span className="text-xs font-bold text-slate-800">Typography & Styling</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={textStyleMod?.params?.enabled !== false}
-                          onCheckedChange={(val) => toggleModifier('text/style', val)}
-                        />
-                      </div>
+                <AccordionItem value="typography" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <Switch
+                        checked={textStyleMod?.params?.enabled !== false}
+                        onCheckedChange={(val) => toggleModifier('text/style', val)}
+                      />
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Type className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Typography & Styling</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
                     <div className="space-y-1">
-                      <span className="text-[11px] text-slate-600">Font Family</span>
+                      <span className="text-[11px] text-slate-600 dark:text-slate-400">Font Family</span>
                       <select
                         value={textStyleMod?.params?.fontFamily || 'Inter'}
                         onChange={(e) => updateModifierParams('text/style', { fontFamily: e.target.value })}
-                        className="w-full h-7 text-xs border border-slate-200 rounded px-2 bg-white"
+                        className="w-full h-7 text-xs border border-slate-200 dark:border-white/10 rounded px-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                       >
                         <option value="Inter">Inter (Sans-Serif)</option>
                         <option value="Fira Code">Fira Code (Monospace)</option>
@@ -885,19 +886,18 @@ export function RightSidebar() {
 
               {/* Audio Ducking & Pan Section */}
               {(duckingMod || selectedTrack?.type === 'audio') && (
-                <AccordionItem value="audio" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
-                  <AccordionTrigger className="px-3 py-2 hover:no-underline bg-slate-50/50">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <div className="flex items-center gap-1.5">
-                        <Volume2 className="w-3.5 h-3.5 text-rose-600" />
-                        <span className="text-xs font-bold text-slate-800">Audio Ducking & Pan</span>
-                      </div>
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={duckingMod?.params?.enabled !== false}
-                          onCheckedChange={(val) => toggleModifier('sfx/dynamic_ducking', val)}
-                        />
-                      </div>
+                <AccordionItem value="audio" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <Switch
+                        checked={duckingMod?.params?.enabled !== false}
+                        onCheckedChange={(val) => toggleModifier('sfx/dynamic_ducking', val)}
+                      />
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Volume2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Audio Ducking & Pan</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
