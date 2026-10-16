@@ -19,9 +19,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import com.unipost.workflow.core.model.WorkflowDefinitionRecord;
+import com.unipost.workflow.core.model.WorkflowVersionStatus;
 
 @Configuration
 @EnableScheduling
@@ -63,8 +66,8 @@ public class WorkflowEngineConfiguration {
     }
 
     @Bean
-    public WorkflowDefinitionRegistry workflowDefinitionRegistry() {
-        return new WorkflowDefinitionRegistry();
+    public WorkflowDefinitionRegistry workflowDefinitionRegistry(PersistencePort persistencePort) {
+        return new WorkflowDefinitionRegistry(persistencePort);
     }
 
     @Bean
@@ -80,10 +83,30 @@ public class WorkflowEngineConfiguration {
      */
     public static class WorkflowDefinitionRegistry {
         private final Map<String, Map<String, WorkflowDefinition>> tenantDefinitions = new ConcurrentHashMap<>();
+        private final PersistencePort persistencePort;
+
+        public WorkflowDefinitionRegistry() {
+            this(null);
+        }
+
+        public WorkflowDefinitionRegistry(PersistencePort persistencePort) {
+            this.persistencePort = persistencePort;
+        }
 
         public void register(String tenantId, WorkflowDefinition definition) {
             tenantDefinitions.computeIfAbsent(tenantId, t -> new ConcurrentHashMap<>())
                 .put(definition.workflowKey(), definition);
+
+            if (persistencePort != null) {
+                String defId = tenantId + "_" + definition.workflowKey() + "_v" + definition.version();
+                long now = System.currentTimeMillis();
+                persistencePort.saveDefinitionVersion(new com.unipost.workflow.core.model.WorkflowDefinitionRecord(
+                    defId, tenantId, definition.workflowKey(), definition.version(),
+                    com.unipost.workflow.core.model.WorkflowVersionStatus.ACTIVE,
+                    definition.name(), definition.description(), definition,
+                    now, "SYSTEM", now, now
+                ));
+            }
         }
 
         public Optional<WorkflowDefinition> get(String tenantId, String workflowKey) {
@@ -91,9 +114,39 @@ public class WorkflowEngineConfiguration {
             if (defs != null && defs.containsKey(workflowKey)) {
                 return Optional.of(defs.get(workflowKey));
             }
+            // Check persistencePort
+            if (persistencePort != null) {
+                List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> list = persistencePort.listDefinitionVersions(tenantId, workflowKey);
+                if (!list.isEmpty()) {
+                    return Optional.of(list.get(list.size() - 1).definition());
+                }
+            }
             // Fallback to "system" default catalog
             Map<String, WorkflowDefinition> systemDefs = tenantDefinitions.get("system");
             return Optional.ofNullable(systemDefs != null ? systemDefs.get(workflowKey) : null);
+        }
+
+        public Optional<com.unipost.workflow.core.model.WorkflowDefinitionRecord> getVersion(String tenantId, String workflowKey, int version) {
+            if (persistencePort != null) {
+                return persistencePort.getDefinitionVersion(tenantId, workflowKey, version);
+            }
+            return get(tenantId, workflowKey).map(def -> new com.unipost.workflow.core.model.WorkflowDefinitionRecord(
+                tenantId + "_" + workflowKey + "_v" + version, tenantId, workflowKey, version,
+                com.unipost.workflow.core.model.WorkflowVersionStatus.ACTIVE,
+                def.name(), def.description(), def, System.currentTimeMillis(), "SYSTEM", System.currentTimeMillis(), System.currentTimeMillis()
+            ));
+        }
+
+        public List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> listVersions(String tenantId, String workflowKey) {
+            if (persistencePort != null) {
+                return persistencePort.listDefinitionVersions(tenantId, workflowKey);
+            }
+            Optional<WorkflowDefinition> defOpt = get(tenantId, workflowKey);
+            return defOpt.map(def -> List.of(new com.unipost.workflow.core.model.WorkflowDefinitionRecord(
+                tenantId + "_" + workflowKey + "_v" + def.version(), tenantId, workflowKey, def.version(),
+                com.unipost.workflow.core.model.WorkflowVersionStatus.ACTIVE,
+                def.name(), def.description(), def, System.currentTimeMillis(), "SYSTEM", System.currentTimeMillis(), System.currentTimeMillis()
+            ))).orElse(List.of());
         }
 
         public Map<String, WorkflowDefinition> list(String tenantId) {

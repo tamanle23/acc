@@ -67,3 +67,36 @@ CREATE TABLE IF NOT EXISTS task_dlq (
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_dlq_tenant ON task_dlq(tenant_id, isolated_at_ms DESC);
+
+CREATE TABLE IF NOT EXISTS workflow_definitions (
+  definition_id VARCHAR(128) PRIMARY KEY,
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+  workflow_key VARCHAR(128) NOT NULL,
+  version INT NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+  name VARCHAR(128) NOT NULL,
+  description TEXT,
+  definition_json JSONB NOT NULL,
+  published_at_ms BIGINT,
+  published_by VARCHAR(128),
+  created_at_ms BIGINT NOT NULL,
+  updated_at_ms BIGINT NOT NULL,
+  CONSTRAINT uq_wf_def_version UNIQUE (tenant_id, workflow_key, version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wf_def_key ON workflow_definitions(tenant_id, workflow_key, version DESC);
+
+CREATE TABLE IF NOT EXISTS workflow_audit_log (
+  sequence_num BIGSERIAL PRIMARY KEY,
+  event_id VARCHAR(64) NOT NULL UNIQUE,
+  workflow_id VARCHAR(64) NOT NULL,
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+  actor_id VARCHAR(64) NOT NULL DEFAULT 'SYSTEM',
+  action VARCHAR(64) NOT NULL,
+  payload_snapshot JSONB NOT NULL,
+  prev_hash VARCHAR(64) NOT NULL,
+  current_hash VARCHAR(64) NOT NULL,
+  created_at_ms BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_workflow ON workflow_audit_log(workflow_id, sequence_num ASC);

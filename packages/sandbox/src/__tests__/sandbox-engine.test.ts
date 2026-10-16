@@ -253,5 +253,57 @@ describe('Unified Sandbox Engine Package', () => {
     expect(Array.isArray(v1ListRes?.data)).toBe(true);
     expect(v1ListRes?.data.some((r: any) => r.taskId === 'wf-sim-test-99')).toBe(true);
   });
+
+  it('handles workflow definition versioning, hot migration dry-run and cryptographic audit ledger verification', async () => {
+    const { workflowVersioningSandboxHandler, workflowVersioningSandboxRepo } = await import('../handlers/workflow-versioning-sandbox-handler');
+    workflowVersioningSandboxRepo.reset();
+    registry.register(workflowVersioningSandboxHandler);
+
+    // 1. GET versions for order-fulfillment-v1
+    const versionsRes = await engine.handleRequest({
+      url: '/api/v1/workflow/definitions/order-fulfillment-v1/versions',
+      method: 'GET',
+    });
+    expect(versionsRes?.status).toBe(200);
+    expect(Array.isArray(versionsRes?.data)).toBe(true);
+    expect(versionsRes?.data.length).toBe(2);
+    expect(versionsRes?.data[0].version).toBe(1);
+    expect(versionsRes?.data[1].version).toBe(2);
+
+    // 2. Migration dry-run
+    const dryRunRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions/wf_exec_901/migrate/dry-run',
+      method: 'POST',
+      data: { workflowKey: 'order-fulfillment-v1', version: 2 },
+    });
+    expect(dryRunRes?.status).toBe(200);
+    expect(dryRunRes?.data.compatible).toBe(true);
+    expect(dryRunRes?.data.addedDownstreamTasks).toContain('calculateCustomsTax');
+
+    // 3. Verify cryptographic audit ledger
+    const auditVerifyRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions/wf_exec_901/audit/verify',
+      method: 'GET',
+    });
+    expect(auditVerifyRes?.status).toBe(200);
+    expect(auditVerifyRes?.data.verified).toBe(true);
+    expect(auditVerifyRes?.data.totalEvents).toBe(2);
+
+    // 4. Simulate tampering and catch verification failure
+    const tamperRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions/wf_exec_901/audit/tamper',
+      method: 'POST',
+      data: { sequenceNum: 1, payload: { illegalAmount: 9999999 } },
+    });
+    expect(tamperRes?.status).toBe(200);
+
+    const reVerifyRes = await engine.handleRequest({
+      url: '/api/v1/workflow/executions/wf_exec_901/audit/verify',
+      method: 'GET',
+    });
+    expect(reVerifyRes?.status).toBe(200);
+    expect(reVerifyRes?.data.verified).toBe(false);
+    expect(reVerifyRes?.data.corruptedAtSequence).toBe(1);
+  });
 });
 

@@ -22,10 +22,19 @@ import java.util.Map;
 public class WorkflowDefinitionController {
 
     private final WorkflowDefinitionRegistry registry;
+    private final com.unipost.workflow.application.WorkflowEngineService engineService;
     private final AcyclicityGuard acyclicityGuard = new AcyclicityGuard();
 
     public WorkflowDefinitionController(WorkflowDefinitionRegistry registry) {
+        this(registry, null);
+    }
+
+    public WorkflowDefinitionController(
+        WorkflowDefinitionRegistry registry,
+        com.unipost.workflow.application.WorkflowEngineService engineService
+    ) {
         this.registry = registry;
+        this.engineService = engineService;
     }
 
     private String resolveTenantId(String headerTenantId) {
@@ -67,11 +76,73 @@ public class WorkflowDefinitionController {
                 .body((WorkflowDefinition) null));
     }
 
+    @GetMapping("/{key}/versions")
+    public ResponseEntity<?> listDefinitionVersions(
+        @PathVariable("key") String key,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        return ResponseEntity.ok(registry.listVersions(tenantId, key));
+    }
+
+    @GetMapping("/{key}/versions/{version}")
+    public ResponseEntity<?> getDefinitionVersion(
+        @PathVariable("key") String key,
+        @PathVariable("version") int version,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        return registry.getVersion(tenantId, key, version)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
     @GetMapping
     public ResponseEntity<Collection<WorkflowDefinition>> listDefinitions(
         @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
     ) {
         String tenantId = resolveTenantId(headerTenantId);
         return ResponseEntity.ok(registry.list(tenantId).values());
+    }
+
+    // --- Execution Migration & Audit Endpoints ---
+
+    @PostMapping("/executions/{id}/migrate/dry-run")
+    public ResponseEntity<?> dryRunMigration(
+        @PathVariable("id") String executionId,
+        @RequestBody WorkflowDefinition targetDefinition
+    ) {
+        try {
+            var report = engineService.validateMigration(executionId, targetDefinition);
+            return ResponseEntity.ok(report);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/executions/{id}/migrate")
+    public ResponseEntity<?> migrateExecution(
+        @PathVariable("id") String executionId,
+        @RequestBody WorkflowDefinition targetDefinition,
+        @RequestHeader(value = "X-Actor-Id", required = false) String actorId
+    ) {
+        try {
+            var snapshot = engineService.migrateExecution(
+                executionId, targetDefinition, actorId != null ? actorId : "OPERATOR", System.currentTimeMillis()
+            );
+            return ResponseEntity.ok(snapshot);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/executions/{id}/audit")
+    public ResponseEntity<?> getAuditLedger(@PathVariable("id") String executionId) {
+        return ResponseEntity.ok(engineService.getAuditLedger(executionId));
+    }
+
+    @GetMapping("/executions/{id}/audit/verify")
+    public ResponseEntity<?> verifyAuditLedger(@PathVariable("id") String executionId) {
+        return ResponseEntity.ok(engineService.verifyAuditLedger(executionId));
     }
 }

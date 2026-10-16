@@ -44,12 +44,14 @@ import {
   Save,
   Eye,
   Lock,
+  GitCompare,
 } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
 } from '@/features/workflows/hooks/use-workflow-execution-stream';
-import { useSaveWorkflowDefinition, useWorkflowDefinition } from '@/features/workflows/api/workflow-api';
+import * as workflowApi from '@/features/workflows/api/workflow-api';
+import { HotMigrationModal } from '@/features/workflows/components/hot-migration-modal';
 
 export interface VisualDagStudioProps {
   mode?: 'full' | 'readonly' | 'designer' | 'execution';
@@ -176,6 +178,12 @@ function DagStudioCanvas({
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
 
+  // Phase 39: Visual Graph Diff & Hot Migration States
+  const [isHotMigrationOpen, setIsHotMigrationOpen] = useState(false);
+  const [diffTargetVersion, setDiffTargetVersion] = useState<number | null>(null);
+  const versionsQuery = workflowApi.useWorkflowVersions ? workflowApi.useWorkflowVersions(workflowKey || null) : { data: [] };
+  const workflowVersions = versionsQuery?.data || [];
+
   // IR Dialog State
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [isIrDialogOpen, setIsIrDialogOpen] = useState(false);
@@ -234,6 +242,61 @@ function DagStudioCanvas({
       });
     }
   }, [isReadOnly, isLiveHead, stream.nodeStates]);
+
+  // Phase 39: Compute visual graph diff overlay when comparison target is selected
+  useEffect(() => {
+    if (!diffTargetVersion) {
+      setNodes((nds) =>
+        nds.map((n) => (n.data.diffStatus ? { ...n, data: { ...n.data, diffStatus: undefined } } : n))
+      );
+      return;
+    }
+
+    const targetVer = workflowVersions.find((v) => v.version === diffTargetVersion);
+    if (!targetVer || !targetVer.definition) return;
+
+    const targetTasks = ((targetVer.definition as any).tasks || []) as Array<{ taskReferenceName: string; taskType: string }>;
+    const targetRefMap = new Map(targetTasks.map((t) => [t.taskReferenceName, t]));
+
+    setNodes((nds) => {
+      const currentRefMap = new Map(nds.map((n) => [n.data.taskReferenceName, n]));
+
+      // 1. Tag existing nodes (modified or removed)
+      const updatedNodes = nds.map((n) => {
+        const targetTask = targetRefMap.get(n.data.taskReferenceName);
+        let diffStatus: 'added' | 'removed' | 'modified' | undefined = undefined;
+        if (!targetTask) {
+          diffStatus = 'removed';
+        } else if (targetTask.taskType !== n.data.taskType) {
+          diffStatus = 'modified';
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            diffStatus,
+          },
+        };
+      });
+
+      // 2. Add placeholder nodes for tasks added in target definition
+      const addedTasks = targetTasks.filter((t) => !currentRefMap.has(t.taskReferenceName));
+      const newlyAddedNodes: Node<DagNodeData>[] = addedTasks.map((t, idx) => ({
+        id: `node-diff-added-${t.taskReferenceName}`,
+        type: 'dagNode',
+        position: { x: 300 + idx * 220, y: 320 },
+        data: {
+          taskReferenceName: t.taskReferenceName,
+          taskType: (t.taskType as any) || 'SIMPLE',
+          label: `${t.taskReferenceName} (v${diffTargetVersion})`,
+          diffStatus: 'added',
+          executionState: 'PENDING',
+        },
+      }));
+
+      return [...updatedNodes, ...newlyAddedNodes];
+    });
+  }, [diffTargetVersion, workflowVersions]);
 
   // Apply node states based on timeline scrubber position
   const applyEventsUpToIndex = useCallback(
@@ -692,6 +755,41 @@ function DagStudioCanvas({
           </div>
         )}
 
+        {/* Phase 39: Visual Graph Diff Version Selector */}
+        {workflowVersions.length > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-muted/40 border border-border/50">
+            <GitCompare className="w-3 h-3 text-primary" />
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Diff:</span>
+            <select
+              aria-label="Diff comparison version"
+              value={diffTargetVersion ?? ''}
+              onChange={(e) => setDiffTargetVersion(e.target.value ? Number(e.target.value) : null)}
+              className="text-[11px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground"
+            >
+              <option value="">None (Current)</option>
+              {workflowVersions.map((v) => (
+                <option key={v.version} value={v.version}>
+                  v{v.version} ({v.status})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Phase 39: Hot Migration Operator Modal Button */}
+        {executionId && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 shadow-sm"
+            onClick={() => setIsHotMigrationOpen(true)}
+            title="Open Hot Migration compatibility checker & execution rewiring"
+          >
+            <GitCompare className="w-3 h-3" />
+            Hot Migrate
+          </Button>
+        )}
+
         <Button
           size="sm"
           variant="outline"
@@ -841,6 +939,20 @@ function DagStudioCanvas({
           mode={irDialogMode}
           initialJson={irDialogContent}
           onImportJson={handleApplyImportedJson}
+        />
+      )}
+
+      {/* Phase 39: Hot Migration Operator Modal */}
+      {executionId && (
+        <HotMigrationModal
+          isOpen={isHotMigrationOpen}
+          onClose={() => setIsHotMigrationOpen(false)}
+          workflowKey={workflowKey || 'order-fulfillment-v1'}
+          executionId={executionId}
+          currentVersion={1}
+          onMigrationSuccess={() => {
+            setIsHotMigrationOpen(false);
+          }}
         />
       )}
     </div>

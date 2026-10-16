@@ -151,3 +151,132 @@ export const useWorkflowExecutionStatus = (executionId: string | null, enabled: 
     },
   });
 };
+
+// 8. Workflow Definition Versions
+export interface WorkflowDefinitionVersionItem {
+  definitionId: string;
+  tenantId: string;
+  workflowKey: string;
+  version: number;
+  status: 'DRAFT' | 'ACTIVE' | 'DEPRECATED' | 'ARCHIVED';
+  name: string;
+  description: string;
+  definition: Record<string, unknown>;
+  publishedAtMs?: number | null;
+  publishedBy?: string | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+}
+
+export const useWorkflowVersions = (workflowKey: string | null) => {
+  return useQuery({
+    queryKey: ['workflows', 'versions', workflowKey],
+    queryFn: async (): Promise<WorkflowDefinitionVersionItem[]> => {
+      if (!workflowKey) return [];
+      try {
+        const res = await springApiClient.get(`/v1/workflow/definitions/${workflowKey}/versions`);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (err) {
+        console.warn(`Failed to fetch versions for ${workflowKey}:`, err);
+        return [];
+      }
+    },
+    enabled: Boolean(workflowKey),
+  });
+};
+
+// 9. Hot Migration Dry Run
+export interface MigrationValidationReport {
+  compatible: boolean;
+  sourceVersion: string;
+  targetVersion: string;
+  completedTasksPreserved: string[];
+  activeFrontierTasks: string[];
+  addedDownstreamTasks: string[];
+  removedTasks: string[];
+  issues: string[];
+}
+
+export const useMigrationDryRun = () => {
+  return useMutation({
+    mutationFn: async ({ executionId, targetDefinition }: { executionId: string; targetDefinition: Record<string, unknown> }) => {
+      const res = await springApiClient.post(`/v1/workflow/executions/${executionId}/migrate/dry-run`, targetDefinition);
+      return res.data as MigrationValidationReport;
+    },
+  });
+};
+
+// 10. Execute Hot Migration
+export const useMigrateExecution = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ executionId, targetDefinition }: { executionId: string; targetDefinition: Record<string, unknown> }) => {
+      const res = await springApiClient.post(`/v1/workflow/executions/${executionId}/migrate`, targetDefinition);
+      return res.data;
+    },
+    onSuccess: (data, vars) => {
+      toast.success(`Execution hot-migrated successfully to v${data.version || 'new'}`);
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', vars.executionId] });
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'audit', vars.executionId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || 'Hot migration failed');
+    },
+  });
+};
+
+// 11. Audit Ledger & Verification
+export interface WorkflowAuditLogRecord {
+  sequenceNum: number;
+  eventId: string;
+  workflowId: string;
+  tenantId: string;
+  actorId: string;
+  action: string;
+  payloadSnapshot: Record<string, unknown>;
+  prevHash: string;
+  currentHash: string;
+  createdAtMs: number;
+}
+
+export interface AuditVerificationResult {
+  verified: boolean;
+  totalEvents: number;
+  corruptedAtSequence?: number | null;
+  details: string;
+}
+
+export const useWorkflowAuditLedger = (executionId: string | null) => {
+  return useQuery({
+    queryKey: ['workflows', 'audit', executionId],
+    queryFn: async (): Promise<WorkflowAuditLogRecord[]> => {
+      if (!executionId) return [];
+      try {
+        const res = await springApiClient.get(`/v1/workflow/executions/${executionId}/audit`);
+        return Array.isArray(res.data) ? res.data : [];
+      } catch (err) {
+        console.warn(`Failed to fetch audit ledger for ${executionId}:`, err);
+        return [];
+      }
+    },
+    enabled: Boolean(executionId),
+  });
+};
+
+export const useVerifyAuditLedger = (executionId: string | null) => {
+  return useQuery({
+    queryKey: ['workflows', 'audit', 'verify', executionId],
+    queryFn: async (): Promise<AuditVerificationResult | null> => {
+      if (!executionId) return null;
+      try {
+        const res = await springApiClient.get(`/v1/workflow/executions/${executionId}/audit/verify`);
+        return res.data;
+      } catch (err) {
+        console.warn(`Failed to verify audit ledger for ${executionId}:`, err);
+        return null;
+      }
+    },
+    enabled: Boolean(executionId),
+  });
+};

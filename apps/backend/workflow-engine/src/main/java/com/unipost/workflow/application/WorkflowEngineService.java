@@ -28,10 +28,17 @@ public class WorkflowEngineService {
 
     private final PersistencePort persistencePort;
     private final PureDecider decider;
+    private final AuditLedgerService auditLedgerService;
+    private final TopologicalCompatibilityValidator compatibilityValidator = new TopologicalCompatibilityValidator();
 
     public WorkflowEngineService(PersistencePort persistencePort, PureDecider decider) {
+        this(persistencePort, decider, new AuditLedgerService());
+    }
+
+    public WorkflowEngineService(PersistencePort persistencePort, PureDecider decider, AuditLedgerService auditLedgerService) {
         this.persistencePort = Objects.requireNonNull(persistencePort, "persistencePort required");
         this.decider = Objects.requireNonNull(decider, "decider required");
+        this.auditLedgerService = Objects.requireNonNull(auditLedgerService, "auditLedgerService required");
     }
 
     public WorkflowSnapshot startWorkflow(
@@ -48,6 +55,29 @@ public class WorkflowEngineService {
                 workflowId, tenantId, workspaceId, definition.workflowKey(), definition.version(),
                 WorkflowStatus.RUNNING, definition, input, Collections.emptyMap(), null, nowEpochMs
             );
+
+            // 1b. Cryptographic Genesis Audit Log for this execution
+            String eventId = UUID.randomUUID().toString();
+            String hash = auditLedgerService.computeHash(
+                com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH,
+                eventId,
+                workflowId,
+                "EXECUTION_STARTED",
+                input != null ? input : Collections.emptyMap(),
+                nowEpochMs
+            );
+            persistencePort.appendAuditRecord(new com.unipost.workflow.core.model.WorkflowAuditRecord(
+                1L,
+                eventId,
+                workflowId,
+                tenantId,
+                "SYSTEM",
+                "EXECUTION_STARTED",
+                input != null ? input : Collections.emptyMap(),
+                com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH,
+                hash,
+                nowEpochMs
+            ));
 
             // 2. Initialize snapshot
             WorkflowSnapshot snapshot = new WorkflowSnapshot(
@@ -142,6 +172,34 @@ public class WorkflowEngineService {
                         );
                     }
                 }
+
+                // Record chained audit event for task execution completion
+                long seq = persistencePort.listAuditRecords(workflowId).size() + 1L;
+                String prevHash = persistencePort.getLatestAuditRecord(workflowId)
+                    .map(com.unipost.workflow.core.model.WorkflowAuditRecord::currentHash)
+                    .orElse(com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH);
+                String auditEventId = UUID.randomUUID().toString();
+                String action = completed ? "TASK_COMPLETED" : "TASK_FAILED";
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("taskId", taskId);
+                payload.put("referenceName", existing.taskReferenceName());
+                payload.put("status", nextStatus.name());
+                if (output != null) payload.put("output", output);
+                if (error != null) payload.put("error", error);
+
+                String currentHash = auditLedgerService.computeHash(prevHash, auditEventId, workflowId, action, payload, nowEpochMs);
+                persistencePort.appendAuditRecord(new com.unipost.workflow.core.model.WorkflowAuditRecord(
+                    seq,
+                    auditEventId,
+                    workflowId,
+                    existing.domain(),
+                    workerId != null ? workerId : "WORKER",
+                    action,
+                    payload,
+                    prevHash,
+                    currentHash,
+                    nowEpochMs
+                ));
             }
 
             uow.commit();
@@ -264,6 +322,83 @@ public class WorkflowEngineService {
         }
         persistencePort.updateDlqStatus(dlqId, "DISCARDED", System.currentTimeMillis());
         return true;
+    }
+
+    public TopologicalCompatibilityValidator.MigrationValidationReport validateMigration(
+        String workflowId,
+        WorkflowDefinition targetDef
+    ) {
+        WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(workflowId)
+            .orElseThrow(() -> new IllegalArgumentException("Workflow execution not found: " + workflowId));
+
+        WorkflowDefinition sourceDef = persistencePort.getDefinitionVersion(snapshot.tenantId(), snapshot.workflowKey(), snapshot.version())
+            .map(com.unipost.workflow.core.model.WorkflowDefinitionRecord::definition)
+            .orElseGet(() -> WorkflowDefinition.builder(snapshot.workflowKey()).version(snapshot.version()).build());
+
+        return compatibilityValidator.validate(sourceDef, targetDef, snapshot);
+    }
+
+    public WorkflowSnapshot migrateExecution(
+        String workflowId,
+        WorkflowDefinition targetDef,
+        String operatorId,
+        long nowEpochMs
+    ) {
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            WorkflowSnapshot current = persistencePort.getWorkflowSnapshot(workflowId)
+                .orElseThrow(() -> new IllegalArgumentException("Workflow execution not found: " + workflowId));
+
+            WorkflowDefinition sourceDef = persistencePort.getDefinitionVersion(current.tenantId(), current.workflowKey(), current.version())
+                .map(com.unipost.workflow.core.model.WorkflowDefinitionRecord::definition)
+                .orElseGet(() -> WorkflowDefinition.builder(current.workflowKey()).version(current.version()).build());
+
+            TopologicalCompatibilityValidator.MigrationValidationReport report = compatibilityValidator.validate(sourceDef, targetDef, current);
+            if (!report.compatible()) {
+                throw new IllegalStateException("Hot migration rejected: " + String.join("; ", report.issues()));
+            }
+
+            // Update definition snapshot and version
+            persistencePort.updateWorkflowDefinitionSnapshot(workflowId, targetDef.version(), targetDef, nowEpochMs);
+
+            // Record HOT_MIGRATION audit record
+            long seq = persistencePort.listAuditRecords(workflowId).size() + 1L;
+            String prevHash = persistencePort.getLatestAuditRecord(workflowId)
+                .map(com.unipost.workflow.core.model.WorkflowAuditRecord::currentHash)
+                .orElse(com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH);
+            String eventId = UUID.randomUUID().toString();
+            Map<String, Object> payload = Map.of(
+                "sourceVersion", report.sourceVersion(),
+                "targetVersion", report.targetVersion(),
+                "operatorId", operatorId != null ? operatorId : "OPERATOR",
+                "activeFrontierTasks", report.activeFrontierTasks()
+            );
+
+            String currentHash = auditLedgerService.computeHash(prevHash, eventId, workflowId, "HOT_MIGRATION", payload, nowEpochMs);
+            persistencePort.appendAuditRecord(new com.unipost.workflow.core.model.WorkflowAuditRecord(
+                seq,
+                eventId,
+                workflowId,
+                current.tenantId(),
+                operatorId != null ? operatorId : "OPERATOR",
+                "HOT_MIGRATION",
+                payload,
+                prevHash,
+                currentHash,
+                nowEpochMs
+            ));
+
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId).orElseThrow();
+        }
+    }
+
+    public AuditLedgerService.AuditVerificationResult verifyAuditLedger(String workflowId) {
+        List<com.unipost.workflow.core.model.WorkflowAuditRecord> records = persistencePort.listAuditRecords(workflowId);
+        return auditLedgerService.verifyChain(records);
+    }
+
+    public List<com.unipost.workflow.core.model.WorkflowAuditRecord> getAuditLedger(String workflowId) {
+        return persistencePort.listAuditRecords(workflowId);
     }
 
     private String extractWorkflowId(String taskId, String taskReferenceName) {

@@ -35,6 +35,8 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     private final Map<String, TaskRecord> tasks = new ConcurrentHashMap<>();
     private final Map<String, QueueRecord> queue = new ConcurrentHashMap<>();
     private final Map<String, TaskDlqRecord> dlq = new ConcurrentHashMap<>();
+    private final Map<String, com.unipost.workflow.core.model.WorkflowDefinitionRecord> definitions = new ConcurrentHashMap<>();
+    private final Map<String, List<com.unipost.workflow.core.model.WorkflowAuditRecord>> auditLogs = new ConcurrentHashMap<>();
 
     private record WorkflowRecord(
         String workflowId, String tenantId, String workspaceId, String workflowName,
@@ -368,6 +370,138 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public void saveDefinitionVersion(com.unipost.workflow.core.model.WorkflowDefinitionRecord record) {
+        lock.lock();
+        try {
+            String key = record.tenantId() + ":" + record.workflowKey() + ":" + record.version();
+            definitions.put(key, record);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public Optional<com.unipost.workflow.core.model.WorkflowDefinitionRecord> getDefinitionVersion(String tenantId, String workflowKey, int version) {
+        String key = (tenantId != null ? tenantId : "system") + ":" + workflowKey + ":" + version;
+        com.unipost.workflow.core.model.WorkflowDefinitionRecord rec = definitions.get(key);
+        if (rec != null) return Optional.of(rec);
+        // Fallback to system
+        String sysKey = "system:" + workflowKey + ":" + version;
+        return Optional.ofNullable(definitions.get(sysKey));
+    }
+
+    @Override
+    public List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> listDefinitionVersions(String tenantId, String workflowKey) {
+        String prefix = (tenantId != null ? tenantId : "system") + ":" + workflowKey + ":";
+        List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> list = new ArrayList<>();
+        for (Map.Entry<String, com.unipost.workflow.core.model.WorkflowDefinitionRecord> entry : definitions.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                list.add(entry.getValue());
+            }
+        }
+        if (list.isEmpty() && !"system".equals(tenantId)) {
+            String sysPrefix = "system:" + workflowKey + ":";
+            for (Map.Entry<String, com.unipost.workflow.core.model.WorkflowDefinitionRecord> entry : definitions.entrySet()) {
+                if (entry.getKey().startsWith(sysPrefix)) {
+                    list.add(entry.getValue());
+                }
+            }
+        }
+        list.sort(Comparator.comparingInt(com.unipost.workflow.core.model.WorkflowDefinitionRecord::version));
+        return list;
+    }
+
+    @Override
+    public void updateDefinitionStatus(
+        String tenantId,
+        String workflowKey,
+        int version,
+        com.unipost.workflow.core.model.WorkflowVersionStatus status,
+        Long publishedAtMs,
+        String publishedBy
+    ) {
+        lock.lock();
+        try {
+            String key = (tenantId != null ? tenantId : "system") + ":" + workflowKey + ":" + version;
+            com.unipost.workflow.core.model.WorkflowDefinitionRecord existing = definitions.get(key);
+            if (existing != null) {
+                com.unipost.workflow.core.model.WorkflowDefinitionRecord updated = new com.unipost.workflow.core.model.WorkflowDefinitionRecord(
+                    existing.definitionId(),
+                    existing.tenantId(),
+                    existing.workflowKey(),
+                    existing.version(),
+                    status,
+                    existing.name(),
+                    existing.description(),
+                    existing.definition(),
+                    publishedAtMs != null ? publishedAtMs : existing.publishedAtMs(),
+                    publishedBy != null ? publishedBy : existing.publishedBy(),
+                    existing.createdAtMs(),
+                    System.currentTimeMillis()
+                );
+                definitions.put(key, updated);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void updateWorkflowDefinitionSnapshot(String workflowId, int newVersion, WorkflowDefinition newDefinitionSnapshot, long nowEpochMs) {
+        lock.lock();
+        try {
+            WorkflowRecord existing = workflows.get(workflowId);
+            if (existing != null) {
+                WorkflowRecord updated = new WorkflowRecord(
+                    existing.workflowId(),
+                    existing.tenantId(),
+                    existing.workspaceId(),
+                    existing.workflowName(),
+                    newVersion,
+                    existing.status(),
+                    toJson(newDefinitionSnapshot),
+                    existing.inputJson(),
+                    existing.outputJson(),
+                    existing.failureReason(),
+                    existing.createdAtMs(),
+                    nowEpochMs
+                );
+                workflows.put(workflowId, updated);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void appendAuditRecord(com.unipost.workflow.core.model.WorkflowAuditRecord record) {
+        lock.lock();
+        try {
+            List<com.unipost.workflow.core.model.WorkflowAuditRecord> list = auditLogs.computeIfAbsent(
+                record.workflowId(),
+                k -> Collections.synchronizedList(new ArrayList<>())
+            );
+            list.add(record);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public List<com.unipost.workflow.core.model.WorkflowAuditRecord> listAuditRecords(String workflowId) {
+        List<com.unipost.workflow.core.model.WorkflowAuditRecord> list = auditLogs.get(workflowId);
+        if (list == null) return Collections.emptyList();
+        return new ArrayList<>(list);
+    }
+
+    @Override
+    public Optional<com.unipost.workflow.core.model.WorkflowAuditRecord> getLatestAuditRecord(String workflowId) {
+        List<com.unipost.workflow.core.model.WorkflowAuditRecord> list = auditLogs.get(workflowId);
+        if (list == null || list.isEmpty()) return Optional.empty();
+        return Optional.of(list.get(list.size() - 1));
     }
 
     private TaskSnapshot toTaskSnapshot(TaskRecord tr) {

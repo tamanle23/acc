@@ -109,5 +109,24 @@ public interface PersistencePort {
     void updateDlqStatus(String dlqId, String status, Long replayedAtMs);
 
     void deleteDlqTask(String dlqId);
+
+    // Workflow Definition Versioning
+    void saveDefinitionVersion(com.unipost.workflow.core.model.WorkflowDefinitionRecord record);
+
+    Optional<com.unipost.workflow.core.model.WorkflowDefinitionRecord> getDefinitionVersion(String tenantId, String workflowKey, int version);
+
+    List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> listDefinitionVersions(String tenantId, String workflowKey);
+
+    void updateDefinitionStatus(String tenantId, String workflowKey, int version, com.unipost.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy);
+
+    // In-flight Execution Hot Migration
+    void updateWorkflowDefinitionSnapshot(String workflowId, int newVersion, WorkflowDefinition newDefinitionSnapshot, long nowEpochMs);
+
+    // Cryptographic Audit Ledger
+    void appendAuditRecord(com.unipost.workflow.core.model.WorkflowAuditRecord record);
+
+    List<com.unipost.workflow.core.model.WorkflowAuditRecord> listAuditRecords(String workflowId);
+
+    Optional<com.unipost.workflow.core.model.WorkflowAuditRecord> getLatestAuditRecord(String workflowId);
 }
 

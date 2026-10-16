@@ -162,6 +162,7 @@ export interface DagNodeData {
   attemptNumber?: number;
   startedAt?: number;
   error?: string;
+  diffStatus?: 'added' | 'removed' | 'modified';
   [key: string]: unknown;
 }
 
@@ -276,11 +277,29 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         data.executionState === 'IN_PROGRESS' && 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.45)] animate-pulse',
         data.executionState === 'WAITING_FOR_APPROVAL' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.55)] animate-pulse',
         data.executionState === 'FAILED' && 'border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/50',
+        data.diffStatus === 'added' && 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.4)]',
+        data.diffStatus === 'removed' && 'border-rose-500 bg-rose-500/15 ring-2 ring-rose-500/50 opacity-70 line-through',
+        data.diffStatus === 'modified' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.4)]',
         data.validationError && 'border-rose-500 ring-2 ring-rose-500/40',
         selected ? 'ring-2 ring-primary border-primary scale-105' : 'hover:scale-[1.02]',
         'cursor-grab active:cursor-grabbing'
       )}
     >
+      {/* Diff Status Indicator Pill */}
+      {data.diffStatus && (
+        <div className="absolute -top-3 -right-2 z-10">
+          <span
+            className={cn(
+              'px-2 py-0.5 text-[9px] font-black uppercase rounded-full shadow-md tracking-wider border',
+              data.diffStatus === 'added' && 'bg-emerald-500 text-white border-emerald-400',
+              data.diffStatus === 'removed' && 'bg-rose-500 text-white border-rose-400',
+              data.diffStatus === 'modified' && 'bg-amber-500 text-white border-amber-400'
+            )}
+          >
+            {data.diffStatus}
+          </span>
+        </div>
+      )}
       {/* Target Handle (Left) */}
       <Handle
         type="target"

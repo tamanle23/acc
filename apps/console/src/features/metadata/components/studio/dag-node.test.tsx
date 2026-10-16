@@ -64,4 +64,73 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     expect(screen.getByText('Route Order')).toBeDefined();
     expect(screen.getByText('RUNNING')).toBeDefined();
   });
+
+  it('renders visual diff status pills correctly for added, removed, and modified nodes', () => {
+    const { rerender } = render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="diff-node"
+          type="dagNode"
+          data={{
+            taskReferenceName: 'calculateCustomsTax',
+            taskType: 'SIMPLE',
+            label: 'Calculate Tax',
+            diffStatus: 'added',
+          }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByText('added')).toBeDefined();
+
+    rerender(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="diff-node"
+          type="dagNode"
+          data={{
+            taskReferenceName: 'calculateCustomsTax',
+            taskType: 'SIMPLE',
+            label: 'Calculate Tax',
+            diffStatus: 'removed',
+          }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+    expect(screen.getByText('removed')).toBeDefined();
+
+    rerender(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="diff-node"
+          type="dagNode"
+          data={{
+            taskReferenceName: 'calculateCustomsTax',
+            taskType: 'SIMPLE',
+            label: 'Calculate Tax',
+            diffStatus: 'modified',
+          }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+    expect(screen.getByText('modified')).toBeDefined();
+  });
 });

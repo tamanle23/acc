@@ -19,6 +19,7 @@ export * from './handlers/chats-sandbox-handler';
 export * from './handlers/apps-sandbox-handler';
 export * from './handlers/widget-handler';
 export * from './handlers/dlq-sandbox-handler';
+export * from './handlers/workflow-versioning-sandbox-handler';
 
 // Auto-register built-in domain handlers into the Unified Registry
 import { sandboxRegistry } from './registry';
@@ -32,6 +33,7 @@ import { chatsSandboxHandler } from './handlers/chats-sandbox-handler';
 import { appsSandboxHandler } from './handlers/apps-sandbox-handler';
 import { widgetSandboxHandler } from './handlers/widget-handler';
 import { dlqSandboxHandler } from './handlers/dlq-sandbox-handler';
+import { workflowVersioningSandboxHandler } from './handlers/workflow-versioning-sandbox-handler';
 
 export function registerDefaultSandboxHandlers(): void {
   sandboxRegistry.register(authSandboxHandler);
@@ -44,6 +46,7 @@ export function registerDefaultSandboxHandlers(): void {
   sandboxRegistry.register(appsSandboxHandler);
   sandboxRegistry.register(widgetSandboxHandler);
   sandboxRegistry.register(dlqSandboxHandler);
+  sandboxRegistry.register(workflowVersioningSandboxHandler);
 }
 
 // Auto-register on module load

@@ -413,6 +413,15 @@ public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
         }
     }
 
+    private <T> T fromJson(String json, Class<T> clazz) {
+        if (json == null || json.isBlank() || "null".equals(json)) return null;
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     @Override
     public void quarantineTaskToDlq(TaskDlqRecord record) {
         String insertSql = """
@@ -531,6 +540,193 @@ public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete DLQ task in PostgreSQL", e);
         }
+    }
+
+    @Override
+    public void saveDefinitionVersion(com.unipost.workflow.core.model.WorkflowDefinitionRecord record) {
+        String sql = """
+            INSERT INTO workflow_definitions
+            (definition_id, tenant_id, workflow_key, version, status, name, description, definition_json, published_at_ms, published_by, created_at_ms, updated_at_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?)
+            ON CONFLICT (tenant_id, workflow_key, version)
+            DO UPDATE SET status = EXCLUDED.status, name = EXCLUDED.name, description = EXCLUDED.description,
+                          definition_json = EXCLUDED.definition_json, published_at_ms = EXCLUDED.published_at_ms,
+                          published_by = EXCLUDED.published_by, updated_at_ms = EXCLUDED.updated_at_ms
+            """;
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, record.definitionId());
+            ps.setString(2, record.tenantId());
+            ps.setString(3, record.workflowKey());
+            ps.setInt(4, record.version());
+            ps.setString(5, record.status().name());
+            ps.setString(6, record.name());
+            ps.setString(7, record.description());
+            ps.setString(8, toJson(record.definition()));
+            if (record.publishedAtMs() != null) ps.setLong(9, record.publishedAtMs()); else ps.setNull(9, Types.BIGINT);
+            ps.setString(10, record.publishedBy());
+            ps.setLong(11, record.createdAtMs());
+            ps.setLong(12, record.updatedAtMs());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save workflow definition version in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public Optional<com.unipost.workflow.core.model.WorkflowDefinitionRecord> getDefinitionVersion(String tenantId, String workflowKey, int version) {
+        String sql = "SELECT * FROM workflow_definitions WHERE tenant_id = ? AND workflow_key = ? AND version = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            ps.setString(2, workflowKey);
+            ps.setInt(3, version);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapDefinitionRecord(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get workflow definition version in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> listDefinitionVersions(String tenantId, String workflowKey) {
+        String sql = "SELECT * FROM workflow_definitions WHERE tenant_id = ? AND workflow_key = ? ORDER BY version ASC";
+        List<com.unipost.workflow.core.model.WorkflowDefinitionRecord> list = new ArrayList<>();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, tenantId != null ? tenantId : "system");
+            ps.setString(2, workflowKey);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapDefinitionRecord(rs));
+                }
+            }
+            return Collections.unmodifiableList(list);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list workflow definition versions in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public void updateDefinitionStatus(String tenantId, String workflowKey, int version, com.unipost.workflow.core.model.WorkflowVersionStatus status, Long publishedAtMs, String publishedBy) {
+        String sql = "UPDATE workflow_definitions SET status = ?, published_at_ms = ?, published_by = ?, updated_at_ms = ? WHERE tenant_id = ? AND workflow_key = ? AND version = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status.name());
+            if (publishedAtMs != null) ps.setLong(2, publishedAtMs); else ps.setNull(2, Types.BIGINT);
+            ps.setString(3, publishedBy);
+            ps.setLong(4, System.currentTimeMillis());
+            ps.setString(5, tenantId != null ? tenantId : "system");
+            ps.setString(6, workflowKey);
+            ps.setInt(7, version);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update definition status in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public void updateWorkflowDefinitionSnapshot(String workflowId, int newVersion, WorkflowDefinition newDefinitionSnapshot, long nowEpochMs) {
+        String sql = "UPDATE workflow_executions SET version = ?, definition_snapshot = ?::jsonb, updated_at_ms = ? WHERE workflow_id = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, newVersion);
+            ps.setString(2, toJson(newDefinitionSnapshot));
+            ps.setLong(3, nowEpochMs);
+            ps.setString(4, workflowId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to hot-migrate workflow execution definition snapshot in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public void appendAuditRecord(com.unipost.workflow.core.model.WorkflowAuditRecord record) {
+        String sql = """
+            INSERT INTO workflow_audit_log
+            (event_id, workflow_id, tenant_id, actor_id, action, payload_snapshot, prev_hash, current_hash, created_at_ms)
+            VALUES (?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?)
+            """;
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, record.eventId());
+            ps.setString(2, record.workflowId());
+            ps.setString(3, record.tenantId());
+            ps.setString(4, record.actorId());
+            ps.setString(5, record.action());
+            ps.setString(6, toJson(record.payloadSnapshot()));
+            ps.setString(7, record.prevHash());
+            ps.setString(8, record.currentHash());
+            ps.setLong(9, record.createdAtMs());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to append audit record in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public List<com.unipost.workflow.core.model.WorkflowAuditRecord> listAuditRecords(String workflowId) {
+        String sql = "SELECT * FROM workflow_audit_log WHERE workflow_id = ? ORDER BY sequence_num ASC";
+        List<com.unipost.workflow.core.model.WorkflowAuditRecord> list = new ArrayList<>();
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, workflowId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapAuditRecord(rs));
+                }
+            }
+            return Collections.unmodifiableList(list);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list audit records in PostgreSQL", e);
+        }
+    }
+
+    @Override
+    public Optional<com.unipost.workflow.core.model.WorkflowAuditRecord> getLatestAuditRecord(String workflowId) {
+        String sql = "SELECT * FROM workflow_audit_log WHERE workflow_id = ? ORDER BY sequence_num DESC LIMIT 1";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, workflowId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapAuditRecord(rs));
+                }
+            }
+            return Optional.empty();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get latest audit record in PostgreSQL", e);
+        }
+    }
+
+    private com.unipost.workflow.core.model.WorkflowDefinitionRecord mapDefinitionRecord(ResultSet rs) throws SQLException {
+        long pubAt = rs.getLong("published_at_ms");
+        Long publishedAtMs = rs.wasNull() ? null : pubAt;
+        return new com.unipost.workflow.core.model.WorkflowDefinitionRecord(
+            rs.getString("definition_id"),
+            rs.getString("tenant_id"),
+            rs.getString("workflow_key"),
+            rs.getInt("version"),
+            com.unipost.workflow.core.model.WorkflowVersionStatus.valueOf(rs.getString("status")),
+            rs.getString("name"),
+            rs.getString("description"),
+            fromJson(rs.getString("definition_json"), WorkflowDefinition.class),
+            publishedAtMs,
+            rs.getString("published_by"),
+            rs.getLong("created_at_ms"),
+            rs.getLong("updated_at_ms")
+        );
+    }
+
+    private com.unipost.workflow.core.model.WorkflowAuditRecord mapAuditRecord(ResultSet rs) throws SQLException {
+        return new com.unipost.workflow.core.model.WorkflowAuditRecord(
+            rs.getLong("sequence_num"),
+            rs.getString("event_id"),
+            rs.getString("workflow_id"),
+            rs.getString("tenant_id"),
+            rs.getString("actor_id"),
+            rs.getString("action"),
+            fromJson(rs.getString("payload_snapshot")),
+            rs.getString("prev_hash"),
+            rs.getString("current_hash"),
+            rs.getLong("created_at_ms")
+        );
     }
 
     private TaskDlqRecord mapTaskDlqRecord(ResultSet rs) throws SQLException {
