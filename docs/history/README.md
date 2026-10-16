@@ -234,6 +234,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`219`](219_iteration3_phase6_python_watchdog_resilience.md) | 2026-10-16 | Master Integration Plan (Iteration 3) Phase 6: Python Backend Resilience & Watchdog | Enterprise daemon resilience: PIDManager file tracking, cross-platform parent process watchdog thread, grpc.health.v1 standard health servicer, and graceful signal handling |
 | [`220`](220_iteration3_phase7_phase8_master_integration.md) | 2026-10-16 | Master Integration Plan (Iteration 3) Phase 7 & 8: Dynamic VRAM Lifecycle Manager & Master Integration E2E QA | ModelLifecycleManager with 120s auto-eviction & CUDA purge, admin.proto AdminService, IPCFacade/Supervisor integration, and full E2E QA |
 | [`221`](221_iteration6_phase1_canvas_transform_overlay.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer | CanvasTransformOverlay with 8-point handles, MagneticSnapEngine, Preview.tsx direct staging integration, and headless export suppression |
+| [`222`](222_iteration6_phase2_deep_collapsible_inspector_panels.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite | Collapsible accordion panels for 3D Relighting, Camera, Particles, Color Grading, Typography, Audio, dual slider/numeric inputs, and RemoveModifierCommand undo |
 
 
 

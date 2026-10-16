@@ -16,6 +16,7 @@ import type { ICommand } from '../commands/ICommand';
 import { TrimSequenceCommand } from '../commands/TrimSequenceCommand';
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
+import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
 
 export interface IRState {
   doc: VideoIRDocument;
@@ -203,16 +204,6 @@ export class IRStateManager {
   }
 
   public removeModifier(sequenceId: string, modifierType: string): void {
-    const copy = JSON.parse(JSON.stringify(this.state.doc)) as VideoIRDocument;
-    for (const track of copy.tracks) {
-      for (const seq of track.sequences) {
-        if (seq.id === sequenceId && seq.modifiers) {
-          seq.modifiers = seq.modifiers.filter((m: ModifierNode) => m.type !== modifierType);
-          this.state.doc = copy;
-          this.recompile();
-          return;
-        }
-      }
-    }
+    this.dispatch(new RemoveModifierCommand(sequenceId, modifierType));
   }
 }
