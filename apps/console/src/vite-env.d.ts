@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vitest-axe" />
 
 interface ImportMetaEnv {
   readonly VITE_FACEBOOK_APP_ID?: string

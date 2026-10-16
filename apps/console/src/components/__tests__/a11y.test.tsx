@@ -2,6 +2,13 @@ import { render, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+declare module 'vitest' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  export interface Assertion<R extends void | Promise<void> = void, T = unknown> {
+    toHaveNoViolations(): any;
+  }
+}
+
 vi.mock('@/components/command-menu', () => ({
   CommandMenu: () => null,
 }));
