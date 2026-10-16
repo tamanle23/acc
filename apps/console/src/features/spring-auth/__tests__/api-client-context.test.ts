@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { springApiClient } from '../api-client';
 import { useSpringAuthStore } from '../store';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
+import { useSandboxStore } from '@/core/sandbox/store/sandbox-store';
 
 describe('springApiClient Context Header Injection', () => {
   beforeEach(() => {
     localStorage.clear();
     useSpringAuthStore.setState({ accessToken: null, refreshToken: null });
+    useSandboxStore.setState({ activeTenantId: 'tenant-acme' });
     useMetadataUiStore.setState({
       activeTenantId: 'tenant-acme',
       activeWorkspaceId: 'ws-prod',

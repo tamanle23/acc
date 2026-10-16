@@ -118,5 +118,6 @@
 | [111](111_phase_36_visual_dag_studio_dual_modes.md) | 2026-10-15 | Visual DAG Studio 2.0 (Dual Modes & 23-Node Palette) (Phase 36) | Delivered Visual DAG Studio 2.0 with full 23-node categorized palette, specialized inspectors, docked microsecond TimeTravelScrubber, slide-over TaskTelemetryInspector, and topology locking. |
 | [112](112_phase_37_human_in_the_loop_approval_inbox.md) | 2026-10-16 | Human-in-the-Loop (HITL) Operations: Task Approval Inbox, Decision Modals & SLA Tracking (Phase 37) | Implemented TaskStatus.WAITING_FOR_APPROVAL, /claim /unclaim /resolve REST endpoints, dedicated /approvals inbox, Liquid Glass HumanDecisionModal, and offline sandbox simulation. |
 | [113](113_relocate_workflow_items_to_admin_sidebar_group.md) | 2026-10-16 | Relocate Workflow Management Items to Admin Group in Sidebar | Moved /workflow-executions, /workflows, and /approvals from Workspace nav group to Admin nav group in sidebar-data.ts. |
+| [114](114_refactor_workflows_approvals_common_datatable_rule.md) | 2026-10-16 | Refactor Workflows & Approvals to Shared DataTable & Codify Common Component Priority Rule | Refactored /workflows and /approvals to use common DataTable primitives and codified COMMON-COMPONENT-PRIORITY agent rule. |
 
 

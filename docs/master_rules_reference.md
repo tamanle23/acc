@@ -228,3 +228,21 @@ When executing implementation plans, tasks, or user requests, writing synthetic 
    - CI/CD and penetration testing suites must never use hardcoded success responses, trivial mock returns (`status: 200` without real validation), or short-circuited checks.
    - Penetration fuzzing, chaos tests, and performance benchmarks must execute against actual parsing, token validation, regex matching, and atomic locking logic.
 
+---
+
+## 11. Common Component Reuse & Anti-Boilerplate Mandate
+
+### Core Rationale
+Re-inventing existing design patterns by implementing raw HTML/JSX tables, duplicate search bars, manual pagination loops, or bespoke modal shells causes visual inconsistency, breaks Liquid Glass styling parity, degrades keyboard accessibility (WCAG 2.2 AA), and introduces redundant maintenance surface area. Prioritizing shared library components ensures design token adherence, consistent user ergonomics, and minimal boilerplate.
+
+### Non-Negotiable Directives
+1. **MANDATORY COMMON COMPONENT DISCOVERY**:
+   - Before creating or modifying UI screens, tables, forms, or navigation panels, developers and AI agents MUST inspect existing shared component directories (`apps/console/src/components/`, `packages/ui/src/`) for existing abstractions.
+2. **DATA-TABLE COMPONENT PRIORITY**:
+   - All tabular listings (e.g. Workflows Catalog, Approvals Inbox, Workflow Executions, Users, Tenants) MUST use the centralized `@/components/data-table` primitives (`DataTable`, `DataTableToolbar`, `DataTablePagination`, `DataTableColumnHeader`, `DataTableFacetedFilter`) powered by TanStack Table.
+   - Never write raw boilerplate `<table>`, `<thead>`, `<tbody>`, or manual pagination rows when presenting tabular entities.
+3. **SEPARATION OF COLUMN CONCERNS**:
+   - Table column definitions MUST be defined in dedicated `*-columns.tsx` files implementing TanStack `ColumnDef<T>[]` with accessible headers (`DataTableColumnHeader`).
+4. **ANTI-BOILERPLATE ENFORCEMENT**:
+   - Do not implement ad-hoc search inputs or filter button rows outside `DataTableToolbar` when a `DataTable` is already present. Use `DataTableToolbar`'s native search, faceted filters, and reset actions.
+

@@ -10,15 +10,7 @@ import { ProfileDropdown } from '@/components/profile-dropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import {
-  UserCheck,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Search as SearchIcon,
-  Filter,
-} from 'lucide-react';
+import { UserCheck } from 'lucide-react';
 import { useApprovalsQuery } from './hooks/use-approvals';
 import { ApprovalTable } from './components/approval-table';
 import { HumanDecisionModal } from './components/human-decision-modal';
@@ -30,7 +22,6 @@ export const ApprovalsFeature: React.FC = () => {
 
   const { data: approvals = [], isLoading, refetch } = useApprovalsQuery();
   const [activeTab, setActiveTab] = useState<'myReview' | 'unassigned' | 'history'>('myReview');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTask, setSelectedTask] = useState<ApprovalTask | null>(null);
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
 
@@ -53,25 +44,12 @@ export const ApprovalsFeature: React.FC = () => {
     );
   }, [approvals]);
 
-  // Active list filtered by search
   const displayedTasks = useMemo(() => {
-    let list: ApprovalTask[] = [];
-    if (activeTab === 'myReview') list = myReviewTasks;
-    else if (activeTab === 'unassigned') list = unassignedTasks;
-    else if (activeTab === 'history') list = historyTasks;
-
-    if (!searchQuery.trim()) return list;
-
-    const q = searchQuery.toLowerCase();
-    return list.filter(
-      (t) =>
-        t.workflowName?.toLowerCase().includes(q) ||
-        t.workflowKey?.toLowerCase().includes(q) ||
-        t.taskReferenceName?.toLowerCase().includes(q) ||
-        t.role?.toLowerCase().includes(q) ||
-        t.instructions?.toLowerCase().includes(q)
-    );
-  }, [activeTab, myReviewTasks, unassignedTasks, historyTasks, searchQuery]);
+    if (activeTab === 'myReview') return myReviewTasks;
+    if (activeTab === 'unassigned') return unassignedTasks;
+    if (activeTab === 'history') return historyTasks;
+    return approvals;
+  }, [activeTab, myReviewTasks, unassignedTasks, historyTasks, approvals]);
 
   const handleOpenReview = (task: ApprovalTask) => {
     setSelectedTask(task);
@@ -125,7 +103,7 @@ export const ApprovalsFeature: React.FC = () => {
           </div>
         </div>
 
-        {/* Toolbar & Filter Tabs */}
+        {/* Filter Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <Tabs
             value={activeTab}
@@ -150,16 +128,6 @@ export const ApprovalsFeature: React.FC = () => {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          <div className="relative w-full sm:w-64">
-            <SearchIcon className="w-4 h-4 absolute left-2.5 top-2.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter tasks, roles, keys..."
-              className="pl-8 text-xs h-9 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md"
-            />
-          </div>
         </div>
 
         {/* Table Content */}
