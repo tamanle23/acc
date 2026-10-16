@@ -236,6 +236,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`221`](221_iteration6_phase1_canvas_transform_overlay.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer | CanvasTransformOverlay with 8-point handles, MagneticSnapEngine, Preview.tsx direct staging integration, and headless export suppression |
 | [`222`](222_iteration6_phase2_deep_collapsible_inspector_panels.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite | Collapsible accordion panels for 3D Relighting, Camera, Particles, Color Grading, Typography, Audio, dual slider/numeric inputs, and RemoveModifierCommand undo |
 | [`223`](223_iteration6_phase3_library_staging_inline_text_partial_vfx.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & Partial VFX Catalog | Staging presets catalog (12 presets), HTML5 drag-and-drop onto canvas with normalized coords, inline canvas text editing, AddSequenceCommand, and Three.js partial VFX subsystem |
+| [`224`](224_iteration6_phase4_master_e2e_qa_and_archival.md) | 2026-10-16 | Master Integration Plan (Iteration 6) Phase 4: Master Integration, End-to-End Test Suite & Archival | Full roundtrip verification across all 4 phases, 27/27 tests passing, walkthrough_02, and all acceptance criteria checked off |
 
 
 
