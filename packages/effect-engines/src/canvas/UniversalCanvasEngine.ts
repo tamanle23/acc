@@ -34,6 +34,7 @@ export interface ParticleState {
   velocities: Group;
   colors: string[];
   radii: Float32Array;
+  attractor: Pt;
 }
 
 export interface HUDConfig {
@@ -41,6 +42,14 @@ export interface HUDConfig {
   scanlineDensity: number;
   color: string;
   rotationSpeed: number;
+}
+
+export interface LightRelightParams {
+  x?: number; // normalized 0..1
+  y?: number; // normalized 0..1
+  diffuse?: number;
+  specular?: number;
+  color?: string;
 }
 
 /**
@@ -59,6 +68,7 @@ export class UniversalCanvasEngine {
   private partialVfxRegions: PartialVFXRegion[] = [];
   private currentTime: number = 0;
   private popOutIntensity: number = 1.0;
+  private isDisposed: boolean = false;
 
   // GSAP Deterministic Scrubbed Timeline
   private timeline: gsap.core.Timeline;
@@ -82,7 +92,17 @@ export class UniversalCanvasEngine {
   }
 
   public updateOverlay(box: BoundingBox2D | null, activeGuides: SnappingGuide[] = []): void {
+    if (box) {
+      this.overlay.setVisible(true);
+    }
     this.overlay.update(box, activeGuides);
+  }
+
+  public setActiveInteraction(
+    handle: TransformHandleType | null,
+    dragMode: 'move' | 'resize' | 'rotate' | null = null
+  ): void {
+    this.overlay.setActiveInteraction(handle, dragMode);
   }
 
   public hitTestOverlay(normX: number, normY: number, box?: BoundingBox2D): TransformHandleType | null {
@@ -92,8 +112,6 @@ export class UniversalCanvasEngine {
   public initDepthMesh(gridCols?: number, gridRows?: number, width?: number, height?: number): void {
     // 2.5D Parallax Depth plane initialization
   }
-
-  private isDisposed: boolean = false;
 
   public get scene(): { children: any[] } {
     if (this.isDisposed) return { children: [] };
@@ -130,7 +148,63 @@ export class UniversalCanvasEngine {
   }
 
   /**
-   * Initializes generative particle warp / starfield network using Pts.js vectors.
+   * Declarative GSAP timeline compiler.
+   * Compiles sequence timing, entrance/exit fades, transform keyframes, and modifier easing
+   * curves into this.timeline for deterministic frame-accurate scrubbing.
+   */
+  public syncTimeline(
+    sequences: Array<{
+      id: string;
+      time: { start: number; duration: number };
+      modifiers?: Array<{ type: string; params?: Record<string, unknown> }>;
+    }>,
+    fps: number = 30
+  ): void {
+    this.timeline.clear();
+
+    for (const seq of sequences) {
+      const startSec = (seq.time?.start ?? 0) / fps;
+      const durSec = Math.max(0.1, (seq.time?.duration ?? 30) / fps);
+
+      const seqState = { opacity: 0, scale: 1.0, x: 0, y: 0 };
+
+      // Entrance fade-in and exit fade-out
+      const fadeDuration = Math.min(0.4, durSec / 3);
+      this.timeline.to(
+        seqState,
+        { opacity: 1, duration: fadeDuration, ease: 'power2.out' },
+        startSec
+      );
+      this.timeline.to(
+        seqState,
+        { opacity: 0, duration: fadeDuration, ease: 'power2.in' },
+        startSec + durSec - fadeDuration
+      );
+
+      // Modifier keyframes
+      if (seq.modifiers) {
+        for (const mod of seq.modifiers) {
+          if (mod.type === 'transform' && mod.params) {
+            const p = mod.params as any;
+            this.timeline.to(
+              seqState,
+              {
+                scale: p.scale ?? 1.0,
+                x: p.x ?? 0,
+                y: p.y ?? 0,
+                duration: durSec,
+                ease: p.ease || 'power2.inOut',
+              },
+              startSec
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Initializes generative particle swarm with dynamic gravitational attractor physics.
    */
   public initParticleSystem(count: number = 200): void {
     const pts = new Group();
@@ -147,9 +221,9 @@ export class UniversalCanvasEngine {
       const y = 0.5 + Math.sin(angle) * dist;
 
       pts.push(new Pt(x, y));
-      vels.push(new Pt((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02));
+      vels.push(new Pt((Math.random() - 0.5) * 0.015, (Math.random() - 0.5) * 0.015));
       colors.push(palette[i % palette.length]);
-      radii[i] = 1.5 + Math.random() * 3.5;
+      radii[i] = 1.5 + Math.random() * 3.0;
     }
 
     this.particles = {
@@ -157,6 +231,7 @@ export class UniversalCanvasEngine {
       velocities: vels,
       colors,
       radii,
+      attractor: new Pt(0.5, 0.5),
     };
   }
 
@@ -179,6 +254,50 @@ export class UniversalCanvasEngine {
     this.currentTime = timeSec;
     this.popOutIntensity = popOutIntensity;
     this.timeline.seek(timeSec);
+  }
+
+  /**
+   * Dual-pass 2.5D parallax displacement & Blinn-Phong specular light pool.
+   */
+  public render2DParallax(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    timeSec: number,
+    lightParams?: LightRelightParams
+  ): void {
+    const lx = (lightParams?.x ?? 0.5 + Math.sin(timeSec * 0.8) * 0.25) * w;
+    const ly = (lightParams?.y ?? 0.5 + Math.cos(timeSec * 1.1) * 0.2) * h;
+    const lightColor = lightParams?.color ?? '#00d4ff';
+    const diffuse = lightParams?.diffuse ?? 1.2;
+    const specular = lightParams?.specular ?? 1.5;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+
+    // 1. Diffuse Radial Sheen
+    const diffRadius = Math.max(120, Math.min(w, h) * 0.55 * this.popOutIntensity);
+    const diffGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, diffRadius);
+    diffGrad.addColorStop(0, `${lightColor}${Math.min(255, Math.round(diffuse * 70)).toString(16).padStart(2, '0')}`);
+    diffGrad.addColorStop(0.7, `${lightColor}15`);
+    diffGrad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = diffGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Specular Hotspot
+    const specRadius = Math.max(30, Math.min(w, h) * 0.12 * this.popOutIntensity);
+    const specGrad = ctx.createRadialGradient(lx, ly, 0, lx, ly, specRadius);
+    specGrad.addColorStop(0, `rgba(255, 255, 255, ${Math.min(0.85, specular * 0.35)})`);
+    specGrad.addColorStop(0.5, `${lightColor}44`);
+    specGrad.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = specGrad;
+    ctx.beginPath();
+    ctx.arc(lx, ly, specRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
   }
 
   /**
@@ -215,23 +334,51 @@ export class UniversalCanvasEngine {
 
   private renderParticles(ctx: CanvasRenderingContext2D, w: number, h: number, timeSec: number): void {
     if (!this.particles) return;
-    const { pts, colors, radii } = this.particles;
+    const { pts, velocities, colors, radii } = this.particles;
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
-    const t = timeSec * 0.8;
+    // Dynamic Gravitational Attractor along Lissajous path
+    const ax = 0.5 + Math.sin(timeSec * 0.9) * 0.22;
+    const ay = 0.5 + Math.cos(timeSec * 1.3) * 0.18;
+    this.particles.attractor.set(ax, ay);
+
     for (let i = 0; i < pts.length; i++) {
       const p = pts[i];
-      // Orbit & pulse math
-      const orbitSpeed = 0.2 + (i % 5) * 0.1;
-      const angle = t * orbitSpeed + (i * Math.PI) / 10;
-      const radiusOffset = Math.sin(t * 1.5 + i) * 0.04;
+      const vel = velocities[i];
 
-      const px = (p.x + Math.cos(angle) * radiusOffset) * w;
-      const py = (p.y + Math.sin(angle) * radiusOffset) * h;
-      const r = radii[i] * (1.0 + Math.sin(t * 2 + i) * 0.3) * this.popOutIntensity;
+      // Gravitational acceleration towards attractor
+      const dx = ax - p.x;
+      const dy = ay - p.y;
+      const dist = Math.hypot(dx, dy) + 0.05;
+      const force = 0.0006 / (dist * dist);
 
+      vel.x = vel.x * 0.96 + (dx / dist) * force;
+      vel.y = vel.y * 0.96 + (dy / dist) * force;
+
+      p.x += vel.x;
+      p.y += vel.y;
+
+      // Boundary wrap
+      if (p.x < 0.02) p.x = 0.98;
+      if (p.x > 0.98) p.x = 0.02;
+      if (p.y < 0.02) p.y = 0.98;
+      if (p.y > 0.98) p.y = 0.02;
+
+      const px = p.x * w;
+      const py = p.y * h;
+      const r = radii[i] * (1.0 + Math.sin(timeSec * 2 + i) * 0.25) * this.popOutIntensity;
+
+      // Particle velocity trail
+      ctx.strokeStyle = colors[i] + '44';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px - vel.x * 4 * w, py - vel.y * 4 * h);
+      ctx.stroke();
+
+      // Particle Core
       ctx.beginPath();
       ctx.arc(px, py, Math.max(0.5, r), 0, Math.PI * 2);
       ctx.fillStyle = colors[i];
@@ -301,10 +448,11 @@ export class UniversalCanvasEngine {
       const intensity = reg.intensity ?? 1.5;
 
       if (reg.type === 'spotlight') {
-        const rad = Math.max(20, (reg.radius ?? 160) * (w / 1920));
+        const rad = Math.max(20, (reg.radius ?? 160) * (w / 1920) * intensity);
         const grad = ctx.createRadialGradient(rx, ry, 0, rx, ry, rad);
         grad.addColorStop(0, color);
-        grad.addColorStop(0.7, `${color}44`);
+        grad.addColorStop(0.4, `${color}88`);
+        grad.addColorStop(0.75, `${color}22`);
         grad.addColorStop(1, 'transparent');
 
         ctx.save();
@@ -315,37 +463,53 @@ export class UniversalCanvasEngine {
         ctx.fill();
         ctx.restore();
       } else if (reg.type === 'glitch') {
-        // RGB split slices
+        // Multi-band RGB chromatic slice shifts
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = 'rgba(236, 72, 153, 0.4)'; // Magenta split
-        const jitter = Math.sin(timeSec * 30 + rx) * 8 * intensity;
-        ctx.fillRect(rx - rw / 2 + jitter, ry - rh / 2, rw, rh * 0.4);
 
-        ctx.fillStyle = 'rgba(6, 182, 212, 0.4)'; // Cyan split
-        ctx.fillRect(rx - rw / 2 - jitter, ry - rh / 2 + rh * 0.5, rw, rh * 0.4);
+        const sliceH = rh / 4;
+        for (let s = 0; s < 4; s++) {
+          const jitter = Math.sin(timeSec * 35 + s * 2.5 + rx) * 12 * intensity;
+          const sliceY = ry - rh / 2 + s * sliceH;
+
+          // Magenta band
+          ctx.fillStyle = 'rgba(236, 72, 153, 0.45)';
+          ctx.fillRect(rx - rw / 2 + jitter, sliceY, rw, sliceH * 0.9);
+
+          // Cyan band
+          ctx.fillStyle = 'rgba(6, 182, 212, 0.45)';
+          ctx.fillRect(rx - rw / 2 - jitter * 0.8, sliceY, rw, sliceH * 0.9);
+        }
         ctx.restore();
       } else if (reg.type === 'blur') {
-        // Simulated soft focus vignette box
+        // Localized soft frosted privacy vignette
         ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-        ctx.shadowBlur = 16;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+        ctx.shadowBlur = 18;
         ctx.fillRect(rx - rw / 2, ry - rh / 2, rw, rh);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(rx - rw / 2, ry - rh / 2, rw, rh);
         ctx.restore();
       } else if (reg.type === 'point_emitter') {
-        // Spark burst
+        // Physics-driven spark emitter burst
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        for (let i = 0; i < 12; i++) {
-          const spAngle = (i / 12) * Math.PI * 2 + timeSec * 4;
-          const spDist = (Math.sin(timeSec * 5 + i) * 0.5 + 0.5) * 35;
+        const sparkCount = 16;
+        for (let i = 0; i < sparkCount; i++) {
+          const spAngle = (i / sparkCount) * Math.PI * 2 + timeSec * 3;
+          const life = (Math.sin(timeSec * 6 + i * 1.2) * 0.5 + 0.5);
+          const spDist = life * 45 * intensity;
           const sx = rx + Math.cos(spAngle) * spDist;
           const sy = ry + Math.sin(spAngle) * spDist;
 
           ctx.beginPath();
-          ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+          ctx.arc(sx, sy, Math.max(0.5, 3 * (1 - life)), 0, Math.PI * 2);
           ctx.fillStyle = color;
+          ctx.shadowColor = color;
+          ctx.shadowBlur = 6;
           ctx.fill();
         }
         ctx.restore();

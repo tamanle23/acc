@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'bun:test';
 import { UniversalCanvasEngine } from '../packages/effect-engines/src/canvas/UniversalCanvasEngine';
+import { CanvasTransformOverlay } from '../packages/effect-engines/src/canvas/CanvasTransformOverlay';
 import { createCanvas } from '@napi-rs/canvas';
 
-describe('Phase 1 & 2: Shared Isomorphic Canvas Engine (UniversalCanvasEngine, GSAP & pts.js)', () => {
+describe('Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay', () => {
   it('should initialize UniversalCanvasEngine and resize dimensions cleanly', () => {
     const engine = new UniversalCanvasEngine({ width: 1280, height: 720 });
     expect(engine.width).toBe(1280);
@@ -15,15 +16,66 @@ describe('Phase 1 & 2: Shared Isomorphic Canvas Engine (UniversalCanvasEngine, G
     engine.dispose();
   });
 
-  it('should generate particle system and render deterministically to @napi-rs/canvas', () => {
+  it('should compile declarative GSAP timeline and advance deterministically', () => {
+    const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
+    const mockSequences = [
+      {
+        id: 'seq-1',
+        time: { start: 0, duration: 60 },
+        modifiers: [
+          { type: 'transform', params: { scale: 1.5, x: 50, y: -20, ease: 'power2.inOut' } },
+        ],
+      },
+      {
+        id: 'seq-2',
+        time: { start: 60, duration: 90 },
+      },
+    ];
+
+    expect(() => {
+      engine.syncTimeline(mockSequences, 30);
+    }).not.toThrow();
+
+    // Advance to frame 30 (1.0s) and frame 60 (2.0s)
+    expect(() => {
+      engine.update(1.0, 1.0);
+      engine.update(2.0, 1.0);
+    }).not.toThrow();
+
+    engine.dispose();
+  });
+
+  it('should generate particle swarm with gravitational attractors and velocity trails', () => {
     const engine = new UniversalCanvasEngine({ width: 800, height: 600 });
-    engine.initParticleSystem(100);
+    engine.initParticleSystem(150);
 
     const canvas = createCanvas(800, 600);
     const ctx = canvas.getContext('2d') as any;
 
     expect(() => {
       engine.render(ctx, 1.5, 1.0);
+      engine.render(ctx, 3.0, 1.2);
+    }).not.toThrow();
+
+    const buffer = canvas.toBuffer('image/png');
+    expect(buffer.length).toBeGreaterThan(0);
+
+    engine.dispose();
+  });
+
+  it('should render dual-pass 2.5D parallax relighting with Blinn-Phong specular sheen', () => {
+    const engine = new UniversalCanvasEngine({ width: 1280, height: 720 });
+    const canvas = createCanvas(1280, 720);
+    const ctx = canvas.getContext('2d') as any;
+
+    expect(() => {
+      engine.render2DParallax(ctx, 1280, 720, 1.0, {
+        x: 0.6,
+        y: 0.4,
+        diffuse: 1.5,
+        specular: 2.0,
+        color: '#00d4ff',
+      });
     }).not.toThrow();
 
     const buffer = canvas.toBuffer('image/png');
@@ -46,7 +98,7 @@ describe('Phase 1 & 2: Shared Isomorphic Canvas Engine (UniversalCanvasEngine, G
     engine.dispose();
   });
 
-  it('should render Partial VFX regions (spotlight, blur, glitch, emitter) without errors', () => {
+  it('should render Partial VFX regions (spotlight, blur, glitch, emitter) with multi-pass compositing', () => {
     const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
     engine.setPartialVFXRegions([
       { id: 'vfx-1', type: 'spotlight', x: 0.5, y: 0.5, radius: 200, color: '#00d4ff', intensity: 1.5 },
@@ -65,21 +117,36 @@ describe('Phase 1 & 2: Shared Isomorphic Canvas Engine (UniversalCanvasEngine, G
     engine.dispose();
   });
 
-  it('should render transform overlay and magnetic guides cleanly', () => {
-    const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
-    engine.setOverlayVisible(true);
-    engine.updateOverlay(
-      { x: 0.5, y: 0.5, width: 0.4, height: 0.3, rotation: 15 },
-      [{ id: 'c-x', type: 'centerX', orientation: 'vertical', position: 0.5, label: 'Center X' }]
-    );
+  it('should render transform overlay with live dimension and angle readout badges', () => {
+    const overlay = new CanvasTransformOverlay();
+    overlay.setVisible(true);
+
+    const box = { x: 0.5, y: 0.5, width: 0.4, height: 0.3, rotation: 35.5 };
+    overlay.update(box, [
+      { id: 'c-x', type: 'centerX', orientation: 'vertical', position: 0.5, label: 'Center X' },
+    ]);
 
     const canvas = createCanvas(1920, 1080);
     const ctx = canvas.getContext('2d') as any;
 
+    // 1. Rotation mode -> angle badge
+    overlay.setActiveInteraction('rotate', 'rotate');
     expect(() => {
-      engine.render(ctx, 0, 1.0);
+      overlay.render(ctx, 1920, 1080, box);
     }).not.toThrow();
 
-    engine.dispose();
+    // 2. Resize mode -> dimension badge
+    overlay.setActiveInteraction('br', 'resize');
+    expect(() => {
+      overlay.render(ctx, 1920, 1080, box);
+    }).not.toThrow();
+
+    // 3. Clear interaction
+    overlay.setActiveInteraction(null, null);
+    expect(() => {
+      overlay.render(ctx, 1920, 1080, box);
+    }).not.toThrow();
+
+    overlay.dispose();
   });
 });

@@ -161,6 +161,7 @@ export function Preview({ playhead }: PreviewProps) {
     }
 
     engine.setPartialVFXRegions(vfxRegions);
+    engine.syncTimeline(activeSeqs as any, fps);
 
     // 3. Synchronize in-canvas transform overlay
     if (selectedSeqId) {
@@ -192,6 +193,9 @@ export function Preview({ playhead }: PreviewProps) {
     setActiveHandle(handleType);
     setStartPointer({ x: e.clientX, y: e.clientY });
     setStartTransform({ ...transform });
+
+    const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
+    engineRef.current?.setActiveInteraction(handleType, mode);
   };
 
   const handleMouseMove = useCallback(
@@ -260,6 +264,7 @@ export function Preview({ playhead }: PreviewProps) {
     setIsDragging(false);
     setActiveHandle(null);
     setActiveGuides([]);
+    engineRef.current?.setActiveInteraction(null, null);
   };
 
   // Drag-and-Drop Staging Handlers

@@ -138,6 +138,8 @@ export class CanvasTransformOverlay {
   private visible: boolean = false;
   private currentBox: BoundingBox2D | null = null;
   private activeGuides: SnappingGuide[] = [];
+  private activeHandle: TransformHandleType | null = null;
+  private dragMode: 'move' | 'resize' | 'rotate' | null = null;
 
   constructor() {}
 
@@ -151,6 +153,14 @@ export class CanvasTransformOverlay {
 
   public get rootGroup(): { visible: boolean } {
     return { visible: this.visible };
+  }
+
+  public setActiveInteraction(
+    handle: TransformHandleType | null,
+    dragMode: 'move' | 'resize' | 'rotate' | null = null
+  ): void {
+    this.activeHandle = handle;
+    this.dragMode = dragMode;
   }
 
   public update(box: BoundingBox2D | null, activeGuides: SnappingGuide[] = []): void {
@@ -215,6 +225,19 @@ export class CanvasTransformOverlay {
     ctx.translate(cx, cy);
     ctx.rotate((box.rotation * Math.PI) / 180);
 
+    // Center Pivot Anchor Crosshair
+    ctx.save();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+    ctx.lineWidth = 1;
+    const anchorSize = 6;
+    ctx.beginPath();
+    ctx.moveTo(-anchorSize, 0);
+    ctx.lineTo(anchorSize, 0);
+    ctx.moveTo(0, -anchorSize);
+    ctx.lineTo(0, anchorSize);
+    ctx.stroke();
+    ctx.restore();
+
     // 3. Draw Bounding Box Line Loop
     ctx.strokeStyle = '#38bdf8'; // Sky cyan
     ctx.lineWidth = 1.5;
@@ -237,36 +260,94 @@ export class CanvasTransformOverlay {
     const knobRadius = 6.5;
     ctx.beginPath();
     ctx.arc(0, knobY, knobRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#0284c7';
+    ctx.fillStyle = this.activeHandle === 'rotate' ? '#38bdf8' : '#0284c7';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#ffffff';
     ctx.stroke();
 
+    // Floating Angle Readout Badge (when rotating)
+    if (this.dragMode === 'rotate' || this.activeHandle === 'rotate') {
+      ctx.save();
+      const badgeText = `${box.rotation.toFixed(1)}°`;
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      const textWidth = ctx.measureText(badgeText).width;
+      const badgeW = textWidth + 14;
+      const badgeH = 20;
+      const badgeX = -badgeW / 2;
+      const badgeY = knobY - 26;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4) : ctx.rect(badgeX, badgeY, badgeW, badgeH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, 0, badgeY + badgeH / 2);
+      ctx.restore();
+    }
+
     // 5. Draw 8 Scale Handles
-    const handlePositions: Array<[number, number]> = [
-      [-halfW, -halfH], // tl
-      [0, -halfH],      // tc
-      [halfW, -halfH],  // tr
-      [-halfW, 0],      // ml
-      [halfW, 0],       // mr
-      [-halfW, halfH],  // bl
-      [0, halfH],       // bc
-      [halfW, halfH],   // br
+    const handlePositions: Array<[number, number, TransformHandleType]> = [
+      [-halfW, -halfH, 'tl'],
+      [0, -halfH, 'tc'],
+      [halfW, -halfH, 'tr'],
+      [-halfW, 0, 'ml'],
+      [halfW, 0, 'mr'],
+      [-halfW, halfH, 'bl'],
+      [0, halfH, 'bc'],
+      [halfW, halfH, 'br'],
     ];
 
     const handleSize = 8;
     const halfHandle = handleSize / 2;
 
-    for (const [hx, hy] of handlePositions) {
-      ctx.fillStyle = '#ffffff';
+    for (const [hx, hy, hType] of handlePositions) {
+      const isCurrentActive = this.activeHandle === hType;
+      ctx.fillStyle = isCurrentActive ? '#38bdf8' : '#ffffff';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
       ctx.shadowBlur = 4;
       ctx.fillRect(hx - halfHandle, hy - halfHandle, handleSize, handleSize);
 
-      ctx.strokeStyle = '#0284c7';
+      ctx.strokeStyle = isCurrentActive ? '#ffffff' : '#0284c7';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(hx - halfHandle, hy - halfHandle, handleSize, handleSize);
+    }
+
+    // Floating Dimension Readout Badge (when resizing)
+    const isResizing =
+      this.dragMode === 'resize' ||
+      (this.activeHandle && this.activeHandle !== 'body' && this.activeHandle !== 'rotate');
+    if (isResizing) {
+      ctx.save();
+      const pxW = Math.round(box.width * canvasWidth);
+      const pxH = Math.round(box.height * canvasHeight);
+      const dimText = `${pxW} × ${pxH}`;
+      ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+      const dimTextW = ctx.measureText(dimText).width;
+      const dimBadgeW = dimTextW + 16;
+      const dimBadgeH = 20;
+      const dimBadgeX = -dimBadgeW / 2;
+      const dimBadgeY = halfH + 14;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(dimBadgeX, dimBadgeY, dimBadgeW, dimBadgeH, 4) : ctx.rect(dimBadgeX, dimBadgeY, dimBadgeW, dimBadgeH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(dimText, 0, dimBadgeY + dimBadgeH / 2);
+      ctx.restore();
     }
 
     ctx.restore();
