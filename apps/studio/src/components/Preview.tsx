@@ -6,6 +6,13 @@ import { Monitor, Sparkles, Box, Move, RotateCw } from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
+import {
+  CanvasTransformOverlay,
+  MagneticSnapEngine,
+  type BoundingBox2D,
+  type SnappingGuide,
+  type TransformHandleType,
+} from '@acc/effect-engines/client';
 
 interface PreviewProps {
   playhead: {
@@ -32,10 +39,13 @@ export function Preview({ playhead }: PreviewProps) {
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
-  // Transform gizmo state for selected sequence
+  // In-Canvas 2D Vector Transform & Magnetic Snapping State
   const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [activeHandle, setActiveHandle] = useState<TransformHandleType | null>(null);
+  const [activeGuides, setActiveGuides] = useState<SnappingGuide[]>([]);
+  const [startPointer, setStartPointer] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [startTransform, setStartTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
 
@@ -285,43 +295,81 @@ export function Preview({ playhead }: PreviewProps) {
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }, [currentFrame, fps, irState, glReady, mousePos]);
 
-  // Drag interaction handlers for bounding box gizmo
-  const handleGizmoMouseDown = (e: React.MouseEvent) => {
+  // Direct in-canvas handle interaction handlers
+  const handleHandleMouseDown = (handleType: TransformHandleType, e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    setActiveHandle(handleType);
+    setStartPointer({ x: e.clientX, y: e.clientY });
+    setStartTransform({ ...transform });
   };
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const rect = containerRef.current?.getBoundingClientRect();
-      if (rect) {
-        setMousePos({
-          x: (e.clientX - rect.left) / rect.width,
-          y: (e.clientY - rect.top) / rect.height,
-        });
-      }
+      if (!rect) return;
 
-      if (isDragging && selectedSeqId) {
-        const dx = e.clientX - dragStart.x;
-        const dy = e.clientY - dragStart.y;
-        const newTransform = {
-          ...transform,
-          x: transform.x + dx,
-          y: transform.y + dy,
+      const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      setMousePos({ x: normX, y: normY });
+
+      if (isDragging && activeHandle && selectedSeqId) {
+        const dx = e.clientX - startPointer.x;
+        const dy = e.clientY - startPointer.y;
+
+        const baseW = 0.5;
+        const baseH = 0.5;
+        const startNormBox: BoundingBox2D = {
+          x: 0.5 + startTransform.x / width,
+          y: 0.5 + startTransform.y / height,
+          width: baseW * startTransform.scale,
+          height: baseH * startTransform.scale,
+          rotation: startTransform.rotation,
         };
-        setTransform(newTransform);
-        setDragStart({ x: e.clientX, y: e.clientY });
 
-        // Coalescing modifier update in IRStateManager
+        const currentPointerNorm = {
+          x: (startPointer.x - rect.left + dx) / rect.width,
+          y: (startPointer.y - rect.top + dy) / rect.height,
+        };
+        const startPointerNorm = {
+          x: (startPointer.x - rect.left) / rect.width,
+          y: (startPointer.y - rect.top) / rect.height,
+        };
+
+        const dragRes = CanvasTransformOverlay.computeDragTransform(
+          startNormBox,
+          activeHandle,
+          currentPointerNorm,
+          startPointerNorm,
+          e.shiftKey,
+          e.shiftKey
+        );
+
+        if (dragRes.snapResult) {
+          setActiveGuides(dragRes.snapResult.activeGuides);
+        } else {
+          setActiveGuides([]);
+        }
+
+        const newNormBox = dragRes.box;
+        const newTransform: TransformState = {
+          x: Math.round((newNormBox.x - 0.5) * width),
+          y: Math.round((newNormBox.y - 0.5) * height),
+          scale: Number((newNormBox.width / baseW).toFixed(2)),
+          rotation: newNormBox.rotation,
+        };
+
+        setTransform(newTransform);
         IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newTransform as any);
       }
     },
-    [isDragging, dragStart, transform, selectedSeqId]
+    [isDragging, activeHandle, startPointer, startTransform, selectedSeqId, width, height]
   );
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setActiveHandle(null);
+    setActiveGuides([]);
   };
 
   // Active cues for subtitles and HUD telemetry
@@ -368,7 +416,12 @@ export function Preview({ playhead }: PreviewProps) {
             className="bg-indigo-950/80 text-indigo-300 border-indigo-700/60 font-mono text-[10px] flex items-center gap-1.5"
           >
             <Move className="w-3 h-3 text-indigo-400" />
-            X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x
+            X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x | R: {transform.rotation}°
+            {activeGuides.length > 0 && (
+              <span className="text-cyan-400 font-semibold ml-1">
+                [Snap: {activeGuides.map((g) => g.label).join(', ')}]
+              </span>
+            )}
           </Badge>
         )}
       </div>
@@ -381,41 +434,96 @@ export function Preview({ playhead }: PreviewProps) {
           style={{ aspectRatio: '16/9' }}
         />
 
-        {/* Interactive Transform Bounding Box Gizmo */}
+        {/* Magnetic Snapping Guidelines Overlay */}
+        {activeGuides.map((guide) => (
+          <div
+            key={guide.id}
+            style={
+              guide.orientation === 'vertical'
+                ? { left: `${guide.position * 100}%`, top: 0, bottom: 0 }
+                : { top: `${guide.position * 100}%`, left: 0, right: 0 }
+            }
+            className={`absolute z-20 pointer-events-none ${
+              guide.orientation === 'vertical'
+                ? 'w-px border-l border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
+                : 'h-px border-t border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
+            }`}
+          >
+            <span
+              className={`absolute text-[9px] font-mono bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.2 rounded shadow-xs ${
+                guide.orientation === 'vertical' ? 'top-2 -translate-x-1/2' : 'left-2 -translate-y-1/2'
+              }`}
+            >
+              {guide.label}
+            </span>
+          </div>
+        ))}
+
+        {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles */}
         {selectedSeqId && (
           <div
-            onMouseDown={handleGizmoMouseDown}
+            onMouseDown={(e) => handleHandleMouseDown('body', e)}
             style={{
               transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
               width: '50%',
               height: '50%',
             }}
-            className="absolute border-2 border-indigo-400 bg-indigo-500/10 cursor-move rounded-xs flex items-center justify-center group shadow-lg pointer-events-auto"
+            className="absolute border-2 border-indigo-400 bg-indigo-500/10 cursor-move rounded-xs flex items-center justify-center group shadow-lg pointer-events-auto z-10"
           >
-            {/* Corner Scale Handles */}
-            <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
-            <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
-            <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
-            <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs" />
+            {/* 4 Corner Scale Handles */}
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('tl', e)}
+              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nwse-resize hover:scale-125 transition-transform"
+              title="Scale Top-Left"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('tr', e)}
+              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nesw-resize hover:scale-125 transition-transform"
+              title="Scale Top-Right"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('bl', e)}
+              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nesw-resize hover:scale-125 transition-transform"
+              title="Scale Bottom-Left"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('br', e)}
+              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nwse-resize hover:scale-125 transition-transform"
+              title="Scale Bottom-Right"
+            />
 
-            {/* Rotation Stem Handle */}
-            <div className="absolute -top-6 flex flex-col items-center">
+            {/* 4 Edge Stretch Handles */}
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('tc', e)}
+              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ns-resize hover:scale-125 transition-transform"
+              title="Stretch Top"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('bc', e)}
+              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ns-resize hover:scale-125 transition-transform"
+              title="Stretch Bottom"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('ml', e)}
+              className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-3 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ew-resize hover:scale-125 transition-transform"
+              title="Stretch Left"
+            />
+            <div
+              onMouseDown={(e) => handleHandleMouseDown('mr', e)}
+              className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-3 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ew-resize hover:scale-125 transition-transform"
+              title="Stretch Right"
+            />
+
+            {/* Rotation Stem & Knob Handle */}
+            <div className="absolute -top-7 flex flex-col items-center">
               <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const nextRot = (transform.rotation + 15) % 360;
-                  setTransform((prev) => ({ ...prev, rotation: nextRot }));
-                  IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', {
-                    ...transform,
-                    rotation: nextRot,
-                  } as any);
-                }}
-                className="w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-500 shadow-xs"
-                title="Rotate 15 deg"
+                onMouseDown={(e) => handleHandleMouseDown('rotate', e)}
+                className="w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-indigo-500 shadow-md transition-transform hover:scale-110"
+                title="Drag to Rotate"
               >
                 <RotateCw className="w-2.5 h-2.5" />
               </div>
-              <div className="w-0.5 h-2 bg-indigo-400" />
+              <div className="w-0.5 h-3 bg-indigo-400" />
             </div>
 
             {/* Sequence identifier pill */}

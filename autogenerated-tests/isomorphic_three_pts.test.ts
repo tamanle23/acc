@@ -17,7 +17,8 @@ describe('Phase 1: Shared Isomorphic 3D Engine (UniversalThreeScene & pts.js)', 
     scene.initDepthMesh(32, 32, 10, 6);
 
     expect(scene.scene.children.length).toBeGreaterThan(0);
-    const mesh = scene.scene.children[0] as THREE.Mesh;
+    const mesh = scene.scene.children.find((c) => c instanceof THREE.Mesh) as THREE.Mesh;
+    expect(mesh).toBeDefined();
     expect(mesh.isMesh).toBe(true);
     expect(mesh.geometry).toBeDefined();
     expect((mesh.material as THREE.ShaderMaterial).uniforms.time).toBeDefined();

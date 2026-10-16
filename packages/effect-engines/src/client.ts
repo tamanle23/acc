@@ -5,6 +5,7 @@
  */
 
 export * from './three/UniversalThreeScene';
+export * from './three/CanvasTransformOverlay';
 export * from './audio/ProceduralAudioSynthesizer';
 export * from './audio/UniversalAudioMixer';
 export * from './vision/CameraSplineInterpolator';

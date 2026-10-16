@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { Pt, Group } from 'pts';
+import {
+  CanvasTransformOverlay,
+  BoundingBox2D,
+  SnappingGuide,
+  TransformHandleType,
+} from './CanvasTransformOverlay';
 
 export interface Scene3DConfig {
   width: number;
@@ -40,6 +46,7 @@ export class UniversalThreeScene {
   public orthoCamera: THREE.OrthographicCamera;
   public width: number;
   public height: number;
+  public overlay: CanvasTransformOverlay;
 
   private depthMesh: THREE.Mesh | null = null;
   private depthMaterial: THREE.ShaderMaterial | null = null;
@@ -59,6 +66,22 @@ export class UniversalThreeScene {
     this.camera.position.set(0, 0, 10);
 
     this.orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+    // Initialize 2D Vector Canvas Transform & Staging Overlay
+    this.overlay = new CanvasTransformOverlay();
+    this.scene.add(this.overlay.rootGroup);
+  }
+
+  public setOverlayVisible(visible: boolean): void {
+    this.overlay.setVisible(visible);
+  }
+
+  public updateOverlay(box: BoundingBox2D | null, activeGuides: SnappingGuide[] = []): void {
+    this.overlay.update(box, activeGuides);
+  }
+
+  public hitTestOverlay(normX: number, normY: number, box?: BoundingBox2D): TransformHandleType | null {
+    return this.overlay.hitTest(normX, normY, box);
   }
 
   /**
@@ -325,6 +348,7 @@ export class UniversalThreeScene {
    * Cleanly disposes of all geometries, materials, and textures to prevent memory leaks.
    */
   public dispose(): void {
+    this.overlay.dispose();
     this.scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh || obj instanceof THREE.Points) {
         obj.geometry.dispose();
