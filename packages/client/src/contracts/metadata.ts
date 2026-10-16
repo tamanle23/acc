@@ -132,6 +132,7 @@ export interface EntityRecord {
   tenantId?: string;
   attributes: Record<string, unknown>;
   version?: number;
+  schemaVersion?: number;
   createdDate?: string;
   updatedDate?: string;
 }
@@ -143,6 +144,7 @@ export interface RelationshipType {
   sourceEntityTypeId: string | number;
   targetEntityTypeId: string | number;
   cardinality: CardinalityType;
+  cascadePolicy?: 'RESTRICT' | 'CASCADE' | 'SET_NULL';
   description?: string;
   version?: number;
   createdDate?: string;
@@ -322,3 +324,30 @@ export interface TenantProvisioningResult {
   createdEntityTypeNames: string[];
   durationMs: number;
 }
+
+export interface RecordAuditLog {
+  id: string | number;
+  tenantId?: string;
+  entityTypeId: string | number;
+  recordId: string | number;
+  version: number;
+  operation: 'CREATE' | 'UPDATE' | 'PATCH' | 'SOFT_DELETE' | 'RESTORE';
+  oldAttributes?: Record<string, unknown> | null;
+  newAttributes?: Record<string, unknown> | null;
+  delta?: Record<string, { old: unknown; new: unknown }> | null;
+  changedBy?: string | null;
+  createdAt: string;
+}
+
+export interface RestorePreviewResponse {
+  recordId: string | number;
+  entityTypeId: string | number;
+  targetAuditLogId: string | number;
+  targetVersion: number;
+  currentVersion: number;
+  nextVersion: number;
+  currentAttributes: Record<string, unknown>;
+  restoredAttributes: Record<string, unknown>;
+  delta: Record<string, { old: unknown; new: unknown }>;
+}
+

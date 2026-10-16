@@ -16,6 +16,7 @@ import { RawJsonDialog } from './raw-json-dialog';
 import { AdvancedFilterPopover } from './advanced-filter-popover';
 import { FacetedSearchSidebar } from './faceted-search-sidebar';
 import { SchemaBackfillDialog } from './schema-backfill-dialog';
+import { RecordAuditHistoryDrawer } from '../records/record-audit-history-drawer';
 import {
   createColumnHelper,
   flexRender,
@@ -55,6 +56,7 @@ import {
   Edit2,
   Trash2,
   Code,
+  History,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -205,6 +207,7 @@ export const EntityDataGrid: React.FC<Props> = ({
   const [localSearchInput, setLocalSearchInput] = useState(searchFilter);
   const [debouncedSearch, setDebouncedSearch] = useState(searchFilter);
   const [inspectingRecord, setInspectingRecord] = useState<EntityRecord | null>(null);
+  const [auditRecord, setAuditRecord] = useState<EntityRecord | null>(null);
 
   // Keep local search input synchronized if searchFilter changes externally
   React.useEffect(() => {
@@ -614,6 +617,12 @@ export const EntityDataGrid: React.FC<Props> = ({
                   className="gap-2 text-primary focus:text-primary"
                 >
                   <GitFork className="h-3.5 w-3.5" /> Connected Edges
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setAuditRecord(row.original)}
+                  className="gap-2 text-blue-600 dark:text-blue-400 focus:text-blue-600"
+                >
+                  <History className="h-3.5 w-3.5" /> Audit History & Ledger
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setInspectingRecord(row.original)}
@@ -1055,6 +1064,12 @@ export const EntityDataGrid: React.FC<Props> = ({
         attributes={attributes}
         onConfirm={handleConfirmBackfill}
         isPending={backfillMutation.isPending}
+      />
+      <RecordAuditHistoryDrawer
+        record={auditRecord}
+        entityTypeId={entityTypeId}
+        open={Boolean(auditRecord)}
+        onClose={() => setAuditRecord(null)}
       />
     </div>
   );

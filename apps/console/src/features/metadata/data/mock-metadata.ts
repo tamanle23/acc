@@ -23,6 +23,8 @@ import type {
   EntityFacetsResponse,
   FacetGroupDto,
   ValidationErrorDetail,
+  RecordAuditLog,
+  RestorePreviewResponse,
 } from '../api/types';
 
 import {
@@ -608,6 +610,7 @@ export class MockMetadataService implements MetadataDataSource {
   );
   private relationshipTypes: RelationshipType[] = [...initialMockRelationshipTypes];
   private relationships: EntityRelationship[] = [...initialMockEntityRelationships];
+  private auditLogs: RecordAuditLog[] = [];
 
   // Two-Tier Simulated Cache Hierarchy (L1 In-Memory + L2 Hazelcast simulation)
   private l1SchemaCache: Map<string, CompiledSchema> = new Map();
@@ -619,6 +622,7 @@ export class MockMetadataService implements MetadataDataSource {
     this.records = JSON.parse(JSON.stringify(initialMockRecords));
     this.relationshipTypes = JSON.parse(JSON.stringify(initialMockRelationshipTypes));
     this.relationships = JSON.parse(JSON.stringify(initialMockEntityRelationships));
+    this.auditLogs = [];
     this.l1SchemaCache.clear();
     this.l2DistributedCache.clear();
   }
@@ -1472,6 +1476,141 @@ export class MockMetadataService implements MetadataDataSource {
 
     list[index] = updatedRecord;
     return updatedRecord;
+  }
+
+  async getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]> {
+    const strTypeId = String(entityTypeId);
+    const strRecId = String(recordId);
+
+    const matches = this.auditLogs.filter(
+      (l) => String(l.entityTypeId) === strTypeId && String(l.recordId) === strRecId
+    );
+
+    if (matches.length > 0) {
+      return [...matches].sort((a, b) => Number(b.version) - Number(a.version));
+    }
+
+    // Fabricate initial baseline history for this record so UI displays realistically in dev/offline
+    const record = await this.getEntityRecord(entityTypeId, recordId);
+    if (!record) return [];
+
+    const initialLog: RecordAuditLog = {
+      id: 1001,
+      tenantId: record.tenantId || 'tenant-acme',
+      entityTypeId: Number(entityTypeId) || 1,
+      recordId: Number(recordId) || 1,
+      version: record.version || 1,
+      operation: 'CREATE',
+      oldAttributes: null,
+      newAttributes: record.attributes || {},
+      delta: null,
+      changedBy: 'admin@unipost.io',
+      createdAt: record.createdDate || new Date().toISOString(),
+    };
+    this.auditLogs.push(initialLog);
+    return [initialLog];
+  }
+
+  async previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse> {
+    const logs = await this.getRecordAuditLogs(entityTypeId, recordId);
+    const targetLog = logs.find((l) => String(l.id) === String(auditLogId));
+    if (!targetLog) {
+      throw new Error(`Audit log entry #${auditLogId} not found for record #${recordId}`);
+    }
+
+    const currentRecord = await this.getEntityRecord(entityTypeId, recordId);
+    if (!currentRecord) {
+      throw new Error(`Entity record #${recordId} not found`);
+    }
+
+    const currentAttrs = currentRecord.attributes || {};
+    const restoredAttrs = targetLog.newAttributes || targetLog.oldAttributes || {};
+
+    const allKeys = new Set([...Object.keys(currentAttrs), ...Object.keys(restoredAttrs)]);
+    const delta: Record<string, { old: unknown; new: unknown }> = {};
+
+    allKeys.forEach((key) => {
+      const oldVal = currentAttrs[key];
+      const newVal = restoredAttrs[key];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        delta[key] = { old: oldVal, new: newVal };
+      }
+    });
+
+    const currentVersion = Number(currentRecord.version || 1);
+    return {
+      recordId: Number(recordId),
+      entityTypeId: Number(entityTypeId),
+      targetAuditLogId: Number(auditLogId),
+      targetVersion: Number(targetLog.version),
+      currentVersion,
+      nextVersion: currentVersion + 1,
+      currentAttributes: currentAttrs,
+      restoredAttributes: restoredAttrs,
+      delta,
+    };
+  }
+
+  async restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<EntityRecord> {
+    const { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } = await import('../../../core/sandbox/store/sandbox-store');
+    const { activePersonaId } = useSandboxStore.getState();
+    const currentPersona = DEFAULT_SANDBOX_PERSONAS[activePersonaId];
+    const roles = currentPersona?.roles || [];
+    const isSovereign = roles.includes('ROLE_SYSTEM_CUSTODIAN') || roles.includes('ROLE_SOVEREIGN_ADMIN');
+
+    if (!isSovereign) {
+      const err = new Error('Access Denied: Sovereign Root Custodian authority required to restore entity record versions');
+      (err as any).status = 403;
+      throw err;
+    }
+
+    const preview = await this.previewRestoreRecord(entityTypeId, recordId, auditLogId);
+    const currentRecord = await this.getEntityRecord(entityTypeId, recordId);
+    if (!currentRecord) {
+      throw new Error(`Record #${recordId} not found`);
+    }
+
+    const strId = String(entityTypeId);
+    const list = this.records[strId] || [];
+    const index = list.findIndex((r) => String(r.id) === String(recordId));
+
+    const newVersion = (currentRecord.version || 1) + 1;
+    const restoredRecord: EntityRecord = {
+      ...currentRecord,
+      attributes: { ...preview.restoredAttributes },
+      version: newVersion,
+      updatedDate: new Date().toISOString(),
+    };
+
+    list[index] = restoredRecord;
+
+    const restoreAuditLog: RecordAuditLog = {
+      id: Date.now(),
+      tenantId: currentRecord.tenantId || 'tenant-acme',
+      entityTypeId: Number(entityTypeId),
+      recordId: Number(recordId),
+      version: newVersion,
+      operation: 'RESTORE',
+      oldAttributes: currentRecord.attributes,
+      newAttributes: preview.restoredAttributes,
+      delta: preview.delta,
+      changedBy: currentPersona?.name || 'Sovereign Root Custodian',
+      createdAt: new Date().toISOString(),
+    };
+    this.auditLogs.unshift(restoreAuditLog);
+
+    return restoredRecord;
   }
 
   // ==========================================

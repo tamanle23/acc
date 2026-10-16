@@ -22,6 +22,8 @@ import type {
   UpdateRelationshipTypeDto,
   ValidateRecordResponse,
   EntityFacetsResponse,
+  RecordAuditLog,
+  RestorePreviewResponse,
 } from './types';
 
 const BASE_URL = '/v1/metadata';
@@ -291,6 +293,38 @@ export class HttpMetadataService implements MetadataDataSource {
       {
         params: { action },
       }
+    );
+    return unwrapResponse(res.data);
+  }
+
+  async getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]> {
+    const res = await springApiClient.get(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/audit`
+    );
+    return unwrapResponse(res.data);
+  }
+
+  async previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse> {
+    const res = await springApiClient.get(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/restore-preview/${auditLogId}`
+    );
+    return unwrapResponse(res.data);
+  }
+
+  async restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<EntityRecord> {
+    const res = await springApiClient.post(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/restore/${auditLogId}`
     );
     return unwrapResponse(res.data);
   }

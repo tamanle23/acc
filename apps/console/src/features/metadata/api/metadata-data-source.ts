@@ -20,6 +20,8 @@ import type {
   UpdateRelationshipTypeDto,
   ValidateRecordResponse,
   EntityFacetsResponse,
+  RecordAuditLog,
+  RestorePreviewResponse,
 } from './types';
 
 export interface MetadataDataSource {
@@ -109,6 +111,20 @@ export interface MetadataDataSource {
     recordId: string | number,
     action: string,
     additionalAttributes?: Record<string, unknown>
+  ): Promise<EntityRecord>;
+  getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]>;
+  previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse>;
+  restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
   ): Promise<EntityRecord>;
 
   // 4. Relationship Types

@@ -223,6 +223,51 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       }
     }
 
+    // 9.2 Record Audit Logs (GET /entity-types/:typeId/records/:recordId/audit)
+    const auditMatch = subPath.match(/^\/entity-types\/([^/]+)\/records\/([^/]+)\/audit$/);
+    if (auditMatch && req.method === 'GET') {
+      const typeId = auditMatch[1];
+      const recordId = auditMatch[2];
+      try {
+        const logs = await mockMetadataStore.getRecordAuditLogs(typeId, recordId);
+        return { status: 200, data: logs };
+      } catch (err: any) {
+        return { status: err.status || 500, data: { message: err.message } };
+      }
+    }
+
+    // 9.3 Record Restore Preview (GET /entity-types/:typeId/records/:recordId/restore-preview/:auditLogId)
+    const restorePreviewMatch = subPath.match(
+      /^\/entity-types\/([^/]+)\/records\/([^/]+)\/restore-preview\/([^/]+)$/
+    );
+    if (restorePreviewMatch && req.method === 'GET') {
+      const typeId = restorePreviewMatch[1];
+      const recordId = restorePreviewMatch[2];
+      const auditLogId = restorePreviewMatch[3];
+      try {
+        const preview = await mockMetadataStore.previewRestoreRecord(typeId, recordId, auditLogId);
+        return { status: 200, data: preview };
+      } catch (err: any) {
+        return { status: err.status || 404, data: { message: err.message } };
+      }
+    }
+
+    // 9.4 Record Restore Execute (POST /entity-types/:typeId/records/:recordId/restore/:auditLogId)
+    const restoreExecMatch = subPath.match(
+      /^\/entity-types\/([^/]+)\/records\/([^/]+)\/restore\/([^/]+)$/
+    );
+    if (restoreExecMatch && req.method === 'POST') {
+      const typeId = restoreExecMatch[1];
+      const recordId = restoreExecMatch[2];
+      const auditLogId = restoreExecMatch[3];
+      try {
+        const restored = await mockMetadataStore.restoreRecordVersion(typeId, recordId, auditLogId);
+        return { status: 200, data: restored };
+      } catch (err: any) {
+        return { status: err.status || 400, data: { message: err.message } };
+      }
+    }
+
     // 10. Entity Record Detail (GET, PUT, PATCH, DELETE)
     const recordDetailMatch = subPath.match(/^\/entity-types\/([^/]+)\/records\/([^/]+)$/);
     if (recordDetailMatch) {

@@ -22,6 +22,8 @@ import type {
   UpdateRelationshipTypeDto,
   ValidateRecordResponse,
   EntityFacetsResponse,
+  RecordAuditLog,
+  RestorePreviewResponse,
 } from './types';
 
 // ==========================================
@@ -354,6 +356,58 @@ export const useTransitionEntityRecord = (entityTypeId: string | number) => {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'records', entityTypeId] });
       queryClient.invalidateQueries({
         queryKey: ['metadata', 'record', entityTypeId, variables.recordId],
+      });
+    },
+  });
+};
+
+export const useRecordAuditLogs = (
+  entityTypeId: string | number | null,
+  recordId: string | number | null
+) => {
+  return useQuery({
+    queryKey: ['metadata', 'record-audit', entityTypeId, recordId],
+    queryFn: (): Promise<RecordAuditLog[]> => {
+      if (!entityTypeId || !recordId) return Promise.resolve([]);
+      return metadataService.getRecordAuditLogs(entityTypeId, recordId);
+    },
+    enabled: Boolean(entityTypeId && recordId),
+  });
+};
+
+export const usePreviewRestoreRecord = (
+  entityTypeId: string | number | null,
+  recordId: string | number | null,
+  auditLogId: string | number | null
+) => {
+  return useQuery({
+    queryKey: ['metadata', 'restore-preview', entityTypeId, recordId, auditLogId],
+    queryFn: (): Promise<RestorePreviewResponse | null> => {
+      if (!entityTypeId || !recordId || !auditLogId) return Promise.resolve(null);
+      return metadataService.previewRestoreRecord(entityTypeId, recordId, auditLogId);
+    },
+    enabled: Boolean(entityTypeId && recordId && auditLogId),
+  });
+};
+
+export const useRestoreRecordVersion = (entityTypeId: string | number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      recordId,
+      auditLogId,
+    }: {
+      recordId: string | number;
+      auditLogId: string | number;
+    }): Promise<EntityRecord> =>
+      metadataService.restoreRecordVersion(entityTypeId, recordId, auditLogId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['metadata', 'records', entityTypeId] });
+      queryClient.invalidateQueries({
+        queryKey: ['metadata', 'record', entityTypeId, variables.recordId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['metadata', 'record-audit', entityTypeId, variables.recordId],
       });
     },
   });

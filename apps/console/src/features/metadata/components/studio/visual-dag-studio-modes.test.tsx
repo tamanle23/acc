@@ -59,6 +59,7 @@ vi.mock('@/features/workflows/hooks/use-workflow-execution-stream', () => ({
 vi.mock('@/features/workflows/api/workflow-api', () => ({
   useWorkflowDefinition: () => ({ data: null }),
   useSaveWorkflowDefinition: () => ({ mutate: vi.fn(), isPending: false }),
+  useWorkflowVersions: () => ({ data: [] }),
 }));
 
 describe('Visual DAG Studio 2.0 - Dual Modes & 23-Node Studio', () => {
