@@ -351,3 +351,31 @@ export interface RestorePreviewResponse {
   delta: Record<string, { old: unknown; new: unknown }>;
 }
 
+export interface ChildPaginationMetadata {
+  totalElements: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface CompositeRecordResponse {
+  id: string | number;
+  tenantId?: string;
+  entityTypeId: string | number;
+  isComposite: boolean;
+  schemaVersion: number;
+  attributes: Record<string, unknown>;
+  childPagination?: Record<string, ChildPaginationMetadata>;
+  engineUsed?: 'dynamic-sql-pushdown' | 'dataloader-fallback' | string;
+  createdDate?: string;
+  updatedDate?: string;
+}
+
+export interface CompositeRecordPageResponse {
+  content: CompositeRecordResponse[];
+  totalElements: number;
+  totalPages: number;
+  pageNumber: number;
+  pageSize: number;
+}
+

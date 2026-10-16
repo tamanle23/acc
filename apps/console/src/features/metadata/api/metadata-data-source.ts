@@ -22,7 +22,15 @@ import type {
   EntityFacetsResponse,
   RecordAuditLog,
   RestorePreviewResponse,
+  CompositeRecordResponse,
 } from './types';
+
+export interface ChildPaginationRequestMap {
+  [alias: string]: {
+    limit?: number;
+    offset?: number;
+  };
+}
 
 export interface MetadataDataSource {
   // 1. Entity Types
@@ -150,4 +158,16 @@ export interface MetadataDataSource {
     recordId: string | number,
     relationshipId: string | number
   ): Promise<boolean>;
+
+  // 6. Composite Records
+  getCompositeRecords(
+    entityTypeId: string | number,
+    params?: PageRequestParams,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<PageResponse<CompositeRecordResponse>>;
+  getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<CompositeRecordResponse | null>;
 }

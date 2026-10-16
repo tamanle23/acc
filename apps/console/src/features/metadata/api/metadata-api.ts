@@ -24,7 +24,9 @@ import type {
   EntityFacetsResponse,
   RecordAuditLog,
   RestorePreviewResponse,
+  CompositeRecordResponse,
 } from './types';
+import type { ChildPaginationRequestMap } from './metadata-data-source';
 
 // ==========================================
 // 1. Entity Types Hooks
@@ -508,5 +510,45 @@ export const useDeleteEntityRelationship = (recordId: string | number) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metadata', 'record-relationships', recordId] });
     },
+  });
+};
+
+// ==========================================
+// 6. Composite Records Hooks
+// ==========================================
+
+export const useCompositeRecords = (
+  entityTypeId: string | number | null,
+  params?: PageRequestParams,
+  childParams?: ChildPaginationRequestMap
+) => {
+  return useQuery({
+    queryKey: ['metadata', 'composite-records', entityTypeId, params, childParams],
+    queryFn: (): Promise<PageResponse<CompositeRecordResponse>> => {
+      if (!entityTypeId) {
+        return Promise.resolve({ content: [], totalElements: 0, totalPages: 0, number: 1, size: 10 });
+      }
+      return metadataService.getCompositeRecords(entityTypeId, params, childParams);
+    },
+    enabled: Boolean(entityTypeId),
+    staleTime: 15 * 1000,
+  });
+};
+
+export const useCompositeRecord = (
+  entityTypeId: string | number | null,
+  recordId: string | number | null,
+  childParams?: ChildPaginationRequestMap
+) => {
+  return useQuery({
+    queryKey: ['metadata', 'composite-record', entityTypeId, recordId, childParams],
+    queryFn: (): Promise<CompositeRecordResponse | null> => {
+      if (!entityTypeId || !recordId) {
+        return Promise.resolve(null);
+      }
+      return metadataService.getCompositeRecordById(entityTypeId, recordId, childParams);
+    },
+    enabled: Boolean(entityTypeId && recordId),
+    staleTime: 15 * 1000,
   });
 };

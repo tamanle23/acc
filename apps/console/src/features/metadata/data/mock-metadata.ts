@@ -1,4 +1,4 @@
-import type { MetadataDataSource } from '../api/metadata-data-source';
+import type { MetadataDataSource, ChildPaginationRequestMap } from '../api/metadata-data-source';
 import type {
   AttributeDefinition,
   CompiledSchema,
@@ -25,6 +25,8 @@ import type {
   ValidationErrorDetail,
   RecordAuditLog,
   RestorePreviewResponse,
+  CompositeRecordResponse,
+  ChildPaginationMetadata,
 } from '../api/types';
 
 import {
@@ -1747,6 +1749,160 @@ export class MockMetadataService implements MetadataDataSource {
     const beforeCount = this.relationships.length;
     this.relationships = this.relationships.filter((r) => String(r.id) !== strId);
     return this.relationships.length < beforeCount;
+  }
+
+  // ==========================================
+  // 6. Composite Records
+  // ==========================================
+  private resolveCompositeRecord(
+    spec: NonNullable<EntityType['compositeSpec']>,
+    rootRecord: EntityRecord,
+    childParams?: ChildPaginationRequestMap
+  ): CompositeRecordResponse {
+    const compositeDoc: Record<string, unknown> = {
+      id: rootRecord.id,
+      ...(rootRecord.attributes || {}),
+    };
+
+    if (spec.fields && spec.fields.length > 0) {
+      for (const field of spec.fields) {
+        const val = rootRecord.attributes?.[field.source_attribute];
+        compositeDoc[field.alias || field.source_attribute] =
+          val !== undefined ? val : (field.default_value ?? null);
+      }
+    }
+
+    const childPagination: Record<string, ChildPaginationMetadata> = {};
+
+    if (spec.children && spec.children.length > 0) {
+      for (const child of spec.children) {
+        const targetTypeId = String(child.target_entity_type_id);
+        const allTargetRecords = this.records[targetTypeId] || [];
+        let matchingChildRecords: EntityRecord[] = [];
+
+        if (child.join_pattern === 'PATTERN_B_FOREIGN_KEY' && child.foreign_key_attribute) {
+          matchingChildRecords = allTargetRecords.filter((tr) => {
+            const fkVal = tr.attributes?.[child.foreign_key_attribute!];
+            return String(fkVal) === String(rootRecord.id);
+          });
+        } else if (child.join_pattern === 'PATTERN_C_ASSOCIATION') {
+          const matchingRelTargetIds = this.relationships
+            .filter((rel) => {
+              const relMatch = child.relationship_type_id
+                ? String(rel.relationshipTypeId) === String(child.relationship_type_id)
+                : true;
+              return relMatch && String(rel.sourceRecordId) === String(rootRecord.id);
+            })
+            .map((rel) => String(rel.targetRecordId));
+          matchingChildRecords = allTargetRecords.filter((tr) =>
+            matchingRelTargetIds.includes(String(tr.id))
+          );
+        }
+
+        const aliasKey = child.alias || child.target_entity_system_name || 'child';
+        const param = childParams?.[aliasKey] || {};
+        const limit =
+          param.limit !== undefined && param.limit > 0 ? Math.min(param.limit, 100) : 50;
+        const offset = param.offset !== undefined && param.offset >= 0 ? param.offset : 0;
+        const totalElements = matchingChildRecords.length;
+        const hasMore = offset + limit < totalElements;
+
+        const sliced = matchingChildRecords.slice(offset, offset + limit).map((tr) => {
+          if (child.fields && child.fields.length > 0) {
+            const projected: Record<string, unknown> = { id: tr.id };
+            for (const f of child.fields) {
+              const val = tr.attributes?.[f.source_attribute];
+              projected[f.alias || f.source_attribute] =
+                val !== undefined ? val : (f.default_value ?? null);
+            }
+            return projected;
+          }
+          return { id: tr.id, ...(tr.attributes || {}) };
+        });
+
+        childPagination[aliasKey] = {
+          totalElements,
+          limit,
+          offset,
+          hasMore,
+        };
+
+        if (child.cardinality === 'ONE_TO_ONE') {
+          compositeDoc[aliasKey] = sliced.length > 0 ? sliced[0] : null;
+        } else {
+          compositeDoc[aliasKey] = sliced;
+        }
+      }
+    }
+
+    return {
+      id: rootRecord.id,
+      tenantId: rootRecord.tenantId,
+      entityTypeId: spec.root_entity_type_id,
+      isComposite: true,
+      schemaVersion: rootRecord.schemaVersion || 1,
+      attributes: compositeDoc,
+      childPagination,
+      engineUsed: 'dynamic-sql-pushdown',
+      createdDate: rootRecord.createdDate,
+      updatedDate: rootRecord.updatedDate,
+    };
+  }
+
+  async getCompositeRecords(
+    entityTypeId: string | number,
+    params?: PageRequestParams,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<PageResponse<CompositeRecordResponse>> {
+    const et = this.entityTypes.find((e) => String(e.id) === String(entityTypeId));
+    if (!et || !et.isComposite || !et.compositeSpec) {
+      throw new Error(`Entity type ${entityTypeId} is not a valid composite entity type.`);
+    }
+
+    const rootTypeId = String(et.compositeSpec.root_entity_type_id);
+    let rootRecords = [...(this.records[rootTypeId] || [])];
+
+    if (params?.tenantId) {
+      rootRecords = rootRecords.filter((r) => r.tenantId === params.tenantId);
+    }
+
+    const page = params?.number && params.number > 0 ? params.number : 1;
+    const size = params?.size && params.size > 0 ? params.size : 10;
+    const start = (page - 1) * size;
+    const end = start + size;
+    const pagedRoots = rootRecords.slice(start, end);
+
+    const content = pagedRoots.map((root) =>
+      this.resolveCompositeRecord(et.compositeSpec!, root, childParams)
+    );
+
+    return {
+      content,
+      totalElements: rootRecords.length,
+      totalPages: Math.ceil(rootRecords.length / size) || 1,
+      number: page,
+      size,
+    };
+  }
+
+  async getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<CompositeRecordResponse | null> {
+    const et = this.entityTypes.find((e) => String(e.id) === String(entityTypeId));
+    if (!et || !et.isComposite || !et.compositeSpec) {
+      return null;
+    }
+
+    const rootTypeId = String(et.compositeSpec.root_entity_type_id);
+    const rootRecords = this.records[rootTypeId] || [];
+    const root = rootRecords.find((r) => String(r.id) === String(recordId));
+    if (!root) {
+      return null;
+    }
+
+    return this.resolveCompositeRecord(et.compositeSpec, root, childParams);
   }
 
   private bumpEntityTypeSchemaVersion(entityTypeId: string) {

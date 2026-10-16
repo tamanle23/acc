@@ -412,6 +412,72 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       }
     }
 
+    // 17. Composite Entity Record Detail
+    const compositeRecordDetailMatch = subPath.match(/^\/composite-entities\/([^/]+)\/records\/([^/]+)$/);
+    if (compositeRecordDetailMatch) {
+      const typeId = compositeRecordDetailMatch[1];
+      const recordId = compositeRecordDetailMatch[2];
+      if (req.method === 'GET') {
+        const childParams: Record<string, { limit?: number; offset?: number }> = {};
+        for (const [key, val] of searchParams.entries()) {
+          const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+          if (limitMatch) {
+            const alias = limitMatch[1];
+            childParams[alias] = childParams[alias] || {};
+            childParams[alias].limit = parseInt(val, 10);
+          }
+          const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+          if (offsetMatch) {
+            const alias = offsetMatch[1];
+            childParams[alias] = childParams[alias] || {};
+            childParams[alias].offset = parseInt(val, 10);
+          }
+        }
+        const data = await mockMetadataStore.getCompositeRecordById(typeId, recordId, childParams);
+        if (!data) return { status: 404, data: { message: 'Composite record not found' } };
+        return {
+          status: 200,
+          headers: { 'X-Composite-Engine': 'dynamic-sql-pushdown' },
+          data,
+        };
+      }
+    }
+
+    // 18. Composite Entity Records Page
+    const compositeRecordsMatch = subPath.match(/^\/composite-entities\/([^/]+)\/records$/);
+    if (compositeRecordsMatch) {
+      const typeId = compositeRecordsMatch[1];
+      if (req.method === 'GET') {
+        const page = parseInt(searchParams.get('number') || '1', 10);
+        const size = parseInt(searchParams.get('size') || '10', 10);
+        const childParams: Record<string, { limit?: number; offset?: number }> = {};
+        for (const [key, val] of searchParams.entries()) {
+          const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+          if (limitMatch) {
+            const alias = limitMatch[1];
+            childParams[alias] = childParams[alias] || {};
+            childParams[alias].limit = parseInt(val, 10);
+          }
+          const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+          if (offsetMatch) {
+            const alias = offsetMatch[1];
+            childParams[alias] = childParams[alias] || {};
+            childParams[alias].offset = parseInt(val, 10);
+          }
+        }
+        const data = await mockMetadataStore.getCompositeRecords(
+          typeId,
+          { number: page, size, tenantId: activeTenantId },
+          childParams
+        );
+        return {
+          status: 200,
+          headers: { 'X-Composite-Engine': 'dynamic-sql-pushdown' },
+          data,
+        };
+      }
+    }
+
     // Fallback to generic not found for unregistered metadata paths
     return {
       status: 404,
