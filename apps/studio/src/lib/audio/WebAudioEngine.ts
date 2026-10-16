@@ -59,7 +59,7 @@ export class WebAudioEngine {
   }
 
   /**
-   * Builds audio mixer clips from Video IR state.
+   * Builds audio mixer clips from Video IR state and syncs dynamic ducking and panning modifiers.
    */
   public syncFromIR(irState: any, fps = 30): void {
     if (!irState || !irState.timeline) return;
@@ -72,6 +72,7 @@ export class WebAudioEngine {
       : [];
 
     const clips: AudioMixerClip[] = [];
+    let customDuckingFactor: number | null = null;
 
     for (const track of tracks as any[]) {
       if (track.type === 'audio') {
@@ -96,17 +97,47 @@ export class WebAudioEngine {
             clipType = 'sfx';
           }
 
+          let clipVolume = 0.8;
+          let clipPan = clipType === 'sfx' ? -0.3 : 0.0;
+
+          // Check for dynamic ducking modifier or audio settings attached to sequence
+          if (seq.modifiers) {
+            for (const mod of seq.modifiers) {
+              if (mod.type === 'sfx/dynamic_ducking' && mod.params) {
+                const p = mod.params as any;
+                if (typeof p.duckVolume === 'number') {
+                  customDuckingFactor = p.duckVolume;
+                }
+                if (typeof p.stereoPan === 'number') {
+                  clipPan = p.stereoPan;
+                }
+              }
+              if (mod.type === 'audio/volume' && mod.params) {
+                const p = mod.params as any;
+                if (typeof p.volume === 'number') {
+                  clipVolume = p.volume;
+                }
+              }
+            }
+          }
+
           clips.push({
             id: seq.id,
             type: clipType,
             startTimeSec: startSec,
             durationSec: durationSec,
-            volume: 0.8,
-            pan: clipType === 'sfx' ? -0.3 : 0.0,
+            volume: clipVolume,
+            pan: clipPan,
             assetId: seq.assetId,
           });
         }
       }
+    }
+
+    if (customDuckingFactor !== null) {
+      this.mixer.duckingFactor = customDuckingFactor;
+    } else {
+      this.mixer.duckingFactor = 0.25;
     }
 
     this.mixer.setClips(clips);

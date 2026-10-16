@@ -18,6 +18,8 @@ import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
 import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequenceCommand';
+import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
+import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
 import type { IRSequence } from '@acc/ir/client';
 
@@ -227,5 +229,21 @@ export class IRStateManager {
 
   public updateTextCue(sequenceId: string, cueIndex: number, newText: string): void {
     this.dispatch(new UpdateTextCueCommand(sequenceId, cueIndex, newText));
+  }
+
+  public duplicateSequence(sequenceId: string): void {
+    const cmd = new DuplicateSequenceCommand(sequenceId);
+    this.dispatch(cmd);
+    const dupId = cmd.getDuplicatedId();
+    if (dupId) {
+      this.setSelectedSequenceId(dupId);
+    }
+  }
+
+  public deleteSequence(sequenceId: string): void {
+    this.dispatch(new DeleteSequenceCommand(sequenceId));
+    if (this.state.selectedSequenceId === sequenceId) {
+      this.setSelectedSequenceId(null);
+    }
   }
 }

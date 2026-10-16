@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles } from 'lucide-react';
+import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -15,6 +15,10 @@ interface TitlebarProps {
   isExporting: boolean;
   onStartExport: () => void;
   onCancelExport: () => void;
+  isLeftOpen?: boolean;
+  onToggleLeft?: () => void;
+  isRightOpen?: boolean;
+  onToggleRight?: () => void;
 }
 
 export function Titlebar({
@@ -25,6 +29,10 @@ export function Titlebar({
   isExporting,
   onStartExport,
   onCancelExport,
+  isLeftOpen,
+  onToggleLeft,
+  isRightOpen,
+  onToggleRight,
 }: TitlebarProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const manager = IRStateManager.getInstance();
@@ -60,8 +68,20 @@ export function Titlebar({
   };
 
   return (
-    <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-xs select-none">
+    <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between shadow-xs select-none">
       <div className="flex items-center gap-3">
+        {onToggleLeft && (
+          <Tooltip content={isLeftOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleLeft}
+              className={`h-8 w-8 text-slate-600 ${isLeftOpen ? 'bg-indigo-50 text-indigo-600' : ''}`}
+            >
+              <PanelLeft className="w-4 h-4" />
+            </Button>
+          </Tooltip>
+        )}
         <div className="h-8 w-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
           IR
         </div>
@@ -188,6 +208,22 @@ export function Titlebar({
             )}
           </div>
         </Tooltip>
+
+        {onToggleRight && (
+          <>
+            <Separator orientation="vertical" className="h-4 mx-1" />
+            <Tooltip content={isRightOpen ? 'Collapse Inspector (])' : 'Expand Inspector (])'}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleRight}
+                className={`h-8 w-8 text-slate-600 ${isRightOpen ? 'bg-indigo-50 text-indigo-600' : ''}`}
+              >
+                <PanelRight className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+          </>
+        )}
       </div>
     </header>
   );

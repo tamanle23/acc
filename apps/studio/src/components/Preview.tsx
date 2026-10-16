@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import * as THREE from 'three';
+import { useDroppable } from '@dnd-kit/core';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -7,11 +9,13 @@ import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import {
+  UniversalThreeScene,
   CanvasTransformOverlay,
   MagneticSnapEngine,
   type BoundingBox2D,
   type SnappingGuide,
   type TransformHandleType,
+  type PartialVFXRegion,
 } from '@acc/effect-engines/client';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 
@@ -34,11 +38,15 @@ interface TransformState {
 export function Preview({ playhead }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const glRef = useRef<WebGL2RenderingContext | null>(null);
-  const programRef = useRef<WebGLProgram | null>(null);
-  const textureRef = useRef<WebGLTexture | null>(null);
+  const scene3dRef = useRef<UniversalThreeScene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+  // dnd-kit drop target
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: 'canvas-viewport-drop-zone',
+  });
 
   // In-Canvas 2D Vector Transform & Magnetic Snapping State
   const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
@@ -84,7 +92,7 @@ export function Preview({ playhead }: PreviewProps) {
     }
   }, [selectedSeqId, irState]);
 
-  // Initialize WebGL 2.0 Shader Pipeline with Texture Sampling & 3D Depth
+  // Initialize UniversalThreeScene & WebGLRenderer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -92,214 +100,107 @@ export function Preview({ playhead }: PreviewProps) {
     canvas.width = width;
     canvas.height = height;
 
-    const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true });
-    if (!gl) {
-      console.warn('[Preview] WebGL2 not supported');
-      return;
+    const scene3d = new UniversalThreeScene({
+      width,
+      height,
+      fov: 45,
+    });
+    scene3d.initDepthMesh(64, 64, 8, 4.5);
+    scene3d.initHologramHUD(6, 3.5);
+    scene3d.initParticleSystem(250);
+    scene3dRef.current = scene3d;
+
+    let renderer: THREE.WebGLRenderer | null = null;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true,
+        preserveDrawingBuffer: true,
+      });
+      renderer.setSize(width, height, false);
+      renderer.setPixelRatio(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
+      rendererRef.current = renderer;
+    } catch (e) {
+      console.warn('[Preview] WebGLRenderer init failed, falling back:', e);
     }
-    glRef.current = gl;
-
-    // Vertex Shader: Fullscreen quad with UV flipping
-    const vsSource = `#version 300 es
-      in vec2 a_position;
-      out vec2 v_texCoord;
-      void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
-        v_texCoord = (a_position + 1.0) * 0.5;
-        v_texCoord.y = 1.0 - v_texCoord.y;
-      }
-    `;
-
-    // Fragment Shader: Hardware Color Grading, Texture Sampling, 3D Parallax & Vignette
-    const fsSource = `#version 300 es
-      precision highp float;
-      in vec2 v_texCoord;
-      out vec4 fragColor;
-
-      uniform float u_time;
-      uniform float u_contrast;
-      uniform float u_saturation;
-      uniform float u_exposure;
-      uniform float u_vignette;
-      uniform vec2 u_parallax;
-      uniform float u_popout;
-      uniform sampler2D u_image;
-      uniform float u_hasTexture;
-
-      void main() {
-        vec2 uv = v_texCoord;
-        uv += u_parallax * 0.001;
-
-        vec4 texColor = vec4(0.0);
-        if (u_hasTexture > 0.5) {
-          texColor = texture(u_image, uv);
-        }
-
-        // Procedural Cyberpunk backdrop fallback
-        vec3 backdrop = mix(vec3(0.04, 0.06, 0.12), vec3(0.14, 0.08, 0.24), uv.y + sin(uv.x * 3.1415 + u_time * 0.2) * 0.15);
-        vec2 grid = abs(fract(uv * vec2(20.0, 12.0) - 0.5) - 0.5) / fwidth(uv * vec2(20.0, 12.0));
-        float line = min(grid.x, grid.y);
-        float gridAlpha = 1.0 - min(line, 1.0);
-        backdrop = mix(backdrop, vec3(0.12, 0.45, 0.65), gridAlpha * 0.3);
-
-        vec3 color = u_hasTexture > 0.5 ? mix(backdrop, texColor.rgb, texColor.a) : backdrop;
-
-        // 3D Depth Holographic Subject representation
-        vec2 centerDist = uv - vec2(0.5);
-        float subjectMask = 1.0 - smoothstep(0.15 * u_popout, 0.35 * u_popout, length(centerDist));
-        if (subjectMask > 0.0) {
-          vec3 subjectColor = vec3(0.2, 0.85, 0.95);
-          float scanline = sin(uv.y * 300.0 + u_time * 15.0) * 0.1;
-          color = mix(color, subjectColor + scanline, subjectMask * 0.35);
-        }
-
-        // Color Grading: Exposure, Contrast, Saturation
-        color += vec3(u_exposure);
-        color = (color - 0.5) * u_contrast + 0.5;
-        float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-        color = mix(vec3(luma), color, u_saturation);
-
-        // Vignette
-        if (u_vignette > 0.0) {
-          float dist = distance(uv, vec2(0.5, 0.5));
-          float vig = smoothstep(0.85, 0.85 - u_vignette * 0.5, dist);
-          color *= vig;
-        }
-
-        fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
-      }
-    `;
-
-    const compileShader = (type: number, src: string) => {
-      const shader = gl.createShader(type);
-      if (!shader) return null;
-      gl.shaderSource(shader, src);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        return null;
-      }
-      return shader;
-    };
-
-    const vs = compileShader(gl.VERTEX_SHADER, vsSource);
-    const fs = compileShader(gl.FRAGMENT_SHADER, fsSource);
-    if (!vs || !fs) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('Program link error:', gl.getProgramInfoLog(program));
-      return;
-    }
-
-    programRef.current = program;
-
-    const quadVertices = new Float32Array([
-      -1, -1,
-       1, -1,
-      -1,  1,
-      -1,  1,
-       1, -1,
-       1,  1,
-    ]);
-
-    const vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
-
-    const posLoc = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(posLoc);
-    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-    // Create texture slot
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    textureRef.current = texture;
 
     setGlReady(true);
+
+    return () => {
+      scene3d.dispose();
+      renderer?.dispose();
+    };
   }, [width, height]);
 
-  // Event-Driven Render Execution: Binds active layer texture & recalculates uniforms
+  // Event-Driven Render Execution: Binds active layer texture & updates UniversalThreeScene
   useEffect(() => {
-    const gl = glRef.current;
-    const program = programRef.current;
-    if (!gl || !program) return;
+    const scene3d = scene3dRef.current;
+    const renderer = rendererRef.current;
+    if (!scene3d || !renderer) return;
 
     // 1. Query active sequences
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
-    let contrast = 1.0;
-    let saturation = 1.0;
-    let exposure = 0.0;
-    let vignette = 0.35;
     let popOutIntensity = 1.0;
-    let activeAssetId: string | null = null;
+    const vfxRegions: PartialVFXRegion[] = [];
 
     for (const seq of activeSeqs) {
-      if (seq.assetId && !activeAssetId) {
-        activeAssetId = seq.assetId;
-      }
       if (seq.modifiers) {
         for (const mod of seq.modifiers) {
-          if (mod.type === 'vfx/color_grading') {
-            const p = mod.params as any;
-            if (typeof p.contrast === 'number') contrast = p.contrast;
-            if (typeof p.saturation === 'number') saturation = p.saturation;
-            if (typeof p.exposure === 'number') exposure = p.exposure;
-          }
           if (mod.type === 'vfx/depth3d') {
             const p = mod.params as any;
             if (typeof p.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
           }
-          if (mod.type === 'overlay/canvas_particles') {
-            vignette = 0.55;
+          if (mod.type === 'vfx/partial') {
+            const p = (mod.params || {}) as any;
+            const trans = seq.modifiers?.find((m) => m.type === 'transform');
+            const tp = (trans?.params || {}) as any;
+            vfxRegions.push({
+              id: seq.id,
+              type: p.vfxType || 'spotlight',
+              x: tp.normX ?? 0.5,
+              y: tp.normY ?? 0.5,
+              width: p.widthNorm ?? 0.35,
+              height: p.heightNorm ?? 0.25,
+              radius: p.radius ?? 160,
+              color: p.color ?? '#00d4ff',
+              intensity: p.intensity ?? 1.5,
+            });
           }
         }
       }
     }
 
-    // Bind texture from AssetTextureCache
-    let hasTexture = 0.0;
-    if (activeAssetId && textureRef.current) {
-      const texCanvas = AssetTextureCache.getInstance().getTextureCanvas(activeAssetId, 640, 360);
-      gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texCanvas);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.uniform1i(gl.getUniformLocation(program, 'u_image'), 0);
-      hasTexture = 1.0;
+    scene3d.setPartialVFXRegions(vfxRegions);
+
+    const timeSec = currentFrame / fps;
+    scene3d.update(timeSec, popOutIntensity);
+
+    // 2. Synchronize in-canvas transform overlay
+    if (selectedSeqId) {
+      const baseW = 0.5;
+      const baseH = 0.5;
+      const normBox: BoundingBox2D = {
+        x: 0.5 + transform.x / width,
+        y: 0.5 + transform.y / height,
+        width: baseW * transform.scale,
+        height: baseH * transform.scale,
+        rotation: transform.rotation,
+      };
+      scene3d.setOverlayVisible(true);
+      scene3d.updateOverlay(normBox, activeGuides);
+    } else {
+      scene3d.setOverlayVisible(false);
+      scene3d.updateOverlay(null, []);
     }
 
-    const parallax = DepthMathEngine.computeParallax(
-      currentFrame,
-      fps,
-      popOutIntensity,
-      mousePos.x,
-      mousePos.y
-    );
-
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    gl.useProgram(program);
-
-    gl.uniform1f(gl.getUniformLocation(program, 'u_time'), currentFrame / fps);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_contrast'), contrast);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_saturation'), saturation);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_exposure'), exposure);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_vignette'), vignette);
-    gl.uniform2f(gl.getUniformLocation(program, 'u_parallax'), parallax.offsetX, parallax.offsetY);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_popout'), popOutIntensity);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_hasTexture'), hasTexture);
-
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-  }, [currentFrame, fps, irState, glReady, mousePos]);
+    // 3. Render 3D Scenegraph & Ortho vector overlay
+    renderer.clear();
+    renderer.render(scene3d.scene, scene3d.camera);
+    renderer.autoClear = false;
+    renderer.render(scene3d.scene, scene3d.orthoCamera);
+    renderer.autoClear = true;
+  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height]);
 
   // Direct in-canvas handle interaction handlers
   const handleHandleMouseDown = (handleType: TransformHandleType, e: React.MouseEvent) => {
@@ -445,13 +346,18 @@ export function Preview({ playhead }: PreviewProps) {
 
   return (
     <Card
-      ref={containerRef}
+      ref={(node) => {
+        containerRef.current = node;
+        setDroppableRef(node);
+      }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden border-slate-800 bg-slate-950/90 shadow-2xl select-none"
+      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden bg-slate-950/90 shadow-2xl select-none transition-colors ${
+        isOver ? 'border-2 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.3)]' : 'border-slate-800'
+      }`}
     >
       {/* Top Monitor Status Bar */}
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -468,7 +374,7 @@ export function Preview({ playhead }: PreviewProps) {
             className="bg-slate-900/85 backdrop-blur-xs text-emerald-400 border-slate-700/60 font-mono text-[10px] flex items-center gap-1"
           >
             <Sparkles className="w-2.5 h-2.5" />
-            WebGL 2.0 Textures Active
+            Universal Three.js Scenegraph
           </Badge>
           <Badge
             variant="outline"
@@ -504,17 +410,19 @@ export function Preview({ playhead }: PreviewProps) {
         />
 
         {/* Drag-and-Drop Staging Target Indicator */}
-        {isDragOver && dragCoords && (
+        {(isOver || (isDragOver && dragCoords)) && (
           <div
             style={{
-              left: `${dragCoords.normX * 100}%`,
-              top: `${dragCoords.normY * 100}%`,
+              left: dragCoords ? `${dragCoords.normX * 100}%` : '50%',
+              top: dragCoords ? `${dragCoords.normY * 100}%` : '50%',
             }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-cyan-500/20 rounded-md p-4 flex flex-col items-center justify-center pointer-events-none z-30 shadow-[0_0_15px_#06b6d4]"
+            className="absolute -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-cyan-500/20 rounded-md p-4 flex flex-col items-center justify-center pointer-events-none z-30 shadow-[0_0_15px_#06b6d4] backdrop-blur-xs animate-pulse"
           >
             <Sparkles className="w-5 h-5 text-cyan-300 animate-spin" />
             <span className="text-[10px] font-mono font-bold text-cyan-200 mt-1 whitespace-nowrap">
-              Drop to stage ({Math.round(dragCoords.normX * 100)}%, {Math.round(dragCoords.normY * 100)}%)
+              {dragCoords
+                ? `Drop to stage (${Math.round(dragCoords.normX * 100)}%, ${Math.round(dragCoords.normY * 100)}%)`
+                : 'Drop into Canvas Viewport'}
             </span>
           </div>
         )}
