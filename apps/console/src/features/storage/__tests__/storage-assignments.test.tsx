@@ -1,4 +1,3 @@
-import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { StorageAssignmentsDialog } from '../storage-assignments-dialog'
@@ -15,6 +14,8 @@ vi.mock('react-i18next', () => ({
 const mockProvider: StorageProvider = {
   id: 'storage-s3-prod',
   name: 'Amazon S3 Standard Bucket',
+  logo: <span data-testid="mock-logo" />,
+  status: 'enabled',
   descKey: 'storage.s3.desc',
   defaultDesc: 'S3 bucket for primary data storage',
   storageMode: 'Archive',
