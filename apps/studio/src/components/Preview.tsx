@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
 import {
   Monitor,
@@ -15,10 +13,12 @@ import {
   Pause,
   SkipBack,
   SkipForward,
+  Layers,
 } from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
+import { useTheme } from '../lib/theme/ThemeProvider';
 import {
   UniversalCanvasEngine,
   CanvasTransformOverlay,
@@ -55,6 +55,7 @@ export function Preview({
   onTogglePlay,
   onScrub,
 }: PreviewProps) {
+  const { preferences } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<UniversalCanvasEngine | null>(null);
@@ -354,7 +355,7 @@ export function Preview({
   );
 
   return (
-    <Card
+    <div
       ref={(node) => {
         containerRef.current = node;
         setDroppableRef(node);
@@ -364,61 +365,63 @@ export function Preview({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden bg-slate-950/90 shadow-2xl select-none transition-colors ${
-        isOver ? 'border-2 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.3)]' : 'border-slate-800'
+      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl glass-panel shadow-2xl select-none transition-all duration-300 ${
+        isOver
+          ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
+          : 'hover:border-[var(--glass-border-highlight)]'
       }`}
     >
+      {/* Ambient Fluid Background Refraction Mesh */}
+      <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh" />
+
       {/* Top Monitor Status Bar */}
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
         <div className="flex items-center gap-2">
-          <Badge
-            variant="secondary"
-            className="glass-card text-slate-300 font-mono gap-1 text-[10px]"
-          >
-            <Monitor className="w-3 h-3 text-cyan-400" />
-            {width}x{height} (16:9)
-          </Badge>
-          <Badge
-            variant="outline"
-            className="glass-card text-emerald-400 font-mono text-[10px] flex items-center gap-1"
-          >
-            <Sparkles className="w-2.5 h-2.5" />
+          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-[var(--glass-border)]">
+            <Monitor className="w-3 h-3 text-[var(--accent-primary)]" />
+            {width}×{height}
+          </div>
+
+          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-[var(--glass-border)]">
+            <Sparkles className="w-2.5 h-2.5 text-[var(--accent-primary)] animate-pulse" />
             GSAP Timeline Engine
-          </Badge>
-          <Badge
-            variant="outline"
-            className={`glass-card font-mono text-[10px] flex items-center gap-1.5 ${
-              isPlaying ? 'text-emerald-400 border-emerald-500/50' : 'text-slate-400'
+          </div>
+
+          <div
+            className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors ${
+              isPlaying
+                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                : 'border-[var(--glass-border)] text-muted-foreground'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                isPlaying ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+                isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
               }`}
             />
             {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
-          </Badge>
+          </div>
 
           {onTogglePlay && (
             <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
               <button
                 type="button"
                 onClick={onTogglePlay}
-                className={`glass-card px-2 py-0.5 rounded text-[10px] font-mono flex items-center gap-1 cursor-pointer pointer-events-auto transition-transform active:scale-95 border ${
+                className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${
                   isPlaying
-                    ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/30 hover:bg-emerald-950/50'
-                    : 'border-white/10 text-slate-300 hover:bg-white/10'
+                    ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                    : 'border-[var(--glass-border)] text-foreground/80 hover:text-foreground'
                 }`}
               >
                 {isPlaying ? (
                   <>
                     <Pause className="w-2.5 h-2.5 fill-current" />
-                    <span className="font-bold">PAUSE</span>
+                    <span className="font-bold tracking-wider">PAUSE</span>
                   </>
                 ) : (
                   <>
                     <Play className="w-2.5 h-2.5 fill-current" />
-                    <span className="font-bold">PLAY</span>
+                    <span className="font-bold tracking-wider">PLAY</span>
                   </>
                 )}
               </button>
@@ -426,56 +429,60 @@ export function Preview({
           )}
         </div>
 
-        {selectedSeqId && (
-          <Badge
-            variant="secondary"
-            className="bg-indigo-950/80 text-indigo-300 border-indigo-700/60 font-mono text-[10px] flex items-center gap-1.5"
-          >
-            <Move className="w-3 h-3 text-indigo-400" />
-            X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x | R: {transform.rotation}°
-            {activeGuides.length > 0 && (
-              <span className="text-cyan-400 font-semibold ml-1">
-                [Snap: {activeGuides.map((g) => g.label).join(', ')}]
-              </span>
-            )}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {selectedSeqId && (
+            <div className="glass-card px-3 py-1 rounded-full text-foreground/90 border border-[var(--accent-primary)]/40 font-mono text-[10px] flex items-center gap-1.5 shadow-xs backdrop-blur-md">
+              <Move className="w-3 h-3 text-[var(--accent-primary)]" />
+              X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x | R: {transform.rotation}°
+              {activeGuides.length > 0 && (
+                <span className="text-[var(--accent-primary)] font-semibold ml-1">
+                  [Snap: {activeGuides.map((g) => g.label).join(', ')}]
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground font-mono text-[10px] flex items-center gap-1 border border-[var(--glass-border)]">
+            <Layers className="w-3 h-3 text-[var(--accent-primary)]" />
+            16:9 Canvas
+          </div>
+        </div>
       </div>
 
       {/* Main Video Viewport Canvas with Mouse Interactive Parallax & Staging Drop Target */}
       <div className="relative flex items-center justify-center">
         <canvas
           ref={canvasRef}
-          className="max-h-[70vh] max-w-[80vw] object-contain rounded-lg shadow-inner cursor-crosshair"
+          className="max-h-[70vh] max-w-[80vw] object-contain rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-[var(--glass-border)] cursor-crosshair transition-all"
           style={{ aspectRatio: '16/9' }}
         />
 
         {/* Floating Viewport Quick Transport Bar */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 glass-panel px-3 py-1.5 rounded-full shadow-2xl pointer-events-auto border border-white/10 backdrop-blur-xl">
-          <Tooltip content="Step Back 1 Frame">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02]">
+          <Tooltip content="Rewind to Start (Home)">
             <button
               type="button"
-              onClick={() => onScrub?.(Math.max(0, currentFrame - 1))}
-              className="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 transition-colors cursor-pointer"
+              onClick={() => onScrub?.(0)}
+              className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
-          <Tooltip content={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
+          <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
             <button
               type="button"
               onClick={onTogglePlay}
-              className={`p-2 rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer ${
+              className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${
                 isPlaying
-                  ? 'bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-amber-500/30'
-                  : 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 shadow-cyan-500/30'
+                  ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                  : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
               }`}
             >
               {isPlaying ? (
-                <Pause className="w-3.5 h-3.5 fill-current" />
+                <Pause className="w-4 h-4 fill-current" />
               ) : (
-                <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                <Play className="w-4 h-4 fill-current ml-0.5" />
               )}
             </button>
           </Tooltip>
@@ -484,17 +491,23 @@ export function Preview({
             <button
               type="button"
               onClick={() => onScrub?.(Math.min(totalFrames, currentFrame + 1))}
-              className="p-1 text-slate-300 hover:text-white rounded hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
-          <div className="h-3 w-px bg-white/20 mx-0.5" />
+          <div className="h-4 w-px bg-[var(--glass-border-highlight)] mx-1" />
 
-          <span className="text-[10px] font-mono text-slate-300 px-1 select-none">
-            {(currentFrame / fps).toFixed(2)}s
-          </span>
+          {/* Timecode Readout Pill */}
+          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full glass-card border border-[var(--glass-border)] text-foreground/90 font-mono text-[11px] select-none tracking-tight">
+            <span className="font-semibold text-[var(--accent-primary)]">
+              {(currentFrame / fps).toFixed(2)}s
+            </span>
+            <span className="text-muted-foreground text-[10px]">
+              / {(totalFrames / fps).toFixed(2)}s
+            </span>
+          </div>
         </div>
 
         {/* Drag-and-Drop Staging Target Indicator */}
@@ -504,10 +517,10 @@ export function Preview({
               left: dragCoords ? `${dragCoords.normX * 100}%` : '50%',
               top: dragCoords ? `${dragCoords.normY * 100}%` : '50%',
             }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-cyan-400 bg-cyan-500/20 rounded-md p-4 flex flex-col items-center justify-center pointer-events-none z-30 shadow-[0_0_15px_#06b6d4] backdrop-blur-xs animate-pulse"
+            className="absolute -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-[var(--accent-primary)] bg-[var(--accent-glow)]/20 rounded-2xl p-5 flex flex-col items-center justify-center pointer-events-none z-30 shadow-[0_0_25px_var(--accent-glow)] backdrop-blur-md animate-pulse"
           >
-            <Sparkles className="w-5 h-5 text-cyan-300 animate-spin" />
-            <span className="text-[10px] font-mono font-bold text-cyan-200 mt-1 whitespace-nowrap">
+            <Sparkles className="w-6 h-6 text-[var(--accent-primary)] animate-spin" />
+            <span className="text-[11px] font-mono font-bold text-foreground mt-2 whitespace-nowrap drop-shadow-sm">
               {dragCoords
                 ? `Drop to stage (${Math.round(dragCoords.normX * 100)}%, ${Math.round(dragCoords.normY * 100)}%)`
                 : 'Drop into Canvas Viewport'}
@@ -724,66 +737,66 @@ export function Preview({
               width: '50%',
               height: '50%',
             }}
-            className="absolute border-2 border-indigo-400 bg-indigo-500/10 cursor-move rounded-xs flex items-center justify-center group shadow-lg pointer-events-auto z-10"
+            className="absolute border-2 border-[var(--accent-primary)] bg-[var(--accent-glow)]/10 cursor-move rounded-md flex items-center justify-center group shadow-[0_0_20px_var(--accent-glow)] pointer-events-auto z-10 backdrop-blur-[2px]"
           >
             {/* 4 Corner Scale Handles */}
             <div
               onMouseDown={(e) => handleHandleMouseDown('tl', e)}
-              className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nwse-resize hover:scale-125 transition-transform"
+              className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-nwse-resize hover:scale-130 active:scale-110 transition-transform"
               title="Scale Top-Left"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('tr', e)}
-              className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nesw-resize hover:scale-125 transition-transform"
+              className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-nesw-resize hover:scale-130 active:scale-110 transition-transform"
               title="Scale Top-Right"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('bl', e)}
-              className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nesw-resize hover:scale-125 transition-transform"
+              className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-nesw-resize hover:scale-130 active:scale-110 transition-transform"
               title="Scale Bottom-Left"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('br', e)}
-              className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border border-indigo-600 rounded-xs shadow-xs cursor-nwse-resize hover:scale-125 transition-transform"
+              className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-nwse-resize hover:scale-130 active:scale-110 transition-transform"
               title="Scale Bottom-Right"
             />
 
             {/* 4 Edge Stretch Handles */}
             <div
               onMouseDown={(e) => handleHandleMouseDown('tc', e)}
-              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ns-resize hover:scale-125 transition-transform"
+              className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-ns-resize hover:scale-130 active:scale-110 transition-transform"
               title="Stretch Top"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('bc', e)}
-              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-2 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ns-resize hover:scale-125 transition-transform"
+              className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-ns-resize hover:scale-130 active:scale-110 transition-transform"
               title="Stretch Bottom"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('ml', e)}
-              className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-3 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ew-resize hover:scale-125 transition-transform"
+              className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-ew-resize hover:scale-130 active:scale-110 transition-transform"
               title="Stretch Left"
             />
             <div
               onMouseDown={(e) => handleHandleMouseDown('mr', e)}
-              className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-3 bg-indigo-200 border border-indigo-600 rounded-xs shadow-xs cursor-ew-resize hover:scale-125 transition-transform"
+              className="absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 border-[var(--accent-primary)] rounded-xs shadow-md cursor-ew-resize hover:scale-130 active:scale-110 transition-transform"
               title="Stretch Right"
             />
 
             {/* Rotation Stem & Knob Handle */}
-            <div className="absolute -top-7 flex flex-col items-center">
+            <div className="absolute -top-8 flex flex-col items-center">
               <div
                 onMouseDown={(e) => handleHandleMouseDown('rotate', e)}
-                className="w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-indigo-500 shadow-md transition-transform hover:scale-110"
+                className="w-5 h-5 bg-[var(--accent-primary)] text-slate-950 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing hover:brightness-110 shadow-[0_0_12px_var(--accent-glow)] transition-transform hover:scale-115"
                 title="Drag to Rotate"
               >
-                <RotateCw className="w-2.5 h-2.5" />
+                <RotateCw className="w-2.5 h-2.5 stroke-[2.5]" />
               </div>
-              <div className="w-0.5 h-3 bg-indigo-400" />
+              <div className="w-0.5 h-3 bg-[var(--accent-primary)] shadow-[0_0_6px_var(--accent-glow)]" />
             </div>
 
             {/* Sequence identifier pill */}
-            <span className="text-[10px] font-mono bg-indigo-900/90 text-indigo-200 px-2 py-0.5 rounded shadow-xs select-none">
+            <span className="glass-card text-[10px] font-mono text-foreground/90 px-2.5 py-0.5 rounded-full shadow-md select-none border border-[var(--glass-border)]">
               {selectedSeqId}
             </span>
           </div>
@@ -792,7 +805,7 @@ export function Preview({
 
       {/* Dynamic Subtitles & HUD Callout Overlay with Double-Click Inline Editing */}
       {activeCues.length > 0 && (
-        <div className="absolute bottom-16 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
+        <div className="absolute bottom-20 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
           {activeCues.map((cue, idx) => {
             const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
             return (
@@ -806,10 +819,10 @@ export function Preview({
                     setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
                   }
                 }}
-                className={`backdrop-blur-xs px-4 py-1.5 rounded-md border shadow-lg text-center cursor-pointer hover:border-indigo-400 transition-colors ${
+                className={`glass-panel px-5 py-2 rounded-xl border shadow-xl text-center cursor-pointer transition-all hover:scale-105 ${
                   isTarget
-                    ? 'bg-rose-950/80 border-rose-500/40 text-rose-300 font-mono text-xs tracking-wider'
-                    : 'bg-black/80 border-white/10 text-white font-medium text-base'
+                    ? 'border-rose-500/60 bg-rose-950/40 text-rose-300 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.25)]'
+                    : 'border-[var(--glass-border-highlight)] text-foreground font-medium text-base shadow-[0_8px_24px_rgba(0,0,0,0.2)]'
                 }`}
                 title="Double click to edit text"
               >
@@ -822,14 +835,14 @@ export function Preview({
 
       {/* Floating Inline Canvas Text Editor Modal */}
       {editingCue && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-xs pointer-events-auto">
-          <div className="bg-slate-900 border border-indigo-500 rounded-lg p-4 shadow-2xl flex flex-col gap-3 max-w-md w-full mx-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between text-xs text-indigo-300 font-mono">
-              <span className="flex items-center gap-1.5 font-bold">
-                <Type className="w-3.5 h-3.5 text-indigo-400" />
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-md pointer-events-auto">
+          <div className="glass-panel border-t-[var(--glass-border-highlight)] rounded-2xl p-5 shadow-2xl flex flex-col gap-3.5 max-w-md w-full mx-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="flex items-center gap-1.5 font-bold text-[var(--accent-primary)]">
+                <Type className="w-4 h-4 text-[var(--accent-primary)]" />
                 Inline Canvas Text Editor
               </span>
-              <span className="text-[10px] text-slate-400">[Enter to commit, Esc to cancel]</span>
+              <span className="text-[10px] text-muted-foreground">[Enter to commit, Esc to cancel]</span>
             </div>
             <input
               type="text"
@@ -848,11 +861,11 @@ export function Preview({
                 IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);
                 setEditingCue(null);
               }}
-              className="bg-black/80 border border-indigo-400/80 rounded px-3 py-2 text-white font-mono text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-400 shadow-inner"
+              className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl px-3.5 py-2.5 text-foreground font-mono text-sm focus:outline-hidden focus:border-[var(--accent-primary)] focus:shadow-[0_0_15px_var(--accent-glow)] transition-all shadow-inner"
             />
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

@@ -175,4 +175,27 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(mockElement.getAttribute('data-accent')).toBe('violet');
     });
   });
+
+  describe('Preview Component Liquid Glass Consistency', () => {
+    it('should style Preview viewport with glass-panel, liquid-ambient-mesh, and no hardcoded opaque card', () => {
+      const previewPath = path.resolve(__dirname, '../apps/studio/src/components/Preview.tsx');
+      expect(fs.existsSync(previewPath)).toBe(true);
+
+      const previewCode = fs.readFileSync(previewPath, 'utf8');
+
+      // Root viewport container must use glass-panel and ambient mesh
+      expect(previewCode).toContain('glass-panel');
+      expect(previewCode).toContain('liquid-ambient-mesh');
+      expect(previewCode).not.toContain('bg-slate-950/90');
+      expect(previewCode).not.toContain('border-slate-800');
+
+      // Uses dynamic CSS variables for accent highlights
+      expect(previewCode).toContain('var(--accent-primary)');
+      expect(previewCode).toContain('var(--accent-glow)');
+      expect(previewCode).toContain('var(--glass-border)');
+
+      // Floating quick transport bar uses glass-panel
+      expect(previewCode).toContain('glass-panel px-4 py-2 rounded-full');
+    });
+  });
 });
