@@ -22,7 +22,9 @@ public final class MetadataDtoMapper {
                 entityType.getVersion(),
                 entityType.getCreatedDate(),
                 entityType.getLastUpdatedDate(),
-                entityType.getLifecycleConfig()
+                entityType.getLifecycleConfig(),
+                Boolean.TRUE.equals(entityType.getIsComposite()),
+                entityType.getCompositeSpec()
         );
     }
 
@@ -33,6 +35,8 @@ public final class MetadataDtoMapper {
         entityType.setSystemName(request.systemName().trim());
         entityType.setDescription(request.description() != null ? request.description().trim() : null);
         entityType.setSchemaVersion(1L);
+        entityType.setIsComposite(Boolean.TRUE.equals(request.isComposite()));
+        entityType.setCompositeSpec(request.compositeSpec());
         return entityType;
     }
 

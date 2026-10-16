@@ -42,8 +42,36 @@ public class MetadataService {
     private final ApplicationEventPublisher eventPublisher;
     private final PageBuilder pageBuilder;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final CompositeSpecCompiler compositeSpecCompiler;
+    private final DynamicIndexProvisioner dynamicIndexProvisioner;
     private com.unipost.outbox.OutboxEventPublisher outboxEventPublisher;
     private com.unipost.service.workflow.EntityLifecycleService entityLifecycleService;
+
+    public MetadataService(
+            EntityTypeRepository entityTypeRepository,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            EntityRecordRepository entityRecordRepository,
+            RelationshipTypeRepository relationshipTypeRepository,
+            EntityRelationshipRepository entityRelationshipRepository,
+            SchemaValidationService schemaValidationService,
+            ApplicationEventPublisher eventPublisher,
+            PageBuilder pageBuilder,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper
+    ) {
+        this(
+            entityTypeRepository,
+            attributeDefinitionRepository,
+            entityRecordRepository,
+            relationshipTypeRepository,
+            entityRelationshipRepository,
+            schemaValidationService,
+            eventPublisher,
+            pageBuilder,
+            objectMapper,
+            new CompositeSpecCompiler(objectMapper != null ? objectMapper : new com.fasterxml.jackson.databind.ObjectMapper()),
+            new DynamicIndexProvisioner(null)
+        );
+    }
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setOutboxEventPublisher(com.unipost.outbox.OutboxEventPublisher outboxEventPublisher) {
@@ -111,7 +139,17 @@ public class MetadataService {
             throw new MetadataConflictException("EntityType with systemName '" + request.systemName() + "' already exists");
         }
         EntityType entityType = MetadataDtoMapper.toEntity(request);
+        if (Boolean.TRUE.equals(request.isComposite())) {
+            entityType.setIsComposite(true);
+            if (request.compositeSpec() != null) {
+                compositeSpecCompiler.validateHierarchy(request.compositeSpec());
+                entityType.setCompositeSpec(request.compositeSpec());
+            }
+        }
         EntityType saved = entityTypeRepository.save(entityType);
+        if (Boolean.TRUE.equals(saved.getIsComposite()) && saved.getCompositeSpec() != null) {
+            dynamicIndexProvisioner.provisionIndexesAsync(saved.getCompositeSpec());
+        }
         return MetadataDtoMapper.toResponse(saved);
     }
 
@@ -128,6 +166,14 @@ public class MetadataService {
 
         entityType.setName(request.name().trim());
         entityType.setDescription(request.description() != null ? request.description().trim() : null);
+        if (request.isComposite() != null) {
+            entityType.setIsComposite(request.isComposite());
+        }
+        if (request.compositeSpec() != null) {
+            compositeSpecCompiler.validateHierarchy(request.compositeSpec());
+            entityType.setCompositeSpec(request.compositeSpec());
+            dynamicIndexProvisioner.provisionIndexesAsync(request.compositeSpec());
+        }
         long nextVersion = (entityType.getSchemaVersion() != null ? entityType.getSchemaVersion() : 1L) + 1L;
         entityType.setSchemaVersion(nextVersion);
 
@@ -138,6 +184,8 @@ public class MetadataService {
 
     @Transactional
     public void deleteEntityType(Long id) {
+        validateNoCompositeDependencyOnEntityType(id);
+
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(id)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + id));
 
@@ -295,6 +343,9 @@ public class MetadataService {
             throw new MetadataConflictException("System attributes (tenant_id = 'SYSTEM') are immutable and cannot be deleted by tenant admins");
         }
 
+        // Composite Dependency Guard: Cannot delete attribute referenced in composite specs
+        validateNoCompositeDependencyOnAttribute(entityTypeId, attr.getSystemName());
+
         // Delete guard: check if any record contains this attribute key
         if (!force) {
             List<EntityRecord> records = entityRecordRepository.findByEntityTypeIdAndDeletedDateIsNull(entityTypeId);
@@ -326,6 +377,9 @@ public class MetadataService {
         if ("SYSTEM".equalsIgnoreCase(attr.getTenantId()) && !isArchiveSovereign) {
             throw new MetadataConflictException("System attributes (tenant_id = 'SYSTEM') are immutable and cannot be archived by tenant admins");
         }
+
+        // Composite Dependency Guard: Cannot archive attribute referenced in composite specs
+        validateNoCompositeDependencyOnAttribute(entityTypeId, attr.getSystemName());
 
         attr.setIsArchived(true);
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
@@ -629,6 +683,10 @@ public class MetadataService {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
 
+        if (Boolean.TRUE.equals(entityType.getIsComposite())) {
+            throw new UnsupportedOperationException("Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.");
+        }
+
         validatePayloadSize(request.attributes());
         Map<String, Object> finalAttributes = applyAttributeDefaults(entityTypeId, request.attributes());
         if (entityLifecycleService != null) {
@@ -661,6 +719,10 @@ public class MetadataService {
     public EntityRecordResponse updateEntityRecord(Long entityTypeId, Long recordId, UpdateRecordRequest request) {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
+
+        if (Boolean.TRUE.equals(entityType.getIsComposite())) {
+            throw new UnsupportedOperationException("Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.");
+        }
 
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
@@ -698,6 +760,10 @@ public class MetadataService {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
 
+        if (Boolean.TRUE.equals(entityType.getIsComposite())) {
+            throw new UnsupportedOperationException("Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.");
+        }
+
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
 
@@ -729,6 +795,10 @@ public class MetadataService {
     public EntityRecordResponse patchEntityRecord(Long entityTypeId, Long recordId, PatchRecordRequest request) {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
+
+        if (Boolean.TRUE.equals(entityType.getIsComposite())) {
+            throw new UnsupportedOperationException("Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.");
+        }
 
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityRecord not found with id: " + recordId + " for entityTypeId: " + entityTypeId));
@@ -830,8 +900,11 @@ public class MetadataService {
 
     @Transactional
     public void deleteEntityRecord(Long entityTypeId, Long recordId) {
-        if (!entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId).isPresent()) {
-            throw new MetadataNotFoundException("EntityType not found with id: " + entityTypeId);
+        EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
+                .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
+
+        if (Boolean.TRUE.equals(entityType.getIsComposite())) {
+            throw new UnsupportedOperationException("Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.");
         }
 
         EntityRecord record = entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(entityTypeId, recordId)
@@ -1083,5 +1156,102 @@ public class MetadataService {
             return false;
         }
         return DANGEROUS_REGEX_PATTERN.matcher(regex).find();
+    }
+
+    private void validateNoCompositeDependencyOnAttribute(Long entityTypeId, String attributeSystemName) {
+        List<EntityType> activeEntities = entityTypeRepository.findAllByDeletedDateIsNull();
+        for (EntityType et : activeEntities) {
+            if (Boolean.TRUE.equals(et.getIsComposite()) && et.getCompositeSpec() != null) {
+                if (isAttributeReferencedInSpec(et.getCompositeSpec(), entityTypeId, attributeSystemName)) {
+                    throw new MetadataConflictException("Cannot delete or archive base attribute '" + attributeSystemName 
+                            + "' because it is actively referenced in composite entity specification for '" + et.getName() + "' (ID: " + et.getId() + ")");
+                }
+            }
+        }
+    }
+
+    private void validateNoCompositeDependencyOnEntityType(Long entityTypeId) {
+        List<EntityType> activeEntities = entityTypeRepository.findAllByDeletedDateIsNull();
+        for (EntityType et : activeEntities) {
+            if (Boolean.TRUE.equals(et.getIsComposite()) && et.getCompositeSpec() != null) {
+                if (isEntityTypeReferencedInSpec(et.getCompositeSpec(), entityTypeId)) {
+                    throw new MetadataConflictException("Cannot delete base entity type '" + entityTypeId 
+                            + "' because it is actively referenced in composite entity specification for '" + et.getName() + "' (ID: " + et.getId() + ")");
+                }
+            }
+        }
+    }
+
+    private boolean isAttributeReferencedInSpec(com.unipost.domain.metadata.CompositeSpec spec, Long entityTypeId, String attributeSystemName) {
+        if (spec == null || attributeSystemName == null) return false;
+        if (Objects.equals(spec.rootEntityTypeId(), entityTypeId) && spec.fields() != null) {
+            for (com.unipost.domain.metadata.CompositeField field : spec.fields()) {
+                if (attributeSystemName.equalsIgnoreCase(field.sourceAttribute())) {
+                    return true;
+                }
+            }
+        }
+        if (spec.children() != null) {
+            for (com.unipost.domain.metadata.CompositeNode child : spec.children()) {
+                if (isAttributeReferencedInNode(child, entityTypeId, attributeSystemName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isAttributeReferencedInNode(com.unipost.domain.metadata.CompositeNode node, Long entityTypeId, String attributeSystemName) {
+        if (node == null || attributeSystemName == null) return false;
+        if (Objects.equals(node.targetEntityTypeId(), entityTypeId)) {
+            if (node.fields() != null) {
+                for (com.unipost.domain.metadata.CompositeField field : node.fields()) {
+                    if (attributeSystemName.equalsIgnoreCase(field.sourceAttribute())) {
+                        return true;
+                    }
+                }
+            }
+            if (attributeSystemName.equalsIgnoreCase(node.foreignKeyAttribute())) {
+                return true;
+            }
+        }
+        if (node.children() != null) {
+            for (com.unipost.domain.metadata.CompositeNode grandchild : node.children()) {
+                if (isAttributeReferencedInNode(grandchild, entityTypeId, attributeSystemName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isEntityTypeReferencedInSpec(com.unipost.domain.metadata.CompositeSpec spec, Long entityTypeId) {
+        if (spec == null || entityTypeId == null) return false;
+        if (Objects.equals(spec.rootEntityTypeId(), entityTypeId)) {
+            return true;
+        }
+        if (spec.children() != null) {
+            for (com.unipost.domain.metadata.CompositeNode child : spec.children()) {
+                if (isEntityTypeReferencedInNode(child, entityTypeId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isEntityTypeReferencedInNode(com.unipost.domain.metadata.CompositeNode node, Long entityTypeId) {
+        if (node == null || entityTypeId == null) return false;
+        if (Objects.equals(node.targetEntityTypeId(), entityTypeId)) {
+            return true;
+        }
+        if (node.children() != null) {
+            for (com.unipost.domain.metadata.CompositeNode grandchild : node.children()) {
+                if (isEntityTypeReferencedInNode(grandchild, entityTypeId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

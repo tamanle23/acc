@@ -10,13 +10,19 @@ public class SchemaValidationException extends BusinessException {
     private static final long serialVersionUID = 1L;
 
     public SchemaValidationException(String message) {
-        super(Error.builder().code("SCHEMA_VALIDATION_FAILED").message(message).build());
+        super(message);
+        if (message != null) {
+            getErrors().add(Error.builder().code("SCHEMA_VALIDATION_FAILED").message(message).build());
+        }
         setHttpCode(400);
         setServerSide(false);
     }
 
     public SchemaValidationException(List<Error> errors) {
-        super(errors);
+        super(errors != null && !errors.isEmpty() && errors.get(0) != null ? errors.get(0).getMessage() : "Schema validation failed");
+        if (errors != null) {
+            getErrors().addAll(errors);
+        }
         setHttpCode(400);
         setServerSide(false);
     }

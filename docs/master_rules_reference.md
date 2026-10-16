@@ -193,8 +193,8 @@ To ensure visual consistency, architectural predictability, and seamless collabo
 ### Core Architectural Invariants
 1. **Schema Caching (C4 & C5)**:
    - Dynamic Draft-07 schemas compiled from attribute definitions must use immutable, versioned cache keys: `schema:{entityTypeId}:v{schemaVersion}`.
-   - Cache resolution operates in two tiers: L1 parsed in-memory cache (`ConcurrentHashMap<String, JsonSchema>`) for microsecond throughput, backed by L2 Redis with TTL fallback.
-   - Cache misses must gracefully fall through to in-process recompilation. A Redis outage must NEVER fail schema compilation or record validation.
+   - Cache resolution operates in two tiers: L1 parsed in-memory cache (`ConcurrentHashMap<String, JsonSchema>`) for microsecond throughput, backed by L2 Distributed Hazelcast with TTL fallback.
+   - Cache misses must gracefully fall through to in-process recompilation. A Hazelcast outage must NEVER fail schema compilation or record validation.
 2. **Schema Invalidation & Evolution**:
    - Every attribute definition creation, update, reorder, archive, or unarchive MUST increment `UNIPOST_ENTITY_TYPES.schema_version` within the same transaction.
    - Spring Modulith event publication triggers local L1 cache clearing. Stale version entries become unreachable by construction.

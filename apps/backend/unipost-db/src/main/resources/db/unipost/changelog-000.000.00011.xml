@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="add-composite-entity-support-11" author="antigravity">
+        <comment>Add is_composite flag and composite_spec JSONB column to UNIPOST_ENTITY_TYPES for Composite Entity Type Registry</comment>
+
+        <addColumn tableName="UNIPOST_ENTITY_TYPES">
+            <column name="is_composite" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="composite_spec" type="JSONB">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <sql dbms="postgresql">
+            COMMENT ON COLUMN UNIPOST_ENTITY_TYPES.is_composite IS
+            'Flag denoting whether this entity type is a virtual read-only composite entity synthesizing multiple base entity types';
+
+            COMMENT ON COLUMN UNIPOST_ENTITY_TYPES.composite_spec IS
+            'Declarative JSON AST specifying root base entity, child joins (Pattern B foreign key or Pattern C association), field projections, and aliases';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

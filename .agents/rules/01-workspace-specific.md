@@ -47,7 +47,7 @@ description: Compact monorepo registry, packaging boundaries, i18n sync, and Liq
 - Synchronization: When routes, screens, or UI tokens are added/edited, MUST synchronously update `DESIGN.md` and `ROUTE.md`. NEVER leave them out of sync.
 
 # DYNAMIC METADATA ENGINE INVARIANTS
-- Schema Caching: MUST use versioned cache keys `schema:{id}:v{version}` with L1 in-memory parsed `JsonSchema` + L2 Redis fallback. Redis failures MUST NEVER break schema compile or validation.
+- Schema Caching: MUST use versioned cache keys `schema:{id}:v{version}` with L1 in-memory parsed `JsonSchema` + L2 Distributed Hazelcast fallback. Hazelcast failures MUST NEVER break schema compile or validation.
 - Schema Evolution: Any attribute definition mutation MUST increment `UNIPOST_ENTITY_TYPES.schema_version` in the same transaction.
 - Soft-Delete Indexes: Metadata tables (`UNIPOST_ENTITY_TYPES`, `UNIPOST_ATTRIBUTE_DEFINITIONS`, `UNIPOST_RELATIONSHIP_TYPES`, `UNIPOST_ENTITY_RELATIONSHIPS`) MUST use partial unique indexes `WHERE "deletedDate" IS NULL`.
 - Record Validation: Compilation MUST set `additionalProperties: false`. Server-side defaults MUST be applied prior to JSON Schema validation.

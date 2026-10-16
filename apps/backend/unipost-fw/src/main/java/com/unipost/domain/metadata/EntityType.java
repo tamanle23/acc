@@ -28,6 +28,13 @@ public class EntityType extends BaseModel {
   @Column(name = "schema_version", nullable = false)
   private Long schemaVersion = 1L;
 
+  @Column(name = "is_composite", nullable = false)
+  private Boolean isComposite = false;
+
+  @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+  @Column(name = "composite_spec", columnDefinition = "jsonb")
+  private CompositeSpec compositeSpec;
+
   @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
   @Column(name = "lifecycle_config", columnDefinition = "jsonb")
   private LifecycleConfig lifecycleConfig;

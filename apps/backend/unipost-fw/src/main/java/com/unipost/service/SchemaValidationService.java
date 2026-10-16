@@ -40,7 +40,18 @@ public class SchemaValidationService {
     private final AttributeDefinitionRepository attributeDefinitionRepository;
     private final EntityTypeRepository entityTypeRepository;
     private final SchemaCompiler schemaCompiler;
+    private final CompositeSpecCompiler compositeSpecCompiler;
     private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+
+    public SchemaValidationService(
+            HazelcastInstance hazelcastInstance,
+            ObjectMapper objectMapper,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            EntityTypeRepository entityTypeRepository,
+            SchemaCompiler schemaCompiler
+    ) {
+        this(hazelcastInstance, objectMapper, attributeDefinitionRepository, entityTypeRepository, schemaCompiler, new CompositeSpecCompiler(objectMapper));
+    }
 
     // L1 in-memory cache holding parsed JsonSchema objects for maximum throughput
     private final Map<String, JsonSchema> l1ParsedSchemaCache = new ConcurrentHashMap<>();
@@ -238,6 +249,15 @@ public class SchemaValidationService {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
 
+        if (Boolean.TRUE.equals(entityType.getIsComposite()) && entityType.getCompositeSpec() != null) {
+            JsonNode node = compositeSpecCompiler.compileNode(entityType.getCompositeSpec());
+            try {
+                return objectMapper.writeValueAsString(node);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize composite schema for entityTypeId: " + entityTypeId, e);
+            }
+        }
+
         List<AttributeDefinition> attributes = resolveEffectiveAttributes(tenantId, entityTypeId);
         return schemaCompiler.compile(entityTypeId, entityType.getSchemaVersion(), attributes);
     }
@@ -250,6 +270,10 @@ public class SchemaValidationService {
     public JsonNode compileSchemaNode(Long entityTypeId) {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElseThrow(() -> new MetadataNotFoundException("EntityType not found with id: " + entityTypeId));
+
+        if (Boolean.TRUE.equals(entityType.getIsComposite()) && entityType.getCompositeSpec() != null) {
+            return compositeSpecCompiler.compileNode(entityType.getCompositeSpec());
+        }
 
         String tenantId = TenantContextHolder.getTenantId();
         List<AttributeDefinition> attributes = resolveEffectiveAttributes(tenantId, entityTypeId);

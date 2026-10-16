@@ -6,11 +6,12 @@ import { AttributePropertyInspector } from './attribute-property-inspector';
 import { DynamicFormLivePreview } from './dynamic-form-live-preview';
 import { FsmWorkflowDesigner } from './fsm-workflow-designer';
 import { VisualDagStudio } from './visual-dag-studio';
+import { CompositeBentoStudio } from './composite';
 import type { PaletteFieldItem } from './studio-types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Sparkles, Layers, Eye, GitFork, Save, RefreshCw } from 'lucide-react';
+import { Sparkles, Layers, Eye, GitFork, Save, RefreshCw, Boxes } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -27,9 +28,16 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
   const [selectedAttributeId, setSelectedAttributeId] = useState<string | number | null>(
     attributes[0]?.id || null
   );
-  const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'conductor'>('canvas');
+  const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'conductor' | 'composite'>('canvas');
 
   const selectedAttribute = attributes.find((a) => String(a.id) === String(selectedAttributeId)) || null;
+
+  // Auto-switch to composite tab if entityType is composite
+  React.useEffect(() => {
+    if (entityType?.isComposite) {
+      setActiveStudioTab('composite');
+    }
+  }, [entityType?.isComposite]);
 
   // Handle dropping or clicking a field item from the palette
   const handleSelectPaletteItem = async (item: PaletteFieldItem) => {
@@ -75,6 +83,11 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
               <Badge variant="outline" className="text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300">
                 v{entityType?.schemaVersion || 1}.0
               </Badge>
+              {entityType?.isComposite && (
+                <Badge variant="secondary" className="text-[10px] font-mono bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20">
+                  Composite
+                </Badge>
+              )}
             </div>
             <p className="text-[11px] text-muted-foreground">
               Dynamic schema attributes, JSON Schema constraints, and FSM lifecycle workflow canvas
@@ -84,7 +97,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
 
         <Tabs
           value={activeStudioTab}
-          onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow')}
+          onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow' | 'conductor' | 'composite')}
           className="w-auto"
         >
           <TabsList className="bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 p-1 rounded-xl">
@@ -94,6 +107,13 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
             >
               <Layers className="h-3.5 w-3.5 text-sky-500" />
               <span>Schema Canvas & Live Preview</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="composite"
+              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
+            >
+              <Boxes className="h-3.5 w-3.5 text-purple-500" />
+              <span>Composite Bento Studio</span>
             </TabsTrigger>
             <TabsTrigger
               value="workflow"
@@ -171,9 +191,12 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
               : undefined
           }
         />
-      ) : (
+      ) : activeStudioTab === 'conductor' ? (
         /* Phase 30 Distributed Visual DAG Studio */
         <VisualDagStudio />
+      ) : (
+        /* Phase 41 Master-Detail Composite Bento Studio */
+        <CompositeBentoStudio entityTypeId={entityTypeId} />
       )}
     </div>
   );

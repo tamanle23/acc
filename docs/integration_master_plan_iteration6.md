@@ -42,11 +42,11 @@ In strict adherence to the canonical architecture defined in `docs/hybrid_metada
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 41** | **Composite Entity Type Registry & Specification DSL** | Extend `UNIPOST_ENTITY_TYPES` with `composite_spec JSONB`; AST compiler supporting Pattern B & C relationships; automated dynamic partial B-Tree index provisioner; versioned L1 Caffeine / L2 Redis cache (`schema:{id}:v{version}`). | JUnit 5 tests asserting AST compilation, relationship type validation, cycle detection, automatic functional index generation, and L1/L2 cache invalidation. |
+| **Phase 41** | **Composite Entity Type Registry & Specification DSL** | Extend `UNIPOST_ENTITY_TYPES` with `composite_spec JSONB`; AST compiler supporting Pattern B & C relationships; automated dynamic partial B-Tree index provisioner; versioned L1 Caffeine / L2 Distributed Hazelcast cache (`schema:{id}:v{version}`). | JUnit 5 tests asserting AST compilation, relationship type validation, cycle detection, automatic functional index generation, and Hazelcast cache invalidation. |
 | **Phase 42** | **Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger** | 6-stage mutation pipeline for base entities; strict OCC (`version` / ETag); Draft-07 validation with `additionalProperties: false`; Pattern B & C referential existence & cardinality checks; declarative delete cascade engine (`RESTRICT`, `CASCADE`, `SET_NULL`); monthly-partitioned `UNIPOST_RECORD_AUDIT_LOG`. | JUnit 5 integration tests asserting concurrent update collision handling (`409 Conflict`), cross-tenant referential rejection, cascade delete propagation, and audit log partition routing. |
 | **Phase 43** | **Adaptive Read-Time Resolution Engine (Dynamic SQL Pushdown & Pagination)** | `DynamicQueryCompiler` compiling composite view ASTs into single-roundtrip PostgreSQL queries with `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` traversing Pattern B inline keys or Pattern C edge tables; native child pagination (`limit`, `offset`); bounded guardrails (max recursion depth 4, statement timeout 1,500ms); `DataLoaderBatchResolver` fallback. | Integration tests asserting query execution plan, zero N+1 round trips, sub-15ms latency for 3-level nested graphs, child slice pagination, and graceful statement timeout handling. |
 | **Phase 44** | **Transaction-Bound Asynchronous Denormalization Pipeline with Coalescing** | Spring Modulith Event Publication integration; Inverted Dependency Graph (`DependencyGraph`) indexing Pattern B & C relations; 500ms sliding-window invalidation debouncer; reverse foreign-key path resolver; idempotent `CascadingMaterializerWorker` with OCC retries & jitter updating `UNIPOST_MATERIALIZED_COMPOSITE_DOCUMENTS`. | Concurrency tests validating storm coalescing (100 child writes $\to$ 1 recalculation), OCC retry resilience, and correct root document state without deadlocks. |
-| **Phase 45** | **Enterprise Resilience, Performance Benchmarking & Chaos Verification** | Stress testing with 100,000 generic records and 1,000 concurrent composite queries; chaos injection (worker crash during materialization, transaction rollback, Redis cache failure); full monorepo build and lint verification. | Performance benchmark reporting p95/p99 query latencies under load; chaos test verifying 100% recovery of pending events via Modulith event publication log. |
+| **Phase 45** | **Enterprise Resilience, Performance Benchmarking & Chaos Verification** | Stress testing with 100,000 generic records and 1,000 concurrent composite queries; chaos injection (worker crash during materialization, transaction rollback, Hazelcast cache failure); full monorepo build and lint verification. | Performance benchmark reporting p95/p99 query latencies under load; chaos test verifying 100% recovery of pending events via Modulith event publication log. |
 
 ---
 
@@ -144,7 +144,106 @@ CREATE INDEX idx_mat_doc_dirty
 
 ---
 
-### 4.2 Dynamic Query Pushdown with Child Pagination
+### 4.2 Phase 41 Deep Dive: Composite Entity Type Registry, Specification DSL & Visual Bento Builder
+
+#### 4.2.1 Unified Model & Declarative Tree Specification DSL
+- **First-Class Registry Entity**: Composite entities are stored directly in `UNIPOST_ENTITY_TYPES` with `is_composite = TRUE`.
+- **Declarative Tree Specification Schema (`composite_spec`)**:
+  ```json
+  {
+    "rootEntityType": "customer",
+    "fields": ["name", "email", "tier"],
+    "relations": [
+      {
+        "alias": "orders",
+        "pattern": "PATTERN_B",
+        "targetEntityType": "order",
+        "joinKey": "customer_id",
+        "cardinality": "ONE_TO_MANY",
+        "fields": ["order_no", "total_amount", "status"],
+        "filter": { "status": { "$ne": "CANCELLED" } },
+        "orderBy": { "order_date": "DESC" },
+        "pagination": { "defaultLimit": 20, "maxLimit": 100 },
+        "relations": [
+          {
+            "alias": "items",
+            "pattern": "PATTERN_B",
+            "targetEntityType": "order_item",
+            "joinKey": "order_id",
+            "cardinality": "ONE_TO_MANY",
+            "fields": ["sku", "quantity", "unit_price"],
+            "pagination": { "defaultLimit": 50, "maxLimit": 100 },
+            "relations": []
+          }
+        ]
+      }
+    ]
+  }
+  ```
+
+#### 4.2.2 Console UX: Master-Detail Bento Builder in VisualSchemaStudio
+- **Integrated Tab**: Embedded as a dedicated tab/mode inside `VisualSchemaStudio` (`apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`) when viewing or editing an entity type where `is_composite = true`.
+- **Left Bento Rail (Relationship Catalog)**:
+  - Automatically queries and categorizes available connections into:
+    - **Inline References (Pattern B 🔗 `Link2`)**: Detected from inline JSONB reference attributes on the entity models.
+    - **Connected Edges (Pattern C ᛦ `GitFork`)**: Discovered from registered `UNIPOST_RELATIONSHIP_TYPES` graph edges.
+- **Center Bento Canvas (Hierarchical Projection Tree)**:
+  - Interactive hierarchical tree cards representing root entity and joined relations.
+  - Multi-select field pickers, custom alias text inputs, declarative filter builders (e.g. `status != CANCELLED`), sort orders, and pagination limit steppers (`defaultLimit`, `maxLimit`).
+- **Right Bento Pane (Live Preview Hub)**:
+  - **Live JSON Preview**: Real-time rendering of the projected composite document structure using mock or live tenant records.
+  - **Pushdown SQL Preview**: Shows the dynamically generated PostgreSQL query (`LEFT JOIN LATERAL`, `jsonb_build_object`, `jsonb_agg`) for full operator transparency.
+
+#### 4.2.3 Backend AST Compiler, Schema Generator & Cycle Guard
+- **AST Compilation (`CompositeSpecCompiler`)**:
+  - Compiles declarative JSON into an immutable, validated `CompositeSpecAst`.
+  - Enforces strict cross-tenant isolation: validates that `rootEntityType` and all target entities exist strictly within the requesting tenant.
+  - Automatically registers the corresponding JSON Schema (Draft-07) representing the composite output document structure.
+- **Cycle Detection & Recursion Ceiling**:
+  - **Hard Depth Ceiling**: Maximum tree nesting depth of **4 levels**.
+  - **Path-Based Cycle Guard**: Recursively verifies that no entity type repeats along the same ancestor traversal path, completely preventing circular expansion.
+
+#### 4.2.4 Strict Dependency Guard on Base Attributes
+- **Integrity Validation**: When an operator attempts to delete or alter a base entity attribute definition in `UNIPOST_ATTRIBUTE_DEFINITIONS`:
+  - An integrity checker queries active `composite_spec` definitions.
+  - If the target attribute is actively projected or referenced in join/filter conditions, the mutation is **rejected immediately with `409 Conflict`**, requiring the composite specification to be updated first.
+
+#### 4.2.5 Automated Dynamic Partial B-Tree Functional Index Provisioner
+- **Zero Manual DBA Indexing**:
+  - Whenever a Pattern B relationship is registered in `UNIPOST_RELATIONSHIP_TYPES` or referenced in a composite specification:
+    ```sql
+    CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_patb_{tenant}_{attr} 
+        ON UNIPOST_ENTITIES (((attributes->>'fk')::uuid)) 
+        WHERE deleted_date IS NULL;
+    ```
+  - **Asynchronous Execution**: Dispatched on a dedicated background thread via a non-transactional connection with name sanitization and graceful fallback if DDL privileges are restricted.
+
+#### 4.2.6 Unified Record Envelope & Strict Read-Only Invariants
+- **Unified Envelope**: Read operations on composite entities return the standard Unipost entity envelope:
+  ```json
+  {
+    "id": "root-uuid",
+    "tenantId": "tenant-001",
+    "entityTypeId": "composite-type-uuid",
+    "schemaVersion": 1,
+    "is_composite": true,
+    "attributes": {
+      "customerId": "root-uuid",
+      "companyName": "Acme Corp",
+      "orders": [ ... ]
+    }
+  }
+  ```
+- **Strict Read-Only Enforcement**: Composite entities are queryable aggregate projections only. Direct mutations (`POST`, `PUT`, `DELETE` on composite entity records) are strictly rejected with `405 Method Not Allowed`.
+
+#### 4.2.7 Distributed Hazelcast Cache Invariants
+- **Versioned Cache Keys**: `schema:{id}:v{schema_version}` stored in Distributed Hazelcast Cache (`IMap`).
+- **Cluster-Wide Invalidation**: Schema mutations increment `schema_version` atomically in the database transaction and evict cached entries across all cluster nodes via Hazelcast topic/event listeners.
+- **Fail-Safe Fallback**: Hazelcast connection timeouts or partition loss must NEVER fail in-process schema compilation or validation.
+
+---
+
+### 4.3 Dynamic Query Pushdown with Child Pagination (Phase 43)
 
 When executing a dynamic pushdown query with child collection pagination:
 
@@ -201,7 +300,7 @@ WHERE root.tenant_id = :tenantId
 
 ---
 
-### 4.3 Invalidation Debouncing & Coalescing Pipeline
+### 4.4 Invalidation Debouncing & Coalescing Pipeline (Phase 44)
 
 ```mermaid
 flowchart TD

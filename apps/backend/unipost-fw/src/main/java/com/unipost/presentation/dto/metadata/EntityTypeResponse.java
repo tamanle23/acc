@@ -1,5 +1,6 @@
 package com.unipost.presentation.dto.metadata;
 
+import com.unipost.domain.metadata.CompositeSpec;
 import com.unipost.domain.metadata.LifecycleConfig;
 import java.time.LocalDateTime;
 
@@ -13,7 +14,9 @@ public record EntityTypeResponse(
         Long version,
         LocalDateTime createdDate,
         LocalDateTime lastUpdatedDate,
-        LifecycleConfig lifecycleConfig
+        LifecycleConfig lifecycleConfig,
+        Boolean isComposite,
+        CompositeSpec compositeSpec
 ) {
     public EntityTypeResponse(
             Long id,
@@ -26,6 +29,21 @@ public record EntityTypeResponse(
             LocalDateTime createdDate,
             LocalDateTime lastUpdatedDate
     ) {
-        this(id, uid, name, systemName, description, schemaVersion, version, createdDate, lastUpdatedDate, null);
+        this(id, uid, name, systemName, description, schemaVersion, version, createdDate, lastUpdatedDate, null, false, null);
+    }
+
+    public EntityTypeResponse(
+            Long id,
+            String uid,
+            String name,
+            String systemName,
+            String description,
+            Long schemaVersion,
+            Long version,
+            LocalDateTime createdDate,
+            LocalDateTime lastUpdatedDate,
+            LifecycleConfig lifecycleConfig
+    ) {
+        this(id, uid, name, systemName, description, schemaVersion, version, createdDate, lastUpdatedDate, lifecycleConfig, false, null);
     }
 }

@@ -1,5 +1,6 @@
 package com.unipost.presentation.dto.metadata;
 
+import com.unipost.domain.metadata.CompositeSpec;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -14,5 +15,13 @@ public record CreateEntityTypeRequest(
         String name,
 
         @Size(max = 4000, message = "description must not exceed 4000 characters")
-        String description
-) {}
+        String description,
+
+        Boolean isComposite,
+
+        CompositeSpec compositeSpec
+) {
+    public CreateEntityTypeRequest(String systemName, String name, String description) {
+        this(systemName, name, description, false, null);
+    }
+}

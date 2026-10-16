@@ -146,6 +146,40 @@ export const initialMockEntityTypes: EntityType[] = [
     createdDate: new Date('2026-02-01').toISOString(),
     updatedDate: new Date('2026-03-25').toISOString(),
   },
+  {
+    id: 'customer-360-composite',
+    name: 'Customer 360 View',
+    systemName: 'customer_360_composite',
+    description: 'Real-time synthesized 360-degree customer view joining accounts, cloud resources, and audit logs.',
+    schemaVersion: 1,
+    version: 1,
+    isComposite: true,
+    compositeSpec: {
+      root_entity_type_id: '1',
+      root_entity_system_name: 'customer_account',
+      root_alias: 'customer',
+      fields: [
+        { source_attribute: 'legal_name', alias: 'name', data_type: 'string', required: true },
+        { source_attribute: 'contact_email', alias: 'email', data_type: 'string', required: true },
+      ],
+      children: [
+        {
+          target_entity_type_id: '2',
+          target_entity_system_name: 'cloud_resource_spec',
+          alias: 'cloud_resources',
+          join_pattern: 'PATTERN_B_FOREIGN_KEY',
+          foreign_key_attribute: 'account_id',
+          cardinality: 'ONE_TO_MANY',
+          fields: [
+            { source_attribute: 'resource_name', alias: 'name', data_type: 'string' },
+            { source_attribute: 'region', alias: 'region', data_type: 'string' },
+          ],
+        },
+      ],
+    },
+    createdDate: new Date('2026-03-01').toISOString(),
+    updatedDate: new Date('2026-03-25').toISOString(),
+  },
   ...additionalEntityTypes,
 ];
 
@@ -1077,6 +1111,13 @@ export class MockMetadataService implements MetadataDataSource {
     dto: CreateEntityRecordDto
   ): Promise<EntityRecord> {
     const strId = String(entityTypeId);
+    const entityType = this.entityTypes.find((e) => String(e.id) === strId);
+    if (entityType?.isComposite) {
+      const err = new Error('Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.');
+      (err as any).status = 405;
+      throw err;
+    }
+
     if (!this.records[strId]) {
       this.records[strId] = [];
     }
@@ -1100,6 +1141,13 @@ export class MockMetadataService implements MetadataDataSource {
     dto: UpdateEntityRecordDto
   ): Promise<EntityRecord> {
     const strId = String(entityTypeId);
+    const entityType = this.entityTypes.find((e) => String(e.id) === strId);
+    if (entityType?.isComposite) {
+      const err = new Error('Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.');
+      (err as any).status = 405;
+      throw err;
+    }
+
     const list = this.records[strId] || [];
     const index = list.findIndex((r) => String(r.id) === String(recordId));
     if (index === -1) {
@@ -1140,6 +1188,13 @@ export class MockMetadataService implements MetadataDataSource {
     recordId: string | number
   ): Promise<boolean> {
     const strId = String(entityTypeId);
+    const entityType = this.entityTypes.find((e) => String(e.id) === strId);
+    if (entityType?.isComposite) {
+      const err = new Error('Composite entity types are strictly virtual and read-only. Direct mutations are forbidden.');
+      (err as any).status = 405;
+      throw err;
+    }
+
     const list = this.records[strId] || [];
     const beforeCount = list.length;
     this.records[strId] = list.filter((r) => String(r.id) !== String(recordId));

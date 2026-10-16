@@ -63,6 +63,36 @@ export interface LifecycleConfig {
   transitions?: TransitionConfig[];
 }
 
+export type CompositeJoinPattern = 'PATTERN_B_FOREIGN_KEY' | 'PATTERN_C_ASSOCIATION';
+
+export interface CompositeField {
+  source_attribute: string;
+  alias?: string;
+  data_type?: string;
+  default_value?: any;
+  required?: boolean;
+}
+
+export interface CompositeNode {
+  target_entity_type_id: string | number;
+  target_entity_system_name: string;
+  alias?: string;
+  join_pattern: CompositeJoinPattern;
+  foreign_key_attribute?: string;
+  relationship_type_id?: string | number;
+  cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY' | 'MANY_TO_ONE' | 'MANY_TO_MANY';
+  fields: CompositeField[];
+  children?: CompositeNode[];
+}
+
+export interface CompositeSpec {
+  root_entity_type_id: string | number;
+  root_entity_system_name: string;
+  root_alias?: string;
+  fields: CompositeField[];
+  children?: CompositeNode[];
+}
+
 export interface EntityType {
   id: string | number;
   name: string;
@@ -71,6 +101,8 @@ export interface EntityType {
   tenantId?: string;
   schemaVersion?: number;
   lifecycleConfig?: LifecycleConfig;
+  isComposite?: boolean;
+  compositeSpec?: CompositeSpec;
   version?: number;
   createdDate?: string;
   updatedDate?: string;
