@@ -13,6 +13,7 @@ import {
   getMediaDuration,
   AudioDuckingDSP,
   type RenderContext,
+  fileExists,
 } from '@acc/core';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from '@acc/core/types';
 import {
@@ -479,7 +480,7 @@ export class VideoEditPipelineOrchestrator {
       let currentVideoPath = path.join(tempDir, 'concat_output.mp4');
 
       if (segments.length === 1) {
-        fs.copyFileSync(segments[0].path, currentVideoPath);
+        await fs.promises.copyFile(segments[0].path, currentVideoPath);
       } else {
         if (hasAnyTransition && !config.settings.fastIntermediate) {
           Logger.info('VideoEditPipelineOrchestrator', 'Applying video transition filtergraph (xfade)...');
@@ -496,7 +497,7 @@ export class VideoEditPipelineOrchestrator {
         if (!path.isAbsolute(masterAudioPath)) {
           masterAudioPath = path.resolve(baseDir, masterAudioPath);
         }
-        if (fs.existsSync(masterAudioPath)) {
+        if (await fileExists(masterAudioPath)) {
           Logger.info('VideoEditPipelineOrchestrator', `=== Remuxing Master Voiceover Track: ${path.basename(masterAudioPath)} ===`);
           const masterVoicePath = path.join(tempDir, 'with_master_voice.mp4');
           const vol = config.settings.audioTrack.volume ?? 1.0;
@@ -528,7 +529,7 @@ export class VideoEditPipelineOrchestrator {
       const allSfxClips: Array<{ source: string; time: number; volume: number; duckBgm: boolean }> = [];
       if (config.settings.sfx && Array.isArray(config.settings.sfx)) {
         for (const clip of config.settings.sfx) {
-          if (clip.source && fs.existsSync(clip.source)) {
+          if (clip.source && await fileExists(clip.source)) {
             allSfxClips.push({
               source: clip.source,
               time: clip.time ?? 0,
@@ -549,7 +550,7 @@ export class VideoEditPipelineOrchestrator {
             if (!path.isAbsolute(sfxPath)) {
               sfxPath = path.resolve(baseDir, sfxPath);
             }
-            if (fs.existsSync(sfxPath)) {
+            if (await fileExists(sfxPath)) {
               allSfxClips.push({
                 source: sfxPath,
                 time: cumulativeSceneTime + (clip.time ?? 0),
@@ -644,20 +645,19 @@ export class VideoEditPipelineOrchestrator {
       if (config.settings.bgm) {
         const nextVideoPath = path.join(tempDir, 'with_bgm.mp4');
         Logger.info('VideoEditPipelineOrchestrator', `=== Applying Background Music ===`);
-        await new Promise<void>((resolve, reject) => {
-          const bgm = config.settings.bgm!;
+        const bgm = config.settings.bgm!;
           let bgmPath = path.isAbsolute(bgm.source) ? bgm.source : path.resolve(baseDir, bgm.source);
-          if (!fs.existsSync(bgmPath)) {
+          if (!await fileExists(bgmPath)) {
             const candidate = path.resolve(baseDir, 'assets', path.basename(bgm.source));
-            if (fs.existsSync(candidate)) {
+            if (await fileExists(candidate)) {
               bgmPath = candidate;
             }
           }
-          if (!fs.existsSync(bgmPath)) {
+          if (!await fileExists(bgmPath)) {
             Logger.warn('VideoEditPipelineOrchestrator', `[BGM] Background music file not found at ${bgmPath}. Skipping BGM.`);
-            fs.copyFileSync(currentVideoPath, nextVideoPath);
-            return resolve();
-          }
+          await fs.promises.copyFile(currentVideoPath, nextVideoPath);
+        } else {
+          await new Promise<void>((resolve, reject) => {
 
           const volume = bgm.volume !== undefined ? bgm.volume : 0.1;
           const isLoop = bgm.loop !== false;
@@ -757,6 +757,7 @@ export class VideoEditPipelineOrchestrator {
             })
             .run();
         });
+        }
         Logger.info('VideoEditPipelineOrchestrator', '✅ Background Music applied successfully!');
         currentVideoPath = nextVideoPath;
       }

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { IPipelineMiddleware } from '@acc/core';
+import { type IPipelineMiddleware, fileExists } from '@acc/core';
 import { LegacyStoryConfigAdapter } from '@acc/ir';
 import type { GenerativeStoryContext } from '../GenerativeStoryPipeline';
 import { resolveStoryFolder } from '../GenerativeStoryPipeline';
@@ -38,7 +38,7 @@ export function createStoryFolderResolutionStage(): IPipelineMiddleware<Generati
         const bgmPath = path.isAbsolute(bgmSource)
           ? bgmSource
           : path.resolve(resolved.absoluteDir, bgmSource);
-        if (fs.existsSync(bgmPath)) {
+        if (await fileExists(bgmPath)) {
           ctx.assets.register('global', 'bgm', bgmPath);
         }
       }
