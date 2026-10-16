@@ -30,6 +30,7 @@ import { Route as AuthenticatedStorageIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedMetadataIndexRouteImport } from './routes/_authenticated/metadata/index'
 import { Route as AuthenticatedHelpCenterIndexRouteImport } from './routes/_authenticated/help-center/index'
+import { Route as AuthenticatedDlqIndexRouteImport } from './routes/_authenticated/dlq/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedCustomerAccountsIndexRouteImport } from './routes/_authenticated/customer-accounts/index'
 import { Route as AuthenticatedChatsIndexRouteImport } from './routes/_authenticated/chats/index'
@@ -155,6 +156,11 @@ const AuthenticatedHelpCenterIndexRoute =
     path: '/help-center/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDlqIndexRoute = AuthenticatedDlqIndexRouteImport.update({
+  id: '/dlq/',
+  path: '/dlq/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
     id: '/dashboard/',
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/chats/': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/dlq/': typeof AuthenticatedDlqIndexRoute
   '/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/chats': typeof AuthenticatedChatsIndexRoute
   '/customer-accounts': typeof AuthenticatedCustomerAccountsIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/dlq': typeof AuthenticatedDlqIndexRoute
   '/help-center': typeof AuthenticatedHelpCenterIndexRoute
   '/metadata': typeof AuthenticatedMetadataIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -330,6 +338,7 @@ export interface FileRoutesById {
   '/_authenticated/chats/': typeof AuthenticatedChatsIndexRoute
   '/_authenticated/customer-accounts/': typeof AuthenticatedCustomerAccountsIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/_authenticated/dlq/': typeof AuthenticatedDlqIndexRoute
   '/_authenticated/help-center/': typeof AuthenticatedHelpCenterIndexRoute
   '/_authenticated/metadata/': typeof AuthenticatedMetadataIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/customer-accounts/'
     | '/dashboard/'
+    | '/dlq/'
     | '/help-center/'
     | '/metadata/'
     | '/settings/'
@@ -401,6 +411,7 @@ export interface FileRouteTypes {
     | '/chats'
     | '/customer-accounts'
     | '/dashboard'
+    | '/dlq'
     | '/help-center'
     | '/metadata'
     | '/settings'
@@ -437,6 +448,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chats/'
     | '/_authenticated/customer-accounts/'
     | '/_authenticated/dashboard/'
+    | '/_authenticated/dlq/'
     | '/_authenticated/help-center/'
     | '/_authenticated/metadata/'
     | '/_authenticated/settings/'
@@ -611,6 +623,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHelpCenterIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dlq/': {
+      id: '/_authenticated/dlq/'
+      path: '/dlq'
+      fullPath: '/dlq/'
+      preLoaderRoute: typeof AuthenticatedDlqIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard/': {
       id: '/_authenticated/dashboard/'
       path: '/dashboard'
@@ -741,6 +760,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatsIndexRoute: typeof AuthenticatedChatsIndexRoute
   AuthenticatedCustomerAccountsIndexRoute: typeof AuthenticatedCustomerAccountsIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
+  AuthenticatedDlqIndexRoute: typeof AuthenticatedDlqIndexRoute
   AuthenticatedHelpCenterIndexRoute: typeof AuthenticatedHelpCenterIndexRoute
   AuthenticatedMetadataIndexRoute: typeof AuthenticatedMetadataIndexRoute
   AuthenticatedStorageIndexRoute: typeof AuthenticatedStorageIndexRoute
@@ -760,6 +780,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomerAccountsIndexRoute:
     AuthenticatedCustomerAccountsIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  AuthenticatedDlqIndexRoute: AuthenticatedDlqIndexRoute,
   AuthenticatedHelpCenterIndexRoute: AuthenticatedHelpCenterIndexRoute,
   AuthenticatedMetadataIndexRoute: AuthenticatedMetadataIndexRoute,
   AuthenticatedStorageIndexRoute: AuthenticatedStorageIndexRoute,

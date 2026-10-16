@@ -27,6 +27,7 @@
       "workflowExecutions": "Workflow Executions",
       "workflows": "Workflows",
       "approvals": "Task Approvals",
+      "dlq": "Dead-Letter Queue",
       "apps": "Apps",
       "chats": "Chats",
       "users": "Users",

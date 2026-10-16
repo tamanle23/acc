@@ -41,9 +41,29 @@ CREATE TABLE IF NOT EXISTS task_queue (
   task_type VARCHAR(32) NOT NULL,
   domain VARCHAR(64) NOT NULL DEFAULT 'default',
   priority INT NOT NULL DEFAULT 0,
+  created_at_ms BIGINT NOT NULL DEFAULT 0,
   visible_at_epoch_ms BIGINT NOT NULL,
   lease_owner VARCHAR(128)
 );
 
 CREATE INDEX IF NOT EXISTS idx_task_queue_poll 
   ON task_queue (tenant_id, task_type, domain, visible_at_epoch_ms, priority DESC);
+
+CREATE TABLE IF NOT EXISTS task_dlq (
+  dlq_id VARCHAR(128) PRIMARY KEY,
+  task_id VARCHAR(128) NOT NULL,
+  workflow_id VARCHAR(64) NOT NULL,
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'system',
+  workspace_id VARCHAR(64) NOT NULL DEFAULT 'default',
+  task_type VARCHAR(32) NOT NULL,
+  domain VARCHAR(64) NOT NULL DEFAULT 'default',
+  error_message TEXT,
+  error_stacktrace TEXT,
+  payload_snapshot JSONB,
+  retry_count INT NOT NULL DEFAULT 0,
+  isolated_at_ms BIGINT NOT NULL,
+  replayed_at_ms BIGINT,
+  status VARCHAR(32) NOT NULL DEFAULT 'ISOLATED'
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_dlq_tenant ON task_dlq(tenant_id, isolated_at_ms DESC);

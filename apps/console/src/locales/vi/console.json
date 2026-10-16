@@ -27,6 +27,7 @@
       "workflowExecutions": "Thực thi Quy trình (Executions)",
       "workflows": "Quy trình (Workflows)",
       "approvals": "Phê duyệt Tác vụ (Approvals)",
+      "dlq": "Hàng đợi Chết (DLQ)",
       "apps": "Ứng dụng",
       "chats": "Trò chuyện",
       "users": "Người dùng",

@@ -146,7 +146,7 @@ class HighFrequencyTaskStrategiesTest {
         assertThat(res1.workflowStatus()).isEqualTo(WorkflowStatus.RUNNING);
         assertThat(res1.commands()).hasSize(1);
         EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) res1.commands().get(0);
-        assertThat(updateCmd.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(updateCmd.status()).isEqualTo(TaskStatus.WAITING_FOR_APPROVAL);
 
         // 2. Second evaluation when human approved externally
         TaskSnapshot completedHuman = new TaskSnapshot(

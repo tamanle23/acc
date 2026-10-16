@@ -39,6 +39,7 @@ src/routes/
     │   ├── index.tsx                           # Path: "/settings" -> Profile
     │   ├── appearance.tsx                      # Path: "/settings/appearance"
     │   └── notifications.tsx                   # Path: "/settings/notifications"
+    ├── dlq/index.tsx                           # Path: "/dlq" -> Dead-Letter Queue Management & Replay
     ├── help-center/index.tsx                   # Path: "/help-center"
     └── errors/$error.tsx                       # Dynamic internal error boundary
 ```
@@ -54,6 +55,8 @@ src/routes/
 
 | `/tasks` | `_authenticated/tasks/index.tsx` | Yes | Authenticated Shell | Manage backlog tasks, filter priority, update status |
 | `/workflows` | `_authenticated/workflows/index.tsx` | Yes | Authenticated Shell | Visual DAG Studio, distributed task orchestration & execution playback |
+| `/approvals` | `_authenticated/approvals/index.tsx` | Yes | Authenticated Shell | Human-in-the-Loop decision inbox, task claims, approval checklists & audit signing |
+| `/dlq` | `_authenticated/dlq/index.tsx` | Yes (Admin) | Authenticated Shell | Dead-letter poison queue management, error stack inspection, payload mutation & priority re-enqueue |
 | `/apps` | `_authenticated/apps/index.tsx` | Yes | Authenticated Shell | Browse connected services, toggle integrations |
 | `/chats` | `_authenticated/chats/index.tsx` | Yes | Authenticated Shell | Direct and channel messaging with team members |
 | `/users` | `_authenticated/users/index.tsx` | Yes (Admin) | Authenticated Shell | User directory CRUD, role assignments, invite links |
@@ -141,6 +144,16 @@ src/routes/
 - **Glass Spec:** Amber liquid glass tokens for sovereign alerts (`bg-amber-500/15 backdrop-blur-xl border-amber-500/30`), frosted modal dialogs with specular highlights.
 - **State & Stores:** Backed by `useSystemFleet` hooks (`useFleetTenants`, `useFleetTenantDiagnostics`, `useUpdateTenantQuotas`, `useAssumeTenant`, `useSystemRoles`, `useGlobalUsers`) and integrated with Unified Sandbox `mockFleetStore`.
 - **Features:** Live telemetry dials, unconstrained volume quota tuning ($\infty$), commercial tier promotion, soft kill-switches, declarative RBAC permission matrix studio, and instant Assume-Tenant session delegation.
+
+### 3.10 Dead-Letter Queue (`/dlq`)
+- **Route:** `src/routes/_authenticated/dlq/index.tsx`
+- **Component Stack:** `DlqFeature`, `DlqTable`, `DataTableToolbar`, `DataTablePagination`, `DlqInspectorSheet`, `Liquid Glass Metric Cards`.
+- **State & Stores:** Backed by `useDlqQuery`, `useReplayDlqMutation`, and `useDiscardDlqMutation` communicating with `/api/v1/workflow/dlq` (backed by `dlqSandboxHandler` in offline dev mode).
+- **Features:** 
+  - Real-time KPI glass counters (Isolated Tasks, Replayed Recoveries, Discarded Poison Tasks).
+  - Multi-tenant tenant/status/taskType faceted filtering with TanStack Table.
+  - Slide-over inspector sheet detailing formatted Java/JS error stack traces and raw JSON payload snapshots.
+  - In-place payload modification textarea with JSON syntax validation and atomic priority re-enqueue (`/replay`).
 
 ---
 

@@ -13,8 +13,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -99,4 +101,56 @@ class WorkflowEngineServiceTest {
         assertThat(polledRetry).hasSize(1);
         assertThat(polledRetry.get(0).attempt()).isEqualTo(2);
     }
+
+    @Test
+    @DisplayName("Should quarantine task to DLQ when max retries exhausted and support in-place replay")
+    void shouldQuarantineTaskToDlqWhenRetriesExhaustedAndSupportReplay() {
+        WorkflowDefinition def = WorkflowDefinition.builder("poison-wf")
+            .tasks(List.of(
+                TaskDefinition.builder("poison-step").retryCount(1).build()
+            ))
+            .build();
+
+        long now = 1000L;
+        service.startWorkflow("wf-poison", "tenant-dlq", "default", def, Map.of("init", 1), now);
+
+        List<TaskSnapshot> polled = persistencePort.pollTasks("tenant-dlq", "SIMPLE", "default", 1, "worker-1", 10000L, now);
+        assertThat(polled).hasSize(1);
+        String taskId = polled.get(0).taskId();
+
+        // Worker reports terminal failure on attempt 1 (maxRetries = 1)
+        service.reportTaskResult(
+            "wf-poison", taskId, "worker-1", false,
+            Collections.emptyMap(), "OutOfMemoryError: Java heap space", 0, def, now + 1000L
+        );
+
+        // Workflow failed
+        WorkflowSnapshot wfSnap = persistencePort.getWorkflowSnapshot("wf-poison").orElseThrow();
+        assertThat(wfSnap.status()).isIn(WorkflowStatus.FAILED, WorkflowStatus.COMPENSATED_FAILED);
+
+        // Task quarantined into DLQ
+        List<com.unipost.workflow.core.model.TaskDlqRecord> dlqList = persistencePort.listDlqTasks("tenant-dlq", "ISOLATED", 10);
+        assertThat(dlqList).hasSize(1);
+        com.unipost.workflow.core.model.TaskDlqRecord dlqRecord = dlqList.get(0);
+        assertThat(dlqRecord.taskId()).isEqualTo(taskId);
+        assertThat(dlqRecord.errorMessage()).contains("OutOfMemoryError");
+
+        // Operator replays quarantined task with payload override
+        Optional<com.unipost.workflow.core.model.TaskDlqRecord> replayedOpt = service.replayDlqTask(
+            dlqRecord.dlqId(), Map.of("fixedMemory", 512), now + 5000L
+        );
+        assertThat(replayedOpt).isPresent();
+        assertThat(replayedOpt.get().status()).isEqualTo("REPLAYED");
+
+        // Parent workflow resumed to RUNNING
+        WorkflowSnapshot resumedWf = persistencePort.getWorkflowSnapshot("wf-poison").orElseThrow();
+        assertThat(resumedWf.status()).isEqualTo(WorkflowStatus.RUNNING);
+
+        // Task re-enqueued and available to poll
+        List<TaskSnapshot> rePolled = persistencePort.pollTasks("tenant-dlq", "SIMPLE", "default", 1, "worker-2", 10000L, now + 5000L);
+        assertThat(rePolled).hasSize(1);
+        assertThat(rePolled.get(0).attempt()).isEqualTo(1);
+        assertThat(rePolled.get(0).inputData()).containsEntry("fixedMemory", 512);
+    }
 }
+

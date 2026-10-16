@@ -2,6 +2,7 @@ package com.unipost.workflow.adapters.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.unipost.workflow.core.model.TaskDlqRecord;
 import com.unipost.workflow.core.model.TaskSnapshot;
 import com.unipost.workflow.core.model.TaskStatus;
 import com.unipost.workflow.core.model.TaskType;
@@ -33,6 +34,7 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     private final Map<String, WorkflowRecord> workflows = new ConcurrentHashMap<>();
     private final Map<String, TaskRecord> tasks = new ConcurrentHashMap<>();
     private final Map<String, QueueRecord> queue = new ConcurrentHashMap<>();
+    private final Map<String, TaskDlqRecord> dlq = new ConcurrentHashMap<>();
 
     private record WorkflowRecord(
         String workflowId, String tenantId, String workspaceId, String workflowName,
@@ -49,7 +51,8 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
 
     private record QueueRecord(
         String taskId, String workflowId, String tenantId, String workspaceId,
-        String taskType, String domain, int priority, long visibleAtEpochMs, String leaseOwner
+        String taskType, String domain, int priority, long visibleAtEpochMs, String leaseOwner,
+        long createdAtMs
     ) {}
 
     @Override
@@ -195,8 +198,9 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     ) {
         lock.lock();
         try {
+            long createdAtMs = System.currentTimeMillis();
             queue.put(taskId, new QueueRecord(
-                taskId, workflowId, tenantId, workspaceId, taskType, domain, priority, visibleAtEpochMs, null
+                taskId, workflowId, tenantId, workspaceId, taskType, domain, priority, visibleAtEpochMs, null, createdAtMs
             ));
         } finally {
             lock.unlock();
@@ -220,7 +224,9 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
                 }
             }
 
-            candidates.sort(Comparator.comparingInt(QueueRecord::priority).reversed()
+            // Anti-starvation dynamic priority aging (+1 priority per 5 seconds in queue)
+            candidates.sort(Comparator.<QueueRecord>comparingInt(qr -> qr.priority() + (int) Math.max(0, (nowEpochMs - qr.createdAtMs()) / 5000L))
+                .reversed()
                 .thenComparingLong(QueueRecord::visibleAtEpochMs));
 
             List<TaskSnapshot> result = new ArrayList<>();
@@ -231,7 +237,7 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
                 long newVisibleAt = nowEpochMs + responseTimeoutMs;
                 queue.put(qr.taskId(), new QueueRecord(
                     qr.taskId(), qr.workflowId(), qr.tenantId(), qr.workspaceId(),
-                    qr.taskType(), qr.domain(), qr.priority(), newVisibleAt, workerId
+                    qr.taskType(), qr.domain(), qr.priority(), newVisibleAt, workerId, qr.createdAtMs()
                 ));
 
                 TaskRecord tr = tasks.get(qr.taskId());
@@ -260,7 +266,7 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
             if (qr != null && (qr.leaseOwner() == null || qr.leaseOwner().equals(workerId))) {
                 queue.put(taskId, new QueueRecord(
                     qr.taskId(), qr.workflowId(), qr.tenantId(), qr.workspaceId(),
-                    qr.taskType(), qr.domain(), qr.priority(), newVisibleAtEpochMs, workerId
+                    qr.taskType(), qr.domain(), qr.priority(), newVisibleAtEpochMs, workerId, qr.createdAtMs()
                 ));
                 return true;
             }
@@ -294,6 +300,71 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
                 }
             }
             return Collections.unmodifiableList(expired);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void quarantineTaskToDlq(TaskDlqRecord record) {
+        lock.lock();
+        try {
+            dlq.put(record.dlqId(), record);
+            queue.remove(record.taskId());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public List<TaskDlqRecord> listDlqTasks(String tenantId, String status, int limit) {
+        lock.lock();
+        try {
+            return dlq.values().stream()
+                .filter(r -> tenantId == null || tenantId.isBlank() || r.tenantId().equalsIgnoreCase(tenantId))
+                .filter(r -> status == null || status.isBlank() || r.status().equalsIgnoreCase(status))
+                .sorted(Comparator.comparingLong(TaskDlqRecord::isolatedAtMs).reversed())
+                .limit(limit > 0 ? limit : 100)
+                .toList();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public Optional<TaskDlqRecord> getDlqTask(String dlqId) {
+        lock.lock();
+        try {
+            return Optional.ofNullable(dlq.get(dlqId));
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void updateDlqStatus(String dlqId, String status, Long replayedAtMs) {
+        lock.lock();
+        try {
+            TaskDlqRecord existing = dlq.get(dlqId);
+            if (existing != null) {
+                TaskDlqRecord updated = new TaskDlqRecord(
+                    existing.dlqId(), existing.taskId(), existing.workflowId(), existing.tenantId(),
+                    existing.workspaceId(), existing.taskType(), existing.domain(),
+                    existing.errorMessage(), existing.errorStacktrace(), existing.payloadSnapshot(),
+                    existing.retryCount(), existing.isolatedAtMs(), replayedAtMs, status
+                );
+                dlq.put(dlqId, updated);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void deleteDlqTask(String dlqId) {
+        lock.lock();
+        try {
+            dlq.remove(dlqId);
         } finally {
             lock.unlock();
         }

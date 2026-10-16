@@ -90,4 +90,42 @@ public abstract class PersistenceContractTest {
         assertThat(expired).hasSize(1);
         assertThat(expired.get(0).taskId()).isEqualTo("task_q1");
     }
+
+    @Test
+    @DisplayName("Contract: should quarantine, query, update, and delete DLQ records")
+    void testDeadLetterQueueOperations() {
+        PersistencePort port = createPersistencePort();
+
+        com.unipost.workflow.core.model.TaskDlqRecord record = new com.unipost.workflow.core.model.TaskDlqRecord(
+            "dlq-101", "task_dlq_1", "wf-101", "tenant-alpha", "ws-default",
+            "HTTP", "default", "Connection refused: api.partner.com",
+            "java.net.ConnectException: Connection refused", Map.of("url", "https://api.partner.com"),
+            3, 50000L, null, "ISOLATED"
+        );
+
+        port.quarantineTaskToDlq(record);
+
+        // List DLQ by tenant
+        List<com.unipost.workflow.core.model.TaskDlqRecord> list = port.listDlqTasks("tenant-alpha", "ISOLATED", 10);
+        assertThat(list).hasSize(1);
+        assertThat(list.get(0).dlqId()).isEqualTo("dlq-101");
+        assertThat(list.get(0).errorMessage()).contains("Connection refused");
+
+        // Get by ID
+        Optional<com.unipost.workflow.core.model.TaskDlqRecord> fetched = port.getDlqTask("dlq-101");
+        assertThat(fetched).isPresent();
+        assertThat(fetched.get().status()).isEqualTo("ISOLATED");
+
+        // Update status to REPLAYED
+        port.updateDlqStatus("dlq-101", "REPLAYED", 55000L);
+        Optional<com.unipost.workflow.core.model.TaskDlqRecord> replayed = port.getDlqTask("dlq-101");
+        assertThat(replayed).isPresent();
+        assertThat(replayed.get().status()).isEqualTo("REPLAYED");
+        assertThat(replayed.get().replayedAtMs()).isEqualTo(55000L);
+
+        // Delete from DLQ
+        port.deleteDlqTask("dlq-101");
+        assertThat(port.getDlqTask("dlq-101")).isEmpty();
+    }
 }
+

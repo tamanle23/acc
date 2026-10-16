@@ -13,6 +13,7 @@ export class TaskPoller {
   private running = false;
   private readonly limiter: ConcurrencyLimiter;
   private pollerTimer?: ReturnType<typeof setTimeout>;
+  private consecutiveEmptyPolls = 0;
 
   constructor(
     private readonly config: Required<WorkerConfig>,
@@ -28,6 +29,7 @@ export class TaskPoller {
   start(): void {
     if (this.running) return;
     this.running = true;
+    this.consecutiveEmptyPolls = 0;
     this.scheduleNextPoll(0);
   }
 
@@ -39,11 +41,22 @@ export class TaskPoller {
     }
   }
 
+  public calculateJitteredBackoff(emptyCount = this.consecutiveEmptyPolls): number {
+    const base = this.config.basePollIntervalMs || 500;
+    const max = this.config.maxPollIntervalMs || 5000;
+    const exponent = Math.min(6, emptyCount);
+    const interval = Math.min(max, base * Math.pow(2, exponent));
+    const jitter = Math.random() * (interval * 0.2); // +20% randomized jitter
+    return Math.floor(interval + jitter);
+  }
+
   private scheduleNextPoll(delayMs: number): void {
     if (!this.running) return;
     this.pollerTimer = setTimeout(() => {
       this.pollAndExecute().catch(() => {
-        this.scheduleNextPoll(this.config.basePollIntervalMs);
+        this.consecutiveEmptyPolls++;
+        const backoff = this.calculateJitteredBackoff();
+        this.scheduleNextPoll(backoff);
       });
     }, delayMs);
   }
@@ -69,19 +82,24 @@ export class TaskPoller {
         this.workerId
       );
     } catch (err) {
-      this.scheduleNextPoll(this.config.basePollIntervalMs * 2);
+      this.consecutiveEmptyPolls++;
+      const delay = this.calculateJitteredBackoff();
+      this.scheduleNextPoll(delay);
       return;
     }
 
     if (tasks.length > 0) {
+      this.consecutiveEmptyPolls = 0;
       for (const task of tasks) {
         this.executeTaskWithLimiter(task);
       }
       // Burst draining: schedule immediately
       this.scheduleNextPoll(0);
     } else {
-      // Exponential backoff
-      this.scheduleNextPoll(this.config.basePollIntervalMs);
+      // Exponential jittered backoff on empty poll
+      this.consecutiveEmptyPolls++;
+      const delay = this.calculateJitteredBackoff();
+      this.scheduleNextPoll(delay);
     }
   }
 

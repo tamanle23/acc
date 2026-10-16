@@ -119,5 +119,6 @@
 | [112](112_phase_37_human_in_the_loop_approval_inbox.md) | 2026-10-16 | Human-in-the-Loop (HITL) Operations: Task Approval Inbox, Decision Modals & SLA Tracking (Phase 37) | Implemented TaskStatus.WAITING_FOR_APPROVAL, /claim /unclaim /resolve REST endpoints, dedicated /approvals inbox, Liquid Glass HumanDecisionModal, and offline sandbox simulation. |
 | [113](113_relocate_workflow_items_to_admin_sidebar_group.md) | 2026-10-16 | Relocate Workflow Management Items to Admin Group in Sidebar | Moved /workflow-executions, /workflows, and /approvals from Workspace nav group to Admin nav group in sidebar-data.ts. |
 | [114](114_refactor_workflows_approvals_common_datatable_rule.md) | 2026-10-16 | Refactor Workflows & Approvals to Shared DataTable & Codify Common Component Priority Rule | Refactored /workflows and /approvals to use common DataTable primitives and codified COMMON-COMPONENT-PRIORITY agent rule. |
+| [115](115_phase_38_enterprise_resilient_lease_queue_dlq.md) | 2026-10-16 | Enterprise Resilient Lease Queue, Poison DLQ & Priority Queuing (Phase 38) | Implemented dedicated task_dlq persistence, multi-tenant aged priority polling, zombie worker lease reclamation, anti-thundering herd jittered poller, Unified Sandbox simulation, and Liquid Glass DLQ management console with shared DataTable. |
 
 

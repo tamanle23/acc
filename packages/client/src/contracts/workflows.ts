@@ -64,3 +64,34 @@ export interface WorkflowDefinitionSummary {
   updatedAt?: string;
   [key: string]: unknown;
 }
+
+// ==========================================
+// Dead-Letter Queue (DLQ) Contracts
+// ==========================================
+
+export interface TaskDlqRecordDto {
+  dlqId: string;
+  taskId: string;
+  workflowId: string;
+  tenantId: string;
+  workspaceId: string;
+  taskType: string;
+  domain: string;
+  errorMessage?: string;
+  errorStacktrace?: string;
+  payloadSnapshot?: Record<string, unknown>;
+  retryCount: number;
+  isolatedAtMs: number;
+  replayedAtMs?: number | null;
+  status: 'ISOLATED' | 'REPLAYED' | 'DISCARDED';
+}
+
+export interface DlqFilterParams {
+  status?: string;
+  limit?: number;
+}
+
+export interface ReplayDlqRequestDto {
+  payloadOverrides?: Record<string, unknown>;
+}
+

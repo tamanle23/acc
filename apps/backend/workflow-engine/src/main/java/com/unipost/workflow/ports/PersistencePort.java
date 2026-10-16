@@ -1,5 +1,6 @@
 package com.unipost.workflow.ports;
 
+import com.unipost.workflow.core.model.TaskDlqRecord;
 import com.unipost.workflow.core.model.TaskSnapshot;
 import com.unipost.workflow.core.model.TaskStatus;
 import com.unipost.workflow.core.model.WorkflowDefinition;
@@ -97,4 +98,16 @@ public interface PersistencePort {
     void removeQueueTask(String taskId);
 
     List<TaskSnapshot> findExpiredLeaseTasks(long nowEpochMs);
+
+    // Dead-letter queue (DLQ) operations
+    void quarantineTaskToDlq(TaskDlqRecord record);
+
+    List<TaskDlqRecord> listDlqTasks(String tenantId, String status, int limit);
+
+    Optional<TaskDlqRecord> getDlqTask(String dlqId);
+
+    void updateDlqStatus(String dlqId, String status, Long replayedAtMs);
+
+    void deleteDlqTask(String dlqId);
 }
+
