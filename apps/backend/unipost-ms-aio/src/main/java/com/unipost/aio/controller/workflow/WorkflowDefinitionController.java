@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -145,4 +146,137 @@ public class WorkflowDefinitionController {
     public ResponseEntity<?> verifyAuditLedger(@PathVariable("id") String executionId) {
         return ResponseEntity.ok(engineService.verifyAuditLedger(executionId));
     }
+
+    // --- Fleet / Batch Hot Migration Endpoints ---
+
+    public record MigrationPreviewRequest(int targetVersion) {}
+    public record BatchMigrateRequest(int targetVersion, List<String> executionIds, Boolean autoMigrateCompatibleOnly) {}
+
+    @PostMapping("/{key}/migration-preview")
+    public ResponseEntity<?> migrationPreview(
+        @PathVariable("key") String workflowKey,
+        @RequestBody MigrationPreviewRequest req,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        var targetRecordOpt = registry.getVersion(tenantId, workflowKey, req.targetVersion());
+        if (targetRecordOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Target definition version not found"));
+        }
+        WorkflowDefinition targetDef = targetRecordOpt.get().definition();
+
+        var persistence = registry.persistencePort();
+        if (persistence == null) {
+            return ResponseEntity.ok(Map.of(
+                "summary", Map.of("fullyCompatible", 0, "requiresReview", 0, "incompatible", 0),
+                "items", List.of()
+            ));
+        }
+
+        List<com.unipost.workflow.core.model.WorkflowSnapshot> runningExecutions = persistence.listWorkflowExecutions(
+            tenantId, workflowKey, com.unipost.workflow.core.model.WorkflowStatus.RUNNING
+        );
+
+        int fullyCompatible = 0;
+        int requiresReview = 0;
+        int incompatible = 0;
+
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
+        for (var exec : runningExecutions) {
+            var report = engineService.validateMigration(exec.workflowId(), targetDef);
+            String tierStr = report.tier() != null ? report.tier().name() : (report.compatible() ? "FULLY_COMPATIBLE" : "INCOMPATIBLE_BLOCK");
+            if ("FULLY_COMPATIBLE".equals(tierStr)) fullyCompatible++;
+            else if ("CONDITIONAL_REQUIRES_MANUAL_REVIEW".equals(tierStr)) requiresReview++;
+            else incompatible++;
+
+            items.add(Map.of(
+                "workflowId", exec.workflowId(),
+                "currentVersion", exec.version(),
+                "status", exec.status().name(),
+                "tier", tierStr,
+                "compatible", report.compatible(),
+                "completedTasks", report.completedTasksPreserved(),
+                "activeTasks", report.activeFrontierTasks(),
+                "warnings", report.warnings(),
+                "issues", report.issues()
+            ));
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "workflowKey", workflowKey,
+            "targetVersion", req.targetVersion(),
+            "summary", Map.of(
+                "total", runningExecutions.size(),
+                "fullyCompatible", fullyCompatible,
+                "requiresReview", requiresReview,
+                "incompatible", incompatible
+            ),
+            "items", items
+        ));
+    }
+
+    @PostMapping("/{key}/batch-migrate")
+    public ResponseEntity<?> batchMigrate(
+        @PathVariable("key") String workflowKey,
+        @RequestBody BatchMigrateRequest req,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId,
+        @RequestHeader(value = "X-Actor-Id", required = false) String actorId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        var targetRecordOpt = registry.getVersion(tenantId, workflowKey, req.targetVersion());
+        if (targetRecordOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Target definition version not found"));
+        }
+        WorkflowDefinition targetDef = targetRecordOpt.get().definition();
+
+        var persistence = registry.persistencePort();
+        if (persistence == null) {
+            return ResponseEntity.ok(Map.of("migrated", 0, "failed", 0, "results", List.of()));
+        }
+
+        List<com.unipost.workflow.core.model.WorkflowSnapshot> runningExecutions = persistence.listWorkflowExecutions(
+            tenantId, workflowKey, com.unipost.workflow.core.model.WorkflowStatus.RUNNING
+        );
+
+        List<String> targetIds = req.executionIds();
+        boolean autoCompatible = Boolean.TRUE.equals(req.autoMigrateCompatibleOnly());
+
+        int migrated = 0;
+        int failed = 0;
+        List<Map<String, Object>> results = new java.util.ArrayList<>();
+        String opId = actorId != null ? actorId : "BATCH_OPERATOR";
+        long now = System.currentTimeMillis();
+
+        for (var exec : runningExecutions) {
+            boolean shouldMigrate = false;
+            if (targetIds != null && targetIds.contains(exec.workflowId())) {
+                shouldMigrate = true;
+            } else if (autoCompatible) {
+                var report = engineService.validateMigration(exec.workflowId(), targetDef);
+                if (report.tier() == com.unipost.workflow.core.model.MigrationTier.FULLY_COMPATIBLE) {
+                    shouldMigrate = true;
+                }
+            }
+
+            if (shouldMigrate) {
+                try {
+                    engineService.migrateExecution(exec.workflowId(), targetDef, opId, now);
+                    migrated++;
+                    results.add(Map.of("workflowId", exec.workflowId(), "success", true));
+                } catch (Exception e) {
+                    failed++;
+                    results.add(Map.of("workflowId", exec.workflowId(), "success", false, "error", e.getMessage()));
+                }
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+            "workflowKey", workflowKey,
+            "targetVersion", req.targetVersion(),
+            "migrated", migrated,
+            "failed", failed,
+            "results", results
+        ));
+    }
 }
+

@@ -14,8 +14,10 @@ import { Button } from '@/components/ui/button';
 import { useWorkflowDefinitions as useWorkflowsQuery } from './api/workflow-api';
 import { WorkflowCatalogTable } from './components/workflow-catalog-table';
 import { WorkflowCreateDialog } from './components/workflow-create-dialog';
+import { FleetMigrationModal } from './components/fleet-migration-modal';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type WorkflowDefinitionSummary } from './api/workflow-api';
 
 const route = getRouteApi('/_authenticated/workflows/')
 
@@ -27,6 +29,7 @@ export const WorkflowsFeature: React.FC = () => {
   const { t } = useTranslation('console');
   const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [fleetMigrateTarget, setFleetMigrateTarget] = useState<WorkflowDefinitionSummary | null>(null);
 
 
 
@@ -129,6 +132,7 @@ export const WorkflowsFeature: React.FC = () => {
               isLoading={isLoading}
               onDesignWorkflow={handleOpenStudio}
               onCreateNew={() => setIsCreateOpen(true)}
+              onFleetMigrate={(wf) => setFleetMigrateTarget(wf)}
             />
           </div>
         )}
@@ -142,6 +146,19 @@ export const WorkflowsFeature: React.FC = () => {
           setActiveWorkflowKey(key);
         }}
       />
+
+      {fleetMigrateTarget && (
+        <FleetMigrationModal
+          isOpen={Boolean(fleetMigrateTarget)}
+          onClose={() => {
+            setFleetMigrateTarget(null);
+            refetch();
+          }}
+          workflowKey={fleetMigrateTarget.workflowKey}
+          workflowName={fleetMigrateTarget.name}
+          currentVersion={fleetMigrateTarget.version || 1}
+        />
+      )}
     </>
   );
 };

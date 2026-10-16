@@ -77,4 +77,46 @@ class TopologicalCompatibilityValidatorTest {
         assertThat(report.compatible()).isFalse();
         assertThat(report.issues()).anyMatch(issue -> issue.contains("Completed task 'step1' does not exist in target version 2"));
     }
+
+    @Test
+    @DisplayName("Should strictly reject hot migration on terminal execution (COMPLETED)")
+    void shouldRejectOnTerminalExecution() {
+        TaskDefinition t1 = TaskDefinition.builder("step1").taskType(TaskType.SIMPLE).build();
+        WorkflowDefinition v1 = WorkflowDefinition.builder("order-flow").version(1).tasks(List.of(t1)).build();
+        WorkflowDefinition v2 = WorkflowDefinition.builder("order-flow").version(2).tasks(List.of(t1)).build();
+
+        WorkflowSnapshot execution = new WorkflowSnapshot(
+            "wf-1", "tenant-1", "default", "order-flow", 1, WorkflowStatus.COMPLETED,
+            Map.of(), Map.of(), null, Map.of()
+        );
+
+        TopologicalCompatibilityValidator.MigrationValidationReport report = validator.validate(v1, v2, execution);
+        assertThat(report.compatible()).isFalse();
+        assertThat(report.tier()).isEqualTo(com.unipost.workflow.core.model.MigrationTier.INCOMPATIBLE_BLOCK);
+        assertThat(report.issues()).anyMatch(i -> i.contains("Cannot hot-migrate execution in terminal state"));
+    }
+
+    @Test
+    @DisplayName("Should categorize as CONDITIONAL_REQUIRES_MANUAL_REVIEW when new tasks introduce parameter bindings")
+    void shouldCategorizeAsConditionalWhenNewTaskHasParameters() {
+        TaskDefinition t1 = TaskDefinition.builder("step1").taskType(TaskType.SIMPLE).build();
+        TaskDefinition t2WithParams = TaskDefinition.builder("step2_new")
+            .taskType(TaskType.SIMPLE)
+            .inputParameters(Map.of("customKey", "requiredValue"))
+            .build();
+
+        WorkflowDefinition v1 = WorkflowDefinition.builder("order-flow").version(1).tasks(List.of(t1)).build();
+        WorkflowDefinition v2 = WorkflowDefinition.builder("order-flow").version(2).tasks(List.of(t1, t2WithParams)).build();
+
+        WorkflowSnapshot execution = new WorkflowSnapshot(
+            "wf-1", "tenant-1", "default", "order-flow", 1, WorkflowStatus.RUNNING,
+            Map.of(), Map.of(), null, Map.of()
+        );
+
+        TopologicalCompatibilityValidator.MigrationValidationReport report = validator.validate(v1, v2, execution);
+        assertThat(report.compatible()).isTrue();
+        assertThat(report.tier()).isEqualTo(com.unipost.workflow.core.model.MigrationTier.CONDITIONAL_REQUIRES_MANUAL_REVIEW);
+        assertThat(report.warnings()).isNotEmpty();
+    }
 }
+

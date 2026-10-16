@@ -93,6 +93,10 @@ public class WorkflowEngineConfiguration {
             this.persistencePort = persistencePort;
         }
 
+        public PersistencePort persistencePort() {
+            return this.persistencePort;
+        }
+
         public void register(String tenantId, WorkflowDefinition definition) {
             tenantDefinitions.computeIfAbsent(tenantId, t -> new ConcurrentHashMap<>())
                 .put(definition.workflowKey(), definition);

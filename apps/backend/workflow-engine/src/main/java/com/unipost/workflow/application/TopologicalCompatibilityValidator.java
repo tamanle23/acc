@@ -1,7 +1,9 @@
 package com.unipost.workflow.application;
 
+import com.unipost.workflow.core.model.MigrationTier;
 import com.unipost.workflow.core.model.TaskDefinition;
 import com.unipost.workflow.core.model.TaskSnapshot;
+import com.unipost.workflow.core.model.TaskStatus;
 import com.unipost.workflow.core.model.WorkflowDefinition;
 import com.unipost.workflow.core.model.WorkflowSnapshot;
 import com.unipost.workflow.core.model.WorkflowStatus;
@@ -13,21 +15,47 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Validates topological compatibility when performing Policy B: Hot Migration
- * on an in-flight workflow execution from v1 to v2.
+ * Validates topological compatibility and classifies in-flight executions into 3 heuristic tiers
+ * when performing Policy B: Hot Migration on an execution from v1 to v2.
  */
 public class TopologicalCompatibilityValidator {
 
     public record MigrationValidationReport(
         boolean compatible,
+        MigrationTier tier,
         String sourceVersion,
         String targetVersion,
         List<String> completedTasksPreserved,
         List<String> activeFrontierTasks,
         List<String> addedDownstreamTasks,
         List<String> removedTasks,
-        List<String> issues
-    ) {}
+        List<String> issues,
+        List<String> warnings
+    ) {
+        public MigrationValidationReport(
+            boolean compatible,
+            String sourceVersion,
+            String targetVersion,
+            List<String> completedTasksPreserved,
+            List<String> activeFrontierTasks,
+            List<String> addedDownstreamTasks,
+            List<String> removedTasks,
+            List<String> issues
+        ) {
+            this(
+                compatible,
+                compatible ? MigrationTier.FULLY_COMPATIBLE : MigrationTier.INCOMPATIBLE_BLOCK,
+                sourceVersion,
+                targetVersion,
+                completedTasksPreserved,
+                activeFrontierTasks,
+                addedDownstreamTasks,
+                removedTasks,
+                issues,
+                List.of()
+            );
+        }
+    }
 
     public MigrationValidationReport validate(
         WorkflowDefinition sourceDef,
@@ -35,13 +63,17 @@ public class TopologicalCompatibilityValidator {
         WorkflowSnapshot currentExecution
     ) {
         List<String> issues = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
 
         if (!sourceDef.workflowKey().equals(targetDef.workflowKey())) {
             issues.add("Workflow key mismatch: source is '" + sourceDef.workflowKey() + "' but target is '" + targetDef.workflowKey() + "'");
         }
 
-        if (currentExecution.status() != WorkflowStatus.RUNNING) {
-            issues.add("Cannot hot-migrate execution in non-RUNNING state: " + currentExecution.status());
+        // Strict Terminal Prohibition: terminal executions cannot be migrated
+        if (currentExecution.status().isTerminal()) {
+            issues.add("Cannot hot-migrate execution in terminal state: " + currentExecution.status());
+        } else if (currentExecution.status() != WorkflowStatus.RUNNING && currentExecution.status() != WorkflowStatus.PAUSED) {
+            issues.add("Cannot hot-migrate execution in non-active state: " + currentExecution.status());
         }
 
         Map<String, TaskDefinition> targetTaskMap = targetDef.tasks().stream()
@@ -70,6 +102,14 @@ public class TopologicalCompatibilityValidator {
                     issues.add("Critical: In-flight frontier task '" + refName + "' is absent in target version " + targetDef.version());
                 } else {
                     activeFrontierTasks.add(refName);
+                    // Check if task definition modified for active task
+                    TaskDefinition sourceTaskDef = sourceTaskMap.get(refName);
+                    TaskDefinition targetTaskDef = targetTaskMap.get(refName);
+                    if (sourceTaskDef != null && targetTaskDef != null) {
+                        if (sourceTaskDef.taskType() != targetTaskDef.taskType()) {
+                            warnings.add("Active task '" + refName + "' changed taskType from " + sourceTaskDef.taskType() + " to " + targetTaskDef.taskType());
+                        }
+                    }
                 }
             }
         }
@@ -86,17 +126,43 @@ public class TopologicalCompatibilityValidator {
             .filter(r -> !targetRefs.contains(r))
             .collect(Collectors.toList());
 
+        // Any removed unexecuted tasks are warnings if not completed
+        for (String rem : removedTasks) {
+            if (!currentExecution.tasksByRef().containsKey(rem)) {
+                warnings.add("Unexecuted task '" + rem + "' was removed from definition in target version");
+            }
+        }
+
+        // Check newly added tasks for input parameters that might require review
+        for (String added : addedDownstreamTasks) {
+            TaskDefinition addedDef = targetTaskMap.get(added);
+            if (addedDef != null && !addedDef.inputParameters().isEmpty()) {
+                warnings.add("Newly added task '" + added + "' introduces " + addedDef.inputParameters().size() + " parameter bindings");
+            }
+        }
+
         boolean isCompatible = issues.isEmpty();
+        MigrationTier tier;
+        if (!isCompatible) {
+            tier = MigrationTier.INCOMPATIBLE_BLOCK;
+        } else if (!warnings.isEmpty()) {
+            tier = MigrationTier.CONDITIONAL_REQUIRES_MANUAL_REVIEW;
+        } else {
+            tier = MigrationTier.FULLY_COMPATIBLE;
+        }
 
         return new MigrationValidationReport(
             isCompatible,
+            tier,
             "v" + sourceDef.version(),
             "v" + targetDef.version(),
             completedTasksPreserved,
             activeFrontierTasks,
             addedDownstreamTasks,
             removedTasks,
-            issues
+            issues,
+            warnings
         );
     }
 }
+

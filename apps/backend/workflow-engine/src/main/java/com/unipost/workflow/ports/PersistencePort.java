@@ -43,6 +43,8 @@ public interface PersistencePort {
 
     Optional<WorkflowSnapshot> getWorkflowSnapshot(String workflowId);
 
+    List<WorkflowSnapshot> listWorkflowExecutions(String tenantId, String workflowKey, WorkflowStatus status);
+
     // Task executions
     void saveTaskExecution(
         String taskId,

@@ -185,9 +185,12 @@ export const useWorkflowVersions = (workflowKey: string | null) => {
   });
 };
 
+export type MigrationTier = 'FULLY_COMPATIBLE' | 'CONDITIONAL_REQUIRES_MANUAL_REVIEW' | 'INCOMPATIBLE_BLOCK';
+
 // 9. Hot Migration Dry Run
 export interface MigrationValidationReport {
   compatible: boolean;
+  tier?: MigrationTier;
   sourceVersion: string;
   targetVersion: string;
   completedTasksPreserved: string[];
@@ -195,6 +198,7 @@ export interface MigrationValidationReport {
   addedDownstreamTasks: string[];
   removedTasks: string[];
   issues: string[];
+  warnings?: string[];
 }
 
 export const useMigrationDryRun = () => {
@@ -278,5 +282,86 @@ export const useVerifyAuditLedger = (executionId: string | null) => {
       }
     },
     enabled: Boolean(executionId),
+  });
+};
+
+// 12. Fleet / Batch Hot Migration
+export interface FleetExecutionPreviewItem {
+  workflowId: string;
+  currentVersion: number;
+  status: string;
+  tier: MigrationTier;
+  compatible: boolean;
+  completedTasks: string[];
+  activeTasks: string[];
+  warnings: string[];
+  issues: string[];
+}
+
+export interface FleetMigrationPreview {
+  workflowKey: string;
+  targetVersion: number;
+  summary: {
+    total: number;
+    fullyCompatible: number;
+    requiresReview: number;
+    incompatible: number;
+  };
+  items: FleetExecutionPreviewItem[];
+}
+
+export interface FleetBatchMigrateResult {
+  workflowKey: string;
+  targetVersion: number;
+  migrated: number;
+  failed: number;
+  results: Array<{ workflowId: string; success: boolean; error?: string }>;
+}
+
+export const useFleetMigrationPreview = (workflowKey: string | null, targetVersion: number | null) => {
+  return useQuery({
+    queryKey: ['workflows', 'fleet-migration-preview', workflowKey, targetVersion],
+    queryFn: async (): Promise<FleetMigrationPreview | null> => {
+      if (!workflowKey || !targetVersion) return null;
+      const res = await springApiClient.post(`/v1/workflow/definitions/${workflowKey}/migration-preview`, {
+        targetVersion,
+      });
+      return res.data;
+    },
+    enabled: Boolean(workflowKey && targetVersion),
+  });
+};
+
+export const useFleetBatchMigrate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      workflowKey,
+      targetVersion,
+      executionIds,
+      autoMigrateCompatibleOnly,
+    }: {
+      workflowKey: string;
+      targetVersion: number;
+      executionIds?: string[];
+      autoMigrateCompatibleOnly?: boolean;
+    }) => {
+      const res = await springApiClient.post(`/v1/workflow/definitions/${workflowKey}/batch-migrate`, {
+        targetVersion,
+        executionIds,
+        autoMigrateCompatibleOnly,
+      });
+      return res.data as FleetBatchMigrateResult;
+    },
+    onSuccess: (data) => {
+      toast.success(`Batch migrated ${data.migrated} executions to v${data.targetVersion}`);
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-executions'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || 'Batch migration failed');
+    },
   });
 };

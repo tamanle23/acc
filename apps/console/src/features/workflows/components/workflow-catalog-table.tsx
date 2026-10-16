@@ -28,6 +28,7 @@ interface WorkflowCatalogTableProps {
   isLoading: boolean;
   onDesignWorkflow: (workflowKey: string) => void;
   onCreateNew: () => void;
+  onFleetMigrate?: (workflow: WorkflowDefinitionSummary) => void;
 }
 
 export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
@@ -35,6 +36,7 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
   isLoading,
   onDesignWorkflow,
   onCreateNew,
+  onFleetMigrate,
 }) => {
   const toggleMutation = useToggleWorkflowStatus();
   const deleteMutation = useDeleteWorkflowDefinition();
@@ -51,8 +53,9 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
         onToggleStatus: (workflowKey, status) =>
           toggleMutation.mutate({ workflowKey, status }),
         onDeleteWorkflow: (workflowKey) => deleteMutation.mutate(workflowKey),
+        onFleetMigrate,
       }),
-    [onDesignWorkflow, toggleMutation, deleteMutation]
+    [onDesignWorkflow, toggleMutation, deleteMutation, onFleetMigrate]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library

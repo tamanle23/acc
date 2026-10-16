@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
   Trash2,
   Power,
+  GitCompare,
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { type WorkflowDefinitionSummary } from '../api/workflow-api';
@@ -23,12 +24,14 @@ interface CreateColumnsProps {
   onDesignWorkflow: (workflowKey: string) => void;
   onToggleStatus: (workflowKey: string, status: 'ACTIVE' | 'DISABLED') => void;
   onDeleteWorkflow: (workflowKey: string) => void;
+  onFleetMigrate?: (workflow: WorkflowDefinitionSummary) => void;
 }
 
 export const createWorkflowCatalogColumns = ({
   onDesignWorkflow,
   onToggleStatus,
   onDeleteWorkflow,
+  onFleetMigrate,
 }: CreateColumnsProps): ColumnDef<WorkflowDefinitionSummary>[] => [
   {
     accessorKey: 'name',
@@ -141,6 +144,12 @@ export const createWorkflowCatalogColumns = ({
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Open in Studio
               </DropdownMenuItem>
+              {onFleetMigrate && (
+                <DropdownMenuItem onClick={() => onFleetMigrate(item)}>
+                  <GitCompare className="h-4 w-4 mr-2 text-primary" />
+                  Fleet Hot Migration
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={() =>
                   onToggleStatus(item.workflowKey, isActive ? 'DISABLED' : 'ACTIVE')

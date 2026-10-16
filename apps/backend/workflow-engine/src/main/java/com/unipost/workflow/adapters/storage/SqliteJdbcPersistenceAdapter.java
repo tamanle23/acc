@@ -195,6 +195,66 @@ public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public List<WorkflowSnapshot> listWorkflowExecutions(String tenantId, String workflowKey, WorkflowStatus status) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM workflow_executions WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (tenantId != null && !tenantId.isBlank() && !"system".equals(tenantId)) {
+            sql.append(" AND tenant_id = ?");
+            params.add(tenantId);
+        }
+        if (workflowKey != null && !workflowKey.isBlank()) {
+            sql.append(" AND workflow_name = ?");
+            params.add(workflowKey);
+        }
+        if (status != null) {
+            sql.append(" AND status = ?");
+            params.add(status.name());
+        }
+        sql.append(" ORDER BY created_at_ms DESC");
+
+        List<WorkflowSnapshot> list = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String wfId = rs.getString("workflow_id");
+                    String tId = rs.getString("tenant_id");
+                    String wsId = rs.getString("workspace_id");
+                    String name = rs.getString("workflow_name");
+                    int version = rs.getInt("version");
+                    WorkflowStatus st = WorkflowStatus.valueOf(rs.getString("status"));
+                    Map<String, Object> input = fromJson(rs.getString("input_payload"));
+                    Map<String, Object> output = fromJson(rs.getString("output_payload"));
+                    String failure = rs.getString("failure_reason");
+
+                    Map<String, TaskSnapshot> tasksByRef = new HashMap<>();
+                    String sqlTasks = "SELECT * FROM task_executions WHERE workflow_id = ?";
+                    try (PreparedStatement psTasks = conn.prepareStatement(sqlTasks)) {
+                        psTasks.setString(1, wfId);
+                        try (ResultSet rsTasks = psTasks.executeQuery()) {
+                            while (rsTasks.next()) {
+                                TaskSnapshot snap = mapTaskSnapshot(rsTasks);
+                                tasksByRef.put(snap.taskReferenceName(), snap);
+                            }
+                        }
+                    }
+
+                    list.add(new WorkflowSnapshot(
+                        wfId, tId, wsId, name, version, st, input, output, failure, tasksByRef
+                    ));
+                }
+            }
+            return Collections.unmodifiableList(list);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to list workflow executions from SQLite", e);
+        }
+    }
+
+    @Override
     public void saveTaskExecution(
         String taskId, String workflowId, String tenantId, String workspaceId,
         String referenceName, String taskType, String domain, TaskStatus status,

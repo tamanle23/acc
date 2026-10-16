@@ -52,6 +52,7 @@ import {
 } from '@/features/workflows/hooks/use-workflow-execution-stream';
 import * as workflowApi from '@/features/workflows/api/workflow-api';
 import { HotMigrationModal } from '@/features/workflows/components/hot-migration-modal';
+import { useSaveWorkflowDefinition, useWorkflowDefinition } from '@/features/workflows/api/workflow-api';
 
 export interface VisualDagStudioProps {
   mode?: 'full' | 'readonly' | 'designer' | 'execution';

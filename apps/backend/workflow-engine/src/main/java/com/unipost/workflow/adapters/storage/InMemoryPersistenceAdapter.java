@@ -141,6 +141,41 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
     }
 
     @Override
+    public List<WorkflowSnapshot> listWorkflowExecutions(String tenantId, String workflowKey, WorkflowStatus status) {
+        lock.lock();
+        try {
+            List<WorkflowSnapshot> result = new ArrayList<>();
+            for (WorkflowRecord rec : workflows.values()) {
+                if (tenantId != null && !tenantId.isBlank() && !rec.tenantId().equals(tenantId) && !"system".equals(tenantId)) {
+                    continue;
+                }
+                if (workflowKey != null && !workflowKey.isBlank() && !rec.workflowName().equals(workflowKey)) {
+                    continue;
+                }
+                if (status != null && rec.status() != status) {
+                    continue;
+                }
+
+                Map<String, TaskSnapshot> tasksByRef = new HashMap<>();
+                for (TaskRecord tr : tasks.values()) {
+                    if (tr.workflowId().equals(rec.workflowId())) {
+                        tasksByRef.put(tr.referenceName(), toTaskSnapshot(tr));
+                    }
+                }
+                Map<String, Object> in = fromJson(rec.inputJson(), Map.class);
+                Map<String, Object> out = fromJson(rec.outputJson(), Map.class);
+                result.add(new WorkflowSnapshot(
+                    rec.workflowId(), rec.tenantId(), rec.workspaceId(), rec.workflowName(),
+                    rec.version(), rec.status(), in, out, rec.failureReason(), tasksByRef
+                ));
+            }
+            return Collections.unmodifiableList(result);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public void saveTaskExecution(
         String taskId, String workflowId, String tenantId, String workspaceId,
         String referenceName, String taskType, String domain, TaskStatus status,

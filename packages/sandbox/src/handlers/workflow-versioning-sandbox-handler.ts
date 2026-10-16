@@ -381,6 +381,86 @@ export const workflowVersioningSandboxHandler: SandboxRouteHandler = {
       return { status: success ? 200 : 404, data: { tampered: success, sequenceNum: seq } };
     }
 
+    // 8. POST /workflow/definitions/:key/migration-preview
+    const previewMatch = cleanPath.match(/^\/workflow\/definitions\/([^/]+)\/migration-preview$/);
+    if (previewMatch && method === 'POST') {
+      const key = previewMatch[1];
+      const body = (req.data || {}) as { targetVersion?: number };
+      const targetVersion = body.targetVersion || 2;
+
+      return {
+        status: 200,
+        data: {
+          workflowKey: key,
+          targetVersion,
+          summary: {
+            total: 3,
+            fullyCompatible: 1,
+            requiresReview: 1,
+            incompatible: 1,
+          },
+          items: [
+            {
+              workflowId: 'wf_exec_001_safe',
+              currentVersion: 1,
+              status: 'RUNNING',
+              tier: 'FULLY_COMPATIBLE',
+              compatible: true,
+              completedTasks: ['checkInventory'],
+              activeTasks: ['verifyFraud'],
+              warnings: [],
+              issues: [],
+            },
+            {
+              workflowId: 'wf_exec_002_review',
+              currentVersion: 1,
+              status: 'RUNNING',
+              tier: 'CONDITIONAL_REQUIRES_MANUAL_REVIEW',
+              compatible: true,
+              completedTasks: ['checkInventory', 'verifyFraud'],
+              activeTasks: ['routeShipping'],
+              warnings: [
+                'Newly added task "calculateCustomsTax" introduces 1 parameter bindings',
+                'Active task "routeShipping" downstream edge remapped',
+              ],
+              issues: [],
+            },
+            {
+              workflowId: 'wf_exec_003_blocked',
+              currentVersion: 1,
+              status: 'COMPLETED',
+              tier: 'INCOMPATIBLE_BLOCK',
+              compatible: false,
+              completedTasks: ['checkInventory', 'verifyFraud', 'routeShipping'],
+              activeTasks: [],
+              warnings: [],
+              issues: ['Cannot hot-migrate execution in terminal state: COMPLETED'],
+            },
+          ],
+        },
+      };
+    }
+
+    // 9. POST /workflow/definitions/:key/batch-migrate
+    const batchMigrateMatch = cleanPath.match(/^\/workflow\/definitions\/([^/]+)\/batch-migrate$/);
+    if (batchMigrateMatch && method === 'POST') {
+      const key = batchMigrateMatch[1];
+      const body = (req.data || {}) as { targetVersion?: number; executionIds?: string[]; autoMigrateCompatibleOnly?: boolean };
+      const targetVersion = body.targetVersion || 2;
+      const ids = body.executionIds || ['wf_exec_001_safe'];
+
+      return {
+        status: 200,
+        data: {
+          workflowKey: key,
+          targetVersion,
+          migrated: ids.length,
+          failed: 0,
+          results: ids.map((id) => ({ workflowId: id, success: true })),
+        },
+      };
+    }
+
     return null;
   },
 };
