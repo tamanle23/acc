@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react';
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -13,7 +14,6 @@ import { DataTablePagination } from '../data-table/pagination';
 import { Search } from '../search';
 import { SearchProvider } from '@/context/search-provider';
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
-import { fireEvent } from '@testing-library/react';
 
 describe('Component Accessibility Test Suite (axe-core)', () => {
   it('SkipToMain component should have zero a11y violations', async () => {
