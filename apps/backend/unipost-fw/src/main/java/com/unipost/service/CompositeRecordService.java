@@ -10,6 +10,7 @@ import com.unipost.domain.metadata.EntityType;
 import com.unipost.fw.tenancy.TenantContextHolder;
 import com.unipost.presentation.dto.metadata.ChildPaginationMetadata;
 import com.unipost.presentation.dto.metadata.ChildPaginationParam;
+import com.unipost.presentation.dto.metadata.ChildQueryOptions;
 import com.unipost.presentation.dto.metadata.CompositeRecordResponse;
 import com.unipost.repository.jpa.EntityRecordRepository;
 import com.unipost.repository.jpa.EntityTypeRepository;
@@ -64,6 +65,16 @@ public class CompositeRecordService {
             Long entityTypeId,
             Long recordId,
             Map<String, ChildPaginationParam> childParams) {
+        return getCompositeRecordByIdWithOptions(entityTypeId, recordId, toQueryOptions(childParams));
+    }
+
+    /**
+     * Resolves a single composite record document by record ID with advanced child options (filters, sort, limit).
+     */
+    public CompositeRecordResponse getCompositeRecordByIdWithOptions(
+            Long entityTypeId,
+            Long recordId,
+            Map<String, ChildQueryOptions> childQueries) {
 
         EntityType entityType = getActiveCompositeEntityType(entityTypeId);
         CompositeSpec spec = entityType.getCompositeSpec();
@@ -73,8 +84,8 @@ public class CompositeRecordService {
         if (namedParameterJdbcTemplate != null) {
             try {
                 enforceStatementTimeout();
-                DynamicQueryCompiler.CompiledQuery compiled = dynamicQueryCompiler.compileSingleRecordQuery(
-                        spec, tenantId, recordId, childParams
+                DynamicQueryCompiler.CompiledQuery compiled = dynamicQueryCompiler.compileSingleRecordQueryWithOptions(
+                        spec, tenantId, recordId, childQueries
                 );
 
                 List<CompositeRecordResponse> results = namedParameterJdbcTemplate.query(
@@ -98,7 +109,7 @@ public class CompositeRecordService {
                         "Root EntityRecord not found with id: " + recordId + " for composite entity type: " + entityTypeId));
 
         List<CompositeRecordResponse> fallbackBatch = dataLoaderBatchResolver.resolveBatch(
-                spec, List.of(rootRecord), childParams
+                spec, List.of(rootRecord), toPaginationParams(childQueries)
         );
 
         if (fallbackBatch.isEmpty()) {
@@ -114,6 +125,16 @@ public class CompositeRecordService {
             Long entityTypeId,
             PageRequest pageRequest,
             Map<String, ChildPaginationParam> childParams) {
+        return getCompositeRecordsPageWithOptions(entityTypeId, pageRequest, toQueryOptions(childParams));
+    }
+
+    /**
+     * Resolves a root-paginated page of composite record documents with advanced child options (filters, sort, limit).
+     */
+    public Page<CompositeRecordResponse> getCompositeRecordsPageWithOptions(
+            Long entityTypeId,
+            PageRequest pageRequest,
+            Map<String, ChildQueryOptions> childQueries) {
 
         EntityType entityType = getActiveCompositeEntityType(entityTypeId);
         CompositeSpec spec = entityType.getCompositeSpec();
@@ -127,8 +148,8 @@ public class CompositeRecordService {
         if (namedParameterJdbcTemplate != null) {
             try {
                 enforceStatementTimeout();
-                DynamicQueryCompiler.CompiledQuery compiled = dynamicQueryCompiler.compilePaginatedQuery(
-                        spec, tenantId, pageSize, offset, childParams
+                DynamicQueryCompiler.CompiledQuery compiled = dynamicQueryCompiler.compilePaginatedQueryWithOptions(
+                        spec, tenantId, pageSize, offset, childQueries
                 );
 
                 Long totalCount = namedParameterJdbcTemplate.queryForObject(
@@ -159,15 +180,33 @@ public class CompositeRecordService {
         org.springframework.data.domain.Page<EntityRecord> rootPage =
                 entityRecordRepository.findByEntityTypeIdAndDeletedDateIsNull(spec.rootEntityTypeId(), springPageable);
 
-        List<CompositeRecordResponse> resolved = dataLoaderBatchResolver.resolveBatch(
-                spec, rootPage.getContent(), childParams
+        List<CompositeRecordResponse> fallbackRecords = dataLoaderBatchResolver.resolveBatch(
+                spec, rootPage.getContent(), toPaginationParams(childQueries)
         );
 
         return pageBuilder.build(
                 pageRequest,
                 rootPage::getTotalElements,
-                () -> resolved
+                () -> fallbackRecords
         );
+    }
+
+    private static Map<String, ChildQueryOptions> toQueryOptions(Map<String, ChildPaginationParam> childParams) {
+        if (childParams == null || childParams.isEmpty()) return Collections.emptyMap();
+        Map<String, ChildQueryOptions> map = new HashMap<>();
+        for (Map.Entry<String, ChildPaginationParam> entry : childParams.entrySet()) {
+            map.put(entry.getKey(), new ChildQueryOptions(entry.getValue().limit(), entry.getValue().offset(), null, null));
+        }
+        return map;
+    }
+
+    private static Map<String, ChildPaginationParam> toPaginationParams(Map<String, ChildQueryOptions> childQueries) {
+        if (childQueries == null || childQueries.isEmpty()) return Collections.emptyMap();
+        Map<String, ChildPaginationParam> map = new HashMap<>();
+        for (Map.Entry<String, ChildQueryOptions> entry : childQueries.entrySet()) {
+            map.put(entry.getKey(), new ChildPaginationParam(entry.getValue().effectiveLimit(), entry.getValue().effectiveOffset()));
+        }
+        return map;
     }
 
     private void enforceStatementTimeout() {

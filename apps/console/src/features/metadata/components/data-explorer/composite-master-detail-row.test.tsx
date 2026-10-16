@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { CompositeMasterDetailRow } from './composite-master-detail-row';
 import type { CompositeSpec, CompositeRecordResponse } from '../../api/types';
 
@@ -125,5 +125,76 @@ describe('CompositeMasterDetailRow', () => {
     fireEvent.click(nextBtn);
 
     expect(onChildPageChange).toHaveBeenCalledWith('resources', 2, 2);
+  });
+
+  it('renders computed rollups as KPI Bento chips when defined', () => {
+    const specWithRollups: CompositeSpec = {
+      ...mockSpec,
+      rollups: [
+        {
+          alias: 'total_spend',
+          target_node_alias: 'resources',
+          aggregate_function: 'SUM',
+          target_field: 'cost',
+        },
+        {
+          alias: 'resource_count',
+          target_node_alias: 'resources',
+          aggregate_function: 'COUNT',
+        },
+      ],
+    };
+
+    const recordWithRollups: CompositeRecordResponse = {
+      ...mockRecord,
+      attributes: {
+        ...mockRecord.attributes,
+        total_spend: 1420.5,
+        resource_count: 5,
+      },
+    };
+
+    render(
+      <CompositeMasterDetailRow
+        record={recordWithRollups}
+        compositeSpec={specWithRollups}
+      />
+    );
+
+    expect(screen.getByTestId('composite-rollups-bar')).toBeDefined();
+    expect(screen.getByTestId('rollup-chip-total_spend')).toBeDefined();
+    const countChip = screen.getByTestId('rollup-chip-resource_count');
+    expect(within(countChip).getByText('5')).toBeDefined();
+    expect(screen.getByText('1420.5')).toBeDefined();
+    expect(screen.getByText('SUM')).toBeDefined();
+    expect(screen.getByText('COUNT')).toBeDefined();
+  });
+
+  it('filters child collection items via search input', () => {
+    render(<CompositeMasterDetailRow record={mockRecord} compositeSpec={mockSpec} />);
+
+    // Both items visible initially
+    expect(screen.getByText('US-East Production VPC')).toBeDefined();
+    expect(screen.getByText('EU-West RDS Cluster')).toBeDefined();
+
+    const searchInput = screen.getByLabelText(/Filter resources/i);
+    fireEvent.change(searchInput, { target: { value: 'RDS' } });
+
+    // Only RDS Cluster should be visible
+    expect(screen.queryByText('US-East Production VPC')).toBeNull();
+    expect(screen.getByText('EU-West RDS Cluster')).toBeDefined();
+  });
+
+  it('sorts child collection columns when headers are clicked', () => {
+    render(<CompositeMasterDetailRow record={mockRecord} compositeSpec={mockSpec} />);
+
+    // Click 'name' column header to sort
+    const nameHeader = screen.getByText('name');
+    fireEvent.click(nameHeader); // ASC
+    fireEvent.click(nameHeader); // DESC
+
+    // Both items should remain present after sorting
+    expect(screen.getByText('US-East Production VPC')).toBeDefined();
+    expect(screen.getByText('EU-West RDS Cluster')).toBeDefined();
   });
 });

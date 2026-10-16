@@ -17,6 +17,10 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unipost.presentation.dto.metadata.ChildQueryOptions;
+
 @RestController
 @RequestMapping("/api/v1/metadata/composite-entities")
 @RequiredArgsConstructor
@@ -24,6 +28,7 @@ public class CompositeEntityController {
 
     private final CompositeRecordService compositeRecordService;
     private final ResponseEntityBuilder responseBuilder;
+    private final ObjectMapper objectMapper;
 
     private static final Pattern CHILD_LIMIT_PATTERN = Pattern.compile("^childLimit\\[([^\\]]+)\\]$");
     private static final Pattern CHILD_OFFSET_PATTERN = Pattern.compile("^childOffset\\[([^\\]]+)\\]$");
@@ -35,8 +40,8 @@ public class CompositeEntityController {
             @ModelAttribute PageRequest pageRequest,
             @RequestParam Map<String, String> allParams) {
 
-        Map<String, ChildPaginationParam> childParams = parseChildPaginationParams(allParams);
-        Page<CompositeRecordResponse> page = compositeRecordService.getCompositeRecordsPage(id, pageRequest, childParams);
+        Map<String, ChildQueryOptions> childQueries = parseChildQueryOptions(allParams);
+        Page<CompositeRecordResponse> page = compositeRecordService.getCompositeRecordsPageWithOptions(id, pageRequest, childQueries);
 
         String engine = (page.getContent() != null && !page.getContent().isEmpty())
                 ? page.getContent().get(0).engineUsed()
@@ -55,13 +60,40 @@ public class CompositeEntityController {
             @PathVariable("recordId") Long recordId,
             @RequestParam Map<String, String> allParams) {
 
-        Map<String, ChildPaginationParam> childParams = parseChildPaginationParams(allParams);
-        CompositeRecordResponse record = compositeRecordService.getCompositeRecordById(id, recordId, childParams);
+        Map<String, ChildQueryOptions> childQueries = parseChildQueryOptions(allParams);
+        CompositeRecordResponse record = compositeRecordService.getCompositeRecordByIdWithOptions(id, recordId, childQueries);
 
         ResponseEntity<ResponseWrapper<ContextHeader, CompositeRecordResponse>> entity = responseBuilder.success(record);
         return ResponseEntity.status(entity.getStatusCode())
                 .header("X-Composite-Engine", record.engineUsed())
                 .body(entity.getBody());
+    }
+
+    private Map<String, ChildQueryOptions> parseChildQueryOptions(Map<String, String> allParams) {
+        if (allParams == null || allParams.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        if (allParams.containsKey("childQueries") && !allParams.get("childQueries").isBlank()) {
+            try {
+                return objectMapper.readValue(
+                        allParams.get("childQueries"),
+                        new TypeReference<Map<String, ChildQueryOptions>>() {}
+                );
+            } catch (Exception ignored) {}
+        }
+
+        Map<String, ChildPaginationParam> legacy = parseChildPaginationParams(allParams);
+        Map<String, ChildQueryOptions> converted = new HashMap<>();
+        for (Map.Entry<String, ChildPaginationParam> entry : legacy.entrySet()) {
+            converted.put(entry.getKey(), new ChildQueryOptions(
+                    entry.getValue().limit(),
+                    entry.getValue().offset(),
+                    null,
+                    null
+            ));
+        }
+        return converted;
     }
 
     private Map<String, ChildPaginationParam> parseChildPaginationParams(Map<String, String> allParams) {

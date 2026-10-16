@@ -458,12 +458,19 @@ export class HttpMetadataService implements MetadataDataSource {
       size: params?.size || 10,
     };
     if (childParams) {
-      for (const [alias, child] of Object.entries(childParams)) {
-        if (child.limit !== undefined) {
-          queryParams[`childLimit[${alias}]`] = child.limit;
-        }
-        if (child.offset !== undefined) {
-          queryParams[`childOffset[${alias}]`] = child.offset;
+      const hasAdvancedOptions = Object.values(childParams).some(
+        (c: any) => c && (c.filters !== undefined || c.sort !== undefined)
+      );
+      if (hasAdvancedOptions) {
+        queryParams['childQueries'] = JSON.stringify(childParams);
+      } else {
+        for (const [alias, child] of Object.entries(childParams)) {
+          if (child.limit !== undefined) {
+            queryParams[`childLimit[${alias}]`] = child.limit;
+          }
+          if (child.offset !== undefined) {
+            queryParams[`childOffset[${alias}]`] = child.offset;
+          }
         }
       }
     }
@@ -480,12 +487,19 @@ export class HttpMetadataService implements MetadataDataSource {
   ): Promise<CompositeRecordResponse | null> {
     const queryParams: Record<string, unknown> = {};
     if (childParams) {
-      for (const [alias, child] of Object.entries(childParams)) {
-        if (child.limit !== undefined) {
-          queryParams[`childLimit[${alias}]`] = child.limit;
-        }
-        if (child.offset !== undefined) {
-          queryParams[`childOffset[${alias}]`] = child.offset;
+      const hasAdvancedOptions = Object.values(childParams).some(
+        (c: any) => c && (c.filters !== undefined || c.sort !== undefined)
+      );
+      if (hasAdvancedOptions) {
+        queryParams['childQueries'] = JSON.stringify(childParams);
+      } else {
+        for (const [alias, child] of Object.entries(childParams)) {
+          if (child.limit !== undefined) {
+            queryParams[`childLimit[${alias}]`] = child.limit;
+          }
+          if (child.offset !== undefined) {
+            queryParams[`childOffset[${alias}]`] = child.offset;
+          }
         }
       }
     }

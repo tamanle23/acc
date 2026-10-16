@@ -108,6 +108,31 @@ describe('Phase 41: Composite Entity Type Registry & Specification DSL', () => {
       expect(screen.getByText(/Level 2/i)).toBeDefined();
       expect(screen.getByText(/Pattern B 🔗/i)).toBeDefined();
     });
+
+    it('renders rollup builder and adds a new computed rollup', () => {
+      const handleUpdate = vi.fn();
+      render(
+        <CompositeProjectionCanvas
+          spec={mockSpec}
+          rootEntity={mockRootEntity}
+          onUpdateSpec={handleUpdate}
+        />
+      );
+
+      expect(screen.getByText('Computed Aggregate Rollups')).toBeDefined();
+      const addBtn = screen.getByRole('button', { name: /Add Rollup/i });
+      fireEvent.click(addBtn);
+
+      expect(handleUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rollups: expect.arrayContaining([
+            expect.objectContaining({
+              aggregate_function: 'COUNT',
+            }),
+          ]),
+        })
+      );
+    });
   });
 
   describe('3. CompositePreviewHub', () => {

@@ -140,6 +140,108 @@ class DynamicQueryCompilerTest {
     }
 
     @Test
+    @DisplayName("Should compile companion lateral aggregation subqueries for rollups (SUM, COUNT)")
+    void testCompileRollupsCompanionLateral() {
+        CompositeSpec spec = new CompositeSpec(
+                10L,
+                "customer_account",
+                "customer",
+                List.of(new CompositeField("company_name", "companyName", "STRING", null, true)),
+                List.of(
+                        new CompositeNode(
+                                20L,
+                                "sales_order",
+                                "orders",
+                                CompositeJoinPattern.PATTERN_B_FOREIGN_KEY,
+                                "customer_id",
+                                null,
+                                "ONE_TO_MANY",
+                                List.of(new CompositeField("total", "total", "DECIMAL", null, true)),
+                                null,
+                                List.of()
+                        )
+                ),
+                List.of(
+                        new CompositeRollup("total_spend", "orders", CompositeRollup.AggregateFunction.SUM, "total", null),
+                        new CompositeRollup("order_count", "orders", CompositeRollup.AggregateFunction.COUNT, null, null)
+                )
+        );
+
+        DynamicQueryCompiler.CompiledQuery compiled = compiler.compileSingleRecordQuery(
+                spec, "tenant-alpha", 1001L, Map.of("orders", new ChildPaginationParam(10, 0))
+        );
+
+        assertNotNull(compiled);
+        String sql = compiled.sql();
+
+        // Verify root projection contains rollup keys
+        assertTrue(sql.contains("'total_spend', t_rollup_1.total_spend"));
+        assertTrue(sql.contains("'order_count', t_rollup_1.order_count"));
+
+        // Verify companion unpaginated lateral query
+        assertTrue(sql.contains("LEFT JOIN LATERAL"));
+        assertTrue(sql.contains("COALESCE(SUM((c_agg.attributes->>'total')::numeric), 0) AS total_spend"));
+        assertTrue(sql.contains("COUNT(*) AS order_count"));
+        assertTrue(sql.contains("FROM UNIPOST_ENTITIES c_agg"));
+        assertTrue(sql.contains("(c_agg.attributes->>'customer_id') = root.id::text"));
+    }
+
+    @Test
+    @DisplayName("Should compile dynamic child filtering and custom sort clauses with parameter binding")
+    void testCompileChildFilteringAndSorting() {
+        CompositeSpec spec = new CompositeSpec(
+                10L,
+                "customer_account",
+                "customer",
+                List.of(new CompositeField("company_name", "companyName", "STRING", null, true)),
+                List.of(
+                        new CompositeNode(
+                                20L,
+                                "sales_order",
+                                "orders",
+                                CompositeJoinPattern.PATTERN_B_FOREIGN_KEY,
+                                "customer_id",
+                                null,
+                                "ONE_TO_MANY",
+                                List.of(new CompositeField("total", "total", "DECIMAL", null, true)),
+                                null,
+                                List.of()
+                        )
+                ),
+                List.of()
+        );
+
+        com.unipost.presentation.dto.metadata.ChildQueryOptions options =
+                new com.unipost.presentation.dto.metadata.ChildQueryOptions(
+                        10,
+                        0,
+                        "total:desc",
+                        Map.of(
+                                "status", new com.unipost.presentation.dto.metadata.ChildFilterCriteria("eq", "COMPLETED"),
+                                "total", new com.unipost.presentation.dto.metadata.ChildFilterCriteria("gte", 100)
+                        )
+                );
+
+        DynamicQueryCompiler.CompiledQuery compiled = compiler.compileSingleRecordQueryWithOptions(
+                spec, "tenant-alpha", 1001L, Map.of("orders", options)
+        );
+
+        assertNotNull(compiled);
+        String sql = compiled.sql();
+
+        // Verify child custom sort clause
+        assertTrue(sql.contains("ORDER BY (c.attributes->>'total') DESC, c.id ASC"));
+
+        // Verify child filter conditions
+        assertTrue(sql.contains("(c.attributes->>'status') = :childFilter_1_status"));
+        assertTrue(sql.contains("(c.attributes->>'total')::numeric >= :childFilter_1_total"));
+
+        // Verify bound parameters
+        assertEquals("COMPLETED", compiled.parameters().get("childFilter_1_status"));
+        assertEquals(100, compiled.parameters().get("childFilter_1_total"));
+    }
+
+    @Test
     @DisplayName("Should throw IllegalArgumentException when spec is null or exceeds max depth")
     void testValidationCeilings() {
         assertThrows(IllegalArgumentException.class, () ->

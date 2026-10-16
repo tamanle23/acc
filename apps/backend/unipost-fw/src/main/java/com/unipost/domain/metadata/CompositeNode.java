@@ -30,8 +30,24 @@ public record CompositeNode(
     List<CompositeField> fields,
 
     @JsonProperty("children")
-    List<CompositeNode> children
+    List<CompositeNode> children,
+
+    @JsonProperty("rollups")
+    List<CompositeRollup> rollups
 ) implements Serializable {
+
+    public CompositeNode(
+            Long targetEntityTypeId,
+            String targetEntitySystemName,
+            String alias,
+            CompositeJoinPattern joinPattern,
+            String foreignKeyAttribute,
+            Long relationshipTypeId,
+            String cardinality,
+            List<CompositeField> fields,
+            List<CompositeNode> children) {
+        this(targetEntityTypeId, targetEntitySystemName, alias, joinPattern, foreignKeyAttribute, relationshipTypeId, cardinality, fields, children, List.of());
+    }
 
     public String effectiveAlias() {
         if (alias != null && !alias.isBlank()) {

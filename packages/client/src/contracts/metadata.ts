@@ -65,6 +65,32 @@ export interface LifecycleConfig {
 
 export type CompositeJoinPattern = 'PATTERN_B_FOREIGN_KEY' | 'PATTERN_C_ASSOCIATION';
 
+export type AggregateFunction = 'SUM' | 'COUNT' | 'AVG' | 'MIN' | 'MAX';
+
+export interface CompositeRollup {
+  alias: string;
+  target_node_alias: string;
+  aggregate_function: AggregateFunction;
+  target_field?: string;
+  filter_predicate?: string;
+}
+
+export type ChildFilterOperator = 'eq' | 'like' | 'contains' | 'gte' | 'lte' | 'in';
+
+export interface ChildFilterCriteria {
+  op: ChildFilterOperator;
+  value: unknown;
+}
+
+export interface ChildQueryOptions {
+  limit?: number;
+  offset?: number;
+  sort?: string;
+  filters?: Record<string, ChildFilterCriteria | unknown>;
+}
+
+export type ChildQueryParams = Record<string, ChildQueryOptions>;
+
 export interface CompositeField {
   source_attribute: string;
   alias?: string;
@@ -83,6 +109,7 @@ export interface CompositeNode {
   cardinality: 'ONE_TO_ONE' | 'ONE_TO_MANY' | 'MANY_TO_ONE' | 'MANY_TO_MANY';
   fields: CompositeField[];
   children?: CompositeNode[];
+  rollups?: CompositeRollup[];
 }
 
 export interface CompositeSpec {
@@ -91,6 +118,7 @@ export interface CompositeSpec {
   root_alias?: string;
   fields: CompositeField[];
   children?: CompositeNode[];
+  rollups?: CompositeRollup[];
 }
 
 export interface EntityType {

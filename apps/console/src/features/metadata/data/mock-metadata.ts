@@ -196,6 +196,24 @@ export const initialMockEntityTypes: EntityType[] = [
           ],
         },
       ],
+      rollups: [
+        {
+          alias: 'total_vcpu',
+          target_node_alias: 'cloud_resources',
+          aggregate_function: 'SUM',
+          target_field: 'vcpu_cores',
+        },
+        {
+          alias: 'total_resources',
+          target_node_alias: 'cloud_resources',
+          aggregate_function: 'COUNT',
+        },
+        {
+          alias: 'total_policies',
+          target_node_alias: 'policies',
+          aggregate_function: 'COUNT',
+        },
+      ],
     },
     createdDate: new Date('2026-03-01').toISOString(),
     updatedDate: new Date('2026-03-25').toISOString(),
@@ -1887,7 +1905,51 @@ export class MockMetadataService implements MetadataDataSource {
         }
 
         const aliasKey = child.alias || child.target_entity_system_name || 'child';
-        const param = childParams?.[aliasKey] || {};
+        const param: any = childParams?.[aliasKey] || {};
+
+        // 1. Dynamic child filtering
+        if (param.filters) {
+          matchingChildRecords = matchingChildRecords.filter((rec: any) => {
+            for (const [fKey, fVal] of Object.entries(param.filters)) {
+              const recVal = rec.attributes?.[fKey];
+              if (typeof fVal === 'object' && fVal !== null && 'op' in (fVal as any)) {
+                const { op, value } = fVal as { op: string; value: any };
+                if (op === 'like' || op === 'contains') {
+                  if (!String(recVal ?? '').toLowerCase().includes(String(value ?? '').toLowerCase())) return false;
+                } else if (op === 'gte') {
+                  if (Number(recVal ?? 0) < Number(value ?? 0)) return false;
+                } else if (op === 'lte') {
+                  if (Number(recVal ?? 0) > Number(value ?? 0)) return false;
+                } else if (op === 'in') {
+                  const arr = Array.isArray(value) ? value : String(value).split(',');
+                  if (!arr.map(String).includes(String(recVal))) return false;
+                } else {
+                  if (String(recVal) !== String(value)) return false;
+                }
+              } else {
+                if (String(recVal) !== String(fVal)) return false;
+              }
+            }
+            return true;
+          });
+        }
+
+        // 2. Dynamic child sorting
+        if (param.sort) {
+          const [sortCol, dir] = String(param.sort).split(':');
+          const isDesc = dir?.toLowerCase() === 'desc';
+          matchingChildRecords = [...matchingChildRecords].sort((a: any, b: any) => {
+            const aVal = a.attributes?.[sortCol] ?? a.id;
+            const bVal = b.attributes?.[sortCol] ?? b.id;
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+              return isDesc ? bVal - aVal : aVal - bVal;
+            }
+            return isDesc
+              ? String(bVal).localeCompare(String(aVal))
+              : String(aVal).localeCompare(String(bVal));
+          });
+        }
+
         const limit =
           param.limit !== undefined && param.limit > 0 ? Math.min(param.limit, 100) : 50;
         const offset = param.offset !== undefined && param.offset >= 0 ? param.offset : 0;
@@ -1918,6 +1980,53 @@ export class MockMetadataService implements MetadataDataSource {
           compositeDoc[aliasKey] = sliced.length > 0 ? sliced[0] : null;
         } else {
           compositeDoc[aliasKey] = sliced;
+        }
+      }
+    }
+
+    // 3. Computed Aggregate Rollups
+    if (spec.rollups && spec.rollups.length > 0) {
+      for (const r of spec.rollups) {
+        const childNode = (spec.children || []).find(
+          (c) => (c.alias || c.target_entity_system_name) === r.target_node_alias
+        );
+        let targetRecords: EntityRecord[] = [];
+        if (childNode) {
+          const targetTypeId = String(childNode.target_entity_type_id);
+          const allTarget = this.records[targetTypeId] || [];
+          if (childNode.join_pattern === 'PATTERN_B_FOREIGN_KEY' && childNode.foreign_key_attribute) {
+            targetRecords = allTarget.filter(
+              (tr) => String(tr.attributes?.[childNode.foreign_key_attribute!]) === String(rootRecord.id)
+            );
+          } else {
+            const relIds = this.relationships
+              .filter((rel) => String(rel.sourceRecordId) === String(rootRecord.id))
+              .map((rel) => String(rel.targetRecordId));
+            targetRecords = allTarget.filter((tr) => relIds.includes(String(tr.id)));
+          }
+        }
+
+        const fn = r.aggregate_function;
+        if (fn === 'COUNT') {
+          compositeDoc[r.alias] = targetRecords.length;
+        } else if (fn === 'SUM') {
+          compositeDoc[r.alias] = targetRecords.reduce(
+            (acc, tr) => acc + (Number(tr.attributes?.[r.target_field || '']) || 0),
+            0
+          );
+        } else if (fn === 'AVG') {
+          const sum = targetRecords.reduce(
+            (acc, tr) => acc + (Number(tr.attributes?.[r.target_field || '']) || 0),
+            0
+          );
+          compositeDoc[r.alias] =
+            targetRecords.length > 0 ? Math.round((sum / targetRecords.length) * 100) / 100 : 0;
+        } else if (fn === 'MIN') {
+          const vals = targetRecords.map((tr) => Number(tr.attributes?.[r.target_field || '']) || 0);
+          compositeDoc[r.alias] = vals.length > 0 ? Math.min(...vals) : 0;
+        } else if (fn === 'MAX') {
+          const vals = targetRecords.map((tr) => Number(tr.attributes?.[r.target_field || '']) || 0);
+          compositeDoc[r.alias] = vals.length > 0 ? Math.max(...vals) : 0;
         }
       }
     }

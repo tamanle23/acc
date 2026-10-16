@@ -422,19 +422,28 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       const typeId = compositeRecordDetailMatch[1];
       const recordId = compositeRecordDetailMatch[2];
       if (req.method === 'GET') {
-        const childParams: Record<string, { limit?: number; offset?: number }> = {};
-        for (const [key, val] of searchParams.entries()) {
-          const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
-          if (limitMatch) {
-            const alias = limitMatch[1];
-            childParams[alias] = childParams[alias] || {};
-            childParams[alias].limit = parseInt(val, 10);
+        let childParams: Record<string, any> = {};
+        const childQueriesRaw = searchParams.get('childQueries');
+        if (childQueriesRaw) {
+          try {
+            childParams = JSON.parse(childQueriesRaw);
+          } catch (e) {
+            console.error('Failed to parse childQueries in sandbox:', e);
           }
-          const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
-          if (offsetMatch) {
-            const alias = offsetMatch[1];
-            childParams[alias] = childParams[alias] || {};
-            childParams[alias].offset = parseInt(val, 10);
+        } else {
+          for (const [key, val] of searchParams.entries()) {
+            const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+            if (limitMatch) {
+              const alias = limitMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].limit = parseInt(val, 10);
+            }
+            const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+            if (offsetMatch) {
+              const alias = offsetMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].offset = parseInt(val, 10);
+            }
           }
         }
         const data = await mockMetadataStore.getCompositeRecordById(typeId, recordId, childParams);
@@ -454,19 +463,28 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       if (req.method === 'GET') {
         const page = parseInt(searchParams.get('number') || '1', 10);
         const size = parseInt(searchParams.get('size') || '10', 10);
-        const childParams: Record<string, { limit?: number; offset?: number }> = {};
-        for (const [key, val] of searchParams.entries()) {
-          const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
-          if (limitMatch) {
-            const alias = limitMatch[1];
-            childParams[alias] = childParams[alias] || {};
-            childParams[alias].limit = parseInt(val, 10);
+        let childParams: Record<string, any> = {};
+        const childQueriesRaw = searchParams.get('childQueries');
+        if (childQueriesRaw) {
+          try {
+            childParams = JSON.parse(childQueriesRaw);
+          } catch (e) {
+            console.error('Failed to parse childQueries in sandbox:', e);
           }
-          const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
-          if (offsetMatch) {
-            const alias = offsetMatch[1];
-            childParams[alias] = childParams[alias] || {};
-            childParams[alias].offset = parseInt(val, 10);
+        } else {
+          for (const [key, val] of searchParams.entries()) {
+            const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+            if (limitMatch) {
+              const alias = limitMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].limit = parseInt(val, 10);
+            }
+            const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+            if (offsetMatch) {
+              const alias = offsetMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].offset = parseInt(val, 10);
+            }
           }
         }
         const data = await mockMetadataStore.getCompositeRecords(

@@ -132,7 +132,10 @@ src/routes/
 - **Glass Spec:** Multi-layer frosted translucent cards (`backdrop-blur-xl bg-white/45 dark:bg-slate-900/45 border border-white/30 dark:border-white/10 shadow-lg`), frosted tab triggers, monospace key tags, and indented child collection accordions.
 - **State & Stores:** `useMetadataUiStore` tracks active entity selection, view tab (`schema` | `data`), search filter, composite filter toggle, and dialogs. TanStack Query caching backed by `springApiClient` with sandbox fallback.
 - **Features:** 9 UI component types, auto-slugging system keys, live Draft-07 JSON Schema compiler, dynamic Zod validation, record pagination and JSON export.
-- **Composite Entities & Master-Detail:** Dedicated "Composite Entities" rail toggle with live counter badge, inline model tag, automatic record tab transition, and `CompositeMasterDetailRow` supporting Pattern B (foreign key pushdown) and Pattern C (association matrix) child sub-collections with sub-collection tabs, micro-pagination, and `dynamic-sql-pushdown` badge.
+- **Composite Entities & Master-Detail:** Dedicated "Composite Entities" rail toggle with live counter badge, inline model tag, automatic record tab transition, and `CompositeMasterDetailRow` supporting Pattern B (foreign key pushdown) and Pattern C (association matrix) child sub-collections with:
+  - Computed rollups KPI Bento chips (`total_vcpu`, `total_resources`, `total_policies`) reflecting unpaginated companion lateral aggregates.
+  - Sub-collection tabs, micro-pagination, inline search filtering, and column sorting headers.
+  - Studio Rollup Builder in `VisualSchemaStudio` for declarative aggregate configuration (`SUM`, `COUNT`, `AVG`, `MIN`, `MAX`).
 
 ### 3.9 Sovereign Platform Cockpits (`/system/*`)
 - **Routes:**
