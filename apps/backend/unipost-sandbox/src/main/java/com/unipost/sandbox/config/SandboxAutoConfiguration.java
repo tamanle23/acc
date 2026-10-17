@@ -3,7 +3,9 @@ package com.unipost.sandbox.config;
 import com.unipost.sandbox.db.PgLiteDatasourceConfiguration;
 import com.unipost.sandbox.registry.BackendSandboxRegistry;
 import com.unipost.sandbox.simulators.InMemoryStorageSimulator;
+import com.unipost.sandbox.simulators.InMemoryStorageConnector;
 import com.unipost.sandbox.simulators.MockWebhookDispatcher;
+import com.unipost.sandbox.simulators.MockWebhookDeliveryService;
 import com.unipost.sandbox.simulators.PayOsSimulator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +27,10 @@ import org.springframework.context.annotation.Import;
         PayOsSimulator.class,
         InMemoryStorageSimulator.class,
         MockWebhookDispatcher.class,
-        PgLiteDatasourceConfiguration.class
+        PgLiteDatasourceConfiguration.class,
+        com.unipost.sandbox.aspect.PayOsCheckoutInterceptorAspect.class,
+        InMemoryStorageConnector.class,
+        MockWebhookDeliveryService.class
 })
 public class SandboxAutoConfiguration {
 
