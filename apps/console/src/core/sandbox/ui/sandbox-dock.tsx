@@ -278,10 +278,12 @@ export function SandboxDock() {
           </div>
 
           <div>
-            <label className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+            <label htmlFor="sandbox-dock-active-tenant" className="text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
               <Building className="size-3.5 text-violet-500" /> Active Scope Tenant
             </label>
             <select
+              id="sandbox-dock-active-tenant"
+              aria-label="Active Scope Tenant"
               value={activeTenantId}
               onChange={(e) => sandboxManager.switchTenant(e.target.value)}
               className="w-full text-xs rounded-md border border-input bg-background/80 px-2 py-1.5 shadow-xs focus:outline-hidden focus:ring-1 focus:ring-ring"

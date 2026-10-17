@@ -417,12 +417,15 @@ export const EntityDataGrid: React.FC<Props> = ({
     return recordsResponse?.content || [];
   }, [recordsResponse]);
 
-  // Auto-expand the first composite record when viewing a composite entity so the master-detail view is immediately visible
+  const hasAutoExpandedRef = React.useRef<string | null>(null);
+
+  // Auto-expand the first composite record once on initial load when viewing a composite entity
   React.useEffect(() => {
-    if (isComposite && records.length > 0 && expandedRowIds.size === 0) {
+    if (isComposite && records.length > 0 && hasAutoExpandedRef.current !== entityTypeId) {
+      hasAutoExpandedRef.current = entityTypeId;
       setExpandedRowIds(new Set([records[0].id]));
     }
-  }, [isComposite, records]);
+  }, [isComposite, records, entityTypeId]);
 
   const handleSortToggle = (field: string) => {
     if (sortField === field) {
@@ -1057,7 +1060,7 @@ export const EntityDataGrid: React.FC<Props> = ({
                   handlePageSizeChange(Number(val));
                 }}
               >
-                <SelectTrigger className="h-7 w-18 text-xs bg-white/50 dark:bg-white/5 border-white/20">
+                <SelectTrigger aria-label="Rows per page" className="h-7 w-18 text-xs bg-white/50 dark:bg-white/5 border-white/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

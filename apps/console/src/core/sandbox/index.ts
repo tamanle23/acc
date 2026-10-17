@@ -8,12 +8,10 @@ export * from '@unipost/sandbox';
 
 // Local UI & state extensions
 export * from './ui/sandbox-dock';
-export * from './store/sandbox-store';
-export * from './manager/sandbox-manager';
-export * from './manager/sandbox-registry';
-export * from './manager/simulation-decorator';
-export * from './adapters/axios-sandbox-adapter';
-export * from './adapters/fetch-sandbox-adapter';
+export { useSandboxStore } from './store/sandbox-store';
+export { UnifiedSandboxManager, sandboxManager } from './manager/sandbox-manager';
+export { attachSandboxAxiosInterceptor } from './adapters/axios-sandbox-adapter';
+export { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
 export * from './handlers/metadata-sandbox-adapter';
 
 // Auto-register console-specific metadataSandboxAdapter into sandboxRegistry

@@ -338,7 +338,7 @@ export const EntityTypeSidebar: React.FC = () => {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-6 w-[54px] text-[11px] px-1.5 py-0 bg-white/40 dark:bg-white/5 border-white/20">
+            <SelectTrigger aria-label="Items per page" className="h-6 w-[54px] text-[11px] px-1.5 py-0 bg-white/40 dark:bg-white/5 border-white/20">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="text-xs min-w-[3.5rem]">
