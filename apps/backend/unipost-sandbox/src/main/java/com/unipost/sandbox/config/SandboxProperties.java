@@ -33,6 +33,19 @@ public class SandboxProperties {
      */
     private DatabaseSimulationProperties database = new DatabaseSimulationProperties();
 
+    /**
+     * DEV mode specific options (e.g., pristine vs persistent baseline).
+     */
+    private DevSimulationProperties dev = new DevSimulationProperties();
+
+    public boolean isDevMode() {
+        return mode == SandboxMode.DEV;
+    }
+
+    public boolean isTestMode() {
+        return mode == SandboxMode.TEST;
+    }
+
     public enum SandboxMode {
         DEV,
         TEST
@@ -50,5 +63,15 @@ public class SandboxProperties {
     public static class DatabaseSimulationProperties {
         private boolean embeddedPglite = true;
         private String devStoragePath = "tmp/db/pglite-sandbox";
+    }
+
+    @Getter
+    @Setter
+    public static class DevSimulationProperties {
+        /**
+         * When true in DEV mode, persistent scratch storage is wiped on boot to guarantee a pristine baseline.
+         * When false (default), data persists across server restarts.
+         */
+        private boolean pristine = false;
     }
 }

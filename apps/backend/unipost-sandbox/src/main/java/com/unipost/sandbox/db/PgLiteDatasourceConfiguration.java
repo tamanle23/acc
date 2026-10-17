@@ -41,11 +41,16 @@ public class PgLiteDatasourceConfiguration {
         } else {
             String storagePath = properties.getDatabase().getDevStoragePath();
             File dbDir = new File(storagePath);
+            if (properties.getDev().isPristine() && dbDir.exists()) {
+                log.info("DEV mode pristine flag active. Wiping persistent scratch database directory: {}", storagePath);
+                deleteRecursively(dbDir);
+            }
             if (!dbDir.exists()) {
                 dbDir.mkdirs();
             }
             jdbcUrl = "jdbc:pglite:file:" + storagePath;
-            log.info("Configuring PGlite persistent file-backed datasource for DEV mode: {}", jdbcUrl);
+            log.info("Configuring PGlite persistent file-backed datasource for DEV mode (pristine={}): {}", 
+                    properties.getDev().isPristine(), jdbcUrl);
         }
 
         try {
@@ -66,5 +71,17 @@ public class PgLiteDatasourceConfiguration {
                     .password("postgres")
                     .build();
         }
+    }
+
+    private void deleteRecursively(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File child : files) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        file.delete();
     }
 }
