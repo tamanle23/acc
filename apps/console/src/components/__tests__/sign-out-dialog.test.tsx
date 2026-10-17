@@ -14,7 +14,7 @@ vi.mock('@/features/spring-auth', () => ({
     clearTokens: vi.fn(),
   }),
   springApiClient: {
-    post: (...args: any[]) => mockPost(...args),
+    post: (...args: unknown[]) => mockPost(...args),
   },
 }))
 
