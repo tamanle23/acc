@@ -128,6 +128,112 @@ export function Timeline({
     IRStateManager.getInstance().trimSequence(seqId, deltaStart, deltaDuration);
   };
 
+  // Interactive Trim Dragging State with Magnetic Snapping
+  const [trimmingState, setTrimmingState] = useState<{
+    seqId: string;
+    handle: 'start' | 'end';
+    startX: number;
+    initialStartFrame: number;
+    initialDurationFrames: number;
+  } | null>(null);
+
+  const startTrim = (
+    seq: { id: string; startFrame: number; durationFrames: number },
+    handle: 'start' | 'end',
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setTrimmingState({
+      seqId: seq.id,
+      handle,
+      startX: e.clientX,
+      initialStartFrame: seq.startFrame,
+      initialDurationFrames: seq.durationFrames,
+    });
+  };
+
+  useEffect(() => {
+    if (!trimmingState) return;
+
+    let accumulatedDelta = 0;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const diffPx = e.clientX - trimmingState.startX;
+      let deltaFrames = Math.round(diffPx / pixelsPerFrame);
+
+      if (snapEnabled) {
+        const snapPoints: number[] = [currentFrame];
+        for (const track of tracks) {
+          for (const s of track.sequences) {
+            if (s.id !== trimmingState.seqId) {
+              snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+            }
+          }
+        }
+
+        if (trimmingState.handle === 'start') {
+          const rawTarget = trimmingState.initialStartFrame + deltaFrames;
+          for (const sp of snapPoints) {
+            if (Math.abs(rawTarget - sp) <= 3) {
+              deltaFrames = sp - trimmingState.initialStartFrame;
+              break;
+            }
+          }
+        } else {
+          const rawTarget =
+            trimmingState.initialStartFrame + trimmingState.initialDurationFrames + deltaFrames;
+          for (const sp of snapPoints) {
+            if (Math.abs(rawTarget - sp) <= 3) {
+              deltaFrames =
+                sp - (trimmingState.initialStartFrame + trimmingState.initialDurationFrames);
+              break;
+            }
+          }
+        }
+      }
+
+      if (deltaFrames !== accumulatedDelta) {
+        const stepDelta = deltaFrames - accumulatedDelta;
+        accumulatedDelta = deltaFrames;
+        if (trimmingState.handle === 'start') {
+          handleTrim(trimmingState.seqId, stepDelta, -stepDelta);
+        } else {
+          handleTrim(trimmingState.seqId, 0, stepDelta);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setTrimmingState(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [trimmingState, pixelsPerFrame, snapEnabled, tracks, currentFrame]);
+
+  const handleClipClick = (seq: any, e: React.MouseEvent) => {
+    if (activeTool === 'razor') {
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickPx = e.clientX - rect.left;
+      const clickedFrame = Math.max(
+        seq.startFrame + 1,
+        Math.min(
+          seq.startFrame + seq.durationFrames - 1,
+          seq.startFrame + Math.round(clickPx / pixelsPerFrame)
+        )
+      );
+      IRStateManager.getInstance().splitSequence(seq.id, clickedFrame);
+    } else {
+      IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+    }
+  };
+
   const toggleLock = (trackId: string) => {
     setLockedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
   };
@@ -196,15 +302,14 @@ export function Timeline({
 
           <Tooltip content="Razor Split Tool (C)">
             <Button
-              variant={activeTool === 'razor' ? 'secondary' : 'ghost'}
+              variant={activeTool === 'razor' ? 'default' : 'ghost'}
               size="icon"
               onClick={() => {
-                setActiveTool('razor');
-                handleSplit();
+                setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
               }}
-              className="h-7 w-7 text-slate-700"
+              className={`h-7 w-7 ${activeTool === 'razor' ? 'bg-indigo-600 text-white' : 'text-slate-700'}`}
             >
-              <Scissors className="w-3.5 h-3.5 text-indigo-600" />
+              <Scissors className="w-3.5 h-3.5" />
             </Button>
           </Tooltip>
 
@@ -401,12 +506,14 @@ export function Timeline({
                       return (
                         <div
                           key={seq.id}
-                          onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
+                          onClick={(e) => handleClipClick(seq, e)}
                           style={{
                             left: `${leftPx}px`,
                             width: `${widthPx}px`,
                           }}
-                          className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between cursor-pointer transition-all select-none group ${
+                          className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${
+                            activeTool === 'razor' ? 'cursor-crosshair' : 'cursor-pointer'
+                          } ${
                             isSelected
                               ? 'ring-2 ring-indigo-500 shadow-md z-20'
                               : 'hover:brightness-95 z-10'
@@ -414,13 +521,12 @@ export function Timeline({
                         >
                           {/* Left Trim Handle */}
                           <div
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleTrim(seq.id, 5, -5);
-                            }}
-                            className="w-1.5 h-full -ml-1 cursor-ew-resize hover:bg-white/40 rounded-xs"
-                            title="Trim Start (+5f)"
-                          />
+                            onMouseDown={(e) => startTrim(seq, 'start', e)}
+                            className="w-2 h-full -ml-2 cursor-col-resize hover:bg-white/50 active:bg-indigo-300 rounded-l-xs flex items-center justify-center transition-colors"
+                            title="Drag to Trim Start (Snap enabled)"
+                          >
+                            <div className="w-0.5 h-3 bg-white/60 rounded-full" />
+                          </div>
 
                           {/* Sequence Label & Visuals */}
                           <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full">
@@ -450,13 +556,12 @@ export function Timeline({
 
                           {/* Right Trim Handle */}
                           <div
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleTrim(seq.id, 0, 5);
-                            }}
-                            className="w-1.5 h-full -mr-1 cursor-ew-resize hover:bg-white/40 rounded-xs"
-                            title="Trim End (+5f)"
-                          />
+                            onMouseDown={(e) => startTrim(seq, 'end', e)}
+                            className="w-2 h-full -mr-2 cursor-col-resize hover:bg-white/50 active:bg-indigo-300 rounded-r-xs flex items-center justify-center transition-colors"
+                            title="Drag to Trim End (Snap enabled)"
+                          >
+                            <div className="w-0.5 h-3 bg-white/60 rounded-full" />
+                          </div>
                         </div>
                       );
                     })}

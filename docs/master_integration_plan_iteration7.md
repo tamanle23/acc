@@ -101,12 +101,12 @@ Following the successful execution of **Iteration 6** (Dual-sidebar enterprise w
 
 ## 4. Phased Implementation Roadmap
 
-### Phase 1: Workspace Manifests & Clean Three.js Removal
+### Phase 1: Workspace Manifests & Clean Three.js Removal [x] Completed
 - Remove `three` and `@types/three` from `package.json`, `packages/effect-engines/package.json`, and `apps/studio/package.json`.
 - Add `gsap` (`^3.12.7`) across the workspace.
 - Delete `packages/effect-engines/src/three/` completely.
 
-### Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay
+### Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay [x] Completed
 - Implement `packages/effect-engines/src/canvas/UniversalCanvasEngine.ts`:
   - Deterministic GSAP timeline runner (`timeline.seek(timeSec)`).
   - Pts.js generative particle networks, procedural HUD telemetry, and 2.5D parallax glow.
@@ -115,43 +115,56 @@ Following the successful execution of **Iteration 6** (Dual-sidebar enterprise w
   - 8 resize handles, rotation stem, magnetic snapping lines rendered via Pts.js `CanvasForm` directly on 2D canvas.
   - Client-safe export via `packages/effect-engines/src/client.ts`.
 
-### Phase 3: Liquid Glass Design System & Theme Provider
+### Phase 3: Liquid Glass Design System & Theme Provider [x] Completed
 - Define liquid glass CSS custom variables in `apps/studio/src/index.css` (`--glass-bg`, `--glass-border`, `--glass-specular`, `--glass-blur`, `--ambient-mesh`).
 - Create `apps/studio/src/lib/theme/ThemeProvider.tsx` with Dark/Light mode, optical glass styles, and `localStorage` persistence.
 - Implement `apps/studio/src/components/SettingsModal.tsx` (Preferences modal for mode, optical glass style, blur intensity, and accent colors).
 
-### Phase 4: Studio Viewport Modernization (Canvas2D, Action Pill, Viewport HUD)
+### Phase 4: Studio Viewport Modernization (Canvas2D, Action Pill, Viewport HUD) [x] Completed
 - Refactor `apps/studio/src/components/Preview.tsx` to mount `UniversalCanvasEngine` on HTML5 2D canvas with ambient fluid mesh lighting.
 - Implement responsive mouse cursor states for handles (`nwse-resize`, `nesw-resize`, `crosshair`, `grabbing`).
 - Add on-canvas floating glassmorphic Action Pill HUD (Duplicate, Delete, Lock, Center Alignment, Reset).
 - Add floating glass Viewport Control Bar in `Preview.tsx` (Zoom, Safe Guides, Checkerboard).
 
-### Phase 5: Right Sidebar GSAP Easing Inspector & Left Sidebar Enhancements
+### Phase 5: Right Sidebar GSAP Easing Inspector & Left Sidebar Enhancements [x] Completed
 - Add visual GSAP Easing Curve Selector in `RightSidebar.tsx` with SVG preview badges.
+- Dual SFX Strategy: pre-generated staging presets (`sfx_impact`, `sfx_whoosh`, `sfx_glitch`, `sfx_riser`) and on-demand Procedural Audio Synthesizer in RightSidebar with live Web Audio auditioning.
 - Enhance `LeftSidebar.tsx`:
   - Real-time search filter bar across presets and assets.
-  - Category pill filter tags (`All`, `Typography`, `VFX`, `Shapes`, `SFX`).
+  - Category pill filter tags (`All`, `Typography`, `Shapes`, `VFX`, `SFX`).
   - Micro-animation hover state on preset cards.
-  - Drag-and-drop asset upload dropzone.
+  - Drag-and-drop asset upload dropzone in Assets Vault.
 
-### Phase 6: Multi-Track Timeline Direct Manipulation & Commands
-- Implement `TrimSequenceCommand.ts` and `SplitSequenceCommand.ts` in `apps/studio/src/lib/commands/`.
-- Add left/right trim handles to timeline clips with magnetic edge snapping.
-- Wire Razor cut tool (`C` hotkey or toolbar toggle).
-- Add live Undo/Redo depth badges in `Titlebar.tsx` and toast notification system.
-- Add Keyboard Shortcuts cheat sheet modal (`?` or `Ctrl+/`).
+### Phase 6: Universal Motion & Easing Engine & Multi-Track Timeline Direct Manipulation [x] Completed
+- **Polymorphic Value & Temporal Curve Model in VideoIR**:
+  - Add `TemporalCurve<T>` in `packages/ir/src/types/VideoIR.ts` and `schema/video-ir.schema.json`.
+  - Support 3-stage lifecycle (`intro`, `steady`, `outro`) and keyframes for spatial transforms (`scale`, `rotation`, `x`, `y`), audio ducking envelopes, and cross-clip transitions.
+- **Universal Canvas Motion Compiler & Zero-Re-Render Viewport**:
+  - Upgrade `UniversalCanvasEngine.syncTimeline()` to compile multi-stage motion curves and transitions into GSAP.
+  - Expose instantaneous evaluated transform matrix `getActiveInterpolatedTransform()` for zero-re-render 60fps canvas sampling in `Preview.tsx`.
+- **Audio Dynamic Ducking Gain Curves**:
+  - Connect dynamic ducking modifier to smoothed attack/release gain curves in `UniversalAudioMixer` & `WebAudioEngine`.
+- **Right Sidebar Motion Inspector**:
+  - Motion presets quick picker (Pop In, Smooth Slide, Overshoot Snap, Bounce Drop, Drift Zoom).
+  - 3-stage lifecycle tabs (`Intro`, `Steady`, `Outro`) with duration sliders and integrated `EasingCurveSelector`.
+- **Multi-Track Timeline Direct Manipulation**:
+  - Implement `TrimSequenceCommand.ts` and `SplitSequenceCommand.ts` in `apps/studio/src/lib/commands/`.
+  - Add left/right trim handles to timeline clips with magnetic edge snapping (12px / 3-frame threshold).
+  - Wire Razor cut tool (`C` hotkey or toolbar toggle).
+  - Add live Undo/Redo depth badges in `Titlebar.tsx` and toast notification system.
+  - Add Keyboard Shortcuts cheat sheet modal (`?` or `Ctrl+/`).
 
 ### Phase 7: Automated Testing & Production Verification
-- Create `autogenerated-tests/isomorphic_canvas_engine.test.ts` testing `@napi-rs/canvas` server rendering.
-- Update all studio unit tests (`studio_canvas_transform.test.ts`, `studio_partial_vfx_staging.test.ts`, `studio_three_audio_wiring.test.ts`, `studio_iteration6_e2e.test.ts`).
-- Compile production bundle via `bun run studio:build` and verify zero Three.js dependencies.
+- Dedicated Phase 6 test suite: `autogenerated-tests/studio_phase6_motion_timeline.test.ts`.
+- Full regression verification: `bun test studio`.
+- Production compilation verification: `bun run studio:build`.
 
-### Phase 8: Universal Canvas Abstraction Layer (Isomorphic Web & Node Environment Switching)
-- Create isomorphic `CanvasProvider` with automatic runtime detection (`web` vs `node`) and manual override.
-- Implement `WebCanvasAdapter` utilizing `OffscreenCanvas` with `HTMLCanvasElement` fallback.
-- Implement `NodeCanvasAdapter` utilizing lazy dynamic `import('@napi-rs/canvas')`.
-- Implement `CanvasAssetLoader` for isomorphic image loading and byte extraction.
-- Expose browser-pure interfaces in `@acc/effect-engines/client`.
+### Phase 8: Universal Canvas Abstraction Layer (Isomorphic Web & Node Environment Switching) [x] Completed (Historical 236)
+- Created isomorphic `CanvasProvider` with automatic runtime detection (`web` vs `node`) and manual override.
+- Implemented `WebCanvasAdapter` utilizing `OffscreenCanvas` with `HTMLCanvasElement` fallback.
+- Implemented `NodeCanvasAdapter` utilizing lazy dynamic `import('@napi-rs/canvas')`.
+- Implemented `CanvasAssetLoader` for isomorphic image loading and byte extraction.
+- Exposed browser-pure interfaces in `@acc/effect-engines/client`.
 
 ---
 

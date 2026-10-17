@@ -207,16 +207,25 @@ export function Preview({
     engine.setPartialVFXRegions(vfxRegions);
     engine.syncTimeline(activeSeqs as any, fps);
 
+    const timeSec = currentFrame / fps;
+    engine.update(timeSec, popOutIntensity);
+
     // 3. Synchronize in-canvas transform overlay
     if (selectedSeqId) {
+      const activeInterp = !isDragging ? engine.getActiveInterpolatedTransform(selectedSeqId) : null;
+      const curX = activeInterp ? activeInterp.x : transform.x;
+      const curY = activeInterp ? activeInterp.y : transform.y;
+      const curScale = activeInterp ? activeInterp.scale : transform.scale;
+      const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
+
       const baseW = 0.5;
       const baseH = 0.5;
       const normBox: BoundingBox2D = {
-        x: 0.5 + transform.x / width,
-        y: 0.5 + transform.y / height,
-        width: baseW * transform.scale,
-        height: baseH * transform.scale,
-        rotation: transform.rotation,
+        x: 0.5 + curX / width,
+        y: 0.5 + curY / height,
+        width: baseW * curScale,
+        height: baseH * curScale,
+        rotation: curRot,
       };
       engine.setOverlayVisible(true);
       engine.updateOverlay(normBox, activeGuides);
@@ -226,9 +235,8 @@ export function Preview({
     }
 
     // 4. Render 2D Scenegraph, Particles, HUD & Vector Overlay
-    const timeSec = currentFrame / fps;
     engine.render(ctx, timeSec, popOutIntensity);
-  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard]);
+  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, isDragging]);
 
   // Direct in-canvas handle interaction handlers
   const handleHandleMouseDown = (handleType: TransformHandleType, e: React.MouseEvent) => {
@@ -979,7 +987,27 @@ export function Preview({
               }
             }}
             style={{
-              transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
+              transform: `translate(${
+                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
+                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.x
+                  : transform.x
+              }px, ${
+                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
+                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.y
+                  : transform.y
+              }px) scale(${
+                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
+                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.scale
+                  : transform.scale
+              }) rotate(${
+                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
+                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.rotation
+                  : transform.rotation
+              }deg)`,
+              opacity:
+                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
+                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.opacity
+                  : 1.0,
               width: '50%',
               height: '50%',
             }}

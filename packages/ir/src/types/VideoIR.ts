@@ -97,6 +97,61 @@ export interface ParticleVfxModifierParams {
   };
 }
 
+export interface TemporalCurve<T = number> {
+  intro?: {
+    durationSec: number;
+    from: T;
+    to?: T;
+    ease: string;
+  };
+  steady?: {
+    type: 'hold' | 'drift' | 'pulse';
+    intensity?: number;
+  };
+  outro?: {
+    durationSec: number;
+    to: T;
+    ease: string;
+  };
+  keyframes?: Array<{
+    timeSec: number;
+    value: T;
+    ease?: string;
+  }>;
+}
+
+export interface TransformModifierParams {
+  x?: number | TemporalCurve<number>;
+  y?: number | TemporalCurve<number>;
+  scale?: number | TemporalCurve<number>;
+  rotation?: number | TemporalCurve<number>;
+  opacity?: number | TemporalCurve<number>;
+  normX?: number;
+  normY?: number;
+  ease?: string;
+  animation?: {
+    preset?: 'pop_in' | 'slide_left' | 'overshoot' | 'bounce' | 'drift';
+    intro?: { durationSec: number; ease: string; direction?: string };
+    steady?: { type: 'hold' | 'drift' | 'pulse'; intensity?: number };
+    outro?: { durationSec: number; ease: string; direction?: string };
+  };
+}
+
+export interface DynamicDuckingModifierParams {
+  duckingFactor: number | TemporalCurve<number>;
+  attackSec?: number;
+  releaseSec?: number;
+  attackEase?: string;
+  releaseEase?: string;
+  threshold?: number;
+}
+
+export interface TransitionModifierParams {
+  transitionType: 'crossfade' | 'slide_left' | 'slide_right' | 'whip_zoom' | 'dip_black';
+  durationSec: number;
+  ease?: string;
+}
+
 export interface ModifierNode<TParams = Record<string, unknown>> {
   type: string;
   params: TParams;

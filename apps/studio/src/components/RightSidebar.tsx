@@ -591,12 +591,115 @@ export function RightSidebar() {
                     onChange={(v) => updateModifierParams('transform', { ...transformMod?.params, rotation: v })}
                   />
 
-                  <div className="pt-2 border-t border-[var(--glass-border)]">
+                  <div className="pt-2 border-t border-[var(--glass-border)] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-indigo-400" />
+                        Motion Preset & Lifecycle
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-mono">GSAP</span>
+                    </div>
+
+                    {/* Presets Pills */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {[
+                        { id: 'none', label: 'Static', ease: 'linear' },
+                        { id: 'pop_in', label: 'Pop In', ease: 'elastic.out' },
+                        { id: 'slide_left', label: 'Slide In', ease: 'power2.out' },
+                        { id: 'bounce', label: 'Bounce', ease: 'bounce.out' },
+                        { id: 'overshoot', label: 'Overshoot', ease: 'back.out' },
+                        { id: 'drift', label: 'Drift', ease: 'power2.inOut' },
+                      ].map((p) => {
+                        const currentPreset = (transformMod?.params as any)?.animation?.preset || 'none';
+                        const isSelected = currentPreset === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              const newAnim =
+                                p.id === 'none'
+                                  ? undefined
+                                  : {
+                                      preset: p.id as any,
+                                      intro: { durationSec: 0.5, ease: p.ease },
+                                      outro: { durationSec: 0.3, ease: 'power2.in' },
+                                    };
+                              updateModifierParams('transform', {
+                                ...transformMod?.params,
+                                ease: p.ease,
+                                animation: newAnim,
+                              });
+                            }}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white shadow-xs'
+                                : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Duration Sliders */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <ParameterSlider
+                        label="Intro Duration"
+                        value={(transformMod?.params as any)?.animation?.intro?.durationSec ?? 0.4}
+                        min={0.1}
+                        max={2.0}
+                        step={0.05}
+                        defaultValue={0.4}
+                        unit="s"
+                        onChange={(v) => {
+                          const currentAnim = (transformMod?.params as any)?.animation || { preset: 'pop_in' };
+                          updateModifierParams('transform', {
+                            ...transformMod?.params,
+                            animation: {
+                              ...currentAnim,
+                              intro: { ...currentAnim.intro, durationSec: v },
+                            },
+                          });
+                        }}
+                      />
+                      <ParameterSlider
+                        label="Outro Duration"
+                        value={(transformMod?.params as any)?.animation?.outro?.durationSec ?? 0.3}
+                        min={0.1}
+                        max={1.5}
+                        step={0.05}
+                        defaultValue={0.3}
+                        unit="s"
+                        onChange={(v) => {
+                          const currentAnim = (transformMod?.params as any)?.animation || { preset: 'pop_in' };
+                          updateModifierParams('transform', {
+                            ...transformMod?.params,
+                            animation: {
+                              ...currentAnim,
+                              outro: { ...currentAnim.outro, durationSec: v },
+                            },
+                          });
+                        }}
+                      />
+                    </div>
+
                     <EasingCurveSelector
                       value={(transformMod?.params as any)?.ease || 'power2.out'}
-                      onChange={(ease) =>
-                        updateModifierParams('transform', { ...transformMod?.params, ease })
-                      }
+                      onChange={(ease) => {
+                        const currentAnim = (transformMod?.params as any)?.animation;
+                        updateModifierParams('transform', {
+                          ...transformMod?.params,
+                          ease,
+                          animation: currentAnim
+                            ? {
+                                ...currentAnim,
+                                intro: { ...(currentAnim.intro || {}), ease },
+                              }
+                            : undefined,
+                        });
+                      }}
                     />
                   </div>
                 </AccordionContent>

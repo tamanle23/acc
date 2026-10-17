@@ -108,6 +108,12 @@ export class WebAudioEngine {
                 if (typeof p.duckVolume === 'number') {
                   customDuckingFactor = p.duckVolume;
                 }
+                if (typeof p.attackMs === 'number') {
+                  this.mixer.attackMs = p.attackMs;
+                }
+                if (typeof p.releaseMs === 'number') {
+                  this.mixer.releaseMs = p.releaseMs;
+                }
                 if (typeof p.stereoPan === 'number') {
                   clipPan = p.stereoPan;
                 }

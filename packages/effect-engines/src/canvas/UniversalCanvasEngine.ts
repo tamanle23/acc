@@ -72,6 +72,10 @@ export class UniversalCanvasEngine {
 
   // GSAP Deterministic Scrubbed Timeline
   private timeline: gsap.core.Timeline;
+  private interpolatedStates = new Map<
+    string,
+    { opacity: number; scale: number; rotation: number; x: number; y: number }
+  >();
 
   constructor(config: CanvasEngineConfig) {
     this.width = config.width;
@@ -80,6 +84,16 @@ export class UniversalCanvasEngine {
 
     // GSAP Timeline strictly in paused scrubbed mode (driven by frame math)
     this.timeline = gsap.timeline({ paused: true });
+  }
+
+  public getActiveInterpolatedTransform(seqId: string): {
+    opacity: number;
+    scale: number;
+    rotation: number;
+    x: number;
+    y: number;
+  } | null {
+    return this.interpolatedStates.get(seqId) ?? null;
   }
 
   public resize(width: number, height: number): void {
@@ -161,44 +175,129 @@ export class UniversalCanvasEngine {
     fps: number = 30
   ): void {
     this.timeline.clear();
+    this.interpolatedStates.clear();
 
     for (const seq of sequences) {
       const startSec = (seq.time?.start ?? 0) / fps;
       const durSec = Math.max(0.1, (seq.time?.duration ?? 30) / fps);
 
-      const seqState = { opacity: 0, scale: 1.0, x: 0, y: 0 };
+      // Extract transform params if available
+      const transMod = seq.modifiers?.find((m) => m.type === 'transform');
+      const tp = (transMod?.params || {}) as any;
 
-      // Entrance fade-in and exit fade-out
-      const fadeDuration = Math.min(0.4, durSec / 3);
-      this.timeline.to(
-        seqState,
-        { opacity: 1, duration: fadeDuration, ease: 'power2.out' },
-        startSec
-      );
-      this.timeline.to(
-        seqState,
-        { opacity: 0, duration: fadeDuration, ease: 'power2.in' },
-        startSec + durSec - fadeDuration
-      );
+      const targetX = tp.x ?? 0;
+      const targetY = tp.y ?? 0;
+      const targetScale = tp.scale ?? 1.0;
+      const targetRot = tp.rotation ?? 0;
+      const baseEase = tp.ease || 'power2.out';
 
-      // Modifier keyframes
-      if (seq.modifiers) {
-        for (const mod of seq.modifiers) {
-          if (mod.type === 'transform' && mod.params) {
-            const p = mod.params as any;
-            this.timeline.to(
-              seqState,
-              {
-                scale: p.scale ?? 1.0,
-                x: p.x ?? 0,
-                y: p.y ?? 0,
-                duration: durSec,
-                ease: p.ease || 'power2.inOut',
-              },
-              startSec
-            );
-          }
+      // 3-Stage Lifecycle config or Animation preset
+      const anim = tp.animation;
+      const preset = anim?.preset;
+
+      const introDur = Math.min(durSec * 0.45, anim?.intro?.durationSec ?? 0.4);
+      const introEase = anim?.intro?.ease ?? baseEase;
+      const outroDur = Math.min(durSec * 0.35, anim?.outro?.durationSec ?? 0.3);
+      const outroEase = anim?.outro?.ease ?? 'power2.in';
+      const steadyType = anim?.steady?.type ?? (preset === 'drift' ? 'drift' : 'hold');
+
+      // Determine initial state based on preset / lifecycle
+      let initialX = targetX;
+      let initialY = targetY;
+      let initialScale = targetScale;
+      let initialRot = targetRot;
+      let initialOpacity = 0;
+
+      if (preset === 'pop_in') {
+        initialScale = targetScale * 0.2;
+      } else if (preset === 'slide_left') {
+        initialX = targetX - 350;
+      } else if (preset === 'bounce') {
+        initialY = targetY - 200;
+        initialScale = targetScale * 0.6;
+      } else if (preset === 'overshoot') {
+        initialScale = targetScale * 0.3;
+      } else if (preset === 'drift') {
+        initialScale = targetScale * 0.94;
+        initialX = targetX - 40;
+      } else {
+        // Standard smooth entrance
+        initialScale = targetScale * 0.85;
+      }
+
+      const seqState = {
+        opacity: initialOpacity,
+        scale: initialScale,
+        rotation: initialRot,
+        x: initialX,
+        y: initialY,
+      };
+      this.interpolatedStates.set(seq.id, seqState);
+
+      // --- 1. INTRO STAGE (Entrance) ---
+      if (introDur > 0) {
+        this.timeline.to(
+          seqState,
+          {
+            opacity: 1,
+            scale: targetScale,
+            x: targetX,
+            y: targetY,
+            rotation: targetRot,
+            duration: introDur,
+            ease: introEase,
+          },
+          startSec
+        );
+      } else {
+        seqState.opacity = 1;
+        seqState.scale = targetScale;
+        seqState.x = targetX;
+        seqState.y = targetY;
+        seqState.rotation = targetRot;
+      }
+
+      // --- 2. STEADY STAGE (Hold or Subtle Drift) ---
+      const steadyStart = startSec + introDur;
+      const steadyDur = Math.max(0.01, durSec - introDur - outroDur);
+      if (steadyType === 'drift') {
+        this.timeline.to(
+          seqState,
+          {
+            scale: targetScale * 1.05,
+            x: targetX + 15,
+            duration: steadyDur,
+            ease: 'linear',
+          },
+          steadyStart
+        );
+      }
+
+      // --- 3. OUTRO STAGE (Exit) ---
+      if (outroDur > 0) {
+        const outroStart = startSec + durSec - outroDur;
+        let exitScale = targetScale * 0.8;
+        let exitX = targetX;
+        let exitY = targetY;
+
+        if (preset === 'slide_left') {
+          exitX = targetX + 350;
+        } else if (preset === 'bounce') {
+          exitY = targetY + 150;
         }
+
+        this.timeline.to(
+          seqState,
+          {
+            opacity: 0,
+            scale: exitScale,
+            x: exitX,
+            y: exitY,
+            duration: outroDur,
+            ease: outroEase,
+          },
+          outroStart
+        );
       }
     }
   }

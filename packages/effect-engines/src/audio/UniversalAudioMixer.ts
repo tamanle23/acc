@@ -27,8 +27,9 @@ export interface AudioMixResult {
  * voice-over ducking for BGM tracks.
  */
 export class UniversalAudioMixer {
-  private clips: AudioMixerClip[] = [];
   public duckingFactor = 0.25; // Attenuate BGM to 25% when voice is active
+  public attackMs = 150;
+  public releaseMs = 300;
   public sampleRate = 44100;
 
   constructor(clips: AudioMixerClip[] = [], sampleRate = 44100) {
@@ -72,14 +73,16 @@ export class UniversalAudioMixer {
       }
     }
 
-    // Smooth voice ducking envelope (linear attack/release filter)
+    // Smooth voice ducking envelope (analog attack/release exponential filter)
     const duckingEnvelope = new Float32Array(numSamples);
     let currentDucking = 1.0;
-    const smoothingFactor = 0.005; // attack / release slew rate
+    const attackAlpha = 1 - Math.exp(-1 / Math.max(1, this.sampleRate * (this.attackMs / 1000)));
+    const releaseAlpha = 1 - Math.exp(-1 / Math.max(1, this.sampleRate * (this.releaseMs / 1000)));
 
     for (let i = 0; i < numSamples; i++) {
       const target = voiceMask[i] > 0 ? this.duckingFactor : 1.0;
-      currentDucking += (target - currentDucking) * smoothingFactor;
+      const alpha = target < currentDucking ? attackAlpha : releaseAlpha;
+      currentDucking += (target - currentDucking) * alpha;
       duckingEnvelope[i] = currentDucking;
     }
 

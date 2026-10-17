@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings, Keyboard } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -7,6 +7,7 @@ import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { IRStateManager } from '../lib/ir/irState';
 import { useTheme } from '../lib/theme/ThemeProvider';
+import { ShortcutsModal } from './ShortcutsModal';
 
 interface TitlebarProps {
   projectTitle: string;
@@ -39,6 +40,19 @@ export function Titlebar({
   const manager = IRStateManager.getInstance();
   const state = manager.getState();
   const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === '?' || (e.ctrlKey && e.key === '/')) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleDownloadIR = () => {
     const jsonStr = manager.exportJSON();
@@ -225,6 +239,18 @@ export function Titlebar({
           </Button>
         </Tooltip>
 
+        {/* Keyboard Shortcuts Cheat Sheet */}
+        <Tooltip content="Keyboard Shortcuts (?)">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsShortcutsOpen(true)}
+            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+          </Button>
+        </Tooltip>
+
         {/* Liquid Glass Preferences Modal */}
         <Tooltip content="Liquid Glass Preferences">
           <Button
@@ -253,6 +279,8 @@ export function Titlebar({
           </>
         )}
       </div>
+
+      <ShortcutsModal open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
     </header>
   );
 }
