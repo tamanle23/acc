@@ -30,6 +30,7 @@ public class WorkflowDefinitionController {
         this(registry, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public WorkflowDefinitionController(
         WorkflowDefinitionRegistry registry,
         com.unipost.workflow.application.WorkflowEngineService engineService

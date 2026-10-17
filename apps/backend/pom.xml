@@ -15,9 +15,9 @@
     <module>./unipost-ms-fs</module>
     <module>./unipost-ms-identity</module>
     <module>./unipost-ms-worker</module>
-    <module>./unipost-ms-aio</module>
     <module>./workflow-engine</module>
     <module>./unipost-sandbox</module>
+    <module>./unipost-ms-aio</module>
   </modules>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

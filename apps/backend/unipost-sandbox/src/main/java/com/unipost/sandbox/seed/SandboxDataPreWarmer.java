@@ -22,12 +22,21 @@ import java.time.LocalDateTime;
 @Slf4j
 @Component
 @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
-@RequiredArgsConstructor
 public class SandboxDataPreWarmer implements ApplicationListener<ApplicationReadyEvent> {
 
     private final SandboxProperties properties;
     private final ObjectProvider<TenantBillingRepository> billingRepositoryProvider;
     private final ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider;
+
+    public SandboxDataPreWarmer(
+            SandboxProperties properties,
+            ObjectProvider<TenantBillingRepository> billingRepositoryProvider,
+            ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider
+    ) {
+        this.properties = properties;
+        this.billingRepositoryProvider = billingRepositoryProvider;
+        this.tenantProvisioningServiceProvider = tenantProvisioningServiceProvider;
+    }
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {

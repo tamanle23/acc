@@ -32,11 +32,18 @@ import java.util.*;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnClass(name = "com.unipost.user.service.TokenService")
 @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
-@RequiredArgsConstructor
 public class SandboxTokenAspect {
 
     private final SandboxPersonaRegistry personaRegistry;
     private final ObjectProvider<JwtTokenHelper> jwtTokenHelperProvider;
+
+    public SandboxTokenAspect(
+            SandboxPersonaRegistry personaRegistry,
+            ObjectProvider<JwtTokenHelper> jwtTokenHelperProvider
+    ) {
+        this.personaRegistry = personaRegistry;
+        this.jwtTokenHelperProvider = jwtTokenHelperProvider;
+    }
 
     @Around("execution(* com.unipost.user.service.TokenService.getToken(..)) && args(request)")
     public Object interceptGetToken(ProceedingJoinPoint pjp, RequestWrapper<ContextHeader, AuthenticationRequestBody> request) throws Throwable {
