@@ -199,6 +199,15 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
 
       // Floating quick transport bar uses glass-panel
       expect(previewCode).toContain('glass-panel px-4 py-2 rounded-full');
+
+      // Canvas viewport stage & studio-canvas must be strictly isolated from outside theme
+      expect(previewCode).toContain('id="studio-canvas"');
+      expect(previewCode).toContain('isolate rounded-xl overflow-hidden');
+      expect(previewCode).toContain('backgroundColor: \'#000000\'');
+
+      // Subtitles & time-cued text must follow video styling, NOT outer glass-panel or text-foreground
+      expect(previewCode).toContain('bg-black/80 text-white');
+      expect(previewCode).not.toContain('glass-panel px-5 py-2 rounded-xl');
     });
   });
 

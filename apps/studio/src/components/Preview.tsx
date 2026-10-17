@@ -147,7 +147,7 @@ export function Preview({
 
     // 1. Clear & Background pass
     ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#020617';
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
 
     // 2. Query active sequences
@@ -365,11 +365,10 @@ export function Preview({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl glass-panel shadow-2xl select-none transition-all duration-300 ${
-        isOver
+      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl glass-panel shadow-2xl select-none transition-all duration-300 ${isOver
           ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
           : 'hover:border-[var(--glass-border-highlight)]'
-      }`}
+        }`}
     >
       {/* Ambient Fluid Background Refraction Mesh */}
       <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh" />
@@ -388,16 +387,14 @@ export function Preview({
           </div>
 
           <div
-            className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors ${
-              isPlaying
+            className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors ${isPlaying
                 ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                 : 'border-[var(--glass-border)] text-muted-foreground'
-            }`}
+              }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
-              }`}
+              className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
+                }`}
             />
             {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
           </div>
@@ -407,11 +404,10 @@ export function Preview({
               <button
                 type="button"
                 onClick={onTogglePlay}
-                className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${
-                  isPlaying
+                className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${isPlaying
                     ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                     : 'border-[var(--glass-border)] text-foreground/80 hover:text-foreground'
-                }`}
+                  }`}
               >
                 {isPlaying ? (
                   <>
@@ -450,65 +446,23 @@ export function Preview({
       </div>
 
       {/* Main Video Viewport Canvas with Mouse Interactive Parallax & Staging Drop Target */}
-      <div className="relative flex items-center justify-center">
+      <div
+        className="relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none"
+        style={{
+          aspectRatio: '16/9',
+          maxHeight: '70vh',
+          maxWidth: '80vw',
+        }}
+      >
         <canvas
+          id="studio-canvas"
           ref={canvasRef}
-          className="max-h-[70vh] max-w-[80vw] object-contain rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-[var(--glass-border)] cursor-crosshair transition-all"
-          style={{ aspectRatio: '16/9' }}
+          className="w-full h-full object-contain cursor-crosshair block bg-black"
+          style={{
+            aspectRatio: '16/9',
+            backgroundColor: '#000000',
+          }}
         />
-
-        {/* Floating Viewport Quick Transport Bar */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02]">
-          <Tooltip content="Rewind to Start (Home)">
-            <button
-              type="button"
-              onClick={() => onScrub?.(0)}
-              className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
-            <button
-              type="button"
-              onClick={onTogglePlay}
-              className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${
-                isPlaying
-                  ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
-                  : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
-              }`}
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 fill-current" />
-              ) : (
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-              )}
-            </button>
-          </Tooltip>
-
-          <Tooltip content="Step Forward 1 Frame">
-            <button
-              type="button"
-              onClick={() => onScrub?.(Math.min(totalFrames, currentFrame + 1))}
-              className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          <div className="h-4 w-px bg-[var(--glass-border-highlight)] mx-1" />
-
-          {/* Timecode Readout Pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full glass-card border border-[var(--glass-border)] text-foreground/90 font-mono text-[11px] select-none tracking-tight">
-            <span className="font-semibold text-[var(--accent-primary)]">
-              {(currentFrame / fps).toFixed(2)}s
-            </span>
-            <span className="text-muted-foreground text-[10px]">
-              / {(totalFrames / fps).toFixed(2)}s
-            </span>
-          </div>
-        </div>
 
         {/* Drag-and-Drop Staging Target Indicator */}
         {(isOver || (isDragOver && dragCoords)) && (
@@ -701,16 +655,14 @@ export function Preview({
                 ? { left: `${guide.position * 100}%`, top: 0, bottom: 0 }
                 : { top: `${guide.position * 100}%`, left: 0, right: 0 }
             }
-            className={`absolute z-20 pointer-events-none ${
-              guide.orientation === 'vertical'
+            className={`absolute z-20 pointer-events-none ${guide.orientation === 'vertical'
                 ? 'w-px border-l border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
                 : 'h-px border-t border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
-            }`}
+              }`}
           >
             <span
-              className={`absolute text-[9px] font-mono bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.2 rounded shadow-xs ${
-                guide.orientation === 'vertical' ? 'top-2 -translate-x-1/2' : 'left-2 -translate-y-1/2'
-              }`}
+              className={`absolute text-[9px] font-mono bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.2 rounded shadow-xs ${guide.orientation === 'vertical' ? 'top-2 -translate-x-1/2' : 'left-2 -translate-y-1/2'
+                }`}
             >
               {guide.label}
             </span>
@@ -796,42 +748,100 @@ export function Preview({
             </div>
 
             {/* Sequence identifier pill */}
-            <span className="glass-card text-[10px] font-mono text-foreground/90 px-2.5 py-0.5 rounded-full shadow-md select-none border border-[var(--glass-border)]">
+            <span className="bg-black/80 text-[10px] font-mono text-white/90 px-2.5 py-0.5 rounded-full shadow-md select-none border border-white/20">
               {selectedSeqId}
             </span>
           </div>
         )}
+
+        {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}
+        {activeCues.length > 0 && (
+          <div className="absolute bottom-6 left-6 right-6 flex flex-col items-center gap-1.5 pointer-events-auto z-20 select-none">
+            {activeCues.map((cue, idx) => {
+              const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
+              return (
+                <span
+                  key={idx}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    const parentSeq = activeSequences.find((s) => s.cues && s.cues.some((c) => c.text === cue.text));
+                    if (parentSeq) {
+                      const cueIdx = parentSeq.cues?.findIndex((c) => c.text === cue.text) ?? 0;
+                      setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
+                    }
+                  }}
+                  className={`px-4 py-1.5 rounded-lg text-center cursor-pointer transition-transform hover:scale-105 select-none font-bold tracking-wide ${
+                    isTarget
+                      ? 'border border-rose-500/80 bg-rose-950/85 text-rose-200 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                      : 'border border-white/15 bg-black/80 text-white text-base shadow-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]'
+                  }`}
+                  style={{
+                    textShadow: isTarget
+                      ? '0 0 8px rgba(244,63,94,0.8)'
+                      : '0 2px 4px rgba(0,0,0,0.95), 0 0 2px #000, 0 0 1px #000',
+                  }}
+                  title="Double click to edit text"
+                >
+                  {cue.text}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Dynamic Subtitles & HUD Callout Overlay with Double-Click Inline Editing */}
-      {activeCues.length > 0 && (
-        <div className="absolute bottom-20 left-8 right-8 flex flex-col items-center gap-2 pointer-events-auto z-20">
-          {activeCues.map((cue, idx) => {
-            const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
-            return (
-              <span
-                key={idx}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  const parentSeq = activeSequences.find((s) => s.cues && s.cues.some((c) => c.text === cue.text));
-                  if (parentSeq) {
-                    const cueIdx = parentSeq.cues?.findIndex((c) => c.text === cue.text) ?? 0;
-                    setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
-                  }
-                }}
-                className={`glass-panel px-5 py-2 rounded-xl border shadow-xl text-center cursor-pointer transition-all hover:scale-105 ${
-                  isTarget
-                    ? 'border-rose-500/60 bg-rose-950/40 text-rose-300 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.25)]'
-                    : 'border-[var(--glass-border-highlight)] text-foreground font-medium text-base shadow-[0_8px_24px_rgba(0,0,0,0.2)]'
-                }`}
-                title="Double click to edit text"
-              >
-                {cue.text}
-              </span>
-            );
-          })}
+      {/* Floating Viewport Quick Transport Bar */}
+      <div className="mt-3 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02] z-30">
+        <Tooltip content="Rewind to Start (Home)">
+          <button
+            type="button"
+            onClick={() => onScrub?.(0)}
+            className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+          >
+            <SkipBack className="w-3.5 h-3.5" />
+          </button>
+        </Tooltip>
+
+        <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
+          <button
+            type="button"
+            onClick={onTogglePlay}
+            className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${
+              isPlaying
+                ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
+            }`}
+          >
+            {isPlaying ? (
+              <Pause className="w-4 h-4 fill-current" />
+            ) : (
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+            )}
+          </button>
+        </Tooltip>
+
+        <Tooltip content="Step Forward 1 Frame">
+          <button
+            type="button"
+            onClick={() => onScrub?.(Math.min(totalFrames, currentFrame + 1))}
+            className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
+        </Tooltip>
+
+        <div className="h-4 w-px bg-[var(--glass-border-highlight)] mx-1" />
+
+        {/* Timecode Readout Pill */}
+        <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full glass-card border border-[var(--glass-border)] text-foreground/90 font-mono text-[11px] select-none tracking-tight">
+          <span className="font-semibold text-[var(--accent-primary)]">
+            {(currentFrame / fps).toFixed(2)}s
+          </span>
+          <span className="text-muted-foreground text-[10px]">
+            / {(totalFrames / fps).toFixed(2)}s
+          </span>
         </div>
-      )}
+      </div>
 
       {/* Floating Inline Canvas Text Editor Modal */}
       {editingCue && (
