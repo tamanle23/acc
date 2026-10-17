@@ -159,6 +159,7 @@ describe('Master Integration Plan (Iteration 1) End-to-End Suite', () => {
           sequences: [
             {
               id: 'seq-1',
+              type: 'video',
               time: { start: 0, duration: 60 },
             },
           ],

@@ -29,6 +29,7 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
           sequences: [
             {
               id: 'seq-bg-base',
+              type: 'video',
               time: { start: 0, duration: 150 },
             },
           ],

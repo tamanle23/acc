@@ -169,6 +169,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
       if (segmentDir.depth3d && segmentDir.depth3d.mode !== 'none') {
         seqModifiers.push({
           type: 'vfx/depth3d',
+          target: ['video', 'image'],
           params: {
             mode: segmentDir.depth3d.mode,
             parallaxFactor: segmentDir.depth3d.parallaxFactor ?? 0.3,
@@ -186,6 +187,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         if ((segmentDir.cameraMotion as any).type === '3d_spline' || (segmentDir.cameraMotion as any).keyframes) {
           seqModifiers.push({
             type: 'vfx/camera_3d',
+            target: ['video', 'image', 'overlay'],
             params: {
               keyframes: (segmentDir.cameraMotion as any).keyframes,
               rackFocus: (segmentDir.cameraMotion as any).rackFocus,
@@ -194,6 +196,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         } else {
           seqModifiers.push({
             type: 'transform/ken_burns',
+            target: ['video', 'image', 'overlay'],
             params: {
               type: segmentDir.cameraMotion.type,
               intensity: segmentDir.cameraMotion.intensity ?? 0.5,
@@ -210,6 +213,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
             segmentDir.transition.type === 'crossfade'
               ? 'transition/crossfade'
               : `transition/${segmentDir.transition.type}`,
+          target: ['video', 'image', 'overlay'],
           params: {
             durationFrames: transFrames,
             easing: segmentDir.transition.easing || 'ease-in-out',
@@ -221,6 +225,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
       const videoSeqId = `seq_${chunkIdx}_vis`;
       const videoSeq: IRSequence = {
         id: videoSeqId,
+        type: 'video',
         assetId: visualAssetPath ? visualAssetId : undefined,
         time: {
           start: previousVideoSeqId ? { after: previousVideoSeqId } : 0,
@@ -243,6 +248,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         const audioSeqId = `seq_${chunkIdx}_aud`;
         const audioSeq: IRSequence = {
           id: audioSeqId,
+          type: 'audio',
           assetId: audioAssetId,
           time: {
             start: previousAudioSeqId ? { after: previousAudioSeqId } : 0,
@@ -264,6 +270,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
           const cueOffsetFrames = Math.round((cue.offsetMs / 1000) * fps);
           sfxSequences.push({
             id: `seq_sfx_${chunkIdx}_${cueIdx}`,
+            type: 'audio',
             assetId: sfxAssetId,
             time: {
               start: { syncWith: videoSeqId, offsetFrames: cueOffsetFrames },
@@ -272,6 +279,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
             modifiers: cue.volume !== undefined ? [
               {
                 type: 'audio/gain',
+                target: 'audio',
                 params: { gain: cue.volume },
               },
             ] : undefined,
@@ -302,6 +310,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
 
         captionSequences.push({
           id: `seq_${chunkIdx}_caption`,
+          type: 'text',
           time: {
             start: { syncWith: videoSeqId },
             duration: durationFrames,
@@ -316,6 +325,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
           modifiers: [
             {
               type: 'text/typography',
+              target: 'text',
               params: {
                 preset: captionPreset,
                 highlightColor,
@@ -335,6 +345,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
       const cg = directorConfig.canvas.colorGrading;
       videoTrackModifiers.push({
         type: 'vfx/color_grading',
+        target: ['video', 'image', 'overlay'],
         params: {
           lutPreset: cg.lutPreset,
           lutPath: cg.lutPath ? resolvePath(cg.lutPath) : undefined,
@@ -351,24 +362,28 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
       if (arch.chartVisuals) {
         videoTrackModifiers.push({
           type: 'vfx/chart_visuals',
+          target: ['video', 'image', 'overlay'],
           params: arch.chartVisuals,
         });
       }
       if (arch.cryptoVisuals) {
         videoTrackModifiers.push({
           type: 'vfx/crypto_ticker',
+          target: ['video', 'image', 'overlay'],
           params: arch.cryptoVisuals,
         });
       }
       if (arch.talkingHead) {
         videoTrackModifiers.push({
           type: 'vfx/talking_head',
+          target: ['video', 'image', 'overlay'],
           params: arch.talkingHead,
         });
       }
       if (arch.narrativeStory) {
         videoTrackModifiers.push({
           type: 'vfx/cinematic_atmosphere',
+          target: ['video', 'image', 'overlay'],
           params: arch.narrativeStory,
         });
       }
@@ -384,6 +399,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
       };
       bgmSequences.push({
         id: 'seq_bgm_master',
+        type: 'audio',
         assetId: bgmAssetId,
         time: {
           start: 0,
@@ -392,6 +408,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         modifiers: [
           {
             type: 'audio/ducking',
+            target: 'audio',
             params: {
               autoDucking: directorConfig.audioStaging.autoDucking ?? true,
               attenuationDb: directorConfig.audioStaging.duckingAttenuationDb ?? -14,

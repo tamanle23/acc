@@ -31,6 +31,13 @@
       "items": {
         "$ref": "#/definitions/IRTrack"
       }
+    },
+    "modifiers": {
+      "type": "array",
+      "description": "Global document-level master modifier chain (post-composition visual and master audio DSP)",
+      "items": {
+        "$ref": "#/definitions/ModifierNode"
+      }
     }
   },
   "definitions": {
@@ -226,16 +233,58 @@
         }
       }
     },
+    "SequenceType": {
+      "type": "string",
+      "enum": [
+        "video",
+        "image",
+        "audio",
+        "text",
+        "overlay"
+      ],
+      "description": "Canonical sequence media type discriminator"
+    },
+    "BlendMode": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "screen",
+        "multiply",
+        "overlay",
+        "add",
+        "color_dodge",
+        "soft_light"
+      ],
+      "default": "normal",
+      "description": "Compositing blend mode"
+    },
     "ModifierNode": {
       "type": "object",
       "required": [
         "type",
+        "target",
         "params"
       ],
       "properties": {
         "type": {
           "type": "string",
-          "description": "Modifier plugin identifier (e.g., 'transform/scale', 'color/lut', 'transition/crossfade', 'depth3d/parallax', 'audio/compressor', 'overlay/composite')"
+          "description": "Modifier plugin identifier (e.g., 'transform', 'vfx/camera_3d', 'audio/volume', 'text/style')"
+        },
+        "target": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/SequenceType"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SequenceType"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          ],
+          "description": "Explicit target domain sequence type(s) that this modifier can be applied to"
         },
         "params": {
           "type": "object",
@@ -248,12 +297,16 @@
       "type": "object",
       "required": [
         "id",
+        "type",
         "time"
       ],
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique sequence identifier within the document"
+        },
+        "type": {
+          "$ref": "#/definitions/SequenceType"
         },
         "assetId": {
           "type": "string",
@@ -272,6 +325,9 @@
         },
         "time": {
           "$ref": "#/definitions/SequenceTime"
+        },
+        "blendMode": {
+          "$ref": "#/definitions/BlendMode"
         },
         "cues": {
           "type": "array",
@@ -317,16 +373,7 @@
           "description": "Hierarchical parent group track ID"
         },
         "blendMode": {
-          "type": "string",
-          "enum": [
-            "normal",
-            "screen",
-            "multiply",
-            "overlay",
-            "add"
-          ],
-          "default": "normal",
-          "description": "Compositing blend mode for video/visual tracks"
+          "$ref": "#/definitions/BlendMode"
         },
         "style": {
           "type": "object",

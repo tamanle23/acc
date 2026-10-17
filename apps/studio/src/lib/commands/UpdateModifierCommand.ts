@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, ModifierNode } from '@acc/ir/client';
+import type { VideoIRDocument, ModifierNode, SequenceType } from '@acc/ir/client';
 
 export class UpdateModifierCommand implements ICommand {
   public readonly id: string;
@@ -9,16 +9,23 @@ export class UpdateModifierCommand implements ICommand {
   private sequenceId: string;
   private modifierType: string;
   private params: Record<string, unknown>;
+  private target?: SequenceType | SequenceType[];
   private previousParamsSnapshot: Record<string, unknown> | null = null;
   private wasPreviouslyExisting: boolean = true;
 
-  constructor(sequenceId: string, modifierType: string, params: Record<string, unknown>) {
+  constructor(
+    sequenceId: string,
+    modifierType: string,
+    params: Record<string, unknown>,
+    target?: SequenceType | SequenceType[]
+  ) {
     this.id = `mod_${sequenceId}_${modifierType}_${Date.now()}`;
     this.description = `Update modifier ${modifierType} on ${sequenceId}`;
     this.timestamp = Date.now();
     this.sequenceId = sequenceId;
     this.modifierType = modifierType;
     this.params = { ...params };
+    this.target = target;
   }
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
@@ -35,6 +42,9 @@ export class UpdateModifierCommand implements ICommand {
               this.previousParamsSnapshot = JSON.parse(JSON.stringify(existingMod.params));
               this.wasPreviouslyExisting = true;
             }
+            if (this.target && !existingMod.target) {
+              existingMod.target = this.target;
+            }
             existingMod.params = { ...existingMod.params, ...this.params };
           } else {
             if (this.previousParamsSnapshot === null) {
@@ -43,6 +53,7 @@ export class UpdateModifierCommand implements ICommand {
             }
             seq.modifiers.push({
               type: this.modifierType,
+              target: this.target || (seq.type ? seq.type : 'video'),
               params: { ...this.params },
             });
           }
@@ -60,14 +71,13 @@ export class UpdateModifierCommand implements ICommand {
     for (const track of copy.tracks) {
       for (const seq of track.sequences) {
         if (seq.id === this.sequenceId && seq.modifiers) {
-          if (this.wasPreviouslyExisting && this.previousParamsSnapshot) {
+          if (!this.wasPreviouslyExisting) {
+            seq.modifiers = seq.modifiers.filter((m) => m.type !== this.modifierType);
+          } else if (this.previousParamsSnapshot !== null) {
             const existingMod = seq.modifiers.find((m) => m.type === this.modifierType);
             if (existingMod) {
-              existingMod.params = JSON.parse(JSON.stringify(this.previousParamsSnapshot));
+              existingMod.params = { ...this.previousParamsSnapshot };
             }
-          } else {
-            // It was newly added, remove it completely
-            seq.modifiers = seq.modifiers.filter((m) => m.type !== this.modifierType);
           }
           return copy;
         }
@@ -77,15 +87,16 @@ export class UpdateModifierCommand implements ICommand {
     return copy;
   }
 
-  public tryMerge(next: ICommand): boolean {
-    if (
-      next instanceof UpdateModifierCommand &&
-      next.sequenceId === this.sequenceId &&
-      next.modifierType === this.modifierType
-    ) {
-      // Coalesce continuous slider tweaks in-place
-      this.params = { ...this.params, ...next.params };
-      return true;
+  public tryMerge(nextCommand: ICommand): boolean {
+    if (nextCommand instanceof UpdateModifierCommand) {
+      if (
+        nextCommand.sequenceId === this.sequenceId &&
+        nextCommand.modifierType === this.modifierType &&
+        nextCommand.timestamp - this.timestamp < 500
+      ) {
+        this.params = { ...this.params, ...nextCommand.params };
+        return true;
+      }
     }
     return false;
   }

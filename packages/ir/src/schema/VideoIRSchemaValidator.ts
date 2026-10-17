@@ -1,14 +1,32 @@
-import type { VideoIRDocument } from '../types/VideoIR';
+import type { VideoIRDocument, SequenceType, TrackType } from '../types/VideoIR';
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
 
+const VALID_SEQUENCE_TYPES = new Set<string>(['video', 'image', 'audio', 'text', 'overlay']);
+const VALID_BLEND_MODES = new Set<string>([
+  'normal',
+  'screen',
+  'multiply',
+  'overlay',
+  'add',
+  'color_dodge',
+  'soft_light',
+]);
+
+const TRACK_COMPATIBLE_SEQUENCE_TYPES: Record<string, Set<string>> = {
+  video: new Set(['video', 'image', 'overlay']),
+  audio: new Set(['audio']),
+  timed_text: new Set(['text']),
+  data: new Set(['video', 'image', 'audio', 'text', 'overlay']),
+};
+
 /**
  * High-speed Draft-07 Polymorphic Schema Validator for Video IR V1.0-Stable.
- * Implements strict type checking on core topology (version, meta, tracks, sequences)
- * and discriminator checks for polymorphic modifier nodes.
+ * Implements strict type checking on core topology (version, meta, tracks, sequences, types, modifiers)
+ * and discriminator checks for polymorphic modifier nodes and target domains.
  */
 export class VideoIRSchemaValidator {
   public static validate(doc: unknown): ValidationResult {
@@ -63,6 +81,11 @@ export class VideoIRSchemaValidator {
       }
     }
 
+    // Global document-level modifier chain validation
+    if (d.modifiers !== undefined) {
+      this.validateModifiers(d.modifiers, 'root document', errors);
+    }
+
     if (!Array.isArray(d.tracks)) {
       errors.push('"tracks" must be an array');
     } else {
@@ -89,13 +112,19 @@ export class VideoIRSchemaValidator {
           errors.push(`Track "${track.id || tIdx}" has invalid type "${track.type}"`);
         }
 
+        if (track.blendMode !== undefined && !VALID_BLEND_MODES.has(track.blendMode)) {
+          errors.push(`Track "${track.id || tIdx}" has invalid blendMode "${track.blendMode}"`);
+        }
+
         if (track.modifiers !== undefined) {
-          this.validateModifiers(track.modifiers, `track "${track.id || tIdx}"`, errors);
+          this.validateModifiers(track.modifiers, `track "${track.id || tIdx}"`, errors, track.type);
         }
 
         if (!Array.isArray(track.sequences)) {
           errors.push(`Track "${track.id || tIdx}" "sequences" must be an array`);
         } else {
+          const compatibleSeqTypes = TRACK_COMPATIBLE_SEQUENCE_TYPES[track.type] || new Set();
+
           for (let sIdx = 0; sIdx < track.sequences.length; sIdx++) {
             const seq = track.sequences[sIdx];
             if (!seq || typeof seq !== 'object') {
@@ -107,6 +136,21 @@ export class VideoIRSchemaValidator {
               errors.push(`Sequence index ${sIdx} on track "${track.id}" missing valid "id"`);
             }
 
+            // Strictly required sequence type
+            if (!seq.type || typeof seq.type !== 'string') {
+              errors.push(`Sequence "${seq.id || sIdx}" on track "${track.id}" missing strictly required "type"`);
+            } else if (!VALID_SEQUENCE_TYPES.has(seq.type)) {
+              errors.push(`Sequence "${seq.id || sIdx}" has invalid type "${seq.type}". Expected: ${Array.from(VALID_SEQUENCE_TYPES).join(', ')}`);
+            } else if (!compatibleSeqTypes.has(seq.type)) {
+              errors.push(
+                `Track "${track.id}" of type "${track.type}" cannot contain sequence "${seq.id || sIdx}" of type "${seq.type}". Permitted types: ${Array.from(compatibleSeqTypes).join(', ')}`
+              );
+            }
+
+            if (seq.blendMode !== undefined && !VALID_BLEND_MODES.has(seq.blendMode)) {
+              errors.push(`Sequence "${seq.id || sIdx}" has invalid blendMode "${seq.blendMode}"`);
+            }
+
             if (!seq.time || typeof seq.time !== 'object') {
               errors.push(`Sequence "${seq.id || sIdx}" missing "time" definition`);
             } else {
@@ -116,7 +160,7 @@ export class VideoIRSchemaValidator {
             }
 
             if (seq.modifiers !== undefined) {
-              this.validateModifiers(seq.modifiers, `sequence "${seq.id || sIdx}"`, errors);
+              this.validateModifiers(seq.modifiers, `sequence "${seq.id || sIdx}"`, errors, track.type, seq.type as SequenceType);
             }
           }
         }
@@ -152,11 +196,19 @@ export class VideoIRSchemaValidator {
     return parsed as VideoIRDocument;
   }
 
-  private static validateModifiers(modifiers: unknown, context: string, errors: string[]): void {
+  private static validateModifiers(
+    modifiers: unknown,
+    context: string,
+    errors: string[],
+    trackType?: TrackType,
+    seqType?: SequenceType
+  ): void {
     if (!Array.isArray(modifiers)) {
       errors.push(`Modifiers on ${context} must be an array`);
       return;
     }
+
+    const compatibleTrackSeqTypes = trackType ? TRACK_COMPATIBLE_SEQUENCE_TYPES[trackType] : undefined;
 
     for (let i = 0; i < modifiers.length; i++) {
       const mod = modifiers[i];
@@ -167,6 +219,45 @@ export class VideoIRSchemaValidator {
       if (!mod.type || typeof mod.type !== 'string') {
         errors.push(`Modifier at index ${i} on ${context} missing "type" string discriminator`);
       }
+
+      // Strictly required modifier target
+      if (mod.target === undefined || mod.target === null) {
+        errors.push(`Modifier "${mod.type || i}" on ${context} missing strictly required "target"`);
+      } else {
+        const targets: string[] = Array.isArray(mod.target) ? mod.target : [mod.target];
+        if (targets.length === 0) {
+          errors.push(`Modifier "${mod.type || i}" on ${context} has empty "target" array`);
+        } else {
+          for (const tgt of targets) {
+            if (typeof tgt !== 'string' || !VALID_SEQUENCE_TYPES.has(tgt)) {
+              errors.push(
+                `Modifier "${mod.type || i}" on ${context} has invalid target "${tgt}". Expected: ${Array.from(VALID_SEQUENCE_TYPES).join(', ')}`
+              );
+            }
+          }
+
+          // Validate target compatibility with track
+          if (compatibleTrackSeqTypes) {
+            const hasCompatibleTarget = targets.some((tgt) => compatibleTrackSeqTypes.has(tgt));
+            if (!hasCompatibleTarget) {
+              errors.push(
+                `Modifier "${mod.type || i}" on ${context} (track type "${trackType}") has target [${targets.join(', ')}] which is incompatible with track permitted types [${Array.from(compatibleTrackSeqTypes).join(', ')}]`
+              );
+            }
+          }
+
+          // Validate target compatibility with sequence if placed on a sequence
+          if (seqType) {
+            const matchesSeq = targets.includes(seqType);
+            if (!matchesSeq) {
+              errors.push(
+                `Modifier "${mod.type || i}" on sequence "${context}" (type "${seqType}") does not target sequence type "${seqType}" (targets: [${targets.join(', ')}])`
+              );
+            }
+          }
+        }
+      }
+
       if (mod.params === undefined || typeof mod.params !== 'object' || mod.params === null) {
         errors.push(`Modifier "${mod.type || i}" on ${context} missing "params" object`);
       } else {

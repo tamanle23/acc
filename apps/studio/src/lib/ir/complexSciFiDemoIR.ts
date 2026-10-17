@@ -54,6 +54,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-city-intro',
+          type: 'image',
           assetId: 'asset-cyber-city',
           time: {
             start: 0,
@@ -62,6 +63,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/color_grading',
+              target: ['video', 'image', 'overlay'],
               params: {
                 contrast: 1.25,
                 saturation: 1.4,
@@ -72,6 +74,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-core-reveal',
+          type: 'image',
           assetId: 'asset-matrix-core',
           time: {
             start: {
@@ -83,6 +86,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/color_grading',
+              target: ['video', 'image', 'overlay'],
               params: {
                 contrast: 1.15,
                 saturation: 1.2,
@@ -101,6 +105,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-holo-subject',
+          type: 'image',
           assetId: 'asset-neon-warrior',
           time: {
             start: 30,
@@ -109,6 +114,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/depth3d',
+              target: ['video', 'image'],
               params: {
                 mode: 'frame_breaker',
                 popOutIntensity: 1.35,
@@ -127,6 +133,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-matrix-rain',
+          type: 'overlay',
           time: {
             start: 0,
             duration: 270,
@@ -134,6 +141,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'overlay/canvas_particles',
+              target: ['video', 'overlay'],
               params: {
                 type: 'matrix_rain',
                 intensity: 1.2,
@@ -152,6 +160,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-hud-tactical',
+          type: 'overlay',
           time: {
             start: 45,
             duration: 210,
@@ -159,6 +168,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'overlay/canvas_particles',
+              target: ['video', 'overlay'],
               params: {
                 type: 'sci_fi_hud',
                 intensity: 0.9,
@@ -176,6 +186,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-pilot-comm',
+          type: 'audio',
           assetId: 'asset-voice-pilot',
           time: {
             start: 20,
@@ -184,6 +195,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'sfx/dynamic_ducking',
+              target: 'audio',
               params: {
                 duckVolume: 0.2,
                 attackMs: 120,
@@ -202,6 +214,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-laser-hit',
+          type: 'audio',
           assetId: 'asset-laser-impact',
           time: {
             start: 90,
@@ -217,6 +230,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-synth-score',
+          type: 'audio',
           assetId: 'asset-synth-bgm',
           time: {
             start: 0,
@@ -235,6 +249,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-dialogue-1',
+          type: 'text',
           time: {
             start: 20,
             duration: 70,
@@ -249,6 +264,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-dialogue-2',
+          type: 'text',
           time: {
             start: 95,
             duration: 75,
@@ -270,6 +286,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-hud-callout',
+          type: 'text',
           time: {
             start: 45,
             duration: 150,

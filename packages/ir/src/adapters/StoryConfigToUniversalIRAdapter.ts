@@ -91,6 +91,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if (audioSrc) {
         audioSequences.push({
           id: audioSeqId,
+          type: 'audio',
           assetId: audioAssetId,
           time: {
             start: index === 0 ? 0 : { after: `seq_${index}_vo`, offsetFrames: pauseFrames },
@@ -104,6 +105,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if (scene.depth3d?.enabled || scene.depth3d?.mode) {
         videoModifiers.push({
           type: 'vfx/depth3d',
+          target: ['video', 'image'],
           params: {
             ...scene.depth3d,
             mode: scene.depth3d.mode || 'frame_breaker',
@@ -116,6 +118,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if ((scene as any).camera3d) {
         videoModifiers.push({
           type: 'vfx/camera_3d',
+          target: ['video', 'image', 'overlay'],
           params: (scene as any).camera3d,
         });
       }
@@ -123,6 +126,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if ((scene as any).particleOverlay) {
         videoModifiers.push({
           type: 'overlay/canvas_particles',
+          target: ['video', 'overlay'],
           params: (scene as any).particleOverlay,
         });
       }
@@ -132,6 +136,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if (colorGrading) {
         videoModifiers.push({
           type: 'vfx/color_grading',
+          target: ['video', 'image', 'overlay'],
           params: {
             lutPath: resolvePath(colorGrading.lutPath || colorGrading.lut),
             contrast: colorGrading.contrast ?? 1.05,
@@ -146,6 +151,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         transitionDurationFrames = Math.round((transitionConfig.duration || 1.0) * fps);
         videoModifiers.push({
           type: 'transition/crossfade',
+          target: ['video', 'image', 'overlay'],
           params: {
             durationFrames: transitionDurationFrames,
             overlapTarget: index > 0 ? `seq_${index}_vis` : undefined,
@@ -162,6 +168,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
 
       videoSequences.push({
         id: videoSeqId,
+        type: (scene.video || (scene as any).resolvedVideo) ? 'video' : 'image',
         assetId: visualSrc ? visualAssetId : undefined,
         time: {
           start: audioSrc
@@ -191,6 +198,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         const captionSeqId = `${sceneId}_cap`;
         captionSequences.push({
           id: captionSeqId,
+          type: 'text',
           time: {
             start: { syncWith: audioSeqId },
             duration: { matchLengthOf: audioSeqId },
@@ -219,6 +227,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
 
       videoTrackModifiers.push({
         type: 'overlay/canvas_particles',
+        target: ['video', 'overlay'],
         params: {
           type: particleType,
           variant: comp,
@@ -274,6 +283,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
             };
             sfxSequences.push({
               id: `seq_sfx_${index + 1}_${cIdx + 1}`,
+              type: 'audio',
               assetId: sfxAssetId,
               time: {
                 start: { syncWith: `seq_${index + 1}_vo`, offsetFrames: Math.round((clip.time || 0) * fps) },
@@ -305,6 +315,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
       if (settings.bgm.autoDucking && audioSequences.length > 0) {
         bgmModifiers.push({
           type: 'sfx/dynamic_ducking',
+          target: 'audio',
           params: {
             controlTrackId: 'track_a1_voiceover',
             attenuationDb: -16.0,
@@ -321,6 +332,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
         sequences: [
           {
             id: 'seq_bgm_main',
+            type: 'audio',
             assetId: bgmAssetId,
             time: {
               start: 0,

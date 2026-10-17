@@ -98,6 +98,7 @@ export class RelationalDAGCompiler {
     return {
       meta: doc.meta,
       assets: doc.assets,
+      modifiers: doc.modifiers,
       tracks: trackMap,
       sequences: resolvedSequences,
       totalFrames,
@@ -254,11 +255,13 @@ export class RelationalDAGCompiler {
       const endFrame = startFrame + duration;
       resolvedSequences.set(currId, {
         id: currId,
+        type: seq.type,
         trackId: item.trackId,
         assetId: seq.assetId,
         startFrame,
         endFrame,
         durationFrames: duration,
+        blendMode: seq.blendMode,
         cues: seq.cues,
         modifiers: seq.modifiers,
       });

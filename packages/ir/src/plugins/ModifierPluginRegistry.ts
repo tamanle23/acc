@@ -25,8 +25,11 @@ export interface ModifierContext {
   state?: Record<string, unknown>;
 }
 
+import type { SequenceType } from '../types/VideoIR';
+
 export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly type: string;
+  readonly defaultTarget?: SequenceType | SequenceType[];
   readonly targetScope: 'track' | 'sequence' | 'master' | 'audio' | 'both';
   readonly targetPhase?: PluginTargetPhase;
   validate?(params: unknown): params is TParams;

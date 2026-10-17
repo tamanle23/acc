@@ -6,6 +6,10 @@
 
 export type TrackType = 'video' | 'audio' | 'data' | 'timed_text';
 
+export type SequenceType = 'video' | 'image' | 'audio' | 'text' | 'overlay';
+
+export type BlendMode = 'normal' | 'screen' | 'multiply' | 'overlay' | 'add' | 'color_dodge' | 'soft_light';
+
 export type AssetType = 'media' | 'image' | 'audio' | 'font' | 'lottie' | 'text_cues';
 
 export interface AssetDefinition {
@@ -47,122 +51,19 @@ export interface TimedTextCue {
   text: string;
 }
 
-export interface DepthRelightingModifierParams {
-  enabled: boolean;
-  lightPosition?: [number, number, number];
-  diffuse?: number;
-  specular?: number;
-  shininess?: number;
-  ambient?: number;
-  rimIntensity?: number;
-  lightColor?: string | [number, number, number];
-  normalStrength?: number;
-}
+// Re-export all modular modifier definitions and types
+export * from './modifiers';
 
-export interface Camera3DKeyframeIR {
-  time: number; // [0, 1]
-  position: [number, number, number];
-  target?: [number, number, number];
-  roll?: number;
-  fov?: number;
-  focalZ?: number;
-  focalAperture?: number;
-}
-
-export interface Camera3DModifierParams {
-  keyframes?: Camera3DKeyframeIR[];
-  rackFocus?: {
-    enabled?: boolean;
-    focalZone?: 'foreground' | 'midground' | 'background' | 'custom';
-    customFocalZ?: number;
-    aperture?: number;
-    blurMaxRadius?: number;
-  };
-  imagePath?: string;
-  depthImagePath?: string;
-  motionBlur?: boolean;
-}
-
-export interface ParticleVfxModifierParams {
-  type: string;
-  variant?: string;
-  intensity?: number;
-  speed?: number;
-  opacity?: number;
-  useSIMD?: boolean;
-  shaders?: {
-    chromaticAberration?: { enabled?: boolean; offsetPx?: number };
-    bloom?: { enabled?: boolean; threshold?: number; intensity?: number };
-    anamorphicFlare?: { enabled?: boolean; intensity?: number; tintColor?: string };
-  };
-}
-
-export interface TemporalCurve<T = number> {
-  intro?: {
-    durationSec: number;
-    from: T;
-    to?: T;
-    ease: string;
-  };
-  steady?: {
-    type: 'hold' | 'drift' | 'pulse';
-    intensity?: number;
-  };
-  outro?: {
-    durationSec: number;
-    to: T;
-    ease: string;
-  };
-  keyframes?: Array<{
-    timeSec: number;
-    value: T;
-    ease?: string;
-  }>;
-}
-
-export interface TransformModifierParams {
-  x?: number | TemporalCurve<number>;
-  y?: number | TemporalCurve<number>;
-  scale?: number | TemporalCurve<number>;
-  rotation?: number | TemporalCurve<number>;
-  opacity?: number | TemporalCurve<number>;
-  normX?: number;
-  normY?: number;
-  ease?: string;
-  animation?: {
-    preset?: 'pop_in' | 'slide_left' | 'overshoot' | 'bounce' | 'drift';
-    intro?: { durationSec: number; ease: string; direction?: string };
-    steady?: { type: 'hold' | 'drift' | 'pulse'; intensity?: number };
-    outro?: { durationSec: number; ease: string; direction?: string };
-  };
-}
-
-export interface DynamicDuckingModifierParams {
-  duckingFactor: number | TemporalCurve<number>;
-  attackSec?: number;
-  releaseSec?: number;
-  attackEase?: string;
-  releaseEase?: string;
-  threshold?: number;
-}
-
-export interface TransitionModifierParams {
-  transitionType: 'crossfade' | 'slide_left' | 'slide_right' | 'whip_zoom' | 'dip_black';
-  durationSec: number;
-  ease?: string;
-}
-
-export interface ModifierNode<TParams = Record<string, unknown>> {
-  type: string;
-  params: TParams;
-}
+import type { ModifierNode } from './modifiers';
 
 export interface IRSequence {
   id: string;
+  type: SequenceType; // Strictly required
   assetId?: string;
   compositionId?: string;
   activeStreams?: string[];
   time: SequenceTime;
+  blendMode?: BlendMode; // Dual-level sequence override
   cues?: TimedTextCue[];
   modifiers?: ModifierNode[];
 }
@@ -173,7 +74,7 @@ export interface IRTrack {
   name?: string;
   routeTo?: string;
   parentTrack?: string;
-  blendMode?: string;
+  blendMode?: BlendMode;
   style?: Record<string, unknown>;
   modifiers?: ModifierNode[];
   sequences: IRSequence[];
@@ -193,16 +94,19 @@ export interface VideoIRDocument {
   version: string; // e.g. "1.0.0-stable"
   meta: IRMeta;
   assets?: Record<string, AssetDefinition>;
+  modifiers?: ModifierNode[]; // Global document-level modifier chain
   tracks: IRTrack[];
 }
 
 export interface ResolvedSequence {
   id: string;
+  type: SequenceType;
   trackId: string;
   assetId?: string;
   startFrame: number;
   endFrame: number;
   durationFrames: number;
+  blendMode?: BlendMode;
   cues?: TimedTextCue[];
   modifiers?: ModifierNode[];
 }
@@ -218,6 +122,7 @@ export interface ResolvedTrack {
 export interface ResolvedTimeline {
   meta: IRMeta;
   assets?: Record<string, AssetDefinition>;
+  modifiers?: ModifierNode[];
   tracks: Map<string, ResolvedTrack>;
   sequences: Map<string, ResolvedSequence>;
   totalFrames: number;

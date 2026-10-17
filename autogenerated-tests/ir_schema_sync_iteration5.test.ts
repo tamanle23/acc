@@ -46,10 +46,12 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
           sequences: [
             {
               id: 'seq_1',
+              type: 'video',
               time: { start: 0, duration: 60 },
               modifiers: [
                 {
                   type: 'vfx/depth3d',
+                  target: 'video',
                   params: {
                     mode: 'frame_breaker',
                     relighting: {
@@ -63,6 +65,7 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
                 },
                 {
                   type: 'vfx/camera_3d',
+                  target: 'video',
                   params: {
                     keyframes: [
                       { time: 0, position: [0, 0, 1.2] },
@@ -73,6 +76,7 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
                 },
                 {
                   type: 'overlay/canvas_particles',
+                  target: 'video',
                   params: {
                     type: 'snow',
                     intensity: 1.2,
@@ -157,10 +161,12 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
           sequences: [
             {
               id: 'seq_parity_1',
+              type: 'video',
               time: { start: 0, duration: 15 },
               modifiers: [
                 {
                   type: 'vfx/camera_3d',
+                  target: 'video',
                   params: {
                     keyframes: [
                       { time: 0, position: [0, 0, 1.0] },
@@ -170,6 +176,7 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
                 },
                 {
                   type: 'overlay/canvas_particles',
+                  target: 'video',
                   params: {
                     type: 'dust',
                     intensity: 0.5,

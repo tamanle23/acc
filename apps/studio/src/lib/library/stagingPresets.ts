@@ -1,4 +1,4 @@
-import type { IRSequence } from '@acc/ir/client';
+import type { IRSequence, SequenceType } from '@acc/ir/client';
 
 export type PresetCategory = 'text' | 'shape' | 'vfx' | 'overlay' | 'sfx';
 
@@ -36,6 +36,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Text Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.4 }) => ({
       id: `seq-title-${Date.now()}`,
+      type: 'text',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -50,6 +51,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: 'text',
           params: {
             normX,
             normY,
@@ -61,6 +63,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'text/style',
+          target: 'text',
           params: {
             fontFamily: 'Cinzel',
             fontSize: 54,
@@ -85,6 +88,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Text Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.3, normY = 0.82 }) => ({
       id: `seq-lowerthird-${Date.now()}`,
+      type: 'text',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -99,6 +103,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: 'text',
           params: {
             normX,
             normY,
@@ -110,6 +115,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'text/style',
+          target: 'text',
           params: {
             fontFamily: 'Inter',
             fontSize: 24,
@@ -134,6 +140,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'HUD Callouts',
     createSequence: ({ startFrame, durationFrames = 120, normX = 0.8, normY = 0.15 }) => ({
       id: `seq-badge-${Date.now()}`,
+      type: 'text',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -148,6 +155,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: 'text',
           params: {
             normX,
             normY,
@@ -159,6 +167,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'text/style',
+          target: 'text',
           params: {
             fontFamily: 'Fira Code',
             fontSize: 14,
@@ -183,6 +192,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'HUD Callouts',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.25 }) => ({
       id: `seq-callout-${Date.now()}`,
+      type: 'text',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -197,6 +207,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: 'text',
           params: {
             normX,
             normY,
@@ -208,6 +219,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'text/style',
+          target: 'text',
           params: {
             fontFamily: 'Fira Code',
             fontSize: 16,
@@ -236,6 +248,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Vector Shapes',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-shape-rect-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -243,6 +256,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -254,6 +268,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'shape/vector',
+          target: 'overlay',
           params: {
             shapeType: 'rect',
             width: 320,
@@ -279,6 +294,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Vector Shapes',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-shape-panel-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -286,6 +302,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -297,6 +314,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'shape/vector',
+          target: 'overlay',
           params: {
             shapeType: 'rounded_box',
             width: 360,
@@ -322,6 +340,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Vector Shapes',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-shape-circle-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -329,6 +348,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -340,6 +360,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'shape/vector',
+          target: 'overlay',
           params: {
             shapeType: 'circle',
             radius: 90,
@@ -364,6 +385,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Vector Shapes',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-shape-arrow-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -371,6 +393,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -382,6 +405,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'shape/vector',
+          target: 'overlay',
           params: {
             shapeType: 'arrow',
             strokeColor: '#f43f5e',
@@ -409,6 +433,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Partial VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-vfx-blur-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -416,6 +441,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -427,6 +453,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'vfx/partial',
+          target: 'overlay',
           params: {
             vfxType: 'blur',
             intensity: 16,
@@ -451,6 +478,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Partial VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-vfx-spotlight-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -458,6 +486,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -469,6 +498,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'vfx/partial',
+          target: 'overlay',
           params: {
             vfxType: 'spotlight',
             color: '#00d4ff',
@@ -493,6 +523,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Partial VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-vfx-glitch-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -500,6 +531,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -511,6 +543,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'vfx/partial',
+          target: 'overlay',
           params: {
             vfxType: 'glitch',
             intensity: 0.85,
@@ -534,6 +567,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Partial VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-vfx-emitter-${Date.now()}`,
+      type: 'overlay',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -541,6 +575,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -552,6 +587,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'vfx/partial',
+          target: 'overlay',
           params: {
             vfxType: 'point_emitter',
             particleCount: 250,
@@ -564,6 +600,10 @@ export const STAGING_PRESETS: StagingPreset[] = [
       ],
     }),
   },
+
+  // ==========================================
+  // 4. OVERLAY VFX PRESETS
+  // ==========================================
   {
     id: 'overlay_particles_sparks',
     category: 'overlay',
@@ -576,6 +616,8 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-overlay-sparks-${Date.now()}`,
+      type: 'overlay',
+      blendMode: 'screen',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -583,6 +625,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -595,6 +638,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'overlay/canvas_particles',
+          target: ['video', 'overlay'],
           params: {
             enabled: true,
             type: 'cyber_sparks',
@@ -624,6 +668,8 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-overlay-snow-${Date.now()}`,
+      type: 'overlay',
+      blendMode: 'screen',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -631,6 +677,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -643,6 +690,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'overlay/canvas_particles',
+          target: ['video', 'overlay'],
           params: {
             enabled: true,
             type: 'cosmic_dust',
@@ -668,6 +716,8 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'VFX Overlays',
     createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-overlay-hud-${Date.now()}`,
+      type: 'overlay',
+      blendMode: 'screen',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -675,6 +725,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'overlay'],
           params: {
             normX,
             normY,
@@ -687,6 +738,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'overlay/hologram_hud',
+          target: ['video', 'overlay'],
           params: {
             enabled: true,
             ringRadiusNorm: 0.35,
@@ -700,7 +752,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
   },
 
   // ==========================================
-  // 4. PROCEDURAL SFX PRESETS
+  // 5. PROCEDURAL SFX PRESETS
   // ==========================================
   {
     id: 'sfx_impact',
@@ -714,6 +766,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Master Audio Track',
     createSequence: ({ startFrame, durationFrames = 45, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-sfx-impact-${Date.now()}`,
+      type: 'audio',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -721,6 +774,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'image', 'overlay', 'text', 'audio'],
           params: {
             normX,
             normY,
@@ -732,6 +786,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'sfx/procedural',
+          target: 'audio',
           params: {
             synthType: 'impact',
             durationSec: 1.5,
@@ -754,6 +809,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Master Audio Track',
     createSequence: ({ startFrame, durationFrames = 24, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-sfx-whoosh-${Date.now()}`,
+      type: 'audio',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -761,6 +817,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'image', 'overlay', 'text', 'audio'],
           params: {
             normX,
             normY,
@@ -772,6 +829,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'sfx/procedural',
+          target: 'audio',
           params: {
             synthType: 'whoosh',
             durationSec: 0.8,
@@ -794,6 +852,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Master Audio Track',
     createSequence: ({ startFrame, durationFrames = 18, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-sfx-glitch-${Date.now()}`,
+      type: 'audio',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -801,6 +860,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'image', 'overlay', 'text', 'audio'],
           params: {
             normX,
             normY,
@@ -812,6 +872,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'sfx/procedural',
+          target: 'audio',
           params: {
             synthType: 'glitch',
             durationSec: 0.6,
@@ -834,6 +895,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
     targetTrackName: 'Master Audio Track',
     createSequence: ({ startFrame, durationFrames = 60, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-sfx-riser-${Date.now()}`,
+      type: 'audio',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -841,6 +903,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
       modifiers: [
         {
           type: 'transform',
+          target: ['video', 'image', 'overlay', 'text', 'audio'],
           params: {
             normX,
             normY,
@@ -852,6 +915,7 @@ export const STAGING_PRESETS: StagingPreset[] = [
         },
         {
           type: 'sfx/procedural',
+          target: 'audio',
           params: {
             synthType: 'riser',
             durationSec: 2.0,
@@ -863,4 +927,3 @@ export const STAGING_PRESETS: StagingPreset[] = [
     }),
   },
 ];
-

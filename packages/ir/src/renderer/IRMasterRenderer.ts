@@ -333,6 +333,13 @@ export class IRMasterRenderer {
             // Phase 2: Sequence-level modifiers (e.g. Depth3D, TransitionCrossfade)
             ctx.save();
             try {
+              const blend = seq.blendMode || track.blendMode;
+              if (blend === 'screen') ctx.globalCompositeOperation = 'screen';
+              else if (blend === 'multiply') ctx.globalCompositeOperation = 'multiply';
+              else if (blend === 'overlay') ctx.globalCompositeOperation = 'overlay';
+              else if (blend === 'add') ctx.globalCompositeOperation = 'lighter';
+              else if (blend === 'normal') ctx.globalCompositeOperation = 'source-over';
+
               if (seq.modifiers) {
                 for (const mod of seq.modifiers) {
                   const plugin = this.pluginRegistry.get(mod.type);
@@ -458,6 +465,26 @@ export class IRMasterRenderer {
               mod.params
             );
           }
+        }
+      }
+    }
+
+    // Global Document-Level Master Composite Modifiers (Phase 4 Master Pass)
+    if (this.timeline.modifiers) {
+      for (const mod of this.timeline.modifiers) {
+        const plugin = this.pluginRegistry.get(mod.type);
+        if (plugin && plugin.renderMasterComposite) {
+          plugin.renderMasterComposite(
+            {
+              canvas,
+              ctx,
+              frame: t,
+              width,
+              height,
+              pixelBuffer: buffer,
+            },
+            mod.params
+          );
         }
       }
     }

@@ -46,6 +46,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-visual-1',
+          type: 'image',
           assetId: 'asset-scene-1',
           time: {
             start: 0,
@@ -54,6 +55,7 @@ export const defaultDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/color_grading',
+              target: ['video', 'image', 'overlay'],
               params: {
                 contrast: 1.15,
                 saturation: 1.2,
@@ -64,6 +66,7 @@ export const defaultDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-visual-2',
+          type: 'image',
           assetId: 'asset-scene-2',
           time: {
             start: {
@@ -75,6 +78,7 @@ export const defaultDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'vfx/color_grading',
+              target: ['video', 'image', 'overlay'],
               params: {
                 contrast: 1.05,
                 saturation: 0.95,
@@ -93,6 +97,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-particle-overlay',
+          type: 'overlay',
           time: {
             start: 30,
             duration: 150,
@@ -100,6 +105,7 @@ export const defaultDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'overlay/canvas_particles',
+              target: ['video', 'overlay'],
               params: {
                 type: 'dust',
                 intensity: 0.8,
@@ -117,6 +123,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-narration',
+          type: 'audio',
           assetId: 'asset-voiceover',
           time: {
             start: 15,
@@ -125,6 +132,7 @@ export const defaultDemoIR: VideoIRDocument = {
           modifiers: [
             {
               type: 'sfx/dynamic_ducking',
+              target: 'audio',
               params: {
                 duckVolume: 0.25,
                 attackMs: 150,
@@ -143,6 +151,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-music-bg',
+          type: 'audio',
           assetId: 'asset-music',
           time: {
             start: 0,
@@ -161,6 +170,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-subs-1',
+          type: 'text',
           time: {
             start: 15,
             duration: 60,
@@ -175,6 +185,7 @@ export const defaultDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-subs-2',
+          type: 'text',
           time: {
             start: 75,
             duration: 60,

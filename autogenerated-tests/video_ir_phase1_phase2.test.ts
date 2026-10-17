@@ -28,12 +28,14 @@ describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compil
           modifiers: [
             {
               type: 'color/lut',
+              target: 'video',
               params: { lutAsset: 'rec709', intensity: 1.0 },
             },
           ],
           sequences: [
             {
               id: 'seq_1',
+              type: 'video',
               assetId: 'raw_vid',
               time: { start: 0, duration: 90 },
             },
@@ -131,10 +133,12 @@ describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compil
           sequences: [
             {
               id: 'seq_audio_1',
+              type: 'audio',
               time: { start: 0, duration: 90 }, // 3.0 seconds
             },
             {
               id: 'seq_audio_2',
+              type: 'audio',
               time: { start: { after: 'seq_audio_1' }, duration: 60 }, // 2.0 seconds
             },
           ],
@@ -145,6 +149,7 @@ describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compil
           sequences: [
             {
               id: 'seq_video_1',
+              type: 'video',
               time: {
                 start: { syncWith: 'seq_audio_1', offsetFrames: 5 },
                 duration: { matchLengthOf: 'seq_audio_1', paddingFrames: 10 },
@@ -152,6 +157,7 @@ describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compil
             },
             {
               id: 'seq_video_2',
+              type: 'video',
               time: {
                 start: { after: 'seq_video_1', overlapFrames: 15 },
                 duration: { matchLengthOf: 'seq_audio_2' },
@@ -194,10 +200,12 @@ describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compil
           sequences: [
             {
               id: 'seq_A',
+              type: 'video',
               time: { start: { after: 'seq_B' }, duration: 30 },
             },
             {
               id: 'seq_B',
+              type: 'video',
               time: { start: { after: 'seq_A' }, duration: 30 },
             },
           ],
