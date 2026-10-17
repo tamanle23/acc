@@ -167,16 +167,22 @@ export class IRStateManager {
   }
 
   public setSelectedSequenceId(id: string | null) {
-    this.state.selectedSequenceId = id;
+    this.state = {
+      ...this.state,
+      selectedSequenceId: id,
+    };
     this.notify();
   }
 
   public async switchTemplate(template: 'scifi' | 'default'): Promise<void> {
     this.historyManager.clear();
     const targetDoc = template === 'scifi' ? complexSciFiDemoIR : defaultDemoIR;
-    this.state.doc = JSON.parse(JSON.stringify(targetDoc));
-    this.state.activeTemplate = template;
-    this.state.selectedSequenceId = targetDoc.tracks[0]?.sequences[0]?.id || null;
+    this.state = {
+      ...this.state,
+      doc: JSON.parse(JSON.stringify(targetDoc)),
+      activeTemplate: template,
+      selectedSequenceId: targetDoc.tracks[0]?.sequences[0]?.id || null,
+    };
     await this.recompile();
   }
 
@@ -264,10 +270,14 @@ export class IRStateManager {
   }
 
   public addAsset(assetId: string, asset: any): void {
-    if (!this.state.doc.assets) {
-      this.state.doc.assets = {};
-    }
-    this.state.doc.assets[assetId] = asset;
+    const assets = { ...(this.state.doc.assets || {}), [assetId]: asset };
+    this.state = {
+      ...this.state,
+      doc: {
+        ...this.state.doc,
+        assets,
+      },
+    };
     this.notify();
   }
 }

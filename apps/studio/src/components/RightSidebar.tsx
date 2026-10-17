@@ -285,6 +285,26 @@ export function RightSidebar() {
     if (selectedSeq) break;
   }
 
+  // Defensive fallback: check compiled timeline tracks if not found in doc.tracks
+  if (!selectedSeq && irState.timeline) {
+    const rawTracks = irState.timeline.tracks;
+    const timelineTracks = rawTracks instanceof Map
+      ? Array.from(rawTracks.values())
+      : Array.isArray(rawTracks)
+      ? rawTracks
+      : [];
+    for (const track of timelineTracks) {
+      for (const seq of track.sequences) {
+        if (seq.id === selectedSeqId) {
+          selectedSeq = seq;
+          selectedTrack = track;
+          break;
+        }
+      }
+      if (selectedSeq) break;
+    }
+  }
+
   // Modifiers lookup
   const modifiers = selectedSeq?.modifiers || [];
 

@@ -509,8 +509,8 @@ export function Timeline({
   };
 
   const handleClipClick = (seq: any, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (activeTool === 'razor') {
-      e.stopPropagation();
       const rect = e.currentTarget.getBoundingClientRect();
       const clickPx = e.clientX - rect.left;
       const clickedFrame = Math.max(

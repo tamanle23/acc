@@ -263,6 +263,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`248`](248_preview_math_reuse_and_decomposition.md) | 2026-10-17 | Studio Preview: Effect Engines Math Reuse & Subcomponent Decomposition | Decomposed Preview into modular subcomponents (ViewportControlBar, ViewportSafeGuides, ContextualActionPill, SubtitlesOverlay), delegated multi-track layer rendering to UniversalCanvasEngine.renderLayers, and added Observer pattern to AssetTextureCache |
 | [`249`](249_studio_phase3_audio_core_and_plugins.md) | 2026-10-17 | Studio Phase 3: Platform-Independent Audio Core, Pure Plugins & Cache | Relocated UniversalAudioMixer to packages/ir, implemented pure buffer modifier plugins (volume, pan, filter, pitch), AudioSourceAdapter, and AudioAssetCache with Observer pattern |
 | [`251`](251_studio_phase4_inspector_hud_particles.md) | 2026-10-17 | Studio Phase 4: Hologram HUD & Schema-Aligned Particle VFX Inspector Panels | Added dedicated Hologram HUD and schema-aligned Particle VFX panels in RightSidebar with dual schema support, PARTICLE_PRESET_DEFAULTS, collapsible post-processing shaders, getParticleCount reactivity, and Rule 229 compliance |
+| [`252`](252_fix_sequence_selection_reactivity.md) | 2026-10-17 | Fix Sequence Selection Reactivity in Sequence Inspector | Resolved React state immutability bail-out in setSelectedSequenceId, added defensive timeline track sequence resolution, and added click propagation guard |
+
 
 
 

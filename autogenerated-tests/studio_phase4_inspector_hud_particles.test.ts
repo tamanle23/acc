@@ -282,4 +282,35 @@ describe('Phase 4: RightSidebar Inspector Panels for HUD & Particles Suite', () 
       expect(source).toContain('AccordionItem value="particles"');
     });
   });
+
+  describe('6. Sequence Selection Reactivity & Immutable State Verification', () => {
+    it('should notify subscribers with a new immutable state reference when setSelectedSequenceId is called', () => {
+      let stateEmissions: any[] = [];
+      const unsub = irState.subscribe((st) => {
+        stateEmissions.push(st);
+      });
+
+      const initialCount = stateEmissions.length;
+      const firstState = stateEmissions[initialCount - 1];
+
+      // Switch selection to another sequence
+      irState.setSelectedSequenceId('seq-pilot-vo');
+
+      expect(stateEmissions.length).toBe(initialCount + 1);
+      const nextState = stateEmissions[stateEmissions.length - 1];
+
+      // Verify that nextState !== firstState (React re-render guarantee)
+      expect(nextState).not.toBe(firstState);
+      expect(nextState.selectedSequenceId).toBe('seq-pilot-vo');
+
+      // Clear selection
+      irState.setSelectedSequenceId(null);
+      expect(stateEmissions.length).toBe(initialCount + 2);
+      const clearedState = stateEmissions[stateEmissions.length - 1];
+      expect(clearedState).not.toBe(nextState);
+      expect(clearedState.selectedSequenceId).toBeNull();
+
+      unsub();
+    });
+  });
 });
