@@ -53,6 +53,7 @@ export function SignOutDialog({ open, onOpenChange }: SignOutDialogProps) {
       desc='Are you sure you want to sign out? You will need to sign in again to access your account.'
       confirmText={isLoading ? 'Signing out...' : 'Sign out'}
       destructive
+      isLoading={isLoading}
       handleConfirm={handleSignOut}
       className='sm:max-w-sm'
     />
