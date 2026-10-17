@@ -986,31 +986,24 @@ export function Preview({
                 });
               }
             }}
-            style={{
-              transform: `translate(${
-                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
-                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.x
-                  : transform.x
-              }px, ${
-                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
-                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.y
-                  : transform.y
-              }px) scale(${
-                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
-                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.scale
-                  : transform.scale
-              }) rotate(${
-                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
-                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.rotation
-                  : transform.rotation
-              }deg)`,
-              opacity:
-                !isDragging && selectedSeqId && canvasEngineRef.current?.getActiveInterpolatedTransform(selectedSeqId)
-                  ? canvasEngineRef.current.getActiveInterpolatedTransform(selectedSeqId)!.opacity
-                  : 1.0,
-              width: '50%',
-              height: '50%',
-            }}
+            style={(() => {
+              const interp =
+                !isDragging && selectedSeqId && engineRef.current
+                  ? engineRef.current.getActiveInterpolatedTransform(selectedSeqId)
+                  : null;
+              const curX = interp ? interp.x : transform.x;
+              const curY = interp ? interp.y : transform.y;
+              const curScale = interp ? interp.scale : transform.scale;
+              const curRot = interp ? interp.rotation : transform.rotation;
+              const curOpacity = interp ? interp.opacity : 1.0;
+
+              return {
+                transform: `translate(${curX}px, ${curY}px) scale(${curScale}) rotate(${curRot}deg)`,
+                opacity: curOpacity,
+                width: '50%',
+                height: '50%',
+              };
+            })()}
             className={`absolute border-2 ${
               isLocked
                 ? 'border-amber-400/80 bg-amber-500/5 cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.25)]'
