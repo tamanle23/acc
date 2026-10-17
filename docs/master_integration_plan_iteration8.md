@@ -127,9 +127,35 @@ flowchart TD
   - Feeds master output into `AnalyserNode` for live peak/RMS VU metering and tactile playhead scrubbing bursts.
 
 ### Phase 4: RightSidebar Inspector Panels for HUD & Particles `[ ] Planned`
-- **`apps/studio/src/components/RightSidebar.tsx`**:
-  - Add dedicated **Hologram HUD** Accordion panel (Ring Radius, Scanline Density, Rotation Speed, Color picker).
-  - Enhance **Particle VFX** Accordion panel to bind live updates to `UniversalCanvasEngine`.
+- **Architectural & Schema Alignment**:
+  - Strictly align inspector controls with `CanvasParticleOverlayParams` (`packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin.ts`) and `HUDConfig` (`packages/effect-engines/src/canvas/UniversalCanvasEngine.ts`).
+  - Support **Dual Schema for Hologram HUD**:
+    1. Dedicated `overlay/hologram_hud`: `{ ringRadiusNorm: number, scanlineDensity: number, color: string, rotationSpeed: number, enabled: boolean }`.
+    2. Overlaid `overlay/canvas_particles` with `type: 'sci_fi_hud'`: `{ type: 'sci_fi_hud', intensity: number, speed: number, opacity: number }`.
+- **`AVAILABLE_MODIFIERS` Registration in `RightSidebar.tsx`**:
+  - Add `overlay/hologram_hud` to `AVAILABLE_MODIFIERS` with icon `Monitor` and defaults `{ enabled: true, ringRadiusNorm: 0.35, scanlineDensity: 40, color: '#00ffff', rotationSpeed: 0.5 }`.
+  - Update `overlay/canvas_particles` in `AVAILABLE_MODIFIERS` with defaults `{ enabled: true, type: 'cyber_sparks', intensity: 1.0, speed: 1.0, opacity: 0.8, particleCount: 1500, shaders: { bloom: { threshold: 0.7, intensity: 1.0 }, chromaticAberration: { offsetPx: 2.0 } } }`.
+- **Dedicated Hologram HUD Accordion Panel (`value="hologram_hud"`)**:
+  - Ring Radius slider: `ringRadiusNorm` (0.10 to 0.80, step 0.05, default 0.35).
+  - Scanline Density slider: `scanlineDensity` (10 to 100, step 5, default 40).
+  - Rotation Speed slider: `rotationSpeed` (0.1 to 3.0, step 0.1, default 0.5, unit `rad/s`).
+  - Color Picker Row: Preset palette (`#00ffff` Cyan Neon, `#ec4899` Magenta Pulse, `#f59e0b` Amber Gold, `#10b981` Emerald Glow, `#8b5cf6` Violet Spark) + native hex picker.
+  - Reset to Defaults action button and Enable/Disable switch via `AccordionTrigger` `actions` prop (Rule 229 compliant).
+- **Strict Schema-Aligned Particle VFX Accordion Panel (`value="particles"`)**:
+  - Particle Type Selector: Dropdown selector featuring predefined particle types (`cyber_sparks`, `embers`, `dust`, `rain`, `snow`, `bokeh`, `matrix_rain`, `digital_glitch`).
+  - Core Physics & Emission Sliders:
+    - Particle Intensity: `intensity` (0.1 to 2.0, step 0.05, default 1.0).
+    - Particle Speed: `speed` (0.1 to 3.0, step 0.1, default 1.0).
+    - Overall Opacity: `opacity` (0.0 to 1.0, step 0.05, default 0.8).
+    - Particle Count: `particleCount` (50 to 3000, step 50, default 1500).
+  - Collapsible Post-Processing Shaders Group:
+    - Bloom Glow: Toggle switch + Bloom Threshold slider (`shaders.bloom.threshold`, 0.1 to 1.0) and Intensity slider (`shaders.bloom.intensity`, 0.1 to 3.0). Backward compatible with flat `bloomThreshold`.
+    - Chromatic Aberration: Toggle switch + Offset slider (`shaders.chromaticAberration.offsetPx`, 0.0 to 10.0 px). Backward compatible with flat `chromaticAberration`.
+  - Preset UX Behavior: Decoupled controls (preserves active slider values on type switch) with a dedicated "Reset to Defaults" button.
+- **Reactive Preview Synchronization & State Management**:
+  - Real-time binding via `IRStateManager.getInstance().updateModifier(seqId, type, params)` propagating to `Preview.tsx` render loop.
+  - Rule 229 Compliance: Pass all interactive elements (`Button`, `Switch`) via `AccordionTrigger` `actions` prop. Zero nested `<button>` violations.
+
 
 ### Phase 5: UI/UX Consistency & Theme Tokens `[ ] Planned`
 - **`apps/studio/src/components/ui/button.tsx`**:
