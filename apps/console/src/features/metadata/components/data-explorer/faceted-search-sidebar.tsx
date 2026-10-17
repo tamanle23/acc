@@ -119,9 +119,15 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
             const b1End = min + step;
             const b2End = min + step * 2;
 
-            const b1 = nums.filter((n) => n <= b1End).length;
-            const b2 = nums.filter((n) => n > b1End && n <= b2End).length;
-            const b3 = nums.filter((n) => n > b2End).length;
+            // Optimization: Single pass over nums array instead of 3 separate .filter() passes
+            let b1 = 0;
+            let b2 = 0;
+            let b3 = 0;
+            for (const n of nums) {
+              if (n <= b1End) b1++;
+              else if (n <= b2End) b2++;
+              else b3++;
+            }
 
             groups.push({
               field,
@@ -173,14 +179,18 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
           const d90 = 90 * 24 * 60 * 60 * 1000;
           const d365 = 365 * 24 * 60 * 60 * 1000;
 
-          const recent = dates.filter((d) => now - d.getTime() <= d30).length;
-          const quarterly = dates.filter(
-            (d) => now - d.getTime() > d30 && now - d.getTime() <= d90
-          ).length;
-          const thisYear = dates.filter(
-            (d) => now - d.getTime() > d90 && now - d.getTime() <= d365
-          ).length;
-          const older = dates.filter((d) => now - d.getTime() > d365).length;
+          // Optimization: Single pass over dates array instead of 4 separate .filter() passes
+          let recent = 0;
+          let quarterly = 0;
+          let thisYear = 0;
+          let older = 0;
+          for (const d of dates) {
+            const age = now - d.getTime();
+            if (age <= d30) recent++;
+            else if (age <= d90) quarterly++;
+            else if (age <= d365) thisYear++;
+            else older++;
+          }
 
           const dateBuckets: FacetBucket[] = [
             { value: 'last_30_days', label: 'Last 30 Days', count: recent },
@@ -381,6 +391,29 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
 
   const activeFacetCount = activeFilters.length;
 
+  // Optimization: Pre-index active filters into O(1) Set lookup maps to avoid nested O(F) array scans during option rendering
+  const activeFilterLookup = React.useMemo(() => {
+    const minRanges = new Set<string>(); // field:minVal
+    const dateValues = new Set<string>(); // field:value
+    const eqValues = new Set<string>(); // field:value
+    const fieldsWithFilters = new Set<string>();
+
+    for (const f of activeFilters) {
+      if (f.field) fieldsWithFilters.add(f.field);
+      if (f.operator === 'gte' && f.value !== undefined && f.value !== null) {
+        minRanges.add(`${f.field}:${f.value}`);
+      }
+      if (f.id.startsWith(`facet-date-${f.field}-`) && f.value !== undefined && f.value !== null) {
+        dateValues.add(`${f.field}:${f.value}`);
+      }
+      if (f.operator === 'eq' && f.value !== undefined && f.value !== null) {
+        eqValues.add(`${f.field}:${f.value}`);
+      }
+    }
+
+    return { minRanges, dateValues, eqValues, fieldsWithFilters };
+  }, [activeFilters]);
+
   return (
     <aside
       aria-label="Faceted Search Filters"
@@ -434,7 +467,7 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
       <div className="p-3 space-y-4 overflow-y-auto flex-1 min-h-[220px] divide-y divide-white/10 dark:divide-white/5">
         {facetGroups.map((group, gIdx) => {
           const isCollapsed = Boolean(collapsedGroups[group.field]);
-          const groupActiveFilters = activeFilters.filter((f) => f.field === group.field);
+          const hasGroupActiveFilters = activeFilterLookup.fieldsWithFilters.has(group.field);
 
           return (
             <div key={group.field} className={gIdx > 0 ? 'pt-3.5' : ''}>
@@ -460,7 +493,7 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  {groupActiveFilters.length > 0 && (
+                  {hasGroupActiveFilters && (
                     <span className="h-2 w-2 rounded-full bg-primary" />
                   )}
                   {isCollapsed ? (
@@ -504,20 +537,11 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
                     {visibleBuckets.map((bucket) => {
                       let isChecked = false;
                       if (group.type === 'numeric_range') {
-                        isChecked = activeFilters.some(
-                          (f) => f.field === group.field && f.operator === 'gte' && f.value === bucket.minVal
-                        );
+                        isChecked = activeFilterLookup.minRanges.has(`${group.field}:${bucket.minVal}`);
                       } else if (group.type === 'date_range') {
-                        isChecked = activeFilters.some(
-                          (f) => f.id.startsWith(`facet-date-${group.field}-`) && f.value === bucket.value
-                        );
+                        isChecked = activeFilterLookup.dateValues.has(`${group.field}:${bucket.value}`);
                       } else {
-                        isChecked = activeFilters.some(
-                          (f) =>
-                            f.field === group.field &&
-                            f.operator === 'eq' &&
-                            f.value === bucket.value
-                        );
+                        isChecked = activeFilterLookup.eqValues.has(`${group.field}:${bucket.value}`);
                       }
 
                       return (
