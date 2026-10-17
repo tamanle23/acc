@@ -198,4 +198,38 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(previewCode).toContain('glass-panel px-4 py-2 rounded-full');
     });
   });
+
+  describe('SettingsModal & Dialog Primitives Liquid Glass Contrast & Semantic Tokens', () => {
+    it('should style SettingsModal and Dialog with semantic theme tokens and zero hardcoded white/slate text', () => {
+      const modalPath = path.resolve(__dirname, '../apps/studio/src/components/SettingsModal.tsx');
+      const dialogPath = path.resolve(__dirname, '../apps/studio/src/components/ui/dialog.tsx');
+
+      expect(fs.existsSync(modalPath)).toBe(true);
+      expect(fs.existsSync(dialogPath)).toBe(true);
+
+      const modalCode = fs.readFileSync(modalPath, 'utf8');
+      const dialogCode = fs.readFileSync(dialogPath, 'utf8');
+
+      // SettingsModal checks:
+      // Must not hardcode text-slate-100, text-slate-200, or text-slate-400 which wash out on light frosted glass
+      expect(modalCode).not.toContain('text-slate-100');
+      expect(modalCode).not.toContain('text-slate-200');
+      expect(modalCode).not.toContain('text-slate-400');
+      expect(modalCode).not.toContain('border-white/10');
+      expect(modalCode).not.toContain('border-white/5');
+
+      // Must use dynamic tokens
+      expect(modalCode).toContain('text-foreground');
+      expect(modalCode).toContain('text-muted-foreground');
+      expect(modalCode).toContain('border-[var(--glass-border)]');
+      expect(modalCode).toContain('var(--accent-primary)');
+
+      // Dialog primitive checks:
+      // Must not hardcode text-slate-900 or text-slate-500
+      expect(dialogCode).not.toContain('text-slate-900');
+      expect(dialogCode).not.toContain('text-slate-500');
+      expect(dialogCode).toContain('text-foreground');
+      expect(dialogCode).toContain('text-muted-foreground');
+    });
+  });
 });
