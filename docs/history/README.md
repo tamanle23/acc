@@ -135,6 +135,8 @@
 | [128](128_automated_testing_phase_1_tooling_and_dual_mode_e2e.md) | 2026-10-17 | Automated Testing Phase 1: Tooling, Coverage Instrumentation & Dual-Mode E2E Framework | Configured jacoco-maven-plugin in backend, @vitest/coverage-v8 in console, dual-mode Playwright runner with health-check fail-fast, WCAG 2.2 AA accessibility helper, 1MB payload enforcement fix, and scheduled GitHub Actions nightly test workflow. |
 | [129](129_automated_testing_phase_2_backend_90_sprint.md) | 2026-10-17 | Automated Testing Phase 2: Backend >=90% Coverage Sprint & Hard-Gated JaCoCo Verification | Achieved 90.25% instruction test coverage across backend business logic with 297 passing tests, added 10 new test suites/slices, and activated Maven JaCoCo 90% hard gate. |
 | [130](130_automated_testing_phase_3_console_sandbox_90_sprint.md) | 2026-10-17 | Automated Testing Phase 3: Console & Sandbox >=90% Coverage Sprint | Achieved 91.65% statements and 93.60% functions coverage across @unipost/sandbox with 90% hard gate in vitest.config.ts, resolved visual DAG studio infinite re-render loop, and added 37 new unit and component integration tests across console stores, schema builder, rollup builder, record editor, and entity data grid (390 total tests passing). |
+| [131](131_interactive_jacoco_style_coverage_generator_script.md) | 2026-10-17 | Interactive JaCoCo-Style Coverage Generator Script | Implemented scripts/generate-coverage-report.mjs aggregating Java backend JaCoCo and TypeScript Vitest v8 coverage into a standalone interactive HTML report with classic JaCoCo red/green meters, breadcrumbs, search filters, column sorting, and source code viewer. |
+
 
 
 
