@@ -1,67 +1,29 @@
 import { CanvasAdapter } from './base';
-import { NapiRsCanvasAdapter } from './napi-rs';
+import { UniversalCanvasProvider } from '../../canvas/UniversalCanvasProvider';
 
-export type CanvasEngineType = 'gpu' | 'napi-rs' | 'auto';
+export type CanvasEngineType = 'gpu' | 'napi-rs' | 'web' | 'auto';
 
 /**
  * CanvasAdapterFactory:
- * Dynamic canvas resolution factory providing GPU hardware acceleration when available
- * with an automatic, headless-safe fallback to high-performance @napi-rs/canvas.
+ * Unified canvas resolution factory routing dynamically to UniversalCanvasProvider.
+ * Provides isomorphic execution across Web (OffscreenCanvas/HTMLCanvasElement) and Node (@napi-rs/canvas).
  */
 export class CanvasAdapterFactory {
-  private static cachedAdapter: CanvasAdapter | null = null;
-  private static detectedEngine: CanvasEngineType = 'napi-rs';
-
   /**
    * Resolves appropriate CanvasAdapter.
-   * If 'gpu' is requested, tests for OffscreenCanvas / WebGL driver support;
-   * falls back safely to 'napi-rs' in headless Docker, CI/CD, or Node/Bun environments.
    */
   public static getAdapter(engine: CanvasEngineType = 'auto'): CanvasAdapter {
-    if (engine === 'auto') {
-      return this.resolveAutoAdapter();
+    if (engine === 'gpu' || engine === 'web') {
+      return UniversalCanvasProvider.getAdapter('web') as unknown as CanvasAdapter;
     }
-
-    if (engine === 'gpu') {
-      try {
-        if (typeof globalThis !== 'undefined' && typeof (globalThis as any).OffscreenCanvas !== 'undefined') {
-          // Future GPU offscreen wrapper or native Napi-RS
-          this.detectedEngine = 'gpu';
-          return new NapiRsCanvasAdapter();
-        }
-      } catch {}
-      // Fallback to napi-rs
-      this.detectedEngine = 'napi-rs';
-      return new NapiRsCanvasAdapter();
-    }
-
     if (engine === 'napi-rs') {
-      return new NapiRsCanvasAdapter();
+      return UniversalCanvasProvider.getAdapter('node') as unknown as CanvasAdapter;
     }
-
-    // Default safe fallback
-    return new NapiRsCanvasAdapter();
+    return UniversalCanvasProvider.getAdapter('auto') as unknown as CanvasAdapter;
   }
 
   public static getDetectedEngine(): CanvasEngineType {
-    return this.detectedEngine;
-  }
-
-  private static resolveAutoAdapter(): CanvasAdapter {
-    if (this.cachedAdapter) return this.cachedAdapter;
-
-    // Detect headless server environments (headless linux/container/bun without display)
-    const isHeadless =
-      typeof process !== 'undefined' &&
-      (!process.env.DISPLAY && process.platform !== 'win32' && process.platform !== 'darwin');
-
-    if (!isHeadless && typeof globalThis !== 'undefined' && typeof (globalThis as any).OffscreenCanvas !== 'undefined') {
-      this.detectedEngine = 'gpu';
-    } else {
-      this.detectedEngine = 'napi-rs';
-    }
-
-    this.cachedAdapter = new NapiRsCanvasAdapter();
-    return this.cachedAdapter;
+    const env = UniversalCanvasProvider.detectEnvironment();
+    return env === 'web' ? 'gpu' : 'napi-rs';
   }
 }

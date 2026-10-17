@@ -366,8 +366,8 @@ export function Preview({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl glass-panel shadow-2xl select-none transition-all duration-300 ${isOver
-          ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
-          : 'hover:border-[var(--glass-border-highlight)]'
+        ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
+        : 'hover:border-[var(--glass-border-highlight)]'
         }`}
     >
       {/* Ambient Fluid Background Refraction Mesh */}
@@ -388,8 +388,8 @@ export function Preview({
 
           <div
             className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors ${isPlaying
-                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                : 'border-[var(--glass-border)] text-muted-foreground'
+              ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+              : 'border-[var(--glass-border)] text-muted-foreground'
               }`}
           >
             <span
@@ -405,8 +405,8 @@ export function Preview({
                 type="button"
                 onClick={onTogglePlay}
                 className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${isPlaying
-                    ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                    : 'border-[var(--glass-border)] text-foreground/80 hover:text-foreground'
+                  ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                  : 'border-[var(--glass-border)] text-foreground/80 hover:text-foreground'
                   }`}
               >
                 {isPlaying ? (
@@ -656,8 +656,8 @@ export function Preview({
                 : { top: `${guide.position * 100}%`, left: 0, right: 0 }
             }
             className={`absolute z-20 pointer-events-none ${guide.orientation === 'vertical'
-                ? 'w-px border-l border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
-                : 'h-px border-t border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
+              ? 'w-px border-l border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
+              : 'h-px border-t border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
               }`}
           >
             <span
@@ -770,11 +770,10 @@ export function Preview({
                       setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
                     }
                   }}
-                  className={`px-4 py-1.5 rounded-lg text-center cursor-pointer transition-transform hover:scale-105 select-none font-bold tracking-wide ${
-                    isTarget
-                      ? 'border border-rose-500/80 bg-rose-950/85 text-rose-200 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                      : 'border border-white/15 bg-black/80 text-white text-base shadow-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]'
-                  }`}
+                  className={`px-4 py-1.5 rounded-lg text-center cursor-pointer transition-transform hover:scale-105 select-none font-bold tracking-wide ${isTarget
+                    ? 'border border-rose-500/80 bg-rose-950/85 text-rose-200 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.4)]'
+                    : 'border border-white/15 bg-black/80 text-white text-base shadow-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]'
+                    }`}
                   style={{
                     textShadow: isTarget
                       ? '0 0 8px rgba(244,63,94,0.8)'
@@ -806,11 +805,10 @@ export function Preview({
           <button
             type="button"
             onClick={onTogglePlay}
-            className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${
-              isPlaying
-                ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
-                : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
-            }`}
+            className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${isPlaying
+              ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+              : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
+              }`}
           >
             {isPlaying ? (
               <Pause className="w-4 h-4 fill-current" />

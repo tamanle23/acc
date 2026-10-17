@@ -1,3 +1,12 @@
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence?: number;
+}
+
+
 export interface CaptionConfig {
   text: string;
   start: number; // in seconds

@@ -1,10 +1,4 @@
-export interface BoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  confidence?: number;
-}
+import { BoundingBox } from "../types";
 
 export interface SegmentationOptions {
   points?: Array<{ x: number; y: number; label?: number }>;

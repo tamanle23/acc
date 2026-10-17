@@ -32,12 +32,23 @@ export const THEME_STORAGE_KEY = 'acc_studio_theme_prefs';
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function getStorage(): Storage | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+    if (typeof localStorage !== 'undefined') return localStorage;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function loadSavedPreferences(): ThemePreferences {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const storage = getStorage();
+  if (!storage) {
     return { ...DEFAULT_THEME_PREFERENCES };
   }
   try {
-    const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const raw = storage.getItem(THEME_STORAGE_KEY);
     if (!raw) return { ...DEFAULT_THEME_PREFERENCES };
     const parsed = JSON.parse(raw);
     return {
@@ -71,12 +82,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.setAttribute('data-blur-intensity', preferences.blurIntensity);
     root.setAttribute('data-accent', preferences.accentColor);
 
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(preferences));
-      } catch (e) {
-        console.warn('Failed to save theme preferences to localStorage:', e);
+    try {
+      const storage = getStorage();
+      if (storage) {
+        storage.setItem(THEME_STORAGE_KEY, JSON.stringify(preferences));
       }
+    } catch (e) {
+      console.warn('Failed to save theme preferences to localStorage:', e);
     }
   }, [preferences]);
 

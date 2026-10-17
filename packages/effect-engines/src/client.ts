@@ -6,6 +6,10 @@
 
 export * from './canvas/UniversalCanvasEngine';
 export * from './canvas/CanvasTransformOverlay';
+export * from './canvas/UniversalCanvasProvider';
+export * from './canvas/CanvasAssetLoader';
+export * from './canvas/adapters/WebCanvasAdapter';
+export * from './canvas/types';
 export * from './audio/ProceduralAudioSynthesizer';
 export * from './audio/UniversalAudioMixer';
 export * from './vision/CameraSplineInterpolator';

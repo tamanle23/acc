@@ -1,11 +1,7 @@
+import { BoundingBox } from "../types";
+
 export type SafeZonePlatform = 'tiktok' | 'reels' | 'shorts' | 'youtube' | 'custom';
 
-export interface BoundingBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 export interface PlatformSafeMargins {
   topMarginPx: number;

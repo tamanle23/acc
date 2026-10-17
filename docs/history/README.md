@@ -248,6 +248,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`233`](233_refactor_settings_modal_button_styles.md) | 2026-10-17 | Refactor Settings Modal Button Styles to Semantic Liquid Glass Classes | Added .glass-button-primary, .glass-pill, and .glass-badge-accent to index.css, added accent/glass variants to Button, and eliminated hardcoded bg-[var(--accent-primary)] in SettingsModal.tsx |
 | [`234`](234_scale_diffusion_filter_strength.md) | 2026-10-17 | Scale Diffusion Filter Strength for Significant Perceptual Change | Widened blur range from 8px-24px to 6px (crisp), 18px (silky), and 40px (velvet) in index.css and SettingsModal.tsx |
 | [`235`](235_isolate_studio_canvas_and_subtitles.md) | 2026-10-17 | Isolate Studio Canvas Viewport & Subtitles from Outside Theme Styling | Wrapped studio-canvas in isolated 16:9 stage with pure black background, moved subtitles inside canvas stage with dedicated video caption styling, and decoupled transport bar |
+| [`236`](236_universal_canvas_switching_web_node.md) | 2026-10-17 | Universal Canvas Abstraction Layer (Isomorphic Web & Node Environment Switching) | Standardized CanvasAdapter, WebCanvasAdapter (OffscreenCanvas/HTMLCanvas), NodeCanvasAdapter (lazy @napi-rs/canvas), UniversalCanvasProvider with auto/manual switching, and isomorphic CanvasAssetLoader |
 
 
 
