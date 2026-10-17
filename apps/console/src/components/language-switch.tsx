@@ -16,11 +16,18 @@ const languages = [
 
 export function LanguageSwitch() {
   const { i18n } = useTranslation()
+  const currentLang = languages.find((l) => l.value === i18n.language)
+  const currentLanguageLabel = currentLang ? currentLang.label : i18n.language
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon' className='scale-95 rounded-full'>
+        <Button
+          variant='ghost'
+          size='icon'
+          className='scale-95 rounded-full'
+          aria-label={`Select language (current: ${currentLanguageLabel})`}
+        >
           <Languages className='size-[1.2rem]' />
           <span className='sr-only'>Toggle language</span>
         </Button>
@@ -30,6 +37,7 @@ export function LanguageSwitch() {
           <DropdownMenuItem
             key={language.value}
             onClick={() => i18n.changeLanguage(language.value)}
+            aria-label={language.label}
           >
             {language.label}
             <Check
