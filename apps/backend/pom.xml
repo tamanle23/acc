@@ -17,6 +17,7 @@
     <module>./unipost-ms-worker</module>
     <module>./unipost-ms-aio</module>
     <module>./workflow-engine</module>
+    <module>./unipost-sandbox</module>
   </modules>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -108,6 +109,11 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>unipost-report-engine</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>unipost-sandbox</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
