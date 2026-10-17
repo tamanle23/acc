@@ -105,7 +105,7 @@ describe('Studio Enterprise Layout & NLE Action Suite', () => {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();
         expect(preset.category).toBeTruthy();
-        expect(['text', 'shape', 'vfx', 'sfx']).toContain(preset.category);
+        expect(['text', 'shape', 'vfx', 'sfx', 'overlay']).toContain(preset.category);
         expect(preset.targetTrackId).toBeTruthy();
 
         const seq = preset.createSequence({ startFrame: 15, normX: 0.3, normY: 0.7 });

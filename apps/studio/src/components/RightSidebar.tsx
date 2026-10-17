@@ -46,6 +46,7 @@ import {
 import { IRStateManager } from '../lib/ir/irState';
 import { EasingCurveSelector } from './EasingCurveSelector';
 import { ProceduralAudioSynthesizer } from '@acc/effect-engines/client';
+import type { SequenceTime, RelationalStart, RelationalDuration } from '@acc/ir/client';
 
 export interface ParameterSliderProps {
   label: string;
@@ -259,6 +260,182 @@ export const PARTICLE_PRESET_DEFAULTS: Record<
   },
 };
 
+export interface AvailableModifierDef {
+  type: string;
+  name: string;
+  icon: any;
+  supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
+  defaultParams: Record<string, unknown>;
+}
+
+export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
+  {
+    type: 'transform',
+    name: 'In-Canvas Transform',
+    icon: Move,
+    supportedTrackTypes: ['video', 'timed_text'],
+    defaultParams: {
+      x: 0,
+      y: 0,
+      scale: 1.0,
+      rotation: 0,
+      opacity: 1.0,
+      ease: 'power2.out',
+    },
+  },
+  {
+    type: 'overlay/canvas_particles',
+    name: 'Particle VFX & Shaders',
+    icon: Layers,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      type: 'cyber_sparks',
+      preset: 'cyber_sparks',
+      intensity: 1.0,
+      speed: 1.0,
+      opacity: 0.8,
+      particleCount: 1500,
+      gravity: -1.2,
+      drag: 0.15,
+      turbulence: 1.0,
+      bloomThreshold: 0.7,
+      chromaticAberration: 2.0,
+      shaders: {
+        bloom: { enabled: true, threshold: 0.7, intensity: 1.0 },
+        chromaticAberration: { enabled: true, offsetPx: 2.0 },
+      },
+    },
+  },
+  {
+    type: 'overlay/hologram_hud',
+    name: 'Hologram HUD',
+    icon: Monitor,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      ringRadiusNorm: 0.35,
+      scanlineDensity: 40,
+      color: '#00ffff',
+      rotationSpeed: 0.5,
+    },
+  },
+  {
+    type: 'vfx/depth_relighting',
+    name: '3D Relighting',
+    icon: Sparkles,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      lightColor: '#00d4ff',
+      lightX: 2.0,
+      lightY: 2.0,
+      lightZ: 5.0,
+      diffuse: 1.0,
+      specular: 1.2,
+      shininess: 32,
+      rimIntensity: 0.5,
+    },
+  },
+  {
+    type: 'camera/3d',
+    name: '3D Camera & Lens',
+    icon: Camera,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      eyeX: 0.0,
+      eyeY: 0.0,
+      eyeZ: 10.0,
+      targetX: 0.0,
+      targetY: 0.0,
+      targetZ: 0.0,
+      fov: 45,
+      roll: 0,
+      focalDistance: 2.5,
+      focalRange: 1.0,
+      bokehRadius: 6.0,
+    },
+  },
+  {
+    type: 'vfx/color_grading',
+    name: 'Color Grading',
+    icon: Palette,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      contrast: 1.0,
+      saturation: 1.0,
+      exposure: 0.0,
+      vignette: 0.35,
+    },
+  },
+  {
+    type: 'text/style',
+    name: 'Typography & Karaoke Glow',
+    icon: Type,
+    supportedTrackTypes: ['timed_text'],
+    defaultParams: {
+      enabled: true,
+      fontFamily: 'Inter',
+      fontSize: 28,
+      fontWeight: 600,
+      letterSpacing: 0,
+      fillColor: '#ffffff',
+      strokeColor: '#000000',
+      strokeWidth: 2,
+      shadowBlur: 6,
+      glowColor: '#00d4ff',
+      activeWordHighlight: {
+        enabled: true,
+        fillColor: '#facc15',
+        scale: 1.15,
+        glowColor: '#00d4ff',
+        glowBlur: 12,
+        animationPreset: 'pop',
+      },
+    },
+  },
+  {
+    type: 'sfx/dynamic_ducking',
+    name: 'Audio Ducking & Pan',
+    icon: Volume2,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      duckVolume: 0.25,
+      attackMs: 150,
+      releaseMs: 300,
+      stereoPan: 0.0,
+      targetBus: 'track-a2',
+    },
+  },
+  {
+    type: 'sfx/procedural',
+    name: 'Procedural Audio Synthesizer',
+    icon: Music,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      synthType: 'impact',
+      durationSec: 1.5,
+      duckingFactor: 0.75,
+      label: 'IMPACT',
+    },
+  },
+];
+
+export function formatTimecode(frames: number, fps: number): string {
+  const safeFps = fps > 0 ? fps : 30;
+  const safeFrames = Math.max(0, Math.round(frames));
+  const totalSeconds = Math.floor(safeFrames / safeFps);
+  const f = safeFrames % safeFps;
+  const s = totalSeconds % 60;
+  const m = Math.floor(totalSeconds / 60) % 60;
+  const h = Math.floor(totalSeconds / 3600);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
+}
+
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [copiedId, setCopiedId] = useState(false);
@@ -321,7 +498,10 @@ export function RightSidebar() {
   const hologramHudMod = dedicatedHudMod || sciFiHudParticleMod;
   const colorGradingMod = modifiers.find((m: any) => m.type === 'vfx/color_grading');
   const textStyleMod = modifiers.find((m: any) => m.type === 'text/style');
-  const duckingMod = modifiers.find((m: any) => m.type === 'sfx/dynamic_ducking');
+  const duckingMod = modifiers.find((m: any) => m.type === 'sfx/dynamic_ducking' || m.type === 'audio/volume');
+  const proceduralSfxMod = modifiers.find((m: any) => m.type === 'sfx/procedural');
+
+  const attachedModifierTypes = new Set(modifiers.map((m: any) => m.type));
 
   // Generic Modifier Updaters with Coalesced History
   const updateModifierParams = (type: string, params: Record<string, any>) => {
@@ -355,6 +535,174 @@ export function RightSidebar() {
   const handleDelete = () => {
     if (!selectedSeqId) return;
     IRStateManager.getInstance().deleteSequence(selectedSeqId);
+  };
+
+  // Base Sequence Timing Resolution & Interactive Handlers
+  const fps = irState.doc.meta?.globalFps || 30;
+  const resolvedSeq = selectedSeqId ? irState.timeline?.sequences?.get(selectedSeqId) : null;
+  const resolvedStartFrame = resolvedSeq?.startFrame ?? (typeof selectedSeq?.time?.start === 'number' ? selectedSeq.time.start : 0);
+  const resolvedEndFrame = resolvedSeq?.endFrame ?? (resolvedStartFrame + (typeof selectedSeq?.time?.duration === 'number' ? selectedSeq.time.duration : 30));
+  const resolvedDurationFrames = Math.max(1, resolvedEndFrame - resolvedStartFrame);
+
+  const otherSequenceIds: string[] = [];
+  for (const track of irState.doc.tracks) {
+    for (const seq of track.sequences) {
+      if (seq.id !== selectedSeqId) {
+        otherSequenceIds.push(seq.id);
+      }
+    }
+  }
+
+  const isStartRelational = typeof selectedSeq?.time?.start === 'object' && selectedSeq?.time?.start !== null;
+  const isDurationRelational = typeof selectedSeq?.time?.duration === 'object' && selectedSeq?.time?.duration !== null;
+
+  const currentStartNumber = typeof selectedSeq?.time?.start === 'number' ? selectedSeq.time.start : resolvedStartFrame;
+  const currentDurationNumber = typeof selectedSeq?.time?.duration === 'number' ? selectedSeq.time.duration : resolvedDurationFrames;
+
+  const relStartObj = (isStartRelational ? selectedSeq.time.start : {}) as RelationalStart;
+  const relStartType: 'after' | 'syncWith' = relStartObj?.after ? 'after' : 'syncWith';
+  const relStartTarget = relStartObj?.after || relStartObj?.syncWith || otherSequenceIds[0] || '';
+  const relStartOffset = relStartObj?.offsetFrames ?? 0;
+  const relStartOverlap = relStartObj?.overlapFrames ?? 0;
+
+  const relDurObj = (isDurationRelational ? selectedSeq.time.duration : {}) as RelationalDuration;
+  const relDurMatchAsset = Boolean(relDurObj?.matchAssetDuration);
+  const relDurTarget = relDurObj?.matchLengthOf || otherSequenceIds[0] || '';
+  const relDurPadding = relDurObj?.paddingFrames ?? 0;
+
+  const handleUpdateSequenceTime = (newTime: SequenceTime) => {
+    if (!selectedSeqId) return;
+    IRStateManager.getInstance().updateSequenceTime(selectedSeqId, newTime);
+  };
+
+  const handleToggleStartRelational = (relational: boolean) => {
+    if (!selectedSeq) return;
+    if (relational) {
+      const target = otherSequenceIds[0] || '';
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        start: { after: target },
+      });
+    } else {
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        start: resolvedStartFrame,
+      });
+    }
+  };
+
+  const handleSetAbsoluteStart = (frames: number) => {
+    if (!selectedSeq) return;
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      start: Math.max(0, frames),
+    });
+  };
+
+  const handleSetRelStartMode = (mode: 'after' | 'syncWith') => {
+    if (!selectedSeq) return;
+    const target = relStartTarget || otherSequenceIds[0] || '';
+    const newStart: RelationalStart = mode === 'after'
+      ? { after: target, offsetFrames: relStartOffset, overlapFrames: relStartOverlap }
+      : { syncWith: target, offsetFrames: relStartOffset, overlapFrames: relStartOverlap };
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      start: newStart,
+    });
+  };
+
+  const handleSetRelStartTarget = (target: string) => {
+    if (!selectedSeq) return;
+    const newStart: RelationalStart = relStartType === 'after'
+      ? { after: target, offsetFrames: relStartOffset, overlapFrames: relStartOverlap }
+      : { syncWith: target, offsetFrames: relStartOffset, overlapFrames: relStartOverlap };
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      start: newStart,
+    });
+  };
+
+  const handleSetRelStartOffset = (offset: number) => {
+    if (!selectedSeq) return;
+    const newStart: RelationalStart = {
+      ...relStartObj,
+      offsetFrames: offset,
+    };
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      start: newStart,
+    });
+  };
+
+  const handleSetRelStartOverlap = (overlap: number) => {
+    if (!selectedSeq) return;
+    const newStart: RelationalStart = {
+      ...relStartObj,
+      overlapFrames: overlap,
+    };
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      start: newStart,
+    });
+  };
+
+  const handleToggleDurationRelational = (relational: boolean) => {
+    if (!selectedSeq) return;
+    if (relational) {
+      const target = otherSequenceIds[0] || '';
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        duration: { matchLengthOf: target },
+      });
+    } else {
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        duration: resolvedDurationFrames || 30,
+      });
+    }
+  };
+
+  const handleSetAbsoluteDuration = (frames: number) => {
+    if (!selectedSeq) return;
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      duration: Math.max(1, frames),
+    });
+  };
+
+  const handleToggleMatchAssetDuration = (match: boolean) => {
+    if (!selectedSeq) return;
+    if (match) {
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        duration: { matchAssetDuration: true },
+      });
+    } else {
+      const target = otherSequenceIds[0] || '';
+      handleUpdateSequenceTime({
+        ...selectedSeq.time,
+        duration: { matchLengthOf: target },
+      });
+    }
+  };
+
+  const handleSetRelDurationTarget = (target: string) => {
+    if (!selectedSeq) return;
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      duration: { matchLengthOf: target, paddingFrames: relDurPadding },
+    });
+  };
+
+  const handleSetRelDurationPadding = (padding: number) => {
+    if (!selectedSeq) return;
+    handleUpdateSequenceTime({
+      ...selectedSeq.time,
+      duration: {
+        ...relDurObj,
+        paddingFrames: padding,
+      },
+    });
   };
 
   // On-the-fly Procedural Audio Synthesizer State (Phase 5)
@@ -431,124 +779,13 @@ export function RightSidebar() {
     });
   };
 
-  const AVAILABLE_MODIFIERS = [
-    {
-      type: 'vfx/depth_relighting',
-      name: '3D Relighting',
-      icon: Sparkles,
-      defaultParams: {
-        enabled: true,
-        lightColor: '#00d4ff',
-        lightX: 2.0,
-        lightY: 2.0,
-        lightZ: 5.0,
-        diffuse: 1.0,
-        specular: 1.2,
-        shininess: 32,
-        rimIntensity: 0.5,
-      },
-    },
-    {
-      type: 'camera/3d',
-      name: '3D Camera & Lens',
-      icon: Camera,
-      defaultParams: {
-        enabled: true,
-        eyeX: 0.0,
-        eyeY: 0.0,
-        eyeZ: 10.0,
-        targetX: 0.0,
-        targetY: 0.0,
-        targetZ: 0.0,
-        fov: 45,
-        roll: 0,
-        focalDistance: 2.5,
-        focalRange: 1.0,
-        bokehRadius: 6.0,
-      },
-    },
-    {
-      type: 'overlay/canvas_particles',
-      name: 'Particle VFX & Shaders',
-      icon: Layers,
-      defaultParams: {
-        enabled: true,
-        type: 'cyber_sparks',
-        preset: 'cyber_sparks',
-        intensity: 1.0,
-        speed: 1.0,
-        opacity: 0.8,
-        particleCount: 1500,
-        gravity: -1.2,
-        drag: 0.15,
-        turbulence: 1.0,
-        bloomThreshold: 0.7,
-        chromaticAberration: 2.0,
-        shaders: {
-          bloom: { enabled: true, threshold: 0.7, intensity: 1.0 },
-          chromaticAberration: { enabled: true, offsetPx: 2.0 },
-        },
-      },
-    },
-    {
-      type: 'overlay/hologram_hud',
-      name: 'Hologram HUD',
-      icon: Monitor,
-      defaultParams: {
-        enabled: true,
-        ringRadiusNorm: 0.35,
-        scanlineDensity: 40,
-        color: '#00ffff',
-        rotationSpeed: 0.5,
-      },
-    },
-    {
-      type: 'vfx/color_grading',
-      name: 'Color Grading',
-      icon: Palette,
-      defaultParams: {
-        enabled: true,
-        contrast: 1.0,
-        saturation: 1.0,
-        exposure: 0.0,
-        vignette: 0.35,
-      },
-    },
-    {
-      type: 'text/style',
-      name: 'Typography & Styling',
-      icon: Type,
-      defaultParams: {
-        enabled: true,
-        fontFamily: 'Inter',
-        fontSize: 28,
-        fontWeight: 600,
-        letterSpacing: 0,
-        fillColor: '#ffffff',
-        strokeColor: '#000000',
-        strokeWidth: 2,
-        shadowBlur: 6,
-        glowColor: '#00d4ff',
-      },
-    },
-    {
-      type: 'sfx/dynamic_ducking',
-      name: 'Audio Ducking & Pan',
-      icon: Volume2,
-      defaultParams: {
-        enabled: true,
-        duckVolume: 0.25,
-        attackMs: 150,
-        releaseMs: 300,
-        stereoPan: 0.0,
-        targetBus: 'track-a2',
-      },
-    },
-  ];
+  const trackType = (selectedTrack?.type || 'video') as 'video' | 'audio' | 'timed_text' | 'data';
+  const relevantModifiers = ALL_AVAILABLE_MODIFIERS.filter((mod) =>
+    mod.supportedTrackTypes.includes(trackType)
+  );
 
   const width = irState.doc.meta?.canvasSize?.w || 1920;
   const height = irState.doc.meta?.canvasSize?.h || 1080;
-  const fps = irState.doc.meta?.globalFps || 30;
   const totalDurationFrames = irState.timeline?.totalDurationFrames || 300;
   const activeSequencesCount = irState.timeline?.sequences
     ? irState.timeline.sequences.size
@@ -577,9 +814,9 @@ export function RightSidebar() {
                 Add Effect
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuGroup>
-                {AVAILABLE_MODIFIERS.map((mod) => {
+                {relevantModifiers.map((mod) => {
                   const isAttached = modifiers.some((m: any) => m.type === mod.type);
                   const Icon = mod.icon;
                   return (
@@ -637,8 +874,192 @@ export function RightSidebar() {
                 <div>
                   <span className="text-slate-400">Duration: </span>
                   <span className="font-mono font-medium text-slate-700">
-                    {selectedSeq.durationFrames ?? 30}f
+                    {resolvedDurationFrames}f ({(resolvedDurationFrames / fps).toFixed(2)}s)
                   </span>
+                </div>
+              </div>
+
+              {/* Sequence Timing Card */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                    Sequence Timing
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {resolvedStartFrame}f - {resolvedEndFrame}f ({formatTimecode(resolvedStartFrame, fps)})
+                  </span>
+                </div>
+
+                {/* Start Time Section */}
+                <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded border border-slate-200/80 dark:border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Start Time</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStartRelational(false)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${!isStartRelational ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'}`}
+                      >
+                        Absolute
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStartRelational(true)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${isStartRelational ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'}`}
+                      >
+                        Relational
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isStartRelational ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-slate-400">Frame</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={currentStartNumber}
+                          onChange={(e) => handleSetAbsoluteStart(parseInt(e.target.value) || 0)}
+                          className="h-6 text-[11px] font-mono"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-slate-400">Timecode</label>
+                        <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300">
+                          {formatTimecode(currentStartNumber, fps)}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <div>
+                          <label className="text-[10px] text-slate-400">Relation</label>
+                          <select
+                            value={relStartType}
+                            onChange={(e) => handleSetRelStartMode(e.target.value as 'after' | 'syncWith')}
+                            className="w-full h-6 text-[10px] bg-background border border-slate-200 dark:border-white/10 rounded px-1"
+                          >
+                            <option value="after">after (sequential)</option>
+                            <option value="syncWith">syncWith (parallel)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-slate-400">Target Sequence</label>
+                          <select
+                            value={relStartTarget}
+                            onChange={(e) => handleSetRelStartTarget(e.target.value)}
+                            className="w-full h-6 text-[10px] bg-background border border-slate-200 dark:border-white/10 rounded px-1 font-mono"
+                          >
+                            {otherSequenceIds.map((id) => (
+                              <option key={id} value={id}>{id}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <label className="text-[10px] text-slate-400">Offset Frames</label>
+                          <Input
+                            type="number"
+                            value={relStartOffset}
+                            onChange={(e) => handleSetRelStartOffset(parseInt(e.target.value) || 0)}
+                            className="h-6 text-[11px] font-mono"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-slate-400">Overlap Frames</label>
+                          <Input
+                            type="number"
+                            value={relStartOverlap}
+                            onChange={(e) => handleSetRelStartOverlap(parseInt(e.target.value) || 0)}
+                            className="h-6 text-[11px] font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Duration Section */}
+                <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded border border-slate-200/80 dark:border-white/10 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDurationRelational(false)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${!isDurationRelational ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'}`}
+                      >
+                        Absolute
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDurationRelational(true)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${isDurationRelational ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'}`}
+                      >
+                        Relational
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isDurationRelational ? (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-slate-400">Frames</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={currentDurationNumber}
+                          onChange={(e) => handleSetAbsoluteDuration(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="h-6 text-[11px] font-mono"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-slate-400">Seconds</label>
+                        <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300">
+                          {(currentDurationNumber / fps).toFixed(2)}s
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 text-[11px]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-slate-500">Match Asset Duration</span>
+                        <Switch
+                          checked={relDurMatchAsset}
+                          onCheckedChange={handleToggleMatchAssetDuration}
+                        />
+                      </div>
+                      {!relDurMatchAsset && (
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <div>
+                            <label className="text-[10px] text-slate-400">matchLengthOf</label>
+                            <select
+                              value={relDurTarget}
+                              onChange={(e) => handleSetRelDurationTarget(e.target.value)}
+                              className="w-full h-6 text-[10px] bg-background border border-slate-200 dark:border-white/10 rounded px-1 font-mono"
+                            >
+                              {otherSequenceIds.map((id) => (
+                                <option key={id} value={id}>{id}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-slate-400">Padding Frames</label>
+                            <Input
+                              type="number"
+                              value={relDurPadding}
+                              onChange={(e) => handleSetRelDurationPadding(parseInt(e.target.value) || 0)}
+                              className="h-6 text-[11px] font-mono"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -676,27 +1097,50 @@ export function RightSidebar() {
               </div>
             </Card>
 
+            {/* Pure Attached-Only Empty State */}
+            {modifiers.length === 0 && (
+              <div className="p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-lg text-center space-y-2 text-slate-400 bg-slate-50/40 dark:bg-slate-900/20">
+                <Sliders className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">No Effects Attached</p>
+                <p className="text-[11px] text-slate-400 max-w-[220px] mx-auto">
+                  Click <span className="font-semibold text-indigo-500">+ Add Effect</span> above to attach visual, audio, or motion modifiers to this sequence.
+                </p>
+              </div>
+            )}
+
             {/* Accordion Panels */}
-            <Accordion type="multiple" defaultValue={['transform', 'relighting', 'camera']} className="space-y-2">
-              {/* Transform Section */}
-              <AccordionItem value="transform" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
-                <AccordionTrigger
-                  actions={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                      onClick={() => updateModifierParams('transform', { x: 0, y: 0, scale: 1.0, rotation: 0 })}
-                      title="Reset transform"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </Button>
-                  }
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Move className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">In-Canvas Transform</span>
-                  </div>
+            <Accordion type="multiple" defaultValue={['transform', 'relighting', 'camera', 'particles', 'hologram_hud', 'typography', 'audio']} className="space-y-2">
+              {/* Transform Section (Pure Attached-Only) */}
+              {attachedModifierTypes.has('transform') && (
+                <AccordionItem value="transform" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                          onClick={() => updateModifierParams('transform', { x: 0, y: 0, scale: 1.0, rotation: 0 })}
+                          title="Reset transform"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+                          onClick={() => removeModifier('transform')}
+                          title="Remove transform"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Move className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">In-Canvas Transform</span>
+                    </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-3 space-y-3">
                   <ParameterSlider
@@ -853,8 +1297,9 @@ export function RightSidebar() {
                   </div>
                 </AccordionContent>
               </AccordionItem>
+            )}
 
-              {/* 3D Relighting Section */}
+            {/* 3D Relighting Section */}
               {relightMod && (
                 <AccordionItem value="relighting" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
                   <AccordionTrigger
@@ -1434,93 +1879,230 @@ export function RightSidebar() {
                 </AccordionItem>
               )}
 
-              {/* Typography & Styling Section */}
-              {(textStyleMod || selectedSeq.cues || selectedTrack?.type === 'timed_text') && (
+              {/* Typography & Styling Section (Pure Attached-Only) */}
+              {attachedModifierTypes.has('text/style') && (
                 <AccordionItem value="typography" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
                   <AccordionTrigger
                     actions={
-                      <Switch
-                        checked={textStyleMod?.params?.enabled !== false}
-                        onCheckedChange={(val) => toggleModifier('text/style', val)}
-                      />
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                          onClick={() => removeModifier('text/style')}
+                          title="Remove modifier"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-500" />
+                        </Button>
+                        <Switch
+                          checked={textStyleMod?.params?.enabled !== false}
+                          onCheckedChange={(val) => toggleModifier('text/style', val)}
+                        />
+                      </div>
                     }
                   >
                     <div className="flex items-center gap-1.5">
                       <Type className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Typography & Styling</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Typography & Karaoke</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
-                    <div className="space-y-1">
-                      <span className="text-[11px] text-slate-600 dark:text-slate-400">Font Family</span>
-                      <select
-                        value={textStyleMod?.params?.fontFamily || 'Inter'}
-                        onChange={(e) => updateModifierParams('text/style', { fontFamily: e.target.value })}
-                        className="w-full h-7 text-xs border border-slate-200 dark:border-white/10 rounded px-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-                      >
-                        <option value="Inter">Inter (Sans-Serif)</option>
-                        <option value="Fira Code">Fira Code (Monospace)</option>
-                        <option value="Outfit">Outfit (Modern Clean)</option>
-                        <option value="Cinzel">Cinzel (Cinematic Serif)</option>
-                        <option value="Montserrat">Montserrat (Geometric)</option>
-                      </select>
+                    {/* 1. Base Typography */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Base Typography</span>
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400">Font Family</span>
+                        <select
+                          value={textStyleMod?.params?.fontFamily || 'Inter'}
+                          onChange={(e) => updateModifierParams('text/style', { fontFamily: e.target.value })}
+                          className="w-full h-7 text-xs border border-slate-200 dark:border-white/10 rounded px-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+                        >
+                          <option value="Inter">Inter (Sans-Serif)</option>
+                          <option value="Fira Code">Fira Code (Monospace)</option>
+                          <option value="Outfit">Outfit (Modern Clean)</option>
+                          <option value="Cinzel">Cinzel (Cinematic Serif)</option>
+                          <option value="Montserrat">Montserrat (Geometric)</option>
+                        </select>
+                      </div>
+                      <ParameterSlider
+                        label="Font Size"
+                        value={textStyleMod?.params?.fontSize ?? 28}
+                        min={12}
+                        max={120}
+                        step={1}
+                        defaultValue={28}
+                        unit="px"
+                        onChange={(v) => updateModifierParams('text/style', { fontSize: v })}
+                      />
+                      <ParameterSlider
+                        label="Font Weight"
+                        value={textStyleMod?.params?.fontWeight ?? 600}
+                        min={300}
+                        max={900}
+                        step={100}
+                        defaultValue={600}
+                        onChange={(v) => updateModifierParams('text/style', { fontWeight: v })}
+                      />
+                      <ParameterSlider
+                        label="Letter Spacing"
+                        value={textStyleMod?.params?.letterSpacing ?? 0}
+                        min={-2}
+                        max={10}
+                        step={0.5}
+                        defaultValue={0}
+                        unit="px"
+                        onChange={(v) => updateModifierParams('text/style', { letterSpacing: v })}
+                      />
+                      <ColorPickerRow
+                        label="Text Fill Color"
+                        value={textStyleMod?.params?.fillColor || '#ffffff'}
+                        presets={[
+                          { name: 'Pure White', hex: '#ffffff' },
+                          { name: 'Cyber Yellow', hex: '#facc15' },
+                          { name: 'Neon Green', hex: '#4ade80' },
+                          { name: 'Cyan Glow', hex: '#22d3ee' },
+                          { name: 'Dark Slate', hex: '#0f172a' },
+                        ]}
+                        onChange={(hex) => updateModifierParams('text/style', { fillColor: hex })}
+                      />
+                      <ColorPickerRow
+                        label="Glow / Shadow Color"
+                        value={textStyleMod?.params?.glowColor || '#00d4ff'}
+                        presets={[
+                          { name: 'Cyan Neon', hex: '#00d4ff' },
+                          { name: 'Electric Violet', hex: '#8b5cf6' },
+                          { name: 'Hot Pink', hex: '#ec4899' },
+                          { name: 'Amber Gold', hex: '#f59e0b' },
+                        ]}
+                        onChange={(hex) => updateModifierParams('text/style', { glowColor: hex })}
+                      />
                     </div>
-                    <ParameterSlider
-                      label="Font Size"
-                      value={textStyleMod?.params?.fontSize ?? 28}
-                      min={12}
-                      max={120}
-                      step={1}
-                      defaultValue={28}
-                      unit="px"
-                      onChange={(v) => updateModifierParams('text/style', { fontSize: v })}
-                    />
-                    <ParameterSlider
-                      label="Letter Spacing"
-                      value={textStyleMod?.params?.letterSpacing ?? 0}
-                      min={-2}
-                      max={10}
-                      step={0.5}
-                      defaultValue={0}
-                      unit="px"
-                      onChange={(v) => updateModifierParams('text/style', { letterSpacing: v })}
-                    />
-                    <ColorPickerRow
-                      label="Text Fill Color"
-                      value={textStyleMod?.params?.fillColor || '#ffffff'}
-                      presets={[
-                        { name: 'Pure White', hex: '#ffffff' },
-                        { name: 'Cyber Yellow', hex: '#facc15' },
-                        { name: 'Neon Green', hex: '#4ade80' },
-                        { name: 'Cyan Glow', hex: '#22d3ee' },
-                        { name: 'Dark Slate', hex: '#0f172a' },
-                      ]}
-                      onChange={(hex) => updateModifierParams('text/style', { fillColor: hex })}
-                    />
-                    <ColorPickerRow
-                      label="Active Word Glow"
-                      value={textStyleMod?.params?.glowColor || '#00d4ff'}
-                      presets={[
-                        { name: 'Cyan Neon', hex: '#00d4ff' },
-                        { name: 'Electric Violet', hex: '#8b5cf6' },
-                        { name: 'Hot Pink', hex: '#ec4899' },
-                        { name: 'Amber Gold', hex: '#f59e0b' },
-                      ]}
-                      onChange={(hex) => updateModifierParams('text/style', { glowColor: hex })}
-                    />
+
+                    {/* 2. Active-Word Karaoke Glow (Dual-State) */}
+                    <div className="pt-2 border-t border-slate-200/80 dark:border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Active-Word Karaoke
+                        </span>
+                        <Switch
+                          checked={(textStyleMod?.params?.activeWordHighlight as any)?.enabled !== false}
+                          onCheckedChange={(val) => {
+                            const prev = (textStyleMod?.params?.activeWordHighlight as any) || {};
+                            updateModifierParams('text/style', {
+                              activeWordHighlight: { ...prev, enabled: val },
+                            });
+                          }}
+                        />
+                      </div>
+
+                      {((textStyleMod?.params?.activeWordHighlight as any)?.enabled !== false) && (
+                        <div className="space-y-2.5 bg-amber-500/5 p-2 rounded border border-amber-500/20">
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-slate-600 dark:text-slate-400">Animation Preset</span>
+                            <div className="grid grid-cols-4 gap-1">
+                              {(['pop', 'glow_pulse', 'bounce', 'wave'] as const).map((preset) => {
+                                const currentPreset = (textStyleMod?.params?.activeWordHighlight as any)?.animationPreset || 'pop';
+                                return (
+                                  <button
+                                    key={preset}
+                                    type="button"
+                                    onClick={() => {
+                                      const prev = (textStyleMod?.params?.activeWordHighlight as any) || {};
+                                      updateModifierParams('text/style', {
+                                        activeWordHighlight: { ...prev, animationPreset: preset },
+                                      });
+                                    }}
+                                    className={`px-1.5 py-1 text-[9px] rounded font-mono capitalize transition-all cursor-pointer ${
+                                      currentPreset === preset
+                                        ? 'bg-amber-500 text-slate-950 font-bold'
+                                        : 'bg-white/50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10'
+                                    }`}
+                                  >
+                                    {preset.replace('_', ' ')}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <ParameterSlider
+                            label="Active Word Scale"
+                            value={(textStyleMod?.params?.activeWordHighlight as any)?.scale ?? 1.15}
+                            min={1.0}
+                            max={1.5}
+                            step={0.05}
+                            defaultValue={1.15}
+                            unit="x"
+                            onChange={(v) => {
+                              const prev = (textStyleMod?.params?.activeWordHighlight as any) || {};
+                              updateModifierParams('text/style', {
+                                activeWordHighlight: { ...prev, scale: v },
+                              });
+                            }}
+                          />
+
+                          <ColorPickerRow
+                            label="Active Word Fill"
+                            value={(textStyleMod?.params?.activeWordHighlight as any)?.fillColor || '#facc15'}
+                            presets={[
+                              { name: 'Gold Pop', hex: '#facc15' },
+                              { name: 'Neon Coral', hex: '#f43f5e' },
+                              { name: 'Electric Cyan', hex: '#00d4ff' },
+                              { name: 'Lime Glow', hex: '#a3e635' },
+                            ]}
+                            onChange={(hex) => {
+                              const prev = (textStyleMod?.params?.activeWordHighlight as any) || {};
+                              updateModifierParams('text/style', {
+                                activeWordHighlight: { ...prev, fillColor: hex },
+                              });
+                            }}
+                          />
+
+                          <ColorPickerRow
+                            label="Karaoke Glow Color"
+                            value={(textStyleMod?.params?.activeWordHighlight as any)?.glowColor || textStyleMod?.params?.glowColor || '#00d4ff'}
+                            presets={[
+                              { name: 'Cyan Neon', hex: '#00d4ff' },
+                              { name: 'Electric Violet', hex: '#8b5cf6' },
+                              { name: 'Hot Pink', hex: '#ec4899' },
+                              { name: 'Amber Gold', hex: '#f59e0b' },
+                            ]}
+                            onChange={(hex) => {
+                              const prev = (textStyleMod?.params?.activeWordHighlight as any) || {};
+                              updateModifierParams('text/style', {
+                                activeWordHighlight: { ...prev, glowColor: hex },
+                                glowColor: hex,
+                              });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               )}
 
-              {/* Audio Ducking & Pan Section */}
-              {(duckingMod || selectedTrack?.type === 'audio') && (
+              {/* Audio Ducking & Pan Section (Pure Attached-Only) */}
+              {(attachedModifierTypes.has('sfx/dynamic_ducking') || attachedModifierTypes.has('audio/volume')) && (
                 <AccordionItem value="audio" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
                   <AccordionTrigger
                     actions={
-                      <Switch
-                        checked={duckingMod?.params?.enabled !== false}
-                        onCheckedChange={(val) => toggleModifier('sfx/dynamic_ducking', val)}
-                      />
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                          onClick={() => removeModifier(duckingMod?.type || 'sfx/dynamic_ducking')}
+                          title="Remove modifier"
+                        >
+                          <Trash2 className="w-3 h-3 text-rose-500" />
+                        </Button>
+                        <Switch
+                          checked={duckingMod?.params?.enabled !== false}
+                          onCheckedChange={(val) => toggleModifier(duckingMod?.type || 'sfx/dynamic_ducking', val)}
+                        />
+                      </div>
                     }
                   >
                     <div className="flex items-center gap-1.5">
@@ -1536,7 +2118,7 @@ export function RightSidebar() {
                       max={1.0}
                       step={0.05}
                       defaultValue={0.25}
-                      onChange={(v) => updateModifierParams('sfx/dynamic_ducking', { duckVolume: v })}
+                      onChange={(v) => updateModifierParams(duckingMod?.type || 'sfx/dynamic_ducking', { duckVolume: v })}
                     />
                     <ParameterSlider
                       label="Attack Time"
@@ -1546,7 +2128,7 @@ export function RightSidebar() {
                       step={10}
                       defaultValue={150}
                       unit="ms"
-                      onChange={(v) => updateModifierParams('sfx/dynamic_ducking', { attackMs: v })}
+                      onChange={(v) => updateModifierParams(duckingMod?.type || 'sfx/dynamic_ducking', { attackMs: v })}
                     />
                     <ParameterSlider
                       label="Release Time"
@@ -1556,7 +2138,7 @@ export function RightSidebar() {
                       step={25}
                       defaultValue={300}
                       unit="ms"
-                      onChange={(v) => updateModifierParams('sfx/dynamic_ducking', { releaseMs: v })}
+                      onChange={(v) => updateModifierParams(duckingMod?.type || 'sfx/dynamic_ducking', { releaseMs: v })}
                     />
                     <ParameterSlider
                       label="Stereo Pan"
@@ -1565,85 +2147,99 @@ export function RightSidebar() {
                       max={1.0}
                       step={0.05}
                       defaultValue={0.0}
-                      onChange={(v) => updateModifierParams('sfx/dynamic_ducking', { stereoPan: v })}
+                      onChange={(v) => updateModifierParams(duckingMod?.type || 'sfx/dynamic_ducking', { stereoPan: v })}
                     />
                   </AccordionContent>
                 </AccordionItem>
               )}
 
-              {/* Procedural Audio Synthesizer (On-Demand SFX) */}
-              <AccordionItem value="procedural_sfx" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
-                <AccordionTrigger>
-                  <div className="flex items-center gap-1.5">
-                    <Music className="w-3.5 h-3.5 text-cyan-500" />
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Procedural SFX Synth</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="p-3 space-y-3">
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Synth Sound Type</span>
-                    <div className="grid grid-cols-3 gap-1">
-                      {(['impact', 'whoosh', 'glitch', 'riser', 'laser'] as const).map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setSynthType(t)}
-                          className={`px-2 py-1 text-[10px] font-mono rounded-lg border capitalize transition-all cursor-pointer ${
-                            synthType === t
-                              ? 'bg-[var(--accent-primary)] text-slate-950 font-bold border-transparent shadow-xs'
-                              : 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-foreground/80 hover:bg-white/10'
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
+              {/* Procedural Audio Synthesizer (Pure Attached-Only) */}
+              {attachedModifierTypes.has('sfx/procedural') && (
+                <AccordionItem value="procedural_sfx" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                  <AccordionTrigger
+                    actions={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                        onClick={() => removeModifier('sfx/procedural')}
+                        title="Remove modifier"
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-500" />
+                      </Button>
+                    }
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Music className="w-3.5 h-3.5 text-cyan-500" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Procedural SFX Synth</span>
                     </div>
-                  </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Synth Sound Type</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(['impact', 'whoosh', 'glitch', 'riser', 'laser'] as const).map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setSynthType(t)}
+                            className={`px-2 py-1 text-[10px] font-mono rounded-lg border capitalize transition-all cursor-pointer ${
+                              synthType === t
+                                ? 'bg-[var(--accent-primary)] text-slate-950 font-bold border-transparent shadow-xs'
+                                : 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-foreground/80 hover:bg-white/10'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                  <ParameterSlider
-                    label="SFX Duration"
-                    value={synthDuration}
-                    min={0.2}
-                    max={4.0}
-                    step={0.1}
-                    defaultValue={1.5}
-                    unit="s"
-                    onChange={setSynthDuration}
-                  />
+                    <ParameterSlider
+                      label="SFX Duration"
+                      value={synthDuration}
+                      min={0.2}
+                      max={4.0}
+                      step={0.1}
+                      defaultValue={1.5}
+                      unit="s"
+                      onChange={setSynthDuration}
+                    />
 
-                  <ParameterSlider
-                    label="Auto-Ducking Level"
-                    value={synthDucking}
-                    min={0.0}
-                    max={1.0}
-                    step={0.05}
-                    defaultValue={0.75}
-                    onChange={setSynthDucking}
-                  />
+                    <ParameterSlider
+                      label="Auto-Ducking Level"
+                      value={synthDucking}
+                      min={0.0}
+                      max={1.0}
+                      step={0.05}
+                      defaultValue={0.75}
+                      onChange={setSynthDucking}
+                    />
 
-                  <div className="flex items-center gap-2 pt-2 border-t border-[var(--glass-border)]">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleAuditionSFX}
-                      disabled={isPlayingAudition}
-                      className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
-                    >
-                      <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudition ? 'text-[var(--accent-primary)] animate-pulse' : ''}`} />
-                      {isPlayingAudition ? 'Playing...' : 'Audition SFX'}
-                    </Button>
+                    <div className="flex items-center gap-2 pt-2 border-t border-[var(--glass-border)]">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAuditionSFX}
+                        disabled={isPlayingAudition}
+                        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+                      >
+                        <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudition ? 'text-[var(--accent-primary)] animate-pulse' : ''}`} />
+                        {isPlayingAudition ? 'Playing...' : 'Audition SFX'}
+                      </Button>
 
-                    <Button
-                      size="sm"
-                      onClick={handleInsertProceduralSFX}
-                      className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 shadow-xs"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Insert to Track
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+                      <Button
+                        size="sm"
+                        onClick={handleInsertProceduralSFX}
+                        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Insert to Track
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
             </Accordion>
           </div>
         ) : (

@@ -22,7 +22,8 @@ import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequ
 import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
-import type { IRSequence } from '@acc/ir/client';
+import { UpdateSequenceTimeCommand } from '../commands/UpdateSequenceTimeCommand';
+import type { IRSequence, SequenceTime } from '@acc/ir/client';
 
 export interface IRState {
   doc: VideoIRDocument;
@@ -230,6 +231,10 @@ export class IRStateManager {
     const startFrame = resolvedSeq?.startFrame ?? 0;
     const endFrame = resolvedSeq?.endFrame ?? 90;
     this.dispatch(new SplitSequenceCommand(sequenceId, splitFrame, startFrame, endFrame));
+  }
+
+  public updateSequenceTime(sequenceId: string, time: SequenceTime): void {
+    this.dispatch(new UpdateSequenceTimeCommand(sequenceId, time));
   }
 
   public updateModifier(sequenceId: string, modifierType: string, params: Record<string, unknown>): void {

@@ -1,6 +1,6 @@
 import type { IRSequence } from '@acc/ir/client';
 
-export type PresetCategory = 'text' | 'shape' | 'vfx' | 'sfx';
+export type PresetCategory = 'text' | 'shape' | 'vfx' | 'overlay' | 'sfx';
 
 export interface StagingPreset {
   id: string;
@@ -559,6 +559,140 @@ export const STAGING_PRESETS: StagingPreset[] = [
             speed: 1.5,
             spread: 360,
             label: 'PARTICLE BURST',
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'overlay_particles_sparks',
+    category: 'overlay',
+    name: 'Cyber Sparks Particle Overlay',
+    badge: 'VFX Overlay',
+    description: 'Autonomous floating spark swarm with bloom and gravitational drift',
+    iconName: 'Sparkles',
+    targetTrackId: 'track-overlay-vfx',
+    targetTrackType: 'video',
+    targetTrackName: 'VFX Overlays',
+    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-overlay-sparks-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+            opacity: 1.0,
+          },
+        },
+        {
+          type: 'overlay/canvas_particles',
+          params: {
+            enabled: true,
+            type: 'cyber_sparks',
+            preset: 'cyber_sparks',
+            intensity: 1.0,
+            speed: 1.0,
+            opacity: 0.85,
+            particleCount: 1500,
+            shaders: {
+              bloom: { enabled: true, threshold: 0.7, intensity: 1.2 },
+              chromaticAberration: { enabled: true, offsetPx: 2.0 },
+            },
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'overlay_particles_snow',
+    category: 'overlay',
+    name: 'Atmospheric Snow / Embers Overlay',
+    badge: 'VFX Overlay',
+    description: 'Gentle falling particle field simulating atmospheric snow or embers',
+    iconName: 'Sparkles',
+    targetTrackId: 'track-overlay-vfx',
+    targetTrackType: 'video',
+    targetTrackName: 'VFX Overlays',
+    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-overlay-snow-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+            opacity: 1.0,
+          },
+        },
+        {
+          type: 'overlay/canvas_particles',
+          params: {
+            enabled: true,
+            type: 'cosmic_dust',
+            preset: 'cosmic_dust',
+            intensity: 0.85,
+            speed: 0.7,
+            opacity: 0.75,
+            particleCount: 1200,
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'overlay_hologram_hud',
+    category: 'overlay',
+    name: 'Sci-Fi Hologram HUD Overlay',
+    badge: 'VFX Overlay',
+    description: 'Rotating targeting reticle ring and scanline diagnostic HUD',
+    iconName: 'Eye',
+    targetTrackId: 'track-overlay-vfx',
+    targetTrackType: 'video',
+    targetTrackName: 'VFX Overlays',
+    createSequence: ({ startFrame, durationFrames = 90, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-overlay-hud-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+            opacity: 1.0,
+          },
+        },
+        {
+          type: 'overlay/hologram_hud',
+          params: {
+            enabled: true,
+            ringRadiusNorm: 0.35,
+            scanlineDensity: 40,
+            color: '#00ffff',
+            rotationSpeed: 0.5,
           },
         },
       ],
