@@ -323,7 +323,97 @@ export function Preview({
     const timeSec = currentFrame / fps;
     engine.update(timeSec, popOutIntensity);
 
-    // 3. Synchronize in-canvas transform overlay
+    // 3. Render Visual Media Sequences (Multi-Track V1 -> V4 Layer Compositing)
+    const textureCache = AssetTextureCache.getInstance();
+    const tracks = irState.doc?.tracks || [];
+    const videoTracks = tracks.filter((t) => t.type === 'video');
+
+    // Build track index map for layer sorting: lower index draws first (e.g. V1 plate before V2 overlay)
+    const trackOrderMap = new Map<string, number>();
+    videoTracks.forEach((t, idx) => {
+      trackOrderMap.set(t.id, idx);
+    });
+
+    // Filter active visual sequences and sort by track order
+    const visualSeqs = activeSeqs.filter((s) => {
+      // Must belong to a video track or have an asset / visual role
+      if (s.trackId && trackOrderMap.has(s.trackId)) return true;
+      return Boolean(s.assetId);
+    }).sort((a, b) => {
+      const orderA = a.trackId ? (trackOrderMap.get(a.trackId) ?? 99) : 99;
+      const orderB = b.trackId ? (trackOrderMap.get(b.trackId) ?? 99) : 99;
+      return orderA - orderB;
+    });
+
+    const assetsMap = irState.doc?.assets || {};
+
+    for (const seq of visualSeqs) {
+      const assetDef = seq.assetId ? assetsMap[seq.assetId] : undefined;
+      const assetSrc = assetDef?.src;
+      const assetType = assetDef?.type || 'media';
+
+      // Calculate sequence local time for video seek
+      const seqStart = seq.startFrame ?? 0;
+      const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
+
+      // Query visual asset from cache (returns ready Image, Video decoder, or neutral dark placeholder)
+      const visualAsset = textureCache.getVisualAsset(
+        seq.assetId || seq.id,
+        assetSrc,
+        assetType === 'audio' ? 'media' : (assetType as any),
+        seqLocalTimeSec
+      );
+
+      if (visualAsset.source) {
+        // Retrieve dynamic GSAP-interpolated transform matrix
+        const interp = engine.getActiveInterpolatedTransform(seq.id);
+        const transX = interp ? interp.x : (selectedSeqId === seq.id ? transform.x : 0);
+        const transY = interp ? interp.y : (selectedSeqId === seq.id ? transform.y : 0);
+        const transScale = interp ? interp.scale : (selectedSeqId === seq.id ? transform.scale : 1.0);
+        const transRot = interp ? interp.rotation : (selectedSeqId === seq.id ? transform.rotation : 0);
+        const transOpacity = interp ? interp.opacity : 1.0;
+
+        if (transOpacity > 0.001) {
+          ctx.save();
+
+          // Apply track blendMode if specified (e.g. screen, lighten)
+          const parentTrack = seq.trackId ? videoTracks.find((t) => t.id === seq.trackId) : null;
+          if (parentTrack?.blendMode) {
+            ctx.globalCompositeOperation = parentTrack.blendMode as GlobalCompositeOperation;
+          }
+
+          // Matrix transformation stack centered around canvas viewport
+          ctx.translate(width * 0.5 + transX, height * 0.5 + transY);
+          if (transRot !== 0) {
+            ctx.rotate((transRot * Math.PI) / 180);
+          }
+          if (transScale !== 1.0) {
+            ctx.scale(transScale, transScale);
+          }
+          ctx.globalAlpha = Math.max(0, Math.min(1, transOpacity));
+
+          // Base drawing dimensions scaled to fit or cover
+          const drawW = width * 0.85;
+          const drawH = height * 0.85;
+
+          try {
+            ctx.drawImage(
+              visualAsset.source,
+              -drawW * 0.5,
+              -drawH * 0.5,
+              drawW,
+              drawH
+            );
+          } catch (e) {
+            // Defensive drawing protection
+          }
+
+          ctx.restore();
+        }
+      }
+    }
+
+    // 4. Synchronize in-canvas transform overlay
     if (selectedSeqId) {
       const activeInterp = !isDragging ? engine.getActiveInterpolatedTransform(selectedSeqId) : null;
       const curX = activeInterp ? activeInterp.x : transform.x;
@@ -347,7 +437,7 @@ export function Preview({
       engine.updateOverlay(null, []);
     }
 
-    // 4. Render 2D Scenegraph, Particles, HUD & Vector Overlay
+    // 5. Render 2D Scenegraph, Particles, HUD & Vector Overlay
     engine.render(ctx, timeSec, popOutIntensity);
   }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging]);
 

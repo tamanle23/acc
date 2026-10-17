@@ -4,10 +4,21 @@
  * Seamlessly decodes real image/video files into HTMLCanvasElement / ImageBitmap,
  * and procedurally generates rich sci-fi filmstrips and 3D textures for mock asset IDs.
  */
+export interface VisualAssetResult {
+  source: CanvasImageSource | null;
+  width: number;
+  height: number;
+  isReady: boolean;
+  type: 'image' | 'video' | 'placeholder';
+}
+
 export class AssetTextureCache {
   private static instance: AssetTextureCache;
   private canvasCache = new Map<string, HTMLCanvasElement>();
   private dataUrlCache = new Map<string, string>();
+  private imageCache = new Map<string, { img: HTMLImageElement; isReady: boolean }>();
+  private videoCache = new Map<string, { video: HTMLVideoElement; isReady: boolean }>();
+  private placeholderCache = new Map<string, HTMLCanvasElement>();
 
   private constructor() {}
 
@@ -19,12 +30,173 @@ export class AssetTextureCache {
   }
 
   /**
+   * Retrieves or asynchronously loads a visual asset (Image or Video decoder).
+   * If not yet decoded or if URL fails, returns an isolated dark video placeholder canvas.
+   */
+  public getVisualAsset(
+    assetId: string,
+    src?: string,
+    assetType: 'image' | 'media' | 'video' = 'image',
+    timeSec: number = 0
+  ): VisualAssetResult {
+    // 1. If real URL provided and image type
+    if (src && (assetType === 'image' || src.match(/\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i))) {
+      let entry = this.imageCache.get(src);
+      if (!entry) {
+        if (typeof Image !== 'undefined') {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          entry = { img, isReady: false };
+          img.onload = () => {
+            entry!.isReady = true;
+          };
+          img.onerror = () => {
+            console.warn(`[AssetTextureCache] Failed to load image: ${src}`);
+          };
+          img.src = src;
+          this.imageCache.set(src, entry);
+        }
+      }
+
+      if (entry && entry.isReady && entry.img.naturalWidth > 0) {
+        return {
+          source: entry.img,
+          width: entry.img.naturalWidth,
+          height: entry.img.naturalHeight,
+          isReady: true,
+          type: 'image',
+        };
+      }
+    }
+
+    // 2. If real URL provided and video/media type
+    if (src && (assetType === 'media' || assetType === 'video' || src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i))) {
+      let vEntry = this.videoCache.get(src);
+      if (!vEntry) {
+        if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+          const video = document.createElement('video');
+          video.crossOrigin = 'anonymous';
+          video.muted = true;
+          video.playsInline = true;
+          video.preload = 'auto';
+          vEntry = { video, isReady: false };
+
+          video.onloadeddata = () => {
+            vEntry!.isReady = true;
+          };
+          video.onerror = () => {
+            console.warn(`[AssetTextureCache] Failed to load video: ${src}`);
+          };
+          video.src = src;
+          this.videoCache.set(src, vEntry);
+        }
+      }
+
+      if (vEntry && vEntry.isReady && vEntry.video.videoWidth > 0) {
+        // Direct seek without audio un-mute
+        const targetTime = Math.max(0, timeSec);
+        if (Math.abs(vEntry.video.currentTime - targetTime) > 0.05) {
+          try {
+            vEntry.video.currentTime = targetTime;
+          } catch {}
+        }
+        return {
+          source: vEntry.video,
+          width: vEntry.video.videoWidth,
+          height: vEntry.video.videoHeight,
+          isReady: true,
+          type: 'video',
+        };
+      }
+    }
+
+    // 3. Fallback to Neutral Dark Video Charcoal (#151518) Isolated Placeholder
+    const phCanvas = this.renderMissingAssetPlaceholder(assetId, assetType);
+    return {
+      source: phCanvas,
+      width: phCanvas.width,
+      height: phCanvas.height,
+      isReady: true,
+      type: 'placeholder',
+    };
+  }
+
+  /**
+   * Renders a neutral dark video charcoal (#151518) placeholder adhering to Rule 235 isolation.
+   */
+  public renderMissingAssetPlaceholder(
+    assetId: string,
+    assetType: string = 'media',
+    width = 640,
+    height = 360
+  ): HTMLCanvasElement {
+    const key = `ph:${assetId}:${width}:${height}`;
+    if (this.placeholderCache.has(key)) {
+      return this.placeholderCache.get(key)!;
+    }
+
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+      return {} as any;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // 1. Dark charcoal video background (isolated from desktop themes)
+      ctx.fillStyle = '#151518';
+      ctx.fillRect(0, 0, width, height);
+
+      // 2. Subtle dashed perimeter guide
+      ctx.strokeStyle = '#2a2a30';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.strokeRect(12, 12, width - 24, height - 24);
+      ctx.setLineDash([]);
+
+      // 3. Neutral Asset Type Badge
+      const isVideo = assetType === 'media' || assetType === 'video';
+      ctx.fillStyle = '#222227';
+      const badgeW = 90;
+      const badgeH = 26;
+      ctx.beginPath();
+      ctx.roundRect(width * 0.5 - badgeW * 0.5, height * 0.5 - 34, badgeW, badgeH, 6);
+      ctx.fill();
+
+      ctx.fillStyle = isVideo ? '#60a5fa' : '#a78bfa';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(isVideo ? '▶ VIDEO' : '🖼 IMAGE', width * 0.5, height * 0.5 - 21);
+
+      // 4. Sequence/Asset Identifier
+      ctx.fillStyle = '#e4e4e7';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(assetId, width * 0.5, height * 0.5 + 14);
+
+      // 5. Dimension & Fallback Note
+      ctx.fillStyle = '#71717a';
+      ctx.font = '11px monospace';
+      ctx.fillText(`${width}x${height} • OFFLINE / PLACEHOLDER`, width * 0.5, height * 0.5 + 34);
+    }
+
+    this.placeholderCache.set(key, canvas);
+    return canvas;
+  }
+
+  /**
    * Returns a cached canvas texture for a given asset ID or URL.
    */
   public getTextureCanvas(assetId: string, width = 640, height = 360): HTMLCanvasElement {
     const key = `${assetId}:${width}:${height}`;
     if (this.canvasCache.has(key)) {
       return this.canvasCache.get(key)!;
+    }
+
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+      return {} as any;
     }
 
     const canvas = document.createElement('canvas');

@@ -259,6 +259,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`244`](244_studio_phase7_master_e2e_hardening.md) | 2026-10-17 | Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite | Strict bit-identical SHA-256 byte parity across runs, 60fps benchmark (~3.8ms/frame with zero-alloc batched particle rendering), defensive schema & NaN corruption resilience, and production release audit (116 tests passing, <1MB bundle) |
 | [`245`](245_html_coverage_generator_script.md) | 2026-10-17 | JaCoCo-Style HTML Code Coverage Generator & NPM Integration | Implemented scripts/generate-coverage-html.ts converting Bun LCOV into an interactive visual dashboard with sorting, filtering, and line-by-line syntax highlighting |
 | [`246`](246_studio_phase1_declarative_vfx.md) | 2026-10-17 | Phase 1: Declarative Particle & Hologram HUD Subsystem | Removed hardcoded initParticleSystem/initHologramHUD from Preview mount, implemented dynamic sequence modifier binding & ambiance toggle in UniversalCanvasEngine & Preview |
+| [`247`](247_studio_phase2_media_compositor.md) | 2026-10-17 | Phase 2: Real Visual Media Compositor (Image & Video) | Implemented AssetTextureCache image & video decoding with Rule 235 neutral fallbacks, multi-track V1->V4 compositing, and GSAP affine matrix transforms in Preview.tsx |
 
 
 
