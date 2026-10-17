@@ -259,8 +259,7 @@ function StudioWorkspace() {
       if (!cancelExportRef.current) {
         const result = await sink.finalize();
         alert(
-          `Client-Side MP4 Export Completed!\nFile Size: ${
-            result.fileSizeBytes || result.stats?.inMemoryBufferSize
+          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes || result.stats?.inMemoryBufferSize
           } bytes\nFrames: ${result.framesConsumed}`
         );
       }
@@ -331,7 +330,7 @@ function StudioWorkspace() {
             }}
           />
 
-          <div className="flex-1 flex items-center justify-center bg-slate-950 p-6 relative">
+          <div className="flex-1 flex items-center justify-center glass-panel p-6 relative">
             <Preview
               playhead={{
                 currentFrame,

@@ -20,6 +20,8 @@ import {
   Clock,
   Film,
   Monitor,
+  Play,
+  Music,
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -42,6 +44,8 @@ import {
   DropdownMenuGroup,
 } from './ui/dropdown-menu';
 import { IRStateManager } from '../lib/ir/irState';
+import { EasingCurveSelector } from './EasingCurveSelector';
+import { ProceduralAudioSynthesizer } from '@acc/effect-engines/client';
 
 export interface ParameterSliderProps {
   label: string;
@@ -222,6 +226,80 @@ export function RightSidebar() {
   const handleDelete = () => {
     if (!selectedSeqId) return;
     IRStateManager.getInstance().deleteSequence(selectedSeqId);
+  };
+
+  // On-the-fly Procedural Audio Synthesizer State (Phase 5)
+  const [synthType, setSynthType] = useState<'whoosh' | 'impact' | 'glitch' | 'riser' | 'laser'>('impact');
+  const [synthDuration, setSynthDuration] = useState(1.5);
+  const [synthDucking, setSynthDucking] = useState(0.75);
+  const [isPlayingAudition, setIsPlayingAudition] = useState(false);
+
+  const handleAuditionSFX = () => {
+    setIsPlayingAudition(true);
+    let buf: Float32Array;
+    switch (synthType) {
+      case 'whoosh':
+        buf = ProceduralAudioSynthesizer.synthWhoosh(0, synthDuration);
+        break;
+      case 'impact':
+        buf = ProceduralAudioSynthesizer.synthImpact(0, synthDuration);
+        break;
+      case 'glitch':
+        buf = ProceduralAudioSynthesizer.synthGlitch(0, synthDuration);
+        break;
+      case 'riser':
+        buf = ProceduralAudioSynthesizer.synthRiser(0, synthDuration);
+        break;
+      case 'laser':
+      default:
+        buf = ProceduralAudioSynthesizer.synthLaserSFX(0, synthDuration);
+        break;
+    }
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const audioBuf = ctx.createBuffer(1, buf.length, 44100);
+        audioBuf.copyToChannel(buf, 0);
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuf;
+        source.connect(ctx.destination);
+        source.start();
+      }
+    } catch (e) {
+      console.warn('Audio audition error:', e);
+    }
+
+    setTimeout(() => setIsPlayingAudition(false), Math.min(2000, synthDuration * 1000));
+  };
+
+  const handleInsertProceduralSFX = () => {
+    const startFrame = 0;
+    const durationFrames = Math.round(synthDuration * 30);
+    const seq = {
+      id: `seq-sfx-${synthType}-${Date.now()}`,
+      name: `${synthType.toUpperCase()} SFX`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'sfx/procedural',
+          params: {
+            synthType,
+            durationSec: synthDuration,
+            duckingFactor: synthDucking,
+            label: synthType.toUpperCase(),
+          },
+        },
+      ],
+    };
+    IRStateManager.getInstance().addSequence('track-audio', seq as any, {
+      trackTypeFallback: 'audio',
+      trackNameFallback: 'Master Audio Track',
+    });
   };
 
   const AVAILABLE_MODIFIERS = [
@@ -512,6 +590,15 @@ export function RightSidebar() {
                     unit="°"
                     onChange={(v) => updateModifierParams('transform', { ...transformMod?.params, rotation: v })}
                   />
+
+                  <div className="pt-2 border-t border-[var(--glass-border)]">
+                    <EasingCurveSelector
+                      value={(transformMod?.params as any)?.ease || 'power2.out'}
+                      onChange={(ease) =>
+                        updateModifierParams('transform', { ...transformMod?.params, ease })
+                      }
+                    />
+                  </div>
                 </AccordionContent>
               </AccordionItem>
 
@@ -942,6 +1029,80 @@ export function RightSidebar() {
                   </AccordionContent>
                 </AccordionItem>
               )}
+
+              {/* Procedural Audio Synthesizer (On-Demand SFX) */}
+              <AccordionItem value="procedural_sfx" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                <AccordionTrigger>
+                  <div className="flex items-center gap-1.5">
+                    <Music className="w-3.5 h-3.5 text-cyan-500" />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Procedural SFX Synth</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-3 space-y-3">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Synth Sound Type</span>
+                    <div className="grid grid-cols-3 gap-1">
+                      {(['impact', 'whoosh', 'glitch', 'riser', 'laser'] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setSynthType(t)}
+                          className={`px-2 py-1 text-[10px] font-mono rounded-lg border capitalize transition-all cursor-pointer ${
+                            synthType === t
+                              ? 'bg-[var(--accent-primary)] text-slate-950 font-bold border-transparent shadow-xs'
+                              : 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-foreground/80 hover:bg-white/10'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <ParameterSlider
+                    label="SFX Duration"
+                    value={synthDuration}
+                    min={0.2}
+                    max={4.0}
+                    step={0.1}
+                    defaultValue={1.5}
+                    unit="s"
+                    onChange={setSynthDuration}
+                  />
+
+                  <ParameterSlider
+                    label="Auto-Ducking Level"
+                    value={synthDucking}
+                    min={0.0}
+                    max={1.0}
+                    step={0.05}
+                    defaultValue={0.75}
+                    onChange={setSynthDucking}
+                  />
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-[var(--glass-border)]">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAuditionSFX}
+                      disabled={isPlayingAudition}
+                      className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+                    >
+                      <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudition ? 'text-[var(--accent-primary)] animate-pulse' : ''}`} />
+                      {isPlayingAudition ? 'Playing...' : 'Audition SFX'}
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      onClick={handleInsertProceduralSFX}
+                      className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Insert to Track
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
         ) : (

@@ -139,4 +139,123 @@ export class ProceduralAudioSynthesizer {
 
     return buffer;
   }
+
+  /**
+   * Generates a cinematic transitional whoosh / air swoosh SFX.
+   */
+  public static synthWhoosh(
+    timeOffsetSec: number,
+    durationSec: number = 0.8,
+    sampleRate = 44100
+  ): Float32Array {
+    const numSamples = Math.floor(durationSec * sampleRate);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const progress = t / durationSec; // 0..1
+
+      // Gaussian-like bell envelope peaking at 60% of duration
+      const envelope = Math.exp(-Math.pow((progress - 0.55) * 4.0, 2));
+
+      // Frequency swept noise + sub body
+      const noise = (Math.random() * 2.0 - 1.0);
+      const sweepFreq = 180 + 900 * Math.sin(progress * Math.PI);
+      const tone = Math.sin(2 * Math.PI * sweepFreq * t) * 0.35;
+
+      buffer[i] = Math.tanh((noise * 0.65 + tone) * envelope) * 0.8;
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Generates a heavy cinematic sub-bass impact / explosion drop SFX.
+   */
+  public static synthImpact(
+    timeOffsetSec: number,
+    durationSec: number = 1.5,
+    sampleRate = 44100
+  ): Float32Array {
+    const numSamples = Math.floor(durationSec * sampleRate);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+
+      // Transient attack + exponential decay
+      const decay = Math.exp(-t * 3.5);
+      // Fast exponential pitch drop from 180Hz down to 35Hz
+      const freq = 35.0 + 145.0 * Math.exp(-t * 12.0);
+      const sub = Math.sin(2 * Math.PI * freq * t);
+
+      // Impact noise transient
+      const transientNoise = (Math.random() * 2.0 - 1.0) * Math.exp(-t * 40.0) * 0.5;
+
+      buffer[i] = Math.tanh((sub * 0.85 + transientNoise) * decay) * 0.9;
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Generates an aggressive cybernetic glitch stutter / digital burst SFX.
+   */
+  public static synthGlitch(
+    timeOffsetSec: number,
+    durationSec: number = 0.6,
+    sampleRate = 44100
+  ): Float32Array {
+    const numSamples = Math.floor(durationSec * sampleRate);
+    const buffer = new Float32Array(numSamples);
+
+    let sampleHold = 0;
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+
+      // Randomized bitcrush clock
+      if (i % 32 === 0) {
+        sampleHold = (Math.random() * 2.0 - 1.0);
+      }
+
+      // Ring modulated square carrier
+      const carrierFreq = 300 + 400 * Math.sin(t * 80.0);
+      const square = Math.sin(2 * Math.PI * carrierFreq * t) > 0 ? 1 : -1;
+      const decay = 1.0 - t / durationSec;
+
+      buffer[i] = (sampleHold * 0.5 + square * 0.5) * decay * 0.5;
+    }
+
+    return buffer;
+  }
+
+  /**
+   * Generates a tension build-up riser drone SFX.
+   */
+  public static synthRiser(
+    timeOffsetSec: number,
+    durationSec: number = 2.0,
+    sampleRate = 44100
+  ): Float32Array {
+    const numSamples = Math.floor(durationSec * sampleRate);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const progress = t / durationSec; // 0..1
+
+      // Accelerating exponential pitch climb from 90Hz to 1600Hz
+      const freq = 90 + 1510 * Math.pow(progress, 2.5);
+      // Accelerating tremolo pulse
+      const tremolo = 0.7 + 0.3 * Math.sin(2 * Math.PI * (4 + 20 * progress) * t);
+      const tone = Math.sin(2 * Math.PI * freq * t);
+      // Volume swell
+      const amp = Math.pow(progress, 1.2) * tremolo;
+
+      buffer[i] = Math.tanh(tone * amp) * 0.75;
+    }
+
+    return buffer;
+  }
 }
+

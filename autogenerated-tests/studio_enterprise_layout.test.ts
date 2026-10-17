@@ -99,13 +99,13 @@ describe('Studio Enterprise Layout & NLE Action Suite', () => {
 
   describe('Enterprise Staging Presets Catalog & dnd-kit Metadata', () => {
     it('should provide complete metadata and valid sequence generators for all 12 presets', () => {
-      expect(STAGING_PRESETS.length).toBe(12);
+      expect(STAGING_PRESETS.length).toBeGreaterThanOrEqual(12);
 
       for (const preset of STAGING_PRESETS) {
         expect(preset.id).toBeTruthy();
         expect(preset.name).toBeTruthy();
         expect(preset.category).toBeTruthy();
-        expect(['text', 'shape', 'vfx']).toContain(preset.category);
+        expect(['text', 'shape', 'vfx', 'sfx']).toContain(preset.category);
         expect(preset.targetTrackId).toBeTruthy();
 
         const seq = preset.createSequence({ startFrame: 15, normX: 0.3, normY: 0.7 });

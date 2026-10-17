@@ -250,6 +250,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`235`](235_isolate_studio_canvas_and_subtitles.md) | 2026-10-17 | Isolate Studio Canvas Viewport & Subtitles from Outside Theme Styling | Wrapped studio-canvas in isolated 16:9 stage with pure black background, moved subtitles inside canvas stage with dedicated video caption styling, and decoupled transport bar |
 | [`236`](236_universal_canvas_switching_web_node.md) | 2026-10-17 | Universal Canvas Abstraction Layer (Isomorphic Web & Node Environment Switching) | Standardized CanvasAdapter, WebCanvasAdapter (OffscreenCanvas/HTMLCanvas), NodeCanvasAdapter (lazy @napi-rs/canvas), UniversalCanvasProvider with auto/manual switching, and isomorphic CanvasAssetLoader |
 | [`237`](237_studio_viewport_modernization_action_pill_hud.md) | 2026-10-17 | Studio Viewport Modernization (Canvas2D, Action Pill, Viewport HUD) | Floating Viewport Header HUD (Zoom presets, Pan tool, 16:9/9:16 safe guides, alpha checkerboard), on-canvas Contextual Action Pill (Duplicate, Center, Lock, Reset, Delete), and responsive cursor states |
+| [`238`](238_studio_phase5_gsap_easing_sidebar_enhancements.md) | 2026-10-17 | Phase 5: GSAP Easing Inspector & Left Sidebar Enhancements | Interactive SVG Bézier GSAP easing curve inspector with traveling dot preview, dual SFX strategy (staging presets + on-demand Web Audio procedural synth), LeftSidebar filter pills, non-intrusive micro-animations, and Assets Vault dropzone |
 
 
 

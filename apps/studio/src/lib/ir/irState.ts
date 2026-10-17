@@ -246,4 +246,12 @@ export class IRStateManager {
       this.setSelectedSequenceId(null);
     }
   }
+
+  public addAsset(assetId: string, asset: any): void {
+    if (!this.state.doc.assets) {
+      this.state.doc.assets = {};
+    }
+    this.state.doc.assets[assetId] = asset;
+    this.notify();
+  }
 }

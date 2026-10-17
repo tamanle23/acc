@@ -1,6 +1,6 @@
 import type { IRSequence } from '@acc/ir/client';
 
-export type PresetCategory = 'text' | 'shape' | 'vfx';
+export type PresetCategory = 'text' | 'shape' | 'vfx' | 'sfx';
 
 export interface StagingPreset {
   id: string;
@@ -8,9 +8,9 @@ export interface StagingPreset {
   name: string;
   badge: string;
   description: string;
-  iconName: 'Type' | 'Square' | 'Circle' | 'ArrowUpRight' | 'Sparkles' | 'Eye' | 'Sun' | 'Zap';
+  iconName: 'Type' | 'Square' | 'Circle' | 'ArrowUpRight' | 'Sparkles' | 'Eye' | 'Sun' | 'Zap' | 'Volume2' | 'Music' | 'Radio';
   targetTrackId: string;
-  targetTrackType: 'timed_text' | 'video';
+  targetTrackType: 'timed_text' | 'video' | 'audio';
   targetTrackName: string;
   createSequence: (opts: {
     startFrame: number;
@@ -564,4 +564,169 @@ export const STAGING_PRESETS: StagingPreset[] = [
       ],
     }),
   },
+
+  // ==========================================
+  // 4. PROCEDURAL SFX PRESETS
+  // ==========================================
+  {
+    id: 'sfx_impact',
+    category: 'sfx',
+    name: 'Cinematic Sub-Bass Impact',
+    badge: 'Audio SFX',
+    description: 'Heavy sub-bass impact drop with exponential pitch decay and transient pop',
+    iconName: 'Volume2',
+    targetTrackId: 'track-audio',
+    targetTrackType: 'audio',
+    targetTrackName: 'Master Audio Track',
+    createSequence: ({ startFrame, durationFrames = 45, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-sfx-impact-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+          },
+        },
+        {
+          type: 'sfx/procedural',
+          params: {
+            synthType: 'impact',
+            durationSec: 1.5,
+            duckingFactor: 0.75,
+            label: 'SUB IMPACT',
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'sfx_whoosh',
+    category: 'sfx',
+    name: 'Sci-Fi Air Whoosh',
+    badge: 'Audio SFX',
+    description: 'Fast swept transitional air swoosh with gaussian envelope',
+    iconName: 'Volume2',
+    targetTrackId: 'track-audio',
+    targetTrackType: 'audio',
+    targetTrackName: 'Master Audio Track',
+    createSequence: ({ startFrame, durationFrames = 24, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-sfx-whoosh-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+          },
+        },
+        {
+          type: 'sfx/procedural',
+          params: {
+            synthType: 'whoosh',
+            durationSec: 0.8,
+            duckingFactor: 0.5,
+            label: 'AIR WHOOSH',
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'sfx_glitch',
+    category: 'sfx',
+    name: 'Cybernetic Glitch Stutter',
+    badge: 'Audio SFX',
+    description: 'Digital ring-modulated stutter burst with bitcrushed sample-and-hold',
+    iconName: 'Zap',
+    targetTrackId: 'track-audio',
+    targetTrackType: 'audio',
+    targetTrackName: 'Master Audio Track',
+    createSequence: ({ startFrame, durationFrames = 18, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-sfx-glitch-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+          },
+        },
+        {
+          type: 'sfx/procedural',
+          params: {
+            synthType: 'glitch',
+            durationSec: 0.6,
+            duckingFactor: 0.6,
+            label: 'CYBER GLITCH',
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'sfx_riser',
+    category: 'sfx',
+    name: 'Tension Drone Riser',
+    badge: 'Audio SFX',
+    description: 'Exponential pitch climb with accelerating tremolo pulse and volume swell',
+    iconName: 'Music',
+    targetTrackId: 'track-audio',
+    targetTrackType: 'audio',
+    targetTrackName: 'Master Audio Track',
+    createSequence: ({ startFrame, durationFrames = 60, normX = 0.5, normY = 0.5 }) => ({
+      id: `seq-sfx-riser-${Date.now()}`,
+      time: {
+        start: startFrame,
+        duration: durationFrames,
+      },
+      modifiers: [
+        {
+          type: 'transform',
+          params: {
+            normX,
+            normY,
+            x: (normX - 0.5) * 600,
+            y: (normY - 0.5) * 400,
+            scale: 1.0,
+            rotation: 0,
+          },
+        },
+        {
+          type: 'sfx/procedural',
+          params: {
+            synthType: 'riser',
+            durationSec: 2.0,
+            duckingFactor: 0.8,
+            label: 'TENSION RISER',
+          },
+        },
+      ],
+    }),
+  },
 ];
+
