@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, ModifierNode } from '@acc/ir/client';
+import type { VideoIRDocument, ModifierNode } from '@acc/ir';
 
 export class RemoveModifierCommand implements ICommand {
   public readonly id: string;

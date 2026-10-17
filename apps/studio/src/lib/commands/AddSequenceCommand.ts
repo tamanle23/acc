@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence, IRTrack, AssetDefinition } from '@acc/ir/client';
+import type { VideoIRDocument, IRSequence, IRTrack, AssetDefinition } from '@acc/ir';
 
 export interface AddSequenceOptions {
   trackTypeFallback?: 'video' | 'audio' | 'timed_text';

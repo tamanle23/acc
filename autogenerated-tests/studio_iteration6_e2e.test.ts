@@ -10,7 +10,7 @@ import {
 import {
   RelationalDAGCompiler,
   VideoIRSchemaValidator,
-} from '@acc/ir/client';
+} from '@acc/ir';
 
 describe('Iteration 6 Master End-to-End QA Suite: Canvas Direct Staging, Inspector, Partial VFX & Export Parity', () => {
   let stateManager: IRStateManager;

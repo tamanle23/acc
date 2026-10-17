@@ -7,7 +7,7 @@ import {
   RelationalDAGCompiler,
   VideoIRSchemaValidator,
   type VideoIRDocument,
-} from '@acc/ir/client';
+} from '@acc/ir';
 import { UniversalThreeScene, type PartialVFXRegion } from '@acc/effect-engines/client';
 
 describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & Partial VFX', () => {

@@ -3,7 +3,7 @@ import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { DuplicateSequenceCommand } from '../apps/studio/src/lib/commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../apps/studio/src/lib/commands/DeleteSequenceCommand';
 import { STAGING_PRESETS } from '../apps/studio/src/lib/library/stagingPresets';
-import { VideoIRSchemaValidator } from '@acc/ir/client';
+import { VideoIRSchemaValidator } from '@acc/ir';
 
 describe('Studio Enterprise Layout & NLE Action Suite', () => {
   let manager: IRStateManager;

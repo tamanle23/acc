@@ -7,7 +7,7 @@ import {
   IntervalTreeIndex,
   VideoIRSchemaValidator,
   type ValidationResult,
-} from '@acc/ir/client';
+} from '@acc/ir';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
 import { defaultDemoIR } from './defaultDemoIR';
 import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
@@ -23,7 +23,7 @@ import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
 import { UpdateSequenceTimeCommand } from '../commands/UpdateSequenceTimeCommand';
-import type { IRSequence, SequenceTime } from '@acc/ir/client';
+import type { IRSequence, SequenceTime } from '@acc/ir';
 
 export interface IRState {
   doc: VideoIRDocument;

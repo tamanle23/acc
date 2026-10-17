@@ -1,4 +1,4 @@
-import type { AssetMetadata, IAssetMetadataProber } from '@acc/ir/client';
+import type { AssetMetadata, IAssetMetadataProber } from '@acc/ir';
 
 /**
  * BrowserAssetMetadataProber:

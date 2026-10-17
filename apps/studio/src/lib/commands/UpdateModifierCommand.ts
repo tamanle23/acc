@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, ModifierNode, SequenceType } from '@acc/ir/client';
+import type { VideoIRDocument, ModifierNode, SequenceType } from '@acc/ir';
 
 export class UpdateModifierCommand implements ICommand {
   public readonly id: string;

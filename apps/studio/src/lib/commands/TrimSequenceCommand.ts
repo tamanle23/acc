@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument } from '@acc/ir/client';
+import type { VideoIRDocument } from '@acc/ir';
 
 export class TrimSequenceCommand implements ICommand {
   public readonly id: string;

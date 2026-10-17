@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, SequenceTime } from '@acc/ir/client';
+import type { VideoIRDocument, SequenceTime } from '@acc/ir';
 
 export class UpdateSequenceTimeCommand implements ICommand {
   public readonly id: string;

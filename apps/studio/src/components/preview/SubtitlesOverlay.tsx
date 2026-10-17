@@ -1,6 +1,6 @@
 import React from 'react';
 import { Type } from 'lucide-react';
-import type { TimedTextCue, ResolvedSequence } from '@acc/ir/client';
+import type { TimedTextCue, ResolvedSequence } from '@acc/ir';
 
 export interface SubtitlesOverlayProps {
   activeCues: TimedTextCue[];

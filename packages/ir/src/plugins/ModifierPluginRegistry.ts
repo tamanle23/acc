@@ -25,7 +25,7 @@ export interface ModifierContext {
   state?: Record<string, unknown>;
 }
 
-import type { ModifierNode, SequenceType } from '../types/VideoIR';
+import type { ModifierNode, ResolvedSequence, ResolvedTrack, SequenceType } from '../types/VideoIR';
 
 export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly type: string;

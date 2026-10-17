@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '@acc/ir/client';
+import type { VideoIRDocument, IRSequence } from '@acc/ir';
 
 export class MoveSequenceCommand implements ICommand {
   public readonly id: string;

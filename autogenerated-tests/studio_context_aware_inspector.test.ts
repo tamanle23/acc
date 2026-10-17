@@ -8,7 +8,7 @@ import {
   type AvailableModifierDef,
 } from '../apps/studio/src/components/RightSidebar';
 import { STAGING_PRESETS } from '../apps/studio/src/lib/library/stagingPresets';
-import type { SequenceTime, IRSequence } from '@acc/ir/client';
+import type { SequenceTime, IRSequence } from '@acc/ir';
 
 describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
   beforeEach(async () => {

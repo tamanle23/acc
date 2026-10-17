@@ -1,4 +1,4 @@
-import type { VideoIRDocument } from '@acc/ir/client';
+import type { VideoIRDocument } from '@acc/ir';
 
 export interface ICommand {
   readonly id: string;

@@ -1,4 +1,4 @@
-import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/effect-engines/client';
+import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
 import { AudioAssetCache } from './AudioAssetCache';
 
 export interface AudioLevels {

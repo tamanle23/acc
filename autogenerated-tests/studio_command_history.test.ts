@@ -4,7 +4,7 @@ import { TrimSequenceCommand } from '../apps/studio/src/lib/commands/TrimSequenc
 import { SplitSequenceCommand } from '../apps/studio/src/lib/commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../apps/studio/src/lib/commands/UpdateModifierCommand';
 import { defaultDemoIR } from '../apps/studio/src/lib/ir/defaultDemoIR';
-import type { VideoIRDocument } from '@acc/ir/client';
+import type { VideoIRDocument } from '@acc/ir';
 
 describe('Studio Command & History Strategy Pattern (Phase 5 Ext)', () => {
   it('executes TrimSequenceCommand and reverses cleanly with undo', () => {

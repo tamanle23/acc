@@ -1,4 +1,4 @@
-import type { IRSequence, SequenceType } from '@acc/ir/client';
+import type { IRSequence, SequenceType } from '@acc/ir';
 
 export type PresetCategory = 'text' | 'shape' | 'vfx' | 'overlay' | 'sfx';
 

@@ -52,7 +52,7 @@ import {
   type SequenceTime,
   type RelationalStart,
   type RelationalDuration,
-} from '@acc/ir/client';
+} from '@acc/ir';
 
 export interface ParameterSliderProps {
   label: string;

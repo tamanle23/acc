@@ -20,10 +20,6 @@ export * from './renderer/audio/DynamicAudioDuckingEngine';
 export * from './renderer/audio/UniversalAudioMixer';
 
 // Pure Buffer-Based Audio Plugins
-export * from './plugins/audio/VolumeModifierPlugin';
-export * from './plugins/audio/PanModifierPlugin';
-export * from './plugins/audio/FilterModifierPlugin';
-export * from './plugins/audio/PitchModifierPlugin';
 export * from './plugins/sfx/DynamicDuckingPlugin';
 export { ModifierPluginRegistry, type ModifierPlugin, type ModifierContext } from './plugins/ModifierPluginRegistry';
 export * from './plugins/clientRegistry';

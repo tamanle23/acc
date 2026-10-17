@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { registerClientModifierPlugins } from '@acc/ir/client';
+import { registerClientModifierPlugins } from '@acc/ir/plugins/clientRegistry';
 import App from './App';
 import './index.css';
 
