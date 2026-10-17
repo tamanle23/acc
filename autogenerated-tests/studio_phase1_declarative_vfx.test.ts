@@ -21,6 +21,12 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
 
       engine.clearParticles();
       expect(engine.hasParticles()).toBe(false);
+
+      engine.setParticleConfig({ count: 100 });
+      expect(engine.hasParticles()).toBe(true);
+
+      engine.setParticleConfig(null);
+      expect(engine.hasParticles()).toBe(false);
       engine.dispose();
     });
 
@@ -40,6 +46,17 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
       expect(engine.hasHologramHUD()).toBe(true);
 
       engine.clearHologramHUD();
+      expect(engine.hasHologramHUD()).toBe(false);
+
+      engine.setHUDConfig({
+        ringRadiusNorm: 0.3,
+        scanlineDensity: 40,
+        color: '#22c55e',
+        rotationSpeed: 0.5,
+      });
+      expect(engine.hasHologramHUD()).toBe(true);
+
+      engine.clearHUD();
       expect(engine.hasHologramHUD()).toBe(false);
 
       engine.dispose();

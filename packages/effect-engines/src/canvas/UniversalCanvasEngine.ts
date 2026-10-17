@@ -398,6 +398,13 @@ export class UniversalCanvasEngine {
   }
 
   /**
+   * Alias for clearHologramHUD.
+   */
+  public clearHUD(): void {
+    this.hudConfig = null;
+  }
+
+  /**
    * Returns whether hologram HUD is actively enabled.
    */
   public hasHologramHUD(): boolean {
@@ -409,6 +416,17 @@ export class UniversalCanvasEngine {
    */
   public setHUDConfig(config: HUDConfig | null): void {
     this.hudConfig = config ? { ...config } : null;
+  }
+
+  /**
+   * Dynamically sets or clears Particle configuration.
+   */
+  public setParticleConfig(config: { count?: number } | null): void {
+    if (!config) {
+      this.clearParticles();
+    } else {
+      this.initParticleSystem(config.count ?? 250);
+    }
   }
 
   /**
