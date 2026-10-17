@@ -14,6 +14,7 @@ import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
 import { HistoryManager } from '../commands/HistoryManager';
 import type { ICommand } from '../commands/ICommand';
 import { TrimSequenceCommand } from '../commands/TrimSequenceCommand';
+import { MoveSequenceCommand } from '../commands/MoveSequenceCommand';
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
@@ -201,6 +202,10 @@ export class IRStateManager {
 
   public trimSequence(sequenceId: string, deltaStart: number, deltaDuration: number): void {
     this.dispatch(new TrimSequenceCommand(sequenceId, deltaStart, deltaDuration));
+  }
+
+  public moveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void {
+    this.dispatch(new MoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame));
   }
 
   public splitSequence(sequenceId: string, splitFrame: number): void {

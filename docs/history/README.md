@@ -254,6 +254,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`239`](239_studio_phase6_universal_motion_easing_timeline.md) | 2026-10-17 | Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulation | Polymorphic TemporalCurve in VideoIR, 3-stage lifecycle GSAP compiler in UniversalCanvasEngine, analog audio ducking slew filter, Motion Preset inspector in RightSidebar, interactive timeline drag trimming with magnetic snapping, and Razor split cut tool |
 | [`240`](240_fix_preview_canvas_engine_ref_reference.md) | 2026-10-17 | Fix Preview Canvas Engine Ref Reference Error in Preview.tsx | Resolved Uncaught ReferenceError: canvasEngineRef is not defined by correcting symbol to engineRef and streamlining active interpolated transform bounding box calculations |
 | [`241`](241_fix_timeline_pixels_per_frame_tdz.md) | 2026-10-17 | Fix Timeline PixelsPerFrame Temporal Dead Zone Reference Error | Hoisted pixelsPerFrame and timelineWidth declarations above useEffect hooks and event handlers in Timeline.tsx to resolve TDZ runtime crash |
+| [`242`](242_studio_phase9_unified_dnd_kit_architecture.md) | 2026-10-17 | Phase 9: Unified @dnd-kit Architecture (Replacing Manual Drag-and-Drop Boilerplate in Timeline & Preview) | Replaced manual window mouse listeners with domain-isolated @dnd-kit DndContexts, MoveSequenceCommand for time shifting and cross-track lane migration, DroppableTrackLane, TimelineClipItem, and TransformBodyDraggable |
 
 
 

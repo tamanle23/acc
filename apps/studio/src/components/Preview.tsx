@@ -1,5 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import {
+  useDroppable,
+  DndContext,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragMoveEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { Tooltip } from './ui/tooltip';
 import {
   Monitor,
@@ -56,6 +66,76 @@ interface TransformState {
   y: number; // offset px
   scale: number; // 0.2 to 3.0
   rotation: number; // degrees
+}
+
+interface TransformHandleProps {
+  handleType: TransformHandleType;
+  isLocked: boolean;
+  className: string;
+  title: string;
+  children?: React.ReactNode;
+}
+
+function TransformHandle({ handleType, isLocked, className, title, children }: TransformHandleProps) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `transform-handle-${handleType}`,
+    data: {
+      type: 'handle',
+      handleType,
+    },
+    disabled: isLocked,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={className}
+      title={title}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface TransformBodyDraggableProps {
+  children: React.ReactNode;
+  isLocked: boolean;
+  style: React.CSSProperties;
+  className: string;
+  onDoubleClick: () => void;
+}
+
+function TransformBodyDraggable({
+  children,
+  isLocked,
+  style,
+  className,
+  onDoubleClick,
+}: TransformBodyDraggableProps) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: 'transform-handle-body',
+    data: {
+      type: 'handle',
+      handleType: 'body' as TransformHandleType,
+    },
+    disabled: isLocked,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onDoubleClick={onDoubleClick}
+      style={style}
+      className={className}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function Preview({
@@ -238,15 +318,100 @@ export function Preview({
     engine.render(ctx, timeSec, popOutIntensity);
   }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, isDragging]);
 
-  // Direct in-canvas handle interaction handlers
-  const handleHandleMouseDown = (handleType: TransformHandleType, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
+  const transformSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    })
+  );
+
+  const handleTransformDragStart = (e: DragStartEvent) => {
+    const data = e.active.data.current;
+    if (!data || isLocked) return;
+
+    const handleType = data.handleType as TransformHandleType;
+    setIsDragging(true);
+    setActiveHandle(handleType);
+    setStartTransform({ ...transform });
+
+    const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
+    engineRef.current?.setActiveInteraction(handleType, mode);
+  };
+
+  const handleTransformDragMove = (e: DragMoveEvent) => {
+    if (!isDragging || !activeHandle || !selectedSeqId || isLocked) return;
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const dx = e.delta.x;
+    const dy = e.delta.y;
+
+    const baseW = 0.5;
+    const baseH = 0.5;
+    const startNormBox: BoundingBox2D = {
+      x: 0.5 + startTransform.x / width,
+      y: 0.5 + startTransform.y / height,
+      width: baseW * startTransform.scale,
+      height: baseH * startTransform.scale,
+      rotation: startTransform.rotation,
+    };
+
+    const currentPointerNorm = {
+      x: 0.5 + (startTransform.x + dx) / width,
+      y: 0.5 + (startTransform.y + dy) / height,
+    };
+    const startPointerNorm = {
+      x: 0.5 + startTransform.x / width,
+      y: 0.5 + startTransform.y / height,
+    };
+
+    const dragRes = CanvasTransformOverlay.computeDragTransform(
+      startNormBox,
+      activeHandle,
+      currentPointerNorm,
+      startPointerNorm,
+      false,
+      false
+    );
+
+    if (dragRes.snapResult) {
+      setActiveGuides(dragRes.snapResult.activeGuides);
+    } else {
+      setActiveGuides([]);
+    }
+
+    const newNormBox = dragRes.box;
+    const newTransform: TransformState = {
+      x: Math.round((newNormBox.x - 0.5) * width),
+      y: Math.round((newNormBox.y - 0.5) * height),
+      scale: Number((newNormBox.width / baseW).toFixed(2)),
+      rotation: newNormBox.rotation,
+    };
+
+    setTransform(newTransform);
+    engineRef.current?.updateOverlay(newNormBox, dragRes.snapResult?.activeGuides || []);
+  };
+
+  const handleTransformDragEnd = (e: DragEndEvent) => {
+    if (selectedSeqId && !isLocked) {
+      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', transform as any);
+    }
+    setIsDragging(false);
+    setActiveHandle(null);
+    setActiveGuides([]);
+    engineRef.current?.setActiveInteraction(null, null);
+  };
+
+  // Backward compatibility alias for handleHandleMouseDown
+  const handleHandleMouseDown = (handleType: TransformHandleType, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (isLocked) return;
     setIsDragging(true);
     setActiveHandle(handleType);
-    setStartPointer({ x: e.clientX, y: e.clientY });
     setStartTransform({ ...transform });
-
     const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
     engineRef.current?.setActiveInteraction(handleType, mode);
   };
@@ -267,82 +432,13 @@ export function Preview({
       const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
       setMousePos({ x: normX, y: normY });
-
-      if (isDragging && activeHandle && selectedSeqId && !isLocked) {
-        const dx = e.clientX - startPointer.x;
-        const dy = e.clientY - startPointer.y;
-
-        const baseW = 0.5;
-        const baseH = 0.5;
-        const startNormBox: BoundingBox2D = {
-          x: 0.5 + startTransform.x / width,
-          y: 0.5 + startTransform.y / height,
-          width: baseW * startTransform.scale,
-          height: baseH * startTransform.scale,
-          rotation: startTransform.rotation,
-        };
-
-        const currentPointerNorm = {
-          x: (startPointer.x - rect.left + dx) / rect.width,
-          y: (startPointer.y - rect.top + dy) / rect.height,
-        };
-        const startPointerNorm = {
-          x: (startPointer.x - rect.left) / rect.width,
-          y: (startPointer.y - rect.top) / rect.height,
-        };
-
-        const dragRes = CanvasTransformOverlay.computeDragTransform(
-          startNormBox,
-          activeHandle,
-          currentPointerNorm,
-          startPointerNorm,
-          e.shiftKey,
-          e.shiftKey
-        );
-
-        if (dragRes.snapResult) {
-          setActiveGuides(dragRes.snapResult.activeGuides);
-        } else {
-          setActiveGuides([]);
-        }
-
-        const newNormBox = dragRes.box;
-        const newTransform: TransformState = {
-          x: Math.round((newNormBox.x - 0.5) * width),
-          y: Math.round((newNormBox.y - 0.5) * height),
-          scale: Number((newNormBox.width / baseW).toFixed(2)),
-          rotation: newNormBox.rotation,
-        };
-
-        setTransform(newTransform);
-        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newTransform as any);
-      }
     },
-    [isDragging, activeHandle, startPointer, startTransform, selectedSeqId, width, height, isPanning, panStart, isLocked]
+    [isPanning, panStart]
   );
 
   const handleMouseUp = () => {
-    setIsDragging(false);
-    setActiveHandle(null);
-    setActiveGuides([]);
     setIsPanning(false);
-    engineRef.current?.setActiveInteraction(null, null);
   };
-
-  // Global mouseup cleanup
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging || isPanning) {
-        setIsDragging(false);
-        setActiveHandle(null);
-        setActiveGuides([]);
-        setIsPanning(false);
-        engineRef.current?.setActiveInteraction(null, null);
-      }
-    };
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
-  }, [isDragging, isPanning]);
 
   // Global Keyboard Shortcuts (Space for Pan/Play, Del, Ctrl+D, Esc)
   useEffect(() => {
@@ -970,229 +1066,241 @@ export function Preview({
 
         {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
         {selectedSeqId && (
-          <div
-            onMouseDown={(e) => {
-              if (isLocked) return;
-              handleHandleMouseDown('body', e);
-            }}
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
-              if (selectedSeq?.cues && selectedSeq.cues.length > 0) {
-                setEditingCue({
-                  sequenceId: selectedSeq.id,
-                  cueIndex: 0,
-                  text: selectedSeq.cues[0].text,
-                });
-              }
-            }}
-            style={(() => {
-              const interp =
-                !isDragging && selectedSeqId && engineRef.current
-                  ? engineRef.current.getActiveInterpolatedTransform(selectedSeqId)
-                  : null;
-              const curX = interp ? interp.x : transform.x;
-              const curY = interp ? interp.y : transform.y;
-              const curScale = interp ? interp.scale : transform.scale;
-              const curRot = interp ? interp.rotation : transform.rotation;
-              const curOpacity = interp ? interp.opacity : 1.0;
-
-              return {
-                transform: `translate(${curX}px, ${curY}px) scale(${curScale}) rotate(${curRot}deg)`,
-                opacity: curOpacity,
-                width: '50%',
-                height: '50%',
-              };
-            })()}
-            className={`absolute border-2 ${
-              isLocked
-                ? 'border-amber-400/80 bg-amber-500/5 cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                : 'border-[var(--accent-primary)] bg-[var(--accent-glow)]/10 cursor-move shadow-[0_0_20px_var(--accent-glow)]'
-            } rounded-md flex items-center justify-center group pointer-events-auto z-10 backdrop-blur-[2px]`}
+          <DndContext
+            sensors={transformSensors}
+            onDragStart={handleTransformDragStart}
+            onDragMove={handleTransformDragMove}
+            onDragEnd={handleTransformDragEnd}
           >
-            {/* Floating Contextual Action Pill HUD */}
-            <div
-              onMouseDown={(e) => e.stopPropagation()}
-              className="absolute -top-12 left-1/2 -translate-x-1/2 glass-panel shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-[var(--glass-border-highlight)] px-2 py-1 rounded-full flex items-center gap-1.5 z-30 select-none pointer-events-auto backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+            <TransformBodyDraggable
+              isLocked={isLocked}
+              onDoubleClick={() => {
+                const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
+                if (selectedSeq?.cues && selectedSeq.cues.length > 0) {
+                  setEditingCue({
+                    sequenceId: selectedSeq.id,
+                    cueIndex: 0,
+                    text: selectedSeq.cues[0].text,
+                  });
+                }
+              }}
+              style={(() => {
+                const interp =
+                  !isDragging && selectedSeqId && engineRef.current
+                    ? engineRef.current.getActiveInterpolatedTransform(selectedSeqId)
+                    : null;
+                const curX = interp ? interp.x : transform.x;
+                const curY = interp ? interp.y : transform.y;
+                const curScale = interp ? interp.scale : transform.scale;
+                const curRot = interp ? interp.rotation : transform.rotation;
+                const curOpacity = interp ? interp.opacity : 1.0;
+
+                return {
+                  transform: `translate(${curX}px, ${curY}px) scale(${curScale}) rotate(${curRot}deg)`,
+                  opacity: curOpacity,
+                  width: '50%',
+                  height: '50%',
+                };
+              })()}
+              className={`absolute border-2 ${
+                isLocked
+                  ? 'border-amber-400/80 bg-amber-500/5 cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                  : 'border-[var(--accent-primary)] bg-[var(--accent-glow)]/10 cursor-move shadow-[0_0_20px_var(--accent-glow)]'
+              } rounded-md flex items-center justify-center group pointer-events-auto z-10 backdrop-blur-[2px]`}
             >
-              {/* Duplicate */}
-              <Tooltip content="Duplicate Sequence (Ctrl+D)">
-                <button
-                  type="button"
-                  onClick={() => IRStateManager.getInstance().duplicateSequence(selectedSeqId)}
-                  className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </Tooltip>
-
-              {/* Center Alignment */}
-              <Tooltip content="Center in Canvas">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newT = { ...transform, x: 0, y: 0 };
-                    setTransform(newT);
-                    IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
-                  }}
-                  className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                >
-                  <AlignCenter className="w-3.5 h-3.5" />
-                </button>
-              </Tooltip>
-
-              {/* Lock / Unlock */}
-              <Tooltip content={isLocked ? 'Unlock Transform' : 'Lock Transform'}>
-                <button
-                  type="button"
-                  onClick={() => setIsLocked(!isLocked)}
-                  className={`p-1 rounded-full active:scale-90 transition-all cursor-pointer ${
-                    isLocked
-                      ? 'text-amber-400 bg-amber-500/15'
-                      : 'text-foreground/80 hover:text-foreground hover:bg-white/15 dark:hover:bg-white/10'
-                  }`}
-                >
-                  {isLocked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5" />}
-                </button>
-              </Tooltip>
-
-              {/* Reset Transform */}
-              <Tooltip content="Reset Transform">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newT = { x: 0, y: 0, scale: 1.0, rotation: 0 };
-                    setTransform(newT);
-                    IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
-                  }}
-                  className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-              </Tooltip>
-
-              <div className="w-px h-3.5 bg-[var(--glass-border)] mx-0.5" />
-
-              {/* Delete */}
-              <Tooltip content="Delete Sequence (Del)">
-                <button
-                  type="button"
-                  onClick={() => IRStateManager.getInstance().deleteSequence(selectedSeqId)}
-                  className="p-1 hover:bg-rose-500/20 rounded-full text-rose-400 hover:text-rose-300 active:scale-90 transition-all cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </Tooltip>
-            </div>
-
-            {/* 4 Corner Scale Handles */}
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('tl', e)}
-              className={`absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Scale Top-Left'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('tr', e)}
-              className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Scale Top-Right'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('bl', e)}
-              className={`absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Scale Bottom-Left'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('br', e)}
-              className={`absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Scale Bottom-Right'}
-            />
-
-            {/* 4 Edge Stretch Handles */}
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('tc', e)}
-              className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Stretch Top'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('bc', e)}
-              className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Stretch Bottom'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('ml', e)}
-              className={`absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Stretch Left'}
-            />
-            <div
-              onMouseDown={(e) => handleHandleMouseDown('mr', e)}
-              className={`absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
-                isLocked
-                  ? 'border-amber-400 cursor-not-allowed opacity-40'
-                  : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
-              } rounded-xs shadow-md transition-transform`}
-              title={isLocked ? 'Locked' : 'Stretch Right'}
-            />
-
-            {/* Rotation Stem & Knob Handle */}
-            <div className="absolute -top-8 flex flex-col items-center">
+              {/* Floating Contextual Action Pill HUD */}
               <div
-                onMouseDown={(e) => handleHandleMouseDown('rotate', e)}
-                className={`w-5 h-5 ${
-                  isLocked
-                    ? 'bg-amber-500 text-slate-950 cursor-not-allowed opacity-50'
-                    : 'bg-[var(--accent-primary)] text-slate-950 cursor-grab active:cursor-grabbing hover:brightness-110 shadow-[0_0_12px_var(--accent-glow)] hover:scale-115'
-                } rounded-full flex items-center justify-center transition-transform`}
-                title={isLocked ? 'Locked' : 'Drag to Rotate'}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="absolute -top-12 left-1/2 -translate-x-1/2 glass-panel shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-[var(--glass-border-highlight)] px-2 py-1 rounded-full flex items-center gap-1.5 z-30 select-none pointer-events-auto backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
               >
-                <RotateCw className="w-2.5 h-2.5 stroke-[2.5]" />
-              </div>
-              <div
-                className={`w-0.5 h-3 ${
-                  isLocked ? 'bg-amber-400/50' : 'bg-[var(--accent-primary)] shadow-[0_0_6px_var(--accent-glow)]'
-                }`}
-              />
-            </div>
+                {/* Duplicate */}
+                <Tooltip content="Duplicate Sequence (Ctrl+D)">
+                  <button
+                    type="button"
+                    onClick={() => IRStateManager.getInstance().duplicateSequence(selectedSeqId)}
+                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
 
-            {/* Sequence identifier pill with lock indicator */}
-            <span
-              className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full shadow-md select-none border flex items-center gap-1 ${
-                isLocked
-                  ? 'bg-amber-950/80 text-amber-200 border-amber-500/40'
-                  : 'bg-black/80 text-white/90 border-white/20'
-              }`}
-            >
-              {isLocked && <Lock className="w-2.5 h-2.5 text-amber-400" />}
-              {selectedSeqId}
-            </span>
-          </div>
+                {/* Center Alignment */}
+                <Tooltip content="Center in Canvas">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newT = { ...transform, x: 0, y: 0 };
+                      setTransform(newT);
+                      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+                    }}
+                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
+                  >
+                    <AlignCenter className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+
+                {/* Lock / Unlock */}
+                <Tooltip content={isLocked ? 'Unlock Transform' : 'Lock Transform'}>
+                  <button
+                    type="button"
+                    onClick={() => setIsLocked(!isLocked)}
+                    className={`p-1 rounded-full active:scale-90 transition-all cursor-pointer ${
+                      isLocked
+                        ? 'text-amber-400 bg-amber-500/15'
+                        : 'text-foreground/80 hover:text-foreground hover:bg-white/15 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {isLocked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5" />}
+                  </button>
+                </Tooltip>
+
+                {/* Reset Transform */}
+                <Tooltip content="Reset Transform">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newT = { x: 0, y: 0, scale: 1.0, rotation: 0 };
+                      setTransform(newT);
+                      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+                    }}
+                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+
+                <div className="w-px h-3.5 bg-[var(--glass-border)] mx-0.5" />
+
+                {/* Delete */}
+                <Tooltip content="Delete Sequence (Del)">
+                  <button
+                    type="button"
+                    onClick={() => IRStateManager.getInstance().deleteSequence(selectedSeqId)}
+                    className="p-1 hover:bg-rose-500/20 rounded-full text-rose-400 hover:text-rose-300 active:scale-90 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+              </div>
+
+              {/* 4 Corner Scale Handles */}
+              <TransformHandle
+                handleType="tl"
+                isLocked={isLocked}
+                className={`absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Scale Top-Left'}
+              />
+              <TransformHandle
+                handleType="tr"
+                isLocked={isLocked}
+                className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Scale Top-Right'}
+              />
+              <TransformHandle
+                handleType="bl"
+                isLocked={isLocked}
+                className={`absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Scale Bottom-Left'}
+              />
+              <TransformHandle
+                handleType="br"
+                isLocked={isLocked}
+                className={`absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Scale Bottom-Right'}
+              />
+
+              {/* 4 Edge Stretch Handles */}
+              <TransformHandle
+                handleType="tc"
+                isLocked={isLocked}
+                className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Stretch Top'}
+              />
+              <TransformHandle
+                handleType="bc"
+                isLocked={isLocked}
+                className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Stretch Bottom'}
+              />
+              <TransformHandle
+                handleType="ml"
+                isLocked={isLocked}
+                className={`absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Stretch Left'}
+              />
+              <TransformHandle
+                handleType="mr"
+                isLocked={isLocked}
+                className={`absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
+                  isLocked
+                    ? 'border-amber-400 cursor-not-allowed opacity-40'
+                    : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
+                } rounded-xs shadow-md transition-transform`}
+                title={isLocked ? 'Locked' : 'Stretch Right'}
+              />
+
+              {/* Rotation Stem & Knob Handle */}
+              <div className="absolute -top-8 flex flex-col items-center">
+                <TransformHandle
+                  handleType="rotate"
+                  isLocked={isLocked}
+                  className={`w-5 h-5 ${
+                    isLocked
+                      ? 'bg-amber-500 text-slate-950 cursor-not-allowed opacity-50'
+                      : 'bg-[var(--accent-primary)] text-slate-950 cursor-grab active:cursor-grabbing hover:brightness-110 shadow-[0_0_12px_var(--accent-glow)] hover:scale-115'
+                  } rounded-full flex items-center justify-center transition-transform`}
+                  title={isLocked ? 'Locked' : 'Drag to Rotate'}
+                >
+                  <RotateCw className="w-2.5 h-2.5 stroke-[2.5]" />
+                </TransformHandle>
+                <div
+                  className={`w-0.5 h-3 ${
+                    isLocked ? 'bg-amber-400/50' : 'bg-[var(--accent-primary)] shadow-[0_0_6px_var(--accent-glow)]'
+                  }`}
+                />
+              </div>
+
+              {/* Sequence identifier pill with lock indicator */}
+              <span
+                className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full shadow-md select-none border flex items-center gap-1 ${
+                  isLocked
+                    ? 'bg-amber-950/80 text-amber-200 border-amber-500/40'
+                    : 'bg-black/80 text-white/90 border-white/20'
+                }`}
+              >
+                {isLocked && <Lock className="w-2.5 h-2.5 text-amber-400" />}
+                {selectedSeqId}
+              </span>
+            </TransformBodyDraggable>
+          </DndContext>
         )}
 
         {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}

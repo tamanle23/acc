@@ -28,6 +28,17 @@ import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragMoveEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 
 interface TimelineProps {
   playhead: {
@@ -38,6 +49,184 @@ interface TimelineProps {
   onScrub: (frame: number) => void;
   isPlaying?: boolean;
   onTogglePlay?: () => void;
+}
+
+interface TrimHandleProps {
+  seq: any;
+  handle: 'start' | 'end';
+}
+
+function TrimHandle({ seq, handle }: TrimHandleProps) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `trim-${handle}-${seq.id}`,
+    data: {
+      type: 'trim',
+      handle,
+      seq,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={(e) => e.stopPropagation()}
+      className={`w-2 h-full ${
+        handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
+      } cursor-col-resize hover:bg-white/50 active:bg-indigo-300 flex items-center justify-center transition-colors z-30`}
+      title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
+    >
+      <div className="w-0.5 h-3 bg-white/60 rounded-full" />
+    </div>
+  );
+}
+
+interface TimelineClipItemProps {
+  seq: any;
+  track: any;
+  pixelsPerFrame: number;
+  isSelected: boolean;
+  activeTool: 'select' | 'razor' | 'hand';
+  getTrackBadgeStyle: (track: any) => string;
+  onClipClick: (seq: any, e: React.MouseEvent) => void;
+  activeDragState: {
+    type: 'clip' | 'trim';
+    seqId: string;
+    handle?: 'start' | 'end';
+    initialStartFrame: number;
+    initialDurationFrames: number;
+    deltaFrames: number;
+    targetTrackId?: string;
+  } | null;
+}
+
+function TimelineClipItem({
+  seq,
+  track,
+  pixelsPerFrame,
+  isSelected,
+  activeTool,
+  getTrackBadgeStyle,
+  onClipClick,
+  activeDragState,
+}: TimelineClipItemProps) {
+  const isBeingDragged = activeDragState?.seqId === seq.id;
+  const isAudio = track.type === 'audio';
+
+  let displayStartFrame = seq.startFrame;
+  let displayDurationFrames = seq.durationFrames;
+
+  if (isBeingDragged && activeDragState) {
+    if (activeDragState.type === 'clip') {
+      displayStartFrame = Math.max(0, seq.startFrame + activeDragState.deltaFrames);
+    } else if (activeDragState.type === 'trim') {
+      if (activeDragState.handle === 'start') {
+        displayStartFrame = Math.max(0, seq.startFrame + activeDragState.deltaFrames);
+        displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
+      } else {
+        displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
+      }
+    }
+  }
+
+  const leftPx = displayStartFrame * pixelsPerFrame;
+  const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
+
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `clip-${seq.id}`,
+    data: {
+      type: 'clip',
+      seq,
+      trackId: track.id,
+    },
+    disabled: activeTool === 'razor',
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={(e) => onClipClick(seq, e)}
+      style={{
+        left: `${leftPx}px`,
+        width: `${widthPx}px`,
+      }}
+      className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${
+        activeTool === 'razor'
+          ? 'cursor-crosshair'
+          : isBeingDragged && activeDragState?.type === 'clip'
+          ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-indigo-400 z-30'
+          : 'cursor-grab'
+      } ${
+        isSelected
+          ? 'ring-2 ring-indigo-500 shadow-md z-20'
+          : 'hover:brightness-95 z-10'
+      } ${getTrackBadgeStyle(track)}`}
+    >
+      <TrimHandle seq={seq} handle="start" />
+
+      <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
+        {isAudio ? (
+          <AudioWaveform
+            id={seq.id}
+            durationFrames={seq.durationFrames}
+            width={widthPx}
+            height={28}
+          />
+        ) : (
+          <FilmstripThumbnail
+            assetId={seq.assetId || seq.id}
+            width={widthPx}
+            height={28}
+          />
+        )}
+        <span className="text-[10px] font-mono font-medium truncate relative z-10 drop-shadow-xs">
+          {seq.id}
+        </span>
+        {seq.modifiers && seq.modifiers.length > 0 && (
+          <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
+            {seq.modifiers.length} mod
+          </span>
+        )}
+      </div>
+
+      <TrimHandle seq={seq} handle="end" />
+    </div>
+  );
+}
+
+interface DroppableTrackLaneProps {
+  track: any;
+  isLocked: boolean;
+  children: React.ReactNode;
+}
+
+function DroppableTrackLane({ track, isLocked, children }: DroppableTrackLaneProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `track-${track.id}`,
+    data: {
+      type: 'track',
+      trackId: track.id,
+    },
+    disabled: isLocked,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
+        isLocked
+          ? 'opacity-60 pointer-events-none bg-slate-100/50'
+          : isOver
+          ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-300'
+          : 'bg-slate-50/50 border-slate-200'
+      }`}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function Timeline({
@@ -131,93 +320,193 @@ export function Timeline({
     IRStateManager.getInstance().trimSequence(seqId, deltaStart, deltaDuration);
   };
 
-  // Interactive Trim Dragging State with Magnetic Snapping
-  const [trimmingState, setTrimmingState] = useState<{
+  // Unified @dnd-kit Drag State for Timeline Clips & Trim Handles
+  const [activeDragState, setActiveDragState] = useState<{
+    type: 'clip' | 'trim';
     seqId: string;
-    handle: 'start' | 'end';
-    startX: number;
+    handle?: 'start' | 'end';
     initialStartFrame: number;
     initialDurationFrames: number;
+    deltaFrames: number;
+    targetTrackId?: string;
   } | null>(null);
 
-  const startTrim = (
-    seq: { id: string; startFrame: number; durationFrames: number },
-    handle: 'start' | 'end',
-    e: React.MouseEvent
-  ) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setTrimmingState({
-      seqId: seq.id,
+  // Backward-compatible aliases for trimmingState & startTrim unified under @dnd-kit
+  const trimmingState = activeDragState?.type === 'trim' ? activeDragState : null;
+  const startTrim = (seq: any, handle: 'start' | 'end') => {
+    setActiveDragState({
+      type: 'trim',
       handle,
-      startX: e.clientX,
+      seqId: seq.id,
       initialStartFrame: seq.startFrame,
       initialDurationFrames: seq.durationFrames,
+      deltaFrames: 0,
     });
   };
 
-  useEffect(() => {
-    if (!trimmingState) return;
+  const timelineSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    })
+  );
 
-    let accumulatedDelta = 0;
+  const handleDragStart = (e: DragStartEvent) => {
+    const data = e.active.data.current;
+    if (!data) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const diffPx = e.clientX - trimmingState.startX;
-      let deltaFrames = Math.round(diffPx / pixelsPerFrame);
+    if (data.type === 'clip') {
+      setActiveDragState({
+        type: 'clip',
+        seqId: data.seq.id,
+        initialStartFrame: data.seq.startFrame,
+        initialDurationFrames: data.seq.durationFrames,
+        deltaFrames: 0,
+        targetTrackId: data.trackId,
+      });
+      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+    } else if (data.type === 'trim') {
+      setActiveDragState({
+        type: 'trim',
+        handle: data.handle,
+        seqId: data.seq.id,
+        initialStartFrame: data.seq.startFrame,
+        initialDurationFrames: data.seq.durationFrames,
+        deltaFrames: 0,
+      });
+      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+    }
+  };
+
+  const handleDragMove = (e: DragMoveEvent) => {
+    if (!activeDragState) return;
+
+    const rawDeltaFrames = Math.round(e.delta.x / pixelsPerFrame);
+
+    if (activeDragState.type === 'clip') {
+      const overTrackId = (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
+      let targetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
 
       if (snapEnabled) {
         const snapPoints: number[] = [currentFrame];
         for (const track of tracks) {
           for (const s of track.sequences) {
-            if (s.id !== trimmingState.seqId) {
+            if (s.id !== activeDragState.seqId) {
+              snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+            }
+          }
+        }
+        for (const sp of snapPoints) {
+          if (Math.abs(targetStart - sp) <= 3) {
+            targetStart = sp;
+            break;
+          }
+        }
+      }
+
+      // Overlap prevention on target track
+      const targetTrack = tracks.find((t) => t.id === overTrackId);
+      if (targetTrack) {
+        for (const s of targetTrack.sequences) {
+          if (s.id !== activeDragState.seqId) {
+            const sEnd = s.startFrame + s.durationFrames;
+            const myEnd = targetStart + activeDragState.initialDurationFrames;
+            if (targetStart < sEnd && myEnd > s.startFrame) {
+              if (activeDragState.initialStartFrame >= sEnd) {
+                targetStart = Math.max(targetStart, sEnd);
+              } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= s.startFrame) {
+                targetStart = Math.min(targetStart, s.startFrame - activeDragState.initialDurationFrames);
+              }
+            }
+          }
+        }
+      }
+
+      const deltaFrames = targetStart - activeDragState.initialStartFrame;
+      setActiveDragState((prev) =>
+        prev
+          ? {
+              ...prev,
+              deltaFrames,
+              targetTrackId: overTrackId,
+            }
+          : null
+      );
+    } else if (activeDragState.type === 'trim') {
+      let deltaFrames = rawDeltaFrames;
+
+      if (snapEnabled) {
+        const snapPoints: number[] = [currentFrame];
+        for (const track of tracks) {
+          for (const s of track.sequences) {
+            if (s.id !== activeDragState.seqId) {
               snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
             }
           }
         }
 
-        if (trimmingState.handle === 'start') {
-          const rawTarget = trimmingState.initialStartFrame + deltaFrames;
+        if (activeDragState.handle === 'start') {
+          const rawTarget = activeDragState.initialStartFrame + deltaFrames;
           for (const sp of snapPoints) {
             if (Math.abs(rawTarget - sp) <= 3) {
-              deltaFrames = sp - trimmingState.initialStartFrame;
+              deltaFrames = sp - activeDragState.initialStartFrame;
               break;
             }
           }
         } else {
           const rawTarget =
-            trimmingState.initialStartFrame + trimmingState.initialDurationFrames + deltaFrames;
+            activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
           for (const sp of snapPoints) {
             if (Math.abs(rawTarget - sp) <= 3) {
               deltaFrames =
-                sp - (trimmingState.initialStartFrame + trimmingState.initialDurationFrames);
+                sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
               break;
             }
           }
         }
       }
 
-      if (deltaFrames !== accumulatedDelta) {
-        const stepDelta = deltaFrames - accumulatedDelta;
-        accumulatedDelta = deltaFrames;
-        if (trimmingState.handle === 'start') {
-          handleTrim(trimmingState.seqId, stepDelta, -stepDelta);
-        } else {
-          handleTrim(trimmingState.seqId, 0, stepDelta);
-        }
+      setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
+    }
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    if (!activeDragState) return;
+
+    if (activeDragState.type === 'clip') {
+      const targetTrackId =
+        (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
+      const targetStartFrame = Math.max(
+        0,
+        activeDragState.initialStartFrame + activeDragState.deltaFrames
+      );
+
+      if (targetTrackId) {
+        IRStateManager.getInstance().moveSequence(
+          activeDragState.seqId,
+          targetTrackId,
+          targetStartFrame
+        );
       }
-    };
+    } else if (activeDragState.type === 'trim') {
+      if (activeDragState.handle === 'start') {
+        IRStateManager.getInstance().trimSequence(
+          activeDragState.seqId,
+          activeDragState.deltaFrames,
+          -activeDragState.deltaFrames
+        );
+      } else {
+        IRStateManager.getInstance().trimSequence(
+          activeDragState.seqId,
+          0,
+          activeDragState.deltaFrames
+        );
+      }
+    }
 
-    const handleMouseUp = () => {
-      setTrimmingState(null);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [trimmingState, pixelsPerFrame, snapEnabled, tracks, currentFrame]);
+    setActiveDragState(null);
+  };
 
   const handleClipClick = (seq: any, e: React.MouseEvent) => {
     if (activeTool === 'razor') {
@@ -455,121 +744,69 @@ export function Timeline({
             <div className="w-0.5 flex-1 bg-rose-500/80" />
           </div>
 
-          {tracks.length === 0 ? (
-            <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
-              Compiling Video IR Tracks...
-            </div>
-          ) : (
-            tracks.map((track) => {
-              const isLocked = lockedTracks[track.id] || false;
-              const isMuted = mutedTracks[track.id] || false;
+          <DndContext
+            sensors={timelineSensors}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+          >
+            {tracks.length === 0 ? (
+              <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
+                Compiling Video IR Tracks...
+              </div>
+            ) : (
+              tracks.map((track) => {
+                const isLocked = lockedTracks[track.id] || false;
+                const isMuted = mutedTracks[track.id] || false;
 
-              return (
-                <div key={track.id} className="h-10 flex items-center gap-2">
-                  {/* Track Header / Controls */}
-                  <div className="w-44 h-full bg-slate-100/90 rounded-md border border-slate-200 flex items-center justify-between px-2.5 shrink-0 shadow-2xs">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="text-[11px] font-medium text-slate-800 truncate">
-                        {track.id}
-                      </span>
-                    </div>
+                return (
+                  <div key={track.id} className="h-10 flex items-center gap-2">
+                    {/* Track Header / Controls */}
+                    <div className="w-44 h-full bg-slate-100/90 rounded-md border border-slate-200 flex items-center justify-between px-2.5 shrink-0 shadow-2xs">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-[11px] font-medium text-slate-800 truncate">
+                          {track.id}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => toggleLock(track.id)}
-                        className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isLocked ? 'text-amber-600 font-bold' : ''}`}
-                      >
-                        {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                      </button>
-
-                      <button
-                        onClick={() => toggleMute(track.id)}
-                        className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isMuted ? 'text-rose-600 font-bold' : ''}`}
-                      >
-                        {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Track Sequence Lane */}
-                  <div
-                    className={`flex-1 h-full rounded-md border relative overflow-hidden bg-slate-50/50 ${
-                      isLocked ? 'opacity-60 pointer-events-none' : ''
-                    }`}
-                  >
-                    {track.sequences.map((seq) => {
-                      const isSelected = selectedSeqId === seq.id;
-                      const leftPx = seq.startFrame * pixelsPerFrame;
-                      const widthPx = Math.max(16, seq.durationFrames * pixelsPerFrame);
-                      const isAudio = track.type === 'audio';
-
-                      return (
-                        <div
-                          key={seq.id}
-                          onClick={(e) => handleClipClick(seq, e)}
-                          style={{
-                            left: `${leftPx}px`,
-                            width: `${widthPx}px`,
-                          }}
-                          className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${
-                            activeTool === 'razor' ? 'cursor-crosshair' : 'cursor-pointer'
-                          } ${
-                            isSelected
-                              ? 'ring-2 ring-indigo-500 shadow-md z-20'
-                              : 'hover:brightness-95 z-10'
-                          } ${getTrackBadgeStyle(track)}`}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => toggleLock(track.id)}
+                          className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isLocked ? 'text-amber-600 font-bold' : ''}`}
                         >
-                          {/* Left Trim Handle */}
-                          <div
-                            onMouseDown={(e) => startTrim(seq, 'start', e)}
-                            className="w-2 h-full -ml-2 cursor-col-resize hover:bg-white/50 active:bg-indigo-300 rounded-l-xs flex items-center justify-center transition-colors"
-                            title="Drag to Trim Start (Snap enabled)"
-                          >
-                            <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                          </div>
+                          {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        </button>
 
-                          {/* Sequence Label & Visuals */}
-                          <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full">
-                            {isAudio ? (
-                              <AudioWaveform
-                                id={seq.id}
-                                durationFrames={seq.durationFrames}
-                                width={widthPx}
-                                height={28}
-                              />
-                            ) : (
-                              <FilmstripThumbnail
-                                assetId={seq.assetId || seq.id}
-                                width={widthPx}
-                                height={28}
-                              />
-                            )}
-                            <span className="text-[10px] font-mono font-medium truncate relative z-10 drop-shadow-xs">
-                              {seq.id}
-                            </span>
-                            {seq.modifiers && seq.modifiers.length > 0 && (
-                              <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
-                                {seq.modifiers.length} mod
-                              </span>
-                            )}
-                          </div>
+                        <button
+                          onClick={() => toggleMute(track.id)}
+                          className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isMuted ? 'text-rose-600 font-bold' : ''}`}
+                        >
+                          {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
 
-                          {/* Right Trim Handle */}
-                          <div
-                            onMouseDown={(e) => startTrim(seq, 'end', e)}
-                            className="w-2 h-full -mr-2 cursor-col-resize hover:bg-white/50 active:bg-indigo-300 rounded-r-xs flex items-center justify-center transition-colors"
-                            title="Drag to Trim End (Snap enabled)"
-                          >
-                            <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {/* Droppable Track Sequence Lane */}
+                    <DroppableTrackLane track={track} isLocked={isLocked}>
+                      {track.sequences.map((seq) => (
+                        <TimelineClipItem
+                          key={seq.id}
+                          seq={seq}
+                          track={track}
+                          pixelsPerFrame={pixelsPerFrame}
+                          isSelected={selectedSeqId === seq.id}
+                          activeTool={activeTool}
+                          getTrackBadgeStyle={getTrackBadgeStyle}
+                          onClipClick={handleClipClick}
+                          activeDragState={activeDragState}
+                        />
+                      ))}
+                    </DroppableTrackLane>
                   </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </DndContext>
         </div>
       </div>
     </footer>

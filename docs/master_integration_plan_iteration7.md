@@ -253,3 +253,95 @@ flowchart TD
    - `bun test studio`: Verify all Studio tests pass cleanly.
 2. **Production Bundle Verification**:
    - `bun run studio:build`: Ensure clean Vite production build with zero native binding warnings or externalized C++ binary errors.
+
+---
+
+## 6. Phase 9: Unified @dnd-kit Architecture (Replacing Manual Drag-and-Drop Movement Boilerplate in Timeline & Preview) [x] Completed (Historical 242)
+
+### 6.1 Goal & Problem Statement
+The Studio NLE currently employs manual `window.addEventListener('mousemove')` and `window.addEventListener('mouseup')` event boilerplate in `Timeline.tsx` for trim dragging and in `Preview.tsx` for 2D bounding box transform manipulation. Furthermore, timeline clips cannot yet be repositioned along time or dragged between track lanes.
+
+This phase modernizes the Studio's drag-and-drop interaction layer by establishing a **Domain-Isolated `@dnd-kit` Architecture**:
+1. **Timeline Dedicated `DndContext`**:
+   - Sequences/Clips become draggables (`useDraggable`) with horizontal magnetic time snapping and vertical cross-track dropping into track lanes (`useDroppable`).
+   - Left and right trim handles become dedicated edge draggables with live magnetic snapping.
+   - Introduces `MoveSequenceCommand` to `IRStateManager` for robust undo/redo time-shifting and track lane changes with overlap prevention.
+2. **Preview Dedicated `DndContext`**:
+   - The 2D bounding box and 8-point resize/rotate handles become draggables inside an isolated transform `DndContext`.
+   - Eliminates window mouse listeners while maintaining live 60fps GSAP canvas transform updates and magnetic snap guides during `onDragMove`.
+3. **Preservation of Root Staging `DndContext`**:
+   - The outer `DndContext` in `App.tsx` remains dedicated to dragging library assets from `LeftSidebar` into `Preview` or `Timeline`.
+
+### 6.2 Architectural Diagram
+
+```mermaid
+graph TD
+    App["App.tsx: Root DndContext (Library Staging)"]
+    LeftSidebar["LeftSidebar: useDraggable(Library Assets)"]
+    PreviewDrop["Preview: useDroppable(Canvas Staging)"]
+    TimelineDrop["Timeline: useDroppable(Track Staging)"]
+
+    App --> LeftSidebar
+    App --> PreviewDrop
+    App --> TimelineDrop
+
+    subgraph Preview_Domain ["Preview Isolated DndContext (Transform Overlay)"]
+        TransformBody["useDraggable(Transform Body)"]
+        ResizeHandles["useDraggable(8-Point Handles)"]
+        RotateHandle["useDraggable(Rotate Handle)"]
+        CanvasEngine["UniversalCanvasEngine (Live GSAP Update on onDragMove)"]
+        TransformBody --> CanvasEngine
+        ResizeHandles --> CanvasEngine
+        RotateHandle --> CanvasEngine
+    end
+
+    subgraph Timeline_Domain ["Timeline Isolated DndContext (Sequences & Trimming)"]
+        ClipDraggable["useDraggable(Clip: Sequence Time Shift)"]
+        TrimStart["useDraggable(Left Trim Handle)"]
+        TrimEnd["useDraggable(Right Trim Handle)"]
+        TrackDroppable["useDroppable(Track Lane)"]
+        MoveCmd["MoveSequenceCommand (IRStateManager)"]
+        TrimCmd["TrimSequenceCommand (IRStateManager)"]
+        ClipDraggable --> TrackDroppable
+        TrackDroppable --> MoveCmd
+        TrimStart --> TrimCmd
+        TrimEnd --> TrimCmd
+    end
+```
+
+### 6.3 Detailed Component Architecture
+
+#### 1. Command Pattern & State Management (`apps/studio/src/lib/`)
+- **`MoveSequenceCommand.ts`**:
+  - Implements `ICommand`.
+  - Executes moving a sequence by updating its `trackId` and `startFrame` in the `VideoIRDocument`.
+  - Records `previousTrackId` and `previousStartFrame` for exact 100% undo recovery.
+- **`IRStateManager.ts`**:
+  - Exposes `moveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void`.
+
+#### 2. Multi-Track Timeline Direct Manipulation (`apps/studio/src/components/Timeline.tsx`)
+- Isolated `<DndContext sensors={timelineSensors} onDragStart={...} onDragMove={...} onDragEnd={...}>`.
+- Left and right trim handles as edge draggables (`useDraggable`).
+- Clips as draggable sequences (`useDraggable`).
+- Track rows as droppable lanes (`useDroppable`).
+- Magnetic snapping to playhead and adjacent sequence boundaries with overlap prevention.
+- Clean removal of manual `window.addEventListener('mousemove')` and `window.addEventListener('mouseup')` event listeners.
+
+#### 3. Viewport 2D Vector Transform Overlay (`apps/studio/src/components/Preview.tsx`)
+- Isolated `<DndContext sensors={transformSensors} onDragStart={...} onDragMove={...} onDragEnd={...}>`.
+- Bounding box body as `useDraggable({ id: 'transform-body' })`.
+- 8-point resize handles and rotate stalk as `useDraggable({ id: 'handle-...' })`.
+- Real-time `onDragMove` calculating `CanvasTransformOverlay.computeDragTransform(...)` and updating `UniversalCanvasEngine` + snap guides.
+- On `onDragEnd`, persists final transform via `IRStateManager.getInstance().updateModifier(...)`.
+- Clean removal of manual window mouse listeners.
+
+### 6.4 Verification Strategy
+1. **Automated Tests**:
+   - `autogenerated-tests/studio_move_sequence_command.test.ts`:
+     - Test horizontal time shifting with frame accuracy.
+     - Test cross-track lane migration.
+     - Test undo/redo roundtrip state restoration.
+     - Test collision overlap clamping.
+   - `bun test autogenerated-tests/studio`: All tests pass cleanly.
+2. **Production Bundle Verification**:
+   - `bun run studio:build`: Ensure clean Vite build.
