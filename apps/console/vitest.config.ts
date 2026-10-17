@@ -19,6 +19,22 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
+      thresholds: {
+        lines: 50,
+        branches: 45,
+        functions: 40,
+        statements: 50,
+        'src/features/metadata/store/**': {
+          lines: 90,
+          functions: 90,
+          statements: 90,
+        },
+        'src/features/spring-auth/store.ts': {
+          lines: 90,
+          functions: 90,
+          statements: 90,
+        },
+      },
       exclude: [
         'node_modules/**',
         'dist/**',

@@ -40,7 +40,9 @@ In Phase 3 of the testing master plan ([`docs/integration_master_plan_iteration7
    - 94 tests in 9 files, 100% passed with hard gate satisfied.
 2. `pnpm --filter @unipost/console test`:
    - 296 tests across 62 test files, 100% passed in under 12s.
-3. `pnpm --filter @unipost/console check-types` & `pnpm --filter @unipost/sandbox check-types`: Clean typechecks.
+3. `pnpm --filter @unipost/console test:coverage`:
+   - Configured coverage threshold gates in `apps/console/vitest.config.ts` (90% lines, functions, statements on core stores).
+4. `pnpm --filter @unipost/console check-types` & `pnpm --filter @unipost/sandbox check-types`: Clean typechecks.
 
 ## Tasks
 - [x] Fix visual DAG studio infinite re-render loop
