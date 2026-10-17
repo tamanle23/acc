@@ -328,8 +328,9 @@ export function Preview({
   );
 
   const handleTransformDragStart = (e: DragStartEvent) => {
+    if (isLocked) return;
     const data = e.active.data.current;
-    if (!data || isLocked) return;
+    if (!data) return;
 
     const handleType = data.handleType as TransformHandleType;
     setIsDragging(true);
@@ -405,16 +406,6 @@ export function Preview({
     engineRef.current?.setActiveInteraction(null, null);
   };
 
-  // Backward compatibility alias for handleHandleMouseDown
-  const handleHandleMouseDown = (handleType: TransformHandleType, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (isLocked) return;
-    setIsDragging(true);
-    setActiveHandle(handleType);
-    setStartTransform({ ...transform });
-    const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
-    engineRef.current?.setActiveInteraction(handleType, mode);
-  };
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
