@@ -93,7 +93,7 @@ export class WidgetExporter {
           kbd.textContent = (idx + 1).toString();
           btn.appendChild(labelSpan);
           btn.appendChild(kbd);
-          btn.setAttribute('aria-label', c.label);
+          btn.setAttribute('aria-label', '' + c.label + ' (Choice ' + (idx + 1) + ' of ' + currentNode.choices.length + ')');
           btn.onclick = () => {
             const nextNode = tree.nodes.find(n => n.id === c.targetChunkId);
             if (nextNode) playNode(nextNode);
