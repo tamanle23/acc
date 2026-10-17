@@ -155,6 +155,110 @@ export function ColorPickerRow({ label, value, presets, onChange }: ColorPickerR
   );
 }
 
+export const PARTICLE_PRESET_DEFAULTS: Record<
+  string,
+  {
+    intensity: number;
+    speed: number;
+    opacity: number;
+    particleCount: number;
+    bloomEnabled: boolean;
+    bloomThreshold: number;
+    bloomIntensity: number;
+    chromaticAberrationEnabled: boolean;
+    chromaticAberrationOffset: number;
+  }
+> = {
+  cyber_sparks: {
+    intensity: 1.2,
+    speed: 1.8,
+    opacity: 0.9,
+    particleCount: 1500,
+    bloomEnabled: true,
+    bloomThreshold: 0.6,
+    bloomIntensity: 1.5,
+    chromaticAberrationEnabled: true,
+    chromaticAberrationOffset: 2.5,
+  },
+  embers: {
+    intensity: 1.0,
+    speed: 0.8,
+    opacity: 0.85,
+    particleCount: 800,
+    bloomEnabled: true,
+    bloomThreshold: 0.7,
+    bloomIntensity: 1.2,
+    chromaticAberrationEnabled: false,
+    chromaticAberrationOffset: 1.0,
+  },
+  dust: {
+    intensity: 0.6,
+    speed: 0.4,
+    opacity: 0.5,
+    particleCount: 400,
+    bloomEnabled: false,
+    bloomThreshold: 0.8,
+    bloomIntensity: 0.5,
+    chromaticAberrationEnabled: false,
+    chromaticAberrationOffset: 0.0,
+  },
+  rain: {
+    intensity: 1.5,
+    speed: 2.2,
+    opacity: 0.7,
+    particleCount: 1200,
+    bloomEnabled: false,
+    bloomThreshold: 0.8,
+    bloomIntensity: 0.5,
+    chromaticAberrationEnabled: true,
+    chromaticAberrationOffset: 1.2,
+  },
+  snow: {
+    intensity: 0.8,
+    speed: 0.5,
+    opacity: 0.75,
+    particleCount: 600,
+    bloomEnabled: false,
+    bloomThreshold: 0.8,
+    bloomIntensity: 0.5,
+    chromaticAberrationEnabled: false,
+    chromaticAberrationOffset: 0.0,
+  },
+  bokeh: {
+    intensity: 0.9,
+    speed: 0.3,
+    opacity: 0.6,
+    particleCount: 300,
+    bloomEnabled: true,
+    bloomThreshold: 0.5,
+    bloomIntensity: 1.8,
+    chromaticAberrationEnabled: false,
+    chromaticAberrationOffset: 0.5,
+  },
+  matrix_rain: {
+    intensity: 1.3,
+    speed: 1.6,
+    opacity: 0.85,
+    particleCount: 1800,
+    bloomEnabled: true,
+    bloomThreshold: 0.65,
+    bloomIntensity: 1.4,
+    chromaticAberrationEnabled: true,
+    chromaticAberrationOffset: 2.0,
+  },
+  digital_glitch: {
+    intensity: 1.4,
+    speed: 2.0,
+    opacity: 0.9,
+    particleCount: 1000,
+    bloomEnabled: true,
+    bloomThreshold: 0.5,
+    bloomIntensity: 2.0,
+    chromaticAberrationEnabled: true,
+    chromaticAberrationOffset: 4.0,
+  },
+};
+
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [copiedId, setCopiedId] = useState(false);
@@ -190,6 +294,11 @@ export function RightSidebar() {
   );
   const cameraMod = modifiers.find((m: any) => m.type === 'camera/3d' || m.type === 'camera/path');
   const particleMod = modifiers.find((m: any) => m.type === 'overlay/canvas_particles');
+  const dedicatedHudMod = modifiers.find((m: any) => m.type === 'overlay/hologram_hud');
+  const sciFiHudParticleMod = modifiers.find(
+    (m: any) => m.type === 'overlay/canvas_particles' && m.params?.type === 'sci_fi_hud'
+  );
+  const hologramHudMod = dedicatedHudMod || sciFiHudParticleMod;
   const colorGradingMod = modifiers.find((m: any) => m.type === 'vfx/color_grading');
   const textStyleMod = modifiers.find((m: any) => m.type === 'text/style');
   const duckingMod = modifiers.find((m: any) => m.type === 'sfx/dynamic_ducking');
@@ -344,13 +453,33 @@ export function RightSidebar() {
       icon: Layers,
       defaultParams: {
         enabled: true,
+        type: 'cyber_sparks',
         preset: 'cyber_sparks',
+        intensity: 1.0,
+        speed: 1.0,
+        opacity: 0.8,
         particleCount: 1500,
         gravity: -1.2,
         drag: 0.15,
         turbulence: 1.0,
         bloomThreshold: 0.7,
         chromaticAberration: 2.0,
+        shaders: {
+          bloom: { enabled: true, threshold: 0.7, intensity: 1.0 },
+          chromaticAberration: { enabled: true, offsetPx: 2.0 },
+        },
+      },
+    },
+    {
+      type: 'overlay/hologram_hud',
+      name: 'Hologram HUD',
+      icon: Monitor,
+      defaultParams: {
+        enabled: true,
+        ringRadiusNorm: 0.35,
+        scanlineDensity: 40,
+        color: '#00ffff',
+        rotationSpeed: 0.5,
       },
     },
     {
@@ -865,9 +994,9 @@ export function RightSidebar() {
                 </AccordionItem>
               )}
 
-              {/* Particle VFX & Shaders Section */}
-              {particleMod && (
-                <AccordionItem value="particles" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+              {/* Hologram HUD Section */}
+              {hologramHudMod && (
+                <AccordionItem value="hologram_hud" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
                   <AccordionTrigger
                     actions={
                       <>
@@ -875,55 +1004,344 @@ export function RightSidebar() {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                          onClick={() => removeModifier(particleMod.type)}
+                          onClick={() => removeModifier(hologramHudMod.type)}
                           title="Remove modifier"
                         >
                           <Trash2 className="w-3 h-3 text-rose-500" />
                         </Button>
                         <Switch
-                          checked={particleMod.params?.enabled !== false}
-                          onCheckedChange={(val) => toggleModifier(particleMod.type, val)}
+                          checked={hologramHudMod.params?.enabled !== false}
+                          onCheckedChange={(val) => toggleModifier(hologramHudMod.type, val)}
                         />
                       </>
                     }
                   >
                     <div className="flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Particle VFX & Shaders</span>
+                      <Monitor className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Hologram HUD</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="p-3 space-y-3">
-                    <ParameterSlider
-                      label="Particle Count"
-                      value={particleMod.params?.particleCount ?? 1500}
-                      min={200}
-                      max={5000}
-                      step={100}
-                      defaultValue={1500}
-                      onChange={(v) => updateModifierParams(particleMod.type, { particleCount: v })}
+                    <ColorPickerRow
+                      label="HUD Telemetry Color"
+                      value={hologramHudMod.params?.color || '#00ffff'}
+                      presets={[
+                        { name: 'Cyan Neon', hex: '#00ffff' },
+                        { name: 'Magenta Pulse', hex: '#ec4899' },
+                        { name: 'Amber Gold', hex: '#f59e0b' },
+                        { name: 'Emerald Glow', hex: '#10b981' },
+                        { name: 'Violet Spark', hex: '#8b5cf6' },
+                      ]}
+                      onChange={(hex) => updateModifierParams(hologramHudMod.type, { color: hex })}
                     />
                     <ParameterSlider
-                      label="Bloom Glow Threshold"
-                      value={particleMod.params?.bloomThreshold ?? 0.7}
-                      min={0.1}
-                      max={1.0}
+                      label="Ring Radius"
+                      value={hologramHudMod.params?.ringRadiusNorm ?? 0.35}
+                      min={0.10}
+                      max={0.80}
                       step={0.05}
-                      defaultValue={0.7}
-                      onChange={(v) => updateModifierParams(particleMod.type, { bloomThreshold: v })}
+                      defaultValue={0.35}
+                      onChange={(v) => updateModifierParams(hologramHudMod.type, { ringRadiusNorm: v })}
                     />
                     <ParameterSlider
-                      label="Chromatic Aberration"
-                      value={particleMod.params?.chromaticAberration ?? 2.0}
-                      min={0.0}
-                      max={10.0}
-                      step={0.5}
-                      defaultValue={2.0}
-                      unit="px"
-                      onChange={(v) => updateModifierParams(particleMod.type, { chromaticAberration: v })}
+                      label="Scanline Density"
+                      value={hologramHudMod.params?.scanlineDensity ?? 40}
+                      min={10}
+                      max={100}
+                      step={5}
+                      defaultValue={40}
+                      onChange={(v) => updateModifierParams(hologramHudMod.type, { scanlineDensity: v })}
                     />
+                    <ParameterSlider
+                      label="Rotation Speed"
+                      value={hologramHudMod.params?.rotationSpeed ?? 0.5}
+                      min={0.1}
+                      max={3.0}
+                      step={0.1}
+                      defaultValue={0.5}
+                      unit=" rad/s"
+                      onChange={(v) => updateModifierParams(hologramHudMod.type, { rotationSpeed: v })}
+                    />
+                    <div className="pt-1 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] text-slate-500 hover:text-indigo-600 gap-1 px-2"
+                        onClick={() => updateModifierParams(hologramHudMod.type, {
+                          ...hologramHudMod.params,
+                          ringRadiusNorm: 0.35,
+                          scanlineDensity: 40,
+                          color: '#00ffff',
+                          rotationSpeed: 0.5,
+                        })}
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        Reset Defaults
+                      </Button>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               )}
+
+              {/* Particle VFX & Shaders Section */}
+              {particleMod && (() => {
+                const currentType = (particleMod.params?.type || particleMod.params?.preset || 'cyber_sparks') as string;
+                const pBloom = particleMod.params?.shaders?.bloom;
+                const bloomEnabled = pBloom?.enabled ?? (particleMod.params?.bloomThreshold !== undefined ? true : true);
+                const bloomThreshold = pBloom?.threshold ?? particleMod.params?.bloomThreshold ?? 0.7;
+                const bloomIntensity = pBloom?.intensity ?? 1.0;
+
+                const pChrom = particleMod.params?.shaders?.chromaticAberration;
+                const chromEnabled = pChrom?.enabled ?? (particleMod.params?.chromaticAberration !== undefined ? true : true);
+                const chromOffset = pChrom?.offsetPx ?? particleMod.params?.chromaticAberration ?? 2.0;
+
+                const updateBloom = (patch: { enabled?: boolean; threshold?: number; intensity?: number }) => {
+                  const curShaders = particleMod.params?.shaders || {};
+                  const curBloom = curShaders.bloom || {};
+                  const updatedBloom = {
+                    enabled: patch.enabled !== undefined ? patch.enabled : bloomEnabled,
+                    threshold: patch.threshold !== undefined ? patch.threshold : bloomThreshold,
+                    intensity: patch.intensity !== undefined ? patch.intensity : bloomIntensity,
+                  };
+                  updateModifierParams(particleMod.type, {
+                    ...particleMod.params,
+                    bloomThreshold: updatedBloom.threshold,
+                    shaders: {
+                      ...curShaders,
+                      bloom: updatedBloom,
+                      chromaticAberration: curShaders.chromaticAberration || {
+                        enabled: chromEnabled,
+                        offsetPx: chromOffset,
+                      },
+                    },
+                  });
+                };
+
+                const updateChrom = (patch: { enabled?: boolean; offsetPx?: number }) => {
+                  const curShaders = particleMod.params?.shaders || {};
+                  const curChrom = curShaders.chromaticAberration || {};
+                  const updatedChrom = {
+                    enabled: patch.enabled !== undefined ? patch.enabled : chromEnabled,
+                    offsetPx: patch.offsetPx !== undefined ? patch.offsetPx : chromOffset,
+                  };
+                  updateModifierParams(particleMod.type, {
+                    ...particleMod.params,
+                    chromaticAberration: updatedChrom.offsetPx,
+                    shaders: {
+                      ...curShaders,
+                      bloom: curShaders.bloom || {
+                        enabled: bloomEnabled,
+                        threshold: bloomThreshold,
+                        intensity: bloomIntensity,
+                      },
+                      chromaticAberration: updatedChrom,
+                    },
+                  });
+                };
+
+                const handleResetDefaults = () => {
+                  const def = PARTICLE_PRESET_DEFAULTS[currentType] || PARTICLE_PRESET_DEFAULTS['cyber_sparks'];
+                  updateModifierParams(particleMod.type, {
+                    ...particleMod.params,
+                    type: currentType,
+                    preset: currentType,
+                    intensity: def.intensity,
+                    speed: def.speed,
+                    opacity: def.opacity,
+                    particleCount: def.particleCount,
+                    bloomThreshold: def.bloomThreshold,
+                    chromaticAberration: def.chromaticAberrationOffset,
+                    shaders: {
+                      bloom: {
+                        enabled: def.bloomEnabled,
+                        threshold: def.bloomThreshold,
+                        intensity: def.bloomIntensity,
+                      },
+                      chromaticAberration: {
+                        enabled: def.chromaticAberrationEnabled,
+                        offsetPx: def.chromaticAberrationOffset,
+                      },
+                    },
+                  });
+                };
+
+                return (
+                  <AccordionItem value="particles" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
+                    <AccordionTrigger
+                      actions={
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                            onClick={() => removeModifier(particleMod.type)}
+                            title="Remove modifier"
+                          >
+                            <Trash2 className="w-3 h-3 text-rose-500" />
+                          </Button>
+                          <Switch
+                            checked={particleMod.params?.enabled !== false}
+                            onCheckedChange={(val) => toggleModifier(particleMod.type, val)}
+                          />
+                        </>
+                      }
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Particle VFX & Shaders</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-3 space-y-3">
+                      {/* Predefined Particle Type Dropdown */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-slate-600 dark:text-slate-400">Particle Type</span>
+                          <span className="text-[10px] font-mono text-indigo-500 uppercase">{currentType}</span>
+                        </div>
+                        <select
+                          value={currentType}
+                          onChange={(e) => {
+                            const newType = e.target.value;
+                            updateModifierParams(particleMod.type, {
+                              ...particleMod.params,
+                              type: newType,
+                              preset: newType,
+                            });
+                          }}
+                          className="w-full h-7 text-xs border border-slate-200 dark:border-white/10 rounded px-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                        >
+                          <option value="cyber_sparks">Cyber Sparks (High-velocity electric arcs)</option>
+                          <option value="embers">Floating Embers (Warm upward drifting sparks)</option>
+                          <option value="dust">Atmospheric Dust (Slow ambient specks)</option>
+                          <option value="rain">Cinematic Rain (Downward streaks with splash)</option>
+                          <option value="snow">Gentle Snow (Soft swirling flakes)</option>
+                          <option value="bokeh">Dreamy Bokeh (Floating soft focus circles)</option>
+                          <option value="matrix_rain">Matrix Rain (Digital falling code streams)</option>
+                          <option value="digital_glitch">Digital Glitch (Corrupted pixel fragments)</option>
+                          <option value="sci_fi_hud">Sci-Fi HUD (Telemetry Reticle Overlay)</option>
+                        </select>
+                      </div>
+
+                      {/* Physics & Emission Sliders */}
+                      <ParameterSlider
+                        label="Intensity"
+                        value={particleMod.params?.intensity ?? 1.0}
+                        min={0.1}
+                        max={2.0}
+                        step={0.05}
+                        defaultValue={1.0}
+                        onChange={(v) => updateModifierParams(particleMod.type, { ...particleMod.params, intensity: v })}
+                      />
+                      <ParameterSlider
+                        label="Speed"
+                        value={particleMod.params?.speed ?? 1.0}
+                        min={0.1}
+                        max={3.0}
+                        step={0.1}
+                        defaultValue={1.0}
+                        onChange={(v) => updateModifierParams(particleMod.type, { ...particleMod.params, speed: v })}
+                      />
+                      <ParameterSlider
+                        label="Opacity"
+                        value={particleMod.params?.opacity ?? 0.8}
+                        min={0.0}
+                        max={1.0}
+                        step={0.05}
+                        defaultValue={0.8}
+                        onChange={(v) => updateModifierParams(particleMod.type, { ...particleMod.params, opacity: v })}
+                      />
+                      <ParameterSlider
+                        label="Particle Count"
+                        value={particleMod.params?.particleCount ?? 1500}
+                        min={50}
+                        max={3000}
+                        step={50}
+                        defaultValue={1500}
+                        onChange={(v) => updateModifierParams(particleMod.type, { ...particleMod.params, particleCount: v })}
+                      />
+
+                      {/* Collapsible Shader Post-Processing */}
+                      <div className="pt-2 border-t border-slate-100 dark:border-white/5 space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-indigo-500" />
+                            <span>Shader Post-Processing</span>
+                          </div>
+                        </div>
+
+                        {/* Bloom / Glow */}
+                        <div className="p-2 rounded bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Bloom & Glow</span>
+                            <Switch
+                              checked={bloomEnabled}
+                              onCheckedChange={(val) => updateBloom({ enabled: val })}
+                            />
+                          </div>
+                          {bloomEnabled && (
+                            <>
+                              <ParameterSlider
+                                label="Bloom Threshold"
+                                value={bloomThreshold}
+                                min={0.1}
+                                max={1.0}
+                                step={0.05}
+                                defaultValue={0.7}
+                                onChange={(v) => updateBloom({ threshold: v })}
+                              />
+                              <ParameterSlider
+                                label="Bloom Intensity"
+                                value={bloomIntensity}
+                                min={0.1}
+                                max={3.0}
+                                step={0.1}
+                                defaultValue={1.0}
+                                onChange={(v) => updateBloom({ intensity: v })}
+                              />
+                            </>
+                          )}
+                        </div>
+
+                        {/* Chromatic Aberration */}
+                        <div className="p-2 rounded bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">Chromatic Aberration</span>
+                            <Switch
+                              checked={chromEnabled}
+                              onCheckedChange={(val) => updateChrom({ enabled: val })}
+                            />
+                          </div>
+                          {chromEnabled && (
+                            <ParameterSlider
+                              label="Color Fringe Offset"
+                              value={chromOffset}
+                              min={0.0}
+                              max={10.0}
+                              step={0.5}
+                              defaultValue={2.0}
+                              unit="px"
+                              onChange={(v) => updateChrom({ offsetPx: v })}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reset to Defaults Action */}
+                      <div className="pt-1 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] text-slate-500 hover:text-indigo-600 gap-1 px-2"
+                          onClick={handleResetDefaults}
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          Reset Defaults
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })()}
 
               {/* Color Grading Section */}
               {colorGradingMod && (

@@ -398,6 +398,13 @@ export class UniversalCanvasEngine {
   }
 
   /**
+   * Returns current active particle count.
+   */
+  public getParticleCount(): number {
+    return this.particles?.pts.length ?? 0;
+  }
+
+  /**
    * Initializes procedural cybernetic HUD telemetry.
    */
   public initHologramHUD(ringRadius: number = 0.35, scanlineDensity: number = 40, color: string = '#00ffff', rotationSpeed: number = 0.5): void {

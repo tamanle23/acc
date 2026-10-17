@@ -126,7 +126,7 @@ flowchart TD
   - Pipes decoded PCM buffers from `AudioAssetCache` into `UniversalAudioMixer`.
   - Feeds master output into `AnalyserNode` for live peak/RMS VU metering and tactile playhead scrubbing bursts.
 
-### Phase 4: RightSidebar Inspector Panels for HUD & Particles `[ ] Planned`
+### Phase 4: RightSidebar Inspector Panels for HUD & Particles `[x] Completed (docs/history/251_studio_phase4_inspector_hud_particles.md)`
 - **Architectural & Schema Alignment**:
   - Strictly align inspector controls with `CanvasParticleOverlayParams` (`packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin.ts`) and `HUDConfig` (`packages/effect-engines/src/canvas/UniversalCanvasEngine.ts`).
   - Support **Dual Schema for Hologram HUD**:

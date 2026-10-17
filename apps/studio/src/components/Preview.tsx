@@ -311,7 +311,7 @@ export function Preview({
     // Declarative Particle Swarm Configuration
     if (showVfxAmbiance && activeParticleMod && activeParticleMod.params?.enabled !== false) {
       const pCount = Math.max(50, Math.min(3000, activeParticleMod.params?.particleCount ?? 200));
-      if (!engine.hasParticles()) {
+      if (!engine.hasParticles() || engine.getParticleCount() !== pCount) {
         engine.initParticleSystem(pCount);
       }
     } else {
@@ -320,13 +320,13 @@ export function Preview({
       }
     }
 
-    // Declarative Hologram HUD Configuration
+    // Declarative Hologram HUD Configuration (Dual Schema Support)
     if (showVfxAmbiance && activeHudMod && activeHudMod.params?.enabled !== false) {
       const hp = activeHudMod.params || {};
       const radius = hp.ringRadiusNorm ?? 0.35;
-      const density = hp.scanlineDensity ?? 40;
+      const density = hp.scanlineDensity ?? (hp.intensity ? Math.round(40 * hp.intensity) : 40);
       const hudColor = hp.color || '#00ffff';
-      const rotSpeed = hp.rotationSpeed ?? 0.5;
+      const rotSpeed = hp.rotationSpeed ?? (hp.speed ? hp.speed * 0.5 : 0.5);
       engine.initHologramHUD(radius, density, hudColor, rotSpeed);
     } else {
       if (engine.hasHologramHUD()) {
