@@ -26,9 +26,12 @@ export { workerFleetMockStore, workerSandboxHandler };
 // Re-export mockMetadataStore for backward compatibility
 export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
 
-// Ensure fetch interceptor is attached in development mode
+// Ensure fetch and axios interceptors are attached in development mode
+import axios from 'axios';
 import { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter';
+import { attachSandboxAxiosInterceptor } from './adapters/axios-sandbox-adapter';
 
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   attachSandboxFetchInterceptor();
+  attachSandboxAxiosInterceptor(axios);
 }

@@ -161,7 +161,7 @@ export function SandboxDock() {
           </span>
           <TestTube2 className="size-3.5 text-emerald-500" />
           <span>Unified Sandbox</span>
-          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-emerald-600/30 text-emerald-800 dark:text-emerald-300">
             {DEFAULT_SANDBOX_PERSONAS[activePersonaId]?.name || activePersonaId}
           </Badge>
           <Maximize2 className="size-3 text-muted-foreground ml-0.5" />

@@ -182,15 +182,15 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                         'Orphaned Tenant'}
                   </span>
                   {isOrphanedTenant ? (
-                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-600/40'>
                       NO WORKSPACE
                     </span>
                   ) : isAssumed ? (
-                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-600/40'>
                       ASSUMED
                     </span>
                   ) : isSovereign ? (
-                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'>
+                    <span className='text-[9px] px-1 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-600/40'>
                       ROOT
                     </span>
                   ) : null}
@@ -311,7 +311,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                         <div className='flex items-center gap-1.5'>
                           <span className='text-sm truncate'>{profile.name}</span>
                           {isPersonalDefault && (
-                            <span className='text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/30 shrink-0'>
+                            <span className='text-[9px] px-1 py-0.2 rounded bg-amber-500/15 text-amber-900 dark:text-amber-200 font-semibold border border-amber-600/40 shrink-0'>
                               My Default
                             </span>
                           )}

@@ -174,8 +174,8 @@ export const billingSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    // 2. POST /create-payment-link
-    if (subPath === '/create-payment-link' && req.method === 'POST') {
+    // 2. POST /create-payment-link or /checkout
+    if ((subPath === '/create-payment-link' || subPath === '/checkout') && req.method === 'POST') {
       const { planTier = 'PRO', cadence = 'MONTHLY' } = req.data || {};
       const orderCode = Date.now();
       const amount =
@@ -215,9 +215,10 @@ export const billingSandboxHandler: SandboxRouteHandler = {
       };
     }
 
-    // 4. POST /webhook-simulate
-    if (subPath === '/webhook-simulate' && req.method === 'POST') {
-      const { orderCode, amount = 199000, planTier = 'PRO' } = req.data || {};
+    // 4. POST /webhook-simulate or /payos/webhook
+    if ((subPath === '/webhook-simulate' || subPath === '/payos/webhook') && req.method === 'POST') {
+      const payload = req.data?.data || req.data || {};
+      const { orderCode, amount = 199000, planTier = 'PRO' } = payload;
       const existing = billingSandboxRepo.get(activeTenantId);
 
       const features =

@@ -541,7 +541,7 @@ export const EntityDataGrid: React.FC<Props> = ({
                 return (
                   <Badge
                     variant={val ? 'secondary' : 'outline'}
-                    className={`text-[10px] ${val ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : ''
+                    className={`text-[10px] ${val ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-600/30 font-semibold' : ''
                       }`}
                   >
                     {val ? 'True' : 'False'}

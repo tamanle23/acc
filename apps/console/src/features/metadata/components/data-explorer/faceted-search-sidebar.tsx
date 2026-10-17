@@ -607,7 +607,7 @@ export const FacetedSearchSidebar: React.FC<FacetedSearchSidebarProps> = ({
       </div>
 
       {/* Footer Info */}
-      <div className="p-3 border-t border-white/20 dark:border-white/10 text-[10px] text-muted-foreground/80 flex items-center justify-between bg-white/20 dark:bg-black/10 shrink-0">
+      <div className="p-3 border-t border-white/20 dark:border-white/10 text-[10px] text-foreground/80 flex items-center justify-between bg-white/20 dark:bg-black/10 shrink-0">
         <span>PostgreSQL GIN Indexed</span>
         <CheckCircle2 className="h-3 w-3 text-emerald-500" />
       </div>

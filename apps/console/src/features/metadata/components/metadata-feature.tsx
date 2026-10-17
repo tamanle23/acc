@@ -132,11 +132,11 @@ export const MetadataFeature: React.FC = () => {
             <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/60 dark:bg-slate-900/60 border border-white/30 dark:border-white/10 backdrop-blur-xl shadow-sm">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground select-none">
                 {workspaceMode === 'architect' ? (
-                  <span className="text-amber-500 dark:text-amber-400 flex items-center gap-1.5 font-bold">
+                  <span className="text-amber-800 dark:text-amber-300 flex items-center gap-1.5 font-bold">
                     <Sparkles className="h-3.5 w-3.5" /> {t('metadata.mode.architect', 'Architect Studio')}
                   </span>
                 ) : (
-                  <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-bold">
+                  <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 font-bold">
                     <User className="h-3.5 w-3.5" /> {t('metadata.mode.operator', 'Operator View')}
                   </span>
                 )}
