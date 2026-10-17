@@ -9,10 +9,12 @@ export const buttonVariants = cva(
       variant: {
         default: 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700',
         destructive: 'bg-rose-600 text-white shadow-xs hover:bg-rose-700',
-        outline: 'border border-slate-200 bg-white shadow-xs hover:bg-slate-100 hover:text-slate-900',
-        secondary: 'bg-slate-100 text-slate-900 shadow-xs hover:bg-slate-200',
-        ghost: 'hover:bg-slate-100 hover:text-slate-900',
+        outline: 'border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-xs hover:bg-foreground/5 hover:text-foreground text-foreground',
+        secondary: 'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
+        ghost: 'hover:bg-foreground/5 text-muted-foreground hover:text-foreground',
         link: 'text-indigo-600 underline-offset-4 hover:underline',
+        glass: 'glass-button text-foreground',
+        accent: 'glass-button-primary',
       },
       size: {
         default: 'h-8 px-3 py-1.5',

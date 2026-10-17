@@ -47,6 +47,9 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(css).toContain('.glass-panel');
       expect(css).toContain('.glass-card');
       expect(css).toContain('.glass-button');
+      expect(css).toContain('.glass-button-primary');
+      expect(css).toContain('.glass-pill');
+      expect(css).toContain('.glass-badge-accent');
       expect(css).toContain('.liquid-ambient-mesh');
       expect(css).toContain('backdrop-filter:');
       expect(css).toContain('-webkit-backdrop-filter:');
@@ -210,7 +213,6 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       const modalCode = fs.readFileSync(modalPath, 'utf8');
       const dialogCode = fs.readFileSync(dialogPath, 'utf8');
 
-      // SettingsModal checks:
       // Must not hardcode text-slate-100, text-slate-200, or text-slate-400 which wash out on light frosted glass
       expect(modalCode).not.toContain('text-slate-100');
       expect(modalCode).not.toContain('text-slate-200');
@@ -218,11 +220,25 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
       expect(modalCode).not.toContain('border-white/10');
       expect(modalCode).not.toContain('border-white/5');
 
-      // Must use dynamic tokens
+      // Must NOT contain hardcoded inline button background styles
+      expect(modalCode).not.toContain('bg-[var(--accent-primary)]');
+      expect(modalCode).not.toContain('ring-[var(--accent-primary)]');
+
+      // Must use dynamic tokens and semantic classes
+      expect(modalCode).toContain('glass-pill');
+      expect(modalCode).toContain('glass-badge-accent');
+      expect(modalCode).toContain('variant="accent"');
       expect(modalCode).toContain('text-foreground');
       expect(modalCode).toContain('text-muted-foreground');
       expect(modalCode).toContain('border-[var(--glass-border)]');
-      expect(modalCode).toContain('var(--accent-primary)');
+
+      // Button component checks:
+      const buttonPath = path.resolve(__dirname, '../apps/studio/src/components/ui/button.tsx');
+      expect(fs.existsSync(buttonPath)).toBe(true);
+      const buttonCode = fs.readFileSync(buttonPath, 'utf8');
+      expect(buttonCode).toContain('accent:');
+      expect(buttonCode).toContain('glass:');
+      expect(buttonCode).toContain('glass-button-primary');
 
       // Dialog primitive checks:
       // Must not hardcode text-slate-900 or text-slate-500

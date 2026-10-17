@@ -47,13 +47,13 @@ export function SettingsModal() {
         <DialogHeader className="pb-3 border-b border-[var(--glass-border)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-[var(--accent-primary)]/15 border border-[var(--accent-primary)]/30 flex items-center justify-center text-[var(--accent-primary)]">
+              <div className="h-8 w-8 rounded-lg glass-badge-accent flex items-center justify-center">
                 <Sliders className="w-4 h-4" />
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
                   Studio Liquid Glass Preferences
-                  <Badge variant="secondary" className="font-mono text-[10px] bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30">
+                  <Badge variant="secondary" className="font-mono text-[10px] glass-badge-accent">
                     Live Reactive
                   </Badge>
                 </DialogTitle>
@@ -76,23 +76,17 @@ export function SettingsModal() {
               <button
                 type="button"
                 onClick={() => setTheme({ mode: 'dark' })}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                  preferences.mode === 'dark'
-                    ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/15 text-foreground font-semibold shadow-xs ring-1 ring-[var(--accent-primary)]/50'
-                    : 'border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)] hover:bg-foreground/5 text-muted-foreground'
-                }`}
+                data-active={preferences.mode === 'dark'}
+                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer"
               >
-                <Moon className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+                <Moon className="w-3.5 h-3.5" />
                 Dark Obsidian (Default)
               </button>
               <button
                 type="button"
                 onClick={() => setTheme({ mode: 'light' })}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
-                  preferences.mode === 'light'
-                    ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/15 text-foreground font-semibold shadow-xs ring-1 ring-[var(--accent-primary)]/50'
-                    : 'border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)] hover:bg-foreground/5 text-muted-foreground'
-                }`}
+                data-active={preferences.mode === 'light'}
+                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer"
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
                 Light Frosted Acrylic
@@ -103,7 +97,7 @@ export function SettingsModal() {
           {/* 2. Optical Glass Style */}
           <div className="space-y-2">
             <label className="font-semibold text-foreground/90 tracking-wide uppercase text-[11px] flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+              <Layers className="w-3.5 h-3.5" />
               Optical Glass Finish
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -112,11 +106,8 @@ export function SettingsModal() {
                   key={style.id}
                   type="button"
                   onClick={() => setTheme({ glassStyle: style.id })}
-                  className={`p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                    preferences.glassStyle === style.id
-                      ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/15 shadow-xs ring-1 ring-[var(--accent-primary)]/50'
-                      : 'border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)] hover:bg-foreground/5 text-muted-foreground'
-                  }`}
+                  data-active={preferences.glassStyle === style.id}
+                  className="glass-pill p-2.5 rounded-lg text-left flex flex-col justify-between cursor-pointer"
                 >
                   <div className="font-semibold text-foreground flex items-center justify-between mb-1">
                     <span>{style.label}</span>
@@ -140,11 +131,8 @@ export function SettingsModal() {
                   key={blur.id}
                   type="button"
                   onClick={() => setTheme({ blurIntensity: blur.id })}
-                  className={`py-2 px-3 rounded-lg border text-center transition-all cursor-pointer ${
-                    preferences.blurIntensity === blur.id
-                      ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/15 text-foreground font-semibold shadow-xs ring-1 ring-[var(--accent-primary)]/50'
-                      : 'border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)] hover:bg-foreground/5 text-muted-foreground'
-                  }`}
+                  data-active={preferences.blurIntensity === blur.id}
+                  className="glass-pill py-2 px-3 rounded-lg text-center cursor-pointer"
                 >
                   <div className="font-medium text-foreground">{blur.label}</div>
                   <div className="text-[10px] text-muted-foreground font-mono">{blur.px}</div>
@@ -164,11 +152,8 @@ export function SettingsModal() {
                   key={accent.id}
                   type="button"
                   onClick={() => setTheme({ accentColor: accent.id })}
-                  className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
-                    preferences.accentColor === accent.id
-                      ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/15 shadow-xs ring-1 ring-[var(--accent-primary)]/50'
-                      : 'border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)] hover:bg-foreground/5'
-                  }`}
+                  data-active={preferences.accentColor === accent.id}
+                  className="glass-pill group flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer"
                 >
                   <span
                     className="w-3 h-3 rounded-full shadow-xs transition-transform group-hover:scale-110"
@@ -207,16 +192,16 @@ export function SettingsModal() {
             variant="ghost"
             size="sm"
             onClick={resetTheme}
-            className="text-muted-foreground hover:text-foreground hover:bg-foreground/5 text-xs gap-1.5 cursor-pointer"
+            className="text-xs gap-1.5 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Reset Defaults
           </Button>
           <Button
-            variant="default"
+            variant="accent"
             size="sm"
             onClick={() => setIsSettingsOpen(false)}
-            className="bg-[var(--accent-primary)] hover:brightness-110 text-slate-950 font-semibold text-xs px-5 shadow-[0_0_15px_var(--accent-glow)] cursor-pointer"
+            className="px-5 cursor-pointer"
           >
             Done
           </Button>
