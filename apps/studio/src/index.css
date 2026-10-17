@@ -105,13 +105,13 @@
 
   /* Blur Intensities */
   [data-blur-intensity="low"] {
-    --glass-blur: blur(8px);
+    --glass-blur: blur(6px);
   }
   [data-blur-intensity="medium"] {
-    --glass-blur: blur(16px);
+    --glass-blur: blur(18px);
   }
   [data-blur-intensity="high"] {
-    --glass-blur: blur(24px);
+    --glass-blur: blur(40px);
   }
 
   /* Dynamic Accent Colors */

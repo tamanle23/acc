@@ -25,9 +25,9 @@ const GLASS_STYLES: { id: GlassStyle; label: string; desc: string }[] = [
 ];
 
 const BLUR_INTENSITIES: { id: BlurIntensity; label: string; px: string }[] = [
-  { id: 'low', label: 'Low', px: '8px' },
-  { id: 'medium', label: 'Medium', px: '16px' },
-  { id: 'high', label: 'High', px: '24px' },
+  { id: 'low', label: 'Low', px: '6px' },
+  { id: 'medium', label: 'Medium', px: '18px' },
+  { id: 'high', label: 'High', px: '40px' },
 ];
 
 const ACCENT_COLORS: { id: AccentColor; label: string; hex: string }[] = [
