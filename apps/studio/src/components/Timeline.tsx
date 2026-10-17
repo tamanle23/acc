@@ -81,6 +81,9 @@ export function Timeline({
     : [];
   const selectedSeqId = irState.selectedSequenceId;
 
+  const pixelsPerFrame = Math.max(1, 4 * zoomScale);
+  const timelineWidth = Math.max(800, totalFrames * pixelsPerFrame);
+
   // Standalone fallback playback loop if onTogglePlay was not provided
   useEffect(() => {
     if (onTogglePlay) return; // Managed by parent component
@@ -272,9 +275,6 @@ export function Timeline({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentFrame, totalFrames, fps, selectedSeqId, onTogglePlay, isPlaying]);
-
-  const pixelsPerFrame = Math.max(1, 4 * zoomScale);
-  const timelineWidth = Math.max(800, totalFrames * pixelsPerFrame);
 
   const getTrackBadgeStyle = (track: any) => {
     if (track.type === 'audio') return 'bg-emerald-600 border-emerald-700 text-white';

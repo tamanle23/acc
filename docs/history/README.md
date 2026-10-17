@@ -253,6 +253,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`238`](238_studio_phase5_gsap_easing_sidebar_enhancements.md) | 2026-10-17 | Phase 5: GSAP Easing Inspector & Left Sidebar Enhancements | Interactive SVG Bézier GSAP easing curve inspector with traveling dot preview, dual SFX strategy (staging presets + on-demand Web Audio procedural synth), LeftSidebar filter pills, non-intrusive micro-animations, and Assets Vault dropzone |
 | [`239`](239_studio_phase6_universal_motion_easing_timeline.md) | 2026-10-17 | Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulation | Polymorphic TemporalCurve in VideoIR, 3-stage lifecycle GSAP compiler in UniversalCanvasEngine, analog audio ducking slew filter, Motion Preset inspector in RightSidebar, interactive timeline drag trimming with magnetic snapping, and Razor split cut tool |
 | [`240`](240_fix_preview_canvas_engine_ref_reference.md) | 2026-10-17 | Fix Preview Canvas Engine Ref Reference Error in Preview.tsx | Resolved Uncaught ReferenceError: canvasEngineRef is not defined by correcting symbol to engineRef and streamlining active interpolated transform bounding box calculations |
+| [`241`](241_fix_timeline_pixels_per_frame_tdz.md) | 2026-10-17 | Fix Timeline PixelsPerFrame Temporal Dead Zone Reference Error | Hoisted pixelsPerFrame and timelineWidth declarations above useEffect hooks and event handlers in Timeline.tsx to resolve TDZ runtime crash |
 
 
 
