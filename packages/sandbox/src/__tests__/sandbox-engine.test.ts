@@ -305,5 +305,15 @@ describe('Unified Sandbox Engine Package', () => {
     expect(reVerifyRes?.data.verified).toBe(false);
     expect(reVerifyRes?.data.corruptedAtSequence).toBe(1);
   });
+
+  it('exposes registry, store, and active persona, and honors isDev disabled flag', () => {
+    expect(engine.getRegistry()).toBe(registry);
+    expect(engine.getStore()).toBe(store);
+    const persona = engine.getActivePersona();
+    expect(persona.id).toBe('admin');
+
+    const prodEngine = new UnifiedSandboxEngine({ isDev: false });
+    expect(prodEngine.isEnabled()).toBe(false);
+  });
 });
 

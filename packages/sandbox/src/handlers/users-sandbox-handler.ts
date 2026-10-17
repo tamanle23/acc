@@ -57,8 +57,14 @@ export class UsersSandboxRepository {
 
   public create(user: User, tenantId?: string): User {
     const list = this.getTenantList(tenantId);
-    list.unshift(user);
-    return user;
+    const newUser: User = {
+      ...user,
+      id: user.id || `usr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: user.createdAt || new Date(),
+      updatedAt: user.updatedAt || new Date(),
+    };
+    list.unshift(newUser);
+    return newUser;
   }
 
   public update(id: string, patch: Partial<User>, tenantId?: string): User | null {
