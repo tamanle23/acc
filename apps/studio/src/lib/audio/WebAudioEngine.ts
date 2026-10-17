@@ -1,4 +1,5 @@
-import { UniversalAudioMixer, type AudioMixerClip } from '@acc/effect-engines/client';
+import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/effect-engines/client';
+import { AudioAssetCache } from './AudioAssetCache';
 
 export interface AudioLevels {
   levelL: number;
@@ -26,8 +27,16 @@ export class WebAudioEngine {
   private isPlaying = false;
   private playbackStartAudioTime = 0;
   private playbackStartTimelineTime = 0;
+  private lastIrState: any = null;
+  private lastFps = 30;
 
-  private constructor() {}
+  private constructor() {
+    AudioAssetCache.getInstance().subscribe(() => {
+      if (this.lastIrState) {
+        this.syncFromIR(this.lastIrState, this.lastFps);
+      }
+    });
+  }
 
   public static getInstance(): WebAudioEngine {
     if (!WebAudioEngine.instance) {
@@ -63,6 +72,11 @@ export class WebAudioEngine {
    */
   public syncFromIR(irState: any, fps = 30): void {
     if (!irState || !irState.timeline) return;
+    this.lastIrState = irState;
+    this.lastFps = fps;
+
+    const assets = irState.timeline.assets || irState.doc?.assets || {};
+    AudioAssetCache.getInstance().preloadAssets(assets);
 
     const rawTracks = irState.timeline.tracks;
     const tracks = rawTracks instanceof Map
@@ -90,10 +104,11 @@ export class WebAudioEngine {
           let clipType: 'voice' | 'sfx' | 'bgm' = 'bgm';
           const nameLower = (seq.name || '').toLowerCase();
           const kindLower = (seq.kind || '').toLowerCase();
+          const trackIdLower = (track.id || '').toLowerCase();
 
-          if (nameLower.includes('pilot') || nameLower.includes('voice') || kindLower.includes('voice')) {
+          if (nameLower.includes('pilot') || nameLower.includes('voice') || kindLower.includes('voice') || trackIdLower.includes('voice') || trackIdLower.includes('a1')) {
             clipType = 'voice';
-          } else if (nameLower.includes('laser') || nameLower.includes('sfx') || kindLower.includes('sfx')) {
+          } else if (nameLower.includes('laser') || nameLower.includes('sfx') || kindLower.includes('sfx') || trackIdLower.includes('sfx') || trackIdLower.includes('a2')) {
             clipType = 'sfx';
           }
 
@@ -127,6 +142,21 @@ export class WebAudioEngine {
             }
           }
 
+          // Query AudioAssetCache for decoded audio
+          let audioSource: DecodedPcmSource | undefined;
+          if (seq.assetId && assets[seq.assetId]) {
+            const assetDef = assets[seq.assetId];
+            const decoded = AudioAssetCache.getInstance().getAudioChannels(seq.assetId, assetDef.src);
+            if (decoded) {
+              audioSource = new DecodedPcmSource({
+                channels: decoded.channels,
+                sourceSampleRate: decoded.sampleRate,
+                sourceTrimStartSec: (seq.sourceTrim?.startFrame || 0) / Math.max(1, fps),
+                loop: trackIdLower.includes('bgm') || track.name?.toLowerCase().includes('bgm'),
+              });
+            }
+          }
+
           clips.push({
             id: seq.id,
             type: clipType,
@@ -135,6 +165,8 @@ export class WebAudioEngine {
             volume: clipVolume,
             pan: clipPan,
             assetId: seq.assetId,
+            audioSource,
+            modifiers: seq.modifiers,
           });
         }
       }
@@ -283,7 +315,9 @@ export class WebAudioEngine {
   }
 
   /**
-   * Generates or extracts synthetic waveform peaks for visual timeline display.
+   * Generates or extracts waveform peaks for visual timeline display.
+   * If real decoded audio is present in AudioAssetCache, extracts actual PCM peak amplitudes;
+   * otherwise falls back to deterministic procedural waveform cadence.
    */
   public getWaveformPeaks(id: string, durationFrames: number, targetBars = 80): Float32Array {
     const cacheKey = `${id}:${durationFrames}:${targetBars}`;
@@ -292,6 +326,27 @@ export class WebAudioEngine {
     }
 
     const peaks = new Float32Array(targetBars);
+
+    const decoded = AudioAssetCache.getInstance().getAudioChannels(id);
+    if (decoded && decoded.channels.length > 0 && decoded.channels[0].length > 0) {
+      const channel = decoded.channels[0];
+      const samplesPerBar = Math.floor(channel.length / targetBars);
+      if (samplesPerBar > 0) {
+        for (let i = 0; i < targetBars; i++) {
+          let maxVal = 0;
+          const start = i * samplesPerBar;
+          const end = Math.min(channel.length, start + samplesPerBar);
+          for (let s = start; s < end; s++) {
+            const v = Math.abs(channel[s]);
+            if (v > maxVal) maxVal = v;
+          }
+          peaks[i] = Math.max(0.05, Math.min(1.0, maxVal));
+        }
+        this.waveformCache.set(cacheKey, peaks);
+        return peaks;
+      }
+    }
+
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
       hash = (hash << 5) - hash + id.charCodeAt(i);

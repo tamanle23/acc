@@ -96,7 +96,7 @@ flowchart TD
   - Lean orchestrator (~280 lines) delegating visual layer drawing to `engine.renderLayers()` and sub-components.
   - Retain exported types and sub-components (`TransformBodyDraggable`, `TransformHandle`, `computeDragTransform`) ensuring 100% zero-regression test compatibility.
 
-### Phase 3: Platform-Independent Audio Core & Multi-Track Mixing `[ ] Planned`
+### Phase 3: Platform-Independent Audio Core & Multi-Track Mixing `[x] Completed (docs/history/249_studio_phase3_audio_core_and_plugins.md)`
 - **Architectural Relocation & Consolidation (`packages/ir/src/renderer/audio/`)**:
   - Relocate `UniversalAudioMixer.ts` to `packages/ir/src/renderer/audio/UniversalAudioMixer.ts` alongside `DecoupledAudioMixer.ts` and `DynamicAudioDuckingEngine.ts`.
   - Re-export `UniversalAudioMixer` from `packages/effect-engines/src/audio/UniversalAudioMixer.ts` ensuring 100% backward compatibility for all existing tests and call sites.

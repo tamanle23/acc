@@ -4,6 +4,7 @@ import type {
   ClipRenderContext,
   StreamRenderContext,
   MasterCompositeContext,
+  AudioProcessContext,
 } from './IVideoPluginStrategy';
 
 export type {
@@ -12,6 +13,7 @@ export type {
   ClipRenderContext,
   StreamRenderContext,
   MasterCompositeContext,
+  AudioProcessContext,
 };
 
 export interface ModifierContext {
@@ -33,6 +35,9 @@ export interface ModifierPlugin<TParams = Record<string, unknown>> {
   renderClipSpace?(ctx: ClipRenderContext, params: TParams, state?: any): void | Promise<void>;
   renderStreamSpace?(ctx: StreamRenderContext, params: TParams, state?: any): void | Promise<void>;
   renderMasterComposite?(ctx: MasterCompositeContext, params: TParams, state?: any): void | Promise<void>;
+  // Pure Float32 DSP audio processing hooks
+  processAudioStream?(ctx: AudioProcessContext, buffer: Float32Array, params: TParams): void;
+  processStereoStream?(ctx: AudioProcessContext, left: Float32Array, right: Float32Array, params: TParams): void;
 }
 
 /**

@@ -261,6 +261,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`246`](246_studio_phase1_declarative_vfx.md) | 2026-10-17 | Phase 1: Declarative Particle & Hologram HUD Subsystem | Removed hardcoded initParticleSystem/initHologramHUD from Preview mount, implemented dynamic sequence modifier binding & ambiance toggle in UniversalCanvasEngine & Preview |
 | [`247`](247_studio_phase2_media_compositor.md) | 2026-10-17 | Phase 2: Real Visual Media Compositor (Image & Video) | Implemented AssetTextureCache image & video decoding with Rule 235 neutral fallbacks, multi-track V1->V4 compositing, and GSAP affine matrix transforms in Preview.tsx |
 | [`248`](248_preview_math_reuse_and_decomposition.md) | 2026-10-17 | Studio Preview: Effect Engines Math Reuse & Subcomponent Decomposition | Decomposed Preview into modular subcomponents (ViewportControlBar, ViewportSafeGuides, ContextualActionPill, SubtitlesOverlay), delegated multi-track layer rendering to UniversalCanvasEngine.renderLayers, and added Observer pattern to AssetTextureCache |
+| [`249`](249_studio_phase3_audio_core_and_plugins.md) | 2026-10-17 | Studio Phase 3: Platform-Independent Audio Core, Pure Plugins & Cache | Relocated UniversalAudioMixer to packages/ir, implemented pure buffer modifier plugins (volume, pan, filter, pitch), AudioSourceAdapter, and AudioAssetCache with Observer pattern |
 
 
 
