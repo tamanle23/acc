@@ -66,7 +66,7 @@ describe('WidgetExporter Accessibility & UX Verification', () => {
     expect(htmlContent).toContain('<video id="activeVideo" playsinline controls');
     expect(htmlContent).toContain('aria-label="Interactive Choice Demo"');
     expect(htmlContent).toContain("btn.type = 'button'");
-    expect(htmlContent).toContain("Choice ${idx + 1} of ${currentNode.choices.length}");
+    expect(htmlContent).toContain("' (Choice ' + (idx + 1) + ' of ' + currentNode.choices.length + ')'");
     expect(htmlContent).toContain('firstBtn.focus()');
     expect(htmlContent).toContain('kbd-badge');
     expect(htmlContent).toContain("document.addEventListener('keydown'");
