@@ -56,6 +56,25 @@ export interface LightRelightParams {
   color?: string;
 }
 
+export interface VisualLayerItem {
+  id: string;
+  source: CanvasImageSource;
+  sourceWidth?: number;
+  sourceHeight?: number;
+  trackId?: string;
+  trackType?: string;
+  trackIndex?: number;
+  fitMode?: 'cover' | 'contain';
+  blendMode?: GlobalCompositeOperation;
+  transform?: {
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    opacity?: number;
+  };
+}
+
 /**
  * UniversalCanvasEngine:
  * High-performance isomorphic 2D/2.5D visual engine combining Pts.js vector mathematics
@@ -512,6 +531,105 @@ export class UniversalCanvasEngine {
 
     // 4. Render In-Canvas Vector Transform Overlay (if visible)
     this.overlay.render(ctx, w, h);
+  }
+
+  /**
+   * Encapsulated multi-track visual layer compositor.
+   * Handles:
+   * - Strict track index sorting (V1 -> V4)
+   * - Aspect ratio geometry ('cover' for background plates, 'contain' for overlays)
+   * - Configurable blendMode from sequence modifiers or tracks
+   * - Pts.js / GSAP affine transform matrix stacking (translate, rotate, scale, opacity)
+   */
+  public renderLayers(ctx: CanvasRenderingContext2D, layers: VisualLayerItem[]): void {
+    if (!layers || layers.length === 0) return;
+
+    const w = this.width;
+    const h = this.height;
+
+    // 1. Sort layers by track order (lower trackIndex draws first)
+    const sortedLayers = [...layers].sort((a, b) => {
+      const idxA = a.trackIndex ?? 99;
+      const idxB = b.trackIndex ?? 99;
+      return idxA - idxB;
+    });
+
+    for (const layer of sortedLayers) {
+      if (!layer.source) continue;
+
+      // Extract transform params (fallback to GSAP interpolated values)
+      const interp = this.getActiveInterpolatedTransform(layer.id);
+      const trans = layer.transform || {};
+      const transX = interp ? interp.x : (trans.x ?? 0);
+      const transY = interp ? interp.y : (trans.y ?? 0);
+      const transScale = interp ? interp.scale : (trans.scale ?? 1.0);
+      const transRot = interp ? interp.rotation : (trans.rotation ?? 0);
+      const transOpacity = interp ? interp.opacity : (trans.opacity ?? 1.0);
+
+      if (transOpacity <= 0.001) continue;
+
+      ctx.save();
+
+      // Configure blend mode
+      if (layer.blendMode) {
+        ctx.globalCompositeOperation = layer.blendMode;
+      }
+
+      // Matrix transformation stack centered around canvas viewport
+      ctx.translate(w * 0.5 + transX, h * 0.5 + transY);
+      if (transRot !== 0) {
+        ctx.rotate((transRot * Math.PI) / 180);
+      }
+      if (transScale !== 1.0) {
+        ctx.scale(transScale, transScale);
+      }
+      ctx.globalAlpha = Math.max(0, Math.min(1, transOpacity));
+
+      // Source dimensions
+      const srcW = layer.sourceWidth || (layer.source as any).videoWidth || (layer.source as any).naturalWidth || (layer.source as any).width || w;
+      const srcH = layer.sourceHeight || (layer.source as any).videoHeight || (layer.source as any).naturalHeight || (layer.source as any).height || h;
+      const srcRatio = srcW > 0 && srcH > 0 ? srcW / srcH : 16 / 9;
+      const canvasRatio = w / h;
+
+      let drawW = w;
+      let drawH = h;
+
+      const fitMode = layer.fitMode || (layer.trackIndex === 0 ? 'cover' : 'contain');
+
+      if (fitMode === 'cover') {
+        // Cover: completely fill the canvas, cropping overflow
+        if (srcRatio > canvasRatio) {
+          drawH = h;
+          drawW = h * srcRatio;
+        } else {
+          drawW = w;
+          drawH = w / srcRatio;
+        }
+      } else {
+        // Contain: fit entirely within the viewport preserving intrinsic proportions
+        if (srcRatio > canvasRatio) {
+          drawW = w * 0.85;
+          drawH = drawW / srcRatio;
+        } else {
+          drawH = h * 0.85;
+          drawW = drawH * srcRatio;
+        }
+      }
+
+      try {
+        ctx.drawImage(
+          layer.source,
+          -drawW * 0.5,
+          -drawH * 0.5,
+          drawW,
+          drawH
+        );
+      } catch (e) {
+        // Defensive drawing protection against transient HTMLVideoElement/Image decoding states
+      }
+
+      ctx.restore();
+    }
   }
 
   private renderParticles(ctx: CanvasRenderingContext2D, w: number, h: number, timeSec: number): void {

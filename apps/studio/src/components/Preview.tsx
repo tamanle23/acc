@@ -38,6 +38,15 @@ import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import { useTheme } from '../lib/theme/ThemeProvider';
+export { ViewportControlBar } from './preview/ViewportControlBar';
+export { ViewportSafeGuides } from './preview/ViewportSafeGuides';
+export { ContextualActionPill } from './preview/ContextualActionPill';
+export { SubtitlesOverlay } from './preview/SubtitlesOverlay';
+
+import { ViewportControlBar } from './preview/ViewportControlBar';
+import { ViewportSafeGuides } from './preview/ViewportSafeGuides';
+import { ContextualActionPill } from './preview/ContextualActionPill';
+import { SubtitlesOverlay } from './preview/SubtitlesOverlay';
 import {
   UniversalCanvasEngine,
   CanvasTransformOverlay,
@@ -182,9 +191,17 @@ export function Preview({
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
+  const [, setAssetTick] = useState(0);
 
   useEffect(() => {
     return IRStateManager.getInstance().subscribe(setIrState);
+  }, []);
+
+  // Reactive subscription to AssetTextureCache (instant re-render when image/video decodes)
+  useEffect(() => {
+    return AssetTextureCache.getInstance().subscribe(() => {
+      setAssetTick((t) => t + 1);
+    });
   }, []);
 
   const width = irState.doc?.meta?.canvasSize?.w || 1920;
@@ -323,20 +340,17 @@ export function Preview({
     const timeSec = currentFrame / fps;
     engine.update(timeSec, popOutIntensity);
 
-    // 3. Render Visual Media Sequences (Multi-Track V1 -> V4 Layer Compositing)
+    // 3. Render Visual Media Sequences via UniversalCanvasEngine Math Compositor
     const textureCache = AssetTextureCache.getInstance();
     const tracks = irState.doc?.tracks || [];
     const videoTracks = tracks.filter((t) => t.type === 'video');
 
-    // Build track index map for layer sorting: lower index draws first (e.g. V1 plate before V2 overlay)
     const trackOrderMap = new Map<string, number>();
     videoTracks.forEach((t, idx) => {
       trackOrderMap.set(t.id, idx);
     });
 
-    // Filter active visual sequences and sort by track order
     const visualSeqs = activeSeqs.filter((s) => {
-      // Must belong to a video track or have an asset / visual role
       if (s.trackId && trackOrderMap.has(s.trackId)) return true;
       return Boolean(s.assetId);
     }).sort((a, b) => {
@@ -346,17 +360,16 @@ export function Preview({
     });
 
     const assetsMap = irState.doc?.assets || {};
+    const layersToDraw: any[] = [];
 
     for (const seq of visualSeqs) {
       const assetDef = seq.assetId ? assetsMap[seq.assetId] : undefined;
       const assetSrc = assetDef?.src;
       const assetType = assetDef?.type || 'media';
 
-      // Calculate sequence local time for video seek
       const seqStart = seq.startFrame ?? 0;
       const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
 
-      // Query visual asset from cache (returns ready Image, Video decoder, or neutral dark placeholder)
       const visualAsset = textureCache.getVisualAsset(
         seq.assetId || seq.id,
         assetSrc,
@@ -365,53 +378,27 @@ export function Preview({
       );
 
       if (visualAsset.source) {
-        // Retrieve dynamic GSAP-interpolated transform matrix
-        const interp = engine.getActiveInterpolatedTransform(seq.id);
-        const transX = interp ? interp.x : (selectedSeqId === seq.id ? transform.x : 0);
-        const transY = interp ? interp.y : (selectedSeqId === seq.id ? transform.y : 0);
-        const transScale = interp ? interp.scale : (selectedSeqId === seq.id ? transform.scale : 1.0);
-        const transRot = interp ? interp.rotation : (selectedSeqId === seq.id ? transform.rotation : 0);
-        const transOpacity = interp ? interp.opacity : 1.0;
+        const parentTrack = seq.trackId ? videoTracks.find((t) => t.id === seq.trackId) : null;
+        const trackIdx = seq.trackId ? (trackOrderMap.get(seq.trackId) ?? 0) : 0;
+        const customBlendMod = seq.modifiers?.find((m) => m.type === 'vfx/blend_mode' || (m.params as any)?.blendMode);
+        const configuredBlend = ((customBlendMod?.params as any)?.blendMode || parentTrack?.blendMode) as GlobalCompositeOperation | undefined;
 
-        if (transOpacity > 0.001) {
-          ctx.save();
-
-          // Apply track blendMode if specified (e.g. screen, lighten)
-          const parentTrack = seq.trackId ? videoTracks.find((t) => t.id === seq.trackId) : null;
-          if (parentTrack?.blendMode) {
-            ctx.globalCompositeOperation = parentTrack.blendMode as GlobalCompositeOperation;
-          }
-
-          // Matrix transformation stack centered around canvas viewport
-          ctx.translate(width * 0.5 + transX, height * 0.5 + transY);
-          if (transRot !== 0) {
-            ctx.rotate((transRot * Math.PI) / 180);
-          }
-          if (transScale !== 1.0) {
-            ctx.scale(transScale, transScale);
-          }
-          ctx.globalAlpha = Math.max(0, Math.min(1, transOpacity));
-
-          // Base drawing dimensions scaled to fit or cover
-          const drawW = width * 0.85;
-          const drawH = height * 0.85;
-
-          try {
-            ctx.drawImage(
-              visualAsset.source,
-              -drawW * 0.5,
-              -drawH * 0.5,
-              drawW,
-              drawH
-            );
-          } catch (e) {
-            // Defensive drawing protection
-          }
-
-          ctx.restore();
-        }
+        layersToDraw.push({
+          id: seq.id,
+          source: visualAsset.source,
+          sourceWidth: visualAsset.width,
+          sourceHeight: visualAsset.height,
+          trackId: seq.trackId,
+          trackIndex: trackIdx,
+          fitMode: trackIdx === 0 ? 'cover' : 'contain',
+          blendMode: configuredBlend,
+          transform: selectedSeqId === seq.id ? transform : undefined,
+        });
       }
     }
+
+    // Mathematical multi-track layer composition executed inside packages/effect-engines
+    engine.renderLayers(ctx, layersToDraw);
 
     // 4. Synchronize in-canvas transform overlay
     if (selectedSeqId) {
@@ -695,203 +682,35 @@ export function Preview({
       <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh" />
 
       {/* Top Monitor Status Bar */}
-      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
-        <div className="flex items-center gap-2">
-          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-[var(--glass-border)]">
-            <Monitor className="w-3 h-3 text-[var(--accent-primary)]" />
-            {width}×{height}
-          </div>
-
-          <div className="glass-card px-2.5 py-1 rounded-full text-foreground/80 font-mono text-[10px] flex items-center gap-1.5 shadow-xs border border-[var(--glass-border)]">
-            <Sparkles className="w-2.5 h-2.5 text-[var(--accent-primary)] animate-pulse" />
-            GSAP Timeline Engine
-          </div>
-
-          <div
-            className={`glass-card px-2.5 py-1 rounded-full font-mono text-[10px] flex items-center gap-1.5 border shadow-xs transition-colors ${isPlaying
-              ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-              : 'border-[var(--glass-border)] text-muted-foreground'
-              }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-emerald-400 animate-ping' : 'bg-muted-foreground/60'
-                }`}
-            />
-            {isPlaying ? 'PLAYING' : 'IDLE'} [{currentFrame}/{totalFrames}]
-          </div>
-
-          {onTogglePlay && (
-            <Tooltip content={isPlaying ? 'Pause Viewport (Space)' : 'Play Viewport (Space)'}>
-              <button
-                type="button"
-                onClick={onTogglePlay}
-                className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${isPlaying
-                  ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                  : 'border-[var(--glass-border)] text-foreground/80 hover:text-foreground'
-                  }`}
-              >
-                {isPlaying ? (
-                  <>
-                    <Pause className="w-2.5 h-2.5 fill-current" />
-                    <span className="font-bold tracking-wider">PAUSE</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-2.5 h-2.5 fill-current" />
-                    <span className="font-bold tracking-wider">PLAY</span>
-                  </>
-                )}
-              </button>
-            </Tooltip>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Active Transform Coordinates Readout */}
-          {selectedSeqId && (
-            <div className="glass-card px-3 py-1 rounded-full text-foreground/90 border border-[var(--accent-primary)]/40 font-mono text-[10px] flex items-center gap-1.5 shadow-xs backdrop-blur-md">
-              <Move className="w-3 h-3 text-[var(--accent-primary)]" />
-              X: {transform.x}px | Y: {transform.y}px | S: {transform.scale.toFixed(2)}x | R: {transform.rotation}°
-              {activeGuides.length > 0 && (
-                <span className="text-[var(--accent-primary)] font-semibold ml-1">
-                  [Snap: {activeGuides.map((g) => g.label).join(', ')}]
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Zoom Presets Segmented Pill */}
-          <div className="flex items-center gap-0.5 glass-card p-0.5 rounded-full border border-[var(--glass-border)] text-[10px] font-mono">
-            <Tooltip content="Fit Viewport">
-              <button
-                type="button"
-                onClick={() => {
-                  setZoomLevel('fit');
-                  setPanOffset({ x: 0, y: 0 });
-                }}
-                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 'fit'
-                    ? 'bg-[var(--accent-primary)] text-slate-950 font-bold shadow-xs'
-                    : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
-                }`}
-              >
-                Fit
-              </button>
-            </Tooltip>
-            <Tooltip content="Zoom 50%">
-              <button
-                type="button"
-                onClick={() => setZoomLevel(0.5)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 0.5
-                    ? 'bg-[var(--accent-primary)] text-slate-950 font-bold shadow-xs'
-                    : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
-                }`}
-              >
-                50%
-              </button>
-            </Tooltip>
-            <Tooltip content="Zoom 100%">
-              <button
-                type="button"
-                onClick={() => setZoomLevel(1.0)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 1.0
-                    ? 'bg-[var(--accent-primary)] text-slate-950 font-bold shadow-xs'
-                    : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
-                }`}
-              >
-                100%
-              </button>
-            </Tooltip>
-            <Tooltip content="Zoom 200%">
-              <button
-                type="button"
-                onClick={() => setZoomLevel(2.0)}
-                className={`px-1.5 py-0.5 rounded-full transition-all cursor-pointer ${
-                  zoomLevel === 2.0
-                    ? 'bg-[var(--accent-primary)] text-slate-950 font-bold shadow-xs'
-                    : 'text-foreground/70 hover:text-foreground hover:bg-white/10'
-                }`}
-              >
-                200%
-              </button>
-            </Tooltip>
-          </div>
-
-          {/* Pan Hand Tool Button */}
-          <Tooltip content="Pan Hand Tool (Hold Space + Drag)">
-            <button
-              type="button"
-              onClick={() => setIsPanToolActive(!isPanToolActive)}
-              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
-                isPanToolActive || isSpacePressed
-                  ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] shadow-[0_0_10px_var(--accent-glow)]'
-                  : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
-              }`}
-            >
-              <Hand className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          {/* Safe Guides Cycle Button */}
-          <Tooltip content={`Safe Guides: ${safeGuidesMode === 'none' ? 'Off' : safeGuidesMode} (Click to Cycle)`}>
-            <button
-              type="button"
-              onClick={() => {
-                setSafeGuidesMode((prev) => {
-                  if (prev === 'none') return '16:9';
-                  if (prev === '16:9') return '9:16';
-                  return 'none';
-                });
-              }}
-              className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
-                safeGuidesMode !== 'none'
-                  ? 'border-amber-400/50 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-                  : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
-              }`}
-            >
-              <Shield className="w-3 h-3 text-amber-400" />
-              <span>{safeGuidesMode === 'none' ? 'Guides' : safeGuidesMode}</span>
-            </button>
-          </Tooltip>
-
-          {/* Alpha Transparency Checkerboard Toggle */}
-          <Tooltip content="Toggle Alpha Transparency Checkerboard">
-            <button
-              type="button"
-              onClick={() => setShowCheckerboard(!showCheckerboard)}
-              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
-                showCheckerboard
-                  ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
-                  : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
-              }`}
-            >
-              <Grid className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          {/* FX Ambiance (Particles & Hologram HUD) Toggle */}
-          <Tooltip content={`VFX Ambiance (HUD & Particles): ${showVfxAmbiance ? 'Enabled' : 'Disabled'}`}>
-            <button
-              type="button"
-              onClick={() => setShowVfxAmbiance(!showVfxAmbiance)}
-              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
-                showVfxAmbiance
-                  ? 'border-purple-400/50 bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
-                  : 'border-[var(--glass-border)] text-foreground/40 hover:text-foreground hover:bg-white/10'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
-
-          <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground font-mono text-[10px] flex items-center gap-1 border border-[var(--glass-border)]">
-            <Layers className="w-3 h-3 text-[var(--accent-primary)]" />
-            16:9 Canvas
-          </div>
-        </div>
-      </div>
+      <ViewportControlBar
+        width={width}
+        height={height}
+        isPlaying={isPlaying}
+        currentFrame={currentFrame}
+        totalFrames={totalFrames}
+        onTogglePlay={onTogglePlay}
+        selectedSeqId={selectedSeqId}
+        transform={transform}
+        activeGuides={activeGuides}
+        zoomLevel={zoomLevel}
+        onSetZoomLevel={setZoomLevel}
+        onResetPan={() => setPanOffset({ x: 0, y: 0 })}
+        isPanToolActive={isPanToolActive}
+        isSpacePressed={isSpacePressed}
+        onTogglePanTool={() => setIsPanToolActive(!isPanToolActive)}
+        safeGuidesMode={safeGuidesMode}
+        onCycleSafeGuides={() => {
+          setSafeGuidesMode((prev) => {
+            if (prev === 'none') return '16:9';
+            if (prev === '16:9') return '9:16';
+            return 'none';
+          });
+        }}
+        showCheckerboard={showCheckerboard}
+        onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
+        showVfxAmbiance={showVfxAmbiance}
+        onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+      />
 
       {/* Main Video Viewport Canvas with Mouse Interactive Parallax & Staging Drop Target */}
       <div
@@ -933,60 +752,8 @@ export function Preview({
           }}
         />
 
-        {/* Broadcast 16:9 Safe Guides Overlay */}
-        {safeGuidesMode === '16:9' && (
-          <div className="absolute inset-0 pointer-events-none z-20">
-            {/* Action Safe 93% */}
-            <div className="absolute inset-[3.5%] border border-dashed border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]">
-              <span className="absolute top-1 left-1.5 text-[9px] font-mono font-semibold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 px-1 py-0.2 rounded">
-                16:9 Action Safe (93%)
-              </span>
-            </div>
-            {/* Title Safe 90% */}
-            <div className="absolute inset-[5%] border border-dashed border-amber-400/70 shadow-[0_0_8px_rgba(245,158,11,0.2)]">
-              <span className="absolute top-1 left-1.5 text-[9px] font-mono font-semibold bg-amber-950/80 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded">
-                16:9 Title Safe (90%)
-              </span>
-            </div>
-            {/* Center Crosshair */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
-              <div className="w-6 h-px bg-cyan-400/80 shadow-[0_0_4px_#06b6d4]" />
-              <div className="h-6 w-px bg-cyan-400/80 shadow-[0_0_4px_#06b6d4] absolute" />
-            </div>
-          </div>
-        )}
-
-        {/* Social 9:16 Safe Guides Overlay (Reels / TikTok / Shorts) */}
-        {safeGuidesMode === '9:16' && (
-          <div className="absolute inset-0 pointer-events-none z-20 flex justify-center">
-            <div className="relative h-full w-[31.64%] border-x-2 border-dashed border-rose-500/80 bg-rose-500/5 shadow-[0_0_15px_rgba(244,63,94,0.3)]">
-              <span className="absolute top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold bg-rose-950/90 text-rose-300 border border-rose-500/50 px-2 py-0.5 rounded whitespace-nowrap">
-                9:16 Social Frame
-              </span>
-
-              {/* Top Header UI Danger Zone */}
-              <div className="absolute top-0 left-0 right-0 h-[12%] border-b border-dashed border-rose-400/60 bg-rose-950/40 flex items-center justify-center">
-                <span className="text-[8px] font-mono text-rose-300/80 tracking-tight">
-                  Top UI Zone (Profile / Search)
-                </span>
-              </div>
-
-              {/* Bottom Captions Danger Zone */}
-              <div className="absolute bottom-0 left-0 right-0 h-[22%] border-t border-dashed border-rose-400/60 bg-rose-950/40 flex items-center justify-center">
-                <span className="text-[8px] font-mono text-rose-300/80 tracking-tight">
-                  Bottom UI Zone (Captions / Audio)
-                </span>
-              </div>
-
-              {/* Right Sidebar Interaction Zone */}
-              <div className="absolute top-[12%] bottom-[22%] right-0 w-[22%] border-l border-dashed border-rose-400/50 bg-rose-950/30 flex items-center justify-center">
-                <span className="text-[7px] font-mono text-rose-300/70 [writing-mode:vertical-rl] tracking-tighter">
-                  Actions (Like / Share)
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Broadcast 16:9 & Social 9:16 Safe Guides */}
+        <ViewportSafeGuides mode={safeGuidesMode} />
 
         {/* Drag-and-Drop Staging Target Indicator */}
         {(isOver || (isDragOver && dragCoords)) && (
@@ -1238,79 +1005,23 @@ export function Preview({
               } rounded-md flex items-center justify-center group pointer-events-auto z-10 backdrop-blur-[2px]`}
             >
               {/* Floating Contextual Action Pill HUD */}
-              <div
-                onMouseDown={(e) => e.stopPropagation()}
-                className="absolute -top-12 left-1/2 -translate-x-1/2 glass-panel shadow-[0_8px_32px_rgba(0,0,0,0.6)] border border-[var(--glass-border-highlight)] px-2 py-1 rounded-full flex items-center gap-1.5 z-30 select-none pointer-events-auto backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
-              >
-                {/* Duplicate */}
-                <Tooltip content="Duplicate Sequence (Ctrl+D)">
-                  <button
-                    type="button"
-                    onClick={() => IRStateManager.getInstance().duplicateSequence(selectedSeqId)}
-                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-
-                {/* Center Alignment */}
-                <Tooltip content="Center in Canvas">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newT = { ...transform, x: 0, y: 0 };
-                      setTransform(newT);
-                      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
-                    }}
-                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                  >
-                    <AlignCenter className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-
-                {/* Lock / Unlock */}
-                <Tooltip content={isLocked ? 'Unlock Transform' : 'Lock Transform'}>
-                  <button
-                    type="button"
-                    onClick={() => setIsLocked(!isLocked)}
-                    className={`p-1 rounded-full active:scale-90 transition-all cursor-pointer ${
-                      isLocked
-                        ? 'text-amber-400 bg-amber-500/15'
-                        : 'text-foreground/80 hover:text-foreground hover:bg-white/15 dark:hover:bg-white/10'
-                    }`}
-                  >
-                    {isLocked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Unlock className="w-3.5 h-3.5" />}
-                  </button>
-                </Tooltip>
-
-                {/* Reset Transform */}
-                <Tooltip content="Reset Transform">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newT = { x: 0, y: 0, scale: 1.0, rotation: 0 };
-                      setTransform(newT);
-                      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
-                    }}
-                    className="p-1 hover:bg-white/15 dark:hover:bg-white/10 rounded-full text-foreground/80 hover:text-foreground active:scale-90 transition-all cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-
-                <div className="w-px h-3.5 bg-[var(--glass-border)] mx-0.5" />
-
-                {/* Delete */}
-                <Tooltip content="Delete Sequence (Del)">
-                  <button
-                    type="button"
-                    onClick={() => IRStateManager.getInstance().deleteSequence(selectedSeqId)}
-                    className="p-1 hover:bg-rose-500/20 rounded-full text-rose-400 hover:text-rose-300 active:scale-90 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
-              </div>
+              <ContextualActionPill
+                selectedSeqId={selectedSeqId}
+                isLocked={isLocked}
+                onDuplicate={(id) => IRStateManager.getInstance().duplicateSequence(id)}
+                onCenter={() => {
+                  const newT = { ...transform, x: 0, y: 0 };
+                  setTransform(newT);
+                  IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+                }}
+                onToggleLock={() => setIsLocked(!isLocked)}
+                onResetTransform={() => {
+                  const newT = { x: 0, y: 0, scale: 1.0, rotation: 0 };
+                  setTransform(newT);
+                  IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+                }}
+                onDelete={(id) => IRStateManager.getInstance().deleteSequence(id)}
+              />
 
               {/* 4 Corner Scale Handles */}
               <TransformHandle
@@ -1433,38 +1144,18 @@ export function Preview({
         )}
 
         {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}
-        {activeCues.length > 0 && (
-          <div className="absolute bottom-6 left-6 right-6 flex flex-col items-center gap-1.5 pointer-events-auto z-20 select-none">
-            {activeCues.map((cue, idx) => {
-              const isTarget = cue.text.startsWith('TARGET') || cue.text.includes('[');
-              return (
-                <span
-                  key={idx}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    const parentSeq = activeSequences.find((s) => s.cues && s.cues.some((c) => c.text === cue.text));
-                    if (parentSeq) {
-                      const cueIdx = parentSeq.cues?.findIndex((c) => c.text === cue.text) ?? 0;
-                      setEditingCue({ sequenceId: parentSeq.id, cueIndex: cueIdx, text: cue.text });
-                    }
-                  }}
-                  className={`px-4 py-1.5 rounded-lg text-center cursor-pointer transition-transform hover:scale-105 select-none font-bold tracking-wide ${isTarget
-                    ? 'border border-rose-500/80 bg-rose-950/85 text-rose-200 font-mono text-xs tracking-wider shadow-[0_0_15px_rgba(244,63,94,0.4)]'
-                    : 'border border-white/15 bg-black/80 text-white text-base shadow-2xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]'
-                    }`}
-                  style={{
-                    textShadow: isTarget
-                      ? '0 0 8px rgba(244,63,94,0.8)'
-                      : '0 2px 4px rgba(0,0,0,0.95), 0 0 2px #000, 0 0 1px #000',
-                  }}
-                  title="Double click to edit text"
-                >
-                  {cue.text}
-                </span>
-              );
-            })}
-          </div>
-        )}
+        <SubtitlesOverlay
+          activeCues={activeCues}
+          activeSequences={activeSequences}
+          editingCue={editingCue}
+          onStartEditing={setEditingCue}
+          onUpdateEditingText={(text) => setEditingCue((prev) => prev ? { ...prev, text } : null)}
+          onCommitEditing={(cue) => {
+            IRStateManager.getInstance().updateTextCue(cue.sequenceId, cue.cueIndex, cue.text);
+            setEditingCue(null);
+          }}
+          onCancelEditing={() => setEditingCue(null)}
+        />
       </div>
 
       {/* Floating Viewport Quick Transport Bar */}

@@ -5,6 +5,20 @@ import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 
 describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, Viewport HUD)', () => {
   const previewPath = path.resolve(__dirname, '../apps/studio/src/components/Preview.tsx');
+  const previewDir = path.resolve(__dirname, '../apps/studio/src/components/preview');
+
+  const getCombinedCode = () => {
+    let combined = fs.readFileSync(previewPath, 'utf8');
+    if (fs.existsSync(previewDir)) {
+      const files = fs.readdirSync(previewDir);
+      for (const f of files) {
+        if (f.endsWith('.tsx') || f.endsWith('.ts')) {
+          combined += '\n' + fs.readFileSync(path.join(previewDir, f), 'utf8');
+        }
+      }
+    }
+    return combined;
+  };
 
   it('verifies Preview.tsx source exists and has zero compilation syntax errors', () => {
     expect(fs.existsSync(previewPath)).toBe(true);
@@ -14,7 +28,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
 
   describe('Viewport Header HUD & Control Bar', () => {
     it('should implement Zoom presets (Fit, 50%, 100%, 200%) in the top HUD', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('zoomLevel');
       expect(code).toContain('Fit');
       expect(code).toContain('50%');
@@ -24,7 +38,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
     });
 
     it('should implement Pan Hand Tool with Spacebar navigation support', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('isPanToolActive');
       expect(code).toContain('isSpacePressed');
       expect(code).toContain('isPanning');
@@ -33,7 +47,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
     });
 
     it('should implement Broadcast (16:9) and Social (9:16) Safe Guides', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('safeGuidesMode');
       expect(code).toContain('16:9 Action Safe (93%)');
       expect(code).toContain('16:9 Title Safe (90%)');
@@ -44,7 +58,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
     });
 
     it('should implement Alpha Transparency Checkerboard toggle with repeating-conic-gradient', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('showCheckerboard');
       expect(code).toContain('repeating-conic-gradient');
       expect(code).toContain('Toggle Alpha Transparency Checkerboard');
@@ -53,13 +67,13 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
 
   describe('On-Canvas Floating Contextual Action Pill', () => {
     it('should render Contextual Action Pill right above the active transform selection', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('Floating Contextual Action Pill HUD');
       expect(code).toContain('-top-12 left-1/2 -translate-x-1/2');
     });
 
     it('should include Duplicate, Center Alignment, Lock/Unlock, Reset Transform, and Delete actions', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('duplicateSequence(selectedSeqId)');
       expect(code).toContain('deleteSequence(selectedSeqId)');
       expect(code).toContain('Center Alignment');
@@ -68,7 +82,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
     });
 
     it('should display lock indicator and disable transform dragging when locked', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('cursor-not-allowed');
       expect(code).toContain('border-amber-400');
       expect(code).toContain('if (isLocked) return');
@@ -77,7 +91,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
 
   describe('Cursor States & Keyboard Shortcuts', () => {
     it('should expose responsive cursor classes for transform handles and pan tool', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain('cursor-nwse-resize');
       expect(code).toContain('cursor-nesw-resize');
       expect(code).toContain('cursor-ns-resize');
@@ -87,7 +101,7 @@ describe('Phase 4: Studio Viewport Modernization Suite (Canvas2D, Action Pill, V
     });
 
     it('should listen for Space, Delete, Backspace, Ctrl+D, and Escape shortcuts', () => {
-      const code = fs.readFileSync(previewPath, 'utf8');
+      const code = getCombinedCode();
       expect(code).toContain("e.code === 'Space'");
       expect(code).toContain("e.key === 'Delete'");
       expect(code).toContain("e.key.toLowerCase() === 'd'");

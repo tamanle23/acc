@@ -19,6 +19,7 @@ export class AssetTextureCache {
   private imageCache = new Map<string, { img: HTMLImageElement; isReady: boolean }>();
   private videoCache = new Map<string, { video: HTMLVideoElement; isReady: boolean }>();
   private placeholderCache = new Map<string, HTMLCanvasElement>();
+  private subscribers = new Set<() => void>();
 
   private constructor() {}
 
@@ -27,6 +28,27 @@ export class AssetTextureCache {
       AssetTextureCache.instance = new AssetTextureCache();
     }
     return AssetTextureCache.instance;
+  }
+
+  /**
+   * Subscribes to asset decoding readiness events.
+   * Automatically called when an image or video finishes decoding in the background.
+   */
+  public subscribe(callback: () => void): () => void {
+    this.subscribers.add(callback);
+    return () => {
+      this.subscribers.delete(callback);
+    };
+  }
+
+  private notify(): void {
+    for (const sub of this.subscribers) {
+      try {
+        sub();
+      } catch (err) {
+        console.error('[AssetTextureCache] Subscriber error:', err);
+      }
+    }
   }
 
   /**
@@ -49,6 +71,7 @@ export class AssetTextureCache {
           entry = { img, isReady: false };
           img.onload = () => {
             entry!.isReady = true;
+            this.notify();
           };
           img.onerror = () => {
             console.warn(`[AssetTextureCache] Failed to load image: ${src}`);
@@ -83,6 +106,7 @@ export class AssetTextureCache {
 
           video.onloadeddata = () => {
             vEntry!.isReady = true;
+            this.notify();
           };
           video.onerror = () => {
             console.warn(`[AssetTextureCache] Failed to load video: ${src}`);

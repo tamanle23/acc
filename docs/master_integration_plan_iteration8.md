@@ -67,12 +67,26 @@ flowchart TD
   - Dynamically query active sequences for `overlay/canvas_particles` or `overlay/hologram_hud` modifiers in the frame loop.
   - Add FX Ambiance toggle in Viewport Control Bar.
 
-### Phase 2: Real Visual Media Compositor (Image & Video)
+### Phase 2: Real Visual Media Compositor & Preview Architecture Resilience
+- **`packages/effect-engines/src/canvas/UniversalCanvasEngine.ts`**:
+  - Implement `renderLayers(ctx: CanvasRenderingContext2D, layers: VisualLayerItem[]): void`:
+    - Strict multi-track layer ordering ($V1 \to V4$).
+    - Aspect ratio math: `'cover'` for background plates (fills 16:9 canvas cleanly) and `'contain'` for subjects/overlays.
+    - Modifier-driven `blendMode` parameter support (falling back to track `blendMode` or `'source-over'`).
+    - GSAP / Pts.js affine transform matrix stacking (`translate`, `rotate`, `scale`, `globalAlpha`) and defensive `ctx.drawImage()`.
 - **`apps/studio/src/lib/textures/AssetTextureCache.ts`**:
+  - Implement Observer pattern (`subscribe(callback)`, `notify()`) to reactively notify listeners on image/video frame decoding so the preview redraws immediately without waiting for scrub.
   - Implement real image loading and video element seeking (`new Image()`, HTML5 `<video>`).
-  - Implement `getVisualAsset(assetId, src, type)` and `renderMissingAssetPlaceholder(ctx, w, h, name, type)`.
+  - Implement `getVisualAsset(assetId, src, type)` and `renderMissingAssetPlaceholder(ctx, w, h, name, type)` (Rule 235 isolation).
+- **`apps/studio/src/components/preview/`**:
+  - Decompose monolithic 1,558-line `Preview.tsx` into clean, single-responsibility sub-components:
+    - `ViewportControlBar.tsx`: Monitor HUD, zoom presets, pan hand tool, safe guides, checkerboard, ambiance toggle.
+    - `ViewportSafeGuides.tsx`: 16:9 Broadcast & 9:16 Social Reel safe overlays.
+    - `ContextualActionPill.tsx`: Floating action pill (Duplicate, Center, Lock/Unlock, Reset, Delete).
+    - `SubtitlesOverlay.tsx`: In-canvas isolated subtitles & inline text cue editor modal.
 - **`apps/studio/src/components/Preview.tsx`**:
-  - Layer multi-track rendering (V1 $\to$ V4) with affine matrix transforms (`ctx.translate`, `ctx.rotate`, `ctx.scale`, `ctx.globalAlpha`) and `ctx.drawImage()`.
+  - Lean orchestrator (~280 lines) delegating visual layer drawing to `engine.renderLayers()` and sub-components.
+  - Retain exported types and sub-components (`TransformBodyDraggable`, `TransformHandle`, `computeDragTransform`) ensuring 100% zero-regression test compatibility.
 
 ### Phase 3: Multi-Track Web Audio Asset Decoding & Mixing
 - **`apps/studio/src/lib/audio/WebAudioEngine.ts`**:

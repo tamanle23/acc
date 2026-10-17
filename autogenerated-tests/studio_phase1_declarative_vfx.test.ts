@@ -65,6 +65,20 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
 
   describe('Preview.tsx Declarative Integration Source Verification', () => {
     const previewFile = path.resolve(process.cwd(), 'apps/studio/src/components/Preview.tsx');
+    const previewDir = path.resolve(process.cwd(), 'apps/studio/src/components/preview');
+
+    const getCombinedCode = () => {
+      let combined = fs.readFileSync(previewFile, 'utf8');
+      if (fs.existsSync(previewDir)) {
+        const files = fs.readdirSync(previewDir);
+        for (const f of files) {
+          if (f.endsWith('.tsx') || f.endsWith('.ts')) {
+            combined += '\n' + fs.readFileSync(path.join(previewDir, f), 'utf8');
+          }
+        }
+      }
+      return combined;
+    };
 
     it('should NOT contain hardcoded initHologramHUD or initParticleSystem in engine mount effect', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
@@ -79,7 +93,7 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
     });
 
     it('should dynamically bind particles and HUD to active sequence modifiers in render effect', () => {
-      const code = fs.readFileSync(previewFile, 'utf-8');
+      const code = getCombinedCode();
       expect(code).toContain('activeParticleMod');
       expect(code).toContain('activeHudMod');
       expect(code).toContain('engine.initParticleSystem');
@@ -89,7 +103,7 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
     });
 
     it('should provide a VFX Ambiance toggle button in Viewport Control Bar', () => {
-      const code = fs.readFileSync(previewFile, 'utf-8');
+      const code = getCombinedCode();
       expect(code).toContain('showVfxAmbiance');
       expect(code).toContain('setShowVfxAmbiance');
       expect(code).toContain('VFX Ambiance (HUD & Particles)');

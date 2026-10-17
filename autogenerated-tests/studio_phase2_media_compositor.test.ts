@@ -33,11 +33,11 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
   describe('Preview.tsx Multi-Track Compositor Source Verification', () => {
     const previewFile = path.resolve(process.cwd(), 'apps/studio/src/components/Preview.tsx');
 
-    it('should query visual assets via AssetTextureCache in render loop', () => {
+    it('should query visual assets via AssetTextureCache in render loop and delegate to engine.renderLayers', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
       expect(code).toContain('textureCache.getVisualAsset(');
-      expect(code).toContain('ctx.drawImage(');
+      expect(code).toContain('engine.renderLayers(ctx, layersToDraw)');
     });
 
     it('should sort visual sequences according to video track order V1 -> V4', () => {
@@ -47,13 +47,11 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
       expect(code).toContain('orderA - orderB');
     });
 
-    it('should apply affine matrix transforms (translate, rotate, scale, alpha) to each sequence', () => {
+    it('should configure layer aspect ratio fitMode and blendMode for UniversalCanvasEngine', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
-      expect(code).toContain('ctx.translate(width * 0.5 + transX, height * 0.5 + transY)');
-      expect(code).toContain('ctx.rotate((transRot * Math.PI) / 180)');
-      expect(code).toContain('ctx.scale(transScale, transScale)');
-      expect(code).toContain('ctx.globalAlpha = Math.max(0, Math.min(1, transOpacity))');
+      expect(code).toContain("fitMode: trackIdx === 0 ? 'cover' : 'contain'");
+      expect(code).toContain('blendMode: configuredBlend');
     });
   });
 });
