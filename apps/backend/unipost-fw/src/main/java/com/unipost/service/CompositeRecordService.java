@@ -40,6 +40,7 @@ public class CompositeRecordService {
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
+    @Autowired
     public CompositeRecordService(
             EntityTypeRepository entityTypeRepository,
             EntityRecordRepository entityRecordRepository,
@@ -48,6 +49,27 @@ public class CompositeRecordService {
             ObjectMapper objectMapper,
             PageBuilder pageBuilder,
             @Autowired(required = false) JdbcTemplate jdbcTemplate) {
+        this(
+                entityTypeRepository,
+                entityRecordRepository,
+                dynamicQueryCompiler,
+                dataLoaderBatchResolver,
+                objectMapper,
+                pageBuilder,
+                jdbcTemplate,
+                jdbcTemplate != null ? new NamedParameterJdbcTemplate(jdbcTemplate) : null
+        );
+    }
+
+    public CompositeRecordService(
+            EntityTypeRepository entityTypeRepository,
+            EntityRecordRepository entityRecordRepository,
+            DynamicQueryCompiler dynamicQueryCompiler,
+            DataLoaderBatchResolver dataLoaderBatchResolver,
+            ObjectMapper objectMapper,
+            PageBuilder pageBuilder,
+            JdbcTemplate jdbcTemplate,
+            NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
         this.entityTypeRepository = entityTypeRepository;
         this.entityRecordRepository = entityRecordRepository;
         this.dynamicQueryCompiler = dynamicQueryCompiler;
@@ -55,7 +77,7 @@ public class CompositeRecordService {
         this.objectMapper = objectMapper;
         this.pageBuilder = pageBuilder;
         this.jdbcTemplate = jdbcTemplate;
-        this.namedParameterJdbcTemplate = jdbcTemplate != null ? new NamedParameterJdbcTemplate(jdbcTemplate) : null;
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
     }
 
     /**

@@ -366,4 +366,218 @@ public class RecordMutationPipelineTest {
 
         verify(outboxEventPublisher).publish(eq("entity_record"), eq("1001"), eq("RECORD_RESTORED"), eq("tenant-corp"), any());
     }
+
+    @Test
+    void testCompositeMutations_AreForbidden() {
+        EntityType composite = new EntityType();
+        composite.setId(99L);
+        composite.setIsComposite(true);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(99L)).thenReturn(Optional.of(composite));
+
+        assertThatThrownBy(() -> pipeline.executeCreate(99L, new CreateRecordRequest(Map.of(), "tenant-corp")))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("virtual and read-only");
+
+        assertThatThrownBy(() -> pipeline.executeUpdate(99L, 1L, new UpdateRecordRequest(Map.of(), null, null), null))
+                .isInstanceOf(UnsupportedOperationException.class);
+
+        assertThatThrownBy(() -> pipeline.executePatch(99L, 1L, new PatchRecordRequest(Map.of(), null, null), null))
+                .isInstanceOf(UnsupportedOperationException.class);
+
+        assertThatThrownBy(() -> pipeline.executeDelete(99L, 1L))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void testUpdateRecord_WithConcurrentConflictOnSameField_ThrowsMetadataConflictException() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+
+        EntityRecord existing = new EntityRecord();
+        existing.setId(1001L);
+        existing.setEntityType(customerType);
+        existing.setTenantId("tenant-corp");
+        existing.setVersion(2L);
+        // Server changed tier to GOLD
+        existing.setAttributes(new HashMap<>(Map.of("name", "Acme", "tier", "GOLD")));
+
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(existing));
+
+        // Client base was STANDARD, but client wants tier = PLATINUM
+        Map<String, Object> baseAttrs = Map.of("name", "Acme", "tier", "STANDARD");
+        Map<String, Object> incomingAttrs = Map.of("name", "Acme", "tier", "PLATINUM");
+
+        UpdateRecordRequest updateReq = new UpdateRecordRequest(incomingAttrs, 1L, baseAttrs);
+
+        assertThatThrownBy(() -> pipeline.executeUpdate(10L, 1001L, updateReq, null))
+                .isInstanceOf(MetadataConflictException.class)
+                .hasMessageContaining("Concurrent modification conflict on field 'tier'");
+    }
+
+    @Test
+    void testExecutePatch_WithETagAndBaseAttributes_Succeeds() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+
+        EntityRecord existing = new EntityRecord();
+        existing.setId(1001L);
+        existing.setEntityType(customerType);
+        existing.setTenantId("tenant-corp");
+        existing.setVersion(3L);
+        existing.setAttributes(new HashMap<>(Map.of("name", "Acme Current", "tier", "VIP")));
+
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(existing));
+        when(entityRecordRepository.save(any(EntityRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Client version 2, base attributes provided for auto-merge
+        PatchRecordRequest patchReq = new PatchRecordRequest(
+                Map.of("phone", "12345"),
+                2L,
+                Map.of("name", "Acme Old", "tier", "VIP")
+        );
+
+        EntityRecordResponse response = pipeline.executePatch(10L, 1001L, patchReq, "W/\"2\"");
+        assertThat(response.version()).isEqualTo(4L);
+        assertThat(response.attributes()).containsEntry("phone", "12345");
+        assertThat(response.attributes()).containsEntry("tier", "VIP");
+    }
+
+    @Test
+    void testDeleteRecord_WithSetNullPolicy_ClearsReference() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+
+        EntityRecord customer = new EntityRecord();
+        customer.setId(1001L);
+        customer.setTenantId("tenant-corp");
+        customer.setEntityType(customerType);
+
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(customer));
+
+        AttributeDefinition setNullAttr = new AttributeDefinition();
+        setNullAttr.setEntityType(orderType);
+        setNullAttr.setSystemName("customer_id");
+        setNullAttr.setOptions(Map.of("targetEntityTypeId", 10L, "cascadePolicy", "SET_NULL"));
+        setNullAttr.setIsArchived(false);
+
+        when(attributeDefinitionRepository.findByTenantIdAndDeletedDateIsNull("tenant-corp")).thenReturn(List.of(setNullAttr));
+        when(jdbcTemplate.queryForObject(any(String.class), eq(Integer.class), eq("tenant-corp"), eq(20L), eq("customer_id"), eq("1001")))
+                .thenReturn(4);
+
+        pipeline.executeDelete(10L, 1001L);
+
+        verify(jdbcTemplate).update(
+                contains("UPDATE UNIPOST_ENTITIES SET attributes = attributes - ?"),
+                eq("customer_id"), eq("tenant-corp"), eq(20L), eq("customer_id"), eq("1001")
+        );
+        assertThat(customer.getDeletedDate()).isNotNull();
+    }
+
+    @Test
+    void testDeleteRecord_WithPatternCGraphEdges_CascadeAndDetach() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+
+        EntityRecord customer = new EntityRecord();
+        customer.setId(1001L);
+        customer.setTenantId("tenant-corp");
+        customer.setEntityType(customerType);
+
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(customer));
+        when(attributeDefinitionRepository.findByTenantIdAndDeletedDateIsNull("tenant-corp")).thenReturn(List.of());
+
+        RelationshipType cascadeRelType = new RelationshipType();
+        cascadeRelType.setSystemName("customer_profiles");
+        cascadeRelType.setCascadePolicy("CASCADE");
+
+        EntityRecord targetRecord = new EntityRecord();
+        targetRecord.setId(2002L);
+
+        EntityRelationship cascadeEdge = new EntityRelationship();
+        cascadeEdge.setId(1L);
+        cascadeEdge.setSourceEntity(customer);
+        cascadeEdge.setTargetEntity(targetRecord);
+        cascadeEdge.setRelationshipType(cascadeRelType);
+
+        when(entityRelationshipRepository.findBySourceEntityIdAndDeletedDateIsNull(1001L)).thenReturn(List.of(cascadeEdge));
+        when(entityRelationshipRepository.findByTargetEntityIdAndDeletedDateIsNull(1001L)).thenReturn(List.of());
+
+        pipeline.executeDelete(10L, 1001L);
+
+        assertThat(cascadeEdge.getDeletedDate()).isNotNull();
+        assertThat(targetRecord.getDeletedDate()).isNotNull();
+        verify(entityRelationshipRepository).save(cascadeEdge);
+        verify(entityRecordRepository).save(targetRecord);
+    }
+
+    @Test
+    void testDeleteRecord_WithPatternCRestrictEdge_ThrowsConflict409() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+
+        EntityRecord customer = new EntityRecord();
+        customer.setId(1001L);
+        customer.setTenantId("tenant-corp");
+        customer.setEntityType(customerType);
+
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(customer));
+        when(attributeDefinitionRepository.findByTenantIdAndDeletedDateIsNull("tenant-corp")).thenReturn(List.of());
+
+        RelationshipType restrictRelType = new RelationshipType();
+        restrictRelType.setSystemName("vital_links");
+        restrictRelType.setCascadePolicy("RESTRICT");
+
+        EntityRelationship restrictEdge = new EntityRelationship();
+        restrictEdge.setId(2L);
+        restrictEdge.setRelationshipType(restrictRelType);
+
+        when(entityRelationshipRepository.findBySourceEntityIdAndDeletedDateIsNull(1001L)).thenReturn(List.of(restrictEdge));
+        when(entityRelationshipRepository.findByTargetEntityIdAndDeletedDateIsNull(1001L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> pipeline.executeDelete(10L, 1001L))
+                .isInstanceOf(MetadataConflictException.class)
+                .hasMessageContaining("active relationship edge exists in 'vital_links' (RESTRICT policy)");
+    }
+
+    @Test
+    void testGetRecordAuditLogs_ReturnsMappedList() {
+        RecordAuditLog log1 = RecordAuditLog.builder()
+                .id(1L)
+                .tenantId("tenant-corp")
+                .recordId(1001L)
+                .entityTypeId(10L)
+                .operation("CREATE")
+                .actor("admin")
+                .version(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(recordAuditLogRepository.findByTenantIdAndEntityTypeIdAndRecordIdOrderByCreatedAtDesc("tenant-corp", 10L, 1001L))
+                .thenReturn(List.of(log1));
+
+        List<RecordAuditLogResponse> logs = pipeline.getRecordAuditLogs(10L, 1001L);
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).id()).isEqualTo(1L);
+        assertThat(logs.get(0).operation()).isEqualTo("CREATE");
+    }
+
+    @Test
+    void testExtractExpectedVersion_Formats() {
+        assertThat(pipeline.extractExpectedVersion("\"5\"", null)).isEqualTo(5L);
+        assertThat(pipeline.extractExpectedVersion("W/\"5\"", null)).isEqualTo(5L);
+        assertThat(pipeline.extractExpectedVersion("5", null)).isEqualTo(5L);
+        assertThat(pipeline.extractExpectedVersion("invalid", 10L)).isEqualTo(10L);
+        assertThat(pipeline.extractExpectedVersion(null, 7L)).isEqualTo(7L);
+    }
+
+    @Test
+    void testPreviewRestore_AuditLogNotFound_ThrowsNotFound() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+        EntityRecord currentRecord = new EntityRecord();
+        currentRecord.setId(1001L);
+        currentRecord.setTenantId("tenant-corp");
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1001L)).thenReturn(Optional.of(currentRecord));
+        when(recordAuditLogRepository.findByTenantIdAndEntityTypeIdAndRecordIdAndId("tenant-corp", 10L, 1001L, 999L))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> pipeline.previewRestore(10L, 1001L, 999L))
+                .isInstanceOf(MetadataNotFoundException.class)
+                .hasMessageContaining("Audit log entry not found");
+    }
 }
+

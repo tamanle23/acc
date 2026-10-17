@@ -145,4 +145,87 @@ class SchemaCompilerTest {
         assertEquals(1, required.size());
         assertEquals("title", required.get(0).asText());
     }
+
+    @Test
+    void testCompile_ReturnsSerializedString() {
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setSystemName("name");
+        attr.setUiComponent("text");
+        attr.setDataType("string");
+
+        String json = schemaCompiler.compile(1L, 1L, List.of(attr));
+        assertNotNull(json);
+        assertTrue(json.contains("\"type\":\"object\""));
+        assertTrue(json.contains("\"name\""));
+    }
+
+    @Test
+    void testCompileNode_DataTypeFallbacksAndRelationPickerString() {
+        AttributeDefinition relString = new AttributeDefinition();
+        relString.setSystemName("parentCode");
+        relString.setUiComponent("relation_picker");
+        relString.setDataType("string");
+
+        AttributeDefinition dateDefault = new AttributeDefinition();
+        dateDefault.setSystemName("created");
+        dateDefault.setUiComponent("datepicker");
+
+        AttributeDefinition boolFallback = new AttributeDefinition();
+        boolFallback.setSystemName("flag");
+        boolFallback.setDataType("boolean");
+
+        AttributeDefinition intFallback = new AttributeDefinition();
+        intFallback.setSystemName("count");
+        intFallback.setDataType("integer");
+        intFallback.setDefaultValue("10");
+
+        AttributeDefinition numFallback = new AttributeDefinition();
+        numFallback.setSystemName("ratio");
+        numFallback.setDataType("number");
+        numFallback.setDefaultValue("1.5");
+
+        AttributeDefinition arrFallback = new AttributeDefinition();
+        arrFallback.setSystemName("list");
+        arrFallback.setDataType("array");
+
+        AttributeDefinition jsonFallback = new AttributeDefinition();
+        jsonFallback.setSystemName("rawJson");
+        jsonFallback.setDataType("json");
+
+        AttributeDefinition dateFallback = new AttributeDefinition();
+        dateFallback.setSystemName("eventDate");
+        dateFallback.setDataType("date");
+
+        AttributeDefinition defaultFallback = new AttributeDefinition();
+        defaultFallback.setSystemName("desc");
+        defaultFallback.setDataType("unknown_type");
+        defaultFallback.setDefaultValue("default desc");
+
+        AttributeDefinition badDefault = new AttributeDefinition();
+        badDefault.setSystemName("badNum");
+        badDefault.setDataType("integer");
+        badDefault.setDefaultValue("not-a-number");
+
+        List<AttributeDefinition> attrs = List.of(
+                relString, dateDefault, boolFallback, intFallback, numFallback,
+                arrFallback, jsonFallback, dateFallback, defaultFallback, badDefault
+        );
+
+        JsonNode root = schemaCompiler.compileNode(1L, 1L, attrs);
+        JsonNode props = root.get("properties");
+
+        assertEquals("string", props.get("parentCode").get("type").asText());
+        assertEquals("date-time", props.get("created").get("format").asText());
+        assertEquals("boolean", props.get("flag").get("type").asText());
+        assertEquals("integer", props.get("count").get("type").asText());
+        assertEquals(10, props.get("count").get("default").asInt());
+        assertEquals("number", props.get("ratio").get("type").asText());
+        assertEquals(1.5, props.get("ratio").get("default").asDouble());
+        assertEquals("array", props.get("list").get("type").asText());
+        assertEquals("object", props.get("rawJson").get("type").asText());
+        assertEquals("string", props.get("eventDate").get("type").asText());
+        assertEquals("string", props.get("desc").get("type").asText());
+        assertEquals("default desc", props.get("desc").get("default").asText());
+        assertEquals("not-a-number", props.get("badNum").get("default").asText());
+    }
 }

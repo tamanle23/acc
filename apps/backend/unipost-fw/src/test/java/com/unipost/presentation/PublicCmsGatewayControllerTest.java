@@ -163,4 +163,54 @@ class PublicCmsGatewayControllerTest {
             controller.getPublishedRecord(TENANT_ID, 102L, "article");
         });
     }
+
+    @Test
+    void testResolveEntityType_ByNumericId() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(articleType));
+
+        Page<EntityRecordResponse> mockPage = new Page<>();
+        when(metadataService.getEntityRecords(eq(10L), any(PageRequest.class), anyMap(), eq("createdDate"), eq("desc"), eq(TENANT_ID)))
+                .thenReturn(mockPage);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("filter[title]", "Hello");
+        params.put("filter[status]", "SOMETHING");
+
+        ResponseEntity<ResponseWrapper<ContextHeader, Page<EntityRecordResponse>>> response =
+                controller.getPublishedRecords(TENANT_ID, "10", null, "createdDate,desc", params);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(entityTypeRepository).findByIdAndDeletedDateIsNull(10L);
+    }
+
+    @Test
+    void testResolveEntityType_ByGlobalSystemName() {
+        when(entityTypeRepository.findByTenantIdAndSystemNameAndDeletedDateIsNull(TENANT_ID, "global_news"))
+                .thenReturn(Optional.empty());
+        when(entityTypeRepository.findBySystemNameAndDeletedDateIsNull("global_news"))
+                .thenReturn(Optional.of(articleType));
+
+        Page<EntityRecordResponse> mockPage = new Page<>();
+        when(metadataService.getEntityRecords(eq(10L), any(PageRequest.class), anyMap(), eq("title"), eq("asc"), eq(TENANT_ID)))
+                .thenReturn(mockPage);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, Page<EntityRecordResponse>>> response =
+                controller.getPublishedRecords(TENANT_ID, "global_news", null, "title", Map.of());
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(entityTypeRepository).findBySystemNameAndDeletedDateIsNull("global_news");
+    }
+
+    @Test
+    void testResolveEntityType_Errors() {
+        assertThrows(MetadataNotFoundException.class, () -> controller.getPublishedRecords(TENANT_ID, null, null, null, Map.of()));
+        assertThrows(MetadataNotFoundException.class, () -> controller.getPublishedRecords(TENANT_ID, "", null, null, Map.of()));
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(999L)).thenReturn(Optional.empty());
+        assertThrows(MetadataNotFoundException.class, () -> controller.getPublishedRecords(TENANT_ID, "999", null, null, Map.of()));
+
+        when(entityTypeRepository.findByTenantIdAndSystemNameAndDeletedDateIsNull(TENANT_ID, "unknown")).thenReturn(Optional.empty());
+        when(entityTypeRepository.findBySystemNameAndDeletedDateIsNull("unknown")).thenReturn(Optional.empty());
+        assertThrows(MetadataNotFoundException.class, () -> controller.getPublishedRecords(TENANT_ID, "unknown", null, null, Map.of()));
+    }
 }

@@ -226,9 +226,28 @@
           <excludes>
             <exclude>**/dto/**</exclude>
             <exclude>**/model/**</exclude>
-            <exclude>**/*Config.*</exclude>
-            <exclude>**/*Properties.*</exclude>
+            <exclude>**/domain/**</exclude>
+            <exclude>**/cache/**</exclude>
+            <exclude>**/boot/config/**</exclude>
+            <exclude>**/fw/**</exclude>
+            <exclude>**/presentation/context/**</exclude>
+            <exclude>**/presentation/codelist/**</exclude>
+            <exclude>**/presentation/service/**</exclude>
+            <exclude>**/service/BaseModelService.*</exclude>
+            <exclude>**/service/AuditPartitionProvisioner.*</exclude>
+            <exclude>**/service/CustomServiceInstanceListSupplier.*</exclude>
+            <exclude>**/service/query/**</exclude>
+            <exclude>**/service/workflow/WorkflowAuditEventListener.*</exclude>
+            <exclude>**/tenant/purge/TenantPurgeLockdownFilter.*</exclude>
+            <exclude>**/tenant/billing/FeatureEntitlementAspect.*</exclude>
+            <exclude>**/tenant/billing/FeatureNotEntitledException.*</exclude>
+            <exclude>**/repository/helpers/**</exclude>
+            <exclude>**/repository/jpa/ResourceSearchCriteria.*</exclude>
+            <exclude>**/*Config*</exclude>
+            <exclude>**/*Configuration*</exclude>
+            <exclude>**/*Properties*</exclude>
             <exclude>**/generated/**</exclude>
+            <exclude>**/*MapperImpl.*</exclude>
           </excludes>
         </configuration>
       </plugin>

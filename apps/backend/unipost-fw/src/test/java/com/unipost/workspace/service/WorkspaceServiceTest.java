@@ -165,4 +165,111 @@ class WorkspaceServiceTest {
         assertNotNull(regularWs.getDeletedDate());
         verify(workspaceRepository).save(regularWs);
     }
+
+    @Test
+    @DisplayName("Should get workspace by uid for active tenant")
+    void getWorkspaceSuccessfully() {
+        Workspace ws = new Workspace();
+        ws.setId(10L);
+        ws.setUid("ws-10");
+        ws.setTenantId("tenant-acme");
+        ws.setName("Acme Labs");
+
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("ws-10")).thenReturn(Optional.of(ws));
+
+        WorkspaceDto result = workspaceService.getWorkspace("ws-10");
+        assertNotNull(result);
+        assertEquals("Acme Labs", result.name());
+
+        // Cross-tenant access throws MetadataNotFoundException
+        ws.setTenantId("tenant-other");
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.getWorkspace("ws-10"));
+    }
+
+    @Test
+    @DisplayName("Should update workspace fields")
+    void updateWorkspaceSuccessfully() {
+        Workspace ws = new Workspace();
+        ws.setId(10L);
+        ws.setUid("ws-10");
+        ws.setTenantId("tenant-acme");
+        ws.setName("Old Name");
+        ws.setDescription("Old Desc");
+
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("ws-10")).thenReturn(Optional.of(ws));
+        when(workspaceRepository.save(any(Workspace.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateWorkspaceRequest req = new UpdateWorkspaceRequest("New Name", "New Desc", "ENTERPRISE");
+        WorkspaceDto updated = workspaceService.updateWorkspace("ws-10", req);
+
+        assertEquals("New Name", updated.name());
+        assertEquals("New Desc", updated.description());
+        assertEquals("ENTERPRISE", updated.planTier());
+    }
+
+    @Test
+    @DisplayName("Should set default workspace and unset previous default")
+    void setDefaultWorkspaceSuccessfully() {
+        Workspace oldDefault = new Workspace();
+        oldDefault.setId(1L);
+        oldDefault.setTenantId("tenant-acme");
+        oldDefault.setIsDefault(true);
+        oldDefault.setIsImmutable(false);
+
+        Workspace newDefault = new Workspace();
+        newDefault.setId(2L);
+        newDefault.setUid("ws-2");
+        newDefault.setTenantId("tenant-acme");
+        newDefault.setIsDefault(false);
+
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("ws-2")).thenReturn(Optional.of(newDefault));
+        when(workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull("tenant-acme"))
+                .thenReturn(Optional.of(oldDefault));
+        when(workspaceRepository.save(any(Workspace.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        WorkspaceDto result = workspaceService.setDefaultWorkspace("ws-2");
+
+        assertTrue(result.isDefault());
+        assertFalse(oldDefault.getIsDefault());
+        verify(workspaceRepository).save(oldDefault);
+        verify(workspaceRepository).save(newDefault);
+    }
+
+    @Test
+    void testWorkspaceNotFoundAndTenantMismatchBranches() {
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("missing")).thenReturn(Optional.empty());
+
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.getWorkspace("missing"));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.updateWorkspace("missing", new UpdateWorkspaceRequest("N", null, null)));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.setDefaultWorkspace("missing"));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.deleteWorkspace("missing"));
+
+        Workspace alien = new Workspace();
+        alien.setId(99L);
+        alien.setUid("alien-ws");
+        alien.setTenantId("alien-tenant");
+        alien.setIsDefault(false);
+        alien.setIsImmutable(false);
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("alien-ws")).thenReturn(Optional.of(alien));
+
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.getWorkspace("alien-ws"));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.updateWorkspace("alien-ws", new UpdateWorkspaceRequest("N", null, null)));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.setDefaultWorkspace("alien-ws"));
+        assertThrows(MetadataNotFoundException.class, () -> workspaceService.deleteWorkspace("alien-ws"));
+    }
+
+    @Test
+    void testSetDefaultWorkspace_WhenAlreadyDefault_ReturnsEarly() {
+        Workspace ws = new Workspace();
+        ws.setId(1L);
+        ws.setUid("ws-default");
+        ws.setTenantId("tenant-acme");
+        ws.setIsDefault(true);
+        when(workspaceRepository.findByUidAndDeletedDateIsNull("ws-default")).thenReturn(Optional.of(ws));
+
+        WorkspaceDto result = workspaceService.setDefaultWorkspace("ws-default");
+        assertTrue(result.isDefault());
+        verify(workspaceRepository, never()).save(any(Workspace.class));
+    }
 }
+

@@ -199,4 +199,202 @@ class CompositeRecordServiceTest {
         assertNotNull(page);
         verify(dataLoaderBatchResolver, times(1)).resolveBatch(eq(compositeSpec), anyList(), anyMap());
     }
+
+    @Test
+    void getCompositeRecordById_WhenCompositeSpecIsNull_ThrowsIllegalArgumentException() {
+        EntityType invalidComposite = new EntityType();
+        invalidComposite.setId(102L);
+        invalidComposite.setName("MissingSpec");
+        invalidComposite.setIsComposite(true);
+        invalidComposite.setCompositeSpec(null);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(102L)).thenReturn(Optional.of(invalidComposite));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.getCompositeRecordById(102L, 1L, Collections.emptyMap()));
+    }
+
+    @Test
+    void getCompositeRecordById_WithPushdownSuccess_ReturnsPushdownResponse() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate mockJdbc = mock(org.springframework.jdbc.core.JdbcTemplate.class);
+        org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate mockNamedJdbc =
+                mock(org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate.class);
+
+        CompositeRecordService serviceWithJdbc = new CompositeRecordService(
+                entityTypeRepository,
+                entityRecordRepository,
+                dynamicQueryCompiler,
+                dataLoaderBatchResolver,
+                objectMapper,
+                pageBuilder,
+                mockJdbc,
+                mockNamedJdbc
+        );
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(100L)).thenReturn(Optional.of(compositeEntityType));
+        when(dynamicQueryCompiler.compileSingleRecordQueryWithOptions(any(), anyString(), anyLong(), anyMap()))
+                .thenReturn(new DynamicQueryCompiler.CompiledQuery("SELECT 1", Map.of(), null, null));
+
+        java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+        when(rs.getLong("root_id")).thenReturn(1L);
+        when(rs.getString("root_tenant_id")).thenReturn("tenant-test");
+        when(rs.getLong("root_entity_type_id")).thenReturn(10L);
+        when(rs.getLong("root_schema_version")).thenReturn(1L);
+        when(rs.getTimestamp("root_created_date")).thenReturn(java.sql.Timestamp.valueOf(LocalDateTime.now()));
+        when(rs.getTimestamp("root_updated_date")).thenReturn(java.sql.Timestamp.valueOf(LocalDateTime.now()));
+        when(rs.getString("composite_document")).thenReturn("{\"companyName\":\"Acme Corp\"}");
+        when(rs.getString("child_pagination_metadata")).thenReturn("{\"orders\":{\"totalElements\":5,\"limit\":10,\"offset\":0,\"hasMore\":false}}");
+
+        when(mockNamedJdbc.query(eq("SELECT 1"), anyMap(), any(org.springframework.jdbc.core.RowMapper.class)))
+                .thenAnswer(invocation -> {
+                    org.springframework.jdbc.core.RowMapper<CompositeRecordResponse> mapper = invocation.getArgument(2);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        CompositeRecordResponse result = serviceWithJdbc.getCompositeRecordById(100L, 1L, Collections.emptyMap());
+        assertNotNull(result);
+        assertEquals("dynamic-sql-pushdown", result.engineUsed());
+        assertEquals("Acme Corp", result.attributes().get("companyName"));
+        assertTrue(result.childPagination().containsKey("orders"));
+        verify(mockJdbc).execute(CompositeRecordService.TIMEOUT_STATEMENT);
+    }
+
+    @Test
+    void getCompositeRecordById_WithPushdownException_FallsBackToDataLoader() {
+        org.springframework.jdbc.core.JdbcTemplate mockJdbc = mock(org.springframework.jdbc.core.JdbcTemplate.class);
+        org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate mockNamedJdbc =
+                mock(org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate.class);
+
+        CompositeRecordService serviceWithJdbc = new CompositeRecordService(
+                entityTypeRepository,
+                entityRecordRepository,
+                dynamicQueryCompiler,
+                dataLoaderBatchResolver,
+                objectMapper,
+                pageBuilder,
+                mockJdbc,
+                mockNamedJdbc
+        );
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(100L)).thenReturn(Optional.of(compositeEntityType));
+        when(dynamicQueryCompiler.compileSingleRecordQueryWithOptions(any(), anyString(), anyLong(), anyMap()))
+                .thenReturn(new DynamicQueryCompiler.CompiledQuery("SELECT 1", Map.of(), null, null));
+
+        when(mockNamedJdbc.query(anyString(), anyMap(), any(org.springframework.jdbc.core.RowMapper.class)))
+                .thenThrow(new org.springframework.dao.QueryTimeoutException("Statement timed out (>1500ms)"));
+
+        EntityRecord root = new EntityRecord();
+        root.setId(1L);
+        root.setTenantId("tenant-test");
+        root.setEntityType(compositeEntityType);
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(10L, 1L))
+                .thenReturn(Optional.of(root));
+
+        CompositeRecordResponse fallbackResponse = new CompositeRecordResponse(
+                1L, "tenant-test", 10L, true, 1L, Map.of(), Map.of(), "dataloader-fallback", null, null
+        );
+        when(dataLoaderBatchResolver.resolveBatch(eq(compositeSpec), anyList(), anyMap()))
+                .thenReturn(List.of(fallbackResponse));
+
+        CompositeRecordResponse result = serviceWithJdbc.getCompositeRecordById(100L, 1L, Collections.emptyMap());
+        assertNotNull(result);
+        assertEquals("dataloader-fallback", result.engineUsed());
+        verify(dataLoaderBatchResolver, times(1)).resolveBatch(eq(compositeSpec), anyList(), anyMap());
+    }
+
+    @Test
+    void getCompositeRecordsPage_WithPushdownSuccess_ReturnsPushdownPage() throws Exception {
+        org.springframework.jdbc.core.JdbcTemplate mockJdbc = mock(org.springframework.jdbc.core.JdbcTemplate.class);
+        org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate mockNamedJdbc =
+                mock(org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate.class);
+
+        CompositeRecordService serviceWithJdbc = new CompositeRecordService(
+                entityTypeRepository,
+                entityRecordRepository,
+                dynamicQueryCompiler,
+                dataLoaderBatchResolver,
+                objectMapper,
+                pageBuilder,
+                mockJdbc,
+                mockNamedJdbc
+        );
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(100L)).thenReturn(Optional.of(compositeEntityType));
+        when(dynamicQueryCompiler.compilePaginatedQueryWithOptions(any(), anyString(), anyInt(), anyInt(), anyMap()))
+                .thenReturn(new DynamicQueryCompiler.CompiledQuery("SELECT 1", Map.of(), "SELECT COUNT(*)", Map.of()));
+
+        when(mockNamedJdbc.queryForObject(eq("SELECT COUNT(*)"), anyMap(), eq(Long.class))).thenReturn(1L);
+
+        java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+        when(rs.getLong("root_id")).thenReturn(1L);
+        when(rs.getString("root_tenant_id")).thenReturn("tenant-test");
+        when(rs.getLong("root_entity_type_id")).thenReturn(10L);
+        when(rs.getString("composite_document")).thenReturn("invalid-json");
+        when(rs.getString("child_pagination_metadata")).thenReturn(null);
+
+        when(mockNamedJdbc.query(eq("SELECT 1"), anyMap(), any(org.springframework.jdbc.core.RowMapper.class)))
+                .thenAnswer(invocation -> {
+                    org.springframework.jdbc.core.RowMapper<CompositeRecordResponse> mapper = invocation.getArgument(2);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        PageRequest req = new PageRequest();
+        req.setNumber(1);
+        req.setSize(10);
+        Page<CompositeRecordResponse> expectedMockPage = new Page<>();
+        doReturn(expectedMockPage).when(pageBuilder).build(eq(req), any(), any());
+
+        Page<CompositeRecordResponse> result = serviceWithJdbc.getCompositeRecordsPage(100L, req, Collections.emptyMap());
+        assertNotNull(result);
+        verify(mockNamedJdbc).queryForObject(eq("SELECT COUNT(*)"), anyMap(), eq(Long.class));
+    }
+
+    @Test
+    void getCompositeRecordsPage_WithPushdownException_FallsBackToDataLoader() {
+        org.springframework.jdbc.core.JdbcTemplate mockJdbc = mock(org.springframework.jdbc.core.JdbcTemplate.class);
+        org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate mockNamedJdbc =
+                mock(org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate.class);
+
+        CompositeRecordService serviceWithJdbc = new CompositeRecordService(
+                entityTypeRepository,
+                entityRecordRepository,
+                dynamicQueryCompiler,
+                dataLoaderBatchResolver,
+                objectMapper,
+                pageBuilder,
+                mockJdbc,
+                mockNamedJdbc
+        );
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(100L)).thenReturn(Optional.of(compositeEntityType));
+        when(dynamicQueryCompiler.compilePaginatedQueryWithOptions(any(), anyString(), anyInt(), anyInt(), anyMap()))
+                .thenReturn(new DynamicQueryCompiler.CompiledQuery("SELECT 1", Map.of(), "SELECT COUNT(*)", Map.of()));
+
+        when(mockNamedJdbc.queryForObject(anyString(), anyMap(), eq(Long.class)))
+                .thenThrow(new org.springframework.dao.QueryTimeoutException("Query timeout"));
+
+        EntityRecord root = new EntityRecord();
+        root.setId(1L);
+        root.setTenantId("tenant-test");
+        org.springframework.data.domain.Page<EntityRecord> springPage =
+                new org.springframework.data.domain.PageImpl<>(List.of(root));
+        when(entityRecordRepository.findByEntityTypeIdAndDeletedDateIsNull(eq(10L), any()))
+                .thenReturn(springPage);
+
+        CompositeRecordResponse fallbackResponse = new CompositeRecordResponse(
+                1L, "tenant-test", 10L, true, 1L, Map.of(), Map.of(), "dataloader-fallback", null, null
+        );
+        when(dataLoaderBatchResolver.resolveBatch(eq(compositeSpec), anyList(), anyMap()))
+                .thenReturn(List.of(fallbackResponse));
+
+        PageRequest req = new PageRequest();
+        req.setNumber(1);
+        req.setSize(10);
+        Page<CompositeRecordResponse> expectedMockPage = new Page<>();
+        doReturn(expectedMockPage).when(pageBuilder).build(eq(req), any(), any());
+
+        Page<CompositeRecordResponse> result = serviceWithJdbc.getCompositeRecordsPage(100L, req, Collections.emptyMap());
+        assertNotNull(result);
+        verify(dataLoaderBatchResolver, times(1)).resolveBatch(eq(compositeSpec), anyList(), anyMap());
+    }
 }
+

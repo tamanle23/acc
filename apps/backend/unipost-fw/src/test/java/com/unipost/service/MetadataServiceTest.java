@@ -73,6 +73,16 @@ class MetadataServiceTest {
 
         springPageMock = mock(org.springframework.data.domain.Page.class);
         customPageMock = new Page();
+
+        lenient().when(springPageMock.getContent()).thenReturn(Collections.emptyList());
+        lenient().when(springPageMock.getTotalElements()).thenReturn(0L);
+        lenient().when(pageBuilder.build(any(), any(), any())).thenAnswer(inv -> {
+            java.util.function.LongSupplier countSupplier = inv.getArgument(1);
+            java.util.function.Supplier<List<?>> contentSupplier = inv.getArgument(2);
+            if (countSupplier != null) countSupplier.getAsLong();
+            if (contentSupplier != null) contentSupplier.get();
+            return customPageMock;
+        });
     }
 
     @Test
@@ -953,4 +963,442 @@ class MetadataServiceTest {
         verify(entityRecordRepository).save(record);
         verify(schemaValidationService).validatePayload(eq(typeId), anyMap());
     }
+
+    @Test
+    void testValidateEntityRecordDryRun_WithRelationPickerAndSchemaErrors() {
+        Long typeId = 1L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+        type.setSchemaVersion(2L);
+
+        AttributeDefinition relAttr = new AttributeDefinition();
+        relAttr.setSystemName("customer_id");
+        relAttr.setUiComponent("relation_picker");
+        relAttr.setOptions(Map.of("targetEntityTypeId", 2L));
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNull(typeId)).thenReturn(List.of(relAttr));
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(2L, 999L)).thenReturn(Optional.empty());
+
+        com.unipost.core.io.Error<String> schemaErr = new com.unipost.core.io.Error<>();
+        schemaErr.setMessage("name is required");
+        schemaErr.setCode("REQUIRED_FIELD");
+        schemaErr.setDetail("name");
+        when(schemaValidationService.validatePayloadDryRun(eq(typeId), anyMap())).thenReturn(List.of(schemaErr));
+
+        CreateRecordRequest req = new CreateRecordRequest(Map.of("customer_id", 999L), "tenant-corp");
+        ValidateRecordResponse response = metadataService.validateEntityRecordDryRun(typeId, req);
+
+        assertFalse(response.valid());
+        assertEquals(2, response.errors().size());
+    }
+
+    @Test
+    void testAnalyzeSchemaDrift_Success() {
+        Long typeId = 1L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+        type.setSchemaVersion(3L);
+
+        EntityRecord r1 = new EntityRecord();
+        r1.setSchemaVersion(3L);
+        EntityRecord r2 = new EntityRecord();
+        r2.setSchemaVersion(2L);
+        EntityRecord r3 = new EntityRecord();
+        r3.setSchemaVersion(null);
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(entityRecordRepository.findByEntityTypeIdAndDeletedDateIsNull(typeId)).thenReturn(List.of(r1, r2, r3));
+
+        SchemaDriftAnalysisResponse response = metadataService.analyzeSchemaDrift(typeId);
+
+        assertEquals(3L, response.currentSchemaVersion());
+        assertEquals(3L, response.totalRecords());
+        assertEquals(2L, response.outdatedRecords());
+        assertEquals(1L, response.compliantRecords());
+    }
+
+    @Test
+    void testIsDangerousRegex() {
+        assertTrue(MetadataService.isDangerousRegex("(a+)+"));
+        assertTrue(MetadataService.isDangerousRegex("([a-z]+)*"));
+        assertFalse(MetadataService.isDangerousRegex("^[a-zA-Z0-9_-]+$"));
+        assertFalse(MetadataService.isDangerousRegex(null));
+    }
+
+    @Test
+    void testPipelineDelegation_AuditLogs_PreviewRestore_Restore() {
+        RecordMutationPipeline mockPipeline = mock(RecordMutationPipeline.class);
+        metadataService.setRecordMutationPipeline(mockPipeline);
+
+        metadataService.getRecordAuditLogs(1L, 10L);
+        verify(mockPipeline).getRecordAuditLogs(1L, 10L);
+
+        metadataService.previewRestoreRecordVersion(1L, 10L, 100L);
+        verify(mockPipeline).previewRestore(1L, 10L, 100L);
+
+        metadataService.restoreRecordToAuditVersion(1L, 10L, 100L);
+        verify(mockPipeline).executeRestore(1L, 10L, 100L);
+    }
+
+    @Test
+    void testGetEntityRecords_WithSortAndFilters() {
+        Long typeId = 1L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNull(typeId)).thenReturn(Collections.emptyList());
+
+        org.springframework.data.domain.Page<EntityRecord> springPage = new org.springframework.data.domain.PageImpl<>(Collections.emptyList());
+        when(entityRecordRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(springPage);
+        when(pageBuilder.build(any(), any(), any())).thenReturn(customPageMock);
+
+        PageRequest req = new PageRequest();
+        req.setNumber(1);
+        req.setSize(10);
+
+        Page<EntityRecordResponse> result = metadataService.getEntityRecords(
+                typeId, req, Map.of("name", Map.of("eq", "test")), "createdDate", "desc", "tenant-alpha"
+        );
+
+        assertNotNull(result);
+        verify(entityRecordRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void testGetAttributeDefinitionsAndGetAttributeDefinition() {
+        Long typeId = 1L;
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(new EntityType()));
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(eq(typeId), any())).thenReturn(springPageMock);
+        when(pageBuilder.build(eq(defaultPageRequest), any(), any())).thenReturn(customPageMock);
+
+        Page<AttributeDefinitionResponse> page = metadataService.getAttributeDefinitions(typeId, defaultPageRequest);
+        assertNotNull(page);
+
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setId(10L);
+        attr.setName("Title");
+        attr.setSystemName("title");
+        attr.setDataType("string");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(typeId, 10L)).thenReturn(Optional.of(attr));
+
+        AttributeDefinitionResponse res = metadataService.getAttributeDefinition(typeId, 10L);
+        assertNotNull(res);
+        assertEquals("Title", res.name());
+    }
+
+    @Test
+    void testRelationshipTypeLifecycle_ListGetUpdateDelete() {
+        when(relationshipTypeRepository.findAllByDeletedDateIsNull(any())).thenReturn(springPageMock);
+        when(pageBuilder.build(eq(defaultPageRequest), any(), any())).thenReturn(customPageMock);
+
+        Page<RelationshipTypeResponse> page = metadataService.getRelationshipTypes(defaultPageRequest);
+        assertNotNull(page);
+
+        RelationshipType rel = new RelationshipType();
+        rel.setId(5L);
+        rel.setSystemName("author_of");
+        rel.setDescription("Author Of");
+        rel.setVersion(1L);
+        when(relationshipTypeRepository.findByIdAndDeletedDateIsNull(5L)).thenReturn(Optional.of(rel));
+
+        RelationshipTypeResponse res = metadataService.getRelationshipType(5L);
+        assertNotNull(res);
+        assertEquals("author_of", res.systemName());
+
+        // Update
+        when(relationshipTypeRepository.save(any(RelationshipType.class))).thenAnswer(inv -> inv.getArgument(0));
+        UpdateRelationshipTypeRequest updateReq = new UpdateRelationshipTypeRequest("New Desc", null, null, "ONE_TO_MANY", 1L);
+        RelationshipTypeResponse updated = metadataService.updateRelationshipType(5L, updateReq);
+        assertEquals("New Desc", updated.description());
+
+        // Update with OCC mismatch throws conflict
+        UpdateRelationshipTypeRequest mismatchReq = new UpdateRelationshipTypeRequest("New Desc", null, null, "ONE_TO_MANY", 99L);
+        assertThrows(MetadataConflictException.class, () -> metadataService.updateRelationshipType(5L, mismatchReq));
+
+        // Delete with force=false and existing relations throws conflict
+        when(entityRelationshipRepository.existsByRelationshipTypeIdAndDeletedDateIsNull(5L)).thenReturn(true);
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteRelationshipType(5L, false));
+
+        // Delete with force=true succeeds
+        metadataService.deleteRelationshipType(5L, true);
+        assertNotNull(rel.getDeletedDate());
+        verify(relationshipTypeRepository, atLeastOnce()).save(rel);
+    }
+
+    @Test
+    void testRecordRelationshipsLifecycle_GetAndDelete() {
+        Long recordId = 100L;
+        EntityRecord record = new EntityRecord();
+        record.setId(recordId);
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(recordId)).thenReturn(Optional.of(record));
+
+        when(entityRelationshipRepository.findBySourceEntityIdAndDeletedDateIsNull(eq(recordId), any())).thenReturn(springPageMock);
+        when(pageBuilder.build(eq(defaultPageRequest), any(), any())).thenReturn(customPageMock);
+
+        Page<EntityRelationshipResponse> pageOut = metadataService.getRecordRelationships(recordId, "outgoing", defaultPageRequest);
+        assertNotNull(pageOut);
+
+        when(entityRelationshipRepository.findByTargetEntityIdAndDeletedDateIsNull(eq(recordId), any())).thenReturn(springPageMock);
+        Page<EntityRelationshipResponse> pageIn = metadataService.getRecordRelationships(recordId, "incoming", defaultPageRequest);
+        assertNotNull(pageIn);
+
+        when(entityRelationshipRepository.findBySourceEntityIdOrTargetEntityIdAndDeletedDateIsNull(eq(recordId), eq(recordId), any())).thenReturn(springPageMock);
+        Page<EntityRelationshipResponse> pageBoth = metadataService.getRecordRelationships(recordId, "both", defaultPageRequest);
+        assertNotNull(pageBoth);
+
+        // Delete relationship
+        EntityRelationship edge = new EntityRelationship();
+        edge.setId(50L);
+        edge.setSourceEntity(record);
+        when(entityRelationshipRepository.findByIdAndDeletedDateIsNull(50L)).thenReturn(Optional.of(edge));
+
+        metadataService.deleteEntityRelationship(recordId, 50L);
+        assertNotNull(edge.getDeletedDate());
+        verify(entityRelationshipRepository).save(edge);
+    }
+
+    @Test
+    void testValidateUiComponentCompatibility_ThrowsOnIncompatible() {
+        Long typeId = 1L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setId(10L);
+        attr.setDataType("number");
+        attr.setUiComponent("number");
+        attr.setVersion(1L);
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(typeId, 10L)).thenReturn(Optional.of(attr));
+
+        UpdateAttributeRequest incompatibleReq = new UpdateAttributeRequest("Score", "textarea", false, false, 1, null, null, 1L);
+        assertThrows(MetadataConflictException.class, () -> metadataService.updateAttributeDefinition(typeId, 10L, incompatibleReq));
+    }
+
+    @Test
+    void testGetEntityRecord_Success() {
+        Long typeId = 1L;
+        Long recordId = 200L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+        EntityRecord record = new EntityRecord();
+        record.setId(recordId);
+        record.setEntityType(type);
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(entityRecordRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(typeId, recordId)).thenReturn(Optional.of(record));
+
+        EntityRecordResponse res = metadataService.getEntityRecord(typeId, recordId);
+        assertNotNull(res);
+        assertEquals(200L, res.id());
+    }
+
+    @Test
+    void testMetadataNotFound_AllEntitiesAndMethods() {
+        Long missingId = 999L;
+        lenient().when(entityTypeRepository.findAllByDeletedDateIsNull()).thenReturn(Collections.emptyList());
+        lenient().when(entityTypeRepository.findByIdAndDeletedDateIsNull(missingId)).thenReturn(Optional.empty());
+        lenient().when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(eq(missingId), anyLong())).thenReturn(Optional.empty());
+        lenient().when(relationshipTypeRepository.findByIdAndDeletedDateIsNull(missingId)).thenReturn(Optional.empty());
+        lenient().when(entityRecordRepository.findByIdAndDeletedDateIsNull(missingId)).thenReturn(Optional.empty());
+
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getEntityType(missingId));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.updateEntityType(missingId, new UpdateEntityTypeRequest("X", null, 1L)));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.deleteEntityType(missingId));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getCompiledSchema(missingId));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getAttributeDefinitions(missingId, defaultPageRequest));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getAttributeDefinition(missingId, 10L));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.createAttributeDefinition(missingId, new CreateAttributeRequest("S", "N", "string", "text", false, false, null, null)));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.updateAttributeDefinition(missingId, 10L, new UpdateAttributeRequest("N", null, false, false, 1, null, null, 1L)));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.deleteAttributeDefinition(missingId, 10L, false));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.archiveAttributeDefinition(missingId, 10L));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.unarchiveAttributeDefinition(missingId, 10L));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.reorderAttributes(missingId, new ReorderAttributesRequest(List.of(1L))));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getEntityRecords(missingId, defaultPageRequest));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getEntityRecord(missingId, 10L));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.transitionRecordState(missingId, 10L, "SUBMIT", Map.of()));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.analyzeSchemaDrift(missingId));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.executeSchemaBackfill(missingId, 100));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getRelationshipType(missingId));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.updateRelationshipType(missingId, new UpdateRelationshipTypeRequest("Desc", null, null, "ONE_TO_MANY", 1L)));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.deleteRelationshipType(missingId, false));
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.getRecordRelationships(missingId, "outgoing", defaultPageRequest));
+    }
+
+    @Test
+    void testCreateEntityRelationship_AllConflictBranches() {
+        Long sourceId = 101L;
+        Long targetId = 202L;
+        Long relTypeId = 303L;
+
+        CreateEntityRelationshipRequest req = new CreateEntityRelationshipRequest(targetId, relTypeId, Map.of("role", "reviewer"));
+
+        // Source missing
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(sourceId)).thenReturn(Optional.empty());
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+
+        // Target missing
+        EntityRecord source = new EntityRecord();
+        source.setId(sourceId);
+        source.setTenantId("tenant-alpha");
+        EntityType srcType = new EntityType();
+        srcType.setId(1L);
+        source.setEntityType(srcType);
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(sourceId)).thenReturn(Optional.of(source));
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(targetId)).thenReturn(Optional.empty());
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+
+        // RelType missing
+        EntityRecord target = new EntityRecord();
+        target.setId(targetId);
+        target.setTenantId("tenant-alpha");
+        EntityType tgtType = new EntityType();
+        tgtType.setId(2L);
+        target.setEntityType(tgtType);
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(targetId)).thenReturn(Optional.of(target));
+        when(relationshipTypeRepository.findByIdAndDeletedDateIsNull(relTypeId)).thenReturn(Optional.empty());
+        assertThrows(MetadataNotFoundException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+
+        // Cross tenant mismatch
+        RelationshipType relType = new RelationshipType();
+        relType.setId(relTypeId);
+        relType.setSystemName("authored_by");
+        when(relationshipTypeRepository.findByIdAndDeletedDateIsNull(relTypeId)).thenReturn(Optional.of(relType));
+        target.setTenantId("tenant-beta");
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        target.setTenantId("tenant-alpha");
+
+        // Source entity type mismatch
+        EntityType requiredSourceType = new EntityType();
+        requiredSourceType.setId(99L);
+        relType.setSourceEntityType(requiredSourceType);
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        relType.setSourceEntityType(srcType);
+
+        // Target entity type mismatch
+        EntityType requiredTargetType = new EntityType();
+        requiredTargetType.setId(98L);
+        relType.setTargetEntityType(requiredTargetType);
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        relType.setTargetEntityType(tgtType);
+
+        // Triplet duplicate
+        when(entityRelationshipRepository.existsBySourceEntityIdAndTargetEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(sourceId, targetId, relTypeId))
+                .thenReturn(true);
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        when(entityRelationshipRepository.existsBySourceEntityIdAndTargetEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(sourceId, targetId, relTypeId))
+                .thenReturn(false);
+
+        // Cardinality ONE_TO_ONE incoming count > 0
+        relType.setCardinality("ONE_TO_ONE");
+        when(entityRelationshipRepository.countByTargetEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(targetId, relTypeId)).thenReturn(1L);
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        when(entityRelationshipRepository.countByTargetEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(targetId, relTypeId)).thenReturn(0L);
+
+        // Cardinality ONE_TO_ONE outgoing count > 0
+        when(entityRelationshipRepository.countBySourceEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(sourceId, relTypeId)).thenReturn(1L);
+        assertThrows(MetadataConflictException.class, () -> metadataService.createEntityRelationship(sourceId, req));
+        when(entityRelationshipRepository.countBySourceEntityIdAndRelationshipTypeIdAndDeletedDateIsNull(sourceId, relTypeId)).thenReturn(0L);
+
+        // Success
+        when(entityRelationshipRepository.save(any(EntityRelationship.class))).thenAnswer(inv -> {
+            EntityRelationship r = inv.getArgument(0);
+            r.setId(555L);
+            return r;
+        });
+        EntityRelationshipResponse res = metadataService.createEntityRelationship(sourceId, req);
+        assertNotNull(res);
+        assertEquals(555L, res.id());
+    }
+
+    @Test
+    void testDeleteEntityRelationship_NotConnectedThrowsConflict() {
+        Long sourceId = 100L;
+        Long edgeId = 50L;
+
+        when(entityRecordRepository.findByIdAndDeletedDateIsNull(sourceId)).thenReturn(Optional.of(new EntityRecord()));
+
+        EntityRelationship edge = new EntityRelationship();
+        edge.setId(edgeId);
+        EntityRecord other1 = new EntityRecord();
+        other1.setId(888L);
+        EntityRecord other2 = new EntityRecord();
+        other2.setId(999L);
+        edge.setSourceEntity(other1);
+        edge.setTargetEntity(other2);
+
+        when(entityRelationshipRepository.findByIdAndDeletedDateIsNull(edgeId)).thenReturn(Optional.of(edge));
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteEntityRelationship(sourceId, edgeId));
+    }
+
+    @Test
+    void testCompositeDependencyGuards_AttributeAndEntityType() {
+        EntityType compositeType = new EntityType();
+        compositeType.setId(50L);
+        compositeType.setName("Composite Order");
+        compositeType.setIsComposite(true);
+
+        com.unipost.domain.metadata.CompositeField field = new com.unipost.domain.metadata.CompositeField("sku", "itemSku", "string", null, false);
+        com.unipost.domain.metadata.CompositeNode child = new com.unipost.domain.metadata.CompositeNode(
+                2L, "items", "items", com.unipost.domain.metadata.CompositeJoinPattern.PATTERN_B_FOREIGN_KEY,
+                "orderId", null, "ONE_TO_MANY", List.of(field), null
+        );
+        com.unipost.domain.metadata.CompositeSpec spec = new com.unipost.domain.metadata.CompositeSpec(
+                1L, "orders", "Order composite",
+                List.of(new com.unipost.domain.metadata.CompositeField("orderNumber", "orderNum", "string", null, false)),
+                List.of(child)
+        );
+        compositeType.setCompositeSpec(spec);
+
+        when(entityTypeRepository.findAllByDeletedDateIsNull()).thenReturn(List.of(compositeType));
+
+        // EntityType 1L has composite dependency on root
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteEntityType(1L));
+
+        // EntityType 2L has composite dependency on child node
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteEntityType(2L));
+
+        // Attribute "orderNumber" on entityType 1L
+        EntityType entityType1 = new EntityType();
+        entityType1.setId(1L);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(1L)).thenReturn(Optional.of(entityType1));
+        AttributeDefinition attr1 = new AttributeDefinition();
+        attr1.setId(10L);
+        attr1.setSystemName("orderNumber");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(1L, 10L)).thenReturn(Optional.of(attr1));
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteAttributeDefinition(1L, 10L, false));
+
+        // Attribute "sku" on entityType 2L (child field)
+        EntityType entityType2 = new EntityType();
+        entityType2.setId(2L);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(2L)).thenReturn(Optional.of(entityType2));
+        AttributeDefinition attr2 = new AttributeDefinition();
+        attr2.setId(20L);
+        attr2.setSystemName("sku");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(2L, 20L)).thenReturn(Optional.of(attr2));
+        assertThrows(MetadataConflictException.class, () -> metadataService.archiveAttributeDefinition(2L, 20L));
+
+        // Attribute "orderId" on entityType 2L (foreignKeyAttribute)
+        AttributeDefinition attrFk = new AttributeDefinition();
+        attrFk.setId(21L);
+        attrFk.setSystemName("orderId");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndIdAndDeletedDateIsNull(2L, 21L)).thenReturn(Optional.of(attrFk));
+        assertThrows(MetadataConflictException.class, () -> metadataService.deleteAttributeDefinition(2L, 21L, true));
+    }
+
+    @Test
+    void testTransitionRecordState_ThrowsOnCompositeEntityType() {
+        EntityType composite = new EntityType();
+        composite.setId(1L);
+        composite.setIsComposite(true);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(1L)).thenReturn(Optional.of(composite));
+
+        assertThrows(UnsupportedOperationException.class, () -> metadataService.transitionRecordState(1L, 100L, "SUBMIT", null));
+    }
 }
+
+

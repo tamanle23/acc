@@ -219,5 +219,60 @@ class SchemaValidationServiceTest {
         verify(attributeDefinitionRepository, times(1)).findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(entityTypeId);
         verify(schemaMap, times(1)).putIfAbsent(eq("schema:tenant-acme:1:v1_s1"), anyString(), eq(1L), eq(TimeUnit.HOURS));
     }
+
+    @Test
+    void testInvalidateL1Cache() {
+        assertDoesNotThrow(() -> schemaValidationService.invalidateL1Cache(1L));
+        assertDoesNotThrow(() -> schemaValidationService.invalidateL1Cache(1L, "tenant-acme"));
+    }
+
+    @Test
+    void testCompileSchemaAndNode() {
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setSystemName("title");
+        attr.setDataType("string");
+        attr.setUiComponent("text");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(1L))
+                .thenReturn(List.of(attr));
+
+        String compiled = schemaValidationService.compileSchema(1L);
+        assertNotNull(compiled);
+        assertTrue(compiled.contains("title"));
+
+        JsonNode node = schemaValidationService.compileSchemaNode(1L);
+        assertNotNull(node);
+        assertTrue(node.has("properties"));
+    }
+
+    @Test
+    void testValidatePayloadDryRun_ValidAndInvalid() {
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setSystemName("age");
+        attr.setDataType("integer");
+        attr.setUiComponent("number");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(1L))
+                .thenReturn(List.of(attr));
+
+        // Valid payload
+        List<com.unipost.core.io.Error> validErrors = schemaValidationService.validatePayloadDryRun(1L, Map.of("age", 25));
+        assertTrue(validErrors.isEmpty());
+
+        // Invalid payload (additional property not in schema)
+        List<com.unipost.core.io.Error> invalidErrors = schemaValidationService.validatePayloadDryRun(1L, Map.of("unknownProp", "bad"));
+        assertFalse(invalidErrors.isEmpty());
+    }
+
+    @Test
+    void testHazelcastFailure_GracefulFallbackToCompilation() {
+        when(schemaMap.get(anyString())).thenThrow(new RuntimeException("Hazelcast cluster disconnected"));
+        AttributeDefinition attr = new AttributeDefinition();
+        attr.setSystemName("notes");
+        attr.setDataType("string");
+        when(attributeDefinitionRepository.findByEntityTypeIdAndDeletedDateIsNullOrderByDisplayOrderAsc(1L))
+                .thenReturn(List.of(attr));
+
+        com.networknt.schema.JsonSchema schema = schemaValidationService.getOrCompileJsonSchema(1L, 1L);
+        assertNotNull(schema);
+    }
 }
 

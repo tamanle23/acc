@@ -242,10 +242,154 @@ class DynamicQueryCompilerTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when spec is null or exceeds max depth")
+    @DisplayName("Should compile rollups with AVG, MIN, MAX, custom filter predicates, and Pattern C association rollup")
+    void testCompileRollupsAllFunctionsAndPatternC() {
+        CompositeSpec spec = new CompositeSpec(
+                10L,
+                "customer_account",
+                "customer",
+                List.of(new CompositeField("company_name", "companyName", "STRING", null, true)),
+                List.of(
+                        new CompositeNode(
+                                20L,
+                                "sales_order",
+                                "orders",
+                                CompositeJoinPattern.PATTERN_C_ASSOCIATION,
+                                null,
+                                999L,
+                                "ONE_TO_MANY",
+                                List.of(new CompositeField("total", "total", "DECIMAL", null, true)),
+                                null,
+                                List.of()
+                        )
+                ),
+                List.of(
+                        new CompositeRollup("avg_spend", "orders", CompositeRollup.AggregateFunction.AVG, "total", null),
+                        new CompositeRollup("min_spend", "orders", CompositeRollup.AggregateFunction.MIN, "total", null),
+                        new CompositeRollup("max_spend", "orders", CompositeRollup.AggregateFunction.MAX, "total", null),
+                        new CompositeRollup("filtered_count", "orders", CompositeRollup.AggregateFunction.COUNT, null, "status = 'ACTIVE'"),
+                        new CompositeRollup("invalid_field_sum", "orders", CompositeRollup.AggregateFunction.SUM, "bad-field; DROP TABLE", null)
+                )
+        );
+
+        DynamicQueryCompiler.CompiledQuery compiled = compiler.compileSingleRecordQuery(
+                spec, "tenant-alpha", 1001L, Map.of()
+        );
+
+        assertNotNull(compiled);
+        String sql = compiled.sql();
+
+        assertTrue(sql.contains("AVG((c_agg.attributes->>'total')::numeric)"));
+        assertTrue(sql.contains("MIN((c_agg.attributes->>'total')::numeric)"));
+        assertTrue(sql.contains("MAX((c_agg.attributes->>'total')::numeric)"));
+        assertTrue(sql.contains("COUNT(CASE WHEN"));
+        assertTrue(sql.contains("rel.relationship_type_id = :relType_r_1"));
+        assertEquals(999L, compiled.parameters().get("relType_r_1"));
+    }
+
+    @Test
+    @DisplayName("Should compile child filtering with contains/like and lte operators")
+    void testCompileChildFiltersOperators() {
+        CompositeSpec spec = new CompositeSpec(
+                10L,
+                "customer_account",
+                "customer",
+                List.of(new CompositeField("company_name", "companyName", "STRING", null, true)),
+                List.of(
+                        new CompositeNode(
+                                20L,
+                                "sales_order",
+                                "orders",
+                                CompositeJoinPattern.PATTERN_B_FOREIGN_KEY,
+                                "customer_id",
+                                null,
+                                "ONE_TO_MANY",
+                                List.of(new CompositeField("total", "total", "DECIMAL", null, true)),
+                                null,
+                                List.of()
+                        )
+                ),
+                List.of()
+        );
+
+        com.unipost.presentation.dto.metadata.ChildQueryOptions options =
+                new com.unipost.presentation.dto.metadata.ChildQueryOptions(
+                        10,
+                        0,
+                        "id:asc",
+                        Map.of(
+                                "keyword", new com.unipost.presentation.dto.metadata.ChildFilterCriteria("contains", "urgent"),
+                                "total", new com.unipost.presentation.dto.metadata.ChildFilterCriteria("lte", 50),
+                                "bad;inject", new com.unipost.presentation.dto.metadata.ChildFilterCriteria("eq", "skipped")
+                        )
+                );
+
+        DynamicQueryCompiler.CompiledQuery compiled = compiler.compileSingleRecordQueryWithOptions(
+                spec, "tenant-alpha", 1001L, Map.of("orders", options)
+        );
+
+        assertNotNull(compiled);
+        String sql = compiled.sql();
+
+        assertTrue(sql.contains("ILIKE :childFilter_1_keyword"));
+        assertTrue(sql.contains("<= :childFilter_1_total"));
+        assertFalse(sql.contains("bad;inject"));
+        assertEquals("%urgent%", compiled.parameters().get("childFilter_1_keyword"));
+        assertEquals(50, compiled.parameters().get("childFilter_1_total"));
+    }
+
+    @Test
+    @DisplayName("Should compile ONE_TO_ONE child lateral subquery with LIMIT 1")
+    void testCompileOneToOneChild() {
+        CompositeSpec spec = new CompositeSpec(
+                10L,
+                "customer_account",
+                "customer",
+                List.of(new CompositeField("company_name", "companyName", "STRING", null, true)),
+                List.of(
+                        new CompositeNode(
+                                30L,
+                                "account_manager",
+                                "manager",
+                                CompositeJoinPattern.PATTERN_C_ASSOCIATION,
+                                null,
+                                500L,
+                                "ONE_TO_ONE",
+                                List.of(new CompositeField("full_name", "fullName", "STRING", null, true)),
+                                null
+                        )
+                )
+        );
+
+        DynamicQueryCompiler.CompiledQuery compiled = compiler.compileSingleRecordQuery(
+                spec, "tenant-gamma", 2002L, Map.of()
+        );
+
+        assertNotNull(compiled);
+        String sql = compiled.sql();
+
+        assertTrue(sql.contains("LIMIT 1"));
+        assertTrue(sql.contains("1 AS total_count"));
+        assertTrue(sql.contains("'manager', t_child_1.aggregated_data"));
+    }
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when depth exceeds 3")
     void testValidationCeilings() {
         assertThrows(IllegalArgumentException.class, () ->
                 compiler.compileSingleRecordQuery(null, "tenant-1", 1L, Map.of())
+        );
+
+        CompositeNode level4 = new CompositeNode(5L, "e", "e", CompositeJoinPattern.PATTERN_B_FOREIGN_KEY, "p_id", null, "ONE_TO_MANY", List.of(), null);
+        CompositeNode level3 = new CompositeNode(4L, "d", "d", CompositeJoinPattern.PATTERN_B_FOREIGN_KEY, "p_id", null, "ONE_TO_MANY", List.of(), List.of(level4));
+        CompositeNode level2 = new CompositeNode(3L, "c", "c", CompositeJoinPattern.PATTERN_B_FOREIGN_KEY, "p_id", null, "ONE_TO_MANY", List.of(), List.of(level3));
+        CompositeNode level1 = new CompositeNode(2L, "b", "b", CompositeJoinPattern.PATTERN_B_FOREIGN_KEY, "p_id", null, "ONE_TO_MANY", List.of(), List.of(level2));
+        CompositeNode rootChild = new CompositeNode(1L, "a", "a", CompositeJoinPattern.PATTERN_B_FOREIGN_KEY, "p_id", null, "ONE_TO_MANY", List.of(), List.of(level1));
+
+        CompositeSpec deepSpec = new CompositeSpec(10L, "root", "root", List.of(), List.of(rootChild));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                compiler.compileSingleRecordQuery(deepSpec, "tenant-1", 100L, Map.of())
         );
     }
 }
