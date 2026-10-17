@@ -23,6 +23,9 @@ class SandboxDecouplingIntegrationTest {
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(BackendSandboxRegistry.class);
                     assertThat(context).doesNotHaveBean(PayOsSimulator.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.auth.SandboxPersonaRegistry.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.auth.SandboxTokenAspect.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.seed.SandboxDataPreWarmer.class);
                 });
     }
 
@@ -33,6 +36,9 @@ class SandboxDecouplingIntegrationTest {
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(BackendSandboxRegistry.class);
                     assertThat(context).doesNotHaveBean(PayOsSimulator.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.auth.SandboxPersonaRegistry.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.auth.SandboxTokenAspect.class);
+                    assertThat(context).doesNotHaveBean(com.unipost.sandbox.seed.SandboxDataPreWarmer.class);
                 });
     }
 
@@ -44,6 +50,9 @@ class SandboxDecouplingIntegrationTest {
                 .run(context -> {
                     assertThat(context).hasSingleBean(BackendSandboxRegistry.class);
                     assertThat(context).hasSingleBean(PayOsSimulator.class);
+                    assertThat(context).hasSingleBean(com.unipost.sandbox.auth.SandboxPersonaRegistry.class);
+                    assertThat(context).hasSingleBean(com.unipost.sandbox.auth.SandboxTokenAspect.class);
+                    assertThat(context).hasSingleBean(com.unipost.sandbox.seed.SandboxDataPreWarmer.class);
                 });
     }
 }

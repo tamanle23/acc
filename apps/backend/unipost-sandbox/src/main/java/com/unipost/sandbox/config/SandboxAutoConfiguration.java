@@ -30,7 +30,10 @@ import org.springframework.context.annotation.Import;
         PgLiteDatasourceConfiguration.class,
         com.unipost.sandbox.aspect.PayOsCheckoutInterceptorAspect.class,
         InMemoryStorageConnector.class,
-        MockWebhookDeliveryService.class
+        MockWebhookDeliveryService.class,
+        com.unipost.sandbox.auth.SandboxPersonaRegistry.class,
+        com.unipost.sandbox.auth.SandboxTokenAspect.class,
+        com.unipost.sandbox.seed.SandboxDataPreWarmer.class
 })
 public class SandboxAutoConfiguration {
 
