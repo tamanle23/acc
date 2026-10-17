@@ -26,3 +26,4 @@ export * from './plugins/audio/FilterModifierPlugin';
 export * from './plugins/audio/PitchModifierPlugin';
 export * from './plugins/sfx/DynamicDuckingPlugin';
 export { ModifierPluginRegistry, type ModifierPlugin, type ModifierContext } from './plugins/ModifierPluginRegistry';
+export * from './plugins/clientRegistry';

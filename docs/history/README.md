@@ -267,6 +267,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`253`](253_studio_overlay_vfx_and_context_aware_inspector.md) | 2026-10-17 | Studio Overlay VFX Staging Presets, Interactive Sequence Timing & Context-Aware Inspector | Implemented UpdateSequenceTimeCommand, base SequenceTime card, domain-filtered effects dropdown, pure attached-only modifier accordions with empty-state guides, dual-state typography, and canonical overlay VFX presets |
 | [`254`](254_video_ir_spec_modernization.md) | 2026-10-17 | Video IR Spec Modernization & 8-Component Synchronization | Required sequence types (video/image/audio/text/overlay) with track containment, global document modifiers, explicit modifier targets, dual-level cascading blend modes, decoupled modular modifiers.schema.json, and 100% 8-component sync |
 | [`255`](255_runtime_modifier_params_validation.md) | 2026-10-18 | Pure TypeScript Runtime Modifier Parameters Validation | Implemented deep parameter validation for all standard modifier types in VideoIRSchemaValidator.ts, including TemporalCurve lifecycles, numeric bounds, OCP custom plugin support, and dedicated unit test suite |
+| [`256`](256_modifier_registry_studio_integration.md) | 2026-10-18 | Dynamic Modifier Discovery in Studio RightSidebar via ModifierPluginRegistry | Integrated ModifierPluginRegistry with RightSidebar.tsx, implemented registerClientModifierPlugins in client.ts, added dynamic discovery with UI catalog enrichment, and custom plugin fallback |
 
 
 

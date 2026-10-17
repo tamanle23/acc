@@ -46,7 +46,13 @@ import {
 import { IRStateManager } from '../lib/ir/irState';
 import { EasingCurveSelector } from './EasingCurveSelector';
 import { ProceduralAudioSynthesizer } from '@acc/effect-engines/client';
-import type { SequenceTime, RelationalStart, RelationalDuration } from '@acc/ir/client';
+import {
+  ModifierPluginRegistry,
+  type ModifierPlugin,
+  type SequenceTime,
+  type RelationalStart,
+  type RelationalDuration,
+} from '@acc/ir/client';
 
 export interface ParameterSliderProps {
   label: string;
@@ -268,9 +274,16 @@ export interface AvailableModifierDef {
   defaultParams: Record<string, unknown>;
 }
 
-export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
+export const MODIFIER_PRESENTATION_CATALOG: Record<
+  string,
   {
-    type: 'transform',
+    name: string;
+    icon: any;
+    supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
+    defaultParams: Record<string, unknown>;
+  }
+> = {
+  transform: {
     name: 'In-Canvas Transform',
     icon: Move,
     supportedTrackTypes: ['video', 'timed_text'],
@@ -283,8 +296,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       ease: 'power2.out',
     },
   },
-  {
-    type: 'overlay/canvas_particles',
+  'overlay/canvas_particles': {
     name: 'Particle VFX & Shaders',
     icon: Layers,
     supportedTrackTypes: ['video'],
@@ -307,8 +319,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       },
     },
   },
-  {
-    type: 'overlay/hologram_hud',
+  'overlay/hologram_hud': {
     name: 'Hologram HUD',
     icon: Monitor,
     supportedTrackTypes: ['video'],
@@ -320,8 +331,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       rotationSpeed: 0.5,
     },
   },
-  {
-    type: 'vfx/depth_relighting',
+  'vfx/depth_relighting': {
     name: '3D Relighting',
     icon: Sparkles,
     supportedTrackTypes: ['video'],
@@ -337,8 +347,19 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       rimIntensity: 0.5,
     },
   },
-  {
-    type: 'camera/3d',
+  'vfx/depth3d': {
+    name: 'Depth 3D & Parallax',
+    icon: Sparkles,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      mode: 'parallax_25d',
+      popOutIntensity: 1.25,
+      autoSegment: true,
+      autoDepth: true,
+    },
+  },
+  'camera/3d': {
     name: '3D Camera & Lens',
     icon: Camera,
     supportedTrackTypes: ['video'],
@@ -357,8 +378,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       bokehRadius: 6.0,
     },
   },
-  {
-    type: 'vfx/color_grading',
+  'vfx/color_grading': {
     name: 'Color Grading',
     icon: Palette,
     supportedTrackTypes: ['video'],
@@ -370,8 +390,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       vignette: 0.35,
     },
   },
-  {
-    type: 'text/style',
+  'text/style': {
     name: 'Typography & Karaoke Glow',
     icon: Type,
     supportedTrackTypes: ['timed_text'],
@@ -396,8 +415,7 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       },
     },
   },
-  {
-    type: 'sfx/dynamic_ducking',
+  'sfx/dynamic_ducking': {
     name: 'Audio Ducking & Pan',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
@@ -410,8 +428,47 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       targetBus: 'track-a2',
     },
   },
-  {
-    type: 'sfx/procedural',
+  'audio/volume': {
+    name: 'Volume & Gain DSP',
+    icon: Volume2,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      volume: 1.0,
+      gainDb: 0.0,
+    },
+  },
+  'audio/pan': {
+    name: 'Stereo Panner DSP',
+    icon: Volume2,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      pan: 0.0,
+    },
+  },
+  'audio/filter': {
+    name: 'Equalizer / Filter DSP',
+    icon: Volume2,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      filterType: 'lowpass',
+      cutoffHz: 12000,
+      resonance: 1.0,
+    },
+  },
+  'audio/pitch': {
+    name: 'Pitch Shift DSP',
+    icon: Volume2,
+    supportedTrackTypes: ['audio'],
+    defaultParams: {
+      enabled: true,
+      pitchSemitones: 0,
+      playbackRate: 1.0,
+    },
+  },
+  'sfx/procedural': {
     name: 'Procedural Audio Synthesizer',
     icon: Music,
     supportedTrackTypes: ['audio'],
@@ -423,7 +480,105 @@ export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
       label: 'IMPACT',
     },
   },
-];
+  'editorial/split_edit': {
+    name: 'L/J Cut Split Edit',
+    icon: Film,
+    supportedTrackTypes: ['video', 'audio'],
+    defaultParams: {
+      enabled: true,
+      audioLeadFrames: 15,
+      videoLagFrames: 0,
+    },
+  },
+  'editorial/transition_crossfade': {
+    name: 'Transition Crossfade',
+    icon: Film,
+    supportedTrackTypes: ['video', 'audio'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      crossfadeType: 'crossfade',
+    },
+  },
+  'overlay/blend_mode': {
+    name: 'Blend Mode Composite',
+    icon: Layers,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      mode: 'screen',
+      opacity: 1.0,
+    },
+  },
+};
+
+/**
+ * Dynamically queries ModifierPluginRegistry to discover all registered modifiers,
+ * mapping them with UI presentation definitions and providing defensive fallbacks
+ * for newly registered or third-party custom plugins.
+ */
+export function getAvailableModifiersFromRegistry(
+  registry: ModifierPluginRegistry = ModifierPluginRegistry.getInstance()
+): AvailableModifierDef[] {
+  const registeredPlugins = registry.listPlugins();
+  const result: AvailableModifierDef[] = [];
+  const processedTypes = new Set<string>();
+
+  for (const plugin of registeredPlugins) {
+    processedTypes.add(plugin.type);
+    const catalogEntry = MODIFIER_PRESENTATION_CATALOG[plugin.type];
+
+    if (catalogEntry) {
+      result.push({
+        type: plugin.type,
+        name: catalogEntry.name,
+        icon: catalogEntry.icon,
+        supportedTrackTypes: catalogEntry.supportedTrackTypes,
+        defaultParams: { ...catalogEntry.defaultParams },
+      });
+    } else {
+      // Dynamic fallback for custom/third-party plugins without presentation metadata
+      const isAudio = plugin.targetScope === 'audio';
+      const defaultSupportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'> = isAudio
+        ? ['audio']
+        : plugin.targetScope === 'both'
+        ? ['video', 'audio', 'timed_text']
+        : ['video'];
+
+      // Generate a human-readable title from type (e.g. "custom/glitch_fx" -> "Glitch Fx")
+      const rawName = plugin.type.split('/').pop() || plugin.type;
+      const formattedName = rawName
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
+      result.push({
+        type: plugin.type,
+        name: formattedName,
+        icon: isAudio ? Volume2 : Sparkles,
+        supportedTrackTypes: defaultSupportedTrackTypes,
+        defaultParams: { enabled: true },
+      });
+    }
+  }
+
+  // Ensure any catalog entries that weren't registered yet are included as fallback
+  for (const [type, entry] of Object.entries(MODIFIER_PRESENTATION_CATALOG)) {
+    if (!processedTypes.has(type)) {
+      result.push({
+        type,
+        name: entry.name,
+        icon: entry.icon,
+        supportedTrackTypes: entry.supportedTrackTypes,
+        defaultParams: { ...entry.defaultParams },
+      });
+    }
+  }
+
+  return result;
+}
+
+export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = getAvailableModifiersFromRegistry();
 
 export function formatTimecode(frames: number, fps: number): string {
   const safeFps = fps > 0 ? fps : 30;
@@ -780,7 +935,8 @@ export function RightSidebar() {
   };
 
   const trackType = (selectedTrack?.type || 'video') as 'video' | 'audio' | 'timed_text' | 'data';
-  const relevantModifiers = ALL_AVAILABLE_MODIFIERS.filter((mod) =>
+  const availableModifiers = getAvailableModifiersFromRegistry();
+  const relevantModifiers = availableModifiers.filter((mod) =>
     mod.supportedTrackTypes.includes(trackType)
   );
 

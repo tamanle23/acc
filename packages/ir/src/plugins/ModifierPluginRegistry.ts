@@ -25,7 +25,7 @@ export interface ModifierContext {
   state?: Record<string, unknown>;
 }
 
-import type { SequenceType } from '../types/VideoIR';
+import type { ModifierNode, SequenceType } from '../types/VideoIR';
 
 export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly type: string;
@@ -53,7 +53,7 @@ export class ModifierPluginRegistry {
   private static instance: ModifierPluginRegistry;
   private plugins: Map<string, ModifierPlugin<any>> = new Map();
 
-  public constructor() {}
+  public constructor() { }
 
   public static getInstance(): ModifierPluginRegistry {
     if (!ModifierPluginRegistry.instance) {
@@ -80,6 +80,10 @@ export class ModifierPluginRegistry {
 
   public listTypes(): string[] {
     return Array.from(this.plugins.keys());
+  }
+
+  public listPlugins(): ModifierPlugin<any>[] {
+    return Array.from(this.plugins.values());
   }
 
   /**
