@@ -255,6 +255,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`240`](240_fix_preview_canvas_engine_ref_reference.md) | 2026-10-17 | Fix Preview Canvas Engine Ref Reference Error in Preview.tsx | Resolved Uncaught ReferenceError: canvasEngineRef is not defined by correcting symbol to engineRef and streamlining active interpolated transform bounding box calculations |
 | [`241`](241_fix_timeline_pixels_per_frame_tdz.md) | 2026-10-17 | Fix Timeline PixelsPerFrame Temporal Dead Zone Reference Error | Hoisted pixelsPerFrame and timelineWidth declarations above useEffect hooks and event handlers in Timeline.tsx to resolve TDZ runtime crash |
 | [`242`](242_studio_phase9_unified_dnd_kit_architecture.md) | 2026-10-17 | Phase 9: Unified @dnd-kit Architecture (Replacing Manual Drag-and-Drop Boilerplate in Timeline & Preview) | Replaced manual window mouse listeners with domain-isolated @dnd-kit DndContexts, MoveSequenceCommand for time shifting and cross-track lane migration, DroppableTrackLane, TimelineClipItem, and TransformBodyDraggable |
+| [`243`](243_studio_phase9_paired_docs.md) | 2026-10-17 | Phase 9: Paired Documentation in apps/studio/doc | Created implementation_plan_09.md and walkthrough_09.md for Phase 9 Unified @dnd-kit Architecture |
+| [`244`](244_studio_phase7_master_e2e_hardening.md) | 2026-10-17 | Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite | Strict bit-identical SHA-256 byte parity across runs, 60fps benchmark (~3.8ms/frame with zero-alloc batched particle rendering), defensive schema & NaN corruption resilience, and production release audit (116 tests passing, <1MB bundle) |
 
 
 

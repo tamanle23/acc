@@ -35,6 +35,10 @@ export interface ParticleState {
   colors: string[];
   radii: Float32Array;
   attractor: Pt;
+  px?: Float32Array;
+  py?: Float32Array;
+  radiiComputed?: Float32Array;
+  colorGroups?: Array<{ color: string; indices: Int32Array }>;
 }
 
 export interface HUDConfig {
@@ -178,17 +182,19 @@ export class UniversalCanvasEngine {
     this.interpolatedStates.clear();
 
     for (const seq of sequences) {
-      const startSec = (seq.time?.start ?? 0) / fps;
-      const durSec = Math.max(0.1, (seq.time?.duration ?? 30) / fps);
+      const startFrames = typeof seq.time?.start === 'number' && Number.isFinite(seq.time.start) ? Math.max(0, seq.time.start) : 0;
+      const durationFrames = typeof seq.time?.duration === 'number' && Number.isFinite(seq.time.duration) ? Math.max(1, seq.time.duration) : 30;
+      const startSec = startFrames / fps;
+      const durSec = Math.max(0.1, durationFrames / fps);
 
       // Extract transform params if available
       const transMod = seq.modifiers?.find((m) => m.type === 'transform');
       const tp = (transMod?.params || {}) as any;
 
-      const targetX = tp.x ?? 0;
-      const targetY = tp.y ?? 0;
-      const targetScale = tp.scale ?? 1.0;
-      const targetRot = tp.rotation ?? 0;
+      const targetX = Number.isFinite(tp.x) ? tp.x : 0;
+      const targetY = Number.isFinite(tp.y) ? tp.y : 0;
+      const targetScale = Number.isFinite(tp.scale) && tp.scale > 0 ? tp.scale : 1.0;
+      const targetRot = Number.isFinite(tp.rotation) ? tp.rotation : 0;
       const baseEase = tp.ease || 'power2.out';
 
       // 3-Stage Lifecycle config or Animation preset
@@ -305,7 +311,7 @@ export class UniversalCanvasEngine {
   /**
    * Initializes generative particle swarm with dynamic gravitational attractor physics.
    */
-  public initParticleSystem(count: number = 200): void {
+  public initParticleSystem(count: number = 200, seed?: number): void {
     const pts = new Group();
     const vels = new Group();
     const colors: string[] = [];
@@ -313,17 +319,37 @@ export class UniversalCanvasEngine {
 
     const palette = ['#38bdf8', '#818cf8', '#c084fc', '#f472b6', '#00ffff'];
 
+    let rng = Math.random;
+    if (seed !== undefined) {
+      let s = seed;
+      rng = () => {
+        s = (s * 9301 + 49297) % 233280;
+        return s / 233280;
+      };
+    }
+
     for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
-      const dist = 0.05 + Math.random() * 0.45;
+      const angle = (i / count) * Math.PI * 2 + (rng() - 0.5) * 0.2;
+      const dist = 0.05 + rng() * 0.45;
       const x = 0.5 + Math.cos(angle) * dist;
       const y = 0.5 + Math.sin(angle) * dist;
 
       pts.push(new Pt(x, y));
-      vels.push(new Pt((Math.random() - 0.5) * 0.015, (Math.random() - 0.5) * 0.015));
+      vels.push(new Pt((rng() - 0.5) * 0.015, (rng() - 0.5) * 0.015));
       colors.push(palette[i % palette.length]);
-      radii[i] = 1.5 + Math.random() * 3.0;
+      radii[i] = 1.5 + rng() * 3.0;
     }
+
+    const colorMap = new Map<string, number[]>();
+    for (let i = 0; i < count; i++) {
+      const c = colors[i];
+      if (!colorMap.has(c)) colorMap.set(c, []);
+      colorMap.get(c)!.push(i);
+    }
+    const colorGroups = Array.from(colorMap.entries()).map(([color, idxs]) => ({
+      color,
+      indices: new Int32Array(idxs),
+    }));
 
     this.particles = {
       pts,
@@ -331,6 +357,10 @@ export class UniversalCanvasEngine {
       colors,
       radii,
       attractor: new Pt(0.5, 0.5),
+      px: new Float32Array(count),
+      py: new Float32Array(count),
+      radiiComputed: new Float32Array(count),
+      colorGroups,
     };
   }
 
@@ -433,7 +463,9 @@ export class UniversalCanvasEngine {
 
   private renderParticles(ctx: CanvasRenderingContext2D, w: number, h: number, timeSec: number): void {
     if (!this.particles) return;
-    const { pts, velocities, colors, radii } = this.particles;
+    const { pts, velocities, radii, px, py, radiiComputed, colorGroups } = this.particles;
+    const count = pts.length;
+    if (count === 0 || !px || !py || !radiiComputed || !colorGroups) return;
 
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
@@ -443,7 +475,7 @@ export class UniversalCanvasEngine {
     const ay = 0.5 + Math.cos(timeSec * 1.3) * 0.18;
     this.particles.attractor.set(ax, ay);
 
-    for (let i = 0; i < pts.length; i++) {
+    for (let i = 0; i < count; i++) {
       const p = pts[i];
       const vel = velocities[i];
 
@@ -465,24 +497,40 @@ export class UniversalCanvasEngine {
       if (p.y < 0.02) p.y = 0.98;
       if (p.y > 0.98) p.y = 0.02;
 
-      const px = p.x * w;
-      const py = p.y * h;
-      const r = radii[i] * (1.0 + Math.sin(timeSec * 2 + i) * 0.25) * this.popOutIntensity;
+      px[i] = p.x * w;
+      py[i] = p.y * h;
+      radiiComputed[i] = radii[i] * (1.0 + Math.sin(timeSec * 2 + i) * 0.25) * this.popOutIntensity;
+    }
 
-      // Particle velocity trail
-      ctx.strokeStyle = colors[i] + '44';
-      ctx.lineWidth = 1;
+    ctx.lineWidth = 1;
+
+    // 1. Batched Velocity Trails
+    for (let g = 0; g < colorGroups.length; g++) {
+      const { color, indices } = colorGroups[g];
+      ctx.strokeStyle = color + '44';
       ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(px - vel.x * 4 * w, py - vel.y * 4 * h);
+      for (let j = 0; j < indices.length; j++) {
+        const i = indices[j];
+        const vel = velocities[i];
+        ctx.moveTo(px[i], py[i]);
+        ctx.lineTo(px[i] - vel.x * 4 * w, py[i] - vel.y * 4 * h);
+      }
       ctx.stroke();
+    }
 
-      // Particle Core
-      ctx.beginPath();
-      ctx.arc(px, py, Math.max(0.5, r), 0, Math.PI * 2);
-      ctx.fillStyle = colors[i];
-      ctx.shadowColor = colors[i];
+    // 2. Batched Particle Cores
+    for (let g = 0; g < colorGroups.length; g++) {
+      const { color, indices } = colorGroups[g];
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
       ctx.shadowBlur = 6;
+      ctx.beginPath();
+      for (let j = 0; j < indices.length; j++) {
+        const i = indices[j];
+        const r = Math.max(0.5, radiiComputed[i]);
+        ctx.moveTo(px[i] + r, py[i]);
+        ctx.arc(px[i], py[i], r, 0, Math.PI * 2);
+      }
       ctx.fill();
     }
 

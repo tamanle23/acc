@@ -185,6 +185,11 @@ export class IRStateManager {
       const parsed = JSON.parse(jsonString);
       const val = VideoIRSchemaValidator.validate(parsed);
       if (!val.valid) {
+        this.state = {
+          ...this.state,
+          error: `Schema error: ${val.errors.join(', ')}`,
+        };
+        this.notify();
         return val;
       }
       this.historyManager.clear();
@@ -192,7 +197,13 @@ export class IRStateManager {
       this.recompile();
       return { valid: true, errors: [] };
     } catch (e: any) {
-      return { valid: false, errors: [e.message || 'Invalid JSON'] };
+      const err = e.message || 'Invalid JSON';
+      this.state = {
+        ...this.state,
+        error: `JSON parse error: ${err}`,
+      };
+      this.notify();
+      return { valid: false, errors: [err] };
     }
   }
 
