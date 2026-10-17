@@ -3,7 +3,8 @@
 /**
  * Universal Monorepo JaCoCo-Style Coverage Generator
  * Combines Java (JaCoCo) and TypeScript (Vitest / Istanbul) into an interactive,
- * high-performance, self-contained HTML coverage dashboard.
+ * high-performance, self-contained HTML coverage dashboard with complete file listing,
+ * classic JaCoCo Red/Green meters, and live source-code viewing.
  *
  * Usage:
  *   node scripts/generate-coverage-report.mjs [--open] [--run] [--out <path>] [--json]
@@ -12,7 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync, spawn } from 'child_process';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -157,7 +158,6 @@ function parseJacocoBackend() {
     }
   }
 
-  // GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
   const packagesMap = new Map();
 
   for (let i = 1; i < lines.length; i++) {
@@ -221,12 +221,21 @@ function parseJacocoBackend() {
       sourceFileName
     );
 
+    let sourceLines = null;
+    if (fs.existsSync(javaSourcePath)) {
+      try {
+        sourceLines = fs.readFileSync(javaSourcePath, 'utf8').split('\n');
+      } catch (e) {}
+    }
+
     const lineCoverageKey = `${pkgName}/${sourceFileName}`;
     const lineCoverage = xmlLinesByPackageSource.get(lineCoverageKey) || {};
 
     pkg.files.push({
       name: className,
       sourceFileName,
+      packageName: pkgName,
+      moduleName: '@unipost/backend',
       javaSourcePath: fs.existsSync(javaSourcePath) ? path.relative(ROOT_DIR, javaSourcePath) : null,
       instructionCovered: ic,
       instructionMissed: im,
@@ -239,6 +248,7 @@ function parseJacocoBackend() {
       methodCovered: mc,
       methodMissed: mm,
       lineCoverage,
+      sourceLines,
     });
   }
 
@@ -309,9 +319,18 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
 
   for (const [absFilePath, fileData] of Object.entries(rawJson)) {
     fileCount++;
-    const relFilePath = path.relative(ROOT_DIR, fileData.path || absFilePath).replace(/\\/g, '/');
+    const resolvedPath = fileData.path || absFilePath;
+    const relFilePath = path.relative(ROOT_DIR, resolvedPath).replace(/\\/g, '/');
     const dirName = path.dirname(relFilePath);
     const fileName = path.basename(relFilePath);
+
+    // Read real source code lines if file exists
+    let sourceLines = null;
+    if (fs.existsSync(resolvedPath)) {
+      try {
+        sourceLines = fs.readFileSync(resolvedPath, 'utf8').split('\n');
+      } catch (e) {}
+    }
 
     // Statements
     const stmts = Object.values(fileData.s || {});
@@ -377,13 +396,13 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
       packagesMap.set(dirName, {
         name: dirName,
         files: [],
-        instructionCovered: 0, // In TS, mapped to statements
+        instructionCovered: 0,
         instructionMissed: 0,
         branchCovered: 0,
         branchMissed: 0,
         lineCovered: 0,
         lineMissed: 0,
-        methodCovered: 0, // mapped to functions
+        methodCovered: 0,
         methodMissed: 0,
         complexityCovered: 0,
         complexityMissed: 0,
@@ -404,6 +423,8 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
       name: fileName,
       sourceFileName: fileName,
       sourcePath: relFilePath,
+      packageName: dirName,
+      moduleName,
       instructionCovered: stmtsCovered,
       instructionMissed: stmtsMissed,
       branchCovered: branchesCovered,
@@ -415,6 +436,7 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
       complexityCovered: fnsCovered,
       complexityMissed: fnsMissed,
       lineCoverage,
+      sourceLines,
     });
 
     totalStatementsCovered += stmtsCovered;
@@ -631,7 +653,7 @@ const htmlContent = `<!DOCTYPE html>
       width: 100%;
     }
 
-    /* Top Header & Breadcrumbs */
+    /* Top Header */
     header {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
@@ -699,8 +721,15 @@ const htmlContent = `<!DOCTYPE html>
       border-radius: 10px;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
       font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .breadcrumbs-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
     .breadcrumb-item {
@@ -720,6 +749,33 @@ const htmlContent = `<!DOCTYPE html>
       font-weight: 500;
     }
 
+    /* View Mode Switcher */
+    .view-mode-toggle {
+      display: flex;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 2px;
+    }
+    .view-mode-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s;
+    }
+    .view-mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
     /* KPI Summary Cards */
     .kpi-grid {
       display: grid;
@@ -737,6 +793,12 @@ const htmlContent = `<!DOCTYPE html>
       gap: 0.4rem;
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -4px rgba(0,0,0,0.2);
     }
     .kpi-card::before {
       content: '';
@@ -780,7 +842,7 @@ const htmlContent = `<!DOCTYPE html>
       transition: width 0.4s ease;
     }
 
-    /* Filters, Tabs, & Search */
+    /* Toolbar: Tabs & Search */
     .toolbar-container {
       display: flex;
       flex-wrap: wrap;
@@ -1074,9 +1136,19 @@ const htmlContent = `<!DOCTYPE html>
   </header>
 
   <main class="container">
-    <!-- Breadcrumbs Navigation -->
+    <!-- Breadcrumbs Navigation & View Mode Toggle -->
     <nav class="breadcrumb-bar" id="breadcrumb-container">
-      <!-- Injected dynamically -->
+      <div class="breadcrumbs-left" id="breadcrumb-links">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="view-mode-toggle">
+        <button class="view-mode-btn" id="btn-mode-hierarchy" onclick="setViewMode('hierarchy')">
+          📁 Hierarchy
+        </button>
+        <button class="view-mode-btn" id="btn-mode-flat" onclick="setViewMode('flat')">
+          📄 All Files (${grandClassCount})
+        </button>
+      </div>
     </nav>
 
     <!-- Top KPI Dashboard Cards -->
@@ -1091,7 +1163,7 @@ const htmlContent = `<!DOCTYPE html>
       </div>
       <div class="search-box-wrap">
         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="search-input" class="search-input" placeholder="Filter packages, classes, files..." oninput="handleSearch(this.value)">
+        <input type="text" id="search-input" class="search-input" placeholder="Search 217 files, packages, or classes..." oninput="handleSearch(this.value)">
       </div>
     </div>
 
@@ -1138,10 +1210,26 @@ const htmlContent = `<!DOCTYPE html>
     // Embedded Monorepo Coverage State
     const REPORT_DATA = ${reportDataJson};
 
-    // Navigation state:
-    // level: 'root' | 'module' | 'package' | 'file'
+    // Client-side percentage calculator
+    function calcPercentage(covered, total) {
+      if (!total || total === 0) return 100;
+      return Math.round((covered / total) * 1000) / 10;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Navigation & View state
     let state = {
-      level: 'root',
+      viewMode: 'hierarchy', // 'hierarchy' | 'flat'
+      level: 'root', // 'root' | 'module' | 'package' | 'file'
       activeModuleId: 'all',
       activePackageName: null,
       activeFileName: null,
@@ -1158,11 +1246,26 @@ const htmlContent = `<!DOCTYPE html>
       document.getElementById('theme-text').textContent = next === 'dark' ? 'Light Mode' : 'Dark Mode';
     }
 
+    function setViewMode(mode) {
+      state.viewMode = mode;
+      document.getElementById('btn-mode-hierarchy').classList.toggle('active', mode === 'hierarchy');
+      document.getElementById('btn-mode-flat').classList.toggle('active', mode === 'flat');
+      renderTableHeaders();
+      renderTableRows();
+    }
+
     function renderBreadcrumbs() {
-      const container = document.getElementById('breadcrumb-container');
+      const container = document.getElementById('breadcrumb-links');
       const parts = [];
 
       parts.push(\`<span class="breadcrumb-item" onclick="navigateRoot()">unipost (monorepo)</span>\`);
+
+      if (state.viewMode === 'flat') {
+        parts.push(\`<span class="breadcrumb-separator">›</span>\`);
+        parts.push(\`<span class="breadcrumb-active">All Files Listing (\${REPORT_DATA.grand.classCount} files)</span>\`);
+        container.innerHTML = parts.join(' ');
+        return;
+      }
 
       if (state.activeModuleId !== 'all') {
         const mod = REPORT_DATA.modules.find(m => m.id === state.activeModuleId);
@@ -1210,19 +1313,19 @@ const htmlContent = `<!DOCTYPE html>
         instructionCovered: mod.instructionCovered,
         instructionMissed: mod.instructionMissed,
         instructionTotal: totalInst,
-        instructionPct: totalInst > 0 ? Math.round((mod.instructionCovered / totalInst) * 1000) / 10 : 100,
+        instructionPct: calcPercentage(mod.instructionCovered, totalInst),
         branchCovered: mod.branchCovered,
         branchMissed: mod.branchMissed,
         branchTotal: totalBranch,
-        branchPct: totalBranch > 0 ? Math.round((mod.branchCovered / totalBranch) * 1000) / 10 : 100,
+        branchPct: calcPercentage(mod.branchCovered, totalBranch),
         lineCovered: mod.lineCovered,
         lineMissed: mod.lineMissed,
         lineTotal: totalLine,
-        linePct: totalLine > 0 ? Math.round((mod.lineCovered / totalLine) * 1000) / 10 : 100,
+        linePct: calcPercentage(mod.lineCovered, totalLine),
         methodCovered: mod.methodCovered,
         methodMissed: mod.methodMissed,
         methodTotal: totalMethod,
-        methodPct: totalMethod > 0 ? Math.round((mod.methodCovered / totalMethod) * 1000) / 10 : 100,
+        methodPct: calcPercentage(mod.methodCovered, totalMethod),
         classCount: mod.classCount
       };
     }
@@ -1230,11 +1333,10 @@ const htmlContent = `<!DOCTYPE html>
     function renderKpis() {
       const container = document.getElementById('kpi-container');
       const m = getActiveMetrics();
-
       const getBarColor = (pct) => pct >= 90 ? 'var(--bar-green)' : pct >= 70 ? 'var(--bar-yellow)' : 'var(--bar-red)';
 
       container.innerHTML = \`
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="setViewMode('flat')">
           <div class="kpi-title">Instructions / Statements</div>
           <div class="kpi-value-row">
             <span class="kpi-percentage" style="color: \${getBarColor(m.instructionPct)}">\${m.instructionPct}%</span>
@@ -1245,7 +1347,7 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="setViewMode('flat')">
           <div class="kpi-title">Branches</div>
           <div class="kpi-value-row">
             <span class="kpi-percentage" style="color: \${getBarColor(m.branchPct)}">\${m.branchPct}%</span>
@@ -1256,7 +1358,7 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="setViewMode('flat')">
           <div class="kpi-title">Line Coverage</div>
           <div class="kpi-value-row">
             <span class="kpi-percentage" style="color: \${getBarColor(m.linePct)}">\${m.linePct}%</span>
@@ -1267,7 +1369,7 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="setViewMode('flat')">
           <div class="kpi-title">Functions / Methods</div>
           <div class="kpi-value-row">
             <span class="kpi-percentage" style="color: \${getBarColor(m.methodPct)}">\${m.methodPct}%</span>
@@ -1278,11 +1380,11 @@ const htmlContent = `<!DOCTYPE html>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-title">Total Files Audited</div>
+        <div class="kpi-card" onclick="setViewMode('flat')" title="Click to view all files list">
+          <div class="kpi-title">Total Files Audited (View List)</div>
           <div class="kpi-value-row">
             <span class="kpi-percentage" style="color: var(--accent)">\${m.classCount}</span>
-            <span class="kpi-raw">\${state.activeModuleId === 'all' ? 'All Monorepo Packages' : 'Active Module'}</span>
+            <span class="kpi-raw">Click to list all 📄</span>
           </div>
           <div class="kpi-progress-bg">
             <div class="kpi-progress-fill" style="width: 100%; background: var(--accent)"></div>
@@ -1338,8 +1440,11 @@ const htmlContent = `<!DOCTYPE html>
 
     function renderTableHeaders() {
       const thead = document.getElementById('table-header-row');
+      const isFlat = state.viewMode === 'flat' || (state.searchQuery && state.searchQuery.length > 0);
+
       const cols = [
-        { id: 'element', label: 'Element' },
+        { id: 'element', label: isFlat ? 'File Name' : 'Element' },
+        ...(isFlat ? [{ id: 'package', label: 'Module / Package' }] : []),
         { id: 'instructions', label: 'Missed Instructions / Stmts' },
         { id: 'instCov', label: 'Cov.' },
         { id: 'branches', label: 'Missed Branches' },
@@ -1348,7 +1453,7 @@ const htmlContent = `<!DOCTYPE html>
         { id: 'linesTotal', label: 'Total Lines' },
         { id: 'methodsMissed', label: 'Missed Methods' },
         { id: 'methodsTotal', label: 'Total Methods' },
-        { id: 'classesMissed', label: 'Files / Classes' },
+        ...(!isFlat ? [{ id: 'classesMissed', label: 'Files / Classes' }] : []),
       ];
 
       thead.innerHTML = cols.map(c => {
@@ -1371,15 +1476,57 @@ const htmlContent = `<!DOCTYPE html>
     }
 
     function handleSearch(q) {
-      state.searchQuery = q.toLowerCase();
+      state.searchQuery = q.toLowerCase().trim();
+      renderTableHeaders();
       renderTableRows();
+    }
+
+    function getAllFilesFlat() {
+      const files = [];
+      const targetModules = state.activeModuleId === 'all'
+        ? REPORT_DATA.modules
+        : REPORT_DATA.modules.filter(m => m.id === state.activeModuleId);
+
+      for (const mod of targetModules) {
+        if (!mod.packages) continue;
+        for (const pkg of mod.packages) {
+          if (!pkg.files) continue;
+          for (const f of pkg.files) {
+            const ic = f.instructionCovered || 0;
+            const im = f.instructionMissed || 0;
+            const bc = f.branchCovered || 0;
+            const bm = f.branchMissed || 0;
+            const lc = f.lineCovered || 0;
+            const lm = f.lineMissed || 0;
+            const mc = f.methodCovered || 0;
+            const mm = f.methodMissed || 0;
+
+            files.push({
+              element: f.name,
+              type: 'file',
+              moduleId: mod.id,
+              moduleName: mod.name,
+              packageName: pkg.name,
+              fileData: f,
+              im, ic, it: ic + im, ipct: calcPercentage(ic, ic + im),
+              bm, bc, bt: bc + bm, bpct: calcPercentage(bc, bc + bm),
+              lm, lc, lt: lc + lm, lpct: calcPercentage(lc, lc + lm),
+              mm, mc, mt: mc + mm,
+              classes: 1
+            });
+          }
+        }
+      }
+      return files;
     }
 
     function getTableRowsData() {
       let rows = [];
+      const isSearchActive = state.searchQuery && state.searchQuery.length > 0;
 
-      if (state.level === 'root') {
-        // Monorepo level: show all modules
+      if (state.viewMode === 'flat' || isSearchActive) {
+        rows = getAllFilesFlat();
+      } else if (state.level === 'root') {
         rows = REPORT_DATA.modules.map(mod => {
           const ic = mod.instructionCovered;
           const im = mod.instructionMissed;
@@ -1401,7 +1548,6 @@ const htmlContent = `<!DOCTYPE html>
           };
         });
       } else if (state.level === 'module') {
-        // Module level: show packages inside this module
         const mod = REPORT_DATA.modules.find(m => m.id === state.activeModuleId);
         if (mod && mod.packages) {
           rows = mod.packages.map(pkg => {
@@ -1427,7 +1573,6 @@ const htmlContent = `<!DOCTYPE html>
           });
         }
       } else if (state.level === 'package') {
-        // Package level: show files inside this package
         const mod = REPORT_DATA.modules.find(m => m.id === state.activeModuleId);
         if (mod) {
           const pkg = mod.packages.find(p => p.name === state.activePackageName);
@@ -1444,6 +1589,9 @@ const htmlContent = `<!DOCTYPE html>
               return {
                 element: f.name,
                 type: 'file',
+                moduleId: mod.id,
+                moduleName: mod.name,
+                packageName: pkg.name,
                 fileData: f,
                 im, ic, it: ic + im, ipct: calcPercentage(ic, ic + im),
                 bm, bc, bt: bc + bm, bpct: calcPercentage(bc, bc + bm),
@@ -1456,9 +1604,13 @@ const htmlContent = `<!DOCTYPE html>
         }
       }
 
-      // Filter by search
+      // Filter by search query across element, package, or module
       if (state.searchQuery) {
-        rows = rows.filter(r => r.element.toLowerCase().includes(state.searchQuery));
+        rows = rows.filter(r =>
+          r.element.toLowerCase().includes(state.searchQuery) ||
+          (r.packageName && r.packageName.toLowerCase().includes(state.searchQuery)) ||
+          (r.moduleName && r.moduleName.toLowerCase().includes(state.searchQuery))
+        );
       }
 
       // Sort rows
@@ -1468,6 +1620,10 @@ const htmlContent = `<!DOCTYPE html>
           case 'element':
             valA = a.element.toLowerCase();
             valB = b.element.toLowerCase();
+            return state.sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          case 'package':
+            valA = (a.packageName || '').toLowerCase();
+            valB = (b.packageName || '').toLowerCase();
             return state.sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
           case 'instructions':
             valA = a.im; valB = b.im; break;
@@ -1499,9 +1655,12 @@ const htmlContent = `<!DOCTYPE html>
     function renderTableRows() {
       const tbody = document.getElementById('table-body');
       const rows = getTableRowsData();
+      const isFlat = state.viewMode === 'flat' || (state.searchQuery && state.searchQuery.length > 0);
 
       if (rows.length === 0) {
-        tbody.innerHTML = \`<tr><td colspan="10" style="text-align: center; padding: 2rem; color: var(--text-dim);">No elements match current filter.</td></tr>\`;
+        tbody.innerHTML = \`<tr><td colspan="\${isFlat ? 10 : 10}" style="text-align: center; padding: 2.5rem; color: var(--text-dim);">
+          No matching files or packages found for "<strong>\${escapeHtml(state.searchQuery)}</strong>".
+        </td></tr>\`;
         renderTableFooter([]);
         return;
       }
@@ -1509,12 +1668,16 @@ const htmlContent = `<!DOCTYPE html>
       tbody.innerHTML = rows.map(r => {
         let elementCell = '';
         if (r.type === 'module') {
-          elementCell = \`<a class="element-link" onclick="navigateToModule('\${r.id}')">📦 \${r.element}</a>\`;
+          elementCell = \`<a class="element-link" onclick="navigateToModule('\${r.id}')">📦 \${escapeHtml(r.element)}</a>\`;
         } else if (r.type === 'package') {
-          elementCell = \`<a class="element-link" onclick="navigateToPackage('\${r.name}')">📁 \${r.element}</a>\`;
+          elementCell = \`<a class="element-link" onclick="navigateToPackage('\${r.name}')">📁 \${escapeHtml(r.element)}</a>\`;
         } else {
-          elementCell = \`<a class="element-link" onclick="openFileViewer('\${r.element}')">📄 \${r.element}</a>\`;
+          elementCell = \`<a class="element-link" onclick="openFileViewerDirect('\${r.moduleId}', '\${r.packageName}', '\${r.element}')">📄 \${escapeHtml(r.element)}</a>\`;
         }
+
+        const packageCol = isFlat
+          ? \`<td><span style="font-size: 0.8rem; color: var(--text-muted);">\${escapeHtml(r.packageName || r.moduleName || '')}</span></td>\`
+          : '';
 
         // JaCoCo Meters
         const instBarRed = r.it > 0 ? (r.im / r.it) * 100 : 0;
@@ -1525,6 +1688,7 @@ const htmlContent = `<!DOCTYPE html>
         return \`
           <tr>
             <td>\${elementCell}</td>
+            \${packageCol}
             <td>
               <div class="jacoco-meter-cell">
                 <div class="jacoco-meter" title="Missed: \${r.im.toLocaleString()}, Covered: \${r.ic.toLocaleString()}">
@@ -1549,7 +1713,7 @@ const htmlContent = `<!DOCTYPE html>
             <td>\${r.lt.toLocaleString()}</td>
             <td>\${r.mm.toLocaleString()}</td>
             <td>\${r.mt.toLocaleString()}</td>
-            <td>\${r.classes.toLocaleString()}</td>
+            \${!isFlat ? \`<td>\${r.classes.toLocaleString()}</td>\` : ''}
           </tr>
         \`;
       }).join('');
@@ -1559,6 +1723,8 @@ const htmlContent = `<!DOCTYPE html>
 
     function renderTableFooter(rows) {
       const tfoot = document.getElementById('table-footer');
+      const isFlat = state.viewMode === 'flat' || (state.searchQuery && state.searchQuery.length > 0);
+
       if (!rows || rows.length === 0) {
         tfoot.innerHTML = '';
         return;
@@ -1590,7 +1756,8 @@ const htmlContent = `<!DOCTYPE html>
 
       tfoot.innerHTML = \`
         <tr>
-          <td>Total</td>
+          <td>Total (\${rows.length} items)</td>
+          \${isFlat ? '<td>—</td>' : ''}
           <td>
             <div class="jacoco-meter-cell">
               <div class="jacoco-meter">
@@ -1615,51 +1782,52 @@ const htmlContent = `<!DOCTYPE html>
           <td>\${sumLt.toLocaleString()}</td>
           <td>\${sumMm.toLocaleString()}</td>
           <td>\${sumMt.toLocaleString()}</td>
-          <td>\${sumClasses.toLocaleString()}</td>
+          \${!isFlat ? \`<td>\${sumClasses.toLocaleString()}</td>\` : ''}
         </tr>
       \`;
     }
 
-    function openFileViewer(fileName) {
-      const mod = REPORT_DATA.modules.find(m => m.id === state.activeModuleId);
+    function openFileViewerDirect(moduleId, packageName, fileName) {
+      const mod = REPORT_DATA.modules.find(m => m.id === moduleId);
       if (!mod) return;
-      const pkg = mod.packages.find(p => p.name === state.activePackageName);
+      const pkg = mod.packages.find(p => p.name === packageName);
       if (!pkg) return;
       const file = pkg.files.find(f => f.name === fileName);
       if (!file) return;
 
-      document.getElementById('drawer-file-name').textContent = file.name;
+      document.getElementById('drawer-file-name').textContent = file.name + ' (' + pkg.name + ')';
       const pct = calcPercentage(file.lineCovered, file.lineCovered + file.lineMissed);
       const badge = document.getElementById('drawer-coverage-badge');
       badge.textContent = \`\${pct}% Line Coverage (\${file.lineCovered} / \${file.lineCovered + file.lineMissed})\`;
       badge.className = \`badge-tag \${pct >= 90 ? 'badge-pass' : pct >= 70 ? 'badge-warn' : 'badge-fail'}\`;
 
-      // Build simulated or annotated code lines
+      // Build real or annotated source lines
       const container = document.getElementById('source-code-content');
-      const lines = [];
-      const totalLines = file.lineCovered + file.lineMissed;
-      const sampleCount = Math.max(totalLines, 30);
+      const lines = file.sourceLines || [];
+      const totalCount = lines.length > 0 ? lines.length : Math.max(file.lineCovered + file.lineMissed, 25);
+      const output = [];
 
-      for (let i = 1; i <= sampleCount; i++) {
+      for (let i = 1; i <= totalCount; i++) {
         let status = 'none';
         if (file.lineCoverage && file.lineCoverage[i]) {
           status = file.lineCoverage[i];
-        } else if (i <= file.lineCovered) {
-          status = 'covered';
-        } else if (i <= totalLines) {
-          status = 'uncovered';
+        } else if (!file.sourceLines) {
+          if (i <= file.lineCovered) status = 'covered';
+          else if (i <= file.lineCovered + file.lineMissed) status = 'uncovered';
         }
 
         const statusClass = status === 'covered' ? 'line-covered' : status === 'partial' ? 'line-partial' : status === 'uncovered' ? 'line-uncovered' : '';
-        lines.push(\`
+        const lineText = lines[i - 1] !== undefined ? escapeHtml(lines[i - 1]) : '// Source code line ' + i + ' [' + status + ']';
+
+        output.push(\`
           <div class="source-line \${statusClass}">
             <span class="source-line-nr">\${i}</span>
-            <span class="source-line-code">// Line \${i} coverage marker [\${status.toUpperCase()}]</span>
+            <span class="source-line-code">\${lineText}</span>
           </div>
         \`);
       }
 
-      container.innerHTML = lines.join('');
+      container.innerHTML = output.join('');
       document.getElementById('source-overlay').classList.add('active');
     }
 
@@ -1677,6 +1845,7 @@ const htmlContent = `<!DOCTYPE html>
 
     // Init
     document.getElementById('gen-timestamp').textContent = 'Generated: ' + REPORT_DATA.timestamp;
+    document.getElementById('btn-mode-hierarchy').classList.add('active');
     renderView();
   </script>
 </body>

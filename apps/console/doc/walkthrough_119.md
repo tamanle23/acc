@@ -28,6 +28,8 @@ To unify code coverage reporting across the disparate stacks in the Unipost mono
     - Drill-down navigation: Root -> Module -> Package -> File.
     - Interactive slide-out Source Code Viewer with line numbers and coverage highlights (green for covered, yellow for partial, red for uncovered).
     - Dual theme support: Modern Liquid Glass Dark mode and Classic JaCoCo Light mode.
+    - Dual View Mode switcher: `📁 Hierarchy` (Drill-down: Monorepo -> Module -> Package -> File) vs `📄 All Files (217 files)` (Flat instant searchable listing of every file in the project).
+    - Real source code viewer rendering actual source lines with line numbers and JaCoCo coverage color classes.
     - CLI flags: `--open` (opens in browser), `--run` (runs all coverage suites before generating), `--json` (exports `coverage-summary.json`), and `--out` (custom path).
 
 ### 2. Root NPM Scripts

@@ -37,6 +37,11 @@ Developers and CI workflows lacked a single unified, interactive, JaCoCo-style H
    - Functions: 1,279 / 2,348 (54.5%)
    - Generated `coverage/index.html` and `coverage/coverage-summary.json`.
 2. `pnpm coverage:report`: Exited 0 and regenerated `coverage/index.html`.
+3. Headless browser automation test (`@playwright/test`):
+   - Verified 0 page console errors (resolved client-side `calcPercentage` scope).
+   - Verified Hierarchy mode renders 3 monorepo modules with drilldown into packages and files.
+   - Verified Flat All Files mode renders all 217 files with instant search and sort.
+   - Verified Source Viewer slide-out drawer renders real code lines (e.g. 295 lines for `CompositeSpecCompiler.java`) with line-by-line coverage classes.
 
 ## Tasks
 - [x] Create `scripts/generate-coverage-report.mjs`
