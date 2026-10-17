@@ -33,14 +33,20 @@ flowchart TD
     subgraph Preview_Compositor ["Preview.tsx Canvas2D Compositor"]
         TextureCache["AssetTextureCache (Image/Video element pool)"]
         ActiveSeqs["Active Sequences Query (intervalTree.queryActive)"]
-        TransformCalc["GSAP Evaluated Matrix (x, y, scale, rot, opacity)"]
+        UCE["UniversalCanvasEngine.renderLayers()"]
         DrawPass["Canvas Draw Order:\n1. Base Plate Images/Videos (V1)\n2. Parallax & Motion Layers (V2..V4)\n3. Declarative Modifiers (Particles / HUD if active)\n4. Vector Transform Overlay (selected sequence)"]
     end
 
-    subgraph Audio_Pipeline ["WebAudioEngine & Mixer"]
-        AudioBufferCache["AudioBuffer Cache (fetch -> decodeAudioData)"]
-        MixerGraph["Web Audio Graph (SourceNodes -> Track Gain/Pan -> Master Gain -> Analyser)"]
-        DynamicDucking["Dynamic Auto-Ducking Curve Slew"]
+    subgraph IR_Audio_Core ["packages/ir Audio Core (Platform-Independent)"]
+        UAM["UniversalAudioMixer (Master Bus Architecture)"]
+        DME["DynamicAudioDuckingEngine (Sidechain Envelope)"]
+        Plugins["Audio Plugins (volume, pan, filter, pitch)"]
+        Adapter["AudioSourceAdapter (Decoded PCM | Procedural Fallback)"]
+    end
+
+    subgraph Studio_Audio ["Studio Audio Pipeline (Web Audio)"]
+        AudioAssetCache["AudioAssetCache (Observer subscribe/notify)"]
+        WebAudioEngine["WebAudioEngine (Transport Sync & Analyser VU)"]
     end
 
     subgraph UI_UX ["Liquid Glass Theme Hardening"]
@@ -50,7 +56,9 @@ flowchart TD
     end
 
     VideoIR_State --> Preview_Compositor
-    VideoIR_State --> Audio_Pipeline
+    VideoIR_State --> IR_Audio_Core
+    IR_Audio_Core --> Studio_Audio
+    AudioAssetCache --> WebAudioEngine
     UI_UX --> Preview_Compositor
 ```
 
@@ -88,11 +96,35 @@ flowchart TD
   - Lean orchestrator (~280 lines) delegating visual layer drawing to `engine.renderLayers()` and sub-components.
   - Retain exported types and sub-components (`TransformBodyDraggable`, `TransformHandle`, `computeDragTransform`) ensuring 100% zero-regression test compatibility.
 
-### Phase 3: Multi-Track Web Audio Asset Decoding & Mixing `[ ] Planned`
-- **`apps/studio/src/lib/audio/WebAudioEngine.ts`**:
-  - Implement asynchronous audio decoding via `AudioContext.decodeAudioData()`.
-  - Schedule synchronized `AudioBufferSourceNode`s routed through per-track gain/pan nodes with dynamic auto-ducking.
-  - Fallback to procedural synthesis if audio is still fetching or offline.
+### Phase 3: Platform-Independent Audio Core & Multi-Track Mixing `[ ] Planned`
+- **Architectural Relocation & Consolidation (`packages/ir/src/renderer/audio/`)**:
+  - Relocate `UniversalAudioMixer.ts` to `packages/ir/src/renderer/audio/UniversalAudioMixer.ts` alongside `DecoupledAudioMixer.ts` and `DynamicAudioDuckingEngine.ts`.
+  - Re-export `UniversalAudioMixer` from `packages/effect-engines/src/audio/UniversalAudioMixer.ts` ensuring 100% backward compatibility for all existing tests and call sites.
+  - Keep `packages/effect-engines` strictly focused on visual/render effects built on top of IR.
+- **Audio Source Adapter Pattern (`AudioSourceAdapter`)**:
+  - Define `IAudioSourceProvider` interface in `packages/ir`:
+    - `DecodedPcmSource`: Samples from real decoded Float32Array PCM channel buffers based on `sequence.sourceTrim` and timeline offsets.
+    - `ProceduralSynthesizerSource`: Seamless fallback to deterministic synthesis when audio assets are still loading or unavailable.
+- **Pure Buffer-Based Modifier Plugins (`packages/ir/src/plugins/audio/` & `sfx/`)**:
+  - Audio plugins operate strictly on pure `Float32Array` PCM channel buffers (zero DOM / Web Audio API dependencies, isomorphic across Node.js/Bun CLI and browser).
+  - Register comprehensive audio plugins in `ModifierPluginRegistry`:
+    - `audio/volume`: Gain scaling with intro/outro fade curves (linear, cosine, exponential).
+    - `audio/pan`: Constant-power stereo panning (-1.0 to 1.0).
+    - `audio/filter`: Biquad filter (lowpass, highpass, bandpass) with frequency cutoff and resonance.
+    - `audio/pitch`: Resampling / playback rate speed modulation.
+    - `sfx/dynamic_ducking`: Sidechain compression utilizing `DynamicAudioDuckingEngine`.
+- **Master Bus Architecture in `UniversalAudioMixer`**:
+  - **Clip-Level DSP**: Sequential pipeline on channel buffers (`volume/fade` $\to$ `filter` $\to$ `pitch` $\to$ `stereo pan`).
+  - **Track-Level Buses**: Dedicated sub-mix buses for Voiceover, Sound Effects (SFX), and Background Music (BGM).
+  - **Master Bus**: Summation with `DynamicAudioDuckingEngine` sidechain attenuation of BGM during dialogue activity, followed by a soft-clipping master limiter (`Math.tanh`).
+- **Studio Audio Asset Cache (`apps/studio/src/lib/audio/AudioAssetCache.ts`)**:
+  - Implement Observer pattern (`subscribe(callback)`, `notify()`) matching `AssetTextureCache`.
+  - Asynchronously fetch and decode audio URLs into in-memory `AudioBuffer`s via browser `AudioContext.decodeAudioData()`.
+  - Notify subscribers (`WebAudioEngine`, timeline waveform visualizer) upon decode completion to trigger seamless live updates.
+- **WebAudioEngine Integration (`apps/studio/src/lib/audio/WebAudioEngine.ts`)**:
+  - Thin browser coordinator that syncs timeline transport frames to `UniversalAudioMixer.mixStereo()`.
+  - Pipes decoded PCM buffers from `AudioAssetCache` into `UniversalAudioMixer`.
+  - Feeds master output into `AnalyserNode` for live peak/RMS VU metering and tactile playhead scrubbing bursts.
 
 ### Phase 4: RightSidebar Inspector Panels for HUD & Particles `[ ] Planned`
 - **`apps/studio/src/components/RightSidebar.tsx`**:
