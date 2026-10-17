@@ -365,15 +365,50 @@ export class UniversalCanvasEngine {
   }
 
   /**
+   * Clears particle system completely.
+   */
+  public clearParticles(): void {
+    this.particles = null;
+  }
+
+  /**
+   * Returns whether particle swarm is actively enabled.
+   */
+  public hasParticles(): boolean {
+    return this.particles !== null;
+  }
+
+  /**
    * Initializes procedural cybernetic HUD telemetry.
    */
-  public initHologramHUD(ringRadius: number = 0.35, scanlineDensity: number = 40): void {
+  public initHologramHUD(ringRadius: number = 0.35, scanlineDensity: number = 40, color: string = '#00ffff', rotationSpeed: number = 0.5): void {
     this.hudConfig = {
       ringRadiusNorm: ringRadius,
       scanlineDensity,
-      color: '#00ffff',
-      rotationSpeed: 0.5,
+      color,
+      rotationSpeed,
     };
+  }
+
+  /**
+   * Clears hologram HUD telemetry.
+   */
+  public clearHologramHUD(): void {
+    this.hudConfig = null;
+  }
+
+  /**
+   * Returns whether hologram HUD is actively enabled.
+   */
+  public hasHologramHUD(): boolean {
+    return this.hudConfig !== null;
+  }
+
+  /**
+   * Dynamically sets or clears HUD configuration.
+   */
+  public setHUDConfig(config: HUDConfig | null): void {
+    this.hudConfig = config ? { ...config } : null;
   }
 
   /**

@@ -174,6 +174,7 @@ export function Preview({
   const [isLocked, setIsLocked] = useState(false);
   const [safeGuidesMode, setSafeGuidesMode] = useState<'none' | '16:9' | '9:16'>('none');
   const [showCheckerboard, setShowCheckerboard] = useState(false);
+  const [showVfxAmbiance, setShowVfxAmbiance] = useState(true);
 
   // Drag-and-Drop Staging & Inline Text Editing State
   const [isDragOver, setIsDragOver] = useState(false);
@@ -224,8 +225,6 @@ export function Preview({
       width,
       height,
     });
-    engine.initHologramHUD(0.35, 40);
-    engine.initParticleSystem(250);
     engineRef.current = engine;
 
     setGlReady(true);
@@ -256,6 +255,8 @@ export function Preview({
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
     let popOutIntensity = 1.0;
     const vfxRegions: PartialVFXRegion[] = [];
+    let activeParticleMod: any = null;
+    let activeHudMod: any = null;
 
     for (const seq of activeSeqs) {
       if (seq.modifiers) {
@@ -280,7 +281,39 @@ export function Preview({
               intensity: p.intensity ?? 1.5,
             });
           }
+          if (mod.type === 'vfx/particles' || mod.type === 'overlay/canvas_particles') {
+            activeParticleMod = mod;
+          }
+          if (mod.type === 'overlay/hologram_hud' || (mod.type === 'overlay/canvas_particles' && mod.params?.type === 'sci_fi_hud')) {
+            activeHudMod = mod;
+          }
         }
+      }
+    }
+
+    // Declarative Particle Swarm Configuration
+    if (showVfxAmbiance && activeParticleMod && activeParticleMod.params?.enabled !== false) {
+      const pCount = Math.max(50, Math.min(3000, activeParticleMod.params?.particleCount ?? 200));
+      if (!engine.hasParticles()) {
+        engine.initParticleSystem(pCount);
+      }
+    } else {
+      if (engine.hasParticles()) {
+        engine.clearParticles();
+      }
+    }
+
+    // Declarative Hologram HUD Configuration
+    if (showVfxAmbiance && activeHudMod && activeHudMod.params?.enabled !== false) {
+      const hp = activeHudMod.params || {};
+      const radius = hp.ringRadiusNorm ?? 0.35;
+      const density = hp.scanlineDensity ?? 40;
+      const hudColor = hp.color || '#00ffff';
+      const rotSpeed = hp.rotationSpeed ?? 0.5;
+      engine.initHologramHUD(radius, density, hudColor, rotSpeed);
+    } else {
+      if (engine.hasHologramHUD()) {
+        engine.clearHologramHUD();
       }
     }
 
@@ -316,7 +349,7 @@ export function Preview({
 
     // 4. Render 2D Scenegraph, Particles, HUD & Vector Overlay
     engine.render(ctx, timeSec, popOutIntensity);
-  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, isDragging]);
+  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging]);
 
   // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
   const transformSensors = useSensors(
@@ -745,6 +778,21 @@ export function Preview({
               }`}
             >
               <Grid className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          {/* FX Ambiance (Particles & Hologram HUD) Toggle */}
+          <Tooltip content={`VFX Ambiance (HUD & Particles): ${showVfxAmbiance ? 'Enabled' : 'Disabled'}`}>
+            <button
+              type="button"
+              onClick={() => setShowVfxAmbiance(!showVfxAmbiance)}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
+                showVfxAmbiance
+                  ? 'border-purple-400/50 bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                  : 'border-[var(--glass-border)] text-foreground/40 hover:text-foreground hover:bg-white/10'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
