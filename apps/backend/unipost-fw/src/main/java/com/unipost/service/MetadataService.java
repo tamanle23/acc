@@ -1,5 +1,6 @@
 package com.unipost.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unipost.core.io.Page;
 import com.unipost.core.io.PageRequest;
 import com.unipost.domain.metadata.AttributeDefinition;
@@ -114,7 +115,8 @@ public class MetadataService {
                     entityRelationshipRepository,
                     null,
                     schemaValidationService,
-                    null
+                    null,
+                    this.objectMapper != null ? this.objectMapper : new ObjectMapper()
             );
             if (this.outboxEventPublisher != null) {
                 this.recordMutationPipeline.setOutboxEventPublisher(this.outboxEventPublisher);

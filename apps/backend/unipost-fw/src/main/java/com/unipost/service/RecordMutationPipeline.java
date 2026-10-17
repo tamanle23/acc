@@ -8,7 +8,7 @@ import com.unipost.repository.jpa.*;
 import com.unipost.service.exception.MetadataConflictException;
 import com.unipost.service.exception.MetadataNotFoundException;
 import com.unipost.service.workflow.EntityLifecycleService;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
@@ -24,8 +24,9 @@ import java.util.*;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RecordMutationPipeline {
+
+    private static final int MAX_RECORD_PAYLOAD_BYTES = 1024 * 1024; // 1MB
 
     private final EntityTypeRepository entityTypeRepository;
     private final EntityRecordRepository entityRecordRepository;
@@ -35,6 +36,44 @@ public class RecordMutationPipeline {
     private final RecordAuditLogRepository recordAuditLogRepository;
     private final SchemaValidationService schemaValidationService;
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
+
+    public RecordMutationPipeline(
+            EntityTypeRepository entityTypeRepository,
+            EntityRecordRepository entityRecordRepository,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            RelationshipTypeRepository relationshipTypeRepository,
+            EntityRelationshipRepository entityRelationshipRepository,
+            RecordAuditLogRepository recordAuditLogRepository,
+            SchemaValidationService schemaValidationService,
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper
+    ) {
+        this.entityTypeRepository = entityTypeRepository;
+        this.entityRecordRepository = entityRecordRepository;
+        this.attributeDefinitionRepository = attributeDefinitionRepository;
+        this.relationshipTypeRepository = relationshipTypeRepository;
+        this.entityRelationshipRepository = entityRelationshipRepository;
+        this.recordAuditLogRepository = recordAuditLogRepository;
+        this.schemaValidationService = schemaValidationService;
+        this.jdbcTemplate = jdbcTemplate;
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
+    }
+
+    public RecordMutationPipeline(
+            EntityTypeRepository entityTypeRepository,
+            EntityRecordRepository entityRecordRepository,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            RelationshipTypeRepository relationshipTypeRepository,
+            EntityRelationshipRepository entityRelationshipRepository,
+            RecordAuditLogRepository recordAuditLogRepository,
+            SchemaValidationService schemaValidationService,
+            JdbcTemplate jdbcTemplate
+    ) {
+        this(entityTypeRepository, entityRecordRepository, attributeDefinitionRepository,
+             relationshipTypeRepository, entityRelationshipRepository, recordAuditLogRepository,
+             schemaValidationService, jdbcTemplate, new ObjectMapper());
+    }
 
     // Optional collaborators
     private EntityLifecycleService entityLifecycleService;
@@ -669,8 +708,20 @@ public class RecordMutationPipeline {
     }
 
     private void validatePayloadSize(Map<String, Object> attributes) {
-        if (attributes != null && attributes.size() > 500) {
+        if (attributes == null || attributes.isEmpty()) {
+            return;
+        }
+        if (attributes.size() > 500) {
             throw new IllegalArgumentException("Payload exceeds maximum permitted attribute count of 500");
+        }
+        try {
+            byte[] bytes = objectMapper.writeValueAsBytes(attributes);
+            if (bytes.length > MAX_RECORD_PAYLOAD_BYTES) {
+                throw new MetadataConflictException(
+                        "Payload size limit exceeded: Maximum 1MB allowed per record payload (received: " + bytes.length + " bytes)");
+            }
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.warn("Failed to calculate payload byte size: {}", e.getMessage());
         }
     }
 

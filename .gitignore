@@ -28,3 +28,9 @@ dist-ssr
 *.sw?
 .idea/*
 .turbo
+
+# Test outputs & coverage
+coverage
+playwright-report
+test-results
+*.exec

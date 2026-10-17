@@ -1,8 +1,17 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SandboxDock } from '../ui/sandbox-dock';
 import { useSandboxStore } from '../store/sandbox-store';
 import { useSpringAuthStore } from '@/features/spring-auth/store';
+
+// Helper to render with QueryClientProvider
+const renderWithQueryClient = (ui: React.ReactElement) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+};
 
 // Mock sonner toast
 vi.mock('sonner', () => ({
@@ -25,7 +34,7 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should render the expanded SandboxDock when ?sandbox=true is present', () => {
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     expect(screen.getByText('Unified Sandbox Dock')).toBeTruthy();
     expect(screen.getByText('Persona & Scope')).toBeTruthy();
@@ -33,7 +42,7 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should switch active persona when clicking persona buttons', () => {
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     const creatorBtn = screen.getByText('Content');
     fireEvent.click(creatorBtn);
@@ -44,7 +53,7 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should allow switching tabs and adjusting latency settings', () => {
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     const networkTab = screen.getByText('Network / Chaos');
     fireEvent.click(networkTab);
@@ -58,7 +67,7 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should support switching scope tenant to tenant-acme and synchronizing active tenant', () => {
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'tenant-acme' } });
@@ -67,7 +76,7 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should simulate unassigned user edge-case with warning toast', () => {
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     const unassignedBtn = screen.getByText('Unassigned User');
     fireEvent.click(unassignedBtn);
@@ -80,7 +89,7 @@ describe('SandboxDock UI Component', () => {
     localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
     localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
 
-    render(<SandboxDock />);
+    renderWithQueryClient(<SandboxDock />);
 
     const resetBtn = screen.getByTitle('Reset all mock data across all features');
     fireEvent.click(resetBtn);

@@ -1,6 +1,6 @@
 # Phase 45: Enterprise Resilience & Performance Benchmark Report
 
-**Generated At**: 2026-10-17T03:58:38.579770900Z
+**Generated At**: 2026-10-17T06:42:29.260730100Z
 **Environment**: Spring Modulith / Java 21 / PostgreSQL Lateral AST Compiler
 **Test Suite**: `CompositeQueryPerformanceBenchmarkTest`
 
@@ -12,8 +12,8 @@
 | :--- | :---: | :---: | :---: |
 | **Total Concurrent Queries** | `1000` | `1,000` | ✅ PASS |
 | **Active Worker Threads** | `32` | `32` | ✅ PASS |
-| **Total Duration** | `0.02 sec` | `< 10 sec` | ✅ PASS |
-| **Query Throughput** | `44220.20 req/sec` | `> 200 req/sec` | ✅ PASS |
+| **Total Duration** | `0.01 sec` | `< 10 sec` | ✅ PASS |
+| **Query Throughput** | `69141.47 req/sec` | `> 200 req/sec` | ✅ PASS |
 | **Failure Rate** | `0.00%` | `0.00%` | ✅ PASS |
 
 ---
@@ -22,12 +22,12 @@
 
 | Percentile | Latency (ms) | Target Ceiling | SLA Status |
 | :--- | :---: | :---: | :---: |
-| **Min** | `0.035 ms` | — | — |
-| **p50 (Median)** | `0.127 ms` | `< 15.0 ms` | ✅ COMPLIANT |
-| **p90** | `0.961 ms` | `< 30.0 ms` | ✅ COMPLIANT |
-| **p95** | `2.184 ms` | `< 50.0 ms` | ✅ COMPLIANT |
-| **p99** | `3.741 ms` | `< 80.0 ms` | ✅ COMPLIANT |
-| **Max** | `5.350 ms` | `< 150.0 ms` | ✅ COMPLIANT |
+| **Min** | `0.039 ms` | — | — |
+| **p50 (Median)** | `0.085 ms` | `< 15.0 ms` | ✅ COMPLIANT |
+| **p90** | `0.323 ms` | `< 30.0 ms` | ✅ COMPLIANT |
+| **p95** | `0.980 ms` | `< 50.0 ms` | ✅ COMPLIANT |
+| **p99** | `3.628 ms` | `< 80.0 ms` | ✅ COMPLIANT |
+| **Max** | `4.836 ms` | `< 150.0 ms` | ✅ COMPLIANT |
 
 ---
 
