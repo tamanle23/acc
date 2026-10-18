@@ -1,12 +1,17 @@
-import fs from 'fs';
-import path from 'path';
 import { ProceduralAudioSynthesizer } from './ProceduralAudioSynthesizer';
 import { DynamicAudioDuckingEngine } from './DynamicAudioDuckingEngine';
 import type { IAudioSourceProvider } from './AudioSourceAdapter';
 import type { ModifierNode, ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
-import type { DecodedAudioPCM } from '@acc/core';
+
+export interface DecodedAudioPCM {
+  sampleRate: number;
+  channels: number;
+  totalSamplesPerChannel: number;
+  durationSeconds: number;
+  data: Float32Array; // Interleaved Float32 PCM samples [-1.0, 1.0]
+}
 
 export interface DecoupledAudioMixResult {
   totalSamples: number;
@@ -33,6 +38,15 @@ export interface AudioMixerClip {
   audioSource?: IAudioSourceProvider;
   modifiers?: ModifierNode[];
   customSynthesizer?: (timeOffsetSec: number, durationSec: number, sampleRate: number) => Float32Array;
+}
+
+function resolveAssetPath(baseDir: string, assetSrc: string): string {
+  if (/^([a-zA-Z]:[\\/]|\\\\|\/)/.test(assetSrc) || assetSrc.startsWith('http://') || assetSrc.startsWith('https://') || assetSrc.startsWith('blob:')) {
+    return assetSrc;
+  }
+  const cleanBase = baseDir.replace(/[\\/]+$/, '');
+  const cleanSrc = assetSrc.replace(/^[\\/]+/, '');
+  return `${cleanBase}/${cleanSrc}`;
 }
 
 export interface AudioMixResult {
@@ -331,7 +345,7 @@ export class UniversalAudioMixer {
         let decoded: DecodedAudioPCM | null = null;
         if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
           const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
           decoded = await this.decodeAsset(resolvedPath);
         }
 
@@ -388,7 +402,7 @@ export class UniversalAudioMixer {
         let decoded: DecodedAudioPCM | null = null;
         if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
           const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
           decoded = await this.decodeAsset(resolvedPath);
         }
 
@@ -449,7 +463,7 @@ export class UniversalAudioMixer {
         let decoded: DecodedAudioPCM | null = null;
         if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
           const assetSrc = timeline.assets[seq.assetId].src;
-          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          const resolvedPath = resolveAssetPath(baseDir, assetSrc);
           decoded = await this.decodeAsset(resolvedPath);
         }
 
@@ -569,11 +583,13 @@ export class UniversalAudioMixer {
       byteOffset += 2;
     }
 
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      await fs.promises.mkdir(dir, { recursive: true });
+    const pathModule = await import('path');
+    const fsModule = await import('fs');
+    const dir = pathModule.dirname(filePath);
+    if (!fsModule.existsSync(dir)) {
+      await fsModule.promises.mkdir(dir, { recursive: true });
     }
 
-    await fs.promises.writeFile(filePath, buffer);
+    await fsModule.promises.writeFile(filePath, buffer);
   }
 }

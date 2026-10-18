@@ -4,9 +4,11 @@ import { getMediaDurationFFI } from '../../ffmpeg-ffi';
 import { FFIConcatMuxer } from '../../ffmpeg-ffi/FFIConcatMuxer';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import { FFIVideoEncoderSink } from '../sinks/FFIVideoEncoderSink';
+import { FFIVideoDecoder } from '../../ffmpeg-ffi/FFIVideoDecoder';
 import type {
   IMediaEngineStrategy,
   IMediaFrameSink,
+  IVideoDecoder,
   IMediaProbeStrategy,
   IMediaConcatStrategy,
   IAudioMuxerStrategy,
@@ -42,6 +44,10 @@ export class BunFFIEngineStrategy implements IMediaEngineStrategy {
 
   public createVideoSink(options?: SinkInitMetadata): IMediaFrameSink {
     return new FFIVideoEncoderSink();
+  }
+
+  public createVideoDecoder(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder {
+    return new FFIVideoDecoder(filePath, targetWidth, targetHeight);
   }
 
   public getProbeStrategy(): IMediaProbeStrategy {

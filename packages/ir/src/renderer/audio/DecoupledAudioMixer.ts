@@ -3,8 +3,8 @@ import {
   UniversalAudioMixer,
   type DecoupledAudioMixResult,
   type DecoupledAudioMixOptions,
+  type DecodedAudioPCM,
 } from './UniversalAudioMixer';
-import type { DecodedAudioPCM } from '@acc/core';
 
 export type { DecoupledAudioMixResult, DecoupledAudioMixOptions };
 

@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 export interface AssetMetadata {
   assetId: string;
   src: string;
@@ -17,6 +14,15 @@ export interface IAssetMetadataProber {
   probe(assetId: string, src: string, type: string, fps?: number): Promise<AssetMetadata>;
 }
 
+function resolveAssetPath(baseDir: string, src: string): string {
+  if (/^([a-zA-Z]:[\\/]|\\\\|\/)/.test(src) || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
+    return src;
+  }
+  const cleanBase = baseDir.replace(/[\\/]+$/, '');
+  const cleanSrc = src.replace(/^[\\/]+/, '');
+  return `${cleanBase}/${cleanSrc}`;
+}
+
 /**
  * Asset Metadata Prober:
  * Inspects local container headers (and mockable remote stream headers)
@@ -26,7 +32,7 @@ export class AssetMetadataProber implements IAssetMetadataProber {
   private baseDir: string;
   private cache: Map<string, AssetMetadata> = new Map();
 
-  constructor(baseDir: string = process.cwd()) {
+  constructor(baseDir: string = typeof process !== 'undefined' && typeof process.cwd === 'function' ? process.cwd() : '.') {
     this.baseDir = baseDir;
   }
 
@@ -41,16 +47,19 @@ export class AssetMetadataProber implements IAssetMetadataProber {
       return this.cache.get(cacheKey)!;
     }
 
-    const resolvedPath = path.isAbsolute(src) ? src : path.resolve(this.baseDir, src);
+    const resolvedPath = resolveAssetPath(this.baseDir, src);
     let durationSeconds = 5.0; // defensive fallback default
 
-    if (fs.existsSync(resolvedPath)) {
+    if (typeof process !== 'undefined' && (process.versions?.node || (process.versions as any)?.bun)) {
       try {
-        // Attempt fast binary header probing for wav or mp3 if audio
-        if (type === 'audio' || src.endsWith('.wav')) {
-          const wavDuration = this.probeWavHeader(resolvedPath);
-          if (wavDuration !== null) {
-            durationSeconds = wavDuration;
+        const fs = await import('fs');
+        if (fs.existsSync(resolvedPath)) {
+          // Attempt fast binary header probing for wav or mp3 if audio
+          if (type === 'audio' || src.endsWith('.wav')) {
+            const wavDuration = this.probeWavHeaderSync(fs, resolvedPath);
+            if (wavDuration !== null) {
+              durationSeconds = wavDuration;
+            }
           }
         }
       } catch {
@@ -76,7 +85,7 @@ export class AssetMetadataProber implements IAssetMetadataProber {
   /**
    * Fast header prober for RIFF WAV files without reading the full body
    */
-  private probeWavHeader(filePath: string): number | null {
+  private probeWavHeaderSync(fs: any, filePath: string): number | null {
     const fd = fs.openSync(filePath, 'r');
     try {
       const headerBuf = Buffer.alloc(44);

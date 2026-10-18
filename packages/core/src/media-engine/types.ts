@@ -79,6 +79,22 @@ export interface IAudioMuxerStrategy {
   muxAudioVideo(videoPath: string, audioPath: string, outputPath: string): Promise<void>;
 }
 
+export interface DecodedVideoFrame {
+  width: number;
+  height: number;
+  canvas: any;
+  ctx: any;
+}
+
+export interface IVideoDecoder {
+  open(): Promise<boolean>;
+  close(): void;
+  readNextFrame(): Promise<any>;
+  getNextFrame?(): Promise<DecodedVideoFrame | null>;
+  seek?(targetFrame: number): Promise<boolean>;
+  getFrame?(frameIndex: number): Promise<DecodedVideoFrame | null>;
+}
+
 export interface IMediaEngineStrategy {
   readonly id: MediaEngineType;
   readonly name: string;
@@ -86,6 +102,7 @@ export interface IMediaEngineStrategy {
 
   validatePrerequisites(): void;
   createVideoSink(options?: SinkInitMetadata): IMediaFrameSink;
+  createVideoDecoder?(filePath: string, targetWidth: number, targetHeight: number): IVideoDecoder;
   getProbeStrategy(): IMediaProbeStrategy;
   getConcatStrategy(): IMediaConcatStrategy;
   getAudioMuxerStrategy(): IAudioMuxerStrategy;

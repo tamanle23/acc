@@ -6,11 +6,11 @@ import {
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
-  IRChunkWorkerPool,
   MediaSinkFactory,
   type IIRFrameSink,
   type VideoIRDocument,
 } from '@acc/ir';
+import { IRChunkWorkerPool } from '@acc/ir/server';
 import type { MediaEngineType } from '@acc/core';
 
 export interface IrRenderCliOptions {

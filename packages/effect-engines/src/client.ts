@@ -10,10 +10,16 @@ export * from './canvas/CanvasAssetLoader';
 export * from './canvas/adapters/WebCanvasAdapter';
 export * from './canvas/types';
 export * from './vision/CameraSplineInterpolator';
+export * from './vision/SurfaceNormalGenerator';
 export * from './subtitles/SafeZoneManager';
 export * from './subtitles/BoundedAcousticCaptionStrategy';
 export * from './subtitles/captions-canvas';
 export * from './overlay-effects/simulators/DeterministicParticleField';
 export * from './overlay-effects/simulators/PostProcessingShaders';
+export * from './styles/ColorGradingEngine';
+export * from './depth3d/strategy';
+export * from './depth3d/renderers';
+export * from './depth3d/factory';
+export * from './depth3d/frame-breaker';
 export * from './types';
 

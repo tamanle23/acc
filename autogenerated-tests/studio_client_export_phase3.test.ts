@@ -7,7 +7,7 @@ describe('Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export Suite', () =
   const appContent = readFileSync(appPath, 'utf8');
 
   it('verifies App.tsx imports IRPreviewEngine and AssetTextureCache', () => {
-    expect(appContent).toContain("import { IRPreviewEngine } from '@acc/ir/client';");
+    expect(appContent).toContain("import { IRPreviewEngine } from '@acc/ir';");
     expect(appContent).toContain("import { AssetTextureCache } from './lib/textures/AssetTextureCache';");
   });
 

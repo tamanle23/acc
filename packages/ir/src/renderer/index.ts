@@ -6,7 +6,6 @@ export * from './audio/ProceduralAudioSynthesizer';
 export * from './audio/AudioSourceAdapter';
 export * from './audio/UniversalAudioMixer';
 export * from './sink';
-export * from './IRMasterRenderer';
 export * from './shared/IRCanvasCompositor';
 export * from './preview/IRPreviewEngine';
 export * from './preview/AssetTextureCache';

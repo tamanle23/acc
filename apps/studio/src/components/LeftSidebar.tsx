@@ -35,7 +35,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
 import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
-import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir/client';
+import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir';
 
 export type LeftNavTab =
   | 'library'

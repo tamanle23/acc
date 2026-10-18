@@ -49,7 +49,7 @@ import { ContextualActionPill } from './preview/ContextualActionPill';
 import { SubtitlesOverlay } from './preview/SubtitlesOverlay';
 import {
   IRPreviewEngine,
-} from '@acc/ir/client';
+} from '@acc/ir';
 import {
   CanvasTransformOverlay,
   MagneticSnapEngine,

@@ -1,4 +1,4 @@
-import { Image } from '@napi-rs/canvas';
+import type { Image } from '@napi-rs/canvas';
 import type { Depth3DConfig } from '../types';
 import { drawImageCover } from './frame-breaker';
 

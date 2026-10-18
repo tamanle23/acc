@@ -1,4 +1,5 @@
-import { Image } from '@napi-rs/canvas';
+import type { Image } from '@napi-rs/canvas';
+import { UniversalCanvasProvider } from '../canvas/UniversalCanvasProvider';
 import type { Depth3DConfig } from '../types';
 
 export interface FrameBreakerState {
@@ -57,8 +58,8 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
       subBBox = (subjectImg as any)._bbox;
     } else {
       try {
-        const { createCanvas } = require('@napi-rs/canvas');
-        const c = createCanvas(subjectImg.width, subjectImg.height);
+        const uCanvas = UniversalCanvasProvider.createCanvas(subjectImg.width, subjectImg.height);
+        const c = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
         const cctx = c.getContext('2d');
         cctx.drawImage(subjectImg, 0, 0);
         const data = cctx.getImageData(0, 0, subjectImg.width, subjectImg.height).data;

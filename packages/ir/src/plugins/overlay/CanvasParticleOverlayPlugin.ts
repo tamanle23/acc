@@ -3,7 +3,7 @@ import {
   DeterministicParticleField,
   PostProcessingShaders,
   UniversalCanvasProvider,
-} from '@acc/effect-engines';
+} from '@acc/effect-engines/client';
 
 export type ProceduralParticleType =
   | 'rain'

@@ -1,4 +1,3 @@
-import fs from 'fs';
 import type {
   ModifierPlugin,
   ModifierContext,
@@ -9,9 +8,9 @@ import {
   CameraSplineInterpolator,
   type Camera3DKeyframe,
   type Camera3DState,
-  resolveDepthMapData,
   UniversalCanvasProvider,
-} from '@acc/effect-engines';
+  CanvasAssetLoader,
+} from '@acc/effect-engines/client';
 
 export interface Camera3DPluginParams {
   keyframes?: Camera3DKeyframe[];
@@ -100,10 +99,11 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     // 2. Pre-generate and cache multi-tier focal zone canvases if rack focus is requested
     const rackFocusEnabled = params.rackFocus?.enabled !== false;
     const imgPath = params.imagePath;
-    const fileExists = typeof fs?.existsSync === 'function' && Boolean(imgPath && fs.existsSync(imgPath));
-    if (rackFocusEnabled && imgPath && fileExists) {
+    if (rackFocusEnabled && imgPath && typeof window === 'undefined') {
       try {
-        const depthData = await resolveDepthMapData(imgPath, width, height, params as any);
+        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
+        const effectEngines = req('@acc/effect-engines');
+        const depthData = await effectEngines.resolveDepthMapData(imgPath, width, height, params as any);
         if (depthData?.srcCanvas) {
           const sharpCanvas = depthData.srcCanvas;
 

@@ -1,4 +1,4 @@
-import type { ProceduralSFXModifierParams } from '@acc/ir/client';
+import type { ProceduralSFXModifierParams } from '@acc/ir';
 import type { StagingPreset } from './stagingPresets';
 
 export interface SoundEffectDefinition {

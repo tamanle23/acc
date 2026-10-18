@@ -1,16 +1,14 @@
-import fs from 'fs';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
   Depth3DFactory,
   drawFrameBreakerFrame,
-  resolveSubjectCutout,
-  resolveDepthMapData,
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type RelightingParams,
   UniversalCanvasProvider,
+  CanvasAssetLoader,
   type CanvasInstance,
-} from '@acc/effect-engines';
+} from '@acc/effect-engines/client';
 
 export type Depth3DMode =
   | 'frame_breaker'
@@ -90,11 +88,11 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     // Pre-resolve AI subject cutout and Depth Anything layers during preflight
-    // TODO(isomorphic-migration): Replace direct Node fs calls with UniversalCanvasProvider/CanvasAssetLoader for browser runtime
-    const fileExists = typeof fs?.existsSync === 'function' && fs.existsSync(params.imagePath);
-    if (params.imagePath && fileExists) {
+    if (params.imagePath && typeof window === 'undefined') {
       try {
-        const cutout = await resolveSubjectCutout(params.imagePath, params as any);
+        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
+        const effectEngines = req('@acc/effect-engines');
+        const cutout = await effectEngines.resolveSubjectCutout(params.imagePath, params as any);
         this.cutoutCache.set(params.imagePath, cutout);
       } catch {}
 
@@ -104,7 +102,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
       if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth || params.relighting?.enabled) {
         try {
-          const depthData = await resolveDepthMapData(
+          const req = typeof require !== 'undefined' ? require : (0, eval)('require');
+          const effectEngines = req('@acc/effect-engines');
+          const depthData = await effectEngines.resolveDepthMapData(
             params.imagePath,
             width,
             height,

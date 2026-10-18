@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { UniversalAudioMixer, IRPreviewEngine } from '@acc/ir/client';
+import { UniversalAudioMixer, IRPreviewEngine } from '@acc/ir';
 import { PartialVFXPlugin } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
 import { HologramHUDPlugin } from '../packages/ir/src/plugins/overlay/HologramHUDPlugin';
 import { WebAudioEngine } from '../apps/studio/src/lib/audio/WebAudioEngine';

@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { registerClientModifierPlugins } from '@acc/ir/client';
+import { registerCoreModifierPlugins } from '@acc/ir';
 import App from './App';
 import './index.css';
 
-// Initialize isomorphic client modifier registry
-registerClientModifierPlugins();
+// Initialize canonical isomorphic modifier registry
+registerCoreModifierPlugins();
 
 
 

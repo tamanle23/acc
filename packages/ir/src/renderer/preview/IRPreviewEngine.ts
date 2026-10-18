@@ -1,7 +1,7 @@
 import type { ResolvedTimeline, ResolvedSequence, ResolvedTrack } from '../../types/VideoIR';
 import { IntervalTreeIndex } from '../../compiler/IntervalTreeIndex';
 import { ModifierPluginRegistry } from '../../plugins/ModifierPluginRegistry';
-import { registerClientModifierPlugins } from '../../plugins/clientRegistry';
+import { registerCoreModifierPlugins } from '../../plugins';
 import { AssetTextureCache } from './AssetTextureCache';
 import {
   evaluateSequenceMotion,
@@ -51,7 +51,7 @@ export class IRPreviewEngine {
     this.timeline = timeline;
     const allSequences = Array.from(timeline.sequences.values());
     this.intervalTree = new IntervalTreeIndex(allSequences);
-    this.pluginRegistry = pluginRegistry ?? registerClientModifierPlugins(ModifierPluginRegistry.createIsolated());
+    this.pluginRegistry = pluginRegistry ?? registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
   }
 
   /**

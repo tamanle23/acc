@@ -11,12 +11,11 @@ import {
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
 import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/effect-engines';
-import { FFIVideoDecoder } from '@acc/core';
+import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
-
-
 export interface HeadlessRenderOptions {
+  engine?: MediaEngineType;
   sink?: IIRFrameSink;
   outputPath?: string;
   audioPath?: string;
@@ -56,7 +55,7 @@ export class IRMasterRenderer {
 
   // Cached assets to prevent disk re-reads in render loop
   private imageCache: Map<string, any> = new Map();
-  private videoDecoders: Map<string, FFIVideoDecoder> = new Map();
+  private videoDecoders: Map<string, IVideoDecoder> = new Map();
 
   constructor(timeline: ResolvedTimeline, seed: number = 42, pluginRegistry?: ModifierPluginRegistry) {
     this.timeline = timeline;
@@ -71,8 +70,10 @@ export class IRMasterRenderer {
   /**
    * Pre-load static visual image assets declared in timeline.assets into memory.
    */
-  public async preloadAssets(baseDir: string = '.'): Promise<void> {
+  public async preloadAssets(baseDir: string = '.', engineType?: MediaEngineType): Promise<void> {
     if (!this.timeline.assets) return;
+
+    const strategy = MediaEngineRegistry.get(engineType);
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
       if (assetDef.type === 'image' || assetDef.type === 'media') {
@@ -88,13 +89,15 @@ export class IRMasterRenderer {
               const img = await CanvasAssetLoader.loadImage(resolvedPath);
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
-              const decoder = new FFIVideoDecoder(
-                resolvedPath,
-                this.timeline.meta.canvasSize.w,
-                this.timeline.meta.canvasSize.h
-              );
-              if (await decoder.open()) {
-                this.videoDecoders.set(assetId, decoder);
+              if (typeof strategy.createVideoDecoder === 'function') {
+                const decoder = strategy.createVideoDecoder(
+                  resolvedPath,
+                  this.timeline.meta.canvasSize.w,
+                  this.timeline.meta.canvasSize.h
+                );
+                if (await decoder.open()) {
+                  this.videoDecoders.set(assetId, decoder);
+                }
               }
             }
           } catch {

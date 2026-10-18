@@ -4,8 +4,8 @@ import {
   UniversalCanvasProvider,
   NodeCanvasAdapter,
 } from '@acc/effect-engines';
+import { IRMasterRenderer } from '@acc/ir/server';
 import {
-  IRMasterRenderer,
   IRPreviewEngine,
   createIsolatedCoreModifierPlugins,
   type ResolvedTimeline,

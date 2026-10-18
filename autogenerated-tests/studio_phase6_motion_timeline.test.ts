@@ -2,7 +2,7 @@ import {
   evaluateSequenceMotion,
   evaluateEase,
 } from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
-import { UniversalAudioMixer } from '@acc/ir/client';
+import { UniversalAudioMixer } from '@acc/ir';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { TrimSequenceCommand } from '../apps/studio/src/lib/commands/TrimSequenceCommand';
 import { SplitSequenceCommand } from '../apps/studio/src/lib/commands/SplitSequenceCommand';

@@ -60,7 +60,7 @@ import {
   type RelationalStart,
   type RelationalDuration,
   ProceduralAudioSynthesizer,
-} from '@acc/ir/client';
+} from '@acc/ir';
 
 export interface ParameterSliderProps {
   label: string;
