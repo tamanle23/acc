@@ -21,7 +21,6 @@ import org.springframework.context.annotation.Import;
  */
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
-@EnableConfigurationProperties(SandboxProperties.class)
 @Import({
         BackendSandboxRegistry.class,
         PayOsSimulator.class,
