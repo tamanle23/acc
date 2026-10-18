@@ -23,13 +23,21 @@ import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
 import { UpdateSequenceTimeCommand } from '../commands/UpdateSequenceTimeCommand';
+import { UpdateTrackCommand, type UpdateTrackProperties } from '../commands/UpdateTrackCommand';
+import { ReorderTrackCommand } from '../commands/ReorderTrackCommand';
+import { UpdateSequencePropsCommand, type UpdateSequenceProperties } from '../commands/UpdateSequencePropsCommand';
+import { UpdateProjectMetaCommand, type UpdateProjectMetaProperties } from '../commands/UpdateProjectMetaCommand';
 import type { IRSequence, SequenceTime } from '@acc/ir';
+
+export type InspectorMode = 'sequence' | 'track' | 'project';
 
 export interface IRState {
   doc: VideoIRDocument;
   timeline: ResolvedTimeline | null;
   intervalTree: IntervalTreeIndex | null;
   selectedSequenceId: string | null;
+  selectedTrackId: string | null;
+  inspectorMode: InspectorMode;
   error: string | null;
   canUndo: boolean;
   canRedo: boolean;
@@ -55,6 +63,8 @@ export class IRStateManager {
     timeline: null,
     intervalTree: null,
     selectedSequenceId: 'seq-city-intro',
+    selectedTrackId: 'track-v1',
+    inspectorMode: 'sequence',
     error: null,
     canUndo: false,
     canRedo: false,
@@ -168,9 +178,37 @@ export class IRStateManager {
   }
 
   public setSelectedSequenceId(id: string | null) {
+    let parentTrackId = this.state.selectedTrackId;
+    if (id) {
+      for (const track of this.state.doc.tracks) {
+        if (track.sequences.some((s) => s.id === id)) {
+          parentTrackId = track.id;
+          break;
+        }
+      }
+    }
     this.state = {
       ...this.state,
       selectedSequenceId: id,
+      selectedTrackId: parentTrackId,
+      inspectorMode: id ? 'sequence' : this.state.inspectorMode,
+    };
+    this.notify();
+  }
+
+  public setSelectedTrackId(trackId: string | null) {
+    this.state = {
+      ...this.state,
+      selectedTrackId: trackId,
+      inspectorMode: trackId ? 'track' : this.state.inspectorMode,
+    };
+    this.notify();
+  }
+
+  public setInspectorMode(mode: InspectorMode) {
+    this.state = {
+      ...this.state,
+      inspectorMode: mode,
     };
     this.notify();
   }
@@ -285,4 +323,21 @@ export class IRStateManager {
     };
     this.notify();
   }
+
+  public updateTrack(trackId: string, updates: UpdateTrackProperties): void {
+    this.dispatch(new UpdateTrackCommand(trackId, updates));
+  }
+
+  public reorderTrack(trackId: string, direction: 'up' | 'down'): void {
+    this.dispatch(new ReorderTrackCommand(trackId, direction));
+  }
+
+  public updateSequenceProps(sequenceId: string, updates: UpdateSequenceProperties): void {
+    this.dispatch(new UpdateSequencePropsCommand(sequenceId, updates));
+  }
+
+  public updateProjectMeta(updates: UpdateProjectMetaProperties): void {
+    this.dispatch(new UpdateProjectMetaCommand(updates));
+  }
 }
+

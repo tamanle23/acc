@@ -7,6 +7,7 @@ import {
   Palette,
   Type,
   Volume2,
+  VolumeX,
   RotateCcw,
   Plus,
   Check,
@@ -22,6 +23,13 @@ import {
   Monitor,
   Play,
   Music,
+  ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  Activity,
+  SlidersHorizontal,
+  Music2,
+  Edit3,
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -677,6 +685,14 @@ export function RightSidebar() {
     }
   }
 
+  // If track still not resolved, resolve from selectedTrackId
+  if (!selectedTrack && irState.selectedTrackId) {
+    selectedTrack = irState.doc.tracks.find((t) => t.id === irState.selectedTrackId) || null;
+  }
+  if (!selectedTrack && irState.doc.tracks.length > 0) {
+    selectedTrack = irState.doc.tracks[0];
+  }
+
   // Modifiers lookup
   const modifiers = selectedSeq?.modifiers || [];
 
@@ -987,58 +1003,480 @@ export function RightSidebar() {
     ? irState.timeline.sequences.size
     : irState.doc.tracks.reduce((acc, t) => acc + t.sequences.length, 0);
 
+  const currentMode = irState.inspectorMode || (selectedSeq ? 'sequence' : selectedTrack ? 'track' : 'project');
+
+  // Track ordering indices
+  const trackIndex = selectedTrack ? irState.doc.tracks.findIndex((t) => t.id === selectedTrack.id) : -1;
+  const canMoveTrackUp = trackIndex > 0;
+  const canMoveTrackDown = trackIndex >= 0 && trackIndex < irState.doc.tracks.length - 1;
+
+  // Aspect ratio presets for Project Inspector
+  const ASPECT_PRESETS: Array<{ label: string; w: number; h: number }> = [
+    { label: '16:9', w: 1920, h: 1080 },
+    { label: '9:16', w: 1080, h: 1920 },
+    { label: '1:1', w: 1080, h: 1080 },
+    { label: '4:4', w: 1440, h: 1440 },
+    { label: '3:4', w: 1080, h: 1440 },
+    { label: '3:2', w: 1620, h: 1080 },
+    { label: '21:9', w: 2560, h: 1080 },
+  ];
+
   return (
     <aside className="w-[336px] glass-panel border-l border-border/50 flex flex-col h-full select-none shadow-xs z-10 shrink-0">
-      {/* 1. Inspector Header */}
-      <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sliders className="w-4 h-4 text-cyan-400" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-            {selectedSeq ? 'Sequence Inspector' : 'Project Settings'}
-          </h2>
+      {/* 1. Multi-Tier Interactive Breadcrumbs & Header */}
+      <div className="p-2.5 border-b border-border/40 bg-background/50 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Sliders className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Inspector
+            </span>
+          </div>
+
+          {currentMode === 'sequence' && selectedSeq && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-[10px] gap-1 px-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Effect
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  {relevantModifiers.map((mod) => {
+                    const isAttached = modifiers.some((m: any) => m.type === mod.type);
+                    const Icon = mod.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={mod.type}
+                        disabled={isAttached}
+                        onClick={() => updateModifierParams(mod.type, mod.defaultParams)}
+                        className="flex items-center justify-between cursor-pointer py-1.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>{mod.name}</span>
+                        </div>
+                        {isAttached && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
-        {selectedSeq && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-[11px] gap-1 px-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+        {/* Persistent Breadcrumb Navigation Bar: [Project] > [Track] > [Sequence] */}
+        <div className="flex items-center gap-1 overflow-x-auto text-[10px] font-mono scrollbar-none py-0.5">
+          {/* Project Tier Pill */}
+          <button
+            type="button"
+            onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer ${
+              currentMode === 'project'
+                ? 'bg-indigo-600 text-white shadow-2xs'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+            }`}
+            title="Inspect Project Master Settings"
+          >
+            <Settings className="w-2.5 h-2.5 shrink-0" />
+            <span className="truncate">{irState.doc.meta?.contentId || 'Project'}</span>
+          </button>
+
+          <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+
+          {/* Track Tier Pill */}
+          <button
+            type="button"
+            disabled={!selectedTrack}
+            onClick={() => {
+              if (selectedTrack) {
+                IRStateManager.getInstance().setSelectedTrackId(selectedTrack.id);
+                IRStateManager.getInstance().setInspectorMode('track');
+              }
+            }}
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] ${
+              !selectedTrack
+                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                : currentMode === 'track'
+                ? 'bg-indigo-600 text-white shadow-2xs cursor-pointer'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer'
+            }`}
+            title={selectedTrack ? `Inspect Track ${selectedTrack.id}` : 'No track selected'}
+          >
+            <Layers className="w-2.5 h-2.5 shrink-0" />
+            <span className="truncate">{selectedTrack?.name || selectedTrack?.id || 'Track'}</span>
+          </button>
+
+          {selectedSeq && (
+            <>
+              <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+
+              {/* Sequence Tier Pill */}
+              <button
+                type="button"
+                onClick={() => {
+                  IRStateManager.getInstance().setSelectedSequenceId(selectedSeq.id);
+                  IRStateManager.getInstance().setInspectorMode('sequence');
+                }}
+                className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer ${
+                  currentMode === 'sequence'
+                    ? 'bg-indigo-600 text-white shadow-2xs'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
+                title={`Inspect Sequence ${selectedSeq.id}`}
               >
-                <Plus className="w-3 h-3" />
-                Add Effect
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuGroup>
-                {relevantModifiers.map((mod) => {
-                  const isAttached = modifiers.some((m: any) => m.type === mod.type);
-                  const Icon = mod.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={mod.type}
-                      disabled={isAttached}
-                      onClick={() => updateModifierParams(mod.type, mod.defaultParams)}
-                      className="flex items-center justify-between cursor-pointer py-1.5"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>{mod.name}</span>
-                      </div>
-                      {isAttached && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+                <Film className="w-2.5 h-2.5 shrink-0" />
+                <span className="truncate">{selectedSeq.id}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 2. Main Content Area */}
       <ScrollArea className="flex-1 p-3 space-y-4">
-        {selectedSeq ? (
+        {currentMode === 'track' && selectedTrack ? (
+          /* ========================================================================= */
+          /* TRACK INSPECTOR FORM                                                     */
+          /* ========================================================================= */
+          <div className="space-y-3">
+            {/* Track Header Card */}
+            <Card className="p-2.5 bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Badge variant="outline" className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200 truncate">
+                    {selectedTrack.id}
+                  </Badge>
+                  <Badge variant="secondary" className="font-mono text-[9px] uppercase">
+                    {selectedTrack.type}
+                  </Badge>
+                </div>
+
+                {/* Track Reordering Controls */}
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!canMoveTrackUp}
+                    onClick={() => IRStateManager.getInstance().reorderTrack(selectedTrack.id, 'up')}
+                    className="h-5 w-5 text-slate-600 hover:text-indigo-600 disabled:opacity-30"
+                    title="Move track up"
+                  >
+                    <ArrowUp className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={!canMoveTrackDown}
+                    onClick={() => IRStateManager.getInstance().reorderTrack(selectedTrack.id, 'down')}
+                    className="h-5 w-5 text-slate-600 hover:text-indigo-600 disabled:opacity-30"
+                    title="Move track down"
+                  >
+                    <ArrowDown className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Track Name */}
+              <div className="space-y-1 pt-1 border-t border-slate-200/60 dark:border-white/10">
+                <label className="text-[10px] text-slate-400 font-mono">Track Name</label>
+                <Input
+                  type="text"
+                  value={selectedTrack.name || selectedTrack.id}
+                  onChange={(e) => {
+                    IRStateManager.getInstance().updateTrack(selectedTrack.id, { name: e.target.value });
+                  }}
+                  className="h-6 text-[11px] font-sans"
+                />
+              </div>
+
+              {/* Compositing & Styling */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+                <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                  Compositing & Style
+                </span>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500">Blend Mode</span>
+                  <select
+                    value={selectedTrack.blendMode || 'normal'}
+                    onChange={(e) => {
+                      IRStateManager.getInstance().updateTrack(selectedTrack.id, {
+                        blendMode: e.target.value as any,
+                      });
+                    }}
+                    className="h-6 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded px-1.5 text-slate-700 dark:text-slate-200"
+                  >
+                    <option value="normal">normal</option>
+                    <option value="screen">screen</option>
+                    <option value="multiply">multiply</option>
+                    <option value="overlay">overlay</option>
+                    <option value="add">add</option>
+                    <option value="color_dodge">color_dodge</option>
+                    <option value="soft_light">soft_light</option>
+                  </select>
+                </div>
+
+                <ParameterSlider
+                  label="Opacity"
+                  value={typeof selectedTrack.style?.opacity === 'number' ? selectedTrack.style.opacity : 1.0}
+                  min={0.0}
+                  max={1.0}
+                  step={0.05}
+                  defaultValue={1.0}
+                  unit=""
+                  onChange={(v) => {
+                    IRStateManager.getInstance().updateTrack(selectedTrack.id, {
+                      style: { ...selectedTrack.style, opacity: v },
+                    });
+                  }}
+                />
+              </div>
+
+              {/* Audio Bus Routing (for audio or mixed tracks) */}
+              {(selectedTrack.type === 'audio' || selectedTrack.routeTo !== undefined) && (
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+                  <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Volume2 className="w-3.5 h-3.5 text-rose-500" />
+                    Audio Bus & Routing
+                  </span>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500">Route To Bus</span>
+                    <select
+                      value={selectedTrack.routeTo || 'master'}
+                      onChange={(e) => {
+                        IRStateManager.getInstance().updateTrack(selectedTrack.id, {
+                          routeTo: e.target.value,
+                        });
+                      }}
+                      className="h-6 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded px-1.5 text-slate-700 dark:text-slate-200"
+                    >
+                      <option value="master">master</option>
+                      {irState.doc.tracks
+                        .filter((t) => t.id !== selectedTrack.id)
+                        .map((t) => (
+                          <option key={t.id} value={t.id}>{t.id}</option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <ParameterSlider
+                    label="Bus Volume"
+                    value={typeof selectedTrack.style?.volume === 'number' ? (selectedTrack.style.volume as number) : 1.0}
+                    min={0.0}
+                    max={2.0}
+                    step={0.05}
+                    defaultValue={1.0}
+                    unit="x"
+                    onChange={(v) => {
+                      IRStateManager.getInstance().updateTrack(selectedTrack.id, {
+                        style: { ...selectedTrack.style, volume: v },
+                      });
+                    }}
+                  />
+
+                  <ParameterSlider
+                    label="Stereo Pan"
+                    value={typeof selectedTrack.style?.pan === 'number' ? (selectedTrack.style.pan as number) : 0.0}
+                    min={-1.0}
+                    max={1.0}
+                    step={0.05}
+                    defaultValue={0.0}
+                    unit=""
+                    onChange={(v) => {
+                      IRStateManager.getInstance().updateTrack(selectedTrack.id, {
+                        style: { ...selectedTrack.style, pan: v },
+                      });
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Sequences Overview */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Child Sequences</span>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {selectedTrack.sequences.length} clips
+                  </Badge>
+                </div>
+                <div className="space-y-1 max-h-32 overflow-y-auto pr-0.5">
+                  {selectedTrack.sequences.map((seq: any) => (
+                    <div
+                      key={seq.id}
+                      onClick={() => {
+                        IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+                        IRStateManager.getInstance().setInspectorMode('sequence');
+                      }}
+                      className="px-2 py-1 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-white/10 flex items-center justify-between cursor-pointer hover:border-indigo-400 text-[11px]"
+                    >
+                      <span className="font-mono text-[10px] text-slate-700 dark:text-slate-300 truncate">
+                        {seq.id}
+                      </span>
+                      <ChevronRight className="w-3 h-3 text-slate-400" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        ) : currentMode === 'project' || !selectedSeq ? (
+          /* ========================================================================= */
+          /* PROJECT INSPECTOR FORM                                                    */
+          /* ========================================================================= */
+          <div className="space-y-3">
+            <Card className="p-3 bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 space-y-3 text-xs">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-white/10">
+                <div className="w-8 h-8 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs">Project Master Settings</h3>
+                  <p className="text-[10px] text-slate-400">Global canvas resolution & timeline timing</p>
+                </div>
+              </div>
+
+              {/* Content ID */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-400 font-mono">Content ID / Project Title</label>
+                <Input
+                  type="text"
+                  value={irState.doc.meta?.contentId || ''}
+                  onChange={(e) => {
+                    IRStateManager.getInstance().updateProjectMeta({ contentId: e.target.value });
+                  }}
+                  className="h-6 text-[11px] font-sans"
+                />
+              </div>
+
+              {/* Aspect Ratio 1-Click Pills */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-400 font-mono">Aspect Ratio Presets</label>
+                <div className="grid grid-cols-4 gap-1">
+                  {ASPECT_PRESETS.map((preset) => {
+                    const isSelected = width === preset.w && height === preset.h;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          IRStateManager.getInstance().updateProjectMeta({
+                            canvasSize: { w: preset.w, h: preset.h },
+                          });
+                        }}
+                        className={`px-1.5 py-1 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Numerical Width / Height Inputs */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-mono">Width (px)</label>
+                  <Input
+                    type="number"
+                    min={320}
+                    max={7680}
+                    step={10}
+                    value={width}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1920;
+                      IRStateManager.getInstance().updateProjectMeta({
+                        canvasSize: { w: val, h: height },
+                      });
+                    }}
+                    className="h-6 text-[11px] font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-mono">Height (px)</label>
+                  <Input
+                    type="number"
+                    min={240}
+                    max={4320}
+                    step={10}
+                    value={height}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1080;
+                      IRStateManager.getInstance().updateProjectMeta({
+                        canvasSize: { w: width, h: val },
+                      });
+                    }}
+                    className="h-6 text-[11px] font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Global FPS Selector */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  Timeline Framerate
+                </span>
+                <select
+                  value={fps}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 30;
+                    IRStateManager.getInstance().updateProjectMeta({ globalFps: val });
+                  }}
+                  className="h-6 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded px-1.5 text-slate-700 dark:text-slate-200"
+                >
+                  <option value={24}>24 FPS (Cinematic)</option>
+                  <option value={30}>30 FPS (Standard)</option>
+                  <option value={60}>60 FPS (Fluid)</option>
+                </select>
+              </div>
+
+              {/* Project Stats Summary */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-1.5 text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Total Duration:</span>
+                  <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                    {totalDurationFrames}f ({(totalDurationFrames / Math.max(1, fps)).toFixed(2)}s)
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Active Tracks:</span>
+                  <Badge variant="outline" className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200">
+                    {irState.doc.tracks.length} Tracks
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Active Sequences:</span>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {activeSequencesCount} Clips
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+
+            <div className="p-3 bg-amber-50/70 rounded-lg border border-amber-200 text-amber-800 text-[11px] space-y-1">
+              <span className="font-semibold block">Inspector Navigation Tip:</span>
+              <p className="text-amber-700 leading-normal">
+                Click any sequence or track header in the timeline to inspect its specific properties. Use the top breadcrumb bar to freely navigate between Project, Track, and Sequence tiers.
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* ========================================================================= */
+          /* SEQUENCE INSPECTOR FORM                                                   */
+          /* ========================================================================= */
           <div className="space-y-3">
             {/* Sequence Meta Card */}
             <Card className="p-2.5 bg-slate-50/70 border-slate-200 space-y-2 text-xs">
@@ -1258,6 +1696,150 @@ export function RightSidebar() {
                   )}
                 </div>
               </div>
+
+              {/* Sequence Compositing & Blend Mode */}
+              <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                    Blend Mode
+                  </span>
+                  <select
+                    value={selectedSeq?.blendMode || 'normal'}
+                    onChange={(e) => {
+                      if (!selectedSeqId) return;
+                      IRStateManager.getInstance().updateSequenceProps(selectedSeqId, {
+                        blendMode: e.target.value as any,
+                      });
+                    }}
+                    className="h-6 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded px-1.5 text-slate-700 dark:text-slate-200"
+                  >
+                    <option value="normal">normal</option>
+                    <option value="screen">screen</option>
+                    <option value="multiply">multiply</option>
+                    <option value="overlay">overlay</option>
+                    <option value="add">add</option>
+                    <option value="color_dodge">color_dodge</option>
+                    <option value="soft_light">soft_light</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Inline Timed Text Cues Editor (for timed_text / subtitle sequences) */}
+              {(selectedTrack?.type === 'timed_text' || selectedSeq?.cues !== undefined) && (
+                <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Type className="w-3.5 h-3.5 text-amber-500" />
+                      Timed Text Cues ({selectedSeq?.cues?.length || 0})
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (!selectedSeqId) return;
+                        const existingCues = [...(selectedSeq?.cues || [])];
+                        const lastEnd = existingCues.length > 0
+                          ? typeof existingCues[existingCues.length - 1].endOffsetMs === 'number'
+                            ? (existingCues[existingCues.length - 1].endOffsetMs as number)
+                            : 1000
+                          : 0;
+                        existingCues.push({
+                          startOffsetMs: lastEnd,
+                          endOffsetMs: lastEnd + 1500,
+                          text: 'New subtitle cue...',
+                        });
+                        IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: existingCues });
+                      }}
+                      className="h-5 px-1.5 text-[10px] gap-1 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                      title="Add Timed Cue"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add Cue
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                    {(selectedSeq?.cues || []).length === 0 ? (
+                      <div className="p-2.5 text-center text-[10px] text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded">
+                        No text cues defined. Click &quot;+ Add Cue&quot; to insert subtitle phrases.
+                      </div>
+                    ) : (
+                      (selectedSeq?.cues || []).map((cue: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="p-1.5 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-white/10 space-y-1 text-[11px]"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-mono text-slate-400 w-4">#{idx + 1}</span>
+                            <div className="flex-1 flex items-center gap-1">
+                              <span className="text-[9px] text-slate-400 font-mono">In:</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={cue.startOffsetMs}
+                                onChange={(e) => {
+                                  if (!selectedSeqId) return;
+                                  const newCues = [...(selectedSeq?.cues || [])];
+                                  newCues[idx] = { ...cue, startOffsetMs: parseInt(e.target.value) || 0 };
+                                  IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: newCues });
+                                }}
+                                className="h-5 w-16 text-[10px] font-mono px-1 py-0"
+                              />
+                              <span className="text-[9px] text-slate-400 font-mono">ms</span>
+                            </div>
+                            <div className="flex-1 flex items-center gap-1">
+                              <span className="text-[9px] text-slate-400 font-mono">Out:</span>
+                              <Input
+                                type="text"
+                                value={String(cue.endOffsetMs)}
+                                onChange={(e) => {
+                                  if (!selectedSeqId) return;
+                                  const val = e.target.value.trim();
+                                  const newCues = [...(selectedSeq?.cues || [])];
+                                  newCues[idx] = {
+                                    ...cue,
+                                    endOffsetMs: val.toLowerCase() === 'end' ? 'end' : (parseInt(val) || 0),
+                                  };
+                                  IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: newCues });
+                                }}
+                                className="h-5 w-16 text-[10px] font-mono px-1 py-0"
+                              />
+                              <span className="text-[9px] text-slate-400 font-mono">ms</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (!selectedSeqId) return;
+                                const newCues = (selectedSeq?.cues || []).filter((_: any, i: number) => i !== idx);
+                                IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: newCues });
+                              }}
+                              className="h-5 w-5 text-slate-400 hover:text-rose-600"
+                              title="Delete cue"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <Input
+                            type="text"
+                            value={cue.text}
+                            onChange={(e) => {
+                              if (!selectedSeqId) return;
+                              const newCues = [...(selectedSeq?.cues || [])];
+                              newCues[idx] = { ...cue, text: e.target.value };
+                              IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: newCues });
+                            }}
+                            placeholder="Cue subtitle phrase..."
+                            className="h-6 text-[11px] px-1.5 py-0 bg-slate-50 dark:bg-slate-950"
+                          />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Action Bar */}
               <div className="flex items-center gap-1 pt-2 border-t border-slate-200/60">
@@ -2437,85 +3019,6 @@ export function RightSidebar() {
                 </AccordionItem>
               )}
             </Accordion>
-          </div>
-        ) : (
-          /* Fallback State: Project & Canvas Settings */
-          <div className="space-y-4 py-2">
-            <div className="text-center pb-2 border-b border-slate-100">
-              <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-2">
-                <Settings className="w-5 h-5" />
-              </div>
-              <h3 className="font-semibold text-slate-800 text-xs">Project Master Settings</h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Global canvas & timeline configuration
-              </p>
-            </div>
-
-            <Card className="p-3 bg-slate-50/60 border-slate-200 space-y-2.5 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-                  <Monitor className="w-3.5 h-3.5 text-slate-400" />
-                  Resolution
-                </span>
-                <span className="font-mono font-medium text-slate-800 text-[11px]">
-                  {width} × {height} ({((width / Math.max(1, height))).toFixed(2)}:1)
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  Frame Rate
-                </span>
-                <span className="font-mono font-medium text-slate-800 text-[11px]">
-                  {fps} FPS
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-slate-400" />
-                  Color Space
-                </span>
-                <span className="font-mono text-slate-700 text-[11px]">
-                  Rec.709 / sRGB (8-bit)
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-slate-400" />
-                  Master Duration
-                </span>
-                <span className="font-mono font-medium text-slate-800 text-[11px]">
-                  {totalDurationFrames}f ({(totalDurationFrames / Math.max(1, fps)).toFixed(2)}s)
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-slate-400" />
-                  Active Tracks
-                </span>
-                <Badge variant="outline" className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200">
-                  {irState.doc.tracks.length} Tracks
-                </Badge>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500 text-[11px]">Active Sequences</span>
-                <Badge variant="outline" className="font-mono text-[10px]">
-                  {activeSequencesCount} Sequences
-                </Badge>
-              </div>
-            </Card>
-
-            <div className="p-3 bg-amber-50/70 rounded-lg border border-amber-200 text-amber-800 text-[11px] space-y-1">
-              <span className="font-semibold block">Inspector Navigation Tip:</span>
-              <p className="text-amber-700 leading-normal">
-                Click any sequence on the timeline or directly on the canvas to inspect and edit its 3D, visual, and audio properties.
-              </p>
-            </div>
           </div>
         )}
       </ScrollArea>

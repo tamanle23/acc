@@ -638,8 +638,9 @@ export function Preview({
             setIsPanning(true);
             setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
           } else if (e.target === canvasRef.current) {
-            // Clicking directly on canvas background deselects selection
+            // Clicking directly on canvas background deselects selection and switches to project inspection
             IRStateManager.getInstance().setSelectedSequenceId(null);
+            IRStateManager.getInstance().setInspectorMode('project');
           }
         }}
       >

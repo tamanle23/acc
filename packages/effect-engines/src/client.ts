@@ -15,5 +15,7 @@ export * from './vision/CameraSplineInterpolator';
 export * from './subtitles/SafeZoneManager';
 export * from './subtitles/BoundedAcousticCaptionStrategy';
 export * from './subtitles/captions-canvas';
+export * from './overlay-effects/simulators/DeterministicParticleField';
+export * from './overlay-effects/simulators/PostProcessingShaders';
 export * from './types';
 

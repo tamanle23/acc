@@ -762,7 +762,14 @@ export function Timeline({
                 return (
                   <div key={track.id} className="h-10 flex items-center gap-2">
                     {/* Track Header / Controls */}
-                    <div className="w-44 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md">
+                    <div
+                      onClick={() => {
+                        IRStateManager.getInstance().setSelectedTrackId(track.id);
+                        IRStateManager.getInstance().setInspectorMode('track');
+                      }}
+                      className="w-44 h-full bg-[var(--glass-bg)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors rounded-md border border-[var(--glass-border)] flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
+                      title={`Inspect Track ${track.id}`}
+                    >
                       <div className="flex items-center gap-1.5 truncate">
                         <span className="text-[11px] font-medium text-foreground truncate">
                           {track.id}
@@ -821,6 +828,15 @@ export function Timeline({
               })
             )}
           </DndContext>
+
+          {/* Empty timeline click target to switch to Project inspection mode */}
+          <div
+            onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+            className="h-12 w-full cursor-pointer hover:bg-slate-500/5 transition-colors rounded-sm flex items-center justify-center text-[10px] text-slate-400 italic"
+            title="Click empty timeline area to inspect Project Settings"
+          >
+            Click empty area to inspect Project Settings
+          </div>
         </div>
       </div>
     </footer>

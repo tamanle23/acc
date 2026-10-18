@@ -78,8 +78,14 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
     const halfW = w * 0.5;
     const halfH = h * 0.5;
 
+    // Position origin at center of viewport (default: 50% width, 50% height) + offset
+    const originX = ctx.width * (params.normX ?? 0.5) + (params.x ?? 0);
+    const originY = ctx.height * (params.normY ?? 0.5) + (params.y ?? 0);
+
     canvasCtx.save();
     try {
+      canvasCtx.translate(originX, originY);
+
       // 1. Configure drop shadow if specified
       if (params.shadowBlur && params.shadowBlur > 0) {
         canvasCtx.shadowColor = params.shadowColor || 'rgba(0,0,0,0.5)';
