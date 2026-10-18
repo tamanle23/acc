@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MetadataService {
 
@@ -47,6 +46,33 @@ public class MetadataService {
     private final DynamicIndexProvisioner dynamicIndexProvisioner;
     private com.unipost.outbox.OutboxEventPublisher outboxEventPublisher;
     private com.unipost.service.workflow.EntityLifecycleService entityLifecycleService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public MetadataService(
+            EntityTypeRepository entityTypeRepository,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            EntityRecordRepository entityRecordRepository,
+            RelationshipTypeRepository relationshipTypeRepository,
+            EntityRelationshipRepository entityRelationshipRepository,
+            SchemaValidationService schemaValidationService,
+            ApplicationEventPublisher eventPublisher,
+            PageBuilder pageBuilder,
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper,
+            CompositeSpecCompiler compositeSpecCompiler,
+            DynamicIndexProvisioner dynamicIndexProvisioner
+    ) {
+        this.entityTypeRepository = entityTypeRepository;
+        this.attributeDefinitionRepository = attributeDefinitionRepository;
+        this.entityRecordRepository = entityRecordRepository;
+        this.relationshipTypeRepository = relationshipTypeRepository;
+        this.entityRelationshipRepository = entityRelationshipRepository;
+        this.schemaValidationService = schemaValidationService;
+        this.eventPublisher = eventPublisher;
+        this.pageBuilder = pageBuilder;
+        this.objectMapper = objectMapper;
+        this.compositeSpecCompiler = compositeSpecCompiler;
+        this.dynamicIndexProvisioner = dynamicIndexProvisioner;
+    }
 
     public MetadataService(
             EntityTypeRepository entityTypeRepository,

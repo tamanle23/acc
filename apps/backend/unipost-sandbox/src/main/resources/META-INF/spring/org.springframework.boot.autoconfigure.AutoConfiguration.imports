@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.AutoConfiguration.imports=com.unipost.sandbox.config.SandboxAutoConfiguration
+com.unipost.sandbox.config.SandboxAutoConfiguration

@@ -38,6 +38,7 @@ public class RecordMutationPipeline {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public RecordMutationPipeline(
             EntityTypeRepository entityTypeRepository,
             EntityRecordRepository entityRecordRepository,

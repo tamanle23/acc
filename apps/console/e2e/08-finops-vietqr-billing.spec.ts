@@ -35,7 +35,7 @@ test.describe('Flow 08: FinOps VietQR Billing & Subscription Upgrade', () => {
     await simulateBtn.click();
 
     // Verify success state or message
-    await expect(page.locator('text=Nâng cấp thành công!').or(page.locator('text=thành công'))).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Nâng cấp thành công!').or(page.locator('text=thành công')).first()).toBeVisible({ timeout: 10000 });
 
     // Close modal
     const closeBtn = dialog.getByRole('button', { name: /Đóng/i }).first();

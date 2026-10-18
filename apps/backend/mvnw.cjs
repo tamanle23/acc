@@ -22,11 +22,28 @@ if (!process.env.JAVA_HOME) {
   }
 }
 
-const result = spawnSync(scriptPath, args, {
-  stdio: 'inherit',
-  shell: isWin,
-  cwd: __dirname,
-  env: process.env,
-});
+if (isWin) {
+  // On Windows, passing args through spawnSync with cmd.exe causes cmd.exe to split arguments on spaces/dots.
+  // Use spawnSync with cmd.exe /s /c and quoted command string.
+  const escapedArgs = args.map(arg => {
+    if (arg.includes(' ') || arg.includes('"')) {
+      return `"${arg.replace(/"/g, '\"')}"`;
+    }
+    return arg;
+  }).join(' ');
 
-process.exit(result.status ?? 0);
+  const result = spawnSync('cmd.exe', ['/s', '/c', `"${scriptPath}" ${escapedArgs}`], {
+    stdio: 'inherit',
+    windowsVerbatimArguments: true,
+    cwd: __dirname,
+    env: process.env,
+  });
+  process.exit(result.status ?? 0);
+} else {
+  const result = spawnSync(scriptPath, args, {
+    stdio: 'inherit',
+    cwd: __dirname,
+    env: process.env,
+  });
+  process.exit(result.status ?? 0);
+}

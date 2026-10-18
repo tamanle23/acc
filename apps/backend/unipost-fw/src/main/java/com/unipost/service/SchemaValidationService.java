@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SchemaValidationService {
 
     private final HazelcastInstance hazelcastInstance;
@@ -42,6 +41,23 @@ public class SchemaValidationService {
     private final SchemaCompiler schemaCompiler;
     private final CompositeSpecCompiler compositeSpecCompiler;
     private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SchemaValidationService(
+            HazelcastInstance hazelcastInstance,
+            ObjectMapper objectMapper,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            EntityTypeRepository entityTypeRepository,
+            SchemaCompiler schemaCompiler,
+            CompositeSpecCompiler compositeSpecCompiler
+    ) {
+        this.hazelcastInstance = hazelcastInstance;
+        this.objectMapper = objectMapper;
+        this.attributeDefinitionRepository = attributeDefinitionRepository;
+        this.entityTypeRepository = entityTypeRepository;
+        this.schemaCompiler = schemaCompiler;
+        this.compositeSpecCompiler = compositeSpecCompiler != null ? compositeSpecCompiler : new CompositeSpecCompiler(objectMapper);
+    }
 
     public SchemaValidationService(
             HazelcastInstance hazelcastInstance,

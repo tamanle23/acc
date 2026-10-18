@@ -73,7 +73,9 @@ export function UserAuthForm({
         password: data.password,
       });
 
-      setTokens(response.data.body.accessToken, response.data.body.refreshToken);
+      const accessToken = response.data?.body?.accessToken || response.data?.accessToken;
+      const refreshToken = response.data?.body?.refreshToken || response.data?.refreshToken;
+      setTokens(accessToken, refreshToken);
       toast.success(`Welcome back, ${data.email}!`);
 
       const targetPath = redirectTo || '/'
@@ -98,13 +100,16 @@ export function UserAuthForm({
       // The mock engine intercepts this request and checks for username + password === 'bypass'
       const response = await springApiClient.post('/auth/token', {
         username: persona.username,
+        userName: persona.username,
         password: 'bypass',
       }, {
         headers: {
           'X-Sandbox-Mock': 'true'
         }
       });
-      setTokens(response.data.accessToken, response.data.refreshToken);
+      const accessToken = response.data?.body?.accessToken || response.data?.accessToken;
+      const refreshToken = response.data?.body?.refreshToken || response.data?.refreshToken;
+      setTokens(accessToken, refreshToken);
       toast.success(
         t('auth.sandbox.successToast', 'Sandbox Login Successful ({{role}})', {
           role: persona.name,

@@ -14,6 +14,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder;
@@ -45,6 +46,7 @@ public class MasterDatabaseConfiguration {
 
   @Bean(name="masterDatabase")
   @Primary
+  @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "false", matchIfMissing = true)
   @ConfigurationProperties(prefix = "spring.datasource")
   public DataSource dataSource() {
     return DataSourceBuilder.create()
@@ -53,8 +55,8 @@ public class MasterDatabaseConfiguration {
   }
 
   @Bean(name = "entityManagerFactory")
-  public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder, ConfigurableListableBeanFactory beanFactory) {
-    LocalContainerEntityManagerFactoryBean em = builder.dataSource(dataSource())
+  public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder, ConfigurableListableBeanFactory beanFactory, DataSource dataSource) {
+    LocalContainerEntityManagerFactoryBean em = builder.dataSource(dataSource)
                                                        .packages("com.unipost")
                                                        .build();
     HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
