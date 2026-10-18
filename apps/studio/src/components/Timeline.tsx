@@ -770,137 +770,33 @@ export function Timeline({
         </div>
       </div>
 
-      {/* 2. Sticky Split-View Timeline Layout */}
+      {/* 2. Unified Scroll Container with Sticky Track Headers and Sticky Timecode Ruler */}
       <DndContext
         sensors={timelineSensors}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Column: Fixed Track Headers (~180px) */}
-          <div className="w-48 shrink-0 border-r border-border/40 bg-background/40 backdrop-blur-md flex flex-col z-20 shadow-xs">
-            {/* Header spacer aligned with Timecode ruler */}
-            <div className="h-7 px-3 flex items-center border-b border-border/30 text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-muted/20">
-              Track Headers
-            </div>
-
-            {/* Track Header Cards */}
-            <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1">
-              {tracks.map((track, idx) => {
-                const isLocked = lockedTracks[track.id] || false;
-                const isMuted = mutedTracks[track.id] || false;
-                const canMoveUp = idx > 0;
-                const canMoveDown = idx < tracks.length - 1;
-
-                return (
-                  <div
-                    key={track.id}
-                    onClick={() => {
-                      IRStateManager.getInstance().setSelectedTrackId(track.id);
-                      IRStateManager.getInstance().setInspectorMode('track');
-                    }}
-                    className="h-10 bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2 shrink-0 shadow-2xs backdrop-blur-md"
-                    title={`Inspect Track ${track.id}`}
-                  >
-                    <div className="flex items-center gap-1 min-w-0">
-                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
-                      <span className="text-[11px] font-medium text-foreground truncate max-w-[70px]">
-                        {track.id}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {/* Track Reorder Up/Down */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={!canMoveUp}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          IRStateManager.getInstance().reorderTrack(track.id, 'up');
-                        }}
-                        className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                        title="Move Track Up"
-                      >
-                        <ChevronUp className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={!canMoveDown}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          IRStateManager.getInstance().reorderTrack(track.id, 'down');
-                        }}
-                        className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                        title="Move Track Down"
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleLock(track.id);
-                        }}
-                        className={`h-5 w-5 rounded transition-colors ${
-                          isLocked
-                            ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        title={isLocked ? 'Unlock Track' : 'Lock Track'}
-                      >
-                        {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleMute(track.id);
-                        }}
-                        className={`h-5 w-5 rounded transition-colors ${
-                          isMuted
-                            ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        title={isMuted ? 'Unmute Track' : 'Mute Track'}
-                      >
-                        {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Empty area target to switch to Project inspection mode */}
-              <div
-                onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
-                className="h-10 rounded border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-2 text-center"
-                title="Click to inspect Project Settings"
-              >
-                Project Settings
+        <div
+          ref={scrollContainerRef}
+          onMouseDown={handleTimelineMouseDown}
+          onMouseMove={handleTimelineMouseMove}
+          onMouseUp={handleTimelineMouseUp}
+          className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${
+            activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
+          }`}
+        >
+          <div style={{ width: `${timelineWidth + 208}px` }} className="space-y-1 relative">
+            {/* Sticky Timeline Head: Track Headers title & Timecode Ruler */}
+            <div className="sticky top-0 z-40 bg-[var(--glass-bg)]/95 backdrop-blur-md pb-1 flex items-center gap-2">
+              {/* Sticky "Track Headers" Title Block */}
+              <div className="w-52 shrink-0 h-6 px-2.5 flex items-center justify-between rounded bg-muted/30 border border-border/40 text-[10px] font-mono uppercase tracking-wider text-muted-foreground shadow-2xs">
+                <span>Track Headers</span>
+                <span className="text-[9px] lowercase opacity-70">({tracks.length} tracks)</span>
               </div>
-            </div>
-          </div>
 
-          {/* Right Column: Horizontally Scrollable Lanes Grid & Timecode Ruler */}
-          <div
-            ref={scrollContainerRef}
-            onMouseDown={handleTimelineMouseDown}
-            onMouseMove={handleTimelineMouseMove}
-            onMouseUp={handleTimelineMouseUp}
-            className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-1 relative ${
-              activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
-            }`}
-          >
-            <div style={{ width: `${timelineWidth}px` }} className="space-y-1 relative">
-              {/* Header: Timecode Ruler */}
-              <div className="h-7 flex items-center">
+              {/* Timecode Ruler */}
+              <div style={{ width: `${timelineWidth}px` }} className="shrink-0 h-6">
                 <TimecodeRuler
                   totalFrames={totalFrames}
                   fps={fps}
@@ -909,44 +805,132 @@ export function Timeline({
                   onScrub={handleScrub}
                 />
               </div>
+            </div>
 
-              {/* Global Playhead Vertical Needle */}
+            {/* Global Playhead Vertical Needle */}
+            <div
+              className="absolute top-7 bottom-0 z-30 pointer-events-none transition-all duration-75 flex flex-col items-center"
+              style={{
+                left: `${208 + currentFrame * pixelsPerFrame}px`,
+              }}
+            >
+              <div className="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />
+              <div className="w-0.5 flex-1 bg-rose-500/80" />
+            </div>
+
+            {/* Cyan Magnetic Snapping Guideline */}
+            {activeSnapGuideline !== null && (
               <div
-                className="absolute top-0 bottom-0 z-30 pointer-events-none transition-all duration-75 flex flex-col items-center"
+                className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
                 style={{
-                  left: `${currentFrame * pixelsPerFrame}px`,
+                  left: `${208 + activeSnapGuideline * pixelsPerFrame}px`,
                 }}
               >
-                <div className="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />
-                <div className="w-0.5 flex-1 bg-rose-500/80" />
+                <div className="w-2 h-2 bg-cyan-400 rotate-45 -mt-1 shadow-[0_0_8px_#22d3ee]" />
+                <div className="w-[1.5px] flex-1 bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                <span className="text-[9px] font-mono text-cyan-300 bg-slate-900/90 px-1 py-0.5 rounded -mt-4 shadow-sm border border-cyan-400/40">
+                  {activeSnapGuideline}f
+                </span>
               </div>
+            )}
 
-              {/* Cyan Magnetic Snapping Guideline */}
-              {activeSnapGuideline !== null && (
-                <div
-                  className="absolute top-0 bottom-0 z-35 pointer-events-none flex flex-col items-center"
-                  style={{
-                    left: `${activeSnapGuideline * pixelsPerFrame}px`,
-                  }}
-                >
-                  <div className="w-2 h-2 bg-cyan-400 rotate-45 -mt-1 shadow-[0_0_8px_#22d3ee]" />
-                  <div className="w-[1.5px] flex-1 bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
-                  <span className="text-[9px] font-mono text-cyan-300 bg-slate-900/90 px-1 py-0.5 rounded -mt-4 shadow-sm border border-cyan-400/40">
-                    {activeSnapGuideline}f
-                  </span>
-                </div>
-              )}
+            {/* Track Rows: Each row contains its sticky Track Header card + its sequence lane */}
+            {tracks.length === 0 ? (
+              <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
+                Compiling Video IR Tracks...
+              </div>
+            ) : (
+              tracks.map((track, idx) => {
+                const isLocked = lockedTracks[track.id] || false;
+                const isMuted = mutedTracks[track.id] || false;
+                const canMoveUp = idx > 0;
+                const canMoveDown = idx < tracks.length - 1;
 
-              {/* Clip Lanes */}
-              {tracks.length === 0 ? (
-                <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
-                  Compiling Video IR Tracks...
-                </div>
-              ) : (
-                tracks.map((track) => {
-                  const isLocked = lockedTracks[track.id] || false;
-                  return (
-                    <div key={track.id} className="h-10 flex items-center">
+                return (
+                  <div key={track.id} className="h-10 flex items-center gap-2">
+                    {/* Sticky Track Header Card */}
+                    <div
+                      onClick={() => {
+                        IRStateManager.getInstance().setSelectedTrackId(track.id);
+                        IRStateManager.getInstance().setInspectorMode('track');
+                      }}
+                      className="sticky left-0 z-20 w-52 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
+                      title={`Inspect Track ${track.id}`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
+                        <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
+                          {track.id}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {/* Track Reorder Up/Down */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={!canMoveUp}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            IRStateManager.getInstance().reorderTrack(track.id, 'up');
+                          }}
+                          className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          title="Move Track Up"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={!canMoveDown}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            IRStateManager.getInstance().reorderTrack(track.id, 'down');
+                          }}
+                          className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                          title="Move Track Down"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLock(track.id);
+                          }}
+                          className={`h-5 w-5 rounded transition-colors ${
+                            isLocked
+                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={isLocked ? 'Unlock Track' : 'Lock Track'}
+                        >
+                          {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMute(track.id);
+                          }}
+                          className={`h-5 w-5 rounded transition-colors ${
+                            isMuted
+                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={isMuted ? 'Unmute Track' : 'Mute Track'}
+                        >
+                          {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Droppable Track Sequence Lane in the Exact Same Row */}
+                    <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
                       <DroppableTrackLane track={track} isLocked={isLocked}>
                         {track.sequences.map((seq) => (
                           <TimelineClipItem
@@ -963,9 +947,18 @@ export function Timeline({
                         ))}
                       </DroppableTrackLane>
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                );
+              })
+            )}
+
+            {/* Empty timeline click target to switch to Project inspection mode */}
+            <div
+              onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+              className="sticky left-0 w-52 h-8 rounded border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-2 text-center shadow-2xs mt-1"
+              title="Click empty area to inspect Project Settings"
+            >
+              Project Settings
             </div>
           </div>
         </div>
