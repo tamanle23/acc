@@ -150,7 +150,7 @@ Update test files importing `UniversalCanvasEngine` to test `IRPreviewEngine` an
   - Overlay canvas: `CanvasTransformOverlay.render()`.
 - Eliminate manual particle/HUD configuration loops from `Preview.tsx`.
 
-### Phase 3: Client-Side Full-Fidelity MP4 Export `[ ] Planned`
+### Phase 3: Client-Side Full-Fidelity MP4 Export `[x] Completed`
 - Update `handleStartExport` in `apps/studio/src/App.tsx` to run `IRPreviewEngine.renderFrame()` frame-by-frame into `MediabunnyClientSink`.
 - Verify full-fidelity client-side MP4 generation without dummy placeholder text.
 

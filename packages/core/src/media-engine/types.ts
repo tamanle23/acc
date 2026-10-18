@@ -54,6 +54,7 @@ export interface SinkFinalizeResult {
   durationSeconds: number;
   framesConsumed: number;
   fileSizeBytes?: number;
+  buffer?: ArrayBuffer;
   stats?: Record<string, unknown>;
 }
 

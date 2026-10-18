@@ -26,6 +26,8 @@ import {
   Badge,
 } from './components/ui';
 import { MediabunnyClientSink } from '@acc/core/client';
+import { IRPreviewEngine } from '@acc/ir/client';
+import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { Video, AlertCircle } from 'lucide-react';
 import { IRStateManager } from './lib/ir/irState';
 import type { StagingPreset } from './lib/library/stagingPresets';
@@ -230,6 +232,27 @@ function StudioWorkspace() {
         ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
       }
 
+      // Initialize IRPreviewEngine with active timeline if available
+      const previewEngine = irState.timeline ? new IRPreviewEngine(irState.timeline) : null;
+      const studioTextureCache = AssetTextureCache.getInstance();
+      const assetsMap = irState.doc?.assets || {};
+      const engineTextures = previewEngine ? previewEngine.getTextureCache() : null;
+
+      // Determine popOutIntensity from depth modifiers if present
+      let popOutIntensity = 1.0;
+      if (irState.timeline?.sequences) {
+        for (const seq of irState.timeline.sequences.values()) {
+          if (seq.modifiers) {
+            for (const mod of seq.modifiers) {
+              if (mod.type === 'vfx/depth3d') {
+                const p = mod.params as any;
+                if (typeof p?.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
+              }
+            }
+          }
+        }
+      }
+
       for (let f = 0; f < totalFrames; f++) {
         if (cancelExportRef.current) {
           console.warn('Client export cancelled by user.');
@@ -238,18 +261,43 @@ function StudioWorkspace() {
 
         let rgba: Uint8Array;
         if (ctx && offscreenCanvas) {
-          ctx.fillStyle = f % 2 === 0 ? '#0f172a' : '#1e293b';
+          ctx.fillStyle = '#000000';
           ctx.fillRect(0, 0, width, height);
 
-          ctx.fillStyle = '#38bdf8';
-          ctx.font = '36px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(`Video IR Render - Frame ${f}/${totalFrames}`, width / 2, height / 2);
+          if (previewEngine && engineTextures) {
+            // Lazy texture loading for active sequences at frame f
+            const activeSeqs = irState.intervalTree?.queryActive(f) || [];
+            for (const seq of activeSeqs) {
+              if (seq.assetId) {
+                const assetDef = assetsMap[seq.assetId];
+                const assetSrc = assetDef?.src;
+                const assetType = assetDef?.type || 'media';
+                const seqStart = seq.startFrame ?? 0;
+                const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
+
+                const visualAsset = studioTextureCache.getVisualAsset(
+                  seq.assetId,
+                  assetSrc,
+                  assetType === 'audio' ? 'media' : (assetType as any),
+                  seqLocalTimeSec
+                );
+
+                if (visualAsset.source) {
+                  engineTextures.set(seq.assetId, visualAsset.source);
+                }
+              }
+            }
+
+            previewEngine.renderFrame(f, ctx, {
+              textureCache: engineTextures,
+              popOutIntensity,
+            });
+          }
 
           const imgData = ctx.getImageData(0, 0, width, height);
           rgba = new Uint8Array(imgData.data.buffer);
         } else {
-          rgba = new Uint8Array(width * height * 4).fill(128);
+          rgba = new Uint8Array(width * height * 4).fill(0);
         }
 
         await sink.consumeFrame(f, rgba);
@@ -258,9 +306,22 @@ function StudioWorkspace() {
 
       if (!cancelExportRef.current) {
         const result = await sink.finalize();
+        const exportBuffer = result.buffer || sink.getBuffer();
+
+        if (exportBuffer && typeof document !== 'undefined' && typeof URL !== 'undefined') {
+          const blob = new Blob([exportBuffer], { type: 'video/mp4' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `video-ir-export-${Date.now()}.mp4`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }
+
         alert(
-          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes || result.stats?.inMemoryBufferSize
-          } bytes\nFrames: ${result.framesConsumed}`
+          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes || exportBuffer?.byteLength || 0} bytes\nFrames: ${result.framesConsumed}`
         );
       }
     } catch (err: any) {

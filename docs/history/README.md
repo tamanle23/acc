@@ -272,6 +272,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`258`](258_studio_phase5_ui_ux_theme_tokens.md) | 2026-10-18 | Studio Phase 5: UI/UX Consistency, Liquid Glass Theme Tokens & Regression Hardening | Standardized button.tsx, Timeline.tsx track headers & controls, and Titlebar.tsx with semantic tokens; eliminated hardcoded indigo/slate classes, added studio_theme_tokens test suite |
 | [`259`](259_ir_preview_engine_elevation_phase1.md) | 2026-10-18 | Iteration 9 Phase 1: Elevate IRPreviewEngine & Formalize HologramHUD and PartialVFX Plugins | Elevated IRPreviewEngine to full deterministic multi-track interactive renderer, implemented HologramHUDPlugin, PartialVFXPlugin, AssetTextureCache, DeterministicMotionEvaluator, and updated client registries |
 | [`260`](260_studio_decoupled_2layer_viewport_canvas.md) | 2026-10-18 | Iteration 9 Phase 2: Decoupled 2-Layer Viewport Canvas Architecture in Studio Preview | Refactored Preview.tsx to stacked DOM canvas architecture (base canvas via IRPreviewEngine.renderFrame + overlay canvas via CanvasTransformOverlay.renderGuides), eliminated manual particle/HUD loops and duplicate JSX divs |
+| [`261`](261_studio_client_side_mp4_export.md) | 2026-10-18 | Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export | Connected client-side MP4 export to IRPreviewEngine.renderFrame and MediabunnyClientSink, lazy frame asset streaming, and automatic browser MP4 download trigger |
 
 
 

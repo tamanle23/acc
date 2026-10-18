@@ -68,6 +68,10 @@ export class MediabunnyClientSink implements IMediaFrameSink {
     this.framesConsumed++;
   }
 
+  public getBuffer(): ArrayBuffer | undefined {
+    return this.bufferTarget?.buffer;
+  }
+
   public async finalize(audioResult?: MediaAudioMixResult): Promise<SinkFinalizeResult> {
     if (this.output) {
       await this.output.finalize();
@@ -103,6 +107,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
       durationSeconds: this.meta ? this.meta.durationSeconds : 0,
       framesConsumed: this.framesConsumed,
       fileSizeBytes,
+      buffer,
       stats: {
         encoder: 'MediabunnyClientSink',
         resolution: this.meta ? `${this.meta.width}x${this.meta.height}` : 'unknown',
