@@ -639,10 +639,52 @@ export function formatTimecode(frames: number, fps: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(f).padStart(2, '0')}`;
 }
 
+export function getSectionIdForModifierType(type: string): string {
+  switch (type) {
+    case 'transform':
+      return 'transform';
+    case 'vfx/depth_relighting':
+    case 'vfx/depth3d_relighting':
+      return 'relighting';
+    case 'camera/3d':
+    case 'camera/path':
+      return 'camera';
+    case 'overlay/hologram_hud':
+      return 'hologram_hud';
+    case 'overlay/canvas_particles':
+      return 'particles';
+    case 'vfx/color_grading':
+      return 'color';
+    case 'text/style':
+      return 'typography';
+    case 'sfx/dynamic_ducking':
+    case 'audio/volume':
+    case 'audio/pan':
+    case 'audio/filter':
+    case 'audio/pitch':
+      return 'audio';
+    case 'sfx/procedural':
+      return 'procedural_sfx';
+    default:
+      return `generic_${type.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+  }
+}
+
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [copiedId, setCopiedId] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [openSections, setOpenSections] = useState<string[]>([
+    'transform',
+    'relighting',
+    'camera',
+    'particles',
+    'hologram_hud',
+    'typography',
+    'color',
+    'audio',
+    'procedural_sfx',
+  ]);
 
   useEffect(() => {
     return IRStateManager.getInstance().subscribe(setIrState);
@@ -718,6 +760,13 @@ export function RightSidebar() {
   const updateModifierParams = (type: string, params: Record<string, any>) => {
     if (!selectedSeqId) return;
     IRStateManager.getInstance().updateModifier(selectedSeqId, type, params);
+  };
+
+  const handleAddEffect = (mod: AvailableModifierDef) => {
+    if (!selectedSeqId) return;
+    const sectionId = getSectionIdForModifierType(mod.type);
+    setOpenSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
+    updateModifierParams(mod.type, mod.defaultParams);
   };
 
   const removeModifier = (type: string) => {
@@ -1054,7 +1103,8 @@ export function RightSidebar() {
                       <DropdownMenuItem
                         key={mod.type}
                         disabled={isAttached}
-                        onClick={() => updateModifierParams(mod.type, mod.defaultParams)}
+                        onSelect={() => handleAddEffect(mod)}
+                        onClick={() => handleAddEffect(mod)}
                         className="flex items-center justify-between cursor-pointer py-1.5"
                       >
                         <div className="flex items-center gap-2">
@@ -1887,7 +1937,12 @@ export function RightSidebar() {
             )}
 
             {/* Accordion Panels */}
-            <Accordion type="multiple" defaultValue={['transform', 'relighting', 'camera', 'particles', 'hologram_hud', 'typography', 'audio']} className="space-y-2">
+            <Accordion
+              type="multiple"
+              value={openSections}
+              onValueChange={setOpenSections}
+              className="space-y-2"
+            >
               {/* Transform Section (Pure Attached-Only) */}
               {attachedModifierTypes.has('transform') && (
                 <AccordionItem value="transform" className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs">
@@ -3018,6 +3073,126 @@ export function RightSidebar() {
                   </AccordionContent>
                 </AccordionItem>
               )}
+
+              {/* Fallback Section for any custom or additional attached modifiers */}
+              {modifiers
+                .filter((m: any) => {
+                  const handledTypes = [
+                    'transform',
+                    'vfx/depth_relighting',
+                    'vfx/depth3d_relighting',
+                    'camera/3d',
+                    'camera/path',
+                    'overlay/hologram_hud',
+                    'overlay/canvas_particles',
+                    'vfx/color_grading',
+                    'text/style',
+                    'sfx/dynamic_ducking',
+                    'audio/volume',
+                    'sfx/procedural',
+                  ];
+                  return !handledTypes.includes(m.type);
+                })
+                .map((m: any) => {
+                  const sectionId = getSectionIdForModifierType(m.type);
+                  const catalogEntry = MODIFIER_PRESENTATION_CATALOG[m.type];
+                  const title = catalogEntry?.name || m.type;
+                  const Icon = catalogEntry?.icon || Sparkles;
+                  const paramKeys = Object.keys(m.params || {}).filter((k) => k !== 'enabled');
+
+                  return (
+                    <AccordionItem
+                      key={m.type}
+                      value={sectionId}
+                      className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs"
+                    >
+                      <AccordionTrigger
+                        actions={
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                              onClick={() => removeModifier(m.type)}
+                              title="Remove modifier"
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-500" />
+                            </Button>
+                            <Switch
+                              checked={m.params?.enabled !== false}
+                              onCheckedChange={(val) => toggleModifier(m.type, val)}
+                            />
+                          </div>
+                        }
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Icon className="w-3.5 h-3.5 text-indigo-500" />
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{title}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="p-3 space-y-3">
+                        {paramKeys.length === 0 ? (
+                          <p className="text-[11px] text-slate-400 italic">No editable numeric parameters.</p>
+                        ) : (
+                          paramKeys.map((key) => {
+                            const val = m.params[key];
+                            if (typeof val === 'number') {
+                              return (
+                                <ParameterSlider
+                                  key={key}
+                                  label={key}
+                                  value={val}
+                                  min={val < 0 ? -100 : 0}
+                                  max={val > 100 ? val * 2 : 100}
+                                  step={Number.isInteger(val) ? 1 : 0.05}
+                                  defaultValue={val}
+                                  onChange={(newVal) =>
+                                    updateModifierParams(m.type, {
+                                      ...m.params,
+                                      [key]: newVal,
+                                    })
+                                  }
+                                />
+                              );
+                            }
+                            if (typeof val === 'boolean') {
+                              return (
+                                <div key={key} className="flex items-center justify-between py-1">
+                                  <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 capitalize">{key}</span>
+                                  <Switch
+                                    checked={val}
+                                    onCheckedChange={(checked) =>
+                                      updateModifierParams(m.type, {
+                                        ...m.params,
+                                        [key]: checked,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              );
+                            }
+                            return (
+                              <div key={key} className="space-y-1">
+                                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 capitalize">{key}</span>
+                                <input
+                                  type="text"
+                                  value={String(val ?? '')}
+                                  onChange={(e) =>
+                                    updateModifierParams(m.type, {
+                                      ...m.params,
+                                      [key]: e.target.value,
+                                    })
+                                  }
+                                  className="w-full h-7 px-2 text-xs font-mono rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900"
+                                />
+                              </div>
+                            );
+                          })
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
             </Accordion>
           </div>
         )}

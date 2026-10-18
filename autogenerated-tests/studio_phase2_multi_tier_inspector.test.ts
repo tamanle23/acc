@@ -4,6 +4,8 @@ import { UpdateTrackCommand } from '../apps/studio/src/lib/commands/UpdateTrackC
 import { ReorderTrackCommand } from '../apps/studio/src/lib/commands/ReorderTrackCommand';
 import { UpdateSequencePropsCommand } from '../apps/studio/src/lib/commands/UpdateSequencePropsCommand';
 import { UpdateProjectMetaCommand } from '../apps/studio/src/lib/commands/UpdateProjectMetaCommand';
+import { UpdateModifierCommand } from '../apps/studio/src/lib/commands/UpdateModifierCommand';
+import { getSectionIdForModifierType } from '../apps/studio/src/components/RightSidebar';
 import type { VideoIRDocument } from '@acc/ir';
 
 describe('Studio Phase 2: Dynamic Multi-Tier Inspector & State Commands', () => {
@@ -201,6 +203,45 @@ describe('Studio Phase 2: Dynamic Multi-Tier Inspector & State Commands', () => 
       stateManager.setInspectorMode('project');
       state = stateManager.getState();
       expect(state.inspectorMode).toBe('project');
+    });
+  });
+
+  describe('Add Effect & Modifier Accordion Section Mapping', () => {
+    it('correctly maps all known and custom modifier types to accordion section IDs', () => {
+      expect(getSectionIdForModifierType('transform')).toBe('transform');
+      expect(getSectionIdForModifierType('vfx/depth_relighting')).toBe('relighting');
+      expect(getSectionIdForModifierType('vfx/depth3d_relighting')).toBe('relighting');
+      expect(getSectionIdForModifierType('camera/3d')).toBe('camera');
+      expect(getSectionIdForModifierType('camera/path')).toBe('camera');
+      expect(getSectionIdForModifierType('overlay/hologram_hud')).toBe('hologram_hud');
+      expect(getSectionIdForModifierType('overlay/canvas_particles')).toBe('particles');
+      expect(getSectionIdForModifierType('vfx/color_grading')).toBe('color');
+      expect(getSectionIdForModifierType('text/style')).toBe('typography');
+      expect(getSectionIdForModifierType('sfx/dynamic_ducking')).toBe('audio');
+      expect(getSectionIdForModifierType('audio/volume')).toBe('audio');
+      expect(getSectionIdForModifierType('sfx/procedural')).toBe('procedural_sfx');
+      expect(getSectionIdForModifierType('custom/glitch_fx')).toBe('generic_custom_glitch_fx');
+    });
+
+    it('attaches new modifier to sequence via UpdateModifierCommand without mutating existing state', () => {
+      const cmd = new UpdateModifierCommand('seq-1', 'vfx/color_grading', {
+        enabled: true,
+        contrast: 1.25,
+        saturation: 1.1,
+      });
+
+      const nextDoc = cmd.execute(initialDoc);
+      const seq = nextDoc.tracks[0].sequences.find((s) => s.id === 'seq-1');
+      expect(seq?.modifiers).toBeDefined();
+      const addedMod = seq?.modifiers?.find((m) => m.type === 'vfx/color_grading');
+      expect(addedMod).toBeDefined();
+      expect(addedMod?.params?.contrast).toBe(1.25);
+
+      // Verify undo cleans up the newly added modifier
+      const undoneDoc = cmd.undo(nextDoc);
+      const undoneSeq = undoneDoc.tracks[0].sequences.find((s) => s.id === 'seq-1');
+      const shouldBeGone = undoneSeq?.modifiers?.find((m) => m.type === 'vfx/color_grading');
+      expect(shouldBeGone).toBeUndefined();
     });
   });
 });
