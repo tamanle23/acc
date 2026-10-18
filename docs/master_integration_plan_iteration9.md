@@ -144,7 +144,7 @@ Update test files importing `UniversalCanvasEngine` to test `IRPreviewEngine` an
 - Implement `packages/ir/src/plugins/overlay/HologramHUDPlugin.ts` and `packages/ir/src/plugins/vfx/PartialVFXPlugin.ts`.
 - Register new plugins in server and client registries.
 
-### Phase 2: Decoupled 2-Layer Viewport in Studio Preview `[ ] Planned`
+### Phase 2: Decoupled 2-Layer Viewport in Studio Preview `[x] Completed`
 - Refactor `apps/studio/src/components/Preview.tsx` to stacked DOM canvas architecture:
   - Base canvas: `IRPreviewEngine.renderFrame()`.
   - Overlay canvas: `CanvasTransformOverlay.render()`.

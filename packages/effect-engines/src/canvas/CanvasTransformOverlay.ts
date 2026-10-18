@@ -171,6 +171,47 @@ export class CanvasTransformOverlay {
     this.activeGuides = [...activeGuides];
   }
 
+  /**
+   * Dedicated 2D vector snapping guide renderer (no 3D gizmos or scale handles).
+   */
+  public renderGuides(
+    ctx: CanvasRenderingContext2D,
+    canvasWidth: number,
+    canvasHeight: number,
+    guides: SnappingGuide[] = this.activeGuides
+  ): void {
+    if (!guides || guides.length === 0) return;
+
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+
+    for (const guide of guides) {
+      if (guide.type === 'centerX' || guide.type === 'centerY') {
+        ctx.strokeStyle = '#00ffff'; // Neon cyan for center crosshairs
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 8;
+      } else {
+        ctx.strokeStyle = '#ec4899'; // Neon pink for safe margins
+        ctx.shadowColor = '#ec4899';
+        ctx.shadowBlur = 6;
+      }
+
+      ctx.beginPath();
+      if (guide.orientation === 'vertical') {
+        const gx = guide.position * canvasWidth;
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, canvasHeight);
+      } else {
+        const gy = guide.position * canvasHeight;
+        ctx.moveTo(0, gy);
+        ctx.lineTo(canvasWidth, gy);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   public render(
     ctx: CanvasRenderingContext2D,
     canvasWidth: number,
@@ -184,34 +225,7 @@ export class CanvasTransformOverlay {
 
     // 1. Render Active Magnetic Snapping Guides
     if (guides && guides.length > 0) {
-      ctx.save();
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 4]);
-
-      for (const guide of guides) {
-        if (guide.type === 'centerX' || guide.type === 'centerY') {
-          ctx.strokeStyle = '#00ffff'; // Neon cyan for center crosshairs
-          ctx.shadowColor = '#00ffff';
-          ctx.shadowBlur = 8;
-        } else {
-          ctx.strokeStyle = '#ec4899'; // Neon pink for safe margins
-          ctx.shadowColor = '#ec4899';
-          ctx.shadowBlur = 6;
-        }
-
-        ctx.beginPath();
-        if (guide.orientation === 'vertical') {
-          const gx = guide.position * canvasWidth;
-          ctx.moveTo(gx, 0);
-          ctx.lineTo(gx, canvasHeight);
-        } else {
-          const gy = guide.position * canvasHeight;
-          ctx.moveTo(0, gy);
-          ctx.lineTo(canvasWidth, gy);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
+      this.renderGuides(ctx, canvasWidth, canvasHeight, guides);
     }
 
     // 2. Setup Coordinate Transform for Box

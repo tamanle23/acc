@@ -83,23 +83,17 @@ describe('Iteration 8 Phase 1: Declarative Particle & HUD Subsystem', () => {
     it('should NOT contain hardcoded initHologramHUD or initParticleSystem in engine mount effect', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
-      // The mounting useEffect (with width, height dependencies) must not call initHologramHUD or initParticleSystem
-      const mountEffectMatch = code.match(/const engine = new UniversalCanvasEngine\([\s\S]*?setGlReady\(true\);/);
-      expect(mountEffectMatch).not.toBeNull();
-      const mountSnippet = mountEffectMatch![0];
-
-      expect(mountSnippet).not.toContain('engine.initHologramHUD');
-      expect(mountSnippet).not.toContain('engine.initParticleSystem');
+      // The mounting useEffect initializes IRPreviewEngine and does not hardcode ad-hoc effects
+      expect(code).toContain('previewEngineRef.current = engine');
+      expect(code).not.toContain('engine.initHologramHUD');
+      expect(code).not.toContain('engine.initParticleSystem');
     });
 
-    it('should dynamically bind particles and HUD to active sequence modifiers in render effect', () => {
+    it('should dynamically bind particles and HUD to active sequence modifiers via IRPreviewEngine', () => {
       const code = getCombinedCode();
-      expect(code).toContain('activeParticleMod');
-      expect(code).toContain('activeHudMod');
-      expect(code).toContain('engine.initParticleSystem');
-      expect(code).toContain('engine.clearParticles()');
-      expect(code).toContain('engine.initHologramHUD');
-      expect(code).toContain('engine.clearHologramHUD()');
+      // IRPreviewEngine dynamically dispatches all active modifiers (particles, HUD, VFX) via ModifierPluginRegistry
+      expect(code).toContain('engine.renderFrame(currentFrame');
+      expect(code).toContain('showVfxAmbiance');
     });
 
     it('should provide a VFX Ambiance toggle button in Viewport Control Bar', () => {

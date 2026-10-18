@@ -8,8 +8,13 @@ import {
   type InterpolatedTransformState,
 } from './DeterministicMotionEvaluator';
 
+export interface IPreviewTextureProvider {
+  get(assetId: string): any | undefined;
+  has(assetId: string): boolean;
+}
+
 export interface PreviewRenderOptions {
-  textureCache?: AssetTextureCache;
+  textureCache?: IPreviewTextureProvider | AssetTextureCache;
   popOutIntensity?: number;
   lodScale?: number;
 }

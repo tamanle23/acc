@@ -33,25 +33,25 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
   describe('Preview.tsx Multi-Track Compositor Source Verification', () => {
     const previewFile = path.resolve(process.cwd(), 'apps/studio/src/components/Preview.tsx');
 
-    it('should query visual assets via AssetTextureCache in render loop and delegate to engine.renderLayers', () => {
+    it('should query visual assets via AssetTextureCache in render loop and delegate to IRPreviewEngine.renderFrame', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
-      expect(code).toContain('textureCache.getVisualAsset(');
-      expect(code).toContain('engine.renderLayers(ctx, layersToDraw)');
+      expect(code).toContain('studioTextureCache.getVisualAsset(');
+      expect(code).toContain('engine.renderFrame(currentFrame');
     });
 
-    it('should sort visual sequences according to video track order V1 -> V4', () => {
+    it('should initialize IRPreviewEngine with active timeline and populate engine texture cache', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
-      expect(code).toContain('trackOrderMap.set(t.id, idx)');
-      expect(code).toContain('orderA - orderB');
+      expect(code).toContain('new IRPreviewEngine(irState.timeline)');
+      expect(code).toContain('engineTextures.set(seq.assetId, visualAsset.source)');
     });
 
-    it('should configure layer aspect ratio fitMode and blendMode for UniversalCanvasEngine', () => {
+    it('should implement decoupled 2-layer viewport canvas architecture', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
 
-      expect(code).toContain("fitMode: trackIdx === 0 ? 'cover' : 'contain'");
-      expect(code).toContain('blendMode: configuredBlend');
+      expect(code).toContain('id="studio-canvas"');
+      expect(code).toContain('id="studio-overlay-canvas"');
     });
   });
 });

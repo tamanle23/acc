@@ -48,13 +48,15 @@ import { ViewportSafeGuides } from './preview/ViewportSafeGuides';
 import { ContextualActionPill } from './preview/ContextualActionPill';
 import { SubtitlesOverlay } from './preview/SubtitlesOverlay';
 import {
-  UniversalCanvasEngine,
+  IRPreviewEngine,
+} from '@acc/ir/client';
+import {
   CanvasTransformOverlay,
   MagneticSnapEngine,
+  UniversalCanvasProvider,
   type BoundingBox2D,
   type SnappingGuide,
   type TransformHandleType,
-  type PartialVFXRegion,
 } from '@acc/effect-engines/client';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 
@@ -155,8 +157,10 @@ export function Preview({
 }: PreviewProps) {
   const { preferences } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const engineRef = useRef<UniversalCanvasEngine | null>(null);
+  const previewEngineRef = useRef<IRPreviewEngine | null>(null);
+  const overlayRef = useRef<CanvasTransformOverlay>(new CanvasTransformOverlay());
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
@@ -230,51 +234,51 @@ export function Preview({
     }
   }, [selectedSeqId, irState]);
 
-  // Initialize UniversalCanvasEngine on HTML5 2D Canvas
+  // Initialize IRPreviewEngine on active timeline
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!irState.timeline) return;
 
-    canvas.width = width;
-    canvas.height = height;
+    const baseCanvas = canvasRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
+    if (baseCanvas) {
+      baseCanvas.width = width;
+      baseCanvas.height = height;
+    }
+    if (overlayCanvas) {
+      overlayCanvas.width = width;
+      overlayCanvas.height = height;
+    }
 
-    const engine = new UniversalCanvasEngine({
-      width,
-      height,
-    });
-    engineRef.current = engine;
-
+    const engine = new IRPreviewEngine(irState.timeline);
+    previewEngineRef.current = engine;
     setGlReady(true);
 
     return () => {
-      engine.dispose();
-      engineRef.current = null;
+      previewEngineRef.current = null;
     };
-  }, [width, height]);
+  }, [irState.timeline, width, height]);
 
-  // Event-Driven Render Execution on 2D Canvas
+  // Event-Driven Render Execution on 2-Layer Decoupled Viewport Canvas
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const engine = engineRef.current;
-    if (!canvas || !engine) return;
+    const baseCanvas = canvasRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
+    const engine = previewEngineRef.current;
+    if (!baseCanvas || !engine) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const baseCtx = baseCanvas.getContext('2d');
+    if (!baseCtx) return;
 
-    // 1. Clear & Background pass
-    ctx.clearRect(0, 0, width, height);
+    // 1. Base Canvas Render Pass (100% Pure Video IR via IRPreviewEngine)
     if (!showCheckerboard) {
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, width, height);
+      baseCtx.fillStyle = '#000000';
+      baseCtx.fillRect(0, 0, width, height);
+    } else {
+      baseCtx.clearRect(0, 0, width, height);
     }
 
-    // 2. Query active sequences
+    // Determine popOutIntensity from depth modifiers if present
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
     let popOutIntensity = 1.0;
-    const vfxRegions: PartialVFXRegion[] = [];
-    let activeParticleMod: any = null;
-    let activeHudMod: any = null;
-
     for (const seq of activeSeqs) {
       if (seq.modifiers) {
         for (const mod of seq.modifiers) {
@@ -282,150 +286,52 @@ export function Preview({
             const p = mod.params as any;
             if (typeof p.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
           }
-          if (mod.type === 'vfx/partial') {
-            const p = (mod.params || {}) as any;
-            const trans = seq.modifiers?.find((m) => m.type === 'transform');
-            const tp = (trans?.params || {}) as any;
-            vfxRegions.push({
-              id: seq.id,
-              type: p.vfxType || 'spotlight',
-              x: tp.normX ?? 0.5,
-              y: tp.normY ?? 0.5,
-              width: p.widthNorm ?? 0.35,
-              height: p.heightNorm ?? 0.25,
-              radius: p.radius ?? 160,
-              color: p.color ?? '#00d4ff',
-              intensity: p.intensity ?? 1.5,
-            });
-          }
-          if (mod.type === 'vfx/particles' || mod.type === 'overlay/canvas_particles') {
-            activeParticleMod = mod;
-          }
-          if (mod.type === 'overlay/hologram_hud' || (mod.type === 'overlay/canvas_particles' && mod.params?.type === 'sci_fi_hud')) {
-            activeHudMod = mod;
-          }
         }
       }
     }
 
-    // Declarative Particle Swarm Configuration
-    if (showVfxAmbiance && activeParticleMod && activeParticleMod.params?.enabled !== false) {
-      const pCount = Math.max(50, Math.min(3000, activeParticleMod.params?.particleCount ?? 200));
-      if (!engine.hasParticles() || engine.getParticleCount() !== pCount) {
-        engine.initParticleSystem(pCount);
-      }
-    } else {
-      if (engine.hasParticles()) {
-        engine.clearParticles();
-      }
-    }
-
-    // Declarative Hologram HUD Configuration (Dual Schema Support)
-    if (showVfxAmbiance && activeHudMod && activeHudMod.params?.enabled !== false) {
-      const hp = activeHudMod.params || {};
-      const radius = hp.ringRadiusNorm ?? 0.35;
-      const density = hp.scanlineDensity ?? (hp.intensity ? Math.round(40 * hp.intensity) : 40);
-      const hudColor = hp.color || '#00ffff';
-      const rotSpeed = hp.rotationSpeed ?? (hp.speed ? hp.speed * 0.5 : 0.5);
-      engine.initHologramHUD(radius, density, hudColor, rotSpeed);
-    } else {
-      if (engine.hasHologramHUD()) {
-        engine.clearHologramHUD();
-      }
-    }
-
-    engine.setPartialVFXRegions(vfxRegions);
-    engine.syncTimeline(activeSeqs as any, fps);
-
-    const timeSec = currentFrame / fps;
-    engine.update(timeSec, popOutIntensity);
-
-    // 3. Render Visual Media Sequences via UniversalCanvasEngine Math Compositor
-    const textureCache = AssetTextureCache.getInstance();
-    const tracks = irState.doc?.tracks || [];
-    const videoTracks = tracks.filter((t) => t.type === 'video');
-
-    const trackOrderMap = new Map<string, number>();
-    videoTracks.forEach((t, idx) => {
-      trackOrderMap.set(t.id, idx);
-    });
-
-    const visualSeqs = activeSeqs.filter((s) => {
-      if (s.trackId && trackOrderMap.has(s.trackId)) return true;
-      return Boolean(s.assetId);
-    }).sort((a, b) => {
-      const orderA = a.trackId ? (trackOrderMap.get(a.trackId) ?? 99) : 99;
-      const orderB = b.trackId ? (trackOrderMap.get(b.trackId) ?? 99) : 99;
-      return orderA - orderB;
-    });
-
+    // Populate studio textures into engine's texture cache
+    const studioTextureCache = AssetTextureCache.getInstance();
     const assetsMap = irState.doc?.assets || {};
-    const layersToDraw: any[] = [];
+    const engineTextures = engine.getTextureCache();
 
-    for (const seq of visualSeqs) {
-      const assetDef = seq.assetId ? assetsMap[seq.assetId] : undefined;
-      const assetSrc = assetDef?.src;
-      const assetType = assetDef?.type || 'media';
+    for (const seq of activeSeqs) {
+      if (seq.assetId) {
+        const assetDef = assetsMap[seq.assetId];
+        const assetSrc = assetDef?.src;
+        const assetType = assetDef?.type || 'media';
+        const seqStart = seq.startFrame ?? 0;
+        const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
 
-      const seqStart = seq.startFrame ?? 0;
-      const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
+        const visualAsset = studioTextureCache.getVisualAsset(
+          seq.assetId,
+          assetSrc,
+          assetType === 'audio' ? 'media' : (assetType as any),
+          seqLocalTimeSec
+        );
 
-      const visualAsset = textureCache.getVisualAsset(
-        seq.assetId || seq.id,
-        assetSrc,
-        assetType === 'audio' ? 'media' : (assetType as any),
-        seqLocalTimeSec
-      );
-
-      if (visualAsset.source) {
-        const parentTrack = seq.trackId ? videoTracks.find((t) => t.id === seq.trackId) : null;
-        const trackIdx = seq.trackId ? (trackOrderMap.get(seq.trackId) ?? 0) : 0;
-        const customBlendMod = seq.modifiers?.find((m) => m.type === 'vfx/blend_mode' || (m.params as any)?.blendMode);
-        const configuredBlend = ((customBlendMod?.params as any)?.blendMode || parentTrack?.blendMode) as GlobalCompositeOperation | undefined;
-
-        layersToDraw.push({
-          id: seq.id,
-          source: visualAsset.source,
-          sourceWidth: visualAsset.width,
-          sourceHeight: visualAsset.height,
-          trackId: seq.trackId,
-          trackIndex: trackIdx,
-          fitMode: trackIdx === 0 ? 'cover' : 'contain',
-          blendMode: configuredBlend,
-          transform: selectedSeqId === seq.id ? transform : undefined,
-        });
+        if (visualAsset.source) {
+          engineTextures.set(seq.assetId, visualAsset.source);
+        }
       }
     }
 
-    // Mathematical multi-track layer composition executed inside packages/effect-engines
-    engine.renderLayers(ctx, layersToDraw);
+    // Render pure Video IR frame deterministically
+    engine.renderFrame(currentFrame, baseCtx, {
+      textureCache: engineTextures,
+      popOutIntensity,
+    });
 
-    // 4. Synchronize in-canvas transform overlay
-    if (selectedSeqId) {
-      const activeInterp = !isDragging ? engine.getActiveInterpolatedTransform(selectedSeqId) : null;
-      const curX = activeInterp ? activeInterp.x : transform.x;
-      const curY = activeInterp ? activeInterp.y : transform.y;
-      const curScale = activeInterp ? activeInterp.scale : transform.scale;
-      const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
-
-      const baseW = 0.5;
-      const baseH = 0.5;
-      const normBox: BoundingBox2D = {
-        x: 0.5 + curX / width,
-        y: 0.5 + curY / height,
-        width: baseW * curScale,
-        height: baseH * curScale,
-        rotation: curRot,
-      };
-      engine.setOverlayVisible(true);
-      engine.updateOverlay(normBox, activeGuides);
-    } else {
-      engine.setOverlayVisible(false);
-      engine.updateOverlay(null, []);
+    // 2. Overlay Canvas Render Pass (Dedicated 2D Vector Snapping Guides - Zero UI artifacts in video)
+    if (overlayCanvas) {
+      const overlayCtx = overlayCanvas.getContext('2d');
+      if (overlayCtx) {
+        overlayCtx.clearRect(0, 0, width, height);
+        if (selectedSeqId && activeGuides.length > 0) {
+          overlayRef.current.renderGuides(overlayCtx, width, height, activeGuides);
+        }
+      }
     }
-
-    // 5. Render 2D Scenegraph, Particles, HUD & Vector Overlay
-    engine.render(ctx, timeSec, popOutIntensity);
   }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging]);
 
   // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
@@ -448,7 +354,7 @@ export function Preview({
     setStartTransform({ ...transform });
 
     const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
-    engineRef.current?.setActiveInteraction(handleType, mode);
+    overlayRef.current.setActiveInteraction(handleType, mode);
   };
 
   const handleTransformDragMove = (e: DragMoveEvent) => {
@@ -503,7 +409,7 @@ export function Preview({
     };
 
     setTransform(newTransform);
-    engineRef.current?.updateOverlay(newNormBox, dragRes.snapResult?.activeGuides || []);
+    overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
   };
 
   const handleTransformDragEnd = (e: DragEndEvent) => {
@@ -513,7 +419,7 @@ export function Preview({
     setIsDragging(false);
     setActiveHandle(null);
     setActiveGuides([]);
-    engineRef.current?.setActiveInteraction(null, null);
+    overlayRef.current.setActiveInteraction(null, null);
   };
 
 
@@ -655,9 +561,6 @@ export function Preview({
     .filter((s) => s.cues && s.cues.length > 0)
     .flatMap((s) => s.cues || []);
 
-  const activePartialVFX = activeSequences.filter((s) =>
-    s.modifiers?.some((m) => m.type === 'vfx/partial')
-  );
   const activeShapes = activeSequences.filter((s) =>
     s.modifiers?.some((m) => m.type === 'shape/vector')
   );
@@ -740,6 +643,7 @@ export function Preview({
           }
         }}
       >
+        {/* Layer 1: Base Video IR Canvas (100% Pure Video IR) */}
         <canvas
           id="studio-canvas"
           ref={canvasRef}
@@ -749,6 +653,16 @@ export function Preview({
           style={{
             aspectRatio: '16/9',
             backgroundColor: '#000000',
+          }}
+        />
+
+        {/* Layer 2: Dedicated Transparent Overlay Canvas (2D Snapping Guides & Alignment Only) */}
+        <canvas
+          id="studio-overlay-canvas"
+          ref={overlayCanvasRef}
+          className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
+          style={{
+            aspectRatio: '16/9',
           }}
         />
 
@@ -772,101 +686,6 @@ export function Preview({
             </span>
           </div>
         )}
-
-        {/* Active Partial VFX Overlays */}
-        {activePartialVFX.map((seq) => {
-          const mod = seq.modifiers?.find((m) => m.type === 'vfx/partial');
-          const trans = seq.modifiers?.find((m) => m.type === 'transform');
-          const p = (mod?.params || {}) as any;
-          const tp = (trans?.params || {}) as any;
-          const normX = tp.normX ?? 0.5;
-          const normY = tp.normY ?? 0.5;
-
-          if (p.vfxType === 'blur') {
-            return (
-              <div
-                key={seq.id}
-                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
-                style={{
-                  left: `${normX * 100}%`,
-                  top: `${normY * 100}%`,
-                  width: `${(p.widthNorm ?? 0.35) * 100}%`,
-                  height: `${(p.heightNorm ?? 0.25) * 100}%`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute border border-dashed border-cyan-400/80 bg-slate-900/60 backdrop-blur-md rounded-xs flex items-center justify-center pointer-events-auto cursor-pointer z-10 shadow-lg"
-              >
-                <span className="text-[9px] font-mono font-bold text-cyan-300 tracking-wider uppercase px-1.5 py-0.5 bg-black/60 rounded">
-                  {p.label || 'REGIONAL BLUR'}
-                </span>
-              </div>
-            );
-          }
-
-          if (p.vfxType === 'spotlight') {
-            return (
-              <div
-                key={seq.id}
-                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
-                style={{
-                  left: `${normX * 100}%`,
-                  top: `${normY * 100}%`,
-                  width: `${((p.radius ?? 160) * 2 / 1080) * 100}%`,
-                  aspectRatio: '1',
-                  transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute rounded-full pointer-events-auto cursor-pointer z-10 flex items-center justify-center"
-              >
-                <div
-                  className="w-full h-full rounded-full animate-pulse border border-cyan-400/40"
-                  style={{
-                    background: `radial-gradient(circle, ${p.color || '#00d4ff'}55 0%, transparent 70%)`,
-                  }}
-                />
-              </div>
-            );
-          }
-
-          if (p.vfxType === 'glitch') {
-            return (
-              <div
-                key={seq.id}
-                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
-                style={{
-                  left: `${normX * 100}%`,
-                  top: `${normY * 100}%`,
-                  width: '30%',
-                  height: '20%',
-                  transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute border border-rose-500/80 bg-rose-950/30 flex items-center justify-center pointer-events-auto cursor-pointer z-10 overflow-hidden shadow-lg"
-              >
-                <span className="text-[9px] font-mono font-bold text-rose-300 tracking-wider uppercase px-1.5 py-0.5 bg-black/60 rounded">
-                  {p.label || 'REGIONAL GLITCH'}
-                </span>
-              </div>
-            );
-          }
-
-          if (p.vfxType === 'point_emitter') {
-            return (
-              <div
-                key={seq.id}
-                onClick={() => IRStateManager.getInstance().setSelectedSequenceId(seq.id)}
-                style={{
-                  left: `${normX * 100}%`,
-                  top: `${normY * 100}%`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute w-8 h-8 rounded-full border-2 border-pink-500 bg-pink-500/20 flex items-center justify-center pointer-events-auto cursor-pointer z-10 animate-ping"
-              >
-                <div className="w-2 h-2 rounded-full bg-pink-400" />
-              </div>
-            );
-          }
-
-          return null;
-        })}
 
         {/* Active Vector Shapes Overlays */}
         {activeShapes.map((seq) => {
@@ -937,29 +756,6 @@ export function Preview({
           return null;
         })}
 
-        {/* Magnetic Snapping Guidelines Overlay */}
-        {activeGuides.map((guide) => (
-          <div
-            key={guide.id}
-            style={
-              guide.orientation === 'vertical'
-                ? { left: `${guide.position * 100}%`, top: 0, bottom: 0 }
-                : { top: `${guide.position * 100}%`, left: 0, right: 0 }
-            }
-            className={`absolute z-20 pointer-events-none ${guide.orientation === 'vertical'
-              ? 'w-px border-l border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
-              : 'h-px border-t border-dashed border-cyan-400 shadow-[0_0_8px_#06b6d4]'
-              }`}
-          >
-            <span
-              className={`absolute text-[9px] font-mono bg-cyan-950/90 text-cyan-300 border border-cyan-500/50 px-1.5 py-0.2 rounded shadow-xs ${guide.orientation === 'vertical' ? 'top-2 -translate-x-1/2' : 'left-2 -translate-y-1/2'
-                }`}
-            >
-              {guide.label}
-            </span>
-          </div>
-        ))}
-
         {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
         {selectedSeqId && (
           <DndContext
@@ -981,15 +777,16 @@ export function Preview({
                 }
               }}
               style={(() => {
-                const interp =
-                  !isDragging && selectedSeqId && engineRef.current
-                    ? engineRef.current.getActiveInterpolatedTransform(selectedSeqId)
+                const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
+                const activeInterp =
+                  !isDragging && selectedSeq && previewEngineRef.current
+                    ? previewEngineRef.current.getActiveInterpolatedTransform(selectedSeq, currentFrame)
                     : null;
-                const curX = interp ? interp.x : transform.x;
-                const curY = interp ? interp.y : transform.y;
-                const curScale = interp ? interp.scale : transform.scale;
-                const curRot = interp ? interp.rotation : transform.rotation;
-                const curOpacity = interp ? interp.opacity : 1.0;
+                const curX = activeInterp ? activeInterp.x : transform.x;
+                const curY = activeInterp ? activeInterp.y : transform.y;
+                const curScale = activeInterp ? activeInterp.scale : transform.scale;
+                const curRot = activeInterp ? activeInterp.rotation : transform.rotation;
+                const curOpacity = activeInterp ? activeInterp.opacity : 1.0;
 
                 return {
                   transform: `translate(${curX}px, ${curY}px) scale(${curScale}) rotate(${curRot}deg)`,
