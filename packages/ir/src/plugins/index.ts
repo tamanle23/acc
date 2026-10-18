@@ -15,6 +15,8 @@ import { VolumeModifierPlugin } from './audio/VolumeModifierPlugin';
 import { PanModifierPlugin } from './audio/PanModifierPlugin';
 import { FilterModifierPlugin } from './audio/FilterModifierPlugin';
 import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
+import { ShapeModifierPlugin } from './shape/ShapeModifierPlugin';
+import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
 
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
@@ -24,6 +26,8 @@ export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
 export * from './transform/TransformModifierPlugin';
 export * from './text/CaptionModifierPlugin';
+export * from './shape/ShapeModifierPlugin';
+export * from './sfx/ProceduralSFXModifierPlugin';
 export * from './sfx/DynamicDuckingPlugin';
 export * from './editorial/SplitEditPlugin';
 export * from './editorial/TransitionCrossfadePlugin';
@@ -48,6 +52,9 @@ export function registerCoreModifierPlugins(
   registry.register(new PartialVFXPlugin());
   registry.register(new TransformModifierPlugin());
   registry.register(new CaptionModifierPlugin());
+  registry.register(new ShapeModifierPlugin('shape/draw'));
+  registry.register(new ShapeModifierPlugin('shape/vector'));
+  registry.register(new ProceduralSFXModifierPlugin());
   registry.register(new DynamicDuckingPlugin());
   registry.register(new SplitEditPlugin());
   const xfadePlugin = new TransitionCrossfadePlugin();
@@ -71,9 +78,7 @@ export function registerCoreModifierPlugins(
   registry.register(new VolumeModifierPlugin());
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());
-  const pitchPlugin = new PitchModifierPlugin();
-  registry.register(pitchPlugin);
-  registry.register({ ...pitchPlugin, type: 'sfx/procedural' });
+  registry.register(new PitchModifierPlugin());
   return registry;
 }
 

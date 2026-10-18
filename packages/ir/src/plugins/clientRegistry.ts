@@ -9,6 +9,9 @@ import { PartialVFXPlugin } from './vfx/PartialVFXPlugin';
 import { TransformModifierPlugin } from './transform/TransformModifierPlugin';
 import { CaptionModifierPlugin } from './text/CaptionModifierPlugin';
 
+import { ShapeModifierPlugin } from './shape/ShapeModifierPlugin';
+import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
+
 /**
  * Creates an isomorphic stub/browser-safe plugin definition for visual, overlay,
  * editorial, text, and transform modifiers so the client runtime has access
@@ -32,7 +35,7 @@ function createClientPluginStub(
 /**
  * Registers all core standard modifier plugins in a client/browser-safe environment.
  * Pure audio DSP plugins run directly in the browser via WebAudio/Float32.
- * Transform, caption, hologram HUD, and partial VFX plugins run their real implementations.
+ * Transform, caption, hologram HUD, partial VFX, shape, and procedural SFX plugins run their real implementations.
  * Node-dependent plugins (Depth3D, Camera3D) are registered as client-safe strategy stubs until migrated.
  */
 export function registerClientModifierPlugins(
@@ -44,12 +47,14 @@ export function registerClientModifierPlugins(
   registry.register(new FilterModifierPlugin());
   const pitchPlugin = new PitchModifierPlugin();
   registry.register(pitchPlugin);
-  registry.register({ ...pitchPlugin, type: 'sfx/procedural' });
+  registry.register(new ProceduralSFXModifierPlugin());
   registry.register(new DynamicDuckingPlugin());
 
-  // 2. Real isomorphic visual, transform, and overlay plugins
+  // 2. Real isomorphic visual, transform, shape, and overlay plugins
   registry.register(new TransformModifierPlugin());
   registry.register(new CaptionModifierPlugin());
+  registry.register(new ShapeModifierPlugin('shape/draw'));
+  registry.register(new ShapeModifierPlugin('shape/vector'));
   const hudPlugin = new HologramHUDPlugin();
   registry.register(hudPlugin);
   registry.register({

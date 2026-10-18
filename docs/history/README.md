@@ -278,6 +278,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`265`](265_ir_iteration10_phase2_canonical_canvas_compositor.md) | 2026-10-18 | Iteration 10 Phase 2: Create Canonical IRCanvasCompositor with Multi-Track Priority | Implemented canonical stateless IRCanvasCompositor, pure document-order track priority, scoped affine matrices, top-level captions, and hybrid culling |
 | [`266`](266_ir_iteration10_phase3_unify_renderer_engines.md) | 2026-10-18 | Iteration 10 Phase 3: Unify IRMasterRenderer & IRPreviewEngine via IRCanvasCompositor | Delegated canvas frame rasterization in IRMasterRenderer and IRPreviewEngine to IRCanvasCompositor, unified black clear color, and eliminated divergent rendering loops |
 | [`267`](267_ir_iteration10_phase4_parity_test_suite.md) | 2026-10-18 | Iteration 10 Phase 4: Automated Web & Server Bit-Identical Parity Test Suite | Automated parity suite verifying 100% cryptographic SHA-256 byte parity, zero pixel delta, and temporal variance between IRMasterRenderer and IRPreviewEngine |
+| [`268`](268_studio_iteration11_phase1_leftsidebar_retained_plugins.md) | 2026-10-18 | Studio Iteration 11 Phase 1: LeftSidebar Staging Library & Retained Modifier Plugins | Implemented ShapeModifierPlugin, ProceduralSFXModifierPlugin, 104-SFX sound bank across 6 banks, footage presets, and instant inline Web Audio audition |
 
 
 

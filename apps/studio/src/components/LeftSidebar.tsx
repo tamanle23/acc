@@ -18,9 +18,12 @@ import {
   Video,
   Music,
   Volume2,
-  UploadCloud,
   Image as ImageIcon,
   FileBox,
+  Film,
+  Radio,
+  Play,
+  VolumeX,
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { Input } from './ui/input';
@@ -30,6 +33,7 @@ import { Card } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
 import { IRStateManager } from '../lib/ir/irState';
+import { ProceduralAudioSynthesizer } from '@acc/ir/client';
 
 export interface LeftSidebarProps {
   isOpen: boolean;
@@ -59,6 +63,14 @@ export function renderPresetIcon(iconName: string) {
       return <Volume2 className="w-3.5 h-3.5 text-rose-400" />;
     case 'Music':
       return <Music className="w-3.5 h-3.5 text-emerald-400" />;
+    case 'Video':
+      return <Video className="w-3.5 h-3.5 text-blue-500" />;
+    case 'Film':
+      return <Film className="w-3.5 h-3.5 text-indigo-400" />;
+    case 'Radio':
+      return <Radio className="w-3.5 h-3.5 text-amber-500" />;
+    case 'Play':
+      return <Play className="w-3.5 h-3.5 text-cyan-500" />;
     case 'Sparkles':
     default:
       return <Sparkles className="w-3.5 h-3.5 text-pink-400" />;
@@ -103,15 +115,84 @@ export function DraggablePresetCard({
         </Badge>
       </div>
 
+      {preset.thumbnailUrl && (
+        <div className="relative w-full h-24 mb-2 rounded-lg overflow-hidden border border-border/40 pointer-events-none group-hover:border-cyan-400/50 transition-colors">
+          <img
+            src={preset.thumbnailUrl}
+            alt={preset.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end justify-between p-1.5">
+            <span className="text-[9px] font-mono font-semibold text-white/90 bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-xs">
+              {preset.durationSec ? `${preset.durationSec.toFixed(1)}s` : 'HD Plate'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {preset.category === 'audio' && (
+        <div className="flex items-center justify-between p-2 mb-2 rounded-lg bg-emerald-950/20 border border-emerald-500/20">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-mono text-emerald-400 font-semibold">
+              {preset.bpm ? `${preset.bpm} BPM` : 'BGM Master'}
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground">
+            {preset.durationSec ? `${preset.durationSec.toFixed(0)}s` : 'Score'}
+          </span>
+        </div>
+      )}
+
       <p className="text-[11px] text-muted-foreground leading-tight mb-2.5 pointer-events-none line-clamp-2">
         {preset.description}
       </p>
 
       <div className="flex items-center justify-between pt-1 border-t border-[var(--glass-border)] text-[10px]">
-        <span className="text-muted-foreground font-mono flex items-center gap-1 pointer-events-none">
-          <GripVertical className="w-3 h-3 text-muted-foreground/60" />
-          Drag to stage
-        </span>
+        {(preset.category === 'sfx' || preset.category === 'audio') ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              try {
+                const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                let buf: Float32Array;
+                if (preset.id.includes('impact')) {
+                  buf = ProceduralAudioSynthesizer.synthImpact(0, 1.2);
+                } else if (preset.id.includes('glitch')) {
+                  buf = ProceduralAudioSynthesizer.synthGlitch(0, 0.6);
+                } else if (preset.id.includes('riser')) {
+                  buf = ProceduralAudioSynthesizer.synthRiser(0, 1.8);
+                } else if (preset.id.includes('bgm') || preset.id.includes('synth') || preset.category === 'audio') {
+                  buf = ProceduralAudioSynthesizer.synthBGM(0, 3.0);
+                } else {
+                  buf = ProceduralAudioSynthesizer.synthWhoosh(0, 0.6);
+                }
+                const audioBuf = ctx.createBuffer(1, buf.length, 44100);
+                audioBuf.copyToChannel(buf, 0);
+                const source = ctx.createBufferSource();
+                source.buffer = audioBuf;
+                source.connect(ctx.destination);
+                source.start();
+              } catch (err) {
+                console.warn('Audition error:', err);
+              }
+            }}
+            className="h-5 px-2 text-[10px] font-medium text-emerald-400 hover:bg-emerald-500/20 rounded-full gap-1 cursor-pointer transition-all active:scale-95"
+          >
+            <Play className="w-2.5 h-2.5 fill-current" />
+            Audition
+          </Button>
+        ) : (
+          <span className="text-muted-foreground font-mono flex items-center gap-1 pointer-events-none">
+            <GripVertical className="w-3 h-3 text-muted-foreground/60" />
+            Drag to stage
+          </span>
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -403,7 +484,7 @@ export function LeftSidebar({
                 </div>
                 {/* Category Filter Pills */}
                 <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-                  {(['all', 'text', 'shape', 'vfx', 'sfx'] as const).map((cat) => (
+                  {(['all', 'text', 'shape', 'vfx', 'sfx', 'video', 'audio'] as const).map((cat) => (
                     <Button
                       key={cat}
                       variant={selectedCategory === cat ? 'default' : 'outline'}
@@ -420,10 +501,14 @@ export function LeftSidebar({
                         : cat === 'vfx'
                         ? 'VFX'
                         : cat === 'sfx'
-                        ? 'SFX'
+                        ? 'SFX (100+)'
                         : cat === 'text'
                         ? 'Typography'
-                        : 'Shapes'}
+                        : cat === 'shape'
+                        ? 'Shapes'
+                        : cat === 'video'
+                        ? 'Video Plates'
+                        : 'Audio Scores'}
                     </Button>
                   ))}
                 </div>

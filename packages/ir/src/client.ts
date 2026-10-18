@@ -32,6 +32,8 @@ export * from './plugins/overlay/HologramHUDPlugin';
 export * from './plugins/vfx/PartialVFXPlugin';
 export * from './plugins/transform/TransformModifierPlugin';
 export * from './plugins/text/CaptionModifierPlugin';
+export * from './plugins/shape/ShapeModifierPlugin';
+export * from './plugins/sfx/ProceduralSFXModifierPlugin';
 export { ModifierPluginRegistry, type ModifierPlugin, type ModifierContext } from './plugins/ModifierPluginRegistry';
 export * from './plugins/clientRegistry';
 
