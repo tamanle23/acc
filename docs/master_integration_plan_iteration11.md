@@ -135,7 +135,7 @@ flowchart TD
 
 ---
 
-### 2. RightSidebar Dynamic Multi-Tier Inspector
+### 2. RightSidebar Dynamic Multi-Tier Inspector `[x] Completed (docs/history/272_studio_multi_tier_inspector_and_state_commands.md)`
 - **Files:**
   - `apps/studio/src/lib/ir/irState.ts` (extended state: `inspectorMode: 'sequence' | 'track' | 'project'`, `selectedTrackId: string | null`, `setInspectorMode()`, `setSelectedTrackId()`)
   - `apps/studio/src/lib/commands/UpdateTrackCommand.ts` (NEW: undoable track property updates for name, blendMode, volume, opacity, mute with 500ms `tryMerge`)

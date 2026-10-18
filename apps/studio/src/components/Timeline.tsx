@@ -767,7 +767,7 @@ export function Timeline({
                         IRStateManager.getInstance().setSelectedTrackId(track.id);
                         IRStateManager.getInstance().setInspectorMode('track');
                       }}
-                      className="w-44 h-full bg-[var(--glass-bg)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors rounded-md border border-[var(--glass-border)] flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
+                      className="w-44 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
                       title={`Inspect Track ${track.id}`}
                     >
                       <div className="flex items-center gap-1.5 truncate">
