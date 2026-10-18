@@ -23,9 +23,12 @@ public class HazelcastConfiguration {
     config.setClusterName("unipost-cluster");
     config.setInstanceName("unipost-embedded-hazelcast");
 
-    // Use loopback/multicast or local TCP discovery for dev/embedded clustering
+    // Use loopback/local discovery for dev/embedded clustering to avoid Windows setsockopt multicast issues
     config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
     config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(false);
+    config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false);
+    config.getNetworkConfig().getInterfaces().setEnabled(true).addInterface("127.0.0.1");
+    config.setProperty("hazelcast.socket.bind.any", "false");
 
     // Configure metadata schemas distributed map
     MapConfig metadataSchemasConfig = new MapConfig(METADATA_SCHEMAS_MAP);
