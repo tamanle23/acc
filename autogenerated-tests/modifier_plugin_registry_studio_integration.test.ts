@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'bun:test';
 import {
   ModifierPluginRegistry,
-  registerClientModifierPlugins,
   type ModifierPlugin,
 } from '../packages/ir/src/client';
+import { registerCoreModifierPlugins } from '../packages/ir/src';
 import {
   getAvailableModifiersFromRegistry,
   MODIFIER_PRESENTATION_CATALOG,
@@ -29,7 +29,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
 
   it('should populate isolated registry with client-safe core plugins', () => {
     const isolated = ModifierPluginRegistry.createIsolated();
-    registerClientModifierPlugins(isolated);
+    registerCoreModifierPlugins(isolated);
 
     const types = isolated.listTypes();
     expect(types).toContain('transform');
@@ -53,7 +53,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
 
   it('should dynamically produce available modifier definitions from registry with catalog enrichment', () => {
     const isolated = ModifierPluginRegistry.createIsolated();
-    registerClientModifierPlugins(isolated);
+    registerCoreModifierPlugins(isolated);
 
     const available = getAvailableModifiersFromRegistry(isolated);
     expect(available.length).toBeGreaterThanOrEqual(15);
@@ -72,7 +72,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
 
   it('should gracefully handle unknown/custom plugins registered at runtime with dynamic fallback', () => {
     const isolated = ModifierPluginRegistry.createIsolated();
-    registerClientModifierPlugins(isolated);
+    registerCoreModifierPlugins(isolated);
 
     isolated.register({
       type: 'custom/neon_bloom_vfx',
@@ -92,7 +92,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
 
   it('should filter modifiers accurately by track type for RightSidebar dropdown', () => {
     const isolated = ModifierPluginRegistry.createIsolated();
-    registerClientModifierPlugins(isolated);
+    registerCoreModifierPlugins(isolated);
 
     const all = getAvailableModifiersFromRegistry(isolated);
 

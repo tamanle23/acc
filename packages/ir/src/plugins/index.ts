@@ -9,6 +9,8 @@ import { CanvasParticleOverlayPlugin } from './overlay/CanvasParticleOverlayPlug
 import { HologramHUDPlugin } from './overlay/HologramHUDPlugin';
 import { PartialVFXPlugin } from './vfx/PartialVFXPlugin';
 import { ColorGradingPlugin } from './vfx/ColorGradingPlugin';
+import { TransformModifierPlugin } from './transform/TransformModifierPlugin';
+import { CaptionModifierPlugin } from './text/CaptionModifierPlugin';
 import { VolumeModifierPlugin } from './audio/VolumeModifierPlugin';
 import { PanModifierPlugin } from './audio/PanModifierPlugin';
 import { FilterModifierPlugin } from './audio/FilterModifierPlugin';
@@ -20,6 +22,8 @@ export * from './vfx/Depth3DPlugin';
 export * from './vfx/Camera3DPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
+export * from './transform/TransformModifierPlugin';
+export * from './text/CaptionModifierPlugin';
 export * from './sfx/DynamicDuckingPlugin';
 export * from './editorial/SplitEditPlugin';
 export * from './editorial/TransitionCrossfadePlugin';
@@ -34,15 +38,21 @@ export * from './audio/PitchModifierPlugin';
 /**
  * Initializes and registers standard core modifier plugins
  */
-export function registerCoreModifierPlugins(): ModifierPluginRegistry {
-  const registry = ModifierPluginRegistry.getInstance();
+export function registerCoreModifierPlugins(
+  targetRegistry?: ModifierPluginRegistry
+): ModifierPluginRegistry {
+  const registry = targetRegistry ?? ModifierPluginRegistry.getInstance();
   registry.register(new Depth3DPlugin());
   registry.register(new Camera3DPlugin());
   registry.register(new ColorGradingPlugin());
   registry.register(new PartialVFXPlugin());
+  registry.register(new TransformModifierPlugin());
+  registry.register(new CaptionModifierPlugin());
   registry.register(new DynamicDuckingPlugin());
   registry.register(new SplitEditPlugin());
-  registry.register(new TransitionCrossfadePlugin());
+  const xfadePlugin = new TransitionCrossfadePlugin();
+  registry.register(xfadePlugin);
+  registry.register({ ...xfadePlugin, type: 'editorial/transition_crossfade' });
   registry.register(new BlendModePlugin());
   registry.register(new CanvasParticleOverlayPlugin());
   const hudPlugin = new HologramHUDPlugin();
@@ -52,10 +62,18 @@ export function registerCoreModifierPlugins(): ModifierPluginRegistry {
     ...hudPlugin,
     type: 'overlay/sci_fi_hud',
   });
+  // Backward compatibility alias for camera/3d -> vfx/camera_3d
+  const camPlugin = new Camera3DPlugin();
+  registry.register({ ...camPlugin, type: 'camera/3d' });
+  // Backward compatibility alias for vfx/depth_relighting -> vfx/depth3d
+  const depthPlugin = new Depth3DPlugin();
+  registry.register({ ...depthPlugin, type: 'vfx/depth_relighting' });
   registry.register(new VolumeModifierPlugin());
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());
-  registry.register(new PitchModifierPlugin());
+  const pitchPlugin = new PitchModifierPlugin();
+  registry.register(pitchPlugin);
+  registry.register({ ...pitchPlugin, type: 'sfx/procedural' });
   return registry;
 }
 
@@ -65,25 +83,5 @@ export function registerCoreModifierPlugins(): ModifierPluginRegistry {
  */
 export function createIsolatedCoreModifierPlugins(): ModifierPluginRegistry {
   const registry = ModifierPluginRegistry.createIsolated();
-  registry.register(new Depth3DPlugin());
-  registry.register(new Camera3DPlugin());
-  registry.register(new ColorGradingPlugin());
-  registry.register(new PartialVFXPlugin());
-  registry.register(new DynamicDuckingPlugin());
-  registry.register(new SplitEditPlugin());
-  registry.register(new TransitionCrossfadePlugin());
-  registry.register(new BlendModePlugin());
-  registry.register(new CanvasParticleOverlayPlugin());
-  const hudPlugin = new HologramHUDPlugin();
-  registry.register(hudPlugin);
-  // Alias overlay/sci_fi_hud to HologramHUDPlugin for full backward compatibility
-  registry.register({
-    ...hudPlugin,
-    type: 'overlay/sci_fi_hud',
-  });
-  registry.register(new VolumeModifierPlugin());
-  registry.register(new PanModifierPlugin());
-  registry.register(new FilterModifierPlugin());
-  registry.register(new PitchModifierPlugin());
-  return registry;
+  return registerCoreModifierPlugins(registry);
 }

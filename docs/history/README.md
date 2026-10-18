@@ -274,6 +274,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`260`](260_studio_decoupled_2layer_viewport_canvas.md) | 2026-10-18 | Iteration 9 Phase 2: Decoupled 2-Layer Viewport Canvas Architecture in Studio Preview | Refactored Preview.tsx to stacked DOM canvas architecture (base canvas via IRPreviewEngine.renderFrame + overlay canvas via CanvasTransformOverlay.renderGuides), eliminated manual particle/HUD loops and duplicate JSX divs |
 | [`261`](261_studio_client_side_mp4_export.md) | 2026-10-18 | Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export | Connected client-side MP4 export to IRPreviewEngine.renderFrame and MediabunnyClientSink, lazy frame asset streaming, and automatic browser MP4 download trigger |
 | [`262`](262_decommission_universal_canvas_engine.md) | 2026-10-18 | Iteration 9 Phase 4: Decommission UniversalCanvasEngine & Migrate Test Suites | Completely removed UniversalCanvasEngine.ts, cleaned exports, and migrated 7 test suites to IRPreviewEngine, CanvasParticleOverlayPlugin, HologramHUDPlugin, and PartialVFXPlugin |
+| [`264`](264_ir_iteration10_phase1_transform_caption_plugins.md) | 2026-10-18 | Iteration 10 Phase 1: Formalize Transform & Caption Modifier Plugins | Formalized TransformModifierPlugin and CaptionModifierPlugin, added Node fs guards and isomorphic migration tags, and unified plugin exports |
 
 
 

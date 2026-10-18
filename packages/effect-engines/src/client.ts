@@ -12,4 +12,8 @@ export * from './canvas/types';
 export * from './audio/ProceduralAudioSynthesizer';
 export * from './audio/UniversalAudioMixer';
 export * from './vision/CameraSplineInterpolator';
+export * from './subtitles/SafeZoneManager';
+export * from './subtitles/BoundedAcousticCaptionStrategy';
+export * from './subtitles/captions-canvas';
 export * from './types';
+

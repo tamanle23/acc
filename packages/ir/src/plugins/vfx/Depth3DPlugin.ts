@@ -90,7 +90,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     // Pre-resolve AI subject cutout and Depth Anything layers during preflight
-    if (params.imagePath && fs.existsSync(params.imagePath)) {
+    // TODO(isomorphic-migration): Replace direct Node fs calls with UniversalCanvasProvider/CanvasAssetLoader for browser runtime
+    const fileExists = typeof fs?.existsSync === 'function' && fs.existsSync(params.imagePath);
+    if (params.imagePath && fileExists) {
       try {
         const cutout = await resolveSubjectCutout(params.imagePath, params as any);
         this.cutoutCache.set(params.imagePath, cutout);

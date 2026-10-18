@@ -6,6 +6,8 @@ import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
 import { DynamicDuckingPlugin } from './sfx/DynamicDuckingPlugin';
 import { HologramHUDPlugin } from './overlay/HologramHUDPlugin';
 import { PartialVFXPlugin } from './vfx/PartialVFXPlugin';
+import { TransformModifierPlugin } from './transform/TransformModifierPlugin';
+import { CaptionModifierPlugin } from './text/CaptionModifierPlugin';
 
 /**
  * Creates an isomorphic stub/browser-safe plugin definition for visual, overlay,
@@ -30,7 +32,8 @@ function createClientPluginStub(
 /**
  * Registers all core standard modifier plugins in a client/browser-safe environment.
  * Pure audio DSP plugins run directly in the browser via WebAudio/Float32.
- * Visual and overlay plugins are registered as client-safe strategy stubs.
+ * Transform, caption, hologram HUD, and partial VFX plugins run their real implementations.
+ * Node-dependent plugins (Depth3D, Camera3D) are registered as client-safe strategy stubs until migrated.
  */
 export function registerClientModifierPlugins(
   registry: ModifierPluginRegistry = ModifierPluginRegistry.getInstance()
@@ -39,10 +42,14 @@ export function registerClientModifierPlugins(
   registry.register(new VolumeModifierPlugin());
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());
-  registry.register(new PitchModifierPlugin());
+  const pitchPlugin = new PitchModifierPlugin();
+  registry.register(pitchPlugin);
+  registry.register({ ...pitchPlugin, type: 'sfx/procedural' });
   registry.register(new DynamicDuckingPlugin());
 
-  // 2. Client-safe visual and overlay plugins
+  // 2. Real isomorphic visual, transform, and overlay plugins
+  registry.register(new TransformModifierPlugin());
+  registry.register(new CaptionModifierPlugin());
   const hudPlugin = new HologramHUDPlugin();
   registry.register(hudPlugin);
   registry.register({
@@ -50,16 +57,17 @@ export function registerClientModifierPlugins(
     type: 'overlay/sci_fi_hud',
   });
   registry.register(new PartialVFXPlugin());
-  registry.register(createClientPluginStub('transform', 'sequence', ['video', 'timed-text', 'image', 'overlay']));
+
+  // 3. Client-safe visual stubs for Node/FFI-dependent plugins (Depth3D, Camera3D, etc.)
   registry.register(createClientPluginStub('overlay/canvas_particles', 'both', ['video', 'overlay']));
   registry.register(createClientPluginStub('vfx/depth_relighting', 'sequence', ['video', 'image']));
   registry.register(createClientPluginStub('vfx/depth3d', 'sequence', ['video', 'image']));
   registry.register(createClientPluginStub('camera/3d', 'both', ['video', 'image', 'overlay']));
+  registry.register(createClientPluginStub('vfx/camera_3d', 'both', ['video', 'image', 'overlay']));
   registry.register(createClientPluginStub('vfx/color_grading', 'both', ['video', 'image', 'overlay']));
-  registry.register(createClientPluginStub('text/style', 'sequence', 'timed-text'));
-  registry.register(createClientPluginStub('sfx/procedural', 'sequence', 'audio'));
   registry.register(createClientPluginStub('editorial/split_edit', 'sequence', ['video', 'audio']));
   registry.register(createClientPluginStub('editorial/transition_crossfade', 'sequence', ['video', 'audio', 'image']));
+  registry.register(createClientPluginStub('transition/crossfade', 'sequence', ['video', 'audio', 'image']));
   registry.register(createClientPluginStub('overlay/blend_mode', 'both', ['video', 'overlay', 'image']));
 
   return registry;

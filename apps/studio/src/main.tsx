@@ -7,6 +7,8 @@ import './index.css';
 // Initialize isomorphic client modifier registry
 registerClientModifierPlugins();
 
+
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

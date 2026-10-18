@@ -28,5 +28,9 @@ export * from './renderer/preview/DeterministicMotionEvaluator';
 export * from './plugins/sfx/DynamicDuckingPlugin';
 export * from './plugins/overlay/HologramHUDPlugin';
 export * from './plugins/vfx/PartialVFXPlugin';
+export * from './plugins/transform/TransformModifierPlugin';
+export * from './plugins/text/CaptionModifierPlugin';
 export { ModifierPluginRegistry, type ModifierPlugin, type ModifierContext } from './plugins/ModifierPluginRegistry';
 export * from './plugins/clientRegistry';
+
+
