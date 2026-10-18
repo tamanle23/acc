@@ -19,7 +19,14 @@ export * from './renderer/audio/AudioSourceAdapter';
 export * from './renderer/audio/DynamicAudioDuckingEngine';
 export * from './renderer/audio/UniversalAudioMixer';
 
-// Pure Buffer-Based Audio Plugins
+// Platform-Independent Preview & Motion Rendering Core
+export * from './renderer/preview/IRPreviewEngine';
+export * from './renderer/preview/AssetTextureCache';
+export * from './renderer/preview/DeterministicMotionEvaluator';
+
+// Pure Buffer-Based & Client Strategy Plugins
 export * from './plugins/sfx/DynamicDuckingPlugin';
+export * from './plugins/overlay/HologramHUDPlugin';
+export * from './plugins/vfx/PartialVFXPlugin';
 export { ModifierPluginRegistry, type ModifierPlugin, type ModifierContext } from './plugins/ModifierPluginRegistry';
 export * from './plugins/clientRegistry';

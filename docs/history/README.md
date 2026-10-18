@@ -270,6 +270,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`256`](256_modifier_registry_studio_integration.md) | 2026-10-18 | Dynamic Modifier Discovery in Studio RightSidebar via ModifierPluginRegistry | Integrated ModifierPluginRegistry with RightSidebar.tsx, implemented registerClientModifierPlugins in client.ts, added dynamic discovery with UI catalog enrichment, and custom plugin fallback |
 | [`257`](257_universal_canvas_and_unified_audio_mixer.md) | 2026-10-18 | Isomorphic Canvas Provider & Unified Universal Audio Mixer Master Bus | Decoupled @napi-rs/canvas to UniversalCanvasProvider in plugins/renderer, unified DecoupledAudioMixer into UniversalAudioMixer, and isolated browser client bundles |
 | [`258`](258_studio_phase5_ui_ux_theme_tokens.md) | 2026-10-18 | Studio Phase 5: UI/UX Consistency, Liquid Glass Theme Tokens & Regression Hardening | Standardized button.tsx, Timeline.tsx track headers & controls, and Titlebar.tsx with semantic tokens; eliminated hardcoded indigo/slate classes, added studio_theme_tokens test suite |
+| [`259`](259_ir_preview_engine_elevation_phase1.md) | 2026-10-18 | Iteration 9 Phase 1: Elevate IRPreviewEngine & Formalize HologramHUD and PartialVFX Plugins | Elevated IRPreviewEngine to full deterministic multi-track interactive renderer, implemented HologramHUDPlugin, PartialVFXPlugin, AssetTextureCache, DeterministicMotionEvaluator, and updated client registries |
 
 
 

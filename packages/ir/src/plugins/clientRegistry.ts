@@ -4,6 +4,8 @@ import { PanModifierPlugin } from './audio/PanModifierPlugin';
 import { FilterModifierPlugin } from './audio/FilterModifierPlugin';
 import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
 import { DynamicDuckingPlugin } from './sfx/DynamicDuckingPlugin';
+import { HologramHUDPlugin } from './overlay/HologramHUDPlugin';
+import { PartialVFXPlugin } from './vfx/PartialVFXPlugin';
 
 /**
  * Creates an isomorphic stub/browser-safe plugin definition for visual, overlay,
@@ -40,10 +42,16 @@ export function registerClientModifierPlugins(
   registry.register(new PitchModifierPlugin());
   registry.register(new DynamicDuckingPlugin());
 
-  // 2. Client-safe standard visual, overlay, editorial & transform plugin definitions
+  // 2. Client-safe visual and overlay plugins
+  const hudPlugin = new HologramHUDPlugin();
+  registry.register(hudPlugin);
+  registry.register({
+    ...hudPlugin,
+    type: 'overlay/sci_fi_hud',
+  });
+  registry.register(new PartialVFXPlugin());
   registry.register(createClientPluginStub('transform', 'sequence', ['video', 'timed-text', 'image', 'overlay']));
   registry.register(createClientPluginStub('overlay/canvas_particles', 'both', ['video', 'overlay']));
-  registry.register(createClientPluginStub('overlay/hologram_hud', 'both', ['video', 'overlay']));
   registry.register(createClientPluginStub('vfx/depth_relighting', 'sequence', ['video', 'image']));
   registry.register(createClientPluginStub('vfx/depth3d', 'sequence', ['video', 'image']));
   registry.register(createClientPluginStub('camera/3d', 'both', ['video', 'image', 'overlay']));

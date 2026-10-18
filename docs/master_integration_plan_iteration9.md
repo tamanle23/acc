@@ -138,7 +138,7 @@ Update test files importing `UniversalCanvasEngine` to test `IRPreviewEngine` an
 
 ## Phased Implementation Roadmap
 
-### Phase 1: Elevate IRPreviewEngine & Formalize Missing Modifier Plugins `[ ] Planned`
+### Phase 1: Elevate IRPreviewEngine & Formalize Missing Modifier Plugins `[x] Completed`
 - Implement `renderFrame(frame, ctx, options)` in `packages/ir/src/renderer/preview/IRPreviewEngine.ts`.
 - Multi-track visual layer composition with track sorting, aspect-ratio fit modes, and blend modes.
 - Implement `packages/ir/src/plugins/overlay/HologramHUDPlugin.ts` and `packages/ir/src/plugins/vfx/PartialVFXPlugin.ts`.
