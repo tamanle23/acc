@@ -24,6 +24,7 @@ import {
   Radio,
   Play,
   VolumeX,
+  UploadCloud,
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
 import { Input } from './ui/input';
@@ -36,11 +37,22 @@ import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
 import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir/client';
 
+export type LeftNavTab =
+  | 'library'
+  | 'vault'
+  | 'typography'
+  | 'shapes'
+  | 'vfx'
+  | 'sfx'
+  | 'video'
+  | 'audio'
+  | 'all';
+
 export interface LeftSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
-  activeNav: 'library' | 'vault';
-  setActiveNav: (nav: 'library' | 'vault') => void;
+  activeNav: LeftNavTab;
+  setActiveNav: (nav: LeftNavTab) => void;
   onInsertPreset?: (preset: StagingPreset) => void;
 }
 
@@ -369,10 +381,30 @@ export function LeftSidebar({
     }
   };
 
+  const effectiveCategory: 'all' | PresetCategory =
+    activeNav === 'typography'
+      ? 'text'
+      : activeNav === 'shapes'
+      ? 'shape'
+      : activeNav === 'vfx'
+      ? 'vfx'
+      : activeNav === 'sfx'
+      ? 'sfx'
+      : activeNav === 'video'
+      ? 'video'
+      : activeNav === 'audio'
+      ? 'audio'
+      : activeNav === 'all'
+      ? 'all'
+      : selectedCategory;
+
   const filteredPresets = STAGING_PRESETS.filter((p) => {
-    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const matchesCat =
+      effectiveCategory === 'all' ||
+      p.category === effectiveCategory ||
+      (effectiveCategory === 'vfx' && p.category === 'overlay');
     const matchesBank =
-      selectedCategory !== 'sfx' ||
+      effectiveCategory !== 'sfx' ||
       selectedSfxBank === 'all' ||
       p.id.toLowerCase().includes(`preset_sfx_${selectedSfxBank}`) ||
       p.id.toLowerCase().includes(`sfx_${selectedSfxBank}`);
@@ -396,43 +428,251 @@ export function LeftSidebar({
     return matchesType && matchesQuery;
   });
 
+  const getDrawerHeader = () => {
+    switch (activeNav) {
+      case 'vault':
+        return {
+          title: 'Assets Vault',
+          icon: <Folder className="w-4 h-4 text-cyan-400" />,
+          count: `${filteredAssets.length} assets`,
+        };
+      case 'typography':
+        return {
+          title: 'Typography Library',
+          icon: <Type className="w-4 h-4 text-indigo-400" />,
+          count: `${filteredPresets.length} styles`,
+        };
+      case 'shapes':
+        return {
+          title: 'Designer Shapes',
+          icon: <Square className="w-4 h-4 text-violet-400" />,
+          count: `${filteredPresets.length} shapes`,
+        };
+      case 'vfx':
+        return {
+          title: 'Cinematic VFX',
+          icon: <Sparkles className="w-4 h-4 text-pink-400" />,
+          count: `${filteredPresets.length} effects`,
+        };
+      case 'sfx':
+        return {
+          title: 'Sound FX Catalog',
+          icon: <Volume2 className="w-4 h-4 text-rose-400" />,
+          count: `${filteredPresets.length} sounds`,
+        };
+      case 'video':
+        return {
+          title: 'Video Footages',
+          icon: <Film className="w-4 h-4 text-blue-400" />,
+          count: `${filteredPresets.length} plates`,
+        };
+      case 'audio':
+        return {
+          title: 'Production Audio',
+          icon: <Music className="w-4 h-4 text-emerald-400" />,
+          count: `${filteredPresets.length} scores`,
+        };
+      case 'all':
+      case 'library':
+      default:
+        return {
+          title: 'Staging Library',
+          icon: <Library className="w-4 h-4 text-cyan-400" />,
+          count: `${filteredPresets.length} items`,
+        };
+    }
+  };
+
+  const headerInfo = getDrawerHeader();
+
   return (
     <div className="flex h-full select-none z-10 shrink-0">
       {/* 1. 48px Enterprise Activity Rail */}
       <aside className="w-12 glass-panel border-r border-border/50 flex flex-col items-center py-3 justify-between shadow-sm z-20">
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
+          {/* 1. Assets Vault */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => {
-              setActiveNav('library');
-              if (!isOpen) onToggle();
-            }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'library' && isOpen
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
-            }`}
-            title="Library Presets & Partial VFX ([)"
-          >
-            <Library className="w-4 h-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setActiveNav('vault');
-              if (!isOpen) onToggle();
+              if (activeNav === 'vault' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('vault');
+                if (!isOpen) onToggle();
+              }
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'vault' && isOpen
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs'
                 : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
             }`}
-            title="Assets Vault ([)"
+            title="Assets Vault (Upload & Media) ([)"
           >
             <Folder className="w-4 h-4" />
+          </Button>
+
+          <div className="w-5 h-[1px] bg-border/40 my-0.5" />
+
+          {/* 2. Typography Library */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'typography' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('typography');
+                setSelectedCategory('text');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'typography' && isOpen
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Typography Library (16+ Styles)"
+          >
+            <Type className="w-4 h-4" />
+          </Button>
+
+          {/* 3. Designer Shapes */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'shapes' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('shapes');
+                setSelectedCategory('shape');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'shapes' && isOpen
+                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Designer Shapes (16+ Vector Geometries)"
+          >
+            <Square className="w-4 h-4" />
+          </Button>
+
+          {/* 4. Cinematic VFX Overlays */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'vfx' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('vfx');
+                setSelectedCategory('vfx');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'vfx' && isOpen
+                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Cinematic VFX Overlays (16+ Atmospheric Layers)"
+          >
+            <Sparkles className="w-4 h-4" />
+          </Button>
+
+          {/* 5. Sound Effects Catalog */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'sfx' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('sfx');
+                setSelectedCategory('sfx');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'sfx' && isOpen
+                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Sound FX Catalog (104+ Curated SFX)"
+          >
+            <Volume2 className="w-4 h-4" />
+          </Button>
+
+          {/* 6. Production Video Footages */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'video' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('video');
+                setSelectedCategory('video');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'video' && isOpen
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Production Video Footages (Curated 4K/HD Plates)"
+          >
+            <Film className="w-4 h-4" />
+          </Button>
+
+          {/* 7. Production Audio Scores */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (activeNav === 'audio' && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('audio');
+                setSelectedCategory('audio');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              activeNav === 'audio' && isOpen
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="Production Audio Scores (BGM & Soundtracks)"
+          >
+            <Music className="w-4 h-4" />
+          </Button>
+
+          {/* 8. All Presets Overview */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if ((activeNav === 'all' || activeNav === 'library') && isOpen) {
+                onToggle();
+              } else {
+                setActiveNav('all');
+                setSelectedCategory('all');
+                if (!isOpen) onToggle();
+              }
+            }}
+            className={`w-9 h-9 rounded-lg transition-colors ${
+              (activeNav === 'all' || activeNav === 'library') && isOpen
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs'
+                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+            }`}
+            title="All Staging Presets Catalog"
+          >
+            <Library className="w-4 h-4" />
           </Button>
         </div>
 
@@ -454,73 +694,64 @@ export function LeftSidebar({
           {/* Drawer Header */}
           <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {activeNav === 'library' ? (
-                <>
-                  <Library className="w-4 h-4 text-cyan-400" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Staging Library
-                  </h2>
-                </>
-              ) : (
-                <>
-                  <Folder className="w-4 h-4 text-cyan-400" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                    Assets Vault
-                  </h2>
-                </>
-              )}
+              {headerInfo.icon}
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                {headerInfo.title}
+              </h2>
             </div>
             <Badge variant="outline" className="font-mono text-[10px] border-border/40">
-              {activeNav === 'library' ? `${filteredPresets.length} items` : `${filteredAssets.length} assets`}
+              {headerInfo.count}
             </Badge>
           </div>
 
-          {activeNav === 'library' ? (
+          {activeNav !== 'vault' ? (
             /* Library View */
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="p-3 border-b border-border/30 bg-transparent space-y-2">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                   <Input
-                    placeholder="Search presets & partial VFX..."
+                    placeholder={`Search ${headerInfo.title.toLowerCase()}...`}
                     value={libraryFilterQuery}
                     onChange={(e) => setLibraryFilterQuery(e.target.value)}
                     className="pl-8 h-8 text-xs bg-slate-50/50"
                   />
                 </div>
-                {/* Category Filter Pills */}
-                <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-                  {(['all', 'text', 'shape', 'vfx', 'sfx', 'video', 'audio'] as const).map((cat) => (
-                    <Button
-                      key={cat}
-                      variant={selectedCategory === cat ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`h-6 text-[10px] px-2 capitalize shrink-0 ${
-                        selectedCategory === cat
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {cat === 'all'
-                        ? 'All'
-                        : cat === 'vfx'
-                        ? 'VFX'
-                        : cat === 'sfx'
-                        ? 'SFX (100+)'
-                        : cat === 'text'
-                        ? 'Typography'
-                        : cat === 'shape'
-                        ? 'Shapes'
-                        : cat === 'video'
-                        ? 'Video Plates'
-                        : 'Audio Scores'}
-                    </Button>
-                  ))}
-                </div>
+                {/* Category Filter Pills (shown in All / Library overview) */}
+                {(activeNav === 'all' || activeNav === 'library') && (
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
+                    {(['all', 'text', 'shape', 'vfx', 'sfx', 'video', 'audio'] as const).map((cat) => (
+                      <Button
+                        key={cat}
+                        variant={selectedCategory === cat ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`h-6 text-[10px] px-2 capitalize shrink-0 ${
+                          selectedCategory === cat
+                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat === 'all'
+                          ? 'All'
+                          : cat === 'vfx'
+                          ? 'VFX'
+                          : cat === 'sfx'
+                          ? 'SFX (100+)'
+                          : cat === 'text'
+                          ? 'Typography'
+                          : cat === 'shape'
+                          ? 'Shapes'
+                          : cat === 'video'
+                          ? 'Video Plates'
+                          : 'Audio Scores'}
+                      </Button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Secondary SFX Bank Filter Pills */}
-                {selectedCategory === 'sfx' && (
+                {(effectiveCategory === 'sfx' || activeNav === 'sfx') && (
                   <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none pt-1.5 border-t border-border/20">
                     {SFX_SOUND_BANKS.map((b) => (
                       <Button

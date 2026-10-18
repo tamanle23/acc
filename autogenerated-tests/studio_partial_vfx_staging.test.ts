@@ -49,9 +49,9 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
       const shapePresets = STAGING_PRESETS.filter((p) => p.category === 'shape');
       const vfxPresets = STAGING_PRESETS.filter((p) => p.category === 'vfx');
 
-      expect(textPresets.length).toBe(4); // title, lower_third, badge, callout
-      expect(shapePresets.length).toBe(4); // rect, rounded_box, circle, arrow
-      expect(vfxPresets.length).toBe(4); // blur, spotlight, glitch, point_emitter
+      expect(textPresets.length).toBeGreaterThanOrEqual(4); // title, lower_third, badge, callout
+      expect(shapePresets.length).toBeGreaterThanOrEqual(4); // rect, rounded_box, circle, arrow
+      expect(vfxPresets.length).toBeGreaterThanOrEqual(4); // blur, spotlight, glitch, point_emitter
 
       // Verify text preset ids
       const textIds = textPresets.map((p) => p.id);
@@ -100,10 +100,10 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
           const textStyleMod = seq.modifiers?.find((m) => m.type === 'text/style');
           expect(textStyleMod).toBeDefined();
         } else if (preset.category === 'shape') {
-          const shapeMod = seq.modifiers?.find((m) => m.type === 'shape/vector');
+          const shapeMod = seq.modifiers?.find((m) => m.type === 'shape/vector' || m.type === 'shape/draw');
           expect(shapeMod).toBeDefined();
         } else if (preset.category === 'vfx') {
-          const vfxMod = seq.modifiers?.find((m) => m.type === 'vfx/partial');
+          const vfxMod = seq.modifiers?.find((m) => m.type === 'vfx/partial' || m.type.startsWith('overlay/'));
           expect(vfxMod).toBeDefined();
         }
       }

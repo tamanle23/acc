@@ -1,5 +1,10 @@
 import type { IRSequence, SequenceType } from '@acc/ir';
-import { SFX_LIBRARY_CATALOG, convertSFXToPreset } from './sfxBank';
+import { SFX_LIBRARY_CATALOG, convertSFXToPreset, SFX_PRESETS } from './sfxBank';
+import { TYPOGRAPHY_PRESETS } from './typographyBank';
+import { SHAPE_PRESETS } from './shapesBank';
+import { VFX_PRESETS } from './vfxBank';
+import { VIDEO_FOOTAGE_PRESETS } from './footageBank';
+import { AUDIO_FOOTAGE_PRESETS } from './audioFootageBank';
 
 export type PresetCategory = 'text' | 'shape' | 'vfx' | 'overlay' | 'sfx' | 'video' | 'audio';
 
@@ -770,228 +775,39 @@ export const STAGING_PRESETS: StagingPreset[] = [
   },
 
   // ==========================================
-  // 5. PROCEDURAL SFX PRESETS (104 Curated Sounds across 6 Banks)
+  // 5. EXPANDED TYPOGRAPHY BANK
   // ==========================================
-  ...SFX_LIBRARY_CATALOG.map(convertSFXToPreset),
+  ...TYPOGRAPHY_PRESETS,
 
   // ==========================================
-  // 6. VIDEO FOOTAGE PRESETS (Royalty-Free Plates)
+  // 6. EXPANDED DESIGNER SHAPES BANK
   // ==========================================
-  {
-    id: 'footage_cyber_city',
-    category: 'video',
-    name: 'Cyberpunk Metropolis',
-    badge: '4K Footage',
-    description: 'Neon-lit futuristic metropolis with atmospheric volumetric fog and traffic',
-    iconName: 'Video',
-    targetTrackId: 'track-v1',
-    targetTrackType: 'video',
-    targetTrackName: 'V1: Primary Plate',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=640&q=80',
-    durationSec: 10.0,
-    createSequence: ({ startFrame, durationFrames = 300, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-footage-cyber-${Date.now()}`,
-      type: 'image',
-      assetId: 'asset-cyber-city',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'image'],
-          params: {
-            normX,
-            normY,
-            x: 0,
-            y: 0,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-        {
-          type: 'vfx/color_grading',
-          target: ['video', 'image'],
-          params: {
-            contrast: 1.2,
-            saturation: 1.35,
-            exposure: 0.05,
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'footage_matrix_rain',
-    category: 'video',
-    name: 'Matrix Digital Stream',
-    badge: 'Video Stream',
-    description: 'Vertical falling green binary code matrix particle stream',
-    iconName: 'Film',
-    targetTrackId: 'track-v1',
-    targetTrackType: 'video',
-    targetTrackName: 'V1: Primary Plate',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=640&q=80',
-    durationSec: 8.0,
-    createSequence: ({ startFrame, durationFrames = 240, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-footage-matrix-${Date.now()}`,
-      type: 'image',
-      assetId: 'asset-matrix-core',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'image'],
-          params: {
-            normX,
-            normY,
-            x: 0,
-            y: 0,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'footage_deep_space',
-    category: 'video',
-    name: 'Cosmic Nebula Void',
-    badge: 'Space 4K',
-    description: 'Deep cosmic starry nebula with slow galactic volumetric drift',
-    iconName: 'Video',
-    targetTrackId: 'track-v1',
-    targetTrackType: 'video',
-    targetTrackName: 'V1: Primary Plate',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=640&q=80',
-    durationSec: 12.0,
-    createSequence: ({ startFrame, durationFrames = 360, normX = 0.5, normY = 0.5 }) => ({
-      id: `seq-footage-space-${Date.now()}`,
-      type: 'image',
-      assetId: 'asset-neon-warrior',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'transform',
-          target: ['video', 'image'],
-          params: {
-            normX,
-            normY,
-            x: 0,
-            y: 0,
-            scale: 1.0,
-            rotation: 0,
-          },
-        },
-      ],
-    }),
-  },
+  ...SHAPE_PRESETS,
 
   // ==========================================
-  // 7. AUDIO FOOTAGE PRESETS (Production Music)
+  // 7. EXPANDED ATMOSPHERIC & CINEMATIC VFX
   // ==========================================
-  {
-    id: 'audio_synthwave_bgm',
-    category: 'audio',
-    name: 'Synthwave 2099 BGM',
-    badge: 'Electronic',
-    description: 'Analog sawtooth bass arpeggio with driving retro electronic beat',
-    iconName: 'Music',
-    targetTrackId: 'track-audio',
-    targetTrackType: 'audio',
-    targetTrackName: 'Master Audio Track',
-    durationSec: 30.0,
-    bpm: 120,
-    createSequence: ({ startFrame, durationFrames = 900 }) => ({
-      id: `seq-bgm-synth-${Date.now()}`,
-      type: 'audio',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'audio/volume',
-          params: {
-            volume: 0.85,
-            gainDb: -1.5,
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'audio_cinematic_trailer',
-    category: 'audio',
-    name: 'Cinematic Tension Braam',
-    badge: 'Orchestral',
-    description: 'Low cello ostinato swelling into massive hybrid trailer braam drop',
-    iconName: 'Play',
-    targetTrackId: 'track-audio',
-    targetTrackType: 'audio',
-    targetTrackName: 'Master Audio Track',
-    durationSec: 25.0,
-    bpm: 90,
-    createSequence: ({ startFrame, durationFrames = 750 }) => ({
-      id: `seq-bgm-trailer-${Date.now()}`,
-      type: 'audio',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'audio/volume',
-          params: {
-            volume: 0.9,
-            gainDb: 0.0,
-          },
-        },
-      ],
-    }),
-  },
-  {
-    id: 'audio_lofi_chill',
-    category: 'audio',
-    name: 'Lo-Fi Tape Sunset',
-    badge: 'Lo-Fi Chill',
-    description: 'Dusty vinyl record crackle with warm rhodes electric piano chords',
-    iconName: 'Radio',
-    targetTrackId: 'track-audio',
-    targetTrackType: 'audio',
-    targetTrackName: 'Master Audio Track',
-    durationSec: 30.0,
-    bpm: 82,
-    createSequence: ({ startFrame, durationFrames = 900 }) => ({
-      id: `seq-bgm-lofi-${Date.now()}`,
-      type: 'audio',
-      time: {
-        start: startFrame,
-        duration: durationFrames,
-      },
-      modifiers: [
-        {
-          type: 'audio/volume',
-          params: {
-            volume: 0.75,
-            gainDb: -2.5,
-          },
-        },
-      ],
-    }),
-  },
+  ...VFX_PRESETS,
+
+  // ==========================================
+  // 8. PROCEDURAL SFX PRESETS (104 Curated Sounds across 6 Banks + Legacy Aliases)
+  // ==========================================
+  ...SFX_PRESETS,
+
+  // ==========================================
+  // 9. VIDEO FOOTAGE PRESETS (Curated Royalty-Free Plates)
+  // ==========================================
+  ...VIDEO_FOOTAGE_PRESETS,
+
+  // ==========================================
+  // 10. AUDIO FOOTAGE PRESETS (Curated Royalty-Free Scores)
+  // ==========================================
+  ...AUDIO_FOOTAGE_PRESETS,
 ];
 
 export const PRESET_LIBRARY = STAGING_PRESETS;
 
 export function getPresetsByCategory(category: PresetCategory): StagingPreset[] {
-  return STAGING_PRESETS.filter((p) => p.category === category);
+  return STAGING_PRESETS.filter((p) => p.category === category || (category === 'vfx' && p.category === 'overlay'));
 }
+

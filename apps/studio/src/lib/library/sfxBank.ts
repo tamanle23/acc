@@ -996,7 +996,7 @@ export function convertSFXToPreset(def: SoundEffectDefinition): StagingPreset {
     targetTrackType: 'audio',
     targetTrackName: 'Master Audio Track',
     durationSec: def.durationSec,
-    createSequence: ({ startFrame, durationFrames: customDuration }) => ({
+    createSequence: ({ startFrame, durationFrames: customDuration, normX = 0.5, normY = 0.5 }) => ({
       id: `seq-sfx-${def.id}-${Date.now()}`,
       type: 'audio',
       time: {
@@ -1009,9 +1009,49 @@ export function convertSFXToPreset(def: SoundEffectDefinition): StagingPreset {
           target: 'audio',
           params: { ...def.params },
         },
+        {
+          type: 'transform',
+          target: ['audio'],
+          params: {
+            normX,
+            normY,
+            x: 0,
+            y: 0,
+            scale: 1.0,
+            rotation: 0,
+          },
+        },
       ],
     }),
   };
 }
 
 export const convertSFXToStagingPreset = convertSFXToPreset;
+
+export const LEGACY_SFX_PRESETS: StagingPreset[] = [
+  {
+    ...convertSFXToPreset(SFX_LIBRARY_CATALOG.find((s) => s.id === 'sfx_whoosh_cinematic_fast')!),
+    id: 'sfx_whoosh',
+    name: 'Cinematic Whoosh',
+  },
+  {
+    ...convertSFXToPreset(SFX_LIBRARY_CATALOG.find((s) => s.id === 'sfx_impact_sub_bass_drop')!),
+    id: 'sfx_impact',
+    name: 'Sub-Bass Impact Drop',
+  },
+  {
+    ...convertSFXToPreset(SFX_LIBRARY_CATALOG.find((s) => s.id === 'sfx_cyber_system_malfunction')!),
+    id: 'sfx_glitch',
+    name: 'Digital Glitch Burst',
+  },
+  {
+    ...convertSFXToPreset(SFX_LIBRARY_CATALOG.find((s) => s.id === 'sfx_riser_tension_pitch')!),
+    id: 'sfx_riser',
+    name: 'Tension Pitch Riser',
+  },
+];
+
+export const SFX_PRESETS: StagingPreset[] = [
+  ...LEGACY_SFX_PRESETS,
+  ...SFX_LIBRARY_CATALOG.map(convertSFXToPreset),
+];

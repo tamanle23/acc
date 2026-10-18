@@ -280,6 +280,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`267`](267_ir_iteration10_phase4_parity_test_suite.md) | 2026-10-18 | Iteration 10 Phase 4: Automated Web & Server Bit-Identical Parity Test Suite | Automated parity suite verifying 100% cryptographic SHA-256 byte parity, zero pixel delta, and temporal variance between IRMasterRenderer and IRPreviewEngine |
 | [`268`](268_studio_iteration11_phase1_leftsidebar_retained_plugins.md) | 2026-10-18 | Studio Iteration 11 Phase 1: LeftSidebar Staging Library & Retained Modifier Plugins | Implemented ShapeModifierPlugin, ProceduralSFXModifierPlugin, 104-SFX sound bank across 6 banks, footage presets, and instant inline Web Audio audition |
 | [`269`](269_pure_modifier_driven_transforms_and_top_left_coordinates.md) | 2026-10-18 | Pure Modifier-Driven Transforms & Universal Top-Left Coordinates | Eliminated hardcoded evaluateSequenceMotion from IRCanvasCompositor, standardized top-left (0,0) canvas coordinates, and implemented stateless anchor-pivot transforms in TransformModifierPlugin based on target configuration |
+| [`270`](270_studio_vertical_navigation_rail_and_expanded_staging_banks.md) | 2026-10-18 | Studio Vertical Navigation Rail & Expanded Staging Preset Banks | Implemented 8-tab vertical activity rail in LeftSidebar, expanded libraries to 16+ typography styles, 16+ designer shapes, 16+ VFX overlays, 104+ SFX across 6 banks, 8 video plates, and 8 audio scores |
 
 
 

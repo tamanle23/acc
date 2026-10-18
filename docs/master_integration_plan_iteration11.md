@@ -28,6 +28,10 @@ Transform ACC Studio into an enterprise-grade NLE workstation with three core ar
    - Track reordering mechanism: native order shifting via up/down controls and drag reordering.
    - High-precision magnetic snap: visual snap guidelines when dragging sequences and trim handles.
    - Large timeline performance: virtualized track & clip rendering for dozens of tracks and hundreds of clips.
+4. **Complete Elimination of Client-Specifics & Isomorphic Unification of `@acc/ir`:**
+   - Eliminate `@acc/ir/client`, `packages/ir/src/client.ts`, `packages/ir/src/plugins/clientRegistry.ts`, and all 10 fake client plugin stubs.
+   - Decouple static Node `fs` from `Depth3DPlugin`, `Camera3DPlugin`, `UniversalAudioMixer`, and `AssetMetadataProber`.
+   - Make `@acc/ir` the single, canonical, 100% isomorphic package for both browser and server runtimes.
 
 ---
 
@@ -133,34 +137,50 @@ flowchart TD
 
 ### 2. RightSidebar Dynamic Multi-Tier Inspector
 - **Files:**
-  - `apps/studio/src/lib/ir/irState.ts` (add `selectedTrackId`, `selectTrack()`, `selectProject()`, track & sequence property update commands)
-  - `apps/studio/src/lib/commands/UpdateTrackCommand.ts` (new command for track order, blendMode, volume, modifiers)
-  - `apps/studio/src/lib/commands/UpdateSequencePropsCommand.ts` (new command for blendMode, activeStreams, cues)
-  - `apps/studio/src/components/RightSidebar.tsx` (breadcrumb header, Sequence Form, Track Form, Project Form)
+  - `apps/studio/src/lib/ir/irState.ts` (extended state: `inspectorMode: 'sequence' | 'track' | 'project'`, `selectedTrackId: string | null`, `setInspectorMode()`, `setSelectedTrackId()`)
+  - `apps/studio/src/lib/commands/UpdateTrackCommand.ts` (NEW: undoable track property updates for name, blendMode, volume, opacity, mute with 500ms `tryMerge`)
+  - `apps/studio/src/lib/commands/ReorderTrackCommand.ts` (NEW: undoable track order shifting up/down in `doc.tracks`)
+  - `apps/studio/src/lib/commands/UpdateSequencePropsCommand.ts` (NEW: undoable sequence updates for blendMode, activeStreams, cues, and relational timing)
+  - `apps/studio/src/lib/commands/UpdateProjectMetaCommand.ts` (NEW: undoable project meta updates for canvasSize, globalFps, colorSpace)
+  - `apps/studio/src/components/RightSidebar.tsx` (interactive breadcrumb header `[Project > Track > Sequence]`, Sequence Form, Track Form, Project Form)
+  - `apps/studio/src/components/Timeline.tsx` (track header click selection, empty area background click to select Project)
+  - `apps/studio/src/components/Preview.tsx` (empty canvas margin click to select Project)
 
-#### Inspection State Machine:
-- `inspectorMode: 'sequence' | 'track' | 'project'`
-- **Breadcrumb Pills:**
-  `[Project: Sci-Fi Cyberpunk] > [Track: V2 3D Depth] > [Sequence: seq-holo-subject]`
-- **Sequence Form:**
-  - Sequence Identification: ID, type, asset source selector.
-  - Timing: Absolute / Relational (`start`, `duration`, `after`, `syncWith`, `offsetFrames`, `overlapFrames`).
-  - Blending & Compositing: `blendMode` dropdown (`normal`, `screen`, `multiply`, `overlay`, `lighter`).
-  - Text Cues Manager: Table of cues with startOffsetMs, endOffsetMs, text editor, and word timestamps.
-  - Active Streams: Video & Audio stream mapping.
-  - Modifiers Stack: Dynamic modifier accordions.
-- **Track Form:**
-  - Track ID, Name, Track Type (`video`, `timed_text`, `audio`).
-  - Track Index & Ordering: Move Up / Move Down buttons.
-  - Track Styling: Default `blendMode`, opacity.
-  - Audio Volume & Mute: Slider for track master gain (0..2.0) and mute toggle.
-  - Track Modifiers: Stream-space and track-level filters.
-- **Project / Global Form:**
-  - Canvas Resolution: W & H inputs with 16:9 / 9:16 / 1:1 presets.
-  - Global FPS: 24, 30, 60 fps selector.
-  - Color Space: `srgb`, `display-p3`, `rec709`.
-  - Document Total Duration: Readout of calculated `totalFrames` and seconds.
-  - Document-level Master Modifiers: Color grading, particle overlays, bloom.
+#### Inspection State Machine & Navigation:
+- **Interactive Breadcrumb Pills:** Persistent header pills `[Project: {title}] > [Track: {name}] > [Sequence: {id}]`. Clicking any pill switches the active inspection tier immediately without losing the underlying selection context.
+- **Context-Sensitive Triggers:**
+  - Clicking a sequence in Timeline or Viewport: selects Sequence, tracks its parent Track, switches `inspectorMode = 'sequence'`.
+  - Clicking a track header in Timeline: selects Track, switches `inspectorMode = 'track'`.
+  - Clicking empty canvas margin outside frame or empty timeline area below tracks: switches `inspectorMode = 'project'`.
+
+#### Sequence Form Sections (Collapsible Accordions):
+1. **Header & Identification:** Sequence ID, Type badge, Asset source selector.
+2. **Timing & Sync:** Segmented toggle for Absolute (Start frame, Duration frames with seconds conversion) vs Relational DAG triggers (`after`, `syncWith`, `offsetFrames`, `matchLengthOf`).
+3. **Compositing & Blending:** `blendMode` dropdown (`normal`, `screen`, `multiply`, `overlay`, `add`, `color_dodge`, `soft_light`) and stream routing tags.
+4. **Text & Cues Editor:** (For `text` sequences or sequences with subtitle cues) Table of timed cue entries with `startOffsetMs`, `endOffsetMs`, and subtitle text editing.
+5. **Modifiers Stack:** Dynamic modifier cards with parameters and motion curve selectors.
+
+#### Track Form Sections:
+1. **Track Metadata:** Track ID, editable display Name, Type badge (`video`, `audio`, `timed_text`).
+2. **Track Ordering:** "Move Up" and "Move Down" buttons dispatching `ReorderTrackCommand` with instant live timeline track reordering.
+3. **Compositing & Layer Styling:** Track-level `blendMode` and track opacity slider (0..100%).
+4. **Audio Bus Controls:** (For audio tracks) Track master gain slider (0..200% / -inf..+6dB), mute toggle, and pan slider (-100%..+100%).
+5. **Track Modifiers Stack:** Track-level modifier chain.
+
+#### Project / Global Form Sections:
+1. **Aspect Ratio Presets & Resolution:** 1-click aspect ratio buttons:
+   - `16:9 Landscape` (1920x1080)
+   - `9:16 Vertical / Shorts / Reels` (1080x1920)
+   - `1:1 Square` (1080x1080)
+   - `21:9 Ultra-Wide` (2560x1080)
+   - Alongside custom Width & Height numerical inputs.
+2. **Project Performance & Frame Rate:** Global FPS selector (`24 fps Cinema`, `30 fps Standard`, `60 fps High-Frame-Rate`).
+3. **Color Space:** `sRGB`, `Display P3`, `Rec.709`.
+4. **Timeline Metrics:** Readout of calculated `totalFrames`, total seconds, track count, and clip count.
+5. **Document Master Modifiers:** Master modifier chain (global color grading, master bloom, particle ambiance).
+
+#### Undo/Redo Semantic Debouncing:
+- Continuous edits on the same target property within 500ms (such as dragging a slider or typing numerical dimensions) automatically merge via `tryMerge` into a single atomic undo/redo history point.
 
 ---
 
@@ -187,6 +207,27 @@ flowchart TD
 5. **Timeline Overflow & Performance:**
    - Sticky track headers on the left while lanes scroll horizontally.
    - Smooth horizontal zoom and vertical scroll isolation.
+
+---
+
+### 4. Complete Elimination of Client-Specifics & Isomorphic Unification of `@acc/ir`
+- **Paired Implementation Plan:** [`apps/studio/doc/implementation_plan_24.md`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/doc/implementation_plan_24.md)
+- **Files to Modify/Delete:**
+  - `packages/ir/src/plugins/clientRegistry.ts` (DELETE: eliminate 10 dummy plugin stubs and `createClientPluginStub`)
+  - `packages/ir/src/client.ts` (DEPRECATE/DELETE: eliminate artificial `@acc/ir/client` subpath in favor of canonical `@acc/ir`)
+  - `packages/ir/src/plugins/vfx/Depth3DPlugin.ts` (remove `import fs from 'fs'` and `fs.existsSync` check)
+  - `packages/ir/src/plugins/vfx/Camera3DPlugin.ts` (remove `import fs from 'fs'` and `fs.existsSync` check)
+  - `packages/ir/src/renderer/audio/UniversalAudioMixer.ts` (remove static `import fs from 'fs'` in `writeWavToDisk`)
+  - `packages/ir/src/prober/AssetMetadataProber.ts` (remove static `import fs from 'fs'` and isolate Node header sniffer)
+  - `packages/ir/src/server.ts` (NEW: isolate server-only batch FFI tools: `IRChunkWorkerPool`, `FFIChunkConcatMuxer`)
+  - `packages/ir/src/index.ts` (canonical 100% isomorphic single source of truth)
+  - `packages/ir/package.json` (update exports to alias `./client` to `./src/index.ts` and add `./server`)
+  - `apps/studio/` (migrate all imports from `@acc/ir/client` to `@acc/ir`, switch `registerClientModifierPlugins` to `registerCoreModifierPlugins`)
+
+#### Key Objectives:
+1. **Zero Dummy Stubs:** Every modifier plugin (`ColorGradingPlugin`, `BlendModePlugin`, `CanvasParticleOverlayPlugin`, `Depth3DPlugin`, `Camera3DPlugin`, `TransitionCrossfadePlugin`) runs its real implementation in both browser (Studio Preview) and server (Headless Exporter).
+2. **Single Canonical Package:** All client and server components import from `@acc/ir` directly.
+3. **Clean Isomorphic Bundles:** Zero Node `fs` or `path` externalization warnings during `bun run --cwd apps/studio build`.
 
 ---
 

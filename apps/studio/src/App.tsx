@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { Titlebar } from './components/Titlebar';
-import { LeftSidebar, DragOverlayPreview } from './components/LeftSidebar';
+import { LeftSidebar, DragOverlayPreview, type LeftNavTab } from './components/LeftSidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
@@ -46,7 +46,7 @@ function StudioWorkspace() {
   // Enterprise Dual-Sidebar Workspace Layout
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
-  const [activeNav, setActiveNav] = useState<'library' | 'vault'>('library');
+  const [activeNav, setActiveNav] = useState<LeftNavTab>('library');
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
 
   const [isExporting, setIsExporting] = useState(false);
