@@ -74,7 +74,7 @@ function TrimHandle({ seq, handle }: TrimHandleProps) {
       onClick={(e) => e.stopPropagation()}
       className={`w-2 h-full ${
         handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
-      } cursor-col-resize hover:bg-white/50 active:bg-indigo-300 flex items-center justify-center transition-colors z-30`}
+      } cursor-col-resize hover:bg-white/50 active:bg-[var(--accent-primary)]/60 flex items-center justify-center transition-colors z-30`}
       title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
     >
       <div className="w-0.5 h-3 bg-white/60 rounded-full" />
@@ -157,11 +157,11 @@ function TimelineClipItem({
         activeTool === 'razor'
           ? 'cursor-crosshair'
           : isBeingDragged && activeDragState?.type === 'clip'
-          ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-indigo-400 z-30'
+          ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
           : 'cursor-grab'
       } ${
         isSelected
-          ? 'ring-2 ring-indigo-500 shadow-md z-20'
+          ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20'
           : 'hover:brightness-95 z-10'
       } ${getTrackBadgeStyle(track)}`}
     >
@@ -218,10 +218,10 @@ function DroppableTrackLane({ track, isLocked, children }: DroppableTrackLanePro
       ref={setNodeRef}
       className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
         isLocked
-          ? 'opacity-60 pointer-events-none bg-slate-100/50'
+          ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'
           : isOver
-          ? 'bg-indigo-50/70 border-indigo-300 ring-1 ring-indigo-300'
-          : 'bg-slate-50/50 border-slate-200'
+          ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/40 ring-1 ring-[var(--accent-primary)]/30'
+          : 'bg-background/25 border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)]/40'
       }`}
     >
       {children}
@@ -575,7 +575,7 @@ export function Timeline({
   return (
     <footer className="h-72 glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
-      <div className="h-11 border-b border-border/40 px-6 flex items-center justify-between bg-background/50">
+      <div className="h-11 border-b border-[var(--glass-border)] px-6 flex items-center justify-between bg-[var(--glass-bg)]/40 backdrop-blur-md">
         <div className="flex items-center gap-1.5">
           {/* Tool Selector Bar */}
           <Tooltip content="Selection Tool (V)">
@@ -583,7 +583,7 @@ export function Timeline({
               variant={activeTool === 'select' ? 'secondary' : 'ghost'}
               size="icon"
               onClick={() => setActiveTool('select')}
-              className="h-7 w-7 text-slate-700"
+              className={`h-7 w-7 transition-colors ${activeTool === 'select' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <MousePointer className="w-3.5 h-3.5" />
             </Button>
@@ -596,7 +596,7 @@ export function Timeline({
               onClick={() => {
                 setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
               }}
-              className={`h-7 w-7 ${activeTool === 'razor' ? 'bg-indigo-600 text-white' : 'text-slate-700'}`}
+              className={`h-7 w-7 transition-colors ${activeTool === 'razor' ? 'bg-[var(--accent-primary)] text-slate-950 font-semibold shadow-[0_0_10px_var(--accent-glow)]' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Scissors className="w-3.5 h-3.5" />
             </Button>
@@ -607,7 +607,7 @@ export function Timeline({
               variant={activeTool === 'hand' ? 'secondary' : 'ghost'}
               size="icon"
               onClick={() => setActiveTool('hand')}
-              className="h-7 w-7 text-slate-700"
+              className={`h-7 w-7 transition-colors ${activeTool === 'hand' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <Hand className="w-3.5 h-3.5" />
             </Button>
@@ -621,7 +621,7 @@ export function Timeline({
               variant="ghost"
               size="icon"
               onClick={() => handleScrub(0)}
-              className="h-7 w-7 text-slate-600 hover:text-slate-900"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
             >
               <SkipBack className="w-3.5 h-3.5" />
             </Button>
@@ -632,7 +632,7 @@ export function Timeline({
               variant={isPlaying ? 'secondary' : 'default'}
               size="icon"
               onClick={togglePlay}
-              className="h-7 w-7"
+              className={`h-7 w-7 transition-transform active:scale-95 ${isPlaying ? 'bg-secondary text-secondary-foreground' : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'}`}
             >
               {isPlaying ? (
                 <Pause className="w-3.5 h-3.5 fill-current" />
@@ -647,7 +647,7 @@ export function Timeline({
               variant="ghost"
               size="icon"
               onClick={() => handleScrub(Math.min(totalFrames, currentFrame + fps))}
-              className="h-7 w-7 text-slate-600 hover:text-slate-900"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
             >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
@@ -660,7 +660,7 @@ export function Timeline({
               pressed={snapEnabled}
               onPressedChange={setSnapEnabled}
               size="sm"
-              className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-indigo-50 data-[state=on]:text-indigo-600"
+              className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-[var(--accent-primary)]/15 data-[state=on]:text-[var(--accent-primary)] data-[state=on]:border-[var(--accent-primary)]/30 border border-transparent transition-colors"
             >
               <Magnet className="w-3 h-3" />
               Snap
@@ -671,7 +671,7 @@ export function Timeline({
         {/* Center: Zoom Controls & Fit */}
         <div className="flex items-center gap-2">
           <ZoomOut
-            className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-700"
+            className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
             onClick={() => setZoomScale((z) => Math.max(0.4, z - 0.2))}
           />
           <Slider
@@ -683,7 +683,7 @@ export function Timeline({
             className="w-24 cursor-pointer"
           />
           <ZoomIn
-            className="w-3.5 h-3.5 text-slate-400 cursor-pointer hover:text-slate-700"
+            className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
             onClick={() => setZoomScale((z) => Math.min(3.0, z + 0.2))}
           />
 
@@ -692,7 +692,7 @@ export function Timeline({
               variant="ghost"
               size="icon"
               onClick={() => setZoomScale(1.0)}
-              className="h-7 w-7 text-slate-500 hover:text-slate-800"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
             >
               <Maximize className="w-3.5 h-3.5" />
             </Button>
@@ -704,10 +704,10 @@ export function Timeline({
           <MasterAudioMeter isPlaying={isPlaying} currentFrame={currentFrame} />
 
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="font-mono text-[11px] border-slate-200 text-slate-700 bg-white">
+            <Badge variant="outline" className="font-mono text-[11px] border-[var(--glass-border)] text-muted-foreground bg-[var(--glass-bg)] shadow-2xs">
               {(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s
             </Badge>
-            <Badge variant="secondary" className="font-mono text-[11px] text-indigo-700 bg-indigo-50 font-semibold">
+            <Badge variant="outline" className="font-mono text-[11px] text-[var(--accent-primary)] border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 font-semibold shadow-2xs">
               F {currentFrame} / {totalFrames}
             </Badge>
           </div>
@@ -762,27 +762,41 @@ export function Timeline({
                 return (
                   <div key={track.id} className="h-10 flex items-center gap-2">
                     {/* Track Header / Controls */}
-                    <div className="w-44 h-full bg-slate-100/90 rounded-md border border-slate-200 flex items-center justify-between px-2.5 shrink-0 shadow-2xs">
+                    <div className="w-44 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md">
                       <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-[11px] font-medium text-slate-800 truncate">
+                        <span className="text-[11px] font-medium text-foreground truncate">
                           {track.id}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => toggleLock(track.id)}
-                          className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isLocked ? 'text-amber-600 font-bold' : ''}`}
+                          className={`h-6 w-6 rounded transition-colors ${
+                            isLocked
+                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={isLocked ? 'Unlock Track' : 'Lock Track'}
                         >
                           {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                        </button>
+                        </Button>
 
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => toggleMute(track.id)}
-                          className={`p-1 rounded hover:bg-slate-200 text-slate-600 ${isMuted ? 'text-rose-600 font-bold' : ''}`}
+                          className={`h-6 w-6 rounded transition-colors ${
+                            isMuted
+                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={isMuted ? 'Unmute Track' : 'Mute Track'}
                         >
                           {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                        </button>
+                        </Button>
                       </div>
                     </div>
 

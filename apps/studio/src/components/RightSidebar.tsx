@@ -580,6 +580,46 @@ export function getAvailableModifiersFromRegistry(
 
 export const ALL_AVAILABLE_MODIFIERS: AvailableModifierDef[] = getAvailableModifiersFromRegistry();
 
+export const AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
+  {
+    type: 'overlay/hologram_hud',
+    name: 'Hologram HUD',
+    icon: Monitor,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      ringRadiusNorm: 0.35,
+      scanlineDensity: 40,
+      color: '#00ffff',
+      rotationSpeed: 0.5,
+    },
+  },
+  {
+    type: 'overlay/canvas_particles',
+    name: 'Particle VFX & Shaders',
+    icon: Layers,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      type: 'cyber_sparks',
+      preset: 'cyber_sparks',
+      intensity: 1.0,
+      speed: 1.0,
+      opacity: 0.8,
+      particleCount: 1500,
+      gravity: -1.2,
+      drag: 0.15,
+      turbulence: 1.0,
+      bloomThreshold: 0.7,
+      chromaticAberration: 2.0,
+      shaders: {
+        bloom: { enabled: true, threshold: 0.7, intensity: 1.0 },
+        chromaticAberration: { enabled: true, offsetPx: 2.0 },
+      },
+    },
+  },
+];
+
 export function formatTimecode(frames: number, fps: number): string {
   const safeFps = fps > 0 ? fps : 30;
   const safeFrames = Math.max(0, Math.round(frames));

@@ -92,26 +92,26 @@ export function Titlebar({
               variant="ghost"
               size="icon"
               onClick={onToggleLeft}
-              className={`h-8 w-8 text-slate-500 hover:text-slate-200 dark:hover:text-white ${isLeftOpen ? 'bg-indigo-500/10 text-indigo-400' : ''}`}
+              className={`h-8 w-8 transition-colors ${isLeftOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <PanelLeft className="w-4 h-4" />
             </Button>
           </Tooltip>
         )}
-        <div className="h-8 w-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+        <div className="h-8 w-8 rounded-lg bg-[var(--accent-primary)] text-slate-950 flex items-center justify-center font-bold text-xs shadow-[0_0_12px_var(--accent-glow)] select-none">
           IR
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{projectTitle}</h1>
+            <h1 className="text-sm font-semibold text-foreground tracking-tight">{projectTitle}</h1>
             <Badge
-              variant="secondary"
-              className="font-mono text-[10px] text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800"
+              variant="outline"
+              className="font-mono text-[10px] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30"
             >
               Universal Video IR V1.0
             </Badge>
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+          <span className="text-xs text-muted-foreground font-mono">
             {currentFrame} / {totalFrames} f ({(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s @ {fps}fps)
           </span>
         </div>
@@ -122,7 +122,7 @@ export function Titlebar({
             value={state.activeTemplate}
             onValueChange={(val: 'scifi' | 'default') => manager.switchTemplate(val)}
           >
-            <SelectTrigger className="h-7 text-[11px] w-48 bg-slate-50 border-slate-200">
+            <SelectTrigger className="h-7 text-[11px] w-48 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
               <SelectValue placeholder="Select Demo" />
             </SelectTrigger>
             <SelectContent>
@@ -141,7 +141,7 @@ export function Titlebar({
             size="icon"
             onClick={() => manager.undo()}
             disabled={!manager.canUndo()}
-            className="h-8 w-8 text-slate-600"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >
             <Undo2 className="w-3.5 h-3.5" />
           </Button>
@@ -153,7 +153,7 @@ export function Titlebar({
             size="icon"
             onClick={() => manager.redo()}
             disabled={!manager.canRedo()}
-            className="h-8 w-8 text-slate-600"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >
             <Redo2 className="w-3.5 h-3.5" />
           </Button>
@@ -176,9 +176,9 @@ export function Titlebar({
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            className="gap-1.5 text-xs h-8 text-slate-700 shadow-2xs"
+            className="gap-1.5 text-xs h-8 shadow-xs border-[var(--glass-border)] text-foreground hover:bg-foreground/5"
           >
-            <Upload className="w-3.5 h-3.5 text-slate-500" />
+            <Upload className="w-3.5 h-3.5 text-muted-foreground" />
             Import IR
           </Button>
         </Tooltip>
@@ -189,7 +189,7 @@ export function Titlebar({
             variant="outline"
             size="sm"
             onClick={handleDownloadIR}
-            className="gap-1.5 text-xs h-8 text-indigo-700 border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 shadow-2xs"
+            className="gap-1.5 text-xs h-8 text-[var(--accent-primary)] border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 hover:bg-[var(--accent-primary)]/20 shadow-xs"
           >
             <FileJson className="w-3.5 h-3.5" />
             Save IR
@@ -206,7 +206,7 @@ export function Titlebar({
                 variant="destructive"
                 size="sm"
                 onClick={onCancelExport}
-                className="gap-1.5 h-8 text-xs shadow-2xs"
+                className="gap-1.5 h-8 text-xs shadow-xs"
               >
                 <XCircle className="w-3.5 h-3.5" />
                 Cancel Export
@@ -216,7 +216,7 @@ export function Titlebar({
                 variant="default"
                 size="sm"
                 onClick={onStartExport}
-                className="gap-1.5 h-8 text-xs shadow-2xs"
+                className="gap-1.5 h-8 text-xs shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />
                 Export MP4
@@ -233,9 +233,9 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={toggleMode}
-            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
-            {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-500" />}
+            {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[var(--accent-primary)]" />}
           </Button>
         </Tooltip>
 
@@ -245,7 +245,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => setIsShortcutsOpen(true)}
-            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <Keyboard className="w-3.5 h-3.5" />
           </Button>
@@ -257,7 +257,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => setIsSettingsOpen(true)}
-            className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <Settings className="w-3.5 h-3.5" />
           </Button>
@@ -271,7 +271,7 @@ export function Titlebar({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleRight}
-                className={`h-8 w-8 text-slate-600 dark:text-slate-400 ${isRightOpen ? 'bg-indigo-500/10 text-indigo-500' : ''}`}
+                className={`h-8 w-8 transition-colors ${isRightOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <PanelRight className="w-4 h-4" />
               </Button>
