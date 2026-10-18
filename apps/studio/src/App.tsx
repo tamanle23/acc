@@ -25,7 +25,7 @@ import {
   Button,
   Badge,
 } from './components/ui';
-import { MediabunnyClientSink } from '@acc/core/client';
+import { MediabunnyClientSink } from '@acc/ir/client';
 import { IRPreviewEngine } from '@acc/ir';
 import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { Video, AlertCircle } from 'lucide-react';

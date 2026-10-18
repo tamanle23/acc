@@ -128,7 +128,6 @@
       "version": "1.0.0",
       "dependencies": {
         "@acc/core": "workspace:*",
-        "@acc/ir": "workspace:*",
         "@huggingface/transformers": "^4.3.0",
         "@napi-rs/canvas": "^1.0.9",
         "gsap": "^3.12.7",
@@ -148,6 +147,11 @@
     "packages/ir": {
       "name": "@acc/ir",
       "version": "1.0.0",
+      "dependencies": {
+        "@acc/core": "workspace:*",
+        "@acc/effect-engines": "workspace:*",
+        "mediabunny": "^1.61.5",
+      },
     },
     "packages/proto": {
       "name": "@acc/proto",

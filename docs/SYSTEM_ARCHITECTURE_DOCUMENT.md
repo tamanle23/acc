@@ -398,7 +398,7 @@ Decoupled as a 100% pure client-side React 19 workspace application (`apps/studi
    - Modular hierarchy: `<Titlebar />`, `<Sidebar />` (Asset Vault & Modifier Inspector), `<Preview />`, and `<Timeline />` multi-track scrubber.
    - Zero-waste state-driven rendering: Viewport monitor operates at 0 FPS during idle state and repaints only when the playhead moves, clips are trimmed, or modifiers change.
 3. **Client-Side WebCodecs Video Export (`MediabunnyClientSink`)**:
-   - Direct browser video export using `MediabunnyClientSink` from `@acc/core/client` powered by Mediabunny and browser-native `VideoEncoder` (WebCodecs).
+   - Direct browser video export using `MediabunnyClientSink` from `@acc/ir/client` powered by Mediabunny and browser-native `VideoEncoder` (WebCodecs).
    - Renders frames offscreen via HTML5 `<canvas>`, encodes in real-time, and muxes to an in-memory MP4 Blob target with direct browser file download.
    - Interactive progress bar with immediate client-side export cancellation without process or memory leaks.
 4. **Local Asset Ingestion**:

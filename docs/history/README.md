@@ -287,6 +287,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`274`](274_resolve_ir_and_effect_engines_circular_dependency.md) | 2026-10-19 | Monorepo Architecture: Eliminate Circular Reference Between IR and Effect Engines | Eliminated circular dependency cycle between @acc/ir and @acc/effect-engines by removing legacy audio re-export stubs in effect-engines, localizing editing types, removing @acc/ir from effect-engines package.json, and formally declaring @acc/effect-engines in packages/ir/package.json |
 | [`275`](275_studio_iteration11_phase3_timeline_engine_modernization.md) | 2026-10-19 | Studio Iteration 11 Phase 3: Timeline Engine Modernization | Unified totalFrames, implemented sticky split-view timeline layout, track reordering UI with undo/redo, enhanced multi-target magnetic snapping with cyan guideline, and Hand-pan tool |
 | [`276`](276_studio_iteration11_phase4_isomorphic_ir_and_media_engine_decoupling.md) | 2026-10-19 | Studio Iteration 11 Phase 4: Isomorphic IR Package Unification & Media Engine Decoupling | Decommissioned @acc/ir/client and all fake stubs, decoupled FFIVideoDecoder via MediaEngineStrategy, isolated server batch renderers under @acc/ir/server, and validated production Vite build and parity test suite |
+| [`277`](277_relocate_mediabunny_client_sink_to_ir_client.md) | 2026-10-19 | Relocate MediabunnyClientSink and Client Sinks to @acc/ir/client | Relocated MediabunnyClientSink implementation to @acc/ir, created dedicated @acc/ir/client subpath export, purged @acc/core/client, updated Studio App.tsx and tests |
 
 
 
