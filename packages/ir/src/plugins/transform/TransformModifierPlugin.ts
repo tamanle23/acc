@@ -16,6 +16,10 @@ export interface TransformModifierParams {
   scale?: number;
   rotation?: number;
   opacity?: number;
+  normX?: number;
+  normY?: number;
+  anchorPoint?: [number, number];
+  target?: 'sequence' | 'track' | 'global';
   ease?: string;
   animation?: {
     preset?: 'pop_in' | 'slide_left' | 'bounce' | 'overshoot' | 'drift';
@@ -66,6 +70,10 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
    * Stacks affine coordinate transform: translate -> rotate -> scale -> globalAlpha.
    */
   public renderClipSpace(ctx: ClipRenderContext, params: TransformModifierParams): void {
+    if (params.target && params.target !== 'sequence') {
+      return;
+    }
+
     const { ctx: canvasCtx, width, height, sequence, localFrame } = ctx;
     const fps = (sequence as any).fps || 30;
     const localSec = Math.max(0, localFrame / fps);
@@ -73,52 +81,89 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
 
     const motion = evaluateSequenceMotion(params, localSec, durationSec);
 
-    // Position viewport matrix centered at origin [width / 2, height / 2] + offset
-    canvasCtx.translate(width * 0.5 + motion.x, height * 0.5 + motion.y);
+    if (motion.opacity <= 0.001) {
+      canvasCtx.globalAlpha = 0;
+      return;
+    }
 
+    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
+    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorX = width * anchorNormX;
+    const anchorY = height * anchorNormY;
+
+    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
-
     if (motion.scale !== 1.0) {
       canvasCtx.scale(motion.scale, motion.scale);
     }
+    canvasCtx.translate(-anchorX, -anchorY);
 
-    canvasCtx.globalAlpha = Math.max(0, Math.min(1, motion.opacity));
+    canvasCtx.globalAlpha = Math.max(0, Math.min(1, canvasCtx.globalAlpha * motion.opacity));
   }
 
-  /**
-   * Phase 3 / Phase 4: Track-Level or Master-Level Transformation.
-   */
   public renderStreamSpace(ctx: StreamRenderContext, params: TransformModifierParams): void {
+    if (params.target !== 'track') {
+      return;
+    }
+
     const { ctx: canvasCtx, width, height, frame } = ctx;
     const fps = 30;
     const timeSec = frame / fps;
     const motion = evaluateSequenceMotion(params, timeSec, 10.0);
 
-    canvasCtx.translate(width * 0.5 + motion.x, height * 0.5 + motion.y);
+    if (motion.opacity <= 0.001) {
+      canvasCtx.globalAlpha = 0;
+      return;
+    }
+
+    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
+    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorX = width * anchorNormX;
+    const anchorY = height * anchorNormY;
+
+    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
     if (motion.scale !== 1.0) {
       canvasCtx.scale(motion.scale, motion.scale);
     }
-    canvasCtx.globalAlpha = Math.max(0, Math.min(1, motion.opacity));
+    canvasCtx.translate(-anchorX, -anchorY);
+
+    canvasCtx.globalAlpha = Math.max(0, Math.min(1, canvasCtx.globalAlpha * motion.opacity));
   }
 
   public renderMasterComposite(ctx: MasterCompositeContext, params: TransformModifierParams): void {
+    if (params.target && params.target !== 'global') {
+      return;
+    }
+
     const { ctx: canvasCtx, width, height, frame } = ctx;
     const fps = 30;
     const timeSec = frame / fps;
     const motion = evaluateSequenceMotion(params, timeSec, 10.0);
 
-    canvasCtx.translate(width * 0.5 + motion.x, height * 0.5 + motion.y);
+    if (motion.opacity <= 0.001) {
+      canvasCtx.globalAlpha = 0;
+      return;
+    }
+
+    const anchorNormX = params.anchorPoint?.[0] ?? 0.5;
+    const anchorNormY = params.anchorPoint?.[1] ?? 0.5;
+    const anchorX = width * anchorNormX;
+    const anchorY = height * anchorNormY;
+
+    canvasCtx.translate(anchorX + motion.x, anchorY + motion.y);
     if (motion.rotation !== 0) {
       canvasCtx.rotate((motion.rotation * Math.PI) / 180);
     }
     if (motion.scale !== 1.0) {
       canvasCtx.scale(motion.scale, motion.scale);
     }
-    canvasCtx.globalAlpha = Math.max(0, Math.min(1, motion.opacity));
+    canvasCtx.translate(-anchorX, -anchorY);
+
+    canvasCtx.globalAlpha = Math.max(0, Math.min(1, canvasCtx.globalAlpha * motion.opacity));
   }
 }

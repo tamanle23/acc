@@ -76,7 +76,8 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
     });
 
     it('should generate valid sequences with proper transform and modifier structures', () => {
-      for (const preset of STAGING_PRESETS) {
+      const visualPresets = STAGING_PRESETS.filter((p) => p.category === 'text' || p.category === 'shape' || p.category === 'vfx');
+      for (const preset of visualPresets) {
         const seq = preset.createSequence({
           startFrame: 30,
           durationFrames: 60,

@@ -39,6 +39,8 @@ export interface TransformModifierParams {
   opacity?: number | TemporalCurve<number>;
   normX?: number;
   normY?: number;
+  anchorPoint?: [number, number];
+  target?: 'sequence' | 'track' | 'global';
   ease?: string;
   animation?: {
     preset?: 'pop_in' | 'slide_left' | 'overshoot' | 'bounce' | 'drift';

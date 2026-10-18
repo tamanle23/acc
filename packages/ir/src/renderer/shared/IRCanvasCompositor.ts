@@ -5,10 +5,6 @@ import type {
 } from '../../types/VideoIR';
 import type { ModifierPluginRegistry } from '../../plugins/ModifierPluginRegistry';
 import {
-  evaluateSequenceMotion,
-  type InterpolatedTransformState,
-} from '../preview/DeterministicMotionEvaluator';
-import {
   BoundedAcousticCaptionStrategy,
   drawCanvasCaptionsFromSnapshot,
   type CaptionConfig,
@@ -109,34 +105,10 @@ export class IRCanvasCompositor {
             else if (blend === 'add') canvasCtx.globalCompositeOperation = 'lighter';
             else if (blend === 'normal') canvasCtx.globalCompositeOperation = 'source-over';
 
-            // Resolve sequence motion & affine transform matrix
-            const transMod = seq.modifiers?.find((m) => m.type === 'transform');
-            const motion: InterpolatedTransformState = evaluateSequenceMotion(
-              transMod?.params,
-              localSec,
-              durationSec
-            );
-
-            // Skip rendering if completely transparent
-            if (motion.opacity <= 0.001) {
-              continue;
-            }
-
-            // Stack affine coordinate matrix centered on viewport [width / 2, height / 2]
-            canvasCtx.translate(width * 0.5 + motion.x, height * 0.5 + motion.y);
-            if (motion.rotation !== 0) {
-              canvasCtx.rotate((motion.rotation * Math.PI) / 180);
-            }
-            if (motion.scale !== 1.0) {
-              canvasCtx.scale(motion.scale, motion.scale);
-            }
-            canvasCtx.globalAlpha = Math.max(0, Math.min(1, motion.opacity));
-
-            // Clip-Space Modifiers (Phase 2)
+            // Clip-Space Modifiers (Phase 2): Render sequence-level modifiers (including 'transform')
             if (seq.modifiers) {
               for (const mod of seq.modifiers) {
-                // 'transform' is already evaluated into the matrix stack above
-                if (mod.type === 'transform') continue;
+                if (mod.target === 'track' || mod.target === 'global') continue;
 
                 const plugin = registry.get(mod.type);
                 if (plugin && plugin.renderClipSpace) {
@@ -160,7 +132,12 @@ export class IRCanvasCompositor {
               }
             }
 
-            // Base Asset Blitting (Cover vs Contain)
+            // Skip rendering if modifier set opacity to 0
+            if (canvasCtx.globalAlpha <= 0.001) {
+              continue;
+            }
+
+            // Base Asset Blitting (Cover vs Contain) in Universal Top-Left (0, 0) Coordinate Space
             const hasDepth3D = seq.modifiers?.some((m) => m.type === 'vfx/depth3d');
             if (!hasDepth3D && seq.assetId) {
               const asset = assets?.has(seq.assetId) ? assets.get(seq.assetId) : undefined;
@@ -183,16 +160,16 @@ export class IRCanvasCompositor {
                   drawH = srcH * scale;
                 }
 
-                const drawX = -drawW * 0.5;
-                const drawY = -drawH * 0.5;
+                const drawX = (width - drawW) * 0.5;
+                const drawY = (height - drawH) * 0.5;
 
                 if (typeof canvasCtx.drawImage === 'function') {
                   canvasCtx.drawImage(asset, drawX, drawY, drawW, drawH);
                 }
               } else {
-                // Non-blocking neutral placeholder fallback
+                // Non-blocking neutral placeholder fallback in standard top-left space
                 canvasCtx.fillStyle = 'rgba(20, 20, 28, 0.4)';
-                canvasCtx.fillRect(-width * 0.5, -height * 0.5, width, height);
+                canvasCtx.fillRect(0, 0, width, height);
               }
             }
           } finally {

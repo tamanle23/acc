@@ -99,8 +99,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
 
     // 2. Pre-generate and cache multi-tier focal zone canvases if rack focus is requested
     const rackFocusEnabled = params.rackFocus?.enabled !== false;
-    // TODO(isomorphic-migration): Replace direct Node fs calls with UniversalCanvasProvider/CanvasAssetLoader for browser runtime
-    const fileExists = typeof fs?.existsSync === 'function' && fs.existsSync(imgPath);
+    const imgPath = params.imagePath;
+    const fileExists = typeof fs?.existsSync === 'function' && Boolean(imgPath && fs.existsSync(imgPath));
     if (rackFocusEnabled && imgPath && fileExists) {
       try {
         const depthData = await resolveDepthMapData(imgPath, width, height, params as any);

@@ -279,6 +279,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`266`](266_ir_iteration10_phase3_unify_renderer_engines.md) | 2026-10-18 | Iteration 10 Phase 3: Unify IRMasterRenderer & IRPreviewEngine via IRCanvasCompositor | Delegated canvas frame rasterization in IRMasterRenderer and IRPreviewEngine to IRCanvasCompositor, unified black clear color, and eliminated divergent rendering loops |
 | [`267`](267_ir_iteration10_phase4_parity_test_suite.md) | 2026-10-18 | Iteration 10 Phase 4: Automated Web & Server Bit-Identical Parity Test Suite | Automated parity suite verifying 100% cryptographic SHA-256 byte parity, zero pixel delta, and temporal variance between IRMasterRenderer and IRPreviewEngine |
 | [`268`](268_studio_iteration11_phase1_leftsidebar_retained_plugins.md) | 2026-10-18 | Studio Iteration 11 Phase 1: LeftSidebar Staging Library & Retained Modifier Plugins | Implemented ShapeModifierPlugin, ProceduralSFXModifierPlugin, 104-SFX sound bank across 6 banks, footage presets, and instant inline Web Audio audition |
+| [`269`](269_pure_modifier_driven_transforms_and_top_left_coordinates.md) | 2026-10-18 | Pure Modifier-Driven Transforms & Universal Top-Left Coordinates | Eliminated hardcoded evaluateSequenceMotion from IRCanvasCompositor, standardized top-left (0,0) canvas coordinates, and implemented stateless anchor-pivot transforms in TransformModifierPlugin based on target configuration |
 
 
 
