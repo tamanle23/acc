@@ -32,8 +32,9 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
+import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
-import { ProceduralAudioSynthesizer } from '@acc/ir/client';
+import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir/client';
 
 export interface LeftSidebarProps {
   isOpen: boolean;
@@ -161,13 +162,12 @@ export function DraggablePresetCard({
                 if (!AudioCtx) return;
                 const ctx = new AudioCtx();
                 let buf: Float32Array;
-                if (preset.id.includes('impact')) {
-                  buf = ProceduralAudioSynthesizer.synthImpact(0, 1.2);
-                } else if (preset.id.includes('glitch')) {
-                  buf = ProceduralAudioSynthesizer.synthGlitch(0, 0.6);
-                } else if (preset.id.includes('riser')) {
-                  buf = ProceduralAudioSynthesizer.synthRiser(0, 1.8);
-                } else if (preset.id.includes('bgm') || preset.id.includes('synth') || preset.category === 'audio') {
+                if (preset.category === 'sfx') {
+                  const seq = preset.createSequence({ startFrame: 0 });
+                  const sfxMod = seq.modifiers?.find((m) => m.type === 'sfx/procedural');
+                  const plugin = new ProceduralSFXModifierPlugin();
+                  buf = plugin.generateAudioBuffer(sfxMod?.params || {}, 44100);
+                } else if (preset.category === 'audio') {
                   buf = ProceduralAudioSynthesizer.synthBGM(0, 3.0);
                 } else {
                   buf = ProceduralAudioSynthesizer.synthWhoosh(0, 0.6);
@@ -320,6 +320,7 @@ export function LeftSidebar({
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [libraryFilterQuery, setLibraryFilterQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | PresetCategory>('all');
+  const [selectedSfxBank, setSelectedSfxBank] = useState<string>('all');
   const [assetFilterQuery, setAssetFilterQuery] = useState('');
   const [selectedAssetType, setSelectedAssetType] = useState<'all' | 'video' | 'audio' | 'image'>('all');
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -370,11 +371,16 @@ export function LeftSidebar({
 
   const filteredPresets = STAGING_PRESETS.filter((p) => {
     const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
+    const matchesBank =
+      selectedCategory !== 'sfx' ||
+      selectedSfxBank === 'all' ||
+      p.id.toLowerCase().includes(`preset_sfx_${selectedSfxBank}`) ||
+      p.id.toLowerCase().includes(`sfx_${selectedSfxBank}`);
     const matchesQuery =
       p.name.toLowerCase().includes(libraryFilterQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(libraryFilterQuery.toLowerCase()) ||
       p.badge.toLowerCase().includes(libraryFilterQuery.toLowerCase());
-    return matchesCat && matchesQuery;
+    return matchesCat && matchesBank && matchesQuery;
   });
 
   const assetList = Object.entries(irState.doc.assets || {}).map(([id, asset]) => ({
@@ -512,6 +518,27 @@ export function LeftSidebar({
                     </Button>
                   ))}
                 </div>
+
+                {/* Secondary SFX Bank Filter Pills */}
+                {selectedCategory === 'sfx' && (
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none pt-1.5 border-t border-border/20">
+                    {SFX_SOUND_BANKS.map((b) => (
+                      <Button
+                        key={b.id}
+                        variant={selectedSfxBank === b.id ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSelectedSfxBank(b.id)}
+                        className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${
+                          selectedSfxBank === b.id
+                            ? 'bg-rose-600 text-white hover:bg-rose-700'
+                            : 'text-slate-500 border-border/40 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {b.name} ({b.count})
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <ScrollArea className="flex-1 p-3">
