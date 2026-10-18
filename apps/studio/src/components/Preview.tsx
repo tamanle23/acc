@@ -212,7 +212,7 @@ export function Preview({
   const height = irState.doc?.meta?.canvasSize?.h || 1080;
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
-  const totalFrames = playhead?.totalFrames || irState.timeline?.totalDurationFrames || 300;
+  const totalFrames = playhead?.totalFrames || irState.timeline?.totalFrames || 300;
   const selectedSeqId = irState.selectedSequenceId;
 
   // Sync transform state from selected sequence modifier if available

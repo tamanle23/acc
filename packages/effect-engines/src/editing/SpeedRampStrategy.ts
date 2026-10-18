@@ -1,4 +1,4 @@
-import type { Keyframe } from '@acc/ir';
+import type { Keyframe } from '../types';
 
 export class SpeedRampStrategy {
   public static evaluateSpeedAtTime(keyframes: Keyframe<number>[], timeMs: number): number {

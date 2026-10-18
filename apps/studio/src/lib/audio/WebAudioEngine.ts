@@ -190,7 +190,7 @@ export class WebAudioEngine {
       this.stopPlayback();
 
       this.syncFromIR(irState, fps);
-      const totalFrames = irState?.timeline?.totalDurationFrames || 300;
+      const totalFrames = irState?.timeline?.totalFrames || 300;
       const startSec = currentFrame / Math.max(1, fps);
       const remainingSec = Math.max(0.1, (totalFrames - currentFrame) / Math.max(1, fps));
 

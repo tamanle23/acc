@@ -8,5 +8,9 @@
     "./client": "./src/client.ts"
   },
   "type": "module",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/effect-engines": "workspace:*"
+  }
 }

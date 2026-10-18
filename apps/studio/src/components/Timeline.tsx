@@ -15,6 +15,9 @@ import {
   MousePointer,
   Hand,
   Maximize,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -261,7 +264,7 @@ export function Timeline({
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
-  const totalFrames = irState.timeline?.totalDurationFrames || playhead?.totalFrames || 300;
+  const totalFrames = irState.timeline?.totalFrames || playhead?.totalFrames || 300;
   const rawTracks = irState.timeline?.tracks;
   const tracks = rawTracks instanceof Map
     ? Array.from(rawTracks.values())

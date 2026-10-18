@@ -1,4 +1,4 @@
-import type { ExtendedContentChunk } from '@acc/ir';
+import type { ExtendedContentChunk } from '../types';
 
 export interface CutTimeRange {
   startMs: number;

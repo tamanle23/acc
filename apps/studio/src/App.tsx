@@ -149,7 +149,7 @@ function StudioWorkspace() {
   };
 
   const fps = irState.doc.meta.globalFps || 30;
-  const totalFrames = irState.timeline?.totalDurationFrames || 300;
+  const totalFrames = irState.timeline?.totalFrames || 300;
   const width = irState.doc.meta.canvasSize.w || 1920;
   const height = irState.doc.meta.canvasSize.h || 1080;
 

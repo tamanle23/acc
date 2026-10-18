@@ -53,13 +53,13 @@ import {
 } from './ui/dropdown-menu';
 import { IRStateManager } from '../lib/ir/irState';
 import { EasingCurveSelector } from './EasingCurveSelector';
-import { ProceduralAudioSynthesizer } from '@acc/effect-engines/client';
 import {
   ModifierPluginRegistry,
   type ModifierPlugin,
   type SequenceTime,
   type RelationalStart,
   type RelationalDuration,
+  ProceduralAudioSynthesizer,
 } from '@acc/ir/client';
 
 export interface ParameterSliderProps {
@@ -1047,7 +1047,7 @@ export function RightSidebar() {
 
   const width = irState.doc.meta?.canvasSize?.w || 1920;
   const height = irState.doc.meta?.canvasSize?.h || 1080;
-  const totalDurationFrames = irState.timeline?.totalDurationFrames || 300;
+  const totalDurationFrames = irState.timeline?.totalFrames || 300;
   const activeSequencesCount = irState.timeline?.sequences
     ? irState.timeline.sequences.size
     : irState.doc.tracks.reduce((acc, t) => acc + t.sequences.length, 0);

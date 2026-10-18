@@ -361,3 +361,20 @@ export interface CaptionTrackSnapshot {
   isInSpeechPause: boolean;
   shouldRender: boolean;
 }
+
+export interface Keyframe<T = number> {
+  timeMs: number;
+  value: T;
+  easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' | 'cubicBezier';
+}
+
+export interface ExtendedContentChunk {
+  id: string;
+  order?: number;
+  text?: string;
+  spokenAudioPath?: string;
+  durationMs: number;
+  videoOffsetMs?: number;
+  [key: string]: any;
+}
+
