@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Play,
   Pause,
@@ -334,6 +334,33 @@ export function Timeline({
     targetTrackId?: string;
   } | null>(null);
 
+  // Active snap guideline (frame position or null)
+  const [activeSnapGuideline, setActiveSnapGuideline] = useState<number | null>(null);
+
+  // Hand tool panning ref & state
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
+
+  const handleTimelineMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (activeTool !== 'hand' || !scrollContainerRef.current) return;
+    isPanningRef.current = true;
+    panStartRef.current = {
+      x: e.clientX,
+      scrollLeft: scrollContainerRef.current.scrollLeft,
+    };
+  };
+
+  const handleTimelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isPanningRef.current || activeTool !== 'hand' || !scrollContainerRef.current) return;
+    const dx = e.clientX - panStartRef.current.x;
+    scrollContainerRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+  };
+
+  const handleTimelineMouseUp = () => {
+    isPanningRef.current = false;
+  };
+
   // Backward-compatible aliases for trimmingState & startTrim unified under @dnd-kit
   const trimmingState = activeDragState?.type === 'trim' ? activeDragState : null;
   const startTrim = (seq: any, handle: 'start' | 'end') => {
@@ -390,8 +417,10 @@ export function Timeline({
     if (activeDragState.type === 'clip') {
       const overTrackId = (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
       let targetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
+      let snappedGuideline: number | null = null;
 
       if (snapEnabled) {
+        // Collect candidate snap points: playhead, sequence boundaries, and 1s ticks
         const snapPoints: number[] = [currentFrame];
         for (const track of tracks) {
           for (const s of track.sequences) {
@@ -400,13 +429,28 @@ export function Timeline({
             }
           }
         }
+        // 1-second grid ticks
+        const totalSeconds = Math.ceil(totalFrames / fps);
+        for (let sec = 0; sec <= totalSeconds; sec++) {
+          snapPoints.push(sec * fps);
+        }
+
+        // Test start edge and end edge against snap points (within 4 frames)
+        const targetEnd = targetStart + activeDragState.initialDurationFrames;
         for (const sp of snapPoints) {
-          if (Math.abs(targetStart - sp) <= 3) {
+          if (Math.abs(targetStart - sp) <= 4) {
             targetStart = sp;
+            snappedGuideline = sp;
+            break;
+          } else if (Math.abs(targetEnd - sp) <= 4) {
+            targetStart = sp - activeDragState.initialDurationFrames;
+            snappedGuideline = sp;
             break;
           }
         }
       }
+
+      setActiveSnapGuideline(snappedGuideline);
 
       // Overlap prevention on target track
       const targetTrack = tracks.find((t) => t.id === overTrackId);
@@ -438,6 +482,7 @@ export function Timeline({
       );
     } else if (activeDragState.type === 'trim') {
       let deltaFrames = rawDeltaFrames;
+      let snappedGuideline: number | null = null;
 
       if (snapEnabled) {
         const snapPoints: number[] = [currentFrame];
@@ -448,12 +493,17 @@ export function Timeline({
             }
           }
         }
+        const totalSeconds = Math.ceil(totalFrames / fps);
+        for (let sec = 0; sec <= totalSeconds; sec++) {
+          snapPoints.push(sec * fps);
+        }
 
         if (activeDragState.handle === 'start') {
           const rawTarget = activeDragState.initialStartFrame + deltaFrames;
           for (const sp of snapPoints) {
-            if (Math.abs(rawTarget - sp) <= 3) {
+            if (Math.abs(rawTarget - sp) <= 4) {
               deltaFrames = sp - activeDragState.initialStartFrame;
+              snappedGuideline = sp;
               break;
             }
           }
@@ -461,20 +511,23 @@ export function Timeline({
           const rawTarget =
             activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
           for (const sp of snapPoints) {
-            if (Math.abs(rawTarget - sp) <= 3) {
+            if (Math.abs(rawTarget - sp) <= 4) {
               deltaFrames =
                 sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
+              snappedGuideline = sp;
               break;
             }
           }
         }
       }
 
+      setActiveSnapGuideline(snappedGuideline);
       setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
     }
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
+    setActiveSnapGuideline(null);
     if (!activeDragState) return;
 
     if (activeDragState.type === 'clip') {
@@ -717,131 +770,206 @@ export function Timeline({
         </div>
       </div>
 
-      {/* 2. Scrollable Multi-Track Lanes with Integrated Timecode Ruler */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto px-6 py-1">
-        <div style={{ minWidth: `${timelineWidth + 180}px` }} className="space-y-1 relative">
-          {/* Header Row: Left spacer + Timecode Ruler */}
-          <div className="flex items-center gap-2">
-            <div className="w-44 shrink-0 text-[10px] font-mono text-slate-400 pl-2">
-              TRACK HEADERS
+      {/* 2. Sticky Split-View Timeline Layout */}
+      <DndContext
+        sensors={timelineSensors}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Column: Fixed Track Headers (~180px) */}
+          <div className="w-48 shrink-0 border-r border-border/40 bg-background/40 backdrop-blur-md flex flex-col z-20 shadow-xs">
+            {/* Header spacer aligned with Timecode ruler */}
+            <div className="h-7 px-3 flex items-center border-b border-border/30 text-[10px] font-mono uppercase tracking-wider text-muted-foreground bg-muted/20">
+              Track Headers
             </div>
-            <div className="flex-1">
-              <TimecodeRuler
-                totalFrames={totalFrames}
-                fps={fps}
-                pixelsPerFrame={pixelsPerFrame}
-                timelineWidth={timelineWidth}
-                onScrub={handleScrub}
-              />
-            </div>
-          </div>
 
-          {/* Global Playhead Vertical Needle */}
-          <div
-            className="absolute top-0 bottom-0 z-30 pointer-events-none transition-all duration-75 flex flex-col items-center"
-            style={{
-              left: `${180 + currentFrame * pixelsPerFrame}px`,
-            }}
-          >
-            <div className="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />
-            <div className="w-0.5 flex-1 bg-rose-500/80" />
-          </div>
-
-          <DndContext
-            sensors={timelineSensors}
-            onDragStart={handleDragStart}
-            onDragMove={handleDragMove}
-            onDragEnd={handleDragEnd}
-          >
-            {tracks.length === 0 ? (
-              <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
-                Compiling Video IR Tracks...
-              </div>
-            ) : (
-              tracks.map((track) => {
+            {/* Track Header Cards */}
+            <div className="flex-1 overflow-y-auto px-2 py-1 space-y-1">
+              {tracks.map((track, idx) => {
                 const isLocked = lockedTracks[track.id] || false;
                 const isMuted = mutedTracks[track.id] || false;
+                const canMoveUp = idx > 0;
+                const canMoveDown = idx < tracks.length - 1;
 
                 return (
-                  <div key={track.id} className="h-10 flex items-center gap-2">
-                    {/* Track Header / Controls */}
-                    <div
-                      onClick={() => {
-                        IRStateManager.getInstance().setSelectedTrackId(track.id);
-                        IRStateManager.getInstance().setInspectorMode('track');
-                      }}
-                      className="w-44 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
-                      title={`Inspect Track ${track.id}`}
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-[11px] font-medium text-foreground truncate">
-                          {track.id}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleLock(track.id)}
-                          className={`h-6 w-6 rounded transition-colors ${
-                            isLocked
-                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                          title={isLocked ? 'Unlock Track' : 'Lock Track'}
-                        >
-                          {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleMute(track.id)}
-                          className={`h-6 w-6 rounded transition-colors ${
-                            isMuted
-                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                          title={isMuted ? 'Unmute Track' : 'Mute Track'}
-                        >
-                          {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-                        </Button>
-                      </div>
+                  <div
+                    key={track.id}
+                    onClick={() => {
+                      IRStateManager.getInstance().setSelectedTrackId(track.id);
+                      IRStateManager.getInstance().setInspectorMode('track');
+                    }}
+                    className="h-10 bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2 shrink-0 shadow-2xs backdrop-blur-md"
+                    title={`Inspect Track ${track.id}`}
+                  >
+                    <div className="flex items-center gap-1 min-w-0">
+                      <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
+                      <span className="text-[11px] font-medium text-foreground truncate max-w-[70px]">
+                        {track.id}
+                      </span>
                     </div>
 
-                    {/* Droppable Track Sequence Lane */}
-                    <DroppableTrackLane track={track} isLocked={isLocked}>
-                      {track.sequences.map((seq) => (
-                        <TimelineClipItem
-                          key={seq.id}
-                          seq={seq}
-                          track={track}
-                          pixelsPerFrame={pixelsPerFrame}
-                          isSelected={selectedSeqId === seq.id}
-                          activeTool={activeTool}
-                          getTrackBadgeStyle={getTrackBadgeStyle}
-                          onClipClick={handleClipClick}
-                          activeDragState={activeDragState}
-                        />
-                      ))}
-                    </DroppableTrackLane>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {/* Track Reorder Up/Down */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={!canMoveUp}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          IRStateManager.getInstance().reorderTrack(track.id, 'up');
+                        }}
+                        className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        title="Move Track Up"
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={!canMoveDown}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          IRStateManager.getInstance().reorderTrack(track.id, 'down');
+                        }}
+                        className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                        title="Move Track Down"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleLock(track.id);
+                        }}
+                        className={`h-5 w-5 rounded transition-colors ${
+                          isLocked
+                            ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title={isLocked ? 'Unlock Track' : 'Lock Track'}
+                      >
+                        {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleMute(track.id);
+                        }}
+                        className={`h-5 w-5 rounded transition-colors ${
+                          isMuted
+                            ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title={isMuted ? 'Unmute Track' : 'Mute Track'}
+                      >
+                        {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+                      </Button>
+                    </div>
                   </div>
                 );
-              })
-            )}
-          </DndContext>
+              })}
 
-          {/* Empty timeline click target to switch to Project inspection mode */}
+              {/* Empty area target to switch to Project inspection mode */}
+              <div
+                onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
+                className="h-10 rounded border border-dashed border-border/30 hover:border-border/60 hover:bg-muted/10 cursor-pointer transition-colors flex items-center justify-center text-[10px] text-muted-foreground italic px-2 text-center"
+                title="Click to inspect Project Settings"
+              >
+                Project Settings
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Horizontally Scrollable Lanes Grid & Timecode Ruler */}
           <div
-            onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
-            className="h-12 w-full cursor-pointer hover:bg-slate-500/5 transition-colors rounded-sm flex items-center justify-center text-[10px] text-slate-400 italic"
-            title="Click empty timeline area to inspect Project Settings"
+            ref={scrollContainerRef}
+            onMouseDown={handleTimelineMouseDown}
+            onMouseMove={handleTimelineMouseMove}
+            onMouseUp={handleTimelineMouseUp}
+            className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-1 relative ${
+              activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
+            }`}
           >
-            Click empty area to inspect Project Settings
+            <div style={{ width: `${timelineWidth}px` }} className="space-y-1 relative">
+              {/* Header: Timecode Ruler */}
+              <div className="h-7 flex items-center">
+                <TimecodeRuler
+                  totalFrames={totalFrames}
+                  fps={fps}
+                  pixelsPerFrame={pixelsPerFrame}
+                  timelineWidth={timelineWidth}
+                  onScrub={handleScrub}
+                />
+              </div>
+
+              {/* Global Playhead Vertical Needle */}
+              <div
+                className="absolute top-0 bottom-0 z-30 pointer-events-none transition-all duration-75 flex flex-col items-center"
+                style={{
+                  left: `${currentFrame * pixelsPerFrame}px`,
+                }}
+              >
+                <div className="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />
+                <div className="w-0.5 flex-1 bg-rose-500/80" />
+              </div>
+
+              {/* Cyan Magnetic Snapping Guideline */}
+              {activeSnapGuideline !== null && (
+                <div
+                  className="absolute top-0 bottom-0 z-35 pointer-events-none flex flex-col items-center"
+                  style={{
+                    left: `${activeSnapGuideline * pixelsPerFrame}px`,
+                  }}
+                >
+                  <div className="w-2 h-2 bg-cyan-400 rotate-45 -mt-1 shadow-[0_0_8px_#22d3ee]" />
+                  <div className="w-[1.5px] flex-1 bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                  <span className="text-[9px] font-mono text-cyan-300 bg-slate-900/90 px-1 py-0.5 rounded -mt-4 shadow-sm border border-cyan-400/40">
+                    {activeSnapGuideline}f
+                  </span>
+                </div>
+              )}
+
+              {/* Clip Lanes */}
+              {tracks.length === 0 ? (
+                <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
+                  Compiling Video IR Tracks...
+                </div>
+              ) : (
+                tracks.map((track) => {
+                  const isLocked = lockedTracks[track.id] || false;
+                  return (
+                    <div key={track.id} className="h-10 flex items-center">
+                      <DroppableTrackLane track={track} isLocked={isLocked}>
+                        {track.sequences.map((seq) => (
+                          <TimelineClipItem
+                            key={seq.id}
+                            seq={seq}
+                            track={track}
+                            pixelsPerFrame={pixelsPerFrame}
+                            isSelected={selectedSeqId === seq.id}
+                            activeTool={activeTool}
+                            getTrackBadgeStyle={getTrackBadgeStyle}
+                            onClipClick={handleClipClick}
+                            activeDragState={activeDragState}
+                          />
+                        ))}
+                      </DroppableTrackLane>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </DndContext>
     </footer>
   );
 }

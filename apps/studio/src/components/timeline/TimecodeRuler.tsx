@@ -40,7 +40,7 @@ export function TimecodeRuler({
     <div
       onClick={handleClick}
       style={{ width: `${timelineWidth}px` }}
-      className="h-6 bg-slate-100 border-b border-slate-200 relative select-none cursor-pointer"
+      className="h-6 bg-slate-100 dark:bg-slate-900/60 border-b border-border/40 relative select-none cursor-pointer"
     >
       {markers.map((m) => {
         const leftPx = m.frame * pixelsPerFrame;
@@ -49,17 +49,17 @@ export function TimecodeRuler({
             key={m.frame}
             style={{ left: `${leftPx}px` }}
             className={`absolute top-0 bottom-0 flex flex-col justify-between ${
-              m.isMajor ? 'border-l border-slate-400' : 'border-l border-slate-300/70'
+              m.isMajor ? 'border-l border-slate-400 dark:border-slate-500' : 'border-l border-slate-300/70 dark:border-slate-700/50'
             }`}
           >
             <span
-              className={`text-[9px] font-mono pl-1 pointer-events-none ${
-                m.isMajor ? 'text-slate-700 font-medium' : 'text-slate-400 text-[8px]'
+              className={`text-[9px] font-mono pl-1 pointer-events-none select-none ${
+                m.isMajor ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400 dark:text-slate-600 text-[8px]'
               }`}
             >
               {m.isMajor ? m.label : ''}
             </span>
-            <div className={`w-0.5 ${m.isMajor ? 'h-2 bg-slate-500' : 'h-1 bg-slate-300'}`} />
+            <div className={`w-0.5 ${m.isMajor ? 'h-2 bg-slate-500 dark:bg-slate-400' : 'h-1 bg-slate-300 dark:bg-slate-700'}`} />
           </div>
         );
       })}
