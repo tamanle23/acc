@@ -275,6 +275,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`261`](261_studio_client_side_mp4_export.md) | 2026-10-18 | Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export | Connected client-side MP4 export to IRPreviewEngine.renderFrame and MediabunnyClientSink, lazy frame asset streaming, and automatic browser MP4 download trigger |
 | [`262`](262_decommission_universal_canvas_engine.md) | 2026-10-18 | Iteration 9 Phase 4: Decommission UniversalCanvasEngine & Migrate Test Suites | Completely removed UniversalCanvasEngine.ts, cleaned exports, and migrated 7 test suites to IRPreviewEngine, CanvasParticleOverlayPlugin, HologramHUDPlugin, and PartialVFXPlugin |
 | [`264`](264_ir_iteration10_phase1_transform_caption_plugins.md) | 2026-10-18 | Iteration 10 Phase 1: Formalize Transform & Caption Modifier Plugins | Formalized TransformModifierPlugin and CaptionModifierPlugin, added Node fs guards and isomorphic migration tags, and unified plugin exports |
+| [`265`](265_ir_iteration10_phase2_canonical_canvas_compositor.md) | 2026-10-18 | Iteration 10 Phase 2: Create Canonical IRCanvasCompositor with Multi-Track Priority | Implemented canonical stateless IRCanvasCompositor, pure document-order track priority, scoped affine matrices, top-level captions, and hybrid culling |
 
 
 

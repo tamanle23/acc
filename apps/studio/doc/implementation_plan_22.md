@@ -19,8 +19,10 @@ Unify and consolidate **`IRPreviewEngine`** (client/web interactive renderer) an
 3. **Default Asset Fit Mode:** Option 1/A — `cover` as universal default when omitted (explicit `contain` supported).
 4. **Motion Transform Hierarchy:** Option 1/A — Formal `TransformModifierPlugin` (`transform`) that executes in clip-space (`renderClipSpace`) with `translate -> rotate -> scale -> draw from center origin [-w/2, -h/2]`. Sequence transforms are isolated via `ctx.save()` and `ctx.restore()` so a sequence never alters the global canvas matrix.
 5. **Timed-Text Captions & Safe Zones:** Option 1/A — Formal `CaptionModifierPlugin` (`text/style`) evaluating `BoundedAcousticCaptionStrategy` and `drawCanvasCaptionsFromSnapshot` with `SafeZoneManager` platform support.
-6. **Track Stacking & Overlay Order:**
+6. **Track Stacking & Overlay Order (Hybrid Pragmatic Approach):**
    - **Order Rule:** Pure document order (`doc.tracks` array index). Track 0 is bottom base layer; subsequent visual tracks overlay on top.
+   - **Painter's Algorithm by Default:** Renders bottom-to-top unconditionally to guarantee 100% mathematical correctness for opacity keyframes, blend modes (`screen`, `multiply`, `overlay`), rotations, transparent WebM/PNG overlays, and 3D cutouts.
+   - **Explicit Culling via Mute/Disabled Flags:** If a track or sequence is explicitly muted/disabled (`track.muted === true` or `track.style?.visible === false` or `sequence.enabled === false`), `IRCanvasCompositor` completely skips it to save rasterization cycles.
    - **Type Hierarchy:** All `video` tracks render first $\rightarrow$ all `timed_text` tracks render on top $\rightarrow$ master composite plugins apply across the entire frame.
    - **Blend Mode Scoping:** Sequence `blendMode` applies to the canvas blit and restores to `source-over` in `finally`, leaving subsequent tracks cleanly compositable.
 7. **Unified Plugin Registry:** Option 1/A — Single isomorphic registry `registerCoreModifierPlugins()`, eliminating `clientRegistry.ts`. Tag legacy Node/native filesystem imports in `Camera3DPlugin` and `Depth3DPlugin` with `// TODO(isomorphic-migration)`.
@@ -97,7 +99,7 @@ flowchart TD
 - Guard `Camera3DPlugin.ts` and `Depth3DPlugin.ts` with `// TODO(isomorphic-migration)` and defensive runtime checks.
 - Consolidate client registry and exports in `packages/ir/src/plugins/clientRegistry.ts` and `packages/ir/src/client.ts`.
 
-### Phase 2: Create Canonical `IRCanvasCompositor` with Document-Order Multi-Track Priority `[ ] Planned`
+### Phase 2: Create Canonical `IRCanvasCompositor` with Document-Order Multi-Track Priority `[x] Completed`
 - Implement `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`.
 - Multi-track layer compositing with pure document ordering, aspect-ratio fit modes (`cover`/`contain`), scoped blend modes, clip-space plugins, stream-space plugins, timed-text subtitles strictly above video, and master compositing.
 

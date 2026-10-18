@@ -23,6 +23,8 @@ export * from './renderer/audio/UniversalAudioMixer';
 export * from './renderer/preview/IRPreviewEngine';
 export * from './renderer/preview/AssetTextureCache';
 export * from './renderer/preview/DeterministicMotionEvaluator';
+export * from './renderer/shared/IRCanvasCompositor';
+
 
 // Pure Buffer-Based & Client Strategy Plugins
 export * from './plugins/sfx/DynamicDuckingPlugin';
