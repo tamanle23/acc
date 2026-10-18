@@ -132,12 +132,29 @@ jobs:
       - name: Install Playwright Chromium & System Dependencies
         run: pnpm --filter @unipost/console exec playwright install chromium --with-deps
 
-      - name: Run Full 10-Spec Playwright Matrix (Autonomous Unified Sandbox Mode)
+      - name: Setup Java 21 (for Live Mode Backend)
+        if: ${{ github.event.inputs.e2e_mode == 'live' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build Backend AIO JAR (for Live Mode Auto-Spawn)
+        if: ${{ github.event.inputs.e2e_mode == 'live' }}
+        run: |
+          mvn clean package -f apps/backend/pom.xml -DskipTests -q
+
+      - name: Run Full 15-Spec Playwright Matrix (Dual-Mode Autonomous & Live)
         env:
           E2E_MODE: ${{ github.event.inputs.e2e_mode || 'sandbox' }}
           CI: true
         run: |
-          pnpm --filter @unipost/console test:e2e
+          if [ "${{ github.event.inputs.e2e_mode }}" = "live" ]; then
+            pnpm test:e2e:live
+          else
+            pnpm test:e2e
+          fi
 
       - name: Archive Playwright HTML Test Report & Traces
         if: always()
