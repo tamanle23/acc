@@ -64,7 +64,7 @@ Workflow:
 - Shared counter: `NEXT = MAX(all existing NN in doc/) + 1` (start at `01`).
 - Paired feature: `implementation_plan_<NN>.md` and `walkthrough_<NN>.md` MUST share identical `NN`.
 - Reactive fix (no plan): Generate `walkthrough_<NEXT>.md` (increments counter by 1).
-- NEVER overwrite existing artifact files in `doc/`.
+- NEVER overwrite existing artifact files in `./docs/**`.
 
 ## 8. Project Routing Map
 Before modifying or analyzing any project endpoints or architecture, read the routing architecture rules defined in [ROUTE.md](./ROUTE.md).

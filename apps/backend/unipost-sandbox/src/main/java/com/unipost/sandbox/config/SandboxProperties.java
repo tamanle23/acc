@@ -38,6 +38,11 @@ public class SandboxProperties {
      */
     private DevSimulationProperties dev = new DevSimulationProperties();
 
+    /**
+     * High-volume demonstration data seed configuration.
+     */
+    private SeedProperties seed = new SeedProperties();
+
     public boolean isDevMode() {
         return mode == SandboxMode.DEV;
     }
@@ -73,5 +78,15 @@ public class SandboxProperties {
          * When false (default), data persists across server restarts.
          */
         private boolean pristine = false;
+    }
+
+    @Getter
+    @Setter
+    public static class SeedProperties {
+        private boolean enabled = true;
+        private int articlesCount = 1000;
+        private int categoriesCount = 50;
+        private int mediaAssetsCount = 200;
+        private String tenantId = "tenant-acme";
     }
 }

@@ -27,17 +27,20 @@ class SandboxDataPreWarmerTest {
         ObjectProvider<TenantBillingRepository> billingProvider = mock(ObjectProvider.class);
         @SuppressWarnings("unchecked")
         ObjectProvider<TenantProvisioningService> provisioningProvider = mock(ObjectProvider.class);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<CmsDataScaffoldingGenerator> cmsProvider = mock(ObjectProvider.class);
 
-        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider);
+        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider);
 
         preWarmer.onApplicationEvent(mock(ApplicationReadyEvent.class));
 
         verifyNoInteractions(billingProvider);
         verifyNoInteractions(provisioningProvider);
+        verifyNoInteractions(cmsProvider);
     }
 
     @Test
-    @DisplayName("Should seed TenantBilling and provision blueprint when in DEV mode")
+    @DisplayName("Should seed TenantBilling and provision blueprints when in DEV mode")
     void testSeedInDevMode() {
         SandboxProperties properties = new SandboxProperties();
         properties.setEnabled(true);
@@ -48,6 +51,7 @@ class SandboxDataPreWarmerTest {
         when(billingRepo.findByTenantId("tenant-us-east-1")).thenReturn(Optional.empty());
 
         TenantProvisioningService provisioningService = mock(TenantProvisioningService.class);
+        CmsDataScaffoldingGenerator cmsGenerator = mock(CmsDataScaffoldingGenerator.class);
 
         @SuppressWarnings("unchecked")
         ObjectProvider<TenantBillingRepository> billingProvider = mock(ObjectProvider.class);
@@ -57,14 +61,21 @@ class SandboxDataPreWarmerTest {
         ObjectProvider<TenantProvisioningService> provisioningProvider = mock(ObjectProvider.class);
         when(provisioningProvider.getIfAvailable()).thenReturn(provisioningService);
 
-        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<CmsDataScaffoldingGenerator> cmsProvider = mock(ObjectProvider.class);
+        when(cmsProvider.getIfAvailable()).thenReturn(cmsGenerator);
+
+        SandboxDataPreWarmer preWarmer = new SandboxDataPreWarmer(properties, billingProvider, provisioningProvider, cmsProvider);
 
         preWarmer.onApplicationEvent(mock(ApplicationReadyEvent.class));
 
         // Verify billing records saved
         verify(billingRepo, times(2)).save(any(TenantBilling.class));
 
-        // Verify blueprint provisioned
-        verify(provisioningService, times(1)).provisionTenant(any(TenantProvisioningRequest.class));
+        // Verify blueprints provisioned (CRM + CMS)
+        verify(provisioningService, times(2)).provisionTenant(any(TenantProvisioningRequest.class));
+
+        // Verify CMS data scaffolding invoked
+        verify(cmsGenerator, times(1)).scaffoldCmsDataIfMissing();
     }
 }

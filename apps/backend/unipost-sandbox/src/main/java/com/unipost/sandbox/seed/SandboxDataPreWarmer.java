@@ -27,15 +27,18 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
     private final SandboxProperties properties;
     private final ObjectProvider<TenantBillingRepository> billingRepositoryProvider;
     private final ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider;
+    private final ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider;
 
     public SandboxDataPreWarmer(
             SandboxProperties properties,
             ObjectProvider<TenantBillingRepository> billingRepositoryProvider,
-            ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider
+            ObjectProvider<TenantProvisioningService> tenantProvisioningServiceProvider,
+            ObjectProvider<CmsDataScaffoldingGenerator> cmsDataScaffoldingGeneratorProvider
     ) {
         this.properties = properties;
         this.billingRepositoryProvider = billingRepositoryProvider;
         this.tenantProvisioningServiceProvider = tenantProvisioningServiceProvider;
+        this.cmsDataScaffoldingGeneratorProvider = cmsDataScaffoldingGeneratorProvider;
     }
 
     @Override
@@ -54,19 +57,43 @@ public class SandboxDataPreWarmer implements ApplicationListener<ApplicationRead
             seedTenantBillingIfMissing(billingRepo, "tenant-us-east-1", "PRO", "MONTHLY", 1000000L);
         }
 
-        // 2. Provision Acme Corp Schemas and Default Workspace via Blueprint
+        // 2. Provision Acme Corp Schemas and Default Workspace via Blueprints
         TenantProvisioningService provisioningService = tenantProvisioningServiceProvider.getIfAvailable();
         if (provisioningService != null) {
+            // 2.1 Provision B2B CRM Blueprint
             try {
-                TenantProvisioningRequest request = new TenantProvisioningRequest(
+                TenantProvisioningRequest crmRequest = new TenantProvisioningRequest(
                         "tenant-acme",
                         "Acme Corporation",
                         "bp_crm_billing_v1"
                 );
-                provisioningService.provisionTenant(request);
+                provisioningService.provisionTenant(crmRequest);
                 log.info("[SANDBOX-SEED] Successfully provisioned demonstration tenant 'tenant-acme' with blueprint 'bp_crm_billing_v1'");
             } catch (Exception e) {
-                log.info("[SANDBOX-SEED] Demonstration tenant 'tenant-acme' already provisioned or skipped: {}", e.getMessage());
+                log.info("[SANDBOX-SEED] CRM blueprint for 'tenant-acme' already provisioned or skipped: {}", e.getMessage());
+            }
+
+            // 2.2 Provision Headless CMS & Publishing Blueprint
+            try {
+                TenantProvisioningRequest cmsRequest = new TenantProvisioningRequest(
+                        "tenant-acme",
+                        "Acme Corporation",
+                        "bp_cms_publishing_v1"
+                );
+                provisioningService.provisionTenant(cmsRequest);
+                log.info("[SANDBOX-SEED] Successfully provisioned demonstration tenant 'tenant-acme' with blueprint 'bp_cms_publishing_v1'");
+            } catch (Exception e) {
+                log.info("[SANDBOX-SEED] CMS blueprint for 'tenant-acme' already provisioned or skipped: {}", e.getMessage());
+            }
+        }
+
+        // 3. High-Volume CMS Data Scaffolding
+        CmsDataScaffoldingGenerator cmsGenerator = cmsDataScaffoldingGeneratorProvider.getIfAvailable();
+        if (cmsGenerator != null) {
+            try {
+                cmsGenerator.scaffoldCmsDataIfMissing();
+            } catch (Exception e) {
+                log.error("[SANDBOX-SEED] Failed to scaffold high-volume CMS dataset: {}", e.getMessage(), e);
             }
         }
 
