@@ -92,6 +92,7 @@ export function Titlebar({
               variant="ghost"
               size="icon"
               onClick={onToggleLeft}
+              aria-label={isLeftOpen ? 'Collapse Left Drawer' : 'Expand Left Drawer'}
               className={`h-8 w-8 transition-colors ${isLeftOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <PanelLeft className="w-4 h-4" />
@@ -141,6 +142,7 @@ export function Titlebar({
             size="icon"
             onClick={() => manager.undo()}
             disabled={!manager.canUndo()}
+            aria-label="Undo action"
             className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -153,6 +155,7 @@ export function Titlebar({
             size="icon"
             onClick={() => manager.redo()}
             disabled={!manager.canRedo()}
+            aria-label="Redo action"
             className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >
             <Redo2 className="w-3.5 h-3.5" />
@@ -233,6 +236,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={toggleMode}
+            aria-label={preferences.mode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[var(--accent-primary)]" />}
@@ -245,6 +249,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => setIsShortcutsOpen(true)}
+            aria-label="Open keyboard shortcuts"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <Keyboard className="w-3.5 h-3.5" />
@@ -257,6 +262,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => setIsSettingsOpen(true)}
+            aria-label="Open settings"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <Settings className="w-3.5 h-3.5" />
@@ -271,6 +277,7 @@ export function Titlebar({
                 variant="ghost"
                 size="icon"
                 onClick={onToggleRight}
+                aria-label={isRightOpen ? 'Collapse Inspector' : 'Expand Inspector'}
                 className={`h-8 w-8 transition-colors ${isRightOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <PanelRight className="w-4 h-4" />
