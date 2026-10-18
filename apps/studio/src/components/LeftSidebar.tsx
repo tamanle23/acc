@@ -287,6 +287,67 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
   );
 }
 
+export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset }) {
+  const seq = React.useMemo(() => preset.createSequence({ startFrame: 0 }), [preset]);
+  const textMod = seq.modifiers?.find((m) => m.type === 'text/style');
+  const params: any = textMod?.params || {};
+
+  const cueText = seq.cues?.[0]?.text || preset.name;
+  const fontFamily = params.fontFamily || 'Inter, system-ui, sans-serif';
+  const fontWeight = params.fontWeight || 700;
+  const textColor = params.textColor || '#ffffff';
+  const strokeColor = params.strokeColor;
+  const strokeWidth = params.strokeWidth;
+  const glowColor = params.glowColor;
+  const glowBlur = params.glowBlur ?? 8;
+  const letterSpacing = params.letterSpacing ? `${params.letterSpacing}px` : 'normal';
+
+  // Build clean text shadow style combining drop shadow and glow
+  const textShadowParts: string[] = [];
+  if (glowColor) {
+    textShadowParts.push(`0 0 ${glowBlur}px ${glowColor}`);
+    textShadowParts.push(`0 0 ${glowBlur * 2}px ${glowColor}`);
+  }
+  if (params.shadowColor) {
+    textShadowParts.push(`0 2px ${params.shadowBlur ?? 4}px ${params.shadowColor}`);
+  }
+  const textShadow = textShadowParts.length > 0 ? textShadowParts.join(', ') : '0 2px 8px rgba(0,0,0,0.5)';
+
+  const webkitTextStroke = strokeColor && strokeWidth ? `${strokeWidth}px ${strokeColor}` : undefined;
+
+  return (
+    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-slate-950/60 pointer-events-none group-hover:border-[var(--accent-primary)]/50 group-hover:bg-slate-950/80 transition-all flex items-center justify-center p-2">
+      {/* Background typographic grid texture */}
+      <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#38bdf8_1px,transparent_1px),linear-gradient(to_bottom,#38bdf8_1px,transparent_1px)] bg-[size:16px_16px]" />
+      
+      {/* Centered stylized typographic specimen */}
+      <div className="relative z-10 text-center px-2 w-full flex flex-col items-center justify-center overflow-hidden">
+        <span
+          className="truncate max-w-full leading-tight select-none font-bold"
+          style={{
+            fontFamily,
+            fontWeight,
+            color: textColor,
+            textShadow,
+            WebkitTextStroke: webkitTextStroke,
+            letterSpacing,
+            fontSize: '15px',
+          }}
+        >
+          {cueText}
+        </span>
+      </div>
+
+      {/* Font Family Metadata Tag */}
+      <div className="absolute bottom-1 right-1.5 z-20">
+        <span className="text-[8px] font-mono text-muted-foreground/80 bg-background/80 px-1 rounded border border-border/30">
+          {fontFamily.split(',')[0].replace(/['"]/g, '')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function DraggablePresetCard({
   preset,
   onInsert,
@@ -342,6 +403,10 @@ export function DraggablePresetCard({
 
       {preset.category === 'shape' && !preset.thumbnailUrl && (
         <ShapePresetThumbnail preset={preset} />
+      )}
+
+      {preset.category === 'text' && !preset.thumbnailUrl && (
+        <TypographyPresetThumbnail preset={preset} />
       )}
 
       {preset.category === 'audio' && (
