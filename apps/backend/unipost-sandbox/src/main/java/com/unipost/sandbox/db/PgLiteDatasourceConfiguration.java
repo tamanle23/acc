@@ -18,7 +18,7 @@ import java.io.File;
  * Provides ephemeral in-memory database for TEST mode and file-backed database for DEV mode.
  */
 @Configuration
-@ConditionalOnProperty(prefix = "application.sandbox.database", name = "embedded-pglite", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "true")
 public class PgLiteDatasourceConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(PgLiteDatasourceConfiguration.class);

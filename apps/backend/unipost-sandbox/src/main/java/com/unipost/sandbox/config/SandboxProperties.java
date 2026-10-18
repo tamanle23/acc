@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @Getter
 @Setter
+@org.springframework.stereotype.Component
 @ConfigurationProperties(prefix = "application.sandbox")
 public class SandboxProperties {
 
