@@ -13,5 +13,8 @@ export * from './editing';
 export * from './styles';
 export * from './canvas/UniversalCanvasEngine';
 export * from './canvas/CanvasTransformOverlay';
+export * from './canvas/UniversalCanvasProvider';
+export * from './canvas/CanvasAssetLoader';
+export * from './canvas/types';
 export * from './audio/ProceduralAudioSynthesizer';
 export * from './canvas/adapters/NodeCanvasAdapter';

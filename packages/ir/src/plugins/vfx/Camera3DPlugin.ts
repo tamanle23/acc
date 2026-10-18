@@ -10,8 +10,8 @@ import {
   type Camera3DKeyframe,
   type Camera3DState,
   resolveDepthMapData,
+  UniversalCanvasProvider,
 } from '@acc/effect-engines';
-import { createCanvas, type Image, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 
 export interface Camera3DPluginParams {
   keyframes?: Camera3DKeyframe[];
@@ -29,9 +29,9 @@ export interface Camera3DPluginParams {
 }
 
 interface FocalZoneCanvases {
-  sharpCanvas: Canvas;
-  nearBlurCanvas: Canvas;
-  farBlurCanvas: Canvas;
+  sharpCanvas: any;
+  nearBlurCanvas: any;
+  farBlurCanvas: any;
 }
 
 /**
@@ -108,8 +108,10 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
           const sharpCanvas = depthData.srcCanvas;
 
           // Generate near-blur (foreground bokeh) and far-blur (background bokeh)
-          const nearBlurCanvas = createCanvas(width, height);
-          const farBlurCanvas = createCanvas(width, height);
+          const uNear = UniversalCanvasProvider.createCanvas(width, height);
+          const uFar = UniversalCanvasProvider.createCanvas(width, height);
+          const nearBlurCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
+          const farBlurCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
 
           const nbCtx = nearBlurCanvas.getContext('2d');
           const fbCtx = farBlurCanvas.getContext('2d');
@@ -212,8 +214,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
    * Eliminates heavy per-pixel CPU convolution while maintaining 60fps performance.
    */
   private drawFastBlurred(
-    targetCtx: SKRSContext2D,
-    srcCanvas: Canvas,
+    targetCtx: any,
+    srcCanvas: any,
     w: number,
     h: number,
     blurLevel: number
@@ -221,7 +223,8 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     const downW = Math.max(8, Math.round(w / (blurLevel * 2)));
     const downH = Math.max(8, Math.round(h / (blurLevel * 2)));
 
-    const tinyCanvas = createCanvas(downW, downH);
+    const uTiny = UniversalCanvasProvider.createCanvas(downW, downH);
+    const tinyCanvas = uTiny.getRawCanvas ? uTiny.getRawCanvas() : uTiny;
     const tCtx = tinyCanvas.getContext('2d');
 
     // Downscale with bilinear filter

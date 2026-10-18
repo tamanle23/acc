@@ -1,11 +1,13 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { createCanvas, loadImage, type Canvas, type SKRSContext2D, type Image } from '@napi-rs/canvas';
 import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '../types/VideoIR';
 import { FrameBackpressureLock } from './handshake/FrameBackpressureLock';
 import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
-import { DecoupledAudioMixer, type DecoupledAudioMixResult } from './audio/DecoupledAudioMixer';
+import {
+  UniversalAudioMixer,
+  type DecoupledAudioMixResult,
+} from './audio/UniversalAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
 import {
@@ -13,6 +15,8 @@ import {
   drawCanvasCaptionsFromSnapshot,
   type CaptionConfig,
   type CaptionSettings,
+  UniversalCanvasProvider,
+  CanvasAssetLoader,
 } from '@acc/effect-engines';
 import { FFIVideoDecoder } from '@acc/core';
 
@@ -51,20 +55,20 @@ export class IRMasterRenderer {
   private timeline: ResolvedTimeline;
   private noiseGen: DeterministicNoiseGenerator;
   private lock: FrameBackpressureLock;
-  private audioMixer: DecoupledAudioMixer;
+  private audioMixer: UniversalAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
   private captionStrategy: BoundedAcousticCaptionStrategy;
   private captionConfigCache: WeakMap<ResolvedSequence, CaptionConfig[]> = new WeakMap();
 
   // Cached assets to prevent disk re-reads in render loop
-  private imageCache: Map<string, Image> = new Map();
+  private imageCache: Map<string, any> = new Map();
   private videoDecoders: Map<string, FFIVideoDecoder> = new Map();
 
   constructor(timeline: ResolvedTimeline, seed: number = 42, pluginRegistry?: ModifierPluginRegistry) {
     this.timeline = timeline;
     this.noiseGen = new DeterministicNoiseGenerator(seed);
     this.lock = new FrameBackpressureLock();
-    this.audioMixer = new DecoupledAudioMixer();
+    this.audioMixer = new UniversalAudioMixer([], 48000);
     // Use passed isolated registry or create an isolated one for deterministic multi-worker safety
     this.pluginRegistry = pluginRegistry ?? createIsolatedCoreModifierPlugins();
     this.captionStrategy = new BoundedAcousticCaptionStrategy();
@@ -87,7 +91,7 @@ export class IRMasterRenderer {
             const ext = path.extname(resolvedPath).toLowerCase();
             // Load if image format
             if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
-              const img = await loadImage(resolvedPath);
+              const img = await CanvasAssetLoader.loadImage(resolvedPath);
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
               const decoder = new FFIVideoDecoder(
@@ -173,14 +177,14 @@ export class IRMasterRenderer {
     if (!options.skipAudio) {
       // If sink is active and no explicit audioPath was passed, pre-render mixed audio to temp WAV
       if (sink && !options.audioPath) {
-        audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
+        audioResult = await this.audioMixer.mixTimeline(this.timeline, { baseDir: options.baseDir });
         if (audioResult.totalSamples > 0) {
           const outDir = options.outputPath ? path.dirname(options.outputPath) : '.';
           tempAudioWavPath = path.resolve(outDir, `.temp_${Date.now()}_master_audio.wav`);
-          await DecoupledAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+          await UniversalAudioMixer.exportToWav(tempAudioWavPath, audioResult);
         }
       } else {
-        audioResult = await this.audioMixer.mix(this.timeline, { baseDir: options.baseDir });
+        audioResult = await this.audioMixer.mixTimeline(this.timeline, { baseDir: options.baseDir });
       }
     }
 
@@ -207,10 +211,12 @@ export class IRMasterRenderer {
     const framePixelBuffer = new Uint8Array(width * height * 4);
 
     // Pre-allocate reusable 2D canvas & context for hardware/software blitting
-    let canvas: Canvas | undefined;
-    let canvasCtx: SKRSContext2D | undefined;
+    let canvasInstance: any | undefined;
+    let canvas: any | undefined;
+    let canvasCtx: any | undefined;
     if (this.imageCache.size > 0 || this.hasVisualTracks()) {
-      canvas = createCanvas(width, height);
+      canvasInstance = UniversalCanvasProvider.createCanvas(width, height);
+      canvas = canvasInstance.getRawCanvas ? canvasInstance.getRawCanvas() : canvasInstance;
       canvasCtx = canvas.getContext('2d');
     }
 
@@ -311,8 +317,8 @@ export class IRMasterRenderer {
     t: number,
     width: number,
     height: number,
-    canvas: Canvas,
-    ctx: SKRSContext2D,
+    canvas: any,
+    ctx: any,
     buffer: Uint8Array
   ): Promise<void> {
     // Clear canvas
@@ -490,7 +496,12 @@ export class IRMasterRenderer {
     }
 
     // Copy into preallocated framePixelBuffer directly to preserve ZERO-ALLOC-FRAME-LOOP
-    buffer.set(canvas.data());
+    if (typeof canvas.data === 'function') {
+      buffer.set(canvas.data());
+    } else {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      buffer.set(imgData.data);
+    }
   }
 
   private rasterizeProceduralFrame(t: number, width: number, height: number, buffer: Uint8Array): void {

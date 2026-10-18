@@ -9,6 +9,12 @@ export default defineConfig({
   build: {
     outDir: 'dist/client',
     emptyOutDir: true,
+    rollupOptions: {
+      external: [
+        /@napi-rs\/canvas/,
+        /\.node$/,
+      ],
+    },
   },
   server: {
     port: 5173,

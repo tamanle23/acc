@@ -1,8 +1,24 @@
+import fs from 'fs';
+import path from 'path';
 import { ProceduralAudioSynthesizer } from './ProceduralAudioSynthesizer';
 import { DynamicAudioDuckingEngine } from './DynamicAudioDuckingEngine';
 import type { IAudioSourceProvider } from './AudioSourceAdapter';
-import type { ModifierNode } from '../../types/VideoIR';
+import type { ModifierNode, ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
+import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
+import type { DecodedAudioPCM } from '@acc/core';
+
+export interface DecoupledAudioMixResult {
+  totalSamples: number;
+  sampleRate: number;
+  channels: number;
+  durationSeconds: number;
+  buffer: Float32Array; // Interleaved stereo PCM stream
+}
+
+export interface DecoupledAudioMixOptions {
+  baseDir?: string;
+}
 
 export type AudioTrackType = 'voice' | 'sfx' | 'bgm';
 
@@ -260,5 +276,304 @@ export class UniversalAudioMixer {
         plugin.processAudioStream(ctx, right, mod.params);
       }
     }
+  }
+
+  /**
+   * Concurrently mixes an entire ResolvedTimeline into a single contiguous interleaved PCM audio stream.
+   * Unifies timeline-level offline mixing with sample-accurate ducking, BGM loops, and spatial pan.
+   */
+  public async mixTimeline(
+    timeline: ResolvedTimeline,
+    options: DecoupledAudioMixOptions = {}
+  ): Promise<DecoupledAudioMixResult> {
+    const totalSamples = DeterministicAudioClock.totalSamplesForFrames(
+      timeline.totalFrames,
+      this.sampleRate,
+      timeline.meta.globalFps
+    );
+    const channels = 2;
+
+    // Master bus (Float32 interleaved stereo)
+    const masterBuffer = new Float32Array(totalSamples * channels);
+    // Dedicated voiceover bus for sidechain ducking analysis
+    const voiceBuffer = new Float32Array(totalSamples * channels);
+
+    // Collect tracks by type
+    const voiceTracks: ResolvedTrack[] = [];
+    const bgmTracks: ResolvedTrack[] = [];
+    const sfxTracks: ResolvedTrack[] = [];
+
+    for (const track of timeline.tracks.values()) {
+      if (track.type === 'audio') {
+        if (track.id.includes('voiceover') || track.id.includes('a1')) {
+          voiceTracks.push(track);
+        } else if (track.id.includes('bgm') || track.id.includes('a2')) {
+          bgmTracks.push(track);
+        } else {
+          sfxTracks.push(track);
+        }
+      }
+    }
+
+    const baseDir = options.baseDir || '.';
+
+    // --- PHASE 1: Render Voiceover Dialogue Track ---
+    for (const track of voiceTracks) {
+      for (const seq of track.sequences) {
+        const startSample = Math.round(
+          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
+        );
+        const durationSamples = Math.round(
+          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
+        );
+        const endSample = Math.min(totalSamples, startSample + durationSamples);
+
+        let decoded: DecodedAudioPCM | null = null;
+        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
+          const assetSrc = timeline.assets[seq.assetId].src;
+          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          decoded = await this.decodeAsset(resolvedPath);
+        }
+
+        if (decoded) {
+          const srcData = decoded.data;
+          const totalSrcSamples = decoded.totalSamplesPerChannel;
+
+          for (let s = startSample; s < endSample; s++) {
+            const srcIdx = s - startSample;
+            if (srcIdx >= totalSrcSamples) break;
+
+            const outIdx = s * channels;
+            const inIdx = srcIdx * channels;
+            const left = srcData[inIdx];
+            const right = srcData[inIdx + 1];
+
+            voiceBuffer[outIdx] += left;
+            voiceBuffer[outIdx + 1] += right;
+
+            masterBuffer[outIdx] += left;
+            masterBuffer[outIdx + 1] += right;
+          }
+        }
+      }
+    }
+
+    // --- PHASE 2: Dynamic Sidechain Envelope Calculation ---
+    let duckingEnvelope: Float32Array | null = null;
+    const hasDucking = bgmTracks.some((t) => t.modifiers?.some((m) => m.type === 'sfx/dynamic_ducking'));
+    if (hasDucking) {
+      duckingEnvelope = DynamicAudioDuckingEngine.generateEnvelope(voiceBuffer, totalSamples, {
+        sampleRate: this.sampleRate,
+        channels,
+        attenuationDb: -18.0,
+        thresholdDb: -36.0,
+        attackMs: 15,
+        holdMs: 100,
+        releaseMs: 300,
+      });
+    }
+
+    // --- PHASE 3: Render Background Music (BGM) with Loop, Fade & Ducking ---
+    for (const track of bgmTracks) {
+      for (const seq of track.sequences) {
+        const startSample = Math.round(
+          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
+        );
+        const durationSamples = Math.round(
+          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
+        );
+        const endSample = Math.min(totalSamples, startSample + durationSamples);
+        const baseGain = 0.25; // Default BGM volume multiplier
+
+        let decoded: DecodedAudioPCM | null = null;
+        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
+          const assetSrc = timeline.assets[seq.assetId].src;
+          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          decoded = await this.decodeAsset(resolvedPath);
+        }
+
+        const fadeInSamples = Math.round(1.5 * this.sampleRate);
+        const fadeOutSamples = Math.round(2.0 * this.sampleRate);
+
+        if (decoded) {
+          const srcData = decoded.data;
+          const totalSrcSamples = decoded.totalSamplesPerChannel;
+
+          for (let s = startSample; s < endSample; s++) {
+            const loopSampleIdx = (s - startSample) % totalSrcSamples;
+            const inIdx = loopSampleIdx * channels;
+
+            let fadeGain = 1.0;
+            const tFromStart = s - startSample;
+            const tFromEnd = endSample - s;
+            if (tFromStart < fadeInSamples) {
+              fadeGain = Math.sin((Math.PI * tFromStart) / (2 * fadeInSamples));
+            } else if (tFromEnd < fadeOutSamples) {
+              fadeGain = Math.sin((Math.PI * tFromEnd) / (2 * fadeOutSamples));
+            }
+
+            let duckMultiplier = 1.0;
+            if (duckingEnvelope) {
+              duckMultiplier = duckingEnvelope[s];
+            }
+
+            const currentBgmGain = baseGain * fadeGain * duckMultiplier;
+            const outIdx = s * channels;
+
+            masterBuffer[outIdx] += srcData[inIdx] * currentBgmGain;
+            masterBuffer[outIdx + 1] += srcData[inIdx + 1] * currentBgmGain;
+          }
+        } else {
+          for (let s = startSample; s < endSample; s++) {
+            const outIdx = s * channels;
+            const duckMultiplier = duckingEnvelope ? duckingEnvelope[s] : 1.0;
+            const gain = 0.04 * duckMultiplier;
+            masterBuffer[outIdx] += gain;
+            masterBuffer[outIdx + 1] += gain;
+          }
+        }
+      }
+    }
+
+    // --- PHASE 4: Render Sound Effects (SFX) with Stereo Panning ---
+    for (const track of sfxTracks) {
+      for (const seq of track.sequences) {
+        const startSample = Math.round(
+          (seq.startFrame * this.sampleRate) / timeline.meta.globalFps
+        );
+        const durationSamples = Math.round(
+          (seq.durationFrames * this.sampleRate) / timeline.meta.globalFps
+        );
+        const endSample = Math.min(totalSamples, startSample + durationSamples);
+
+        let decoded: DecodedAudioPCM | null = null;
+        if (seq.assetId && timeline.assets && timeline.assets[seq.assetId]) {
+          const assetSrc = timeline.assets[seq.assetId].src;
+          const resolvedPath = path.isAbsolute(assetSrc) ? assetSrc : path.resolve(baseDir, assetSrc);
+          decoded = await this.decodeAsset(resolvedPath);
+        }
+
+        const pan = (seq as any).spatialPan ?? 0.0;
+        const clampedPan = Math.max(-1.0, Math.min(1.0, pan));
+        const panAngle = ((clampedPan + 1.0) * Math.PI) / 4.0;
+        const panLeftGain = Math.cos(panAngle);
+        const panRightGain = Math.sin(panAngle);
+        const sfxVolume = (seq as any).volume ?? 0.8;
+
+        if (decoded) {
+          const srcData = decoded.data;
+          const totalSrcSamples = decoded.totalSamplesPerChannel;
+
+          for (let s = startSample; s < endSample; s++) {
+            const srcIdx = s - startSample;
+            if (srcIdx >= totalSrcSamples) break;
+
+            const inIdx = srcIdx * channels;
+            const outIdx = s * channels;
+
+            const monoEnergy = (srcData[inIdx] + srcData[inIdx + 1]) * 0.5;
+            masterBuffer[outIdx] += monoEnergy * panLeftGain * sfxVolume;
+            masterBuffer[outIdx + 1] += monoEnergy * panRightGain * sfxVolume;
+          }
+        }
+      }
+    }
+
+    // --- PHASE 5: Tanh Soft-Clipping Master Bus Brickwall Limiter ---
+    for (let i = 0; i < masterBuffer.length; i++) {
+      masterBuffer[i] = Math.tanh(masterBuffer[i]);
+    }
+
+    return {
+      totalSamples,
+      sampleRate: this.sampleRate,
+      channels,
+      durationSeconds: timeline.durationSeconds,
+      buffer: masterBuffer,
+    };
+  }
+
+  private audioCache = new Map<string, DecodedAudioPCM>();
+
+  /**
+   * Universal audio decoder leveraging FFIAudioDecoder with memory caching.
+   */
+  public async decodeAsset(filePath: string): Promise<DecodedAudioPCM | null> {
+    if (this.audioCache.has(filePath)) {
+      return this.audioCache.get(filePath)!;
+    }
+
+    try {
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        // Dynamically load native FFIAudioDecoder only in Node/Bun runtime
+        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
+        const core = req('@acc/core');
+        if (core?.FFIAudioDecoder) {
+          const decoded = await core.FFIAudioDecoder.decodeToPCM(filePath, this.sampleRate, 2);
+          if (decoded) {
+            this.audioCache.set(filePath, decoded);
+            return decoded;
+          }
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return null;
+  }
+
+  /**
+   * Encodes a DecoupledAudioMixResult into a valid 16-bit stereo PCM WAV file on disk.
+   */
+  public static async exportToWav(filePath: string, mixResult: DecoupledAudioMixResult): Promise<void> {
+    const totalFrames = mixResult.totalSamples;
+    const channels = mixResult.channels;
+    const sampleRate = mixResult.sampleRate;
+    const bytesPerSample = 2; // 16-bit
+    const blockAlign = channels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = totalFrames * blockAlign;
+    const totalBufferSize = 44 + dataSize;
+
+    const buffer = Buffer.alloc(totalBufferSize);
+
+    // RIFF chunk descriptor
+    buffer.write('RIFF', 0);
+    buffer.writeUInt32LE(totalBufferSize - 8, 4);
+    buffer.write('WAVE', 8);
+
+    // "fmt " sub-chunk
+    buffer.write('fmt ', 12);
+    buffer.writeUInt32LE(16, 16);
+    buffer.writeUInt16LE(1, 20);
+    buffer.writeUInt16LE(channels, 22);
+    buffer.writeUInt32LE(sampleRate, 24);
+    buffer.writeUInt32LE(byteRate, 28);
+    buffer.writeUInt16LE(blockAlign, 32);
+    buffer.writeUInt16LE(16, 34);
+
+    // "data" sub-chunk
+    buffer.write('data', 36);
+    buffer.writeUInt32LE(dataSize, 40);
+
+    let byteOffset = 44;
+    const floatSamples = mixResult.buffer;
+    const len = floatSamples.length;
+
+    for (let i = 0; i < len; i++) {
+      let s = floatSamples[i];
+      if (s > 1.0) s = 1.0;
+      else if (s < -1.0) s = -1.0;
+      const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
+      buffer.writeInt16LE(int16, byteOffset);
+      byteOffset += 2;
+    }
+
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      await fs.promises.mkdir(dir, { recursive: true });
+    }
+
+    await fs.promises.writeFile(filePath, buffer);
   }
 }

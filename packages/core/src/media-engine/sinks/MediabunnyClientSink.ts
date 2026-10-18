@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import {
   Output,
   Mp4OutputFormat,
@@ -85,13 +83,19 @@ export class MediabunnyClientSink implements IMediaFrameSink {
     let fileSizeBytes = buffer ? buffer.byteLength : 0;
 
     // If an outputPath was specified (e.g. running in Node test or electron desktop mode), persist buffer
-    if (this.outputPath && buffer) {
-      const outputDir = path.dirname(this.outputPath);
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
+    if (this.outputPath && buffer && typeof process !== 'undefined' && process.versions?.node) {
+      try {
+        const nodeFs = await import('fs');
+        const nodePath = await import('path');
+        const outputDir = nodePath.dirname(this.outputPath);
+        if (!nodeFs.existsSync(outputDir)) {
+          nodeFs.mkdirSync(outputDir, { recursive: true });
+        }
+        nodeFs.writeFileSync(this.outputPath, Buffer.from(buffer));
+        fileSizeBytes = nodeFs.statSync(this.outputPath).size;
+      } catch (err) {
+        // Ignore file save failure in non-Node or browser contexts
       }
-      fs.writeFileSync(this.outputPath, Buffer.from(buffer));
-      fileSizeBytes = fs.statSync(this.outputPath).size;
     }
 
     return {

@@ -8,8 +8,9 @@ import {
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type RelightingParams,
+  UniversalCanvasProvider,
+  type CanvasInstance,
 } from '@acc/effect-engines';
-import { createCanvas, type Image, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 
 export type Depth3DMode =
   | 'frame_breaker'
@@ -66,14 +67,14 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public readonly targetPhase = 2;
 
   // Cache resolved cutouts and depth layers per sequence to maintain ZERO-ALLOC-FRAME-LOOP
-  private cutoutCache = new Map<string, { subjectImg: Image | null; subjectBBox: any | null }>();
-  private depthLayerCache = new Map<string, { srcCanvas: Canvas; depthLayers: any }>();
-  private bgCanvasCache = new Map<string, Canvas>();
+  private cutoutCache = new Map<string, { subjectImg: any | null; subjectBBox: any | null }>();
+  private depthLayerCache = new Map<string, { srcCanvas: any; depthLayers: any }>();
+  private bgCanvasCache = new Map<string, any>();
   private particlesCache = new Map<string, any[]>();
   private dustParticlesCache = new Map<string, any[]>();
-  private baseCanvasCache = new Map<string, Canvas>();
+  private baseCanvasCache = new Map<string, any>();
   private normalMapCache = new Map<string, SurfaceNormalMap>();
-  private relightCanvasCache = new Map<string, { canvas: Canvas; ctx: SKRSContext2D }>();
+  private relightCanvasCache = new Map<string, { canvas: any; ctx: any }>();
 
   public validate(params: unknown): params is Depth3DPluginParams {
     return Boolean(params && typeof params === 'object' && 'mode' in params);
@@ -123,9 +124,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             this.normalMapCache.set(params.imagePath, normalMap);
 
             // Pre-allocate scratch canvas for relight compositing
-            const relightCanvas = createCanvas(width, height);
+            const relightCanvas = UniversalCanvasProvider.createCanvas(width, height);
             const rCtx = relightCanvas.getContext('2d');
-            this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas, ctx: rCtx });
+            this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas, ctx: rCtx });
           }
         } catch {}
       }
@@ -176,11 +177,12 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     }
 
     // Build or retrieve cached dimmed background plate for frame_breaker
-    let bgCanvas: Canvas | undefined;
+    let bgCanvas: any | undefined;
     if (mode === 'frame_breaker' && params.imagePath) {
       bgCanvas = this.bgCanvasCache.get(params.imagePath);
       if (!bgCanvas) {
-        bgCanvas = createCanvas(width, height);
+        const uCanvas = UniversalCanvasProvider.createCanvas(width, height);
+        bgCanvas = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
         const bgCtx = bgCanvas.getContext('2d');
         bgCtx.fillStyle = '#06060c';
         bgCtx.fillRect(0, 0, width, height);
@@ -226,11 +228,12 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     const dustParticles = params.imagePath ? this.dustParticlesCache.get(params.imagePath) : undefined;
 
     // Build or retrieve cached baseCanvas (e.g. for wigglegram)
-    let baseCanvas: Canvas | undefined;
+    let baseCanvas: any | undefined;
     if (mode === 'wigglegram' && params.imagePath) {
       baseCanvas = this.baseCanvasCache.get(params.imagePath);
       if (!baseCanvas) {
-        baseCanvas = createCanvas(width, height);
+        const uBaseCanvas = UniversalCanvasProvider.createCanvas(width, height);
+        baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
         const bCtx = baseCanvas.getContext('2d');
         bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
         this.baseCanvasCache.set(params.imagePath, baseCanvas);

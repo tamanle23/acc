@@ -2,8 +2,8 @@ import type { ModifierPlugin, ModifierContext, StreamRenderContext, ClipRenderCo
 import {
   SIMDParticleComputeEngine,
   PostProcessingShaders,
+  UniversalCanvasProvider,
 } from '@acc/effect-engines';
-import { createCanvas, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 
 export type ProceduralParticleType =
   | 'rain'
@@ -49,7 +49,7 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
   public readonly targetPhase = 3;
 
   private simdEngineCache = new Map<string, SIMDParticleComputeEngine>();
-  private scratchCanvasCache = new Map<string, { canvas: Canvas; ctx: SKRSContext2D }>();
+  private scratchCanvasCache = new Map<string, { canvas: any; ctx: any }>();
 
   public validate(params: unknown): params is CanvasParticleOverlayParams {
     return Boolean(params && typeof params === 'object' && 'type' in params);
@@ -84,7 +84,8 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
 
     // Pre-allocate scratch canvas for post-processing shaders
     if (params.shaders?.bloom?.enabled || params.shaders?.chromaticAberration?.enabled) {
-      const scratch = createCanvas(width, height);
+      const uScratch = UniversalCanvasProvider.createCanvas(width, height);
+      const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
       const sCtx = scratch.getContext('2d');
       this.scratchCanvasCache.set(key, { canvas: scratch, ctx: sCtx });
     }

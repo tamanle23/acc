@@ -7,7 +7,7 @@ import {
   IntervalTreeIndex,
   VideoIRSchemaValidator,
   type ValidationResult,
-} from '@acc/ir';
+} from '@acc/ir/client';
 import { complexSciFiDemoIR } from './complexSciFiDemoIR';
 import { defaultDemoIR } from './defaultDemoIR';
 import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
