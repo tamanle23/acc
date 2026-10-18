@@ -4,7 +4,6 @@
  * Strictly guarantees ZERO native C/Node.js dependencies (.node binaries, @napi-rs/canvas, fs).
  */
 
-export * from './canvas/UniversalCanvasEngine';
 export * from './canvas/CanvasTransformOverlay';
 export * from './canvas/UniversalCanvasProvider';
 export * from './canvas/CanvasAssetLoader';

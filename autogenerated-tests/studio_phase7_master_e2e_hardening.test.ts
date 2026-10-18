@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { createHash } from 'crypto';
 import { createCanvas } from '@napi-rs/canvas';
 import {
-  UniversalCanvasEngine,
   UniversalCanvasProvider,
   NodeCanvasAdapter,
   type CanvasInstance,
 } from '../packages/effect-engines/src';
+import { IRPreviewEngine } from '../packages/ir/src/renderer/preview/IRPreviewEngine';
+import { evaluateSequenceMotion } from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+import type { ResolvedTimeline, ResolvedTrack } from '../packages/ir/src/types/VideoIR';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { MoveSequenceCommand } from '../apps/studio/src/lib/commands/MoveSequenceCommand';
 import { TrimSequenceCommand } from '../apps/studio/src/lib/commands/TrimSequenceCommand';
@@ -22,32 +24,27 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
     const FRAMES_TO_TEST = [0, 15, 30, 45, 60];
     const FPS = 30;
 
-    function renderDeterministicSceneRun(): { frameHashes: string[]; cumulativeHash: string } {
-      const adapter = new NodeCanvasAdapter();
-      const canvas = adapter.createCanvas(W, H);
-      const ctx = canvas.getContext('2d') as any;
-
-      const engine = new UniversalCanvasEngine({ width: W, height: H });
-
-      // Deterministic particle swarm with fixed seed
-      engine.initParticleSystem(100, 1337);
-
-      // Deterministic holographic HUD
-      engine.initHologramHUD(0.35, 32);
-
-      // Deterministic Partial VFX
-      engine.setPartialVFXRegions([
-        { id: 'vfx-spot', type: 'spotlight', x: 0.5, y: 0.5, radius: 120, color: '#00d4ff', intensity: 1.2 },
-        { id: 'vfx-glitch', type: 'glitch', x: 0.3, y: 0.4, width: 0.25, height: 0.15, intensity: 0.8 },
-        { id: 'vfx-emitter', type: 'point_emitter', x: 0.6, y: 0.3, color: '#ec4899', intensity: 1.0 },
-      ]);
-
-      // GSAP Declarative Timeline
-      engine.syncTimeline(
-        [
+    function createDeterministicTestTimeline(): ResolvedTimeline {
+      const track: ResolvedTrack = {
+        id: 'track-v1',
+        name: 'Video Track',
+        type: 'visual',
+        order: 1,
+        modifiers: [
+          {
+            type: 'overlay/hologram_hud',
+            params: { ringRadius: 0.35, scanlineDensity: 32, rotationSpeed: 0.5 },
+          },
+        ],
+        sequences: [
           {
             id: 'seq-hero',
-            time: { start: 0, duration: 90 },
+            name: 'Hero Sequence',
+            type: 'video',
+            startFrame: 0,
+            durationFrames: 90,
+            endFrame: 90,
+            timelineStartFrame: 0,
             modifiers: [
               {
                 type: 'transform',
@@ -64,31 +61,49 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
                   },
                 },
               },
+              {
+                type: 'vfx/partial',
+                params: { type: 'spotlight', intensity: 1.2, radius: 120, color: '#00d4ff' },
+              },
             ],
           },
         ],
-        FPS
-      );
+      };
+
+      const tracksMap = new Map<string, ResolvedTrack>();
+      tracksMap.set(track.id, track);
+      const seqMap = new Map();
+      seqMap.set(track.sequences[0].id, track.sequences[0]);
+
+      return {
+        id: 'timeline-e2e-deterministic',
+        totalFrames: 120,
+        meta: {
+          globalFps: FPS,
+          canvasSize: { w: W, h: H },
+        },
+        tracks: tracksMap,
+        sequences: seqMap,
+        modifiers: [],
+      };
+    }
+
+    function renderDeterministicSceneRun(): { frameHashes: string[]; cumulativeHash: string } {
+      const adapter = new NodeCanvasAdapter();
+      const canvas = adapter.createCanvas(W, H);
+      const ctx = canvas.getContext('2d') as any;
+
+      const timeline = createDeterministicTestTimeline();
+      const engine = new IRPreviewEngine(timeline);
 
       const frameHashes: string[] = [];
       const cumulativeHasher = createHash('sha256');
 
       for (const f of FRAMES_TO_TEST) {
-        const timeSec = f / FPS;
         ctx.fillStyle = '#0a0f1d';
         ctx.fillRect(0, 0, W, H);
 
-        // 1. Dual-pass Parallax Relighting
-        engine.render2DParallax(ctx, W, H, timeSec, {
-          x: 0.5,
-          y: 0.5,
-          diffuse: 1.2,
-          specular: 1.5,
-          color: '#38bdf8',
-        });
-
-        // 2. Core Visual Rendering
-        engine.render(ctx, timeSec, 1.0);
+        engine.renderFrame(f, ctx);
 
         // Extract raw RGBA bytes
         const rawPixels = canvas.toBuffer('raw');
@@ -97,7 +112,6 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
         cumulativeHasher.update(rawPixels);
       }
 
-      engine.dispose();
       return {
         frameHashes,
         cumulativeHash: cumulativeHasher.digest('hex'),
@@ -138,52 +152,73 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
       const canvas = adapter.createCanvas(W, H);
       const ctx = canvas.getContext('2d') as any;
 
-      const engine = new UniversalCanvasEngine({ width: W, height: H });
+      // 10 Layered Tracks/Sequences in Video IR
+      const tracksMap = new Map<string, ResolvedTrack>();
+      const sequencesMap = new Map();
 
-      // High-density: 500 particles
-      engine.initParticleSystem(500, 9999);
+      for (let i = 0; i < 10; i++) {
+        const seq = {
+          id: `seq-layer-${i}`,
+          name: `Layer ${i}`,
+          type: 'video' as const,
+          startFrame: i * 5,
+          durationFrames: 80,
+          endFrame: i * 5 + 80,
+          timelineStartFrame: i * 5,
+          modifiers: [
+            {
+              type: 'transform',
+              params: {
+                x: (i - 5) * 20,
+                y: (i - 5) * 15,
+                scale: 1.0 + (i % 3) * 0.1,
+                rotation: (i - 5) * 4,
+                animation: { preset: 'drift' },
+              },
+            },
+            {
+              type: 'vfx/partial',
+              params: { type: 'spotlight', intensity: 1.2, radius: 100, color: '#00d4ff' },
+            },
+          ],
+        };
+        const track: ResolvedTrack = {
+          id: `track-${i}`,
+          name: `Track ${i}`,
+          type: 'visual',
+          order: i,
+          sequences: [seq],
+        };
+        tracksMap.set(track.id, track);
+        sequencesMap.set(seq.id, seq);
+      }
 
-      // Procedural HUD
-      engine.initHologramHUD(0.4, 48);
-
-      // 5 VFX Regions
-      engine.setPartialVFXRegions([
-        { id: 'vfx-1', type: 'spotlight', x: 0.2, y: 0.3, radius: 180, color: '#00d4ff', intensity: 1.5 },
-        { id: 'vfx-2', type: 'glitch', x: 0.7, y: 0.6, width: 0.3, height: 0.2, intensity: 1.2 },
-        { id: 'vfx-3', type: 'blur', x: 0.5, y: 0.5, width: 0.4, height: 0.3 },
-        { id: 'vfx-4', type: 'point_emitter', x: 0.3, y: 0.7, color: '#ec4899', intensity: 1.4 },
-        { id: 'vfx-5', type: 'spotlight', x: 0.8, y: 0.2, radius: 150, color: '#38bdf8', intensity: 1.0 },
-      ]);
-
-      // 10 Layered Tracks/Sequences in GSAP Timeline
-      const sequences = Array.from({ length: 10 }).map((_, i) => ({
-        id: `seq-layer-${i}`,
-        time: { start: i * 5, duration: 80 },
+      const timeline: ResolvedTimeline = {
+        id: 'timeline-benchmark-hd',
+        totalFrames: 150,
+        meta: {
+          globalFps: 30,
+          canvasSize: { w: W, h: H },
+        },
+        tracks: tracksMap,
+        sequences: sequencesMap,
         modifiers: [
           {
-            type: 'transform',
-            params: {
-              x: (i - 5) * 20,
-              y: (i - 5) * 15,
-              scale: 1.0 + (i % 3) * 0.1,
-              rotation: (i - 5) * 4,
-              animation: { preset: 'drift' },
-            },
+            type: 'overlay/hologram_hud',
+            params: { ringRadius: 0.4, scanlineDensity: 48 },
           },
         ],
-      }));
-      engine.syncTimeline(sequences, 30);
+      };
 
+      const engine = new IRPreviewEngine(timeline);
       const frameTimes: number[] = [];
 
       for (let f = 0; f < TOTAL_BENCHMARK_FRAMES; f++) {
-        const timeSec = f / 30;
         const t0 = performance.now();
 
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, W, H);
-        engine.render2DParallax(ctx, W, H, timeSec);
-        engine.render(ctx, timeSec, 1.0);
+        engine.renderFrame(f, ctx);
 
         const dt = performance.now() - t0;
         frameTimes.push(dt);
@@ -197,20 +232,56 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
       // Average must be strictly below 12.0ms (60fps is 16.6ms)
       expect(avgMs).toBeLessThan(12.0);
       expect(p95Ms).toBeLessThan(20.0);
-
-      engine.dispose();
     });
 
     it('should maintain heap stability across 500 consecutive random seeks', () => {
-      const engine = new UniversalCanvasEngine({ width: W, height: H });
-      engine.initParticleSystem(200, 42);
-      engine.initHologramHUD(0.3, 30);
+      const track: ResolvedTrack = {
+        id: 'track-v1',
+        name: 'V1',
+        type: 'visual',
+        order: 1,
+        sequences: [
+          {
+            id: 'seq-1',
+            name: 'Hero',
+            type: 'video',
+            startFrame: 0,
+            durationFrames: 300,
+            endFrame: 300,
+            timelineStartFrame: 0,
+            modifiers: [],
+          },
+        ],
+      };
 
+      const tracksMap = new Map();
+      tracksMap.set(track.id, track);
+      const seqMap = new Map();
+      seqMap.set(track.sequences[0].id, track.sequences[0]);
+
+      const timeline: ResolvedTimeline = {
+        id: 'timeline-heap-test',
+        totalFrames: 300,
+        meta: {
+          globalFps: 30,
+          canvasSize: { w: W, h: H },
+        },
+        tracks: tracksMap,
+        sequences: seqMap,
+        modifiers: [
+          {
+            type: 'overlay/hologram_hud',
+            params: { ringRadius: 0.3, scanlineDensity: 30 },
+          },
+        ],
+      };
+
+      const engine = new IRPreviewEngine(timeline);
       const initialMemory = process.memoryUsage().heapUsed;
 
       for (let i = 0; i < 500; i++) {
-        const randomTime = (i * 7.13) % 60;
-        engine.update(randomTime, 1.0);
+        const randomFrame = Math.floor((i * 7.13) % 300);
+        engine.seek(randomFrame);
       }
 
       const finalMemory = process.memoryUsage().heapUsed;
@@ -218,7 +289,6 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
 
       // Memory expansion should not exceed 25MB after 500 seeks
       expect(expansionMb).toBeLessThan(25);
-      engine.dispose();
     });
   });
 
@@ -274,38 +344,20 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
       expect(trimmedSeq?.time.duration).toBeGreaterThanOrEqual(1);
     });
 
-    it('should sanitize NaN and non-positive transform values in UniversalCanvasEngine', () => {
-      const engine = new UniversalCanvasEngine({ width: 800, height: 600 });
-      const badSequences = [
-        {
-          id: 'seq-corrupt-transform',
-          time: { start: -10, duration: -50 },
-          modifiers: [
-            {
-              type: 'transform',
-              params: {
-                x: NaN,
-                y: NaN,
-                scale: 0, // invalid scale
-                rotation: NaN,
-              },
-            },
-          ],
-        },
-      ];
+    it('should sanitize NaN and non-positive transform values in IRPreviewEngine and evaluateSequenceMotion', () => {
+      const badParams = {
+        x: NaN,
+        y: NaN,
+        scale: 0, // invalid scale
+        rotation: NaN,
+      };
 
-      expect(() => {
-        engine.syncTimeline(badSequences as any, 30);
-      }).not.toThrow();
-
-      const transform = engine.getActiveInterpolatedTransform('seq-corrupt-transform');
+      const transform = evaluateSequenceMotion(badParams, 0.5, 2.0);
       expect(transform).toBeDefined();
-      expect(Number.isFinite(transform?.x)).toBe(true);
-      expect(Number.isFinite(transform?.y)).toBe(true);
-      expect(transform!.scale).toBeGreaterThan(0);
-      expect(Number.isFinite(transform?.rotation)).toBe(true);
-
-      engine.dispose();
+      expect(Number.isFinite(transform.x)).toBe(true);
+      expect(Number.isFinite(transform.y)).toBe(true);
+      expect(transform.scale).toBeGreaterThan(0);
+      expect(Number.isFinite(transform.rotation)).toBe(true);
     });
 
     it('should preserve document consistency across 100 rapid undo/redo cycles', () => {

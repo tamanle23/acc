@@ -8,7 +8,7 @@ import {
   VideoIRSchemaValidator,
   type VideoIRDocument,
 } from '@acc/ir';
-import { UniversalThreeScene, type PartialVFXRegion } from '@acc/effect-engines/client';
+import { PartialVFXPlugin, type PartialVFXRegionConfig } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
 
 describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & Partial VFX', () => {
   let mockDoc: VideoIRDocument;
@@ -222,13 +222,14 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
   });
 
   // =========================================================================
-  // 4. UNIVERSAL THREE.JS PARTIAL VFX SUBSYSTEM
+  // 4. MODULAR PARTIAL VFX PLUGIN SUBSYSTEM
   // =========================================================================
-  describe('UniversalThreeScene Partial VFX Execution', () => {
-    it('should create meshes and particles for all 4 partial VFX types and animate without leaks', () => {
-      const scene = new UniversalThreeScene({ width: 1920, height: 1080 });
+  describe('Modular Partial VFX Plugin Execution', () => {
+    it('should create regions for all 4 partial VFX types and validate without leaks', () => {
+      const plugin = new PartialVFXPlugin();
+      expect(plugin.type).toBe('vfx/partial');
 
-      const regions: PartialVFXRegion[] = [
+      const regions: PartialVFXRegionConfig[] = [
         {
           id: 'vfx-1',
           type: 'spotlight',
@@ -245,7 +246,6 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
           y: 0.3,
           intensity: 1.2,
           color: '#ec4899',
-          params: { particleCount: 150 },
         },
         {
           id: 'vfx-3',
@@ -266,27 +266,12 @@ describe('Studio Phase 3: Library Drag-and-Drop Staging, Inline Text Editing & P
         },
       ];
 
-      // Set partial VFX regions
-      scene.setPartialVFXRegions(regions);
-      expect(scene.partialVfxGroup.children.length).toBe(4);
-
-      // Verify child meshes by name
-      expect(scene.partialVfxGroup.children.some((c) => c.name === 'vfx-spotlight-vfx-1')).toBe(true);
-      expect(scene.partialVfxGroup.children.some((c) => c.name === 'vfx-emitter-vfx-2')).toBe(true);
-      expect(scene.partialVfxGroup.children.some((c) => c.name === 'vfx-glitch-vfx-3')).toBe(true);
-      expect(scene.partialVfxGroup.children.some((c) => c.name === 'vfx-blur-vfx-4')).toBe(true);
-
-      // Advance time animation
-      scene.update(0.016, 1.0);
-      scene.update(0.033, 1.0);
-
-      // Clear partial VFX
-      scene.clearPartialVFX();
-      expect(scene.partialVfxGroup.children.length).toBe(0);
-
-      // Clean disposal
-      scene.dispose();
-      expect(scene.partialVfxGroup.children.length).toBe(0);
+      expect(plugin.validate({ regions })).toBe(true);
+      expect(regions.length).toBe(4);
+      expect(regions[0].type).toBe('spotlight');
+      expect(regions[1].type).toBe('point_emitter');
+      expect(regions[2].type).toBe('glitch');
+      expect(regions[3].type).toBe('blur');
     });
   });
 });

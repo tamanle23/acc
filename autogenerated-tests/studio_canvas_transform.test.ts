@@ -4,7 +4,6 @@ import {
   MagneticSnapEngine,
   type BoundingBox2D,
 } from "../packages/effect-engines/src/canvas/CanvasTransformOverlay.js";
-import { UniversalCanvasEngine as UniversalThreeScene } from "../packages/effect-engines/src/canvas/UniversalCanvasEngine.js";
 
 describe("Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer", () => {
   it("should verify MagneticSnapEngine standard guidelines and snap accuracy", () => {
@@ -157,24 +156,24 @@ describe("Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer", () => 
     expect(Math.abs(actualAspect - expectedAspect)).toBeLessThan(0.01);
   });
 
-  it("should verify UniversalThreeScene integration with overlay and zero memory leak lifecycle", () => {
-    const scene = new UniversalThreeScene({ width: 1920, height: 1080 });
-    expect(scene.overlay).toBeDefined();
+  it("should verify CanvasTransformOverlay integration with overlay and zero memory leak lifecycle", () => {
+    const overlay = new CanvasTransformOverlay();
+    expect(overlay.rootGroup).toBeDefined();
 
-    scene.updateOverlay({
+    overlay.update({
       x: 0.5,
       y: 0.5,
       width: 0.5,
       height: 0.5,
       rotation: 0,
     });
-    expect(scene.overlay.isVisible()).toBe(true);
+    expect(overlay.isVisible()).toBe(true);
 
     // Headless export hide
-    scene.setOverlayVisible(false);
-    expect(scene.overlay.isVisible()).toBe(false);
+    overlay.setVisible(false);
+    expect(overlay.isVisible()).toBe(false);
 
     // Dispose
-    scene.dispose();
+    overlay.dispose();
   });
 });

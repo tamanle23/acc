@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { UniversalCanvasEngine } from '../packages/effect-engines/src/canvas/UniversalCanvasEngine';
-import { UniversalAudioMixer } from '../packages/effect-engines/src/audio/UniversalAudioMixer';
+import {
+  evaluateSequenceMotion,
+  evaluateEase,
+} from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+import { UniversalAudioMixer } from '@acc/ir/client';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { TrimSequenceCommand } from '../apps/studio/src/lib/commands/TrimSequenceCommand';
 import { SplitSequenceCommand } from '../apps/studio/src/lib/commands/SplitSequenceCommand';
@@ -12,108 +14,76 @@ describe('Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulati
     await IRStateManager.getInstance().switchTemplate('scifi');
   });
 
-  describe('1. UniversalCanvasEngine Motion & Lifecycle Compiler', () => {
+  describe('1. Universal Motion & Lifecycle Compiler', () => {
     it('compiles 3-stage lifecycle and provides getActiveInterpolatedTransform', () => {
-      const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
-
-      const testSequences = [
-        {
-          id: 'seq-test-motion',
-          time: { start: 0, duration: 60 }, // 2.0s at 30fps
-          modifiers: [
-            {
-              type: 'transform',
-              params: {
-                x: 100,
-                y: -50,
-                scale: 1.5,
-                rotation: 15,
-                ease: 'bounce.out',
-                animation: {
-                  preset: 'pop_in',
-                  intro: { durationSec: 0.5, ease: 'bounce.out' },
-                  steady: { type: 'hold' },
-                  outro: { durationSec: 0.3, ease: 'power2.in' },
-                },
-              },
-            },
-          ],
+      const transformParams = {
+        x: 100,
+        y: -50,
+        scale: 1.5,
+        rotation: 15,
+        ease: 'bounce.out',
+        animation: {
+          preset: 'pop_in',
+          intro: { durationSec: 0.5, ease: 'bounce.out' },
+          steady: { type: 'hold' },
+          outro: { durationSec: 0.3, ease: 'power2.in' },
         },
-      ];
+      };
 
-      engine.syncTimeline(testSequences as any, 30);
+      const durationSec = 2.0;
 
       // At start (0.0s): initial pop_in entrance
-      engine.update(0.0);
-      const startInterp = engine.getActiveInterpolatedTransform('seq-test-motion');
+      const startInterp = evaluateSequenceMotion(transformParams, 0.0, durationSec);
       expect(startInterp).toBeDefined();
-      expect(startInterp!.opacity).toBeCloseTo(0, 1);
-      expect(startInterp!.scale).toBeLessThan(1.5);
+      expect(startInterp.opacity).toBeCloseTo(0, 1);
+      expect(startInterp.scale).toBeLessThan(1.5);
 
       // Mid-intro (0.25s): scale progressing toward target 1.5 with bounce
-      engine.update(0.25);
-      const midIntro = engine.getActiveInterpolatedTransform('seq-test-motion');
+      const midIntro = evaluateSequenceMotion(transformParams, 0.25, durationSec);
       expect(midIntro).toBeDefined();
-      expect(midIntro!.opacity).toBeGreaterThan(0);
-      expect(midIntro!.scale).toBeGreaterThan(0.3);
+      expect(midIntro.opacity).toBeGreaterThan(0);
+      expect(midIntro.scale).toBeGreaterThan(0.3);
 
       // Steady state (1.0s): settled at target values
-      engine.update(1.0);
-      const steadyInterp = engine.getActiveInterpolatedTransform('seq-test-motion');
+      const steadyInterp = evaluateSequenceMotion(transformParams, 1.0, durationSec);
       expect(steadyInterp).toBeDefined();
-      expect(steadyInterp!.opacity).toBeCloseTo(1, 1);
-      expect(steadyInterp!.x).toBeCloseTo(100, 1);
-      expect(steadyInterp!.y).toBeCloseTo(-50, 1);
-      expect(steadyInterp!.scale).toBeCloseTo(1.5, 1);
-      expect(steadyInterp!.rotation).toBeCloseTo(15, 1);
+      expect(steadyInterp.opacity).toBeCloseTo(1, 1);
+      expect(steadyInterp.x).toBeCloseTo(100, 1);
+      expect(steadyInterp.y).toBeCloseTo(-50, 1);
+      expect(steadyInterp.scale).toBeCloseTo(1.5, 1);
+      expect(steadyInterp.rotation).toBeCloseTo(15, 1);
 
-      // Outro exit (1.9s): fading and scaling out
-      engine.update(1.95);
-      const outroInterp = engine.getActiveInterpolatedTransform('seq-test-motion');
+      // Outro exit (1.95s): fading and scaling out
+      const outroInterp = evaluateSequenceMotion(transformParams, 1.95, durationSec);
       expect(outroInterp).toBeDefined();
-      expect(outroInterp!.opacity).toBeLessThan(0.5);
+      expect(outroInterp.opacity).toBeLessThan(0.5);
     });
 
     it('evaluates motion presets (slide_left, overshoot, drift) accurately', () => {
-      const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
-
-      const testSeqs = [
-        {
-          id: 'seq-drift',
-          time: { start: 0, duration: 90 }, // 3.0s
-          modifiers: [
-            {
-              type: 'transform',
-              params: {
-                x: 0,
-                y: 0,
-                scale: 1.0,
-                animation: {
-                  preset: 'drift',
-                  intro: { durationSec: 0.4, ease: 'power2.out' },
-                  steady: { type: 'drift' },
-                  outro: { durationSec: 0.3, ease: 'power2.in' },
-                },
-              },
-            },
-          ],
+      const driftParams = {
+        x: 0,
+        y: 0,
+        scale: 1.0,
+        animation: {
+          preset: 'drift',
+          intro: { durationSec: 0.4, ease: 'power2.out' },
+          steady: { type: 'drift' },
+          outro: { durationSec: 0.3, ease: 'power2.in' },
         },
-      ];
+      };
 
-      engine.syncTimeline(testSeqs as any, 30);
+      const durationSec = 3.0;
 
       // Settle intro (0.5s)
-      engine.update(0.5);
-      const earlySteady = { ...engine.getActiveInterpolatedTransform('seq-drift')! };
+      const earlySteady = { ...evaluateSequenceMotion(driftParams, 0.5, durationSec) };
 
       // Later in steady drift (2.0s)
-      engine.update(2.0);
-      const lateSteady = engine.getActiveInterpolatedTransform('seq-drift');
+      const lateSteady = evaluateSequenceMotion(driftParams, 2.0, durationSec);
 
       expect(earlySteady).toBeDefined();
       expect(lateSteady).toBeDefined();
-      expect(lateSteady!.x).toBeGreaterThan(earlySteady.x);
-      expect(lateSteady!.scale).toBeGreaterThanOrEqual(earlySteady.scale);
+      expect(lateSteady.x).toBeGreaterThan(earlySteady.x);
+      expect(lateSteady.scale).toBeGreaterThanOrEqual(earlySteady.scale);
     });
   });
 

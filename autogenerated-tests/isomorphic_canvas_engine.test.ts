@@ -1,120 +1,162 @@
 import { describe, it, expect } from 'bun:test';
-import { UniversalCanvasEngine } from '../packages/effect-engines/src/canvas/UniversalCanvasEngine';
+import { IRPreviewEngine } from '../packages/ir/src/renderer/preview/IRPreviewEngine';
 import { CanvasTransformOverlay } from '../packages/effect-engines/src/canvas/CanvasTransformOverlay';
+import { HologramHUDPlugin } from '../packages/ir/src/plugins/overlay/HologramHUDPlugin';
+import { PartialVFXPlugin } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
+import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';
 import { createCanvas } from '@napi-rs/canvas';
+import type { ResolvedTimeline, ResolvedTrack } from '../packages/ir/src/types/VideoIR';
 
-describe('Phase 2: Core UniversalCanvasEngine & Pts.js Transform Overlay', () => {
-  it('should initialize UniversalCanvasEngine and resize dimensions cleanly', () => {
-    const engine = new UniversalCanvasEngine({ width: 1280, height: 720 });
-    expect(engine.width).toBe(1280);
-    expect(engine.height).toBe(720);
-    expect(engine.overlay).toBeDefined();
-
-    engine.resize(1920, 1080);
-    expect(engine.width).toBe(1920);
-    expect(engine.height).toBe(1080);
-    engine.dispose();
-  });
-
-  it('should compile declarative GSAP timeline and advance deterministically', () => {
-    const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
-    const mockSequences = [
+function createMockTimeline(): ResolvedTimeline {
+  const track1: ResolvedTrack = {
+    id: 'track-v1',
+    name: 'Video 1',
+    type: 'visual',
+    order: 1,
+    sequences: [
       {
         id: 'seq-1',
-        time: { start: 0, duration: 60 },
+        name: 'Hero Sequence',
+        type: 'video',
+        startFrame: 0,
+        durationFrames: 60,
+        endFrame: 60,
+        timelineStartFrame: 0,
         modifiers: [
-          { type: 'transform', params: { scale: 1.5, x: 50, y: -20, ease: 'power2.inOut' } },
+          {
+            type: 'transform',
+            params: { scale: 1.5, x: 50, y: -20, ease: 'power2.inOut' },
+          },
         ],
       },
       {
         id: 'seq-2',
-        time: { start: 60, duration: 90 },
+        name: 'Second Sequence',
+        type: 'video',
+        startFrame: 60,
+        durationFrames: 90,
+        endFrame: 150,
+        timelineStartFrame: 60,
+        modifiers: [],
       },
-    ];
+    ],
+  };
 
-    expect(() => {
-      engine.syncTimeline(mockSequences, 30);
-    }).not.toThrow();
+  const tracksMap = new Map<string, ResolvedTrack>();
+  tracksMap.set(track1.id, track1);
 
-    // Advance to frame 30 (1.0s) and frame 60 (2.0s)
-    expect(() => {
-      engine.update(1.0, 1.0);
-      engine.update(2.0, 1.0);
-    }).not.toThrow();
+  const sequencesMap = new Map();
+  for (const seq of track1.sequences) {
+    sequencesMap.set(seq.id, seq);
+  }
 
-    engine.dispose();
-  });
+  return {
+    id: 'timeline-test-1',
+    totalFrames: 150,
+    meta: {
+      globalFps: 30,
+      canvasSize: { w: 1920, h: 1080 },
+    },
+    tracks: tracksMap,
+    sequences: sequencesMap,
+    modifiers: [],
+  };
+}
 
-  it('should generate particle swarm with gravitational attractors and velocity trails', () => {
-    const engine = new UniversalCanvasEngine({ width: 800, height: 600 });
-    engine.initParticleSystem(150);
+describe('Phase 2: Isomorphic IRPreviewEngine & CanvasTransformOverlay Suite', () => {
+  it('should initialize IRPreviewEngine and seek/render frames deterministically', () => {
+    const timeline = createMockTimeline();
+    const engine = new IRPreviewEngine(timeline);
+    expect(engine).toBeDefined();
 
-    const canvas = createCanvas(800, 600);
+    const canvas = createCanvas(1920, 1080);
     const ctx = canvas.getContext('2d') as any;
 
-    expect(() => {
-      engine.render(ctx, 1.5, 1.0);
-      engine.render(ctx, 3.0, 1.2);
-    }).not.toThrow();
+    const res0 = engine.renderFrame(0, ctx);
+    expect(res0.frame).toBe(0);
+    expect(res0.activeSequences.length).toBe(1);
+    expect(res0.activeSequences[0].id).toBe('seq-1');
 
-    const buffer = canvas.toBuffer('image/png');
-    expect(buffer.length).toBeGreaterThan(0);
-
-    engine.dispose();
+    const res65 = engine.renderFrame(65, ctx);
+    expect(res65.frame).toBe(65);
+    expect(res65.activeSequences.length).toBe(1);
+    expect(res65.activeSequences[0].id).toBe('seq-2');
   });
 
-  it('should render dual-pass 2.5D parallax relighting with Blinn-Phong specular sheen', () => {
-    const engine = new UniversalCanvasEngine({ width: 1280, height: 720 });
+  it('should evaluate deterministic interpolated motion transform without drifting', () => {
+    const timeline = createMockTimeline();
+    const engine = new IRPreviewEngine(timeline);
+    const seq = timeline.sequences.get('seq-1')!;
+
+    const transform0 = engine.getActiveInterpolatedTransform(seq, 0);
+    expect(transform0).toBeDefined();
+    expect(transform0.opacity).toBeCloseTo(0, 1);
+
+    const transform30 = engine.getActiveInterpolatedTransform(seq, 30);
+    expect(transform30).toBeDefined();
+    expect(transform30.opacity).toBeCloseTo(1, 1);
+    expect(transform30.scale).toBeCloseTo(1.5, 1);
+  });
+
+  it('should render HologramHUDPlugin procedural cybernetic telemetry to canvas context', () => {
+    const plugin = new HologramHUDPlugin();
+    expect(plugin.type).toBe('overlay/hologram_hud');
+
     const canvas = createCanvas(1280, 720);
     const ctx = canvas.getContext('2d') as any;
 
     expect(() => {
-      engine.render2DParallax(ctx, 1280, 720, 1.0, {
-        x: 0.6,
-        y: 0.4,
-        diffuse: 1.5,
-        specular: 2.0,
-        color: '#00d4ff',
-      });
+      plugin.renderClipSpace(
+        {
+          canvas,
+          ctx,
+          frame: 30,
+          width: 1280,
+          height: 720,
+          sequence: { id: 'seq-hud', startFrame: 0, durationFrames: 60 } as any,
+          transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 },
+        },
+        { ringRadius: 0.35, scanlineDensity: 40, color: '#00ffff' }
+      );
     }).not.toThrow();
 
     const buffer = canvas.toBuffer('image/png');
     expect(buffer.length).toBeGreaterThan(0);
-
-    engine.dispose();
   });
 
-  it('should initialize holographic HUD and render to @napi-rs/canvas cleanly', () => {
-    const engine = new UniversalCanvasEngine({ width: 1280, height: 720 });
-    engine.initHologramHUD(0.35, 40);
-
-    const canvas = createCanvas(1280, 720);
-    const ctx = canvas.getContext('2d') as any;
-
-    expect(() => {
-      engine.render(ctx, 2.0, 1.2);
-    }).not.toThrow();
-
-    engine.dispose();
-  });
-
-  it('should render Partial VFX regions (spotlight, blur, glitch, emitter) with multi-pass compositing', () => {
-    const engine = new UniversalCanvasEngine({ width: 1920, height: 1080 });
-    engine.setPartialVFXRegions([
-      { id: 'vfx-1', type: 'spotlight', x: 0.5, y: 0.5, radius: 200, color: '#00d4ff', intensity: 1.5 },
-      { id: 'vfx-2', type: 'glitch', x: 0.3, y: 0.4, width: 0.2, height: 0.1, intensity: 1.0 },
-      { id: 'vfx-3', type: 'blur', x: 0.7, y: 0.7, width: 0.3, height: 0.2 },
-      { id: 'vfx-4', type: 'point_emitter', x: 0.5, y: 0.3, color: '#ec4899' },
-    ]);
+  it('should render PartialVFXPlugin regions (spotlight, blur, glitch, point_emitter)', () => {
+    const plugin = new PartialVFXPlugin();
+    expect(plugin.type).toBe('vfx/partial');
 
     const canvas = createCanvas(1920, 1080);
     const ctx = canvas.getContext('2d') as any;
 
     expect(() => {
-      engine.render(ctx, 0.5, 1.0);
+      plugin.renderClipSpace(
+        {
+          canvas,
+          ctx,
+          frame: 15,
+          width: 1920,
+          height: 1080,
+          sequence: { id: 'seq-vfx', startFrame: 0, durationFrames: 60 } as any,
+          transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 },
+        },
+        { type: 'spotlight', intensity: 1.5, radius: 200, color: '#00d4ff' }
+      );
+      plugin.renderClipSpace(
+        {
+          canvas,
+          ctx,
+          frame: 15,
+          width: 1920,
+          height: 1080,
+          sequence: { id: 'seq-vfx', startFrame: 0, durationFrames: 60 } as any,
+          transform: { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 },
+        },
+        { type: 'digital_glitch', intensity: 1.0 }
+      );
     }).not.toThrow();
-
-    engine.dispose();
   });
 
   it('should render transform overlay with live dimension and angle readout badges', () => {

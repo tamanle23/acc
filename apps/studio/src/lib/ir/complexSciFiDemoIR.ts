@@ -30,8 +30,8 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       type: 'image',
     },
     'asset-matrix-core': {
-      src: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1920&q=80',
-      type: 'image',
+      src: 'https://media.gettyimages.com/id/1340037487/video/the-matrix-reloaded-cast-interviews.mp4?s=mp4-640x640-gi&k=20&c=QmuoEVN4gNDv1DFmosfSTKNY5_OgW0MB29aWUAQw1nM=',
+      type: 'media',
     },
     'asset-voice-pilot': {
       src: 'https://actions.google.com/sounds/v1/science_fiction/ringing_ambient_background.ogg',

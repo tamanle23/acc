@@ -11,7 +11,6 @@ export * from './vision';
 export * from './types';
 export * from './editing';
 export * from './styles';
-export * from './canvas/UniversalCanvasEngine';
 export * from './canvas/CanvasTransformOverlay';
 export * from './canvas/UniversalCanvasProvider';
 export * from './canvas/CanvasAssetLoader';
