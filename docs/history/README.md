@@ -151,6 +151,7 @@
 | [144](144_fix_multiple_primary_datasource_beans.md) | 2026-10-18 | Fix Multiple Primary DataSource Beans in Backend Sandbox Startup | Resolved NoUniqueBeanDefinitionException between masterDatabase and sandboxDataSource by adding @Component to SandboxProperties, scoping PgLiteDatasourceConfiguration strictly to application.sandbox.enabled=true, and rebuilding unipost-fw and unipost-sandbox (33/33 tests passing, Jetty boots on port 8000). |
 | [145](145_fix_hazelcast_multicast_setsockopt_windows.md) | 2026-10-18 | Fix Hazelcast Multicast setsockopt SocketException on Windows | Resolved java.net.SocketException: Invalid argument: setsockopt by disabling Hazelcast join auto-detection, disabling multicast/TCP discovery, and explicitly binding to 127.0.0.1 loopback interface with hazelcast.socket.bind.any=false. |
 | [146](146_production_resilient_hazelcast_clustering.md) | 2026-10-18 | Production-Resilient Hazelcast Clustering & Profile-Aware Discovery | Made HazelcastConfiguration profile-aware supporting local loopback isolation in dev/sandbox and clustered discovery (Kubernetes DNS or TCP-IP member list) in production environments (33/33 tests pass, health UP). |
+| [147](147_liquid_glass_presets_and_accents.md) | 2026-10-18 | Liquid Glass Flagship Presets, Ambient Accents & Solid Fallback Engine | Implemented Light Frosted Acrylic and Dark Obsidian presets, 5 ambient accents (Aurora, Sky, Jade, Quartz, Sovereign), and WCAG 2.2 AA solid fallback engine with cookie persistence and E2E verification. |
 
 
 
