@@ -10,15 +10,11 @@ import {
 } from './audio/UniversalAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
-import {
-  BoundedAcousticCaptionStrategy,
-  drawCanvasCaptionsFromSnapshot,
-  type CaptionConfig,
-  type CaptionSettings,
-  UniversalCanvasProvider,
-  CanvasAssetLoader,
-} from '@acc/effect-engines';
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/effect-engines';
 import { FFIVideoDecoder } from '@acc/core';
+import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
+
+
 
 export interface HeadlessRenderOptions {
   sink?: IIRFrameSink;
@@ -57,8 +53,6 @@ export class IRMasterRenderer {
   private lock: FrameBackpressureLock;
   private audioMixer: UniversalAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
-  private captionStrategy: BoundedAcousticCaptionStrategy;
-  private captionConfigCache: WeakMap<ResolvedSequence, CaptionConfig[]> = new WeakMap();
 
   // Cached assets to prevent disk re-reads in render loop
   private imageCache: Map<string, any> = new Map();
@@ -71,8 +65,8 @@ export class IRMasterRenderer {
     this.audioMixer = new UniversalAudioMixer([], 48000);
     // Use passed isolated registry or create an isolated one for deterministic multi-worker safety
     this.pluginRegistry = pluginRegistry ?? createIsolatedCoreModifierPlugins();
-    this.captionStrategy = new BoundedAcousticCaptionStrategy();
   }
+
 
   /**
    * Pre-load static visual image assets declared in timeline.assets into memory.
@@ -312,6 +306,7 @@ export class IRMasterRenderer {
   /**
    * Zero-Allocation Frame Loop:
    * Composites active visual and timed-text layers onto reusable canvas and copies raw bytes into preallocated buffer.
+   * Delegates directly to the canonical IRCanvasCompositor.
    */
   private async renderCanvasFrame(
     t: number,
@@ -321,187 +316,30 @@ export class IRMasterRenderer {
     ctx: any,
     buffer: Uint8Array
   ): Promise<void> {
-    // Clear canvas
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, width, height);
-
-    // 1. Render Video Tracks (Phase 2 & Phase 3)
-    for (const track of this.timeline.tracks.values()) {
-      if (track.type === 'video') {
-        const activeSeqs: ResolvedSequence[] = [];
-        for (const seq of track.sequences) {
-          if (t >= seq.startFrame && t < seq.endFrame) {
-            activeSeqs.push(seq);
-            const localFrame = t - seq.startFrame;
-
-            // Phase 2: Sequence-level modifiers (e.g. Depth3D, TransitionCrossfade)
-            ctx.save();
-            try {
-              const blend = seq.blendMode || track.blendMode;
-              if (blend === 'screen') ctx.globalCompositeOperation = 'screen';
-              else if (blend === 'multiply') ctx.globalCompositeOperation = 'multiply';
-              else if (blend === 'overlay') ctx.globalCompositeOperation = 'overlay';
-              else if (blend === 'add') ctx.globalCompositeOperation = 'lighter';
-              else if (blend === 'normal') ctx.globalCompositeOperation = 'source-over';
-
-              if (seq.modifiers) {
-                for (const mod of seq.modifiers) {
-                  const plugin = this.pluginRegistry.get(mod.type);
-                  if (plugin && plugin.renderClipSpace) {
-                    plugin.renderClipSpace(
-                      {
-                        canvas,
-                        ctx,
-                        frame: t,
-                        localFrame,
-                        width,
-                        height,
-                        sequence: seq,
-                        baseAsset: seq.assetId ? this.imageCache.get(seq.assetId) : undefined,
-                      },
-                      mod.params
-                    );
-                  }
-                }
-              }
-
-              const hasDepth3DModifier = seq.modifiers?.some(m => m.type === 'vfx/depth3d');
-
-              // Draw base asset if available and not already drawn by specialized 3D depth modifier
-              if (!hasDepth3DModifier && seq.assetId) {
-                let frameSource: Canvas | Image | null = null;
-                if (this.videoDecoders.has(seq.assetId)) {
-                  frameSource = await this.videoDecoders.get(seq.assetId)!.readNextFrame();
-                } else if (this.imageCache.has(seq.assetId)) {
-                  frameSource = this.imageCache.get(seq.assetId)!;
-                }
-
-                if (frameSource) {
-                  const srcAspect = frameSource.width / frameSource.height;
-                  const canvasAspect = width / height;
-                  let drawW = width;
-                  let drawH = height;
-                  let drawX = 0;
-                  let drawY = 0;
-
-                  if (srcAspect > canvasAspect) {
-                    drawW = width;
-                    drawH = width / srcAspect;
-                    drawY = (height - drawH) / 2;
-                  } else {
-                    drawH = height;
-                    drawW = height * srcAspect;
-                    drawX = (width - drawW) / 2;
-                  }
-
-                  ctx.drawImage(frameSource, drawX, drawY, drawW, drawH);
-                }
-              }
-            } finally {
-              ctx.restore();
-            }
-          }
+    // 1. Asynchronously pre-fetch next frame from active video decoders if required
+    const activeVideoFrames = new Map<string, any>();
+    for (const [assetId, decoder] of this.videoDecoders) {
+      try {
+        const frame = await decoder.readNextFrame();
+        if (frame) {
+          activeVideoFrames.set(assetId, frame);
         }
-
-        // Phase 3: Track-level stream modifiers (e.g. CanvasParticleOverlay)
-        if (track.modifiers) {
-          for (const mod of track.modifiers) {
-            const plugin = this.pluginRegistry.get(mod.type);
-            if (plugin && plugin.renderStreamSpace) {
-              plugin.renderStreamSpace(
-                {
-                  canvas,
-                  ctx,
-                  frame: t,
-                  width,
-                  height,
-                  track,
-                  activeSequences: activeSeqs,
-                },
-                mod.params
-              );
-            }
-          }
-        }
-      } else if (track.type === 'timed_text') {
-        // Render Subtitles / Captions with Karaoke Active Word Highlighting
-        const captionSettings = track.style as CaptionSettings | undefined;
-
-        for (const seq of track.sequences) {
-          if (t >= seq.startFrame && t < seq.endFrame && seq.cues && seq.cues.length > 0) {
-            // Retrieve cached CaptionConfig array to guarantee ZERO-ALLOC-FRAME-LOOP
-            let captionConfigs = this.captionConfigCache.get(seq);
-            if (!captionConfigs) {
-              captionConfigs = seq.cues.map(c => ({
-                text: c.text,
-                start: c.startOffsetMs / 1000,
-                end: c.endOffsetMs === 'end' ? (seq.durationFrames / this.timeline.meta.globalFps) : (c.endOffsetMs / 1000),
-              }));
-              this.captionConfigCache.set(seq, captionConfigs);
-            }
-
-            const localTimeSec = (t - seq.startFrame) / this.timeline.meta.globalFps;
-            const snapshot = this.captionStrategy.evaluate(captionConfigs, localTimeSec, captionSettings);
-
-            if (snapshot.shouldRender) {
-              drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height);
-            }
-          }
-        }
-      }
+      } catch {}
     }
 
-    // Phase 4: Master Canvas Composite
-    for (const track of this.timeline.tracks.values()) {
-      if (track.modifiers) {
-        for (const mod of track.modifiers) {
-          const plugin = this.pluginRegistry.get(mod.type);
-          if (plugin && plugin.renderMasterComposite) {
-            plugin.renderMasterComposite(
-              {
-                canvas,
-                ctx,
-                frame: t,
-                width,
-                height,
-                pixelBuffer: buffer,
-              },
-              mod.params
-            );
-          }
-        }
-      }
-    }
+    // 2. Build asset source resolver combining static imageCache and dynamic activeVideoFrames
+    const assetResolver: IAssetSourceResolver = {
+      has: (id: string) => activeVideoFrames.has(id) || this.imageCache.has(id),
+      get: (id: string) => activeVideoFrames.get(id) || this.imageCache.get(id),
+    };
 
-    // Global Document-Level Master Composite Modifiers (Phase 4 Master Pass)
-    if (this.timeline.modifiers) {
-      for (const mod of this.timeline.modifiers) {
-        const plugin = this.pluginRegistry.get(mod.type);
-        if (plugin && plugin.renderMasterComposite) {
-          plugin.renderMasterComposite(
-            {
-              canvas,
-              ctx,
-              frame: t,
-              width,
-              height,
-              pixelBuffer: buffer,
-            },
-            mod.params
-          );
-        }
-      }
-    }
-
-    // Copy into preallocated framePixelBuffer directly to preserve ZERO-ALLOC-FRAME-LOOP
-    if (typeof canvas.data === 'function') {
-      buffer.set(canvas.data());
-    } else {
-      const imgData = ctx.getImageData(0, 0, width, height);
-      buffer.set(imgData.data);
-    }
+    // 3. Delegate to canonical IRCanvasCompositor
+    IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
+      pluginRegistry: this.pluginRegistry,
+      assetResolver,
+      clearColor: '#000000',
+      generatePixelBuffer: buffer,
+    });
   }
 
   private rasterizeProceduralFrame(t: number, width: number, height: number, buffer: Uint8Array): void {

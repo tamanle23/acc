@@ -103,7 +103,7 @@ flowchart TD
 - Implement `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`.
 - Multi-track layer compositing with pure document ordering, aspect-ratio fit modes (`cover`/`contain`), scoped blend modes, clip-space plugins, stream-space plugins, timed-text subtitles strictly above video, and master compositing.
 
-### Phase 3: Unify `IRMasterRenderer` & `IRPreviewEngine` `[ ] Planned`
+### Phase 3: Unify `IRMasterRenderer` & `IRPreviewEngine` `[x] Completed`
 - Delegate canvas rendering in `IRMasterRenderer.ts` to `IRCanvasCompositor.renderFrame()`.
 - Delegate canvas rendering in `IRPreviewEngine.ts` to `IRCanvasCompositor.renderFrame()`.
 - Standardize `#000000` clear color across both engines.
