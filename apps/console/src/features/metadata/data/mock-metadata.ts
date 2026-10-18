@@ -34,6 +34,13 @@ import {
   additionalAttributes,
   generateAdditionalRecords,
 } from './mock-catalog-data';
+import {
+  cmsEntityTypes,
+  cmsAttributes,
+  cmsRelationshipTypes,
+  generateCmsRecordsAndRelationships,
+} from './mock-cms-data';
+import { sandboxResetRegistry } from '@unipost/sandbox';
 
 export const initialMockEntityTypes: EntityType[] = [
   {
@@ -219,10 +226,12 @@ export const initialMockEntityTypes: EntityType[] = [
     updatedDate: new Date('2026-03-25').toISOString(),
   },
   ...additionalEntityTypes,
+  ...cmsEntityTypes,
 ];
 
 export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
   ...additionalAttributes,
+  ...cmsAttributes,
   'customer-360-composite': [
     {
       id: 'comp-101',
@@ -620,8 +629,9 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
     });
   }
 
-  return {
+    return {
     ...generateAdditionalRecords(),
+    ...generateCmsRecordsAndRelationships().records,
     '1': customerRecords,
     '2': resourceRecords,
     '3': policyRecords,
@@ -631,6 +641,7 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
 export const initialMockRecords: Record<string, EntityRecord[]> = generateInitialRecords();
 
 export const initialMockRelationshipTypes: RelationshipType[] = [
+  ...cmsRelationshipTypes,
   {
     id: '1',
     name: 'Customer Deployment Policy',
@@ -656,7 +667,7 @@ export const initialMockRelationshipTypes: RelationshipType[] = [
 ];
 
 export const initialMockEntityRelationships: EntityRelationship[] = (() => {
-  const rels: EntityRelationship[] = [];
+  const rels: EntityRelationship[] = [...generateCmsRecordsAndRelationships().relationships];
   for (let i = 1; i <= 50; i++) {
     const custId = String(1000 + i);
     const policyId = String(3000 + i);
@@ -2120,3 +2131,8 @@ export class MockMetadataService implements MetadataDataSource {
 }
 
 export const mockMetadataStore = new MockMetadataService();
+
+// Register with Unified Sandbox Reset Registry
+sandboxResetRegistry.register(() => {
+  mockMetadataStore.resetToInitialState();
+});
