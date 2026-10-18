@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Slider from '@react-native-community/slider';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePostStore } from '../store/usePostStore';
+import { useMobileContextStore } from '../store/useMobileContextStore';
 import { GlassCard } from '../components/GlassCard';
 import { GlassButton } from '../components/GlassButton';
 
@@ -14,6 +15,7 @@ export const ProfileScreen = () => {
   const { theme, setTheme, liquidGlass, toggleLiquidGlass, glassIntensity, setGlassIntensity } = useSettingsStore();
   const clearPosts = usePostStore(state => state.clearPosts);
   const resetPosts = usePostStore(state => state.resetPosts);
+  const { activePersonaId, activeTenantId, setActivePersona } = useMobileContextStore();
 
   return (
     <ScrollView 
@@ -84,6 +86,37 @@ export const ProfileScreen = () => {
             </View>
           </>
         )}
+      </GlassCard>
+
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Unified Sandbox & Tenancy</Text>
+      <GlassCard style={styles.settingsCard}>
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Active Persona</Text>
+          <View style={styles.themeOptions}>
+            {(['system', 'admin', 'creator', 'user'] as const).map((p) => (
+              <Text
+                key={p}
+                onPress={() => setActivePersona(p)}
+                style={[
+                  styles.themeText,
+                  {
+                    color: activePersonaId === p ? (p === 'system' ? '#f59e0b' : colors.primary) : '#888',
+                    fontWeight: activePersonaId === p ? 'bold' : 'normal',
+                  },
+                ]}
+              >
+                {p === 'system' ? '👑 SYSTEM' : p.toUpperCase()}
+              </Text>
+            ))}
+          </View>
+        </View>
+        <View style={styles.separator} />
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>Active Tenant</Text>
+          <Text style={{ fontSize: 13, color: colors.text, opacity: 0.8, fontFamily: 'monospace' }}>
+            {activeTenantId}
+          </Text>
+        </View>
       </GlassCard>
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Data Management</Text>
