@@ -79,13 +79,15 @@ public final class MetadataDtoMapper {
 
     public static EntityRecordResponse toResponse(EntityRecord record) {
         if (record == null) return null;
+        java.util.Map<String, Object> redactedAttrs = com.unipost.service.metadata.serialization.FieldLevelSecuritySerializer
+                .redactAttributesForCurrentContext(record.getAttributes());
         return new EntityRecordResponse(
                 record.getId(),
                 record.getUid(),
                 record.getEntityType() != null ? record.getEntityType().getId() : null,
                 record.getTenantId(),
                 record.getSchemaVersion() != null ? record.getSchemaVersion() : 1L,
-                record.getAttributes(),
+                redactedAttrs,
                 record.getVersion(),
                 record.getCreatedDate(),
                 record.getLastUpdatedDate()

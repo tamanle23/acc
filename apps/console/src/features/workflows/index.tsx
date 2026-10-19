@@ -15,6 +15,7 @@ import { useWorkflowDefinitions as useWorkflowsQuery, type WorkflowDefinitionSum
 import { WorkflowCatalogTable } from './components/workflow-catalog-table';
 import { WorkflowCreateDialog } from './components/workflow-create-dialog';
 import { FleetMigrationModal } from './components/fleet-migration-modal';
+import { ApprovalsInbox } from './approvals/approvals-inbox';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,6 +27,7 @@ export const WorkflowsFeature: React.FC = () => {
 
   const { t } = useTranslation('console');
   const [activeWorkflowKey, setActiveWorkflowKey] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'catalog' | 'approvals'>('catalog');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [fleetMigrateTarget, setFleetMigrateTarget] = useState<WorkflowDefinitionSummary | null>(null);
 
@@ -97,6 +99,27 @@ export const WorkflowsFeature: React.FC = () => {
             </div>
           </div>
 
+          {!activeWorkflowKey && (
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-white/20 dark:border-white/10 backdrop-blur-md">
+              <Button
+                variant={activeTab === 'catalog' ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs h-8 px-3"
+                onClick={() => setActiveTab('catalog')}
+              >
+                Definitions Catalog
+              </Button>
+              <Button
+                variant={activeTab === 'approvals' ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs h-8 px-3"
+                onClick={() => setActiveTab('approvals')}
+              >
+                Approvals Inbox
+              </Button>
+            </div>
+          )}
+
           {activeWorkflowKey && (
             <Button
               variant="outline"
@@ -110,13 +133,15 @@ export const WorkflowsFeature: React.FC = () => {
           )}
         </div>
 
-        {/* Content Area: Catalog Table or Full-bleed Studio Canvas */}
+        {/* Content Area: Catalog Table, Approvals Inbox, or Full-bleed Studio Canvas */}
         {activeWorkflowKey ? (
           <VisualDagStudio
             mode="designer"
             workflowKey={activeWorkflowKey}
             onSaveSuccess={refetch}
           />
+        ) : activeTab === 'approvals' ? (
+          <ApprovalsInbox />
         ) : isLoading ? (
           <div className='space-y-4'>
             <Skeleton className='h-10 w-full' />

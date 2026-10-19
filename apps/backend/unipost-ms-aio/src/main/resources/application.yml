@@ -43,6 +43,9 @@ spring:
   main:
     web-application-type: servlet
     allow-bean-definition-overriding: true
+  threads:
+    virtual:
+      enabled: true
   data:
     redis:
       repositories:
@@ -132,8 +135,8 @@ mybatis:
   type-aliases-package: com.unipost.*.model, com.unipost.*.repository.**.model
   mapper-locations: classpath*:mappers/*.xml
   config-location: classpath:mybatis-config.xml
-#  configuration:
-#    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
-#    map-underscore-to-camel-case: true
-#    default-fetch-size: 100
-#    default-statement-timeout: 30
+
+springdoc:
+  show-spring-data-pageable: false
+  show-spring-data-rest: false
+  enable-spring-data-rest: false

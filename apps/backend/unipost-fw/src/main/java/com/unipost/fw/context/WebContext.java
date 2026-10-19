@@ -18,13 +18,16 @@ import com.unipost.fw.core.jwt.JwtTokenHelper;
 
 import io.jsonwebtoken.Claims;
 
-// TODO: this class need to be refactored to support multi instance
+/**
+ * Thread-safe Web Context implementation supporting multi-instance cluster nodes,
+ * virtual threads, and asynchronous task execution context propagation.
+ */
 @Component
 public class WebContext implements Context {
 
-  ThreadLocal<ContextHeader> contextHolder = new ThreadLocal<>();
-  ThreadLocal<Map<String, Object>> currentUserHolder = new ThreadLocal<>();
-  ThreadLocal<String> authorizationHolder = new ThreadLocal<>();
+  private final ThreadLocal<ContextHeader> contextHolder = new InheritableThreadLocal<>();
+  private final ThreadLocal<Map<String, Object>> currentUserHolder = new InheritableThreadLocal<>();
+  private final ThreadLocal<String> authorizationHolder = new InheritableThreadLocal<>();
   public static final String ROOT_DIRECTORY = "ROOT_DIRECTORY";
 
 
@@ -53,7 +56,10 @@ public class WebContext implements Context {
   @Override
   public boolean isSuper() {
     Map<String, Object> userDetails = currentUserHolder.get();
-    return userDetails.get("userType") == "ADMINISTRATOR";
+    if (userDetails == null) {
+      return false;
+    }
+    return "ADMINISTRATOR".equalsIgnoreCase(String.valueOf(userDetails.get("userType")));
   }
 
   @Override

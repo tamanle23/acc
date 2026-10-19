@@ -79,6 +79,7 @@ public class RecordMutationPipeline {
     // Optional collaborators
     private EntityLifecycleService entityLifecycleService;
     private OutboxEventPublisher outboxEventPublisher;
+    private org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
     public void setEntityLifecycleService(EntityLifecycleService entityLifecycleService) {
         this.entityLifecycleService = entityLifecycleService;
@@ -86,6 +87,26 @@ public class RecordMutationPipeline {
 
     public void setOutboxEventPublisher(OutboxEventPublisher outboxEventPublisher) {
         this.outboxEventPublisher = outboxEventPublisher;
+    }
+
+    public void setApplicationEventPublisher(org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    private void publishMutationEvent(Long entityTypeId, EntityRecord record, String action, String actor, Map<String, Object> delta) {
+        if (applicationEventPublisher != null && record != null) {
+            applicationEventPublisher.publishEvent(new EntityRecordMutatedEvent(
+                    entityTypeId,
+                    record.getId(),
+                    record.getTenantId(),
+                    action,
+                    actor != null ? actor : "SYSTEM",
+                    record.getVersion() != null ? record.getVersion() : 1L,
+                    record.getAttributes(),
+                    delta,
+                    java.time.Instant.now()
+            ));
+        }
     }
 
     // =========================================================================
@@ -143,6 +164,7 @@ public class RecordMutationPipeline {
         if (outboxEventPublisher != null) {
             outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_CREATED", effectiveTenantId, saved.getAttributes());
         }
+        publishMutationEvent(entityTypeId, saved, "CREATE", actor, auditLog.getDelta());
 
         return MetadataDtoMapper.toResponse(saved);
     }
@@ -214,6 +236,7 @@ public class RecordMutationPipeline {
         if (outboxEventPublisher != null) {
             outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_UPDATED", saved.getTenantId(), saved.getAttributes());
         }
+        publishMutationEvent(entityTypeId, saved, "UPDATE", actor, delta);
 
         return MetadataDtoMapper.toResponse(saved);
     }
@@ -286,6 +309,7 @@ public class RecordMutationPipeline {
         if (outboxEventPublisher != null) {
             outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_UPDATED", saved.getTenantId(), saved.getAttributes());
         }
+        publishMutationEvent(entityTypeId, saved, "PATCH", actor, delta);
 
         return MetadataDtoMapper.toResponse(saved);
     }
@@ -336,6 +360,7 @@ public class RecordMutationPipeline {
             outboxEventPublisher.publish("entity_record", String.valueOf(record.getId()), "RECORD_DELETED", record.getTenantId(),
                     Map.of("id", recordId, "entityTypeId", entityTypeId));
         }
+        publishMutationEvent(entityTypeId, record, "DELETE", actor, null);
     }
 
     private void executeDeleteCascades(Long entityTypeId, Long recordId, String tenantId) {
@@ -523,6 +548,7 @@ public class RecordMutationPipeline {
             outboxEventPublisher.publish("entity_record", String.valueOf(saved.getId()), "RECORD_RESTORED", saved.getTenantId(),
                     Map.of("id", saved.getId(), "entityTypeId", entityTypeId, "restoredFromVersion", auditLog.getVersion()));
         }
+        publishMutationEvent(entityTypeId, saved, "RESTORE", actor, delta);
 
         return MetadataDtoMapper.toResponse(saved);
     }

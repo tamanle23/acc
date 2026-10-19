@@ -54,7 +54,10 @@ public class WebLoginAttemptService implements LoginAttemptService{
   
   @Scheduled(cron = "${com.unipost.authentication.attempts.cleanup.cron.expression:0 30/15 * * * *}")
   public void cleanupAttemps() {
-    // TODO Clean login attemps.
-    logger.debug("/Clean login attemps.");
+    if (cacheMap != null) {
+      long sizeBefore = cacheMap.size();
+      cacheMap.cleanUp();
+      logger.info("Evicted expired login attempts from cache. Active entries: {} (was: {})", cacheMap.size(), sizeBefore);
+    }
   }
 }

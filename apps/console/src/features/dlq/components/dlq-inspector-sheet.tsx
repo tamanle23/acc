@@ -162,10 +162,28 @@ export function DlqInspectorSheet({
           {/* Payload Overrides (for Replay) */}
           {record.status === 'ISOLATED' && (
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold flex items-center justify-between">
-                <span>Replay Payload Overrides (Optional JSON)</span>
-                {jsonError && <span className="text-destructive text-[11px]">{jsonError}</span>}
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">
+                  <span>Replay Payload Overrides (Optional JSON)</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 px-1.5 text-[10px] text-primary hover:underline"
+                    onClick={() => {
+                      if (record.payloadSnapshot) {
+                        setOverrideJson(JSON.stringify(record.payloadSnapshot, null, 2));
+                        setJsonError(null);
+                      }
+                    }}
+                  >
+                    Copy Existing Payload
+                  </Button>
+                  {jsonError && <span className="text-destructive text-[11px]">{jsonError}</span>}
+                </div>
+              </div>
               <Textarea
                 placeholder='e.g. { "timeoutSeconds": 60, "apiKey": "valid-token" }'
                 value={overrideJson}
@@ -173,7 +191,7 @@ export function DlqInspectorSheet({
                   setOverrideJson(e.target.value);
                   setJsonError(null);
                 }}
-                className="font-mono text-xs h-24 bg-background/50 border-border/60"
+                className="font-mono text-xs h-28 bg-background/50 border-border/60"
               />
             </div>
           )}

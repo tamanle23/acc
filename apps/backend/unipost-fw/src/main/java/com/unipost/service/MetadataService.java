@@ -128,6 +128,7 @@ public class MetadataService {
             if (this.entityLifecycleService != null) {
                 this.recordMutationPipeline.setEntityLifecycleService(this.entityLifecycleService);
             }
+            this.recordMutationPipeline.setApplicationEventPublisher(this.eventPublisher);
         }
     }
 
@@ -150,6 +151,7 @@ public class MetadataService {
             if (this.entityLifecycleService != null) {
                 this.recordMutationPipeline.setEntityLifecycleService(this.entityLifecycleService);
             }
+            this.recordMutationPipeline.setApplicationEventPublisher(this.eventPublisher);
         }
         return this.recordMutationPipeline;
     }
@@ -604,6 +606,50 @@ public class MetadataService {
 
     public Page<EntityRecordResponse> getEntityRecords(Long entityTypeId, PageRequest pageRequest) {
         return getEntityRecords(entityTypeId, pageRequest, null, null, null, null);
+    }
+
+    public SeekPageResponse<EntityRecordResponse> seekEntityRecords(Long entityTypeId, String cursor, int limit, String tenantId) {
+        if (!entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId).isPresent()) {
+            throw new MetadataNotFoundException("EntityType not found with id: " + entityTypeId);
+        }
+
+        String activeTenantId = (tenantId != null && !tenantId.isBlank())
+                ? tenantId
+                : com.unipost.fw.tenancy.TenantContextHolder.getTenantId();
+
+        Long afterId = null;
+        if (cursor != null && !cursor.isBlank()) {
+            try {
+                String decoded = new String(Base64.getDecoder().decode(cursor.trim()), java.nio.charset.StandardCharsets.UTF_8);
+                if (decoded.contains(":")) {
+                    String[] parts = decoded.split(":");
+                    afterId = Long.parseLong(parts[parts.length - 1]);
+                } else {
+                    afterId = Long.parseLong(decoded);
+                }
+            } catch (Exception e) {
+                log.warn("Malformed keyset cursor: {}, ignoring and seeking from start", cursor);
+            }
+        }
+
+        int pageSize = limit > 0 ? Math.min(limit, 200) : 50;
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, pageSize + 1);
+        List<EntityRecord> records = entityRecordRepository.seekRecords(entityTypeId, activeTenantId, afterId, pageable);
+
+        boolean hasMore = records.size() > pageSize;
+        List<EntityRecord> pageRecords = hasMore ? records.subList(0, pageSize) : records;
+
+        String nextCursor = null;
+        if (hasMore && !pageRecords.isEmpty()) {
+            Long lastId = pageRecords.get(pageRecords.size() - 1).getId();
+            nextCursor = Base64.getEncoder().encodeToString(String.valueOf(lastId).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+
+        List<EntityRecordResponse> responses = pageRecords.stream()
+                .map(MetadataDtoMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return new SeekPageResponse<>(responses, nextCursor, hasMore, pageSize);
     }
 
     public EntityRecordResponse getEntityRecord(Long entityTypeId, Long recordId) {

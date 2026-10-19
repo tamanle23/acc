@@ -25,4 +25,12 @@ public interface EntityRecordRepository extends BaseRepository<EntityRecord> {
     List<EntityRecord> findByTenantIdAndDeletedDateIsNull(String tenantId);
     Page<EntityRecord> findByTenantIdAndDeletedDateIsNull(String tenantId, Pageable pageable);
     long countByTenantIdAndDeletedDateIsNull(String tenantId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT e FROM EntityRecord e WHERE e.entityTypeId = :entityTypeId AND (:tenantId IS NULL OR e.tenantId = :tenantId) AND (:afterId IS NULL OR e.id > :afterId) AND e.deletedDate IS NULL ORDER BY e.id ASC")
+    List<EntityRecord> seekRecords(
+        @org.springframework.data.repository.query.Param("entityTypeId") Long entityTypeId,
+        @org.springframework.data.repository.query.Param("tenantId") String tenantId,
+        @org.springframework.data.repository.query.Param("afterId") Long afterId,
+        Pageable pageable
+    );
 }

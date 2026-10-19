@@ -115,12 +115,10 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
 			logger.error("ERROR while building bulk Indexing. ERROR details are : {}, Entities are : {}", jestResult.getJsonString());
 		}
 	 return isSuccess;
-    } catch (IOException ex) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-      logger.error("FAIL to build bulk index.", ex);
+     } catch (IOException ex) {
+      logger.error("FAIL to build bulk index for type[{}] in index[{}].", this.typeName, this.indexName, ex);
+      throw new ElasticsearchOperationException("FAIL to build bulk index for type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   public Long countByQuery(String query) {
@@ -139,11 +137,9 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
         return 0L;
       }
     } catch (IOException ex) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-      logger.error("FAIL to execute search request.", ex);
+      logger.error("FAIL to execute search request for query: {}", query, ex);
+      throw new ElasticsearchOperationException("FAIL to execute search count query: " + query, ex);
     }
-    return null;
   }
 
   public boolean delete(ID id) {
@@ -163,11 +159,9 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
           jestResult.getPathToResult());
       return jestResult.isSucceeded();
     } catch (IOException ex) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
       logger.error("FAIL to delete object[id={}]", id, ex);
+      throw new ElasticsearchOperationException("FAIL to delete object[id=" + id + "]", ex);
     }
-    return false;
   }
 
   public void deleteAsync(long id) {
@@ -233,12 +227,9 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       }
       return jestResult.isSucceeded();
     } catch (IOException ex) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-
-      logger.error("FAIL to update object's index.", ex);
+      logger.error("FAIL to update object's index for type[{}].", this.typeName, ex);
+      throw new ElasticsearchOperationException("FAIL to update object's index in bulk for type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   @Override
@@ -254,9 +245,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
     try {
       jestResult = jestClient.execute(get);
     } catch (IOException e) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-      logger.error("FAIL to get index[id={}] of type[{}].", id, this.typeName);
+      logger.error("FAIL to get index[id={}] of type[{}].", id, this.typeName, e);
+      throw new ElasticsearchOperationException("FAIL to get index[id=" + id + "] of type[" + this.typeName + "]", e);
     }
     if (jestResult != null) {
       resultObject = jestResult.getSourceAsObject(this.documentTypeClass);
@@ -286,9 +276,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
         }
       }
     } catch (IOException e) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-      logger.error("FAIL to get index[id={}] of type[{}].", ids, this.typeName);
+      logger.error("FAIL to get index[id={}] of type[{}].", ids, this.typeName, e);
+      throw new ElasticsearchOperationException("FAIL to get bulk indices for ids in type[" + this.typeName + "]", e);
     }
     return resultObjects;
   }
@@ -310,11 +299,9 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
 
       return jestResult.isSucceeded();
     } catch (IOException ex) {
-      // TODO: [Mudit] This code should not swallow the exception. Instead should throw this
-      // exception or log into TaskMonitor
-      logger.error("FAIL to build object's index.", ex);
+      logger.error("FAIL to build object's index for type[{}].", this.typeName, ex);
+      throw new ElasticsearchOperationException("FAIL to build object's index for entity in type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   public void indexAsync(T entity) {

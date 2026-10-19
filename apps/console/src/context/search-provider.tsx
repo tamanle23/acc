@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useMemo } from 'react'
-import { CommandMenu } from '@/components/command-menu'
+import { CommandPalette } from '@/components/command-palette/command-palette'
 
 type SearchContextType = {
   open: boolean
@@ -36,7 +36,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
   return (
     <SearchContext value={contextValue}>
       {children}
-      <CommandMenu />
+      <CommandPalette />
     </SearchContext>
   )
 }

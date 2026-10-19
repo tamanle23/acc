@@ -20,7 +20,16 @@ import java.util.concurrent.Executors;
 public class DynamicIndexProvisioner {
 
     private final JdbcTemplate jdbcTemplate;
-    private final ExecutorService indexExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService indexExecutor = createThreadExecutor();
+
+    private static ExecutorService createThreadExecutor() {
+        try {
+            java.lang.reflect.Method m = Executors.class.getMethod("newVirtualThreadPerTaskExecutor");
+            return (ExecutorService) m.invoke(null);
+        } catch (Exception e) {
+            return Executors.newCachedThreadPool();
+        }
+    }
 
     /**
      * Inspects a CompositeSpec and generates partial B-Tree functional index DDLs.

@@ -119,8 +119,10 @@ public abstract class BaseModelService<T extends BaseModel,R extends BaseReposit
   }
 
   public Page<T> findAll(PageRequest pageable) {
-    // TODO Auto-generated method stub
-    return null;
+    if (pageable == null) {
+      return this.getRepository().findAll(PageRequest.of(0, 20));
+    }
+    return this.getRepository().findAll((Pageable) pageable);
   }
 
 

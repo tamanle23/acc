@@ -197,6 +197,17 @@ public class MetadataController {
         return responseBuilder.success(page);
     }
 
+    @GetMapping("/entity-types/{id}/records/seek")
+    @PreAuthorize("hasAuthority('METADATA_RECORD_READ') or hasAuthority('METADATA_RECORD_WRITE') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, SeekPageResponse<EntityRecordResponse>>> seekEntityRecords(
+            @PathVariable Long id,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false, defaultValue = "50") Integer limit,
+            @RequestParam(required = false) String tenantId) {
+        SeekPageResponse<EntityRecordResponse> result = metadataService.seekEntityRecords(id, cursor, limit != null ? limit : 50, tenantId);
+        return responseBuilder.success(result);
+    }
+
     @GetMapping("/entity-types/{id}/drift")
     @PreAuthorize("hasAuthority('METADATA_SCHEMA_READ') or hasAuthority('METADATA_RECORD_READ') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, SchemaDriftAnalysisResponse>> getSchemaDriftAnalysis(
@@ -332,6 +343,15 @@ public class MetadataController {
         return ResponseEntity.ok()
                 .eTag(etag)
                 .body(responseBuilder.success(restored).getBody());
+    }
+
+    @PatchMapping("/entity-types/{id}/records/{recordId}/revert/{auditId}")
+    @PreAuthorize("hasRole('SYSTEM_CUSTODIAN') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> revertRecordVersion(
+            @PathVariable Long id,
+            @PathVariable Long recordId,
+            @PathVariable Long auditId) {
+        return restoreRecordVersion(id, recordId, auditId);
     }
 
     @PostMapping("/entity-types/{id}/records/{recordId}/transition")

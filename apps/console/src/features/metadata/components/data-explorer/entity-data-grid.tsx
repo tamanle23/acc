@@ -19,12 +19,32 @@ import { FacetedSearchSidebar } from './faceted-search-sidebar';
 import { SchemaBackfillDialog } from './schema-backfill-dialog';
 import { RecordAuditHistoryDrawer } from '../records/record-audit-history-drawer';
 import { CompositeMasterDetailRow } from './composite-master-detail-row';
+import { DynamicQueryBuilder } from './query-builder/dynamic-query-builder';
+import { TableViewsPopover, type GridDensity, type ViewPreset } from './table-views-popover';
+import { MasterDetailRowInspector } from './master-detail-row-inspector';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
   type VisibilityState,
+  type Header,
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DataTableViewOptions } from '@/components/data-table/view-options';
@@ -86,7 +106,88 @@ import {
   Rocket,
   ShieldCheck,
   ArrowRight,
+  GripVertical,
 } from 'lucide-react';
+
+interface DraggableHeaderCellProps {
+  header: Header<EntityRecord, unknown>;
+  density: GridDensity;
+  sortField: string | null;
+  sortDirection: 'asc' | 'desc';
+  onSortToggle: (id: string) => void;
+}
+
+const DraggableHeaderCell: React.FC<DraggableHeaderCellProps> = ({
+  header,
+  density,
+  sortField,
+  sortDirection,
+  onSortToggle,
+}) => {
+  const colId = header.column.id;
+  const isPinned = colId === 'actions' || colId === 'row_index' || colId === 'expander';
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: colId,
+    disabled: isPinned,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+  };
+
+  const isSortable = !isPinned;
+  const ariaSort = isSortable
+    ? sortField === colId
+      ? sortDirection === 'asc'
+        ? 'ascending'
+        : 'descending'
+      : 'none'
+    : undefined;
+
+  return (
+    <th
+      ref={setNodeRef}
+      style={style}
+      scope="col"
+      aria-sort={ariaSort}
+      className={cn(
+        'font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap bg-white/95 dark:bg-slate-800/95 backdrop-blur-md select-none',
+        density === 'compact'
+          ? 'py-1.5 px-2 text-[10px]'
+          : density === 'spacious'
+            ? 'py-3.5 px-3.5 text-xs'
+            : 'p-3 text-[11px]',
+        colId === 'row_index' &&
+          'sticky left-0 z-40 w-12 text-center border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]',
+        colId === 'actions' &&
+          'sticky right-0 z-40 w-12 border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        {!isPinned && (
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground p-0.5 rounded"
+            title="Drag column header to reorder"
+            aria-label={`Drag ${colId} column to reorder`}
+          >
+            <GripVertical className="size-3" />
+          </button>
+        )}
+        <div className="flex-1">
+          {header.isPlaceholder
+            ? null
+            : flexRender(header.column.columnDef.header, header.getContext())}
+        </div>
+      </div>
+    </th>
+  );
+};
 
 /**
  * Returns contextual icon and Liquid Glass styling for FSM transition actions.
@@ -218,6 +319,39 @@ export const EntityDataGrid: React.FC<Props> = ({
 
   // Column visibility state for toggle views
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Grid Density (compact: 36px, comfortable: 48px, spacious: 60px)
+  const [density, setDensity] = useState<GridDensity>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('unipost_density_profile');
+      if (saved === 'compact' || saved === 'comfortable' || saved === 'spacious') {
+        return saved as GridDensity;
+      }
+    }
+    return 'comfortable';
+  });
+
+  const handleDensityChange = (newDensity: GridDensity) => {
+    setDensity(newDensity);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('unipost_density_profile', newDensity);
+    }
+  };
+
+  // Drag-and-drop column ordering state
+  const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
+  // Master-Detail Row Inspector state & keyboard navigation
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [masterDetailRecord, setMasterDetailRecord] = useState<EntityRecord | null>(null);
+  const [isMasterDetailOpen, setIsMasterDetailOpen] = useState(false);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   // Horizontal scroll cue detection for high-density tables (e.g. 100+ columns)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
@@ -795,18 +929,84 @@ export const EntityDataGrid: React.FC<Props> = ({
     columns,
     state: {
       columnVisibility,
+      columnOrder,
     },
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
   });
 
   const { rows } = table.getRowModel();
 
-  // High-performance DOM virtualization with dynamic row measuring
+  const draggableColumnIds = useMemo(() => {
+    return table
+      .getAllLeafColumns()
+      .map((c) => c.id)
+      .filter((id) => id !== 'row_index' && id !== 'actions' && id !== 'expander');
+  }, [table]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setColumnOrder((currentOrder) => {
+      const existingOrder =
+        currentOrder.length > 0
+          ? currentOrder
+          : table.getAllLeafColumns().map((c) => c.id);
+      const oldIndex = existingOrder.indexOf(String(active.id));
+      const newIndex = existingOrder.indexOf(String(over.id));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        return arrayMove(existingOrder, oldIndex, newIndex);
+      }
+      return existingOrder;
+    });
+  };
+
+  // Keyboard navigation for Master-Detail inspection (j / k row traversal, Enter to expand)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const tag = (activeEl?.tagName || '').toLowerCase();
+      if (
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        activeEl?.getAttribute('role') === 'combobox'
+      ) {
+        return;
+      }
+
+      if (e.key === 'j' || (e.key === 'ArrowDown' && e.altKey)) {
+        e.preventDefault();
+        setSelectedRowIndex((prev) => {
+          const next = prev === null ? 0 : Math.min(rows.length - 1, prev + 1);
+          return next;
+        });
+      } else if (e.key === 'k' || (e.key === 'ArrowUp' && e.altKey)) {
+        e.preventDefault();
+        setSelectedRowIndex((prev) => {
+          const next = prev === null ? 0 : Math.max(0, prev - 1);
+          return next;
+        });
+      } else if (e.key === 'Enter' && selectedRowIndex !== null && rows[selectedRowIndex]) {
+        e.preventDefault();
+        setMasterDetailRecord(rows[selectedRowIndex].original);
+        setIsMasterDetailOpen(true);
+      } else if (e.key === 'Escape' && isMasterDetailOpen) {
+        setIsMasterDetailOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rows, selectedRowIndex, isMasterDetailOpen]);
+
+  // High-performance DOM virtualization with dynamic row measuring based on density
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => 45,
+    estimateSize: () => (density === 'compact' ? 36 : density === 'spacious' ? 60 : 48),
     overscan: 10,
     initialRect: { width: 1000, height: 800 },
   });
@@ -900,6 +1100,13 @@ export const EntityDataGrid: React.FC<Props> = ({
             )}
           </div>
 
+          {/* Dynamic Multi-Condition Query Builder */}
+          <DynamicQueryBuilder
+            attributes={attributes}
+            legacyFilters={attributeFilters}
+            onApplyQuery={(_, clauses) => handleAttributeFiltersChange(clauses)}
+          />
+
           {/* Advanced Multi-Attribute Compound Filter Popover */}
           <AdvancedFilterPopover
             attributes={attributes}
@@ -953,6 +1160,18 @@ export const EntityDataGrid: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <TableViewsPopover
+            entityTypeId={entityTypeId}
+            currentDensity={density}
+            onDensityChange={handleDensityChange}
+            currentVisibility={columnVisibility}
+            onVisibilityChange={setColumnVisibility}
+            currentColumnOrder={columnOrder}
+            onColumnOrderChange={setColumnOrder}
+            activePresetId={activePresetId}
+            onSelectPreset={(p) => setActivePresetId(p.id)}
+          />
+
           <DataTableViewOptions table={table} />
 
           <Button
@@ -1058,48 +1277,34 @@ export const EntityDataGrid: React.FC<Props> = ({
             aria-label="Metadata entity data grid scrollable region"
             className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 h-full scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <table className="w-full min-w-max text-left border-collapse text-xs table-auto">
-              <thead className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-xs">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr
-                    key={headerGroup.id}
-                    className="border-b border-border"
-                  >
-                    {headerGroup.headers.map((header) => {
-                      const isAction = header.column.id === 'actions';
-                      const isRowIndex = header.column.id === 'row_index';
-                      const colId = header.column.id;
-                      const isSortable = colId !== 'actions' && colId !== 'row_index';
-                      const ariaSort = isSortable
-                        ? sortField === colId
-                          ? sortDirection === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : 'none'
-                        : undefined;
-
-                      return (
-                        <th
-                          key={header.id}
-                          scope="col"
-                          aria-sort={ariaSort}
-                          className={cn(
-                            'p-3 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] whitespace-nowrap bg-white/95 dark:bg-slate-800/95 backdrop-blur-md',
-                            isRowIndex &&
-                            'sticky left-0 z-40 w-12 text-center border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]',
-                            isAction &&
-                            'sticky right-0 z-40 w-12 border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
-                          )}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </thead>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <table className="w-full min-w-max text-left border-collapse text-xs table-auto">
+                <thead className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-xs">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <SortableContext
+                      key={headerGroup.id}
+                      items={draggableColumnIds}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      <tr className="border-b border-border">
+                        {headerGroup.headers.map((header) => (
+                          <DraggableHeaderCell
+                            key={header.id}
+                            header={header}
+                            density={density}
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                            onSortToggle={handleSortToggle}
+                          />
+                        ))}
+                      </tr>
+                    </SortableContext>
+                  ))}
+                </thead>
               <tbody>
                 {rows.length > 0 ? (
                   <>
@@ -1147,7 +1352,17 @@ export const EntityDataGrid: React.FC<Props> = ({
                                 <tr
                                   data-index={virtualRow.index}
                                   ref={rowVirtualizer.measureElement}
-                                  className="group border-b border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
+                                  onClick={() => setSelectedRowIndex(virtualRow.index)}
+                                  onDoubleClick={() => {
+                                    setMasterDetailRecord(row.original);
+                                    setIsMasterDetailOpen(true);
+                                  }}
+                                  className={cn(
+                                    'group border-b border-white/10 transition-colors cursor-pointer',
+                                    selectedRowIndex === virtualRow.index
+                                      ? 'bg-primary/15 dark:bg-primary/20 ring-1 ring-inset ring-primary/40'
+                                      : 'hover:bg-white/40 dark:hover:bg-white/5'
+                                  )}
                                 >
                                   {row.getVisibleCells().map((cell) => {
                                     const isAction = cell.column.id === 'actions';
@@ -1156,11 +1371,16 @@ export const EntityDataGrid: React.FC<Props> = ({
                                       <td
                                         key={cell.id}
                                         className={cn(
-                                          'p-3 whitespace-nowrap',
+                                          'whitespace-nowrap transition-[background-color,backdrop-filter] duration-150',
+                                          density === 'compact'
+                                            ? 'py-1 px-2 text-xs'
+                                            : density === 'spacious'
+                                              ? 'py-3.5 px-3.5 text-sm'
+                                              : 'p-3 text-xs',
                                           isRowIndex &&
-                                          'sticky left-0 z-10 w-12 text-center bg-white/90 group-hover:bg-white/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)] transition-[background-color,backdrop-filter] duration-150',
+                                          'sticky left-0 z-10 w-12 text-center bg-white/90 group-hover:bg-white/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]',
                                           isAction &&
-                                          'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
+                                          'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
                                         )}
                                       >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -1211,7 +1431,8 @@ export const EntityDataGrid: React.FC<Props> = ({
                 )}
               </tbody>
             </table>
-          </div>
+          </DndContext>
+        </div>
 
           {/* Pagination Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 border-t border-white/10 bg-white/30 dark:bg-slate-850/30 shrink-0">
@@ -1323,6 +1544,15 @@ export const EntityDataGrid: React.FC<Props> = ({
         entityTypeId={entityTypeId}
         open={Boolean(auditRecord)}
         onClose={() => setAuditRecord(null)}
+      />
+      <MasterDetailRowInspector
+        record={masterDetailRecord}
+        entityType={entityType}
+        attributes={attributes}
+        open={isMasterDetailOpen}
+        onOpenChange={setIsMasterDetailOpen}
+        onEdit={openEditRecordDialog}
+        onInspectEdges={openRecordRelationshipsInspector}
       />
     </div>
   );

@@ -93,8 +93,8 @@ export function resolveTenantProfile(
 }
 
 export const useProfileStore = create<ProfileState>()((set, get) => {
-  let defaultProfiles = sidebarTeams as Profile[]
-  let initialProfile = defaultProfiles[0]
+  let defaultProfiles = (sidebarTeams || []) as Profile[]
+  let initialProfile = defaultProfiles[0] || SOVEREIGN_PROFILE
 
   const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null
   const assumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null

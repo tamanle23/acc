@@ -1068,6 +1068,36 @@ class MetadataServiceTest {
     }
 
     @Test
+    void testSeekEntityRecords_Success() {
+        Long typeId = 1L;
+        EntityType type = new EntityType();
+        type.setId(typeId);
+
+        EntityRecord r1 = new EntityRecord();
+        r1.setId(10L);
+        r1.setEntityType(type);
+        r1.setTenantId("tenant-alpha");
+        r1.setAttributes(Map.of("name", "Item 10"));
+
+        EntityRecord r2 = new EntityRecord();
+        r2.setId(20L);
+        r2.setEntityType(type);
+        r2.setTenantId("tenant-alpha");
+        r2.setAttributes(Map.of("name", "Item 20"));
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(type));
+        when(entityRecordRepository.seekRecords(eq(typeId), eq("tenant-alpha"), eq(null), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(r1, r2));
+
+        SeekPageResponse<EntityRecordResponse> response = metadataService.seekEntityRecords(typeId, null, 10, "tenant-alpha");
+
+        assertNotNull(response);
+        assertEquals(2, response.items().size());
+        assertFalse(response.hasMore());
+        assertNull(response.nextCursor());
+    }
+
+    @Test
     void testGetAttributeDefinitionsAndGetAttributeDefinition() {
         Long typeId = 1L;
         when(entityTypeRepository.findByIdAndDeletedDateIsNull(typeId)).thenReturn(Optional.of(new EntityType()));
