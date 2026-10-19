@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TenantUsersDrawer } from '../tenant-users-drawer';
@@ -140,6 +140,8 @@ describe('TenantUsersDrawer - Phase 5 Symmetrical Sovereign Drawer', () => {
   });
 
   it('filters users by search query input', () => {
+    vi.useFakeTimers();
+
     renderWithClient(
       <TenantUsersDrawer
         tenant={mockTenant}
@@ -151,8 +153,15 @@ describe('TenantUsersDrawer - Phase 5 Symmetrical Sovereign Drawer', () => {
     const searchInput = screen.getByPlaceholderText(/Tìm kiếm user, email/i);
     fireEvent.change(searchInput, { target: { value: 'admin' } });
 
-    // useGlobalUsers was called with search query
-    expect(useSystemFleetModule.useGlobalUsers).toHaveBeenCalledWith('admin', 'tenant-acme');
+    // Advance timer past debounce delay (300ms)
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    // useGlobalUsers was called with debounced search query
+    expect(useSystemFleetModule.useGlobalUsers).toHaveBeenLastCalledWith('admin', 'tenant-acme');
+
+    vi.useRealTimers();
   });
 
   it('triggers emergency lock confirmation dialog and executes lockMutation', () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -47,6 +47,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export interface TenantUsersDrawerProps {
   tenant: FleetTenantSummary | null;
@@ -62,23 +63,29 @@ export function TenantUsersDrawer({
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
 
+  // ⚡ Bolt Optimization: Debounce search query input to prevent redundant API re-fetches on every keystroke
+  const debouncedSearch = useDebounce(search, 300);
+
   // Lock Confirmation Dialog state
   const [userToLock, setUserToLock] = useState<GlobalUserListItem | null>(null);
   const [lockReason, setLockReason] = useState('');
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
 
   const { data: users = [], isLoading, refetch } = useGlobalUsers(
-    search,
+    debouncedSearch,
     tenant?.tenantId
   );
   const lockMutation = useLockUser();
 
-  if (!tenant) return null;
+  // ⚡ Bolt Optimization: Memoize user role filtering to preserve referential integrity and prevent O(N) array scans on unrelated re-renders
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter === 'ALL') return true;
+      return u.roles.some((r) => r.toUpperCase().includes(roleFilter.toUpperCase()));
+    });
+  }, [users, roleFilter]);
 
-  const filteredUsers = users.filter((u) => {
-    if (roleFilter === 'ALL') return true;
-    return u.roles.some((r) => r.toUpperCase().includes(roleFilter.toUpperCase()));
-  });
+  if (!tenant) return null;
 
   const handleOpenLockDialog = (user: GlobalUserListItem) => {
     setUserToLock(user);
