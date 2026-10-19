@@ -17,9 +17,11 @@ import { FilterModifierPlugin } from './audio/FilterModifierPlugin';
 import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
 import { ShapeModifierPlugin } from './shape/ShapeModifierPlugin';
 import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
+import { TimeSpaceModifierPlugin } from './TimeSpaceModifierPlugin';
 
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
+export * from './TimeSpaceModifierPlugin';
 export * from './vfx/Depth3DPlugin';
 export * from './vfx/Camera3DPlugin';
 export * from './vfx/ColorGradingPlugin';
@@ -79,6 +81,7 @@ export function registerCoreModifierPlugins(
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());
   registry.register(new PitchModifierPlugin());
+  registry.register(new TimeSpaceModifierPlugin());
   return registry;
 }
 

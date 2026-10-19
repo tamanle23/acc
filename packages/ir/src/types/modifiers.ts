@@ -257,6 +257,15 @@ export interface TypedModifierNode<TType extends string, TTarget extends Sequenc
   params: TParams;
 }
 
+export interface TimeSpaceModifierParams {
+  templateId: string;
+  seed?: number;
+  params?: Record<string, number | string | boolean>;
+  boundary?: 'loop' | 'pingpong' | 'clamp' | 'once';
+  renderMode?: 'canvas2d' | 'webgl_buffers';
+}
+export type TimeSpaceModifierConfig = TimeSpaceModifierParams & { type: 'time_space' };
+
 export type StandardModifierNode =
   | TypedModifierNode<'transform', 'video' | 'image' | 'overlay' | 'text' | SequenceType[], TransformModifierParams>
   | TypedModifierNode<'vfx/camera_3d', 'video' | 'image' | 'overlay' | SequenceType[], Camera3DModifierParams>
@@ -265,6 +274,7 @@ export type StandardModifierNode =
   | TypedModifierNode<'overlay/canvas_particles', 'video' | 'overlay' | SequenceType[], ParticleVfxModifierParams>
   | TypedModifierNode<'overlay/hologram_hud', 'video' | 'overlay' | SequenceType[], HologramHudModifierParams>
   | TypedModifierNode<'overlay/blend_mode', 'video' | 'image' | 'overlay' | SequenceType[], BlendModeModifierParams>
+  | TypedModifierNode<'time_space', 'video' | 'image' | 'overlay' | SequenceType[], TimeSpaceModifierParams>
   | TypedModifierNode<'text/style', 'text' | SequenceType[], TextStyleModifierParams>
   | TypedModifierNode<'audio/volume', 'audio' | SequenceType[], VolumeModifierParams>
   | TypedModifierNode<'audio/pan', 'audio' | SequenceType[], PanModifierParams>

@@ -1,3 +1,5 @@
+import { createTimeSpaceMachine, TimeSpaceStateMachine } from '@acc/core-isomorphic';
+
 export interface SpringConfig {
   stiffness: number; // k (e.g. 180)
   damping: number; // c (e.g. 12)
@@ -7,6 +9,14 @@ export interface SpringConfig {
 export interface SpringState {
   value: number;
   velocity: number;
+}
+
+export interface KineticTitleOptions {
+  enterDuration?: number;
+  idleDuration?: number;
+  exitDuration?: number;
+  fontSize?: number;
+  fontColor?: string;
 }
 
 export class KineticTypography {
@@ -44,5 +54,100 @@ export class KineticTypography {
     }
 
     return scales;
+  }
+
+  /**
+   * Creates a deterministic TimeSpaceStateMachine for kinetic typography titles.
+   */
+  public static createTitleMachine(
+    text: string,
+    options: KineticTitleOptions = {}
+  ): TimeSpaceStateMachine {
+    const enterDuration = options.enterDuration ?? 0.6;
+    const idleDuration = options.idleDuration ?? 2.5;
+    const exitDuration = options.exitDuration ?? 0.4;
+    const fontSize = options.fontSize ?? 48;
+    const fontColor = options.fontColor ?? '#ffffff';
+
+    return createTimeSpaceMachine({
+      initialState: {
+        scale: 0,
+        opacity: 0,
+        yOffset: 40,
+        letterSpacing: 2,
+      },
+      phases: {
+        enter: {
+          duration: enterDuration,
+          setup: (tl, state) => {
+            tl.to(state, {
+              scale: 1,
+              opacity: 1,
+              yOffset: 0,
+              duration: enterDuration,
+              ease: 'elastic.out(1, 0.75)',
+            });
+          },
+        },
+        idle: {
+          duration: idleDuration,
+          setup: (tl, state) => {
+            tl.to(state, {
+              scale: 1.03,
+              duration: idleDuration / 2,
+              yoyo: true,
+              repeat: -1,
+              ease: 'sine.inOut',
+            });
+          },
+        },
+        exit: {
+          duration: exitDuration,
+          setup: (tl, state) => {
+            tl.to(state, {
+              scale: 0.8,
+              opacity: 0,
+              yOffset: -30,
+              duration: exitDuration,
+              ease: 'power2.in',
+            });
+          },
+        },
+      },
+      generateGeometry: (state, space) => {
+        return {
+          points: [space.center],
+          groups: [],
+          polygons: [],
+          meta: {
+            text,
+            scale: state.scale,
+            opacity: state.opacity,
+            yOffset: state.yOffset,
+            fontSize,
+            fontColor,
+          },
+        };
+      },
+      render: (snapshot, ctx) => {
+        const meta = snapshot.geometry.meta;
+        if (!meta || meta.opacity <= 0.001) return;
+
+        ctx.save();
+        ctx.globalAlpha = meta.opacity;
+        ctx.font = `bold ${meta.fontSize}px sans-serif`;
+        ctx.fillStyle = meta.fontColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 10;
+
+        const center = snapshot.geometry.points[0] || [0, 0];
+        ctx.translate(center[0], center[1] + meta.yOffset);
+        ctx.scale(meta.scale, meta.scale);
+        ctx.fillText(meta.text, 0, 0);
+        ctx.restore();
+      },
+    });
   }
 }

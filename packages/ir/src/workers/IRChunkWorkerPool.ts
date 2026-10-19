@@ -27,6 +27,7 @@ export interface IRWorkerPoolOptions {
   tempDir?: string;
   seed?: number;
   generateFrameHash?: boolean;
+  jobId?: string;
   onProgress?: (progress: {
     completedChunks: number;
     totalChunks: number;
@@ -108,7 +109,12 @@ export class IRChunkWorkerPool {
     const fps = this.timeline.meta.globalFps;
 
     // Resolve active media engine strategy and chunk execution policy
-    const { MediaEngineRegistry, AdaptiveResourceGovernor } = await import('@acc/core');
+    const {
+      MediaEngineRegistry,
+      AdaptiveResourceGovernor,
+      RenderCheckpointManager,
+      SagaOrchestrator,
+    } = await import('@acc/core');
     const mediaEngine = MediaEngineRegistry.get(options.engine);
     const chunkPolicy = mediaEngine.getChunkPolicy();
 
@@ -133,6 +139,11 @@ export class IRChunkWorkerPool {
       await fs.promises.mkdir(workingDir, { recursive: true });
     }
 
+    const jobId = options.jobId;
+    const checkpointManager = jobId ? RenderCheckpointManager.getInstance() : null;
+    const completedIndices = checkpointManager && jobId ? await checkpointManager.getCompletedChunkIndices(jobId) : new Set<number>();
+    const saga = new SagaOrchestrator(jobId ? `chunk_pool_${jobId}` : `chunk_pool_${this.seed}`);
+
     // Step 1: Pre-mix global audio once if we have an output video target
     let masterAudioWavPath: string | undefined;
     let audioSamples = 0;
@@ -144,9 +155,18 @@ export class IRChunkWorkerPool {
       if (mixedAudio.totalSamples > 0) {
         masterAudioWavPath = path.resolve(
           workingDir,
-          `.temp_master_audio_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.wav`
+          `.temp_master_audio_${this.seed}_${jobId || 'main'}.wav`
         );
         await DecoupledAudioMixer.exportToWav(masterAudioWavPath, mixedAudio);
+        saga.addStep({
+          name: 'master_audio',
+          execute: async () => {},
+          compensate: async () => {
+            if (masterAudioWavPath && fs.existsSync(masterAudioWavPath)) {
+              try { await fs.promises.unlink(masterAudioWavPath); } catch {}
+            }
+          },
+        });
       }
     }
 
@@ -161,12 +181,42 @@ export class IRChunkWorkerPool {
       const chunkMp4Path = outPath
         ? path.resolve(
             workingDir,
-            `.temp_chunk_${slice.chunkIndex}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp4`
+            `.temp_chunk_${slice.chunkIndex}_${this.seed}_${jobId || 'job'}.mp4`
           )
         : undefined;
 
       if (chunkMp4Path) {
         chunkPaths[slice.chunkIndex] = chunkMp4Path;
+        saga.addStep({
+          name: `chunk_${slice.chunkIndex}`,
+          execute: async () => {},
+          compensate: async () => {
+            if (chunkMp4Path && fs.existsSync(chunkMp4Path)) {
+              try { await fs.promises.unlink(chunkMp4Path); } catch {}
+            }
+          },
+        });
+      }
+
+      // Checkpoint resumption: skip already verified chunks
+      if (checkpointManager && jobId && completedIndices.has(slice.chunkIndex) && chunkMp4Path && fs.existsSync(chunkMp4Path)) {
+        const cp = await checkpointManager.loadCheckpoint(jobId);
+        const rec = cp?.completedChunks[slice.chunkIndex];
+        if (rec) {
+          chunkHashes[slice.chunkIndex] = rec.sha256;
+          completedChunks++;
+          completedFrames += slice.frameCount;
+          if (options.onProgress) {
+            options.onProgress({
+              completedChunks,
+              totalChunks: chunkCount,
+              completedFrames,
+              totalFrames,
+              percent: parseFloat(((completedFrames / totalFrames) * 100).toFixed(1)),
+            });
+          }
+          return { cumulativeHash: rec.sha256 } as any;
+        }
       }
 
       // Each worker gets an isolated renderer instance seeded deterministically with the global seed
@@ -190,6 +240,15 @@ export class IRChunkWorkerPool {
 
       chunkHashes[slice.chunkIndex] = chunkResult.cumulativeHash;
 
+      if (checkpointManager && jobId && chunkMp4Path) {
+        await checkpointManager.saveChunkCheckpoint(
+          jobId,
+          slice.chunkIndex,
+          chunkMp4Path,
+          chunkResult.cumulativeHash
+        );
+      }
+
       completedChunks++;
       completedFrames += slice.frameCount;
 
@@ -206,8 +265,14 @@ export class IRChunkWorkerPool {
       return chunkResult;
     });
 
-    // Execute tasks in parallel (Bun resolves native threads/microtasks)
-    await Promise.all(activeTasks.map((task) => task()));
+    try {
+      // Execute tasks in parallel (Bun resolves native threads/microtasks)
+      await Promise.all(activeTasks.map((task) => task()));
+    } catch (err: any) {
+      // SAGA Compensation on failure: clean up chunk artifacts and record failure
+      await saga.execute({});
+      throw err;
+    }
 
     // Step 3: Compute Merkle Root for Bit-Identical Verification
     // RootHash = SHA256(ChunkHash_0 || ChunkHash_1 || ... || ChunkHash_N)
@@ -231,7 +296,7 @@ export class IRChunkWorkerPool {
         // First stitch video chunks losslessly via active media engine strategy
         const tempVideoOnlyPath = path.resolve(
           workingDir,
-          `.temp_stitched_video_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.mp4`
+          `.temp_stitched_video_${this.seed}_${jobId || 'main'}.mp4`
         );
 
         await mediaEngine.getConcatStrategy().concatenate(validChunkPaths, tempVideoOnlyPath);
@@ -260,6 +325,10 @@ export class IRChunkWorkerPool {
           await fs.promises.rename(tempVideoOnlyPath, outPath);
         }
       }
+    }
+
+    if (checkpointManager && jobId) {
+      await checkpointManager.clearCheckpoint(jobId);
     }
 
     const durationSeconds = totalFrames > 0 ? parseFloat((totalFrames / fps).toFixed(3)) : 0;

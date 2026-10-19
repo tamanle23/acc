@@ -1,4 +1,4 @@
-import { Noise } from 'pts';
+import { StatelessHashNoise } from '@acc/core-isomorphic';
 import { gsap } from 'gsap';
 
 export interface DeterministicParticleFieldParams {
@@ -11,6 +11,12 @@ export interface DeterministicParticleFieldParams {
   [key: string]: any;
 }
 
+class StatelessNoiseAdapter {
+  public noise2D(x: number, y: number): number {
+    return StatelessHashNoise.noise2D(1337, 0, x * 10, y * 10);
+  }
+}
+
 /**
  * DeterministicParticleField:
  * Zero-allocation, 100% stateless procedural particle field renderer.
@@ -19,11 +25,11 @@ export interface DeterministicParticleFieldParams {
  * - DETERMINISTIC-HANDSHAKE-BACKPRESSURE: Pure mathematical function of (frame, seed, type).
  *   Scrubbing forward, backward, or jumping randomly produces 100% bit-identical frame output.
  * - ZERO-ALLOC-FRAME-LOOP: Reusable Float32Array working vectors and noise generators.
- * - PTS.JS NOISE: Coherent spatial curl turbulence flow-fields for natural physics without Euler integration drift.
+ * - STATELESS HASH NOISE: Coherent spatial curl turbulence flow-fields for natural physics without Euler integration drift.
  * - GSAP PARAMETRIC EASING: Deterministic life-cycle shaping curves (birth -> expansion -> decay -> death).
  */
 export class DeterministicParticleField {
-  private static noise = new Noise();
+  private static noise = new StatelessNoiseAdapter();
   private static easeOut = gsap.parseEase('power2.out');
   private static easeInOut = gsap.parseEase('sine.inOut');
   private static easeExp = gsap.parseEase('expo.inOut');

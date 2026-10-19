@@ -1,6 +1,7 @@
 import { AssetContext } from './AssetContext';
 import { VFXCommand } from './VFXCommand';
 import { Logger } from './logger';
+import { DeadLetterQueue } from './saga/SagaOrchestrator';
 
 export interface PipelineContext {
   storyId: string;
@@ -17,6 +18,7 @@ export interface PipelineContext {
 export interface IPipelineMiddleware<TContext extends PipelineContext = PipelineContext> {
   name: string;
   execute(ctx: TContext, next: () => Promise<void>): Promise<void>;
+  compensate?: (ctx: TContext, error: Error) => Promise<void>;
 }
 
 export interface PipelineRunnerHooks<TContext extends PipelineContext = PipelineContext> {
@@ -54,18 +56,58 @@ export class PipelineRunner<TContext extends PipelineContext = PipelineContext> 
     return [...this.middlewares];
   }
 
-  public async run(ctx: TContext): Promise<TContext> {
+  public async runWithSaga(ctx: TContext): Promise<TContext> {
+    return this.run(ctx, { enableSagaCompensation: true });
+  }
+
+  public async run(ctx: TContext, options: { enableSagaCompensation?: boolean } = {}): Promise<TContext> {
     const storyIdentifier = ctx.storyId || (ctx as any).pipelineId || 'unknown';
     Logger.info('PipelineRunner', `Starting pipeline execution for story [${storyIdentifier}]`);
     let index = -1;
+    let compensationTriggered = false;
+    const startedMiddlewares: IPipelineMiddleware<TContext>[] = [];
 
     if (!ctx.timings) {
       ctx.timings = {};
     }
 
+    const triggerCompensation = async (error: Error, failedStageName: string) => {
+      if (!options.enableSagaCompensation || compensationTriggered) return;
+      compensationTriggered = true;
+      Logger.error('PipelineRunner', `Triggering reverse SAGA compensation starting from [${failedStageName}]...`);
+      let compStatus: 'COMPENSATED' | 'COMPENSATION_FAILED' = 'COMPENSATED';
+
+      for (let j = startedMiddlewares.length - 1; j >= 0; j--) {
+        const mw = startedMiddlewares[j];
+        if (mw.compensate) {
+          try {
+            Logger.info('PipelineRunner', `Compensating middleware [${mw.name}]...`);
+            await mw.compensate(ctx, error);
+          } catch (compErr: any) {
+            compStatus = 'COMPENSATION_FAILED';
+            Logger.error('PipelineRunner', `Failed compensating middleware [${mw.name}]: ${compErr.message}`);
+          }
+        }
+      }
+
+      DeadLetterQueue.getInstance().enqueue({
+        sagaId: `pipeline_${storyIdentifier}`,
+        stepName: failedStageName,
+        timestamp: new Date().toISOString(),
+        errorPayload: {
+          message: error.message,
+          stack: error.stack,
+        },
+        contextSnapshot: { storyId: storyIdentifier, metadata: ctx.metadata },
+        compensationStatus: compStatus,
+      });
+    };
+
     const dispatch = async (i: number): Promise<void> => {
       if (ctx.signal?.aborted) {
-        throw new Error(`Pipeline execution aborted: ${ctx.signal.reason || 'aborted by caller'}`);
+        const abortErr = new Error(`Pipeline execution aborted: ${ctx.signal.reason || 'aborted by caller'}`);
+        await triggerCompensation(abortErr, 'abort_signal');
+        throw abortErr;
       }
 
       if (i <= index) {
@@ -78,6 +120,7 @@ export class PipelineRunner<TContext extends PipelineContext = PipelineContext> 
       }
 
       const mw = this.middlewares[i];
+      startedMiddlewares.push(mw);
       Logger.debug('PipelineRunner', `Executing middleware stage: ${mw.name}`);
       const stageStartTime = Date.now();
 
@@ -108,6 +151,11 @@ export class PipelineRunner<TContext extends PipelineContext = PipelineContext> 
 
         Logger.error('PipelineRunner', `Fault in middleware [${mw.name}]: ${errorObj.message}`);
         ctx.errors.push({ stage: mw.name, error: errorObj });
+
+        if (options.enableSagaCompensation) {
+          await triggerCompensation(errorObj, mw.name);
+          throw errorObj;
+        }
 
         if (this.hooks.onStageError) {
           try {

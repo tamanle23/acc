@@ -37,6 +37,7 @@ export class FFIVideoEncoder {
 
     private srcDataC: any = 0;
     private srcStrideC: any = 0;
+    private cachedSrcDataView: DataView | null = null;
     private pinnedFrameBuf: Buffer | null = null;
     private strategy: IVideoEncodingStrategy;
     private activeEncoderName: string = '';
@@ -265,6 +266,7 @@ export class FFIVideoEncoder {
 
         const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 64));
         for (let i = 0; i < 8; i++) dataView.setBigUint64(i * 8, 0n, true);
+        this.cachedSrcDataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 8));
 
         this.isInitialized = true;
     }
@@ -275,8 +277,10 @@ export class FFIVideoEncoder {
         this.strategy.paceFrame(this.frameIndex, this.fps);
 
         const framePtr = BigInt(ptr(rgbaBuffer));
-        const dataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 8));
-        dataView.setBigUint64(0, framePtr, true);
+        if (!this.cachedSrcDataView) {
+            this.cachedSrcDataView = new DataView(safeArrayBuffer(this.srcDataC, 0, 8));
+        }
+        this.cachedSrcDataView.setBigUint64(0, framePtr, true);
 
         FFI.swscale.sws_scale(
             this.swsCtx,

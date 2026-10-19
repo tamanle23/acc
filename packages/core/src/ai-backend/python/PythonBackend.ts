@@ -1,6 +1,8 @@
 import { Logger } from '../../logger';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
+import os from 'os';
+import fs from 'fs';
 import { randomUUID } from 'crypto';
 
 // ==========================================
@@ -48,17 +50,32 @@ class LineBuffer {
 // ==========================================
 /**
  * Encapsulates the lifecycle, IPC stream, and queue 
- * of a single Python AI Daemon.
+ * of a single Python AI Daemon with resilient supervision.
  */
 class PythonWorker {
   private process: ChildProcess | null = null;
   private isReady = false;
   private initPromise: Promise<void> | null = null;
+  private restartAttempts = 0;
+  private maxRestartAttempts = 3;
+  private isShuttingDown = false;
 
   private pendingRequests = new Map<string, { resolve: (res: any) => void; reject: (err: any) => void }>();
   private lineBuffer = new LineBuffer();
 
   constructor(public readonly domain: string) { }
+
+  private resolveWorkerScript(): { scriptPath: string; workingDir: string; exists: boolean } {
+    const scriptName = `${this.domain}_worker.py`;
+    const globalAccDir = path.join(os.homedir(), '.acc', 'python', 'workers');
+    const globalScript = path.join(globalAccDir, scriptName);
+    if (fs.existsSync(globalScript)) {
+      return { scriptPath: globalScript, workingDir: globalAccDir, exists: true };
+    }
+    const repoDir = path.resolve(process.cwd(), 'packages/core/src/ai-backend/python/workers');
+    const repoScript = path.join(repoDir, scriptName);
+    return { scriptPath: repoScript, workingDir: repoDir, exists: fs.existsSync(repoScript) };
+  }
 
   /**
    * Bootstraps the worker process. Ensures singleton initialization per worker instance.
@@ -68,16 +85,19 @@ class PythonWorker {
       return this.initPromise;
     }
 
-    this.initPromise = new Promise<void>((resolve, reject) => {
-      const scriptName = `${this.domain}_worker.py`;
-      const scriptPath = path.join(__dirname, 'workers', scriptName);
+    const { scriptPath, workingDir, exists } = this.resolveWorkerScript();
+    if (!exists) {
+      this.initPromise = Promise.reject(new Error(`Worker script not found for domain [${this.domain}]`));
+      return this.initPromise;
+    }
 
-      Logger.info(`PythonBackend:${this.domain}`, 'Bootstrapping Python Worker...');
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      Logger.info(`PythonBackend:${this.domain}`, `Bootstrapping Python Worker from ${scriptPath}...`);
 
       // Spawn using 'bun x' to resolve environment paths reliably
       this.process = spawn('bun', ['x', 'uv', 'run', scriptPath], {
         stdio: ['pipe', 'pipe', 'inherit'],
-        cwd: path.join(__dirname, 'workers'),
+        cwd: workingDir,
         shell: process.platform === 'win32',
         env: {
           ...process.env,            // Keep existing environment variables
@@ -104,7 +124,25 @@ class PythonWorker {
         this.isReady = false;
         this.initPromise = null;
         this.process = null;
-        this.rejectAllPending(new Error(`Worker process exited unexpectedly (code ${code})`));
+
+        // Resilient Supervisor: If exited unexpectedly and not shutting down, attempt auto-restart
+        if (!this.isShuttingDown && this.restartAttempts < this.maxRestartAttempts) {
+          this.restartAttempts++;
+          const backoffMs = Math.min(5000, 500 * Math.pow(2, this.restartAttempts - 1));
+          Logger.warn(
+            `PythonBackend:${this.domain}`,
+            `Process crashed. Supervising auto-restart (attempt ${this.restartAttempts}/${this.maxRestartAttempts}) after ${backoffMs}ms...`
+          );
+          setTimeout(() => {
+            if (!this.isShuttingDown) {
+              this.initialize().catch((restartErr) => {
+                Logger.error(`PythonBackend:${this.domain}`, `Supervised restart failed: ${restartErr.message}`);
+              });
+            }
+          }, backoffMs);
+        } else {
+          this.rejectAllPending(new Error(`Worker process exited unexpectedly (code ${code})`));
+        }
       });
     });
 
@@ -118,6 +156,7 @@ class PythonWorker {
     if (!this.isReady && line.includes('WORKER_READY')) {
       Logger.info(`PythonBackend:${this.domain}`, 'System is READY.');
       this.isReady = true;
+      this.restartAttempts = 0; // Reset restart count on healthy startup
       onReady();
       return;
     }
@@ -155,6 +194,31 @@ class PythonWorker {
   }
 
   /**
+   * Health check probing domain worker responsiveness.
+   */
+  public async checkHealth(): Promise<boolean> {
+    if (this.isShuttingDown) return false;
+    const { exists } = this.resolveWorkerScript();
+    if (!exists) return false;
+    if (!this.isReady) {
+      try {
+        await this.initialize();
+      } catch {
+        return false;
+      }
+    }
+    try {
+      const res = await Promise.race([
+        this.dispatch('ping', {}),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 2500)),
+      ]);
+      return res !== undefined;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Sends a task to the python daemon via NDJSON over stdin.
    */
   public async dispatch<T>(action: string, payload: any): Promise<T> {
@@ -179,6 +243,7 @@ class PythonWorker {
    * Gracefully or forcefully terminates the daemon.
    */
   public kill() {
+    this.isShuttingDown = true;
     if (this.process && !this.process.killed) {
       this.process.kill('SIGKILL');
     }
@@ -228,6 +293,18 @@ export class PythonBackend {
       this.workers.set(domain, worker);
     }
     return worker.dispatch<T>(action, payload);
+  }
+
+  /**
+   * Performs an asynchronous health check probe against the specified domain worker.
+   */
+  public async checkHealth(domain: string): Promise<boolean> {
+    let worker = this.workers.get(domain);
+    if (!worker) {
+      worker = new PythonWorker(domain);
+      this.workers.set(domain, worker);
+    }
+    return worker.checkHealth();
   }
 
   /**

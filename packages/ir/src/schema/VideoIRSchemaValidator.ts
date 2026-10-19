@@ -616,6 +616,19 @@ export class VideoIRSchemaValidator {
         break;
       }
 
+      case 'time_space': {
+        if (!p.templateId || typeof p.templateId !== 'string') {
+          errors.push(`Modifier "time_space" on ${context}: templateId must be a non-empty string`);
+        }
+        if (p.boundary !== undefined && !['loop', 'pingpong', 'clamp', 'once'].includes(p.boundary)) {
+          errors.push(`Modifier "time_space" on ${context}: boundary must be 'loop', 'pingpong', 'clamp', or 'once'`);
+        }
+        if (p.renderMode !== undefined && !['canvas2d', 'webgl_buffers'].includes(p.renderMode)) {
+          errors.push(`Modifier "time_space" on ${context}: renderMode must be 'canvas2d' or 'webgl_buffers'`);
+        }
+        break;
+      }
+
       default:
         // Permissive Open-Closed Principle fallback: unknown / custom modifier types are allowed
         // as long as their params is an object (already validated above).

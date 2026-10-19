@@ -45,3 +45,4 @@ sample-story/output/
 __pycache__/
 *.pyc
 pnpm-lock.yaml
+*.bun-build

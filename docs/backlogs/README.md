@@ -40,6 +40,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`034`](034_master_integration_plan_iteration2.md) | Master Integration Plan (Iteration 2): Narrative Scripting, GPU Acceleration & Studio Preview | Core Architecture / Conductor / FFI GPU / UI Studio | ✅ `Completed` | 2026-10-14 | [`196`](../history/196_master_integration_plan_iteration2_phase5_master_sync.md) |
 | [`035`](035_large_timeline_virtualization_wavesurfer_jkl_shuttle.md) | Studio High-Performance Virtualization & Industrial NLE Scrubbing | Studio / Virtualization / Waveforms / Shuttle | ✅ `Completed` | 2026-10-19 | [`279_large_timeline_virtualization_wavesurfer_jkl_shuttle.md`](../history/279_large_timeline_virtualization_wavesurfer_jkl_shuttle.md) |
 | [`036`](036_platform_dependent_library_decoupling.md) | Platform-Dependent Native Library Decoupling & Architecture Modernization | Core Architecture / Monorepo Isolation / Native Decoupling / Parity Harness | ✅ `Completed` | 2026-10-19 | [`281_platform_dependent_native_library_decoupling_execution.md`](../history/281_platform_dependent_native_library_decoupling_execution.md) |
+| [`037`](037_master_integration_plan_iteration15.md) | Master Integration Plan Iteration 15: Enterprise Production Quality, Studio Preview, Zero-Stubs, Tuning & TimeSpaceStateMachine | Monorepo Core / Studio / Universal IR / Effect Engines / Native FFI | ✅ `Completed` | 2026-10-19 | [`282_master_integration_plan_iteration15_execution.md`](../history/282_master_integration_plan_iteration15_execution.md) |
 
 ---
 
