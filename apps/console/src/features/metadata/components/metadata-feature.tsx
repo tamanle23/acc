@@ -273,7 +273,7 @@ export const MetadataFeature: React.FC = () => {
                   </div>
 
                   {/* Tab Views */}
-                  <TabsContent value="schema" className="m-0 flex-1 min-h-0 focus-visible:outline-none data-[state=inactive]:hidden">
+                  <TabsContent value="schema" className="m-0 flex-1 min-h-0 h-full flex flex-col focus-visible:outline-none data-[state=inactive]:hidden">
                     <FeatureGate
                       featureKey="FEATURE_SCHEMA_STUDIO"
                       featureTitle="Schema Architect Studio"
@@ -284,11 +284,11 @@ export const MetadataFeature: React.FC = () => {
                     </FeatureGate>
                   </TabsContent>
 
-                  <TabsContent value="data" className="m-0 flex-1 min-h-0 focus-visible:outline-none data-[state=inactive]:hidden">
+                  <TabsContent value="data" className="m-0 flex-1 min-h-0 h-full flex flex-col focus-visible:outline-none data-[state=inactive]:hidden">
                     <EntityDataGrid entityTypeId={selectedEntityTypeId} />
                   </TabsContent>
 
-                  <TabsContent value="relationships" className="m-0 flex-1 min-h-0 focus-visible:outline-none data-[state=inactive]:hidden">
+                  <TabsContent value="relationships" className="m-0 flex-1 min-h-0 h-full flex flex-col focus-visible:outline-none data-[state=inactive]:hidden">
                     <FeatureGate
                       featureKey="FEATURE_PATTERN_C_GRAPH"
                       featureTitle="Pattern C Connected Graph Edges"

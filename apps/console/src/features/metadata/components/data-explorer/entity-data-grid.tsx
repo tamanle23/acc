@@ -992,7 +992,7 @@ export const EntityDataGrid: React.FC<Props> = ({
       )}
 
       {/* Table Canvas with Optional Faceted Search Sidebar & Horizontal Overflow */}
-      <div className="flex flex-col lg:flex-row items-stretch gap-4 w-full min-w-0 flex-1 min-h-0">
+      <div className="flex flex-col lg:flex-row items-stretch gap-4 w-full min-w-0 flex-1 min-h-[420px] lg:min-h-0">
         {showFacetedSidebar && isFacetOpen && (
           <FacetedSearchSidebar
             attributes={attributes}
@@ -1005,7 +1005,7 @@ export const EntityDataGrid: React.FC<Props> = ({
           />
         )}
 
-        <div className="group/grid relative flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden max-lg:min-h-[420px] lg:min-h-0">
+        <div className="group/grid relative flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden h-full min-h-[420px] lg:min-h-0">
           {/* Dynamic Left Gradient Shadow Cue */}
           <div
             aria-hidden="true"
@@ -1029,7 +1029,7 @@ export const EntityDataGrid: React.FC<Props> = ({
             tabIndex={0}
             role="region"
             aria-label="Metadata entity data grid scrollable region"
-            className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+            className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 h-full scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
           >
             <table className="w-full min-w-max text-left border-collapse text-xs table-auto">
               <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-xs">
