@@ -17,6 +17,9 @@ declare module 'vitest' {
 vi.mock('@/components/command-menu', () => ({
   CommandMenu: () => null,
 }));
+vi.mock('@/components/command-palette/command-palette', () => ({
+  CommandPalette: () => null,
+}));
 import { SkipToMain } from '../skip-to-main';
 import { Main } from '../layout/main';
 import { PasswordInput } from '../password-input';

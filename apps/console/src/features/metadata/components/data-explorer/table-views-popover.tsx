@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   LayoutGrid,
   Check,
@@ -217,15 +209,18 @@ export const TableViewsPopover: React.FC<TableViewsPopoverProps> = ({
               return (
                 <div
                   key={p.id}
-                  onClick={() => handleApplyPreset(p)}
                   className={cn(
-                    'group flex items-center justify-between p-2 rounded-lg text-xs cursor-pointer border transition-colors',
+                    'group flex items-center justify-between p-1.5 rounded-lg text-xs border transition-colors',
                     isSelected
                       ? 'border-primary/50 bg-primary/10 text-primary font-medium'
                       : 'border-border/40 hover:bg-muted/50 text-foreground'
                   )}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPreset(p)}
+                    className="flex items-center gap-2 min-w-0 flex-1 text-left bg-transparent border-0 p-0 text-inherit cursor-pointer font-inherit"
+                  >
                     {p.isTeamView ? (
                       <Users className="size-3.5 text-blue-500 shrink-0" />
                     ) : (
@@ -237,21 +232,20 @@ export const TableViewsPopover: React.FC<TableViewsPopoverProps> = ({
                         Team
                       </Badge>
                     )}
-                  </div>
+                    {isSelected && <Check className="size-3.5 text-primary ml-auto mr-1" />}
+                  </button>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    {isSelected && <Check className="size-3.5 text-primary" />}
-                    {!p.isTeamView && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeletePreset(p.id, e)}
-                        className="opacity-0 group-hover:opacity-100 hover:text-destructive p-0.5"
-                        title="Delete Preset"
-                      >
-                        <Trash2 className="size-3" />
-                      </button>
-                    )}
-                  </div>
+                  {!p.isTeamView && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeletePreset(p.id, e)}
+                      className="opacity-0 group-hover:opacity-100 hover:text-destructive p-1 rounded transition-opacity"
+                      title="Delete Preset"
+                      aria-label={`Delete preset ${p.name}`}
+                    >
+                      <Trash2 className="size-3" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -276,7 +270,7 @@ export const TableViewsPopover: React.FC<TableViewsPopoverProps> = ({
                 placeholder="Preset name..."
                 onChange={(e) => setNewPresetName(e.target.value)}
                 className="h-8 text-xs flex-1"
-                autoFocus
+                aria-label="Preset name"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreatePreset();
                   if (e.key === 'Escape') setIsSaving(false);

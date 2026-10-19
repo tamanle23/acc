@@ -13,8 +13,6 @@ import {
   Building2,
   Workflow,
   Download,
-  Settings,
-  Layers,
   Search,
 } from 'lucide-react'
 import { useSearch } from '@/context/search-provider'
@@ -28,6 +26,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
+import { QueryClientContext } from '@tanstack/react-query'
 import { useSidebarData } from '@/components/layout/data/sidebar-data'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useEntityTypes } from '@/features/metadata/api/metadata-api'
@@ -35,12 +34,50 @@ import { useProfileStore } from '@/stores/profile-store'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
+function CommandPaletteEntitySection({
+  runCommand,
+  navigate,
+}: {
+  runCommand: (command: () => unknown) => void
+  navigate: (opts: { to: string; search?: Record<string, unknown> }) => void
+}) {
+  const { data: entityTypes } = useEntityTypes()
+
+  if (!entityTypes || entityTypes.length === 0) return null
+
+  return (
+    <CommandGroup heading="Dynamic Entity Types">
+      {entityTypes.slice(0, 8).map((et) => (
+        <CommandItem
+          key={et.id}
+          value={`entity-${et.name}-${et.systemName}`}
+          onSelect={() => {
+            runCommand(() => {
+              navigate({
+                to: '/metadata/data-explorer',
+                search: { entityType: String(et.id) },
+              })
+            })
+          }}
+          className="flex items-center gap-2 cursor-pointer rounded-lg px-2.5 py-2 hover:bg-primary/10 transition-colors"
+        >
+          <Database className="size-4 text-primary shrink-0" />
+          <span className="font-medium text-foreground">{et.name}</span>
+          <span className="text-xs text-muted-foreground font-mono ml-auto">
+            {et.systemName}
+          </span>
+        </CommandItem>
+      ))}
+    </CommandGroup>
+  )
+}
+
 export function CommandPalette() {
   const navigate = useNavigate()
   const { setTheme } = useTheme()
   const { open, setOpen } = useSearch()
   const sidebarData = useSidebarData()
-  const { data: entityTypes } = useEntityTypes()
+  const hasQueryClient = !!React.useContext(QueryClientContext)
   const { currentProfile, profiles, setCurrentProfile } = useProfileStore()
 
   const runCommand = React.useCallback(
@@ -60,7 +97,7 @@ export function CommandPalette() {
           localStorage.removeItem('unipost_density_profile')
         }
         toast.success('Sandbox state & view presets reset to factory defaults')
-      } catch (e) {
+      } catch {
         toast.error('Failed to reset sandbox state')
       }
     })
@@ -82,7 +119,7 @@ export function CommandPalette() {
         a.click()
         URL.revokeObjectURL(url)
         toast.success('Tenant configuration exported successfully')
-      } catch (e) {
+      } catch {
         toast.error('Export failed')
       }
     })
@@ -107,30 +144,8 @@ export function CommandPalette() {
           </CommandEmpty>
 
           {/* Quick Entity Type Switcher */}
-          {entityTypes && entityTypes.length > 0 && (
-            <CommandGroup heading="Dynamic Entity Types">
-              {entityTypes.slice(0, 8).map((et) => (
-                <CommandItem
-                  key={et.id}
-                  value={`entity-${et.name}-${et.systemName}`}
-                  onSelect={() => {
-                    runCommand(() => {
-                      navigate({
-                        to: '/metadata/data-explorer',
-                        search: { entityType: String(et.id) } as any,
-                      })
-                    })
-                  }}
-                  className="flex items-center gap-2 cursor-pointer rounded-lg px-2.5 py-2 hover:bg-primary/10 transition-colors"
-                >
-                  <Database className="size-4 text-primary shrink-0" />
-                  <span className="font-medium text-foreground">{et.name}</span>
-                  <span className="text-xs text-muted-foreground font-mono ml-auto">
-                    {et.systemName}
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+          {hasQueryClient && (
+            <CommandPaletteEntitySection runCommand={runCommand} navigate={navigate} />
           )}
 
           {/* Navigation Items from Sidebar */}

@@ -22,7 +22,6 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  Layers,
   FolderPlus,
   Check,
   RotateCcw,

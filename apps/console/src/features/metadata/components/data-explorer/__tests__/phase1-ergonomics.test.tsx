@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DynamicQueryBuilder, toLegacyClause } from '../query-builder/dynamic-query-builder';
 import { TableViewsPopover } from '../table-views-popover';
 import { MasterDetailRowInspector } from '../master-detail-row-inspector';
-import { CommandPalette } from '@/components/command-palette/command-palette';
 import { SearchProvider } from '@/context/search-provider';
 import type { AttributeDefinition, EntityRecord, EntityType } from '../../../api/types';
 

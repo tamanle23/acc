@@ -200,8 +200,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       return jestResult.isSucceeded();
     } catch (IOException ex) {
       logger.error("FAIL to delete objects by query[query={}]", query, ex);
+      throw new ElasticsearchOperationException("FAIL to delete objects by query[" + query + "] in type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   private boolean executeUpdate(List<Update> updateActions) {
@@ -342,8 +342,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       return jestResult.isSucceeded();
     } catch (IOException ex) {
       logger.error("FAIL to partial indexing object.", ex);
+      throw new ElasticsearchOperationException("FAIL to partially update object[id=" + id + "] in type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   @Override
@@ -365,8 +365,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       return jestResult.isSucceeded();
     } catch (IOException ex) {
       logger.error("FAIL to partial indexing object.", ex);
+      throw new ElasticsearchOperationException("FAIL to partially update entity[id=" + id + "] in type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   @Override
@@ -404,6 +404,7 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       }
     } catch (IOException ex) {
       logger.error("FAIL to update object's index.", ex);
+      throw new ElasticsearchOperationException("FAIL to bulk partial update objects in type[" + this.typeName + "]", ex);
     }
     return false;
   }
@@ -458,8 +459,8 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       return jestResult.isSucceeded();
     } catch (IOException ex) {
       logger.error("FAIL to update object's index.", ex);
+      throw new ElasticsearchOperationException("FAIL to bulk partial update object map in type[" + this.typeName + "]", ex);
     }
-    return false;
   }
 
   @Override
@@ -499,6 +500,7 @@ public abstract class JestRepository<T, ID> implements EsRepository<T, ID> {
       result = jestClient.execute(search);
     } catch (IOException ex) {
       logger.error("FAIL to execute search request.", ex);
+      throw new ElasticsearchOperationException("FAIL to execute search query[" + query + "] in type[" + this.typeName + "]", ex);
     }
     if (result != null && result.isSucceeded()) {
       List<SearchResult.Hit<T, Void>> hits = result.getHits(this.documentTypeClass);

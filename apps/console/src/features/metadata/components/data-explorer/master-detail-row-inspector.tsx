@@ -13,9 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Database,
-  Calendar,
-  User,
-  GitCommit,
   Tag,
   Copy,
   Check,
@@ -53,6 +50,10 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
 }) => {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
 
+  const entityTypeId = entityType?.id || (record as unknown as { entityType?: { id?: number | string } } | null)?.entityType?.id || null;
+  const { data: auditLogs = [], isLoading: auditLogsLoading } = useRecordAuditLogs(entityTypeId, record?.id || null);
+  const restoreMutation = useRestoreRecordVersion(entityTypeId || 0);
+
   if (!record) return null;
 
   const handleCopy = (key: string, val: unknown) => {
@@ -69,10 +70,6 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
 
   const recordAttributes = record.attributes || {};
 
-  const entityTypeId = entityType?.id || (record as any)?.entityType?.id || null;
-  const { data: auditLogs = [], isLoading: auditLogsLoading } = useRecordAuditLogs(entityTypeId, record?.id || null);
-  const restoreMutation = useRestoreRecordVersion(entityTypeId || 0);
-
   const handleRevertVersion = async (auditLogId: string | number, version: number) => {
     try {
       await restoreMutation.mutateAsync({
@@ -81,8 +78,8 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
       });
       toast.success(`Successfully reverted record #${record.id} to version ${version}`);
       announceToScreenReader(`Record reverted to version ${version}`);
-    } catch (e: any) {
-      toast.error(e?.message || 'Failed to revert record version');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to revert record version');
     }
   };
 
@@ -293,18 +290,21 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
                             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
                               Changes:
                             </span>
-                            {Object.entries(delta).map(([key, change]: [string, any]) => (
-                              <div key={key} className="flex items-center gap-2 py-0.5 px-2 rounded bg-muted/40">
-                                <span className="font-semibold text-foreground">{key}:</span>
-                                <span className="line-through text-destructive/80 text-[10px]">
-                                  {JSON.stringify(change?.old ?? null)}
-                                </span>
-                                <span className="text-muted-foreground text-[10px]">➔</span>
-                                <span className="text-emerald-700 dark:text-emerald-400 font-semibold text-[10px]">
-                                  {JSON.stringify(change?.new ?? null)}
-                                </span>
-                              </div>
-                            ))}
+                            {Object.entries(delta).map(([key, change]: [string, unknown]) => {
+                              const c = change as { old?: unknown; new?: unknown } | null;
+                              return (
+                                <div key={key} className="flex items-center gap-2 py-0.5 px-2 rounded bg-muted/40">
+                                  <span className="font-semibold text-foreground">{key}:</span>
+                                  <span className="line-through text-destructive/80 text-[10px]">
+                                    {JSON.stringify(c?.old ?? null)}
+                                  </span>
+                                  <span className="text-muted-foreground text-[10px]">➔</span>
+                                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold text-[10px]">
+                                    {JSON.stringify(c?.new ?? null)}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>

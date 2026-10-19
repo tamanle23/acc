@@ -129,12 +129,12 @@ export function ApprovalsInbox() {
           };
           setTasks((prev) => [newTask, ...prev]);
           announceToScreenReader('New approval task received');
-        } catch (e) {
-          console.warn('Failed to parse SSE approval payload', e);
+        } catch {
+          // Ignore invalid JSON payload in SSE event
         }
       });
     } catch {
-      setSseConnected(false);
+      // EventSource initialization failed or unsupported in test/offline environment
     }
 
     return () => {

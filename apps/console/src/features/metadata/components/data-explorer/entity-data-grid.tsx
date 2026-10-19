@@ -20,7 +20,7 @@ import { SchemaBackfillDialog } from './schema-backfill-dialog';
 import { RecordAuditHistoryDrawer } from '../records/record-audit-history-drawer';
 import { CompositeMasterDetailRow } from './composite-master-detail-row';
 import { DynamicQueryBuilder } from './query-builder/dynamic-query-builder';
-import { TableViewsPopover, type GridDensity, type ViewPreset } from './table-views-popover';
+import { TableViewsPopover, type GridDensity } from './table-views-popover';
 import { MasterDetailRowInspector } from './master-detail-row-inspector';
 import {
   DndContext,
@@ -95,7 +95,6 @@ import {
   RefreshCw,
   ShieldAlert,
   Play,
-  CheckCircle2,
   Send,
   Check,
   Zap,
@@ -114,7 +113,7 @@ interface DraggableHeaderCellProps {
   density: GridDensity;
   sortField: string | null;
   sortDirection: 'asc' | 'desc';
-  onSortToggle: (id: string) => void;
+  onSortToggle?: (id: string) => void;
 }
 
 const DraggableHeaderCell: React.FC<DraggableHeaderCellProps> = ({
@@ -122,7 +121,7 @@ const DraggableHeaderCell: React.FC<DraggableHeaderCellProps> = ({
   density,
   sortField,
   sortDirection,
-  onSortToggle,
+  onSortToggle: _onSortToggle,
 }) => {
   const colId = header.column.id;
   const isPinned = colId === 'actions' || colId === 'row_index' || colId === 'expander';
@@ -559,7 +558,7 @@ export const EntityDataGrid: React.FC<Props> = ({
   );
 
   const recordsLoading = isComposite ? compositeLoading : standardLoading;
-  const recordsResponse = isComposite ? (compositeRecordsResponse as any) : standardRecordsResponse;
+  const recordsResponse = isComposite ? (compositeRecordsResponse as unknown as typeof standardRecordsResponse) : standardRecordsResponse;
 
   // Fetch server-aggregated facet counts if enabled/available
   const { data: serverFacets } = useEntityFacets(
@@ -1272,7 +1271,6 @@ export const EntityDataGrid: React.FC<Props> = ({
 
           <div
             ref={scrollContainerRef}
-            tabIndex={0}
             role="region"
             aria-label="Metadata entity data grid scrollable region"
             className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 h-full scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
@@ -1392,7 +1390,7 @@ export const EntityDataGrid: React.FC<Props> = ({
                                   <tr className="border-b border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
                                     <td colSpan={columns.length} className="p-3 pl-8">
                                       <CompositeMasterDetailRow
-                                        record={row.original as any}
+                                        record={row.original as unknown as Parameters<typeof CompositeMasterDetailRow>[0]['record']}
                                         compositeSpec={entityType.compositeSpec}
                                       />
                                     </td>

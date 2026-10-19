@@ -24,7 +24,7 @@ import java.util.*;
  */
 @Slf4j
 @Service
-public class RecordMutationPipeline {
+public class RecordMutationPipeline implements org.springframework.context.ApplicationEventPublisherAware {
 
     private static final int MAX_RECORD_PAYLOAD_BYTES = 1024 * 1024; // 1MB
 
@@ -89,6 +89,8 @@ public class RecordMutationPipeline {
         this.outboxEventPublisher = outboxEventPublisher;
     }
 
+    @Override
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     public void setApplicationEventPublisher(org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }

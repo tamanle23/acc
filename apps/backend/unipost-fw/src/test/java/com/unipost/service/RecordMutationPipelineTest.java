@@ -579,5 +579,33 @@ public class RecordMutationPipelineTest {
                 .isInstanceOf(MetadataNotFoundException.class)
                 .hasMessageContaining("Audit log entry not found");
     }
+
+    @Test
+    void testApplicationEventPublisher_FiresMutationEventOnCreate() {
+        org.springframework.context.ApplicationEventPublisher mockPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
+        pipeline.setApplicationEventPublisher(mockPublisher);
+
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(10L)).thenReturn(Optional.of(customerType));
+        when(entityRecordRepository.save(any(EntityRecord.class))).thenAnswer(invocation -> {
+            EntityRecord r = invocation.getArgument(0);
+            r.setId(777L);
+            r.setVersion(1L);
+            return r;
+        });
+
+        CreateRecordRequest request = new CreateRecordRequest(Map.of("name", "Event Test Corp"), "tenant-corp");
+        pipeline.executeCreate(10L, request);
+
+        org.mockito.ArgumentCaptor<Object> captor = org.mockito.ArgumentCaptor.forClass(Object.class);
+        verify(mockPublisher, atLeastOnce()).publishEvent(captor.capture());
+
+        Object published = captor.getValue();
+        assertThat(published).isInstanceOf(com.unipost.domain.metadata.EntityRecordMutatedEvent.class);
+        com.unipost.domain.metadata.EntityRecordMutatedEvent event = (com.unipost.domain.metadata.EntityRecordMutatedEvent) published;
+        assertThat(event.entityTypeId()).isEqualTo(10L);
+        assertThat(event.recordId()).isEqualTo(777L);
+        assertThat(event.action()).isEqualTo("CREATE");
+        assertThat(event.tenantId()).isEqualTo("tenant-corp");
+    }
 }
 
