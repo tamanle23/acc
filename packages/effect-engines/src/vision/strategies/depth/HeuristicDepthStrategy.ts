@@ -1,4 +1,4 @@
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 
 export class HeuristicDepthStrategy implements IDepthEstimationStrategy {
@@ -10,18 +10,18 @@ export class HeuristicDepthStrategy implements IDepthEstimationStrategy {
   }
 
   public async estimateDepth(imageBuffer: Buffer, options?: DepthOptions): Promise<DepthResult> {
-    const original = await loadImage(imageBuffer);
+    const original = await CanvasAssetLoader.loadImage(imageBuffer);
     const w = original.width;
     const h = original.height;
 
-    const canvas = createCanvas(w, h);
+    const canvas = UniversalCanvasProvider.createCanvas(w, h);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(original, 0, 0, w, h);
 
     const imgData = ctx.getImageData(0, 0, w, h);
     const data = imgData.data;
 
-    const depthCanvas = createCanvas(w, h);
+    const depthCanvas = UniversalCanvasProvider.createCanvas(w, h);
     const depthCtx = depthCanvas.getContext('2d');
     const depthData = depthCtx.createImageData(w, h);
 

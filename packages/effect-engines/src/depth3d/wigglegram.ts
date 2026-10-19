@@ -1,10 +1,10 @@
-import { Canvas, Image } from '@napi-rs/canvas';
+import type { ICanvasInstance } from '@acc/core-isomorphic';
 import type { Depth3DConfig } from '../types';
 import { drawImageCover } from './frame-breaker';
 
 export interface WigglegramState {
-  baseCanvas: Canvas;
-  subjectImg: Image | null;
+  baseCanvas: ICanvasInstance | any;
+  subjectImg: any | null;
   width: number;
   height: number;
   frame: number;

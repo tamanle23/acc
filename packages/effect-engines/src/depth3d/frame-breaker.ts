@@ -1,10 +1,9 @@
-import type { Image } from '@napi-rs/canvas';
-import { UniversalCanvasProvider } from '../canvas/UniversalCanvasProvider';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { Depth3DConfig } from '../types';
 
 export interface FrameBreakerState {
-  img: Image;
-  subjectImg: Image | null;
+  img: any;
+  subjectImg: any | null;
   subjectBBox?: { x: number; y: number; width: number; height: number } | null;
   bgCanvas?: any;
   width: number;

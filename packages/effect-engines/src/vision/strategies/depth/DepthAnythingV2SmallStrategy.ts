@@ -1,5 +1,4 @@
-import { pipeline, RawImage } from '@huggingface/transformers';
-import { createCanvas } from '@napi-rs/canvas';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { configureHfEnv } from '../../utils';
 
@@ -8,14 +7,17 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy {
   public readonly modelId = 'onnx-community/depth-anything-v2-small';
 
   private depthPipeline: any = null;
+  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
     if (this.depthPipeline) return;
     if (this.initPromise) return this.initPromise;
 
-    configureHfEnv();
     this.initPromise = (async () => {
+      const { pipeline, RawImage, env } = await import('@huggingface/transformers');
+      configureHfEnv(env);
+      this.rawImageClass = RawImage;
       this.depthPipeline = await pipeline('depth-estimation', this.modelId, { dtype: 'fp32' });
     })();
 
@@ -25,6 +27,7 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy {
   public async estimateDepth(imageBuffer: Buffer, options?: DepthOptions): Promise<DepthResult> {
     await this.init();
 
+    const RawImage = this.rawImageClass || (await import('@huggingface/transformers')).RawImage;
     const rawImage = await RawImage.fromBlob(new Blob([imageBuffer]));
     const output = await this.depthPipeline(rawImage);
 
@@ -34,7 +37,7 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy {
     const h = depthRaw.height || rawImage.height;
 
     // Convert depth values to 16-bit PNG buffer
-    const depthCanvas = createCanvas(w, h);
+    const depthCanvas = UniversalCanvasProvider.createCanvas(w, h);
     const depthCtx = depthCanvas.getContext('2d');
     const imgData = depthCtx.createImageData(w, h);
 

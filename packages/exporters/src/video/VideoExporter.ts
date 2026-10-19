@@ -1,9 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
-import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists, Logger } from '@acc/core';
+import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists, Logger, UniversalCanvasProvider } from '@acc/core';
 
 import type { MediaEngineType } from '@acc/core';
 
@@ -115,11 +114,11 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       const frameCount = Math.max(1, Math.ceil((durationMs * fps) / 1000));
 
       // Render slide on Canvas
-      const canvas = createCanvas(width, height);
+      const canvas = UniversalCanvasProvider.createCanvas(width, height);
       const ctx = canvas.getContext('2d');
       this.drawChunkFrame(ctx, chunk, cIdx + 1, ir.chunks.length, width, height, ir.metadata.title);
 
-      const frameBuffer = canvas.data();
+      const frameBuffer = typeof canvas.data === 'function' ? canvas.data() : canvas.toBuffer('raw');
 
       for (let f = 0; f < frameCount; f++) {
         encoder.encodeRgbaFrame(frameBuffer);

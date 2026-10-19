@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import type { IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
 import type { RepurposingPipelineContext } from '../RepurposingPipeline';
 
 export function createRepurposingCompositionStage(): IPipelineMiddleware<RepurposingPipelineContext> {
@@ -14,7 +13,7 @@ export function createRepurposingCompositionStage(): IPipelineMiddleware<Repurpo
 
       const cardWidth = 1080;
       const cardHeight = 1920;
-      const canvas = createCanvas(cardWidth, cardHeight);
+      const canvas = UniversalCanvasProvider.createCanvas(cardWidth, cardHeight);
       const renderCtx = canvas.getContext('2d');
 
       // Background

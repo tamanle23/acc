@@ -1,4 +1,3 @@
-import type { Image, Canvas } from '@napi-rs/canvas';
 import type { Depth3DConfig, CaptionConfig } from '../types';
 import type { DepthMeshLayers } from './depth-mesh';
 import { Depth3DRendererRegistry } from './strategy';

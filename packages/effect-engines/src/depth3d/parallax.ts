@@ -1,11 +1,10 @@
-import type { Image } from '@napi-rs/canvas';
 import type { Depth3DConfig } from '../types';
 import { drawImageCover } from './frame-breaker';
 
 export interface ParallaxState {
-  img: Image;
-  subjectImg: Image | null;
-  bgImg?: Image | null;
+  img: any;
+  subjectImg: any | null;
+  bgImg?: any | null;
   width: number;
   height: number;
   frame: number;

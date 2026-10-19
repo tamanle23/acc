@@ -291,6 +291,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`278`](278_master_integration_plan_iteration13.md) | 2026-10-19 | Master Integration Plan Iteration 13: Timeline Virtualization, WaveSurfer Waveforms & J-K-L Shuttle | Finalized architecture using @tanstack/react-virtual, wavesurfer.js, and discrete frame-accurate J-K-L shuttle state machine |
 | [`279`](279_large_timeline_virtualization_wavesurfer_jkl_shuttle.md) | 2026-10-19 | Studio Iteration 13: Large Timeline Virtualization, WaveSurfer Waveforms & J-K-L Shuttle Engine | Implemented @tanstack/react-virtual vertical & horizontal windowing in Timeline.tsx, WaveSurferWaveform with peak caching, and frame-accurate J-K-L shuttle engine with hardware audio sync and discrete integer frame jump math |
 | [`280`](280_platform_dependent_library_architecture_and_decoupling_plan.md) | 2026-10-19 | Platform-Dependent Native Library Decoupling & Architecture Modernization Plan | Comprehensive architectural design separating @napi-rs/canvas and bun:ffi into package boundaries, Abstract Factory + Strategy patterns, IoC registries, and dual-layer parity guardrails |
+| [`281`](281_platform_dependent_native_library_decoupling_execution.md) | 2026-10-19 | Platform-Dependent Native Library Decoupling & Architecture Modernization | Extracted isomorphic canvas and media contracts, encapsulated @napi-rs/canvas in NapiCanvasAdapter, cleaned up all 20+ direct imports across monorepo, added static CI guardrail and parity suite |
 
 
 

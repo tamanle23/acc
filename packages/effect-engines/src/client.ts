@@ -23,3 +23,12 @@ export * from './depth3d/factory';
 export * from './depth3d/frame-breaker';
 export * from './types';
 
+import { WebCanvasAdapter } from './canvas/adapters/WebCanvasAdapter';
+import { UniversalCanvasProvider } from './canvas/UniversalCanvasProvider';
+
+try {
+  UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
+} catch {
+  // Graceful fallback
+}
+

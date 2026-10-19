@@ -1,5 +1,5 @@
 import { ptr, toArrayBuffer } from "bun:ffi";
-import { createCanvas, loadImage, ImageData } from "@napi-rs/canvas";
+import { UniversalCanvasProvider, CanvasAssetLoader } from "../isomorphic/canvas";
 import fs from "fs";
 import path from "path";
 import { FFI, initFFI, makeAVRational, AV_PIX_FMT_RGBA, Structs } from "./index";
@@ -85,7 +85,7 @@ export class FFISceneEngine {
     colorGrading?: any;
   }): Promise<{ path: string; duration: number }> {
     const { imagePath, audioPath, duration, outputPath, width, height, fps, captions, captionSettings, platform, colorGrading } = options;
-    const canvas = createCanvas(width, height);
+    const canvas = UniversalCanvasProvider.createCanvas(width, height);
     const ctx = canvas.getContext("2d");
 
     if (colorGrading) {
@@ -93,7 +93,7 @@ export class FFISceneEngine {
       colorEngine.applyCanvasTransform(ctx, colorGrading);
     }
 
-    const img = await loadImage(imagePath);
+    const img = await CanvasAssetLoader.loadImage(imagePath);
 
     // Letterbox / Pillarbox centering
     const imgAspect = img.width / img.height;
@@ -123,7 +123,7 @@ export class FFISceneEngine {
     const totalFrames = Math.ceil(fps * duration);
 
     if (captions && captions.length > 0) {
-      const bgCanvas = createCanvas(width, height);
+      const bgCanvas = UniversalCanvasProvider.createCanvas(width, height);
       const bgCtx = bgCanvas.getContext("2d");
 
       if (colorGrading) {
@@ -266,7 +266,7 @@ export class FFISceneEngine {
         duration,
       });
 
-      canvas = createCanvas(width, height);
+      canvas = UniversalCanvasProvider.createCanvas(width, height);
       ctx = canvas.getContext("2d");
 
       rgbaFrame = BigInt(FFI.avutil.av_frame_alloc());
@@ -285,7 +285,9 @@ export class FFISceneEngine {
       const linesize = Structs.AVFrame.getLinesize(rgbaFrame, 0);
       const ab = toArrayBuffer(rgbaPtr as any, 0, linesize * height);
       uint8Clamped = new Uint8ClampedArray(ab, 0, width * height * 4);
-      imgData = new ImageData(width, height);
+      imgData = ctx.createImageData
+        ? ctx.createImageData(width, height)
+        : { data: new Uint8ClampedArray(width * height * 4) };
     }
 
     const encodeDecodedFrame = async (f: bigint) => {
@@ -306,7 +308,8 @@ export class FFISceneEngine {
           const timeSec = framesEncoded / fps;
           const snapshot = timeline.getTrackState<CaptionTrackSnapshot>("subtitles", timeSec, captionSettings);
           drawCanvasCaptionsFromSnapshot(ctx, snapshot, captionSettings, width, height, platform);
-          encoder.encodeRgbaFrame(canvas.data());
+          const rawFrameBuf = typeof canvas.data === 'function' ? canvas.data() : canvas.toBuffer('raw');
+          encoder.encodeRgbaFrame(rawFrameBuf);
         } else {
           encoder.encodeRawFrame(f, srcW, srcH, srcFmt);
         }

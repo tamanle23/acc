@@ -1,4 +1,3 @@
-import { PreTrainedModel, AutoProcessor, RawImage } from '@huggingface/transformers';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { configureHfEnv, createCutoutRgba } from '../../utils';
 
@@ -8,6 +7,7 @@ export class RmbgStrategy implements ISegmentationStrategy {
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
@@ -15,10 +15,12 @@ export class RmbgStrategy implements ISegmentationStrategy {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    configureHfEnv();
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        const { PreTrainedModel, AutoProcessor, RawImage, env } = await import('@huggingface/transformers');
+        configureHfEnv(env);
+        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           PreTrainedModel.from_pretrained(this.modelId),
           AutoProcessor.from_pretrained(this.modelId)
@@ -36,6 +38,7 @@ export class RmbgStrategy implements ISegmentationStrategy {
   public async segment(imageBuffer: Buffer, options?: SegmentationOptions): Promise<SegmentationResult> {
     await this.init();
 
+    const RawImage = this.rawImageClass || (await import('@huggingface/transformers')).RawImage;
     const rawImage = await RawImage.fromBlob(new Blob([imageBuffer]));
     const origW = rawImage.width;
     const origH = rawImage.height;

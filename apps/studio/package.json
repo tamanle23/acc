@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@acc/core": "workspace:*",
+    "@acc/core-isomorphic": "workspace:*",
+    "@acc/core-web": "workspace:*",
     "@acc/effect-engines": "workspace:*",
     "@acc/exporters": "workspace:*",
     "@acc/ir": "workspace:*",

@@ -1,5 +1,5 @@
 import { CanvasAdapter } from './base';
-import { UniversalCanvasProvider } from '../../canvas/UniversalCanvasProvider';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export type CanvasEngineType = 'gpu' | 'napi-rs' | 'web' | 'auto';
 

@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR } from '@acc/ir';
 import { defaultExporterDispatcher, ExporterDispatcher, MultiExportResults } from '@acc/exporters';
 import {
@@ -11,6 +10,7 @@ import {
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
   DefaultPipelineRegistry,
+  UniversalCanvasProvider,
 } from '@acc/core';
 import { createAmbientParticleShaderCompositionStage } from './stages/AmbientParticleShaderCompositionStage';
 
@@ -84,7 +84,7 @@ export class AmbientStreamPipeline implements IPipeline<AmbientLoopConfig> {
   public renderProceduralFrame(config: Partial<AmbientLoopConfig>, frameIndex: number, fps: number = 30): Buffer {
     const width = 1920;
     const height = 1080;
-    const canvas = createCanvas(width, height);
+    const canvas = UniversalCanvasProvider.createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
     const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, width * 0.7);

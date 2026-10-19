@@ -1,15 +1,17 @@
 import fs from 'fs';
 import path from 'path';
 import { ptr, toArrayBuffer } from 'bun:ffi';
-import { createCanvas, ImageData, type Canvas, type SKRSContext2D } from '@napi-rs/canvas';
 import { FFI, Structs, AV_PIX_FMT_RGBA, safeArrayBuffer, initFFI } from './index';
 import { FFmpegManager } from '../FFmpegManager';
+import type { ICanvasInstance, ICanvasContext2D } from '../isomorphic/canvas/types';
+import { UniversalCanvasProvider } from '../isomorphic/canvas/UniversalCanvasProvider';
+import type { IVideoDecoder } from '../media-engine/types';
 
 export interface DecodedVideoFrame {
   width: number;
   height: number;
-  canvas: Canvas;
-  ctx: SKRSContext2D;
+  canvas: ICanvasInstance;
+  ctx: ICanvasContext2D;
 }
 
 /**
@@ -18,7 +20,7 @@ export interface DecodedVideoFrame {
  * and libswscale via pure bun:ffi.
  * Decodes video files frame-by-frame directly into standard RGBA Canvas instances.
  */
-export class FFIVideoDecoder {
+export class FFIVideoDecoder implements IVideoDecoder {
   private vInFmt: bigint = 0n;
   private decCtx: bigint = 0n;
   private swsCtx: bigint = 0n;
@@ -30,8 +32,8 @@ export class FFIVideoDecoder {
   private srcFmt = 0;
   private targetW = 0;
   private targetH = 0;
-  private canvas: Canvas | null = null;
-  private ctx: SKRSContext2D | null = null;
+  private canvas: ICanvasInstance | null = null;
+  private ctx: ICanvasContext2D | null = null;
   private imgData: any = null;
   private uint8Clamped: Uint8ClampedArray | null = null;
   private currentFrameIndex = 0;
@@ -111,10 +113,11 @@ export class FFIVideoDecoder {
     const linesize = Structs.AVFrame.getLinesize(this.rgbaFrame, 0);
     const ab = toArrayBuffer(rgbaPtr as any, 0, linesize * this.targetH);
     this.uint8Clamped = new Uint8ClampedArray(ab, 0, this.targetW * this.targetH * 4);
-    this.imgData = new ImageData(this.targetW, this.targetH);
-
-    this.canvas = createCanvas(this.targetW, this.targetH);
+    this.canvas = UniversalCanvasProvider.createCanvas(this.targetW, this.targetH);
     this.ctx = this.canvas.getContext('2d');
+    this.imgData = this.ctx.createImageData
+      ? this.ctx.createImageData(this.targetW, this.targetH)
+      : { data: new Uint8ClampedArray(this.targetW * this.targetH * 4) };
     this.isOpened = true;
     return true;
   }
@@ -122,7 +125,7 @@ export class FFIVideoDecoder {
   /**
    * Reads next frame from video file. Loops back to start if end of video reached.
    */
-  public async readNextFrame(): Promise<Canvas | null> {
+  public async readNextFrame(): Promise<ICanvasInstance | null> {
     if (!this.isOpened) return null;
 
     while (true) {
@@ -164,6 +167,17 @@ export class FFIVideoDecoder {
       }
       FFI.avcodec.av_packet_unref(this.pkt);
     }
+  }
+
+  public async getNextFrame(): Promise<DecodedVideoFrame | null> {
+    const frame = await this.readNextFrame();
+    if (!frame || !this.ctx) return null;
+    return {
+      width: this.targetW,
+      height: this.targetH,
+      canvas: this.canvas!,
+      ctx: this.ctx!,
+    };
   }
 
   public close(): void {

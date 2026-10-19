@@ -4,7 +4,10 @@ import { registerCoreModifierPlugins } from '@acc/ir';
 import App from './App';
 import './index.css';
 
-// Initialize canonical isomorphic modifier registry
+import { bootstrapClient } from './bootstrap';
+
+// Initialize canonical isomorphic modifier registry and client adapters
+bootstrapClient();
 registerCoreModifierPlugins();
 
 

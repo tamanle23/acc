@@ -1,8 +1,3 @@
-import {
-  MediabunnyProbeStrategy,
-  MediabunnyConcatStrategy,
-  MediabunnyAudioMuxerStrategy,
-} from './MediabunnyServerStrategy';
 import { MediabunnyClientSink } from '../sinks/MediabunnyClientSink';
 import type {
   IMediaEngineStrategy,
@@ -13,9 +8,37 @@ import type {
   IMediaConcatStrategy,
   IAudioMuxerStrategy,
   IChunkExecutionPolicy,
+  MediaProbeResult,
   SinkInitMetadata,
 } from '../types';
 import { MediaEngineError } from '../types';
+
+export class MediabunnyClientProbeStrategy implements IMediaProbeStrategy {
+  public async probe(filePathOrUrl: string): Promise<MediaProbeResult> {
+    throw new MediaEngineError(
+      'mediabunny-client',
+      `Client-side media probing for "${filePathOrUrl}" is not supported without a Web Blob/URL source.`
+    );
+  }
+}
+
+export class MediabunnyClientConcatStrategy implements IMediaConcatStrategy {
+  public async concatenate(_inputPaths: string[], _outputPath: string): Promise<void> {
+    throw new MediaEngineError(
+      'mediabunny-client',
+      'Lossless container concatenation of disk paths is unavailable in client browser runtime.'
+    );
+  }
+}
+
+export class MediabunnyClientAudioMuxerStrategy implements IAudioMuxerStrategy {
+  public async muxAudioVideo(_videoPath: string, _audioPath: string, _outputPath: string): Promise<void> {
+    throw new MediaEngineError(
+      'mediabunny-client',
+      'Direct container audio multiplexing via native FFI is unavailable in client browser runtime. Audio mixing is handled via WebAudio and MediabunnyClientSink.'
+    );
+  }
+}
 
 export class MediabunnyClientChunkPolicy implements IChunkExecutionPolicy {
   public readonly supportsParallelExecution = true;
@@ -43,9 +66,9 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
     requiresNativeBinaries: false,
   };
 
-  private probeStrategy = new MediabunnyProbeStrategy();
-  private concatStrategy = new MediabunnyConcatStrategy();
-  private audioMuxerStrategy = new MediabunnyAudioMuxerStrategy();
+  private probeStrategy = new MediabunnyClientProbeStrategy();
+  private concatStrategy = new MediabunnyClientConcatStrategy();
+  private audioMuxerStrategy = new MediabunnyClientAudioMuxerStrategy();
   private chunkPolicy = new MediabunnyClientChunkPolicy();
 
   public validatePrerequisites(): void {

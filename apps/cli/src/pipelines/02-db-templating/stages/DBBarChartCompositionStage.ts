@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import type { IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
 import type { DBTemplatePipelineContext } from '../DBTemplatingPipeline';
 
 export function createDBBarChartCompositionStage(): IPipelineMiddleware<DBTemplatePipelineContext> {
@@ -15,7 +14,7 @@ export function createDBBarChartCompositionStage(): IPipelineMiddleware<DBTempla
 
       const cardWidth = 1080;
       const cardHeight = 1920;
-      const canvas = createCanvas(cardWidth, cardHeight);
+      const canvas = UniversalCanvasProvider.createCanvas(cardWidth, cardHeight);
       const renderCtx = canvas.getContext('2d');
 
       // Background

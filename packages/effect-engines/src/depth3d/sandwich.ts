@@ -1,10 +1,9 @@
-import { Image } from '@napi-rs/canvas';
 import type { Depth3DConfig, CaptionConfig } from '../types';
 import { drawImageCover } from './frame-breaker';
 
 export interface SandwichState {
-  img: Image;
-  subjectImg: Image | null;
+  img: any;
+  subjectImg: any | null;
   width: number;
   height: number;
   frame: number;

@@ -1,15 +1,15 @@
-import type { Image, Canvas } from '@napi-rs/canvas';
+import type { ICanvasInstance } from '@acc/core-isomorphic';
 import type { Depth3DConfig, CaptionConfig } from '../types';
 import type { DepthMeshLayers } from './depth-mesh';
 
 export interface Depth3DFrameState {
-  img: Image;
-  subjectImg: Image | null;
+  img: any;
+  subjectImg: any | null;
   subjectBBox?: { x: number; y: number; width: number; height: number; minX?: number; maxX?: number; minY?: number; maxY?: number } | null;
-  bgImg?: Image | null;
-  bgCanvas?: Canvas | null;
-  srcCanvas?: Canvas | null;
-  baseCanvas?: Canvas | null;
+  bgImg?: any | null;
+  bgCanvas?: ICanvasInstance | any | null;
+  srcCanvas?: ICanvasInstance | any | null;
+  baseCanvas?: ICanvasInstance | any | null;
   depthLayers?: DepthMeshLayers | null;
   width: number;
   height: number;

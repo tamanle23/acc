@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import type { IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
 import type { RuleLogicPipelineContext } from '../RuleLogicPipeline';
 
 export function createRuleLogicChalkboardCompositionStage(): IPipelineMiddleware<RuleLogicPipelineContext> {
@@ -12,7 +11,7 @@ export function createRuleLogicChalkboardCompositionStage(): IPipelineMiddleware
       const payload = ctx.input;
       const cardWidth = 1920;
       const cardHeight = 1080;
-      const canvas = createCanvas(cardWidth, cardHeight);
+      const canvas = UniversalCanvasProvider.createCanvas(cardWidth, cardHeight);
       const renderCtx = canvas.getContext('2d');
 
       // Blackboard texture gradient

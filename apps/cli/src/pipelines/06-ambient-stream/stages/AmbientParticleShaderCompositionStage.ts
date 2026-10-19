@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import type { IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
 import type { AmbientStreamPipelineContext } from '../AmbientStreamPipeline';
 
 export function createAmbientParticleShaderCompositionStage(): IPipelineMiddleware<AmbientStreamPipelineContext> {
@@ -15,7 +14,7 @@ export function createAmbientParticleShaderCompositionStage(): IPipelineMiddlewa
 
       const width = 1920;
       const height = 1080;
-      const canvas = createCanvas(width, height);
+      const canvas = UniversalCanvasProvider.createCanvas(width, height);
       const renderCtx = canvas.getContext('2d');
 
       const bgGrad = renderCtx.createRadialGradient(width / 2, height / 2, 50, width / 2, height / 2, width * 0.7);

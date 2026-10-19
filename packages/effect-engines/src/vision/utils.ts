@@ -1,16 +1,22 @@
 import os from 'os';
 import path from 'path';
-import { env } from '@huggingface/transformers';
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { BoundingBox } from './types';
 
 // Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule
 const globalHfCache = path.join(os.homedir(), '.cache', 'huggingface');
-env.cacheDir = globalHfCache;
-env.allowLocalModels = true;
+if (typeof process !== 'undefined' && process.env) {
+  process.env.HF_HOME = globalHfCache;
+}
 
-export function configureHfEnv() {
-  env.cacheDir = globalHfCache;
+export function configureHfEnv(transformersEnv?: any) {
+  if (typeof process !== 'undefined' && process.env) {
+    process.env.HF_HOME = globalHfCache;
+  }
+  if (transformersEnv) {
+    transformersEnv.cacheDir = globalHfCache;
+    transformersEnv.allowLocalModels = true;
+  }
 }
 
 /**
@@ -23,7 +29,7 @@ export async function createCutoutRgba(
   maskHeight?: number,
   options?: { fillHoles?: boolean; featherRadius?: number }
 ): Promise<{ rgbaBuffer: Buffer; alphaBuffer: Buffer; bbox: BoundingBox }> {
-  const original = await loadImage(originalImageBuffer);
+  const original = await CanvasAssetLoader.loadImage(originalImageBuffer);
   const origW = original.width;
   const origH = original.height;
 
@@ -32,10 +38,10 @@ export async function createCutoutRgba(
   let mH = maskHeight;
 
   if (Buffer.isBuffer(alphaMaskOrBuffer) && (!mW || !mH)) {
-    const maskImg = await loadImage(alphaMaskOrBuffer);
+    const maskImg = await CanvasAssetLoader.loadImage(alphaMaskOrBuffer);
     mW = maskImg.width;
     mH = maskImg.height;
-    const tempCanvas = createCanvas(mW, mH);
+    const tempCanvas = UniversalCanvasProvider.createCanvas(mW, mH);
     const tempCtx = tempCanvas.getContext('2d');
     tempCtx.drawImage(maskImg, 0, 0, mW, mH);
     const rawData = tempCtx.getImageData(0, 0, mW, mH).data;
@@ -57,7 +63,7 @@ export async function createCutoutRgba(
   }
 
   // Mask canvas at mask resolution
-  const maskCanvas = createCanvas(mW, mH);
+  const maskCanvas = UniversalCanvasProvider.createCanvas(mW, mH);
   const maskCtx = maskCanvas.getContext('2d');
   const maskImgData = maskCtx.createImageData(mW, mH);
 
@@ -103,7 +109,7 @@ export async function createCutoutRgba(
   maskCtx.putImageData(maskImgData, 0, 0);
 
   // Full resolution RGBA canvas
-  const fullCanvas = createCanvas(origW, origH);
+  const fullCanvas = UniversalCanvasProvider.createCanvas(origW, origH);
   const fullCtx = fullCanvas.getContext('2d');
 
   // Draw original
@@ -116,7 +122,7 @@ export async function createCutoutRgba(
   const rgbaBuffer = fullCanvas.toBuffer('image/png');
 
   // Also export alpha mask canvas scaled to original size
-  const alphaCanvas = createCanvas(origW, origH);
+  const alphaCanvas = UniversalCanvasProvider.createCanvas(origW, origH);
   const alphaCtx = alphaCanvas.getContext('2d');
   alphaCtx.drawImage(maskCanvas, 0, 0, origW, origH);
   const alphaBuffer = alphaCanvas.toBuffer('image/png');

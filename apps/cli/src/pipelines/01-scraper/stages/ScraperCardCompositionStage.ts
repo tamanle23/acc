@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { createCanvas } from '@napi-rs/canvas';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import type { IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
 import type { ScraperPipelineContext } from '../ScraperPipeline';
 
 export function createScraperCardCompositionStage(): IPipelineMiddleware<ScraperPipelineContext> {
@@ -19,7 +18,7 @@ export function createScraperCardCompositionStage(): IPipelineMiddleware<Scraper
 
       const cardWidth = 1080;
       const cardHeight = 1920;
-      const canvas = createCanvas(cardWidth, cardHeight);
+      const canvas = UniversalCanvasProvider.createCanvas(cardWidth, cardHeight);
       const renderCtx = canvas.getContext('2d');
 
       // Background gradient

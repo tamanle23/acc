@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createCanvas } from '@napi-rs/canvas';
-import { fileExists } from '@acc/core';
+import { fileExists, UniversalCanvasProvider } from '@acc/core';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
 
@@ -53,7 +52,7 @@ export class SocialExporter implements IExporter<SocialExportOptions> {
   }
 
   private async renderCoverSlide(title: string, tags: string[], outputPath: string) {
-    const canvas = createCanvas(1080, 1350);
+    const canvas = UniversalCanvasProvider.createCanvas(1080, 1350);
     const ctx = canvas.getContext('2d');
 
     // Background gradient
@@ -87,7 +86,7 @@ export class SocialExporter implements IExporter<SocialExportOptions> {
   }
 
   private async renderChunkSlide(chunk: ContentChunk, step: number, total: number, outputPath: string) {
-    const canvas = createCanvas(1080, 1350);
+    const canvas = UniversalCanvasProvider.createCanvas(1080, 1350);
     const ctx = canvas.getContext('2d');
 
     ctx.fillStyle = '#0b0f19';

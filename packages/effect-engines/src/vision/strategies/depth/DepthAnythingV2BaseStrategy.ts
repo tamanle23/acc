@@ -1,5 +1,4 @@
-import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
-import { createCanvas } from '@napi-rs/canvas';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { configureHfEnv } from '../../utils';
 
@@ -9,6 +8,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
@@ -16,10 +16,12 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    configureHfEnv();
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        const { AutoModelForDepthEstimation, AutoProcessor, RawImage, env } = await import('@huggingface/transformers');
+        configureHfEnv(env);
+        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           AutoModelForDepthEstimation.from_pretrained(this.modelId, { dtype: 'fp32' }),
           AutoProcessor.from_pretrained(this.modelId)
@@ -37,6 +39,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
   public async estimateDepth(imageBuffer: Buffer, options?: DepthOptions): Promise<DepthResult> {
     await this.init();
 
+    const RawImage = this.rawImageClass || (await import('@huggingface/transformers')).RawImage;
     const rawImage = await RawImage.fromBlob(new Blob([imageBuffer]));
     const origW = rawImage.width;
     const origH = rawImage.height;
@@ -58,7 +61,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
     }
 
     const range = maxVal - minVal || 1.0;
-    const depthCanvas = createCanvas(depthW, depthH);
+    const depthCanvas = UniversalCanvasProvider.createCanvas(depthW, depthH);
     const depthCtx = depthCanvas.getContext('2d');
     const imgData = depthCtx.createImageData(depthW, depthH);
 
@@ -74,7 +77,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
 
     depthCtx.putImageData(imgData, 0, 0);
 
-    const fullCanvas = createCanvas(origW, origH);
+    const fullCanvas = UniversalCanvasProvider.createCanvas(origW, origH);
     const fullCtx = fullCanvas.getContext('2d');
     fullCtx.drawImage(depthCanvas, 0, 0, origW, origH);
 

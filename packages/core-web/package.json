@@ -1,0 +1,12 @@
+{
+  "name": "@acc/core-web",
+  "version": "1.0.0",
+  "description": "Browser client and worker adapters (OffscreenCanvas, HTML5 Canvas, WebCodecs)",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@acc/core-isomorphic": "workspace:*"
+  }
+}

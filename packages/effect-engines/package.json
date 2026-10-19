@@ -11,8 +11,10 @@
   "private": true,
   "dependencies": {
     "@acc/core": "workspace:*",
+    "@acc/core-isomorphic": "workspace:*",
+    "@acc/core-native": "workspace:*",
+    "@acc/core-web": "workspace:*",
     "@huggingface/transformers": "^4.3.0",
-    "@napi-rs/canvas": "^1.0.9",
     "gsap": "^3.12.7",
     "pts": "^1.0.3",
     "simplex-noise": "^4.0.3"

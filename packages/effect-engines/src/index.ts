@@ -11,8 +11,17 @@ export * from './vision';
 export * from './types';
 export * from './editing';
 export * from './styles';
-export * from './canvas/CanvasTransformOverlay';
-export * from './canvas/UniversalCanvasProvider';
-export * from './canvas/CanvasAssetLoader';
-export * from './canvas/types';
-export * from './canvas/adapters/NodeCanvasAdapter';
+export * from './canvas';
+
+// Auto-register adapters for runtime environments
+try {
+  UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter());
+} catch {
+  // Graceful fallback
+}
+
+try {
+  UniversalCanvasProvider.registerAdapter(new NodeCanvasAdapter(), true);
+} catch {
+  // Graceful fallback in non-node environments
+}

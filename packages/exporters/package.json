@@ -7,7 +7,6 @@
   "private": true,
   "dependencies": {
     "@acc/core": "workspace:*",
-    "@acc/ir": "workspace:*",
-    "@napi-rs/canvas": "^1.0.9"
+    "@acc/ir": "workspace:*"
   }
 }

@@ -1,4 +1,4 @@
-import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 
 export class GrabCutFallbackStrategy implements ISegmentationStrategy {
@@ -10,12 +10,12 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy {
   }
 
   public async segment(imageBuffer: Buffer, options?: SegmentationOptions): Promise<SegmentationResult> {
-    const original = await loadImage(imageBuffer);
+    const original = await CanvasAssetLoader.loadImage(imageBuffer);
     const w = original.width;
     const h = original.height;
 
     // Create canvas
-    const canvas = createCanvas(w, h);
+    const canvas = UniversalCanvasProvider.createCanvas(w, h);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(original, 0, 0, w, h);
 
@@ -36,7 +36,7 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy {
     }
 
     // Alpha mask canvas
-    const alphaCanvas = createCanvas(w, h);
+    const alphaCanvas = UniversalCanvasProvider.createCanvas(w, h);
     const alphaCtx = alphaCanvas.getContext('2d');
     const alphaImgData = alphaCtx.createImageData(w, h);
 
@@ -72,7 +72,7 @@ export class GrabCutFallbackStrategy implements ISegmentationStrategy {
     alphaCtx.putImageData(alphaImgData, 0, 0);
 
     // Composite RGBA
-    const finalCanvas = createCanvas(w, h);
+    const finalCanvas = UniversalCanvasProvider.createCanvas(w, h);
     const finalCtx = finalCanvas.getContext('2d');
     finalCtx.drawImage(original, 0, 0);
     finalCtx.globalCompositeOperation = 'destination-in';

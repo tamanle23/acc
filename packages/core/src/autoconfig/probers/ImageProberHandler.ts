@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { BaseMediaAssetProberHandler } from './BaseMediaAssetProberHandler';
+import { CanvasAssetLoader } from '../../isomorphic/canvas';
 import type { DiscoveredAssetManifest, DiscoveredVisualAsset, ProberScanOptions } from '../types';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif']);
@@ -34,8 +35,7 @@ export class ImageProberHandler extends BaseMediaAssetProberHandler {
       // Deep inspection if requested
       if (options?.probeDeepMetadata !== false) {
         try {
-          const { loadImage } = await import('@napi-rs/canvas');
-          const img = await loadImage(filePath);
+          const img = await CanvasAssetLoader.loadImage(filePath);
           width = img.width;
           height = img.height;
 

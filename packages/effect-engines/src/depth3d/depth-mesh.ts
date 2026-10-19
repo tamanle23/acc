@@ -1,14 +1,14 @@
-import { Canvas } from '@napi-rs/canvas';
+import type { ICanvasInstance } from '@acc/core-isomorphic';
 import type { Depth3DConfig } from '../types';
 
 export interface DepthMeshLayers {
-  bgCanvas: Canvas;
-  mgCanvas?: Canvas;
-  fgCanvas?: Canvas;
+  bgCanvas: ICanvasInstance | any;
+  mgCanvas?: ICanvasInstance | any;
+  fgCanvas?: ICanvasInstance | any;
 }
 
 export interface DepthMeshState {
-  srcCanvas: Canvas;
+  srcCanvas: ICanvasInstance | any;
   depthData?: Uint8ClampedArray;
   depthLayers?: DepthMeshLayers;
   gridX?: number;

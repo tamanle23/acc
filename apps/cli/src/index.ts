@@ -6,6 +6,7 @@ import {
   ScraperEngine,
 } from './pipelines';
 import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions, fileExists } from '@acc/core';
+import { bootstrapServer } from './bootstrap';
 
 export interface CliOptions {
   command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render' | 'studio';
@@ -585,6 +586,7 @@ export async function run(customArgs?: string[]): Promise<any> {
 }
 
 if (import.meta.main) {
+  await bootstrapServer();
   intro('--- ACC - Automated Content Creator ---');
   run().then(async (result) => {
     if (result?.success === false) {
