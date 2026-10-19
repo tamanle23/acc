@@ -102,10 +102,13 @@ export function DataTable<TData>({
                   const isAction = header.column.id === 'actions'
                   const colId = header.column.id
                   const isSorted = header.column.getIsSorted?.()
-                  const ariaSort = isSorted
+                  const canSort = header.column.getCanSort?.()
+                  const ariaSort = canSort
                     ? isSorted === 'asc'
                       ? 'ascending'
-                      : 'descending'
+                      : isSorted === 'desc'
+                      ? 'descending'
+                      : 'none'
                     : undefined
 
                   return (

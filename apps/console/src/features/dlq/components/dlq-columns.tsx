@@ -177,6 +177,7 @@ export const createDlqColumns = ({
             className="h-8 px-2 text-xs"
             onClick={() => onInspect(item)}
             title="Inspect Error & Payload"
+            aria-label={`Inspect DLQ task ${item.taskId}`}
           >
             <Eye className="h-3.5 w-3.5 mr-1" />
             Inspect
@@ -188,6 +189,7 @@ export const createDlqColumns = ({
               className="h-8 px-2 text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
               onClick={() => onReplay(item)}
               title="Replay Quarantined Task"
+              aria-label={`Replay DLQ task ${item.taskId}`}
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1" />
               Replay
@@ -195,7 +197,11 @@ export const createDlqColumns = ({
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Open actions menu">
+              <Button
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                aria-label={`Actions for DLQ task ${item.taskId}`}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

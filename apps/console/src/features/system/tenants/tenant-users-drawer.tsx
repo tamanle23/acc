@@ -128,7 +128,6 @@ export function TenantUsersDrawer({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          aria-describedby="tenant-users-drawer-desc"
           className="w-full sm:max-w-xl bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6"
         >
           <SheetHeader>
@@ -140,7 +139,7 @@ export function TenantUsersDrawer({
                 <SheetTitle className="text-base font-bold">
                   Assigned Users for {tenant.name}
                 </SheetTitle>
-                <SheetDescription id="tenant-users-drawer-desc" className="text-xs font-mono">
+                <SheetDescription className="text-xs font-mono">
                   Tenant ID: {tenant.tenantId} • ({filteredUsers.length} members)
                 </SheetDescription>
               </div>

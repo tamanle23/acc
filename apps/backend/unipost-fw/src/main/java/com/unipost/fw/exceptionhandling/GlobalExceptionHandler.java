@@ -27,32 +27,35 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(value = { BusinessException.class})
   protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleBusinessException(BusinessException ex) {
     if (this.logger.isErrorEnabled()) {
-      this.logger.error("Debug error: ", ex);
+      this.logger.error("Business exception: ", ex);
     }
-    if(ex.getHttpCode() == null) {
-      if(ex.isServerSide()){
-        return responseBuilder.error(ex.getErrors().toArray(new Error[0]));
+    if (ex.getHttpCode() == null) {
+      if (ex.isServerSide()) {
+        return responseBuilder.error(HttpStatus.INTERNAL_SERVER_ERROR, ex.getErrors().toArray(new Error[0]));
       }
-      return responseBuilder.fail(ex.getErrors().toArray(new Error[0]));
+      return responseBuilder.fail(HttpStatus.BAD_REQUEST, ex.getErrors().toArray(new Error[0]));
     } else {
-      return responseBuilder.error(HttpStatus.valueOf(ex.getHttpCode()),ex.getErrors().toArray(new Error[0]));
+      return responseBuilder.error(HttpStatus.valueOf(ex.getHttpCode()), ex.getErrors().toArray(new Error[0]));
     }
   }
 
   @ExceptionHandler(value = { AccessDeniedException.class})
   protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleAccessDeniedException(AccessDeniedException ex) {
-    if(this.logger.isErrorEnabled()){
-      this.logger.error("Debug error: ",ex);
+    if (this.logger.isErrorEnabled()) {
+      this.logger.error("Access denied error: ", ex);
     }
-    return responseBuilder.error(Error.builder().code(ErrorCodes.ERROR_ACCESS_DENIED.name()).message(ErrorCodes.ERROR_ACCESS_DENIED.getMessage()).build());
+    return responseBuilder.error(HttpStatus.FORBIDDEN, Error.builder().code(ErrorCodes.ERROR_ACCESS_DENIED.name()).message(ErrorCodes.ERROR_ACCESS_DENIED.getMessage()).build());
   }
 
   @ExceptionHandler(value = { RuntimeException.class})
   protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleRuntimeException(RuntimeException ex) {
-      if(this.logger.isErrorEnabled()){
-          this.logger.error("Debug error: ",ex);
-      }
-      return responseBuilder.error(Error.builder().code(ErrorCodes.NONE.name()).message(ex.getMessage()).build());
+    if (this.logger.isErrorEnabled()) {
+      this.logger.error("Uncaught runtime exception: ", ex);
+    }
+    String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+        ? ex.getMessage()
+        : "An unexpected runtime error occurred";
+    return responseBuilder.error(HttpStatus.INTERNAL_SERVER_ERROR, Error.builder().code(ErrorCodes.NONE.name()).message(message).build());
   }
 
   @ExceptionHandler(value = { org.springframework.web.bind.MethodArgumentNotValidException.class })
@@ -75,16 +78,22 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(value = { HttpMessageConversionException.class})
   protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleHttpMessageConversionException(RuntimeException ex) {
     if (this.logger.isErrorEnabled()) {
-      this.logger.error("Debug error: ", ex);
+      this.logger.error("Message conversion error: ", ex);
     }
-    return responseBuilder.fail(Error.builder().code(ErrorCodes.FAIL_ENDPOINT_MAPPING.name()).message(ex.getMessage()).build());
+    String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+        ? ex.getMessage()
+        : "Malformed request payload or invalid parameters";
+    return responseBuilder.fail(HttpStatus.BAD_REQUEST, Error.builder().code(ErrorCodes.FAIL_ENDPOINT_MAPPING.name()).message(message).build());
   }
 
   @ExceptionHandler(value = { Exception.class})
   protected ResponseEntity<ResponseWrapper<ContextHeader, Object>> handleThrowable(Throwable ex) {
-    if(this.logger.isErrorEnabled()){
-        this.logger.error("Debug error: ",ex);
+    if (this.logger.isErrorEnabled()) {
+      this.logger.error("Uncaught general exception: ", ex);
     }
-    return responseBuilder.error(Error.builder().code(ErrorCodes.NONE.name()).message(ex.getMessage()).build());
+    String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+        ? ex.getMessage()
+        : "An unexpected internal server error occurred";
+    return responseBuilder.error(HttpStatus.INTERNAL_SERVER_ERROR, Error.builder().code(ErrorCodes.NONE.name()).message(message).build());
   }
 }

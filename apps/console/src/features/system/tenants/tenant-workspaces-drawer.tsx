@@ -82,7 +82,6 @@ export function TenantWorkspacesDrawer({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          aria-describedby="tenant-workspaces-drawer-desc"
           className="w-full sm:max-w-lg bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6"
         >
           <SheetHeader>
@@ -94,7 +93,7 @@ export function TenantWorkspacesDrawer({
                 <SheetTitle className="text-base font-bold">
                   Workspaces for {tenant.name}
                 </SheetTitle>
-                <SheetDescription id="tenant-workspaces-drawer-desc" className="text-xs font-mono">
+                <SheetDescription className="text-xs font-mono">
                   Tenant ID: {tenant.tenantId} • ({tenantWorkspaces.length} /{' '}
                   {tenant.maxWorkspaces === -1 ? '∞' : tenant.maxWorkspaces})
                 </SheetDescription>

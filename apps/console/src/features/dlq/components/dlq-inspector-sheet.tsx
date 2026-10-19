@@ -71,7 +71,6 @@ export function DlqInspectorSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        aria-describedby="dlq-inspector-sheet-desc"
         className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 backdrop-blur-2xl bg-background/95 border-l border-border/40 shadow-2xl"
       >
         <SheetHeader className="text-left space-y-1">
@@ -93,7 +92,7 @@ export function DlqInspectorSheet({
               {record.status}
             </Badge>
           </div>
-          <SheetDescription id="dlq-inspector-sheet-desc" className="font-mono text-xs text-muted-foreground">
+          <SheetDescription className="font-mono text-xs text-muted-foreground">
             {record.dlqId} • Task: {record.taskId}
           </SheetDescription>
         </SheetHeader>

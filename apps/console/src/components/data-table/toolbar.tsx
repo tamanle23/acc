@@ -69,7 +69,11 @@ export function DataTableToolbar<TData>({
   }
 
   return (
-    <div className={cn('flex flex-wrap items-center justify-between gap-2', className)}>
+    <div
+      role="toolbar"
+      aria-label="Table toolbar"
+      className={cn('flex flex-wrap items-center justify-between gap-2', className)}
+    >
       <div className='flex flex-1 flex-wrap items-center gap-2'>
         <Input
           placeholder={searchPlaceholder}

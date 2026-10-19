@@ -244,6 +244,7 @@ export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerPr
                           onClick={() => handleInspect(u)}
                           className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                           title="Inspect user details and security telemetry"
+                          aria-label={`Inspect user ${u.username}`}
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>Inspect</span>
@@ -255,6 +256,7 @@ export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerPr
                             variant={u.locked ? 'outline' : 'destructive'}
                             onClick={() => handleOpenLockDialog(u)}
                             className="h-7 text-xs gap-1.5"
+                            aria-label={u.locked ? `Unlock account for user ${u.username}` : `Lockout user ${u.username}`}
                           >
                             {u.locked ? (
                               <>
