@@ -163,8 +163,12 @@ export class IRCanvasCompositor {
                 const drawX = (width - drawW) * 0.5;
                 const drawY = (height - drawH) * 0.5;
 
-                if (typeof canvasCtx.drawImage === 'function') {
-                  canvasCtx.drawImage(asset, drawX, drawY, drawW, drawH);
+                const rawAsset = typeof (asset as any).getRawCanvas === 'function'
+                  ? (asset as any).getRawCanvas()
+                  : asset;
+
+                if (rawAsset && typeof canvasCtx.drawImage === 'function') {
+                  canvasCtx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
                 }
               } else {
                 // Non-blocking neutral placeholder fallback in standard top-left space
