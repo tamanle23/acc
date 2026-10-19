@@ -186,6 +186,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           <button
             type="button"
             onClick={onTogglePanTool}
+            aria-label="Pan hand tool"
             className={`p-1.5 rounded-full border transition-all cursor-pointer ${isPanToolActive || isSpacePressed
               ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] shadow-[0_0_10px_var(--accent-glow)]'
               : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
@@ -200,6 +201,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           <button
             type="button"
             onClick={onCycleSafeGuides}
+            aria-label={`Safe guides: ${safeGuidesMode === 'none' ? 'Off' : safeGuidesMode}`}
             className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer ${safeGuidesMode !== 'none'
               ? 'border-amber-400/50 bg-amber-500/15 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
               : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
@@ -215,6 +217,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           <button
             type="button"
             onClick={onToggleCheckerboard}
+            aria-label="Toggle alpha transparency checkerboard"
             className={`p-1.5 rounded-full border transition-all cursor-pointer ${showCheckerboard
               ? 'border-cyan-400/50 bg-cyan-500/20 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
               : 'border-[var(--glass-border)] text-foreground/70 hover:text-foreground hover:bg-white/10'
@@ -229,6 +232,7 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           <button
             type="button"
             onClick={onToggleVfxAmbiance}
+            aria-label={showVfxAmbiance ? 'Disable VFX ambiance' : 'Enable VFX ambiance'}
             className={`p-1.5 rounded-full border transition-all cursor-pointer ${showVfxAmbiance
               ? 'border-purple-400/50 bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
               : 'border-[var(--glass-border)] text-foreground/40 hover:text-foreground hover:bg-white/10'
