@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import {
@@ -76,13 +76,27 @@ export function StorageAssignmentsDialog({
     ])
   }
 
-  const assignedSet = new Set(assignments.map((a) => a.workspaceId))
-  const unassignedProfiles = profiles.filter(
-    (p) => !assignedSet.has(p.id ?? p.name)
+  // Optimization: Pre-index assignments into a Map and memoize computed profiles
+  // to reduce lookup time from O(N * M) nested array scans to O(1) Map accesses per render.
+  const assignmentMap = useMemo(
+    () => new Map(assignments.map((a) => [a.workspaceId, a])),
+    [assignments]
   )
-  const assignedProfiles = profiles.filter((p) =>
-    assignedSet.has(p.id ?? p.name)
-  )
+
+  const { assignedProfiles, unassignedProfiles } = useMemo(() => {
+    const assignedSet = new Set(assignments.map((a) => a.workspaceId))
+    const assigned: typeof profiles = []
+    const unassigned: typeof profiles = []
+    for (const p of profiles) {
+      const id = p.id ?? p.name
+      if (assignedSet.has(id)) {
+        assigned.push(p)
+      } else {
+        unassigned.push(p)
+      }
+    }
+    return { assignedProfiles: assigned, unassignedProfiles: unassigned }
+  }, [assignments, profiles])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,8 +144,8 @@ export function StorageAssignmentsDialog({
               </div>
               <ul className='space-y-2'>
                 {assignedProfiles.map((profile) => {
-                  const assignment = assignments.find(
-                    (a) => a.workspaceId === (profile.id ?? profile.name)
+                  const assignment = assignmentMap.get(
+                    profile.id ?? profile.name
                   )
                   // For 'System Internal' with 'all', they are effectively enabled globally unless overridden.
                   // Since 'System Internal' uses 'all', we might just show them as enabled.
