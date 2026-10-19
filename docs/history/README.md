@@ -158,6 +158,7 @@
 | [151](151_entity_data_grid_column_views_and_horizontal_scroll.md) | 2026-10-19 | Column Views Toggle & Guaranteed Horizontal Overflow for EntityDataGrid | Integrated DataTableViewOptions column visibility toggles into EntityDataGrid, added min-w-max table layout for guaranteed horizontal scrolling on 100+ columns, and updated attribute fetching size to 500 across sandbox and services. |
 | [152](152_grid_wide_hover_scrollbar_thumb_ergonomics.md) | 2026-10-19 | Grid-Wide Hover Detection for Scrollbar Thumb Ergonomics | Implemented parent hover illumination (.group/grid:hover) for scrollbar thumbs across EntityDataGrid and DataTable, increased scrollbar hit area to 8px, and hardened theme contrast. |
 | [153](153_schema_builder_vertical_scroll.md) | 2026-10-19 | SchemaBuilder Dedicated Vertical Scrolling & Sticky Header Ergonomics | Added independent vertical scroll container with .scrollbar-thin and .group/grid hover illumination for SchemaBuilder columns list, pinned header action bar with shrink-0, and added WCAG keyboard region semantics. |
+| [154](154_remove_visual_dag_studio_from_metadata.md) | 2026-10-19 | Remove Visual DAG Studio from Metadata Schema Studio | Removed the redundant Visual DAG Studio tab and conductor canvas from VisualSchemaStudio in Metadata, keeping DAG workflow design scoped to dedicated /workflows and /workflow-executions routes. |
 
 
 
