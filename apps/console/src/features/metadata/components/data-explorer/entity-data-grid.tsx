@@ -510,8 +510,33 @@ export const EntityDataGrid: React.FC<Props> = ({
         ]
       : [];
 
+    const rowIndexCol = [
+      columnHelper.display({
+        id: 'row_index',
+        header: () => (
+          <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none">
+            #
+          </span>
+        ),
+        cell: ({ row }) => {
+          const calculatedIndex = (page - 1) * pageSize + row.index + 1;
+          return (
+            <span
+              className="font-mono text-[11px] text-muted-foreground/80 font-medium select-none"
+              title={`Row #${calculatedIndex}`}
+            >
+              {calculatedIndex}
+            </span>
+          );
+        },
+        enableHiding: false,
+        size: 48,
+      }),
+    ];
+
     const baseCols = [
       ...expanderCol,
+      ...rowIndexCol,
       columnHelper.accessor('id', {
         header: () => (
           <button
@@ -761,6 +786,8 @@ export const EntityDataGrid: React.FC<Props> = ({
     openRecordRelationshipsInspector,
     isComposite,
     expandedRowIds,
+    page,
+    pageSize,
   ]);
 
   const table = useReactTable({
@@ -1040,8 +1067,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                   >
                     {headerGroup.headers.map((header) => {
                       const isAction = header.column.id === 'actions';
+                      const isRowIndex = header.column.id === 'row_index';
                       const colId = header.column.id;
-                      const isSortable = colId !== 'actions';
+                      const isSortable = colId !== 'actions' && colId !== 'row_index';
                       const ariaSort = isSortable
                         ? sortField === colId
                           ? sortDirection === 'asc'
@@ -1057,6 +1085,8 @@ export const EntityDataGrid: React.FC<Props> = ({
                           aria-sort={ariaSort}
                           className={cn(
                             'p-3 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] whitespace-nowrap bg-white/95 dark:bg-slate-800/95 backdrop-blur-md',
+                            isRowIndex &&
+                            'sticky left-0 z-40 w-12 text-center border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]',
                             isAction &&
                             'sticky right-0 z-40 w-12 border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
                           )}
@@ -1121,11 +1151,14 @@ export const EntityDataGrid: React.FC<Props> = ({
                                 >
                                   {row.getVisibleCells().map((cell) => {
                                     const isAction = cell.column.id === 'actions';
+                                    const isRowIndex = cell.column.id === 'row_index';
                                     return (
                                       <td
                                         key={cell.id}
                                         className={cn(
                                           'p-3 whitespace-nowrap',
+                                          isRowIndex &&
+                                          'sticky left-0 z-10 w-12 text-center bg-white/90 group-hover:bg-white/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-r border-white/20 dark:border-white/10 shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)] transition-[background-color,backdrop-filter] duration-150',
                                           isAction &&
                                           'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
                                         )}
