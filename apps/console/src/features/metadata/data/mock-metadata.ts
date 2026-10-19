@@ -40,6 +40,11 @@ import {
   cmsRelationshipTypes,
   generateCmsRecordsAndRelationships,
 } from './mock-cms-data';
+import {
+  telemetryWideEntityType,
+  generateWideAttributes,
+  generateWideRecords,
+} from './mock-wide-telemetry';
 import { sandboxResetRegistry } from '@unipost/sandbox';
 
 export const initialMockEntityTypes: EntityType[] = [
@@ -227,11 +232,13 @@ export const initialMockEntityTypes: EntityType[] = [
   },
   ...additionalEntityTypes,
   ...cmsEntityTypes,
+  telemetryWideEntityType,
 ];
 
 export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
   ...additionalAttributes,
   ...cmsAttributes,
+  'telemetry-wide-matrix': generateWideAttributes(),
   'customer-360-composite': [
     {
       id: 'comp-101',
@@ -632,6 +639,7 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
     return {
     ...generateAdditionalRecords(),
     ...generateCmsRecordsAndRelationships().records,
+    'telemetry-wide-matrix': generateWideRecords(60),
     '1': customerRecords,
     '2': resourceRecords,
     '3': policyRecords,
@@ -1003,7 +1011,7 @@ export class MockMetadataService implements MetadataDataSource {
     attrs.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     const page = params?.number && params.number > 0 ? params.number : 1;
-    const size = params?.size && params.size > 0 ? params.size : 50;
+    const size = params?.size && params.size > 0 ? params.size : 500;
     const start = (page - 1) * size;
     const end = start + size;
     const content = attrs.slice(start, end);

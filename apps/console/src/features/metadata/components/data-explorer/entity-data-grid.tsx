@@ -213,6 +213,19 @@ export const EntityDataGrid: React.FC<Props> = ({
   const [auditRecord, setAuditRecord] = useState<EntityRecord | null>(null);
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string | number>>(new Set());
 
+  // Horizontal scroll cue detection for high-density tables (e.g. 100+ columns)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = React.useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 1);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+  }, []);
+
   const toggleRowExpanded = (id: string | number) => {
     setExpandedRowIds((prev) => {
       const next = new Set(prev);
@@ -426,6 +439,22 @@ export const EntityDataGrid: React.FC<Props> = ({
       setExpandedRowIds(new Set([records[0].id]));
     }
   }, [isComposite, records, entityTypeId]);
+
+  // Dynamic horizontal scroll cue observer for wide columns
+  React.useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    checkScroll();
+    el.addEventListener('scroll', checkScroll, { passive: true });
+    const resizeObserver = new ResizeObserver(() => checkScroll());
+    resizeObserver.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      resizeObserver.disconnect();
+    };
+  }, [checkScroll, records.length, attributes.length]);
 
   const handleSortToggle = (field: string) => {
     if (sortField === field) {
@@ -953,8 +982,32 @@ export const EntityDataGrid: React.FC<Props> = ({
           />
         )}
 
-        <div className="flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden max-lg:min-h-[420px] lg:min-h-0">
-          <div className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0">
+        <div className="relative flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden max-lg:min-h-[420px] lg:min-h-0">
+          {/* Dynamic Left Gradient Shadow Cue */}
+          <div
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute inset-y-0 start-0 z-30 w-8 bg-gradient-to-r from-background/80 via-background/30 to-transparent transition-opacity duration-300',
+              canScrollLeft ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+
+          {/* Dynamic Right Gradient Shadow Cue */}
+          <div
+            aria-hidden="true"
+            className={cn(
+              'pointer-events-none absolute inset-y-0 end-0 z-30 w-8 bg-gradient-to-l from-background/80 via-background/30 to-transparent transition-opacity duration-300',
+              canScrollRight ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+
+          <div
+            ref={scrollContainerRef}
+            tabIndex={0}
+            role="region"
+            aria-label="Metadata entity data grid scrollable region"
+            className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+          >
             <table className="w-full text-left border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-xs">
                 {table.getHeaderGroups().map((headerGroup) => (
