@@ -15,8 +15,9 @@
     <module>./unipost-ms-fs</module>
     <module>./unipost-ms-identity</module>
     <module>./unipost-ms-worker</module>
-    <module>./unipost-ms-aio</module>
     <module>./workflow-engine</module>
+    <module>./unipost-sandbox</module>
+    <module>./unipost-ms-aio</module>
   </modules>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -112,6 +113,11 @@
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
+        <artifactId>unipost-sandbox</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
         <artifactId>unipost-ms-worker</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
@@ -202,6 +208,54 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>**/dto/**</exclude>
+            <exclude>**/model/**</exclude>
+            <exclude>**/domain/**</exclude>
+            <exclude>**/cache/**</exclude>
+            <exclude>**/boot/config/**</exclude>
+            <exclude>**/fw/**</exclude>
+            <exclude>**/presentation/context/**</exclude>
+            <exclude>**/presentation/codelist/**</exclude>
+            <exclude>**/presentation/service/**</exclude>
+            <exclude>**/service/BaseModelService.*</exclude>
+            <exclude>**/service/AuditPartitionProvisioner.*</exclude>
+            <exclude>**/service/CustomServiceInstanceListSupplier.*</exclude>
+            <exclude>**/service/query/**</exclude>
+            <exclude>**/service/workflow/WorkflowAuditEventListener.*</exclude>
+            <exclude>**/tenant/purge/TenantPurgeLockdownFilter.*</exclude>
+            <exclude>**/tenant/billing/FeatureEntitlementAspect.*</exclude>
+            <exclude>**/tenant/billing/FeatureNotEntitledException.*</exclude>
+            <exclude>**/repository/helpers/**</exclude>
+            <exclude>**/repository/jpa/ResourceSearchCriteria.*</exclude>
+            <exclude>**/*Config*</exclude>
+            <exclude>**/*Configuration*</exclude>
+            <exclude>**/*Properties*</exclude>
+            <exclude>**/generated/**</exclude>
+            <exclude>**/*MapperImpl.*</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
     <pluginManagement>

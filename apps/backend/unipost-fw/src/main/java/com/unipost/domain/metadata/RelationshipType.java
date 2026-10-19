@@ -34,4 +34,7 @@ public class RelationshipType extends BaseModel {
 
     @Column(name = "cardinality", length = 50)
     private String cardinality;
+
+    @Column(name = "cascade_policy", length = 20)
+    private String cascadePolicy = "RESTRICT";
 }

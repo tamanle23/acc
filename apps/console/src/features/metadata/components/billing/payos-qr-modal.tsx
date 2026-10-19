@@ -170,6 +170,7 @@ export const PayOsQrModal: React.FC<Props> = ({
                     <span>{checkoutData.orderCode}</span>
                     <button
                       type="button"
+                      aria-label="Sao chép mã đơn hàng"
                       onClick={() => handleCopy(String(checkoutData.orderCode), 'mã đơn hàng')}
                       className="text-muted-foreground hover:text-foreground"
                     >
@@ -183,7 +184,7 @@ export const PayOsQrModal: React.FC<Props> = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Thời gian kích hoạt:</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Tức thì (0s Webhook)</span>
+                  <span className="text-emerald-800 dark:text-emerald-300 font-semibold">Tức thì (0s Webhook)</span>
                 </div>
               </div>
 
@@ -192,7 +193,7 @@ export const PayOsQrModal: React.FC<Props> = ({
                 <Button
                   onClick={handleSimulatePayment}
                   disabled={simulatePaymentMutation.isPending}
-                  className="w-full text-xs font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+                  className="w-full text-xs font-semibold gap-2 bg-emerald-700 hover:bg-emerald-800 text-white shadow-md"
                 >
                   {simulatePaymentMutation.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

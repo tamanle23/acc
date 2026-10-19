@@ -18,8 +18,20 @@ public record CompositeSpec(
     List<CompositeField> fields,
 
     @JsonProperty("children")
-    List<CompositeNode> children
+    List<CompositeNode> children,
+
+    @JsonProperty("rollups")
+    List<CompositeRollup> rollups
 ) implements Serializable {
+
+    public CompositeSpec(
+            Long rootEntityTypeId,
+            String rootEntitySystemName,
+            String rootAlias,
+            List<CompositeField> fields,
+            List<CompositeNode> children) {
+        this(rootEntityTypeId, rootEntitySystemName, rootAlias, fields, children, List.of());
+    }
 
     public String effectiveRootAlias() {
         if (rootAlias != null && !rootAlias.isBlank()) {

@@ -408,4 +408,131 @@ class MetadataControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(metadataService).deleteEntityRelationship(100L, 50L);
     }
+
+    @Test
+    void testCreateEntityType() {
+        CreateEntityTypeRequest req = new CreateEntityTypeRequest("article", "Articles", "Cms Article");
+        EntityTypeResponse mockResp = new EntityTypeResponse(1L, "uid-1", "Articles", "article", "Cms Article", 1L, 1L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.createEntityType(req)).thenReturn(mockResp);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, EntityTypeResponse>> response = metadataController.createEntityType(req);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(mockResp, response.getBody().getBody());
+        verify(metadataService).createEntityType(req);
+    }
+
+    @Test
+    void testCreateAttributeDefinition() {
+        Long typeId = 1L;
+        CreateAttributeRequest req = new CreateAttributeRequest("headline", "Headline", "string", "text", true, false, null, null);
+        AttributeDefinitionResponse mockResp = new AttributeDefinitionResponse(10L, "uid-10", typeId, "Headline", "headline", "string", "text", true, false, 0, null, null, 1L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.createAttributeDefinition(typeId, req)).thenReturn(mockResp);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, AttributeDefinitionResponse>> response = metadataController.createAttributeDefinition(typeId, req);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(mockResp, response.getBody().getBody());
+        verify(metadataService).createAttributeDefinition(typeId, req);
+    }
+
+    @Test
+    void testUpdateEntityRecord_WithIfMatch() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        UpdateRecordRequest req = new UpdateRecordRequest(Map.of("title", "New Title"), 2L);
+        EntityRecordResponse mockResp = new EntityRecordResponse(recordId, "uid-100", typeId, "tenant-test", 1L, Map.of("title", "New Title"), 3L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.updateEntityRecord(typeId, recordId, req, "\"2\"")).thenReturn(mockResp);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> response = metadataController.updateEntityRecord(typeId, recordId, "\"2\"", req);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("\"3\"", response.getHeaders().getETag());
+        verify(metadataService).updateEntityRecord(typeId, recordId, req, "\"2\"");
+    }
+
+    @Test
+    void testPatchEntityRecord_WithIfMatch() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        PatchRecordRequest req = new PatchRecordRequest(Map.of("title", "Patched"), 3L);
+        EntityRecordResponse mockResp = new EntityRecordResponse(recordId, "uid-100", typeId, "tenant-test", 1L, Map.of("title", "Patched"), 4L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.patchEntityRecord(typeId, recordId, req, "\"3\"")).thenReturn(mockResp);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> response = metadataController.patchEntityRecord(typeId, recordId, "\"3\"", req);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("\"4\"", response.getHeaders().getETag());
+        verify(metadataService).patchEntityRecord(typeId, recordId, req, "\"3\"");
+    }
+
+    @Test
+    void testGetRecordAuditLogs() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        List<RecordAuditLogResponse> logs = List.of(
+                new RecordAuditLogResponse(1L, "tenant-test", recordId, typeId, "CREATE", "user1", 1L, Map.of(), Map.of(), Map.of(), LocalDateTime.now())
+        );
+        when(metadataService.getRecordAuditLogs(typeId, recordId)).thenReturn(logs);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, List<RecordAuditLogResponse>>> response = metadataController.getRecordAuditLogs(typeId, recordId);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(1, response.getBody().getBody().size());
+        verify(metadataService).getRecordAuditLogs(typeId, recordId);
+    }
+
+    @Test
+    void testPreviewAndRestoreRecordVersion() {
+        Long typeId = 1L;
+        Long recordId = 100L;
+        Long auditId = 55L;
+
+        RestorePreviewResponse preview = new RestorePreviewResponse(recordId, 1L, 2L, Map.of(), Map.of(), Map.of(), Map.of(), List.of());
+        when(metadataService.previewRestoreRecordVersion(typeId, recordId, auditId)).thenReturn(preview);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, RestorePreviewResponse>> prevResp = metadataController.previewRestoreRecordVersion(typeId, recordId, auditId);
+        assertEquals(HttpStatus.OK, prevResp.getStatusCode());
+        assertEquals(preview, prevResp.getBody().getBody());
+
+        EntityRecordResponse restored = new EntityRecordResponse(recordId, "uid-100", typeId, "tenant-test", 1L, Map.of(), 5L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.restoreRecordToAuditVersion(typeId, recordId, auditId)).thenReturn(restored);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> restResp = metadataController.restoreRecordVersion(typeId, recordId, auditId);
+        assertEquals(HttpStatus.OK, restResp.getStatusCode());
+        assertEquals("\"5\"", restResp.getHeaders().getETag());
+    }
+
+    @Test
+    void testRelationshipTypeControllerEndpoints() {
+        Page<RelationshipTypeResponse> page = new Page<>();
+        when(metadataService.getRelationshipTypes(any(PageRequest.class))).thenReturn(page);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, Page<RelationshipTypeResponse>>> listResp = metadataController.getRelationshipTypes(null);
+        assertEquals(HttpStatus.OK, listResp.getStatusCode());
+
+        Long relId = 10L;
+        RelationshipTypeResponse rel = new RelationshipTypeResponse(relId, "uid-rel", "authored_by", "Desc", 1L, 2L, "ONE_TO_MANY", 1L, LocalDateTime.now(), LocalDateTime.now());
+        when(metadataService.getRelationshipType(relId)).thenReturn(rel);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, RelationshipTypeResponse>> getResp = metadataController.getRelationshipType(relId);
+        assertEquals(HttpStatus.OK, getResp.getStatusCode());
+        assertEquals(rel, getResp.getBody().getBody());
+
+        UpdateRelationshipTypeRequest updateReq = new UpdateRelationshipTypeRequest("New Desc", null, null, "MANY_TO_ONE", 1L);
+        when(metadataService.updateRelationshipType(relId, updateReq)).thenReturn(rel);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, RelationshipTypeResponse>> updateResp = metadataController.updateRelationshipType(relId, updateReq);
+        assertEquals(HttpStatus.OK, updateResp.getStatusCode());
+
+        ResponseEntity<ResponseWrapper<ContextHeader, Void>> delResp = metadataController.deleteRelationshipType(relId, false);
+        assertEquals(HttpStatus.OK, delResp.getStatusCode());
+        verify(metadataService).deleteRelationshipType(relId, false);
+    }
+
+    @Test
+    void testGetRecordRelationships_ControllerEndpoint() {
+        Long recordId = 100L;
+        Page<EntityRelationshipResponse> page = new Page<>();
+        when(metadataService.getRecordRelationships(eq(recordId), eq("outgoing"), any(PageRequest.class))).thenReturn(page);
+
+        ResponseEntity<ResponseWrapper<ContextHeader, Page<EntityRelationshipResponse>>> resp = metadataController.getRecordRelationships(recordId, "outgoing", null);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        verify(metadataService).getRecordRelationships(eq(recordId), eq("outgoing"), any(PageRequest.class));
+    }
 }

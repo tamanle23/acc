@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { springApiClient } from '@/features/spring-auth/api-client';
 
 export interface WorkerTelemetry {
   workerId: string;
@@ -37,7 +37,7 @@ export function useWorkerFleet(refreshInterval: number = 3000) {
   return useQuery<WorkerFleetResponse>({
     queryKey: WORKER_FLEET_QUERY_KEY,
     queryFn: async () => {
-      const response = await axios.get<WorkerFleetResponse>('/api/v1/workflow/workers');
+      const response = await springApiClient.get<WorkerFleetResponse>('/v1/workflow/workers');
       return response.data;
     },
     refetchInterval: refreshInterval > 0 ? refreshInterval : false,
@@ -49,7 +49,7 @@ export function useDrainWorker() {
 
   return useMutation({
     mutationFn: async (workerId: string) => {
-      const response = await axios.post(`/api/v1/workflow/workers/${encodeURIComponent(workerId)}/drain`);
+      const response = await springApiClient.post(`/v1/workflow/workers/${encodeURIComponent(workerId)}/drain`);
       return response.data;
     },
     onSuccess: () => {

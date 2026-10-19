@@ -20,6 +20,7 @@ import { routeTree } from './routeTree.gen'
 // Styles
 import './styles/index.css'
 import './i18n'
+import '@/core/sandbox'
 
 declare global {
   interface Window {

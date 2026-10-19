@@ -1,5 +1,5 @@
 import { springApiClient } from '@/features/spring-auth/api-client';
-import type { MetadataDataSource } from './metadata-data-source';
+import type { MetadataDataSource, ChildPaginationRequestMap } from './metadata-data-source';
 import type {
   AttributeDefinition,
   CompiledSchema,
@@ -22,6 +22,9 @@ import type {
   UpdateRelationshipTypeDto,
   ValidateRecordResponse,
   EntityFacetsResponse,
+  RecordAuditLog,
+  RestorePreviewResponse,
+  CompositeRecordResponse,
 } from './types';
 
 const BASE_URL = '/v1/metadata';
@@ -295,6 +298,38 @@ export class HttpMetadataService implements MetadataDataSource {
     return unwrapResponse(res.data);
   }
 
+  async getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]> {
+    const res = await springApiClient.get(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/audit`
+    );
+    return unwrapResponse(res.data);
+  }
+
+  async previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse> {
+    const res = await springApiClient.get(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/restore-preview/${auditLogId}`
+    );
+    return unwrapResponse(res.data);
+  }
+
+  async restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<EntityRecord> {
+    const res = await springApiClient.post(
+      `${BASE_URL}/entity-types/${entityTypeId}/records/${recordId}/restore/${auditLogId}`
+    );
+    return unwrapResponse(res.data);
+  }
+
   async getEntityFacets(
     entityTypeId: string | number,
     params?: PageRequestParams
@@ -408,6 +443,71 @@ export class HttpMetadataService implements MetadataDataSource {
       `${BASE_URL}/records/${recordId}/relationships/${relationshipId}`
     );
     return true;
+  }
+
+  // ==========================================
+  // 6. Composite Records
+  // ==========================================
+  async getCompositeRecords(
+    entityTypeId: string | number,
+    params?: PageRequestParams,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<PageResponse<CompositeRecordResponse>> {
+    const queryParams: Record<string, unknown> = {
+      number: params?.number || 1,
+      size: params?.size || 10,
+    };
+    if (childParams) {
+      const hasAdvancedOptions = Object.values(childParams).some(
+        (c: any) => c && (c.filters !== undefined || c.sort !== undefined)
+      );
+      if (hasAdvancedOptions) {
+        queryParams['childQueries'] = JSON.stringify(childParams);
+      } else {
+        for (const [alias, child] of Object.entries(childParams)) {
+          if (child.limit !== undefined) {
+            queryParams[`childLimit[${alias}]`] = child.limit;
+          }
+          if (child.offset !== undefined) {
+            queryParams[`childOffset[${alias}]`] = child.offset;
+          }
+        }
+      }
+    }
+    const res = await springApiClient.get(`${BASE_URL}/composite-entities/${entityTypeId}/records`, {
+      params: queryParams,
+    });
+    return unwrapResponse(res.data);
+  }
+
+  async getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<CompositeRecordResponse | null> {
+    const queryParams: Record<string, unknown> = {};
+    if (childParams) {
+      const hasAdvancedOptions = Object.values(childParams).some(
+        (c: any) => c && (c.filters !== undefined || c.sort !== undefined)
+      );
+      if (hasAdvancedOptions) {
+        queryParams['childQueries'] = JSON.stringify(childParams);
+      } else {
+        for (const [alias, child] of Object.entries(childParams)) {
+          if (child.limit !== undefined) {
+            queryParams[`childLimit[${alias}]`] = child.limit;
+          }
+          if (child.offset !== undefined) {
+            queryParams[`childOffset[${alias}]`] = child.offset;
+          }
+        }
+      }
+    }
+    const res = await springApiClient.get(
+      `${BASE_URL}/composite-entities/${entityTypeId}/records/${recordId}`,
+      { params: queryParams }
+    );
+    return unwrapResponse(res.data);
   }
 }
 

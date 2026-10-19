@@ -1,0 +1,165 @@
+name: Nightly Automated Test Matrix & 90% Coverage Pipeline
+
+on:
+  schedule:
+    # Run nightly at 02:00 UTC (09:00 ICT)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      e2e_mode:
+        description: 'E2E Execution Mode (sandbox or live)'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+          - sandbox
+          - live
+
+concurrency:
+  group: nightly-test-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Backend JaCoCo Coverage & Spring Modulith Tests
+  # ---------------------------------------------------------------------------
+  backend-coverage-matrix:
+    name: Backend JaCoCo Coverage Sprint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 & Maven Cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Run Backend Tests & Generate JaCoCo Coverage Report
+        run: |
+          mvn clean verify -f apps/backend/pom.xml -q
+
+      - name: Archive JaCoCo HTML Coverage Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-report
+          path: |
+            apps/backend/unipost-fw/target/site/jacoco
+            apps/backend/**/target/site/jacoco
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Job 2: Frontend Vitest V8 Coverage Matrix (Console + Sandbox)
+  # ---------------------------------------------------------------------------
+  frontend-coverage-matrix:
+    name: Console & Sandbox Vitest V8 Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Console & Sandbox Coverage Suite
+        run: |
+          pnpm --filter @unipost/sandbox test
+          pnpm --filter @unipost/console test:coverage
+
+      - name: Archive Vitest Coverage HTML Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-vitest-coverage-report
+          path: apps/console/coverage
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Playwright 10-Spec E2E Browser Matrix & WCAG 2.2 AA Audits
+  # ---------------------------------------------------------------------------
+  playwright-e2e-matrix:
+    name: Playwright E2E Matrix & WCAG AA
+    runs-on: ubuntu-latest
+    needs: [frontend-coverage-matrix]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+          run_install: false
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium & System Dependencies
+        run: pnpm --filter @unipost/console exec playwright install chromium --with-deps
+
+      - name: Setup Java 21 (for Live Mode Backend)
+        if: ${{ github.event.inputs.e2e_mode == 'live' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build Backend AIO JAR (for Live Mode Auto-Spawn)
+        if: ${{ github.event.inputs.e2e_mode == 'live' }}
+        run: |
+          mvn clean package -f apps/backend/pom.xml -DskipTests -q
+
+      - name: Run Full 15-Spec Playwright Matrix (Dual-Mode Autonomous & Live)
+        env:
+          E2E_MODE: ${{ github.event.inputs.e2e_mode || 'sandbox' }}
+          CI: true
+        run: |
+          if [ "${{ github.event.inputs.e2e_mode }}" = "live" ]; then
+            pnpm test:e2e:live
+          else
+            pnpm test:e2e
+          fi
+
+      - name: Archive Playwright HTML Test Report & Traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-report
+          path: apps/console/playwright-report
+          retention-days: 14

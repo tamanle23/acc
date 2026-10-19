@@ -8,6 +8,7 @@ import com.unipost.fw.ResponseEntityBuilder;
 import com.unipost.presentation.dto.metadata.*;
 import com.unipost.service.MetadataService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -228,7 +229,10 @@ public class MetadataController {
             @PathVariable Long id,
             @Valid @RequestBody CreateRecordRequest request) {
         EntityRecordResponse created = metadataService.createEntityRecord(id, request);
-        return responseBuilder.success(created);
+        String etag = created.version() != null ? "\"" + created.version() + "\"" : "\"1\"";
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .body(responseBuilder.success(created).getBody());
     }
 
     @GetMapping("/entity-types/{id}/records/{recordId}")
@@ -237,7 +241,10 @@ public class MetadataController {
             @PathVariable Long id,
             @PathVariable Long recordId) {
         EntityRecordResponse record = metadataService.getEntityRecord(id, recordId);
-        return responseBuilder.success(record);
+        String etag = record.version() != null ? "\"" + record.version() + "\"" : "\"1\"";
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .body(responseBuilder.success(record).getBody());
     }
 
     @PutMapping("/entity-types/{id}/records/{recordId}")
@@ -245,9 +252,22 @@ public class MetadataController {
     public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> updateEntityRecord(
             @PathVariable Long id,
             @PathVariable Long recordId,
+            @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @Valid @RequestBody UpdateRecordRequest request) {
-        EntityRecordResponse updated = metadataService.updateEntityRecord(id, recordId, request);
-        return responseBuilder.success(updated);
+        EntityRecordResponse updated = (ifMatch != null)
+                ? metadataService.updateEntityRecord(id, recordId, request, ifMatch)
+                : metadataService.updateEntityRecord(id, recordId, request);
+        String etag = updated.version() != null ? "\"" + updated.version() + "\"" : "\"1\"";
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .body(responseBuilder.success(updated).getBody());
+    }
+
+    public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> updateEntityRecord(
+            Long id,
+            Long recordId,
+            UpdateRecordRequest request) {
+        return updateEntityRecord(id, recordId, null, request);
     }
 
     @PatchMapping("/entity-types/{id}/records/{recordId}")
@@ -255,9 +275,22 @@ public class MetadataController {
     public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> patchEntityRecord(
             @PathVariable Long id,
             @PathVariable Long recordId,
+            @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @Valid @RequestBody PatchRecordRequest request) {
-        EntityRecordResponse updated = metadataService.patchEntityRecord(id, recordId, request);
-        return responseBuilder.success(updated);
+        EntityRecordResponse updated = (ifMatch != null)
+                ? metadataService.patchEntityRecord(id, recordId, request, ifMatch)
+                : metadataService.patchEntityRecord(id, recordId, request);
+        String etag = updated.version() != null ? "\"" + updated.version() + "\"" : "\"1\"";
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .body(responseBuilder.success(updated).getBody());
+    }
+
+    public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> patchEntityRecord(
+            Long id,
+            Long recordId,
+            PatchRecordRequest request) {
+        return patchEntityRecord(id, recordId, null, request);
     }
 
     @DeleteMapping("/entity-types/{id}/records/{recordId}")
@@ -267,6 +300,38 @@ public class MetadataController {
             @PathVariable Long recordId) {
         metadataService.deleteEntityRecord(id, recordId);
         return responseBuilder.success(null);
+    }
+
+    @GetMapping("/entity-types/{id}/records/{recordId}/audit")
+    @PreAuthorize("hasAuthority('METADATA_RECORD_READ') or hasAuthority('METADATA_RECORD_WRITE') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, List<RecordAuditLogResponse>>> getRecordAuditLogs(
+            @PathVariable Long id,
+            @PathVariable Long recordId) {
+        List<RecordAuditLogResponse> logs = metadataService.getRecordAuditLogs(id, recordId);
+        return responseBuilder.success(logs);
+    }
+
+    @GetMapping("/entity-types/{id}/records/{recordId}/restore-preview/{auditId}")
+    @PreAuthorize("hasRole('SYSTEM_CUSTODIAN') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, RestorePreviewResponse>> previewRestoreRecordVersion(
+            @PathVariable Long id,
+            @PathVariable Long recordId,
+            @PathVariable Long auditId) {
+        RestorePreviewResponse previewResult = metadataService.previewRestoreRecordVersion(id, recordId, auditId);
+        return responseBuilder.success(previewResult);
+    }
+
+    @PostMapping("/entity-types/{id}/records/{recordId}/restore/{auditId}")
+    @PreAuthorize("hasRole('SYSTEM_CUSTODIAN') or hasRole('ADMIN')")
+    public ResponseEntity<ResponseWrapper<ContextHeader, EntityRecordResponse>> restoreRecordVersion(
+            @PathVariable Long id,
+            @PathVariable Long recordId,
+            @PathVariable Long auditId) {
+        EntityRecordResponse restored = metadataService.restoreRecordToAuditVersion(id, recordId, auditId);
+        String etag = restored.version() != null ? "\"" + restored.version() + "\"" : "\"1\"";
+        return ResponseEntity.ok()
+                .eTag(etag)
+                .body(responseBuilder.success(restored).getBody());
     }
 
     @PostMapping("/entity-types/{id}/records/{recordId}/transition")

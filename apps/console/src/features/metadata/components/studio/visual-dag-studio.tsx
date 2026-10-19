@@ -183,7 +183,7 @@ function DagStudioCanvas({
   const [isHotMigrationOpen, setIsHotMigrationOpen] = useState(false);
   const [diffTargetVersion, setDiffTargetVersion] = useState<number | null>(null);
   const versionsQuery = workflowApi.useWorkflowVersions ? workflowApi.useWorkflowVersions(workflowKey || null) : { data: [] };
-  const workflowVersions = versionsQuery?.data || [];
+  const workflowVersions = useMemo(() => versionsQuery?.data || [], [versionsQuery?.data]);
 
   // IR Dialog State
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
@@ -247,9 +247,10 @@ function DagStudioCanvas({
   // Phase 39: Compute visual graph diff overlay when comparison target is selected
   useEffect(() => {
     if (!diffTargetVersion) {
-      setNodes((nds) =>
-        nds.map((n) => (n.data.diffStatus ? { ...n, data: { ...n.data, diffStatus: undefined } } : n))
-      );
+      setNodes((nds) => {
+        if (!nds.some((n) => n.data.diffStatus !== undefined)) return nds;
+        return nds.map((n) => (n.data.diffStatus ? { ...n, data: { ...n.data, diffStatus: undefined } } : n));
+      });
       return;
     }
 

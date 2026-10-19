@@ -132,10 +132,15 @@ export function DlqInspectorSheet({
                 {copied ? 'Copied' : 'Copy'}
               </Button>
             </div>
-            <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 font-mono text-[11px] text-destructive overflow-x-auto whitespace-pre-wrap max-h-48 leading-relaxed">
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="Error details and stacktrace"
+              className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 font-mono text-[11px] text-red-900 dark:text-red-200 overflow-x-auto whitespace-pre-wrap max-h-48 leading-relaxed focus:outline-none focus:ring-1 focus:ring-destructive"
+            >
               {record.errorMessage}
               {record.errorStacktrace && (
-                <div className="mt-2 pt-2 border-t border-destructive/15 text-[10px] opacity-80">
+                <div className="mt-2 pt-2 border-t border-destructive/15 text-[10px] text-red-800 dark:text-red-300">
                   {record.errorStacktrace}
                 </div>
               )}
@@ -191,7 +196,7 @@ export function DlqInspectorSheet({
             {record.status === 'ISOLATED' && (
               <Button
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm"
+                className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm"
                 onClick={handleTriggerReplay}
               >
                 <RotateCcw className="h-3.5 w-3.5 mr-1.5" />

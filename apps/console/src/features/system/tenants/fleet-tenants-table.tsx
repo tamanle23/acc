@@ -153,7 +153,7 @@ export function FleetTenantsTable() {
           </div>
 
           <Select value={tierFilter} onValueChange={setTierFilter}>
-            <SelectTrigger className="w-[130px] bg-background/50 border-white/20 dark:border-white/10">
+            <SelectTrigger aria-label="Filter by subscription tier" className="w-[130px] bg-background/50 border-white/20 dark:border-white/10">
               <SelectValue placeholder="All Tiers" />
             </SelectTrigger>
             <SelectContent>
@@ -166,7 +166,7 @@ export function FleetTenantsTable() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px] bg-background/50 border-white/20 dark:border-white/10">
+            <SelectTrigger aria-label="Filter by tenant status" className="w-[130px] bg-background/50 border-white/20 dark:border-white/10">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -338,7 +338,7 @@ export function FleetTenantsTable() {
                     <TableCell className="text-end">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for tenant ${tenant.name}`}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

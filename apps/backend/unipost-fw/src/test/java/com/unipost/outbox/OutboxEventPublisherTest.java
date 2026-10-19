@@ -68,4 +68,78 @@ class OutboxEventPublisherTest {
         assertEquals("PENDING", event.getStatus());
         verify(outboxEventRepository).save(any(OutboxEvent.class));
     }
+
+    @Test
+    void testPublishEvent_WithStringJsonPayload() {
+        String json = "{\"action\":\"export\",\"format\":\"csv\"}";
+        OutboxEvent event = publisher.publish("export", "exp-1", "EXPORT_REQUESTED", "tenant-test", json);
+
+        assertNotNull(event);
+        assertTrue(event.getPayload().contains("csv"));
+        assertEquals("tenant-test", event.getTenantId());
+    }
+
+    record SamplePojo(String name, int count) {}
+
+    @Test
+    void testPublishEvent_WithPojoPayload() {
+        SamplePojo pojo = new SamplePojo("Item", 42);
+        OutboxEvent event = publisher.publish("item", "item-1", "ITEM_CREATED", "tenant-test", pojo);
+
+        assertNotNull(event);
+        assertTrue(event.getPayload().contains("Item"));
+        assertTrue(event.getPayload().contains("42"));
+    }
+
+    @Test
+    void testPublishEvent_WithMdcTraceId() {
+        org.slf4j.MDC.put("trace_id", "4bf92f3577b34da6a3ce929d0e0e4736");
+        try {
+            OutboxEvent event = publisher.publish("order", "ord-1", "ORDER_PLACED", "tenant-test", Map.of("total", 100));
+            assertTrue(event.getPayload().contains("traceparent"));
+            assertTrue(event.getPayload().contains("4bf92f3577b34da6a3ce929d0e0e4736"));
+        } finally {
+            org.slf4j.MDC.clear();
+        }
+    }
+
+    @Test
+    void testPublishEvent_WithMdcTraceIdCamelCase() {
+        org.slf4j.MDC.put("traceId", "abcdef1234567890abcdef1234567890");
+        try {
+            OutboxEvent event = publisher.publish("order", "ord-2", "ORDER_PLACED", "tenant-test", Map.of("total", 200));
+            assertTrue(event.getPayload().contains("traceparent"));
+            assertTrue(event.getPayload().contains("abcdef1234567890abcdef1234567890"));
+        } finally {
+            org.slf4j.MDC.clear();
+        }
+    }
+
+    @Test
+    void testPublishEvent_WithExistingTraceparent_DoesNotOverwrite() {
+        org.slf4j.MDC.put("trace_id", "11111111111111111111111111111111");
+        try {
+            Map<String, Object> payload = Map.of("traceparent", "00-existing-traceparent-01");
+            OutboxEvent event = publisher.publish("order", "ord-3", "ORDER_PLACED", "tenant-test", payload);
+            assertTrue(event.getPayload().contains("00-existing-traceparent-01"));
+        } finally {
+            org.slf4j.MDC.clear();
+        }
+    }
+
+    @Test
+    void testPublishEvent_SerializationFailureFallback() {
+        // String that is not valid JSON
+        OutboxEvent event = publisher.publish("raw", "raw-1", "RAW_EVENT", "tenant-test", "not a json string");
+        assertNotNull(event);
+        assertEquals("not a json string", event.getPayload());
+
+        // Object that fails serialization fallback
+        Object nonSerializable = new Object() {
+            public Object getSelf() { throw new RuntimeException("fail"); }
+        };
+        OutboxEvent event2 = publisher.publish("raw", "raw-2", "RAW_EVENT", "tenant-test", nonSerializable);
+        assertNotNull(event2);
+        assertEquals("{}", event2.getPayload());
+    }
 }

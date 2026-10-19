@@ -14,6 +14,7 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder;
@@ -33,18 +34,18 @@ import org.springframework.transaction.PlatformTransactionManager;
 import com.unipost.presentation.context.UserAuditorAware;
 
 @Configuration
-@EnableJpaRepositories(basePackages = { "com.unipost" }, entityManagerFactoryRef="entityManagerFactory"
-                          ,transactionManagerRef="transactionManager")
-//@EntityScan("com.unipost.repository.domain")
+@EnableJpaRepositories(basePackages = {
+    "com.unipost" }, entityManagerFactoryRef = "entityManagerFactory", transactionManagerRef = "transactionManager")
+// @EntityScan("com.unipost.repository.domain")
 @MapperScan(basePackages = "com.unipost.*.repository.mybatis", nameGenerator = BeanNameGenerator.class)
-@EnableJpaAuditing(auditorAwareRef="auditorProvider")
+@EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 public class MasterDatabaseConfiguration {
 
   @Autowired
   private Environment env;
 
-  @Bean(name="masterDatabase")
-  @Primary
+  @Bean(name = "masterDatabase")
+  @ConditionalOnProperty(prefix = "application.sandbox", name = "enabled", havingValue = "false", matchIfMissing = true)
   @ConfigurationProperties(prefix = "spring.datasource")
   public DataSource dataSource() {
     return DataSourceBuilder.create()
@@ -53,19 +54,21 @@ public class MasterDatabaseConfiguration {
   }
 
   @Bean(name = "entityManagerFactory")
-  public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder, ConfigurableListableBeanFactory beanFactory) {
-    LocalContainerEntityManagerFactoryBean em = builder.dataSource(dataSource())
-                                                       .packages("com.unipost")
-                                                       .build();
+  public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder,
+      ConfigurableListableBeanFactory beanFactory, DataSource dataSource) {
+    LocalContainerEntityManagerFactoryBean em = builder.dataSource(dataSource)
+        .packages("com.unipost")
+        .build();
     HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
     em.setJpaVendorAdapter(vendorAdapter);
     em.setJpaPropertyMap(env.getProperty("spring.jpa.properties.hibernate", HashMap.class));
     em.getJpaPropertyMap().put(AvailableSettings.BEAN_CONTAINER, new SpringBeanContainer(beanFactory));
-   return em;
+    return em;
   }
 
   @Bean
-  public PlatformTransactionManager transactionManager(@Qualifier("entityManagerFactory") EntityManagerFactory entityManagerFactory) {
+  public PlatformTransactionManager transactionManager(
+      @Qualifier("entityManagerFactory") EntityManagerFactory entityManagerFactory) {
     return new JpaTransactionManager(entityManagerFactory);
   }
 
@@ -87,27 +90,28 @@ public class MasterDatabaseConfiguration {
     return dbIdProvider;
   }
 
-//  @Bean
-//  public SqlSessionFactory sqlSessionFactory(DataSource dataSource, ApplicationContext appContext,
-//                                             VendorDatabaseIdProvider vendorDatabaseIdProvider) throws Exception {
-//    SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
-//    bean.setDataSource(dataSource);
-//    bean.setDatabaseIdProvider(vendorDatabaseIdProvider);
-//    bean.setConfigLocation("classpath:/mybatis-config.xml");
-//    return bean.getObject();
-//  }
+  // @Bean
+  // public SqlSessionFactory sqlSessionFactory(DataSource dataSource,
+  // ApplicationContext appContext,
+  // VendorDatabaseIdProvider vendorDatabaseIdProvider) throws Exception {
+  // SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
+  // bean.setDataSource(dataSource);
+  // bean.setDatabaseIdProvider(vendorDatabaseIdProvider);
+  // bean.setConfigLocation("classpath:/mybatis-config.xml");
+  // return bean.getObject();
+  // }
 
-//  @Bean
-//  @Primary
-//  JdbcTemplate jdbcTemplate(DataSource dataSource, JdbcProperties properties) {
-//    JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-//    JdbcProperties.Template template = properties.getTemplate();
-//    jdbcTemplate.setFetchSize(template.getFetchSize());
-//    jdbcTemplate.setMaxRows(template.getMaxRows());
-//    if (template.getQueryTimeout() != null) {
-//      jdbcTemplate.setQueryTimeout((int)template.getQueryTimeout().getSeconds());
-//    }
-//
-//    return jdbcTemplate;
-//  }
+  // @Bean
+  // @Primary
+  // JdbcTemplate jdbcTemplate(DataSource dataSource, JdbcProperties properties) {
+  // JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+  // JdbcProperties.Template template = properties.getTemplate();
+  // jdbcTemplate.setFetchSize(template.getFetchSize());
+  // jdbcTemplate.setMaxRows(template.getMaxRows());
+  // if (template.getQueryTimeout() != null) {
+  // jdbcTemplate.setQueryTimeout((int)template.getQueryTimeout().getSeconds());
+  // }
+  //
+  // return jdbcTemplate;
+  // }
 }

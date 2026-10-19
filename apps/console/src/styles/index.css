@@ -46,11 +46,23 @@
       url('/images/liquid-glass-bg-light.jpg');
   }
 
+  .acrylic body::before,
+  :root.acrylic body::before,
+  html.acrylic body::before {
+    background-image:
+      radial-gradient(at 15% 15%, var(--accent-glow, rgba(147, 51, 234, 0.2)) 0px, transparent 45%),
+      radial-gradient(at 85% 10%, rgba(59, 130, 246, 0.22) 0px, transparent 40%),
+      radial-gradient(at 85% 85%, rgba(236, 72, 153, 0.18) 0px, transparent 45%),
+      radial-gradient(at 10% 85%, rgba(16, 185, 129, 0.15) 0px, transparent 40%),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(245, 247, 250, 0.45)),
+      url('/images/liquid-glass-bg-light.jpg');
+  }
+
   .dark body::before,
   :root[class~='dark'] body::before,
   html.dark body::before {
     background-image:
-      radial-gradient(at 25% 20%, rgba(168, 85, 247, 0.25) 0px, transparent 50%),
+      radial-gradient(at 25% 20%, var(--accent-glow, rgba(168, 85, 247, 0.25)) 0px, transparent 50%),
       radial-gradient(at 80% 15%, rgba(6, 182, 212, 0.28) 0px, transparent 45%),
       radial-gradient(at 75% 80%, rgba(244, 63, 94, 0.22) 0px, transparent 50%),
       radial-gradient(at 15% 85%, rgba(16, 185, 129, 0.2) 0px, transparent 45%),
@@ -58,27 +70,55 @@
       url('/images/liquid-glass-bg.jpg');
   }
 
+  .obsidian body::before,
+  :root.obsidian body::before,
+  html.obsidian body::before {
+    background-image:
+      radial-gradient(at 20% 15%, var(--accent-glow, rgba(147, 51, 234, 0.35)) 0px, transparent 50%),
+      radial-gradient(at 85% 15%, rgba(14, 165, 233, 0.25) 0px, transparent 45%),
+      radial-gradient(at 80% 85%, rgba(244, 63, 94, 0.25) 0px, transparent 50%),
+      radial-gradient(at 15% 85%, rgba(16, 185, 129, 0.22) 0px, transparent 45%),
+      linear-gradient(to bottom, rgba(5, 7, 12, 0.65), rgba(8, 10, 18, 0.85)),
+      url('/images/liquid-glass-bg.jpg');
+  }
+
   :root[data-wallpaper='mesh'] body::before,
   html[data-wallpaper='mesh'] body::before {
     background-image:
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.18) 0px, transparent 50%),
+      radial-gradient(at 0% 0%, var(--accent-glow, rgba(99, 102, 241, 0.22)) 0px, transparent 50%),
       radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.16) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.18) 0px, transparent 50%),
       radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.15) 0px, transparent 50%);
   }
 
   :root.dark[data-wallpaper='mesh'] body::before,
-  html.dark[data-wallpaper='mesh'] body::before {
+  html.dark[data-wallpaper='mesh'] body::before,
+  :root.obsidian[data-wallpaper='mesh'] body::before,
+  html.obsidian[data-wallpaper='mesh'] body::before {
     background-image:
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.3) 0px, transparent 55%),
+      radial-gradient(at 0% 0%, var(--accent-glow, rgba(99, 102, 241, 0.35)) 0px, transparent 55%),
       radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.25) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.28) 0px, transparent 50%),
       radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.25) 0px, transparent 55%);
   }
 
   :root[data-wallpaper='none'] body::before,
-  html[data-wallpaper='none'] body::before {
+  html[data-wallpaper='none'] body::before,
+  :root[data-glass-fallback='true'] body::before,
+  html[data-glass-fallback='true'] body::before {
     display: none;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    body::before {
+      display: none !important;
+    }
+    .liquid-glass,
+    .liquid-glass-card,
+    .liquid-glass-interactive {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
   }
 
   /* Override Radix scroll locking for sticky headers */

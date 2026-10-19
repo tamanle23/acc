@@ -22,6 +22,10 @@ export const CompositePreviewHub: React.FC<Props> = ({ spec }) => {
       rootAttributes[key] = `sample_${f.source_attribute}_val`;
     });
 
+    (spec.rollups || []).forEach((r) => {
+      rootAttributes[r.alias] = r.aggregate_function === 'COUNT' ? 8 : 1420.5;
+    });
+
     (spec.children || []).forEach((child) => {
       const childKey = child.alias || child.target_entity_system_name.toLowerCase();
       const childItem: Record<string, unknown> = {
@@ -82,6 +86,10 @@ export const CompositePreviewHub: React.FC<Props> = ({ spec }) => {
       lines.push(`    '${childAlias}', t_child_${i + 1}.aggregated_data,`);
     });
 
+    (spec.rollups || []).forEach((r) => {
+      lines.push(`    '${r.alias}', t_rollup_${r.alias}.${r.alias},`);
+    });
+
     // Remove trailing comma
     const lastItem = lines[lines.length - 1];
     if (lastItem.endsWith(',')) {
@@ -90,6 +98,17 @@ export const CompositePreviewHub: React.FC<Props> = ({ spec }) => {
 
     lines.push(`  ) AS composite_record`);
     lines.push(`FROM UNIPOST_ENTITIES t_root`);
+
+    (spec.rollups || []).forEach((r) => {
+      lines.push(`LEFT JOIN LATERAL (`);
+      const aggExpr = r.aggregate_function === 'COUNT'
+        ? 'COUNT(*)'
+        : `COALESCE(${r.aggregate_function}((c_agg.attributes->>'${r.target_field}')::numeric), 0)`;
+      lines.push(`  SELECT ${aggExpr} AS ${r.alias}`);
+      lines.push(`  FROM UNIPOST_ENTITIES c_agg`);
+      lines.push(`  WHERE c_agg.tenant_id = t_root.tenant_id`);
+      lines.push(`) t_rollup_${r.alias} ON TRUE`);
+    });
 
     (spec.children || []).forEach((child, i) => {
       const cTable = `t_child_${i + 1}`;

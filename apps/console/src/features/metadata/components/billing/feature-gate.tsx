@@ -64,7 +64,7 @@ export const FeatureGate: React.FC<Props> = ({
               <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary uppercase">
                 Yêu cầu gói {requiredTier}
               </Badge>
-              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px]">
+              <Badge className="bg-amber-500/20 text-amber-800 dark:text-amber-200 border-amber-600/40 font-semibold text-[10px]">
                 Tính năng Nâng cao
               </Badge>
             </div>

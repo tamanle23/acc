@@ -1,4 +1,4 @@
-import type { MetadataDataSource } from '../api/metadata-data-source';
+import type { MetadataDataSource, ChildPaginationRequestMap } from '../api/metadata-data-source';
 import type {
   AttributeDefinition,
   CompiledSchema,
@@ -23,6 +23,10 @@ import type {
   EntityFacetsResponse,
   FacetGroupDto,
   ValidationErrorDetail,
+  RecordAuditLog,
+  RestorePreviewResponse,
+  CompositeRecordResponse,
+  ChildPaginationMetadata,
 } from '../api/types';
 
 import {
@@ -30,6 +34,13 @@ import {
   additionalAttributes,
   generateAdditionalRecords,
 } from './mock-catalog-data';
+import {
+  cmsEntityTypes,
+  cmsAttributes,
+  cmsRelationshipTypes,
+  generateCmsRecordsAndRelationships,
+} from './mock-cms-data';
+import { sandboxResetRegistry } from '@unipost/sandbox';
 
 export const initialMockEntityTypes: EntityType[] = [
   {
@@ -150,7 +161,7 @@ export const initialMockEntityTypes: EntityType[] = [
     id: 'customer-360-composite',
     name: 'Customer 360 View',
     systemName: 'customer_360_composite',
-    description: 'Real-time synthesized 360-degree customer view joining accounts, cloud resources, and audit logs.',
+    description: 'Real-time synthesized 360-degree customer view joining accounts, cloud resources, and deployment policies.',
     schemaVersion: 1,
     version: 1,
     isComposite: true,
@@ -161,6 +172,7 @@ export const initialMockEntityTypes: EntityType[] = [
       fields: [
         { source_attribute: 'legal_name', alias: 'name', data_type: 'string', required: true },
         { source_attribute: 'contact_email', alias: 'email', data_type: 'string', required: true },
+        { source_attribute: 'subscription_tier', alias: 'tier', data_type: 'string', required: false },
       ],
       children: [
         {
@@ -173,7 +185,40 @@ export const initialMockEntityTypes: EntityType[] = [
           fields: [
             { source_attribute: 'resource_name', alias: 'name', data_type: 'string' },
             { source_attribute: 'region', alias: 'region', data_type: 'string' },
+            { source_attribute: 'vcpu_cores', alias: 'vcpu', data_type: 'number' },
+            { source_attribute: 'ram_gib', alias: 'ram', data_type: 'number' },
           ],
+        },
+        {
+          target_entity_type_id: '3',
+          target_entity_system_name: 'deployment_policy',
+          alias: 'policies',
+          join_pattern: 'PATTERN_C_ASSOCIATION',
+          relationship_type_id: 1,
+          cardinality: 'ONE_TO_MANY',
+          fields: [
+            { source_attribute: 'policy_id', alias: 'policy_id', data_type: 'string' },
+            { source_attribute: 'rollout_strategy', alias: 'strategy', data_type: 'string' },
+            { source_attribute: 'strict_zero_downtime', alias: 'zero_downtime', data_type: 'boolean' },
+          ],
+        },
+      ],
+      rollups: [
+        {
+          alias: 'total_vcpu',
+          target_node_alias: 'cloud_resources',
+          aggregate_function: 'SUM',
+          target_field: 'vcpu_cores',
+        },
+        {
+          alias: 'total_resources',
+          target_node_alias: 'cloud_resources',
+          aggregate_function: 'COUNT',
+        },
+        {
+          alias: 'total_policies',
+          target_node_alias: 'policies',
+          aggregate_function: 'COUNT',
         },
       ],
     },
@@ -181,10 +226,47 @@ export const initialMockEntityTypes: EntityType[] = [
     updatedDate: new Date('2026-03-25').toISOString(),
   },
   ...additionalEntityTypes,
+  ...cmsEntityTypes,
 ];
 
 export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
   ...additionalAttributes,
+  ...cmsAttributes,
+  'customer-360-composite': [
+    {
+      id: 'comp-101',
+      entityTypeId: 'customer-360-composite',
+      name: 'Account Name',
+      systemName: 'name',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: true,
+      displayOrder: 1,
+      version: 1,
+    },
+    {
+      id: 'comp-102',
+      entityTypeId: 'customer-360-composite',
+      name: 'Primary Contact Email',
+      systemName: 'email',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: true,
+      displayOrder: 2,
+      version: 1,
+    },
+    {
+      id: 'comp-103',
+      entityTypeId: 'customer-360-composite',
+      name: 'Subscription Tier',
+      systemName: 'tier',
+      dataType: 'STRING',
+      uiComponent: 'text',
+      isRequired: false,
+      displayOrder: 3,
+      version: 1,
+    },
+  ],
   '1': [
     {
       id: '101',
@@ -509,7 +591,10 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
       tenantId: regions[i % regions.length],
       version: 1,
       attributes: {
+        account_id: String(1000 + ((i % 50) + 1)),
+        resource_name: `${family.toUpperCase()} Node #${id}`,
         resource_code: code,
+        region: regions[i % regions.length],
         vcpu_cores: vcpu,
         ram_gib: ram,
         gpu_enabled: isGpu,
@@ -544,8 +629,9 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
     });
   }
 
-  return {
+    return {
     ...generateAdditionalRecords(),
+    ...generateCmsRecordsAndRelationships().records,
     '1': customerRecords,
     '2': resourceRecords,
     '3': policyRecords,
@@ -555,6 +641,7 @@ const generateInitialRecords = (): Record<string, EntityRecord[]> => {
 export const initialMockRecords: Record<string, EntityRecord[]> = generateInitialRecords();
 
 export const initialMockRelationshipTypes: RelationshipType[] = [
+  ...cmsRelationshipTypes,
   {
     id: '1',
     name: 'Customer Deployment Policy',
@@ -579,24 +666,31 @@ export const initialMockRelationshipTypes: RelationshipType[] = [
   },
 ];
 
-export const initialMockEntityRelationships: EntityRelationship[] = [
-  {
-    id: '1',
-    relationshipTypeId: '1',
-    sourceRecordId: '1001',
-    targetRecordId: '3001',
-    version: 1,
-    createdDate: new Date('2026-02-06').toISOString(),
-  },
-  {
-    id: '2',
-    relationshipTypeId: '2',
-    sourceRecordId: '1001',
-    targetRecordId: '2001',
-    version: 1,
-    createdDate: new Date('2026-02-08').toISOString(),
-  },
-];
+export const initialMockEntityRelationships: EntityRelationship[] = (() => {
+  const rels: EntityRelationship[] = [...generateCmsRecordsAndRelationships().relationships];
+  for (let i = 1; i <= 50; i++) {
+    const custId = String(1000 + i);
+    const policyId = String(3000 + i);
+    const computeId = String(2000 + i);
+    rels.push({
+      id: String(rels.length + 1),
+      relationshipTypeId: '1',
+      sourceRecordId: custId,
+      targetRecordId: policyId,
+      version: 1,
+      createdDate: new Date('2026-02-06').toISOString(),
+    });
+    rels.push({
+      id: String(rels.length + 1),
+      relationshipTypeId: '2',
+      sourceRecordId: custId,
+      targetRecordId: computeId,
+      version: 1,
+      createdDate: new Date('2026-02-08').toISOString(),
+    });
+  }
+  return rels;
+})();
 
 export class MockMetadataService implements MetadataDataSource {
   private entityTypes: EntityType[] = [...initialMockEntityTypes];
@@ -608,6 +702,7 @@ export class MockMetadataService implements MetadataDataSource {
   );
   private relationshipTypes: RelationshipType[] = [...initialMockRelationshipTypes];
   private relationships: EntityRelationship[] = [...initialMockEntityRelationships];
+  private auditLogs: RecordAuditLog[] = [];
 
   // Two-Tier Simulated Cache Hierarchy (L1 In-Memory + L2 Hazelcast simulation)
   private l1SchemaCache: Map<string, CompiledSchema> = new Map();
@@ -619,6 +714,7 @@ export class MockMetadataService implements MetadataDataSource {
     this.records = JSON.parse(JSON.stringify(initialMockRecords));
     this.relationshipTypes = JSON.parse(JSON.stringify(initialMockRelationshipTypes));
     this.relationships = JSON.parse(JSON.stringify(initialMockEntityRelationships));
+    this.auditLogs = [];
     this.l1SchemaCache.clear();
     this.l2DistributedCache.clear();
   }
@@ -644,6 +740,11 @@ export class MockMetadataService implements MetadataDataSource {
           et.systemName.toLowerCase().includes(search) ||
           (et.description && et.description.toLowerCase().includes(search))
       );
+    }
+
+    if ((params as any)?.isComposite !== undefined) {
+      const isCompVal = String((params as any).isComposite) === 'true';
+      list = list.filter((et) => Boolean(et.isComposite) === isCompVal);
     }
 
     const totalElements = list.length;
@@ -881,6 +982,23 @@ export class MockMetadataService implements MetadataDataSource {
     const strId = String(entityTypeId);
     let attrs = [...(this.attributes[strId] || [])];
 
+    if (attrs.length === 0) {
+      const et = this.entityTypes.find((e) => String(e.id) === strId);
+      if (et?.isComposite && et.compositeSpec?.fields) {
+        attrs = et.compositeSpec.fields.map((f, idx) => ({
+          id: `comp-attr-${strId}-${idx + 1}`,
+          entityTypeId: strId,
+          name: f.alias ? f.alias.charAt(0).toUpperCase() + f.alias.slice(1) : f.source_attribute,
+          systemName: f.alias || f.source_attribute,
+          dataType: (f.data_type?.toUpperCase() as any) || 'STRING',
+          uiComponent: 'text',
+          isRequired: Boolean(f.required),
+          displayOrder: idx + 1,
+          version: 1,
+        }));
+      }
+    }
+
     // Sort by displayOrder ascending
     attrs.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
@@ -904,7 +1022,11 @@ export class MockMetadataService implements MetadataDataSource {
     attrId: string | number
   ): Promise<AttributeDefinition | null> {
     const strId = String(entityTypeId);
-    const attrs = this.attributes[strId] || [];
+    let attrs = this.attributes[strId] || [];
+    if (attrs.length === 0) {
+      const res = await this.getAttributeDefinitions(entityTypeId);
+      attrs = res.content;
+    }
     const found = attrs.find((a) => String(a.id) === String(attrId));
     return found || null;
   }
@@ -1474,6 +1596,141 @@ export class MockMetadataService implements MetadataDataSource {
     return updatedRecord;
   }
 
+  async getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]> {
+    const strTypeId = String(entityTypeId);
+    const strRecId = String(recordId);
+
+    const matches = this.auditLogs.filter(
+      (l) => String(l.entityTypeId) === strTypeId && String(l.recordId) === strRecId
+    );
+
+    if (matches.length > 0) {
+      return [...matches].sort((a, b) => Number(b.version) - Number(a.version));
+    }
+
+    // Fabricate initial baseline history for this record so UI displays realistically in dev/offline
+    const record = await this.getEntityRecord(entityTypeId, recordId);
+    if (!record) return [];
+
+    const initialLog: RecordAuditLog = {
+      id: 1001,
+      tenantId: record.tenantId || 'tenant-acme',
+      entityTypeId: Number(entityTypeId) || 1,
+      recordId: Number(recordId) || 1,
+      version: record.version || 1,
+      operation: 'CREATE',
+      oldAttributes: null,
+      newAttributes: record.attributes || {},
+      delta: null,
+      changedBy: 'admin@unipost.io',
+      createdAt: record.createdDate || new Date().toISOString(),
+    };
+    this.auditLogs.push(initialLog);
+    return [initialLog];
+  }
+
+  async previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse> {
+    const logs = await this.getRecordAuditLogs(entityTypeId, recordId);
+    const targetLog = logs.find((l) => String(l.id) === String(auditLogId));
+    if (!targetLog) {
+      throw new Error(`Audit log entry #${auditLogId} not found for record #${recordId}`);
+    }
+
+    const currentRecord = await this.getEntityRecord(entityTypeId, recordId);
+    if (!currentRecord) {
+      throw new Error(`Entity record #${recordId} not found`);
+    }
+
+    const currentAttrs = currentRecord.attributes || {};
+    const restoredAttrs = targetLog.newAttributes || targetLog.oldAttributes || {};
+
+    const allKeys = new Set([...Object.keys(currentAttrs), ...Object.keys(restoredAttrs)]);
+    const delta: Record<string, { old: unknown; new: unknown }> = {};
+
+    allKeys.forEach((key) => {
+      const oldVal = currentAttrs[key];
+      const newVal = restoredAttrs[key];
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        delta[key] = { old: oldVal, new: newVal };
+      }
+    });
+
+    const currentVersion = Number(currentRecord.version || 1);
+    return {
+      recordId: Number(recordId),
+      entityTypeId: Number(entityTypeId),
+      targetAuditLogId: Number(auditLogId),
+      targetVersion: Number(targetLog.version),
+      currentVersion,
+      nextVersion: currentVersion + 1,
+      currentAttributes: currentAttrs,
+      restoredAttributes: restoredAttrs,
+      delta,
+    };
+  }
+
+  async restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<EntityRecord> {
+    const { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } = await import('../../../core/sandbox/store/sandbox-store');
+    const { activePersonaId } = useSandboxStore.getState();
+    const currentPersona = DEFAULT_SANDBOX_PERSONAS[activePersonaId];
+    const roles = currentPersona?.roles || [];
+    const isSovereign = roles.includes('ROLE_SYSTEM_CUSTODIAN') || roles.includes('ROLE_SOVEREIGN_ADMIN');
+
+    if (!isSovereign) {
+      const err = new Error('Access Denied: Sovereign Root Custodian authority required to restore entity record versions');
+      (err as any).status = 403;
+      throw err;
+    }
+
+    const preview = await this.previewRestoreRecord(entityTypeId, recordId, auditLogId);
+    const currentRecord = await this.getEntityRecord(entityTypeId, recordId);
+    if (!currentRecord) {
+      throw new Error(`Record #${recordId} not found`);
+    }
+
+    const strId = String(entityTypeId);
+    const list = this.records[strId] || [];
+    const index = list.findIndex((r) => String(r.id) === String(recordId));
+
+    const newVersion = (currentRecord.version || 1) + 1;
+    const restoredRecord: EntityRecord = {
+      ...currentRecord,
+      attributes: { ...preview.restoredAttributes },
+      version: newVersion,
+      updatedDate: new Date().toISOString(),
+    };
+
+    list[index] = restoredRecord;
+
+    const restoreAuditLog: RecordAuditLog = {
+      id: Date.now(),
+      tenantId: currentRecord.tenantId || 'tenant-acme',
+      entityTypeId: Number(entityTypeId),
+      recordId: Number(recordId),
+      version: newVersion,
+      operation: 'RESTORE',
+      oldAttributes: currentRecord.attributes,
+      newAttributes: preview.restoredAttributes,
+      delta: preview.delta,
+      changedBy: currentPersona?.name || 'Sovereign Root Custodian',
+      createdAt: new Date().toISOString(),
+    };
+    this.auditLogs.unshift(restoreAuditLog);
+
+    return restoredRecord;
+  }
+
   // ==========================================
   // 4. Relationship Types
   // ==========================================
@@ -1610,6 +1867,251 @@ export class MockMetadataService implements MetadataDataSource {
     return this.relationships.length < beforeCount;
   }
 
+  // ==========================================
+  // 6. Composite Records
+  // ==========================================
+  private resolveCompositeRecord(
+    spec: NonNullable<EntityType['compositeSpec']>,
+    rootRecord: EntityRecord,
+    childParams?: ChildPaginationRequestMap
+  ): CompositeRecordResponse {
+    const compositeDoc: Record<string, unknown> = {
+      id: rootRecord.id,
+      ...(rootRecord.attributes || {}),
+    };
+
+    if (spec.fields && spec.fields.length > 0) {
+      for (const field of spec.fields) {
+        const val = rootRecord.attributes?.[field.source_attribute];
+        compositeDoc[field.alias || field.source_attribute] =
+          val !== undefined ? val : (field.default_value ?? null);
+      }
+    }
+
+    const childPagination: Record<string, ChildPaginationMetadata> = {};
+
+    if (spec.children && spec.children.length > 0) {
+      for (const child of spec.children) {
+        const targetTypeId = String(child.target_entity_type_id);
+        const allTargetRecords = this.records[targetTypeId] || [];
+        let matchingChildRecords: EntityRecord[] = [];
+
+        if (child.join_pattern === 'PATTERN_B_FOREIGN_KEY' && child.foreign_key_attribute) {
+          matchingChildRecords = allTargetRecords.filter((tr) => {
+            const fkVal = tr.attributes?.[child.foreign_key_attribute!];
+            return String(fkVal) === String(rootRecord.id);
+          });
+        } else if (child.join_pattern === 'PATTERN_C_ASSOCIATION') {
+          const matchingRelTargetIds = this.relationships
+            .filter((rel) => {
+              const relMatch = child.relationship_type_id
+                ? String(rel.relationshipTypeId) === String(child.relationship_type_id)
+                : true;
+              return relMatch && String(rel.sourceRecordId) === String(rootRecord.id);
+            })
+            .map((rel) => String(rel.targetRecordId));
+          matchingChildRecords = allTargetRecords.filter((tr) =>
+            matchingRelTargetIds.includes(String(tr.id))
+          );
+        }
+
+        const aliasKey = child.alias || child.target_entity_system_name || 'child';
+        const param: any = childParams?.[aliasKey] || {};
+
+        // 1. Dynamic child filtering
+        if (param.filters) {
+          matchingChildRecords = matchingChildRecords.filter((rec: any) => {
+            for (const [fKey, fVal] of Object.entries(param.filters)) {
+              const recVal = rec.attributes?.[fKey];
+              if (typeof fVal === 'object' && fVal !== null && 'op' in (fVal as any)) {
+                const { op, value } = fVal as { op: string; value: any };
+                if (op === 'like' || op === 'contains') {
+                  if (!String(recVal ?? '').toLowerCase().includes(String(value ?? '').toLowerCase())) return false;
+                } else if (op === 'gte') {
+                  if (Number(recVal ?? 0) < Number(value ?? 0)) return false;
+                } else if (op === 'lte') {
+                  if (Number(recVal ?? 0) > Number(value ?? 0)) return false;
+                } else if (op === 'in') {
+                  const arr = Array.isArray(value) ? value : String(value).split(',');
+                  if (!arr.map(String).includes(String(recVal))) return false;
+                } else {
+                  if (String(recVal) !== String(value)) return false;
+                }
+              } else {
+                if (String(recVal) !== String(fVal)) return false;
+              }
+            }
+            return true;
+          });
+        }
+
+        // 2. Dynamic child sorting
+        if (param.sort) {
+          const [sortCol, dir] = String(param.sort).split(':');
+          const isDesc = dir?.toLowerCase() === 'desc';
+          matchingChildRecords = [...matchingChildRecords].sort((a: any, b: any) => {
+            const aVal = a.attributes?.[sortCol] ?? a.id;
+            const bVal = b.attributes?.[sortCol] ?? b.id;
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+              return isDesc ? bVal - aVal : aVal - bVal;
+            }
+            return isDesc
+              ? String(bVal).localeCompare(String(aVal))
+              : String(aVal).localeCompare(String(bVal));
+          });
+        }
+
+        const limit =
+          param.limit !== undefined && param.limit > 0 ? Math.min(param.limit, 100) : 50;
+        const offset = param.offset !== undefined && param.offset >= 0 ? param.offset : 0;
+        const totalElements = matchingChildRecords.length;
+        const hasMore = offset + limit < totalElements;
+
+        const sliced = matchingChildRecords.slice(offset, offset + limit).map((tr) => {
+          if (child.fields && child.fields.length > 0) {
+            const projected: Record<string, unknown> = { id: tr.id };
+            for (const f of child.fields) {
+              const val = tr.attributes?.[f.source_attribute];
+              projected[f.alias || f.source_attribute] =
+                val !== undefined ? val : (f.default_value ?? null);
+            }
+            return projected;
+          }
+          return { id: tr.id, ...(tr.attributes || {}) };
+        });
+
+        childPagination[aliasKey] = {
+          totalElements,
+          limit,
+          offset,
+          hasMore,
+        };
+
+        if (child.cardinality === 'ONE_TO_ONE') {
+          compositeDoc[aliasKey] = sliced.length > 0 ? sliced[0] : null;
+        } else {
+          compositeDoc[aliasKey] = sliced;
+        }
+      }
+    }
+
+    // 3. Computed Aggregate Rollups
+    if (spec.rollups && spec.rollups.length > 0) {
+      for (const r of spec.rollups) {
+        const childNode = (spec.children || []).find(
+          (c) => (c.alias || c.target_entity_system_name) === r.target_node_alias
+        );
+        let targetRecords: EntityRecord[] = [];
+        if (childNode) {
+          const targetTypeId = String(childNode.target_entity_type_id);
+          const allTarget = this.records[targetTypeId] || [];
+          if (childNode.join_pattern === 'PATTERN_B_FOREIGN_KEY' && childNode.foreign_key_attribute) {
+            targetRecords = allTarget.filter(
+              (tr) => String(tr.attributes?.[childNode.foreign_key_attribute!]) === String(rootRecord.id)
+            );
+          } else {
+            const relIds = this.relationships
+              .filter((rel) => String(rel.sourceRecordId) === String(rootRecord.id))
+              .map((rel) => String(rel.targetRecordId));
+            targetRecords = allTarget.filter((tr) => relIds.includes(String(tr.id)));
+          }
+        }
+
+        const fn = r.aggregate_function;
+        if (fn === 'COUNT') {
+          compositeDoc[r.alias] = targetRecords.length;
+        } else if (fn === 'SUM') {
+          compositeDoc[r.alias] = targetRecords.reduce(
+            (acc, tr) => acc + (Number(tr.attributes?.[r.target_field || '']) || 0),
+            0
+          );
+        } else if (fn === 'AVG') {
+          const sum = targetRecords.reduce(
+            (acc, tr) => acc + (Number(tr.attributes?.[r.target_field || '']) || 0),
+            0
+          );
+          compositeDoc[r.alias] =
+            targetRecords.length > 0 ? Math.round((sum / targetRecords.length) * 100) / 100 : 0;
+        } else if (fn === 'MIN') {
+          const vals = targetRecords.map((tr) => Number(tr.attributes?.[r.target_field || '']) || 0);
+          compositeDoc[r.alias] = vals.length > 0 ? Math.min(...vals) : 0;
+        } else if (fn === 'MAX') {
+          const vals = targetRecords.map((tr) => Number(tr.attributes?.[r.target_field || '']) || 0);
+          compositeDoc[r.alias] = vals.length > 0 ? Math.max(...vals) : 0;
+        }
+      }
+    }
+
+    return {
+      id: rootRecord.id,
+      tenantId: rootRecord.tenantId,
+      entityTypeId: spec.root_entity_type_id,
+      isComposite: true,
+      schemaVersion: rootRecord.schemaVersion || 1,
+      attributes: compositeDoc,
+      childPagination,
+      engineUsed: 'dynamic-sql-pushdown',
+      createdDate: rootRecord.createdDate,
+      updatedDate: rootRecord.updatedDate,
+    };
+  }
+
+  async getCompositeRecords(
+    entityTypeId: string | number,
+    params?: PageRequestParams,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<PageResponse<CompositeRecordResponse>> {
+    const et = this.entityTypes.find((e) => String(e.id) === String(entityTypeId));
+    if (!et || !et.isComposite || !et.compositeSpec) {
+      throw new Error(`Entity type ${entityTypeId} is not a valid composite entity type.`);
+    }
+
+    const rootTypeId = String(et.compositeSpec.root_entity_type_id);
+    let rootRecords = [...(this.records[rootTypeId] || [])];
+
+    if (params?.tenantId) {
+      rootRecords = rootRecords.filter((r) => r.tenantId === params.tenantId);
+    }
+
+    const page = params?.number && params.number > 0 ? params.number : 1;
+    const size = params?.size && params.size > 0 ? params.size : 10;
+    const start = (page - 1) * size;
+    const end = start + size;
+    const pagedRoots = rootRecords.slice(start, end);
+
+    const content = pagedRoots.map((root) =>
+      this.resolveCompositeRecord(et.compositeSpec!, root, childParams)
+    );
+
+    return {
+      content,
+      totalElements: rootRecords.length,
+      totalPages: Math.ceil(rootRecords.length / size) || 1,
+      number: page,
+      size,
+    };
+  }
+
+  async getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<CompositeRecordResponse | null> {
+    const et = this.entityTypes.find((e) => String(e.id) === String(entityTypeId));
+    if (!et || !et.isComposite || !et.compositeSpec) {
+      return null;
+    }
+
+    const rootTypeId = String(et.compositeSpec.root_entity_type_id);
+    const rootRecords = this.records[rootTypeId] || [];
+    const root = rootRecords.find((r) => String(r.id) === String(recordId));
+    if (!root) {
+      return null;
+    }
+
+    return this.resolveCompositeRecord(et.compositeSpec, root, childParams);
+  }
+
   private bumpEntityTypeSchemaVersion(entityTypeId: string) {
     const entityType = this.entityTypes.find((e) => String(e.id) === String(entityTypeId));
     if (entityType) {
@@ -1629,3 +2131,8 @@ export class MockMetadataService implements MetadataDataSource {
 }
 
 export const mockMetadataStore = new MockMetadataService();
+
+// Register with Unified Sandbox Reset Registry
+sandboxResetRegistry.register(() => {
+  mockMetadataStore.resetToInitialState();
+});

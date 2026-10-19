@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 public class AuthenticationRequestBody {
 
+  @com.fasterxml.jackson.annotation.JsonAlias({"username", "user_name"})
   String userName;
   String password;
   ClientType clientType;

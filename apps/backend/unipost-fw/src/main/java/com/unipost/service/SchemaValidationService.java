@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SchemaValidationService {
 
     private final HazelcastInstance hazelcastInstance;
@@ -42,6 +41,23 @@ public class SchemaValidationService {
     private final SchemaCompiler schemaCompiler;
     private final CompositeSpecCompiler compositeSpecCompiler;
     private final JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public SchemaValidationService(
+            HazelcastInstance hazelcastInstance,
+            ObjectMapper objectMapper,
+            AttributeDefinitionRepository attributeDefinitionRepository,
+            EntityTypeRepository entityTypeRepository,
+            SchemaCompiler schemaCompiler,
+            CompositeSpecCompiler compositeSpecCompiler
+    ) {
+        this.hazelcastInstance = hazelcastInstance;
+        this.objectMapper = objectMapper;
+        this.attributeDefinitionRepository = attributeDefinitionRepository;
+        this.entityTypeRepository = entityTypeRepository;
+        this.schemaCompiler = schemaCompiler;
+        this.compositeSpecCompiler = compositeSpecCompiler != null ? compositeSpecCompiler : new CompositeSpecCompiler(objectMapper);
+    }
 
     public SchemaValidationService(
             HazelcastInstance hazelcastInstance,
@@ -152,11 +168,15 @@ public class SchemaValidationService {
     }
 
     public List<Error> validatePayloadDryRun(Long entityTypeId, Map<String, Object> payload) {
+        return validatePayloadDryRun(TenantContextHolder.getTenantId(), entityTypeId, payload);
+    }
+
+    public List<Error> validatePayloadDryRun(String tenantId, Long entityTypeId, Map<String, Object> payload) {
         EntityType entityType = entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)
                 .orElse(null);
         Long schemaVersion = entityType != null ? entityType.getSchemaVersion() : 1L;
 
-        JsonSchema schema = getOrCompileJsonSchema(entityTypeId, schemaVersion);
+        JsonSchema schema = getOrCompileJsonSchema(tenantId, entityTypeId, schemaVersion);
 
         try {
             JsonNode payloadNode = objectMapper.valueToTree(payload != null ? payload : Map.of());
@@ -202,7 +222,11 @@ public class SchemaValidationService {
     }
 
     public void validatePayload(Long entityTypeId, Map<String, Object> payload) {
-        List<Error> errorList = validatePayloadDryRun(entityTypeId, payload);
+        validatePayload(TenantContextHolder.getTenantId(), entityTypeId, payload);
+    }
+
+    public void validatePayload(String tenantId, Long entityTypeId, Map<String, Object> payload) {
+        List<Error> errorList = validatePayloadDryRun(tenantId, entityTypeId, payload);
         if (!errorList.isEmpty()) {
             throw new SchemaValidationException(errorList);
         }

@@ -155,7 +155,7 @@ export const WorkerFleetFeature: React.FC = () => {
             <Badge className="bg-primary/20 text-primary border-primary/30 font-mono text-[10px]">
               SOVEREIGN CUSTODY
             </Badge>
-            <Badge variant="outline" className="text-[10px] font-mono border-amber-500/30 text-amber-600 bg-amber-500/10">
+            <Badge variant="outline" className="text-[10px] font-mono border-amber-600/40 text-amber-900 dark:text-amber-200 bg-amber-500/10">
               ROOT
             </Badge>
           </div>
@@ -173,7 +173,7 @@ export const WorkerFleetFeature: React.FC = () => {
             onClick={() => setRefreshInterval(refreshInterval > 0 ? 0 : 3000)}
           >
             {refreshInterval > 0 ? (
-              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+              <span className="flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Live 3s
               </span>

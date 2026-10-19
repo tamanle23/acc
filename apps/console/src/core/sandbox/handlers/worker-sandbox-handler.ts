@@ -148,25 +148,26 @@ export const workerFleetMockStore = new WorkerFleetMockStore();
 export const workerSandboxHandler: SandboxRouteHandler = {
   id: 'worker-fleet-sandbox',
   name: 'Worker Fleet Telemetry & Management Sandbox',
-  priority: 15,
-  matcher: (req: SandboxRequest) => {
-    return req.url.startsWith('/api/v1/workflow/workers');
+  priority: 100,
+  matcher: (context: any) => {
+    const url = context.url || context.pathname || '';
+    return url.includes('/workflow/workers');
   },
   handler: async (req: SandboxRequest, _context?: any) => {
     const url = new URL(req.url, 'http://localhost');
-    const path = url.pathname;
+    const path = url.pathname.replace(/^\/api/, '');
     const method = req.method.toUpperCase();
 
-    // 1. GET /api/v1/workflow/workers
-    if (method === 'GET' && path === '/api/v1/workflow/workers') {
+    // 1. GET /v1/workflow/workers
+    if (method === 'GET' && path === '/v1/workflow/workers') {
       return {
         status: 200,
         data: workerFleetMockStore.getFleet(),
       };
     }
 
-    // 2. POST /api/v1/workflow/workers/heartbeat
-    if (method === 'POST' && path === '/api/v1/workflow/workers/heartbeat') {
+    // 2. POST /v1/workflow/workers/heartbeat
+    if (method === 'POST' && path === '/v1/workflow/workers/heartbeat') {
       const body = req.data || {};
       const updated = workerFleetMockStore.registerHeartbeat(body);
       return {
@@ -175,8 +176,8 @@ export const workerSandboxHandler: SandboxRouteHandler = {
       };
     }
 
-    // 3. POST /api/v1/workflow/workers/:workerId/drain
-    const drainMatch = path.match(/^\/api\/v1\/workflow\/workers\/([^/]+)\/drain$/);
+    // 3. POST /v1/workflow/workers/:workerId/drain
+    const drainMatch = path.match(/^\/v1\/workflow\/workers\/([^/]+)\/drain$/);
     if (method === 'POST' && drainMatch) {
       const workerId = decodeURIComponent(drainMatch[1]);
       const ok = workerFleetMockStore.drain(workerId);

@@ -37,6 +37,45 @@
   --glass-border: rgba(255, 255, 255, calc(0.15 + var(--glass-intensity, 0.2) * 0.45));
   --glass-specular: rgba(255, 255, 255, var(--glass-specular-alpha, 0.85));
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+
+  /* Ambient Accent Tokens (Default: Violet Aurora) */
+  --accent-glow: rgba(147, 51, 234, 0.2);
+  --glass-accent-border: rgba(168, 85, 247, 0.35);
+}
+
+.acrylic {
+  --background: oklch(0.975 0.012 260);
+  --foreground: oklch(0.11 0.04 265);
+  --card: oklch(1 0 0 / 58%);
+  --card-foreground: oklch(0.11 0.04 265);
+  --popover: oklch(1 0 0 / 85%);
+  --popover-foreground: oklch(0.11 0.04 265);
+  --primary: oklch(0.2 0.045 265);
+  --primary-foreground: oklch(0.99 0.002 247);
+  --secondary: oklch(0.95 0.01 250 / 80%);
+  --secondary-foreground: oklch(0.18 0.04 265);
+  --muted: oklch(0.95 0.01 250 / 65%);
+  --muted-foreground: oklch(0.38 0.045 257);
+  --accent: oklch(0.95 0.01 250 / 70%);
+  --accent-foreground: oklch(0.18 0.04 265);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.85 0.02 255 / 75%);
+  --input: oklch(0.85 0.02 255 / 75%);
+  --ring: oklch(0.68 0.05 260);
+
+  --sidebar: oklch(1 0 0 / calc(0.4 + var(--glass-intensity, 0.2) * 0.45));
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: oklch(0.9 0.015 255 / 55%);
+  --sidebar-ring: var(--ring);
+
+  --glass-bg: oklch(1 0 0 / calc(0.22 + var(--glass-intensity, 0.2) * 0.48));
+  --glass-border: rgba(255, 255, 255, calc(0.25 + var(--glass-intensity, 0.2) * 0.45));
+  --glass-specular: rgba(255, 255, 255, var(--glass-specular-alpha, 0.95));
+  --glass-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.07);
 }
 
 .dark {
@@ -77,6 +116,104 @@
   --glass-border: rgba(255, 255, 255, calc(0.06 + var(--glass-intensity, 0.2) * 0.2));
   --glass-specular: rgba(255, 255, 255, calc(var(--glass-specular-alpha, 0.2) * 0.65));
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Ambient Accent Tokens */
+  --accent-glow: rgba(168, 85, 247, 0.3);
+  --glass-accent-border: rgba(192, 132, 252, 0.3);
+}
+
+.obsidian {
+  --background: oklch(0.08 0.025 265);
+  --foreground: oklch(0.99 0.002 247);
+  --card: oklch(0.12 0.03 260 / 60%);
+  --card-foreground: oklch(0.99 0.002 247);
+  --popover: oklch(0.13 0.03 260 / 88%);
+  --popover-foreground: oklch(0.99 0.002 247);
+  --primary: oklch(0.95 0.01 255);
+  --primary-foreground: oklch(0.12 0.03 265);
+  --secondary: oklch(0.20 0.03 260 / 65%);
+  --secondary-foreground: oklch(0.99 0.002 247);
+  --muted: oklch(0.20 0.03 260 / 55%);
+  --muted-foreground: oklch(0.78 0.03 256);
+  --accent: oklch(0.20 0.03 260 / 60%);
+  --accent-foreground: oklch(0.99 0.002 247);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 18%);
+  --input: oklch(1 0 0 / 22%);
+  --ring: oklch(0.65 0.04 260);
+
+  --sidebar: oklch(0.10 0.025 264 / calc(0.4 + var(--glass-intensity, 0.2) * 0.45));
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: var(--ring);
+
+  --glass-bg: oklch(0.10 0.025 264 / calc(0.25 + var(--glass-intensity, 0.2) * 0.5));
+  --glass-border: rgba(255, 255, 255, calc(0.08 + var(--glass-intensity, 0.2) * 0.22));
+  --glass-specular: rgba(255, 255, 255, var(--glass-specular-alpha, 0.85));
+  --glass-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.55);
+
+  --accent-glow: rgba(147, 51, 234, 0.35);
+  --glass-accent-border: rgba(192, 132, 252, 0.35);
+}
+
+/* 5 Selectable Ambient Accent Variants */
+:root[data-accent='azure'],
+html[data-accent='azure'] {
+  --ring: oklch(0.62 0.18 245);
+  --accent-glow: rgba(14, 165, 233, 0.3);
+  --glass-accent-border: rgba(56, 189, 248, 0.45);
+}
+
+:root[data-accent='emerald'],
+html[data-accent='emerald'] {
+  --ring: oklch(0.65 0.18 155);
+  --accent-glow: rgba(16, 185, 129, 0.3);
+  --glass-accent-border: rgba(52, 211, 153, 0.45);
+}
+
+:root[data-accent='rose'],
+html[data-accent='rose'] {
+  --ring: oklch(0.65 0.22 355);
+  --accent-glow: rgba(244, 63, 94, 0.3);
+  --glass-accent-border: rgba(251, 113, 133, 0.45);
+}
+
+:root[data-accent='amber'],
+html[data-accent='amber'] {
+  --ring: oklch(0.72 0.17 75);
+  --accent-glow: rgba(245, 158, 11, 0.3);
+  --glass-accent-border: rgba(251, 191, 36, 0.45);
+}
+
+/* Accessibility High-Contrast Solid Fallback Engine */
+:root[data-glass-fallback='true'],
+html[data-glass-fallback='true'] {
+  --card: oklch(1 0 0);
+  --popover: oklch(1 0 0);
+  --sidebar: oklch(0.985 0.005 250);
+  --glass-bg: oklch(1 0 0);
+  --glass-border: oklch(0.78 0.02 255);
+  --glass-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.12);
+  --glass-specular: transparent;
+  --border: oklch(0.75 0.02 255);
+}
+
+:root.dark[data-glass-fallback='true'],
+html.dark[data-glass-fallback='true'],
+:root.obsidian[data-glass-fallback='true'],
+html.obsidian[data-glass-fallback='true'] {
+  --card: oklch(0.16 0.035 259);
+  --popover: oklch(0.18 0.038 265);
+  --sidebar: oklch(0.13 0.03 264);
+  --glass-bg: oklch(0.16 0.035 259);
+  --glass-border: oklch(0.35 0.03 260);
+  --glass-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.6);
+  --glass-specular: transparent;
+  --border: oklch(0.35 0.03 260);
 }
 
 @theme inline {

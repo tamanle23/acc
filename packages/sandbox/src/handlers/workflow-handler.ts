@@ -510,6 +510,8 @@ export class WorkflowSandboxRepository {
 }
 
 export const workflowSandboxRepo = new WorkflowSandboxRepository();
+// Backward compatibility alias for tasks
+export const tasksSandboxRepo = workflowExecutionsSandboxRepo;
 
 export const workflowSandboxHandler: SandboxRouteHandler = {
   id: 'workflow-sandbox-handler',
@@ -720,6 +722,8 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   },
 };
 
+
+export const tasksSandboxHandler = workflowSandboxHandler;
 
 export function resetWorkflowSandbox(): void {
   workflowSandboxRepo.reset();

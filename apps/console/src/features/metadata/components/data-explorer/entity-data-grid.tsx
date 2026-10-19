@@ -7,6 +7,7 @@ import {
   useExecuteSchemaBackfill,
   useEntityFacets,
   useTransitionEntityRecord,
+  useCompositeRecords,
 } from '../../api/metadata-api';
 import { useMetadataUiStore, type AttributeFilterClause } from '../../store/use-metadata-ui-store';
 import type { AttributeDefinition, EntityRecord } from '../../api/types';
@@ -16,6 +17,8 @@ import { RawJsonDialog } from './raw-json-dialog';
 import { AdvancedFilterPopover } from './advanced-filter-popover';
 import { FacetedSearchSidebar } from './faceted-search-sidebar';
 import { SchemaBackfillDialog } from './schema-backfill-dialog';
+import { RecordAuditHistoryDrawer } from '../records/record-audit-history-drawer';
+import { CompositeMasterDetailRow } from './composite-master-detail-row';
 import {
   createColumnHelper,
   flexRender,
@@ -55,8 +58,10 @@ import {
   Edit2,
   Trash2,
   Code,
+  History,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Database,
@@ -205,6 +210,20 @@ export const EntityDataGrid: React.FC<Props> = ({
   const [localSearchInput, setLocalSearchInput] = useState(searchFilter);
   const [debouncedSearch, setDebouncedSearch] = useState(searchFilter);
   const [inspectingRecord, setInspectingRecord] = useState<EntityRecord | null>(null);
+  const [auditRecord, setAuditRecord] = useState<EntityRecord | null>(null);
+  const [expandedRowIds, setExpandedRowIds] = useState<Set<string | number>>(new Set());
+
+  const toggleRowExpanded = (id: string | number) => {
+    setExpandedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Keep local search input synchronized if searchFilter changes externally
   React.useEffect(() => {
@@ -375,10 +394,19 @@ export const EntityDataGrid: React.FC<Props> = ({
     return params;
   }, [page, pageSize, sortField, sortDirection, debouncedSearch, attributeFilters, attributes]);
 
-  const { data: recordsResponse, isLoading: recordsLoading } = useEntityRecords(
-    entityTypeId,
+  const isComposite = Boolean(entityType?.isComposite && entityType?.compositeSpec);
+
+  const { data: standardRecordsResponse, isLoading: standardLoading } = useEntityRecords(
+    !isComposite ? entityTypeId : null,
     queryParams
   );
+  const { data: compositeRecordsResponse, isLoading: compositeLoading } = useCompositeRecords(
+    isComposite ? entityTypeId : null,
+    queryParams
+  );
+
+  const recordsLoading = isComposite ? compositeLoading : standardLoading;
+  const recordsResponse = isComposite ? (compositeRecordsResponse as any) : standardRecordsResponse;
 
   // Fetch server-aggregated facet counts if enabled/available
   const { data: serverFacets } = useEntityFacets(
@@ -388,6 +416,16 @@ export const EntityDataGrid: React.FC<Props> = ({
   const records = useMemo(() => {
     return recordsResponse?.content || [];
   }, [recordsResponse]);
+
+  const hasAutoExpandedRef = React.useRef<string | null>(null);
+
+  // Auto-expand the first composite record once on initial load when viewing a composite entity
+  React.useEffect(() => {
+    if (isComposite && records.length > 0 && hasAutoExpandedRef.current !== entityTypeId) {
+      hasAutoExpandedRef.current = entityTypeId;
+      setExpandedRowIds(new Set([records[0].id]));
+    }
+  }, [isComposite, records, entityTypeId]);
 
   const handleSortToggle = (field: string) => {
     if (sortField === field) {
@@ -402,7 +440,43 @@ export const EntityDataGrid: React.FC<Props> = ({
   };
 
   const columns = useMemo(() => {
+    const expanderCol = isComposite
+      ? [
+          columnHelper.display({
+            id: 'expander',
+            header: () => <span className="sr-only">Expand</span>,
+            cell: ({ row }) => {
+              const rowId = row.original.id;
+              const isExpanded = expandedRowIds.has(rowId);
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRowExpanded(rowId);
+                  }}
+                  aria-label={
+                    isExpanded
+                      ? 'Collapse composite sub-collections'
+                      : 'Expand composite sub-collections'
+                  }
+                  className="p-1 rounded-md hover:bg-white/40 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              );
+            },
+            size: 36,
+          }),
+        ]
+      : [];
+
     const baseCols = [
+      ...expanderCol,
       columnHelper.accessor('id', {
         header: () => (
           <button
@@ -467,7 +541,7 @@ export const EntityDataGrid: React.FC<Props> = ({
                 return (
                   <Badge
                     variant={val ? 'secondary' : 'outline'}
-                    className={`text-[10px] ${val ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : ''
+                    className={`text-[10px] ${val ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-600/30 font-semibold' : ''
                       }`}
                   >
                     {val ? 'True' : 'False'}
@@ -616,6 +690,12 @@ export const EntityDataGrid: React.FC<Props> = ({
                   <GitFork className="h-3.5 w-3.5" /> Connected Edges
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => setAuditRecord(row.original)}
+                  className="gap-2 text-blue-600 dark:text-blue-400 focus:text-blue-600"
+                >
+                  <History className="h-3.5 w-3.5" /> Audit History & Ledger
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() => setInspectingRecord(row.original)}
                   className="gap-2"
                 >
@@ -644,6 +724,8 @@ export const EntityDataGrid: React.FC<Props> = ({
     openEditRecordDialog,
     openDeleteRecordDialog,
     openRecordRelationshipsInspector,
+    isComposite,
+    expandedRowIds,
   ]);
 
   const table = useReactTable({
@@ -913,28 +995,42 @@ export const EntityDataGrid: React.FC<Props> = ({
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="group border-b border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const isAction = cell.column.id === 'actions';
-                      return (
-                        <td
-                          key={cell.id}
-                          className={cn(
-                            'p-3 whitespace-nowrap',
-                            isAction &&
-                            'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
-                          )}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                {table.getRowModel().rows.map((row) => {
+                  const isExpanded = expandedRowIds.has(row.original.id);
+                  return (
+                    <React.Fragment key={row.id}>
+                      <tr
+                        className="group border-b border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const isAction = cell.column.id === 'actions';
+                          return (
+                            <td
+                              key={cell.id}
+                              className={cn(
+                                'p-3 whitespace-nowrap',
+                                isAction &&
+                                'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
+                              )}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {isComposite && isExpanded && entityType?.compositeSpec && (
+                        <tr className="border-b border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+                          <td colSpan={columns.length} className="p-3 pl-8">
+                            <CompositeMasterDetailRow
+                              record={row.original as any}
+                              compositeSpec={entityType.compositeSpec}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
                 {table.getRowModel().rows.length === 0 && (
                   <tr>
                     <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
@@ -964,7 +1060,7 @@ export const EntityDataGrid: React.FC<Props> = ({
                   handlePageSizeChange(Number(val));
                 }}
               >
-                <SelectTrigger className="h-7 w-18 text-xs bg-white/50 dark:bg-white/5 border-white/20">
+                <SelectTrigger aria-label="Rows per page" className="h-7 w-18 text-xs bg-white/50 dark:bg-white/5 border-white/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1055,6 +1151,12 @@ export const EntityDataGrid: React.FC<Props> = ({
         attributes={attributes}
         onConfirm={handleConfirmBackfill}
         isPending={backfillMutation.isPending}
+      />
+      <RecordAuditHistoryDrawer
+        record={auditRecord}
+        entityTypeId={entityTypeId}
+        open={Boolean(auditRecord)}
+        onClose={() => setAuditRecord(null)}
       />
     </div>
   );

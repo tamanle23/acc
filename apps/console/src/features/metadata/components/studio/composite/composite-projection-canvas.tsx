@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   ArrowRight,
 } from 'lucide-react';
+import { CompositeRollupBuilder } from './composite-rollup-builder';
 
 interface Props {
   spec: CompositeSpec;
@@ -234,6 +235,11 @@ export const CompositeProjectionCanvas: React.FC<Props> = ({
             ))
           )}
         </div>
+
+        {/* ========================================== */}
+        {/* 3. Computed Aggregate Rollups Section      */}
+        {/* ========================================== */}
+        <CompositeRollupBuilder spec={spec} onUpdateSpec={onUpdateSpec} />
       </div>
     </div>
   );

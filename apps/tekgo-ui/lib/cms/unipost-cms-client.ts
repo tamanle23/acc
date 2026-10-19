@@ -12,9 +12,9 @@ export interface UnipostCmsConfig {
 }
 
 const DEFAULT_CONFIG: UnipostCmsConfig = {
-  baseUrl: process.env.NEXT_PUBLIC_UNIPOST_API_URL || 'http://localhost:8080',
+  baseUrl: process.env.NEXT_PUBLIC_UNIPOST_API_URL || 'http://localhost:8000',
   publishableKey: process.env.NEXT_PUBLIC_UNIPOST_PUBLISHABLE_KEY || 'pk_live_default-tenant_pub123key',
-  tenantId: process.env.NEXT_PUBLIC_UNIPOST_TENANT_ID || 'default-tenant',
+  tenantId: process.env.NEXT_PUBLIC_UNIPOST_TENANT_ID || 'tenant-acme',
   revalidateSeconds: 60,
 }
 

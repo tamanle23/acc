@@ -99,7 +99,11 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       if (req.method === 'GET') {
         const page = parseInt(searchParams.get('number') || searchParams.get('page') || '0', 10);
         const size = parseInt(searchParams.get('size') || '50', 10);
-        const data = await mockMetadataStore.getEntityTypes({ page, size });
+        const search = searchParams.get('search') || undefined;
+        const isComposite = searchParams.has('isComposite')
+          ? searchParams.get('isComposite') === 'true'
+          : undefined;
+        const data = await mockMetadataStore.getEntityTypes({ page, size, search, isComposite } as any);
         return { status: 200, data };
       }
       if (req.method === 'POST') {
@@ -220,6 +224,51 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       } catch (err: any) {
         const status = err.status || 400;
         return { status, data: { message: err.message || 'FSM Transition Failed' } };
+      }
+    }
+
+    // 9.2 Record Audit Logs (GET /entity-types/:typeId/records/:recordId/audit)
+    const auditMatch = subPath.match(/^\/entity-types\/([^/]+)\/records\/([^/]+)\/audit$/);
+    if (auditMatch && req.method === 'GET') {
+      const typeId = auditMatch[1];
+      const recordId = auditMatch[2];
+      try {
+        const logs = await mockMetadataStore.getRecordAuditLogs(typeId, recordId);
+        return { status: 200, data: logs };
+      } catch (err: any) {
+        return { status: err.status || 500, data: { message: err.message } };
+      }
+    }
+
+    // 9.3 Record Restore Preview (GET /entity-types/:typeId/records/:recordId/restore-preview/:auditLogId)
+    const restorePreviewMatch = subPath.match(
+      /^\/entity-types\/([^/]+)\/records\/([^/]+)\/restore-preview\/([^/]+)$/
+    );
+    if (restorePreviewMatch && req.method === 'GET') {
+      const typeId = restorePreviewMatch[1];
+      const recordId = restorePreviewMatch[2];
+      const auditLogId = restorePreviewMatch[3];
+      try {
+        const preview = await mockMetadataStore.previewRestoreRecord(typeId, recordId, auditLogId);
+        return { status: 200, data: preview };
+      } catch (err: any) {
+        return { status: err.status || 404, data: { message: err.message } };
+      }
+    }
+
+    // 9.4 Record Restore Execute (POST /entity-types/:typeId/records/:recordId/restore/:auditLogId)
+    const restoreExecMatch = subPath.match(
+      /^\/entity-types\/([^/]+)\/records\/([^/]+)\/restore\/([^/]+)$/
+    );
+    if (restoreExecMatch && req.method === 'POST') {
+      const typeId = restoreExecMatch[1];
+      const recordId = restoreExecMatch[2];
+      const auditLogId = restoreExecMatch[3];
+      try {
+        const restored = await mockMetadataStore.restoreRecordVersion(typeId, recordId, auditLogId);
+        return { status: 200, data: restored };
+      } catch (err: any) {
+        return { status: err.status || 400, data: { message: err.message } };
       }
     }
 
@@ -364,6 +413,90 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
       if (req.method === 'DELETE') {
         const deleted = await mockMetadataStore.deleteEntityType(typeId);
         return { status: 200, data: { success: deleted } };
+      }
+    }
+
+    // 17. Composite Entity Record Detail
+    const compositeRecordDetailMatch = subPath.match(/^\/composite-entities\/([^/]+)\/records\/([^/]+)$/);
+    if (compositeRecordDetailMatch) {
+      const typeId = compositeRecordDetailMatch[1];
+      const recordId = compositeRecordDetailMatch[2];
+      if (req.method === 'GET') {
+        let childParams: Record<string, any> = {};
+        const childQueriesRaw = searchParams.get('childQueries');
+        if (childQueriesRaw) {
+          try {
+            childParams = JSON.parse(childQueriesRaw);
+          } catch (e) {
+            console.error('Failed to parse childQueries in sandbox:', e);
+          }
+        } else {
+          for (const [key, val] of searchParams.entries()) {
+            const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+            if (limitMatch) {
+              const alias = limitMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].limit = parseInt(val, 10);
+            }
+            const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+            if (offsetMatch) {
+              const alias = offsetMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].offset = parseInt(val, 10);
+            }
+          }
+        }
+        const data = await mockMetadataStore.getCompositeRecordById(typeId, recordId, childParams);
+        if (!data) return { status: 404, data: { message: 'Composite record not found' } };
+        return {
+          status: 200,
+          headers: { 'X-Composite-Engine': 'dynamic-sql-pushdown' },
+          data,
+        };
+      }
+    }
+
+    // 18. Composite Entity Records Page
+    const compositeRecordsMatch = subPath.match(/^\/composite-entities\/([^/]+)\/records$/);
+    if (compositeRecordsMatch) {
+      const typeId = compositeRecordsMatch[1];
+      if (req.method === 'GET') {
+        const page = parseInt(searchParams.get('number') || '1', 10);
+        const size = parseInt(searchParams.get('size') || '10', 10);
+        let childParams: Record<string, any> = {};
+        const childQueriesRaw = searchParams.get('childQueries');
+        if (childQueriesRaw) {
+          try {
+            childParams = JSON.parse(childQueriesRaw);
+          } catch (e) {
+            console.error('Failed to parse childQueries in sandbox:', e);
+          }
+        } else {
+          for (const [key, val] of searchParams.entries()) {
+            const limitMatch = key.match(/^childLimit\[([^\]]+)\]$/);
+            if (limitMatch) {
+              const alias = limitMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].limit = parseInt(val, 10);
+            }
+            const offsetMatch = key.match(/^childOffset\[([^\]]+)\]$/);
+            if (offsetMatch) {
+              const alias = offsetMatch[1];
+              childParams[alias] = childParams[alias] || {};
+              childParams[alias].offset = parseInt(val, 10);
+            }
+          }
+        }
+        const data = await mockMetadataStore.getCompositeRecords(
+          typeId,
+          { number: page, size, tenantId: activeTenantId },
+          childParams
+        );
+        return {
+          status: 200,
+          headers: { 'X-Composite-Engine': 'dynamic-sql-pushdown' },
+          data,
+        };
       }
     }
 

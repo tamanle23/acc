@@ -61,7 +61,7 @@ export const CustomerAccountsExplorer: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Badge variant="secondary" className="gap-1.5 py-1 px-3 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+            <Badge variant="secondary" className="gap-1.5 py-1 px-3 text-xs bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-600/30">
               <ShieldCheck className="h-3.5 w-3.5" />
               <span>Three-Tier Enforced</span>
             </Badge>

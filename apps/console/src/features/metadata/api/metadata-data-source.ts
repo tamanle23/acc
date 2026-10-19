@@ -20,7 +20,17 @@ import type {
   UpdateRelationshipTypeDto,
   ValidateRecordResponse,
   EntityFacetsResponse,
+  RecordAuditLog,
+  RestorePreviewResponse,
+  CompositeRecordResponse,
 } from './types';
+
+export interface ChildPaginationRequestMap {
+  [alias: string]: {
+    limit?: number;
+    offset?: number;
+  };
+}
 
 export interface MetadataDataSource {
   // 1. Entity Types
@@ -110,6 +120,20 @@ export interface MetadataDataSource {
     action: string,
     additionalAttributes?: Record<string, unknown>
   ): Promise<EntityRecord>;
+  getRecordAuditLogs(
+    entityTypeId: string | number,
+    recordId: string | number
+  ): Promise<RecordAuditLog[]>;
+  previewRestoreRecord(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<RestorePreviewResponse>;
+  restoreRecordVersion(
+    entityTypeId: string | number,
+    recordId: string | number,
+    auditLogId: string | number
+  ): Promise<EntityRecord>;
 
   // 4. Relationship Types
   getRelationshipTypes(params?: PageRequestParams): Promise<PageResponse<RelationshipType>>;
@@ -134,4 +158,16 @@ export interface MetadataDataSource {
     recordId: string | number,
     relationshipId: string | number
   ): Promise<boolean>;
+
+  // 6. Composite Records
+  getCompositeRecords(
+    entityTypeId: string | number,
+    params?: PageRequestParams,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<PageResponse<CompositeRecordResponse>>;
+  getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: ChildPaginationRequestMap
+  ): Promise<CompositeRecordResponse | null>;
 }

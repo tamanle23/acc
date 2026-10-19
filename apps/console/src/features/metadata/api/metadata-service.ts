@@ -149,6 +149,18 @@ class MetadataServiceStrategy implements MetadataDataSource {
     return this.activeService.transitionRecordState(entityTypeId, recordId, action, additionalAttributes);
   }
 
+  getRecordAuditLogs(entityTypeId: string | number, recordId: string | number) {
+    return this.activeService.getRecordAuditLogs(entityTypeId, recordId);
+  }
+
+  previewRestoreRecord(entityTypeId: string | number, recordId: string | number, auditLogId: string | number) {
+    return this.activeService.previewRestoreRecord(entityTypeId, recordId, auditLogId);
+  }
+
+  restoreRecordVersion(entityTypeId: string | number, recordId: string | number, auditLogId: string | number) {
+    return this.activeService.restoreRecordVersion(entityTypeId, recordId, auditLogId);
+  }
+
   // 4. Relationship Types
   getRelationshipTypes(params?: any) {
     return this.activeService.getRelationshipTypes(params);
@@ -181,6 +193,23 @@ class MetadataServiceStrategy implements MetadataDataSource {
 
   deleteEntityRelationship(recordId: string | number, relationshipId: string | number) {
     return this.activeService.deleteEntityRelationship(recordId, relationshipId);
+  }
+
+  // 6. Composite Records
+  getCompositeRecords(
+    entityTypeId: string | number,
+    params?: any,
+    childParams?: any
+  ) {
+    return this.activeService.getCompositeRecords(entityTypeId, params, childParams);
+  }
+
+  getCompositeRecordById(
+    entityTypeId: string | number,
+    recordId: string | number,
+    childParams?: any
+  ) {
+    return this.activeService.getCompositeRecordById(entityTypeId, recordId, childParams);
   }
 }
 
