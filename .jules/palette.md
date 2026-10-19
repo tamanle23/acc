@@ -15,3 +15,7 @@
 ## 2025-05-21 - Dynamic Active State Announcements on Switcher Triggers
 **Learning:** Icon-only trigger buttons for preference switchers (such as theme or language switchers) should include dynamic current state information in their `aria-label` (e.g., `Select theme (current: Light)`) so screen reader users immediately know the current setting without having to open the menu.
 **Action:** Always include the currently active option/state in the `aria-label` of dropdown menu triggers that change application settings.
+
+## 2025-05-22 - SignOutDialog Async Loading State
+**Learning:** Modal confirmation wrappers (like `SignOutDialog`) using generic `ConfirmDialog` components must propagate `isLoading` state so that `aria-busy="true"`, loading spinners, and disabled button states are properly reflected during async network actions.
+**Action:** Always ensure async state variables (`isLoading`) in custom dialog wrappers are explicitly forwarded to underlying `ConfirmDialog` components.
