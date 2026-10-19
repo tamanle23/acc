@@ -58,4 +58,16 @@ export class ExporterDispatcher {
   }
 }
 
-export const defaultExporterDispatcher = new ExporterDispatcher();
+let _defaultDispatcher: ExporterDispatcher | null = null;
+export function getDefaultExporterDispatcher(): ExporterDispatcher {
+  if (!_defaultDispatcher) {
+    _defaultDispatcher = new ExporterDispatcher();
+  }
+  return _defaultDispatcher;
+}
+
+export const defaultExporterDispatcher: ExporterDispatcher = new Proxy({} as ExporterDispatcher, {
+  get(target, prop, receiver) {
+    return Reflect.get(getDefaultExporterDispatcher(), prop, receiver);
+  },
+});

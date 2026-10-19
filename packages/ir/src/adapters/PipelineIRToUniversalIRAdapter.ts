@@ -403,7 +403,7 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
         assetId: bgmAssetId,
         time: {
           start: 0,
-          duration: Math.max(fps, totalVideoFrames),
+          duration: { matchLengthOf: 'timeline' },
         },
         modifiers: [
           {

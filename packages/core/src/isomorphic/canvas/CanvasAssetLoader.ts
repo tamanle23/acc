@@ -12,8 +12,18 @@ export class CanvasAssetLoader {
    * Loads an image from a file path, URL, Base64 data URL, Buffer, or Blob.
    */
   public static async loadImage(
-    source: string | Buffer | Uint8Array | Blob | File
+    source: string | Buffer | Uint8Array | Blob | File | any
   ): Promise<any> {
+    // 0. IAssetBlob unwrap
+    if (source && typeof source === 'object' && typeof source.arrayBuffer === 'function' && 'uri' in source) {
+      const nativePath = typeof source.getNativePath === 'function' ? source.getNativePath() : null;
+      if (nativePath) {
+        return this.loadImage(nativePath);
+      }
+      const buffer = await source.arrayBuffer();
+      return this.loadImage(new Uint8Array(buffer));
+    }
+
     try {
       const adapter = UniversalCanvasProvider.getAdapter();
       if (adapter && typeof adapter.loadImage === 'function') {

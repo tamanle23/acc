@@ -336,7 +336,7 @@ export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<Legac
             assetId: bgmAssetId,
             time: {
               start: 0,
-              duration: { matchLengthOf: 'seq_1_vis' }, // stretched during DAG solve across all video
+              duration: { matchLengthOf: 'timeline' },
             },
           },
         ],

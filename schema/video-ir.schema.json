@@ -155,11 +155,15 @@
       "properties": {
         "matchLengthOf": {
           "type": "string",
-          "description": "ID of sequence whose resolved duration determines this sequence length"
+          "description": "ID of sequence whose resolved duration determines this sequence length, or 'timeline' to span entire compiled timeline duration"
         },
         "matchAssetDuration": {
           "type": "boolean",
           "description": "Derive duration dynamically from underlying audio/video asset metadata"
+        },
+        "loop": {
+          "type": "boolean",
+          "description": "Loop underlying media asset if shorter than resolved duration"
         },
         "paddingFrames": {
           "type": "integer",

@@ -45,15 +45,22 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
         PipelineIRToUniversalIRAdapter,
         RelationalDAGCompiler,
         AssetMetadataProber,
+      } = await import('@acc/ir');
+      const {
         IRMasterRenderer,
         MediaSinkFactory,
-      } = await import('@acc/ir');
+      } = await import('@acc/ir/server');
 
       Logger.info('VideoExporter', `⚡ Compiling PipelineIR [${ir.pipelineId}] to Universal Video IR...`);
       const directorConfig = (options as any)?.directorConfig || (options as any)?.videoConfig;
       const irDoc = PipelineIRToUniversalIRAdapter.adapt(ir, undefined, outDir, directorConfig);
       irDoc.meta.canvasSize = { w: width, h: height };
       irDoc.meta.globalFps = fps;
+
+      // Persist canonical video-ir.json by default in output directory
+      const irPersistPath = path.join(outDir, 'video-ir.json');
+      await fs.promises.writeFile(irPersistPath, JSON.stringify(irDoc, null, 2), 'utf-8');
+      Logger.info('VideoExporter', `📄 Persisted canonical Video IR: ${irPersistPath}`);
 
       const prober = new AssetMetadataProber(outDir);
       const compiler = new RelationalDAGCompiler({ prober });

@@ -1,4 +1,5 @@
 import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '../../isomorphic/canvas/types';
+import { wrapCanvasContext } from '../../isomorphic/canvas/wrapCanvasContext';
 
 /**
  * WebCanvasAdapter:
@@ -32,7 +33,7 @@ export class WebCanvasAdapter implements ICanvasAdapter {
       );
     }
 
-    let cachedCtx: any = null;
+    let cachedCtx: ICanvasContext2D | null = null;
 
     return {
       width,
@@ -40,9 +41,10 @@ export class WebCanvasAdapter implements ICanvasAdapter {
       getRawCanvas: () => rawCanvas,
       getContext: (contextId: '2d'): ICanvasContext2D => {
         if (!cachedCtx) {
-          cachedCtx = rawCanvas.getContext(contextId, { willReadFrequently: true }) || rawCanvas.getContext(contextId);
+          const rawCtx = rawCanvas.getContext(contextId, { willReadFrequently: true }) || rawCanvas.getContext(contextId);
+          cachedCtx = wrapCanvasContext(rawCtx);
         }
-        return cachedCtx as unknown as ICanvasContext2D;
+        return cachedCtx;
       },
       toBuffer: (mimeType?: string): Buffer | Uint8Array => {
         const ctx = cachedCtx || (rawCanvas.getContext('2d', { willReadFrequently: true }) || rawCanvas.getContext('2d'));

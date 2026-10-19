@@ -157,6 +157,21 @@ export class VideoIRSchemaValidator {
               if (seq.time.start === undefined) {
                 errors.push(`Sequence "${seq.id || sIdx}" missing "time.start"`);
               }
+              if (seq.time.duration !== undefined && typeof seq.time.duration === 'object' && seq.time.duration !== null) {
+                const rd = seq.time.duration as any;
+                if (rd.matchLengthOf !== undefined && typeof rd.matchLengthOf !== 'string') {
+                  errors.push(`Sequence "${seq.id || sIdx}" time.duration.matchLengthOf must be a string`);
+                }
+                if (rd.matchAssetDuration !== undefined && typeof rd.matchAssetDuration !== 'boolean') {
+                  errors.push(`Sequence "${seq.id || sIdx}" time.duration.matchAssetDuration must be a boolean`);
+                }
+                if (rd.loop !== undefined && typeof rd.loop !== 'boolean') {
+                  errors.push(`Sequence "${seq.id || sIdx}" time.duration.loop must be a boolean`);
+                }
+                if (rd.paddingFrames !== undefined && typeof rd.paddingFrames !== 'number') {
+                  errors.push(`Sequence "${seq.id || sIdx}" time.duration.paddingFrames must be a number`);
+                }
+              }
             }
 
             if (seq.modifiers !== undefined) {

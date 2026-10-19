@@ -75,6 +75,33 @@ export class RelationalDAGCompiler {
     const resolvedSequences = new Map<string, ResolvedSequence>();
     this.resolveStartFrames(flatSequences, durationMap, resolvedSequences);
 
+    // PASS 3: Resolve terminal 'timeline' duration sequences against maximum timeline boundary
+    let maxStandardEndFrame = 0;
+    for (const resSeq of resolvedSequences.values()) {
+      const origSeq = seqMap.get(resSeq.id)!;
+      const d = origSeq.time.duration;
+      const isTimelineBound = d && typeof d === 'object' && (d as RelationalDuration).matchLengthOf === 'timeline';
+      if (!isTimelineBound && resSeq.endFrame > maxStandardEndFrame) {
+        maxStandardEndFrame = resSeq.endFrame;
+      }
+    }
+
+    if (maxStandardEndFrame === 0) {
+      maxStandardEndFrame = Math.round(5.0 * fps);
+    }
+
+    for (const resSeq of resolvedSequences.values()) {
+      const origSeq = seqMap.get(resSeq.id)!;
+      const d = origSeq.time.duration;
+      if (d && typeof d === 'object' && (d as RelationalDuration).matchLengthOf === 'timeline') {
+        const padding = (d as RelationalDuration).paddingFrames || 0;
+        const dur = Math.max(1, maxStandardEndFrame - resSeq.startFrame + padding);
+        resSeq.durationFrames = dur;
+        resSeq.endFrame = resSeq.startFrame + dur;
+        durationMap.set(resSeq.id, dur);
+      }
+    }
+
     // Group resolved sequences into their parent tracks
     let maxEndFrame = 0;
     for (const resSeq of resolvedSequences.values()) {
@@ -116,15 +143,21 @@ export class RelationalDAGCompiler {
     durationMap: Map<string, number>,
     fps: number
   ): Promise<void> {
+    // Filter out sequences whose duration depends on the terminal timeline duration
+    const standardItems = items.filter(item => {
+      const d = item.seq.time.duration;
+      return !(d && typeof d === 'object' && (d as RelationalDuration).matchLengthOf === 'timeline');
+    });
+
     const adj = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
 
-    for (const { seq } of items) {
+    for (const { seq } of standardItems) {
       adj.set(seq.id, []);
       inDegree.set(seq.id, 0);
     }
 
-    for (const { seq } of items) {
+    for (const { seq } of standardItems) {
       const d = seq.time.duration;
       if (d && typeof d === 'object' && 'matchLengthOf' in d && d.matchLengthOf) {
         const target = d.matchLengthOf;
@@ -147,7 +180,7 @@ export class RelationalDAGCompiler {
       const currId = queue.shift()!;
       processedCount++;
 
-      const item = items.find(i => i.seq.id === currId)!;
+      const item = standardItems.find(i => i.seq.id === currId)!;
       const seq = item.seq;
       let dur = Math.round(5.0 * fps); // default 5s
 
@@ -182,7 +215,7 @@ export class RelationalDAGCompiler {
       }
     }
 
-    if (processedCount < items.length) {
+    if (processedCount < standardItems.length) {
       throw new Error('Cycle detected in sequence duration graph (matchLengthOf circular dependency)');
     }
   }
@@ -231,7 +264,7 @@ export class RelationalDAGCompiler {
 
       const item = items.find(i => i.seq.id === currId)!;
       const seq = item.seq;
-      const duration = durationMap.get(currId)!;
+      const duration = durationMap.get(currId) ?? 0;
       let startFrame = 0;
 
       if (typeof seq.time.start === 'number') {

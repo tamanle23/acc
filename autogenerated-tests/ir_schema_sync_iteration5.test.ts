@@ -7,10 +7,12 @@ import {
   StoryConfigToUniversalIRAdapter,
   PipelineIRToUniversalIRAdapter,
   RelationalDAGCompiler,
-  IRMasterRenderer,
-  MediaSinkFactory,
   type VideoIRDocument,
 } from '../packages/ir/src';
+import {
+  IRMasterRenderer,
+  MediaSinkFactory,
+} from '../packages/ir/src/server';
 import { MediaEngineRegistry } from '../packages/core/src/media-engine/MediaEngineRegistry';
 import { BunFFIEngineStrategy } from '../packages/core/src/media-engine/strategies/BunFFIEngineStrategy';
 import { FluentFFmpegEngineStrategy } from '../packages/core/src/media-engine/strategies/FluentFFmpegEngineStrategy';

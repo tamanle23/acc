@@ -47,6 +47,7 @@ import { ViewportControlBar } from './preview/ViewportControlBar';
 import { ViewportSafeGuides } from './preview/ViewportSafeGuides';
 import { ContextualActionPill } from './preview/ContextualActionPill';
 import { SubtitlesOverlay } from './preview/SubtitlesOverlay';
+import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
 } from '@acc/ir';
@@ -236,13 +237,22 @@ export function Preview({
     }
   }, [selectedSeqId, irState]);
 
-  // Initialize IRPreviewEngine on active timeline
+  const workerBridgeRef = useRef<PreviewWorkerBridge | null>(null);
+  const [, setWorkerReady] = useState(false);
+
+  // Initialize IRPreviewEngine or PreviewWorkerBridge on active timeline
   useEffect(() => {
     if (!irState.timeline) return;
 
     const baseCanvas = canvasRef.current;
     const overlayCanvas = overlayCanvasRef.current;
-    if (baseCanvas) {
+
+    if (!workerBridgeRef.current) {
+      workerBridgeRef.current = new PreviewWorkerBridge();
+    }
+    const bridge = workerBridgeRef.current;
+
+    if (baseCanvas && !bridge.hasTransferred()) {
       baseCanvas.width = width;
       baseCanvas.height = height;
     }
@@ -251,32 +261,49 @@ export function Preview({
       overlayCanvas.height = height;
     }
 
-    const engine = new IRPreviewEngine(irState.timeline);
-    previewEngineRef.current = engine;
-    setGlReady(true);
+    if (baseCanvas && bridge.supportsOffscreen() && !bridge.hasTransferred()) {
+      const transferred = bridge.init(baseCanvas, irState.timeline, width, height, fps, totalFrames);
+      if (transferred) {
+        setWorkerReady(true);
+      }
+    }
 
+    if (bridge.hasTransferred()) {
+      bridge.updateTimeline(irState.timeline, totalFrames, fps);
+    } else {
+      const engine = new IRPreviewEngine(irState.timeline);
+      previewEngineRef.current = engine;
+    }
+    setGlReady(true);
+  }, [irState.timeline, width, height, fps, totalFrames]);
+
+  useEffect(() => {
     return () => {
-      previewEngineRef.current = null;
+      workerBridgeRef.current?.destroy();
+      workerBridgeRef.current = null;
     };
-  }, [irState.timeline, width, height]);
+  }, []);
+
+  // Worker Playback Synchronization Loop
+  useEffect(() => {
+    const bridge = workerBridgeRef.current;
+    if (!bridge || !bridge.hasTransferred()) return;
+
+    if (isPlaying) {
+      bridge.startPlayback(1, currentFrame, fps, totalFrames, (f, ended) => {
+        onScrub?.(f);
+        if (ended && onTogglePlay) {
+          onTogglePlay();
+        }
+      });
+    } else {
+      bridge.stopPlayback();
+    }
+  }, [isPlaying, fps, totalFrames, onScrub, onTogglePlay]);
 
   // Event-Driven Render Execution on 2-Layer Decoupled Viewport Canvas
   useEffect(() => {
-    const baseCanvas = canvasRef.current;
     const overlayCanvas = overlayCanvasRef.current;
-    const engine = previewEngineRef.current;
-    if (!baseCanvas || !engine) return;
-
-    const baseCtx = baseCanvas.getContext('2d');
-    if (!baseCtx) return;
-
-    // 1. Base Canvas Render Pass (100% Pure Video IR via IRPreviewEngine)
-    if (!showCheckerboard) {
-      baseCtx.fillStyle = '#000000';
-      baseCtx.fillRect(0, 0, width, height);
-    } else {
-      baseCtx.clearRect(0, 0, width, height);
-    }
 
     // Determine popOutIntensity from depth modifiers if present
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
@@ -292,37 +319,56 @@ export function Preview({
       }
     }
 
-    // Populate studio textures into engine's texture cache
-    const studioTextureCache = AssetTextureCache.getInstance();
-    const assetsMap = irState.doc?.assets || {};
-    const engineTextures = engine.getTextureCache();
+    const bridge = workerBridgeRef.current;
+    if (bridge && bridge.hasTransferred()) {
+      // 1. OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking, Adaptive Dynamic LOD)
+      bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+    } else {
+      // Main-thread fallback
+      const baseCanvas = canvasRef.current;
+      const engine = previewEngineRef.current;
+      if (baseCanvas && engine) {
+        const baseCtx = baseCanvas.getContext('2d');
+        if (baseCtx) {
+          if (!showCheckerboard) {
+            baseCtx.fillStyle = '#000000';
+            baseCtx.fillRect(0, 0, width, height);
+          } else {
+            baseCtx.clearRect(0, 0, width, height);
+          }
 
-    for (const seq of activeSeqs) {
-      if (seq.assetId) {
-        const assetDef = assetsMap[seq.assetId];
-        const assetSrc = assetDef?.src;
-        const assetType = assetDef?.type || 'media';
-        const seqStart = seq.startFrame ?? 0;
-        const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
+          const studioTextureCache = AssetTextureCache.getInstance();
+          const assetsMap = irState.doc?.assets || {};
+          const engineTextures = engine.getTextureCache();
 
-        const visualAsset = studioTextureCache.getVisualAsset(
-          seq.assetId,
-          assetSrc,
-          assetType === 'audio' ? 'media' : (assetType as any),
-          seqLocalTimeSec
-        );
+          for (const seq of activeSeqs) {
+            if (seq.assetId) {
+              const assetDef = assetsMap[seq.assetId];
+              const assetSrc = assetDef?.src;
+              const assetType = assetDef?.type || 'media';
+              const seqStart = seq.startFrame ?? 0;
+              const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
 
-        if (visualAsset.source) {
-          engineTextures.set(seq.assetId, visualAsset.source);
+              const visualAsset = studioTextureCache.getVisualAsset(
+                seq.assetId,
+                assetSrc,
+                assetType === 'audio' ? 'media' : (assetType as any),
+                seqLocalTimeSec
+              );
+
+              if (visualAsset.source) {
+                engineTextures.set(seq.assetId, visualAsset.source);
+              }
+            }
+          }
+
+          engine.renderFrame(currentFrame, baseCtx, {
+            textureCache: engineTextures,
+            popOutIntensity,
+          });
         }
       }
     }
-
-    // Render pure Video IR frame deterministically
-    engine.renderFrame(currentFrame, baseCtx, {
-      textureCache: engineTextures,
-      popOutIntensity,
-    });
 
     // 2. Overlay Canvas Render Pass (Dedicated 2D Vector Snapping Guides - Zero UI artifacts in video)
     if (overlayCanvas) {

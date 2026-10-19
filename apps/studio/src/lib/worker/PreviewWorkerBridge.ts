@@ -1,0 +1,142 @@
+import type { ResolvedTimeline } from '@acc/ir';
+
+export class PreviewWorkerBridge {
+  private worker: Worker | null = null;
+  private isSupported: boolean = false;
+  private isTransferred: boolean = false;
+  private isReady: boolean = false;
+  private onFrameUpdateCallback: ((frame: number, ended?: boolean) => void) | null = null;
+
+  constructor() {
+    this.isSupported =
+      typeof window !== 'undefined' &&
+      typeof HTMLCanvasElement !== 'undefined' &&
+      typeof HTMLCanvasElement.prototype.transferControlToOffscreen === 'function' &&
+      typeof Worker !== 'undefined';
+  }
+
+  public supportsOffscreen(): boolean {
+    return this.isSupported;
+  }
+
+  public hasTransferred(): boolean {
+    return this.isTransferred;
+  }
+
+  public init(
+    canvas: HTMLCanvasElement,
+    timeline: ResolvedTimeline,
+    width: number,
+    height: number,
+    fps: number,
+    totalFrames: number
+  ): boolean {
+    if (!this.isSupported) return false;
+    if (this.isTransferred) return true;
+
+    try {
+      const offscreen = canvas.transferControlToOffscreen();
+      this.worker = new Worker(new URL('../../workers/preview.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+
+      this.worker.onmessage = (e: MessageEvent) => {
+        const data = e.data;
+        if (!data) return;
+        if (data.type === 'ready') {
+          this.isReady = true;
+        } else if (data.type === 'frameUpdate') {
+          if (this.onFrameUpdateCallback) {
+            this.onFrameUpdateCallback(data.frame, data.ended);
+          }
+        }
+      };
+
+      this.worker.postMessage(
+        {
+          type: 'init',
+          canvas: offscreen,
+          timeline,
+          width,
+          height,
+          fps,
+          totalFrames,
+        },
+        [offscreen]
+      );
+
+      this.isTransferred = true;
+      return true;
+    } catch (err) {
+      console.warn('[PreviewWorkerBridge] OffscreenCanvas transfer failed, falling back to main-thread canvas:', err);
+      this.isSupported = false;
+      return false;
+    }
+  }
+
+  public updateTimeline(timeline: ResolvedTimeline, totalFrames: number, fps: number, popOutIntensity?: number) {
+    if (!this.worker || !this.isTransferred) return;
+    this.worker.postMessage({
+      type: 'updateTimeline',
+      timeline,
+      totalFrames,
+      fps,
+      popOutIntensity,
+    });
+  }
+
+  public renderFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
+    if (!this.worker || !this.isTransferred) return;
+    this.worker.postMessage({
+      type: 'renderFrame',
+      frame,
+      lod,
+      popOutIntensity,
+    });
+  }
+
+  public startPlayback(
+    speed: number,
+    startFrame: number,
+    fps: number,
+    totalFrames: number,
+    onFrameUpdate: (frame: number, ended?: boolean) => void
+  ) {
+    if (!this.worker || !this.isTransferred) return;
+    this.onFrameUpdateCallback = onFrameUpdate;
+    this.worker.postMessage({
+      type: 'startPlayback',
+      speed,
+      startFrame,
+      fps,
+      totalFrames,
+    });
+  }
+
+  public stopPlayback() {
+    if (!this.worker || !this.isTransferred) return;
+    this.onFrameUpdateCallback = null;
+    this.worker.postMessage({ type: 'stopPlayback' });
+  }
+
+  public updateTextures(textures: Record<string, ImageBitmap>) {
+    if (!this.worker || !this.isTransferred) return;
+    const transferables = Object.values(textures);
+    this.worker.postMessage(
+      {
+        type: 'updateTextures',
+        textures,
+      },
+      transferables
+    );
+  }
+
+  public destroy() {
+    if (this.worker) {
+      this.worker.terminate();
+      this.worker = null;
+    }
+    this.isTransferred = false;
+    this.isReady = false;
+  }
+}

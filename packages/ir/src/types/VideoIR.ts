@@ -35,8 +35,10 @@ export type RelationalStart = {
 };
 
 export type RelationalDuration = {
-  matchLengthOf?: string;
+  /** Target sequence ID OR 'timeline' to span entire resolved timeline duration */
+  matchLengthOf?: string | 'timeline';
   matchAssetDuration?: boolean;
+  loop?: boolean;
   paddingFrames?: number;
 };
 

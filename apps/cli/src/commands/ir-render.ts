@@ -24,30 +24,70 @@ export interface IrRenderCliOptions {
   chunkEnd?: number;
   concurrency?: number;
   seed?: number;
-  exportIr?: string;
   traceparent?: string;
 }
 
-
 /**
  * Handles the 'ir-render' command line execution.
+ * Standalone debug & headless execution stage strictly consuming canonical video-ir.json.
  */
 export async function handleIrRenderCommand(options: IrRenderCliOptions): Promise<void> {
   const rootContext = TraceContext.fromTraceparent(options.traceparent);
 
   return Tracer.runWithContext(rootContext, async () => {
-    // ─── Phase 1: Input Discovery & AST Adaptation ─────────────────────
+    // ─── Phase 1: Input Discovery & Canonical Validation ───────────────
     const { irDoc, baseDir } = await Tracer.withSpan('ir.input_transform', async () => {
       await FFmpegManager.prepare();
       let inputPath = path.resolve(options.input);
+
       if (fs.existsSync(inputPath) && fs.statSync(inputPath).isDirectory()) {
-        const candidates = ['pipeline-ir.json', 'story-config.json', 'omnichannel-config.json', 'video-ir.json'];
+        const candidates = ['video-ir.json', 'video-ir.transformed.json'];
+        let matched: string | null = null;
         for (const file of candidates) {
           const candidate = path.join(inputPath, file);
           if (fs.existsSync(candidate)) {
-            inputPath = candidate;
+            matched = candidate;
             break;
           }
+        }
+
+        if (!matched) {
+          if (fs.existsSync(path.join(inputPath, 'story-config.json'))) {
+            Logger.error(
+              'IRRenderCommand',
+              `❌ 'story-config.json' detected in ${inputPath}.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${inputPath}`
+            );
+            process.exit(1);
+          }
+          if (fs.existsSync(path.join(inputPath, 'pipeline-ir.json'))) {
+            Logger.error(
+              'IRRenderCommand',
+              `❌ 'pipeline-ir.json' detected in ${inputPath}.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${inputPath}`
+            );
+            process.exit(1);
+          }
+          Logger.error(
+            'IRRenderCommand',
+            `❌ No canonical 'video-ir.json' found in directory ${inputPath}.\n'ir-render' strictly consumes pre-compiled Video IR documents.`
+          );
+          process.exit(1);
+        }
+        inputPath = matched;
+      } else {
+        const baseName = path.basename(inputPath);
+        if (baseName === 'story-config.json') {
+          Logger.error(
+            'IRRenderCommand',
+            `❌ 'story-config.json' detected.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${path.dirname(inputPath)}`
+          );
+          process.exit(1);
+        }
+        if (baseName === 'pipeline-ir.json') {
+          Logger.error(
+            'IRRenderCommand',
+            `❌ 'pipeline-ir.json' detected.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${path.dirname(inputPath)}`
+          );
+          process.exit(1);
         }
       }
 
@@ -68,13 +108,6 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
       } catch (err: any) {
         Logger.error('IRRenderCommand', `Failed to parse or transform input document: ${err.message}`);
         process.exit(1);
-      }
-
-      if (options.exportIr) {
-        const exportPath = path.resolve(options.exportIr);
-        await fs.promises.mkdir(path.dirname(exportPath), { recursive: true });
-        await fs.promises.writeFile(exportPath, JSON.stringify(transformedDoc, null, 2), 'utf-8');
-        Logger.info('IRRenderCommand', `✓ Transformed Video IR JSON saved to: ${exportPath}`);
       }
 
       return { irDoc: transformedDoc, baseDir: dir };

@@ -130,6 +130,7 @@ export function useShuttleEngine({
 
     let rafId: number;
     let lastTime = performance.now();
+    let lastUiSyncTime = performance.now();
     let accumulatedMs = 0;
 
     const tick = (now: number) => {
@@ -165,7 +166,13 @@ export function useShuttleEngine({
 
         const discreteFrame = snapToDiscreteFrame(next);
         currentFrameRef.current = discreteFrame;
-        onScrubRef.current(discreteFrame);
+
+        // Throttle React state update to ~15 Hz (every ~66ms) during continuous playback,
+        // preventing continuous 60 Hz React reconciliation overhead
+        if (now - lastUiSyncTime >= 66) {
+          lastUiSyncTime = now;
+          onScrubRef.current(discreteFrame);
+        }
       }
 
       rafId = requestAnimationFrame(tick);

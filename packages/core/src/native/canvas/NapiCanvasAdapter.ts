@@ -1,5 +1,6 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '../../isomorphic/canvas/types';
+import { wrapCanvasContext } from '../../isomorphic/canvas/wrapCanvasContext';
 
 /**
  * NapiCanvasAdapter:
@@ -19,16 +20,17 @@ export class NapiCanvasAdapter implements ICanvasAdapter {
 
   public createCanvas(width: number, height: number): ICanvasInstance {
     const raw = createCanvas(width, height);
-    let cachedCtx: any = null;
+    let cachedCtx: ICanvasContext2D | null = null;
 
     return {
       width,
       height,
       getContext: (contextId: '2d'): ICanvasContext2D => {
         if (!cachedCtx) {
-          cachedCtx = raw.getContext(contextId);
+          const rawCtx = raw.getContext(contextId);
+          cachedCtx = wrapCanvasContext(rawCtx);
         }
-        return cachedCtx as unknown as ICanvasContext2D;
+        return cachedCtx;
       },
       toBuffer: (mimeType?: string): Buffer | Uint8Array => {
         if (mimeType === 'raw') {
