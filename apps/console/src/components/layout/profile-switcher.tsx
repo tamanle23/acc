@@ -100,12 +100,14 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   const groupedByTenant = useMemo(() => {
     const map = new Map<string, { tenantName: string; workspaces: Profile[] }>()
     displayProfiles.forEach((p) => {
-      const tenantId = (p.tenantId as string) || effectiveTenantId
+      const tenantId = (p.tenantId as string) || effectiveTenantId || ''
       const tenantName = (p.tenantName as string) || 'Organization'
-      if (!map.has(tenantId)) {
+      if (tenantId && !map.has(tenantId)) {
         map.set(tenantId, { tenantName, workspaces: [] })
       }
-      map.get(tenantId)!.workspaces.push(p)
+      if (tenantId) {
+        map.get(tenantId)!.workspaces.push(p)
+      }
     })
     return Array.from(map.entries()).map(([tenantId, data]) => ({
       tenantId,
@@ -114,7 +116,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
   }, [displayProfiles, effectiveTenantId])
 
   const handleSelectWorkspace = (profile: Profile) => {
-    const tenantId = (profile.tenantId as string) || effectiveTenantId
+    const tenantId = (profile.tenantId as string) || effectiveTenantId || ''
     const tenantName = (profile.tenantName as string) || profile.name
     const workspaceId = (profile.id as string) || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
 

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { FsmStateNode } from './studio-types';
 
@@ -12,13 +12,14 @@ export interface DynamicHandleConfig {
   label?: string;
 }
 
-export interface FsmNodeData extends FsmStateNode {
+export interface FsmNodeData extends FsmStateNode, Record<string, unknown> {
   isCurrent?: boolean;
   incomingHandles?: DynamicHandleConfig[];
   outgoingHandles?: DynamicHandleConfig[];
 }
 
-export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNodeData>) => {
+export const FsmStateNodeComponent = memo(({ data: rawData, selected }: NodeProps | any) => {
+  const data = (rawData || {}) as FsmNodeData;
   const incoming = data.incomingHandles || [
     { id: 'target-left', type: 'target', position: Position.Left, offsetPct: 50 },
   ];

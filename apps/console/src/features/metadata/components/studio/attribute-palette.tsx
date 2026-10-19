@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-export const PALETTE_ITEMS: PaletteFieldItem[] = [
+export const ATTRIBUTE_PALETTE_ITEMS: PaletteFieldItem[] = [
   // 1. Primitive Elements
   {
     id: 'text',
@@ -159,7 +159,7 @@ export const AttributePalette: React.FC<Props> = ({ onSelectFieldType, disabled 
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-2">
-        {PALETTE_ITEMS.map((item) => {
+        {ATTRIBUTE_PALETTE_ITEMS.map((item) => {
           const Icon = ICON_MAP[item.iconName] || Sparkles;
           return (
             <button

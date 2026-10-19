@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AttributePalette, PALETTE_ITEMS } from './attribute-palette';
+import { AttributePalette } from './attribute-palette';
 import { AttributePropertyInspector } from './attribute-property-inspector';
-import { FsmWorkflowDesigner, DEFAULT_FSM_STATES, DEFAULT_FSM_TRANSITIONS } from './fsm-workflow-designer';
+import { FsmWorkflowDesigner } from './fsm-workflow-designer';
 import type { AttributeDefinition } from '../../api/types';
 
 describe('Phase 22: Visual Schema & State Machine (FSM) Workflow Studio', () => {

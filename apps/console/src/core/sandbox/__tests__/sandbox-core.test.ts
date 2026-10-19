@@ -139,9 +139,10 @@ describe('Unified Sandbox Core Platform (Phase 1)', () => {
         }
       );
 
-      expect(response.status).toBe(503);
-      expect(response.headers?.['x-sandbox-fault-injected']).toBe('true');
-      expect((response.data as any).error).toContain('Simulated Sandbox Service Unavailable');
+      expect(response).not.toBeNull();
+      expect(response!.status).toBe(503);
+      expect(response!.headers?.['x-sandbox-fault-injected']).toBe('true');
+      expect((response!.data as any).error).toContain('Simulated Sandbox Service Unavailable');
     });
 
     it('should pass through cleanly when faultRate is 0', async () => {
@@ -155,8 +156,9 @@ describe('Unified Sandbox Core Platform (Phase 1)', () => {
         }
       );
 
-      expect(response.status).toBe(200);
-      expect(response.data).toEqual({ ok: true });
+      expect(response).not.toBeNull();
+      expect(response!.status).toBe(200);
+      expect(response!.data).toEqual({ ok: true });
     });
   });
 });

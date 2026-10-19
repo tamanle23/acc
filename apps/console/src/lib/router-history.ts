@@ -2,7 +2,7 @@ import {
   createBrowserHistory,
   createHashHistory,
   createMemoryHistory,
-  RouterHistory,
+  type RouterHistory,
 } from '@tanstack/react-router'
 
 export type RouterMode = 'browser' | 'hash' | 'memory' | 'auto'

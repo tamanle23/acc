@@ -169,7 +169,7 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
     // 2. POST /api/v1/workspaces
     if (method === 'POST' && url === '/api/v1/workspaces') {
       try {
-        const payload = req.body || {};
+        const payload = req.data || (req as any).body || {};
         const created = sandboxWorkspaceRepository.create(activeTenantId, payload);
         return {
           status: 201,
@@ -239,6 +239,6 @@ export const workspaceSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    return null;
+    return { status: 404, data: { message: 'Not found' } };
   },
 };

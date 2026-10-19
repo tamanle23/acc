@@ -303,6 +303,6 @@ export const billingSandboxHandler: SandboxRouteHandler = {
       }
     }
 
-    return null;
+    return { status: 404, data: { message: 'Not found' } };
   },
 };

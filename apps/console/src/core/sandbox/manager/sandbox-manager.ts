@@ -126,7 +126,7 @@ export class UnifiedSandboxManager {
    */
   public async handleRequest(
     req: SandboxRequest
-  ): Promise<SandboxResponse | null> {
+  ): Promise<any> {
     if (!this.isEnabled()) {
       return null;
     }
@@ -149,10 +149,10 @@ export class UnifiedSandboxManager {
     const { handler, context } = match;
 
     // Apply simulation decorator (latency + fault injection)
-    return await withSimulationDecorator(
-      () => handler.handler(req, context),
+    return (await withSimulationDecorator(
+      async () => (await handler.handler(req, context)) as any,
       state.networkSimulation
-    );
+    )) as any;
   }
 }
 

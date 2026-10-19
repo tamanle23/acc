@@ -4,6 +4,7 @@ import {
   EdgeLabelRenderer,
   getBezierPath,
   type EdgeProps,
+  type Edge,
 } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { FsmTransitionEdge } from './studio-types';
@@ -21,7 +22,7 @@ import {
   Layers,
 } from 'lucide-react';
 
-export interface FsmEdgeData extends FsmTransitionEdge {
+export interface FsmEdgeData extends FsmTransitionEdge, Record<string, unknown> {
   multiIndex?: number;
   multiTotal?: number;
   hasSiblings?: boolean;
@@ -58,7 +59,7 @@ export const FsmTransitionEdgeComponent = memo(
     markerEnd,
     markerStart,
     style,
-  }: EdgeProps<FsmEdgeData>) => {
+  }: EdgeProps | any) => {
     const multiIndex = data?.multiIndex ?? 0;
     const multiTotal = data?.multiTotal ?? 1;
 

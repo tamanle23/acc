@@ -122,7 +122,7 @@ export function useWorkflowExecutionStream(executionId: string | null) {
     }
 
     // Try EventSource connection
-    let sseUrl = `/api/v1/workflow/executions/${executionId}/events`;
+    const sseUrl = `/api/v1/workflow/executions/${executionId}/events`;
     let isCancelled = false;
 
     addLog('INFO', `Connecting real-time telemetry stream for ${executionId}...`);

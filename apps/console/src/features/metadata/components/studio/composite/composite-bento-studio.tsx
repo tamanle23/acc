@@ -93,7 +93,7 @@ export const CompositeBentoStudio: React.FC<Props> = ({ entityTypeId }) => {
       target_entity_system_name: targetEntity.systemName,
       alias: targetEntity.systemName.toLowerCase(),
       join_pattern: pattern,
-      foreignKeyAttribute: pattern === 'PATTERN_B_FOREIGN_KEY' ? 'root_id' : undefined,
+      foreign_key_attribute: pattern === 'PATTERN_B_FOREIGN_KEY' ? 'root_id' : undefined,
       cardinality: 'ONE_TO_MANY',
       fields: [],
       children: [],

@@ -206,8 +206,8 @@ function DagStudioCanvas({
             taskId: t.taskId,
             taskType: t.taskType,
             status: t.status,
-            output: t.output,
-            error: t.error,
+            output: t.output as Record<string, unknown> | undefined,
+            error: t.error as string | undefined,
             timestamp: Date.now() - (10 - idx) * 1000,
           },
         });
@@ -242,14 +242,16 @@ function DagStudioCanvas({
         return hasChanges ? updated : nds;
       });
     }
-  }, [isReadOnly, isLiveHead, stream.nodeStates]);
+  }, [isReadOnly, isLiveHead, JSON.stringify(stream.nodeStates)]);
 
   // Phase 39: Compute visual graph diff overlay when comparison target is selected
   useEffect(() => {
     if (!diffTargetVersion) {
-      setNodes((nds) =>
-        nds.map((n) => (n.data.diffStatus ? { ...n, data: { ...n.data, diffStatus: undefined } } : n))
-      );
+      setNodes((nds) => {
+        const hasDiff = nds.some((n) => n.data.diffStatus !== undefined);
+        if (!hasDiff) return nds;
+        return nds.map((n) => ({ ...n, data: { ...n.data, diffStatus: undefined } }));
+      });
       return;
     }
 
@@ -863,9 +865,9 @@ function DagStudioCanvas({
 
       {/* React Flow Canvas */}
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
+        nodes={nodes as any}
+        edges={edges as any}
+        nodeTypes={nodeTypes as any}
         onNodesChange={isReadOnly ? undefined : onNodesChange}
         onEdgesChange={isReadOnly ? undefined : onEdgesChange}
         onConnect={isReadOnly ? undefined : onConnect}

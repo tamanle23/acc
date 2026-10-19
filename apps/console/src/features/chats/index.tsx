@@ -193,7 +193,7 @@ export function Chats() {
                     size='icon'
                     variant='ghost'
                     className='-ms-2 h-full sm:hidden'
-                    onClick={() => setMobileSelectedUser(null)}
+                    onClick={() => setMobileSelectedUserId(null)}
                   >
                     <ArrowLeft className='rtl:rotate-180' />
                   </Button>

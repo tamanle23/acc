@@ -136,7 +136,7 @@ const initialTenantId = hasAssumedTenant ? (initialAssumedTenant as string) : DE
 const initialTenantName = hasAssumedTenant ? (initialAssumedTenantName || initialAssumedTenant as string) : DEFAULT_TENANT_NAME;
 
 let initialWorkspaceId = hasAssumedTenant ? `ws-${initialAssumedTenant}` : DEFAULT_WS_ID;
-let initialWorkspaceName = hasAssumedTenant ? `${initialTenantName} Workspace` : DEFAULT_WS_NAME;
+const initialWorkspaceName = hasAssumedTenant ? `${initialTenantName} Workspace` : DEFAULT_WS_NAME;
 
 if (typeof window !== 'undefined') {
   const userPref = localStorage.getItem(`unipost_user_default_ws_${initialTenantId}`);

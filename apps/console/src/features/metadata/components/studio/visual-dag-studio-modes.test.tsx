@@ -58,6 +58,7 @@ vi.mock('@/features/workflows/hooks/use-workflow-execution-stream', () => ({
 // Mock workflow API queries
 vi.mock('@/features/workflows/api/workflow-api', () => ({
   useWorkflowDefinition: () => ({ data: null }),
+  useWorkflowVersions: () => ({ data: [] }),
   useSaveWorkflowDefinition: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 

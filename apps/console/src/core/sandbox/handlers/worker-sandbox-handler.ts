@@ -192,6 +192,6 @@ export const workerSandboxHandler: SandboxRouteHandler = {
       };
     }
 
-    return null;
+    return { status: 404, data: { message: 'Not found' } };
   },
 };

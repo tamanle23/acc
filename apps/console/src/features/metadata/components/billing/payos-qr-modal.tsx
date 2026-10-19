@@ -28,6 +28,7 @@ interface Props {
   cadence?: 'MONTHLY' | 'YEARLY';
   featureTitle?: string;
   onSuccess?: () => void;
+  children?: React.ReactNode;
 }
 
 export const PayOsQrModal: React.FC<Props> = ({

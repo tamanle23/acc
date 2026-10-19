@@ -24,7 +24,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
-import { AttributeDefinition, EntityType, SchemaDriftAnalysisResponse } from '../../api/types';
+import { type AttributeDefinition, type EntityType, type SchemaDriftAnalysisResponse } from '../../api/types';
 
 interface SchemaBackfillDialogProps {
   open: boolean;

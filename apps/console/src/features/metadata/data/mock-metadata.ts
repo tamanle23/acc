@@ -879,7 +879,7 @@ export class MockMetadataService implements MetadataDataSource {
     params?: PageRequestParams
   ): Promise<PageResponse<AttributeDefinition>> {
     const strId = String(entityTypeId);
-    let attrs = [...(this.attributes[strId] || [])];
+    const attrs = [...(this.attributes[strId] || [])];
 
     // Sort by displayOrder ascending
     attrs.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
@@ -1466,7 +1466,6 @@ export class MockMetadataService implements MetadataDataSource {
       ...currentRecord,
       attributes: mergedAttributes,
       version: (currentRecord.version || 1) + 1,
-      schemaVersion: entityType.schemaVersion || 1,
       updatedDate: new Date().toISOString(),
     };
 
@@ -1560,7 +1559,7 @@ export class MockMetadataService implements MetadataDataSource {
     const strRecId = String(recordId);
     const dir = params?.direction || 'both';
 
-    let filtered = this.relationships.filter((r) => {
+    const filtered = this.relationships.filter((r) => {
       if (dir === 'incoming') return String(r.targetRecordId) === strRecId;
       if (dir === 'outgoing') return String(r.sourceRecordId) === strRecId;
       return String(r.sourceRecordId) === strRecId || String(r.targetRecordId) === strRecId;

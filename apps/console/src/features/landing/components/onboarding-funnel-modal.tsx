@@ -13,6 +13,7 @@ import {
   useBlueprintCatalog,
   useProvisionTenantBlueprint,
 } from '../../metadata/api/use-blueprints';
+import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
 import { useSpringAuthStore } from '../../spring-auth/store';
 import { useMetadataUiStore } from '../../metadata/store/use-metadata-ui-store';
 import { BlueprintCard } from '../../metadata/components/blueprint-gallery/blueprint-card';
@@ -134,7 +135,7 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
       onClose();
 
       // 3. Smooth transition redirect into metadata studio
-      navigate({ to: '/_authenticated/metadata/' });
+      navigate({ to: '/metadata' as any });
     } catch (err: any) {
       toast.error('Khởi tạo workspace thất bại. Vui lòng thử lại.');
     } finally {

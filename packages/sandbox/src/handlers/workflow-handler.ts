@@ -71,6 +71,7 @@ export class WorkflowExecutionsSandboxRepository {
 }
 
 export const workflowExecutionsSandboxRepo = new WorkflowExecutionsSandboxRepository();
+export const tasksSandboxRepo = workflowExecutionsSandboxRepo;
 
 export interface WorkflowDefinitionIR {
   workflowKey: string;
@@ -720,6 +721,8 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   },
 };
 
+
+export const tasksSandboxHandler = workflowSandboxHandler;
 
 export function resetWorkflowSandbox(): void {
   workflowSandboxRepo.reset();

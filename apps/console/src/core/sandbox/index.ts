@@ -8,12 +8,9 @@ export * from '@unipost/sandbox';
 
 // Local UI & state extensions
 export * from './ui/sandbox-dock';
-export * from './store/sandbox-store';
+export { useSandboxStore } from './store/sandbox-store';
 export * from './manager/sandbox-manager';
 export * from './manager/sandbox-registry';
-export * from './manager/simulation-decorator';
-export * from './adapters/axios-sandbox-adapter';
-export * from './adapters/fetch-sandbox-adapter';
 export * from './handlers/metadata-sandbox-adapter';
 
 // Auto-register console-specific metadataSandboxAdapter into sandboxRegistry
@@ -24,6 +21,12 @@ sandboxRegistry.register(metadataSandboxAdapter);
 sandboxRegistry.register(workerSandboxHandler);
 
 export { workerFleetMockStore, workerSandboxHandler };
+export {
+  usersSandboxHandler,
+  usersSandboxRepo,
+  workflowSandboxHandler as tasksSandboxHandler,
+  workflowExecutionsSandboxRepo as tasksSandboxRepo,
+} from '@unipost/sandbox';
 
 // Re-export mockMetadataStore for backward compatibility
 export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';

@@ -519,17 +519,17 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
         {/* React Flow Canvas */}
         <div className="w-full h-full">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={nodes as any}
+            edges={edges as any}
             onInit={(instance) => {
-              reactFlowInstanceRef.current = instance;
+              reactFlowInstanceRef.current = instance as any;
             }}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
+            onNodesChange={onNodesChange as any}
+            onEdgesChange={onEdgesChange as any}
             onEdgeClick={(_, edge) => setSelectedTransitionId(edge.id)}
             onSelectionChange={onSelectionChange}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
+            nodeTypes={nodeTypes as any}
+            edgeTypes={edgeTypes as any}
             fitView
             fitViewOptions={{ padding: 0.28 }}
             defaultEdgeOptions={{
@@ -541,7 +541,7 @@ export const FsmWorkflowDesigner: React.FC<Props> = ({
             <Background color="var(--border)" gap={24} size={1.25} />
             <Controls className="!m-4" />
             <MiniMap
-              nodeColor={(n) => (n.data as FsmNodeData)?.color || '#38bdf8'}
+              nodeColor={(n) => (n.data as unknown as FsmNodeData)?.color || '#38bdf8'}
               className="!m-4"
               maskColor="rgba(15, 23, 42, 0.4)"
             />

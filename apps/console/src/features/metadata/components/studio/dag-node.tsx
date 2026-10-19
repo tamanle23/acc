@@ -161,6 +161,7 @@ export interface DagNodeData {
   leaseId?: string;
   attemptNumber?: number;
   startedAt?: number;
+  endedAt?: number;
   error?: string;
   diffStatus?: 'added' | 'removed' | 'modified';
   [key: string]: unknown;
@@ -170,7 +171,8 @@ export interface DagNodeData {
 export type ConductorNodeType = DagNodeType;
 export type ConductorNodeData = DagNodeData;
 
-export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
+export const DagWorkflowNodeComponent = memo(({ data: rawData, selected }: NodeProps | any) => {
+  const data = (rawData || {}) as DagNodeData;
   const getNodeIcon = () => {
     switch (data.taskType) {
       // Control Flow
