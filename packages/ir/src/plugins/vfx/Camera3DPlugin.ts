@@ -1,3 +1,4 @@
+import { UniversalCanvasProvider } from '@acc/core/isomorphic';
 import type {
   ModifierPlugin,
   ModifierContext,
@@ -7,9 +8,7 @@ import type {
 import {
   CameraSplineInterpolator,
   type Camera3DKeyframe,
-  type Camera3DState,
-  UniversalCanvasProvider,
-  CanvasAssetLoader,
+  type Camera3DState
 } from '@acc/effect-engines/client';
 
 export interface Camera3DPluginParams {
@@ -126,7 +125,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
             farBlurCanvas,
           });
         }
-      } catch {}
+      } catch { }
     }
   }
 

@@ -1,8 +1,8 @@
+import { UniversalCanvasProvider } from '@acc/core/isomorphic';
 import type { ModifierPlugin, ModifierContext, StreamRenderContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
   DeterministicParticleField,
   PostProcessingShaders,
-  UniversalCanvasProvider,
 } from '@acc/effect-engines/client';
 
 export type ProceduralParticleType =

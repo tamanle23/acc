@@ -1,3 +1,4 @@
+import { UniversalCanvasProvider } from '@acc/core/isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
   Depth3DFactory,
@@ -5,9 +6,6 @@ import {
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type RelightingParams,
-  UniversalCanvasProvider,
-  CanvasAssetLoader,
-  type CanvasInstance,
 } from '@acc/effect-engines/client';
 
 export type Depth3DMode =
@@ -94,7 +92,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         const effectEngines = req('@acc/effect-engines');
         const cutout = await effectEngines.resolveSubjectCutout(params.imagePath, params as any);
         this.cutoutCache.set(params.imagePath, cutout);
-      } catch {}
+      } catch { }
 
       const mode = params.mode || 'frame_breaker';
       const width = context.canvas.width;
@@ -130,7 +128,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             const rCtx = relightCanvas.getContext('2d');
             this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas, ctx: rCtx });
           }
-        } catch {}
+        } catch { }
       }
 
       if (mode === 'parallax_25d' || mode === 'parallax_dolly') {

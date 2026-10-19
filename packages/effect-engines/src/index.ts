@@ -11,17 +11,3 @@ export * from './vision';
 export * from './types';
 export * from './editing';
 export * from './styles';
-export * from './canvas';
-
-// Auto-register adapters for runtime environments
-try {
-  UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter());
-} catch {
-  // Graceful fallback
-}
-
-try {
-  UniversalCanvasProvider.registerAdapter(new NodeCanvasAdapter(), true);
-} catch {
-  // Graceful fallback in non-node environments
-}
