@@ -1,9 +1,9 @@
 import { describe, it, expect } from "bun:test";
 import {
-  CanvasTransformOverlay,
+  Gizmo2DTransformation as CanvasTransformOverlay,
   MagneticSnapEngine,
   type BoundingBox2D,
-} from "../packages/effect-engines/src/canvas/CanvasTransformOverlay.js";
+} from "../apps/studio/src/lib/gizmo";
 
 describe("Phase 1: In-Canvas 2D Vector Transform & Direct Staging Layer", () => {
   it("should verify MagneticSnapEngine standard guidelines and snap accuracy", () => {

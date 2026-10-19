@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { STAGING_PRESETS } from '../apps/studio/src/lib/library/stagingPresets';
 import {
-  CanvasTransformOverlay,
+  Gizmo2DTransformation as CanvasTransformOverlay,
   MagneticSnapEngine,
   type BoundingBox2D,
-} from '@acc/effect-engines/client';
+} from '../apps/studio/src/lib/gizmo';
 import { PartialVFXPlugin } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
 import {
   RelationalDAGCompiler,

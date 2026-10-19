@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { IRPreviewEngine } from '../packages/ir/src/renderer/preview/IRPreviewEngine';
-import { CanvasTransformOverlay } from '../packages/effect-engines/src/canvas/CanvasTransformOverlay';
+import { Gizmo2DTransformation as CanvasTransformOverlay } from '../apps/studio/src/lib/gizmo';
 import { HologramHUDPlugin } from '../packages/ir/src/plugins/overlay/HologramHUDPlugin';
 import { PartialVFXPlugin } from '../packages/ir/src/plugins/vfx/PartialVFXPlugin';
 import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';

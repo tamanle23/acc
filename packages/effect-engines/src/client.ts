@@ -4,10 +4,7 @@
  * Strictly guarantees ZERO native C/Node.js dependencies (.node binaries, @napi-rs/canvas, fs).
  */
 
-export * from './canvas/CanvasTransformOverlay';
-export * from './canvas/UniversalCanvasProvider';
 export * from './canvas/CanvasAssetLoader';
-export * from './canvas/adapters/WebCanvasAdapter';
 export * from './canvas/types';
 export * from './vision/CameraSplineInterpolator';
 export * from './vision/SurfaceNormalGenerator';
@@ -22,13 +19,3 @@ export * from './depth3d/renderers';
 export * from './depth3d/factory';
 export * from './depth3d/frame-breaker';
 export * from './types';
-
-import { WebCanvasAdapter } from './canvas/adapters/WebCanvasAdapter';
-import { UniversalCanvasProvider } from './canvas/UniversalCanvasProvider';
-
-try {
-  UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
-} catch {
-  // Graceful fallback
-}
-
