@@ -5,13 +5,15 @@ import {
   Logger,
 } from '@acc/core';
 import {
-  IRMasterRenderer,
   AssetMetadataProber,
   RelationalDAGCompiler,
-  FFIVideoEncoderSink,
   type VideoIRDocument,
   type ResolvedTimeline,
 } from '@acc/ir';
+import {
+  IRMasterRenderer,
+  FFIVideoEncoderSink,
+} from '@acc/ir/server';
 import { StudioTimelineState } from './StudioTimelineState';
 import type {
   ResolvedFramePreview,
