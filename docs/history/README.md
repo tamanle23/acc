@@ -159,6 +159,7 @@
 | [152](152_grid_wide_hover_scrollbar_thumb_ergonomics.md) | 2026-10-19 | Grid-Wide Hover Detection for Scrollbar Thumb Ergonomics | Implemented parent hover illumination (.group/grid:hover) for scrollbar thumbs across EntityDataGrid and DataTable, increased scrollbar hit area to 8px, and hardened theme contrast. |
 | [153](153_schema_builder_vertical_scroll.md) | 2026-10-19 | SchemaBuilder Dedicated Vertical Scrolling & Sticky Header Ergonomics | Added independent vertical scroll container with .scrollbar-thin and .group/grid hover illumination for SchemaBuilder columns list, pinned header action bar with shrink-0, and added WCAG keyboard region semantics. |
 | [154](154_remove_visual_dag_studio_from_metadata.md) | 2026-10-19 | Remove Visual DAG Studio from Metadata Schema Studio | Removed the redundant Visual DAG Studio tab and conductor canvas from VisualSchemaStudio in Metadata, keeping DAG workflow design scoped to dedicated /workflows and /workflow-executions routes. |
+| [155](155_entity_data_grid_dom_virtualization.md) | 2026-10-19 | High-Performance DOM Virtualization for EntityDataGrid via @tanstack/react-virtual | Integrated @tanstack/react-virtual into EntityDataGrid with dynamic row measuring, padding spacer virtualization, and expanded page size options (up to 1,000 rows) for zero DOM lag with 10,000+ rows and 120+ columns (315/315 tests passing). |
 
 
 

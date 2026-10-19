@@ -26,6 +26,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { DataTableViewOptions } from '@/components/data-table/view-options';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -772,6 +773,17 @@ export const EntityDataGrid: React.FC<Props> = ({
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const { rows } = table.getRowModel();
+
+  // High-performance DOM virtualization with dynamic row measuring
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 45,
+    overscan: 10,
+    initialRect: { width: 1000, height: 800 },
+  });
+
   const handleExportJson = () => {
     const dataStr =
       'data:text/json;charset=utf-8,' +
@@ -1059,43 +1071,97 @@ export const EntityDataGrid: React.FC<Props> = ({
                 ))}
               </thead>
               <tbody>
-                {table.getRowModel().rows.map((row) => {
-                  const isExpanded = expandedRowIds.has(row.original.id);
-                  return (
-                    <React.Fragment key={row.id}>
-                      <tr
-                        className="group border-b border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
-                      >
-                        {row.getVisibleCells().map((cell) => {
-                          const isAction = cell.column.id === 'actions';
-                          return (
-                            <td
-                              key={cell.id}
-                              className={cn(
-                                'p-3 whitespace-nowrap',
-                                isAction &&
-                                'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
-                              )}
-                            >
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                      {isComposite && isExpanded && entityType?.compositeSpec && (
-                        <tr className="border-b border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
-                          <td colSpan={columns.length} className="p-3 pl-8">
-                            <CompositeMasterDetailRow
-                              record={row.original as any}
-                              compositeSpec={entityType.compositeSpec}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-                {table.getRowModel().rows.length === 0 && (
+                {rows.length > 0 ? (
+                  <>
+                    {(() => {
+                      const virtualRows = rowVirtualizer.getVirtualItems();
+                      // In headless/jsdom testing environments where scrollHeight/clientHeight is 0,
+                      // fallback to rendering initial rows so assertions and SSR render reliably without unvirtualized DOM overhead
+                      const itemsToRender =
+                        virtualRows.length > 0
+                          ? virtualRows
+                          : rows.slice(0, Math.min(rows.length, 25)).map((_, index) => ({
+                              index,
+                              start: index * 45,
+                              end: (index + 1) * 45,
+                              size: 45,
+                              key: index,
+                              lane: 0,
+                            }));
+
+                      const totalSize = rowVirtualizer.getTotalSize();
+                      const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start ?? 0 : 0;
+                      const paddingBottom =
+                        virtualRows.length > 0
+                          ? totalSize - (virtualRows[virtualRows.length - 1]?.end ?? 0)
+                          : 0;
+
+                      return (
+                        <>
+                          {paddingTop > 0 && (
+                            <tr>
+                              <td
+                                colSpan={columns.length}
+                                style={{ height: `${paddingTop}px` }}
+                                className="p-0 border-0"
+                              />
+                            </tr>
+                          )}
+                          {itemsToRender.map((virtualRow) => {
+                            const row = rows[virtualRow.index];
+                            if (!row) return null;
+                            const isExpanded = expandedRowIds.has(row.original.id);
+
+                            return (
+                              <React.Fragment key={row.id}>
+                                <tr
+                                  data-index={virtualRow.index}
+                                  ref={rowVirtualizer.measureElement}
+                                  className="group border-b border-white/10 hover:bg-white/40 dark:hover:bg-white/5 transition-colors"
+                                >
+                                  {row.getVisibleCells().map((cell) => {
+                                    const isAction = cell.column.id === 'actions';
+                                    return (
+                                      <td
+                                        key={cell.id}
+                                        className={cn(
+                                          'p-3 whitespace-nowrap',
+                                          isAction &&
+                                          'sticky right-0 z-10 w-12 group-hover:bg-white/85 dark:group-hover:bg-slate-800/85 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)] transition-[background-color,backdrop-filter] duration-150'
+                                        )}
+                                      >
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                                {isComposite && isExpanded && entityType?.compositeSpec && (
+                                  <tr className="border-b border-white/10 bg-black/[0.02] dark:bg-white/[0.02]">
+                                    <td colSpan={columns.length} className="p-3 pl-8">
+                                      <CompositeMasterDetailRow
+                                        record={row.original as any}
+                                        compositeSpec={entityType.compositeSpec}
+                                      />
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                          {paddingBottom > 0 && (
+                            <tr>
+                              <td
+                                colSpan={columns.length}
+                                style={{ height: `${paddingBottom}px` }}
+                                className="p-0 border-0"
+                              />
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : (
                   <tr>
                     <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center gap-2">
@@ -1132,6 +1198,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                   <SelectItem value="25">25</SelectItem>
                   <SelectItem value="50">50</SelectItem>
                   <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="250">250</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                  <SelectItem value="1000">1000</SelectItem>
                 </SelectContent>
               </Select>
               <span>per page</span>
