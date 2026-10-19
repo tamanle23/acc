@@ -51,13 +51,15 @@ import {
   IRPreviewEngine,
 } from '@acc/ir';
 import {
-  CanvasTransformOverlay,
-  MagneticSnapEngine,
   UniversalCanvasProvider,
+} from '@acc/effect-engines/client';
+import {
+  Gizmo2DTransformation,
+  MagneticSnapEngine,
   type BoundingBox2D,
   type SnappingGuide,
   type TransformHandleType,
-} from '@acc/effect-engines/client';
+} from '../lib/gizmo';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 
 interface PreviewProps {
@@ -160,7 +162,7 @@ export function Preview({
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const previewEngineRef = useRef<IRPreviewEngine | null>(null);
-  const overlayRef = useRef<CanvasTransformOverlay>(new CanvasTransformOverlay());
+  const overlayRef = useRef<Gizmo2DTransformation>(new Gizmo2DTransformation());
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
@@ -385,7 +387,7 @@ export function Preview({
       y: 0.5 + startTransform.y / height,
     };
 
-    const dragRes = CanvasTransformOverlay.computeDragTransform(
+    const dragRes = Gizmo2DTransformation.computeDragTransform(
       startNormBox,
       activeHandle,
       currentPointerNorm,
