@@ -310,35 +310,73 @@
 /* Themed Thin Glass Scrollbars for DataTables and Containers */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
+}
+
+.dark .scrollbar-thin,
+.obsidian .scrollbar-thin {
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-track,
+.obsidian .scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(150, 150, 150, 0.25);
+  background: rgba(120, 120, 120, 0.35);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb,
 .obsidian .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* When the parent container is hovered, brighten thumb so user immediately spots scrollable axes */
+:hover > .scrollbar-thin::-webkit-scrollbar-thumb,
+.scrollbar-thin:hover::-webkit-scrollbar-thumb,
+.group:hover .scrollbar-thin::-webkit-scrollbar-thumb,
+.group\/grid:hover .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.65);
+  background-clip: padding-box;
+}
+
+.dark :hover > .scrollbar-thin::-webkit-scrollbar-thumb,
+.dark .scrollbar-thin:hover::-webkit-scrollbar-thumb,
+.dark .group:hover .scrollbar-thin::-webkit-scrollbar-thumb,
+.dark .group\/grid:hover .scrollbar-thin::-webkit-scrollbar-thumb,
+.obsidian :hover > .scrollbar-thin::-webkit-scrollbar-thumb,
+.obsidian .scrollbar-thin:hover::-webkit-scrollbar-thumb,
+.obsidian .group:hover .scrollbar-thin::-webkit-scrollbar-thumb,
+.obsidian .group\/grid:hover .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.55);
+  background-clip: padding-box;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(150, 150, 150, 0.45);
+  background: rgba(70, 70, 70, 0.85) !important;
+  background-clip: padding-box !important;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover,
 .obsidian .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.8) !important;
+  background-clip: padding-box !important;
 }
 
 

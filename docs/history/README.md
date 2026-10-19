@@ -156,6 +156,7 @@
 | [149](149_iteration11_wcag_audit_rfc7807_remediation.md) | 2026-10-19 | Iteration 11 WCAG 2.2 AA Audit, ARIA Invariants & Backend RFC-7807 Remediation | Eliminated Radix Dialog description warning logs across drawers, calibrated WAI-ARIA aria-sort="none" on DataTable headers, added unique row action aria-labels, added DataTableToolbar role, and standardized backend RFC-7807 error responses and HTTP statuses with unit tests. |
 | [150](150_high_density_120_column_sandbox_entity.md) | 2026-10-19 | High-Density Table Ergonomics & 120-Column Sandbox Telemetry Matrix | Added IoT Fleet Telemetry entity with 120 dynamic attribute columns and 60 realistic records to Unified Sandbox, aligned EntityDataGrid with dynamic overflow gradient cues and WCAG 2.2 keyboard region semantics (312/312 tests passing). |
 | [151](151_entity_data_grid_column_views_and_horizontal_scroll.md) | 2026-10-19 | Column Views Toggle & Guaranteed Horizontal Overflow for EntityDataGrid | Integrated DataTableViewOptions column visibility toggles into EntityDataGrid, added min-w-max table layout for guaranteed horizontal scrolling on 100+ columns, and updated attribute fetching size to 500 across sandbox and services. |
+| [152](152_grid_wide_hover_scrollbar_thumb_ergonomics.md) | 2026-10-19 | Grid-Wide Hover Detection for Scrollbar Thumb Ergonomics | Implemented parent hover illumination (.group/grid:hover) for scrollbar thumbs across EntityDataGrid and DataTable, increased scrollbar hit area to 8px, and hardened theme contrast. |
 
 
 

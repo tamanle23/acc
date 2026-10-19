@@ -993,7 +993,7 @@ export const EntityDataGrid: React.FC<Props> = ({
           />
         )}
 
-        <div className="relative flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden max-lg:min-h-[420px] lg:min-h-0">
+        <div className="group/grid relative flex-1 min-w-0 w-full rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 flex flex-col overflow-hidden max-lg:min-h-[420px] lg:min-h-0">
           {/* Dynamic Left Gradient Shadow Cue */}
           <div
             aria-hidden="true"
