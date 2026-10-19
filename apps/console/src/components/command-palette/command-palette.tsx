@@ -43,19 +43,18 @@ function CommandPaletteEntitySection({
 }) {
   const { data: entityTypes } = useEntityTypes()
 
-  if (!entityTypes || entityTypes.length === 0) return null
+  if (!entityTypes?.content || entityTypes.content.length === 0) return null
 
   return (
     <CommandGroup heading="Dynamic Entity Types">
-      {entityTypes.slice(0, 8).map((et) => (
+      {entityTypes?.content.slice(0, 8).map((et) => (
         <CommandItem
           key={et.id}
           value={`entity-${et.name}-${et.systemName}`}
           onSelect={() => {
             runCommand(() => {
               navigate({
-                to: '/metadata/data-explorer',
-                search: { entityType: String(et.id) },
+                to: `/metadata?tab=data&model="${String(et.id)}"`,
               })
             })
           }}
