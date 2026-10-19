@@ -18,7 +18,7 @@ interface Props {
 }
 
 export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
-  const { data: attributesResponse, isLoading } = useAttributeDefinitions(entityTypeId);
+  const { data: attributesResponse, isLoading } = useAttributeDefinitions(entityTypeId, { size: 500 });
   const { data: entityType } = useEntityType(entityTypeId);
   const { openCreateAttributeDialog, openJsonSchemaPreview } = useMetadataUiStore();
   const { data: billing } = useTenantBilling();
@@ -85,9 +85,9 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
   }
 
   return (
-    <div className="space-y-6 w-full min-w-0 flex flex-col flex-1 min-h-0 overflow-y-auto pr-1">
+    <div className="group/grid flex flex-col gap-4 w-full min-w-0 flex-1 min-h-0">
       {/* Schema Header & Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 shrink-0">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold tracking-tight text-foreground">
@@ -166,7 +166,9 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
       </div>
 
       {isStudioMode ? (
-        <VisualSchemaStudio entityTypeId={entityTypeId} />
+        <div className="flex-1 min-h-0 w-full">
+          <VisualSchemaStudio entityTypeId={entityTypeId} />
+        </div>
       ) : (
         <>
           {/* Accessible Live Region for Reordering Announcements (SC 2.5.7) */}
@@ -174,40 +176,45 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
             {a11yStatus}
           </div>
 
-      {/* Attributes List */}
-      <div className="space-y-3">
-        {attributes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border border-dashed border-white/30 dark:border-white/10">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
-              <Layers className="h-6 w-6" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-1">No Fields Defined</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mb-4">
-              This entity type currently has no schema properties. Add attributes to start capturing structured data.
-            </p>
-            <Button size="sm" onClick={openCreateAttributeDialog} className="gap-1.5 text-xs">
-              <Sparkles className="h-3.5 w-3.5" /> Define First Field
-            </Button>
+          {/* Attributes List with dedicated vertical scrolling & responsive glass scrollbar */}
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label="Schema attributes list"
+            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin pr-1.5 space-y-3 focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring rounded-xl"
+          >
+            {attributes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-white/30 dark:bg-slate-900/30 backdrop-blur-md border border-dashed border-white/30 dark:border-white/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary mb-3">
+                  <Layers className="h-6 w-6" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-1">No Fields Defined</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mb-4">
+                  This entity type currently has no schema properties. Add attributes to start capturing structured data.
+                </p>
+                <Button size="sm" onClick={openCreateAttributeDialog} className="gap-1.5 text-xs">
+                  <Sparkles className="h-3.5 w-3.5" /> Define First Field
+                </Button>
+              </div>
+            ) : filteredAttributes.length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-white/20 dark:bg-slate-900/20 text-muted-foreground text-xs">
+                No fields match your search filter "{fieldSearch}".
+              </div>
+            ) : (
+              filteredAttributes.map((attr, idx) => (
+                <AttributeCard
+                  key={attr.id}
+                  attribute={attr}
+                  entityTypeId={entityTypeId}
+                  onMoveUp={() => handleMoveUp(idx)}
+                  onMoveDown={() => handleMoveDown(idx)}
+                  isFirst={idx === 0}
+                  isLast={idx === filteredAttributes.length - 1}
+                />
+              ))
+            )}
           </div>
-        ) : filteredAttributes.length === 0 ? (
-          <div className="p-8 text-center rounded-xl bg-white/20 dark:bg-slate-900/20 text-muted-foreground text-xs">
-            No fields match your search filter "{fieldSearch}".
-          </div>
-        ) : (
-          filteredAttributes.map((attr, idx) => (
-            <AttributeCard
-              key={attr.id}
-              attribute={attr}
-              entityTypeId={entityTypeId}
-              onMoveUp={() => handleMoveUp(idx)}
-              onMoveDown={() => handleMoveDown(idx)}
-              isFirst={idx === 0}
-              isLast={idx === filteredAttributes.length - 1}
-            />
-          ))
-        )}
-      </div>
-      </>
+        </>
       )}
 
       {/* Dialogs */}
