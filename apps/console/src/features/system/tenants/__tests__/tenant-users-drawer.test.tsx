@@ -92,12 +92,12 @@ describe('TenantUsersDrawer - Phase 5 Symmetrical Sovereign Drawer', () => {
       data: mockUsers,
       isLoading: false,
       refetch: vi.fn(),
-    } as any);
+    } as unknown as ReturnType<typeof useSystemFleetModule.useGlobalUsers>);
 
     vi.spyOn(useSystemFleetModule, 'useLockUser').mockReturnValue({
       mutate: mockMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof useSystemFleetModule.useLockUser>);
   });
 
   it('renders slide-over sheet with tenant header and member count', () => {

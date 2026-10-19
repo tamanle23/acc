@@ -111,8 +111,9 @@ export function TenantUsersDrawer({
           setUserToLock(null);
           refetch();
         },
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.message || 'Thao tác khóa/mở khóa thất bại.');
+        onError: (err: unknown) => {
+          const apiErr = err as { response?: { data?: { message?: string } } };
+          toast.error(apiErr?.response?.data?.message || 'Thao tác khóa/mở khóa thất bại.');
         },
       }
     );
@@ -335,10 +336,11 @@ export function TenantUsersDrawer({
           </DialogHeader>
 
           <div className="space-y-3 py-2">
-            <label className="text-xs font-semibold text-foreground">
+            <label htmlFor="lock-reason-input" className="text-xs font-semibold text-foreground">
               Lý do thực hiện <span className="text-rose-500">*</span>
             </label>
             <Input
+              id="lock-reason-input"
               placeholder="VD: Tuân thủ chính sách bảo mật, yêu cầu từ quản trị viên..."
               value={lockReason}
               onChange={(e) => setLockReason(e.target.value)}
