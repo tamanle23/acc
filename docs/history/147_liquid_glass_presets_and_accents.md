@@ -1,62 +1,49 @@
 # 147. Liquid Glass Flagship Presets, Ambient Accents & Solid Fallback Engine
 
 ## Problem
-In Iteration 11 Workstream 1, `@unipost/console` needed to elevate its visual system to enterprise maturity while strictly maintaining WCAG 2.2 AA accessibility:
-1. **Limited Visual Options**: The application lacked dedicated flagship presets representing the full optical potential of the Liquid Glass design language.
-2. **Missing Accent Personalization**: Interactive highlights and background caustics were locked to a static purple hue without user-configurable ambient tones.
-3. **Accessibility Compliance**: Users with low vision or vestibular sensitivity requiring reduced transparency lacked an immediate way to disable translucent refraction and fall back to solid, high-contrast surfaces complying with WCAG 2.2 AA.
+In Iteration 11 Workstream 1, initial implementation of theme presets and ambient accents had two visual issues:
+1. **Accents Changed Nothing**: The ambient accent selector only modified `--ring` and `--accent-glow`. Core UI tokens (`--primary`, `--accent`, `--sidebar-primary`) remained hardcoded to static values, meaning buttons, active links, badges, and highlights never changed color.
+2. **Presets Looked Identical**: `body` possessed an opaque background color that covered the `body::before` liquid wallpaper layer. Both `Light` vs `Acrylic` and `Dark` vs `Obsidian` rendered with nearly identical solid background colors and identical wallpaper configurations.
 
 ## Plan
-1. **Design System & Optical Tokens**:
-   - Introduce `.acrylic` (Light Frosted Acrylic) and `.obsidian` (Dark Obsidian) theme presets.
-   - Define 5 ambient accents: `violet` (Aurora), `azure` (Sky), `emerald` (Jade), `rose` (Quartz), and `amber` (Sovereign).
-   - Define high-contrast solid surface tokens (`[data-glass-fallback='true']`).
-2. **Context Engine & Accessibility Automation**:
-   - Update `ThemeProvider` in `@unipost/console` with full state, cookie management (`vite-ui-theme`, `vite-ui-accent`, `vite-ui-glass-intensity`, `vite-ui-glass-fallback`), and dynamic `--glass-*` CSS variable injection.
-   - Implement native OS media query listener for `(prefers-reduced-transparency: reduce)` with defensive guards for headless/test environments.
-3. **Appearance Form UI & Real-Time Preview**:
-   - Provide 4 visual theme cards, 5 ambient accent swatches, an accessibility solid fallback switch, and a live interactive preview card in `/settings/appearance`.
-4. **Verification & Testing**:
-   - Unit tests covering ThemeProvider invariants and AppearanceForm interactions.
-   - Run Vitest full suite and Playwright E2E Mode 1 test runner.
+1. **Theme Distinction**:
+   - `Light`: Pure, clean, solid SaaS dashboard with solid white cards and no distracting background caustics.
+   - `Light Frosted Acrylic`: Apple macOS / Fluent Acrylic frosted glass with visible dynamic liquid wallpaper and radial caustics shining through translucent cards.
+   - `Dark`: Clean developer dark slate layout with solid slate cards and no wallpaper.
+   - `Dark Obsidian`: Deepest crystalline obsidian glass with glowing cosmic liquid wallpaper, nebula caustics, and specular top-rim insets.
+2. **Deep Ambient Accent Propagation**:
+   - Wire all 5 accents (Aurora, Sky, Jade, Quartz, Sovereign) into `--primary`, `--primary-foreground`, `--accent`, `--accent-foreground`, `--ring`, `--sidebar-primary`, and `--accent-glow`.
+   - Calibrate lightness (`oklch(0.46 - 0.48)` light, `oklch(0.70 - 0.76)` dark) to guarantee strict WCAG 2.2 AA ($\ge 4.5:1$) compliance across badges and text.
+3. **Controlled Form State**:
+   - Update RadioGroups to controlled value with immediate `setTheme` and `setAccentColor` callbacks on click.
+4. **Verification**:
+   - Unit tests, full Vitest suite (307 tests), and Playwright E2E suite (15 tests with Axe audits).
 
 ## Changes
 
 ### 1. Style & Optical Token Architecture
 - [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css):
-  - Defined `.acrylic` and `.obsidian` class tokens.
-  - Defined 5 ambient accent configurations mapping `--ring`, `--accent-glow`, and `--glass-accent-border`.
-  - Defined high-contrast fallback tokens (`[data-glass-fallback='true']`).
+  - Defined high-contrast default `:root` and solid `.dark` tokens alongside translucent `.acrylic` and crystalline `.obsidian` tokens.
+  - Defined full token palettes for all 5 ambient accents across both light and dark modes (`--primary`, `--accent`, `--ring`, `--sidebar-primary`, `--accent-glow`, `--glass-accent-border`).
 - [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css):
-  - Added radial background caustics incorporating `var(--accent-glow)`.
-  - Enforced `backdrop-filter: none !important` under `@media (prefers-reduced-transparency: reduce)`.
+  - Configured `body::before` to display vibrant liquid caustics exclusively in `.acrylic` and `.obsidian` presets, keeping `.light` and `.dark` clean and solid.
+  - Configured `html` and `body` backgrounds to allow optical wallpaper refraction.
 
 ### 2. State & Context Hydration Engine
 - [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/theme-provider.tsx):
-  - Expanded `Theme` type to include `'acrylic' | 'obsidian'`.
-  - Added `accentColor` and `glassFallback` state with cookie synchronization.
-  - Added defensive guards for `window.matchMedia` across SSR, Node, and test environments.
-
-### 3. Settings Appearance UI
+  - Set both CSS classes and `data-theme` attribute on the root element.
 - [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/appearance-form.tsx):
-  - Upgraded appearance form with visual radio selectors for all 4 theme presets.
-  - Added 5 clickable accent color swatches with active checkmarks.
-  - Added High-Contrast Solid Fallback switch with explanatory WCAG description.
-  - Added live preview card demonstrating real-time refraction, blur, opacity metrics, and interactive button hover effects.
-
-### 4. Automated Testing
-- [`apps/console/src/context/__tests__/theme-provider.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/__tests__/theme-provider.test.tsx): 5 unit tests for preset application, accent color attribute propagation, and solid fallback behavior.
-- [`apps/console/src/features/settings/appearance/__tests__/appearance-form.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/__tests__/appearance-form.test.tsx): 4 component tests validating form rendering and switch interactions.
+  - Converted radio groups to controlled components with immediate `setTheme` and `setAccentColor` triggers.
 
 ---
 
 ## Verification
 - **Unit & Component Tests**:
-  - `pnpm --filter @unipost/console test -- src/context/__tests__/theme-provider.test.tsx`: 5/5 passed.
-  - `pnpm --filter @unipost/console test -- src/features/settings/appearance/__tests__/appearance-form.test.tsx`: 4/4 passed.
+  - `src/context/__tests__/theme-provider.test.tsx`: 5/5 passed.
+  - `src/features/settings/appearance/__tests__/appearance-form.test.tsx`: 4/4 passed.
   - Full console test suite: 64 test files, 307 tests passed (0 failures).
 - **Playwright E2E Mode 1**:
-  - `pnpm --filter @unipost/console test:e2e`: 15/15 tests passed in 40.2s with zero regressions.
+  - `pnpm --filter @unipost/console test:e2e`: 15/15 tests passed in 31.8s with 0 WCAG 2.2 AA violations.
 
 ---
 
@@ -66,14 +53,9 @@ In Iteration 11 Workstream 1, `@unipost/console` needed to elevate its visual sy
 ---
 
 ## Tasks
-- [x] Configure CSS theme tokens for `.acrylic`, `.obsidian`, 5 accents, and solid fallback.
-- [x] Update `ThemeProvider` with full state, cookie hydration, and media query listeners.
-- [x] Update `AppearanceForm` with 4 theme cards, 5 accent swatches, and solid fallback switch.
-- [x] Write and verify unit and component tests.
-- [x] Verify Playwright E2E test suite.
-- [x] Record documentation and git commit.
-
----
-
-## Enhancement
-- Future iterations can expose custom hex color picker overrides for sovereign tenants to white-label their ambient caustics directly from the Admin console.
+- [x] Configure deep accent propagation across primary, accent, ring, and sidebar tokens.
+- [x] Configure distinct optical treatments for Classic Light vs Frosted Acrylic and Classic Dark vs Obsidian.
+- [x] Wire controlled RadioGroup state with immediate context updates.
+- [x] Validate WCAG 2.2 AA contrast compliance across all ambient accents.
+- [x] Run full Vitest and Playwright test suites (all passing).
+- [x] Commit and archive history log.

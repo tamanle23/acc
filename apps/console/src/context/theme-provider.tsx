@@ -120,6 +120,7 @@ export function ThemeProvider({
 
     const applyTheme = (currentResolvedTheme: ResolvedTheme) => {
       root.classList.remove('light', 'dark', 'acrylic', 'obsidian')
+      root.setAttribute('data-theme', currentResolvedTheme)
       if (currentResolvedTheme === 'obsidian') {
         root.classList.add('dark', 'obsidian')
       } else {

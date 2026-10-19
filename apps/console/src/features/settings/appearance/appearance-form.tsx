@@ -79,32 +79,26 @@ export function AppearanceForm() {
     defaultValues,
   })
 
+  // Sync external theme/accent changes to form
+  useEffect(() => {
+    if (theme && form.getValues('theme') !== theme) {
+      form.setValue('theme', (theme === 'system' ? 'light' : theme) as any)
+    }
+  }, [theme, form])
+
+  useEffect(() => {
+    if (accentColor && form.getValues('accentColor') !== accentColor) {
+      form.setValue('accentColor', accentColor)
+    }
+  }, [accentColor, form])
+
   // Watch for immediate client-side UI updates
   const formValues = form.watch()
   useEffect(() => {
     if (!isServerSide) {
       if (formValues.font && formValues.font !== font) setFont(formValues.font)
-      if (formValues.theme && formValues.theme !== theme) setTheme(formValues.theme)
-      if (formValues.accentColor && formValues.accentColor !== accentColor) setAccentColor(formValues.accentColor)
-      if (formValues.glassFallback !== undefined && formValues.glassFallback !== glassFallback) {
-        setGlassFallback(formValues.glassFallback)
-      }
     }
-  }, [
-    formValues.font,
-    formValues.theme,
-    formValues.accentColor,
-    formValues.glassFallback,
-    isServerSide,
-    font,
-    theme,
-    accentColor,
-    glassFallback,
-    setFont,
-    setTheme,
-    setAccentColor,
-    setGlassFallback,
-  ])
+  }, [formValues.font, isServerSide, font, setFont])
 
   function onSubmit(data: AppearanceFormValues) {
     if (isServerSide) {
@@ -176,8 +170,11 @@ export function AppearanceForm() {
               </FormDescription>
               <FormMessage />
               <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
+                onValueChange={(val) => {
+                  field.onChange(val)
+                  setTheme(val as 'light' | 'dark' | 'acrylic' | 'obsidian')
+                }}
                 className='grid max-w-2xl grid-cols-2 gap-4 pt-2 sm:grid-cols-4'
               >
                 {/* Light */}
@@ -292,8 +289,11 @@ export function AppearanceForm() {
               </FormDescription>
               <FormMessage />
               <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
+                value={field.value}
+                onValueChange={(val) => {
+                  field.onChange(val)
+                  setAccentColor(val as AccentColor)
+                }}
                 className='grid max-w-lg grid-cols-5 gap-3 pt-1'
               >
                 {ACCENT_OPTIONS.map((opt) => (
