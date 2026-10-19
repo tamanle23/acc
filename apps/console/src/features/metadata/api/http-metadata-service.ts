@@ -110,7 +110,7 @@ export class HttpMetadataService implements MetadataDataSource {
     const res = await springApiClient.get(`${BASE_URL}/entity-types/${entityTypeId}/attributes`, {
       params: {
         number: params?.number || 1,
-        size: params?.size || 50,
+        size: params?.size || 500,
         sort: params?.sort,
       },
     });

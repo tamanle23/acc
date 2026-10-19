@@ -24,7 +24,9 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  type VisibilityState,
 } from '@tanstack/react-table';
+import { DataTableViewOptions } from '@/components/data-table/view-options';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -213,6 +215,9 @@ export const EntityDataGrid: React.FC<Props> = ({
   const [auditRecord, setAuditRecord] = useState<EntityRecord | null>(null);
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string | number>>(new Set());
 
+  // Column visibility state for toggle views
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
   // Horizontal scroll cue detection for high-density tables (e.g. 100+ columns)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -244,7 +249,7 @@ export const EntityDataGrid: React.FC<Props> = ({
   }, [searchFilter]);
 
   const { data: attributesResponse, isLoading: schemaLoading } =
-    useAttributeDefinitions(entityTypeId);
+    useAttributeDefinitions(entityTypeId, { size: 500 });
   const { data: entityType } = useEntityType(entityTypeId);
   const { data: driftAnalysis } = useSchemaDriftAnalysis(entityTypeId);
   const backfillMutation = useExecuteSchemaBackfill(entityTypeId);
@@ -760,6 +765,10 @@ export const EntityDataGrid: React.FC<Props> = ({
   const table = useReactTable({
     data: records,
     columns,
+    state: {
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -905,6 +914,8 @@ export const EntityDataGrid: React.FC<Props> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <DataTableViewOptions table={table} />
+
           <Button
             variant="outline"
             size="sm"
@@ -1008,7 +1019,7 @@ export const EntityDataGrid: React.FC<Props> = ({
             aria-label="Metadata entity data grid scrollable region"
             className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-max text-left border-collapse text-xs table-auto">
               <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-xs">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr

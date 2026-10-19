@@ -388,7 +388,10 @@ export const metadataSandboxAdapter: SandboxRouteHandler = {
     if (attrMatch) {
       const typeId = attrMatch[1];
       if (req.method === 'GET') {
-        const data = await mockMetadataStore.getAttributeDefinitions(typeId);
+        const page = parseInt(searchParams.get('number') || searchParams.get('page') || '1', 10);
+        const size = parseInt(searchParams.get('size') || '500', 10);
+        const sort = searchParams.get('sort') || undefined;
+        const data = await mockMetadataStore.getAttributeDefinitions(typeId, { number: page, size, sort });
         return { status: 200, data };
       }
       if (req.method === 'POST') {
