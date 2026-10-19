@@ -16,6 +16,7 @@ import { CreateWorkspaceModal } from '@/features/settings/workspaces/create-work
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { announceToScreenReader } from '@/hooks/use-aria-announce';
 
 interface TenantWorkspacesDrawerProps {
   tenant: FleetTenantSummary | null;
@@ -64,6 +65,7 @@ export function TenantWorkspacesDrawer({
     }
 
     toast.success(`Workspace "${workspace.name}" has been deleted from ${tenant.name}.`);
+    announceToScreenReader(`Workspace ${workspace.name} has been deleted from ${tenant.name}`);
     setWorkspaceToDelete(null);
   };
 
@@ -72,12 +74,17 @@ export function TenantWorkspacesDrawer({
     setActiveTenant(tenant.tenantId, tenant.name);
     setActiveWorkspace(workspace.id || '', workspace.name);
     toast.info(`Switched active workspace to "${workspace.name}".`);
+    announceToScreenReader(`Switched active workspace to ${workspace.name}`);
   };
 
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-lg bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6">
+        <SheetContent
+          side="right"
+          aria-describedby="tenant-workspaces-drawer-desc"
+          className="w-full sm:max-w-lg bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6"
+        >
           <SheetHeader>
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
@@ -87,7 +94,7 @@ export function TenantWorkspacesDrawer({
                 <SheetTitle className="text-base font-bold">
                   Workspaces for {tenant.name}
                 </SheetTitle>
-                <SheetDescription className="text-xs font-mono">
+                <SheetDescription id="tenant-workspaces-drawer-desc" className="text-xs font-mono">
                   Tenant ID: {tenant.tenantId} • ({tenantWorkspaces.length} /{' '}
                   {tenant.maxWorkspaces === -1 ? '∞' : tenant.maxWorkspaces})
                 </SheetDescription>

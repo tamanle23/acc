@@ -12,15 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   GitCompare,
-  ArrowRight,
   CheckCircle2,
   AlertTriangle,
-  Play,
-  RotateCcw,
   ShieldCheck,
-  Layers,
-  Sparkles,
-  HelpCircle,
   XCircle,
   ChevronRight,
   Info,
@@ -64,11 +58,12 @@ export const FleetMigrationModal: React.FC<FleetMigrationModalProps> = ({
 
   const batchMigrateMutation = useFleetBatchMigrate();
 
+  const previewItems = previewData?.items;
   const filteredItems = useMemo(() => {
-    if (!previewData?.items) return [];
-    if (tierFilter === 'ALL') return previewData.items;
-    return previewData.items.filter((item) => item.tier === tierFilter);
-  }, [previewData?.items, tierFilter]);
+    if (!previewItems) return [];
+    if (tierFilter === 'ALL') return previewItems;
+    return previewItems.filter((item) => item.tier === tierFilter);
+  }, [previewItems, tierFilter]);
 
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {

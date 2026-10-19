@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable prettier/prettier */
-/* eslint-disable jsx-a11y/media-has-caption */
+ 
 import React from 'react'
 import { PortableText } from '@portabletext/react'
 import Image from './Image'

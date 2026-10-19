@@ -152,6 +152,7 @@
 | [145](145_fix_hazelcast_multicast_setsockopt_windows.md) | 2026-10-18 | Fix Hazelcast Multicast setsockopt SocketException on Windows | Resolved java.net.SocketException: Invalid argument: setsockopt by disabling Hazelcast join auto-detection, disabling multicast/TCP discovery, and explicitly binding to 127.0.0.1 loopback interface with hazelcast.socket.bind.any=false. |
 | [146](146_production_resilient_hazelcast_clustering.md) | 2026-10-18 | Production-Resilient Hazelcast Clustering & Profile-Aware Discovery | Made HazelcastConfiguration profile-aware supporting local loopback isolation in dev/sandbox and clustered discovery (Kubernetes DNS or TCP-IP member list) in production environments (33/33 tests pass, health UP). |
 | [147](147_liquid_glass_presets_and_accents.md) | 2026-10-18 | Liquid Glass Flagship Presets, Ambient Accents & Solid Fallback Engine | Implemented Light Frosted Acrylic and Dark Obsidian presets, 5 ambient accents (Aurora, Sky, Jade, Quartz, Sovereign), and WCAG 2.2 AA solid fallback engine with cookie persistence and E2E verification. |
+| [148](148_iteration11_wcag_datatable_defects.md) | 2026-10-19 | Iteration 11 Remaining Phases - WCAG 2.2 AA, DataTable Unification & Defect Resolution | Implemented drawer focus trapping, explicit aria-describedby, centralized useAriaAnnounce live region, destructive contrast calibration, DataTable overflow gradient shadows and sticky frosted headers, Fleet Tenants and Billing migrations, tekgo-ui flat ESLint fix, and backend sandbox properties autowiring. |
 
 
 

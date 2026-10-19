@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { FleetTenantsTable } from '@/features/system/tenants/fleet-tenants-table';
-import { ShieldAlert, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 export const Route = createFileRoute('/_authenticated/system/tenants')({
   component: SystemTenantsPage,

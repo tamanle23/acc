@@ -6,11 +6,14 @@ import { DataTableFacetedFilter } from './faceted-filter'
 import { DataTableViewOptions } from './view-options'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 type DataTableToolbarProps<TData> = {
   table: Table<TData>
   searchPlaceholder?: string
   searchKey?: string
+  className?: string
+  actions?: React.ReactNode
   filters?: {
     columnId: string
     title: string
@@ -26,6 +29,8 @@ export function DataTableToolbar<TData>({
   table,
   searchPlaceholder = 'Filter...',
   searchKey,
+  className,
+  actions,
   filters = [],
 }: DataTableToolbarProps<TData>) {
   const isFiltered =
@@ -64,15 +69,15 @@ export function DataTableToolbar<TData>({
   }
 
   return (
-    <div className='flex items-center justify-between'>
-      <div className='flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2'>
+    <div className={cn('flex flex-wrap items-center justify-between gap-2', className)}>
+      <div className='flex flex-1 flex-wrap items-center gap-2'>
         <Input
           placeholder={searchPlaceholder}
           value={searchValue}
           onChange={(event) => setSearchValue(event.target.value)}
           className='h-8 w-[150px] lg:w-[250px]'
         />
-        <div className='flex gap-x-2'>
+        <div className='flex flex-wrap gap-2'>
           {filters.map((filter) => {
             const column = table.getColumn(filter.columnId)
             if (!column) return null
@@ -100,7 +105,10 @@ export function DataTableToolbar<TData>({
           </Button>
         )}
       </div>
-      <DataTableViewOptions table={table} />
+      <div className='flex items-center gap-2'>
+        {actions}
+        <DataTableViewOptions table={table} />
+      </div>
     </div>
   )
 }

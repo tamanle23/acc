@@ -11,19 +11,17 @@ import { VisualDagStudio } from '@/features/metadata/components/studio';
 import { Workflow, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useWorkflowDefinitions as useWorkflowsQuery } from './api/workflow-api';
+import { useWorkflowDefinitions as useWorkflowsQuery, type WorkflowDefinitionSummary } from './api/workflow-api';
 import { WorkflowCatalogTable } from './components/workflow-catalog-table';
 import { WorkflowCreateDialog } from './components/workflow-create-dialog';
 import { FleetMigrationModal } from './components/fleet-migration-modal';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
-import { type WorkflowDefinitionSummary } from './api/workflow-api';
 
 const route = getRouteApi('/_authenticated/workflows/')
 
 export const WorkflowsFeature: React.FC = () => {
   const search = route.useSearch()
-  const navigate = route.useNavigate()
   const { data: definitions = [], isLoading, refetch } = useWorkflowsQuery();
 
   const { t } = useTranslation('console');

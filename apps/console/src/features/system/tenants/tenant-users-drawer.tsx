@@ -46,6 +46,7 @@ import {
 } from '../api/use-system-fleet';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { announceToScreenReader } from '@/hooks/use-aria-announce';
 
 export interface TenantUsersDrawerProps {
   tenant: FleetTenantSummary | null;
@@ -96,11 +97,11 @@ export function TenantUsersDrawer({
       },
       {
         onSuccess: () => {
-          toast.success(
-            userToLock.locked
-              ? `Tài khoản ${userToLock.username} đã được mở khóa thành công.`
-              : `Tài khoản ${userToLock.username} đã bị khóa khẩn cấp.`
-          );
+          const msg = userToLock.locked
+            ? `Tài khoản ${userToLock.username} đã được mở khóa thành công.`
+            : `Tài khoản ${userToLock.username} đã bị khóa khẩn cấp.`;
+          toast.success(msg);
+          announceToScreenReader(msg);
           setLockDialogOpen(false);
           setUserToLock(null);
           refetch();
@@ -114,6 +115,7 @@ export function TenantUsersDrawer({
 
   const handleRevokeSessions = (user: GlobalUserListItem) => {
     toast.success(`Đã thu hồi tất cả phiên làm việc và refresh token của "${user.username}".`);
+    announceToScreenReader(`Đã thu hồi tất cả phiên làm việc của ${user.username}`);
   };
 
   const handleCopyUserId = (userId: string) => {
@@ -126,6 +128,7 @@ export function TenantUsersDrawer({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
+          aria-describedby="tenant-users-drawer-desc"
           className="w-full sm:max-w-xl bg-background/95 backdrop-blur-2xl border-white/20 p-6 flex flex-col gap-6"
         >
           <SheetHeader>
@@ -137,7 +140,7 @@ export function TenantUsersDrawer({
                 <SheetTitle className="text-base font-bold">
                   Assigned Users for {tenant.name}
                 </SheetTitle>
-                <SheetDescription className="text-xs font-mono">
+                <SheetDescription id="tenant-users-drawer-desc" className="text-xs font-mono">
                   Tenant ID: {tenant.tenantId} • ({filteredUsers.length} members)
                 </SheetDescription>
               </div>

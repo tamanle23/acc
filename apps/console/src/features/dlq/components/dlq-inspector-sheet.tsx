@@ -21,6 +21,7 @@ import {
   Archive,
 } from 'lucide-react';
 import type { TaskDlqRecordDto } from '@unipost/client';
+import { announceToScreenReader } from '@/hooks/use-aria-announce';
 
 interface DlqInspectorSheetProps {
   record: TaskDlqRecordDto | null;
@@ -63,12 +64,16 @@ export function DlqInspectorSheet({
     }
     setJsonError(null);
     onReplay(record, parsedOverrides);
+    announceToScreenReader(`Task ${record.taskId} submitted for DLQ replay`);
     onOpenChange(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 backdrop-blur-2xl bg-background/95 border-l border-border/40 shadow-2xl">
+      <SheetContent
+        aria-describedby="dlq-inspector-sheet-desc"
+        className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 backdrop-blur-2xl bg-background/95 border-l border-border/40 shadow-2xl"
+      >
         <SheetHeader className="text-left space-y-1">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
@@ -88,7 +93,7 @@ export function DlqInspectorSheet({
               {record.status}
             </Badge>
           </div>
-          <SheetDescription className="font-mono text-xs text-muted-foreground">
+          <SheetDescription id="dlq-inspector-sheet-desc" className="font-mono text-xs text-muted-foreground">
             {record.dlqId} • Task: {record.taskId}
           </SheetDescription>
         </SheetHeader>

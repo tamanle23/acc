@@ -13,7 +13,8 @@ export interface UnipostCmsConfig {
 
 const DEFAULT_CONFIG: UnipostCmsConfig = {
   baseUrl: process.env.NEXT_PUBLIC_UNIPOST_API_URL || 'http://localhost:8000',
-  publishableKey: process.env.NEXT_PUBLIC_UNIPOST_PUBLISHABLE_KEY || 'pk_live_default-tenant_pub123key',
+  publishableKey:
+    process.env.NEXT_PUBLIC_UNIPOST_PUBLISHABLE_KEY || 'pk_live_default-tenant_pub123key',
   tenantId: process.env.NEXT_PUBLIC_UNIPOST_TENANT_ID || 'tenant-acme',
   revalidateSeconds: 60,
 }
@@ -33,7 +34,12 @@ export class UnipostCmsClient {
     const customFetch: typeof fetch = async (input, init) => {
       // In dev mode, check sandbox registry first
       if (process.env.NODE_ENV !== 'production') {
-        const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url
+        const urlStr =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : (input as Request).url
         const method = init?.method || 'GET'
         const headers = (init?.headers as Record<string, string>) || {}
         const matched = sandboxRegistry.findHandler(urlStr, method, headers)
@@ -93,7 +99,9 @@ export class UnipostCmsClient {
     const path = `/api/v1/public/tenants/${encodeURIComponent(this.config.tenantId)}/cms/records?${query.toString()}`
 
     try {
-      const response = await this.client.get<{ data?: { content?: EntityRecord[] } | EntityRecord[] } | EntityRecord[]>(path)
+      const response = await this.client.get<
+        { data?: { content?: EntityRecord[] } | EntityRecord[] } | EntityRecord[]
+      >(path)
       // Unpack standard response wrappers (Page or content array)
       if (Array.isArray(response)) {
         return response
@@ -108,7 +116,10 @@ export class UnipostCmsClient {
       }
       return []
     } catch (error) {
-      console.warn(`[UnipostCmsClient] Failed to fetch published records for '${entityType}':`, error)
+      console.warn(
+        `[UnipostCmsClient] Failed to fetch published records for '${entityType}':`,
+        error
+      )
       return []
     }
   }

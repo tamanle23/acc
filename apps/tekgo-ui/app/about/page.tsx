@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
  
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { Authors, allAuthors } from '@/lib/content'
 import { PortableTextRenderer } from '@/components/PortableTextRenderer'
 import AuthorLayout from '@/layouts/AuthorLayout'
