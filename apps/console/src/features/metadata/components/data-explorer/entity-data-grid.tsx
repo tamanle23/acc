@@ -1032,7 +1032,7 @@ export const EntityDataGrid: React.FC<Props> = ({
             className="overflow-x-auto overflow-y-auto relative w-full flex-1 min-h-0 h-full scrollbar-thin focus:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
           >
             <table className="w-full min-w-max text-left border-collapse text-xs table-auto">
-              <thead className="sticky top-0 z-10 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-xs">
+              <thead className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-xs">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr
                     key={headerGroup.id}
@@ -1056,9 +1056,9 @@ export const EntityDataGrid: React.FC<Props> = ({
                           scope="col"
                           aria-sort={ariaSort}
                           className={cn(
-                            'p-3 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] whitespace-nowrap',
+                            'p-3 font-semibold text-muted-foreground uppercase tracking-wider text-[11px] whitespace-nowrap bg-white/95 dark:bg-slate-800/95 backdrop-blur-md',
                             isAction &&
-                            'sticky right-0 z-20 w-12 backdrop-blur-xl border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
+                            'sticky right-0 z-40 w-12 border-l border-white/30 dark:border-white/10 shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[-8px_0_20px_-4px_rgba(0,0,0,0.5),inset_1px_0_1px_0_rgba(255,255,255,0.08)]'
                           )}
                         >
                           {header.isPlaceholder
