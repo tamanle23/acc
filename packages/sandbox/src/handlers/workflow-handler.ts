@@ -288,7 +288,7 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
   },
   handler: (req: SandboxRequest, context): SandboxResponse => {
     const method = req.method.toUpperCase();
-    const { pathname, searchParams } = context;
+    const { pathname } = context;
     const cleanPath = pathname.replace(/^\/(api\/v1|api\/api|api|v1)/, '');
     const tenantId = (req.headers?.['x-tenant-id'] as string) || defaultSandboxStore.getState().activeTenantId || 'tenant-acme';
 

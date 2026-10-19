@@ -1,5 +1,4 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
-import { useSandboxStore } from '../store/sandbox-store';
 import { createMockJwt } from './auth-sandbox-handler';
 
 export interface SandboxFleetTenant {

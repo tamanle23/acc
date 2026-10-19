@@ -3,7 +3,6 @@ import { defaultSandboxStore, SandboxStoreManager, DEFAULT_SANDBOX_PERSONAS } fr
 import { withSimulationDecorator } from './simulation';
 import type {
   SandboxPersona,
-  SandboxPersonaId,
   SandboxRequest,
   SandboxResponse,
 } from './types';

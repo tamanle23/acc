@@ -18,7 +18,6 @@ import {
   Lock,
   Info,
   PlusCircle,
-  Building2,
   UserKey,
 } from 'lucide-react';
 import { RoleDefinitionModal } from './role-definition-modal';

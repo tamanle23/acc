@@ -14,7 +14,7 @@ export interface PaletteFieldItem {
   category: 'PRIMITIVE' | 'COMPLEX' | 'EXTENDED';
 }
 
-export interface FsmStateNode {
+export interface FsmStateNode extends Record<string, unknown> {
   id: string; // e.g. 'DRAFT', 'SUBMITTED', 'APPROVED', 'PUBLISHED', 'ARCHIVED'
   label: string;
   isInitial?: boolean;
@@ -23,7 +23,7 @@ export interface FsmStateNode {
   description?: string;
 }
 
-export interface FsmTransitionEdge {
+export interface FsmTransitionEdge extends Record<string, unknown> {
   id: string;
   sourceState: string;
   targetState: string;

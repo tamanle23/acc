@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Save, CheckCircle2 } from 'lucide-react';
+import { FileText, Save } from 'lucide-react';
 import { useUpdateVatInvoice, type VatInvoiceInfo } from '@/features/metadata/api/use-billing';
 import { toast } from 'sonner';
 

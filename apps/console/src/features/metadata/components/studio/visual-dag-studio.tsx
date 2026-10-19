@@ -39,7 +39,6 @@ import {
   Upload,
   CheckCircle2,
   AlertTriangle,
-  SlidersHorizontal,
   Save,
   Eye,
 } from 'lucide-react';
@@ -57,7 +56,7 @@ export interface VisualDagStudioProps {
 
 const nodeTypes = {
   dagNode: DagWorkflowNodeComponent,
-};
+} as any;
 
 const INITIAL_NODES: Node<DagNodeData>[] = [
   {

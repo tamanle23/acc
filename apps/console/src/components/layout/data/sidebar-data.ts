@@ -23,7 +23,6 @@ import {
   Database,
   Building2,
   CreditCard,
-  Crown,
   KeyRound,
   Workflow,
 } from 'lucide-react'

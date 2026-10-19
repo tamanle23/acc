@@ -15,7 +15,6 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface BlueprintTableViewProps {
   blueprints: BlueprintSummaryDto[];

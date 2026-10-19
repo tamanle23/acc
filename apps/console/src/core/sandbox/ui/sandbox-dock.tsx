@@ -40,7 +40,7 @@ export function SandboxDock() {
     setFaultInjection,
   } = useSandboxStore();
 
-  const { isAuthenticated, isSandbox, clearTokens } =
+  const { isAuthenticated, isSandbox, clearTokens, expireAccessToken, expireRefreshToken } =
     useSpringAuthStore();
 
   const [isMinimized, setIsMinimized] = useState(() => {

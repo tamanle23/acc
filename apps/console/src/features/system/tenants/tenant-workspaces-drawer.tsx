@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Layers, Plus, Trash2, LayoutGrid, CheckCircle2 } from 'lucide-react';
+import { Layers, Plus, Trash2, LayoutGrid } from 'lucide-react';
 import { useProfileStore, type Profile } from '@/stores/profile-store';
 import { useMetadataUiStore } from '@/features/metadata/store/use-metadata-ui-store';
 import { type FleetTenantSummary } from '../api/use-system-fleet';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles, ArrowRight, Zap, Crown, Building2 } from 'lucide-react';
+import { Check, Sparkles, ArrowRight, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type PlanTierType = 'BASIC' | 'PRO' | 'PRO_MAX' | 'ENTERPRISE';

@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { Settings } from './index';
 
 // ResizeObserver is required by @radix-ui/react-scroll-area but not available in JSDOM
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
+  (globalThis as any).ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}

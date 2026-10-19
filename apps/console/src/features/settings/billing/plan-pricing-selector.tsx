@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles, ArrowRight, Building2 } from 'lucide-react';
+import { Check, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { SubscriptionTier } from '@/features/metadata/api/use-billing';
 

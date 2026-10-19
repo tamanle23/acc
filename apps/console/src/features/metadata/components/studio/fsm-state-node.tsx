@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { memo } from 'react';
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { FsmStateNode } from './studio-types';
 
@@ -18,7 +18,7 @@ export interface FsmNodeData extends FsmStateNode {
   outgoingHandles?: DynamicHandleConfig[];
 }
 
-export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<FsmNodeData>) => {
+export const FsmStateNodeComponent = memo(({ data, selected }: NodeProps<Node<FsmNodeData>>) => {
   const incoming = data.incomingHandles || [
     { id: 'target-left', type: 'target', position: Position.Left, offsetPct: 50 },
   ];

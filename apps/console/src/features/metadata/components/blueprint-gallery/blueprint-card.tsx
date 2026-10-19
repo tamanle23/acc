@@ -11,9 +11,6 @@ import {
   Home,
   ArrowRight,
   Eye,
-  GitFork,
-  Database,
-  Sparkles,
 } from 'lucide-react';
 
 interface Props {

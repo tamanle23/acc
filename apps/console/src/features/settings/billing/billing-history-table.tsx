@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Receipt, CheckCircle2, Clock, XCircle, Download, ExternalLink } from 'lucide-react';
+import { Receipt, CheckCircle2, Clock, XCircle, Download } from 'lucide-react';
 import type { BillingTransaction } from '@/features/metadata/api/use-billing';
 import { toast } from 'sonner';
 

@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   ShieldCheck,
   LayoutGrid,
-  Sparkles,
   Trash2,
   Star,
 } from 'lucide-react';

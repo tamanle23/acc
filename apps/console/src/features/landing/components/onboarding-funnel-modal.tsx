@@ -15,10 +15,10 @@ import {
 } from '../../metadata/api/use-blueprints';
 import { useSpringAuthStore } from '../../spring-auth/store';
 import { useMetadataUiStore } from '../../metadata/store/use-metadata-ui-store';
-import { BlueprintCard } from '../../metadata/components/blueprint-gallery/blueprint-card';
 import { useNavigate } from '@tanstack/react-router';
 import { useProfileStore } from '@/stores/profile-store';
-import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Mail, Key, Layers, LayoutGrid } from 'lucide-react';
+import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
+import { Sparkles, ArrowRight, ArrowLeft, CheckCircle2, User, Building, Mail, Layers, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -43,7 +43,7 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
   const { setActiveTenant, setActiveWorkspace } = useMetadataUiStore();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedPlan, setSelectedPlan] = useState<'BASIC' | 'PRO' | 'PRO_MAX'>(defaultPlan);
+  const [selectedPlan] = useState<'BASIC' | 'PRO' | 'PRO_MAX'>(defaultPlan);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string>(defaultBlueprintId);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
@@ -134,7 +134,7 @@ export const OnboardingFunnelModal: React.FC<Props> = ({
       onClose();
 
       // 3. Smooth transition redirect into metadata studio
-      navigate({ to: '/_authenticated/metadata/' });
+      navigate({ to: '/metadata' });
     } catch (err: any) {
       toast.error('Khởi tạo workspace thất bại. Vui lòng thử lại.');
     } finally {

@@ -38,9 +38,7 @@ describe('PayOsQrModal Component', () => {
         onClose={vi.fn()}
         planTier="PRO"
         featureTitle="Schema Architect Studio"
-      >
-        <div />
-      </PayOsQrModal>
+      />
     );
 
     expect(screen.getByText('Thanh toán Quét mã VietQR')).toBeDefined();
@@ -77,9 +75,7 @@ describe('PayOsQrModal Component', () => {
         onClose={vi.fn()}
         planTier="PRO"
         onSuccess={mockSuccess}
-      >
-        <div />
-      </PayOsQrModal>
+      />
     );
 
     const payBtn = screen.getByText('Xác nhận đã chuyển khoản (Mô phỏng Webhook 0s)');

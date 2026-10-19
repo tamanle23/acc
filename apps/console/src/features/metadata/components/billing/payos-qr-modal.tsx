@@ -13,10 +13,7 @@ import {
   QrCode,
   CheckCircle2,
   Copy,
-  Sparkles,
   ExternalLink,
-  ShieldCheck,
-  CreditCard,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';

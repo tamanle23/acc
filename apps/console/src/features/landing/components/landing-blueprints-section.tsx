@@ -4,8 +4,7 @@ import {
 } from '../../metadata/api/use-blueprints';
 import { BlueprintCard } from '../../metadata/components/blueprint-gallery/blueprint-card';
 import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
-import { Sparkles, ArrowRight, Layers } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
 
 interface Props {
   onSelectBlueprint: (blueprintId: string) => void;

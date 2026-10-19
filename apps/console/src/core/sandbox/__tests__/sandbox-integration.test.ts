@@ -232,6 +232,9 @@ describe('Unified Sandbox Full Platform Integration (Phases 2-4)', () => {
         status: 'in progress',
         label: 'feature',
         priority: 'high',
+        attempt: 1,
+        maxRetries: 3,
+        pollDomain: 'default',
       });
       expect(newTask.id).toBe('TASK-9999');
       expect(tasksSandboxRepo.getById('TASK-9999')).toBeDefined();
@@ -252,6 +255,9 @@ describe('Unified Sandbox Full Platform Integration (Phases 2-4)', () => {
         status: 'todo',
         label: 'bug',
         priority: 'low',
+        attempt: 1,
+        maxRetries: 3,
+        pollDomain: 'default',
       });
       expect(tasksSandboxRepo.getById('TASK-TO-PURGE')).toBeDefined();
 

@@ -12,7 +12,7 @@ import { PayOsQrModal } from '@/features/metadata/components/billing/payos-qr-mo
 
 export const BillingPanel: React.FC = () => {
   const { activeTenantId, activeTenantName } = useMetadataUiStore();
-  const { data: billing, isLoading } = useTenantBilling();
+  const { data: billing } = useTenantBilling();
 
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'PRO' | 'PRO_MAX'>('PRO');

@@ -1,11 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { BlueprintCard } from '../../components/blueprint-gallery/blueprint-card';
 import { BlueprintGraphCanvas } from '../../components/blueprint-gallery/blueprint-graph-canvas';
 import { BlueprintTableView } from '../../components/blueprint-gallery/blueprint-table-view';
 import { DialogResizeHandles } from '@/components/dialog-resize-handles';
-import { LayoutModeSwitcher } from '@/components/layout-switcher';
 import type { BlueprintSummaryDto, BlueprintEntityType, BlueprintRelationship } from '../../api/types';
 
 describe('BlueprintCard Component', () => {

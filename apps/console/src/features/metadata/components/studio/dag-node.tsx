@@ -1,12 +1,12 @@
-import React, { memo } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { memo } from 'react';
+import { Handle, Position, type NodeProps, type Node } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import { Play, Split, GitMerge, Clock, Repeat, CheckCircle2, AlertCircle, Loader2, GitFork } from 'lucide-react';
 
 export type DagNodeType = 'SIMPLE' | 'SWITCH' | 'FORK_JOIN' | 'DYNAMIC_FORK' | 'WAIT' | 'DO_WHILE';
 export type ExecutionState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED';
 
-export interface DagNodeData {
+export interface DagNodeData extends Record<string, unknown> {
   taskReferenceName: string;
   taskType: DagNodeType;
   label?: string;
@@ -30,7 +30,7 @@ export interface DagNodeData {
 export type ConductorNodeType = DagNodeType;
 export type ConductorNodeData = DagNodeData;
 
-export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
+export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<Node<DagNodeData>>) => {
   const getNodeIcon = () => {
     switch (data.taskType) {
       case 'SWITCH':

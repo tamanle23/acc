@@ -1,8 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ThemeSwitch } from '@/components/theme-switch';
-import { Layers, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+import { ArrowRight } from 'lucide-react';
 
 interface Props {
   onOpenSignUp: () => void;

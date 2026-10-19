@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -34,8 +34,6 @@ import {
   Mail,
   Copy,
   LogOut,
-  UserCheck,
-  ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
 import {

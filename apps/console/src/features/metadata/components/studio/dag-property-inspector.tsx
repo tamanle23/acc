@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import type { DagNodeData, DagNodeType } from './dag-node';
+import type { DagNodeData } from './dag-node';
 import { validateBindingExpression } from './workflow-ir-converter';
 import { Plus, Trash2, CheckCircle2, AlertTriangle, ShieldAlert } from 'lucide-react';
 

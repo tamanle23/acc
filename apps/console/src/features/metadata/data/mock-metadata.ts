@@ -1411,7 +1411,6 @@ export class MockMetadataService implements MetadataDataSource {
       ...currentRecord,
       attributes: mergedAttributes,
       version: (currentRecord.version || 1) + 1,
-      schemaVersion: entityType.schemaVersion || 1,
       updatedDate: new Date().toISOString(),
     };
 

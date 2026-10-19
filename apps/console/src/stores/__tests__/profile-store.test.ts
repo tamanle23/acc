@@ -3,7 +3,6 @@ import {
   useProfileStore,
   resolveTenantProfile,
   SOVEREIGN_PROFILE,
-  type Profile,
 } from '../profile-store';
 
 describe('profile-store and tenant resolution', () => {

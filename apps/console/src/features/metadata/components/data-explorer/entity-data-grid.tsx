@@ -67,7 +67,6 @@ import {
   RefreshCw,
   ShieldAlert,
   Play,
-  CheckCircle2,
   Send,
   Check,
   Zap,

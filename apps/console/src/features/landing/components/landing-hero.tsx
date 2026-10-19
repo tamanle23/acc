@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, ArrowRight, Play, Database, Layers, GitFork, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, Database, Layers, GitFork, ShieldCheck } from 'lucide-react';
 
 interface Props {
   onGetStarted: () => void;

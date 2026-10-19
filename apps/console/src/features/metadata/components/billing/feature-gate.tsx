@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useTenantBilling } from '../../api/use-billing';
 import { PayOsQrModal } from './payos-qr-modal';
-import { Lock, Sparkles, Zap, ShieldAlert } from 'lucide-react';
+import { Lock, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 import { usePermissions } from '@/features/spring-auth';
 

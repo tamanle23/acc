@@ -1,7 +1,6 @@
 import React from 'react';
 import type { BlueprintEntityType, BlueprintRelationship } from '../../api/types';
-import { Database, GitFork, ArrowRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Database, GitFork } from 'lucide-react';
 
 interface Props {
   entityTypes: BlueprintEntityType[];

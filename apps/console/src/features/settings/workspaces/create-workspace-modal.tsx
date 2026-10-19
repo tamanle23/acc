@@ -16,7 +16,7 @@ import {
 import { useMetadataUiStore } from '../../metadata/store/use-metadata-ui-store';
 import { useProfileStore } from '@/stores/profile-store';
 import { TemplatePreviewModal } from '../../metadata/components/blueprint-gallery/template-preview-modal';
-import { Building2, Sparkles, ArrowRight, CheckCircle2, Command, LayoutGrid } from 'lucide-react';
+import { Building2, ArrowRight, CheckCircle2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {

@@ -21,8 +21,6 @@ import {
   LayoutTemplate,
   Sparkles,
   ArrowRight,
-  CheckCircle2,
-  Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

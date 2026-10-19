@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  ShieldAlert,
   Building2,
   Sliders,
   CreditCard,
@@ -41,14 +40,12 @@ import {
   HardDrive,
   Database,
   Layers,
-  Infinity as InfinityIcon,
   UsersIcon,
 } from 'lucide-react';
 import {
   useFleetTenants,
   useAssumeTenant,
   type FleetTenantSummary,
-  type SovereignSubscriptionTier,
   type SovereignTenantStatus,
 } from '../api/use-system-fleet';
 import { CreateTenantModal } from './create-tenant-modal';

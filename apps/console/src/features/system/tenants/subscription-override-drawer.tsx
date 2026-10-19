@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreditCard, Sparkles, Loader2, ShieldCheck, Check } from 'lucide-react';
+import { CreditCard, Sparkles, Loader2 } from 'lucide-react';
 import {
   useOverrideSubscription,
   type FleetTenantSummary,

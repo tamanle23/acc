@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -16,8 +16,10 @@ describe('TenantWorkspacesDrawer - Phase 3 Immutable Default Workspace Invariant
   const mockTenant = {
     tenantId: 'tenant-acme',
     name: 'Acme International Corp',
+    slug: 'acme-corp',
     tier: 'ENTERPRISE' as const,
     status: 'ACTIVE' as const,
+    ownerEmail: 'admin@acme.com',
     workspacesCount: 2,
     maxWorkspaces: 10,
     schemasCount: 4,
@@ -26,8 +28,14 @@ describe('TenantWorkspacesDrawer - Phase 3 Immutable Default Workspace Invariant
     maxRecords: -1,
     rateLimitBurst: 200,
     rateLimitReplenishRate: 100,
+    cpuUsagePercent: 12.5,
+    storageBytes: 104857600,
+    rateLimitSpikes: 0,
+    activeConnections: 5,
+    expiresAt: null,
     createdDate: '2026-01-01',
-    lastAssumedDate: null,
+    lastUpdatedDate: '2026-03-01',
+    activeFeatures: ['FEATURE_METADATA_READ'],
   };
 
   beforeEach(() => {

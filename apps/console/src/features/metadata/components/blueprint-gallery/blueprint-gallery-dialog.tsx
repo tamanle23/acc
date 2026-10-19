@@ -20,7 +20,7 @@ import { TemplatePreviewModal } from './template-preview-modal';
 import { LayoutModeSwitcher, type LayoutMode } from '@/components/layout-switcher';
 import { DialogResizeHandles } from '@/components/dialog-resize-handles';
 import { useResizableDialog } from '@/hooks/use-resizable-dialog';
-import { Search, BookTemplate, Sparkles, Filter, X, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
+import { Search, BookTemplate, Sparkles, X, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY_LAYOUT = 'console:layout:blueprint-catalog';

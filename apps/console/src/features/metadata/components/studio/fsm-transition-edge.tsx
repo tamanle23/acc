@@ -1,9 +1,10 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
   type EdgeProps,
+  type Edge,
 } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import type { FsmTransitionEdge } from './studio-types';
@@ -52,13 +53,12 @@ export const FsmTransitionEdgeComponent = memo(
     targetX,
     targetY,
     sourcePosition,
-    targetPosition,
     data,
     selected,
     markerEnd,
     markerStart,
     style,
-  }: EdgeProps<FsmEdgeData>) => {
+  }: EdgeProps<Edge<FsmEdgeData>>) => {
     const multiIndex = data?.multiIndex ?? 0;
     const multiTotal = data?.multiTotal ?? 1;
 

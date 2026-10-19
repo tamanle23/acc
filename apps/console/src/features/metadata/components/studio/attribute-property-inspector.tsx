@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { AttributeDefinition, AttributeDefinitionOptions } from '../../api/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Sliders, Check, ShieldCheck, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Sliders, Check, ShieldCheck } from 'lucide-react';
 
 interface Props {
   attribute: AttributeDefinition | null;

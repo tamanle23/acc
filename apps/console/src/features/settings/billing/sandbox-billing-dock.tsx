@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Terminal, Zap, RefreshCw } from 'lucide-react';
+import { Terminal, Zap } from 'lucide-react';
 import { useSimulatePaymentWebhook } from '@/features/metadata/api/use-billing';
 import { toast } from 'sonner';
 

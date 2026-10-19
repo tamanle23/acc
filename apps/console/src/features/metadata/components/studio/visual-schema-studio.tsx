@@ -7,10 +7,9 @@ import { DynamicFormLivePreview } from './dynamic-form-live-preview';
 import { FsmWorkflowDesigner } from './fsm-workflow-designer';
 import { VisualDagStudio } from './visual-dag-studio';
 import type { PaletteFieldItem } from './studio-types';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Sparkles, Layers, Eye, GitFork, Save, RefreshCw } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sparkles, Layers, GitFork } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -19,7 +18,7 @@ interface Props {
 
 export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
   const { data: entityType } = useEntityType(entityTypeId);
-  const { data: attributesResponse, refetch: refetchAttributes } = useAttributeDefinitions(entityTypeId);
+  const { data: attributesResponse } = useAttributeDefinitions(entityTypeId);
   const createAttributeMutation = useCreateAttributeDefinition(entityTypeId);
   const updateAttributeMutation = useUpdateAttributeDefinition(entityTypeId);
 

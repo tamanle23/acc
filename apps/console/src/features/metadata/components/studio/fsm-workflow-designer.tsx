@@ -5,7 +5,6 @@ import {
   Controls,
   MiniMap,
   Position,
-  Panel,
   MarkerType,
   applyNodeChanges,
   applyEdgeChanges,
@@ -104,11 +103,11 @@ interface Props {
 
 const nodeTypes = {
   fsmState: FsmStateNodeComponent,
-};
+} as any;
 
 const edgeTypes = {
   fsmTransition: FsmTransitionEdgeComponent,
-};
+} as any;
 
 export const FsmWorkflowDesigner: React.FC<Props> = ({
   entityTypeName,

@@ -1,6 +1,9 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+import * as matchers from 'vitest-axe/matchers';
+
+expect.extend(matchers);
 
 vi.mock('@/components/command-menu', () => ({
   CommandMenu: () => null,
@@ -17,7 +20,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
   it('SkipToMain component should have zero a11y violations', async () => {
     const { container } = render(<SkipToMain />);
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
   });
 
   it('Main layout component should have zero a11y violations', async () => {
@@ -28,7 +31,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
       </Main>
     );
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
   });
 
   it('PasswordInput component should have zero a11y violations', async () => {
@@ -39,7 +42,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
       </div>
     );
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
   });
 
   it('ConfirmDialog open state should have zero a11y violations', async () => {
@@ -55,7 +58,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
       />
     );
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
   });
 
   it('DataTablePagination should have zero a11y violations and correct ARIA attributes', async () => {
@@ -75,7 +78,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
     );
 
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
 
     const activePageBtn = getByLabelText('Page 1');
     expect(activePageBtn.getAttribute('aria-current')).toBe('page');
@@ -94,7 +97,7 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
     );
 
     const results = await axe(container);
-    expect(results).toHaveNoViolations();
+    (expect(results) as any).toHaveNoViolations();
 
     const button = getByRole('button', { name: /Search docs \(Press Ctrl\+K or Cmd\+K\)/i });
     expect(button).toBeDefined();

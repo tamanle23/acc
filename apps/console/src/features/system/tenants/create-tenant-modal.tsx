@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Building2, Sparkles, Loader2, ShieldCheck } from 'lucide-react';
+import { Building2, Sparkles, Loader2 } from 'lucide-react';
 import { useCreateTenant, type SovereignSubscriptionTier } from '../api/use-system-fleet';
 
 interface CreateTenantModalProps {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DagWorkflowNodeComponent, type DagNodeData } from './dag-node';
@@ -18,15 +17,17 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     render(
       <ReactFlowProvider>
         <DagWorkflowNodeComponent
-          id="test-node"
-          type="dagNode"
-          data={data}
-          selected={false}
-          zIndex={0}
-          isConnectable={true}
-          positionAbsoluteX={0}
-          positionAbsoluteY={0}
-          dragging={false}
+          {...({
+            id: 'test-node',
+            type: 'dagNode',
+            data,
+            selected: false,
+            zIndex: 0,
+            isConnectable: true,
+            positionAbsoluteX: 0,
+            positionAbsoluteY: 0,
+            dragging: false,
+          } as any)}
         />
       </ReactFlowProvider>
     );
@@ -48,15 +49,17 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     render(
       <ReactFlowProvider>
         <DagWorkflowNodeComponent
-          id="switch-node"
-          type="dagNode"
-          data={data}
-          selected={false}
-          zIndex={0}
-          isConnectable={true}
-          positionAbsoluteX={0}
-          positionAbsoluteY={0}
-          dragging={false}
+          {...({
+            id: 'switch-node',
+            type: 'dagNode',
+            data,
+            selected: false,
+            zIndex: 0,
+            isConnectable: true,
+            positionAbsoluteX: 0,
+            positionAbsoluteY: 0,
+            dragging: false,
+          } as any)}
         />
       </ReactFlowProvider>
     );
