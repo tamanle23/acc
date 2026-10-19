@@ -92,34 +92,7 @@ export class FFmpegManager {
       }
     } catch {}
 
-    // 3. MacOS Homebrew Auto-Install (if brew is available on the machine)
-    if (platform === 'darwin') {
-      let hasBrew = false;
-      try {
-        const brewPath = execSync('which brew', { encoding: 'utf-8' }).trim();
-        hasBrew = Boolean(brewPath && fs.existsSync(brewPath));
-      } catch {}
-
-      if (hasBrew) {
-        Logger.info('FFmpegManager', 'System FFmpeg missing. Found Homebrew, auto-installing FFmpeg shared libraries (brew install ffmpeg)...');
-        try {
-          execSync('brew install ffmpeg', { stdio: 'inherit' });
-          const brewFfmpeg = execSync('which ffmpeg', { encoding: 'utf-8' }).trim();
-          const brewFfprobe = execSync('which ffprobe', { encoding: 'utf-8' }).trim();
-          if (brewFfmpeg && brewFfprobe && fs.existsSync(brewFfmpeg)) {
-            Logger.info('FFmpegManager', `Successfully installed FFmpeg via Homebrew: ${brewFfmpeg}`);
-            this.ffmpegPath = brewFfmpeg;
-            this.ffprobePath = brewFfprobe;
-            this.binDirPath = path.dirname(brewFfmpeg);
-            return;
-          }
-        } catch (brewErr: any) {
-          Logger.warn('FFmpegManager', `Homebrew auto-install failed or non-interactive: ${brewErr.message}. Falling back to precompiled direct download...`);
-        }
-      }
-    }
-
-    // 4. Universal Fallback: Direct Precompiled Download into ~/.acc/bin/ffmpeg-shared/
+    // 3. Universal Precompiled Download into ~/.acc/bin/ffmpeg-shared/
     Logger.info('FFmpegManager', `Auto-downloading precompiled FFmpeg build for ${platform}-${arch} into ${targetDir}...`);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
