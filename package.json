@@ -34,14 +34,14 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"                                                                                                                                                                                                                                                                                                    
+    "packages/*"
   ],
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^26.6.2",
     "mitata": "^1.0.34",
     "pts": "^1.0.3",
-    "turbo": "^2.4.4"
+    "turbo": "^2.11.7"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"

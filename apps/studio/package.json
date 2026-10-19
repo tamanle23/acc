@@ -35,9 +35,11 @@
     "@radix-ui/react-toggle": "^1.2.1",
     "@radix-ui/react-toggle-group": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
+    "@tanstack/react-virtual": "^3.13.0",
     "gsap": "^3.12.7",
     "mediabunny": "^1.61.5",
-    "pts": "^1.0.2"
+    "pts": "^1.0.2",
+    "wavesurfer.js": "^7.8.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

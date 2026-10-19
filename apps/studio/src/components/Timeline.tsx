@@ -31,6 +31,9 @@ import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
+import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
 import {
   DndContext,
   useDraggable,
@@ -52,6 +55,7 @@ interface TimelineProps {
   onScrub: (frame: number) => void;
   isPlaying?: boolean;
   onTogglePlay?: () => void;
+  shuttle?: UseShuttleEngineReturn;
 }
 
 interface TrimHandleProps {
@@ -117,15 +121,16 @@ function TimelineClipItem({
   const isBeingDragged = activeDragState?.seqId === seq.id;
   const isAudio = track.type === 'audio';
 
-  let displayStartFrame = seq.startFrame;
+  const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
+  let displayStartFrame = rawStart;
   let displayDurationFrames = seq.durationFrames;
 
   if (isBeingDragged && activeDragState) {
     if (activeDragState.type === 'clip') {
-      displayStartFrame = Math.max(0, seq.startFrame + activeDragState.deltaFrames);
+      displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
     } else if (activeDragState.type === 'trim') {
       if (activeDragState.handle === 'start') {
-        displayStartFrame = Math.max(0, seq.startFrame + activeDragState.deltaFrames);
+        displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
         displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
       } else {
         displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
@@ -173,7 +178,7 @@ function TimelineClipItem({
       <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
         {isAudio ? (
           <AudioWaveform
-            id={seq.id}
+            id={seq.assetId || seq.id}
             durationFrames={seq.durationFrames}
             width={widthPx}
             height={28}
@@ -237,20 +242,10 @@ export function Timeline({
   onScrub,
   isPlaying: externalIsPlaying,
   onTogglePlay,
+  shuttle: externalShuttle,
 }: TimelineProps) {
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
-
-  const [localIsPlaying, setLocalIsPlaying] = useState(false);
-  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : localIsPlaying;
-
-  const togglePlay = () => {
-    if (onTogglePlay) {
-      onTogglePlay();
-    } else {
-      setLocalIsPlaying((prev) => !prev);
-    }
-  };
 
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~4px per frame
@@ -276,42 +271,32 @@ export function Timeline({
   const pixelsPerFrame = Math.max(1, 4 * zoomScale);
   const timelineWidth = Math.max(800, totalFrames * pixelsPerFrame);
 
-  // Standalone fallback playback loop if onTogglePlay was not provided
-  useEffect(() => {
-    if (onTogglePlay) return; // Managed by parent component
-    let rafId: number;
-    if (localIsPlaying) {
-      WebAudioEngine.getInstance().startPlayback(currentFrame, fps, irState);
-      let lastTime = performance.now();
-      let acc = 0;
-      const frameDuration = 1000 / fps;
-      let frame = currentFrame;
-
-      const loop = (now: number) => {
-        const delta = now - lastTime;
-        lastTime = now;
-        acc += delta;
-        if (acc >= frameDuration) {
-          const adv = Math.floor(acc / frameDuration);
-          acc %= frameDuration;
-          frame = (frame + adv) % (totalFrames || 300);
-          onScrub(frame);
-        }
-        rafId = requestAnimationFrame(loop);
-      };
-      rafId = requestAnimationFrame(loop);
-    } else {
-      WebAudioEngine.getInstance().stopPlayback();
-    }
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (!onTogglePlay) WebAudioEngine.getInstance().stopPlayback();
-    };
-  }, [localIsPlaying, fps, totalFrames, irState, onTogglePlay]);
-
   const handleScrub = (frame: number) => {
-    WebAudioEngine.getInstance().playScrubFeedback(frame, fps, irState);
-    onScrub(frame);
+    const discreteFrame = snapToDiscreteFrame(frame);
+    WebAudioEngine.getInstance().playScrubFeedback(discreteFrame, fps, irState);
+    onScrub(discreteFrame);
+  };
+
+  // Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping & Audio Clock Sync
+  const internalShuttle = useShuttleEngine({
+    currentFrame,
+    totalFrames,
+    fps,
+    onScrub: handleScrub,
+    irState,
+    enableKeybindings: !externalShuttle,
+  });
+
+  const shuttle = externalShuttle || internalShuttle;
+
+  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : shuttle.isPlaying;
+
+  const togglePlay = () => {
+    if (onTogglePlay) {
+      onTogglePlay();
+    } else {
+      shuttle.togglePlay();
+    }
   };
 
   const handleSplit = () => {
@@ -342,6 +327,38 @@ export function Timeline({
   const isPanningRef = useRef(false);
   const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
 
+  // Virtualization Scroll & Viewport Observers
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [clientWidth, setClientWidth] = useState(1200);
+
+  const handleScroll = useCallback(() => {
+    if (scrollContainerRef.current) {
+      setScrollLeft(scrollContainerRef.current.scrollLeft);
+      setClientWidth(scrollContainerRef.current.clientWidth);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  // TanStack Vertical Track Virtualization
+  const rowVirtualizer = useVirtualizer({
+    count: tracks.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 48,
+    overscan: 4,
+  });
+
+  // Horizontal Sequence Virtualization
+  const bufferFrames = Math.ceil(400 / pixelsPerFrame);
+  const visibleStartFrame = Math.max(0, Math.floor(scrollLeft / pixelsPerFrame) - bufferFrames);
+  const visibleEndFrame = Math.ceil((scrollLeft + clientWidth) / pixelsPerFrame) + bufferFrames;
+
   const handleTimelineMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool !== 'hand' || !scrollContainerRef.current) return;
     isPanningRef.current = true;
@@ -368,7 +385,7 @@ export function Timeline({
       type: 'trim',
       handle,
       seqId: seq.id,
-      initialStartFrame: seq.startFrame,
+      initialStartFrame: seq.startFrame ?? seq.timelineStartFrame ?? 0,
       initialDurationFrames: seq.durationFrames,
       deltaFrames: 0,
     });
@@ -390,7 +407,7 @@ export function Timeline({
       setActiveDragState({
         type: 'clip',
         seqId: data.seq.id,
-        initialStartFrame: data.seq.startFrame,
+        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
         initialDurationFrames: data.seq.durationFrames,
         deltaFrames: 0,
         targetTrackId: data.trackId,
@@ -401,7 +418,7 @@ export function Timeline({
         type: 'trim',
         handle: data.handle,
         seqId: data.seq.id,
-        initialStartFrame: data.seq.startFrame,
+        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
         initialDurationFrames: data.seq.durationFrames,
         deltaFrames: 0,
       });
@@ -425,7 +442,8 @@ export function Timeline({
         for (const track of tracks) {
           for (const s of track.sequences) {
             if (s.id !== activeDragState.seqId) {
-              snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+              const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
+              snapPoints.push(sStart, sStart + s.durationFrames);
             }
           }
         }
@@ -457,13 +475,14 @@ export function Timeline({
       if (targetTrack) {
         for (const s of targetTrack.sequences) {
           if (s.id !== activeDragState.seqId) {
-            const sEnd = s.startFrame + s.durationFrames;
+            const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
+            const sEnd = sStart + s.durationFrames;
             const myEnd = targetStart + activeDragState.initialDurationFrames;
-            if (targetStart < sEnd && myEnd > s.startFrame) {
+            if (targetStart < sEnd && myEnd > sStart) {
               if (activeDragState.initialStartFrame >= sEnd) {
                 targetStart = Math.max(targetStart, sEnd);
-              } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= s.startFrame) {
-                targetStart = Math.min(targetStart, s.startFrame - activeDragState.initialDurationFrames);
+              } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= sStart) {
+                targetStart = Math.min(targetStart, sStart - activeDragState.initialDurationFrames);
               }
             }
           }
@@ -569,11 +588,12 @@ export function Timeline({
     if (activeTool === 'razor') {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickPx = e.clientX - rect.left;
+      const sStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
       const clickedFrame = Math.max(
-        seq.startFrame + 1,
+        sStart + 1,
         Math.min(
-          seq.startFrame + seq.durationFrames - 1,
-          seq.startFrame + Math.round(clickPx / pixelsPerFrame)
+          sStart + seq.durationFrames - 1,
+          sStart + Math.round(clickPx / pixelsPerFrame)
         )
       );
       IRStateManager.getInstance().splitSequence(seq.id, clickedFrame);
@@ -590,21 +610,12 @@ export function Timeline({
     setMutedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
   };
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (editing tools and zoom; transport/scrubbing handled by useShuttleEngine)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
-      } else if (e.code === 'ArrowLeft') {
-        e.preventDefault();
-        handleScrub(Math.max(0, currentFrame - (e.shiftKey ? fps : 1)));
-      } else if (e.code === 'ArrowRight') {
-        e.preventDefault();
-        handleScrub(Math.min(totalFrames, currentFrame + (e.shiftKey ? fps : 1)));
-      } else if (e.key === 'c' || e.key === 'C') {
+      if (e.key === 'c' || e.key === 'C') {
         setActiveTool('razor');
         handleSplit();
       } else if (e.key === 'v' || e.key === 'V') {
@@ -619,7 +630,7 @@ export function Timeline({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentFrame, totalFrames, fps, selectedSeqId, onTogglePlay, isPlaying]);
+  }, [selectedSeqId, currentFrame]);
 
   const getTrackBadgeStyle = (track: any) => {
     if (track.type === 'audio') return 'bg-emerald-600 border-emerald-700 text-white';
@@ -683,14 +694,25 @@ export function Timeline({
             </Button>
           </Tooltip>
 
-          <Tooltip content={isPlaying ? 'Pause (Space)' : 'Play (Space)'}>
+          <Tooltip content={`Shuttle Reverse (J): ${shuttle.speed < 0 ? shuttle.speed + 'x' : '-1x'}`}>
             <Button
-              variant={isPlaying ? 'secondary' : 'default'}
+              variant="ghost"
+              size="icon"
+              onClick={shuttle.shuttleReverse}
+              className={`h-7 w-7 transition-colors ${shuttle.speed < 0 ? 'text-amber-400 bg-amber-500/15' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <SkipBack className="w-3.5 h-3.5" />
+            </Button>
+          </Tooltip>
+
+          <Tooltip content={shuttle.isPlaying ? `Pause / Stop (K / Space): ${shuttle.speed}x` : 'Play (Space / L)'}>
+            <Button
+              variant={shuttle.isPlaying ? 'secondary' : 'default'}
               size="icon"
               onClick={togglePlay}
-              className={`h-7 w-7 transition-transform active:scale-95 ${isPlaying ? 'bg-secondary text-secondary-foreground' : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'}`}
+              className={`h-7 w-7 transition-transform active:scale-95 ${shuttle.isPlaying ? 'bg-secondary text-secondary-foreground' : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'}`}
             >
-              {isPlaying ? (
+              {shuttle.isPlaying ? (
                 <Pause className="w-3.5 h-3.5 fill-current" />
               ) : (
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -698,12 +720,12 @@ export function Timeline({
             </Button>
           </Tooltip>
 
-          <Tooltip content="Fast Forward 1s">
+          <Tooltip content={`Shuttle Forward (L): ${shuttle.speed > 0 ? shuttle.speed + 'x' : '1x'}`}>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => handleScrub(Math.min(totalFrames, currentFrame + fps))}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={shuttle.shuttleForward}
+              className={`h-7 w-7 transition-colors ${shuttle.speed > 0 ? 'text-emerald-400 bg-emerald-500/15' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <SkipForward className="w-3.5 h-3.5" />
             </Button>
@@ -760,6 +782,11 @@ export function Timeline({
           <MasterAudioMeter isPlaying={isPlaying} currentFrame={currentFrame} />
 
           <div className="flex items-center gap-1.5">
+            {shuttle.speed !== 0 && (
+              <Badge variant="outline" className="font-mono text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs">
+                {shuttle.speed}x
+              </Badge>
+            )}
             <Badge variant="outline" className="font-mono text-[11px] border-[var(--glass-border)] text-muted-foreground bg-[var(--glass-bg)] shadow-2xs">
               {(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s
             </Badge>
@@ -834,122 +861,151 @@ export function Timeline({
               </div>
             )}
 
-            {/* Track Rows: Each row contains its sticky Track Header card + its sequence lane */}
+            {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
               <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
                 Compiling Video IR Tracks...
               </div>
             ) : (
-              tracks.map((track, idx) => {
-                const isLocked = lockedTracks[track.id] || false;
-                const isMuted = mutedTracks[track.id] || false;
-                const canMoveUp = idx > 0;
-                const canMoveDown = idx < tracks.length - 1;
+              <div
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  width: `${timelineWidth + 208}px`,
+                  position: 'relative',
+                }}
+              >
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const track = tracks[virtualRow.index];
+                  if (!track) return null;
+                  const idx = virtualRow.index;
+                  const isLocked = lockedTracks[track.id] || false;
+                  const isMuted = mutedTracks[track.id] || false;
+                  const canMoveUp = idx > 0;
+                  const canMoveDown = idx < tracks.length - 1;
 
-                return (
-                  <div key={track.id} className="h-10 flex items-center gap-2">
-                    {/* Sticky Track Header Card */}
+                  // Horizontal sequence virtualization
+                  const visibleSequences = track.sequences.filter((seq) => {
+                    if (activeDragState?.seqId === seq.id) return true;
+                    const seqStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
+                    const seqEnd = seqStart + seq.durationFrames;
+                    return seqEnd >= visibleStartFrame && seqStart <= visibleEndFrame;
+                  });
+
+                  return (
                     <div
-                      onClick={() => {
-                        IRStateManager.getInstance().setSelectedTrackId(track.id);
-                        IRStateManager.getInstance().setInspectorMode('track');
+                      key={track.id}
+                      style={{
+                        position: 'absolute',
+                        top: `${virtualRow.start}px`,
+                        left: 0,
+                        width: `${timelineWidth + 208}px`,
+                        height: '40px',
                       }}
-                      className="sticky left-0 z-20 w-52 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
-                      title={`Inspect Track ${track.id}`}
+                      className="h-10 flex items-center gap-2"
                     >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
-                        <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
-                          {track.id}
-                        </span>
+                      {/* Sticky Track Header Card */}
+                      <div
+                        onClick={() => {
+                          IRStateManager.getInstance().setSelectedTrackId(track.id);
+                          IRStateManager.getInstance().setInspectorMode('track');
+                        }}
+                        className="sticky left-0 z-20 w-52 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
+                        title={`Inspect Track ${track.id}`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
+                          <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
+                            {track.id}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {/* Track Reorder Up/Down */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={!canMoveUp}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              IRStateManager.getInstance().reorderTrack(track.id, 'up');
+                            }}
+                            className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                            title="Move Track Up"
+                          >
+                            <ChevronUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={!canMoveDown}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              IRStateManager.getInstance().reorderTrack(track.id, 'down');
+                            }}
+                            className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
+                            title="Move Track Down"
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleLock(track.id);
+                            }}
+                            className={`h-5 w-5 rounded transition-colors ${
+                              isLocked
+                                ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            title={isLocked ? 'Unlock Track' : 'Lock Track'}
+                          >
+                            {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleMute(track.id);
+                            }}
+                            className={`h-5 w-5 rounded transition-colors ${
+                              isMuted
+                                ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            title={isMuted ? 'Unmute Track' : 'Mute Track'}
+                          >
+                            {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+                          </Button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        {/* Track Reorder Up/Down */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={!canMoveUp}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            IRStateManager.getInstance().reorderTrack(track.id, 'up');
-                          }}
-                          className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                          title="Move Track Up"
-                        >
-                          <ChevronUp className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={!canMoveDown}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            IRStateManager.getInstance().reorderTrack(track.id, 'down');
-                          }}
-                          className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                          title="Move Track Down"
-                        >
-                          <ChevronDown className="w-3 h-3" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleLock(track.id);
-                          }}
-                          className={`h-5 w-5 rounded transition-colors ${
-                            isLocked
-                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                          title={isLocked ? 'Unlock Track' : 'Lock Track'}
-                        >
-                          {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleMute(track.id);
-                          }}
-                          className={`h-5 w-5 rounded transition-colors ${
-                            isMuted
-                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                          title={isMuted ? 'Unmute Track' : 'Mute Track'}
-                        >
-                          {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
-                        </Button>
+                      {/* Droppable Track Sequence Lane in the Exact Same Row */}
+                      <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
+                        <DroppableTrackLane track={track} isLocked={isLocked}>
+                          {visibleSequences.map((seq) => (
+                            <TimelineClipItem
+                              key={seq.id}
+                              seq={seq}
+                              track={track}
+                              pixelsPerFrame={pixelsPerFrame}
+                              isSelected={selectedSeqId === seq.id}
+                              activeTool={activeTool}
+                              getTrackBadgeStyle={getTrackBadgeStyle}
+                              onClipClick={handleClipClick}
+                              activeDragState={activeDragState}
+                            />
+                          ))}
+                        </DroppableTrackLane>
                       </div>
                     </div>
-
-                    {/* Droppable Track Sequence Lane in the Exact Same Row */}
-                    <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
-                      <DroppableTrackLane track={track} isLocked={isLocked}>
-                        {track.sequences.map((seq) => (
-                          <TimelineClipItem
-                            key={seq.id}
-                            seq={seq}
-                            track={track}
-                            pixelsPerFrame={pixelsPerFrame}
-                            isSelected={selectedSeqId === seq.id}
-                            activeTool={activeTool}
-                            getTrackBadgeStyle={getTrackBadgeStyle}
-                            onClipClick={handleClipClick}
-                            activeDragState={activeDragState}
-                          />
-                        ))}
-                      </DroppableTrackLane>
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
 
             {/* Empty timeline click target to switch to Project inspection mode */}

@@ -1,5 +1,6 @@
 import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
 import { AudioAssetCache } from './AudioAssetCache';
+import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 
 export interface AudioLevels {
   levelL: number;
@@ -98,7 +99,7 @@ export class WebAudioEngine {
           : [];
 
         for (const seq of sequences) {
-          const startSec = (seq.timelineStartFrame || 0) / Math.max(1, fps);
+          const startSec = ((seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0) / Math.max(1, fps);
           const durationSec = (seq.durationFrames || 30) / Math.max(1, fps);
 
           let clipType: 'voice' | 'sfx' | 'bgm' = 'bgm';
@@ -232,6 +233,40 @@ export class WebAudioEngine {
       this.currentSource = null;
     }
     this.isPlaying = false;
+  }
+
+  /**
+   * Sets shuttle playback speed with hardware clock pitch preservation and high-speed/reverse muting.
+   */
+  public setShuttleSpeed(speed: ShuttleSpeed, currentFrame: number, fps: number, irState: any): void {
+    if (speed === 0) {
+      this.stopPlayback();
+      return;
+    }
+
+    const mute = shouldMuteAudio(speed);
+
+    if (mute) {
+      this.stopPlayback();
+      if (this.masterGain && this.ctx) {
+        this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
+      }
+      return;
+    }
+
+    const playbackRate = getAudioPlaybackRate(speed);
+    // Restart audio playback cleanly synchronized to the currentFrame at the requested playback rate
+    this.startPlayback(currentFrame, fps, irState);
+
+    if (this.currentSource && this.masterGain && this.ctx) {
+      try {
+        this.currentSource.playbackRate.setValueAtTime(playbackRate, this.ctx.currentTime);
+        if ((this.currentSource.playbackRate as any).preservesPitch !== undefined) {
+          (this.currentSource.playbackRate as any).preservesPitch = true;
+        }
+        this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+      } catch {}
+    }
   }
 
   /**

@@ -35,11 +35,12 @@ import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { SettingsModal } from './components/SettingsModal';
 
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
+import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
+import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
 
 function StudioWorkspace() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [currentFrame, setCurrentFrame] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const currentFrameRef = useRef(currentFrame);
   currentFrameRef.current = currentFrame;
 
@@ -57,11 +58,8 @@ function StudioWorkspace() {
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
-  const handleTogglePlay = () => {
-    setIsPlaying((prev) => !prev);
-  };
-
-  // Global Workspace Hotkeys: Space (play/pause), [ (left drawer), ] (right inspector), \ (zen mode)
+  // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
+  // J, K, L, Space, and Arrow keys are handled with discrete frame accuracy by useShuttleEngine
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -72,10 +70,7 @@ function StudioWorkspace() {
         return;
       }
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        handleTogglePlay();
-      } else if (e.key === '[') {
+      if (e.key === '[') {
         setIsLeftOpen((prev) => !prev);
       } else if (e.key === ']') {
         setIsRightOpen((prev) => !prev);
@@ -133,6 +128,7 @@ function StudioWorkspace() {
         const newSeq = {
           id: seqId,
           name: assetId,
+          startFrame: currentFrame,
           timelineStartFrame: currentFrame,
           durationFrames: asset.durationSec ? Math.round(asset.durationSec * fps) : 90,
           assetId,
@@ -154,57 +150,33 @@ function StudioWorkspace() {
   const height = irState.doc.meta.canvasSize.h || 1080;
 
   const handleScrub = (frame: number) => {
-    const clamped = Math.max(0, Math.min(frame, totalFrames));
+    const discrete = snapToDiscreteFrame(frame);
+    const clamped = Math.max(0, Math.min(discrete, totalFrames));
     setCurrentFrame(clamped);
     currentFrameRef.current = clamped;
-    if (isPlaying) {
+    if (shuttle.isPlaying) {
       WebAudioEngine.getInstance().startPlayback(clamped, fps, irState);
     } else {
       WebAudioEngine.getInstance().playScrubFeedback(clamped, fps, irState);
     }
   };
 
-  // Synchronized requestAnimationFrame playback loop
-  useEffect(() => {
-    if (!isPlaying) {
-      WebAudioEngine.getInstance().stopPlayback();
-      return;
-    }
+  // Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping & Audio Clock Sync
+  const shuttle = useShuttleEngine({
+    currentFrame,
+    totalFrames,
+    fps,
+    onScrub: handleScrub,
+    irState,
+    enableKeybindings: true,
+  });
 
-    WebAudioEngine.getInstance().startPlayback(currentFrameRef.current, fps, irState);
+  const isPlaying = shuttle.isPlaying;
 
-    let rafId: number;
-    let lastTime = performance.now();
-    let accumulatedTime = 0;
-    const frameDurationMs = 1000 / fps;
+  const handleTogglePlay = () => {
+    shuttle.togglePlay();
+  };
 
-    const tick = (currentTime: number) => {
-      const delta = currentTime - lastTime;
-      lastTime = currentTime;
-      accumulatedTime += delta;
-
-      if (accumulatedTime >= frameDurationMs) {
-        const framesToAdvance = Math.floor(accumulatedTime / frameDurationMs);
-        accumulatedTime %= frameDurationMs;
-
-        let nextFrame = currentFrameRef.current + framesToAdvance;
-        if (nextFrame >= totalFrames) {
-          nextFrame = 0;
-        }
-        currentFrameRef.current = nextFrame;
-        setCurrentFrame(nextFrame);
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      WebAudioEngine.getInstance().stopPlayback();
-    };
-  }, [isPlaying, fps, totalFrames, irState]);
 
   const handleStartExport = async () => {
     try {
@@ -458,6 +430,7 @@ function StudioWorkspace() {
           onScrub={handleScrub}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
+          shuttle={shuttle}
         />
 
         {/* 4. Drag Overlay */}
