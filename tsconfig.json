@@ -29,7 +29,9 @@
       "@acc/exporters": ["packages/exporters/src/index.ts"],
       "@acc/exporters/*": ["packages/exporters/src/*"],
       "@acc/effect-engines": ["packages/effect-engines/src/index.ts"],
-      "@acc/effect-engines/*": ["packages/effect-engines/src/*"]
+      "@acc/effect-engines/*": ["packages/effect-engines/src/*"],
+      "@acc/cli": ["apps/cli/src/index.ts"],
+      "@acc/cli/*": ["apps/cli/src/*"]
     }
   }
 }
