@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
 import type { WorkflowIR } from '@/features/metadata/components/studio/workflow-ir-converter';
 import type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot } from '@unipost/client';
+import type { ApprovalTask } from '@/core/sandbox/handlers/approvals-sandbox-handler';
 import { toast } from 'sonner';
 
-export type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot };
+export type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot, ApprovalTask };
 
 // 1. Fetch Workflow Definitions
 export const useWorkflowDefinitions = () => {
@@ -362,6 +363,62 @@ export const useFleetBatchMigrate = () => {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || 'Batch migration failed');
+    },
+  });
+};
+
+// 12. Fetch Human-in-the-Loop Approval Tasks
+export const useApprovalTasks = (status?: string) => {
+  return useQuery({
+    queryKey: ['workflows', 'approvals', status],
+    queryFn: async (): Promise<ApprovalTask[]> => {
+      try {
+        const res = await springApiClient.get('/v1/workflows/approvals', {
+          params: status ? { status } : undefined,
+        });
+        if (res.status === 200) {
+          return Array.isArray(res.data) ? res.data : res.data?.data || [];
+        }
+        return [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 30 * 1000,
+  });
+};
+
+// 13. Resolve Human-in-the-Loop Approval Task
+export const useResolveApprovalTask = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      action,
+      rationale,
+    }: {
+      taskId: string;
+      action: 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
+      rationale?: string;
+    }): Promise<ApprovalTask> => {
+      const res = await springApiClient.post(
+        `/v1/workflows/approvals/${encodeURIComponent(taskId)}/resolve`,
+        { action, rationale }
+      );
+      return res.data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Approval task ${data.id} updated: ${data.status}`);
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'approvals'] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data
+          ?.error ||
+        (err as Error)?.message ||
+        'Failed to resolve approval task';
+      toast.error(msg);
     },
   });
 };

@@ -18,10 +18,12 @@ export * from './handlers/metadata-sandbox-adapter';
 import { sandboxRegistry } from '@unipost/sandbox';
 import { metadataSandboxAdapter } from './handlers/metadata-sandbox-adapter';
 import { workerSandboxHandler, workerFleetMockStore } from './handlers/worker-sandbox-handler';
+import { approvalsSandboxHandler, approvalTaskMockStore } from './handlers/approvals-sandbox-handler';
 sandboxRegistry.register(metadataSandboxAdapter);
 sandboxRegistry.register(workerSandboxHandler);
+sandboxRegistry.register(approvalsSandboxHandler);
 
-export { workerFleetMockStore, workerSandboxHandler };
+export { workerFleetMockStore, workerSandboxHandler, approvalTaskMockStore, approvalsSandboxHandler };
 
 // Re-export mockMetadataStore for backward compatibility
 export { mockMetadataStore } from '@/features/metadata/data/mock-metadata';

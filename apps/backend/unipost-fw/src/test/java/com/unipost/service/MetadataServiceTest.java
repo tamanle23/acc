@@ -1429,6 +1429,125 @@ class MetadataServiceTest {
 
         assertThrows(UnsupportedOperationException.class, () -> metadataService.transitionRecordState(1L, 100L, "SUBMIT", null));
     }
+
+    @Test
+    void testSeekEntityRecords_FirstPage_Success() {
+        Long entityTypeId = 1L;
+        EntityType entityType = new EntityType();
+        entityType.setId(entityTypeId);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)).thenReturn(Optional.of(entityType));
+
+        EntityRecord r1 = new EntityRecord();
+        r1.setId(10L);
+        r1.setEntityType(entityType);
+        r1.setTenantId("tenant-1");
+        r1.setAttributes(Map.of("name", "Item 1"));
+
+        EntityRecord r2 = new EntityRecord();
+        r2.setId(20L);
+        r2.setEntityType(entityType);
+        r2.setTenantId("tenant-1");
+        r2.setAttributes(Map.of("name", "Item 2"));
+
+        EntityRecord r3 = new EntityRecord();
+        r3.setId(30L);
+        r3.setEntityType(entityType);
+        r3.setTenantId("tenant-1");
+        r3.setAttributes(Map.of("name", "Item 3"));
+
+        when(entityRecordRepository.seekRecords(eq(entityTypeId), eq("tenant-1"), isNull(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(r1, r2, r3));
+
+        com.unipost.presentation.dto.metadata.SeekPageResponse<EntityRecordResponse> response =
+                metadataService.seekEntityRecords(entityTypeId, null, 2, "tenant-1");
+
+        assertNotNull(response);
+        assertEquals(2, response.items().size());
+        assertTrue(response.hasMore());
+        assertNotNull(response.nextCursor());
+        String decodedCursor = new String(java.util.Base64.getDecoder().decode(response.nextCursor()), java.nio.charset.StandardCharsets.UTF_8);
+        assertEquals("20", decodedCursor);
+    }
+
+    @Test
+    void testSeekEntityRecords_WithCursor_Success() {
+        Long entityTypeId = 1L;
+        EntityType entityType = new EntityType();
+        entityType.setId(entityTypeId);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)).thenReturn(Optional.of(entityType));
+
+        String cursor = java.util.Base64.getEncoder().encodeToString("20".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        EntityRecord r3 = new EntityRecord();
+        r3.setId(30L);
+        r3.setEntityType(entityType);
+        r3.setTenantId("tenant-1");
+        r3.setAttributes(Map.of("name", "Item 3"));
+
+        when(entityRecordRepository.seekRecords(eq(entityTypeId), eq("tenant-1"), eq(20L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(r3));
+
+        com.unipost.presentation.dto.metadata.SeekPageResponse<EntityRecordResponse> response =
+                metadataService.seekEntityRecords(entityTypeId, cursor, 2, "tenant-1");
+
+        assertNotNull(response);
+        assertEquals(1, response.items().size());
+        assertFalse(response.hasMore());
+        assertNull(response.nextCursor());
+    }
+
+    @Test
+    void testSeekEntityRecords_WithTimestampPrefixedCursor_ExtractsId() {
+        Long entityTypeId = 1L;
+        EntityType entityType = new EntityType();
+        entityType.setId(entityTypeId);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)).thenReturn(Optional.of(entityType));
+
+        String rawCursor = "2026-10-20T12:00:00Z:55";
+        String cursor = java.util.Base64.getEncoder().encodeToString(rawCursor.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        EntityRecord r = new EntityRecord();
+        r.setId(60L);
+        r.setEntityType(entityType);
+        r.setTenantId("tenant-1");
+
+        when(entityRecordRepository.seekRecords(eq(entityTypeId), eq("tenant-1"), eq(55L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(List.of(r));
+
+        com.unipost.presentation.dto.metadata.SeekPageResponse<EntityRecordResponse> response =
+                metadataService.seekEntityRecords(entityTypeId, cursor, 10, "tenant-1");
+
+        assertNotNull(response);
+        assertEquals(1, response.items().size());
+        verify(entityRecordRepository).seekRecords(eq(entityTypeId), eq("tenant-1"), eq(55L), any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void testSeekEntityRecords_MalformedCursor_FallsBackToNullAfterId() {
+        Long entityTypeId = 1L;
+        EntityType entityType = new EntityType();
+        entityType.setId(entityTypeId);
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(entityTypeId)).thenReturn(Optional.of(entityType));
+
+        when(entityRecordRepository.seekRecords(eq(entityTypeId), eq("tenant-1"), isNull(), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(Collections.emptyList());
+
+        com.unipost.presentation.dto.metadata.SeekPageResponse<EntityRecordResponse> response =
+                metadataService.seekEntityRecords(entityTypeId, "not-valid-base-64!!", 10, "tenant-1");
+
+        assertNotNull(response);
+        assertTrue(response.items().isEmpty());
+        assertFalse(response.hasMore());
+        verify(entityRecordRepository).seekRecords(eq(entityTypeId), eq("tenant-1"), isNull(), any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void testSeekEntityRecords_EntityTypeNotFound_Throws() {
+        when(entityTypeRepository.findByIdAndDeletedDateIsNull(999L)).thenReturn(Optional.empty());
+
+        assertThrows(MetadataNotFoundException.class, () ->
+                metadataService.seekEntityRecords(999L, null, 10, "tenant-1"));
+    }
 }
 
 

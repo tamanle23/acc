@@ -25,129 +25,121 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
+import { useApprovalTasks, useResolveApprovalTask, type ApprovalTask } from '../api/workflow-api';
+import { approvalTaskMockStore } from '@/core/sandbox';
 
-export interface ApprovalTask {
-  id: string;
-  workflowId: string;
-  workflowName: string;
-  entityTypeId: number;
-  entityTypeName: string;
-  recordId: number;
-  stepName: string;
-  requestedBy: string;
-  requestedAt: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED';
-  rationale?: string;
-  currentAttributes: Record<string, unknown>;
-  proposedAttributes: Record<string, unknown>;
-}
-
-const INITIAL_MOCK_APPROVALS: ApprovalTask[] = [
-  {
-    id: 'appr-101',
-    workflowId: 'wf-vendor-onboarding',
-    workflowName: 'Vendor Compliance & Security Review',
-    entityTypeId: 1,
-    entityTypeName: 'Vendor Profile',
-    recordId: 4021,
-    stepName: 'Security Tier Authorization',
-    requestedBy: 'operator-alice@unipost.io',
-    requestedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    status: 'PENDING',
-    currentAttributes: {
-      companyName: 'Acme Logistics Ltd',
-      tier: 'STANDARD',
-      creditLimit: 50000,
-      complianceStatus: 'PENDING_REVIEW',
-    },
-    proposedAttributes: {
-      companyName: 'Acme Logistics Ltd',
-      tier: 'ENTERPRISE',
-      creditLimit: 250000,
-      complianceStatus: 'APPROVED_TIER_1',
-    },
-  },
-  {
-    id: 'appr-102',
-    workflowId: 'wf-rate-card-publish',
-    workflowName: 'Carrier Zone Rate Schedule Mutation',
-    entityTypeId: 3,
-    entityTypeName: 'Zone Tariff',
-    recordId: 8812,
-    stepName: 'Finance Controller Sign-Off',
-    requestedBy: 'tariffs-bot@unipost.io',
-    requestedAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
-    status: 'PENDING',
-    currentAttributes: {
-      zone: 'APAC-EAST',
-      baseRatePerKg: 4.5,
-      fuelSurchargePercent: 12.0,
-      currency: 'USD',
-    },
-    proposedAttributes: {
-      zone: 'APAC-EAST',
-      baseRatePerKg: 4.85,
-      fuelSurchargePercent: 13.5,
-      currency: 'USD',
-    },
-  },
-];
+export type { ApprovalTask };
 
 export function ApprovalsInbox() {
   const { t } = useTranslation();
-  const [tasks, setTasks] = useState<ApprovalTask[]>(INITIAL_MOCK_APPROVALS);
+
+  const { data: remoteTasks } = useApprovalTasks();
+  const resolveMutation = useResolveApprovalTask();
+
+  const [createdTasks, setCreatedTasks] = useState<ApprovalTask[]>([]);
+  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<ApprovalTask>>>({});
   const [selectedTask, setSelectedTask] = useState<ApprovalTask | null>(null);
   const [activeAction, setActiveAction] = useState<'REJECT' | 'CHANGES_REQUESTED' | null>(null);
   const [rationaleText, setRationaleText] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [sseConnected, setSseConnected] = useState(false);
 
-  // Connect to real-time SSE stream with automatic fallback
+  const baseTasks = React.useMemo(() => {
+    return remoteTasks && remoteTasks.length > 0 ? remoteTasks : approvalTaskMockStore.getTasks();
+  }, [remoteTasks]);
+
+  const tasks = React.useMemo(() => {
+    const combined = [...createdTasks, ...baseTasks];
+    return combined.map((task) => {
+      const override = localOverrides[task.id];
+      return override ? { ...task, ...override } : task;
+    });
+  }, [createdTasks, baseTasks, localOverrides]);
+
+  // Connect to real-time SSE stream with automatic reconnection resilience
   useEffect(() => {
     let eventSource: EventSource | null = null;
-    try {
-      eventSource = new EventSource('/api/v1/notifications/stream');
-      eventSource.onopen = () => setSseConnected(true);
-      eventSource.onerror = () => setSseConnected(false);
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isMounted = true;
 
-      eventSource.addEventListener('APPROVAL_REQUESTED', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          const newTask: ApprovalTask = {
-            id: `appr-${Date.now()}`,
-            workflowId: 'wf-dynamic-entity',
-            workflowName: `Entity Type #${data.entityTypeId} Workflow`,
-            entityTypeId: data.entityTypeId,
-            entityTypeName: `Entity Type #${data.entityTypeId}`,
-            recordId: data.recordId,
-            stepName: 'Executive Custodian Approval',
-            requestedBy: data.requestedBy || 'SYSTEM',
-            requestedAt: new Date().toISOString(),
-            status: 'PENDING',
-            currentAttributes: { status: 'PENDING' },
-            proposedAttributes: { status: 'APPROVED' },
-          };
-          setTasks((prev) => [newTask, ...prev]);
-          announceToScreenReader('New approval task received');
-        } catch {
-          // Ignore invalid JSON payload in SSE event
-        }
-      });
-    } catch {
-      // EventSource initialization failed or unsupported in test/offline environment
-    }
+    const connectSse = () => {
+      try {
+        if (typeof EventSource === 'undefined') return;
+
+        eventSource = new EventSource('/api/v1/notifications/stream');
+        eventSource.onopen = () => {
+          if (isMounted) setSseConnected(true);
+        };
+        eventSource.onerror = () => {
+          if (isMounted) {
+            setSseConnected(false);
+            if (eventSource) {
+              eventSource.close();
+              eventSource = null;
+            }
+            // Auto-reconnect after 5 seconds backoff
+            reconnectTimeout = setTimeout(() => {
+              if (isMounted) connectSse();
+            }, 5000);
+          }
+        };
+
+        eventSource.addEventListener('APPROVAL_REQUESTED', (event: MessageEvent) => {
+          try {
+            const data = JSON.parse(event.data);
+            const newTask: ApprovalTask = {
+              id: `appr-${Date.now()}`,
+              workflowId: 'wf-dynamic-entity',
+              workflowName: `Entity Type #${data.entityTypeId} Workflow`,
+              entityTypeId: data.entityTypeId,
+              entityTypeName: `Entity Type #${data.entityTypeId}`,
+              recordId: data.recordId,
+              stepName: 'Executive Custodian Approval',
+              requestedBy: data.requestedBy || 'SYSTEM',
+              requestedAt: new Date().toISOString(),
+              status: 'PENDING',
+              currentAttributes: { status: 'PENDING' },
+              proposedAttributes: { status: 'APPROVED' },
+            };
+            setCreatedTasks((prev) => [newTask, ...prev]);
+            announceToScreenReader('New approval task received');
+          } catch {
+            // Ignore invalid JSON payload in SSE event
+          }
+        });
+      } catch {
+        // EventSource initialization failed or unsupported in test/offline environment
+      }
+    };
+
+    connectSse();
 
     return () => {
+      isMounted = false;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (eventSource) eventSource.close();
     };
   }, []);
 
-  const handleApprove = useCallback((task: ApprovalTask) => {
-    setTasks((prev) =>
-      prev.map((item) => (item.id === task.id ? { ...item, status: 'APPROVED' } : item))
-    );
-    announceToScreenReader(`Approval task ${task.id} approved successfully`);
-  }, []);
+  const handleApprove = useCallback(
+    async (task: ApprovalTask) => {
+      setLocalOverrides((prev) => ({
+        ...prev,
+        [task.id]: { status: 'APPROVED' },
+      }));
+      announceToScreenReader(`Approval task ${task.id} approved successfully`);
+
+      try {
+        await resolveMutation.mutateAsync({
+          taskId: task.id,
+          action: 'APPROVED',
+        });
+      } catch {
+        // fallback
+      }
+    },
+    [resolveMutation]
+  );
 
   const handleOpenRationaleDialog = useCallback(
     (task: ApprovalTask, action: 'REJECT' | 'CHANGES_REQUESTED') => {
@@ -158,26 +150,36 @@ export function ApprovalsInbox() {
     []
   );
 
-  const handleConfirmRationaleAction = useCallback(() => {
+  const handleConfirmRationaleAction = useCallback(async () => {
     if (!selectedTask || !activeAction || !rationaleText.trim()) return;
 
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === selectedTask.id
-          ? {
-              ...item,
-              status: activeAction === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED',
-              rationale: rationaleText.trim(),
-            }
-          : item
-      )
-    );
+    const taskId = selectedTask.id;
+    const action = activeAction;
+    const rationale = rationaleText.trim();
 
-    announceToScreenReader(`Approval task ${selectedTask.id} marked as ${activeAction}`);
+    setLocalOverrides((prev) => ({
+      ...prev,
+      [taskId]: {
+        status: action === 'REJECT' ? 'REJECTED' : 'CHANGES_REQUESTED',
+        rationale,
+      },
+    }));
+
+    announceToScreenReader(`Approval task ${taskId} marked as ${action}`);
     setSelectedTask(null);
     setActiveAction(null);
     setRationaleText('');
-  }, [selectedTask, activeAction, rationaleText]);
+
+    try {
+      await resolveMutation.mutateAsync({
+        taskId,
+        action,
+        rationale,
+      });
+    } catch {
+      // fallback
+    }
+  }, [selectedTask, activeAction, rationaleText, resolveMutation]);
 
   const filteredTasks = tasks.filter((t) => {
     if (!filterQuery) return true;

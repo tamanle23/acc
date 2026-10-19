@@ -17,8 +17,6 @@ import {
   Trash2,
   Copy,
   Check,
-  CheckCircle2,
-  Archive,
 } from 'lucide-react';
 import type { TaskDlqRecordDto } from '@unipost/client';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
@@ -57,8 +55,9 @@ export function DlqInspectorSheet({
     if (overrideJson.trim()) {
       try {
         parsedOverrides = JSON.parse(overrideJson);
-      } catch (err: any) {
-        setJsonError(`Invalid JSON: ${err.message}`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setJsonError(`Invalid JSON: ${message}`);
         return;
       }
     }
@@ -137,7 +136,6 @@ export function DlqInspectorSheet({
               </Button>
             </div>
             <div
-              tabIndex={0}
               role="region"
               aria-label="Error details and stacktrace"
               className="p-3 rounded-lg border border-destructive/20 bg-destructive/5 font-mono text-[11px] text-red-900 dark:text-red-200 overflow-x-auto whitespace-pre-wrap max-h-48 leading-relaxed focus:outline-none focus:ring-1 focus:ring-destructive"
