@@ -176,7 +176,6 @@ function DagStudioCanvas({
 
   const [nodes, setNodes] = useState<Node<DagNodeData>[]>(INITIAL_NODES);
   const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
-  const [isSimulating, setIsSimulating] = useState(false);
   const [showPalette, setShowPalette] = useState(!isReadOnly);
 
   // Real-time execution stream integration
@@ -711,7 +710,7 @@ function DagStudioCanvas({
       }
     });
     return {
-      workflowStatus: stream.workflowStatus || (isSimulating ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
+      workflowStatus: stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
       breakpoints,
       workflowVariables: (stream.snapshot as any)?.variables || {
         orderId: 'ORD-2026-991',
@@ -719,7 +718,7 @@ function DagStudioCanvas({
       },
       taskOutputs,
     };
-  }, [nodes, stream.workflowStatus, stream.snapshot, isSimulating, breakpoints]);
+  }, [nodes, stream.workflowStatus, stream.snapshot, breakpoints]);
 
   const handleExportJson = useCallback(() => {
     const ir = exportToWorkflowIR(nodes, edges);
@@ -745,27 +744,6 @@ function DagStudioCanvas({
       alert(`Import error: ${e.message}`);
     }
   }, []);
-
-  const handleSimulateStep = () => {
-    setIsSimulating(true);
-    setNodes((nds) =>
-      nds.map((n) => {
-        if (breakpoints.includes(n.data.taskReferenceName)) {
-          return {
-            ...n,
-            data: { ...n.data, executionState: 'PAUSED_AT_BREAKPOINT' },
-          };
-        }
-        if (n.data.taskReferenceName === 'expressCourier') {
-          return {
-            ...n,
-            data: { ...n.data, executionState: 'COMPLETED' },
-          };
-        }
-        return n;
-      })
-    );
-  };
 
   const handleDebuggerPause = () => {
     if (executionId) {
@@ -823,7 +801,6 @@ function DagStudioCanvas({
   };
 
   const handleReset = () => {
-    setIsSimulating(false);
     setNodes(INITIAL_NODES);
     setEdges(INITIAL_EDGES);
     setSelectedNodeId(null);
@@ -1122,17 +1099,6 @@ function DagStudioCanvas({
             Hot Migrate
           </Button>
         )}
-
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs gap-1"
-          onClick={handleSimulateStep}
-          disabled={isSimulating}
-        >
-          <Play className="w-3 h-3 text-emerald-500" />
-          Simulate
-        </Button>
 
         <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleReset}>
           <RotateCcw className="w-3 h-3" />
