@@ -36,6 +36,35 @@ describe('VisualJsonEditor Component', () => {
     expect(screen.getByText(/Syntax Error/i)).toBeDefined();
   });
 
+  it('supports Form mode with editable fields and nested objects', () => {
+    const data = {
+      profile: {
+        username: 'alice',
+        age: 30,
+      },
+      tags: ['lead', 'enterprise'],
+    };
+    const onChange = vi.fn();
+    render(<VisualJsonEditor value={data} onChange={onChange} defaultMode="form" />);
+
+    expect(screen.getByText('Properties')).toBeDefined();
+    expect(screen.getByText('profile')).toBeDefined();
+    expect(screen.getByText('username')).toBeDefined();
+    expect(screen.getByText('tags')).toBeDefined();
+
+    // Find the text input for username and edit it
+    const input = screen.getByDisplayValue('alice');
+    fireEvent.change(input, { target: { value: 'alice_updated' } });
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profile: expect.objectContaining({
+          username: 'alice_updated',
+        }),
+      })
+    );
+  });
+
   it('renders JsonCellPopover with key count badge and opens popover on click', () => {
     const data = { alpha: 1, beta: 2, gamma: 3 };
     render(<JsonCellPopover value={data} attributeName="Telemetry" />);

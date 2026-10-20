@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Minimize2,
   FileCode,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,6 +24,7 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { JsonTreeNode } from './json-tree-node';
+import { JsonFormRow } from './json-form-row';
 
 export type JsonEditorMode = 'tree' | 'form' | 'code';
 
@@ -388,40 +390,80 @@ export const VisualJsonEditor: React.FC<VisualJsonEditorProps> = ({
         {mode === 'form' && (
           <div className="space-y-2">
             {typeof parsedValue === 'object' && parsedValue !== null ? (
-              <div className="grid grid-cols-1 gap-2">
-                {Object.entries(parsedValue as Record<string, unknown>).map(
-                  ([k, v]) => (
-                    <div
-                      key={k}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-white/10"
+              <div className="space-y-1">
+                {/* Top Add Property Bar for Root */}
+                {!readOnly && (
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/40">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {Array.isArray(parsedValue) ? 'Array Elements' : 'Properties'}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (Array.isArray(parsedValue)) {
+                          handleTreeUpdate([parsedValue.length], '');
+                        } else {
+                          let baseKey = 'property';
+                          let count = 1;
+                          const current = (parsedValue as Record<string, unknown>) || {};
+                          while (baseKey in current) {
+                            baseKey = `property_${count++}`;
+                          }
+                          handleTreeUpdate([baseKey], '');
+                        }
+                      }}
+                      className="h-6 px-2 text-[11px] gap-1 text-primary hover:bg-primary/10 border-primary/20"
                     >
-                      <span className="font-mono text-xs font-semibold text-foreground/90 w-36 truncate">
-                        {k}
-                      </span>
-                      <div className="flex-1 text-xs">
-                        {typeof v === 'object' && v !== null ? (
-                          <pre className="font-mono text-[10px] p-1.5 rounded bg-muted/50 overflow-x-auto">
-                            {JSON.stringify(v)}
-                          </pre>
-                        ) : (
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {String(v)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
+                      <Plus className="size-3" />
+                      <span>{Array.isArray(parsedValue) ? 'Add Item' : 'Add Property'}</span>
+                    </Button>
+                  </div>
                 )}
-                {Object.keys(parsedValue as Record<string, unknown>).length ===
-                  0 && (
+
+                {/* Object Properties / Array Items */}
+                {!Array.isArray(parsedValue) ? (
+                  Object.entries(parsedValue as Record<string, unknown>).map(
+                    ([k, v]) => (
+                      <JsonFormRow
+                        key={k}
+                        fieldKey={k}
+                        value={v}
+                        path={[k]}
+                        depth={0}
+                        readOnly={readOnly}
+                        onUpdate={handleTreeUpdate}
+                        onDelete={handleTreeDelete}
+                        onKeyRename={handleKeyRename}
+                      />
+                    )
+                  )
+                ) : (
+                  (parsedValue as unknown[]).map((v, idx) => (
+                    <JsonFormRow
+                      key={idx}
+                      fieldKey={idx}
+                      value={v}
+                      path={[idx]}
+                      depth={0}
+                      readOnly={readOnly}
+                      onUpdate={handleTreeUpdate}
+                      onDelete={handleTreeDelete}
+                      onKeyRename={handleKeyRename}
+                    />
+                  ))
+                )}
+
+                {Object.keys(parsedValue as Record<string, unknown>).length === 0 && (
                   <div className="text-center py-6 text-xs text-muted-foreground">
-                    Empty object. Switch to Tree or Code mode to add attributes.
+                    Empty document. Click &quot;Add Property&quot; or switch to Tree/Code mode.
                   </div>
                 )}
               </div>
             ) : (
-              <div className="text-center py-6 text-xs text-muted-foreground">
-                Form mode is supported for objects and arrays.
+              <div className="text-center py-6 text-xs text-muted-foreground font-mono">
+                Form mode is supported for objects and arrays. Primitive value: {String(parsedValue)}
               </div>
             )}
           </div>
