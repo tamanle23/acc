@@ -72,12 +72,12 @@ describe('WorkerClipPrewarmer Suite', () => {
     expect(requestedFrames.length).toBe(0);
 
     // At frame 30 (window is [30, 75]).
-    // seq-2 starts at 70, which is inside [30, 75]. It should trigger prewarm!
+    // seq-2 starts at 70, which is inside [30, 75]. It should trigger prewarm of local frame 0 (hero frame)!
     prewarmer.prewarmUpcomingClips(30, 30);
 
     // Allow promise to resolve
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(requestedFrames).toEqual([70]);
+    expect(requestedFrames).toEqual([0]);
 
     // Calling again at frame 35 shouldn't re-trigger because it's already warmed
     prewarmer.prewarmUpcomingClips(35, 30);

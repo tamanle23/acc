@@ -72,17 +72,24 @@ function renderCurrentFrame(
   // 2. Lookahead Pre-warming of upcoming clips within 1.5s
   clipPrewarmer.prewarmUpcomingClips(frame, currentFps);
 
-  // 3. Resolve active video frames from Mediabunny readers or MemoryManager
-  for (const [assetId, reader] of videoReaders) {
-    const cachedBmp = memoryManager.get(assetId, frame) || reader.getFrame(frame);
+  // 3. Resolve active video frames from Mediabunny readers or MemoryManager using clip-local frames
+  const activeSeqs = engine.seek(frame).activeSequences;
+  for (const seq of activeSeqs) {
+    if (!seq.assetId) continue;
+    const reader = videoReaders.get(seq.assetId);
+    if (!reader) continue;
+
+    const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
+    const cachedBmp = memoryManager.get(seq.assetId, localFrame) || reader.getFrame(localFrame);
     if (cachedBmp) {
-      textureCache.set(assetId, cachedBmp);
+      textureCache.set(seq.assetId, cachedBmp);
     } else {
       // Async decode requested if not in buffer
-      reader.requestFrame(frame, currentFps, isScrubbing).then((bmp) => {
+      const assetId = seq.assetId;
+      reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp) {
           textureCache.set(assetId, bmp);
-          memoryManager.set(assetId, frame, bmp);
+          memoryManager.set(assetId, localFrame, bmp);
           // If paused or idling, trigger immediate repaint with new frame
           if (!isPlaying) {
             texturesDirty = true;
@@ -182,10 +189,29 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
       def.type === 'media' ||
       def.src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i);
 
-    if (isVideo && !videoReaders.has(id)) {
-      const reader = new MediabunnyWorkerReader(def.src, { ringBufferSize: 8 });
-      videoReaders.set(id, reader);
-      reader.init().catch(() => {});
+    if (isVideo) {
+      if (!videoReaders.has(id)) {
+        const reader = new MediabunnyWorkerReader(def.src, { ringBufferSize: 8 });
+        videoReaders.set(id, reader);
+        reader.init().catch(() => {});
+      }
+    } else {
+      // Image asset fallback loading directly in worker
+      if (!textureCache.has(id) && typeof fetch === 'function' && typeof createImageBitmap === 'function') {
+        const url = def.src;
+        const assetId = id;
+        fetch(url)
+          .then((res) => res.blob())
+          .then((blob) => createImageBitmap(blob))
+          .then((bmp) => {
+            textureCache.set(assetId, bmp);
+            texturesDirty = true;
+            if (!isPlaying) {
+              renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+            }
+          })
+          .catch(() => {});
+      }
     }
   }
 }

@@ -199,7 +199,7 @@ export function Preview({
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
-  const [, setAssetTick] = useState(0);
+  const [assetTick, setAssetTick] = useState(0);
 
   useEffect(() => {
     return IRStateManager.getInstance().subscribe(setIrState);
@@ -420,7 +420,7 @@ export function Preview({
         }
       }
     }
-  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging]);
+  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging, assetTick]);
 
   // High-Frequency Direct Playhead Subscription (Smooth 60fps OffscreenCanvas rendering without React re-renders)
   useEffect(() => {
