@@ -1,19 +1,36 @@
 import { IRPreviewEngine, type ResolvedTimeline } from '@acc/ir';
 import { DeterministicTimelineClock } from '@acc/core-isomorphic';
+import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
+import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
+import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
+import { ContentHashTextureCache } from './ContentHashTextureCache';
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
 let engine: IRPreviewEngine | null = null;
+let currentTimeline: ResolvedTimeline | null = null;
 let currentWidth = 1920;
 let currentHeight = 1080;
 let currentFps = 30;
 let currentTotalFrames = 300;
 let currentFrame = 0;
-let textureCache = new Map<string, any>();
+
+// Texture and video reader registries
+const textureCache = new Map<string, any>();
+const videoReaders = new Map<string, MediabunnyWorkerReader>();
+const clipPrewarmer = new WorkerClipPrewarmer(videoReaders);
+const memoryManager = PreviewFrameMemoryManager.getInstance();
+const textTextureCache = ContentHashTextureCache.getInstance();
+
+// Dirty-Frame & Refresh Optimization state
+let lastRenderedFrame: number | null = null;
+let lastRenderedLOD: number | null = null;
+let lastPopOutIntensity: number | null = null;
+let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; popOutIntensity: number } | null = null;
+let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean } | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -23,18 +40,58 @@ let lastRafTime = 0;
 let lastUiSyncTime = 0;
 let workerClock: DeterministicTimelineClock | null = null;
 
-function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
+function renderCurrentFrame(
+  frame: number,
+  lod = 1.0,
+  popOutIntensity = 1.0,
+  isScrubbing = false
+) {
   if (!canvas || !ctx || !engine) return;
+
+  // 1. Dirty-Frame Optimization: Skip redraw if frame, LOD, and popOutIntensity haven't changed
+  if (
+    !texturesDirty &&
+    !isScrubbing &&
+    frame === lastRenderedFrame &&
+    lod === lastRenderedLOD &&
+    popOutIntensity === lastPopOutIntensity
+  ) {
+    return;
+  }
 
   if (isRendering) {
     // Coalesce latest requested frame to avoid worker message queue pileup
-    pendingRender = { frame, lod, popOutIntensity };
+    pendingRender = { frame, lod, popOutIntensity, isScrubbing };
     return;
   }
 
   isRendering = true;
   const w = currentWidth;
   const h = currentHeight;
+
+  // 2. Lookahead Pre-warming of upcoming clips within 1.5s
+  clipPrewarmer.prewarmUpcomingClips(frame, currentFps);
+
+  // 3. Resolve active video frames from Mediabunny readers or MemoryManager
+  for (const [assetId, reader] of videoReaders) {
+    const cachedBmp = memoryManager.get(assetId, frame) || reader.getFrame(frame);
+    if (cachedBmp) {
+      textureCache.set(assetId, cachedBmp);
+    } else {
+      // Async decode requested if not in buffer
+      reader.requestFrame(frame, currentFps, isScrubbing).then((bmp) => {
+        if (bmp) {
+          textureCache.set(assetId, bmp);
+          memoryManager.set(assetId, frame, bmp);
+          // If paused or idling, trigger immediate repaint with new frame
+          if (!isPlaying) {
+            texturesDirty = true;
+            renderCurrentFrame(currentFrame, lod, popOutIntensity, false);
+          }
+        }
+      });
+    }
+  }
 
   ctx.save();
   if (lod < 1.0) {
@@ -56,46 +113,47 @@ function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
 
   ctx.restore();
   isRendering = false;
+  texturesDirty = false;
+  lastRenderedFrame = frame;
+  lastRenderedLOD = lod;
+  lastPopOutIntensity = popOutIntensity;
 
   // Drain coalesced pending frame if one arrived during this draw pass
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity);
+    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing);
   }
 }
 
 function playbackLoop(now: number) {
   if (!isPlaying || shuttleSpeed === 0 || !workerClock) return;
 
-  const deltaSec = Math.max(0, (now - lastRafTime) / 1000);
+  const deltaMs = now - lastRafTime;
   lastRafTime = now;
 
-  const targetFrame = workerClock.tick(deltaSec);
+  const clockState = workerClock.tick(deltaMs / 1000);
+  currentFrame = clockState.currentFrame;
 
-  if (targetFrame !== currentFrame) {
-    currentFrame = targetFrame;
+  if (currentFrame >= currentTotalFrames) {
+    currentFrame = currentTotalFrames;
+    stopPlayback();
+    self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
+    return;
+  } else if (currentFrame <= 0) {
+    currentFrame = 0;
+    stopPlayback();
+    self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
+    return;
+  }
 
-    if (currentFrame >= currentTotalFrames - 1 && shuttleSpeed > 0) {
-      currentFrame = currentTotalFrames - 1;
-      stopPlayback();
-      self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
-      return;
-    } else if (currentFrame <= 0 && shuttleSpeed < 0) {
-      currentFrame = 0;
-      stopPlayback();
-      self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
-      return;
-    }
+  // Active playback renders at 0.5x Dynamic LOD for maximum smoothness
+  renderCurrentFrame(currentFrame, 0.5, 1.0, false);
 
-    // Active playback renders at 0.5x Dynamic LOD for maximum smoothness
-    renderCurrentFrame(currentFrame, 0.5, 1.0);
-
-    // Throttle React UI state synchronization to 15 Hz (~66ms) to eliminate React lag
-    if (now - lastUiSyncTime >= 66) {
-      lastUiSyncTime = now;
-      self.postMessage({ type: 'frameUpdate', frame: currentFrame });
-    }
+  // Throttle React UI state synchronization to 15 Hz (~66ms) to eliminate React lag
+  if (now - lastUiSyncTime >= 66) {
+    lastUiSyncTime = now;
+    self.postMessage({ type: 'frameUpdate', frame: currentFrame });
   }
 
   rafId = requestAnimationFrame(playbackLoop);
@@ -112,7 +170,24 @@ function stopPlayback() {
     rafId = null;
   }
   // Parked hero frame: Render crystal-clear 1.0x full LOD
-  renderCurrentFrame(currentFrame, 1.0, 1.0);
+  texturesDirty = true;
+  renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+}
+
+function syncAssetSources(assets: Record<string, { src?: string; type?: string }>) {
+  for (const [id, def] of Object.entries(assets)) {
+    if (!def.src) continue;
+    const isVideo =
+      def.type === 'video' ||
+      def.type === 'media' ||
+      def.src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i);
+
+    if (isVideo && !videoReaders.has(id)) {
+      const reader = new MediabunnyWorkerReader(def.src, { ringBufferSize: 8 });
+      videoReaders.set(id, reader);
+      reader.init().catch(() => {});
+    }
+  }
 }
 
 self.onmessage = (e: MessageEvent) => {
@@ -131,27 +206,49 @@ self.onmessage = (e: MessageEvent) => {
       ctx = canvas.getContext('2d', { willReadFrequently: false }) as OffscreenCanvasRenderingContext2D;
 
       if (data.timeline) {
+        currentTimeline = data.timeline;
         engine = new IRPreviewEngine(data.timeline);
+        clipPrewarmer.setTimeline(data.timeline);
       }
+
+      if (data.assets) {
+        syncAssetSources(data.assets);
+      }
+
       self.postMessage({ type: 'ready' });
       // Render initial hero frame immediately upon worker initialization
-      renderCurrentFrame(currentFrame, 1.0, 1.0);
+      texturesDirty = true;
+      renderCurrentFrame(currentFrame, 1.0, 1.0, false);
       break;
     }
 
     case 'updateTimeline': {
       if (data.timeline) {
+        currentTimeline = data.timeline;
         engine = new IRPreviewEngine(data.timeline);
+        clipPrewarmer.setTimeline(data.timeline);
       }
       if (data.totalFrames) currentTotalFrames = data.totalFrames;
       if (data.fps) currentFps = data.fps;
-      renderCurrentFrame(currentFrame, 1.0, data.popOutIntensity ?? 1.0);
+      if (data.assets) {
+        syncAssetSources(data.assets);
+      }
+      texturesDirty = true;
+      renderCurrentFrame(currentFrame, 1.0, data.popOutIntensity ?? 1.0, false);
+      break;
+    }
+
+    case 'syncAssets': {
+      if (data.assets) {
+        syncAssetSources(data.assets);
+      }
       break;
     }
 
     case 'renderFrame': {
       currentFrame = data.frame;
-      renderCurrentFrame(currentFrame, data.lod ?? 1.0, data.popOutIntensity ?? 1.0);
+      const isScrub = !!data.isScrubbing;
+      renderCurrentFrame(currentFrame, data.lod ?? 1.0, data.popOutIntensity ?? 1.0, isScrub);
       break;
     }
 
@@ -185,9 +282,10 @@ self.onmessage = (e: MessageEvent) => {
         for (const [id, bmp] of Object.entries(data.textures)) {
           textureCache.set(id, bmp);
         }
+        texturesDirty = true;
         // If parked/paused, re-render immediately with newly synchronized textures
         if (!isPlaying) {
-          renderCurrentFrame(currentFrame, 1.0, 1.0);
+          renderCurrentFrame(currentFrame, 1.0, 1.0, false);
         }
       }
       break;

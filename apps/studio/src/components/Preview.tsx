@@ -262,8 +262,10 @@ export function Preview({
       overlayCanvas.height = height;
     }
 
+    const assetsMap = irState.doc?.assets || {};
+
     if (baseCanvas && bridge.supportsOffscreen() && !bridge.hasTransferred()) {
-      const transferred = bridge.init(baseCanvas, irState.timeline, width, height, fps, totalFrames);
+      const transferred = bridge.init(baseCanvas, irState.timeline, width, height, fps, totalFrames, assetsMap);
       if (transferred) {
         setWorkerReady(true);
         bridge.onReady(() => {
@@ -273,13 +275,13 @@ export function Preview({
     }
 
     if (bridge.hasTransferred()) {
-      bridge.updateTimeline(irState.timeline, totalFrames, fps);
+      bridge.updateTimeline(irState.timeline, totalFrames, fps, undefined, assetsMap);
     } else {
       const engine = new IRPreviewEngine(irState.timeline);
       previewEngineRef.current = engine;
     }
     setGlReady(true);
-  }, [irState.timeline, width, height, fps, totalFrames]);
+  }, [irState.timeline, irState.doc?.assets, width, height, fps, totalFrames]);
 
   useEffect(() => {
     return () => {
@@ -311,7 +313,7 @@ export function Preview({
     const assetsMap = irState.doc?.assets || {};
 
     if (bridge && bridge.hasTransferred()) {
-      // Synchronize newly available textures to Web Worker via ImageBitmap transfer
+      // Synchronize image/placeholder textures to Web Worker; video assets are decoded directly inside preview.worker.ts via Mediabunny
       const activeTexturesToSync: Record<string, ImageBitmap> = {};
       const syncPromises: Promise<void>[] = [];
 
@@ -320,6 +322,14 @@ export function Preview({
           const assetDef = assetsMap[seq.assetId];
           const assetSrc = assetDef?.src;
           const assetType = assetDef?.type || 'media';
+          const isVideo =
+            assetType === 'video' ||
+            assetType === 'media' ||
+            (assetSrc && assetSrc.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i));
+
+          // For video assets, the worker decodes directly via MediabunnyWorkerReader
+          if (isVideo) continue;
+
           const seqStart = seq.startFrame ?? 0;
           const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
 
@@ -349,7 +359,7 @@ export function Preview({
           if (Object.keys(activeTexturesToSync).length > 0) {
             bridge.updateTextures(activeTexturesToSync);
           }
-          // 1. OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking, Adaptive Dynamic LOD)
+          // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
           bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
         });
       } else {
@@ -417,7 +427,7 @@ export function Preview({
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const bridge = workerBridgeRef.current;
       if (bridge && bridge.hasTransferred()) {
-        bridge.renderFrame(frame, playing ? 0.5 : 1.0);
+        bridge.renderFrame(frame, playing ? 0.5 : 1.0, 1.0, !playing);
       }
     });
   }, []);

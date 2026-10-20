@@ -357,4 +357,80 @@ export class AssetTextureCache {
     ctx.font = '9px monospace';
     ctx.fillText(`${w}x${h} | ${assetId}`, 8, h - 8);
   }
+
+  /**
+   * Caches static text rasterized onto an offscreen canvas to avoid per-frame layout recalculation.
+   */
+  public getRasterizedTextTexture(
+    text: string,
+    font = 'bold 32px sans-serif',
+    fillColor = '#ffffff',
+    strokeColor?: string,
+    strokeWidth = 0
+  ): HTMLCanvasElement {
+    const key = `txt:${text}:${font}:${fillColor}:${strokeColor || ''}:${strokeWidth}`;
+    const cached = this.canvasCache.get(key);
+    if (cached) return cached;
+
+    if (typeof document === 'undefined') {
+      return null as any;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+
+    ctx.font = font;
+    const metrics = ctx.measureText(text);
+    const w = Math.ceil(metrics.width) + 16;
+    const h = 48; // Standard single-line height
+
+    canvas.width = w;
+    canvas.height = h;
+
+    ctx.font = font;
+    ctx.textBaseline = 'middle';
+
+    if (strokeColor && strokeWidth > 0) {
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.strokeText(text, 8, h * 0.5);
+    }
+
+    ctx.fillStyle = fillColor;
+    ctx.fillText(text, 8, h * 0.5);
+
+    this.canvasCache.set(key, canvas);
+    return canvas;
+  }
+
+  /**
+   * Caches static vector shape drawing to an offscreen canvas to avoid vector recalculations.
+   */
+  public getRasterizedShapeTexture(
+    shapeKey: string,
+    w: number,
+    h: number,
+    drawFn: (ctx: CanvasRenderingContext2D, w: number, h: number) => void
+  ): HTMLCanvasElement {
+    const key = `shp:${shapeKey}:${w}:${h}`;
+    const cached = this.canvasCache.get(key);
+    if (cached) return cached;
+
+    if (typeof document === 'undefined') {
+      return null as any;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      drawFn(ctx, w, h);
+    }
+
+    this.canvasCache.set(key, canvas);
+    return canvas;
+  }
 }
+

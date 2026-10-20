@@ -42,7 +42,8 @@ export class PreviewWorkerBridge {
     width: number,
     height: number,
     fps: number,
-    totalFrames: number
+    totalFrames: number,
+    assets?: Record<string, { src?: string; type?: string }>
   ): boolean {
     if (!this.isSupported) return false;
     if (this.isTransferred) return true;
@@ -77,6 +78,7 @@ export class PreviewWorkerBridge {
           height,
           fps,
           totalFrames,
+          assets,
         },
         [offscreen]
       );
@@ -90,7 +92,13 @@ export class PreviewWorkerBridge {
     }
   }
 
-  public updateTimeline(timeline: ResolvedTimeline, totalFrames: number, fps: number, popOutIntensity?: number) {
+  public updateTimeline(
+    timeline: ResolvedTimeline,
+    totalFrames: number,
+    fps: number,
+    popOutIntensity?: number,
+    assets?: Record<string, { src?: string; type?: string }>
+  ) {
     if (!this.worker || !this.isTransferred) return;
     this.worker.postMessage({
       type: 'updateTimeline',
@@ -98,16 +106,26 @@ export class PreviewWorkerBridge {
       totalFrames,
       fps,
       popOutIntensity,
+      assets,
     });
   }
 
-  public renderFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
+  public syncAssets(assets: Record<string, { src?: string; type?: string }>) {
+    if (!this.worker || !this.isTransferred) return;
+    this.worker.postMessage({
+      type: 'syncAssets',
+      assets,
+    });
+  }
+
+  public renderFrame(frame: number, lod = 1.0, popOutIntensity = 1.0, isScrubbing = false) {
     if (!this.worker || !this.isTransferred) return;
     this.worker.postMessage({
       type: 'renderFrame',
       frame,
       lod,
       popOutIntensity,
+      isScrubbing,
     });
   }
 
