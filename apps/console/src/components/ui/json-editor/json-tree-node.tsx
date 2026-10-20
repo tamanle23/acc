@@ -29,6 +29,7 @@ export interface JsonTreeNodeProps {
   value: unknown;
   path: (string | number)[];
   depth?: number;
+  isLastChild?: boolean;
   readOnly?: boolean;
   onUpdate: (path: (string | number)[], newValue: unknown) => void;
   onDelete: (path: (string | number)[]) => void;
@@ -130,28 +131,35 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
   };
 
   return (
-    <div className="flex flex-col select-none text-xs">
+    <div className="flex flex-col select-none text-xs relative">
       <div
         className={cn(
-          'group flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-muted/40 transition-colors',
-          depth > 0 && 'ml-4 border-l border-white/10 dark:border-white/5 pl-2'
+          'group flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-muted/40 transition-colors relative'
         )}
       >
+        {/* Horizontal connector line from parent dashed line */}
+        {depth > 0 && (
+          <span
+            className="absolute -left-3 top-1/2 -translate-y-1/2 w-3 border-t border-dashed border-border/70 pointer-events-none"
+            aria-hidden="true"
+          />
+        )}
+
         {/* Expand / Collapse toggle */}
         {isContainer ? (
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-0.5 hover:bg-muted/60 rounded text-muted-foreground hover:text-foreground transition-colors"
+            className="p-0.5 hover:bg-muted/60 rounded text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
             {isExpanded ? (
-              <ChevronDown className="size-3.5" />
+              <ChevronDown className="size-3.5 text-primary" />
             ) : (
-              <ChevronRight className="size-3.5" />
+              <ChevronRight className="size-3.5 text-primary" />
             )}
           </button>
         ) : (
-          <div className="size-3.5" />
+          <div className="size-3.5 shrink-0" />
         )}
 
         {/* Key Display / Inline Editor */}
@@ -169,20 +177,20 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
                   setIsEditingKey(false);
                 }
               }}
-              className="h-6 w-28 text-xs font-mono py-0 px-1.5 bg-background border-primary"
+              className="h-6 w-28 text-xs font-mono py-0 px-1.5 bg-background border-primary shrink-0"
             />
           ) : (
             <button
               type="button"
               onDoubleClick={() => !readOnly && setIsEditingKey(true)}
-              className="font-mono font-medium text-foreground/90 hover:text-primary transition-colors cursor-pointer"
+              className="font-mono font-medium text-foreground/90 hover:text-primary transition-colors cursor-pointer shrink-0"
               title={!readOnly ? 'Double-click to rename' : undefined}
             >
               {String(nodeKey)}:
             </button>
           )
         ) : (
-          <span className="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1 py-0.2 rounded">
+          <span className="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1 py-0.2 rounded shrink-0">
             [{nodeKey}]
           </span>
         )}
@@ -193,7 +201,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
             <DropdownMenuTrigger asChild>
               <Badge
                 variant="outline"
-                className="gap-1 text-[10px] font-mono px-1.5 py-0 cursor-pointer hover:bg-muted/50 border-white/20"
+                className="gap-1 text-[10px] font-mono px-1.5 py-0 cursor-pointer hover:bg-muted/50 border-white/20 shrink-0"
               >
                 {renderTypeIcon(valType)}
                 <span>{valType}</span>
@@ -215,7 +223,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Badge variant="outline" className="gap-1 text-[10px] font-mono px-1.5 py-0 border-white/20">
+          <Badge variant="outline" className="gap-1 text-[10px] font-mono px-1.5 py-0 border-white/20 shrink-0">
             {renderTypeIcon(valType)}
             <span>{valType}</span>
           </Badge>
@@ -229,7 +237,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
                 value={String(value ?? '')}
                 disabled={readOnly}
                 onChange={(e) => onUpdate(path, e.target.value)}
-                className="h-6 text-xs font-mono py-0 px-1.5 bg-white/40 dark:bg-slate-900/40 border-white/20"
+                className="h-6 text-xs font-mono py-0 px-1.5 bg-white/40 dark:bg-slate-900/40 border-white/20 w-full"
                 placeholder="text value..."
               />
             )}
@@ -268,7 +276,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
 
         {/* Container Size Badge */}
         {isContainer && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono shrink-0">
             {valType === 'array'
               ? `[ ${(value as unknown[]).length} items ]`
               : `{ ${Object.keys((value as Record<string, unknown>) || {}).length} keys }`}
@@ -277,7 +285,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
 
         {/* Row Contextual Actions (Add child / Delete) */}
         {!readOnly && (
-          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
             {isContainer && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -323,9 +331,9 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
         )}
       </div>
 
-      {/* Children elements if container and expanded */}
+      {/* Children elements with continuous vertical dashed alignment guide */}
       {isContainer && isExpanded && (
-        <div className="flex flex-col">
+        <div className="flex flex-col ml-4 pl-3 relative border-l border-dashed border-border/70 dark:border-border/60">
           {valType === 'object' &&
             Object.entries((value as Record<string, unknown>) || {}).map(([k, v]) => (
               <JsonTreeNode
@@ -358,7 +366,7 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
 
           {((valType === 'object' && Object.keys((value as Record<string, unknown>) || {}).length === 0) ||
             (valType === 'array' && ((value as unknown[]) || []).length === 0)) && (
-            <div className="ml-8 py-1 text-muted-foreground/50 italic text-[11px] font-mono">
+            <div className="py-1 text-muted-foreground/50 italic text-[11px] font-mono">
               (empty)
             </div>
           )}

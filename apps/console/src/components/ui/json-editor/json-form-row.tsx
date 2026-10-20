@@ -119,13 +119,20 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="flex flex-col space-y-1 relative">
       <div
         className={cn(
-          'flex items-center gap-2 p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-white/10 text-xs transition-colors group',
-          depth > 0 && 'ml-4 border-l-2 border-l-primary/40 pl-3 bg-muted/20'
+          'flex items-center gap-2 p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-white/10 text-xs transition-colors group relative'
         )}
       >
+        {/* Horizontal connector line from parent dashed guide */}
+        {depth > 0 && (
+          <span
+            className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-3.5 border-t border-dashed border-border/70 pointer-events-none"
+            aria-hidden="true"
+          />
+        )}
+
         {/* Container collapse toggle */}
         {isContainer ? (
           <button
@@ -143,8 +150,8 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
           <div className="size-3.5 shrink-0" />
         )}
 
-        {/* Key Label or Key Input */}
-        <div className="w-36 shrink-0 flex items-center gap-1 min-w-0">
+        {/* Key Label or Key Input with consistent width */}
+        <div className="w-40 shrink-0 flex items-center gap-1 min-w-0">
           {!isArrayItem ? (
             isEditingKey && !readOnly ? (
               <Input
@@ -179,16 +186,18 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
         </div>
 
         {/* Type Badge & Quick Converter */}
-        <div className="shrink-0">
+        <div className="shrink-0 w-20">
           {!readOnly ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="gap-1 text-[10px] font-mono px-1.5 py-0 cursor-pointer hover:bg-muted/50 border-white/20"
+                  className="gap-1 text-[10px] font-mono px-1.5 py-0 cursor-pointer hover:bg-muted/50 border-white/20 w-full justify-between"
                 >
-                  {renderTypeIcon(valType)}
-                  <span>{valType}</span>
+                  <div className="flex items-center gap-1">
+                    {renderTypeIcon(valType)}
+                    <span>{valType}</span>
+                  </div>
                 </Badge>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-28 text-xs">
@@ -315,9 +324,9 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
         )}
       </div>
 
-      {/* Recursive rendering for nested objects and arrays */}
+      {/* Recursive rendering for nested objects and arrays with vertical dashed alignment line */}
       {isContainer && isExpanded && (
-        <div className="space-y-1">
+        <div className="space-y-1 ml-4 pl-3.5 relative border-l border-dashed border-border/70 dark:border-border/60">
           {valType === 'object' &&
             Object.entries((value as Record<string, unknown>) || {}).map(([k, v]) => (
               <JsonFormRow
@@ -350,7 +359,7 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
 
           {((valType === 'object' && Object.keys((value as Record<string, unknown>) || {}).length === 0) ||
             (valType === 'array' && ((value as unknown[]) || []).length === 0)) && (
-            <div className="ml-8 py-2 text-muted-foreground/60 italic text-xs font-mono">
+            <div className="py-2 text-muted-foreground/60 italic text-xs font-mono">
               (empty container)
             </div>
           )}
