@@ -21,6 +21,8 @@ import { DagPalette } from './dag-palette';
 import { DagPropertyInspector } from './dag-property-inspector';
 import { TaskTelemetryInspector } from './task-telemetry-inspector';
 import { TimeTravelScrubber } from './time-travel-scrubber';
+import { WorkflowExecutionFlamegraph } from './workflow-execution-flamegraph';
+import { WorkflowDryRunModal } from './workflow-dry-run-modal';
 import { WorkflowIrDialog } from './workflow-ir-dialog';
 import {
   exportToWorkflowIR,
@@ -31,6 +33,7 @@ import {
 } from './workflow-ir-converter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   Play,
   Pause,
@@ -52,6 +55,8 @@ import {
   LayoutGrid,
   Bug,
   Braces,
+  BarChart2,
+  Sparkles,
 } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
@@ -193,6 +198,10 @@ function DagStudioCanvas({
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
 
+  // Iteration 14: Execution View Tabs & Hover Cross-Highlighting
+  const [activeViewTab, setActiveViewTab] = useState<'graph' | 'timeline'>('graph');
+  const [activeHoveredTaskRef, setActiveHoveredTaskRef] = useState<string | null>(null);
+
   // Phase 39: Visual Graph Diff & Hot Migration States
   const [isHotMigrationOpen, setIsHotMigrationOpen] = useState(false);
   const [diffTargetVersion, setDiffTargetVersion] = useState<number | null>(null);
@@ -203,6 +212,9 @@ function DagStudioCanvas({
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [isIrDialogOpen, setIsIrDialogOpen] = useState(false);
   const [irDialogContent, setIrDialogContent] = useState('');
+
+  // Dry-Run Simulation Modal State
+  const [isDryRunOpen, setIsDryRunOpen] = useState(false);
 
   // Validation State
   const [validationErrors, setValidationErrors] = useState<GraphValidationError[]>([]);
@@ -702,6 +714,65 @@ function DagStudioCanvas({
     [nodes, breakpoints, handleToggleBreakpoint, isExecutionMode]
   );
 
+  // Phase 1 (Iteration 14): Traversed Path & Dead Branch Contrast Highlighting
+  const decoratedEdges = useMemo(() => {
+    if (!isExecutionMode) {
+      return edges;
+    }
+
+    const nodeMap = new Map<string, Node<DagNodeData>>();
+    nodes.forEach((n) => nodeMap.set(n.id, n));
+
+    return edges.map((e) => {
+      const sourceNode = nodeMap.get(e.source);
+      const targetNode = nodeMap.get(e.target);
+
+      const sourceState = sourceNode?.data?.executionState;
+      const targetState = targetNode?.data?.executionState;
+
+      const isSourceCompleted = sourceState === 'COMPLETED';
+      const isTargetActiveOrDone =
+        targetState === 'COMPLETED' ||
+        targetState === 'IN_PROGRESS' ||
+        targetState === 'PAUSED_AT_BREAKPOINT';
+
+      const isTraversed = isSourceCompleted && isTargetActiveOrDone;
+
+      // Dead branch if upstream node finished, but this downstream branch was bypassed/skipped (remains PENDING)
+      const isBypassedBranch =
+        isSourceCompleted && targetState === 'PENDING' && !isTargetActiveOrDone;
+
+      let edgeStyle: React.CSSProperties = { ...e.style };
+      let className = e.className || '';
+
+      if (isTraversed) {
+        edgeStyle = {
+          ...edgeStyle,
+          stroke: '#10b981', // Emerald glow
+          strokeWidth: 3,
+          filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))',
+        };
+        className = cn(className, 'stroke-emerald-500 animate-pulse');
+      } else if (isBypassedBranch) {
+        edgeStyle = {
+          ...edgeStyle,
+          stroke: '#94a3b8',
+          strokeWidth: 1.5,
+          strokeDasharray: '4 4',
+          opacity: 0.35,
+        };
+        className = cn(className, 'opacity-35');
+      }
+
+      return {
+        ...e,
+        animated: isTraversed ? true : e.animated,
+        style: edgeStyle,
+        className,
+      };
+    });
+  }, [edges, nodes, isExecutionMode]);
+
   // Compute aggregated Variable Watch state from workflow snapshot or current node states
   const variableWatchSnapshot = useMemo(() => {
     const taskOutputs: Record<string, unknown> = {};
@@ -744,6 +815,35 @@ function DagStudioCanvas({
     } catch (e: any) {
       alert(`Import error: ${e.message}`);
     }
+  }, []);
+
+  const handleSimulationSuccess = useCallback((simResult: any) => {
+    if (!simResult) return;
+    const tasksByRef = simResult.tasksByRef || {};
+    setNodes((nds) =>
+      nds.map((n) => {
+        const ref = n.data.taskReferenceName;
+        const taskSim = tasksByRef[ref];
+        if (taskSim) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: taskSim.status || 'COMPLETED',
+              outputParameters: taskSim.output || n.data.outputParameters,
+              durationMs: taskSim.durationMs ?? 15,
+            },
+          };
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            executionState: 'PENDING',
+          },
+        };
+      })
+    );
   }, []);
 
   const handleDebuggerPause = () => {
@@ -961,6 +1061,18 @@ function DagStudioCanvas({
               Import IR
             </Button>
 
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+              onClick={() => setIsDryRunOpen(true)}
+              title="Dry-run simulate workflow execution with mock inputs"
+              data-testid="dag-dry-run-btn"
+            >
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              Dry Run
+            </Button>
+
             <div className="h-4 w-[1px] bg-border/50" />
 
             <Button
@@ -995,13 +1107,38 @@ function DagStudioCanvas({
           </>
         )}
 
-        {/* Read-Only Mode Actions */}
+        {/* Read-Only Mode Actions & View Switcher */}
         {isReadOnly && (
           <div className="flex items-center gap-2">
             <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px]">
               <Eye className="w-3 h-3 mr-1" />
               Execution & Back-Test View
             </Badge>
+
+            {/* View Switcher: Graph vs Timeline */}
+            <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
+              <Button
+                size="sm"
+                variant={activeViewTab === 'graph' ? 'default' : 'ghost'}
+                className="h-6 px-2 text-[10px] gap-1"
+                onClick={() => setActiveViewTab('graph')}
+                data-testid="dag-view-graph-tab"
+              >
+                <LayoutGrid className="w-3 h-3" />
+                Graph
+              </Button>
+              <Button
+                size="sm"
+                variant={activeViewTab === 'timeline' ? 'default' : 'ghost'}
+                className="h-6 px-2 text-[10px] gap-1"
+                onClick={() => setActiveViewTab('timeline')}
+                data-testid="dag-view-timeline-tab"
+              >
+                <BarChart2 className="w-3 h-3" />
+                Timeline
+              </Button>
+            </div>
+
             {onCloseExecution && (
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCloseExecution}>
                 Exit View
@@ -1192,35 +1329,52 @@ function DagStudioCanvas({
         </div>
       )}
 
-      {/* React Flow Canvas */}
-      <ReactFlow
-        nodes={decoratedNodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={isReadOnly ? undefined : onNodesChange}
-        onEdgesChange={isReadOnly ? undefined : onEdgesChange}
-        onConnect={isReadOnly ? undefined : onConnect}
-        onNodeClick={onNodeClick}
-        nodesDraggable={!isReadOnly}
-        nodesConnectable={!isReadOnly}
-        elementsSelectable={true}
-        fitView
-      >
-        <Background gap={16} size={1} />
-        <Controls className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl !shadow-lg" />
-        <MiniMap
-          className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl"
-          nodeColor={(n) => {
-            const data = n.data as DagNodeData;
-            if (data?.validationError) return '#ef4444';
-            if (data?.executionState === 'COMPLETED') return '#10b981';
-            if (data?.executionState === 'PAUSED_AT_BREAKPOINT') return '#f59e0b';
-            if (data?.executionState === 'IN_PROGRESS') return '#0284c7';
-            if (data?.executionState === 'FAILED') return '#ef4444';
-            return '#94a3b8';
-          }}
-        />
-      </ReactFlow>
+      {/* Viewport: Either React Flow Canvas or Concurrency Flamegraph */}
+      {activeViewTab === 'timeline' && isReadOnly ? (
+        <div className="absolute inset-0 pt-16 p-6 overflow-y-auto">
+          <WorkflowExecutionFlamegraph
+            events={timelineEvents}
+            activeTaskRef={activeHoveredTaskRef}
+            onHoverTask={setActiveHoveredTaskRef}
+            onClickTask={(ref) => {
+              const node = nodes.find((n) => n.data.taskReferenceName === ref);
+              if (node) {
+                setSelectedNodeId(node.id);
+                setIsTelemetryOpen(true);
+              }
+            }}
+          />
+        </div>
+      ) : (
+        <ReactFlow
+          nodes={decoratedNodes}
+          edges={decoratedEdges}
+          nodeTypes={nodeTypes}
+          onNodesChange={isReadOnly ? undefined : onNodesChange}
+          onEdgesChange={isReadOnly ? undefined : onEdgesChange}
+          onConnect={isReadOnly ? undefined : onConnect}
+          onNodeClick={onNodeClick}
+          nodesDraggable={!isReadOnly}
+          nodesConnectable={!isReadOnly}
+          elementsSelectable={true}
+          fitView
+        >
+          <Background gap={16} size={1} />
+          <Controls className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl !shadow-lg" />
+          <MiniMap
+            className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl"
+            nodeColor={(n) => {
+              const data = n.data as DagNodeData;
+              if (data?.validationError) return '#ef4444';
+              if (data?.executionState === 'COMPLETED') return '#10b981';
+              if (data?.executionState === 'PAUSED_AT_BREAKPOINT') return '#f59e0b';
+              if (data?.executionState === 'IN_PROGRESS') return '#0284c7';
+              if (data?.executionState === 'FAILED') return '#ef4444';
+              return '#94a3b8';
+            }}
+          />
+        </ReactFlow>
+      )}
 
       {/* Full Mode Property Inspector Drawer */}
       {!isReadOnly && (
@@ -1263,8 +1417,8 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* Read-Only Mode Time-Travel Replay & Back-Test Scrubber */}
-      {isReadOnly && (
+      {/* Read-Only Mode Time-Travel Replay & Back-Test Scrubber (Only in Graph view) */}
+      {isReadOnly && activeViewTab === 'graph' && (
         <TimeTravelScrubber
           events={timelineEvents}
           currentIndex={currentScrubberIndex}
@@ -1290,6 +1444,16 @@ function DagStudioCanvas({
           mode={irDialogMode}
           initialJson={irDialogContent}
           onImportJson={handleApplyImportedJson}
+        />
+      )}
+
+      {/* Iteration 14: Designer Dry-Run Simulation Harness */}
+      {!isReadOnly && (
+        <WorkflowDryRunModal
+          open={isDryRunOpen}
+          onOpenChange={setIsDryRunOpen}
+          workflowIR={exportToWorkflowIR(nodes, edges)}
+          onSimulationSuccess={handleSimulationSuccess}
         />
       )}
 

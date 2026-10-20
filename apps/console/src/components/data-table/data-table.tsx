@@ -15,6 +15,7 @@ type DataTableProps<TData> = {
   containerClassName?: string
   noResultsMessage?: React.ReactNode
   stickyHeader?: boolean
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData>({
@@ -23,6 +24,7 @@ export function DataTable<TData>({
   containerClassName,
   noResultsMessage = 'No results.',
   stickyHeader = true,
+  onRowClick,
 }: DataTableProps<TData>) {
   const columnCount = table.getAllColumns().length
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -141,7 +143,11 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="group/row hover:bg-white/40 dark:hover:bg-white/5 transition-colors border-b border-white/10"
+                  onClick={() => onRowClick?.(row.original)}
+                  className={cn(
+                    "group/row hover:bg-white/40 dark:hover:bg-white/5 transition-colors border-b border-white/10",
+                    onRowClick && "cursor-pointer"
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const isAction = cell.column.id === 'actions'

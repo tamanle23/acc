@@ -3,6 +3,7 @@ import { WorkflowExecutionsImportDialog } from './workflow-executions-import-dia
 import { WorkflowExecutionsMutateDrawer } from './workflow-executions-mutate-drawer'
 import { WorkflowExecutionPayloadInspectorDialog } from './workflow-payload-inspector-dialog'
 import { WorkflowExecutionStreamModal } from './workflow-execution-stream-modal'
+import { WorkflowExecutionDetailDrawer } from './workflow-execution-detail-drawer'
 import { useWorkflowExecutions } from './workflow-executions-provider'
 import { useDeleteWorkflowExecutionMutation } from '../api/use-workflow-executions'
 
@@ -26,6 +27,20 @@ export function WorkflowExecutionsDialogs() {
 
       {currentRow && (
         <>
+          <WorkflowExecutionDetailDrawer
+            key={`workflow-execution-drawer-${currentRow.id}`}
+            workflowExecution={currentRow}
+            open={open === 'drawer'}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                setOpen(null)
+                setTimeout(() => {
+                  setCurrentRow(null)
+                }, 300)
+              }
+            }}
+          />
+
           <WorkflowExecutionStreamModal
             key={`workflow-execution-stream-${currentRow.id}`}
             workflowExecution={currentRow}

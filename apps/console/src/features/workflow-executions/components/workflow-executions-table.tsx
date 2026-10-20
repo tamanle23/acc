@@ -22,6 +22,7 @@ import { priorities, statuses } from '../types'
 import { type WorkflowExecution } from '../schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { workflowExecutionsColumns as columns } from './workflow-executions-columns'
+import { useWorkflowExecutions } from './workflow-executions-provider'
 
 const route = getRouteApi('/_authenticated/workflow-executions/')
 
@@ -30,6 +31,7 @@ type DataTableProps = {
 }
 
 export function WorkflowExecutionsTable({ data }: DataTableProps) {
+  const { setOpen, setCurrentRow } = useWorkflowExecutions()
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [sorting, setSorting] = useState<SortingState>([])
@@ -122,7 +124,14 @@ export function WorkflowExecutionsTable({ data }: DataTableProps) {
           },
         ]}
       />
-      <DataTable table={table} className='min-w-xl' />
+      <DataTable
+        table={table}
+        className='min-w-xl'
+        onRowClick={(row) => {
+          setCurrentRow(row)
+          setOpen('drawer')
+        }}
+      />
       <DataTablePagination table={table} className='mt-auto' />
       <DataTableBulkActions table={table} />
     </div>

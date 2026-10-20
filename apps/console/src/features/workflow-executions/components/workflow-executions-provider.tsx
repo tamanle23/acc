@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import useDialogState from '@/hooks/use-dialog-state'
 import { type WorkflowExecution } from '../schema'
 
-type WorkflowExecutionsDialogType = 'create' | 'update' | 'delete' | 'import' | 'inspect' | 'live-stream'
+type WorkflowExecutionsDialogType = 'create' | 'update' | 'delete' | 'import' | 'inspect' | 'live-stream' | 'drawer'
 
 type WorkflowExecutionsContextType = {
   open: WorkflowExecutionsDialogType | null

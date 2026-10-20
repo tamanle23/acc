@@ -66,6 +66,7 @@ vi.mock('@/features/workflows/api/workflow-api', () => ({
   useResumeWorkflowExecution: () => ({ mutate: vi.fn() }),
   useStepOverWorkflowExecution: () => ({ mutate: vi.fn() }),
   useRerunWorkflowTask: () => ({ mutate: vi.fn(), isPending: false }),
+  useSimulateWorkflowDefinition: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/features/workers/api/worker-fleet-api', () => ({

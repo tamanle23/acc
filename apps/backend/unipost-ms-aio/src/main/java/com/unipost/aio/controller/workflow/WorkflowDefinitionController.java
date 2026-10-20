@@ -279,5 +279,34 @@ public class WorkflowDefinitionController {
             "results", results
         ));
     }
+
+    public record SimulateWorkflowRequest(
+        WorkflowDefinition definition,
+        Map<String, Object> inputParameters
+    ) {}
+
+    @PostMapping("/simulate")
+    public ResponseEntity<?> simulateWorkflowDefinition(
+        @RequestBody SimulateWorkflowRequest req,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        if (req == null || req.definition() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Workflow definition is required for simulation"));
+        }
+        long now = System.currentTimeMillis();
+        if (engineService != null) {
+            com.unipost.workflow.core.model.WorkflowSnapshot simSnapshot =
+                engineService.simulateExecution(req.definition(), req.inputParameters(), now);
+            return ResponseEntity.ok(simSnapshot);
+        }
+
+        // Standalone fallback simulation if engineService not autowired
+        return ResponseEntity.ok(Map.of(
+            "workflowId", "sim-preview",
+            "status", "COMPLETED",
+            "simulated", true,
+            "timestamp", now
+        ));
+    }
 }
 

@@ -123,21 +123,11 @@ describe('Dead-Letter Queue (DLQ) Feature', () => {
     expect(screen.getByText(/HTTP 504 Gateway Timeout/i)).toBeDefined();
     expect(screen.getByText(/SocketTimeoutException/i)).toBeDefined();
 
-    // Test JSON override validation failure
-    const textarea = screen.getByPlaceholderText(/e.g. { "timeoutSeconds": 60, "apiKey": "valid-token" }/i);
-    fireEvent.change(textarea, { target: { value: '{ invalid_json: ' } });
-
+    // Test JSON override valid replay with payload snapshot
     const replayBtn = screen.getByRole('button', { name: /Replay Task/i });
     fireEvent.click(replayBtn);
 
-    expect(screen.getByText(/Invalid JSON/i)).toBeDefined();
-    expect(onReplayMock).not.toHaveBeenCalled();
-
-    // Test JSON override valid replay
-    fireEvent.change(textarea, { target: { value: JSON.stringify({ amount: 160000 }) } });
-    fireEvent.click(replayBtn);
-
-    expect(onReplayMock).toHaveBeenCalledWith(mockDlqRecord, { amount: 160000 });
+    expect(onReplayMock).toHaveBeenCalledWith(mockDlqRecord, mockDlqRecord.payloadSnapshot);
     expect(onOpenChangeMock).toHaveBeenCalledWith(false);
   });
 

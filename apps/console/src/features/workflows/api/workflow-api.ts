@@ -519,3 +519,20 @@ export const useRerunWorkflowTask = () => {
   });
 };
 
+export const useSimulateWorkflowDefinition = () => {
+  return useMutation({
+    mutationFn: async ({
+      definition,
+      inputParameters,
+    }: {
+      definition: WorkflowIR;
+      inputParameters?: Record<string, unknown>;
+    }) => {
+      const res = await springApiClient.post('/v1/workflow/definitions/simulate', {
+        definition,
+        inputParameters: inputParameters || {},
+      });
+      return res.data as WorkflowExecutionSnapshot;
+    },
+  });
+};

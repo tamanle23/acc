@@ -174,6 +174,7 @@
 | [167](167_eliminate_deterministic_ai_schema_generation.md) | 2026-10-21 | Eliminate Deterministic AI-Assisted Schema Generation | Completely purged hardcoded/heuristic deterministic AI schema generation across backend and frontend (removed controller, service, test, modal, hook, sandbox handler, and UI trigger). |
 | [168](168_scope_visual_debugger_to_execution_mode.md) | 2026-10-21 | Scope Visual Debugger Toolbar and Breakpoints to Workflow Execution Mode | Scoped the Debugger Control Bar (Pause, Step Over, Resume, Watch) and node breakpoint dots strictly to active execution inspection mode with an executionId, decluttering authoring/design mode. |
 | [169](169_remove_design_in_studio_action_from_workflow_executions.md) | 2026-10-21 | Remove "Design in Studio" Action from Workflow Execution Row Level | Removed the out-of-context "Design in Studio" action item from data-table-row-actions.tsx under /workflow-executions, focusing row actions on runtime execution inspection and live streaming. |
+| [170](170_iteration14_visual_dag_studio_enhancements.md) | 2026-10-21 | Iteration 14 Visual DAG Studio & Execution Inspector Enhancements | Master-detail execution inspection drawer on row click, traversed-path lighting & dead branch dimming, concurrency flamegraph/Gantt timeline view with cross-hover highlighting, and zero-side-effect in-memory designer dry-run simulator harness. |
 
 
 

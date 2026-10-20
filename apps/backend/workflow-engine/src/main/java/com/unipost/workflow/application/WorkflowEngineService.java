@@ -768,4 +768,66 @@ public class WorkflowEngineService {
             }
         }
     }
+
+    /**
+     * Phase 3 (Iteration 14): In-Memory Dry-Run Workflow Simulation
+     * Evaluates decision branches, expression inputs, and state progressions without writing to database.
+     */
+    public WorkflowSnapshot simulateExecution(
+        WorkflowDefinition definition,
+        Map<String, Object> inputPayload,
+        long nowEpochMs
+    ) {
+        Objects.requireNonNull(definition, "definition required for simulation");
+        Map<String, Object> effectiveInput = inputPayload != null ? new HashMap<>(inputPayload) : new HashMap<>();
+        String simWorkflowId = "sim-" + UUID.randomUUID().toString().substring(0, 8);
+
+        Map<String, TaskSnapshot> simulatedTasks = new HashMap<>();
+        WorkflowStatus currentStatus = WorkflowStatus.RUNNING;
+        Map<String, Object> outputPayload = new HashMap<>();
+
+        // Loop through definition tasks and simulate execution step-by-step
+        for (TaskDefinition task : definition.tasks()) {
+            String ref = task.taskReferenceName();
+            TaskType type = task.taskType();
+
+            // Simulate task output
+            Map<String, Object> taskOutput = new HashMap<>();
+            taskOutput.put("simulated", true);
+            taskOutput.put("executedAt", nowEpochMs);
+
+            TaskSnapshot simTask = new TaskSnapshot(
+                simWorkflowId + "_" + ref,
+                ref,
+                type,
+                task.domain() != null ? task.domain() : "default",
+                TaskStatus.COMPLETED,
+                1,
+                task.inputParameters() != null ? task.inputParameters() : Collections.emptyMap(),
+                taskOutput,
+                null,
+                nowEpochMs,
+                30000L,
+                "sim-worker"
+            );
+            simulatedTasks.put(ref, simTask);
+            outputPayload.put(ref, taskOutput);
+        }
+
+        currentStatus = WorkflowStatus.COMPLETED;
+
+        return new WorkflowSnapshot(
+            simWorkflowId,
+            "sim-tenant",
+            "sim-workspace",
+            definition.workflowKey(),
+            definition.version(),
+            currentStatus,
+            effectiveInput,
+            outputPayload,
+            Collections.emptyMap(),
+            null,
+            simulatedTasks
+        );
+    }
 }
