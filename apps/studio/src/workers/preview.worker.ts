@@ -10,6 +10,10 @@ let currentTotalFrames = 300;
 let currentFrame = 0;
 let textureCache = new Map<string, any>();
 
+// Frame coalescing state
+let isRendering = false;
+let pendingRender: { frame: number; lod: number; popOutIntensity: number } | null = null;
+
 // Playback state
 let isPlaying = false;
 let shuttleSpeed = 0;
@@ -21,6 +25,13 @@ let lastUiSyncTime = 0;
 function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
   if (!canvas || !ctx || !engine) return;
 
+  if (isRendering) {
+    // Coalesce latest requested frame to avoid worker message queue pileup
+    pendingRender = { frame, lod, popOutIntensity };
+    return;
+  }
+
+  isRendering = true;
   const w = currentWidth;
   const h = currentHeight;
 
@@ -43,6 +54,14 @@ function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
   }
 
   ctx.restore();
+  isRendering = false;
+
+  // Drain coalesced pending frame if one arrived during this draw pass
+  if (pendingRender) {
+    const next = pendingRender;
+    pendingRender = null;
+    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity);
+  }
 }
 
 function playbackLoop(now: number) {

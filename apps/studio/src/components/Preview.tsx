@@ -62,6 +62,7 @@ import {
   type TransformHandleType,
 } from '../lib/gizmo';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
+import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 
 interface PreviewProps {
   playhead: {
@@ -284,23 +285,6 @@ export function Preview({
     };
   }, []);
 
-  // Worker Playback Synchronization Loop
-  useEffect(() => {
-    const bridge = workerBridgeRef.current;
-    if (!bridge || !bridge.hasTransferred()) return;
-
-    if (isPlaying) {
-      bridge.startPlayback(1, currentFrame, fps, totalFrames, (f, ended) => {
-        onScrub?.(f);
-        if (ended && onTogglePlay) {
-          onTogglePlay();
-        }
-      });
-    } else {
-      bridge.stopPlayback();
-    }
-  }, [isPlaying, fps, totalFrames, onScrub, onTogglePlay]);
-
   // Event-Driven Render Execution on 2-Layer Decoupled Viewport Canvas
   useEffect(() => {
     const overlayCanvas = overlayCanvasRef.current;
@@ -320,9 +304,54 @@ export function Preview({
     }
 
     const bridge = workerBridgeRef.current;
+    const studioTextureCache = AssetTextureCache.getInstance();
+    const assetsMap = irState.doc?.assets || {};
+
     if (bridge && bridge.hasTransferred()) {
-      // 1. OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking, Adaptive Dynamic LOD)
-      bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+      // Synchronize newly available textures to Web Worker via ImageBitmap transfer
+      const activeTexturesToSync: Record<string, ImageBitmap> = {};
+      const syncPromises: Promise<void>[] = [];
+
+      for (const seq of activeSeqs) {
+        if (seq.assetId) {
+          const assetDef = assetsMap[seq.assetId];
+          const assetSrc = assetDef?.src;
+          const assetType = assetDef?.type || 'media';
+          const seqStart = seq.startFrame ?? 0;
+          const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
+
+          const visualAsset = studioTextureCache.getVisualAsset(
+            seq.assetId,
+            assetSrc,
+            assetType === 'audio' ? 'media' : (assetType as any),
+            seqLocalTimeSec
+          );
+
+          if (visualAsset.source && typeof createImageBitmap === 'function') {
+            const source = visualAsset.source;
+            const assetId = seq.assetId;
+            syncPromises.push(
+              createImageBitmap(source as ImageBitmapSource)
+                .then((bmp) => {
+                  activeTexturesToSync[assetId] = bmp;
+                })
+                .catch(() => {})
+            );
+          }
+        }
+      }
+
+      if (syncPromises.length > 0) {
+        Promise.all(syncPromises).then(() => {
+          if (Object.keys(activeTexturesToSync).length > 0) {
+            bridge.updateTextures(activeTexturesToSync);
+          }
+          // 1. OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking, Adaptive Dynamic LOD)
+          bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+        });
+      } else {
+        bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+      }
     } else {
       // Main-thread fallback
       const baseCanvas = canvasRef.current;
@@ -337,8 +366,6 @@ export function Preview({
             baseCtx.clearRect(0, 0, width, height);
           }
 
-          const studioTextureCache = AssetTextureCache.getInstance();
-          const assetsMap = irState.doc?.assets || {};
           const engineTextures = engine.getTextureCache();
 
           for (const seq of activeSeqs) {
@@ -381,6 +408,16 @@ export function Preview({
       }
     }
   }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging]);
+
+  // High-Frequency Direct Playhead Subscription (Smooth 60fps OffscreenCanvas rendering without React re-renders)
+  useEffect(() => {
+    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
+      const bridge = workerBridgeRef.current;
+      if (bridge && bridge.hasTransferred()) {
+        bridge.renderFrame(frame, playing ? 0.5 : 1.0);
+      }
+    });
+  }, []);
 
   // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
   const transformSensors = useSensors(

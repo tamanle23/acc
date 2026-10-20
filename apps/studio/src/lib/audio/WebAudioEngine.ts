@@ -30,6 +30,7 @@ export class WebAudioEngine {
   private playbackStartTimelineTime = 0;
   private lastIrState: any = null;
   private lastFps = 30;
+  private lastScrubAudioTime = 0;
 
   private constructor() {
     AudioAssetCache.getInstance().subscribe(() => {
@@ -271,10 +272,17 @@ export class WebAudioEngine {
 
   /**
    * Plays a responsive micro-burst of actual audio content during playhead scrubbing.
+   * Throttled to ~14 Hz (70ms) to prevent main-thread CPU lockup during rapid key-repeat scrubbing.
    */
   public playScrubFeedback(frame: number, fps = 30, irState?: any): void {
     try {
       if (!this.initContext() || !this.ctx || !this.masterGain) return;
+
+      const now = performance.now();
+      if (now - this.lastScrubAudioTime < 70) {
+        return;
+      }
+      this.lastScrubAudioTime = now;
 
       // Stop previous scrub slice to prevent cacophony
       if (this.scrubSource) {
@@ -301,15 +309,15 @@ export class WebAudioEngine {
       source.buffer = buffer;
 
       const gain = this.ctx.createGain();
-      const now = this.ctx.currentTime;
-      gain.gain.setValueAtTime(0.5, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + sliceDuration);
+      const audioTime = this.ctx.currentTime;
+      gain.gain.setValueAtTime(0.5, audioTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioTime + sliceDuration);
 
       source.connect(gain);
       gain.connect(this.masterGain);
 
-      source.start(now);
-      source.stop(now + sliceDuration);
+      source.start(audioTime);
+      source.stop(audioTime + sliceDuration);
       this.scrubSource = source;
     } catch {
       // Audio autoplay policy fallback

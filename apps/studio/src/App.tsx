@@ -37,6 +37,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
 import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
+import { StudioPlayheadController } from './lib/playhead/StudioPlayheadController';
 
 function StudioWorkspace() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
@@ -149,14 +150,25 @@ function StudioWorkspace() {
   const width = irState.doc.meta.canvasSize.w || 1920;
   const height = irState.doc.meta.canvasSize.h || 1080;
 
+  // Sync StudioPlayheadController configuration
+  useEffect(() => {
+    StudioPlayheadController.getInstance().setConfig(fps, totalFrames);
+  }, [fps, totalFrames]);
+
+  // Subscribe low-frequency updates to sync React state (e.g. for clip inspector) without per-frame re-renders
+  useEffect(() => {
+    return StudioPlayheadController.getInstance().subscribeLowFrequency((frame) => {
+      setCurrentFrame(frame);
+      currentFrameRef.current = frame;
+    });
+  }, []);
+
   const handleScrub = (frame: number) => {
     const discrete = snapToDiscreteFrame(frame);
     const clamped = Math.max(0, Math.min(discrete, totalFrames));
-    setCurrentFrame(clamped);
     currentFrameRef.current = clamped;
-    if (shuttle.isPlaying) {
-      WebAudioEngine.getInstance().startPlayback(clamped, fps, irState);
-    } else {
+    StudioPlayheadController.getInstance().seek(clamped, !shuttle.isPlaying);
+    if (!shuttle.isPlaying) {
       WebAudioEngine.getInstance().playScrubFeedback(clamped, fps, irState);
     }
   };
@@ -172,6 +184,10 @@ function StudioWorkspace() {
   });
 
   const isPlaying = shuttle.isPlaying;
+
+  useEffect(() => {
+    StudioPlayheadController.getInstance().setIsPlaying(isPlaying);
+  }, [isPlaying]);
 
   const handleTogglePlay = () => {
     shuttle.togglePlay();

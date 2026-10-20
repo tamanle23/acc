@@ -34,6 +34,7 @@ import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
+import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import {
   DndContext,
   useDraggable,
@@ -324,8 +325,20 @@ export function Timeline({
 
   // Hand tool panning ref & state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const playheadNeedleRef = useRef<HTMLDivElement>(null);
   const isPanningRef = useRef(false);
   const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
+
+  // High-Frequency Direct DOM transform for 60fps playhead needle (Zero React reconciliation)
+  useEffect(() => {
+    const needle = playheadNeedleRef.current;
+    if (!needle) return;
+
+    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame) => {
+      const leftPx = 208 + frame * pixelsPerFrame;
+      needle.style.transform = `translate3d(${leftPx}px, 0, 0)`;
+    });
+  }, [pixelsPerFrame]);
 
   // Virtualization Scroll & Viewport Observers
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -834,11 +847,12 @@ export function Timeline({
               </div>
             </div>
 
-            {/* Global Playhead Vertical Needle */}
+            {/* Global Playhead Vertical Needle (Direct DOM Transform for 60fps Zero-Jank Movement) */}
             <div
-              className="absolute top-7 bottom-0 z-30 pointer-events-none transition-all duration-75 flex flex-col items-center"
+              ref={playheadNeedleRef}
+              className="absolute top-7 bottom-0 z-30 pointer-events-none will-change-transform flex flex-col items-center left-0"
               style={{
-                left: `${208 + currentFrame * pixelsPerFrame}px`,
+                transform: `translate3d(${208 + currentFrame * pixelsPerFrame}px, 0, 0)`,
               }}
             >
               <div className="w-2.5 h-2.5 bg-rose-500 rotate-45 -mt-1 shadow-xs" />

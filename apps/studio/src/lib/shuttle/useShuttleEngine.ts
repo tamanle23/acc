@@ -185,9 +185,11 @@ export function useShuttleEngine({
     };
   }, [speed]);
 
-  // J-K-L and Arrow Keybindings
+  // J-K-L and Arrow Keybindings with repeat debouncing
   useEffect(() => {
     if (!enableKeybindings || typeof window === 'undefined') return;
+
+    let lastArrowStepTime = 0;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -216,13 +218,19 @@ export function useShuttleEngine({
           togglePlay();
           break;
         case 'ArrowLeft':
+        case 'ArrowRight': {
           e.preventDefault();
-          stepFrame(e.shiftKey ? -10 : -1);
+          const now = performance.now();
+          // First keypress is always immediate (zero lag).
+          // Repeated keydown events (holding arrow key) throttled to 35ms (~28 Hz) to match display rate
+          if (e.repeat && now - lastArrowStepTime < 35) {
+            return;
+          }
+          lastArrowStepTime = now;
+          const delta = e.code === 'ArrowRight' ? (e.shiftKey ? 10 : 1) : (e.shiftKey ? -10 : -1);
+          stepFrame(delta);
           break;
-        case 'ArrowRight':
-          e.preventDefault();
-          stepFrame(e.shiftKey ? 10 : 1);
-          break;
+        }
       }
     };
 
