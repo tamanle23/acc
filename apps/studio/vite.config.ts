@@ -22,7 +22,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(__dirname, 'src'),
+      '@acc/core-isomorphic': path.resolve(__dirname, '../../packages/core-isomorphic/src'),
+      '@acc/core-web': path.resolve(__dirname, '../../packages/core-web/src'),
+      '@acc/core': path.resolve(__dirname, '../../packages/core/src'),
+      '@acc/ir': path.resolve(__dirname, '../../packages/ir/src'),
+      '@acc/effect-engines': path.resolve(__dirname, '../../packages/effect-engines/src'),
     },
   },
 });

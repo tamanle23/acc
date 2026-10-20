@@ -1,4 +1,5 @@
 import { IRPreviewEngine, type ResolvedTimeline } from '@acc/ir';
+import { DeterministicTimelineClock } from '@acc/core-isomorphic';
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -19,8 +20,8 @@ let isPlaying = false;
 let shuttleSpeed = 0;
 let rafId: number | null = null;
 let lastRafTime = 0;
-let accumulatedMs = 0;
 let lastUiSyncTime = 0;
+let workerClock: DeterministicTimelineClock | null = null;
 
 function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
   if (!canvas || !ctx || !engine) return;
@@ -65,26 +66,22 @@ function renderCurrentFrame(frame: number, lod = 1.0, popOutIntensity = 1.0) {
 }
 
 function playbackLoop(now: number) {
-  if (!isPlaying || shuttleSpeed === 0) return;
+  if (!isPlaying || shuttleSpeed === 0 || !workerClock) return;
 
-  const deltaMs = now - lastRafTime;
+  const deltaSec = Math.max(0, (now - lastRafTime) / 1000);
   lastRafTime = now;
 
-  const frameDurationMs = 1000 / currentFps;
-  accumulatedMs += deltaMs * shuttleSpeed;
+  const targetFrame = workerClock.tick(deltaSec);
 
-  if (Math.abs(accumulatedMs) >= frameDurationMs) {
-    const framesToAdvance = Math.trunc(accumulatedMs / frameDurationMs);
-    accumulatedMs -= framesToAdvance * frameDurationMs;
+  if (targetFrame !== currentFrame) {
+    currentFrame = targetFrame;
 
-    currentFrame += framesToAdvance;
-
-    if (currentFrame >= currentTotalFrames) {
-      currentFrame = currentTotalFrames;
+    if (currentFrame >= currentTotalFrames - 1 && shuttleSpeed > 0) {
+      currentFrame = currentTotalFrames - 1;
       stopPlayback();
       self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
       return;
-    } else if (currentFrame <= 0) {
+    } else if (currentFrame <= 0 && shuttleSpeed < 0) {
       currentFrame = 0;
       stopPlayback();
       self.postMessage({ type: 'frameUpdate', frame: currentFrame, ended: true });
@@ -107,6 +104,9 @@ function playbackLoop(now: number) {
 function stopPlayback() {
   isPlaying = false;
   shuttleSpeed = 0;
+  if (workerClock) {
+    workerClock.pause();
+  }
   if (rafId !== null) {
     cancelAnimationFrame(rafId);
     rafId = null;
@@ -163,7 +163,14 @@ self.onmessage = (e: MessageEvent) => {
       isPlaying = true;
       lastRafTime = performance.now();
       lastUiSyncTime = performance.now();
-      accumulatedMs = 0;
+
+      workerClock = new DeterministicTimelineClock({
+        fps: currentFps,
+        totalFrames: currentTotalFrames,
+        mode: 'monotonic_worker',
+      });
+      workerClock.play(currentFrame, shuttleSpeed);
+
       rafId = requestAnimationFrame(playbackLoop);
       break;
     }

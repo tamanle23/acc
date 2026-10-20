@@ -6,7 +6,7 @@ import {
   CanvasAssetLoader,
   wrapCanvasContext,
   type ICanvasInstance,
-} from '../packages/core/src/isomorphic';
+} from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
 import { WebCanvasAdapter } from '../packages/core-web/src';
 import {
@@ -244,7 +244,7 @@ describe('Iteration 16: Architectural Canvas & Timeline Decoupling Suite', () =>
       const registry = AssetProtocolRegistry.getInstance();
 
       const fileBlob = registry.resolve('./assets/scene1.jpg', '/root/project');
-      expect(fileBlob.getNativePath()).toBe('/root/project/assets/scene1.jpg');
+      expect(fileBlob.getNativePath()).toBe(path.resolve('/root/project', './assets/scene1.jpg'));
       expect(fileBlob.mimeType).toBe('image/jpeg');
 
       const dataBlob = registry.resolve('data:image/png;base64,iVBORw0KGgo=');

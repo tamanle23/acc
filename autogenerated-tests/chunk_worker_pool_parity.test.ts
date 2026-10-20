@@ -6,9 +6,9 @@ import {
   StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
-  IRChunkWorkerPool,
   type LegacyStoryConfig,
 } from '../packages/ir/src';
+import { IRChunkWorkerPool } from '../packages/ir/src/server';
 import { FFmpegManager, initFFI, MediaEngineRegistry } from '@acc/core';
 
 describe('Chunk Worker Pool Parity (bun:ffi vs fluent-ffmpeg)', () => {

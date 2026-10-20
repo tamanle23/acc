@@ -226,10 +226,8 @@ export class VideoEditPipelineOrchestrator {
         StoryConfigToUniversalIRAdapter,
         RelationalDAGCompiler,
         AssetMetadataProber,
-        IRMasterRenderer,
-        FFIVideoEncoderSink,
       } = await import('@acc/ir');
-      const { IRChunkWorkerPool } = await import('@acc/ir/server');
+      const { IRMasterRenderer, FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/ir/server');
 
       const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);
       const prober = new AssetMetadataProber(baseDir);

@@ -1,6 +1,7 @@
 import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
+import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';
 
 export interface AudioLevels {
   levelL: number;
@@ -25,6 +26,7 @@ export class WebAudioEngine {
   private mixer: UniversalAudioMixer = new UniversalAudioMixer([], 44100);
   private waveformCache = new Map<string, Float32Array>();
   private audioBufferCache = new Map<string, AudioBuffer>();
+  private streamWorklet: UniversalAudioStreamWorklet = new UniversalAudioStreamWorklet(44100);
   private isPlaying = false;
   private playbackStartAudioTime = 0;
   private playbackStartTimelineTime = 0;
@@ -38,6 +40,10 @@ export class WebAudioEngine {
         this.syncFromIR(this.lastIrState, this.lastFps);
       }
     });
+  }
+
+  public getStreamWorklet(): UniversalAudioStreamWorklet {
+    return this.streamWorklet;
   }
 
   public static getInstance(): WebAudioEngine {
@@ -200,6 +206,10 @@ export class WebAudioEngine {
       const renderDuration = Math.min(30.0, remainingSec);
       const mixResult = this.mixer.mixStereo(startSec, renderDuration);
 
+      // Stream into UniversalAudioStreamWorklet ring buffer for non-blocking worklet transport
+      this.streamWorklet.reset();
+      this.streamWorklet.pushChunk(mixResult.left, mixResult.right);
+
       const buffer = this.ctx.createBuffer(2, mixResult.left.length, this.ctx.sampleRate);
       buffer.copyToChannel(mixResult.left as unknown as Float32Array<ArrayBuffer>, 0);
       buffer.copyToChannel(mixResult.right as unknown as Float32Array<ArrayBuffer>, 1);
@@ -233,6 +243,7 @@ export class WebAudioEngine {
       }
       this.currentSource = null;
     }
+    this.streamWorklet.reset();
     this.isPlaying = false;
   }
 
@@ -406,5 +417,27 @@ export class WebAudioEngine {
 
     this.waveformCache.set(cacheKey, peaks);
     return peaks;
+  }
+
+  /**
+   * Returns the current hardware audio time from AudioContext.currentTime,
+   * used as the reference clock for DeterministicTimelineClock.
+   */
+  public getAudioCurrentTime(): number {
+    return this.ctx ? this.ctx.currentTime : 0;
+  }
+
+  /**
+   * Returns the audio hardware timestamp when current playback was started.
+   */
+  public getPlaybackStartAudioTime(): number {
+    return this.playbackStartAudioTime;
+  }
+
+  /**
+   * Returns true if audio playback is currently active.
+   */
+  public getIsPlaying(): boolean {
+    return this.isPlaying;
   }
 }

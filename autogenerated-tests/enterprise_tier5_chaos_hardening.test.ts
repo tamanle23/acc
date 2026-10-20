@@ -7,10 +7,12 @@ import {
   VideoIRSchemaValidator,
   RelationalDAGCompiler,
   AssetMetadataProber,
-  IRMasterRenderer,
-  IRChunkWorkerPool,
   type LegacyStoryConfig,
 } from '../packages/ir/src';
+import {
+  IRMasterRenderer,
+  IRChunkWorkerPool,
+} from '../packages/ir/src/server';
 import {
   AdaptiveResourceGovernor,
   RenderCircuitBreaker,

@@ -121,6 +121,7 @@ export class FFISceneEngine {
     encoder.initialize();
 
     const totalFrames = Math.ceil(fps * duration);
+    let cachedRgbaBuffer: Buffer | null = null;
 
     if (captions && captions.length > 0) {
       const bgCanvas = UniversalCanvasProvider.createCanvas(width, height);
@@ -147,7 +148,6 @@ export class FFISceneEngine {
 
       let lastPhraseIdx = -2;
       let lastActiveWordIdx = -2;
-      let cachedRgbaBuffer: Buffer | null = null;
 
       for (let f = 0; f < totalFrames; f++) {
         const timeSec = f / fps;

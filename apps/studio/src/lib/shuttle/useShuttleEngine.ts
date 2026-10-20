@@ -6,6 +6,7 @@ import {
   snapToDiscreteFrame,
 } from './shuttleTypes';
 import { WebAudioEngine } from '../audio/WebAudioEngine';
+import { DeterministicTimelineClock } from '../clock/DeterministicTimelineClock';
 
 export interface UseShuttleEngineOptions {
   currentFrame: number;
@@ -124,55 +125,63 @@ export function useShuttleEngine({
     WebAudioEngine.getInstance().playScrubFeedback(clamped, fpsRef.current, irStateRef.current);
   }, [setSpeed]);
 
-  // Discrete Frame Advancement Animation Loop
+  // Deterministic Time-Based Frame Advancement Engine (DeterministicTimelineClock)
   useEffect(() => {
     if (speed === 0) return;
+
+    const clock = new DeterministicTimelineClock({
+      fps: fpsRef.current,
+      totalFrames: totalFramesRef.current,
+      mode: speed === 1 && !shouldMuteAudio(speed) ? 'audio_master' : 'monotonic_worker',
+    });
+
+    const currentSpeed = speedRef.current;
+    clock.play(currentFrameRef.current, currentSpeed);
+
+    if (clock.getSyncMode() === 'audio_master') {
+      const audioStart = WebAudioEngine.getInstance().getPlaybackStartAudioTime();
+      clock.lockMasterAudio(audioStart);
+    }
 
     let rafId: number;
     let lastTime = performance.now();
     let lastUiSyncTime = performance.now();
-    let accumulatedMs = 0;
 
     const tick = (now: number) => {
-      const deltaMs = now - lastTime;
+      let targetFrame: number;
+
+      if (clock.getSyncMode() === 'audio_master' && WebAudioEngine.getInstance().getIsPlaying()) {
+        const audioNow = WebAudioEngine.getInstance().getAudioCurrentTime();
+        targetFrame = clock.tick(audioNow);
+      } else {
+        const deltaSec = (now - lastTime) / 1000;
+        targetFrame = clock.tick(deltaSec);
+      }
       lastTime = now;
 
-      const currentFps = Math.max(1, fpsRef.current);
-      const frameDurationMs = 1000 / currentFps;
-      const currentSpeed = speedRef.current;
-
-      accumulatedMs += deltaMs * currentSpeed;
-
-      if (Math.abs(accumulatedMs) >= frameDurationMs) {
-        const framesToAdvance = Math.trunc(accumulatedMs / frameDurationMs);
-        accumulatedMs -= framesToAdvance * frameDurationMs;
-
-        const total = totalFramesRef.current || 300;
-        let next = currentFrameRef.current + framesToAdvance;
-
-        if (next >= total) {
-          const discreteFrame = snapToDiscreteFrame(total);
-          currentFrameRef.current = discreteFrame;
-          onScrubRef.current(discreteFrame);
-          setSpeed(0);
-          return;
-        } else if (next <= 0) {
-          const discreteFrame = 0;
-          currentFrameRef.current = discreteFrame;
-          onScrubRef.current(discreteFrame);
-          setSpeed(0);
-          return;
-        }
-
-        const discreteFrame = snapToDiscreteFrame(next);
+      const total = totalFramesRef.current || 300;
+      if (targetFrame >= total) {
+        const discreteFrame = snapToDiscreteFrame(total);
         currentFrameRef.current = discreteFrame;
+        onScrubRef.current(discreteFrame);
+        setSpeed(0);
+        return;
+      } else if (targetFrame <= 0 && currentSpeed < 0) {
+        const discreteFrame = 0;
+        currentFrameRef.current = discreteFrame;
+        onScrubRef.current(discreteFrame);
+        setSpeed(0);
+        return;
+      }
 
-        // Throttle React state update to ~15 Hz (every ~66ms) during continuous playback,
-        // preventing continuous 60 Hz React reconciliation overhead
-        if (now - lastUiSyncTime >= 66) {
-          lastUiSyncTime = now;
-          onScrubRef.current(discreteFrame);
-        }
+      const discreteFrame = snapToDiscreteFrame(targetFrame);
+      currentFrameRef.current = discreteFrame;
+
+      // Throttle React state update to ~15 Hz (every ~66ms) during continuous playback,
+      // preventing continuous 60 Hz React reconciliation overhead
+      if (now - lastUiSyncTime >= 66) {
+        lastUiSyncTime = now;
+        onScrubRef.current(discreteFrame);
       }
 
       rafId = requestAnimationFrame(tick);
@@ -182,6 +191,7 @@ export function useShuttleEngine({
 
     return () => {
       cancelAnimationFrame(rafId);
+      clock.pause();
     };
   }, [speed]);
 

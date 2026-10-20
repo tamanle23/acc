@@ -1,5 +1,4 @@
-export * from './types';
-export * from './MediaEngineRegistry';
+export * from '@acc/core-isomorphic';
 export * from './sinks/FFIVideoEncoderSink';
 export * from './sinks/FluentPipeVideoSink';
 export * from './sinks/MediabunnyServerSink';
@@ -9,7 +8,7 @@ export * from './strategies/FluentFFmpegEngineStrategy';
 export * from './strategies/MediabunnyServerStrategy';
 export * from './strategies/MediabunnyClientStrategy';
 
-import { MediaEngineRegistry } from './MediaEngineRegistry';
+import { MediaEngineRegistry } from '@acc/core-isomorphic';
 import { BunFFIEngineStrategy } from './strategies/BunFFIEngineStrategy';
 import { FluentFFmpegEngineStrategy } from './strategies/FluentFFmpegEngineStrategy';
 import { MediabunnyServerStrategy } from './strategies/MediabunnyServerStrategy';

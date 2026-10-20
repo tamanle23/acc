@@ -1,3 +1,5 @@
+import { DeterministicTimelineClock } from '@acc/core-isomorphic';
+
 export interface InitMessage {
   type: 'INIT';
   canvas?: any; // OffscreenCanvas
@@ -94,6 +96,11 @@ export class PreviewRenderWorkerCore {
   private irDoc: any | null = null;
   private frameCache: DecodedFrameCache = new DecodedFrameCache(120, 30);
   private lastRenderedFrame: number = -1;
+  private clock: DeterministicTimelineClock = new DeterministicTimelineClock({ fps: 30 });
+
+  public getClock(): DeterministicTimelineClock {
+    return this.clock;
+  }
 
   public handleMessage(msg: WorkerMessage, postMessage: (data: FrameAckPayload) => void): void {
     switch (msg.type) {
@@ -103,6 +110,7 @@ export class PreviewRenderWorkerCore {
         this.height = msg.height || 1080;
         this.fps = msg.fps || 30;
         this.irDoc = msg.irDoc || null;
+        this.clock.setFps(this.fps);
         if (this.canvas && typeof this.canvas.getContext === 'function') {
           this.ctx = this.canvas.getContext('2d');
         }
@@ -122,12 +130,15 @@ export class PreviewRenderWorkerCore {
 
       case 'UPDATE_TIMELINE': {
         this.irDoc = msg.irDoc;
+        if (msg.irDoc?.timeline?.totalFrames) {
+          this.clock.setTotalFrames(msg.irDoc.timeline.totalFrames);
+        }
         this.frameCache.clear();
         break;
       }
 
       case 'DISPATCH_FRAME': {
-        const frame = Math.max(0, Math.round(msg.frame));
+        const frame = this.clock.seek(msg.frame);
         const speed = msg.speed ?? 1.0;
         // Dynamic Scrub LOD: If scrubbing at >3x speed, scale resolution to 0.5x
         let lod = msg.lod ?? (Math.abs(speed) > 3.0 ? 0.5 : 1.0);

@@ -4,14 +4,14 @@ import { Tracer, TraceContext, type TraceSpan } from '@acc/core';
 import { parseCliArgs } from '../apps/cli/src/index';
 
 describe('Enterprise Telemetry: Non-Invasive Distributed Tracing for ir-render', () => {
-  const sampleConfigPath = path.resolve(import.meta.dir, '../sample-story/story-config.json');
+  const sampleConfigPath = path.resolve(import.meta.dir, '../sample-story/video-ir.json');
 
   it('correctly parses --traceparent CLI argument in parseCliArgs', () => {
     const customTraceparent = '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01';
     const args = [
       'ir-render',
       '--config',
-      './sample-story/story-config.json',
+      './sample-story/video-ir.json',
       '--traceparent',
       customTraceparent,
       '--dry-run',
@@ -19,7 +19,7 @@ describe('Enterprise Telemetry: Non-Invasive Distributed Tracing for ir-render',
 
     const parsed = parseCliArgs(args);
     expect(parsed.command).toBe('ir-render');
-    expect(parsed.configPath).toBe('./sample-story/story-config.json');
+    expect(parsed.configPath).toBe('./sample-story/video-ir.json');
     expect(parsed.traceparent).toBe(customTraceparent);
     expect(parsed.dryRun).toBe(true);
   });

@@ -5,11 +5,13 @@ import {
   StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
+  type LegacyStoryConfig,
+} from '../packages/ir/src';
+import {
   IRMasterRenderer,
   IRChunkWorkerPool,
   FFIChunkConcatMuxer,
-  type LegacyStoryConfig,
-} from '../packages/ir/src';
+} from '../packages/ir/src/server';
 import { FFmpegManager } from '@acc/core';
 
 describe('Enterprise Parallel Temporal Chunking & Concat (Phase 1)', () => {
