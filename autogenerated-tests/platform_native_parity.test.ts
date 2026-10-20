@@ -11,7 +11,7 @@ import {
   type IVideoDecoder,
 } from '../packages/core/src/isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
-import { WebCanvasAdapter } from '../packages/core/src/web';
+import { WebCanvasAdapter } from '../packages/core-web/src';
 import { FFIVideoDecoder } from '../packages/core/src/ffmpeg-ffi/FFIVideoDecoder';
 
 describe('Iteration 14: Platform-Dependent Native Library Decoupling & Parity Suite', () => {
@@ -246,7 +246,7 @@ describe('Iteration 14: Platform-Dependent Native Library Decoupling & Parity Su
           supportsBrowserRuntime: false,
           requiresNativeBinaries: true,
         },
-        validatePrerequisites: () => {},
+        validatePrerequisites: () => { },
       };
 
       MediaEngineRegistry.register(mockStrategy);

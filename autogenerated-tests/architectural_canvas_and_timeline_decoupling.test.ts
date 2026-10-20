@@ -8,7 +8,7 @@ import {
   type ICanvasInstance,
 } from '../packages/core/src/isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
-import { WebCanvasAdapter } from '../packages/core/src/web';
+import { WebCanvasAdapter } from '../packages/core-web/src';
 import {
   RelationalDAGCompiler,
   VideoIRSchemaValidator,

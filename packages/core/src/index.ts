@@ -60,4 +60,4 @@ export * from './autoconfig';
 export * from './media-engine';
 export * from './isomorphic';
 export * from './native';
-export * from './web';
+export * from '../../core-web/src';
