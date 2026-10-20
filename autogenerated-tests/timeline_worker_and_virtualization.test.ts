@@ -89,4 +89,48 @@ describe('Timeline Virtualization & Memory Hygiene Suite', () => {
       expect(closeCount).toBe(2);
     });
   });
+
+  describe('TimelineWorkerBridge (OffscreenCanvas Lifecycle Guard)', () => {
+    it('prevents multiple transferControlToOffscreen calls on already transferred canvas DOM nodes', async () => {
+      // Mock browser environment in Bun test runner
+      (globalThis as any).window = globalThis;
+      (globalThis as any).HTMLCanvasElement = class HTMLCanvasElement {
+        transferControlToOffscreen() {}
+      };
+      (globalThis as any).Worker = class MockWorker {
+        postMessage() {}
+        terminate() {}
+      };
+
+      const { TimelineWorkerBridge } = await import('../apps/studio/src/lib/timeline/TimelineWorkerBridge');
+      const bridge = new TimelineWorkerBridge();
+
+      let transferCount = 0;
+      const mockCanvas: any = {
+        transferControlToOffscreen: () => {
+          transferCount++;
+          return {} as any;
+        },
+      };
+
+      const dummyModel: any = { tracks: [], clips: [], totalFrames: 100, fps: 30 };
+      const dummyViewport: any = { scrollLeft: 0, scrollTop: 0, viewportWidth: 1000, viewportHeight: 300, pixelsPerFrame: 4, dpr: 1 };
+
+      const ok1 = bridge.init(mockCanvas, dummyModel, dummyViewport);
+      expect(ok1).toBe(true);
+      expect(transferCount).toBe(1);
+      expect(mockCanvas.__transferred).toBe(true);
+
+      // Now simulate a remount where the bridge was disposed and a new bridge attempts to init with the same canvas
+      bridge.dispose();
+
+      const newBridge = new TimelineWorkerBridge();
+      // Should reject without calling transferControlToOffscreen or throwing InvalidStateError
+      const ok2 = newBridge.init(mockCanvas, dummyModel, dummyViewport);
+      expect(ok2).toBe(false);
+      expect(transferCount).toBe(1); // not called again
+      newBridge.dispose();
+    });
+  });
 });
+

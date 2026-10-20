@@ -331,6 +331,7 @@ export function Timeline({
   const playheadNeedleRef = useRef<HTMLDivElement>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const workerBridgeRef = useRef<TimelineWorkerBridge | null>(null);
+  const [canvasKey, setCanvasKey] = useState(0);
   const isPanningRef = useRef(false);
   const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
 
@@ -432,12 +433,16 @@ export function Timeline({
     };
 
     if (bridge.supportsOffscreen() && !bridge.hasTransferred?.()) {
-      bridge.init(canvas, model, initialViewport);
+      const initialized = bridge.init(canvas, model, initialViewport);
+      if (!initialized && (canvas as any).__transferred) {
+        // The canvas was transferred in a previous lifecycle; trigger key update for a fresh DOM canvas node
+        setCanvasKey((k) => k + 1);
+      }
     } else {
       bridge.updateModel(model);
       bridge.updateViewport(initialViewport);
     }
-  }, [tracks, lockedTracks, mutedTracks, totalFrames, fps, pixelsPerFrame]);
+  }, [tracks, lockedTracks, mutedTracks, totalFrames, fps, pixelsPerFrame, canvasKey]);
 
   useEffect(() => {
     return () => {
@@ -974,6 +979,7 @@ export function Timeline({
 
             {/* OffscreenCanvas Background Track Renderer (Transferred to dedicated Timeline Web Worker) */}
             <canvas
+              key={canvasKey}
               ref={offscreenCanvasRef}
               className="absolute top-7 left-52 pointer-events-none z-0"
               style={{

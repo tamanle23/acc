@@ -34,8 +34,14 @@ export class TimelineWorkerBridge {
     if (!this.isSupported) return false;
     if (this.isTransferred) return true;
 
+    // A canvas DOM node cannot be transferred more than once across its entire lifecycle
+    if ((canvas as any).__transferred) {
+      return false;
+    }
+
     try {
       const offscreen = canvas.transferControlToOffscreen();
+      (canvas as any).__transferred = true;
       this.worker = new Worker(new URL('../../workers/timeline.worker.ts', import.meta.url), {
         type: 'module',
       });
