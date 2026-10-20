@@ -1,6 +1,6 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '@acc/core-isomorphic';
-import { wrapCanvasContext } from '@acc/core-isomorphic';
+import { wrapCanvasContext, UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 /**
  * NapiCanvasAdapter:
@@ -80,5 +80,13 @@ export class NapiCanvasAdapter implements ICanvasAdapter {
       return loadImage(Buffer.from(ab));
     }
     throw new Error(`[NapiCanvasAdapter] Unsupported image source type in Node: ${typeof source}`);
+  }
+
+  public acquireScratchCanvas(width: number, height: number): ICanvasInstance {
+    return UniversalCanvasProvider.acquireScratchCanvas(width, height, 'node');
+  }
+
+  public releaseScratchCanvas(canvas: ICanvasInstance): void {
+    UniversalCanvasProvider.releaseScratchCanvas(canvas);
   }
 }

@@ -111,7 +111,13 @@ function renderTimeline(): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
 
-  // Clear timeline background
+  // If in DOM mode, clear canvas to transparent so it doesn't double-render beneath DOM
+  if (model.mode === 'dom') {
+    ctx.clearRect(0, 0, viewport.viewportWidth, viewport.viewportHeight);
+    return;
+  }
+
+  // Clear timeline background for Canvas mode
   ctx.fillStyle = '#0f172a'; // slate-900
   ctx.fillRect(0, 0, viewport.viewportWidth, viewport.viewportHeight);
 
@@ -212,9 +218,22 @@ function renderTimeline(): void {
       }
     }
 
-    // Clip border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.stroke();
+    // Clip border & Selection highlight
+    const isSelected = model.selectedClipId === clip.id;
+    if (isSelected) {
+      ctx.strokeStyle = '#22d3ee'; // cyan-400
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Trim handle grips
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(x + 1, y + h / 2 - 6, 2, 12);
+      ctx.fillRect(x + w - 3, y + h / 2 - 6, 2, 12);
+    } else {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
 
     // Label
     ctx.fillStyle = '#ffffff';
@@ -225,6 +244,25 @@ function renderTimeline(): void {
     ctx.rect(x + 4, y, Math.max(0, w - 8), h);
     ctx.clip();
     ctx.fillText(clip.name || clip.id, x + 8, y + h / 2);
+    ctx.restore();
+  }
+
+  // Draw Ghost Drag preview if dragging
+  if (model.ghostDrag) {
+    const gx = model.ghostDrag.startFrame * pixelsPerFrame;
+    const gw = Math.max(8, model.ghostDrag.durationFrames * pixelsPerFrame);
+    const gy = model.ghostDrag.trackIndex * rowHeight + 2;
+    const gh = rowHeight - 6;
+
+    ctx.save();
+    ctx.fillStyle = model.ghostDrag.isValid ? 'rgba(34, 211, 238, 0.25)' : 'rgba(239, 68, 68, 0.25)';
+    ctx.strokeStyle = model.ghostDrag.isValid ? '#22d3ee' : '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.roundRect(gx, gy, gw, gh, 4);
+    ctx.fill();
+    ctx.stroke();
     ctx.restore();
   }
 

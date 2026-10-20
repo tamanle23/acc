@@ -91,6 +91,8 @@ export interface ICanvasAdapter {
   readonly environment: 'web' | 'node' | 'custom';
   isSupported(): boolean;
   createCanvas(width: number, height: number): ICanvasInstance;
+  acquireScratchCanvas?(width: number, height: number): ICanvasInstance;
+  releaseScratchCanvas?(canvas: ICanvasInstance): void;
   loadImage?(source: string | Buffer | Uint8Array | Blob | File): Promise<any>;
 }
 

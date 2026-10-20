@@ -2,9 +2,11 @@ import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { CanvasAdapter, CanvasInstance, CanvasContext2D } from './base';
 
 export class NapiRsCanvasAdapter implements CanvasAdapter {
+  private wrapperToOriginal = new WeakMap<CanvasInstance, any>();
+
   createCanvas(width: number, height: number): CanvasInstance {
     const canvas = UniversalCanvasProvider.createCanvas(width, height, 'node');
-    return {
+    const instance: CanvasInstance = {
       width,
       height,
       getRawCanvas: () => (canvas.getRawCanvas ? canvas.getRawCanvas() : canvas),
@@ -19,11 +21,13 @@ export class NapiRsCanvasAdapter implements CanvasAdapter {
         return Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength);
       },
     };
+    this.wrapperToOriginal.set(instance, canvas);
+    return instance;
   }
 
   acquireScratchCanvas(width: number, height: number): CanvasInstance {
     const canvas = UniversalCanvasProvider.acquireScratchCanvas(width, height, 'node');
-    return {
+    const instance: CanvasInstance = {
       width,
       height,
       getRawCanvas: () => (canvas.getRawCanvas ? canvas.getRawCanvas() : canvas),
@@ -38,10 +42,12 @@ export class NapiRsCanvasAdapter implements CanvasAdapter {
         return Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength);
       },
     };
+    this.wrapperToOriginal.set(instance, canvas);
+    return instance;
   }
 
   releaseScratchCanvas(canvas: CanvasInstance): void {
-    const raw = canvas.getRawCanvas ? canvas.getRawCanvas() : canvas;
-    UniversalCanvasProvider.releaseScratchCanvas(raw);
+    const orig = this.wrapperToOriginal.get(canvas) || (canvas.getRawCanvas ? canvas.getRawCanvas() : canvas);
+    UniversalCanvasProvider.releaseScratchCanvas(orig);
   }
 }

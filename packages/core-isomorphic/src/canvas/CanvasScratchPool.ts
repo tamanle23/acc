@@ -31,6 +31,7 @@ export class CanvasScratchPool {
   private pool: Map<string, ICanvasInstance[]> = new Map();
   private inUseSet: Set<ICanvasInstance> = new Set();
   private canvasToBucketKey: WeakMap<ICanvasInstance, string> = new WeakMap();
+  private rawToOriginal: WeakMap<object, ICanvasInstance> = new WeakMap();
   private maxPerBucket: number = 8;
 
   public static getInstance(): CanvasScratchPool {
@@ -83,19 +84,27 @@ export class CanvasScratchPool {
 
     this.inUseSet.add(canvas);
     this.canvasToBucketKey.set(canvas, key);
+    if (typeof (canvas as any).getRawCanvas === 'function') {
+      const raw = (canvas as any).getRawCanvas();
+      if (raw && typeof raw === 'object') {
+        this.rawToOriginal.set(raw, canvas);
+      }
+    }
     return canvas;
   }
 
   /**
    * Releases an acquired scratch canvas back into the pool.
    */
-  public release(canvas: ICanvasInstance): void {
-    if (!this.inUseSet.has(canvas)) {
+  public release(canvas: ICanvasInstance | any): void {
+    if (!canvas) return;
+    const target = this.rawToOriginal.get(canvas) || canvas;
+    if (!this.inUseSet.has(target)) {
       return;
     }
-    this.inUseSet.delete(canvas);
+    this.inUseSet.delete(target);
 
-    const key = this.canvasToBucketKey.get(canvas);
+    const key = this.canvasToBucketKey.get(target);
     if (!key) return;
 
     let bucket = this.pool.get(key);
@@ -105,7 +114,7 @@ export class CanvasScratchPool {
     }
 
     if (bucket.length < this.maxPerBucket) {
-      bucket.push(canvas);
+      bucket.push(target);
     }
     // Else let excess canvases be naturally collected by GC
   }

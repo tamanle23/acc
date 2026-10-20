@@ -1,5 +1,5 @@
 import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '@acc/core-isomorphic';
-import { wrapCanvasContext } from '@acc/core-isomorphic';
+import { wrapCanvasContext, UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 /**
  * WebCanvasAdapter:
@@ -167,5 +167,13 @@ export class WebCanvasAdapter implements ICanvasAdapter {
       img.onerror = (err) => reject(new Error(`[WebCanvasAdapter] Failed to load image from URL: ${err}`));
       img.src = url;
     });
+  }
+
+  public acquireScratchCanvas(width: number, height: number): ICanvasInstance {
+    return UniversalCanvasProvider.acquireScratchCanvas(width, height, 'web');
+  }
+
+  public releaseScratchCanvas(canvas: ICanvasInstance): void {
+    UniversalCanvasProvider.releaseScratchCanvas(canvas);
   }
 }

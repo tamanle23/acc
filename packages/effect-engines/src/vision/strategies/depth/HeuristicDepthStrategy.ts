@@ -14,46 +14,52 @@ export class HeuristicDepthStrategy implements IDepthEstimationStrategy {
     const w = original.width;
     const h = original.height;
 
-    const canvas = UniversalCanvasProvider.createCanvas(w, h);
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(original, 0, 0, w, h);
+    const canvas = UniversalCanvasProvider.acquireScratchCanvas(w, h);
+    const depthCanvas = UniversalCanvasProvider.acquireScratchCanvas(w, h);
+    try {
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(original, 0, 0, w, h);
 
-    const imgData = ctx.getImageData(0, 0, w, h);
-    const data = imgData.data;
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
 
-    const depthCanvas = UniversalCanvasProvider.createCanvas(w, h);
-    const depthCtx = depthCanvas.getContext('2d');
-    const depthData = depthCtx.createImageData(w, h);
+      const depthCtx = depthCanvas.getContext('2d');
+      const depthData = depthCtx.createImageData(w, h);
 
-    for (let y = 0; y < h; y++) {
-      const yGradient = (y / h) * 0.4 + 0.2; // Perspective depth gradient
-      for (let x = 0; x < w; x++) {
-        const idx = (y * w + x) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+      for (let y = 0; y < h; y++) {
+        const yGradient = (y / h) * 0.4 + 0.2; // Perspective depth gradient
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
 
-        // Inverted luminance + vertical perspective gradient
-        const depthVal = Math.min(255, Math.max(0, Math.round(((1.0 - lum) * 0.6 + yGradient) * 255)));
+          // Inverted luminance + vertical perspective gradient
+          const depthVal = Math.min(255, Math.max(0, Math.round(((1.0 - lum) * 0.6 + yGradient) * 255)));
 
-        depthData.data[idx] = depthVal;
-        depthData.data[idx + 1] = depthVal;
-        depthData.data[idx + 2] = depthVal;
-        depthData.data[idx + 3] = 255;
+          depthData.data[idx] = depthVal;
+          depthData.data[idx + 1] = depthVal;
+          depthData.data[idx + 2] = depthVal;
+          depthData.data[idx + 3] = 255;
+        }
       }
+
+      depthCtx.putImageData(depthData, 0, 0);
+
+      const [minD, maxD] = options?.normalizeRange ?? [0.5, 8.5];
+      const depth16Buffer = depthCanvas.toBuffer('image/png');
+      return {
+        depth16Buffer,
+        width: w,
+        height: h,
+        minDepth: minD,
+        maxDepth: maxD,
+        modelUsed: this.modelId
+      };
+    } finally {
+      UniversalCanvasProvider.releaseScratchCanvas(canvas);
+      UniversalCanvasProvider.releaseScratchCanvas(depthCanvas);
     }
-
-    depthCtx.putImageData(depthData, 0, 0);
-
-    const [minD, maxD] = options?.normalizeRange ?? [0.5, 8.5];
-    return {
-      depth16Buffer: depthCanvas.toBuffer('image/png'),
-      width: w,
-      height: h,
-      minDepth: minD,
-      maxDepth: maxD,
-      modelUsed: this.modelId
-    };
   }
 }

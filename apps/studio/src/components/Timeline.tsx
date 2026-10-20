@@ -49,6 +49,14 @@ import {
   type DragMoveEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
+import {
+  TimelinePointerStateMachine,
+  type GhostDragState,
+} from '../lib/timeline/interaction/TimelinePointerStateMachine';
+import { TimelineCommandDispatcher, RazorCutCommand } from '../lib/timeline/commands/TimelineCommands';
+import type { HitTestTrack } from '../lib/timeline/interaction/TimelineHitTester';
+import type { TimelineMode } from '../lib/timeline/strategies/ITimelineRenderStrategy';
+import { LayoutGrid, Monitor } from 'lucide-react';
 
 interface TimelineProps {
   playhead: {
@@ -254,6 +262,11 @@ export function Timeline({
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~4px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
+  const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
+  const [canvasCursor, setCanvasCursor] = useState<string>('default');
+  const [timecodeHUD, setTimecodeHUD] = useState<{ frame: number; deltaFrames: number } | null>(null);
+  const [razorHoverFrame, setRazorHoverFrame] = useState<number | null>(null);
+  const [canvasGhostDrag, setCanvasGhostDrag] = useState<GhostDragState | null>(null);
   const [lockedTracks, setLockedTracks] = useState<Record<string, boolean>>({});
   const [mutedTracks, setMutedTracks] = useState<Record<string, boolean>>({});
 
@@ -334,6 +347,27 @@ export function Timeline({
   const [canvasKey, setCanvasKey] = useState(0);
   const isPanningRef = useRef(false);
   const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
+
+  // Design Pattern: State Machine for pointer interactions in Canvas Mode
+  const pointerStateMachineRef = useRef<TimelinePointerStateMachine | null>(null);
+  if (!pointerStateMachineRef.current) {
+    pointerStateMachineRef.current = new TimelinePointerStateMachine({
+      onCursorChange: (c) => setCanvasCursor(c),
+      onGhostUpdate: (ghost) => setCanvasGhostDrag(ghost),
+      onSnapGuideline: (g) => setActiveSnapGuideline(g),
+      onTimecodeHUD: (hud) => setTimecodeHUD(hud),
+    });
+  }
+
+  // Keep state machine synced with tools & snap
+  useEffect(() => {
+    if (pointerStateMachineRef.current) {
+      pointerStateMachineRef.current.setToolMode(
+        activeTool === 'razor' ? 'scissors' : activeTool === 'hand' ? 'hand' : 'select'
+      );
+      pointerStateMachineRef.current.setSnappingEnabled(snapEnabled);
+    }
+  }, [activeTool, snapEnabled]);
 
   // High-Frequency Direct DOM transform for 60fps playhead needle (Zero React reconciliation)
   useEffect(() => {
@@ -420,6 +454,17 @@ export function Timeline({
       clips,
       totalFrames,
       fps,
+      mode: timelineMode,
+      selectedClipId: selectedSeqId,
+      ghostDrag: canvasGhostDrag
+        ? {
+            seqId: canvasGhostDrag.seqId,
+            startFrame: canvasGhostDrag.currentStartFrame,
+            durationFrames: canvasGhostDrag.currentDurationFrames,
+            trackIndex: canvasGhostDrag.targetTrackIndex,
+            isValid: canvasGhostDrag.isValidDrop,
+          }
+        : null,
     };
 
     const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1.0 : 1.0;
@@ -442,7 +487,7 @@ export function Timeline({
       bridge.updateModel(model);
       bridge.updateViewport(initialViewport);
     }
-  }, [tracks, lockedTracks, mutedTracks, totalFrames, fps, pixelsPerFrame, canvasKey]);
+  }, [tracks, lockedTracks, mutedTracks, totalFrames, fps, pixelsPerFrame, canvasKey, timelineMode, selectedSeqId, canvasGhostDrag]);
 
   useEffect(() => {
     return () => {
@@ -717,6 +762,74 @@ export function Timeline({
     }
   };
 
+  // Convert tracks to HitTestTrack[] format for pure State Machine & HitTester
+  const hitTestTracks: HitTestTrack[] = tracks.map((t: any, index: number) => ({
+    id: t.id,
+    type: t.type || 'video',
+    sequences: Array.isArray(t.sequences) ? t.sequences : [],
+  }));
+
+  // Canvas Mode Pointer Event Handlers wired directly to TimelinePointerStateMachine
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (timelineMode !== 'canvas') return;
+    const canvas = e.currentTarget;
+    canvas.setPointerCapture(e.pointerId);
+
+    const rect = canvas.getBoundingClientRect();
+    const localPoint = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    pointerStateMachineRef.current?.handlePointerDown(
+      localPoint,
+      scrollLeft,
+      0,
+      pixelsPerFrame,
+      40, // 40px rowHeight
+      hitTestTracks,
+      currentFrame
+    );
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (timelineMode !== 'canvas') return;
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const localPoint = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+
+    if (activeTool === 'razor') {
+      const frameAtPointer = Math.max(0, Math.floor((localPoint.x + scrollLeft) / pixelsPerFrame));
+      setRazorHoverFrame(frameAtPointer);
+    } else {
+      setRazorHoverFrame(null);
+    }
+
+    pointerStateMachineRef.current?.handlePointerMove(
+      localPoint,
+      scrollLeft,
+      0,
+      pixelsPerFrame,
+      40,
+      hitTestTracks,
+      currentFrame
+    );
+  };
+
+  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (timelineMode !== 'canvas') return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignored if pointer was not captured
+    }
+    setRazorHoverFrame(null);
+    pointerStateMachineRef.current?.handlePointerUp();
+  };
+
   const toggleLock = (trackId: string) => {
     setLockedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
   };
@@ -731,8 +844,14 @@ export function Timeline({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === 'c' || e.key === 'C') {
-        setActiveTool('razor');
-        handleSplit();
+        setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
+      } else if (e.key === 's' || e.key === 'S') {
+        // Split selected clip at playhead
+        if (selectedSeqId) {
+          TimelineCommandDispatcher.getInstance().dispatch(
+            new RazorCutCommand(selectedSeqId, currentFrame)
+          );
+        }
       } else if (e.key === 'v' || e.key === 'V') {
         setActiveTool('select');
       } else if (e.key === 'h' || e.key === 'H') {
@@ -859,6 +978,42 @@ export function Timeline({
               Snap
             </Toggle>
           </Tooltip>
+
+          <Separator orientation="vertical" className="h-4 mx-1" />
+
+          {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
+          <div className="flex items-center rounded-md border border-border/40 p-0.5 bg-muted/20 text-xs shadow-2xs">
+            <Tooltip content="DOM Mode: Interactive HTML Elements with @dnd-kit">
+              <Button
+                variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTimelineMode('dom')}
+                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
+                  timelineMode === 'dom'
+                    ? 'bg-secondary text-secondary-foreground font-semibold shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <LayoutGrid className="w-3 h-3" />
+                DOM
+              </Button>
+            </Tooltip>
+            <Tooltip content="Canvas Mode: 60fps High-Performance OffscreenCanvas & Pure Math Hit-Testing">
+              <Button
+                variant={timelineMode === 'canvas' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setTimelineMode('canvas')}
+                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
+                  timelineMode === 'canvas'
+                    ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40 font-semibold shadow-2xs'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Monitor className="w-3 h-3" />
+                Canvas
+              </Button>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Center: Zoom Controls & Fit */}
@@ -981,12 +1136,68 @@ export function Timeline({
             <canvas
               key={canvasKey}
               ref={offscreenCanvasRef}
-              className="absolute top-7 left-52 pointer-events-none z-0"
+              className={`absolute top-7 left-52 pointer-events-none ${
+                timelineMode === 'canvas' ? 'z-10' : 'z-0 opacity-0'
+              }`}
               style={{
                 width: `${timelineWidth}px`,
                 height: `${Math.max(120, rowVirtualizer.getTotalSize())}px`,
               }}
             />
+
+            {/* Canvas Mode Transparent Pointer Interaction Overlay (0ms direct cursor & pointer capture) */}
+            {timelineMode === 'canvas' && (
+              <canvas
+                className="absolute top-7 left-52 z-25"
+                style={{
+                  width: `${timelineWidth}px`,
+                  height: `${Math.max(120, rowVirtualizer.getTotalSize())}px`,
+                  cursor: canvasCursor,
+                }}
+                onPointerDown={handleCanvasPointerDown}
+                onPointerMove={handleCanvasPointerMove}
+                onPointerUp={handleCanvasPointerUp}
+              />
+            )}
+
+            {/* Razor Tool Hover Cut Indicator Guideline */}
+            {timelineMode === 'canvas' && razorHoverFrame !== null && (
+              <div
+                className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
+                style={{
+                  left: `${208 + razorHoverFrame * pixelsPerFrame}px`,
+                }}
+              >
+                <div className="w-1.5 h-1.5 bg-rose-400 rotate-45 -mt-1 shadow-[0_0_8px_#f43f5e]" />
+                <div className="w-[1.5px] flex-1 bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
+                <span className="text-[9px] font-mono text-rose-300 bg-slate-900/95 px-1 py-0.5 rounded -mt-4 shadow-sm border border-rose-500/40">
+                  ✂ Cut @ {razorHoverFrame}f
+                </span>
+              </div>
+            )}
+
+            {/* Floating Timecode HUD Badge during Drag or Trim */}
+            {timelineMode === 'canvas' && timecodeHUD && (
+              <div
+                className="absolute z-40 pointer-events-none -top-1 px-2 py-0.5 rounded bg-slate-950/90 border border-cyan-400 text-cyan-300 font-mono text-[10px] shadow-lg flex items-center gap-1.5 backdrop-blur-xs transition-transform"
+                style={{
+                  left: `${Math.max(210, 208 + timecodeHUD.frame * pixelsPerFrame - 30)}px`,
+                }}
+              >
+                <span>Frame {timecodeHUD.frame}</span>
+                <span
+                  className={
+                    timecodeHUD.deltaFrames > 0
+                      ? 'text-emerald-400 font-bold'
+                      : timecodeHUD.deltaFrames < 0
+                      ? 'text-amber-400 font-bold'
+                      : 'text-muted-foreground'
+                  }
+                >
+                  ({timecodeHUD.deltaFrames >= 0 ? `+${timecodeHUD.deltaFrames}` : timecodeHUD.deltaFrames}f)
+                </span>
+              </div>
+            )}
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
@@ -1111,23 +1322,28 @@ export function Timeline({
                         </div>
                       </div>
 
-                      {/* Droppable Track Sequence Lane in the Exact Same Row */}
+                      {/* Track Sequence Lane: Render DOM clips only in DOM mode to prevent double rendering */}
                       <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
-                        <DroppableTrackLane track={track} isLocked={isLocked}>
-                          {visibleSequences.map((seq) => (
-                            <TimelineClipItem
-                              key={seq.id}
-                              seq={seq}
-                              track={track}
-                              pixelsPerFrame={pixelsPerFrame}
-                              isSelected={selectedSeqId === seq.id}
-                              activeTool={activeTool}
-                              getTrackBadgeStyle={getTrackBadgeStyle}
-                              onClipClick={handleClipClick}
-                              activeDragState={activeDragState}
-                            />
-                          ))}
-                        </DroppableTrackLane>
+                        {timelineMode === 'dom' ? (
+                          <DroppableTrackLane track={track} isLocked={isLocked}>
+                            {visibleSequences.map((seq) => (
+                              <TimelineClipItem
+                                key={seq.id}
+                                seq={seq}
+                                track={track}
+                                pixelsPerFrame={pixelsPerFrame}
+                                isSelected={selectedSeqId === seq.id}
+                                activeTool={activeTool}
+                                getTrackBadgeStyle={getTrackBadgeStyle}
+                                onClipClick={handleClipClick}
+                                activeDragState={activeDragState}
+                              />
+                            ))}
+                          </DroppableTrackLane>
+                        ) : (
+                          // Canvas Mode: placeholder empty slot aligned with offscreen canvas beneath
+                          <div className="flex-1 h-full rounded-md border border-[var(--glass-border)]/30 bg-transparent pointer-events-none" />
+                        )}
                       </div>
                     </div>
                   );

@@ -222,14 +222,18 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     const downW = Math.max(8, Math.round(w / (blurLevel * 2)));
     const downH = Math.max(8, Math.round(h / (blurLevel * 2)));
 
-    const uTiny = UniversalCanvasProvider.createCanvas(downW, downH);
-    const tinyCanvas = uTiny.getRawCanvas ? uTiny.getRawCanvas() : uTiny;
-    const tCtx = tinyCanvas.getContext('2d');
+    const uTiny = UniversalCanvasProvider.acquireScratchCanvas(downW, downH);
+    try {
+      const tinyCanvas = uTiny.getRawCanvas ? uTiny.getRawCanvas() : uTiny;
+      const tCtx = tinyCanvas.getContext('2d');
 
-    // Downscale with bilinear filter
-    tCtx.drawImage(srcCanvas, 0, 0, downW, downH);
+      // Downscale with bilinear filter
+      tCtx.drawImage(srcCanvas, 0, 0, downW, downH);
 
-    // Upscale back with smooth blur
-    targetCtx.drawImage(tinyCanvas, 0, 0, downW, downH, 0, 0, w, h);
+      // Upscale back with smooth blur
+      targetCtx.drawImage(tinyCanvas, 0, 0, downW, downH, 0, 0, w, h);
+    } finally {
+      UniversalCanvasProvider.releaseScratchCanvas(uTiny);
+    }
   }
 }

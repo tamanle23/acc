@@ -23,6 +23,15 @@ export interface TimelineRenderModel {
   clips: ClipLayoutEntry[];
   totalFrames: number;
   fps: number;
+  mode?: 'dom' | 'canvas';
+  selectedClipId?: string | null;
+  ghostDrag?: {
+    seqId: string;
+    startFrame: number;
+    durationFrames: number;
+    trackIndex: number;
+    isValid: boolean;
+  } | null;
 }
 
 export interface TimelineViewportState {

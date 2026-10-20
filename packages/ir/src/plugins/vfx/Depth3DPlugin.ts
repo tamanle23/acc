@@ -124,7 +124,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             this.normalMapCache.set(params.imagePath, normalMap);
 
             // Pre-allocate scratch canvas for relight compositing
-            const relightCanvas = UniversalCanvasProvider.createCanvas(width, height);
+            const relightCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
             const rCtx = relightCanvas.getContext('2d');
             this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas, ctx: rCtx });
           }
@@ -181,7 +181,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     if (mode === 'frame_breaker' && params.imagePath) {
       bgCanvas = this.bgCanvasCache.get(params.imagePath);
       if (!bgCanvas) {
-        const uCanvas = UniversalCanvasProvider.createCanvas(width, height);
+        const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
         bgCanvas = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
         const bgCtx = bgCanvas.getContext('2d');
         bgCtx.fillStyle = '#06060c';
@@ -232,7 +232,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     if (mode === 'wigglegram' && params.imagePath) {
       baseCanvas = this.baseCanvasCache.get(params.imagePath);
       if (!baseCanvas) {
-        const uBaseCanvas = UniversalCanvasProvider.createCanvas(width, height);
+        const uBaseCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
         baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
         const bCtx = baseCanvas.getContext('2d');
         bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);

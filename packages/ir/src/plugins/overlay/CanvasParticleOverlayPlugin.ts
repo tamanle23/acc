@@ -69,7 +69,7 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
 
     // Pre-allocate scratch canvas for post-processing shaders if requested
     if (params.shaders?.bloom?.enabled || params.shaders?.chromaticAberration?.enabled) {
-      const uScratch = UniversalCanvasProvider.createCanvas(width, height);
+      const uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
       const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
       const sCtx = scratch.getContext('2d');
       this.scratchCanvasCache.set(key, { canvas: scratch, ctx: sCtx });

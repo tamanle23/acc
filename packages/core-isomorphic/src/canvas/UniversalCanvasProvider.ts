@@ -5,6 +5,7 @@ import type {
   CanvasAdapter,
   CanvasInstance,
 } from './types';
+import { CanvasScratchPool } from './CanvasScratchPool';
 
 /**
  * UniversalCanvasProvider:
@@ -152,12 +153,10 @@ export class UniversalCanvasProvider {
   }
 
   public static acquireScratchCanvas(width: number, height: number, preferredAdapter?: CanvasEnvironment): ICanvasInstance {
-    const { CanvasScratchPool } = require('./CanvasScratchPool');
     return CanvasScratchPool.getInstance().acquire(width, height, preferredAdapter);
   }
 
   public static releaseScratchCanvas(canvas: ICanvasInstance): void {
-    const { CanvasScratchPool } = require('./CanvasScratchPool');
     CanvasScratchPool.getInstance().release(canvas);
   }
 

@@ -41,21 +41,25 @@ export async function createCutoutRgba(
     const maskImg = await CanvasAssetLoader.loadImage(alphaMaskOrBuffer);
     mW = maskImg.width;
     mH = maskImg.height;
-    const tempCanvas = UniversalCanvasProvider.createCanvas(mW, mH);
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(maskImg, 0, 0, mW, mH);
-    const rawData = tempCtx.getImageData(0, 0, mW, mH).data;
-    const arrayMask = new Uint8Array(mW * mH);
-    for (let i = 0; i < mW * mH; i++) {
-      const r = rawData[i * 4];
-      const g = rawData[i * 4 + 1];
-      const b = rawData[i * 4 + 2];
-      const a = rawData[i * 4 + 3];
-      // If image has RGB white/black mask or alpha
-      const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-      arrayMask[i] = a > 0 ? (lum > 0 ? lum : a) : 0;
+    const tempCanvas = UniversalCanvasProvider.acquireScratchCanvas(mW, mH);
+    try {
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(maskImg, 0, 0, mW, mH);
+      const rawData = tempCtx.getImageData(0, 0, mW, mH).data;
+      const arrayMask = new Uint8Array(mW * mH);
+      for (let i = 0; i < mW * mH; i++) {
+        const r = rawData[i * 4];
+        const g = rawData[i * 4 + 1];
+        const b = rawData[i * 4 + 2];
+        const a = rawData[i * 4 + 3];
+        // If image has RGB white/black mask or alpha
+        const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+        arrayMask[i] = a > 0 ? (lum > 0 ? lum : a) : 0;
+      }
+      alphaMask = arrayMask;
+    } finally {
+      UniversalCanvasProvider.releaseScratchCanvas(tempCanvas);
     }
-    alphaMask = arrayMask;
   } else {
     alphaMask = alphaMaskOrBuffer as Uint8Array | number[] | Float32Array;
     mW = mW || origW;
@@ -63,7 +67,7 @@ export async function createCutoutRgba(
   }
 
   // Mask canvas at mask resolution
-  const maskCanvas = UniversalCanvasProvider.createCanvas(mW, mH);
+  const maskCanvas = UniversalCanvasProvider.acquireScratchCanvas(mW, mH);
   const maskCtx = maskCanvas.getContext('2d');
   const maskImgData = maskCtx.createImageData(mW, mH);
 
@@ -130,6 +134,7 @@ export async function createCutoutRgba(
   // Release scratch canvases back to pool
   UniversalCanvasProvider.releaseScratchCanvas(fullCanvas);
   UniversalCanvasProvider.releaseScratchCanvas(alphaCanvas);
+  UniversalCanvasProvider.releaseScratchCanvas(maskCanvas);
 
   const bbox: BoundingBox = fgPixels > 0
     ? {
