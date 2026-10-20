@@ -31,6 +31,9 @@ export interface TimelineRenderModel {
     durationFrames: number;
     trackIndex: number;
     isValid: boolean;
+    ghostType?: 'clip' | 'trim';
+    handle?: 'start' | 'end';
+    dropMessage?: string;
   } | null;
 }
 

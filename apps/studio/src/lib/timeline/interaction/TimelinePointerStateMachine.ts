@@ -23,13 +23,15 @@ export interface GhostDragState {
   isValidDrop: boolean;
   deltaFrames: number;
   handle?: 'start' | 'end';
+  dropMessage?: string;
+  snapTargetLabel?: string;
 }
 
 export interface PointerStateMachineListener {
   onCursorChange?: (cursor: string) => void;
   onGhostUpdate?: (ghost: GhostDragState | null) => void;
-  onSnapGuideline?: (frame: number | null) => void;
-  onTimecodeHUD?: (hud: { frame: number; deltaFrames: number } | null) => void;
+  onSnapGuideline?: (frame: number | null, label?: string) => void;
+  onTimecodeHUD?: (hud: { frame: number; deltaFrames: number; snapLabel?: string; durationFrames?: number } | null) => void;
 }
 
 export class TimelinePointerStateMachine {
@@ -53,10 +55,21 @@ export class TimelinePointerStateMachine {
     this.isSnappingEnabled = enabled;
   }
 
+  private isDragThresholdPassed: boolean = false;
+  private pendingSession: {
+    type: 'clip' | 'trim';
+    hit: TimelineHitTestResult;
+    startFrame: number;
+    duration: number;
+    handle?: 'start' | 'end';
+  } | null = null;
+
   public getCursor(): string {
     if (this.toolMode === 'scissors') return 'crosshair';
     if (this.toolMode === 'hand') return 'grab';
-    if (this.currentState === 'DRAGGING_CLIP') return 'grabbing';
+    if (this.currentState === 'DRAGGING_CLIP') {
+      return this.activeGhost && !this.activeGhost.isValidDrop ? 'not-allowed' : 'grabbing';
+    }
     if (this.currentState === 'TRIMMING_CLIP') return 'col-resize';
     return 'default';
   }
@@ -103,13 +116,15 @@ export class TimelinePointerStateMachine {
       TimelineCommandDispatcher.getInstance().dispatch(new SelectClipCommand(null));
       this.currentState = 'IDLE';
       this.activeGhost = null;
+      this.pendingSession = null;
+      this.isDragThresholdPassed = false;
       this.notifyUpdates();
       return;
     }
 
     if (!hit.seq || !hit.trackId || hit.trackIndex === undefined) return;
 
-    // Select the clicked clip
+    // Select the clicked clip immediately
     TimelineCommandDispatcher.getInstance().dispatch(new SelectClipCommand(hit.seq.id));
 
     const startFrame = hit.seq.startFrame ?? hit.seq.timelineStartFrame ?? 0;
@@ -117,10 +132,11 @@ export class TimelinePointerStateMachine {
 
     this.dragStartX = localPoint.x;
     this.dragStartY = localPoint.y;
+    this.isDragThresholdPassed = false;
 
+    // Initialize activeGhost immediately so inspection and instant HUD are available
     if (hit.type === 'trim-start' || hit.type === 'trim-end') {
       const handle = hit.type === 'trim-start' ? 'start' : 'end';
-      this.currentState = 'TRIMMING_CLIP';
       this.activeGhost = {
         type: 'trim',
         seqId: hit.seq.id,
@@ -134,10 +150,17 @@ export class TimelinePointerStateMachine {
         isValidDrop: true,
         deltaFrames: 0,
         handle,
+        dropMessage: handle === 'start' ? 'Trim Start' : 'Trim End',
+      };
+      this.pendingSession = {
+        type: 'trim',
+        hit,
+        startFrame,
+        duration,
+        handle,
       };
       this.listeners.onCursorChange?.('col-resize');
     } else if (hit.type === 'clip') {
-      this.currentState = 'DRAGGING_CLIP';
       this.activeGhost = {
         type: 'clip',
         seqId: hit.seq.id,
@@ -150,6 +173,13 @@ export class TimelinePointerStateMachine {
         targetTrackIndex: hit.trackIndex,
         isValidDrop: true,
         deltaFrames: 0,
+        dropMessage: 'Move',
+      };
+      this.pendingSession = {
+        type: 'clip',
+        hit,
+        startFrame,
+        duration,
       };
       this.listeners.onCursorChange?.('grabbing');
     }
@@ -169,7 +199,7 @@ export class TimelinePointerStateMachine {
     tracks: HitTestTrack[],
     playheadFrame: number
   ): void {
-    if (this.currentState === 'IDLE') {
+    if (this.currentState === 'IDLE' && !this.pendingSession) {
       // Hover hit-test to update cursor
       const hit = TimelineHitTester.hitTest(
         localPoint,
@@ -192,19 +222,66 @@ export class TimelinePointerStateMachine {
       return;
     }
 
+    // Check 3px activation threshold if pending
+    if (this.pendingSession && !this.isDragThresholdPassed) {
+      const dist = Math.hypot(localPoint.x - this.dragStartX, localPoint.y - this.dragStartY);
+      if (dist < 3) return; // ignore sub-threshold micro movements
+
+      this.isDragThresholdPassed = true;
+      const { type, hit, startFrame, duration, handle } = this.pendingSession;
+
+      if (type === 'trim') {
+        this.currentState = 'TRIMMING_CLIP';
+        this.activeGhost = {
+          type: 'trim',
+          seqId: hit.seq!.id,
+          initialStartFrame: startFrame,
+          initialDurationFrames: duration,
+          currentStartFrame: startFrame,
+          currentDurationFrames: duration,
+          sourceTrackId: hit.trackId!,
+          targetTrackId: hit.trackId!,
+          targetTrackIndex: hit.trackIndex!,
+          isValidDrop: true,
+          deltaFrames: 0,
+          handle,
+          dropMessage: handle === 'start' ? 'Trim Start' : 'Trim End',
+        };
+        this.listeners.onCursorChange?.('col-resize');
+      } else {
+        this.currentState = 'DRAGGING_CLIP';
+        this.activeGhost = {
+          type: 'clip',
+          seqId: hit.seq!.id,
+          initialStartFrame: startFrame,
+          initialDurationFrames: duration,
+          currentStartFrame: startFrame,
+          currentDurationFrames: duration,
+          sourceTrackId: hit.trackId!,
+          targetTrackId: hit.trackId!,
+          targetTrackIndex: hit.trackIndex!,
+          isValidDrop: true,
+          deltaFrames: 0,
+          dropMessage: 'Move',
+        };
+        this.listeners.onCursorChange?.('grabbing');
+      }
+    }
+
     if (!this.activeGhost) return;
 
     const deltaX = localPoint.x - this.dragStartX;
+    const deltaY = localPoint.y - this.dragStartY;
     const rawDeltaFrames = Math.round(deltaX / pixelsPerFrame);
 
     if (this.currentState === 'DRAGGING_CLIP') {
-      // Target track from Y position
+      // Target track from pointer world Y
       const worldY = localPoint.y + scrollTop;
       const targetTrackIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(worldY / rowHeight)));
       const targetTrack = tracks[targetTrackIndex];
-
-      // Track compatibility check: audio only on audio, video only on video
       const sourceTrack = tracks.find((t) => t.id === this.activeGhost?.sourceTrackId);
+
+      // Track compatibility check: audio only on audio, video/overlay only on video/overlay
       const isAudioSource = sourceTrack?.type === 'audio' || sourceTrack?.id.toLowerCase().includes('audio');
       const isAudioTarget = targetTrack?.type === 'audio' || targetTrack?.id.toLowerCase().includes('audio');
       const isCompatibleTrack = isAudioSource === isAudioTarget;
@@ -213,6 +290,7 @@ export class TimelinePointerStateMachine {
       let candidateEnd = candidateStart + this.activeGhost.initialDurationFrames;
 
       this.snapGuideline = null;
+      let snapLabel: string | undefined;
 
       // Magnetic Snapping
       if (this.isSnappingEnabled) {
@@ -227,6 +305,7 @@ export class TimelinePointerStateMachine {
           candidateStart = snapStart.snappedFrame;
           candidateEnd = candidateStart + this.activeGhost.initialDurationFrames;
           this.snapGuideline = snapStart.snappedFrame;
+          snapLabel = snapStart.target?.label;
         } else {
           const snapEnd = TimelineMagneticSnapService.calculateSnap(
             candidateEnd,
@@ -238,6 +317,7 @@ export class TimelinePointerStateMachine {
           if (snapEnd.isSnapped) {
             candidateStart = snapEnd.snappedFrame - this.activeGhost.initialDurationFrames;
             this.snapGuideline = snapEnd.snappedFrame;
+            snapLabel = snapEnd.target?.label;
           }
         }
       }
@@ -249,12 +329,21 @@ export class TimelinePointerStateMachine {
           if (seq.id === this.activeGhost.seqId) continue;
           const sStart = seq.startFrame ?? seq.timelineStartFrame ?? 0;
           const sEnd = sStart + seq.durationFrames;
-          // Check overlap
+          // Overlap check
           if (candidateStart < sEnd && candidateStart + this.activeGhost.initialDurationFrames > sStart) {
             hasCollision = true;
             break;
           }
         }
+      }
+
+      let dropMessage = 'Move';
+      if (!isCompatibleTrack) {
+        dropMessage = isAudioSource ? 'Audio track only' : 'Video track only';
+      } else if (hasCollision) {
+        dropMessage = 'Overlap Collision';
+      } else if (snapLabel) {
+        dropMessage = snapLabel;
       }
 
       const isValidDrop = isCompatibleTrack && !hasCollision;
@@ -267,19 +356,25 @@ export class TimelinePointerStateMachine {
         currentStartFrame: candidateStart,
         deltaFrames: finalDelta,
         isValidDrop,
+        dropMessage,
+        snapTargetLabel: snapLabel,
       };
 
+      this.listeners.onCursorChange?.(isValidDrop ? 'grabbing' : 'not-allowed');
       this.listeners.onTimecodeHUD?.({
         frame: candidateStart,
         deltaFrames: finalDelta,
+        snapLabel,
+        durationFrames: this.activeGhost.initialDurationFrames,
       });
     } else if (this.currentState === 'TRIMMING_CLIP') {
       const handle = this.activeGhost.handle || 'start';
       this.snapGuideline = null;
+      let snapLabel: string | undefined;
 
       if (handle === 'start') {
         let candidateStart = this.activeGhost.initialStartFrame + rawDeltaFrames;
-        const maxStart = this.activeGhost.initialStartFrame + this.activeGhost.initialDurationFrames - 1; // min 1 frame
+        const maxStart = this.activeGhost.initialStartFrame + this.activeGhost.initialDurationFrames - 1; // minimum 1 frame
         candidateStart = Math.min(maxStart, Math.max(0, candidateStart));
 
         if (this.isSnappingEnabled) {
@@ -293,20 +388,27 @@ export class TimelinePointerStateMachine {
           if (snap.isSnapped && snap.snappedFrame <= maxStart) {
             candidateStart = snap.snappedFrame;
             this.snapGuideline = snap.snappedFrame;
+            snapLabel = snap.target?.label;
           }
         }
 
         const delta = candidateStart - this.activeGhost.initialStartFrame;
+        const remainingDuration = this.activeGhost.initialDurationFrames - delta;
+
         this.activeGhost = {
           ...this.activeGhost,
           currentStartFrame: candidateStart,
-          currentDurationFrames: this.activeGhost.initialDurationFrames - delta,
+          currentDurationFrames: remainingDuration,
           deltaFrames: delta,
+          dropMessage: snapLabel || `Trim Start (${delta >= 0 ? `+${delta}` : delta}f)`,
+          snapTargetLabel: snapLabel,
         };
 
         this.listeners.onTimecodeHUD?.({
           frame: candidateStart,
           deltaFrames: delta,
+          snapLabel,
+          durationFrames: remainingDuration,
         });
       } else {
         // Trim end
@@ -324,6 +426,7 @@ export class TimelinePointerStateMachine {
           if (snap.isSnapped && snap.snappedFrame > this.activeGhost.initialStartFrame) {
             candidateDuration = snap.snappedFrame - this.activeGhost.initialStartFrame;
             this.snapGuideline = snap.snappedFrame;
+            snapLabel = snap.target?.label;
           }
         }
 
@@ -332,11 +435,15 @@ export class TimelinePointerStateMachine {
           ...this.activeGhost,
           currentDurationFrames: candidateDuration,
           deltaFrames: delta,
+          dropMessage: snapLabel || `Trim End (${delta >= 0 ? `+${delta}` : delta}f)`,
+          snapTargetLabel: snapLabel,
         };
 
         this.listeners.onTimecodeHUD?.({
           frame: this.activeGhost.initialStartFrame + candidateDuration,
           deltaFrames: delta,
+          snapLabel,
+          durationFrames: candidateDuration,
         });
       }
     }
@@ -348,6 +455,9 @@ export class TimelinePointerStateMachine {
    * Pointer Up handler
    */
   public handlePointerUp(): void {
+    this.pendingSession = null;
+    this.isDragThresholdPassed = false;
+
     if (!this.activeGhost) {
       this.currentState = 'IDLE';
       this.snapGuideline = null;

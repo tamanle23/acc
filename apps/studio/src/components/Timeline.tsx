@@ -18,6 +18,7 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  Film,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -264,7 +265,12 @@ export function Timeline({
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
   const [canvasCursor, setCanvasCursor] = useState<string>('default');
-  const [timecodeHUD, setTimecodeHUD] = useState<{ frame: number; deltaFrames: number } | null>(null);
+  const [timecodeHUD, setTimecodeHUD] = useState<{
+    frame: number;
+    deltaFrames: number;
+    snapLabel?: string;
+    durationFrames?: number;
+  } | null>(null);
   const [razorHoverFrame, setRazorHoverFrame] = useState<number | null>(null);
   const [canvasGhostDrag, setCanvasGhostDrag] = useState<GhostDragState | null>(null);
   const [lockedTracks, setLockedTracks] = useState<Record<string, boolean>>({});
@@ -336,8 +342,8 @@ export function Timeline({
     targetTrackId?: string;
   } | null>(null);
 
-  // Active snap guideline (frame position or null)
-  const [activeSnapGuideline, setActiveSnapGuideline] = useState<number | null>(null);
+  // Active snap guideline (frame position and label or null)
+  const [activeSnapGuideline, setActiveSnapGuideline] = useState<{ frame: number; label?: string } | null>(null);
 
   // Hand tool panning ref & state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -354,7 +360,7 @@ export function Timeline({
     pointerStateMachineRef.current = new TimelinePointerStateMachine({
       onCursorChange: (c) => setCanvasCursor(c),
       onGhostUpdate: (ghost) => setCanvasGhostDrag(ghost),
-      onSnapGuideline: (g) => setActiveSnapGuideline(g),
+      onSnapGuideline: (g, label) => setActiveSnapGuideline(g !== null ? { frame: g, label } : null),
       onTimecodeHUD: (hud) => setTimecodeHUD(hud),
     });
   }
@@ -463,6 +469,9 @@ export function Timeline({
             durationFrames: canvasGhostDrag.currentDurationFrames,
             trackIndex: canvasGhostDrag.targetTrackIndex,
             isValid: canvasGhostDrag.isValidDrop,
+            ghostType: canvasGhostDrag.type,
+            handle: canvasGhostDrag.handle,
+            dropMessage: canvasGhostDrag.dropMessage,
           }
         : null,
     };
@@ -700,7 +709,7 @@ export function Timeline({
         }
       }
 
-      setActiveSnapGuideline(snappedGuideline);
+      setActiveSnapGuideline(snappedGuideline !== null ? { frame: snappedGuideline } : null);
       setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
     }
   };
@@ -1121,13 +1130,16 @@ export function Timeline({
               <div
                 className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
                 style={{
-                  left: `${208 + activeSnapGuideline * pixelsPerFrame}px`,
+                  left: `${208 + activeSnapGuideline.frame * pixelsPerFrame}px`,
                 }}
               >
                 <div className="w-2 h-2 bg-cyan-400 rotate-45 -mt-1 shadow-[0_0_8px_#22d3ee]" />
                 <div className="w-[1.5px] flex-1 bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
-                <span className="text-[9px] font-mono text-cyan-300 bg-slate-900/90 px-1 py-0.5 rounded -mt-4 shadow-sm border border-cyan-400/40">
-                  {activeSnapGuideline}f
+                <span className="text-[9px] font-mono text-cyan-300 bg-slate-900/95 px-1.5 py-0.5 rounded -mt-4 shadow-sm border border-cyan-400/40 flex items-center gap-1">
+                  <span>{activeSnapGuideline.frame}f</span>
+                  {activeSnapGuideline.label && (
+                    <span className="text-[8px] text-cyan-400/80 uppercase font-semibold">({activeSnapGuideline.label})</span>
+                  )}
                 </span>
               </div>
             )}
@@ -1179,12 +1191,12 @@ export function Timeline({
             {/* Floating Timecode HUD Badge during Drag or Trim */}
             {timelineMode === 'canvas' && timecodeHUD && (
               <div
-                className="absolute z-40 pointer-events-none -top-1 px-2 py-0.5 rounded bg-slate-950/90 border border-cyan-400 text-cyan-300 font-mono text-[10px] shadow-lg flex items-center gap-1.5 backdrop-blur-xs transition-transform"
+                className="absolute z-40 pointer-events-none -top-1 px-2.5 py-1 rounded bg-slate-950/95 border border-cyan-400 text-cyan-300 font-mono text-[10px] shadow-xl flex items-center gap-2 backdrop-blur-md transition-transform"
                 style={{
-                  left: `${Math.max(210, 208 + timecodeHUD.frame * pixelsPerFrame - 30)}px`,
+                  left: `${Math.max(210, 208 + timecodeHUD.frame * pixelsPerFrame - 40)}px`,
                 }}
               >
-                <span>Frame {timecodeHUD.frame}</span>
+                <span className="font-semibold text-slate-200">Frame {timecodeHUD.frame}</span>
                 <span
                   className={
                     timecodeHUD.deltaFrames > 0
@@ -1196,13 +1208,29 @@ export function Timeline({
                 >
                   ({timecodeHUD.deltaFrames >= 0 ? `+${timecodeHUD.deltaFrames}` : timecodeHUD.deltaFrames}f)
                 </span>
+                {timecodeHUD.durationFrames !== undefined && (
+                  <span className="text-slate-400 text-[9px] border-l border-slate-700 pl-1.5">
+                    Dur: {timecodeHUD.durationFrames}f
+                  </span>
+                )}
+                {timecodeHUD.snapLabel && (
+                  <span className="text-cyan-400 text-[9px] bg-cyan-950/60 border border-cyan-700/50 px-1 rounded">
+                    {timecodeHUD.snapLabel}
+                  </span>
+                )}
               </div>
             )}
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
-              <div className="flex items-center justify-center h-28 text-xs text-slate-400 italic">
-                Compiling Video IR Tracks...
+              <div className="flex flex-col items-center justify-center h-36 rounded-lg border border-dashed border-border/40 bg-muted/10 p-6 text-center space-y-2">
+                <div className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-cyan-400">
+                  <Film className="w-4 h-4" />
+                </div>
+                <div className="text-xs font-medium text-slate-300">No Tracks in Timeline</div>
+                <p className="text-[11px] text-muted-foreground max-w-sm">
+                  Drag media from the Asset Library or click below to generate your initial composition.
+                </p>
               </div>
             ) : (
               <div

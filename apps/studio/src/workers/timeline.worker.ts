@@ -135,22 +135,40 @@ function renderTimeline(): void {
 
   const rowHeight = 44;
 
-  // Draw Track Lanes
+  // Draw Track Lanes with polished zebra striping & subtle grid
   ctx.save();
   ctx.translate(-scrollLeft, -scrollTop);
 
   const numTracks = model.tracks.length;
   for (let t = 0; t < numTracks; t++) {
     const y = t * rowHeight;
-    ctx.fillStyle = t % 2 === 0 ? 'rgba(30, 41, 59, 0.4)' : 'rgba(15, 23, 42, 0.6)';
+    // Darker, sleeker slate-900 / slate-950 tone with subtle contrast
+    ctx.fillStyle = t % 2 === 0 ? 'rgba(15, 23, 42, 0.75)' : 'rgba(30, 41, 59, 0.45)';
     ctx.fillRect(scrollLeft, y, viewport.viewportWidth, rowHeight - 2);
 
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+    // Track bottom divider line
+    ctx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(scrollLeft, y + rowHeight - 2);
     ctx.lineTo(scrollLeft + viewport.viewportWidth, y + rowHeight - 2);
     ctx.stroke();
+
+    // Subtle 1-second grid ticks along the lane for depth and visual alignment
+    const fps = model.fps || 30;
+    const secondStep = fps * pixelsPerFrame;
+    if (secondStep >= 24) {
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.15)';
+      ctx.lineWidth = 1;
+      const startSecX = Math.floor(scrollLeft / secondStep) * secondStep;
+      const endSecX = scrollLeft + viewport.viewportWidth;
+      ctx.beginPath();
+      for (let sx = startSecX; sx <= endSecX; sx += secondStep) {
+        ctx.moveTo(sx, y);
+        ctx.lineTo(sx, y + rowHeight - 2);
+      }
+      ctx.stroke();
+    }
   }
 
   // Draw Visible Clips
@@ -159,12 +177,25 @@ function renderTimeline(): void {
   for (let i = 0; i < visibleClipsScratch.length; i++) {
     const clip = visibleClipsScratch[i];
     const x = clip.startFrame * pixelsPerFrame;
-    const w = Math.max(8, clip.durationFrames * pixelsPerFrame);
-    const y = clip.trackIndex * rowHeight + 2;
-    const h = rowHeight - 6;
+    const w = Math.max(12, clip.durationFrames * pixelsPerFrame);
+    const y = clip.trackIndex * rowHeight + 3;
+    const h = rowHeight - 7;
+    const isSelected = model.selectedClipId === clip.id;
 
-    // Clip body
-    ctx.fillStyle = clip.color || '#3b82f6';
+    // Determine semantic color and gradient
+    let baseColor = clip.color;
+    if (!baseColor) {
+      if (clip.type === 'audio') baseColor = '#059669'; // emerald-600
+      else if (clip.type === 'overlay') baseColor = '#8b5cf6'; // violet-500
+      else baseColor = '#0284c7'; // sky-600
+    }
+
+    // Clip body with vertical subtle gradient
+    ctx.save();
+    const clipGrad = ctx.createLinearGradient(x, y, x, y + h);
+    clipGrad.addColorStop(0, baseColor);
+    clipGrad.addColorStop(1, 'rgba(15, 23, 42, 0.85)');
+    ctx.fillStyle = clipGrad;
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
@@ -183,14 +214,14 @@ function renderTimeline(): void {
       if (numBars > 0) {
         ctx.save();
         ctx.beginPath();
-        ctx.rect(x + 2, y + 2, Math.max(0, w - 4), h - 4);
+        ctx.roundRect(x + 2, y + 2, Math.max(0, w - 4), h - 4, 2);
         ctx.clip();
 
         const barWidth = Math.max(1, (w - 4) / numBars);
         const centerY = y + h / 2;
         const maxAmp = (h - 8) / 2;
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.4)';
         for (let b = 0; b < numBars; b++) {
           const amp = Math.max(0.05, Math.min(1.0, peaks[b])) * maxAmp;
           const bx = x + 2 + b * barWidth;
@@ -208,8 +239,8 @@ function renderTimeline(): void {
         ctx.beginPath();
         ctx.roundRect(x + 1, y + 1, Math.max(0, w - 2), h - 2, 3);
         ctx.clip();
-        ctx.globalAlpha = 0.35;
-        const thumbW = 60;
+        ctx.globalAlpha = 0.4;
+        const thumbW = 56;
         const count = Math.max(1, Math.floor(w / thumbW));
         for (let t = 0; t < count; t++) {
           ctx.drawImage(cachedBmp, x + t * thumbW, y, thumbW, h);
@@ -218,53 +249,98 @@ function renderTimeline(): void {
       }
     }
 
-    // Clip border & Selection highlight
-    const isSelected = model.selectedClipId === clip.id;
+    // Clip border & Selection highlight with cyan glow
     if (isSelected) {
+      ctx.shadowColor = 'rgba(34, 211, 238, 0.55)';
+      ctx.shadowBlur = 6;
       ctx.strokeStyle = '#22d3ee'; // cyan-400
       ctx.lineWidth = 2;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
-      // Trim handle grips
+      // Ergonomic 3-dot trim handle grips on left and right
       ctx.fillStyle = '#22d3ee';
-      ctx.fillRect(x + 1, y + h / 2 - 6, 2, 12);
-      ctx.fillRect(x + w - 3, y + h / 2 - 6, 2, 12);
+      // Left handle pill
+      ctx.beginPath();
+      ctx.roundRect(x + 1, y + h / 2 - 7, 3, 14, 1.5);
+      ctx.fill();
+      // Right handle pill
+      ctx.beginPath();
+      ctx.roundRect(x + w - 4, y + h / 2 - 7, 3, 14, 1.5);
+      ctx.fill();
     } else {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
 
-    // Label
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
-    ctx.textBaseline = 'middle';
+    // Clip Header / Label + Type Badge
     ctx.save();
     ctx.beginPath();
     ctx.rect(x + 4, y, Math.max(0, w - 8), h);
     ctx.clip();
-    ctx.fillText(clip.name || clip.id, x + 8, y + h / 2);
+
+    // Type Badge icon
+    ctx.font = '9px ui-monospace, SFMono-Regular, monospace';
+    ctx.textBaseline = 'middle';
+    const badgeText = clip.type === 'audio' ? '♫' : clip.type === 'overlay' ? '❖' : '▶';
+    ctx.fillStyle = isSelected ? '#22d3ee' : 'rgba(255, 255, 255, 0.7)';
+    ctx.fillText(badgeText, x + 6, y + h / 2);
+
+    // Label Text
+    ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(clip.name || clip.id, x + 18, y + h / 2);
+    ctx.restore();
+
     ctx.restore();
   }
 
-  // Draw Ghost Drag preview if dragging
+  // Draw Ghost Drag preview if dragging or trimming
   if (model.ghostDrag) {
     const gx = model.ghostDrag.startFrame * pixelsPerFrame;
-    const gw = Math.max(8, model.ghostDrag.durationFrames * pixelsPerFrame);
-    const gy = model.ghostDrag.trackIndex * rowHeight + 2;
-    const gh = rowHeight - 6;
+    const gw = Math.max(10, model.ghostDrag.durationFrames * pixelsPerFrame);
+    const gy = model.ghostDrag.trackIndex * rowHeight + 3;
+    const gh = rowHeight - 7;
+    const isValid = model.ghostDrag.isValid;
 
     ctx.save();
-    ctx.fillStyle = model.ghostDrag.isValid ? 'rgba(34, 211, 238, 0.25)' : 'rgba(239, 68, 68, 0.25)';
-    ctx.strokeStyle = model.ghostDrag.isValid ? '#22d3ee' : '#ef4444';
+    ctx.fillStyle = isValid ? 'rgba(34, 211, 238, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+    ctx.strokeStyle = isValid ? '#22d3ee' : '#ef4444';
     ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([5, 4]);
+
     ctx.beginPath();
     ctx.roundRect(gx, gy, gw, gh, 4);
     ctx.fill();
     ctx.stroke();
+
+    // Drop Message / Collision Warning HUD badge
+    const message = model.ghostDrag.dropMessage || (isValid ? 'Move' : 'Invalid Collision');
+    ctx.setLineDash([]);
+    ctx.font = 'bold 9px ui-monospace, SFMono-Regular, monospace';
+    ctx.textBaseline = 'middle';
+    const textMetrics = ctx.measureText(message);
+    const badgeW = textMetrics.width + 12;
+    const badgeH = 16;
+    const badgeX = gx + 6;
+    const badgeY = gy + gh / 2 - badgeH / 2;
+
+    ctx.fillStyle = isValid ? 'rgba(15, 23, 42, 0.9)' : 'rgba(153, 27, 27, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 3);
+    ctx.fill();
+    ctx.strokeStyle = isValid ? '#22d3ee' : '#ef4444';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = isValid ? '#22d3ee' : '#fca5a5';
+    ctx.fillText(message, badgeX + 6, badgeY + badgeH / 2);
+
     ctx.restore();
   }
+
+  ctx.restore();
 
   ctx.restore();
 }

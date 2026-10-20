@@ -20,7 +20,7 @@ export interface TimelineHitTestResult {
 }
 
 export class TimelineHitTester {
-  public static readonly TRIM_HANDLE_WIDTH = 8; // pixels
+  public static readonly TRIM_HANDLE_WIDTH = 10; // pixels (ergonomic hit area)
 
   /**
    * Evaluates hit-test for a point on the timeline canvas.

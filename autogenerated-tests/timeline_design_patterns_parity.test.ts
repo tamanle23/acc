@@ -177,5 +177,59 @@ describe('Timeline Design Patterns Parity Suite', () => {
 
       fsm.handlePointerUp();
     });
+
+    it('enforces cross-lane track compatibility and flags invalid drop collisions', () => {
+      let ghost: GhostDragState | null = null;
+      let cursor = 'default';
+
+      const fsm = new TimelinePointerStateMachine({
+        onGhostUpdate: (g) => { ghost = g; },
+        onCursorChange: (c) => { cursor = c; },
+      });
+
+      const pixelsPerFrame = 4;
+
+      // Pointer down on video clip seq-1 on track-v1 (y = 15)
+      fsm.handlePointerDown(
+        { x: 50, y: 15 },
+        0, 0, pixelsPerFrame, 44, sampleTracks, 0
+      );
+      expect(ghost?.isValidDrop).toBe(true);
+
+      // Drag downward into audio track track-a1 (y = 65, which is trackIndex 1)
+      fsm.handlePointerMove(
+        { x: 50, y: 65 },
+        0, 0, pixelsPerFrame, 44, sampleTracks, 0
+      );
+      expect(ghost?.isValidDrop).toBe(false);
+      expect(ghost?.dropMessage).toBe('Video track only');
+      expect(cursor).toBe('not-allowed');
+
+      // Drag back up to track-v1 but overlapping seq-2 (seq-2 is at frame 90..150, so move seq-1 to frame 80..140)
+      // delta = 80f * 4px = 320px
+      fsm.handlePointerMove(
+        { x: 370, y: 15 },
+        0, 0, pixelsPerFrame, 44, sampleTracks, 0
+      );
+      expect(ghost?.isValidDrop).toBe(false);
+      expect(ghost?.dropMessage).toBe('Overlap Collision');
+      expect(cursor).toBe('not-allowed');
+
+      fsm.handlePointerUp();
+      expect(fsm.getCursor()).toBe('default');
+    });
+
+    it('snaps candidate frames to major timecode grid seconds', () => {
+      const pixelsPerFrame = 4;
+      const playheadFrame = 100;
+
+      // Candidate at 211f (1 frame away from 210f = 7s grid at 30fps, far from any clip): snaps to grid
+      const snapGrid = TimelineMagneticSnapService.calculateSnap(
+        211, pixelsPerFrame, playheadFrame, sampleTracks
+      );
+      expect(snapGrid.isSnapped).toBe(true);
+      expect(snapGrid.snappedFrame).toBe(210);
+      expect(snapGrid.target?.type).toBe('grid');
+    });
   });
 });

@@ -60,6 +60,15 @@ export class TimelineMagneticSnapService {
       }
     }
 
+    // 3. Check Major Timecode Grid (every 1 second)
+    const fps = 30; // standard fallback
+    const nearestSecFrame = Math.round(candidateFrame / fps) * fps;
+    const distGrid = Math.abs(candidateFrame - nearestSecFrame);
+    if (distGrid <= thresholdFrames && distGrid < minDistance) {
+      minDistance = distGrid;
+      closestTarget = { frame: nearestSecFrame, type: 'grid', label: `Grid (${nearestSecFrame}f)` };
+    }
+
     if (closestTarget) {
       return {
         snappedFrame: closestTarget.frame,
