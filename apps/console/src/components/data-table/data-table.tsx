@@ -143,7 +143,23 @@ export function DataTable<TData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  onClick={() => onRowClick?.(row.original)}
+                  onClick={(e: React.MouseEvent) => {
+                    if (!onRowClick) return;
+                    const target = e.target as HTMLElement | null;
+                    if (
+                      target?.closest('button') ||
+                      target?.closest('a') ||
+                      target?.closest('input') ||
+                      target?.closest('[role="menuitem"]') ||
+                      target?.closest('[role="checkbox"]') ||
+                      target?.closest('[data-slot="dropdown-menu-trigger"]') ||
+                      target?.closest('[data-slot="dropdown-menu-content"]') ||
+                      target?.closest('td[data-action="true"]')
+                    ) {
+                      return;
+                    }
+                    onRowClick(row.original);
+                  }}
                   className={cn(
                     "group/row hover:bg-white/40 dark:hover:bg-white/5 transition-colors border-b border-white/10",
                     onRowClick && "cursor-pointer"
@@ -154,6 +170,12 @@ export function DataTable<TData>({
                     return (
                       <TableCell
                         key={cell.id}
+                        data-action={isAction ? 'true' : undefined}
+                        onClick={(e) => {
+                          if (isAction) {
+                            e.stopPropagation();
+                          }
+                        }}
                         className={cn(
                           cell.column.columnDef.meta?.className,
                           cell.column.columnDef.meta?.tdClassName,

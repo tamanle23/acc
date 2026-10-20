@@ -35,6 +35,7 @@ export function DataTableRowActions<TData>({
           variant='ghost'
           aria-label={`Actions for execution ${workflowExecution.id}`}
           className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+          onClick={(e) => e.stopPropagation()}
         >
           <MoreHorizontal className='h-4 w-4' />
           <span className='sr-only'>Actions for execution {workflowExecution.id}</span>
