@@ -1,4 +1,5 @@
 import React from 'react';
+import { RationalTime } from '@acc/core-isomorphic';
 
 interface TimecodeRulerProps {
   totalFrames: number;
@@ -22,17 +23,16 @@ export function TimecodeRuler({
     onScrub(targetFrame);
   };
 
-  // Generate markers every second and intermediate frames
+  // Generate markers every second and intermediate frames using exact RationalTime arithmetic
   const secondStep = Math.max(1, Math.round(fps));
   const markers: { frame: number; label: string; isMajor: boolean }[] = [];
 
   for (let f = 0; f <= totalFrames; f += Math.round(fps / 2)) {
     const isMajor = f % secondStep === 0;
-    const sec = Math.floor(f / fps);
-    const remainderFrames = f % fps;
-    const label = isMajor
-      ? `00:${sec < 10 ? '0' : ''}${sec}:00`
-      : `:${remainderFrames < 10 ? '0' : ''}${remainderFrames}`;
+    const rTime = RationalTime.fromFrame(f, fps);
+    const smpte = rTime.toSMPTE(fps); // HH:MM:SS:FF
+    // For major ticks show MM:SS, for minor show :FF
+    const label = isMajor ? smpte.slice(3, 8) : `:${smpte.slice(9, 11)}`;
     markers.push({ frame: f, label, isMajor });
   }
 

@@ -109,7 +109,7 @@ export async function createCutoutRgba(
   maskCtx.putImageData(maskImgData, 0, 0);
 
   // Full resolution RGBA canvas
-  const fullCanvas = UniversalCanvasProvider.createCanvas(origW, origH);
+  const fullCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
   const fullCtx = fullCanvas.getContext('2d');
 
   // Draw original
@@ -122,10 +122,14 @@ export async function createCutoutRgba(
   const rgbaBuffer = fullCanvas.toBuffer('image/png');
 
   // Also export alpha mask canvas scaled to original size
-  const alphaCanvas = UniversalCanvasProvider.createCanvas(origW, origH);
+  const alphaCanvas = UniversalCanvasProvider.acquireScratchCanvas(origW, origH);
   const alphaCtx = alphaCanvas.getContext('2d');
   alphaCtx.drawImage(maskCanvas, 0, 0, origW, origH);
   const alphaBuffer = alphaCanvas.toBuffer('image/png');
+
+  // Release scratch canvases back to pool
+  UniversalCanvasProvider.releaseScratchCanvas(fullCanvas);
+  UniversalCanvasProvider.releaseScratchCanvas(alphaCanvas);
 
   const bbox: BoundingBox = fgPixels > 0
     ? {

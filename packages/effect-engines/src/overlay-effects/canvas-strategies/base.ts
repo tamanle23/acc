@@ -25,4 +25,6 @@ export interface CanvasInstance {
 
 export interface CanvasAdapter {
   createCanvas(width: number, height: number): CanvasInstance;
+  acquireScratchCanvas?(width: number, height: number): CanvasInstance;
+  releaseScratchCanvas?(canvas: CanvasInstance): void;
 }

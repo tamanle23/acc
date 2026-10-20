@@ -1,4 +1,6 @@
 import type { TimelineRenderModel, TimelineViewportState, ClipLayoutEntry } from './timelineTypes';
+import { WaveformLODPyramid } from '../lib/timeline/WaveformLODPyramid';
+import { ThumbnailLRUCache } from '../lib/timeline/ThumbnailLRUCache';
 
 /**
  * 1D Interval Tree Entry for O(log N) horizontal timeline culling.
@@ -82,6 +84,12 @@ const visibleClipsScratch: ClipLayoutEntry[] = [];
 // Pre-allocated Float32Array coordinate buffer: [x, y, w, h] per clip
 let clipCoordsBuffer = new Float32Array(1024 * 4);
 
+// Waveform LOD Pyramid cache: clipId -> WaveformLODPyramid
+const waveformPyramidCache = new Map<string, WaveformLODPyramid>();
+
+// Thumbnail LRU cache: bitmapUrl -> ImageBitmap
+const thumbnailCache = new ThumbnailLRUCache<ImageBitmap>(64);
+
 function ensureCoordsBufferSize(requiredClips: number): void {
   if (clipCoordsBuffer.length < requiredClips * 4) {
     clipCoordsBuffer = new Float32Array(Math.max(clipCoordsBuffer.length * 2, requiredClips * 4));
@@ -120,7 +128,6 @@ function renderTimeline(): void {
   intervalTree.queryRange(startFrame, endFrame, visibleClipsScratch);
 
   const rowHeight = 44;
-  const trackHeaderWidth = 0; // Offscreen canvas renders only the track lane content
 
   // Draw Track Lanes
   ctx.save();
@@ -155,6 +162,55 @@ function renderTimeline(): void {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, 4);
     ctx.fill();
+
+    // 1. Audio Waveform LOD rendering
+    if (clip.type === 'audio' && clip.peaks && clip.peaks.length > 0) {
+      let pyramid = waveformPyramidCache.get(clip.id);
+      if (!pyramid) {
+        pyramid = new WaveformLODPyramid(clip.peaks);
+        waveformPyramidCache.set(clip.id, pyramid);
+      }
+
+      const lod = pyramid.selectLOD(pixelsPerFrame);
+      const peaks = lod.peaks;
+      const numBars = peaks.length;
+      if (numBars > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x + 2, y + 2, Math.max(0, w - 4), h - 4);
+        ctx.clip();
+
+        const barWidth = Math.max(1, (w - 4) / numBars);
+        const centerY = y + h / 2;
+        const maxAmp = (h - 8) / 2;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        for (let b = 0; b < numBars; b++) {
+          const amp = Math.max(0.05, Math.min(1.0, peaks[b])) * maxAmp;
+          const bx = x + 2 + b * barWidth;
+          ctx.fillRect(bx, centerY - amp, Math.max(1, barWidth - 1), amp * 2);
+        }
+        ctx.restore();
+      }
+    }
+
+    // 2. Video Thumbnail Filmstrip rendering
+    if (clip.type === 'video' && clip.thumbnailUrl) {
+      const cachedBmp = thumbnailCache.get(clip.thumbnailUrl);
+      if (cachedBmp) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(x + 1, y + 1, Math.max(0, w - 2), h - 2, 3);
+        ctx.clip();
+        ctx.globalAlpha = 0.35;
+        const thumbW = 60;
+        const count = Math.max(1, Math.floor(w / thumbW));
+        for (let t = 0; t < count; t++) {
+          ctx.drawImage(cachedBmp, x + t * thumbW, y, thumbW, h);
+        }
+        ctx.restore();
+      }
+    }
 
     // Clip border
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';

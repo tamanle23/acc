@@ -37,6 +37,7 @@ import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import { TimelineWorkerBridge } from '../lib/timeline/TimelineWorkerBridge';
 import type { TimelineRenderModel, ClipLayoutEntry } from '../workers/timelineTypes';
+import { RationalTime } from '@acc/core-isomorphic';
 import {
   DndContext,
   useDraggable,
@@ -379,6 +380,17 @@ export function Timeline({
       if (Array.isArray(track.sequences)) {
         track.sequences.forEach((seq: any) => {
           const sStart = seq.startFrame ?? seq.timelineStartFrame ?? 0;
+          const isAudio = track.type === 'audio';
+          let peaks: number[] | undefined;
+          let thumbnailUrl: string | undefined;
+
+          if (isAudio) {
+            const raw = WebAudioEngine.getInstance().getWaveformPeaks(seq.assetId || seq.id, seq.durationFrames, 120);
+            peaks = Array.from(raw);
+          } else {
+            thumbnailUrl = (seq.assetId || seq.id);
+          }
+
           clips.push({
             id: seq.id,
             trackId: track.id,
@@ -389,6 +401,8 @@ export function Timeline({
             type: track.type || 'video',
             color: track.type === 'audio' ? '#a855f7' : '#3b82f6',
             name: seq.id,
+            peaks,
+            thumbnailUrl,
           });
         });
       }
@@ -884,7 +898,7 @@ export function Timeline({
               </Badge>
             )}
             <Badge variant="outline" className="font-mono text-[11px] border-[var(--glass-border)] text-muted-foreground bg-[var(--glass-bg)] shadow-2xs">
-              {(currentFrame / fps).toFixed(2)}s / {(totalFrames / fps).toFixed(2)}s
+              {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)} / {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
             </Badge>
             <Badge variant="outline" className="font-mono text-[11px] text-[var(--accent-primary)] border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 font-semibold shadow-2xs">
               F {currentFrame} / {totalFrames}

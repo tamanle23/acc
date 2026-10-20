@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
 
+import { WaveformLODPyramid } from '../../lib/timeline/WaveformLODPyramid';
+
 export interface WaveSurferWaveformProps {
   id: string;
   durationFrames: number;
@@ -12,23 +14,25 @@ export interface WaveSurferWaveformProps {
   fps?: number;
 }
 
-// Global decoded peak cache to eliminate redundant audio peak decoding during scroll/zoom
-const peakCache = new Map<string, number[]>();
+// Global pyramid cache to provide multi-resolution LOD decimation
+const pyramidCache = new Map<string, WaveformLODPyramid>();
 
 export function getCachedPeaks(id: string, durationFrames: number, targetBars: number): number[] {
-  const cacheKey = `${id}:${durationFrames}:${targetBars}`;
-  if (peakCache.has(cacheKey)) {
-    return peakCache.get(cacheKey)!;
+  let pyramid = pyramidCache.get(id);
+  if (!pyramid) {
+    const rawPeaks = WebAudioEngine.getInstance().getWaveformPeaks(id, durationFrames, Math.max(targetBars * 4, 320));
+    pyramid = new WaveformLODPyramid(rawPeaks);
+    pyramidCache.set(id, pyramid);
   }
 
-  const rawPeaks = WebAudioEngine.getInstance().getWaveformPeaks(id, durationFrames, targetBars);
-  const peaksArray = Array.from(rawPeaks);
-  peakCache.set(cacheKey, peaksArray);
-  return peaksArray;
+  // Derive pixels per frame for LOD level selection
+  const pxPerFrame = targetBars > 0 && durationFrames > 0 ? (targetBars * 3) / durationFrames : 1.0;
+  const lod = pyramid.selectLOD(pxPerFrame);
+  return Array.from(lod.peaks);
 }
 
 export function clearWaveSurferPeakCache(): void {
-  peakCache.clear();
+  pyramidCache.clear();
 }
 
 export function WaveSurferWaveform({

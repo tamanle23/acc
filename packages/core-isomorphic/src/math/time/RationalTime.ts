@@ -128,4 +128,20 @@ export class RationalTime implements IRationalTime {
     if (a.value > b.value) return 1;
     return 0;
   }
+
+  /**
+   * Formats RationalTime as standard SMPTE timecode string: HH:MM:SS:FF.
+   */
+  public toSMPTE(fps: number): string {
+    const frameNumber = this.toFrame(fps);
+    const roundedFps = Math.max(1, Math.round(fps));
+    const totalSeconds = Math.floor(frameNumber / roundedFps);
+    const frames = frameNumber % roundedFps;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const pad = (n: number, z = 2) => String(n).padStart(z, '0');
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
+  }
 }

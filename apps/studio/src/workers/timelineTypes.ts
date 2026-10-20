@@ -8,6 +8,8 @@ export interface ClipLayoutEntry {
   type: 'video' | 'audio' | 'overlay';
   color: string;
   name: string;
+  peaks?: number[];
+  thumbnailUrl?: string;
 }
 
 export interface TimelineRenderModel {
