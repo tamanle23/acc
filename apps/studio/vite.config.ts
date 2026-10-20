@@ -22,11 +22,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@acc/core-isomorphic': path.resolve(__dirname, '../../packages/core/src/isomorphic'),
-      '@acc/core/isomorphic': path.resolve(__dirname, '../../packages/core/src/isomorphic'),
-      '@acc/core-web': path.resolve(__dirname, '../../packages/core/src/web'),
-      '@acc/core/web': path.resolve(__dirname, '../../packages/core/src/web'),
+      '@': path.resolve(__dirname, 'src')
     },
   },
 });

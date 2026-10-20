@@ -1,5 +1,5 @@
-import React from 'react';
 import { RationalTime } from '@acc/core-isomorphic';
+import React from 'react';
 
 interface TimecodeRulerProps {
   totalFrames: number;
@@ -48,14 +48,12 @@ export function TimecodeRuler({
           <div
             key={m.frame}
             style={{ left: `${leftPx}px` }}
-            className={`absolute top-0 bottom-0 flex flex-col justify-between ${
-              m.isMajor ? 'border-l border-slate-400 dark:border-slate-500' : 'border-l border-slate-300/70 dark:border-slate-700/50'
-            }`}
+            className={`absolute top-0 bottom-0 flex flex-col justify-between ${m.isMajor ? 'border-l border-slate-400 dark:border-slate-500' : 'border-l border-slate-300/70 dark:border-slate-700/50'
+              }`}
           >
             <span
-              className={`text-[9px] font-mono pl-1 pointer-events-none select-none ${
-                m.isMajor ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400 dark:text-slate-600 text-[8px]'
-              }`}
+              className={`text-[9px] font-mono pl-1 pointer-events-none select-none ${m.isMajor ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400 dark:text-slate-600 text-[8px]'
+                }`}
             >
               {m.isMajor ? m.label : ''}
             </span>
