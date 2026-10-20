@@ -553,45 +553,4 @@ export const useCompositeRecord = (
   });
 };
 
-// ==========================================
-// 7. Deterministic AI Schema Synthesizer Hook
-// ==========================================
-
-export interface SynthesizedAttributeProposal {
-  name: string;
-  systemName: string;
-  dataType: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'JSON' | 'ENUM';
-  uiComponent: string;
-  isRequired: boolean;
-  isSearchable: boolean;
-  isPii: boolean;
-  enumValues?: string[];
-  validationRules?: Record<string, unknown>;
-}
-
-export interface SynthesizeSchemaResponse {
-  entityName: string;
-  systemName: string;
-  description: string;
-  attributes: SynthesizedAttributeProposal[];
-  lifecycleConfig?: {
-    initial_state: string;
-    states: string[];
-    transitions: Array<{ from: string; to: string; action: string }>;
-  };
-}
-
-export const useSynthesizeSchema = () => {
-  return useMutation({
-    mutationFn: async (payload: {
-      prompt?: string;
-      sampleJson?: string;
-      domainTemplate?: string;
-    }): Promise<SynthesizeSchemaResponse> => {
-      const { springApiClient } = await import('@/features/spring-auth/api-client');
-      const res = await springApiClient.post('/v1/metadata/ai/synthesize-schema', payload);
-      return res.data?.data || res.data;
-    },
-  });
-};
 

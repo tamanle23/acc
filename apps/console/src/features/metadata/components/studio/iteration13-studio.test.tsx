@@ -1,8 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AiSchemaGeneratorModal } from './ai-schema-generator-modal';
 import { DagPropertyInspector } from './dag-property-inspector';
 import { DagWorkflowNodeComponent } from './dag-node';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -22,24 +21,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('Iteration 13 Studio Capabilities (Phases 4, 5, 6, 7)', () => {
-  it('renders AiSchemaGeneratorModal and triggers deterministic synthesis', async () => {
-    renderWithProviders(
-      <AiSchemaGeneratorModal
-        entityTypeId={1}
-        open={true}
-        onOpenChange={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText('AI-Assisted Schema & FSM Synthesizer')).toBeTruthy();
-    const triggerBtn = screen.getByTestId('ai-synthesize-trigger-btn');
-    fireEvent.click(triggerBtn);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('ai-apply-schema-btn')).toBeTruthy();
-    });
-  });
-
   it('renders DagPropertyInspector with upstream variable pills and VisualJsonEditor', async () => {
     const onUpdateNodeData = vi.fn();
     renderWithProviders(
