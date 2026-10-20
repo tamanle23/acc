@@ -35,6 +35,8 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
+import { TimelineWorkerBridge } from '../lib/timeline/TimelineWorkerBridge';
+import type { TimelineRenderModel, ClipLayoutEntry } from '../workers/timelineTypes';
 import {
   DndContext,
   useDraggable,
@@ -326,6 +328,8 @@ export function Timeline({
   // Hand tool panning ref & state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const playheadNeedleRef = useRef<HTMLDivElement>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement>(null);
+  const workerBridgeRef = useRef<TimelineWorkerBridge | null>(null);
   const isPanningRef = useRef(false);
   const panStartRef = useRef<{ x: number; scrollLeft: number }>({ x: 0, scrollLeft: 0 });
 
@@ -346,9 +350,88 @@ export function Timeline({
 
   const handleScroll = useCallback(() => {
     if (scrollContainerRef.current) {
-      setScrollLeft(scrollContainerRef.current.scrollLeft);
-      setClientWidth(scrollContainerRef.current.clientWidth);
+      const newScrollLeft = scrollContainerRef.current.scrollLeft;
+      const newClientWidth = scrollContainerRef.current.clientWidth;
+      setScrollLeft(newScrollLeft);
+      setClientWidth(newClientWidth);
+
+      if (workerBridgeRef.current) {
+        workerBridgeRef.current.updateViewport({
+          scrollLeft: newScrollLeft,
+          viewportWidth: newClientWidth,
+        });
+      }
     }
+  }, []);
+
+  // Initialize TimelineWorkerBridge with OffscreenCanvas
+  useEffect(() => {
+    const canvas = offscreenCanvasRef.current;
+    if (!canvas) return;
+
+    if (!workerBridgeRef.current) {
+      workerBridgeRef.current = new TimelineWorkerBridge();
+    }
+    const bridge = workerBridgeRef.current;
+
+    const clips: ClipLayoutEntry[] = [];
+    tracks.forEach((track: any, trackIndex: number) => {
+      if (Array.isArray(track.sequences)) {
+        track.sequences.forEach((seq: any) => {
+          const sStart = seq.startFrame ?? seq.timelineStartFrame ?? 0;
+          clips.push({
+            id: seq.id,
+            trackId: track.id,
+            startFrame: sStart,
+            durationFrames: seq.durationFrames,
+            endFrame: sStart + seq.durationFrames,
+            trackIndex,
+            type: track.type || 'video',
+            color: track.type === 'audio' ? '#a855f7' : '#3b82f6',
+            name: seq.id,
+          });
+        });
+      }
+    });
+
+    const model: TimelineRenderModel = {
+      tracks: tracks.map((t: any) => ({
+        id: t.id,
+        type: t.type || 'video',
+        name: t.id,
+        isLocked: lockedTracks[t.id],
+        isMuted: mutedTracks[t.id],
+      })),
+      clips,
+      totalFrames,
+      fps,
+    };
+
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1.0 : 1.0;
+    const initialViewport = {
+      scrollLeft: scrollContainerRef.current?.scrollLeft || 0,
+      scrollTop: scrollContainerRef.current?.scrollTop || 0,
+      viewportWidth: scrollContainerRef.current?.clientWidth || 1200,
+      viewportHeight: Math.max(300, tracks.length * 48),
+      pixelsPerFrame,
+      dpr,
+    };
+
+    if (bridge.supportsOffscreen() && !bridge.hasTransferred?.()) {
+      bridge.init(canvas, model, initialViewport);
+    } else {
+      bridge.updateModel(model);
+      bridge.updateViewport(initialViewport);
+    }
+  }, [tracks, lockedTracks, mutedTracks, totalFrames, fps, pixelsPerFrame]);
+
+  useEffect(() => {
+    return () => {
+      if (workerBridgeRef.current) {
+        workerBridgeRef.current.dispose();
+        workerBridgeRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -874,6 +957,16 @@ export function Timeline({
                 </span>
               </div>
             )}
+
+            {/* OffscreenCanvas Background Track Renderer (Transferred to dedicated Timeline Web Worker) */}
+            <canvas
+              ref={offscreenCanvasRef}
+              className="absolute top-7 left-52 pointer-events-none z-0"
+              style={{
+                width: `${timelineWidth}px`,
+                height: `${Math.max(120, rowVirtualizer.getTotalSize())}px`,
+              }}
+            />
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (

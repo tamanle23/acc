@@ -150,4 +150,22 @@ export class UniversalCanvasProvider {
     const adapter = UniversalCanvasProvider.getAdapter(preferredAdapter || UniversalCanvasProvider.getInstance().getEngine());
     return adapter.createCanvas(width, height);
   }
+
+  public static acquireScratchCanvas(width: number, height: number, preferredAdapter?: CanvasEnvironment): ICanvasInstance {
+    const { CanvasScratchPool } = require('./CanvasScratchPool');
+    return CanvasScratchPool.getInstance().acquire(width, height, preferredAdapter);
+  }
+
+  public static releaseScratchCanvas(canvas: ICanvasInstance): void {
+    const { CanvasScratchPool } = require('./CanvasScratchPool');
+    CanvasScratchPool.getInstance().release(canvas);
+  }
+
+  public acquireScratchCanvas(width: number, height: number, preferredAdapter?: CanvasEnvironment): ICanvasInstance {
+    return UniversalCanvasProvider.acquireScratchCanvas(width, height, preferredAdapter);
+  }
+
+  public releaseScratchCanvas(canvas: ICanvasInstance): void {
+    UniversalCanvasProvider.releaseScratchCanvas(canvas);
+  }
 }

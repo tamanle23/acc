@@ -424,3 +424,25 @@ Elevates the core rendering, VFX, SFX, and 3D depth synthesis capabilities acros
    - `CanvasAdapterFactory`: Dynamic auto-detection resolving GPU offscreen contexts where available with seamless fallback to `@napi-rs/canvas` in headless environments.
 4. **Media Engine Strategy Pattern Isolation**:
    - Universal media operations route exclusively through `MediaEngineRegistry` across all 4 production engines (`bun-ffi`, `fluent-ffmpeg`, `mediabunny-server`, `mediabunny-client`) with zero raw unmanaged binary invocations.
+
+---
+
+## 16. Enterprise-Grade Preview, Timeline & Isomorphic Canvas Architecture (Iteration 17)
+
+Optimizes the interactive timeline, preview subsystem, and isomorphic canvas creation to enterprise-grade NLE standards:
+
+1. **Decoupled Two-Tier Dedicated Worker Architecture**:
+   - `PreviewRenderWorker`: Dedicated Web Worker handling video decoding, shader evaluation, and 3D depth compositing via `OffscreenCanvas`.
+   - `TimelineRenderWorker`: Dedicated Web Worker handling tracks, clip rectangles, waveforms, and filmstrip thumbnails via `transferControlToOffscreen()`.
+   - High-frequency UI overlay: Needle, timecode ruler, and cyan snaplines reside on an overlay canvas driven by `requestAnimationFrame`, fully decoupled from React DOM reconciliation.
+2. **Universal Canvas Scratch Pool (`CanvasScratchPool`)**:
+   - Tiered resolution bucketing (256x256, 512x512, 1280x720, 1920x1080) in `@acc/core` (`acquireScratchCanvas` / `releaseScratchCanvas`).
+   - Eliminates GC pauses during frame loops across the 50+ canvas effect generators, vision filters, and IR renderer passes.
+3. **Viewport Virtualization & Memory Hygiene**:
+   - 1D Interval Tree index / horizontal BVH culling so only clips and markers within visible horizontal bounds $[T_{\text{start}}, T_{\text{end}}]$ are rendered.
+   - `WaveformLODPyramid`: 4-level decimation peak pyramid selecting LOD dynamically based on zoom scale ($px/\text{frame}$) to maintain $O(1)$ draw time.
+   - `ThumbnailLRUCache`: Memory-hygienic cache with explicit `.close()` disposal on evicted `ImageBitmap` / `VideoFrame` instances to eliminate browser GPU memory leaks.
+4. **SMPTE/OTIO RationalTime Arithmetic**:
+   - BigInt-backed `RationalTime` with 10MHz master timescale (`10_000_000`) in `@acc/core-isomorphic`.
+   - Exact integer divisibility across all standard framerates (23.976, 24, 25, 29.97, 30, 59.94, 60, 120 fps) and audio sample rates, eliminating IEEE-754 precision accumulation drift.
+   - Hardware audio clock synchronization (`AudioContext.currentTime` master clock) with jitter-filtering PLL.

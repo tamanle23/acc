@@ -1,3 +1,5 @@
+import { RationalTime } from '../time/RationalTime';
+
 export type ClockSyncMode = 'audio_master' | 'monotonic_worker' | 'manual_step';
 
 export interface ClockOptions {
@@ -14,6 +16,7 @@ export interface ClockState {
   totalFrames: number;
   mode: ClockSyncMode;
   timeSec: number;
+  rationalTime: RationalTime;
 }
 
 /**
@@ -88,6 +91,7 @@ export class DeterministicTimelineClock {
   }
 
   public getState(): ClockState {
+    const rationalTime = RationalTime.fromFrame(this.currentFrame, this.fps);
     return {
       currentFrame: this.currentFrame,
       isPlaying: this.isPlaying,
@@ -95,8 +99,13 @@ export class DeterministicTimelineClock {
       fps: this.fps,
       totalFrames: this.totalFrames,
       mode: this.mode,
-      timeSec: this.currentFrame / this.fps,
+      timeSec: rationalTime.toSeconds(),
+      rationalTime,
     };
+  }
+
+  public getRationalTime(): RationalTime {
+    return RationalTime.fromFrame(this.currentFrame, this.fps);
   }
 
   public getFrame(): number {
