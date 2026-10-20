@@ -49,16 +49,30 @@ public class EntityWorkflowTriggerDispatcher {
             log.info("Triggering automated workflow DAG check for entityTypeId={}, recordId={}",
                     event.entityTypeId(), event.recordId());
             if (notificationSseController != null) {
+                Map<String, Object> approvalPayload = new java.util.LinkedHashMap<>();
+                approvalPayload.put("id", "APR-" + event.entityTypeId() + "-" + event.recordId());
+                approvalPayload.put("workflowKey", "entity-governance-approval-v1");
+                approvalPayload.put("executionId", "wf_exec_gov_" + event.recordId());
+                approvalPayload.put("title", "Governance Review: Entity #" + event.entityTypeId() + " Record #" + event.recordId());
+                approvalPayload.put("entityType", "entity_" + event.entityTypeId());
+                approvalPayload.put("entityTypeId", event.entityTypeId());
+                approvalPayload.put("entityName", "Record #" + event.recordId());
+                approvalPayload.put("recordId", event.recordId());
+                approvalPayload.put("requestedBy", event.actor() != null ? event.actor() : "SYSTEM");
+                approvalPayload.put("requestedAt", event.timestamp().toString());
+                approvalPayload.put("priority", "HIGH");
+                approvalPayload.put("status", "PENDING");
+                approvalPayload.put("beforeContext", event.delta() != null ? event.delta() : java.util.Collections.emptyMap());
+                approvalPayload.put("afterContext", event.attributes() != null ? event.attributes() : java.util.Collections.emptyMap());
+                approvalPayload.put("currentAttributes", event.delta() != null ? event.delta() : java.util.Collections.emptyMap());
+                approvalPayload.put("proposedAttributes", event.attributes() != null ? event.attributes() : java.util.Collections.emptyMap());
+                approvalPayload.put("message", "New record submitted for approval");
+                approvalPayload.put("timestamp", System.currentTimeMillis());
+
                 notificationSseController.broadcast(
                         event.tenantId(),
                         "APPROVAL_REQUESTED",
-                        Map.of(
-                                "entityTypeId", event.entityTypeId(),
-                                "recordId", event.recordId(),
-                                "requestedBy", event.actor() != null ? event.actor() : "SYSTEM",
-                                "message", "New record submitted for approval",
-                                "timestamp", System.currentTimeMillis()
-                        )
+                        approvalPayload
                 );
             }
         }

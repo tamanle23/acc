@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -9,6 +9,9 @@ import {
   ToggleLeft,
   Braces,
   List,
+  ArrowUp,
+  ArrowDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,9 +32,15 @@ export interface JsonFormRowProps {
   path: (string | number)[];
   depth?: number;
   readOnly?: boolean;
+  parentArrayLength?: number;
+  searchQuery?: string;
+  matchedPaths?: Set<string>;
+  expandedAncestorPaths?: Set<string>;
+  schemaErrors?: Record<string, string>;
   onUpdate: (path: (string | number)[], newValue: unknown) => void;
   onDelete: (path: (string | number)[]) => void;
   onKeyRename?: (path: (string | number)[], oldKey: string, newKey: string) => void;
+  onMoveArrayItem?: (path: (string | number)[], direction: 'up' | 'down') => void;
 }
 
 export const JsonFormRow: React.FC<JsonFormRowProps> = ({
@@ -40,10 +49,17 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
   path,
   depth = 0,
   readOnly = false,
+  parentArrayLength,
+  searchQuery,
+  matchedPaths,
+  expandedAncestorPaths,
+  schemaErrors,
   onUpdate,
   onDelete,
   onKeyRename,
+  onMoveArrayItem,
 }) => {
+  const pathKey = path.join('.');
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [keyInput, setKeyInput] = useState(String(fieldKey));
@@ -51,6 +67,14 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
   const valType = detectJsonType(value);
   const isContainer = valType === 'object' || valType === 'array';
   const isArrayItem = typeof fieldKey === 'number';
+  const isMatched = Boolean(searchQuery && matchedPaths?.has(pathKey));
+  const rowSchemaError = schemaErrors?.[pathKey];
+
+  useEffect(() => {
+    if (searchQuery && expandedAncestorPaths?.has(pathKey)) {
+      setIsExpanded(true);
+    }
+  }, [searchQuery, expandedAncestorPaths, pathKey]);
 
   const handleKeyBlur = () => {
     setIsEditingKey(false);
@@ -122,7 +146,9 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
     <div className="flex flex-col space-y-1 relative">
       <div
         className={cn(
-          'flex items-center gap-2 p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-white/10 text-xs transition-colors group relative'
+          'flex items-center gap-2 p-2 rounded-lg bg-white/40 dark:bg-slate-800/40 border border-white/10 text-xs transition-colors group relative',
+          isMatched && 'bg-amber-500/15 border-amber-500/40',
+          rowSchemaError && 'bg-destructive/10 border-destructive/40'
         )}
       >
         {/* Horizontal connector line from parent dashed guide */}
@@ -172,7 +198,10 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
               <button
                 type="button"
                 onDoubleClick={() => !readOnly && setIsEditingKey(true)}
-                className="font-mono text-xs font-semibold text-foreground/90 hover:text-primary transition-colors truncate text-left w-full cursor-pointer"
+                className={cn(
+                  'font-mono text-xs font-semibold text-foreground/90 hover:text-primary transition-colors truncate text-left w-full cursor-pointer',
+                  isMatched && 'text-amber-600 dark:text-amber-400 font-bold'
+                )}
                 title={!readOnly ? 'Double-click to rename' : undefined}
               >
                 {String(fieldKey)}
@@ -276,9 +305,49 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
           </div>
         )}
 
+        {/* Inline Schema Error Badge */}
+        {rowSchemaError && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-mono text-destructive bg-destructive/15 px-1.5 py-0.5 rounded shrink-0"
+            title={rowSchemaError}
+          >
+            <AlertCircle className="size-2.5 shrink-0" />
+            <span className="truncate max-w-44">{rowSchemaError}</span>
+          </span>
+        )}
+
         {/* Actions for this row */}
         {!readOnly && (
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {isArrayItem && onMoveArrayItem && typeof parentArrayLength === 'number' && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={(fieldKey as number) <= 0}
+                  onClick={() => onMoveArrayItem(path, 'up')}
+                  className="size-6 text-muted-foreground hover:text-foreground"
+                  title="Move item up"
+                  aria-label="Move item up"
+                >
+                  <ArrowUp className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={(fieldKey as number) >= parentArrayLength - 1}
+                  onClick={() => onMoveArrayItem(path, 'down')}
+                  className="size-6 text-muted-foreground hover:text-foreground"
+                  title="Move item down"
+                  aria-label="Move item down"
+                >
+                  <ArrowDown className="size-3.5" />
+                </Button>
+              </>
+            )}
+
             {isContainer && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -336,14 +405,19 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
                 path={[...path, k]}
                 depth={depth + 1}
                 readOnly={readOnly}
+                searchQuery={searchQuery}
+                matchedPaths={matchedPaths}
+                expandedAncestorPaths={expandedAncestorPaths}
+                schemaErrors={schemaErrors}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onKeyRename={onKeyRename}
+                onMoveArrayItem={onMoveArrayItem}
               />
             ))}
 
           {valType === 'array' &&
-            ((value as unknown[]) || []).map((v, idx) => (
+            ((value as unknown[]) || []).map((v, idx, arr) => (
               <JsonFormRow
                 key={idx}
                 fieldKey={idx}
@@ -351,9 +425,15 @@ export const JsonFormRow: React.FC<JsonFormRowProps> = ({
                 path={[...path, idx]}
                 depth={depth + 1}
                 readOnly={readOnly}
+                parentArrayLength={arr.length}
+                searchQuery={searchQuery}
+                matchedPaths={matchedPaths}
+                expandedAncestorPaths={expandedAncestorPaths}
+                schemaErrors={schemaErrors}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onKeyRename={onKeyRename}
+                onMoveArrayItem={onMoveArrayItem}
               />
             ))}
 

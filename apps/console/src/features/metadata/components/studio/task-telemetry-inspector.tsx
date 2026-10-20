@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -19,14 +19,19 @@ import {
   FileCode,
   Terminal,
   ShieldAlert,
+  RotateCcw,
 } from 'lucide-react';
 import type { DagNodeData } from './dag-node';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
+import { useRerunWorkflowTask } from '@/features/workflows/api/workflow-api';
 
 export interface TaskTelemetryInspectorProps {
   nodeId: string | null;
   nodeData: DagNodeData | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  executionId?: string | null;
+  onRerunTask?: (taskReferenceName: string, overrideInput: Record<string, unknown>) => void;
   logs?: Array<{
     id: string;
     time: string;
@@ -41,8 +46,19 @@ export const TaskTelemetryInspector: React.FC<TaskTelemetryInspectorProps> = ({
   nodeData,
   open,
   onOpenChange,
+  executionId,
+  onRerunTask,
   logs = [],
 }) => {
+  const [overrideInput, setOverrideInput] = useState<Record<string, unknown>>(
+    nodeData?.inputParameters || {}
+  );
+  const rerunMutation = useRerunWorkflowTask();
+
+  useEffect(() => {
+    setOverrideInput(nodeData?.inputParameters || {});
+  }, [nodeData]);
+
   if (!nodeId || !nodeData) return null;
 
   const nodeLogs = logs.filter(
@@ -208,14 +224,46 @@ export const TaskTelemetryInspector: React.FC<TaskTelemetryInspectorProps> = ({
 
             {/* Payloads Tab */}
             <TabsContent value="payloads" className="mt-0 space-y-4">
-              <div className="space-y-1.5">
-                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <FileCode className="w-3.5 h-3.5 text-primary" />
-                  Resolved Input Parameters
-                </span>
-                <pre className="p-3 rounded-xl bg-black/20 font-mono text-[11px] overflow-x-auto max-h-48 border border-border/40 text-foreground">
-                  {JSON.stringify(nodeData.inputParameters || {}, null, 2)}
-                </pre>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <FileCode className="w-3.5 h-3.5 text-primary" />
+                    Input Parameters (Editable for Re-Run)
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={rerunMutation.isPending}
+                    onClick={() => {
+                      if (executionId) {
+                        rerunMutation.mutate({
+                          executionId,
+                          taskReferenceName: nodeData.taskReferenceName,
+                          overrideInput,
+                        });
+                      }
+                      if (onRerunTask) {
+                        onRerunTask(nodeData.taskReferenceName, overrideInput);
+                      }
+                    }}
+                    className="h-7 text-xs gap-1.5 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20"
+                    data-testid="debugger-rerun-node-btn"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Edit Input & Re-Run From Node</span>
+                  </Button>
+                </div>
+                <VisualJsonEditor
+                  value={overrideInput}
+                  onChange={(nextVal) => {
+                    if (nextVal && typeof nextVal === 'object' && !Array.isArray(nextVal)) {
+                      setOverrideInput(nextVal as Record<string, unknown>);
+                    }
+                  }}
+                  defaultMode="tree"
+                  height="200px"
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -223,9 +271,13 @@ export const TaskTelemetryInspector: React.FC<TaskTelemetryInspectorProps> = ({
                   <Activity className="w-3.5 h-3.5 text-emerald-500" />
                   Task Output Data
                 </span>
-                <pre className="p-3 rounded-xl bg-black/20 font-mono text-[11px] overflow-x-auto max-h-48 border border-border/40 text-foreground">
-                  {JSON.stringify(nodeData.outputParameters || {}, null, 2)}
-                </pre>
+                <VisualJsonEditor
+                  value={nodeData.outputParameters || {}}
+                  onChange={() => {}}
+                  readOnly
+                  defaultMode="tree"
+                  height="180px"
+                />
               </div>
             </TabsContent>
 

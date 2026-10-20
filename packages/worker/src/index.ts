@@ -6,3 +6,5 @@ export * from './middleware/AutoHeartbeatMiddleware.js';
 export * from './middleware/SchemaValidationMiddleware.js';
 export * from './middleware/ErrorClassificationMiddleware.js';
 export * from './client/HttpWorkerTransportClient.js';
+export * from './runner.js';
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -10,7 +10,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   AlertTriangle,
   RotateCcw,
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { TaskDlqRecordDto } from '@unipost/client';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
+import { VisualJsonEditor } from '@/components/ui/json-editor/visual-json-editor';
 
 interface DlqInspectorSheetProps {
   record: TaskDlqRecordDto | null;
@@ -37,8 +37,15 @@ export function DlqInspectorSheet({
   onDiscard,
 }: DlqInspectorSheetProps) {
   const [copied, setCopied] = useState(false);
-  const [overrideJson, setOverrideJson] = useState('');
-  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [overridePayload, setOverridePayload] = useState<Record<string, unknown>>({});
+
+  useEffect(() => {
+    if (record?.payloadSnapshot && typeof record.payloadSnapshot === 'object') {
+      setOverridePayload(record.payloadSnapshot as Record<string, unknown>);
+    } else {
+      setOverridePayload({});
+    }
+  }, [record]);
 
   if (!record) return null;
 
@@ -51,18 +58,8 @@ export function DlqInspectorSheet({
   };
 
   const handleTriggerReplay = () => {
-    let parsedOverrides: Record<string, unknown> | undefined;
-    if (overrideJson.trim()) {
-      try {
-        parsedOverrides = JSON.parse(overrideJson);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        setJsonError(`Invalid JSON: ${message}`);
-        return;
-      }
-    }
-    setJsonError(null);
-    onReplay(record, parsedOverrides);
+    const hasOverrides = Object.keys(overridePayload).length > 0;
+    onReplay(record, hasOverrides ? overridePayload : undefined);
     announceToScreenReader(`Task ${record.taskId} submitted for DLQ replay`);
     onOpenChange(false);
   };
@@ -149,47 +146,50 @@ export function DlqInspectorSheet({
             </div>
           </div>
 
-          {/* Payload Snapshot */}
+          {/* Payload Snapshot (Read-Only VisualJsonEditor) */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Execution Payload Snapshot</Label>
-            <pre className="p-3 rounded-lg border border-border/50 bg-muted/30 font-mono text-[11px] text-foreground/90 overflow-x-auto max-h-44">
-              {JSON.stringify(record.payloadSnapshot, null, 2)}
-            </pre>
+            <VisualJsonEditor
+              value={record.payloadSnapshot ?? {}}
+              onChange={() => {}}
+              readOnly
+              defaultMode="tree"
+              height="200px"
+            />
           </div>
 
-          {/* Payload Overrides (for Replay) */}
+          {/* Payload Overrides (for Replay via VisualJsonEditor) */}
           {record.status === 'ISOLATED' && (
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold">
-                  <span>Replay Payload Overrides (Optional JSON)</span>
+                  <span>Replay Payload Overrides (Interactive JSON Editor)</span>
                 </Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 px-1.5 text-[10px] text-primary hover:underline"
-                    onClick={() => {
-                      if (record.payloadSnapshot) {
-                        setOverrideJson(JSON.stringify(record.payloadSnapshot, null, 2));
-                        setJsonError(null);
-                      }
-                    }}
-                  >
-                    Copy Existing Payload
-                  </Button>
-                  {jsonError && <span className="text-destructive text-[11px]">{jsonError}</span>}
-                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 px-1.5 text-[10px] text-primary hover:underline"
+                  onClick={() => {
+                    if (record.payloadSnapshot && typeof record.payloadSnapshot === 'object') {
+                      setOverridePayload(
+                        JSON.parse(JSON.stringify(record.payloadSnapshot)) as Record<string, unknown>
+                      );
+                    }
+                  }}
+                >
+                  Reset to Snapshot
+                </Button>
               </div>
-              <Textarea
-                placeholder='e.g. { "timeoutSeconds": 60, "apiKey": "valid-token" }'
-                value={overrideJson}
-                onChange={(e) => {
-                  setOverrideJson(e.target.value);
-                  setJsonError(null);
+              <VisualJsonEditor
+                value={overridePayload}
+                onChange={(val) => {
+                  if (val && typeof val === 'object' && !Array.isArray(val)) {
+                    setOverridePayload(val as Record<string, unknown>);
+                  }
                 }}
-                className="font-mono text-xs h-28 bg-background/50 border-border/60"
+                defaultMode="tree"
+                height="240px"
               />
             </div>
           )}

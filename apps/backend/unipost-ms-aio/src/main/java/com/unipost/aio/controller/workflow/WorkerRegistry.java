@@ -1,8 +1,10 @@
 package com.unipost.aio.controller.workflow;
 
+import com.unipost.workflow.worker.TaskWorkerDescriptor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,8 +23,28 @@ public class WorkerRegistry {
         long errorCount,
         long uptimeSeconds,
         long lastHeartbeatEpochMs,
-        String status // HEALTHY, DEGRADED, OFFLINE, DRAINING
-    ) {}
+        String status, // HEALTHY, DEGRADED, OFFLINE, DRAINING
+        List<TaskWorkerDescriptor> capabilities
+    ) {
+        public WorkerRegistration(
+            String workerId,
+            String hostIp,
+            String runtime,
+            List<String> pollDomains,
+            int concurrencyLimit,
+            int activeLeases,
+            long tasksCompletedCount,
+            long errorCount,
+            long uptimeSeconds,
+            long lastHeartbeatEpochMs,
+            String status
+        ) {
+            this(
+                workerId, hostIp, runtime, pollDomains, concurrencyLimit, activeLeases,
+                tasksCompletedCount, errorCount, uptimeSeconds, lastHeartbeatEpochMs, status, List.of()
+            );
+        }
+    }
 
     public record WorkerFleetSummary(
         int totalWorkers,
@@ -41,6 +63,7 @@ public class WorkerRegistry {
     ) {}
 
     private final Map<String, WorkerRegistration> workers = new ConcurrentHashMap<>();
+    private final Map<String, TaskWorkerDescriptor> taskCatalog = new ConcurrentHashMap<>();
 
     public WorkerRegistry() {
         // Seed default JVM worker for initial out-of-the-box telemetry
@@ -49,7 +72,7 @@ public class WorkerRegistry {
             "jvm-virtual-thread-worker-01",
             "127.0.0.1",
             "JAVA_VIRTUAL_THREADS",
-            List.of("default", "orders", "billing"),
+            List.of("default", "orders", "billing", "cms"),
             128,
             0,
             0L,
@@ -71,11 +94,43 @@ public class WorkerRegistry {
         long uptimeSeconds,
         long now
     ) {
+        return registerWorkerWithCapabilities(
+            workerId, hostIp, runtime, pollDomains, concurrencyLimit, activeLeases,
+            tasksCompletedCount, errorCount, uptimeSeconds, now, null
+        );
+    }
+
+    public WorkerRegistration registerWorkerWithCapabilities(
+        String workerId,
+        String hostIp,
+        String runtime,
+        List<String> pollDomains,
+        int concurrencyLimit,
+        int activeLeases,
+        long tasksCompletedCount,
+        long errorCount,
+        long uptimeSeconds,
+        long now,
+        List<TaskWorkerDescriptor> capabilities
+    ) {
+        if (capabilities != null) {
+            for (TaskWorkerDescriptor descriptor : capabilities) {
+                if (descriptor != null && descriptor.taskName() != null) {
+                    String key = (descriptor.domain() != null ? descriptor.domain() : "default") + ":" + descriptor.taskName();
+                    taskCatalog.put(key, descriptor);
+                }
+            }
+        }
+
         return workers.compute(workerId, (id, existing) -> {
             String status = "HEALTHY";
             if (existing != null && "DRAINING".equalsIgnoreCase(existing.status())) {
                 status = "DRAINING";
             }
+            List<TaskWorkerDescriptor> resolvedCaps = capabilities != null
+                ? List.copyOf(capabilities)
+                : (existing != null && existing.capabilities() != null ? existing.capabilities() : List.of());
+
             return new WorkerRegistration(
                 workerId,
                 hostIp != null ? hostIp : (existing != null ? existing.hostIp() : "127.0.0.1"),
@@ -87,9 +142,21 @@ public class WorkerRegistry {
                 errorCount >= 0 ? errorCount : (existing != null ? existing.errorCount() : 0L),
                 uptimeSeconds >= 0 ? uptimeSeconds : (existing != null ? existing.uptimeSeconds() : 1L),
                 now,
-                status
+                status,
+                resolvedCaps
             );
         });
+    }
+
+    public void registerTaskDescriptor(TaskWorkerDescriptor descriptor) {
+        if (descriptor != null && descriptor.taskName() != null) {
+            String key = (descriptor.domain() != null ? descriptor.domain() : "default") + ":" + descriptor.taskName();
+            taskCatalog.put(key, descriptor);
+        }
+    }
+
+    public List<TaskWorkerDescriptor> getTaskCatalog() {
+        return new ArrayList<>(taskCatalog.values());
     }
 
     public boolean drainWorker(String workerId) {
@@ -108,7 +175,8 @@ public class WorkerRegistry {
             existing.errorCount(),
             existing.uptimeSeconds(),
             existing.lastHeartbeatEpochMs(),
-            "DRAINING"
+            "DRAINING",
+            existing.capabilities()
         ));
         return true;
     }
@@ -147,7 +215,8 @@ public class WorkerRegistry {
                 w.errorCount(),
                 w.uptimeSeconds(),
                 w.lastHeartbeatEpochMs(),
-                computedStatus
+                computedStatus,
+                w.capabilities()
             );
             resolvedWorkers.add(updated);
 
@@ -176,5 +245,6 @@ public class WorkerRegistry {
 
     public void clear() {
         workers.clear();
+        taskCatalog.clear();
     }
 }

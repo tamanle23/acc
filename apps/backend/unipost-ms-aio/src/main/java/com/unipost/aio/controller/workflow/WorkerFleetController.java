@@ -1,5 +1,6 @@
 package com.unipost.aio.controller.workflow;
 
+import com.unipost.workflow.worker.TaskWorkerDescriptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,34 @@ public class WorkerFleetController {
         Integer activeLeases,
         Long tasksCompletedCount,
         Long errorCount,
-        Long uptimeSeconds
+        Long uptimeSeconds,
+        List<TaskWorkerDescriptor> capabilities
+    ) {
+        public HeartbeatRequest(
+            String workerId,
+            String hostIp,
+            String runtime,
+            List<String> pollDomains,
+            Integer concurrencyLimit,
+            Integer activeLeases,
+            Long tasksCompletedCount,
+            Long errorCount,
+            Long uptimeSeconds
+        ) {
+            this(
+                workerId, hostIp, runtime, pollDomains, concurrencyLimit, activeLeases,
+                tasksCompletedCount, errorCount, uptimeSeconds, null
+            );
+        }
+    }
+
+    public record RegisterWorkerRequest(
+        String workerId,
+        String hostIp,
+        String runtime,
+        List<String> pollDomains,
+        Integer concurrencyLimit,
+        List<TaskWorkerDescriptor> capabilities
     ) {}
 
     @GetMapping
@@ -40,13 +68,44 @@ public class WorkerFleetController {
         return ResponseEntity.ok(workerRegistry.getFleet(now));
     }
 
+    @GetMapping("/catalog")
+    public ResponseEntity<List<TaskWorkerDescriptor>> getWorkerCatalog() {
+        return ResponseEntity.ok(workerRegistry.getTaskCatalog());
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerWorker(@RequestBody RegisterWorkerRequest req) {
+        if (req == null || req.workerId() == null || req.workerId().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "workerId is required"));
+        }
+        long now = System.currentTimeMillis();
+        WorkerRegistry.WorkerRegistration reg = workerRegistry.registerWorkerWithCapabilities(
+            req.workerId(),
+            req.hostIp(),
+            req.runtime() != null ? req.runtime() : "NODEJS_WORKER",
+            req.pollDomains(),
+            req.concurrencyLimit() != null ? req.concurrencyLimit() : 32,
+            0,
+            0L,
+            0L,
+            1L,
+            now,
+            req.capabilities()
+        );
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "worker", reg,
+            "registeredCapabilities", req.capabilities() != null ? req.capabilities().size() : 0
+        ));
+    }
+
     @PostMapping("/heartbeat")
     public ResponseEntity<?> heartbeat(@RequestBody HeartbeatRequest req) {
         if (req == null || req.workerId() == null || req.workerId().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "workerId is required"));
         }
         long now = System.currentTimeMillis();
-        WorkerRegistry.WorkerRegistration reg = workerRegistry.registerOrHeartbeat(
+        WorkerRegistry.WorkerRegistration reg = workerRegistry.registerWorkerWithCapabilities(
             req.workerId(),
             req.hostIp(),
             req.runtime(),
@@ -56,7 +115,8 @@ public class WorkerFleetController {
             req.tasksCompletedCount() != null ? req.tasksCompletedCount() : 0L,
             req.errorCount() != null ? req.errorCount() : 0L,
             req.uptimeSeconds() != null ? req.uptimeSeconds() : 1L,
-            now
+            now,
+            req.capabilities()
         );
         return ResponseEntity.ok(Map.of(
             "success", true,

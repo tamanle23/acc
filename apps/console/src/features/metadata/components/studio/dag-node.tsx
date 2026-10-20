@@ -58,7 +58,16 @@ export type DagNodeType =
   | 'CALL_MCP_TOOL'
   | 'DYNAMIC';
 
-export type ExecutionState = 'PENDING' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'TIMED_OUT' | 'SKIPPED' | 'WAITING_FOR_APPROVAL';
+export type ExecutionState =
+  | 'PENDING'
+  | 'SCHEDULED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'TIMED_OUT'
+  | 'SKIPPED'
+  | 'WAITING_FOR_APPROVAL'
+  | 'PAUSED_AT_BREAKPOINT';
 
 export interface HttpTaskParams {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -161,8 +170,11 @@ export interface DagNodeData {
   leaseId?: string;
   attemptNumber?: number;
   startedAt?: number;
+  endedAt?: number;
   error?: string;
   diffStatus?: 'added' | 'removed' | 'modified';
+  hasBreakpoint?: boolean;
+  onToggleBreakpoint?: (taskReferenceName: string) => void;
   [key: string]: unknown;
 }
 
@@ -243,6 +255,13 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
             RUNNING
           </span>
         );
+      case 'PAUSED_AT_BREAKPOINT':
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded-full border border-amber-500/40 animate-pulse">
+            <StopCircle className="w-3 h-3 text-rose-500" />
+            BREAKPOINT
+          </span>
+        );
       case 'FAILED':
         return (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20">
@@ -275,6 +294,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'bg-white/75 dark:bg-slate-900/75 border-white/40 dark:border-white/10',
         data.executionState === 'COMPLETED' && 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
         data.executionState === 'IN_PROGRESS' && 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.45)] animate-pulse',
+        data.executionState === 'PAUSED_AT_BREAKPOINT' && 'border-amber-500 bg-amber-500/20 ring-2 ring-amber-500/70 shadow-[0_0_28px_rgba(245,158,11,0.65)] animate-pulse',
         data.executionState === 'WAITING_FOR_APPROVAL' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.55)] animate-pulse',
         data.executionState === 'FAILED' && 'border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/50',
         data.diffStatus === 'added' && 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.4)]',
@@ -285,6 +305,25 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'cursor-grab active:cursor-grabbing'
       )}
     >
+      {/* Breakpoint Gutter Dot (Top-Left) */}
+      <button
+        type="button"
+        aria-label={`Toggle breakpoint on ${data.taskReferenceName}`}
+        title={data.hasBreakpoint ? 'Remove breakpoint' : 'Set breakpoint on node'}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (data.onToggleBreakpoint) {
+            data.onToggleBreakpoint(data.taskReferenceName);
+          }
+        }}
+        className={cn(
+          'absolute -top-2 -left-2 z-20 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all',
+          data.hasBreakpoint
+            ? 'bg-rose-600 scale-110 shadow-[0_0_10px_rgba(225,29,72,0.8)] opacity-100'
+            : 'bg-slate-400/50 opacity-0 group-hover:opacity-80 hover:bg-rose-500'
+        )}
+        data-testid={`dag-breakpoint-dot-${data.taskReferenceName}`}
+      />
       {/* Diff Status Indicator Pill */}
       {data.diffStatus && (
         <div className="absolute -top-3 -right-2 z-10">

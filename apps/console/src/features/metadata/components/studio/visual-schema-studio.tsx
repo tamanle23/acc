@@ -6,11 +6,12 @@ import { AttributePropertyInspector } from './attribute-property-inspector';
 import { DynamicFormLivePreview } from './dynamic-form-live-preview';
 import { FsmWorkflowDesigner } from './fsm-workflow-designer';
 import { CompositeBentoStudio } from './composite';
+import { AiSchemaGeneratorModal } from './ai-schema-generator-modal';
 import type { PaletteFieldItem } from './studio-types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Sparkles, Layers, Eye, GitFork, Save, RefreshCw, Boxes } from 'lucide-react';
+import { Sparkles, Layers, Eye, GitFork, Save, RefreshCw, Boxes, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -28,6 +29,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
     attributes[0]?.id || null
   );
   const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'composite'>('canvas');
+  const [isAiGeneratorOpen, setIsAiGeneratorOpen] = useState<boolean>(false);
 
   const selectedAttribute = attributes.find((a) => String(a.id) === String(selectedAttributeId)) || null;
 
@@ -94,35 +96,49 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
           </div>
         </div>
 
-        <Tabs
-          value={activeStudioTab}
-          onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow' | 'conductor' | 'composite')}
-          className="w-auto"
-        >
-          <TabsList className="bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 p-1 rounded-xl">
-            <TabsTrigger
-              value="canvas"
-              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
-            >
-              <Layers className="h-3.5 w-3.5 text-sky-500" />
-              <span>Schema Canvas & Live Preview</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="composite"
-              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
-            >
-              <Boxes className="h-3.5 w-3.5 text-purple-500" />
-              <span>Composite Bento Studio</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="workflow"
-              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
-            >
-              <GitFork className="h-3.5 w-3.5 text-indigo-500" />
-              <span>FSM Workflow Studio</span>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setIsAiGeneratorOpen(true)}
+            className="h-8 text-xs gap-1.5 border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20"
+            data-testid="open-ai-schema-generator-btn"
+          >
+            <Wand2 className="h-3.5 w-3.5" />
+            <span>Generate with AI</span>
+          </Button>
+
+          <Tabs
+            value={activeStudioTab}
+            onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow' | 'conductor' | 'composite')}
+            className="w-auto"
+          >
+            <TabsList className="bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 p-1 rounded-xl">
+              <TabsTrigger
+                value="canvas"
+                className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
+              >
+                <Layers className="h-3.5 w-3.5 text-sky-500" />
+                <span>Schema Canvas & Live Preview</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="composite"
+                className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
+              >
+                <Boxes className="h-3.5 w-3.5 text-purple-500" />
+                <span>Composite Bento Studio</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="workflow"
+                className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
+              >
+                <GitFork className="h-3.5 w-3.5 text-indigo-500" />
+                <span>FSM Workflow Studio</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {activeStudioTab === 'canvas' ? (
@@ -187,6 +203,15 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
         /* Phase 41 Master-Detail Composite Bento Studio */
         <CompositeBentoStudio entityTypeId={entityTypeId} />
       )}
+
+      <AiSchemaGeneratorModal
+        entityTypeId={entityTypeId}
+        open={isAiGeneratorOpen}
+        onOpenChange={setIsAiGeneratorOpen}
+        onApplied={() => {
+          refetchAttributes();
+        }}
+      />
     </div>
   );
 };

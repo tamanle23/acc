@@ -123,9 +123,22 @@ export class TaskPoller {
       this.abortController.signal.addEventListener('abort', () => taskAbort.abort(), { once: true });
     }
 
+    const resolveWorkflowId = (): string => {
+      if (task.workflowId) return task.workflowId;
+      if (task.taskReferenceName) {
+        const marker = `_${task.taskReferenceName}`;
+        const idx = task.taskId.lastIndexOf(marker);
+        if (idx > 0) {
+          return task.taskId.slice(0, idx);
+        }
+      }
+      const lastUnderscore = task.taskId.lastIndexOf('_');
+      return lastUnderscore > 0 ? task.taskId.slice(0, lastUnderscore) : task.taskId;
+    };
+
     const context: TaskContext = {
       taskId: task.taskId,
-      workflowId: task.taskId.split('_')[0],
+      workflowId: resolveWorkflowId(),
       tenantId: this.config.tenantId,
       workspaceId: 'default',
       taskType: task.taskType,

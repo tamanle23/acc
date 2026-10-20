@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -9,6 +9,9 @@ import {
   ToggleLeft,
   Braces,
   List,
+  ArrowUp,
+  ArrowDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,9 +34,15 @@ export interface JsonTreeNodeProps {
   depth?: number;
   isLastChild?: boolean;
   readOnly?: boolean;
+  parentArrayLength?: number;
+  searchQuery?: string;
+  matchedPaths?: Set<string>;
+  expandedAncestorPaths?: Set<string>;
+  schemaErrors?: Record<string, string>;
   onUpdate: (path: (string | number)[], newValue: unknown) => void;
   onDelete: (path: (string | number)[]) => void;
   onKeyRename?: (path: (string | number)[], oldKey: string, newKey: string) => void;
+  onMoveArrayItem?: (path: (string | number)[], direction: 'up' | 'down') => void;
 }
 
 export function detectJsonType(val: unknown): JsonValueType {
@@ -51,10 +60,17 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
   path,
   depth = 0,
   readOnly = false,
+  parentArrayLength,
+  searchQuery,
+  matchedPaths,
+  expandedAncestorPaths,
+  schemaErrors,
   onUpdate,
   onDelete,
   onKeyRename,
+  onMoveArrayItem,
 }) => {
+  const pathKey = path.length === 0 ? 'root' : path.join('.');
   const [isExpanded, setIsExpanded] = useState<boolean>(depth < 2);
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [keyInput, setKeyInput] = useState(String(nodeKey));
@@ -62,6 +78,14 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
   const valType = detectJsonType(value);
   const isContainer = valType === 'object' || valType === 'array';
   const isArrayItem = typeof nodeKey === 'number';
+  const isMatched = Boolean(searchQuery && matchedPaths?.has(pathKey));
+  const nodeSchemaError = schemaErrors?.[pathKey];
+
+  useEffect(() => {
+    if (searchQuery && expandedAncestorPaths?.has(pathKey)) {
+      setIsExpanded(true);
+    }
+  }, [searchQuery, expandedAncestorPaths, pathKey]);
 
   const handleKeyBlur = () => {
     setIsEditingKey(false);
@@ -134,7 +158,9 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
     <div className="flex flex-col select-none text-xs relative">
       <div
         className={cn(
-          'group flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-muted/40 transition-colors relative'
+          'group flex items-center gap-1.5 py-1 px-2 rounded-lg hover:bg-muted/40 transition-colors relative',
+          isMatched && 'bg-amber-500/15 ring-1 ring-amber-500/40',
+          nodeSchemaError && 'bg-destructive/10 ring-1 ring-destructive/40'
         )}
       >
         {/* Horizontal connector line from parent dashed line */}
@@ -183,7 +209,10 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
             <button
               type="button"
               onDoubleClick={() => !readOnly && setIsEditingKey(true)}
-              className="font-mono font-medium text-foreground/90 hover:text-primary transition-colors cursor-pointer shrink-0"
+              className={cn(
+                'font-mono font-medium text-foreground/90 hover:text-primary transition-colors cursor-pointer shrink-0',
+                isMatched && 'text-amber-600 dark:text-amber-400 font-bold'
+              )}
               title={!readOnly ? 'Double-click to rename' : undefined}
             >
               {String(nodeKey)}:
@@ -283,9 +312,49 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
           </span>
         )}
 
-        {/* Row Contextual Actions (Add child / Delete) */}
+        {/* Inline Schema Error Badge */}
+        {nodeSchemaError && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-mono text-destructive bg-destructive/15 px-1.5 py-0.5 rounded shrink-0"
+            title={nodeSchemaError}
+          >
+            <AlertCircle className="size-2.5 shrink-0" />
+            <span className="truncate max-w-44">{nodeSchemaError}</span>
+          </span>
+        )}
+
+        {/* Row Contextual Actions (Move Up/Down / Add child / Delete) */}
         {!readOnly && (
           <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            {isArrayItem && onMoveArrayItem && typeof parentArrayLength === 'number' && (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={(nodeKey as number) <= 0}
+                  onClick={() => onMoveArrayItem(path, 'up')}
+                  className="size-5 text-muted-foreground hover:text-foreground"
+                  title="Move item up"
+                  aria-label="Move item up"
+                >
+                  <ArrowUp className="size-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={(nodeKey as number) >= parentArrayLength - 1}
+                  onClick={() => onMoveArrayItem(path, 'down')}
+                  className="size-5 text-muted-foreground hover:text-foreground"
+                  title="Move item down"
+                  aria-label="Move item down"
+                >
+                  <ArrowDown className="size-3" />
+                </Button>
+              </>
+            )}
+
             {isContainer && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -343,14 +412,19 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
                 path={[...path, k]}
                 depth={depth + 1}
                 readOnly={readOnly}
+                searchQuery={searchQuery}
+                matchedPaths={matchedPaths}
+                expandedAncestorPaths={expandedAncestorPaths}
+                schemaErrors={schemaErrors}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onKeyRename={onKeyRename}
+                onMoveArrayItem={onMoveArrayItem}
               />
             ))}
 
           {valType === 'array' &&
-            ((value as unknown[]) || []).map((v, idx) => (
+            ((value as unknown[]) || []).map((v, idx, arr) => (
               <JsonTreeNode
                 key={idx}
                 nodeKey={idx}
@@ -358,9 +432,15 @@ export const JsonTreeNode: React.FC<JsonTreeNodeProps> = ({
                 path={[...path, idx]}
                 depth={depth + 1}
                 readOnly={readOnly}
+                parentArrayLength={arr.length}
+                searchQuery={searchQuery}
+                matchedPaths={matchedPaths}
+                expandedAncestorPaths={expandedAncestorPaths}
+                schemaErrors={schemaErrors}
                 onUpdate={onUpdate}
                 onDelete={onDelete}
                 onKeyRename={onKeyRename}
+                onMoveArrayItem={onMoveArrayItem}
               />
             ))}
 

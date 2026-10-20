@@ -23,7 +23,11 @@ import {
   Sliders,
   SlidersHorizontal,
   Settings2,
+  Cpu,
+  Braces,
 } from 'lucide-react';
+import { useWorkerCatalog, type TaskWorkerDescriptor } from '@/features/workers/api/worker-fleet-api';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 interface DagPropertyInspectorProps {
   nodeId: string | null;
@@ -47,6 +51,7 @@ export function DagPropertyInspector({
   const [formData, setFormData] = useState<DagNodeData | null>(nodeData);
   const [paramKey, setParamKey] = useState('');
   const [paramValue, setParamValue] = useState('');
+  const { data: workerCatalog = [] } = useWorkerCatalog();
 
   useEffect(() => {
     setFormData(nodeData);
@@ -55,6 +60,31 @@ export function DagPropertyInspector({
   if (!nodeId || !formData) {
     return null;
   }
+
+  const matchedWorkerDescriptor: TaskWorkerDescriptor | undefined = workerCatalog.find(
+    (w) => w.taskName === formData.taskReferenceName
+  );
+
+  const handleBindRegisteredWorker = (workerTaskName: string) => {
+    const desc = workerCatalog.find((w) => w.taskName === workerTaskName);
+    if (!desc) return;
+    const sampleInputs: Record<string, unknown> = { ...(formData.inputParameters || {}) };
+    const props = (desc.inputSchema as { properties?: Record<string, { type?: string }> } | undefined)?.properties || {};
+    Object.keys(props).forEach((key) => {
+      if (!(key in sampleInputs)) {
+        sampleInputs[key] = `\${workflow.input.${key}}`;
+      }
+    });
+    const patch: Partial<DagNodeData> = {
+      taskReferenceName: desc.taskName,
+      domain: desc.domain || 'default',
+      description: desc.description || formData.description,
+      timeoutSeconds: desc.timeoutSeconds || formData.timeoutSeconds || 30,
+      inputParameters: sampleInputs,
+    };
+    setFormData({ ...formData, ...patch });
+    onUpdateNodeData(nodeId, patch);
+  };
 
   const handleFieldChange = (field: keyof DagNodeData, value: any) => {
     const updated = { ...formData, [field]: value };
@@ -562,6 +592,40 @@ export function DagPropertyInspector({
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {/* 1. General Tab */}
             <TabsContent value="general" className="mt-0 space-y-4">
+              {formData.taskType === 'SIMPLE' && workerCatalog.length > 0 && (
+                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
+                  <Label htmlFor="workerCatalogSelect" className="text-xs font-semibold flex items-center gap-1.5 text-primary">
+                    <Cpu className="w-3.5 h-3.5" />
+                    Bind to Registered SIMPLE Worker
+                  </Label>
+                  <select
+                    id="workerCatalogSelect"
+                    aria-label="Bind to Registered SIMPLE Worker"
+                    value={matchedWorkerDescriptor?.taskName || ''}
+                    onChange={(e) => {
+                      if (e.target.value) handleBindRegisteredWorker(e.target.value);
+                    }}
+                    className="w-full h-8 rounded-lg border border-border bg-background px-2 text-xs font-mono"
+                    data-testid="bind-registered-worker-select"
+                  >
+                    <option value="">-- Custom / Unregistered Task --</option>
+                    {workerCatalog.map((w) => (
+                      <option key={w.taskName} value={w.taskName}>
+                        {w.taskName} ({w.domain})
+                      </option>
+                    ))}
+                  </select>
+                  {matchedWorkerDescriptor && (
+                    <div className="text-[10px] text-muted-foreground space-y-0.5">
+                      <div>{matchedWorkerDescriptor.description}</div>
+                      <div className="font-mono text-primary">
+                        Domain: {matchedWorkerDescriptor.domain} · Max Concurrency: {matchedWorkerDescriptor.maxConcurrency}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="taskRef" className="text-xs font-semibold">
                   Task Reference Name <span className="text-destructive">*</span>
@@ -630,6 +694,35 @@ export function DagPropertyInspector({
             {/* 3. Parameter Bindings Tab */}
             <TabsContent value="params" className="mt-0 space-y-4">
               <div className="space-y-3">
+                {/* Upstream Variable Autocomplete Pills */}
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                    <Braces className="w-3 h-3 text-primary" />
+                    Upstream Variable Reference Pills (Click to insert)
+                  </Label>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setParamValue('${workflow.input.orderId}')}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 hover:bg-sky-500/20"
+                    >
+                      ${'{workflow.input.*}'}
+                    </button>
+                    {availableTaskRefs
+                      .filter((r) => r !== formData.taskReferenceName)
+                      .map((ref) => (
+                        <button
+                          key={ref}
+                          type="button"
+                          onClick={() => setParamValue(`\${${ref}.output.result}`)}
+                          className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 hover:bg-indigo-500/20"
+                        >
+                          ${`{${ref}.output.*}`}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+
                 <div className="flex gap-2 items-end">
                   <div className="flex-1 space-y-1">
                     <Label htmlFor="paramKey" className="text-[11px] font-medium">Key</Label>
@@ -705,6 +798,23 @@ export function DagPropertyInspector({
                       })}
                     </div>
                   )}
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-border/40">
+                  <Label className="text-xs font-semibold">
+                    Structured Input Parameters (Visual JSON Editor)
+                  </Label>
+                  <VisualJsonEditor
+                    value={formData.inputParameters || {}}
+                    onChange={(nextVal) => {
+                      if (nextVal && typeof nextVal === 'object' && !Array.isArray(nextVal)) {
+                        handleFieldChange('inputParameters', nextVal);
+                      }
+                    }}
+                    jsonSchema={matchedWorkerDescriptor?.inputSchema}
+                    defaultMode="tree"
+                    height="220px"
+                  />
                 </div>
               </div>
             </TabsContent>

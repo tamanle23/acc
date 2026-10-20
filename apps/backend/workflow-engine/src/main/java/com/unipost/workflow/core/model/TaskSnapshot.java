@@ -53,7 +53,15 @@ public record TaskSnapshot(
         );
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("workflowId")
     public String workflowId() {
+        if (taskReferenceName != null && !taskReferenceName.isBlank()) {
+            String marker = "_" + taskReferenceName;
+            int idx = taskId.lastIndexOf(marker);
+            if (idx > 0) {
+                return taskId.substring(0, idx);
+            }
+        }
         int idx = taskId.lastIndexOf('_');
         if (idx > 0) {
             String prefix = taskId.substring(0, idx);

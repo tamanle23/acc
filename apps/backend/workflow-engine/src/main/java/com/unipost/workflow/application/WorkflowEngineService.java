@@ -444,6 +444,284 @@ public class WorkflowEngineService {
         return persistencePort.listAuditRecords(workflowId);
     }
 
+    public Optional<WorkflowSnapshot> resolveHumanApprovalTask(
+        String workflowId,
+        String taskIdOrRef,
+        boolean approved,
+        String actor,
+        String rationale,
+        WorkflowDefinition definition,
+        long nowEpochMs
+    ) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        WorkflowSnapshot wf = wfOpt.get();
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            TaskSnapshot targetTask = wf.tasksByRef().get(taskIdOrRef);
+            if (targetTask == null) {
+                for (TaskSnapshot ts : wf.tasksByRef().values()) {
+                    if (ts.taskId().equals(taskIdOrRef) || ts.status() == TaskStatus.WAITING_FOR_APPROVAL) {
+                        targetTask = ts;
+                        break;
+                    }
+                }
+            }
+
+            String taskId = targetTask != null ? targetTask.taskId() : (workflowId + "_" + taskIdOrRef);
+            String refName = targetTask != null ? targetTask.taskReferenceName() : taskIdOrRef;
+            TaskStatus resolvedStatus = approved ? TaskStatus.COMPLETED : TaskStatus.FAILED;
+            Map<String, Object> output = new HashMap<>();
+            output.put("approved", approved);
+            output.put("resolvedBy", actor != null ? actor : "APPROVER");
+            output.put("rationale", rationale != null ? rationale : "");
+            output.put("resolvedAtEpochMs", nowEpochMs);
+
+            String errorMsg = approved ? null : ("Rejected by " + (actor != null ? actor : "APPROVER") + (rationale != null && !rationale.isBlank() ? ": " + rationale : ""));
+
+            if (persistencePort.getTaskExecution(taskId).isPresent()) {
+                persistencePort.updateTaskExecution(taskId, resolvedStatus, output, errorMsg, nowEpochMs);
+            } else {
+                persistencePort.saveTaskExecution(
+                    taskId, workflowId, wf.tenantId(), wf.workspaceId(), refName,
+                    "HUMAN", "default", resolvedStatus, 1,
+                    targetTask != null ? targetTask.inputData() : Collections.emptyMap(),
+                    output, errorMsg, 30000L, nowEpochMs
+                );
+            }
+
+            // Record cryptographic audit ledger entry
+            long seq = persistencePort.listAuditRecords(workflowId).size() + 1L;
+            String prevHash = persistencePort.getLatestAuditRecord(workflowId)
+                .map(com.unipost.workflow.core.model.WorkflowAuditRecord::currentHash)
+                .orElse(com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH);
+            String eventId = UUID.randomUUID().toString();
+            String actionName = approved ? "HUMAN_APPROVAL_APPROVED" : "HUMAN_APPROVAL_REJECTED";
+            Map<String, Object> auditPayload = new HashMap<>(output);
+            auditPayload.put("taskId", taskId);
+            auditPayload.put("referenceName", refName);
+
+            String currentHash = auditLedgerService.computeHash(prevHash, eventId, workflowId, actionName, auditPayload, nowEpochMs);
+            persistencePort.appendAuditRecord(new com.unipost.workflow.core.model.WorkflowAuditRecord(
+                seq, eventId, workflowId, wf.tenantId(), actor != null ? actor : "APPROVER",
+                actionName, auditPayload, prevHash, currentHash, nowEpochMs
+            ));
+
+            if (definition != null) {
+                WorkflowSnapshot refreshed = persistencePort.getWorkflowSnapshot(workflowId).orElse(wf);
+                DecisionResult decision = decider.decide(definition, refreshed, nowEpochMs);
+                applyCommands(workflowId, wf.tenantId(), wf.workspaceId(), decision.commands(), nowEpochMs);
+            } else if (!approved) {
+                persistencePort.updateWorkflowStatus(workflowId, WorkflowStatus.FAILED, wf.outputPayload(), errorMsg, nowEpochMs);
+            }
+
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
+    public Optional<WorkflowSnapshot> updateBreakpoints(
+        String workflowId,
+        List<String> breakpoints,
+        WorkflowDefinition definition,
+        long nowEpochMs
+    ) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty()) return Optional.empty();
+        WorkflowSnapshot current = wfOpt.get();
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            Map<String, Object> updatedInput = new HashMap<>(current.inputPayload() != null ? current.inputPayload() : Collections.emptyMap());
+            updatedInput.put("__breakpoints", breakpoints != null ? List.copyOf(breakpoints) : Collections.emptyList());
+
+            persistencePort.saveWorkflowExecution(
+                workflowId, current.tenantId(), current.workspaceId(), current.workflowKey(),
+                current.version(), current.status(), definition, updatedInput,
+                current.outputPayload(), current.failureReason(), nowEpochMs
+            );
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
+    public Optional<WorkflowSnapshot> pauseExecution(String workflowId, long nowEpochMs) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty()) return Optional.empty();
+        WorkflowSnapshot current = wfOpt.get();
+        if (current.status().isTerminal()) return Optional.of(current);
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            persistencePort.updateWorkflowStatus(
+                workflowId, WorkflowStatus.PAUSED, current.outputPayload(), "Manually paused by operator", nowEpochMs
+            );
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
+    public Optional<WorkflowSnapshot> resumeExecution(
+        String workflowId,
+        WorkflowDefinition definition,
+        long nowEpochMs
+    ) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty()) return Optional.empty();
+        WorkflowSnapshot current = wfOpt.get();
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            Map<String, Object> updatedInput = new HashMap<>(current.inputPayload() != null ? current.inputPayload() : Collections.emptyMap());
+            Object pausedAt = current.outputPayload() != null ? current.outputPayload().get("pausedAtNode") : null;
+            if (pausedAt instanceof String pausedRef) {
+                updatedInput.put("__stepOverNode", pausedRef);
+            }
+            persistencePort.saveWorkflowExecution(
+                workflowId, current.tenantId(), current.workspaceId(), current.workflowKey(),
+                current.version(), WorkflowStatus.RUNNING, definition, updatedInput,
+                current.outputPayload(), null, nowEpochMs
+            );
+
+            if (definition != null) {
+                WorkflowSnapshot refreshed = persistencePort.getWorkflowSnapshot(workflowId).orElseThrow();
+                DecisionResult decision = decider.decide(definition, refreshed, nowEpochMs);
+                applyCommands(workflowId, current.tenantId(), current.workspaceId(), decision.commands(), nowEpochMs);
+            }
+
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
+    public Optional<WorkflowSnapshot> stepOverExecution(
+        String workflowId,
+        WorkflowDefinition definition,
+        long nowEpochMs
+    ) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty() || definition == null) return wfOpt;
+        WorkflowSnapshot current = wfOpt.get();
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            String targetRef = null;
+            if (current.outputPayload() != null && current.outputPayload().get("pausedAtNode") instanceof String p) {
+                targetRef = p;
+            }
+            if (targetRef == null) {
+                for (TaskDefinition td : definition.tasks()) {
+                    if (!current.tasksByRef().containsKey(td.taskReferenceName())) {
+                        targetRef = td.taskReferenceName();
+                        break;
+                    }
+                }
+            }
+
+            // Determine the next unexecuted node after targetRef so we pause immediately after stepping over targetRef
+            List<String> updatedBps = new java.util.ArrayList<>();
+            Object existingBps = current.inputPayload() != null ? current.inputPayload().get("__breakpoints") : null;
+            if (existingBps instanceof java.util.Collection<?> col) {
+                for (Object item : col) {
+                    if (item != null && !String.valueOf(item).equals(targetRef)) {
+                        updatedBps.add(String.valueOf(item));
+                    }
+                }
+            }
+            if (targetRef != null) {
+                boolean foundCurrent = false;
+                for (TaskDefinition td : definition.tasks()) {
+                    if (foundCurrent && !current.tasksByRef().containsKey(td.taskReferenceName())) {
+                        if (!updatedBps.contains(td.taskReferenceName())) {
+                            updatedBps.add(td.taskReferenceName());
+                        }
+                        break;
+                    }
+                    if (td.taskReferenceName().equals(targetRef)) {
+                        foundCurrent = true;
+                    }
+                }
+            }
+
+            Map<String, Object> updatedInput = new HashMap<>(current.inputPayload() != null ? current.inputPayload() : Collections.emptyMap());
+            if (targetRef != null) {
+                updatedInput.put("__stepOverNode", targetRef);
+            }
+            updatedInput.put("__breakpoints", updatedBps);
+
+            persistencePort.saveWorkflowExecution(
+                workflowId, current.tenantId(), current.workspaceId(), current.workflowKey(),
+                current.version(), WorkflowStatus.RUNNING, definition, updatedInput,
+                current.outputPayload(), null, nowEpochMs
+            );
+
+            WorkflowSnapshot refreshed = persistencePort.getWorkflowSnapshot(workflowId).orElseThrow();
+            DecisionResult decision = decider.decide(definition, refreshed, nowEpochMs);
+            applyCommands(workflowId, current.tenantId(), current.workspaceId(), decision.commands(), nowEpochMs);
+
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
+    public Optional<WorkflowSnapshot> rerunTaskFromNode(
+        String workflowId,
+        String taskReferenceName,
+        Map<String, Object> inputOverrides,
+        WorkflowDefinition definition,
+        long nowEpochMs
+    ) {
+        Optional<WorkflowSnapshot> wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+        if (wfOpt.isEmpty()) return Optional.empty();
+        WorkflowSnapshot current = wfOpt.get();
+
+        try (UnitOfWork uow = persistencePort.openUnitOfWork()) {
+            TaskSnapshot existingTask = current.tasksByRef().get(taskReferenceName);
+            String taskId = existingTask != null ? existingTask.taskId() : (workflowId + "_" + taskReferenceName + "_att1");
+            String taskType = existingTask != null ? existingTask.taskType().name() : "SIMPLE";
+            String domain = existingTask != null ? existingTask.domain() : "default";
+            int nextAttempt = existingTask != null ? existingTask.attempt() + 1 : 1;
+
+            Map<String, Object> mergedInput = new HashMap<>(
+                existingTask != null && existingTask.inputData() != null ? existingTask.inputData() : Collections.emptyMap()
+            );
+            if (inputOverrides != null && !inputOverrides.isEmpty()) {
+                mergedInput.putAll(inputOverrides);
+            }
+
+            persistencePort.saveTaskExecution(
+                taskId, workflowId, current.tenantId(), current.workspaceId(),
+                taskReferenceName, taskType, domain, TaskStatus.SCHEDULED, nextAttempt,
+                mergedInput, Collections.emptyMap(), null, 30000L, nowEpochMs
+            );
+            persistencePort.enqueueTask(
+                taskId, workflowId, current.tenantId(), current.workspaceId(),
+                taskType, domain, 100, nowEpochMs
+            );
+            persistencePort.updateWorkflowStatus(
+                workflowId, WorkflowStatus.RUNNING, current.outputPayload(), null, nowEpochMs
+            );
+
+            // Audit log for node rerun
+            long seq = persistencePort.listAuditRecords(workflowId).size() + 1L;
+            String prevHash = persistencePort.getLatestAuditRecord(workflowId)
+                .map(com.unipost.workflow.core.model.WorkflowAuditRecord::currentHash)
+                .orElse(com.unipost.workflow.core.model.WorkflowAuditRecord.GENESIS_HASH);
+            String eventId = UUID.randomUUID().toString();
+            Map<String, Object> auditPayload = Map.of(
+                "taskReferenceName", taskReferenceName,
+                "attempt", nextAttempt,
+                "inputOverrides", inputOverrides != null ? inputOverrides : Collections.emptyMap()
+            );
+            String currentHash = auditLedgerService.computeHash(prevHash, eventId, workflowId, "TASK_RERUN_FROM_NODE", auditPayload, nowEpochMs);
+            persistencePort.appendAuditRecord(new com.unipost.workflow.core.model.WorkflowAuditRecord(
+                seq, eventId, workflowId, current.tenantId(), "DEBUGGER",
+                "TASK_RERUN_FROM_NODE", auditPayload, prevHash, currentHash, nowEpochMs
+            ));
+
+            uow.commit();
+            return persistencePort.getWorkflowSnapshot(workflowId);
+        }
+    }
+
     private String extractWorkflowId(String taskId, String taskReferenceName) {
         if (taskId != null && taskReferenceName != null) {
             int idx = taskId.lastIndexOf("_" + taskReferenceName);
@@ -470,7 +748,18 @@ public class WorkflowEngineService {
                     st.domain(), 0, st.visibleAtEpochMs()
                 );
             } else if (cmd instanceof EngineCommand.UpdateTaskStatus ut) {
-                persistencePort.updateTaskExecution(ut.taskId(), ut.status(), ut.output(), ut.error(), nowEpochMs);
+                if (persistencePort.getTaskExecution(ut.taskId()).isPresent()) {
+                    persistencePort.updateTaskExecution(ut.taskId(), ut.status(), ut.output(), ut.error(), nowEpochMs);
+                } else {
+                    String inferredType = ut.status() == TaskStatus.WAITING_FOR_APPROVAL ? "HUMAN" : "SIMPLE";
+                    persistencePort.saveTaskExecution(
+                        ut.taskId(), workflowId, tenantId, workspaceId, ut.referenceName(),
+                        inferredType, "default", ut.status(), 1,
+                        ut.output() != null ? ut.output() : Collections.emptyMap(),
+                        ut.output() != null ? ut.output() : Collections.emptyMap(),
+                        ut.error(), 30000L, nowEpochMs
+                    );
+                }
                 if (ut.status().isTerminal()) {
                     persistencePort.removeQueueTask(ut.taskId());
                 }

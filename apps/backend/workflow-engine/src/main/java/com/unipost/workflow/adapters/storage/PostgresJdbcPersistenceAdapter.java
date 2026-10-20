@@ -328,10 +328,14 @@ public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
     ) {
         // FOR UPDATE SKIP LOCKED ensures race-free distributed polling with anti-starvation dynamic priority aging (+1 every 5s)
         String selectSql = """
-            SELECT task_id FROM task_queue 
-            WHERE tenant_id = ? AND task_type = ? AND domain = ? AND visible_at_epoch_ms <= ?
-            ORDER BY (priority + CAST((? - created_at_ms) / 5000 AS INT)) DESC, visible_at_epoch_ms ASC 
-            LIMIT ? FOR UPDATE SKIP LOCKED
+            SELECT q.task_id FROM task_queue q
+            LEFT JOIN task_executions t ON q.task_id = t.task_id
+            WHERE (q.tenant_id = ? OR ? = 'system')
+              AND (q.task_type = ? OR t.reference_name = ?)
+              AND (q.domain = ? OR ? = '*')
+              AND q.visible_at_epoch_ms <= ?
+            ORDER BY (q.priority + CAST((? - q.created_at_ms) / 5000 AS INT)) DESC, q.visible_at_epoch_ms ASC 
+            LIMIT ? FOR UPDATE OF q SKIP LOCKED
             """;
         String updateQueueSql = "UPDATE task_queue SET visible_at_epoch_ms = ?, lease_owner = ? WHERE task_id = ?";
         String updateTaskSql = "UPDATE task_executions SET status = 'IN_PROGRESS', worker_id = ?, updated_at_ms = ? WHERE task_id = ?";
@@ -343,11 +347,14 @@ public final class PostgresJdbcPersistenceAdapter implements PersistencePort {
 
             try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
                 psSelect.setString(1, tenantId);
-                psSelect.setString(2, taskType);
-                psSelect.setString(3, domain);
-                psSelect.setLong(4, nowEpochMs);
-                psSelect.setLong(5, nowEpochMs);
-                psSelect.setInt(6, batchSize);
+                psSelect.setString(2, tenantId);
+                psSelect.setString(3, taskType);
+                psSelect.setString(4, taskType);
+                psSelect.setString(5, domain);
+                psSelect.setString(6, domain);
+                psSelect.setLong(7, nowEpochMs);
+                psSelect.setLong(8, nowEpochMs);
+                psSelect.setInt(9, batchSize);
 
                 try (ResultSet rs = psSelect.executeQuery()) {
                     while (rs.next()) {

@@ -6,6 +6,7 @@ public enum WorkflowStatus {
     FAILED,
     TERMINATED,
     PAUSED,
+    PAUSED_AT_BREAKPOINT,
     COMPENSATED_FAILED;
 
     public boolean isTerminal() {

@@ -33,6 +33,8 @@ public final class WorkerHost implements Closeable {
     private final ExecutorService virtualExecutor;
     private final List<Thread> pollerThreads = new ArrayList<>();
 
+    private final Map<String, TaskWorkerDescriptor> descriptors = new ConcurrentHashMap<>();
+
     private record RegisteredWorker(
         WorkerConfig config,
         TaskHandler handler,
@@ -57,6 +59,14 @@ public final class WorkerHost implements Closeable {
         this.virtualExecutor = exec;
     }
 
+    public String workerId() {
+        return workerId;
+    }
+
+    public List<TaskWorkerDescriptor> getRegisteredDescriptors() {
+        return List.copyOf(descriptors.values());
+    }
+
     public WorkerHost use(WorkerMiddleware middleware) {
         this.middlewares.add(middleware);
         return this;
@@ -64,7 +74,20 @@ public final class WorkerHost implements Closeable {
 
     public WorkerHost register(WorkerConfig config, TaskHandler handler) {
         Semaphore sem = new Semaphore(config.maxConcurrency());
-        workers.put(config.taskType(), new RegisteredWorker(config, handler, sem));
+        String key = config.domain() + ":" + config.taskType();
+        workers.put(key, new RegisteredWorker(config, handler, sem));
+        descriptors.putIfAbsent(config.taskType(), new TaskWorkerDescriptor(
+            config.taskType(), config.domain(), "Registered worker handler for " + config.taskType(),
+            config.maxConcurrency(), 30L, Collections.emptyMap(), Collections.emptyMap()
+        ));
+        return this;
+    }
+
+    public WorkerHost registerTask(TaskWorkerDescriptor descriptor, WorkerConfig config, TaskHandler handler) {
+        descriptors.put(descriptor.taskName(), descriptor);
+        Semaphore sem = new Semaphore(config.maxConcurrency());
+        String key = config.domain() + ":" + config.taskType();
+        workers.put(key, new RegisteredWorker(config, handler, sem));
         return this;
     }
 
@@ -72,10 +95,15 @@ public final class WorkerHost implements Closeable {
         return register(WorkerConfig.defaults(taskType), ctx -> TaskOutcome.completed(fn.apply(ctx)));
     }
 
+    public WorkerHost registerSimple(String taskType, String domain, Function<TaskContext, Map<String, Object>> fn) {
+        WorkerConfig cfg = new WorkerConfig(taskType, "system", domain, 10, 50L, 2000L, 5, 10000L);
+        return register(cfg, ctx -> TaskOutcome.completed(fn.apply(ctx)));
+    }
+
     public synchronized void start() {
         if (running.compareAndSet(false, true)) {
             for (RegisteredWorker rw : workers.values()) {
-                Thread poller = new Thread(() -> pollLoop(rw), "worker-poller-" + rw.config.taskType());
+                Thread poller = new Thread(() -> pollLoop(rw), "worker-poller-" + rw.config.domain() + "-" + rw.config.taskType());
                 poller.setDaemon(true);
                 poller.start();
                 pollerThreads.add(poller);
@@ -123,8 +151,8 @@ public final class WorkerHost implements Closeable {
         List<String> logs = new ArrayList<>();
         TaskContext context = new TaskContext() {
             @Override public String taskId() { return task.taskId(); }
-            @Override public String workflowId() { return task.taskId().split("_")[0]; }
-            @Override public String tenantId() { return "system"; }
+            @Override public String workflowId() { return task.workflowId(); }
+            @Override public String tenantId() { return rw.config().tenantId(); }
             @Override public String workspaceId() { return "default"; }
             @Override public String taskType() { return task.taskType().name(); }
             @Override public String referenceName() { return task.taskReferenceName(); }

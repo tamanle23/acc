@@ -64,6 +64,21 @@ public final class PureDecider {
 
         for (int i = 0; i < tasks.size(); i++) {
             TaskDefinition taskDef = tasks.get(i);
+            String refName = taskDef.taskReferenceName();
+
+            // Check engine-level debugger breakpoints before scheduling an unstarted node
+            if (!snapshot.tasksByRef().containsKey(refName) && isBreakpointActive(snapshot, refName)) {
+                Map<String, Object> bpOutput = new HashMap<>(aggregatedOutput);
+                bpOutput.put("pausedAtNode", refName);
+                String reason = "Paused at breakpoint: " + refName;
+                accumulatedCommands.add(new EngineCommand.TransitionWorkflow(
+                    WorkflowStatus.PAUSED_AT_BREAKPOINT,
+                    bpOutput,
+                    reason
+                ));
+                return new DecisionResult(WorkflowStatus.PAUSED_AT_BREAKPOINT, accumulatedCommands, bpOutput, reason);
+            }
+
             NodeEvaluatorStrategy strategy = strategyRegistry.get(taskDef.taskType());
 
             NodeEvaluatorStrategy.NodeEvaluationResult result = strategy.evaluate(
@@ -155,5 +170,19 @@ public final class PureDecider {
         }
 
         return DecisionResult.continueRunning(accumulatedCommands);
+    }
+
+    private boolean isBreakpointActive(WorkflowSnapshot snapshot, String refName) {
+        Object stepOver = snapshot.variables().getOrDefault("__stepOverNode",
+            snapshot.inputPayload() != null ? snapshot.inputPayload().get("__stepOverNode") : null);
+        if (refName.equals(stepOver)) {
+            return false;
+        }
+        Object bps = snapshot.variables().getOrDefault("__breakpoints",
+            snapshot.inputPayload() != null ? snapshot.inputPayload().get("__breakpoints") : null);
+        if (bps instanceof java.util.Collection<?> col) {
+            return col.contains(refName);
+        }
+        return false;
     }
 }

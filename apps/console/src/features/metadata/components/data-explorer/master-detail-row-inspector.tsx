@@ -26,7 +26,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRecordAuditLogs, useRestoreRecordVersion } from '../../api/metadata-api';
+import { useRecordAuditLogs, usePreviewRestoreRecord, useRestoreRecordVersion } from '../../api/metadata-api';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 
@@ -50,9 +50,15 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
   onInspectEdges,
 }) => {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [previewAuditLogId, setPreviewAuditLogId] = React.useState<string | number | null>(null);
 
   const entityTypeId = entityType?.id || (record as unknown as { entityType?: { id?: number | string } } | null)?.entityType?.id || null;
   const { data: auditLogs = [], isLoading: auditLogsLoading } = useRecordAuditLogs(entityTypeId, record?.id || null);
+  const { data: previewRestoreData, isLoading: previewRestoreLoading } = usePreviewRestoreRecord(
+    entityTypeId,
+    record?.id || null,
+    previewAuditLogId
+  );
   const restoreMutation = useRestoreRecordVersion(entityTypeId || 0);
 
   if (!record) return null;
@@ -279,6 +285,18 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
                             </span>
                             <Button
                               size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-[10px] gap-1"
+                              onClick={() =>
+                                setPreviewAuditLogId(
+                                  previewAuditLogId === logItem.id ? null : logItem.id
+                                )
+                              }
+                            >
+                              {previewAuditLogId === logItem.id ? 'Hide Diff' : 'Preview Diff'}
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="outline"
                               className="h-6 px-2 text-[10px] gap-1 hover:bg-primary/10"
                               onClick={() => handleRevertVersion(logItem.id, logItem.version)}
@@ -289,6 +307,31 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
                             </Button>
                           </div>
                         </div>
+
+                        {previewAuditLogId === logItem.id && (
+                          <div className="mt-2 p-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                            {previewRestoreLoading ? (
+                              <span className="text-[11px] text-muted-foreground">
+                                Computing dry-run restore diff...
+                              </span>
+                            ) : previewRestoreData ? (
+                              <>
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-semibold text-amber-700 dark:text-amber-300">
+                                    Dry-Run Restore Target: v{previewRestoreData.targetVersion} ➔ v{previewRestoreData.nextVersion}
+                                  </span>
+                                </div>
+                                <VisualJsonEditor
+                                  value={previewRestoreData.targetAttributes || previewRestoreData.delta || {}}
+                                  onChange={() => {}}
+                                  readOnly
+                                  defaultMode="tree"
+                                  height="160px"
+                                />
+                              </>
+                            ) : null}
+                          </div>
+                        )}
 
                         {/* Visual Delta Diff */}
                         {hasDelta && (
@@ -385,9 +428,13 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
 
           <TabsContent value="json" className="flex-1 m-0 p-6 min-h-0">
             <ScrollArea className="h-[calc(100vh-180px)] pr-3">
-              <pre className="p-4 rounded-xl border border-border/50 bg-muted/40 font-mono text-xs overflow-x-auto text-foreground/90">
-                {JSON.stringify(record, null, 2)}
-              </pre>
+              <VisualJsonEditor
+                value={record}
+                onChange={() => {}}
+                readOnly
+                defaultMode="tree"
+                height="480px"
+              />
             </ScrollArea>
           </TabsContent>
         </Tabs>

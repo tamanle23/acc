@@ -89,15 +89,21 @@ export interface WorkflowExecution {
   tenantId: string;
   workspaceId?: string;
   workflowKey: string;
-  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TERMINATED';
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TERMINATED' | 'PAUSED_AT_BREAKPOINT';
   currentStep?: string;
+  inputPayload?: Record<string, unknown>;
+  outputPayload?: Record<string, unknown>;
+  variables?: Record<string, unknown>;
   tasks: Array<{
     taskId: string;
     taskReferenceName: string;
     taskType: string;
-    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'WAITING_FOR_APPROVAL';
+    inputData?: Record<string, unknown>;
     output?: Record<string, unknown>;
+    outputData?: Record<string, unknown>;
   }>;
+  tasksByRef?: Record<string, any>;
 }
 
 const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
@@ -484,13 +490,33 @@ export class WorkflowSandboxRepository {
           },
         ];
 
+    const breakpoints = Array.isArray(input.__breakpoints) ? (input.__breakpoints as string[]) : [];
+    const firstRef = tasks[0]?.taskReferenceName;
+    const isPausedInitially = Boolean(firstRef && breakpoints.includes(firstRef));
+    if (isPausedInitially && tasks[0]) {
+      tasks[0].status = 'SCHEDULED';
+    }
+
+    const tasksByRef: Record<string, any> = {};
+    for (const t of tasks) {
+      tasksByRef[t.taskReferenceName] = {
+        ...t,
+        inputData: (t as any).inputData || input,
+        outputData: t.output || {},
+      };
+    }
+
     const execution: WorkflowExecution = {
       workflowId,
       tenantId: tid,
       workflowKey,
-      status: 'RUNNING',
-      currentStep: tasks[0]?.taskReferenceName || 'Initializing',
+      status: isPausedInitially ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING',
+      currentStep: firstRef || 'Initializing',
+      inputPayload: { ...input, __breakpoints: breakpoints },
+      outputPayload: isPausedInitially ? { pausedAtNode: firstRef } : {},
+      variables: { ...input },
       tasks,
+      tasksByRef,
     };
 
     execMap.set(workflowId, execution);
@@ -499,6 +525,88 @@ export class WorkflowSandboxRepository {
 
   public getExecution(workflowId: string, tenantId?: string): WorkflowExecution | undefined {
     return this.getExecutionMap(tenantId).get(workflowId);
+  }
+
+  public updateBreakpoints(workflowId: string, breakpoints: string[], tenantId?: string): WorkflowExecution | null {
+    const exec = this.getExecutionMap(tenantId).get(workflowId);
+    if (!exec) return null;
+    exec.inputPayload = { ...(exec.inputPayload || {}), __breakpoints: breakpoints };
+    return exec;
+  }
+
+  public pauseExecution(workflowId: string, tenantId?: string): WorkflowExecution | null {
+    const exec = this.getExecutionMap(tenantId).get(workflowId);
+    if (!exec) return null;
+    exec.status = 'PAUSED_AT_BREAKPOINT';
+    const activeTask = exec.tasks.find((t) => t.status === 'SCHEDULED' || t.status === 'IN_PROGRESS') || exec.tasks[0];
+    if (activeTask) {
+      exec.currentStep = activeTask.taskReferenceName;
+      exec.outputPayload = { ...(exec.outputPayload || {}), pausedAtNode: activeTask.taskReferenceName };
+    }
+    return exec;
+  }
+
+  public resumeExecution(workflowId: string, tenantId?: string): WorkflowExecution | null {
+    const exec = this.getExecutionMap(tenantId).get(workflowId);
+    if (!exec) return null;
+    exec.status = 'RUNNING';
+    if (exec.outputPayload) {
+      delete exec.outputPayload.pausedAtNode;
+    }
+    return exec;
+  }
+
+  public stepOverExecution(workflowId: string, tenantId?: string): WorkflowExecution | null {
+    const exec = this.getExecutionMap(tenantId).get(workflowId);
+    if (!exec) return null;
+    const pausedNode = (exec.outputPayload?.pausedAtNode as string) || exec.currentStep;
+    const idx = exec.tasks.findIndex((t) => t.taskReferenceName === pausedNode);
+    if (idx >= 0) {
+      exec.tasks[idx].status = 'COMPLETED';
+      exec.tasks[idx].output = exec.tasks[idx].output || { steppedOver: true, completedAt: new Date().toISOString() };
+      if (exec.tasksByRef && exec.tasksByRef[pausedNode!]) {
+        exec.tasksByRef[pausedNode!].status = 'COMPLETED';
+        exec.tasksByRef[pausedNode!].outputData = exec.tasks[idx].output;
+      }
+      const nextTask = exec.tasks[idx + 1];
+      if (nextTask) {
+        nextTask.status = 'SCHEDULED';
+        exec.currentStep = nextTask.taskReferenceName;
+        exec.status = 'PAUSED_AT_BREAKPOINT';
+        exec.outputPayload = { ...(exec.outputPayload || {}), pausedAtNode: nextTask.taskReferenceName };
+      } else {
+        exec.status = 'COMPLETED';
+        exec.outputPayload = { completedAt: new Date().toISOString() };
+      }
+    } else {
+      exec.status = 'RUNNING';
+    }
+    return exec;
+  }
+
+  public rerunTaskFromNode(
+    workflowId: string,
+    taskRef: string,
+    modifiedInput: Record<string, unknown>,
+    tenantId?: string
+  ): WorkflowExecution | null {
+    const exec = this.getExecutionMap(tenantId).get(workflowId);
+    if (!exec) return null;
+    const task = exec.tasks.find((t) => t.taskReferenceName === taskRef);
+    if (task) {
+      task.status = 'SCHEDULED';
+      task.inputData = { ...(task.inputData || {}), ...modifiedInput };
+      task.output = { rerunWithInput: modifiedInput, timestamp: Date.now() };
+      if (exec.tasksByRef && exec.tasksByRef[taskRef]) {
+        exec.tasksByRef[taskRef].status = 'SCHEDULED';
+        exec.tasksByRef[taskRef].inputData = task.inputData;
+        exec.tasksByRef[taskRef].outputData = task.output;
+      }
+    }
+    exec.status = 'RUNNING';
+    exec.currentStep = taskRef;
+    exec.variables = { ...(exec.variables || {}), ...modifiedInput };
+    return exec;
   }
 
   public terminateExecution(workflowId: string, tenantId?: string): boolean {
@@ -594,7 +702,11 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
         }
         // Otherwise, start workflow execution via workflowSandboxRepo
         const workflowKey = body.workflowKey || 'order-fulfillment-v1';
-        const execution = workflowSandboxRepo.startExecution(workflowKey, body.input || {}, tenantId);
+        const mergedInput = { ...(body.input || {}) };
+        if (Array.isArray(body.breakpoints)) {
+          mergedInput.__breakpoints = body.breakpoints;
+        }
+        const execution = workflowSandboxRepo.startExecution(workflowKey, mergedInput, tenantId);
         return { status: 201, data: execution };
       }
     }
@@ -618,6 +730,45 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
         headers: { 'Content-Type': 'text/event-stream' },
         data: events,
       };
+    }
+
+    // 2b. Debugger Endpoints: /breakpoints, /pause, /resume, /step, /tasks/:ref/rerun
+    const bpMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/breakpoints$/);
+    if (bpMatch && method === 'POST') {
+      const execId = bpMatch[1];
+      const bps = Array.isArray((req.data as any)?.breakpoints) ? (req.data as any).breakpoints : [];
+      const updated = workflowSandboxRepo.updateBreakpoints(execId, bps, tenantId);
+      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
+    }
+
+    const pauseMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/pause$/);
+    if (pauseMatch && method === 'POST') {
+      const execId = pauseMatch[1];
+      const updated = workflowSandboxRepo.pauseExecution(execId, tenantId);
+      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
+    }
+
+    const resumeMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/resume$/);
+    if (resumeMatch && method === 'POST') {
+      const execId = resumeMatch[1];
+      const updated = workflowSandboxRepo.resumeExecution(execId, tenantId);
+      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
+    }
+
+    const stepMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/step$/);
+    if (stepMatch && method === 'POST') {
+      const execId = stepMatch[1];
+      const updated = workflowSandboxRepo.stepOverExecution(execId, tenantId);
+      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
+    }
+
+    const rerunMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/tasks\/([^/]+)\/rerun$/);
+    if (rerunMatch && method === 'POST') {
+      const execId = rerunMatch[1];
+      const taskRef = decodeURIComponent(rerunMatch[2]);
+      const modifiedInput = ((req.data as any)?.modifiedInput || {}) as Record<string, unknown>;
+      const updated = workflowSandboxRepo.rerunTaskFromNode(execId, taskRef, modifiedInput, tenantId);
+      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
     }
 
     // 3. Terminate Execution: POST /workflow/executions/{id}/terminate

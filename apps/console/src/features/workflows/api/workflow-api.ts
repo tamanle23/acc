@@ -422,3 +422,100 @@ export const useResolveApprovalTask = () => {
     },
   });
 };
+
+// 14. Workflow Visual Debugger Hooks (Phase 7)
+export const useUpdateWorkflowBreakpoints = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      executionId,
+      breakpoints,
+    }: {
+      executionId: string;
+      breakpoints: string[];
+    }) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/breakpoints`,
+        { breakpoints }
+      );
+      return res.data;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', vars.executionId] });
+    },
+  });
+};
+
+export const usePauseWorkflowExecution = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (executionId: string) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/pause`
+      );
+      return res.data as WorkflowExecutionSnapshot;
+    },
+    onSuccess: (_data, executionId) => {
+      toast.info('Workflow execution paused at breakpoint');
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', executionId] });
+    },
+  });
+};
+
+export const useResumeWorkflowExecution = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (executionId: string) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/resume`
+      );
+      return res.data as WorkflowExecutionSnapshot;
+    },
+    onSuccess: (_data, executionId) => {
+      toast.success('Workflow execution resumed');
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', executionId] });
+    },
+  });
+};
+
+export const useStepOverWorkflowExecution = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (executionId: string) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/step`
+      );
+      return res.data as WorkflowExecutionSnapshot;
+    },
+    onSuccess: (_data, executionId) => {
+      toast.success('Stepped over next frontier task');
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', executionId] });
+    },
+  });
+};
+
+export const useRerunWorkflowTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      executionId,
+      taskReferenceName,
+      overrideInput,
+    }: {
+      executionId: string;
+      taskReferenceName: string;
+      overrideInput: Record<string, unknown>;
+    }) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/tasks/${encodeURIComponent(taskReferenceName)}/rerun`,
+        overrideInput
+      );
+      return res.data as WorkflowExecutionSnapshot;
+    },
+    onSuccess: (_data, vars) => {
+      toast.success(`Re-running task "${vars.taskReferenceName}" with overridden input`);
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', vars.executionId] });
+    },
+  });
+};
+

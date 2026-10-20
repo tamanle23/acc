@@ -33,6 +33,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Play,
+  Pause,
+  StepForward,
   RotateCcw,
   Activity,
   Plus,
@@ -45,6 +47,11 @@ import {
   Eye,
   Lock,
   GitCompare,
+  Undo2,
+  Redo2,
+  LayoutGrid,
+  Bug,
+  Braces,
 } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
@@ -52,7 +59,15 @@ import {
 } from '@/features/workflows/hooks/use-workflow-execution-stream';
 import * as workflowApi from '@/features/workflows/api/workflow-api';
 import { HotMigrationModal } from '@/features/workflows/components/hot-migration-modal';
-import { useSaveWorkflowDefinition, useWorkflowDefinition } from '@/features/workflows/api/workflow-api';
+import {
+  useSaveWorkflowDefinition,
+  useWorkflowDefinition,
+  useUpdateWorkflowBreakpoints,
+  usePauseWorkflowExecution,
+  useResumeWorkflowExecution,
+  useStepOverWorkflowExecution,
+} from '@/features/workflows/api/workflow-api';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 export interface VisualDagStudioProps {
   mode?: 'full' | 'readonly' | 'designer' | 'execution';
@@ -544,6 +559,168 @@ function DagStudioCanvas({
     );
   }, [nodes, edges]);
 
+  // Phase 5 & 7: Undo/Redo history, Auto-Layout, Breakpoints & Debugger Controls
+  const [undoStack, setUndoStack] = useState<Array<{ nodes: Node<DagNodeData>[]; edges: Edge[] }>>([]);
+  const [redoStack, setRedoStack] = useState<Array<{ nodes: Node<DagNodeData>[]; edges: Edge[] }>>([]);
+  const [breakpoints, setBreakpoints] = useState<string[]>([]);
+  const [isVariableWatchOpen, setIsVariableWatchOpen] = useState<boolean>(false);
+
+  const updateBreakpointsMutation = useUpdateWorkflowBreakpoints();
+  const pauseExecutionMutation = usePauseWorkflowExecution();
+  const resumeExecutionMutation = useResumeWorkflowExecution();
+  const stepOverExecutionMutation = useStepOverWorkflowExecution();
+
+  const pushUndoSnapshot = useCallback(() => {
+    setUndoStack((prev) => [...prev.slice(-24), { nodes, edges }]);
+    setRedoStack([]);
+  }, [nodes, edges]);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    setRedoStack((r) => [...r, { nodes, edges }]);
+    setUndoStack((u) => u.slice(0, -1));
+    setNodes(previous.nodes);
+    setEdges(previous.edges);
+  }, [undoStack, nodes, edges]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setUndoStack((u) => [...u, { nodes, edges }]);
+    setRedoStack((r) => r.slice(0, -1));
+    setNodes(next.nodes);
+    setEdges(next.edges);
+  }, [redoStack, nodes, edges]);
+
+  // Keyboard shortcuts Cmd+Z / Cmd+Y
+  useEffect(() => {
+    if (isReadOnly) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') ||
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z')
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isReadOnly, handleUndo, handleRedo]);
+
+  // Topological Auto-Layout (LR or TB)
+  const handleAutoLayout = useCallback(
+    (direction: 'LR' | 'TB' = 'LR') => {
+      pushUndoSnapshot();
+      const inDegree = new Map<string, number>();
+      const adj = new Map<string, string[]>();
+      nodes.forEach((n) => {
+        inDegree.set(n.id, 0);
+        adj.set(n.id, []);
+      });
+      edges.forEach((e) => {
+        if (adj.has(e.source) && inDegree.has(e.target)) {
+          adj.get(e.source)!.push(e.target);
+          inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+        }
+      });
+
+      const layerMap = new Map<string, number>();
+      const queue: string[] = [];
+      inDegree.forEach((deg, id) => {
+        if (deg === 0) {
+          queue.push(id);
+          layerMap.set(id, 0);
+        }
+      });
+
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        const currLayer = layerMap.get(curr) || 0;
+        for (const nxt of adj.get(curr) || []) {
+          layerMap.set(nxt, Math.max(layerMap.get(nxt) || 0, currLayer + 1));
+          inDegree.set(nxt, (inDegree.get(nxt) || 1) - 1);
+          if (inDegree.get(nxt) === 0) {
+            queue.push(nxt);
+          }
+        }
+      }
+
+      const layers = new Map<number, string[]>();
+      nodes.forEach((n) => {
+        const l = layerMap.get(n.id) ?? 0;
+        if (!layers.has(l)) layers.set(l, []);
+        layers.get(l)!.push(n.id);
+      });
+
+      setNodes((nds) =>
+        nds.map((n) => {
+          const l = layerMap.get(n.id) ?? 0;
+          const siblings = layers.get(l) || [n.id];
+          const idx = siblings.indexOf(n.id);
+          const position =
+            direction === 'LR'
+              ? { x: 60 + l * 280, y: 100 + idx * 150 }
+              : { x: 120 + idx * 250, y: 70 + l * 160 };
+          return { ...n, position };
+        })
+      );
+    },
+    [nodes, edges, pushUndoSnapshot]
+  );
+
+  // Toggle node breakpoint
+  const handleToggleBreakpoint = useCallback(
+    (taskReferenceName: string) => {
+      setBreakpoints((prev) => {
+        const exists = prev.includes(taskReferenceName);
+        const next = exists ? prev.filter((b) => b !== taskReferenceName) : [...prev, taskReferenceName];
+        if (executionId) {
+          updateBreakpointsMutation.mutate({ executionId, breakpoints: next });
+        }
+        return next;
+      });
+    },
+    [executionId, updateBreakpointsMutation]
+  );
+
+  // Decorate nodes with breakpoint state and toggle handler
+  const decoratedNodes = useMemo(
+    () =>
+      nodes.map((n) => ({
+        ...n,
+        data: {
+          ...n.data,
+          hasBreakpoint: breakpoints.includes(n.data.taskReferenceName),
+          onToggleBreakpoint: handleToggleBreakpoint,
+        },
+      })),
+    [nodes, breakpoints, handleToggleBreakpoint]
+  );
+
+  // Compute aggregated Variable Watch state from workflow snapshot or current node states
+  const variableWatchSnapshot = useMemo(() => {
+    const taskOutputs: Record<string, unknown> = {};
+    nodes.forEach((n) => {
+      if (n.data.outputParameters && Object.keys(n.data.outputParameters).length > 0) {
+        taskOutputs[n.data.taskReferenceName] = n.data.outputParameters;
+      }
+    });
+    return {
+      workflowStatus: stream.workflowStatus || (isSimulating ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
+      breakpoints,
+      workflowVariables: (stream.snapshot as any)?.variables || {
+        orderId: 'ORD-2026-991',
+        tier: 'EXPRESS',
+      },
+      taskOutputs,
+    };
+  }, [nodes, stream.workflowStatus, stream.snapshot, isSimulating, breakpoints]);
+
   const handleExportJson = useCallback(() => {
     const ir = exportToWorkflowIR(nodes, edges);
     setIrDialogContent(JSON.stringify(ir, null, 2));
@@ -573,6 +750,12 @@ function DagStudioCanvas({
     setIsSimulating(true);
     setNodes((nds) =>
       nds.map((n) => {
+        if (breakpoints.includes(n.data.taskReferenceName)) {
+          return {
+            ...n,
+            data: { ...n.data, executionState: 'PAUSED_AT_BREAKPOINT' },
+          };
+        }
         if (n.data.taskReferenceName === 'expressCourier') {
           return {
             ...n,
@@ -581,6 +764,61 @@ function DagStudioCanvas({
         }
         return n;
       })
+    );
+  };
+
+  const handleDebuggerPause = () => {
+    if (executionId) {
+      pauseExecutionMutation.mutate(executionId);
+    }
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.data.executionState === 'IN_PROGRESS'
+          ? { ...n, data: { ...n.data, executionState: 'PAUSED_AT_BREAKPOINT' } }
+          : n
+      )
+    );
+  };
+
+  const handleDebuggerStepOver = () => {
+    if (executionId) {
+      stepOverExecutionMutation.mutate(executionId);
+    }
+    setNodes((nds) => {
+      let stepped = false;
+      return nds.map((n) => {
+        if (
+          !stepped &&
+          (n.data.executionState === 'PAUSED_AT_BREAKPOINT' ||
+            n.data.executionState === 'IN_PROGRESS' ||
+            n.data.executionState === 'PENDING')
+        ) {
+          stepped = true;
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: 'COMPLETED',
+              durationMs: 42,
+              outputParameters: { stepped: true, timestamp: Date.now() },
+            },
+          };
+        }
+        return n;
+      });
+    });
+  };
+
+  const handleDebuggerResume = () => {
+    if (executionId) {
+      resumeExecutionMutation.mutate(executionId);
+    }
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.data.executionState === 'PAUSED_AT_BREAKPOINT'
+          ? { ...n, data: { ...n.data, executionState: 'COMPLETED' } }
+          : n
+      )
     );
   };
 
@@ -598,6 +836,7 @@ function DagStudioCanvas({
 
   const handleClearSelected = () => {
     if (isReadOnly) return;
+    pushUndoSnapshot();
     setNodes((nds) => nds.filter((n) => !n.selected));
     setEdges((eds) => eds.filter((e) => !e.selected));
   };
@@ -669,6 +908,42 @@ function DagStudioCanvas({
             >
               <Plus className="w-3 h-3" />
               Palette
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={() => handleAutoLayout('LR')}
+              title="Topological Auto-Layout (Left-to-Right)"
+              data-testid="dag-auto-layout-btn"
+            >
+              <LayoutGrid className="w-3 h-3 text-indigo-500" />
+              Auto-Layout
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={handleUndo}
+              disabled={undoStack.length === 0}
+              title="Undo (Cmd+Z)"
+              aria-label="Undo"
+            >
+              <Undo2 className="w-3 h-3" />
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              title="Redo (Cmd+Y)"
+              aria-label="Redo"
+            >
+              <Redo2 className="w-3 h-3" />
             </Button>
 
             <Button
@@ -757,6 +1032,62 @@ function DagStudioCanvas({
           </div>
         )}
 
+        {/* Phase 7: Visual Debugger Control Bar */}
+        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mr-0.5" />
+          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">
+            Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleDebuggerPause}
+            className="h-6 px-1.5 text-[10px] gap-1"
+            title="Pause execution before next task"
+            data-testid="debugger-pause-btn"
+          >
+            <Pause className="w-3 h-3 text-amber-500" />
+            Pause
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleDebuggerStepOver}
+            className="h-6 px-1.5 text-[10px] gap-1"
+            title="Step Over single frontier task"
+            data-testid="debugger-step-btn"
+          >
+            <StepForward className="w-3 h-3 text-sky-500" />
+            Step Over
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleDebuggerResume}
+            className="h-6 px-1.5 text-[10px] gap-1"
+            title="Resume workflow execution"
+            data-testid="debugger-resume-btn"
+          >
+            <Play className="w-3 h-3 text-emerald-500" />
+            Resume
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={isVariableWatchOpen ? 'default' : 'ghost'}
+            onClick={() => setIsVariableWatchOpen((prev) => !prev)}
+            className="h-6 px-1.5 text-[10px] gap-1"
+            title="Toggle Live Variable Watch & State Diff Drawer"
+            data-testid="debugger-variable-watch-btn"
+          >
+            <Braces className="w-3 h-3" />
+            Watch
+          </Button>
+        </div>
+
         {/* Phase 39: Visual Graph Diff Version Selector */}
         {workflowVersions.length > 0 && (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-muted/40 border border-border/50">
@@ -808,6 +1139,36 @@ function DagStudioCanvas({
           Reset
         </Button>
       </div>
+
+      {/* Phase 7: Floating Variable Watch & Time-Travel State Drawer */}
+      {isVariableWatchOpen && (
+        <div
+          className="absolute top-20 right-4 z-20 w-80 p-3 rounded-2xl backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-2xl space-y-2"
+          data-testid="debugger-variable-watch-panel"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold flex items-center gap-1.5 text-foreground">
+              <Bug className="w-3.5 h-3.5 text-amber-500" />
+              Variable Watch & Breakpoint State
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-5 px-1.5 text-[10px]"
+              onClick={() => setIsVariableWatchOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+          <VisualJsonEditor
+            value={variableWatchSnapshot}
+            onChange={() => {}}
+            readOnly
+            defaultMode="tree"
+            height="240px"
+          />
+        </div>
+      )}
 
       {/* Validation Status Notification Banner */}
       {!isReadOnly && validationBannerVisible && (
@@ -864,7 +1225,7 @@ function DagStudioCanvas({
 
       {/* React Flow Canvas */}
       <ReactFlow
-        nodes={nodes}
+        nodes={decoratedNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={isReadOnly ? undefined : onNodesChange}
@@ -884,6 +1245,7 @@ function DagStudioCanvas({
             const data = n.data as DagNodeData;
             if (data?.validationError) return '#ef4444';
             if (data?.executionState === 'COMPLETED') return '#10b981';
+            if (data?.executionState === 'PAUSED_AT_BREAKPOINT') return '#f59e0b';
             if (data?.executionState === 'IN_PROGRESS') return '#0284c7';
             if (data?.executionState === 'FAILED') return '#ef4444';
             return '#94a3b8';
@@ -910,6 +1272,24 @@ function DagStudioCanvas({
           nodeData={selectedNode?.data || null}
           open={isTelemetryOpen}
           onOpenChange={setIsTelemetryOpen}
+          executionId={executionId}
+          onRerunTask={(taskRef, overrideInput) => {
+            setNodes((nds) =>
+              nds.map((n) =>
+                n.data.taskReferenceName === taskRef
+                  ? {
+                      ...n,
+                      data: {
+                        ...n.data,
+                        inputParameters: overrideInput,
+                        executionState: 'IN_PROGRESS',
+                        error: undefined,
+                      },
+                    }
+                  : n
+              )
+            );
+          }}
           logs={stream.logs}
         />
       )}

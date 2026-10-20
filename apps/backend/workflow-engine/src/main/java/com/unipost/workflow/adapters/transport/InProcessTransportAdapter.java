@@ -46,7 +46,9 @@ public final class InProcessTransportAdapter implements WorkerTransportPort {
         String errorMessage, long callbackAfterSeconds
     ) {
         long now = System.currentTimeMillis();
-        String workflowId = taskId.split("_")[0];
+        String workflowId = persistencePort.getTaskExecution(taskId)
+            .map(TaskSnapshot::workflowId)
+            .orElseGet(() -> taskId.split("_")[0]);
         engineService.reportTaskResult(
             workflowId, taskId, workerId, completed, output, errorMessage,
             callbackAfterSeconds, workflowDefinition, now

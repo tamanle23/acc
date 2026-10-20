@@ -4,7 +4,8 @@ export type TaskStatus =
   | 'COMPLETED'
   | 'FAILED'
   | 'TIMED_OUT'
-  | 'SKIPPED';
+  | 'SKIPPED'
+  | 'WAITING_FOR_APPROVAL';
 
 export type TaskOutcome =
   | { status: 'COMPLETED'; output?: Record<string, unknown> }
@@ -66,11 +67,25 @@ export type SimpleTaskHandler<TInput = Record<string, unknown>, TOutput = Record
   context: TaskContext<TInput>
 ) => Promise<TOutput> | TOutput;
 
+export interface TaskWorkerDescriptor {
+  taskName: string;
+  domain: string;
+  description: string;
+  maxConcurrency: number;
+  timeoutSeconds: number;
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
+}
+
 export interface WorkerConfig {
   taskType: string;
   tenantId?: string;
   domain?: string;
+  description?: string;
   maxConcurrency?: number;          // Default: 10
+  timeoutSeconds?: number;          // Default: 30
+  inputSchema?: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
   basePollIntervalMs?: number;      // Default: 100ms
   maxPollIntervalMs?: number;       // Default: 3000ms
   pollBatchSize?: number;           // Default: 5
@@ -79,6 +94,7 @@ export interface WorkerConfig {
 
 export interface TaskSnapshotDto {
   taskId: string;
+  workflowId?: string;
   taskReferenceName: string;
   taskType: string;
   domain: string;
@@ -90,6 +106,28 @@ export interface TaskSnapshotDto {
   visibleAtEpochMs: number;
   responseTimeoutMs: number;
   workerId?: string;
+}
+
+export interface WorkerRegistrationPayload {
+  workerId: string;
+  hostIp?: string;
+  runtime?: string;
+  pollDomains: string[];
+  concurrencyLimit: number;
+  capabilities: TaskWorkerDescriptor[];
+}
+
+export interface WorkerFleetHeartbeatPayload {
+  workerId: string;
+  hostIp?: string;
+  runtime?: string;
+  pollDomains: string[];
+  concurrencyLimit: number;
+  activeLeases: number;
+  tasksCompletedCount: number;
+  errorCount: number;
+  uptimeSeconds: number;
+  capabilities?: TaskWorkerDescriptor[];
 }
 
 export interface WorkerTransportClient {
@@ -111,6 +149,10 @@ export interface WorkerTransportClient {
   ): Promise<void>;
 
   heartbeat(taskId: string, workerId: string): Promise<boolean>;
+
+  registerWorker?(payload: WorkerRegistrationPayload): Promise<void>;
+
+  sendFleetHeartbeat?(payload: WorkerFleetHeartbeatPayload): Promise<void>;
 }
 
 export type MiddlewareNext = (context: TaskContext) => Promise<TaskOutcome>;

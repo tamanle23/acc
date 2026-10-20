@@ -123,4 +123,40 @@ class FieldLevelSecuritySerializerTest {
         assertEquals("****", FieldLevelSecuritySerializer.maskOperatorValue("1234"));
         assertEquals("****-5678", FieldLevelSecuritySerializer.maskOperatorValue("12345678"));
     }
+
+    @Test
+    void testRedactAttributes_RecursiveJsonbAndSchemaSensitiveFields() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("operator", "pass", List.of(new SimpleGrantedAuthority("ROLE_OPERATOR")))
+        );
+
+        Map<String, Object> input = Map.of(
+                "companyName", "Acme Corp",
+                "customPinCode", "98765432",
+                "billingProfile", Map.of(
+                        "credit_card", "4111222233334444",
+                        "contacts", List.of(
+                                Map.of("name", "Jane", "ssn", "123-45-6789")
+                        )
+                )
+        );
+
+        Map<String, Object> output = FieldLevelSecuritySerializer.redactAttributesForCurrentContext(
+                input,
+                java.util.Set.of("customPinCode")
+        );
+
+        assertEquals("Acme Corp", output.get("companyName"));
+        assertEquals("****-5432", output.get("customPinCode"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> billingProfile = (Map<String, Object>) output.get("billingProfile");
+        assertEquals("****-4444", billingProfile.get("credit_card"));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> contacts = (List<Map<String, Object>>) billingProfile.get("contacts");
+        assertEquals("Jane", contacts.get(0).get("name"));
+        assertEquals("****-6789", contacts.get(0).get("ssn"));
+    }
 }
+

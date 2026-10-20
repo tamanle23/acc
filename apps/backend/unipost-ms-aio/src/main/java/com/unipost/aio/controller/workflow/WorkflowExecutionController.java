@@ -29,6 +29,22 @@ public class WorkflowExecutionController {
     private final PersistencePort persistencePort;
     private final WorkflowDefinitionRegistry registry;
     private final ExecutionStreamBroadcaster broadcaster;
+    private final WorkflowApprovalsController approvalsController;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkflowExecutionController(
+        WorkflowEngineService engineService,
+        PersistencePort persistencePort,
+        WorkflowDefinitionRegistry registry,
+        ExecutionStreamBroadcaster broadcaster,
+        @org.springframework.beans.factory.annotation.Autowired(required = false) WorkflowApprovalsController approvalsController
+    ) {
+        this.engineService = engineService;
+        this.persistencePort = persistencePort;
+        this.registry = registry;
+        this.broadcaster = broadcaster;
+        this.approvalsController = approvalsController;
+    }
 
     public WorkflowExecutionController(
         WorkflowEngineService engineService,
@@ -36,10 +52,7 @@ public class WorkflowExecutionController {
         WorkflowDefinitionRegistry registry,
         ExecutionStreamBroadcaster broadcaster
     ) {
-        this.engineService = engineService;
-        this.persistencePort = persistencePort;
-        this.registry = registry;
-        this.broadcaster = broadcaster;
+        this(engineService, persistencePort, registry, broadcaster, null);
     }
 
     private String resolveTenantId(String headerTenantId) {
@@ -54,8 +67,16 @@ public class WorkflowExecutionController {
 
     public record StartWorkflowRequest(
         String workflowKey,
-        Map<String, Object> input
-    ) {}
+        Map<String, Object> input,
+        java.util.List<String> breakpoints
+    ) {
+        public StartWorkflowRequest(String workflowKey, Map<String, Object> input) {
+            this(workflowKey, input, null);
+        }
+    }
+
+    public record UpdateBreakpointsRequest(java.util.List<String> breakpoints) {}
+    public record RerunTaskRequest(Map<String, Object> modifiedInput) {}
 
     @PostMapping
     public ResponseEntity<?> startExecution(
@@ -79,14 +100,26 @@ public class WorkflowExecutionController {
         String executionId = "wf_exec_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         long now = System.currentTimeMillis();
 
+        Map<String, Object> effectiveInput = new java.util.LinkedHashMap<>();
+        if (request.input() != null) {
+            effectiveInput.putAll(request.input());
+        }
+        if (request.breakpoints() != null && !request.breakpoints().isEmpty()) {
+            effectiveInput.put("__breakpoints", request.breakpoints());
+        }
+
         WorkflowSnapshot snapshot = engineService.startWorkflow(
             executionId,
             tenantId,
             workspaceId,
             def,
-            request.input() != null ? request.input() : Collections.emptyMap(),
+            effectiveInput,
             now
         );
+
+        if (approvalsController != null) {
+            approvalsController.registerEngineApprovalTask(snapshot, def);
+        }
 
         broadcaster.broadcast(executionId, "WORKFLOW_STARTED", Map.of(
             "workflowId", executionId,
@@ -113,6 +146,126 @@ public class WorkflowExecutionController {
         return persistencePort.getWorkflowSnapshot(id)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
+    }
+
+    @PostMapping("/{id}/breakpoints")
+    public ResponseEntity<?> updateBreakpoints(
+        @PathVariable("id") String id,
+        @RequestBody UpdateBreakpointsRequest request
+    ) {
+        long now = System.currentTimeMillis();
+        java.util.List<String> bps = request != null && request.breakpoints() != null
+            ? request.breakpoints()
+            : java.util.List.of();
+        WorkflowSnapshot updated = engineService.updateBreakpoints(id, bps, now).orElse(null);
+        if (updated == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+        broadcaster.broadcast(id, "BREAKPOINTS_UPDATED", Map.of(
+            "workflowId", id,
+            "breakpoints", bps,
+            "timestamp", now
+        ));
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{id}/pause")
+    public ResponseEntity<?> pauseExecution(@PathVariable("id") String id) {
+        long now = System.currentTimeMillis();
+        WorkflowSnapshot updated = engineService.pauseExecution(id, now).orElse(null);
+        if (updated == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+        broadcaster.broadcast(id, "WORKFLOW_PAUSED", Map.of(
+            "workflowId", id,
+            "status", updated.status().name(),
+            "timestamp", now
+        ));
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{id}/resume")
+    public ResponseEntity<?> resumeExecution(
+        @PathVariable("id") String id,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        long now = System.currentTimeMillis();
+        WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
+        if (snapshot == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+        WorkflowDefinition def = registry.get(tenantId, snapshot.workflowKey()).orElse(null);
+        if (def == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
+        }
+        WorkflowSnapshot resumed = engineService.resumeExecution(id, def, now).orElse(snapshot);
+        if (approvalsController != null) {
+            approvalsController.registerEngineApprovalTask(resumed, def);
+        }
+        broadcaster.broadcast(id, "WORKFLOW_RESUMED", Map.of(
+            "workflowId", id,
+            "status", resumed.status().name(),
+            "timestamp", now
+        ));
+        return ResponseEntity.ok(resumed);
+    }
+
+    @PostMapping("/{id}/step")
+    public ResponseEntity<?> stepOverExecution(
+        @PathVariable("id") String id,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        long now = System.currentTimeMillis();
+        WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
+        if (snapshot == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+        WorkflowDefinition def = registry.get(tenantId, snapshot.workflowKey()).orElse(null);
+        if (def == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
+        }
+        WorkflowSnapshot stepped = engineService.stepOverExecution(id, def, now).orElse(snapshot);
+        if (approvalsController != null) {
+            approvalsController.registerEngineApprovalTask(stepped, def);
+        }
+        broadcaster.broadcast(id, "WORKFLOW_STEPPED", Map.of(
+            "workflowId", id,
+            "status", stepped.status().name(),
+            "timestamp", now
+        ));
+        return ResponseEntity.ok(stepped);
+    }
+
+    @PostMapping("/{id}/tasks/{taskRef}/rerun")
+    public ResponseEntity<?> rerunTaskFromNode(
+        @PathVariable("id") String id,
+        @PathVariable("taskRef") String taskRef,
+        @RequestBody(required = false) RerunTaskRequest request,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        long now = System.currentTimeMillis();
+        WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
+        if (snapshot == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Execution not found", "id", id));
+        }
+        WorkflowDefinition def = registry.get(tenantId, snapshot.workflowKey()).orElse(null);
+        if (def == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
+        }
+        Map<String, Object> modifiedInput = request != null && request.modifiedInput() != null
+            ? request.modifiedInput()
+            : Collections.emptyMap();
+        WorkflowSnapshot updated = engineService.rerunTaskFromNode(id, taskRef, modifiedInput, def, now).orElse(snapshot);
+        broadcaster.broadcast(id, "TASK_RERUN_SCHEDULED", Map.of(
+            "workflowId", id,
+            "taskReferenceName", taskRef,
+            "status", updated.status().name(),
+            "timestamp", now
+        ));
+        return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/{id}/terminate")

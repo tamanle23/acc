@@ -253,10 +253,12 @@ public final class InMemoryPersistenceAdapter implements PersistencePort {
         try {
             List<QueueRecord> candidates = new ArrayList<>();
             for (QueueRecord qr : queue.values()) {
-                if (qr.tenantId().equals(tenantId) &&
-                    qr.taskType().equalsIgnoreCase(taskType) &&
-                    qr.domain().equalsIgnoreCase(domain) &&
-                    qr.visibleAtEpochMs() <= nowEpochMs) {
+                TaskRecord tr = tasks.get(qr.taskId());
+                boolean tenantMatches = qr.tenantId().equals(tenantId) || "system".equalsIgnoreCase(tenantId) || "ALL".equalsIgnoreCase(tenantId);
+                boolean typeMatches = qr.taskType().equalsIgnoreCase(taskType)
+                    || (tr != null && tr.referenceName().equalsIgnoreCase(taskType));
+                boolean domainMatches = qr.domain().equalsIgnoreCase(domain) || "*".equals(domain);
+                if (tenantMatches && typeMatches && domainMatches && qr.visibleAtEpochMs() <= nowEpochMs) {
                     candidates.add(qr);
                 }
             }

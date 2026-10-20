@@ -1,4 +1,9 @@
-import { TaskSnapshotDto, WorkerTransportClient } from '../types.js';
+import {
+  TaskSnapshotDto,
+  WorkerFleetHeartbeatPayload,
+  WorkerRegistrationPayload,
+  WorkerTransportClient,
+} from '../types.js';
 
 export interface HttpWorkerTransportClientOptions {
   baseUrl: string;
@@ -83,5 +88,31 @@ export class HttpWorkerTransportClient implements WorkerTransportClient {
     });
 
     return res.ok;
+  }
+
+  async registerWorker(payload: WorkerRegistrationPayload): Promise<void> {
+    const url = `${this.baseUrl}/api/v1/workflow/workers/register`;
+    try {
+      await this.fetch(url, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Non-fatal if control plane registration endpoint is unreachable during local tests
+    }
+  }
+
+  async sendFleetHeartbeat(payload: WorkerFleetHeartbeatPayload): Promise<void> {
+    const url = `${this.baseUrl}/api/v1/workflow/workers/heartbeat`;
+    try {
+      await this.fetch(url, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // Non-fatal on transient heartbeat network drop
+    }
   }
 }
