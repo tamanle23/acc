@@ -1,5 +1,5 @@
 import { type Row } from '@tanstack/react-table'
-import { MoreHorizontal, Trash2, Eye, ExternalLink, SlidersHorizontal } from 'lucide-react'
+import { MoreHorizontal, Trash2, Eye, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,7 +17,6 @@ import {
 import { labels } from '../types'
 import { workflowExecutionSchema } from '../schema'
 import { useWorkflowExecutions } from './workflow-executions-provider'
-import { useNavigate } from '@tanstack/react-router'
 
 type DataTableRowActionsProps<TData> = {
   row: Row<TData>
@@ -28,13 +27,6 @@ export function DataTableRowActions<TData>({
 }: DataTableRowActionsProps<TData>) {
   const workflowExecution = workflowExecutionSchema.parse(row.original)
   const { setOpen, setCurrentRow } = useWorkflowExecutions()
-  const navigate = useNavigate()
-
-  const handleOpenStudio = () => {
-    navigate({
-      to: '/workflows' as any,
-    })
-  }
 
   return (
     <DropdownMenu modal={false}>
@@ -71,13 +63,6 @@ export function DataTableRowActions<TData>({
           Live Execution Stream
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={handleOpenStudio}
-          className='gap-2'
-        >
-          <SlidersHorizontal className='size-4 text-indigo-500' />
-          Design in Studio
-        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
