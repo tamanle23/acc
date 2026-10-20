@@ -22,6 +22,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@acc/core-isomorphic": "workspace:*",
     "@mediabunny/server": "^1.61.5",
     "mediabunny": "^1.61.5"
   }

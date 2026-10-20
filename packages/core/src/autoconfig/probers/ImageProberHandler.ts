@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { BaseMediaAssetProberHandler } from './BaseMediaAssetProberHandler';
-import { CanvasAssetLoader } from '../../isomorphic/canvas';
+import { CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { DiscoveredAssetManifest, DiscoveredVisualAsset, ProberScanOptions } from '../types';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif']);

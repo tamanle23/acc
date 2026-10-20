@@ -1,6 +1,6 @@
 import { createCanvas, loadImage } from '@napi-rs/canvas';
-import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '../../isomorphic/canvas/types';
-import { wrapCanvasContext } from '../../isomorphic/canvas/wrapCanvasContext';
+import type { ICanvasAdapter, ICanvasInstance, ICanvasContext2D } from '@acc/core-isomorphic';
+import { wrapCanvasContext } from '@acc/core-isomorphic';
 
 /**
  * NapiCanvasAdapter:

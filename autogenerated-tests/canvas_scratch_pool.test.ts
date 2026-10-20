@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { UniversalCanvasProvider } from '../packages/core/src/isomorphic/canvas/UniversalCanvasProvider';
-import { CanvasScratchPool } from '../packages/core/src/isomorphic/canvas/CanvasScratchPool';
+import { UniversalCanvasProvider, CanvasScratchPool } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
 
 describe('CanvasScratchPool & Tiered Resolution Bucketing Suite', () => {

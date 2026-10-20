@@ -1,5 +1,5 @@
 import { ptr, toArrayBuffer } from "bun:ffi";
-import { UniversalCanvasProvider, CanvasAssetLoader } from "../isomorphic/canvas";
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import fs from "fs";
 import path from "path";
 import { FFI, initFFI, makeAVRational, AV_PIX_FMT_RGBA, Structs } from "./index";

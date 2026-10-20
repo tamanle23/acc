@@ -3,8 +3,8 @@ import path from 'path';
 import { ptr, toArrayBuffer } from 'bun:ffi';
 import { FFI, Structs, AV_PIX_FMT_RGBA, safeArrayBuffer, initFFI } from './index';
 import { FFmpegManager } from '../FFmpegManager';
-import type { ICanvasInstance, ICanvasContext2D } from '../isomorphic/canvas/types';
-import { UniversalCanvasProvider } from '../isomorphic/canvas/UniversalCanvasProvider';
+import type { ICanvasInstance, ICanvasContext2D } from '@acc/core-isomorphic';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { IVideoDecoder } from '../media-engine/types';
 
 export interface DecodedVideoFrame {

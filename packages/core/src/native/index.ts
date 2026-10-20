@@ -1,4 +1,4 @@
-import { UniversalCanvasProvider } from '../isomorphic/canvas/UniversalCanvasProvider';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { MediaEngineRegistry } from '../media-engine/MediaEngineRegistry';
 import { NapiCanvasAdapter } from './canvas/NapiCanvasAdapter';
 import { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStrategy';

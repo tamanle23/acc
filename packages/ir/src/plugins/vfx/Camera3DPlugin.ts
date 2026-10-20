@@ -1,4 +1,4 @@
-import { UniversalCanvasProvider } from '@acc/core/isomorphic';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type {
   ModifierPlugin,
   ModifierContext,

@@ -1,4 +1,4 @@
-import { UniversalCanvasProvider } from '../isomorphic/canvas/UniversalCanvasProvider';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { MediaEngineRegistry } from '../media-engine/MediaEngineRegistry';
 import { WebCanvasAdapter } from './canvas/WebCanvasAdapter';
 import { MediabunnyClientStrategy } from '../media-engine/strategies/MediabunnyClientStrategy';
