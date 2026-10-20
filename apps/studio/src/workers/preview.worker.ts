@@ -134,6 +134,8 @@ self.onmessage = (e: MessageEvent) => {
         engine = new IRPreviewEngine(data.timeline);
       }
       self.postMessage({ type: 'ready' });
+      // Render initial hero frame immediately upon worker initialization
+      renderCurrentFrame(currentFrame, 1.0, 1.0);
       break;
     }
 
@@ -175,6 +177,10 @@ self.onmessage = (e: MessageEvent) => {
       if (data.textures) {
         for (const [id, bmp] of Object.entries(data.textures)) {
           textureCache.set(id, bmp);
+        }
+        // If parked/paused, re-render immediately with newly synchronized textures
+        if (!isPlaying) {
+          renderCurrentFrame(currentFrame, 1.0, 1.0);
         }
       }
       break;

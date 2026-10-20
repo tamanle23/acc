@@ -295,6 +295,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`282`](282_master_integration_plan_iteration15_execution.md) | 2026-10-19 | Master Integration Plan (Iteration 15) Execution | Full end-to-end execution of Iteration 15: PreviewRenderWorker, DeterministicTimelineClock, AudioWorklet transport, stub elimination, SagaOrchestrator decoupling, NativeBufferPool, Deterministic Pts math, paused GSAP proxy tweening, TimeSpaceStateMachine, TimeSpaceModifierPlugin, and RenderCheckpointManager |
 | [`283`](283_master_integration_plan_iteration16_execution.md) | 2026-10-20 | Master Integration Plan (Iteration 16) Execution | Architectural decoupling: transparent canvas subtyping (LSP), declarative 'timeline' duration 8-point sync, 3-pass DAG compiler, strict CLI route isolation, default video-ir.json persistence, universal streaming asset blobs, and real Web Worker OffscreenCanvas Studio preview |
 | [`284`](284_studio_preview_player_performance_tuning_and_decoupling.md) | 2026-10-20 | Studio Preview Player Performance Tuning & Reactive Decoupling | Decoupled 60fps frame loop from React reconciliation via StudioPlayheadController observer, direct hardware-accelerated CSS translate3d needle updates in Timeline.tsx, IPreviewRenderStrategy abstraction, repeat event debouncing in useShuttleEngine, throttled scrub audio, and worker frame coalescing |
+| [`285`](285_fix_studio_preview_initial_black_screen.md) | 2026-10-20 | Fix Studio Preview Initial Black Screen Canvas on Window Open | Resolved preview black screen on launch: auto-render hero frame on worker init, dispatch onReady callback from PreviewWorkerBridge, and trigger immediate parked frame repaint on texture cache updates |
+
 
 
 

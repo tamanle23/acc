@@ -6,6 +6,7 @@ export class PreviewWorkerBridge {
   private isTransferred: boolean = false;
   private isReady: boolean = false;
   private onFrameUpdateCallback: ((frame: number, ended?: boolean) => void) | null = null;
+  private onReadyCallback: (() => void) | null = null;
 
   constructor() {
     this.isSupported =
@@ -17,6 +18,18 @@ export class PreviewWorkerBridge {
 
   public supportsOffscreen(): boolean {
     return this.isSupported;
+  }
+
+  public getIsReady(): boolean {
+    return this.isReady;
+  }
+
+  public onReady(callback: () => void): void {
+    if (this.isReady) {
+      callback();
+    } else {
+      this.onReadyCallback = callback;
+    }
   }
 
   public hasTransferred(): boolean {
@@ -45,6 +58,9 @@ export class PreviewWorkerBridge {
         if (!data) return;
         if (data.type === 'ready') {
           this.isReady = true;
+          if (this.onReadyCallback) {
+            this.onReadyCallback();
+          }
         } else if (data.type === 'frameUpdate') {
           if (this.onFrameUpdateCallback) {
             this.onFrameUpdateCallback(data.frame, data.ended);

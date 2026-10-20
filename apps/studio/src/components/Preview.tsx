@@ -266,6 +266,9 @@ export function Preview({
       const transferred = bridge.init(baseCanvas, irState.timeline, width, height, fps, totalFrames);
       if (transferred) {
         setWorkerReady(true);
+        bridge.onReady(() => {
+          setAssetTick((t) => t + 1);
+        });
       }
     }
 
