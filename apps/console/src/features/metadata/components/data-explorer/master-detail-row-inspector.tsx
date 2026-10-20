@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner';
 import { useRecordAuditLogs, useRestoreRecordVersion } from '../../api/metadata-api';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 interface MasterDetailRowInspectorProps {
   record: EntityRecord | null;
@@ -211,9 +212,14 @@ export const MasterDetailRowInspector: React.FC<MasterDetailRowInspectorProps> =
                       <div className="text-xs font-mono break-all text-foreground/90 mt-0.5">
                         {hasVal ? (
                           typeof val === 'object' ? (
-                            <pre className="text-[11px] p-2 rounded-lg bg-muted/40 overflow-x-auto">
-                              {JSON.stringify(val, null, 2)}
-                            </pre>
+                            <VisualJsonEditor
+                              value={val}
+                              onChange={() => {}}
+                              readOnly
+                              defaultMode="tree"
+                              height="180px"
+                              className="mt-1 border-border/40 shadow-xs"
+                            />
                           ) : (
                             String(val)
                           )

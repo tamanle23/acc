@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { useEntityRecords } from '../../api/metadata-api';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
 import { WidgetRegistry, registerStandardWidgets } from '@unipost/ui';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 // Initialize standard pluggable widgets once
 registerStandardWidgets();
@@ -405,27 +406,13 @@ export const DynamicFieldRenderer: React.FC<Props> = ({
 
       case 'json_editor':
         return (
-          <Textarea
-            id={systemName}
-            value={
-              typeof value === 'object' && value !== null
-                ? JSON.stringify(value, null, 2)
-                : typeof value === 'string'
-                ? value
-                : '{}'
-            }
-            onChange={(e) => {
-              const text = e.target.value;
-              try {
-                const parsed = JSON.parse(text);
-                onChange(parsed);
-              } catch {
-                onChange(text);
-              }
-            }}
-            rows={4}
-            className={cn('font-mono text-xs bg-slate-950/80 text-emerald-400', errorClass)}
-            placeholder="{}"
+          <VisualJsonEditor
+            value={value}
+            onChange={(val) => onChange(val)}
+            readOnly={readOnly || disabled}
+            defaultMode="tree"
+            height="220px"
+            className={errorClass}
           />
         );
 

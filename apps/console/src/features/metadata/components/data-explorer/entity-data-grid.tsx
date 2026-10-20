@@ -22,6 +22,7 @@ import { CompositeMasterDetailRow } from './composite-master-detail-row';
 import { DynamicQueryBuilder } from './query-builder/dynamic-query-builder';
 import { TableViewsPopover, type GridDensity } from './table-views-popover';
 import { MasterDetailRowInspector } from './master-detail-row-inspector';
+import { JsonCellPopover } from '@/components/ui/json-editor';
 import {
   DndContext,
   closestCenter,
@@ -757,12 +758,8 @@ export const EntityDataGrid: React.FC<Props> = ({
                 );
               }
 
-              if (typeof val === 'object') {
-                return (
-                  <code className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px] inline-block">
-                    {JSON.stringify(val)}
-                  </code>
-                );
+              if (typeof val === 'object' || attr.uiComponent === 'json_editor') {
+                return <JsonCellPopover value={val} attributeName={attr.name} />;
               }
 
               if (attr.uiComponent === 'relation_picker') {
