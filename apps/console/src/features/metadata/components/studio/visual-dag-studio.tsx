@@ -687,18 +687,19 @@ function DagStudioCanvas({
     [executionId, updateBreakpointsMutation]
   );
 
-  // Decorate nodes with breakpoint state and toggle handler
+  // Decorate nodes with breakpoint state and toggle handler (only active in execution inspection mode)
+  const isExecutionMode = Boolean(isReadOnly && executionId);
   const decoratedNodes = useMemo(
     () =>
       nodes.map((n) => ({
         ...n,
         data: {
           ...n.data,
-          hasBreakpoint: breakpoints.includes(n.data.taskReferenceName),
-          onToggleBreakpoint: handleToggleBreakpoint,
+          hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
+          onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
         },
       })),
-    [nodes, breakpoints, handleToggleBreakpoint]
+    [nodes, breakpoints, handleToggleBreakpoint, isExecutionMode]
   );
 
   // Compute aggregated Variable Watch state from workflow snapshot or current node states
@@ -1009,61 +1010,63 @@ function DagStudioCanvas({
           </div>
         )}
 
-        {/* Phase 7: Visual Debugger Control Bar */}
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mr-0.5" />
-          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">
-            Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerPause}
-            className="h-6 px-1.5 text-[10px] gap-1"
-            title="Pause execution before next task"
-            data-testid="debugger-pause-btn"
-          >
-            <Pause className="w-3 h-3 text-amber-500" />
-            Pause
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerStepOver}
-            className="h-6 px-1.5 text-[10px] gap-1"
-            title="Step Over single frontier task"
-            data-testid="debugger-step-btn"
-          >
-            <StepForward className="w-3 h-3 text-sky-500" />
-            Step Over
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerResume}
-            className="h-6 px-1.5 text-[10px] gap-1"
-            title="Resume workflow execution"
-            data-testid="debugger-resume-btn"
-          >
-            <Play className="w-3 h-3 text-emerald-500" />
-            Resume
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={isVariableWatchOpen ? 'default' : 'ghost'}
-            onClick={() => setIsVariableWatchOpen((prev) => !prev)}
-            className="h-6 px-1.5 text-[10px] gap-1"
-            title="Toggle Live Variable Watch & State Diff Drawer"
-            data-testid="debugger-variable-watch-btn"
-          >
-            <Braces className="w-3 h-3" />
-            Watch
-          </Button>
-        </div>
+        {/* Phase 7: Visual Debugger Control Bar (Only active in execution inspection mode) */}
+        {isExecutionMode && (
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mr-0.5" />
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">
+              Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={handleDebuggerPause}
+              className="h-6 px-1.5 text-[10px] gap-1"
+              title="Pause execution before next task"
+              data-testid="debugger-pause-btn"
+            >
+              <Pause className="w-3 h-3 text-amber-500" />
+              Pause
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={handleDebuggerStepOver}
+              className="h-6 px-1.5 text-[10px] gap-1"
+              title="Step Over single frontier task"
+              data-testid="debugger-step-btn"
+            >
+              <StepForward className="w-3 h-3 text-sky-500" />
+              Step Over
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={handleDebuggerResume}
+              className="h-6 px-1.5 text-[10px] gap-1"
+              title="Resume workflow execution"
+              data-testid="debugger-resume-btn"
+            >
+              <Play className="w-3 h-3 text-emerald-500" />
+              Resume
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={isVariableWatchOpen ? 'default' : 'ghost'}
+              onClick={() => setIsVariableWatchOpen((prev) => !prev)}
+              className="h-6 px-1.5 text-[10px] gap-1"
+              title="Toggle Live Variable Watch & State Diff Drawer"
+              data-testid="debugger-variable-watch-btn"
+            >
+              <Braces className="w-3 h-3" />
+              Watch
+            </Button>
+          </div>
+        )}
 
         {/* Phase 39: Visual Graph Diff Version Selector */}
         {workflowVersions.length > 0 && (
@@ -1107,7 +1110,7 @@ function DagStudioCanvas({
       </div>
 
       {/* Phase 7: Floating Variable Watch & Time-Travel State Drawer */}
-      {isVariableWatchOpen && (
+      {isExecutionMode && isVariableWatchOpen && (
         <div
           className="absolute top-20 right-4 z-20 w-80 p-3 rounded-2xl backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-2xl space-y-2"
           data-testid="debugger-variable-watch-panel"

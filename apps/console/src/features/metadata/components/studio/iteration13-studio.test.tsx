@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DagPropertyInspector } from './dag-property-inspector';
 import { DagWorkflowNodeComponent } from './dag-node';
+import { VisualDagStudio } from './visual-dag-studio';
 import { ReactFlowProvider } from '@xyflow/react';
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -72,5 +73,22 @@ describe('Iteration 13 Studio Capabilities (Phases 4, 5, 6, 7)', () => {
     const bpDot = screen.getByTestId('dag-breakpoint-dot-expressCourier');
     fireEvent.click(bpDot);
     expect(onToggleBreakpoint).toHaveBeenCalledWith('expressCourier');
+  });
+
+  it('hides Debugger Toolbar in Authoring/Design mode and displays it in Execution mode with executionId', () => {
+    // In Design Mode (mode="full", executionId=undefined):
+    const { unmount } = renderWithProviders(<VisualDagStudio mode="full" />);
+    expect(screen.queryByTestId('debugger-pause-btn')).toBeNull();
+    expect(screen.queryByTestId('debugger-step-btn')).toBeNull();
+    expect(screen.queryByTestId('debugger-resume-btn')).toBeNull();
+    expect(screen.queryByTestId('debugger-variable-watch-btn')).toBeNull();
+    unmount();
+
+    // In Execution Mode (mode="execution", executionId="exec-123"):
+    renderWithProviders(<VisualDagStudio mode="execution" executionId="exec-123" />);
+    expect(screen.getByTestId('debugger-pause-btn')).toBeTruthy();
+    expect(screen.getByTestId('debugger-step-btn')).toBeTruthy();
+    expect(screen.getByTestId('debugger-resume-btn')).toBeTruthy();
+    expect(screen.getByTestId('debugger-variable-watch-btn')).toBeTruthy();
   });
 });

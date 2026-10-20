@@ -61,6 +61,15 @@ vi.mock('@/features/workflows/api/workflow-api', () => ({
   useWorkflowDefinition: () => ({ data: null }),
   useSaveWorkflowDefinition: () => ({ mutate: vi.fn(), isPending: false }),
   useWorkflowVersions: () => ({ data: EMPTY_VERSIONS }),
+  useUpdateWorkflowBreakpoints: () => ({ mutate: vi.fn() }),
+  usePauseWorkflowExecution: () => ({ mutate: vi.fn() }),
+  useResumeWorkflowExecution: () => ({ mutate: vi.fn() }),
+  useStepOverWorkflowExecution: () => ({ mutate: vi.fn() }),
+  useRerunWorkflowTask: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/features/workers/api/worker-fleet-api', () => ({
+  useWorkerCatalog: () => ({ data: [], isLoading: false }),
 }));
 
 describe('Visual DAG Studio 2.0 - Dual Modes & 23-Node Studio', () => {

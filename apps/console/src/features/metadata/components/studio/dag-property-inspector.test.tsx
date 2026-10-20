@@ -1,8 +1,19 @@
+import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DagPropertyInspector } from './dag-property-inspector';
 import type { DagNodeData } from './dag-node';
+
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 describe('DagPropertyInspector Drawer', () => {
   const mockNodeData: DagNodeData = {
@@ -25,7 +36,7 @@ describe('DagPropertyInspector Drawer', () => {
     const handleUpdate = vi.fn();
     const handleOpenChange = vi.fn();
 
-    render(
+    renderWithClient(
       <DagPropertyInspector
         nodeId="node-checkInventory"
         nodeData={mockNodeData}
@@ -46,7 +57,7 @@ describe('DagPropertyInspector Drawer', () => {
   it('invokes update callback when editing general properties', () => {
     const handleUpdate = vi.fn();
 
-    render(
+    renderWithClient(
       <DagPropertyInspector
         nodeId="node-checkInventory"
         nodeData={mockNodeData}

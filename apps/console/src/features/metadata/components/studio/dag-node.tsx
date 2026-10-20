@@ -305,25 +305,27 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'cursor-grab active:cursor-grabbing'
       )}
     >
-      {/* Breakpoint Gutter Dot (Top-Left) */}
-      <button
-        type="button"
-        aria-label={`Toggle breakpoint on ${data.taskReferenceName}`}
-        title={data.hasBreakpoint ? 'Remove breakpoint' : 'Set breakpoint on node'}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (data.onToggleBreakpoint) {
-            data.onToggleBreakpoint(data.taskReferenceName);
-          }
-        }}
-        className={cn(
-          'absolute -top-2 -left-2 z-20 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all',
-          data.hasBreakpoint
-            ? 'bg-rose-600 scale-110 shadow-[0_0_10px_rgba(225,29,72,0.8)] opacity-100'
-            : 'bg-slate-400/50 opacity-0 group-hover:opacity-80 hover:bg-rose-500'
-        )}
-        data-testid={`dag-breakpoint-dot-${data.taskReferenceName}`}
-      />
+      {/* Breakpoint Gutter Dot (Top-Left, only in execution inspection mode) */}
+      {(data.onToggleBreakpoint || data.hasBreakpoint) && (
+        <button
+          type="button"
+          aria-label={`Toggle breakpoint on ${data.taskReferenceName}`}
+          title={data.hasBreakpoint ? 'Remove breakpoint' : 'Set breakpoint on node'}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (data.onToggleBreakpoint) {
+              data.onToggleBreakpoint(data.taskReferenceName);
+            }
+          }}
+          className={cn(
+            'absolute -top-2 -left-2 z-20 w-4 h-4 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all',
+            data.hasBreakpoint
+              ? 'bg-rose-600 scale-110 shadow-[0_0_10px_rgba(225,29,72,0.8)] opacity-100'
+              : 'bg-slate-400/50 opacity-0 group-hover:opacity-80 hover:bg-rose-500'
+          )}
+          data-testid={`dag-breakpoint-dot-${data.taskReferenceName}`}
+        />
+      )}
       {/* Diff Status Indicator Pill */}
       {data.diffStatus && (
         <div className="absolute -top-3 -right-2 z-10">
