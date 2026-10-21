@@ -33,25 +33,28 @@ Following the architectural decomposition of `RightSidebar.tsx` into modular sub
 
 #### [MODIFY] [`SequenceInspector.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/inspector/SequenceInspector.tsx)
 
-1. **Timed Text Cues Interactive List**:
-   - Render each cue in `selectedSeq.cues` with:
-     - Text input for cue text, wired to `IRStateManager.getInstance().updateTextCue(...)` or updating `cues` array.
-     - Start offset (`ms`) and End offset (`ms`) inputs.
-     - Delete cue button.
-     - Visual cue count and duration indicators.
-2. **True Lock State (`isLocked`) Enforcement**:
+1. **Timed Text Cues Management (Option B - Modal / Dialog Manager)**:
+   - Provide a clean "Manage Cues ({count})" button in `SequenceInspector.tsx` that opens a dedicated `CueTimelineDialog` modal.
+   - Inside the dialog:
+     - Table / timeline view displaying all subtitle cues.
+     - Inputs for `text`, `startOffsetMs`, `endOffsetMs`, and preview duration.
+     - Actions to add new cue, reorder, delete, and duplicate cue.
+     - Fully accessible keyboard navigation and WCAG 2.1 AA focus rings.
+     - Live synchronization via `IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues })`.
+2. **True Full Lock State (`isLocked`) Enforcement (Option A)**:
    - When `isLocked` is `true`, disable:
-     - Start time inputs (absolute frame / relational dropdowns).
-     - Duration inputs (frames / seconds / relational switches).
-     - Modifier parameter inputs and removal buttons.
-     - Cue inputs and Add Cue button.
-     - Duplicate and Delete buttons.
-3. **Relational Timing Complete Parameters**:
+     - Start time inputs (absolute frame / relational dropdowns / offsets / overlaps).
+     - Duration inputs (frames / seconds / relational switches / matchLengthOf).
+     - Modifier parameter inputs, toggle switches, and removal buttons.
+     - "Manage Cues" button and "+ Add Cue" actions.
+     - Duplicate, Delete, and Add Effect buttons.
+     - Propagate `disabled={isLocked}` down to `DynamicModifierInspector`.
+3. **Relational Timing Complete Parameters & Auto-Clamp Fallback (Option A)**:
    - For `start` relational mode: Add number inputs for `offsetFrames` and `overlapFrames`.
    - For `duration` relational mode: Add target sequence dropdown and `paddingFrames` input when `matchLengthOf` is selected.
-   - Graceful fallback when `otherSequenceIds.length === 0`: Show an alert banner explaining that relational timing requires at least 2 sequences in the project.
+   - **Auto-Clamp Guard**: When `otherSequenceIds.length === 0` (<2 sequences exist in project), disable the "Relational" mode button with a helpful tooltip/badge: `"Requires ≥2 sequences"`, preventing invalid IR relational references.
 4. **Empty State Direct Action**:
-   - Add a primary "+ Add First Effect" button directly in the empty state card that opens the modifier picker dropdown or triggers the first available modifier.
+   - Add a primary "+ Add First Effect" button directly in the empty state card that triggers the modifier selection dropdown.
 
 ---
 
@@ -59,11 +62,11 @@ Following the architectural decomposition of `RightSidebar.tsx` into modular sub
 
 #### [MODIFY] [`RightSidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/RightSidebar.tsx)
 
-1. **Auto-Expansion of New Modifiers**:
-   - When adding an effect, notify or dispatch the section ID to automatically expand the accordion item for that effect.
+1. **Auto-Expansion of New Modifiers (Option A)**:
+   - When adding an effect in `handleAddEffect`, ensure the newly added effect section ID (`effect-${mod.type}`) is automatically appended to `openSections` state, keeping all existing open sections expanded while immediately opening the new effect.
 2. **Dynamic Add Effect Menu Enhancements**:
-   - Group modifiers by category (Motion & Transforms, 3D & Depth, Shaders & Particles, Audio DSP, Typography).
-   - Display shortcut badge or descriptive subtitle.
+   - Disable "Add Effect" button when the selected sequence `isLocked`.
+   - Group modifiers by category (Motion & Transforms, 3D & Depth, Shaders & Particles, Audio DSP, Typography) with clear icons and checkmarks for already-attached effects.
 3. **Accessibility Attributes**:
    - Ensure breadcrumb pills have explicit `aria-current="page"`, `aria-label`, and `focus-visible:ring-2`.
 

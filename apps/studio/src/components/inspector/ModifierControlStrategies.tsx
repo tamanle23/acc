@@ -14,6 +14,7 @@ export interface ControlStrategyProps {
   descriptor: ParamFieldDescriptor;
   value: any;
   onChange: (newValue: any) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -24,6 +25,7 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
   value,
   onChange,
+  disabled = false,
 }) => {
   const min = descriptor.min ?? 0;
   const max = descriptor.max ?? 100;
@@ -38,6 +40,7 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   }, [numericVal]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     setLocalVal(e.target.value);
     const num = parseFloat(e.target.value);
     if (!Number.isNaN(num)) {
@@ -46,12 +49,14 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   };
 
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${disabled ? 'pointer-events-none' : ''}`}>
       <div className="flex justify-between items-center text-[11px]">
         <span
-          onDoubleClick={() => onChange(defaultVal)}
-          className="text-slate-600 dark:text-slate-300 select-none cursor-pointer hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors"
-          title="Double-click to reset to default"
+          onDoubleClick={() => !disabled && onChange(defaultVal)}
+          className={` select-none ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer '
+          } transition-colors`}
+          title={disabled ? undefined : "Double-click to reset to default"}
         >
           {descriptor.label}
         </span>
@@ -60,11 +65,12 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
             type="number"
             step={step}
             value={localVal}
+            disabled={disabled}
             onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900"
+            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 "
           />
           {descriptor.unit && (
-            <span className="text-[10px] text-slate-400 font-mono">{descriptor.unit}</span>
+            <span className="text-[10px]  font-mono">{descriptor.unit}</span>
           )}
         </div>
       </div>
@@ -72,8 +78,9 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
         min={min}
         max={max}
         step={step}
+        disabled={disabled}
         value={[numericVal]}
-        onValueChange={(v) => onChange(v[0])}
+        onValueChange={(v) => !disabled && onChange(v[0])}
       />
     </div>
   );
@@ -87,15 +94,16 @@ export const SwitchControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
   value,
   onChange,
+  disabled = false,
 }) => {
   const checked = typeof value === 'boolean' ? value : Boolean(descriptor.defaultValue);
 
   return (
-    <div className="flex items-center justify-between py-1">
+    <div className={`flex items-center justify-between py-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
         {descriptor.label}
       </span>
-      <Switch checked={checked} onCheckedChange={(c) => onChange(c)} />
+      <Switch checked={checked} disabled={disabled} onCheckedChange={(c) => !disabled && onChange(c)} />
     </div>
   );
 };
@@ -108,18 +116,20 @@ export const SelectControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
   value,
   onChange,
+  disabled = false,
 }) => {
   const currentVal = value ?? descriptor.defaultValue ?? descriptor.options?.[0]?.value ?? '';
 
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
         {descriptor.label}
       </label>
       <select
         value={String(currentVal)}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-7 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        disabled={disabled}
+        onChange={(e) => !disabled && onChange(e.target.value)}
+        className="w-full h-7 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed"
       >
         {(descriptor.options || []).map((opt) => (
           <option key={String(opt.value)} value={String(opt.value)}>
@@ -139,20 +149,22 @@ export const ColorControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
   value,
   onChange,
+  disabled = false,
 }) => {
   const colorVal = typeof value === 'string' && value.startsWith('#') ? value : (descriptor.defaultValue || '#00ffff');
 
   return (
-    <div className="flex items-center justify-between pt-1">
+    <div className={`flex items-center justify-between pt-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
         {descriptor.label}
       </span>
       <div className="flex items-center gap-1.5">
         <input
           type="color"
+          disabled={disabled}
           value={colorVal.slice(0, 7)}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-6 h-6 rounded border border-slate-200 dark:border-white/10 cursor-pointer p-0 bg-transparent"
+          onChange={(e) => !disabled && onChange(e.target.value)}
+          className="w-6 h-6 rounded border border-slate-200 dark:border-white/10 cursor-pointer p-0 bg-transparent disabled:cursor-not-allowed"
         />
         <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
           {colorVal}
@@ -170,17 +182,19 @@ export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
   value,
   onChange,
+  disabled = false,
 }) => {
   return (
-    <div className="space-y-1">
+    <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 block">
         {descriptor.label}
       </span>
       <Input
         type="text"
+        disabled={disabled}
         value={String(value ?? descriptor.defaultValue ?? '')}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-7 px-2 text-xs font-mono rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900"
+        onChange={(e) => !disabled && onChange(e.target.value)}
+        className="w-full h-7 px-2 text-xs font-mono rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -193,6 +207,7 @@ export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
 export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
   value,
   onChange,
+  disabled = false,
 }) => {
   const regions: PartialVFXRegionConfig[] = Array.isArray(value) ? value : [];
   const [selectedIdx, setSelectedIdx] = React.useState<number>(0);
@@ -201,6 +216,7 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
   const activeRegion = regions[activeIndex];
 
   const handleAddRegion = () => {
+    if (disabled) return;
     const newRegion: PartialVFXRegionConfig = {
       type: 'spotlight',
       x: 0.5,
@@ -217,18 +233,20 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
   };
 
   const handleRemoveRegion = (idx: number) => {
+    if (disabled) return;
     const next = regions.filter((_, i) => i !== idx);
     onChange(next);
     setSelectedIdx(Math.max(0, idx - 1));
   };
 
   const updateRegion = (idx: number, patch: Partial<PartialVFXRegionConfig>) => {
+    if (disabled) return;
     const next = regions.map((r, i) => (i === idx ? { ...r, ...patch } : r));
     onChange(next);
   };
 
   const handlePadPointer = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!activeRegion) return;
+    if (disabled || !activeRegion) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const normX = Math.max(0, Math.min(1, Number(((e.clientX - rect.left) / rect.width).toFixed(2))));
     const normY = Math.max(0, Math.min(1, Number(((e.clientY - rect.top) / rect.height).toFixed(2))));
@@ -471,6 +489,7 @@ export const CurveControlStrategy: React.FC<ControlStrategyProps> = ({
 export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
   value,
   onChange,
+  disabled = false,
 }) => {
   const anim = typeof value === 'object' && value !== null ? value : {};
   const currentPreset = anim.preset || 'none';
@@ -485,6 +504,7 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
   ];
 
   const handlePresetClick = (p: typeof presets[0]) => {
+    if (disabled) return;
     if (p.id === 'none') {
       onChange(undefined);
     } else {
@@ -498,7 +518,7 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
   };
 
   return (
-    <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-2.5">
+    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-indigo-400" />
@@ -514,12 +534,13 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
             <button
               key={p.id}
               type="button"
+              disabled={disabled}
               onClick={() => handlePresetClick(p)}
               className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
                 isSelected
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
-              }`}
+              } disabled:cursor-not-allowed`}
             >
               {p.label}
             </button>
@@ -539,9 +560,10 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
             defaultValue: 0.4,
             unit: 's',
           }}
+          disabled={disabled}
           value={anim.intro?.durationSec ?? 0.4}
           onChange={(v) =>
-            onChange({
+            !disabled && onChange({
               ...anim,
               intro: { ...(anim.intro || {}), durationSec: v },
             })
@@ -558,9 +580,10 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
             defaultValue: 0.3,
             unit: 's',
           }}
+          disabled={disabled}
           value={anim.outro?.durationSec ?? 0.3}
           onChange={(v) =>
-            onChange({
+            !disabled && onChange({
               ...anim,
               outro: { ...(anim.outro || {}), durationSec: v },
             })
@@ -571,10 +594,12 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
       <EasingCurveSelector
         value={anim.intro?.ease || 'power2.out'}
         onChange={(ease) => {
-          onChange({
-            ...anim,
-            intro: { ...(anim.intro || {}), ease },
-          });
+          if (!disabled) {
+            onChange({
+              ...anim,
+              intro: { ...(anim.intro || {}), ease },
+            });
+          }
         }}
       />
     </div>
@@ -588,13 +613,14 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
 export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
   value,
   onChange,
+  disabled = false,
 }) => {
   const shaders = typeof value === 'object' && value !== null ? value : {};
   const bloom = shaders.bloom || { enabled: false, threshold: 0.7, intensity: 1.0 };
   const chromatic = shaders.chromaticAberration || { enabled: false, offsetPx: 2.0 };
 
   return (
-    <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-2">
+    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -607,8 +633,9 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
         <SwitchControlStrategy
           descriptor={{ key: 'bloomEnabled', label: 'Bloom Glow', type: 'boolean' }}
           value={bloom.enabled}
+          disabled={disabled}
           onChange={(en) =>
-            onChange({
+            !disabled && onChange({
               ...shaders,
               bloom: { ...bloom, enabled: en },
             })
@@ -627,8 +654,9 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
                 defaultValue: 0.7,
               }}
               value={bloom.threshold ?? 0.7}
+              disabled={disabled}
               onChange={(v) =>
-                onChange({
+                !disabled && onChange({
                   ...shaders,
                   bloom: { ...bloom, threshold: v },
                 })
@@ -645,8 +673,9 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
                 defaultValue: 1.0,
               }}
               value={bloom.intensity ?? 1.0}
+              disabled={disabled}
               onChange={(v) =>
-                onChange({
+                !disabled && onChange({
                   ...shaders,
                   bloom: { ...bloom, intensity: v },
                 })
@@ -661,8 +690,9 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
         <SwitchControlStrategy
           descriptor={{ key: 'chromaticEnabled', label: 'Chromatic Aberration', type: 'boolean' }}
           value={chromatic.enabled}
+          disabled={disabled}
           onChange={(en) =>
-            onChange({
+            !disabled && onChange({
               ...shaders,
               chromaticAberration: { ...chromatic, enabled: en },
             })
@@ -681,8 +711,9 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
               unit: 'px',
             }}
             value={chromatic.offsetPx ?? 2.0}
+            disabled={disabled}
             onChange={(v) =>
-              onChange({
+              !disabled && onChange({
                 ...shaders,
                 chromaticAberration: { ...chromatic, offsetPx: v },
               })
@@ -701,11 +732,12 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
 export const KaraokeGroupControlStrategy: React.FC<ControlStrategyProps> = ({
   value,
   onChange,
+  disabled = false,
 }) => {
   const karaoke = typeof value === 'object' && value !== null ? value : {};
 
   return (
-    <div className="pt-2 border-t border-slate-200 dark:border-white/10 space-y-2">
+    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-amber-400" />
@@ -715,7 +747,8 @@ export const KaraokeGroupControlStrategy: React.FC<ControlStrategyProps> = ({
       <SwitchControlStrategy
         descriptor={{ key: 'activeWordHighlight', label: 'Highlight Active Word', type: 'boolean' }}
         value={karaoke.activeWordHighlight ?? true}
-        onChange={(v) => onChange({ ...karaoke, activeWordHighlight: v })}
+        disabled={disabled}
+        onChange={(v) => !disabled && onChange({ ...karaoke, activeWordHighlight: v })}
       />
       <ColorControlStrategy
         descriptor={{
@@ -725,7 +758,8 @@ export const KaraokeGroupControlStrategy: React.FC<ControlStrategyProps> = ({
           defaultValue: '#ffcc00',
         }}
         value={karaoke.glowColor ?? '#ffcc00'}
-        onChange={(v) => onChange({ ...karaoke, glowColor: v })}
+        disabled={disabled}
+        onChange={(v) => !disabled && onChange({ ...karaoke, glowColor: v })}
       />
     </div>
   );
@@ -737,10 +771,12 @@ export const KaraokeGroupControlStrategy: React.FC<ControlStrategyProps> = ({
  */
 export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
   value,
+  disabled = false,
 }) => {
   const [isPlayingAudition, setIsPlayingAudition] = React.useState(false);
 
   const handleAuditionSFX = (synthType: string = 'whoosh', durationSec: number = 1.5) => {
+    if (disabled) return;
     setIsPlayingAudition(true);
     let buf: Float32Array;
     switch (synthType) {
@@ -785,6 +821,7 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     durationSec: number = 1.5,
     duckingFactor: number = 0.75
   ) => {
+    if (disabled) return;
     const startFrame = 0;
     const durationFrames = Math.round(durationSec * 30);
     const seq = {
@@ -817,13 +854,13 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
   const ducking = value?.duckingFactor ?? 0.75;
 
   return (
-    <div className="pt-2 border-t border-slate-200 dark:border-white/10 flex items-center gap-2">
+    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <Button
         size="sm"
         variant="outline"
         onClick={() => handleAuditionSFX(currentType, durationSec)}
-        disabled={isPlayingAudition}
-        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-indigo-500 hover:text-indigo-500"
+        disabled={disabled || isPlayingAudition}
+        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-indigo-500 hover:text-indigo-500 disabled:cursor-not-allowed"
       >
         <Volume2
           className={`w-3.5 h-3.5 ${
@@ -835,8 +872,9 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
 
       <Button
         size="sm"
+        disabled={disabled}
         onClick={() => handleInsertProceduralSFX(currentType, durationSec, ducking)}
-        className="flex-1 text-[11px] font-mono gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+        className="flex-1 text-[11px] font-mono gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer disabled:cursor-not-allowed"
       >
         <Plus className="w-3.5 h-3.5" />
         Insert to Track

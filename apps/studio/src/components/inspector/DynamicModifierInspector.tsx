@@ -10,6 +10,7 @@ export interface DynamicModifierInspectorProps {
   modifierType: string;
   params: Record<string, any>;
   onChange: (nextParams: Record<string, any>) => void;
+  disabled?: boolean;
 }
 
 function ensureRegistryPopulated(registry: ModifierPluginRegistry): ModifierPluginRegistry {
@@ -32,11 +33,13 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
   modifierType,
   params = {},
   onChange,
+  disabled = false,
 }) => {
   const registry = ensureRegistryPopulated(ModifierPluginRegistry.getInstance());
   const schema = registry.getSchema(modifierType);
 
   const handleFieldChange = (key: string, newVal: any) => {
+    if (disabled) return;
     onChange({
       ...params,
       [key]: newVal,
@@ -50,7 +53,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
     );
 
     return (
-      <div className="space-y-2.5">
+      <div className={`space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
         {schemaEntries.map(([fieldKey, descriptor]) => {
           const ControlComponent = resolveParamControlStrategy(descriptor);
           const currentValue =
@@ -65,6 +68,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
               key={fieldKey}
               descriptor={descriptor}
               value={currentValue}
+              disabled={disabled}
               onChange={(val) => handleFieldChange(fieldKey, val)}
             />
           );
@@ -78,6 +82,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
               key={key}
               descriptor={inferredDescriptor}
               value={val}
+              disabled={disabled}
               onChange={(newVal) => handleFieldChange(key, newVal)}
             />
           );
@@ -98,7 +103,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className={`space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       {paramEntries.map(([key, val]) => {
         const inferredDescriptor: ParamFieldDescriptor = inferFieldDescriptor(key, val);
         const ControlComponent = resolveParamControlStrategy(inferredDescriptor);
@@ -108,6 +113,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
             key={key}
             descriptor={inferredDescriptor}
             value={val}
+            disabled={disabled}
             onChange={(newVal) => handleFieldChange(key, newVal)}
           />
         );

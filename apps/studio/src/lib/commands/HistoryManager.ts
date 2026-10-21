@@ -22,6 +22,9 @@ export class CoalescingHistoryStrategy implements IHistoryStrategy {
     if (incoming.timestamp - last.timestamp > this.coalesceWindowMs) {
       return false;
     }
+    if (typeof last.tryMerge !== 'function') {
+      return false;
+    }
     return last.tryMerge(incoming);
   }
 }

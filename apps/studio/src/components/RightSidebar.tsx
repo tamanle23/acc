@@ -37,6 +37,20 @@ export { EasingCurveSelector } from './EasingCurveSelector';
 
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
+  const [openSections, setOpenSections] = useState<string[]>([
+    'transform',
+    'motion_gsap',
+    'relighting',
+    'camera',
+    'particles',
+    'hologram_hud',
+    'typography',
+    'color',
+    'audio',
+    'procedural_sfx',
+  ]);
+  const [isSequenceLocked, setIsSequenceLocked] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   useEffect(() => {
     return IRStateManager.getInstance().subscribe(setIrState);
@@ -78,11 +92,13 @@ export function RightSidebar() {
   const modifiers: any[] = selectedSeq?.modifiers || [];
 
   const handleAddEffect = (mod: AvailableModifierDef) => {
-    if (!selectedSeqId) return;
+    if (!selectedSeqId || isSequenceLocked) return;
     IRStateManager.getInstance().addModifier(selectedSeqId, {
       type: mod.type,
       params: { ...mod.defaultParams },
     });
+    const sectionId = getSectionIdForModifierType(mod.type);
+    setOpenSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
   };
 
   return (
@@ -98,12 +114,13 @@ export function RightSidebar() {
           </div>
 
           {currentMode === 'sequence' && selectedSeq && (
-            <DropdownMenu>
+            <DropdownMenu open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-6 text-[10px] gap-1 px-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                  disabled={isSequenceLocked}
+                  className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/200 text-accent-theme/600 hover:bg-accent-theme/100 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3" />
                   Add Effect
@@ -117,16 +134,16 @@ export function RightSidebar() {
                     return (
                       <DropdownMenuItem
                         key={mod.type}
-                        disabled={isAttached}
+                        disabled={isAttached || isSequenceLocked}
                         onSelect={() => handleAddEffect(mod)}
                         onClick={() => handleAddEffect(mod)}
                         className="flex items-center justify-between cursor-pointer py-1.5"
                       >
                         <div className="flex items-center gap-2">
-                          <Icon className="w-3.5 h-3.5 text-indigo-500" />
+                          <Icon className="w-3.5 h-3.5 text-accent-theme" />
                           <span>{mod.name}</span>
                         </div>
-                        {isAttached && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                        {isAttached && <Check className="w-3.5 h-3.5 text-accent-theme" />}
                       </DropdownMenuItem>
                     );
                   })}
@@ -137,41 +154,41 @@ export function RightSidebar() {
         </div>
 
         {/* Persistent Breadcrumb Navigation Bar: [Project] > [Track] > [Sequence] */}
-        <div className="flex items-center gap-1 overflow-x-auto text-[10px] font-mono scrollbar-none py-0.5">
+        <nav aria-label="Inspector Hierarchy" className="flex items-center gap-1 overflow-x-auto text-[10px] font-mono scrollbar-none py-0.5">
           {/* Project Tier Pill */}
           <button
             type="button"
+            aria-current={currentMode === 'project' ? 'page' : undefined}
             onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer ${
-              currentMode === 'project'
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'project'
                 ? 'bg-accent-theme text-primary-foreground shadow-2xs'
                 : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-            }`}
+              }`}
             title="Inspect Project Master Settings"
           >
             <Settings className="w-2.5 h-2.5 shrink-0" />
             <span className="truncate">{irState.doc.meta?.contentId || 'Project'}</span>
           </button>
 
-          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
 
           {/* Track Tier Pill */}
           <button
             type="button"
             disabled={!selectedTrack}
+            aria-current={currentMode === 'track' ? 'page' : undefined}
             onClick={() => {
               if (selectedTrack) {
                 IRStateManager.getInstance().setSelectedTrackId(selectedTrack.id);
                 IRStateManager.getInstance().setInspectorMode('track');
               }
             }}
-            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] ${
-              !selectedTrack
+            className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${!selectedTrack
                 ? 'opacity-40 cursor-not-allowed text-muted-foreground'
                 : currentMode === 'track'
-                ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
-                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
-            }`}
+                  ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
+                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
+              }`}
             title={selectedTrack ? `Inspect Track ${selectedTrack.id}` : 'No track selected'}
           >
             <Layers className="w-2.5 h-2.5 shrink-0" />
@@ -182,20 +199,20 @@ export function RightSidebar() {
 
           {selectedSeq && (
             <>
-              <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+              <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
 
               {/* Sequence Tier Pill */}
               <button
                 type="button"
+                aria-current={currentMode === 'sequence' ? 'page' : undefined}
                 onClick={() => {
                   IRStateManager.getInstance().setSelectedSequenceId(selectedSeq.id);
                   IRStateManager.getInstance().setInspectorMode('sequence');
                 }}
-                className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer ${
-                  currentMode === 'sequence'
+                className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'sequence'
                     ? 'bg-accent-theme text-primary-foreground shadow-2xs'
                     : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
                 title={`Inspect Sequence ${selectedSeq.id}`}
               >
                 <Film className="w-2.5 h-2.5 shrink-0" />
@@ -203,7 +220,7 @@ export function RightSidebar() {
               </button>
             </>
           )}
-        </div>
+        </nav>
       </div>
 
       {/* 2. Main Content Area */}
@@ -218,6 +235,11 @@ export function RightSidebar() {
             selectedTrack={selectedTrack}
             irState={irState}
             fps={fps}
+            isLocked={isSequenceLocked}
+            onToggleLock={setIsSequenceLocked}
+            openSections={openSections}
+            onOpenSectionsChange={setOpenSections}
+            onAddEffectClick={() => setIsAddMenuOpen(true)}
           />
         )}
       </ScrollArea>

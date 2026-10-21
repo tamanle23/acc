@@ -30,12 +30,18 @@ import {
   MODIFIER_PRESENTATION_CATALOG,
 } from './modifierCatalog';
 import { IRStateManager } from '../../lib/ir/irState';
+import { CueTimelineDialog } from './CueTimelineDialog';
 
 export interface SequenceInspectorProps {
   selectedSeq: any;
   selectedTrack: any;
   irState: ReturnType<typeof IRStateManager.prototype.getState>;
   fps: number;
+  isLocked?: boolean;
+  onToggleLock?: (locked: boolean) => void;
+  openSections?: string[];
+  onOpenSectionsChange?: (sections: string[]) => void;
+  onAddEffectClick?: () => void;
 }
 
 export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
@@ -43,10 +49,26 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   selectedTrack,
   irState,
   fps,
+  isLocked: externalLocked,
+  onToggleLock,
+  openSections: externalOpenSections,
+  onOpenSectionsChange,
+  onAddEffectClick,
 }) => {
   const [copiedId, setCopiedId] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>([
+  const [internalLocked, setInternalLocked] = useState(false);
+  const [isCueDialogOpen, setIsCueDialogOpen] = useState(false);
+
+  const isLocked = externalLocked !== undefined ? externalLocked : internalLocked;
+  const setIsLocked = (locked: boolean) => {
+    if (onToggleLock) {
+      onToggleLock(locked);
+    } else {
+      setInternalLocked(locked);
+    }
+  };
+
+  const [internalOpenSections, setInternalOpenSections] = useState<string[]>([
     'transform',
     'motion_gsap',
     'relighting',
@@ -58,6 +80,15 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     'audio',
     'procedural_sfx',
   ]);
+
+  const openSections = externalOpenSections !== undefined ? externalOpenSections : internalOpenSections;
+  const setOpenSections = (sections: string[]) => {
+    if (onOpenSectionsChange) {
+      onOpenSectionsChange(sections);
+    } else {
+      setInternalOpenSections(sections);
+    }
+  };
 
   if (!selectedSeq) {
     return (
@@ -227,8 +258,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  disabled={isLocked}
                   onClick={() => handleToggleStartRelational(false)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
+                    isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  } ${
                     !isStartRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -238,8 +272,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                 </button>
                 <button
                   type="button"
+                  disabled={isLocked || otherSequenceIds.length === 0}
                   onClick={() => handleToggleStartRelational(true)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
+                  title={otherSequenceIds.length === 0 ? "Requires ≥2 sequences" : "Switch to Relational timing"}
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
+                    isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  } ${
                     isStartRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -257,6 +295,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   <Input
                     type="number"
                     min={0}
+                    disabled={isLocked}
                     value={currentStartNumber}
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
@@ -281,6 +320,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                     <label className="text-[10px] text-muted-foreground">Relation</label>
                     <select
                       value={relStartType}
+                      disabled={isLocked}
                       onChange={(e) => {
                         const mode = e.target.value as 'after' | 'syncWith';
                         const newRel = mode === 'syncWith'
@@ -290,7 +330,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                           time: { ...selectedSeq.time, start: newRel },
                         });
                       }}
-                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 text-foreground"
+                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 text-foreground disabled:cursor-not-allowed"
                     >
                       <option value="after">after (sequential)</option>
                       <option value="syncWith">syncWith (parallel)</option>
@@ -300,6 +340,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                     <label className="text-[10px] text-muted-foreground">Target Sequence</label>
                     <select
                       value={relStartTarget}
+                      disabled={isLocked}
                       onChange={(e) => {
                         const target = e.target.value;
                         const newRel = relStartType === 'syncWith'
@@ -309,7 +350,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                           time: { ...selectedSeq.time, start: newRel },
                         });
                       }}
-                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 font-mono text-foreground"
+                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 font-mono text-foreground disabled:cursor-not-allowed"
                     >
                       {otherSequenceIds.map((id) => (
                         <option key={id} value={id}>
@@ -318,6 +359,50 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-border/30">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">Offset (Frames)</label>
+                    <Input
+                      type="number"
+                      disabled={isLocked}
+                      value={relStartOffset}
+                      onChange={(e) => {
+                        const offset = parseInt(e.target.value) || 0;
+                        const newRel = relStartType === 'syncWith'
+                          ? { syncWith: relStartTarget, offsetFrames: offset }
+                          : { after: relStartTarget, offsetFrames: offset, overlapFrames: relStartOverlap };
+                        IRStateManager.getInstance().updateSequenceProps(selectedSeqId, {
+                          time: { ...selectedSeq.time, start: newRel },
+                        });
+                      }}
+                      className="h-6 text-[10px] font-mono bg-background"
+                    />
+                  </div>
+                  {relStartType === 'after' && (
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Overlap (Frames)</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        disabled={isLocked}
+                        value={relStartOverlap}
+                        onChange={(e) => {
+                          const overlap = Math.max(0, parseInt(e.target.value) || 0);
+                          const newRel = {
+                            after: relStartTarget,
+                            offsetFrames: relStartOffset,
+                            overlapFrames: overlap,
+                          };
+                          IRStateManager.getInstance().updateSequenceProps(selectedSeqId, {
+                            time: { ...selectedSeq.time, start: newRel },
+                          });
+                        }}
+                        className="h-6 text-[10px] font-mono bg-background"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -330,8 +415,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  disabled={isLocked}
                   onClick={() => handleToggleDurationRelational(false)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
+                    isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  } ${
                     !isDurationRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -341,8 +429,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                 </button>
                 <button
                   type="button"
+                  disabled={isLocked || otherSequenceIds.length === 0}
                   onClick={() => handleToggleDurationRelational(true)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
+                  title={otherSequenceIds.length === 0 ? "Requires ≥2 sequences" : "Switch to Relational duration"}
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
+                    isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  } ${
                     isDurationRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -360,6 +452,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   <Input
                     type="number"
                     min={1}
+                    disabled={isLocked}
                     value={currentDurationNumber}
                     onChange={(e) => {
                       const val = Math.max(1, parseInt(e.target.value) || 1);
@@ -383,6 +476,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   <span className="text-[10px] text-muted-foreground">Match Asset Duration</span>
                   <Switch
                     checked={relDurMatchAsset}
+                    disabled={isLocked}
                     onCheckedChange={(checked) => {
                       const newRel = checked
                         ? { matchAssetDuration: true }
@@ -393,6 +487,52 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                     }}
                   />
                 </div>
+
+                {!relDurMatchAsset && (
+                  <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-border/30">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Target</label>
+                      <select
+                        value={relDurTarget}
+                        disabled={isLocked}
+                        onChange={(e) => {
+                          const target = e.target.value;
+                          IRStateManager.getInstance().updateSequenceProps(selectedSeqId, {
+                            time: {
+                              ...selectedSeq.time,
+                              duration: { matchLengthOf: target, paddingFrames: relDurPadding },
+                            },
+                          });
+                        }}
+                        className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 font-mono text-foreground disabled:cursor-not-allowed"
+                      >
+                        {otherSequenceIds.map((id) => (
+                          <option key={id} value={id}>
+                            {id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">Padding (Frames)</label>
+                      <Input
+                        type="number"
+                        disabled={isLocked}
+                        value={relDurPadding}
+                        onChange={(e) => {
+                          const padding = parseInt(e.target.value) || 0;
+                          IRStateManager.getInstance().updateSequenceProps(selectedSeqId, {
+                            time: {
+                              ...selectedSeq.time,
+                              duration: { matchLengthOf: relDurTarget || otherSequenceIds[0] || '', paddingFrames: padding },
+                            },
+                          });
+                        }}
+                        className="h-6 text-[10px] font-mono bg-background"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -409,23 +549,23 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  const existing = [...(selectedSeq?.cues || [])];
-                  const lastEnd = existing.length > 0 && typeof existing[existing.length - 1].endOffsetMs === 'number'
-                    ? existing[existing.length - 1].endOffsetMs
-                    : 0;
-                  existing.push({
-                    startOffsetMs: lastEnd,
-                    endOffsetMs: lastEnd + 1500,
-                    text: 'New subtitle cue...',
-                  });
-                  IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: existing });
-                }}
-                className="h-5 px-1.5 text-[10px] text-accent-theme hover:bg-accent-theme/10 cursor-pointer"
+                disabled={isLocked}
+                onClick={() => setIsCueDialogOpen(true)}
+                className="h-5 px-1.5 text-[10px] text-accent-theme hover:bg-accent-theme/10 cursor-pointer disabled:cursor-not-allowed"
               >
-                + Add Cue
+                Manage Cues
               </Button>
             </div>
+            {selectedSeq?.cues && selectedSeq.cues.length > 0 && (
+              <div className="p-1.5 rounded bg-muted/30 border border-border/30 text-[10px] text-muted-foreground flex items-center justify-between">
+                <span className="truncate max-w-[180px] italic">
+                  &ldquo;{selectedSeq.cues[0]?.text}&rdquo;
+                </span>
+                <span className="font-mono text-[9px] shrink-0">
+                  {selectedSeq.cues.length} cue{selectedSeq.cues.length > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -434,8 +574,9 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
           <Button
             variant="outline"
             size="sm"
+            disabled={isLocked}
             onClick={handleDuplicate}
-            className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-border/50 cursor-pointer"
+            className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-border/50 cursor-pointer disabled:cursor-not-allowed"
             title="Duplicate sequence"
           >
             <CopyPlus className="w-3 h-3" />
@@ -448,15 +589,16 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             className={`h-6 px-2 text-[10px] gap-1 border-border/50 cursor-pointer ${
               isLocked ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300' : 'text-muted-foreground'
             }`}
-            title={isLocked ? 'Locked' : 'Unlocked'}
+            title={isLocked ? 'Locked (Click to unlock)' : 'Unlocked (Click to lock)'}
           >
             {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
           </Button>
           <Button
             variant="outline"
             size="sm"
+            disabled={isLocked}
             onClick={handleDelete}
-            className="h-6 px-2 text-[10px] text-rose-600 hover:bg-rose-50 hover:text-rose-700 border-rose-200 cursor-pointer"
+            className="h-6 px-2 text-[10px] text-rose-600 hover:bg-rose-50 hover:text-rose-700 border-rose-200 cursor-pointer disabled:cursor-not-allowed"
             title="Delete sequence (undoable)"
           >
             <Trash2 className="w-3 h-3" />
@@ -466,14 +608,26 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
       {/* Pure Attached-Only Empty State */}
       {modifiers.length === 0 && (
-        <div className="p-6 border-2 border-dashed border-border/60 rounded-lg text-center space-y-2 text-muted-foreground bg-muted/20">
+        <div className="p-6 border-2 border-dashed border-border/60 rounded-lg text-center space-y-2.5 text-muted-foreground bg-muted/20">
           <Sliders className="w-8 h-8 mx-auto text-muted-foreground/60" />
           <p className="text-xs font-semibold text-foreground/90">
             No Effects Attached
           </p>
           <p className="text-[11px] text-muted-foreground max-w-[220px] mx-auto">
-            Click <span className="font-semibold text-accent-theme">+ Add Effect</span> above to attach visual, audio, or motion modifiers to this sequence.
+            Click &ldquo;+ Add Effect&rdquo; above to attach visual, audio, or motion modifiers to this sequence.
           </p>
+          {onAddEffectClick && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isLocked}
+              onClick={onAddEffectClick}
+              className="h-7 text-xs gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/40 cursor-pointer disabled:cursor-not-allowed mx-auto"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Add First Effect
+            </Button>
+          )}
         </div>
       )}
 
@@ -505,8 +659,10 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                        disabled={isLocked}
+                        className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer disabled:cursor-not-allowed"
                         onClick={() =>
+                          !isLocked &&
                           updateModifierParams(mod.type, {
                             ...catalogEntry.defaultParams,
                             enabled: isEnabled,
@@ -520,15 +676,18 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
-                      onClick={() => removeModifier(mod.type)}
+                      disabled={isLocked}
+                      className="h-6 w-6 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer disabled:cursor-not-allowed"
+                      onClick={() => !isLocked && removeModifier(mod.type)}
                       title="Remove modifier"
                     >
                       <Trash2 className="w-3 h-3 text-rose-500" />
                     </Button>
                     <Switch
                       checked={isEnabled}
+                      disabled={isLocked}
                       onCheckedChange={(checked) =>
+                        !isLocked &&
                         updateModifierParams(mod.type, {
                           ...(mod.params || {}),
                           enabled: checked,
@@ -550,13 +709,26 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                 <DynamicModifierInspector
                   modifierType={mod.type}
                   params={mod.params || {}}
-                  onChange={(nextParams) => updateModifierParams(mod.type, nextParams)}
+                  disabled={isLocked || !isEnabled}
+                  onChange={(nextParams) => !isLocked && updateModifierParams(mod.type, nextParams)}
                 />
               </AccordionContent>
             </AccordionItem>
           );
         })}
       </Accordion>
+
+      {/* Subtitle Cue Timeline Management Modal */}
+      <CueTimelineDialog
+        open={isCueDialogOpen}
+        onOpenChange={setIsCueDialogOpen}
+        cues={selectedSeq?.cues || []}
+        disabled={isLocked}
+        onSaveCues={(updatedCues) => {
+          if (!selectedSeqId) return;
+          IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: updatedCues });
+        }}
+      />
     </div>
   );
 };
