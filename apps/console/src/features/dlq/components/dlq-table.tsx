@@ -89,6 +89,7 @@ export const DlqTable: React.FC<DlqTableProps> = ({
       {/* Shared DataTable Component */}
       <DataTable
         table={table}
+        showRowIndex
         noResultsMessage={
           <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl">
             <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mb-3" />

@@ -127,6 +127,7 @@ export function WorkflowExecutionsTable({ data }: DataTableProps) {
       <DataTable
         table={table}
         className='min-w-xl'
+        showRowIndex
         onRowClick={(row) => {
           setCurrentRow(row)
           setOpen('drawer')

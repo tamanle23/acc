@@ -1,6 +1,8 @@
-export { DataTable } from './data-table'
+export { DataTable, createRowIndexColumn, ROW_INDEX_COLUMN_ID } from './data-table'
+export type { DataTableProps } from './data-table'
 export { DataTablePagination } from './pagination'
 export { DataTableColumnHeader } from './column-header'
 export { DataTableToolbar } from './toolbar'
 export { DataTableBulkActions } from './bulk-actions'
+export { DataTableViewOptions } from './view-options'
 
