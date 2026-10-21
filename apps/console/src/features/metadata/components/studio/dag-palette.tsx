@@ -76,13 +76,37 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   },
   {
     type: 'FORK_JOIN',
-    label: 'Fork / Join',
-    description: 'Parallel branch execution barrier',
+    label: 'Fork (Parallel Split)',
+    description: 'Diverges execution into concurrent branches',
     category: 'control',
-    icon: <GitMerge className="w-3.5 h-3.5 text-indigo-500" />,
+    icon: <GitFork className="w-3.5 h-3.5 text-indigo-500" />,
     defaultData: {
       taskType: 'FORK_JOIN',
       label: 'Parallel Fork',
+    },
+  },
+  {
+    type: 'JOIN',
+    label: 'Join (Parallel Barrier)',
+    description: 'Waits for all parallel fork branches to complete',
+    category: 'control',
+    icon: <GitMerge className="w-3.5 h-3.5 text-indigo-500" />,
+    defaultData: {
+      taskType: 'JOIN',
+      label: 'Parallel Join',
+      joinOn: [],
+    },
+  },
+  {
+    type: 'EXCLUSIVE_JOIN',
+    label: 'Exclusive Join (Switch Merge)',
+    description: 'Merges single active branch from a Switch router',
+    category: 'control',
+    icon: <GitMerge className="w-3.5 h-3.5 text-rose-500" />,
+    defaultData: {
+      taskType: 'EXCLUSIVE_JOIN',
+      label: 'Exclusive Join',
+      joinOn: [],
     },
   },
   {
@@ -122,8 +146,8 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   },
   {
     type: 'TERMINATE',
-    label: 'Terminate',
-    description: 'Force stop workflow early',
+    label: 'Terminate (Fail-Fast)',
+    description: 'Aborts workflow early (routes to END sink on canvas)',
     category: 'control',
     icon: <StopCircle className="w-3.5 h-3.5 text-red-500" />,
     defaultData: {

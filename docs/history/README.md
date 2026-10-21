@@ -178,6 +178,7 @@
 | [171](171_fix_datatable_row_click_event_propagation.md) | 2026-10-21 | Fix DataTable Row-Click Event Propagation on Action Controls | Prevented row-level master-detail drawer from triggering when clicking row action menus, buttons, inputs, links, or checkboxes by adding event target filtering and stopPropagation. |
 | [172](172_iteration15_dag_topology_invariants_and_studio_enhancements.md) | 2026-10-21 | Single-Start/End DAG Topology Invariants & Visual Studio Enhancements | Enforced single-start/end graph topology invariants with boundary node protection, custom DagConditionEdge & modal, and WorkflowVariableWatchDrawer (47/47 tests green). |
 | [173](173_pure_conventional_start_and_end_workflow_nodes.md) | 2026-10-21 | Pure Conventional START & END Workflow Boundary Nodes | Streamlined START and END nodes into pure conventional boundaries dedicated strictly to workflow input parameters and output payload mapping (50/50 tests green). |
+| [174](174_blank_workflow_and_control_flow_alignment.md) | 2026-10-21 | Blank Workflow Canvas, Edge Quick-Insert & Control Flow Alignment | Initialized blank workflows strictly with pure START and END boundary nodes connected by single direct edge, added edge quick-insert '+' split button with undo tracking, expanded palette with JOIN and EXCLUSIVE_JOIN, and enforced full-stack Control Flow invariants and bidirectional IR joinOn synchronization (54/54 console tests and backend JUnit tests green). |
 
 
 

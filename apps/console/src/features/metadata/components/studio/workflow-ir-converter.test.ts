@@ -401,6 +401,73 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
       expect(endNode?.data.isEndNode).toBe(true);
       expect(endNode?.data.isPermanent).toBe(true);
     });
+
+    it('rejects FORK_JOIN branches that reach end without converging into a JOIN barrier', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 'start', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'fork', type: 'dagNode', position: { x: 100, y: 0 }, data: { taskReferenceName: 'forkTask', taskType: 'FORK_JOIN' } },
+        { id: 'b1', type: 'dagNode', position: { x: 200, y: -50 }, data: { taskReferenceName: 'branch1', taskType: 'SIMPLE' } },
+        { id: 'b2', type: 'dagNode', position: { x: 200, y: 50 }, data: { taskReferenceName: 'branch2', taskType: 'SIMPLE' } },
+        { id: 'end', type: 'dagNode', position: { x: 400, y: 0 }, data: { taskReferenceName: 'endTask', taskType: 'TERMINATE', isEndNode: true } },
+      ];
+      // b1 goes directly to end, b2 goes to end - NO JOIN node
+      const edges: Edge[] = [
+        { id: 'e1', source: 'start', target: 'fork' },
+        { id: 'e2', source: 'fork', target: 'b1' },
+        { id: 'e3', source: 'fork', target: 'b2' },
+        { id: 'e4', source: 'b1', target: 'end' },
+        { id: 'e5', source: 'b2', target: 'end' },
+      ];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors.some((e) => e.type === 'FORK_WITHOUT_JOIN')).toBe(true);
+      expect(errors.find((e) => e.type === 'FORK_WITHOUT_JOIN')?.message).toContain('branches must converge into a matching Join barrier');
+    });
+
+    it('validates DO_WHILE loop with tagged loopback edge and downstream exit', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 'start', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'loop', type: 'dagNode', position: { x: 150, y: 0 }, data: { taskReferenceName: 'loopTask', taskType: 'DO_WHILE' } },
+        { id: 'body', type: 'dagNode', position: { x: 300, y: 0 }, data: { taskReferenceName: 'bodyTask', taskType: 'SIMPLE' } },
+        { id: 'end', type: 'dagNode', position: { x: 450, y: 0 }, data: { taskReferenceName: 'endTask', taskType: 'TERMINATE' } },
+      ];
+      const edges: Edge[] = [
+        { id: 'e1', source: 'start', target: 'loop' },
+        { id: 'e2', source: 'loop', target: 'body' },
+        { id: 'e3', source: 'body', target: 'loop', data: { isLoopbackEdge: true } }, // Loopback edge!
+        { id: 'e4', source: 'body', target: 'end' }, // Forward exit!
+      ];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('synchronizes incoming edges into task.joinOn in exportToWorkflowIR and reconstructs them in importFromWorkflowIR', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 's', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'p1', type: 'dagNode', position: { x: 100, y: -50 }, data: { taskReferenceName: 'prep1', taskType: 'SIMPLE' } },
+        { id: 'p2', type: 'dagNode', position: { x: 100, y: 50 }, data: { taskReferenceName: 'prep2', taskType: 'SIMPLE' } },
+        { id: 'j', type: 'dagNode', position: { x: 250, y: 0 }, data: { taskReferenceName: 'joinBarrier', taskType: 'JOIN' } },
+        { id: 'e', type: 'dagNode', position: { x: 400, y: 0 }, data: { taskReferenceName: 'endTask', taskType: 'TERMINATE' } },
+      ];
+      const edges: Edge[] = [
+        { id: 'e1', source: 's', target: 'p1' },
+        { id: 'e2', source: 's', target: 'p2' },
+        { id: 'e3', source: 'p1', target: 'j' },
+        { id: 'e4', source: 'p2', target: 'j' },
+        { id: 'e5', source: 'j', target: 'e' },
+      ];
+
+      const exported = exportToWorkflowIR(nodes, edges);
+      const joinTask = exported.tasks.find((t) => t.taskReferenceName === 'joinBarrier');
+      expect(joinTask).toBeDefined();
+      expect(joinTask?.joinOn).toEqual(['prep1', 'prep2']);
+
+      // Roundtrip import
+      const imported = importFromWorkflowIR(exported);
+      expect(imported.edges.some((edge) => edge.source === 'node-prep1' && edge.target === 'node-joinBarrier')).toBe(true);
+      expect(imported.edges.some((edge) => edge.source === 'node-prep2' && edge.target === 'node-joinBarrier')).toBe(true);
+    });
   });
 });
 

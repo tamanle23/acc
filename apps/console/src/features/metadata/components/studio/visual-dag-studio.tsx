@@ -83,6 +83,8 @@ export interface VisualDagStudioProps {
   workflowKey?: string;
   executionId?: string | null;
   initialEvents?: WorkflowStreamEvent[];
+  initialNodes?: Node<DagNodeData>[];
+  initialEdges?: Edge[];
   onCloseExecution?: () => void;
   onSaveSuccess?: () => void;
 }
@@ -95,7 +97,48 @@ const edgeTypes = {
   dagEdge: DagConditionEdge,
 };
 
-const INITIAL_NODES: Node<DagNodeData>[] = [
+export const BLANK_WORKFLOW_NODES: Node<DagNodeData>[] = [
+  {
+    id: 'node-start',
+    type: 'dagNode',
+    position: { x: 100, y: 200 },
+    data: {
+      taskReferenceName: 'workflow_start',
+      taskType: 'NOOP',
+      label: 'Workflow Start',
+      executionState: 'PENDING',
+      isPermanent: true,
+      isStartNode: true,
+      inputParameters: {},
+    },
+  },
+  {
+    id: 'node-end',
+    type: 'dagNode',
+    position: { x: 500, y: 200 },
+    data: {
+      taskReferenceName: 'workflow_end',
+      taskType: 'NOOP',
+      label: 'Workflow End',
+      executionState: 'PENDING',
+      isPermanent: true,
+      isEndNode: true,
+      inputParameters: {},
+    },
+  },
+];
+
+export const BLANK_WORKFLOW_EDGES: Edge[] = [
+  {
+    id: 'e_start_to_end',
+    type: 'dagEdge',
+    source: 'node-start',
+    target: 'node-end',
+    animated: true,
+  },
+];
+
+export const INITIAL_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-start',
     type: 'dagNode',
@@ -192,7 +235,7 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
     position: { x: 1020, y: 150 },
     data: {
       taskReferenceName: 'workflow_end',
-      taskType: 'TERMINATE',
+      taskType: 'NOOP',
       label: 'Workflow End',
       executionState: 'PENDING',
       isPermanent: true,
@@ -202,15 +245,11 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
         trackingNumber: '${expressCourier.output.trackingNumber}',
         status: 'FULFILLED',
       },
-      terminateParams: {
-        terminationStatus: 'COMPLETED',
-        terminationReason: 'Order fulfillment completed successfully',
-      },
     },
   },
 ];
 
-const INITIAL_EDGES: Edge[] = [
+export const INITIAL_EDGES: Edge[] = [
   { id: 'e0', type: 'dagEdge', source: 'node-start', target: 'node-inventory', animated: true },
   { id: 'e1', type: 'dagEdge', source: 'node-inventory', target: 'node-route', animated: true },
   { id: 'e2', type: 'dagEdge', source: 'node-route', target: 'node-courier', label: 'EXPRESS', animated: true, data: { decisionCase: 'EXPRESS' } },
@@ -224,6 +263,8 @@ function DagStudioCanvas({
   workflowKey,
   executionId,
   initialEvents,
+  initialNodes,
+  initialEdges,
   onCloseExecution,
   onSaveSuccess,
 }: VisualDagStudioProps) {
@@ -231,8 +272,12 @@ function DagStudioCanvas({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
-  const [nodes, setNodes] = useState<Node<DagNodeData>[]>(INITIAL_NODES);
-  const [edges, setEdges] = useState<Edge[]>(INITIAL_EDGES);
+  const isExecutionOrLoaded = Boolean(executionId || workflowKey);
+  const defaultNodes = initialNodes || (isExecutionOrLoaded ? INITIAL_NODES : BLANK_WORKFLOW_NODES);
+  const defaultEdges = initialEdges || (isExecutionOrLoaded ? INITIAL_EDGES : BLANK_WORKFLOW_EDGES);
+
+  const [nodes, setNodes] = useState<Node<DagNodeData>[]>(defaultNodes);
+  const [edges, setEdges] = useState<Edge[]>(defaultEdges);
   const [showPalette, setShowPalette] = useState(!isReadOnly);
 
   // Real-time execution stream integration
@@ -786,6 +831,70 @@ function DagStudioCanvas({
     setEdges(next.edges);
   }, [redoStack, nodes, edges]);
 
+  const handleSplitEdge = useCallback(
+    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE') => {
+      if (isReadOnly) return;
+      const targetEdge = edges.find((e) => e.id === edgeId);
+      if (!targetEdge) return;
+
+      pushUndoSnapshot();
+
+      const sourceNode = nodes.find((n) => n.id === targetEdge.source);
+      const targetNode = nodes.find((n) => n.id === targetEdge.target);
+
+      const sourcePos = sourceNode?.position || { x: 100, y: 200 };
+      const targetPos = targetNode?.position || { x: 500, y: 200 };
+
+      const newX = Math.round((sourcePos.x + targetPos.x) / 2);
+      const newY = Math.round((sourcePos.y + targetPos.y) / 2);
+
+      const uniqueSuffix = Date.now().toString().slice(-4);
+      const taskRef = `${newNodeType.toLowerCase()}_task_${uniqueSuffix}`;
+      const newNodeId = `node-${taskRef}`;
+
+      const newNode: Node<DagNodeData> = {
+        id: newNodeId,
+        type: 'dagNode',
+        position: { x: newX, y: newY },
+        data: {
+          taskReferenceName: taskRef,
+          taskType: newNodeType,
+          label: `${newNodeType} Task`,
+          executionState: 'PENDING',
+          domain: 'default',
+          timeoutSeconds: 30,
+          retryCount: 3,
+          retryDelaySeconds: 2,
+          backoffRate: 2.0,
+          inputParameters: {},
+        },
+      };
+
+      const edgeIn: Edge = {
+        id: `e_${targetEdge.source}_to_${newNodeId}`,
+        type: 'dagEdge',
+        source: targetEdge.source,
+        target: newNodeId,
+        animated: true,
+        label: targetEdge.label,
+        data: targetEdge.data ? { ...targetEdge.data } : {},
+      };
+
+      const edgeOut: Edge = {
+        id: `e_${newNodeId}_to_${targetEdge.target}`,
+        type: 'dagEdge',
+        source: newNodeId,
+        target: targetEdge.target,
+        animated: true,
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+      setEdges((eds) => [...eds.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
+      setSelectedNodeId(newNodeId);
+    },
+    [isReadOnly, edges, nodes, pushUndoSnapshot]
+  );
+
   // Keyboard shortcuts Cmd+Z / Cmd+Y
   useEffect(() => {
     if (isReadOnly) return;
@@ -922,6 +1031,7 @@ function DagStudioCanvas({
           data: {
             ...baseEdgeData,
             onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+            onSplitEdge: isReadOnly ? undefined : handleSplitEdge,
           },
         };
       });
@@ -935,6 +1045,7 @@ function DagStudioCanvas({
       const withHandler = {
         ...baseEdgeData,
         onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+        onSplitEdge: isReadOnly ? undefined : handleSplitEdge,
       };
 
       const sourceNode = nodeMap.get(e.source);
@@ -986,7 +1097,7 @@ function DagStudioCanvas({
         className,
       };
     });
-  }, [edges, nodes, isExecutionMode, isReadOnly, handleOpenEdgeEditor]);
+  }, [edges, nodes, isExecutionMode, isReadOnly, handleOpenEdgeEditor, handleSplitEdge]);
 
   // Compute aggregated Variable Watch state from workflow snapshot or current node states
   const variableWatchSnapshot = useMemo(() => {
@@ -1202,6 +1313,23 @@ function DagStudioCanvas({
             >
               <Plus className="w-3 h-3" />
               Palette
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={() => {
+                pushUndoSnapshot();
+                setNodes(BLANK_WORKFLOW_NODES);
+                setEdges(BLANK_WORKFLOW_EDGES);
+                setSelectedNodeId(null);
+              }}
+              title="Reset canvas to blank workflow (START and END only)"
+              data-testid="dag-new-blank-btn"
+            >
+              <RotateCcw className="w-3 h-3 text-muted-foreground" />
+              Blank
             </Button>
 
             <Button

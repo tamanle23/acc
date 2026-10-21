@@ -11,7 +11,9 @@ describe('DagPalette Component Unit Tests', () => {
     expect(screen.getByText('Drag & Drop')).toBeDefined();
     expect(screen.getByText('Simple Task')).toBeDefined();
     expect(screen.getByText('Switch Node')).toBeDefined();
-    expect(screen.getByText('Fork / Join')).toBeDefined();
+    expect(screen.getByText('Fork (Parallel Split)')).toBeDefined();
+    expect(screen.getByText('Join (Parallel Barrier)')).toBeDefined();
+    expect(screen.getByText('Exclusive Join (Switch Merge)')).toBeDefined();
     expect(screen.getByText('Dynamic Fork')).toBeDefined();
     expect(screen.getByText('Wait / Timer')).toBeDefined();
     expect(screen.getByText('Do-While Loop')).toBeDefined();
@@ -22,6 +24,8 @@ describe('DagPalette Component Unit Tests', () => {
     expect(types).toContain('SIMPLE');
     expect(types).toContain('SWITCH');
     expect(types).toContain('FORK_JOIN');
+    expect(types).toContain('JOIN');
+    expect(types).toContain('EXCLUSIVE_JOIN');
     expect(types).toContain('DYNAMIC_FORK');
     expect(types).toContain('WAIT');
     expect(types).toContain('DO_WHILE');

@@ -114,6 +114,15 @@ public final class AcyclicityGuard {
             if (endNodes.isEmpty()) {
                 throw new WorkflowTopologyException("Workflow definition must have at least one end node (found 0, graph has cycles)");
             }
+
+            // 4. Enforce FORK_JOIN and JOIN pairing
+            boolean hasFork = tasks.stream().anyMatch(t -> t.taskType() == com.unipost.workflow.core.model.TaskType.FORK_JOIN);
+            if (hasFork) {
+                boolean hasJoin = tasks.stream().anyMatch(t -> t.taskType() == com.unipost.workflow.core.model.TaskType.JOIN);
+                if (!hasJoin) {
+                    throw new WorkflowTopologyException("Workflow contains FORK_JOIN task but no matching JOIN barrier task");
+                }
+            }
         }
 
         return Collections.unmodifiableList(sortedOrder);

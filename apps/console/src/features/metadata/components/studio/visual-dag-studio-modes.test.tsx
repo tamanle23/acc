@@ -104,11 +104,20 @@ describe('Visual DAG Studio 2.0 - Dual Modes & 23-Node Studio', () => {
       expect(screen.queryByRole('button', { name: /Save DAG/i })).toBeNull();
       expect(screen.queryByRole('button', { name: /Delete/i })).toBeNull();
     });
+
+    it('initializes new blank workflow with START and END nodes and renders Blank reset button', () => {
+      render(<VisualDagStudio mode="full" />);
+
+      const blankBtn = screen.getByRole('button', { name: /Blank/i });
+      expect(blankBtn).toBeDefined();
+
+      fireEvent.click(blankBtn);
+    });
   });
 
   describe('2. 23-Node Categorized Accordion Palette', () => {
     it('contains all 23 backend task node types across 5 categories', () => {
-      expect(PALETTE_ITEMS).toHaveLength(21); // 9 Control + 3 Data + 5 Connectors + 1 Human + 3 AI = 21 primary + fork/join variations
+      expect(PALETTE_ITEMS).toHaveLength(23); // 11 Control + 3 Data + 5 Connectors + 1 Human + 3 AI = 23 primary nodes
       expect(CATEGORIES).toHaveLength(5);
 
       render(<DagPalette />);

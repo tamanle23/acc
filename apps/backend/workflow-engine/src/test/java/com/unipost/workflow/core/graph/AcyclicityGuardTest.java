@@ -121,4 +121,39 @@ class AcyclicityGuardTest {
         List<String> order = guard.validateAndSort(def);
         assertThat(order).containsExactly("solo-task");
     }
+
+    @Test
+    @DisplayName("Should reject workflow with FORK_JOIN but missing JOIN task")
+    void shouldRejectForkWithoutJoin() {
+        WorkflowDefinition def = WorkflowDefinition.builder("unconverged-fork")
+            .tasks(List.of(
+                TaskDefinition.builder("start-task").build(),
+                TaskDefinition.builder("fork-task").taskType(TaskType.FORK_JOIN).joinOn(List.of("start-task")).build(),
+                TaskDefinition.builder("branch-1").joinOn(List.of("fork-task")).build(),
+                TaskDefinition.builder("end-task").joinOn(List.of("branch-1")).build()
+            ))
+            .build();
+
+        assertThatThrownBy(() -> guard.validateAndSort(def))
+            .isInstanceOf(WorkflowTopologyException.class)
+            .hasMessageContaining("Workflow contains FORK_JOIN task but no matching JOIN barrier task");
+    }
+
+    @Test
+    @DisplayName("Should accept valid FORK_JOIN and JOIN pairing")
+    void shouldAcceptValidForkJoinPair() {
+        WorkflowDefinition def = WorkflowDefinition.builder("valid-fork-join")
+            .tasks(List.of(
+                TaskDefinition.builder("start-task").build(),
+                TaskDefinition.builder("fork-task").taskType(TaskType.FORK_JOIN).joinOn(List.of("start-task")).build(),
+                TaskDefinition.builder("b1").joinOn(List.of("fork-task")).build(),
+                TaskDefinition.builder("b2").joinOn(List.of("fork-task")).build(),
+                TaskDefinition.builder("join-barrier").taskType(TaskType.JOIN).joinOn(List.of("b1", "b2")).build(),
+                TaskDefinition.builder("end-task").joinOn(List.of("join-barrier")).build()
+            ))
+            .build();
+
+        List<String> order = guard.validateAndSort(def);
+        assertThat(order).contains("start-task", "fork-task", "b1", "b2", "join-barrier", "end-task");
+    }
 }
