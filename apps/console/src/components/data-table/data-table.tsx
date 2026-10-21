@@ -245,7 +245,7 @@ export function DataTable<TData>({
           <TableHeader
             className={cn(
               stickyHeader &&
-                'sticky top-0 z-20 bg-background/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs border-b border-white/20 dark:border-white/10'
+              'sticky top-0 z-20 bg-background/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-xs border-b border-white/20 dark:border-white/10'
             )}
           >
             {table.getHeaderGroups().map((headerGroup) => (
@@ -299,8 +299,8 @@ export function DataTable<TData>({
                     ? isSorted === 'asc'
                       ? 'ascending'
                       : isSorted === 'desc'
-                      ? 'descending'
-                      : 'none'
+                        ? 'descending'
+                        : 'none'
                     : undefined
 
                   return (
@@ -314,24 +314,24 @@ export function DataTable<TData>({
                         header.column.columnDef.meta?.className,
                         header.column.columnDef.meta?.thClassName,
                         isStickyLeft &&
-                          cn(
-                            'sticky z-20 w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
-                            isRowIndex &&
-                              'font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none',
-                            getStickyStartClass(header.column.id),
-                            isRightmostStickyLeft(header.column.id) &&
-                              'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
-                          ),
+                        cn(
+                          'sticky z-20 w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
+                          isRowIndex &&
+                          'font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none',
+                          getStickyStartClass(header.column.id),
+                          isRightmostStickyLeft(header.column.id) &&
+                          'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
+                        ),
                         isAction &&
-                          'sticky end-0 z-20 bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-s border-white/20 dark:border-white/10 shadow-[-6px_0_12px_rgba(0,0,0,0.06)]'
+                        'sticky end-0 z-20 bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-s border-white/20 dark:border-white/10 shadow-[-6px_0_12px_rgba(0,0,0,0.06)]'
                       )}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   )
                 })}
@@ -430,16 +430,16 @@ export function DataTable<TData>({
                             cell.column.columnDef.meta?.className,
                             cell.column.columnDef.meta?.tdClassName,
                             isStickyLeft &&
-                              cn(
-                                'sticky z-10 w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]',
-                                isRowIndex &&
-                                  'font-mono text-[11px] text-muted-foreground/80 font-medium select-none',
-                                getStickyStartClass(cell.column.id),
-                                isRightmostStickyLeft(cell.column.id) &&
-                                  'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
-                              ),
+                            cn(
+                              'sticky z-10 w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]',
+                              isRowIndex &&
+                              'font-mono text-[11px] text-muted-foreground/80 font-medium select-none',
+                              getStickyStartClass(cell.column.id),
+                              isRightmostStickyLeft(cell.column.id) &&
+                              'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
+                            ),
                             isAction &&
-                              'sticky end-0 z-10 bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-900/95 backdrop-blur-md border-s border-white/20 dark:border-white/10 shadow-[-6px_0_12px_rgba(0,0,0,0.06)] transition-[background-color]'
+                            'sticky end-0 z-10 bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-900/95 backdrop-blur-md border-s border-white/20 dark:border-white/10 shadow-[-6px_0_12px_rgba(0,0,0,0.06)] transition-[background-color]'
                           )}
                         >
                           {flexRender(
