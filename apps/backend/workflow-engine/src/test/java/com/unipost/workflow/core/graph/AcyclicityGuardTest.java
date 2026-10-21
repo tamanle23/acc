@@ -76,4 +76,49 @@ class AcyclicityGuardTest {
             .isInstanceOf(WorkflowCycleDetectedException.class)
             .hasMessageContaining("Cycle detected");
     }
+
+    @Test
+    @DisplayName("Should reject workflow with multiple start nodes")
+    void shouldRejectMultipleStartNodes() {
+        WorkflowDefinition def = WorkflowDefinition.builder("multi-start")
+            .tasks(List.of(
+                TaskDefinition.builder("start-1").build(),
+                TaskDefinition.builder("start-2").build(),
+                TaskDefinition.builder("end-task").joinOn(List.of("start-1", "start-2")).build()
+            ))
+            .build();
+
+        assertThatThrownBy(() -> guard.validateAndSort(def))
+            .isInstanceOf(WorkflowTopologyException.class)
+            .hasMessageContaining("Workflow definition must have exactly one start node, found 2");
+    }
+
+    @Test
+    @DisplayName("Should reject workflow with multiple end nodes")
+    void shouldRejectMultipleEndNodes() {
+        WorkflowDefinition def = WorkflowDefinition.builder("multi-end")
+            .tasks(List.of(
+                TaskDefinition.builder("start-task").build(),
+                TaskDefinition.builder("end-1").joinOn(List.of("start-task")).build(),
+                TaskDefinition.builder("end-2").joinOn(List.of("start-task")).build()
+            ))
+            .build();
+
+        assertThatThrownBy(() -> guard.validateAndSort(def))
+            .isInstanceOf(WorkflowTopologyException.class)
+            .hasMessageContaining("Workflow definition must have exactly one end node, found 2");
+    }
+
+    @Test
+    @DisplayName("Should allow single-node workflow (which is both start and end)")
+    void shouldAllowSingleNodeWorkflow() {
+        WorkflowDefinition def = WorkflowDefinition.builder("single-node")
+            .tasks(List.of(
+                TaskDefinition.builder("solo-task").build()
+            ))
+            .build();
+
+        List<String> order = guard.validateAndSort(def);
+        assertThat(order).containsExactly("solo-task");
+    }
 }

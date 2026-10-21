@@ -272,5 +272,75 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
     expect(importedNodes[4].data.humanParams?.slaMinutes).toBe(180);
     expect(importedNodes[5].data.terminateParams?.terminationReason).toBe('Flow executed cleanly');
   });
+
+  describe('Iteration 15: Conventional Single-Start & Single-End Graph Topology Invariants', () => {
+    it('rejects graphs with multiple start nodes (inDegree === 0)', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 's1', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startA', taskType: 'SIMPLE' } },
+        { id: 's2', type: 'dagNode', position: { x: 0, y: 100 }, data: { taskReferenceName: 'startB', taskType: 'SIMPLE' } },
+        { id: 'endNode', type: 'dagNode', position: { x: 200, y: 50 }, data: { taskReferenceName: 'endTask', taskType: 'SIMPLE' } },
+      ];
+      const edges: Edge[] = [
+        { id: 'e1', source: 's1', target: 'endNode' },
+        { id: 'e2', source: 's2', target: 'endNode' },
+      ];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors.some((e) => e.type === 'MULTIPLE_START_NODES')).toBe(true);
+      expect(errors.filter((e) => e.type === 'MULTIPLE_START_NODES')).toHaveLength(2);
+    });
+
+    it('rejects graphs with multiple end nodes (outDegree === 0)', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 's1', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'e1', type: 'dagNode', position: { x: 200, y: -50 }, data: { taskReferenceName: 'endA', taskType: 'SIMPLE' } },
+        { id: 'e2', type: 'dagNode', position: { x: 200, y: 50 }, data: { taskReferenceName: 'endB', taskType: 'SIMPLE' } },
+      ];
+      const edges: Edge[] = [
+        { id: 'e1', source: 's1', target: 'e1' },
+        { id: 'e2', source: 's1', target: 'e2' },
+      ];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors.some((e) => e.type === 'MULTIPLE_END_NODES')).toBe(true);
+      expect(errors.filter((e) => e.type === 'MULTIPLE_END_NODES')).toHaveLength(2);
+    });
+
+    it('rejects disconnected components where nodes cannot be reached from start', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 's1', type: 'dagNode', position: { x: 0, y: 0 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'm1', type: 'dagNode', position: { x: 200, y: 0 }, data: { taskReferenceName: 'middleTask', taskType: 'SIMPLE' } },
+        { id: 'iso', type: 'dagNode', position: { x: 400, y: 150 }, data: { taskReferenceName: 'isolatedTask', taskType: 'SIMPLE' } },
+      ];
+      // Note: even if isolated connects to m1, multiple starts or reachability failure will trigger
+      const edges: Edge[] = [{ id: 'e1', source: 's1', target: 'm1' }];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors.length).toBeGreaterThan(0);
+      expect(errors.some((e) => e.type === 'MULTIPLE_START_NODES' || e.type === 'DISCONNECTED_GRAPH' || e.type === 'MULTIPLE_END_NODES')).toBe(true);
+    });
+
+    it('validates a compliant converged diamond DAG with single start and single end', () => {
+      const nodes: Node<DagNodeData>[] = [
+        { id: 'start', type: 'dagNode', position: { x: 0, y: 50 }, data: { taskReferenceName: 'startTask', taskType: 'SIMPLE' } },
+        { id: 'fork', type: 'dagNode', position: { x: 150, y: 50 }, data: { taskReferenceName: 'forkTask', taskType: 'FORK_JOIN' } },
+        { id: 'b1', type: 'dagNode', position: { x: 300, y: 0 }, data: { taskReferenceName: 'branch1', taskType: 'SIMPLE' } },
+        { id: 'b2', type: 'dagNode', position: { x: 300, y: 100 }, data: { taskReferenceName: 'branch2', taskType: 'SIMPLE' } },
+        { id: 'join', type: 'dagNode', position: { x: 450, y: 50 }, data: { taskReferenceName: 'joinTask', taskType: 'JOIN' } },
+        { id: 'end', type: 'dagNode', position: { x: 600, y: 50 }, data: { taskReferenceName: 'endTask', taskType: 'TERMINATE' } },
+      ];
+      const edges: Edge[] = [
+        { id: 'e1', source: 'start', target: 'fork' },
+        { id: 'e2', source: 'fork', target: 'b1' },
+        { id: 'e3', source: 'fork', target: 'b2' },
+        { id: 'e4', source: 'b1', target: 'join' },
+        { id: 'e5', source: 'b2', target: 'join' },
+        { id: 'e6', source: 'join', target: 'end' },
+      ];
+
+      const errors = validateGraphTopology(nodes, edges);
+      expect(errors).toHaveLength(0);
+    });
+  });
 });
 

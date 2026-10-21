@@ -566,12 +566,19 @@ export function DagPropertyInspector({
       >
         <SheetHeader className="p-6 pb-4 border-b border-border/40 shrink-0">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-base font-bold flex items-center gap-2">
-              <span>Node Inspector</span>
-              <Badge variant="outline" className="text-xs font-mono font-normal">
-                {formData.taskType}
-              </Badge>
-            </SheetTitle>
+            <div className="flex items-center gap-2">
+              <SheetTitle className="text-base font-bold flex items-center gap-2">
+                <span>Node Inspector</span>
+                <Badge variant="outline" className="text-xs font-mono font-normal">
+                  {formData.taskType}
+                </Badge>
+              </SheetTitle>
+              {formData.isPermanent && (
+                <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px]">
+                  Protected Boundary Node
+                </Badge>
+              )}
+            </div>
           </div>
           <SheetDescription className="text-xs text-muted-foreground">
             Configure step execution parameters, retry reliability, and DAG expressions.

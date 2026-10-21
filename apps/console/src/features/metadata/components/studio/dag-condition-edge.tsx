@@ -1,0 +1,108 @@
+import React, { memo } from 'react';
+import {
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  type EdgeProps,
+} from '@xyflow/react';
+import { cn } from '@/lib/utils';
+import { GitBranch, Zap } from 'lucide-react';
+
+export interface DagConditionEdgeData {
+  condition?: string;
+  decisionCase?: string;
+  isDefaultCase?: boolean;
+  onEditEdge?: (edgeId: string) => void;
+  [key: string]: unknown;
+}
+
+export const DagConditionEdge = memo(
+  ({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    data,
+    selected,
+    markerEnd,
+    markerStart,
+    style,
+    label,
+  }: EdgeProps) => {
+    const [edgePath, labelX, labelY] = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    });
+
+    const edgeData = data as DagConditionEdgeData | undefined;
+    const displayLabel =
+      (label as string) ||
+      edgeData?.decisionCase ||
+      (edgeData?.isDefaultCase ? 'DEFAULT' : edgeData?.condition);
+
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (edgeData?.onEditEdge) {
+        edgeData.onEditEdge(id);
+      }
+    };
+
+    return (
+      <>
+        <BaseEdge
+          id={id}
+          path={edgePath}
+          markerEnd={markerEnd}
+          markerStart={markerStart}
+          style={{
+            ...style,
+            strokeWidth: selected ? 2.5 : 2,
+            stroke: selected ? '#6366f1' : undefined,
+          }}
+        />
+        {displayLabel && (
+          <EdgeLabelRenderer>
+            <div
+              style={{
+                position: 'absolute',
+                transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                pointerEvents: 'all',
+              }}
+              className="nodrag nopan"
+            >
+              <button
+                type="button"
+                onClick={handleClick}
+                className={cn(
+                  'group flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium transition-all shadow-sm',
+                  'backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border border-white/40 dark:border-white/10 text-foreground',
+                  'hover:bg-primary/10 hover:border-primary/50 hover:text-primary hover:scale-105 active:scale-95',
+                  edgeData?.isDefaultCase &&
+                    'border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10'
+                )}
+                title="Click to configure branch condition or switch case"
+                data-testid={`dag-edge-label-${id}`}
+              >
+                {edgeData?.isDefaultCase ? (
+                  <Zap className="w-2.5 h-2.5 text-amber-500" />
+                ) : (
+                  <GitBranch className="w-2.5 h-2.5 text-muted-foreground group-hover:text-primary" />
+                )}
+                <span className="truncate max-w-[120px]">{displayLabel}</span>
+              </button>
+            </div>
+          </EdgeLabelRenderer>
+        )}
+      </>
+    );
+  }
+);
+
+DagConditionEdge.displayName = 'DagConditionEdge';

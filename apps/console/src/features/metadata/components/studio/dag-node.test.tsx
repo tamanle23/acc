@@ -133,4 +133,56 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     );
     expect(screen.getByText('modified')).toBeDefined();
   });
+
+  it('renders START and END boundary badges correctly on entry and exit nodes', () => {
+    const { rerender } = render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="start-node"
+          type="dagNode"
+          data={{
+            taskReferenceName: 'startTask',
+            taskType: 'SIMPLE',
+            label: 'Start Task',
+            isStartNode: true,
+            isPermanent: true,
+          }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-node-start-badge-startTask')).toBeDefined();
+    expect(screen.getByText('START')).toBeDefined();
+
+    rerender(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="end-node"
+          type="dagNode"
+          data={{
+            taskReferenceName: 'endTask',
+            taskType: 'TERMINATE',
+            label: 'End Task',
+            isEndNode: true,
+            isPermanent: true,
+          }}
+          selected={false}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    expect(screen.getByTestId('dag-node-end-badge-endTask')).toBeDefined();
+    expect(screen.getByText('END')).toBeDefined();
+  });
 });

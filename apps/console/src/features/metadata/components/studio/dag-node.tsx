@@ -175,6 +175,10 @@ export interface DagNodeData {
   diffStatus?: 'added' | 'removed' | 'modified';
   hasBreakpoint?: boolean;
   onToggleBreakpoint?: (taskReferenceName: string) => void;
+  // Topology Boundary & Permanence Invariants (Iteration 15)
+  isPermanent?: boolean;
+  isStartNode?: boolean;
+  isEndNode?: boolean;
   [key: string]: unknown;
 }
 
@@ -358,6 +362,22 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           <span className="text-xs font-bold tracking-tight text-foreground truncate max-w-[120px]">
             {data.label || data.taskReferenceName}
           </span>
+          {data.isStartNode && (
+            <span
+              className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+              data-testid={`dag-node-start-badge-${data.taskReferenceName}`}
+            >
+              START
+            </span>
+          )}
+          {data.isEndNode && (
+            <span
+              className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
+              data-testid={`dag-node-end-badge-${data.taskReferenceName}`}
+            >
+              END
+            </span>
+          )}
         </div>
         {getStatusBadge()}
       </div>

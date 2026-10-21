@@ -7,6 +7,7 @@ import com.unipost.workflow.core.model.TaskDefinition;
 import com.unipost.workflow.core.model.TaskDlqRecord;
 import com.unipost.workflow.core.model.TaskSnapshot;
 import com.unipost.workflow.core.model.TaskStatus;
+import com.unipost.workflow.core.model.TaskType;
 import com.unipost.workflow.core.model.WorkflowDefinition;
 import com.unipost.workflow.core.model.WorkflowSnapshot;
 import com.unipost.workflow.core.model.WorkflowStatus;

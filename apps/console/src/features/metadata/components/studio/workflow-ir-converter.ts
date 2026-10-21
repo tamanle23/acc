@@ -58,7 +58,16 @@ export interface GraphValidationError {
   nodeId?: string;
   taskReferenceName?: string;
   message: string;
-  type: 'CYCLE' | 'MISSING_BINDING' | 'INVALID_SYNTAX' | 'ISOLATED_NODE';
+  type:
+    | 'CYCLE'
+    | 'MISSING_BINDING'
+    | 'INVALID_SYNTAX'
+    | 'ISOLATED_NODE'
+    | 'MULTIPLE_START_NODES'
+    | 'MULTIPLE_END_NODES'
+    | 'NO_START_NODE'
+    | 'NO_END_NODE'
+    | 'DISCONNECTED_GRAPH';
 }
 
 /**
@@ -105,20 +114,27 @@ export function validateBindingExpression(
 }
 
 /**
- * Cycle and topology detection using Kahn's algorithm and Tarjan SCC
+ * Cycle and topology detection using Kahn's algorithm and Tarjan SCC.
+ * Invariant (Iteration 15): Exactly one start node (in-degree 0) and one end node (out-degree 0).
  */
 export function validateGraphTopology(
   nodes: Node<DagNodeData>[],
   edges: Edge[]
 ): GraphValidationError[] {
   const errors: GraphValidationError[] = [];
+  if (nodes.length === 0) {
+    return errors;
+  }
+
   const nodeMap = new Map<string, Node<DagNodeData>>();
   const inDegree = new Map<string, number>();
+  const outDegree = new Map<string, number>();
   const adj = new Map<string, string[]>();
 
   for (const node of nodes) {
     nodeMap.set(node.id, node);
     inDegree.set(node.id, 0);
+    outDegree.set(node.id, 0);
     adj.set(node.id, []);
   }
 
@@ -126,11 +142,13 @@ export function validateGraphTopology(
     if (adj.has(edge.source) && inDegree.has(edge.target)) {
       adj.get(edge.source)!.push(edge.target);
       inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+      outDegree.set(edge.source, (outDegree.get(edge.source) || 0) + 1);
     }
   }
 
   // Kahn's algorithm for cycle detection
   const queue: string[] = [];
+  const inDegreeCopy = new Map<string, number>(inDegree);
   for (const [id, deg] of inDegree.entries()) {
     if (deg === 0) {
       queue.push(id);
@@ -146,14 +164,15 @@ export function validateGraphTopology(
     visitedCount++;
 
     for (const v of adj.get(u) || []) {
-      const newDeg = (inDegree.get(v) || 0) - 1;
-      inDegree.set(v, newDeg);
+      const newDeg = (inDegreeCopy.get(v) || 0) - 1;
+      inDegreeCopy.set(v, newDeg);
       if (newDeg === 0) {
         queue.push(v);
       }
     }
   }
 
+  let hasCycles = false;
   if (visitedCount < nodes.length) {
     // There is at least one cycle among non-visited nodes
     for (const node of nodes) {
@@ -162,12 +181,78 @@ export function validateGraphTopology(
         if (node.data.taskType === 'DO_WHILE') {
           continue;
         }
+        hasCycles = true;
         errors.push({
           nodeId: node.id,
           taskReferenceName: node.data.taskReferenceName,
           message: `Cycle detected involving node "${node.data.label || node.data.taskReferenceName}"`,
           type: 'CYCLE',
         });
+      }
+    }
+  }
+
+  // Iteration 15 Invariant: Conventional Single-Start & Single-End Graph Topology
+  if (!hasCycles && nodes.length > 1) {
+    const startNodes = nodes.filter((n) => (inDegree.get(n.id) || 0) === 0);
+    if (startNodes.length === 0) {
+      errors.push({
+        message: 'Workflow has no start node (graph must have exactly one entry node)',
+        type: 'NO_START_NODE',
+      });
+    } else if (startNodes.length > 1) {
+      for (const sn of startNodes) {
+        errors.push({
+          nodeId: sn.id,
+          taskReferenceName: sn.data.taskReferenceName,
+          message: `Multiple start nodes detected: "${sn.data.label || sn.data.taskReferenceName}" has no prerequisite inputs. Workflows must have exactly 1 start node.`,
+          type: 'MULTIPLE_START_NODES',
+        });
+      }
+    }
+
+    const endNodes = nodes.filter((n) => (outDegree.get(n.id) || 0) === 0);
+    if (endNodes.length === 0) {
+      errors.push({
+        message: 'Workflow has no terminal end node (graph must converge to exactly one exit node)',
+        type: 'NO_END_NODE',
+      });
+    } else if (endNodes.length > 1) {
+      for (const en of endNodes) {
+        errors.push({
+          nodeId: en.id,
+          taskReferenceName: en.data.taskReferenceName,
+          message: `Multiple end nodes detected: "${en.data.label || en.data.taskReferenceName}" has no downstream connection. Parallel or branched tasks must converge into a single terminal end node.`,
+          type: 'MULTIPLE_END_NODES',
+        });
+      }
+    }
+
+    // Reachability verification from the single start node
+    if (startNodes.length === 1) {
+      const reachableFromStart = new Set<string>();
+      const q = [startNodes[0].id];
+      reachableFromStart.add(startNodes[0].id);
+
+      while (q.length > 0) {
+        const cur = q.shift()!;
+        for (const nxt of adj.get(cur) || []) {
+          if (!reachableFromStart.has(nxt)) {
+            reachableFromStart.add(nxt);
+            q.push(nxt);
+          }
+        }
+      }
+
+      for (const n of nodes) {
+        if (!reachableFromStart.has(n.id)) {
+          errors.push({
+            nodeId: n.id,
+            taskReferenceName: n.data.taskReferenceName,
+            message: `Node "${n.data.label || n.data.taskReferenceName}" is unreachable from the start node "${startNodes[0].data.label || startNodes[0].data.taskReferenceName}"`,
+            type: 'DISCONNECTED_GRAPH',
+          });
+        }
       }
     }
   }

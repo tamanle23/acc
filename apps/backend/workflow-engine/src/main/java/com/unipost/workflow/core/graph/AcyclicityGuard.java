@@ -39,6 +39,11 @@ public final class AcyclicityGuard {
 
         // Build edges
         // 1. Join dependencies: joinOn lists prerequisite task references
+        Map<String, Integer> outDegree = new LinkedHashMap<>();
+        for (TaskDefinition task : tasks) {
+            outDegree.putIfAbsent(task.taskReferenceName(), 0);
+        }
+
         for (TaskDefinition task : tasks) {
             String toNode = task.taskReferenceName();
             if (task.joinOn() != null && !task.joinOn().isEmpty()) {
@@ -46,13 +51,14 @@ public final class AcyclicityGuard {
                     if (adj.containsKey(fromNode)) {
                         if (adj.get(fromNode).add(toNode)) {
                             inDegree.put(toNode, inDegree.get(toNode) + 1);
+                            outDegree.put(fromNode, outDegree.get(fromNode) + 1);
                         }
                     }
                 }
             }
         }
 
-        // 2. Kahn's algorithm
+        // 2. Kahn's algorithm for cycle detection
         Deque<String> queue = new ArrayDeque<>();
         for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
             if (entry.getValue() == 0) {
@@ -60,14 +66,15 @@ public final class AcyclicityGuard {
             }
         }
 
+        Map<String, Integer> inDegreeCopy = new HashMap<>(inDegree);
         List<String> sortedOrder = new ArrayList<>();
         while (!queue.isEmpty()) {
             String current = queue.poll();
             sortedOrder.add(current);
 
             for (String neighbor : adj.getOrDefault(current, Collections.emptySet())) {
-                int newInDegree = inDegree.get(neighbor) - 1;
-                inDegree.put(neighbor, newInDegree);
+                int newInDegree = inDegreeCopy.get(neighbor) - 1;
+                inDegreeCopy.put(neighbor, newInDegree);
                 if (newInDegree == 0) {
                     queue.add(neighbor);
                 }
@@ -78,6 +85,35 @@ public final class AcyclicityGuard {
             // Cycle detected! Extract cycle using Tarjan SCC
             List<String> cyclePath = findCyclePath(adj);
             throw new WorkflowCycleDetectedException(cyclePath);
+        }
+
+        // 3. Enforce Single Start and Single End Topological Invariant (tasks > 1)
+        if (tasks.size() > 1) {
+            List<String> startNodes = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+                if (entry.getValue() == 0) {
+                    startNodes.add(entry.getKey());
+                }
+            }
+            if (startNodes.size() > 1) {
+                throw new WorkflowTopologyException("Workflow definition must have exactly one start node, found " + startNodes.size() + ": " + startNodes);
+            }
+            if (startNodes.isEmpty()) {
+                throw new WorkflowTopologyException("Workflow definition must have at least one start node (found 0, graph has cycles)");
+            }
+
+            List<String> endNodes = new ArrayList<>();
+            for (Map.Entry<String, Integer> entry : outDegree.entrySet()) {
+                if (entry.getValue() == 0) {
+                    endNodes.add(entry.getKey());
+                }
+            }
+            if (endNodes.size() > 1) {
+                throw new WorkflowTopologyException("Workflow definition must have exactly one end node, found " + endNodes.size() + ": " + endNodes);
+            }
+            if (endNodes.isEmpty()) {
+                throw new WorkflowTopologyException("Workflow definition must have at least one end node (found 0, graph has cycles)");
+            }
         }
 
         return Collections.unmodifiableList(sortedOrder);

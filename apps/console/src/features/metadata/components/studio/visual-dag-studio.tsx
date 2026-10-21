@@ -24,6 +24,9 @@ import { TimeTravelScrubber } from './time-travel-scrubber';
 import { WorkflowExecutionFlamegraph } from './workflow-execution-flamegraph';
 import { WorkflowDryRunModal } from './workflow-dry-run-modal';
 import { WorkflowIrDialog } from './workflow-ir-dialog';
+import { DagConditionEdge, type DagConditionEdgeData } from './dag-condition-edge';
+import { DagEdgeConditionModal, type EdgeConditionModalData } from './dag-edge-condition-modal';
+import { WorkflowVariableWatchDrawer } from './workflow-variable-watch-drawer';
 import {
   exportToWorkflowIR,
   importFromWorkflowIR,
@@ -87,6 +90,10 @@ const nodeTypes = {
   dagNode: DagWorkflowNodeComponent,
 };
 
+const edgeTypes = {
+  dagEdge: DagConditionEdge,
+};
+
 const INITIAL_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-inventory',
@@ -105,6 +112,8 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
       inputParameters: {
         orderId: '${workflow.input.orderId}',
       },
+      isPermanent: true,
+      isStartNode: true,
     },
   },
   {
@@ -159,12 +168,31 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
       },
     },
   },
+  {
+    id: 'node-complete',
+    type: 'dagNode',
+    position: { x: 900, y: 150 },
+    data: {
+      taskReferenceName: 'completeOrder',
+      taskType: 'TERMINATE',
+      label: 'Complete Order',
+      executionState: 'PENDING',
+      isPermanent: true,
+      isEndNode: true,
+      terminateParams: {
+        terminationStatus: 'COMPLETED',
+        terminationReason: 'Order fulfillment completed successfully',
+      },
+    },
+  },
 ];
 
 const INITIAL_EDGES: Edge[] = [
-  { id: 'e1', source: 'node-inventory', target: 'node-route', animated: true },
-  { id: 'e2', source: 'node-route', target: 'node-courier', label: 'EXPRESS', animated: true },
-  { id: 'e3', source: 'node-route', target: 'node-ground', label: 'STANDARD' },
+  { id: 'e1', type: 'dagEdge', source: 'node-inventory', target: 'node-route', animated: true },
+  { id: 'e2', type: 'dagEdge', source: 'node-route', target: 'node-courier', label: 'EXPRESS', animated: true, data: { decisionCase: 'EXPRESS' } },
+  { id: 'e3', type: 'dagEdge', source: 'node-route', target: 'node-ground', label: 'STANDARD', data: { decisionCase: 'STANDARD', isDefaultCase: true } },
+  { id: 'e4', type: 'dagEdge', source: 'node-courier', target: 'node-complete', animated: true },
+  { id: 'e5', type: 'dagEdge', source: 'node-ground', target: 'node-complete' },
 ];
 
 function DagStudioCanvas({
@@ -438,6 +466,10 @@ function DagStudioCanvas({
     [nodes, selectedNodeId]
   );
 
+  // Edge Condition Modal State (Iteration 15)
+  const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
+  const [isEdgeConditionOpen, setIsEdgeConditionOpen] = useState(false);
+
   const onNodesChange: OnNodesChange<Node<DagNodeData>> = useCallback(
     (changes) => {
       if (isReadOnly) return;
@@ -457,9 +489,116 @@ function DagStudioCanvas({
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (isReadOnly) return;
-      setEdges((eds) => addEdge({ ...params, animated: true }, eds));
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            type: 'dagEdge',
+            animated: true,
+            data: {},
+          },
+          eds
+        )
+      );
     },
     [isReadOnly]
+  );
+
+  const handleOpenEdgeEditor = useCallback(
+    (edgeId: string) => {
+      if (isReadOnly) return;
+      const targetEdge = edges.find((e) => e.id === edgeId);
+      if (!targetEdge) return;
+      const sourceNode = nodes.find((n) => n.id === targetEdge.source);
+      const targetNode = nodes.find((n) => n.id === targetEdge.target);
+
+      setSelectedEdgeData({
+        edgeId: targetEdge.id,
+        sourceTaskRef: sourceNode?.data?.taskReferenceName || targetEdge.source,
+        targetTaskRef: targetNode?.data?.taskReferenceName || targetEdge.target,
+        sourceTaskType: sourceNode?.data?.taskType,
+        label: typeof targetEdge.label === 'string' ? targetEdge.label : undefined,
+        condition: (targetEdge.data as DagConditionEdgeData)?.condition,
+        decisionCase: (targetEdge.data as DagConditionEdgeData)?.decisionCase,
+        isDefaultCase: (targetEdge.data as DagConditionEdgeData)?.isDefaultCase,
+      });
+      setIsEdgeConditionOpen(true);
+    },
+    [edges, nodes, isReadOnly]
+  );
+
+  const handleSaveEdgeCondition = useCallback(
+    (
+      edgeId: string,
+      updates: {
+        label?: string;
+        condition?: string;
+        decisionCase?: string;
+        isDefaultCase?: boolean;
+      }
+    ) => {
+      if (isReadOnly) return;
+      setEdges((eds) =>
+        eds.map((e) => {
+          if (e.id === edgeId) {
+            return {
+              ...e,
+              label: updates.label || updates.decisionCase || (updates.isDefaultCase ? 'DEFAULT' : updates.condition),
+              data: {
+                ...((e.data as object) || {}),
+                condition: updates.condition,
+                decisionCase: updates.decisionCase,
+                isDefaultCase: updates.isDefaultCase,
+              },
+            };
+          }
+          return e;
+        })
+      );
+
+      // If source is a SWITCH node, sync decisionCases and defaultCase
+      const targetEdge = edges.find((e) => e.id === edgeId);
+      if (targetEdge) {
+        const sourceNode = nodes.find((n) => n.id === targetEdge.source);
+        const targetNode = nodes.find((n) => n.id === targetEdge.target);
+        if (sourceNode?.data.taskType === 'SWITCH' && targetNode) {
+          const targetRef = targetNode.data.taskReferenceName;
+          const currentCases = { ...(sourceNode.data.decisionCases || {}) };
+          let currentDefaults = [...(sourceNode.data.defaultCase || [])];
+
+          if (updates.isDefaultCase) {
+            if (!currentDefaults.includes(targetRef)) {
+              currentDefaults.push(targetRef);
+            }
+          } else if (updates.decisionCase) {
+            currentCases[updates.decisionCase] = [targetRef];
+          }
+
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === sourceNode.id
+                ? {
+                    ...n,
+                    data: {
+                      ...n.data,
+                      decisionCases: currentCases,
+                      defaultCase: currentDefaults,
+                    },
+                  }
+                : n
+            )
+          );
+        }
+      }
+    },
+    [isReadOnly, edges, nodes]
+  );
+
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      handleOpenEdgeEditor(edge.id);
+    },
+    [handleOpenEdgeEditor]
   );
 
   const onNodeClick = useCallback(
@@ -699,31 +838,62 @@ function DagStudioCanvas({
     [executionId, updateBreakpointsMutation]
   );
 
-  // Decorate nodes with breakpoint state and toggle handler (only active in execution inspection mode)
+  // Decorate nodes with boundary badges, permanent status, and breakpoint handler
   const isExecutionMode = Boolean(isReadOnly && executionId);
-  const decoratedNodes = useMemo(
-    () =>
-      nodes.map((n) => ({
+  const decoratedNodes = useMemo(() => {
+    const inDegree = new Map<string, number>();
+    const outDegree = new Map<string, number>();
+    nodes.forEach((n) => {
+      inDegree.set(n.id, 0);
+      outDegree.set(n.id, 0);
+    });
+    edges.forEach((e) => {
+      if (inDegree.has(e.target)) inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+      if (outDegree.has(e.source)) outDegree.set(e.source, (outDegree.get(e.source) || 0) + 1);
+    });
+
+    return nodes.map((n) => {
+      const degIn = inDegree.get(n.id) ?? 0;
+      const degOut = outDegree.get(n.id) ?? 0;
+      return {
         ...n,
         data: {
           ...n.data,
+          isStartNode: degIn === 0,
+          isEndNode: degOut === 0,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
           onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
         },
-      })),
-    [nodes, breakpoints, handleToggleBreakpoint, isExecutionMode]
-  );
+      };
+    });
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, isExecutionMode]);
 
-  // Phase 1 (Iteration 14): Traversed Path & Dead Branch Contrast Highlighting
+  // Traversed Path & Dead Branch Contrast Highlighting + Condition Edge edit triggers
   const decoratedEdges = useMemo(() => {
     if (!isExecutionMode) {
-      return edges;
+      return edges.map((e) => {
+        const baseEdgeData = (e.data as object) || {};
+        return {
+          ...e,
+          type: 'dagEdge',
+          data: {
+            ...baseEdgeData,
+            onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+          },
+        };
+      });
     }
 
     const nodeMap = new Map<string, Node<DagNodeData>>();
     nodes.forEach((n) => nodeMap.set(n.id, n));
 
     return edges.map((e) => {
+      const baseEdgeData = (e.data as object) || {};
+      const withHandler = {
+        ...baseEdgeData,
+        onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+      };
+
       const sourceNode = nodeMap.get(e.source);
       const targetNode = nodeMap.get(e.target);
 
@@ -766,12 +936,14 @@ function DagStudioCanvas({
 
       return {
         ...e,
+        type: 'dagEdge',
+        data: withHandler,
         animated: isTraversed ? true : e.animated,
         style: edgeStyle,
         className,
       };
     });
-  }, [edges, nodes, isExecutionMode]);
+  }, [edges, nodes, isExecutionMode, isReadOnly, handleOpenEdgeEditor]);
 
   // Compute aggregated Variable Watch state from workflow snapshot or current node states
   const variableWatchSnapshot = useMemo(() => {
@@ -915,7 +1087,8 @@ function DagStudioCanvas({
   const handleClearSelected = () => {
     if (isReadOnly) return;
     pushUndoSnapshot();
-    setNodes((nds) => nds.filter((n) => !n.selected));
+    // Do not allow deleting permanent boundary nodes (Start/End)
+    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
     setEdges((eds) => eds.filter((e) => !e.selected));
   };
 
@@ -1078,8 +1251,14 @@ function DagStudioCanvas({
             <Button
               size="sm"
               variant="default"
-              className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm"
+              className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm disabled:opacity-50"
               onClick={() => {
+                const errors = validateGraphTopology(nodes, edges);
+                if (errors.length > 0) {
+                  setValidationErrors(errors);
+                  setValidationBannerVisible(true);
+                  return;
+                }
                 const ir = exportToWorkflowIR(nodes, edges);
                 saveWorkflowMutation.mutate(ir, {
                   onSuccess: () => {
@@ -1087,8 +1266,13 @@ function DagStudioCanvas({
                   },
                 });
               }}
-              disabled={saveWorkflowMutation.isPending}
-              title="Save workflow definition to backend catalog"
+              disabled={saveWorkflowMutation.isPending || validationErrors.length > 0}
+              title={
+                validationErrors.length > 0
+                  ? `Cannot save: ${validationErrors.length} DAG topology issue(s)`
+                  : 'Save workflow definition to backend catalog'
+              }
+              data-testid="dag-save-btn"
             >
               <Save className="w-3 h-3" />
               {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
@@ -1246,34 +1430,40 @@ function DagStudioCanvas({
         </Button>
       </div>
 
-      {/* Phase 7: Floating Variable Watch & Time-Travel State Drawer */}
-      {isExecutionMode && isVariableWatchOpen && (
-        <div
-          className="absolute top-20 right-4 z-20 w-80 p-3 rounded-2xl backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-2xl space-y-2"
-          data-testid="debugger-variable-watch-panel"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold flex items-center gap-1.5 text-foreground">
-              <Bug className="w-3.5 h-3.5 text-amber-500" />
-              Variable Watch & Breakpoint State
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-5 px-1.5 text-[10px]"
-              onClick={() => setIsVariableWatchOpen(false)}
-            >
-              Close
-            </Button>
-          </div>
-          <VisualJsonEditor
-            value={variableWatchSnapshot}
-            onChange={() => {}}
-            readOnly
-            defaultMode="tree"
-            height="240px"
-          />
-        </div>
+      {/* Phase 7 / Iteration 15: Execution Variable Watch Drawer */}
+      {isExecutionMode && (
+        <WorkflowVariableWatchDrawer
+          open={isVariableWatchOpen}
+          onOpenChange={setIsVariableWatchOpen}
+          executionId={executionId}
+          workflowStatus={stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')}
+          pausedAtNode={stream.snapshot?.outputPayload?.pausedAtNode as string || null}
+          breakpoints={breakpoints}
+          onRemoveBreakpoint={handleToggleBreakpoint}
+          variablesSnapshot={
+            (stream.snapshot as any)?.variables ||
+            (stream.snapshot as any)?.inputPayload || {
+              orderId: 'ORD-2026-991',
+              tier: 'EXPRESS',
+            }
+          }
+          taskOutputs={variableWatchSnapshot.taskOutputs}
+          onStepOver={handleDebuggerStepOver}
+          onPause={handleDebuggerPause}
+          onResume={handleDebuggerResume}
+          isStepping={stepOverExecutionMutation.isPending}
+        />
+      )}
+
+      {/* Iteration 15: Visual Edge Condition Modal */}
+      {!isReadOnly && (
+        <DagEdgeConditionModal
+          open={isEdgeConditionOpen}
+          onOpenChange={setIsEdgeConditionOpen}
+          edgeData={selectedEdgeData}
+          availableTaskRefs={availableTaskRefs}
+          onSaveEdgeCondition={handleSaveEdgeCondition}
+        />
       )}
 
       {/* Validation Status Notification Banner */}
@@ -1350,10 +1540,12 @@ function DagStudioCanvas({
           nodes={decoratedNodes}
           edges={decoratedEdges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={isReadOnly ? undefined : onNodesChange}
           onEdgesChange={isReadOnly ? undefined : onEdgesChange}
           onConnect={isReadOnly ? undefined : onConnect}
           onNodeClick={onNodeClick}
+          onEdgeClick={isReadOnly ? undefined : onEdgeClick}
           nodesDraggable={!isReadOnly}
           nodesConnectable={!isReadOnly}
           elementsSelectable={true}
