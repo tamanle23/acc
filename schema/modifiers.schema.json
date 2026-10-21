@@ -386,15 +386,65 @@
     },
     "TransitionModifierParams": {
       "type": "object",
-      "required": ["transitionType", "durationSec"],
       "properties": {
         "transitionType": {
           "type": "string",
-          "enum": ["crossfade", "slide_left", "slide_right", "whip_zoom", "dip_black"]
+          "enum": [
+            "crossfade",
+            "dip",
+            "wipe",
+            "push",
+            "zoom",
+            "glitch",
+            "light_leak",
+            "radial_wipe",
+            "iris",
+            "slide_left",
+            "slide_right",
+            "whip_zoom",
+            "dip_black"
+          ]
         },
-        "durationSec": { "type": "number", "minimum": 0 },
-        "ease": { "type": "string" },
-        "overlapTarget": { "type": "string" }
+        "durationFrames": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "durationSec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ease": {
+          "type": "string"
+        },
+        "alignment": {
+          "type": "string",
+          "enum": [
+            "center_on_cut",
+            "start_at_cut",
+            "end_at_cut"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ]
+        },
+        "dipColor": {
+          "type": "string"
+        },
+        "outgoingSeqId": {
+          "type": "string"
+        },
+        "overlapTarget": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
       }
     },
     "ModifierNode": {
