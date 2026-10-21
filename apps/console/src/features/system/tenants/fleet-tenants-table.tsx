@@ -205,6 +205,7 @@ export function FleetTenantsTable() {
 
       {/* Main Standardized DataTable */}
       <DataTable
+        showRowIndex
         table={table}
         noResultsMessage={
           isLoading

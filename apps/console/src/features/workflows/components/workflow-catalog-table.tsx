@@ -111,6 +111,7 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
 
       {/* Shared DataTable Component */}
       <DataTable
+        showRowIndex
         table={table}
         noResultsMessage={
           isLoading ? (

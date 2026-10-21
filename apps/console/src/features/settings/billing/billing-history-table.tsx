@@ -65,6 +65,7 @@ export const BillingHistoryTable: React.FC<Props> = ({ transactions = [] }) => {
       </div>
 
       <DataTable
+        showRowIndex
         table={table}
         noResultsMessage="Chưa có giao dịch thanh toán nào được ghi nhận."
       />

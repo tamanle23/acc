@@ -91,6 +91,7 @@ export const ApprovalTable: React.FC<ApprovalTableProps> = ({
 
       {/* Shared DataTable Component */}
       <DataTable
+        showRowIndex
         table={table}
         noResultsMessage={
           <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl">

@@ -39,6 +39,28 @@ export function StorageAssignmentsDialog({
     }
   }, [provider, open])
 
+  // Optimization: Pre-index assignments into a Map and memoize computed profiles
+  // to reduce lookup time from O(N * M) nested array scans to O(1) Map accesses per render.
+  const assignmentMap = useMemo(
+    () => new Map(assignments.map((a) => [a.workspaceId, a])),
+    [assignments]
+  )
+
+  const { assignedProfiles, unassignedProfiles } = useMemo(() => {
+    const assignedSet = new Set(assignments.map((a) => a.workspaceId))
+    const assigned: typeof profiles = []
+    const unassigned: typeof profiles = []
+    for (const p of profiles) {
+      const id = p.id ?? p.name
+      if (assignedSet.has(id)) {
+        assigned.push(p)
+      } else {
+        unassigned.push(p)
+      }
+    }
+    return { assignedProfiles: assigned, unassignedProfiles: unassigned }
+  }, [assignments, profiles])
+
   if (!provider) return null
 
   const handleAssign = (workspaceId: string) => {
@@ -76,27 +98,7 @@ export function StorageAssignmentsDialog({
     ])
   }
 
-  // Optimization: Pre-index assignments into a Map and memoize computed profiles
-  // to reduce lookup time from O(N * M) nested array scans to O(1) Map accesses per render.
-  const assignmentMap = useMemo(
-    () => new Map(assignments.map((a) => [a.workspaceId, a])),
-    [assignments]
-  )
 
-  const { assignedProfiles, unassignedProfiles } = useMemo(() => {
-    const assignedSet = new Set(assignments.map((a) => a.workspaceId))
-    const assigned: typeof profiles = []
-    const unassigned: typeof profiles = []
-    for (const p of profiles) {
-      const id = p.id ?? p.name
-      if (assignedSet.has(id)) {
-        assigned.push(p)
-      } else {
-        unassigned.push(p)
-      }
-    }
-    return { assignedProfiles: assigned, unassignedProfiles: unassigned }
-  }, [assignments, profiles])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
