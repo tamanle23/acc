@@ -30,4 +30,13 @@ describe('DagPalette Component Unit Tests', () => {
     expect(types).toContain('WAIT');
     expect(types).toContain('DO_WHILE');
   });
+
+  it('accepts and applies custom className and responsive maxHeight style', () => {
+    const { container } = render(
+      <DagPalette className="custom-palette" style={{ maxHeight: '350px' }} />
+    );
+    const paletteDiv = container.firstChild as HTMLElement;
+    expect(paletteDiv.classList.contains('custom-palette')).toBe(true);
+    expect(paletteDiv.style.maxHeight).toBe('350px');
+  });
 });

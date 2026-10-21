@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Search,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { type DagNodeType, type DagNodeData } from './dag-node';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,11 @@ export interface PaletteItem {
   category: 'control' | 'data' | 'connectors' | 'human' | 'ai';
   icon: React.ReactNode;
   defaultData: Partial<DagNodeData>;
+}
+
+export interface DagPaletteProps {
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 export const CATEGORIES: { id: PaletteItem['category']; label: string }[] = [
@@ -372,7 +378,7 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   },
 ];
 
-export function DagPalette() {
+export function DagPalette({ className, style }: DagPaletteProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     control: true,
@@ -404,7 +410,13 @@ export function DagPalette() {
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden">
+    <div
+      style={style}
+      className={cn(
+        'flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden',
+        className
+      )}
+    >
       {/* Header & Search */}
       <div className="flex items-center justify-between pb-1.5 border-b border-border/40 shrink-0">
         <div className="flex items-center gap-1.5">

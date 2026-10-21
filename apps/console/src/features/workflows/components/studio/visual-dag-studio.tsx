@@ -1446,6 +1446,34 @@ function DagStudioCanvas({
     }
   };
 
+  // Snapping and responsive height calculation for DagPalette:
+  // Pallet DagPalette always snaps directly beneath the Studio Header Toolbar (top: 16px + headerHeight + 8px)
+  // and dynamically bounds its maxHeight so it never covers React Flow bottom controls/panel (react-flow__panel).
+  const headerToolbarRef = useRef<HTMLDivElement>(null);
+  const [headerToolbarHeight, setHeaderToolbarHeight] = useState<number>(44);
+  const [containerHeight, setContainerHeight] = useState<number>(650);
+
+  useEffect(() => {
+    if (!reactFlowWrapper.current) return;
+    const updateDimensions = () => {
+      if (headerToolbarRef.current) {
+        setHeaderToolbarHeight(headerToolbarRef.current.offsetHeight);
+      }
+      if (reactFlowWrapper.current) {
+        setContainerHeight(reactFlowWrapper.current.offsetHeight);
+      }
+    };
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
+    });
+    if (headerToolbarRef.current) resizeObserver.observe(headerToolbarRef.current);
+    if (reactFlowWrapper.current) resizeObserver.observe(reactFlowWrapper.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
   return (
     <div
       ref={reactFlowWrapper}
@@ -1454,7 +1482,10 @@ function DagStudioCanvas({
       onDrop={onDrop}
     >
       {/* Studio Header Toolbar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-lg flex-wrap">
+      <div
+        ref={headerToolbarRef}
+        className="absolute top-4 left-4 z-10 flex items-center gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-lg flex-wrap"
+      >
         <div className="flex items-center gap-2 mr-1">
           <Activity className="w-4 h-4 text-primary animate-pulse" />
           <span className="text-xs font-bold text-foreground">Visual DAG Studio 2.0</span>
@@ -1922,11 +1953,27 @@ function DagStudioCanvas({
       )}
 
       {/* Floating Drag-and-Drop Task Palette (Full mode only) */}
-      {!isReadOnly && showPalette && (
-        <div className="absolute top-16 left-4 z-10">
-          <DagPalette />
-        </div>
-      )}
+      {!isReadOnly && showPalette && (() => {
+        // Snapped directly beneath header toolbar:
+        // top is 16px (top-4) + headerToolbarHeight + 8px gap
+        const paletteTop = 16 + headerToolbarHeight + 8;
+        // Bottom reserve: bottom panel/controls (approx 16px bottom + 120-140px height for controls/minimap + 16px buffer = 180px)
+        // Ensure max-height stays between header toolbar and bottom react-flow__panel controls
+        const computedMaxHeight = Math.max(180, containerHeight - paletteTop - 180);
+
+        return (
+          <div
+            className="absolute left-4 z-10 transition-all duration-150 ease-out"
+            style={{ top: `${paletteTop}px` }}
+          >
+            <DagPalette
+              style={{
+                maxHeight: `${computedMaxHeight}px`,
+              }}
+            />
+          </div>
+        );
+      })()}
 
       {/* Viewport: Either React Flow Canvas or Concurrency Flamegraph */}
       {activeViewTab === 'timeline' && isReadOnly ? (

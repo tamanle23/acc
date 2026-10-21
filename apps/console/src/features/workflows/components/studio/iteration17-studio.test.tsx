@@ -96,4 +96,22 @@ describe('Iteration 17 Studio Ergonomics & Canvas Enhancements', () => {
     expect(screen.getByTestId('dag-duplicate-btn')).toBeTruthy();
     expect(screen.getByTestId('dag-bulk-delete-btn')).toBeTruthy();
   });
+
+  it('renders DagPalette snapped beneath Studio Header Toolbar with responsive bounded height', () => {
+    const { container } = renderWithProviders(<VisualDagStudio mode="full" />);
+
+    // In full mode, showPalette is true by default
+    expect(screen.getByText('Node Palette')).toBeTruthy();
+
+    // Find the palette wrapper
+    const paletteTitle = screen.getByText('Node Palette');
+    const paletteCard = paletteTitle.closest('.rounded-2xl') as HTMLElement;
+    expect(paletteCard).toBeTruthy();
+    expect(paletteCard.style.maxHeight).toBeTruthy();
+
+    // The wrapper parent container should be positioned beneath the header toolbar
+    const wrapper = paletteCard.parentElement as HTMLElement;
+    expect(wrapper).toBeTruthy();
+    expect(wrapper.style.top).toMatch(/\d+px/);
+  });
 });
