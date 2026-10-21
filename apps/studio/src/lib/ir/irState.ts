@@ -14,6 +14,7 @@ import { BrowserAssetMetadataProber } from './BrowserAssetMetadataProber';
 import { HistoryManager } from '../commands/HistoryManager';
 import type { ICommand } from '../commands/ICommand';
 import { TrimSequenceCommand } from '../commands/TrimSequenceCommand';
+import { RippleTrimSequenceCommand } from '../commands/RippleTrimSequenceCommand';
 import { MoveSequenceCommand } from '../commands/MoveSequenceCommand';
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
@@ -21,6 +22,7 @@ import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
 import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequenceCommand';
 import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
+import { RippleDeleteSequenceCommand } from '../commands/RippleDeleteSequenceCommand';
 import { UpdateTextCueCommand } from '../commands/UpdateTextCueCommand';
 import { UpdateSequenceTimeCommand } from '../commands/UpdateSequenceTimeCommand';
 import { UpdateTrackCommand, type UpdateTrackProperties } from '../commands/UpdateTrackCommand';
@@ -276,6 +278,10 @@ export class IRStateManager {
     this.dispatch(new TrimSequenceCommand(sequenceId, deltaStart, deltaDuration));
   }
 
+  public rippleTrimSequence(sequenceId: string, deltaStart: number, deltaDuration: number): void {
+    this.dispatch(new RippleTrimSequenceCommand(sequenceId, deltaStart, deltaDuration));
+  }
+
   public moveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void {
     this.dispatch(new MoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame));
   }
@@ -335,6 +341,13 @@ export class IRStateManager {
 
   public deleteSequence(sequenceId: string): void {
     this.dispatch(new DeleteSequenceCommand(sequenceId));
+    if (this.state.selectedSequenceId === sequenceId) {
+      this.setSelectedSequenceId(null);
+    }
+  }
+
+  public rippleDeleteSequence(sequenceId: string): void {
+    this.dispatch(new RippleDeleteSequenceCommand(sequenceId));
     if (this.state.selectedSequenceId === sequenceId) {
       this.setSelectedSequenceId(null);
     }

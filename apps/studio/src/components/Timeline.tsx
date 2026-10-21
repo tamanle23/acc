@@ -19,6 +19,7 @@ import {
   ChevronDown,
   GripVertical,
   Film,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -279,6 +280,7 @@ export function Timeline({
   const fps = playhead?.fps || 30;
 
   const [snapEnabled, setSnapEnabled] = useState(true);
+  const [rippleEnabled, setRippleEnabled] = useState(false);
   const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~4px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
@@ -361,7 +363,7 @@ export function Timeline({
   } | null>(null);
 
   // Active snap guideline (frame position and label or null)
-  const [activeSnapGuideline, setActiveSnapGuideline] = useState<{ frame: number; label?: string } | null>(null);
+  const [activeSnapGuideline, setActiveSnapGuideline] = useState<{ frame: number; label?: string; isAbut?: boolean } | null>(null);
 
   // Hand tool panning ref & state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -625,37 +627,53 @@ export function Timeline({
 
       if (snapEnabled) {
         // Collect candidate snap points: playhead, sequence boundaries, and 1s ticks
-        const snapPoints: number[] = [currentFrame];
+        interface SnapPointCandidate {
+          frame: number;
+          label?: string;
+          isAbut?: boolean;
+        }
+
+        const candidatePoints: SnapPointCandidate[] = [{ frame: currentFrame, label: 'Playhead' }];
+
         for (const track of tracks) {
           for (const s of track.sequences) {
             if (s.id !== activeDragState.seqId) {
               const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
-              snapPoints.push(sStart, sStart + s.durationFrames);
+              const sEnd = sStart + s.durationFrames;
+              candidatePoints.push(
+                { frame: sStart, label: `Abut ${s.id}`, isAbut: true },
+                { frame: sEnd, label: `Abut ${s.id}`, isAbut: true }
+              );
             }
           }
         }
+
         // 1-second grid ticks
         const totalSeconds = Math.ceil(totalFrames / fps);
         for (let sec = 0; sec <= totalSeconds; sec++) {
-          snapPoints.push(sec * fps);
+          candidatePoints.push({ frame: sec * fps, label: `${sec}s` });
         }
 
         // Test start edge and end edge against snap points (within 4 frames)
         const targetEnd = targetStart + activeDragState.initialDurationFrames;
-        for (const sp of snapPoints) {
-          if (Math.abs(targetStart - sp) <= 4) {
-            targetStart = sp;
-            snappedGuideline = sp;
+        let snapResult: { frame: number; label?: string; isAbut?: boolean } | null = null;
+
+        for (const pt of candidatePoints) {
+          if (Math.abs(targetStart - pt.frame) <= 4) {
+            targetStart = pt.frame;
+            snapResult = pt;
             break;
-          } else if (Math.abs(targetEnd - sp) <= 4) {
-            targetStart = sp - activeDragState.initialDurationFrames;
-            snappedGuideline = sp;
+          } else if (Math.abs(targetEnd - pt.frame) <= 4) {
+            targetStart = pt.frame - activeDragState.initialDurationFrames;
+            snapResult = pt;
             break;
           }
         }
-      }
 
-      setActiveSnapGuideline(snappedGuideline);
+        setActiveSnapGuideline(snapResult);
+      } else {
+        setActiveSnapGuideline(null);
+      }
 
       // Overlap prevention on target track
       const targetTrack = tracks.find((t) => t.id === overTrackId);
@@ -752,17 +770,20 @@ export function Timeline({
         );
       }
     } else if (activeDragState.type === 'trim') {
-      if (activeDragState.handle === 'start') {
-        IRStateManager.getInstance().trimSequence(
+      const dStart = activeDragState.handle === 'start' ? activeDragState.deltaFrames : 0;
+      const dDur = activeDragState.handle === 'start' ? -activeDragState.deltaFrames : activeDragState.deltaFrames;
+
+      if (rippleEnabled) {
+        IRStateManager.getInstance().rippleTrimSequence(
           activeDragState.seqId,
-          activeDragState.deltaFrames,
-          -activeDragState.deltaFrames
+          dStart,
+          dDur
         );
       } else {
         IRStateManager.getInstance().trimSequence(
           activeDragState.seqId,
-          0,
-          activeDragState.deltaFrames
+          dStart,
+          dDur
         );
       }
     }
@@ -1006,6 +1027,18 @@ export function Timeline({
             </Toggle>
           </Tooltip>
 
+          <Tooltip content="Ripple Edit Mode: Trimming or deleting automatically shifts downstream clips on track">
+            <Toggle
+              pressed={rippleEnabled}
+              onPressedChange={setRippleEnabled}
+              size="sm"
+              className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400 data-[state=on]:border-amber-500/40 border border-transparent transition-colors"
+            >
+              <ArrowRightLeft className="w-3 h-3" />
+              Ripple
+            </Toggle>
+          </Tooltip>
+
           <Separator orientation="vertical" className="h-4 mx-1" />
 
           {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
@@ -1110,8 +1143,8 @@ export function Timeline({
           <div style={{ width: `${timelineWidth + 208}px` }} className="space-y-1 relative">
             {/* Sticky Timeline Head: Track Headers title & Timecode Ruler */}
             <div className="sticky top-0 z-40 bg-[var(--glass-bg)]/95 backdrop-blur-md pb-1 flex items-center gap-2">
-              {/* Sticky "Track Headers" Title Block */}
-              <div className="w-52 shrink-0 h-6 px-2.5 flex items-center justify-between rounded bg-muted/30 border border-border/40 text-[10px] font-mono uppercase tracking-wider text-muted-foreground shadow-2xs">
+              {/* Sticky "Track Headers" Title Block (Sticky both horizontally left-0 and vertically top-0) */}
+              <div className="sticky left-0 z-50 w-52 shrink-0 h-6 px-2.5 flex items-center justify-between rounded bg-muted/90 border border-border/60 text-[10px] font-mono uppercase tracking-wider text-muted-foreground shadow-2xs backdrop-blur-md">
                 <span>Track Headers</span>
                 <span className="text-[9px] lowercase opacity-70">({tracks.length} tracks)</span>
               </div>
@@ -1140,7 +1173,7 @@ export function Timeline({
               <div className="w-0.5 flex-1 bg-rose-500/80" />
             </div>
 
-            {/* Cyan Magnetic Snapping Guideline */}
+            {/* Magnetic Snapping Guideline (Cyan for grid/playhead, Emerald for abutting clip seams) */}
             {activeSnapGuideline !== null && (
               <div
                 className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
@@ -1148,12 +1181,36 @@ export function Timeline({
                   left: `${208 + activeSnapGuideline.frame * pixelsPerFrame}px`,
                 }}
               >
-                <div className="w-2 h-2 bg-accent-theme rotate-45 -mt-1 shadow-accent-glow" />
-                <div className="w-[1.5px] flex-1 bg-accent-theme shadow-accent-glow" />
-                <span className="text-[9px] font-mono text-accent-theme bg-popover/95 px-1.5 py-0.5 rounded -mt-4 shadow-sm border border-accent-theme/40 flex items-center gap-1">
+                <div
+                  className={`w-2 h-2 rotate-45 -mt-1 ${
+                    activeSnapGuideline.isAbut
+                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] ring-1 ring-emerald-300'
+                      : 'bg-accent-theme shadow-accent-glow'
+                  }`}
+                />
+                <div
+                  className={`w-[1.5px] flex-1 ${
+                    activeSnapGuideline.isAbut
+                      ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]'
+                      : 'bg-accent-theme shadow-accent-glow'
+                  }`}
+                />
+                <span
+                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded -mt-4 shadow-sm border flex items-center gap-1 backdrop-blur-md ${
+                    activeSnapGuideline.isAbut
+                      ? 'text-emerald-300 bg-emerald-950/90 border-emerald-500/60'
+                      : 'text-accent-theme bg-popover/95 border-accent-theme/40'
+                  }`}
+                >
                   <span>{activeSnapGuideline.frame}f</span>
                   {activeSnapGuideline.label && (
-                    <span className="text-[8px] text-accent-theme/80 uppercase font-semibold">({activeSnapGuideline.label})</span>
+                    <span
+                      className={`text-[8px] uppercase font-semibold ${
+                        activeSnapGuideline.isAbut ? 'text-emerald-200' : 'text-accent-theme/80'
+                      }`}
+                    >
+                      ({activeSnapGuideline.label})
+                    </span>
                   )}
                 </span>
               </div>

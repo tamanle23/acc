@@ -604,6 +604,19 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
           >
             <Trash2 className="w-3 h-3" />
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isLocked}
+            onClick={() => {
+              if (!selectedSeqId) return;
+              IRStateManager.getInstance().rippleDeleteSequence(selectedSeqId);
+            }}
+            className="h-6 px-2 text-[10px] text-amber-600 hover:bg-amber-50 hover:text-amber-700 border-amber-200 cursor-pointer disabled:cursor-not-allowed"
+            title="Ripple Delete (Closes track gap, undoable)"
+          >
+            Ripple Del
+          </Button>
         </div>
       </Card>
 

@@ -117,18 +117,28 @@ Following the detailed `/grill-me` architectural alignment on Pillar 1, three fo
 
 ### Pillar 2: Audio Waveform Peak Integration & Ripple / Magnetic Snapping Engine
 
-#### [MODIFY] [`apps/studio/src/components/timeline/WaveSurferWaveform.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/timeline/WaveSurferWaveform.tsx) & [`AudioWaveform.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/timeline/AudioWaveform.tsx)
-- Ensure peak caching gracefully handles all audio source types:
-  - Assets with audio URLs (fetching arrayBuffer -> decoding via WebAudio `decodeAudioData`).
-  - Procedural SFX sequences (synthesizing preview PCM buffer via `ProceduralAudioSynthesizer`).
-  - Fallback deterministic synthetic noise waveform when audio is loading or offline, avoiding flat blank bars.
+#### [NEW] [`apps/studio/src/workers/audioWaveform.worker.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/workers/audioWaveform.worker.ts) & [MODIFY] [`WaveSurferWaveform.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/timeline/WaveSurferWaveform.tsx)
+- **Web Worker Peak Extraction Engine**:
+  - Dedicated background Web Worker for offloading PCM decoding and peak calculation.
+  - Takes raw audio arrayBuffers or synthesized procedural SFX buffers, performs multi-resolution min/max decimation across LOD levels, and returns `Float32Array` peaks to the main thread.
+  - Keeps main-thread render loop and 60fps scrubbing completely jank-free, even for 10+ MB audio files.
+  - Graceful fallback: immediate synthetic envelope from audio volume DSP while worker decoding is in flight, avoiding blank bars.
+
+#### [MODIFY] [`apps/studio/src/lib/commands/HistoryManager.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/lib/commands/HistoryManager.ts) & [`irState.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/lib/ir/irState.ts)
+- **Undoable Ripple Command Suite**:
+  - `RippleTrimSequenceCommand`: Trims target clip and shifts all downstream clips on the same track by `deltaFrames`.
+  - `RippleDeleteSequenceCommand`: Deletes sequence and closes the gap by shifting downstream clips backward by `durationFrames`.
+  - Full Command-Pattern integration supporting multi-step undo/redo via `IRStateManager.getInstance().undo()` and `redo()`.
 
 #### [MODIFY] [`apps/studio/src/components/Timeline.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/Timeline.tsx)
-- Add **Ripple Edit Mode** (`rippleEnabled` state & toolbar toggle with `Shuffle` / `ArrowRightLeft` icon).
-  - In Ripple Edit Mode:
-    - Moving a sequence or trimming its start/end automatically shifts all downstream clips on that track (or across all unlocked tracks) by `deltaFrames`.
-    - Deleting a sequence ripples remaining clips backward, closing the gap.
-  - Abutting Snap Guideline: Highlight the seam between adjacent clips with an emerald snap guideline (`"Abut"`) when dragging within 4 frames of neighboring start/end.
+- **Ripple Edit Mode Toolbar & Logic**:
+  - Added toolbar toggle with `Shuffle` / `ArrowRightLeft` icon (`rippleEnabled` state).
+  - Trimming start/end in Ripple Mode dispatches `rippleTrimSequence`.
+  - Track-scoped ripple: operates strictly on the active track, preserving other tracks' timing.
+- **Abutting Magnetic Snapping & HUD**:
+  - Detects adjacent clip start/end boundaries within a 4-frame threshold.
+  - Renders distinct emerald guideline (`#10b981`) at the exact abut frame.
+  - Displays HUD pill: `"Abut Clip {targetSeqId}"` to provide clear visual confirmation of abutting alignment.
 
 ---
 

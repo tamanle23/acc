@@ -25,6 +25,8 @@ export class WebAudioEngine {
   private scrubSource: AudioBufferSourceNode | null = null;
   private mixer: UniversalAudioMixer = new UniversalAudioMixer([], 44100);
   private waveformCache = new Map<string, Float32Array>();
+  private waveformWorker: Worker | null = null;
+  private workerPending = new Set<string>();
   private audioBufferCache = new Map<string, AudioBuffer>();
   private streamWorklet: UniversalAudioStreamWorklet = new UniversalAudioStreamWorklet(44100);
   private isPlaying = false;
@@ -379,13 +381,40 @@ export class WebAudioEngine {
       return this.waveformCache.get(cacheKey)!;
     }
 
-    const peaks = new Float32Array(targetBars);
-
     const decoded = AudioAssetCache.getInstance().getAudioChannels(id);
-    if (decoded && decoded.channels.length > 0 && decoded.channels[0].length > 0) {
-      const channel = decoded.channels[0];
+    const channel = decoded && decoded.channels.length > 0 ? decoded.channels[0] : undefined;
+
+    // Trigger background worker if in browser environment and not already pending
+    if (typeof window !== 'undefined' && typeof Worker !== 'undefined' && !this.workerPending.has(cacheKey)) {
+      this.workerPending.add(cacheKey);
+      try {
+        if (!this.waveformWorker) {
+          this.waveformWorker = new Worker(
+            new URL('../../workers/audioWaveform.worker.ts', import.meta.url),
+            { type: 'module' }
+          );
+          this.waveformWorker.onmessage = (e: MessageEvent<{ id: string; targetBars: number; peaks: Float32Array }>) => {
+            const res = e.data;
+            const key = `${res.id}:${durationFrames}:${res.targetBars}`;
+            this.waveformCache.set(key, res.peaks);
+            this.workerPending.delete(key);
+          };
+        }
+        this.waveformWorker.postMessage({
+          id,
+          durationFrames,
+          targetBars,
+          channelData: channel ? channel.slice() : undefined,
+        });
+      } catch (e) {
+        // Fallback silently if worker construction fails
+      }
+    }
+
+    if (channel && channel.length > 0) {
       const samplesPerBar = Math.floor(channel.length / targetBars);
       if (samplesPerBar > 0) {
+        const peaks = new Float32Array(targetBars);
         for (let i = 0; i < targetBars; i++) {
           let maxVal = 0;
           const start = i * samplesPerBar;
@@ -401,6 +430,7 @@ export class WebAudioEngine {
       }
     }
 
+    const peaks = new Float32Array(targetBars);
     let hash = 0;
     for (let i = 0; i < id.length; i++) {
       hash = (hash << 5) - hash + id.charCodeAt(i);
