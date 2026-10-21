@@ -119,15 +119,23 @@ describe('DataTable - Sticky Bulk Row Selection Column', () => {
   it('positions select column to start-12 when both showRowIndex and showRowSelection are true', () => {
     const { container } = render(<TestTableWrapper showRowIndex showRowSelection />)
 
-    // Row index header is at start-0
-    const indexHeader = container.querySelector(`th[data-row-index="true"]`)
+    // Row index header is at start-0 with strict width constraints
+    const indexHeader = container.querySelector(`th[data-row-index="true"]`) as HTMLElement | null
     expect(indexHeader).toBeTruthy()
     expect(indexHeader?.className).toContain('start-0')
+    expect(indexHeader?.className).toContain('min-w-12')
+    expect(indexHeader?.className).toContain('max-w-12')
+    expect(indexHeader?.style.width).toBe('48px')
+    expect(indexHeader?.style.left).toBe('0px')
 
-    // Row select header is at start-12
-    const selectHeader = container.querySelector(`th[data-row-select="true"]`)
+    // Row select header is at start-12 with matching strict width constraints
+    const selectHeader = container.querySelector(`th[data-row-select="true"]`) as HTMLElement | null
     expect(selectHeader).toBeTruthy()
     expect(selectHeader?.className).toContain('start-12')
+    expect(selectHeader?.className).toContain('min-w-12')
+    expect(selectHeader?.className).toContain('max-w-12')
+    expect(selectHeader?.style.width).toBe('48px')
+    expect(selectHeader?.style.left).toBe('48px')
     // Select column is the rightmost sticky left column, so it gets the elevation shadow
     expect(selectHeader?.className).toContain('shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]')
 
@@ -135,8 +143,13 @@ describe('DataTable - Sticky Bulk Row Selection Column', () => {
     const selectCells = container.querySelectorAll(`td[data-row-select="true"]`)
     expect(selectCells).toHaveLength(mockData.length)
     selectCells.forEach((cell) => {
-      expect(cell.className).toContain('start-12')
-      expect(cell.className).toContain('shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]')
+      const el = cell as HTMLElement
+      expect(el.className).toContain('start-12')
+      expect(el.className).toContain('min-w-12')
+      expect(el.className).toContain('max-w-12')
+      expect(el.style.width).toBe('48px')
+      expect(el.style.left).toBe('48px')
+      expect(el.className).toContain('shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]')
     })
   })
 

@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 export const ROW_INDEX_COLUMN_ID = 'row_index'
 export const ROW_SELECT_COLUMN_ID = 'select'
+export const STICKY_COLUMN_WIDTH = 48
 
 /**
  * Creates a standard column definition for a sticky row order increment column (#).
@@ -44,7 +45,9 @@ export function createRowIndexColumn<TData>(): ColumnDef<TData> {
     },
     enableSorting: false,
     enableHiding: false,
-    size: 48,
+    size: STICKY_COLUMN_WIDTH,
+    minSize: STICKY_COLUMN_WIDTH,
+    maxSize: STICKY_COLUMN_WIDTH,
   }
 }
 
@@ -76,7 +79,9 @@ export function createRowSelectColumn<TData>(): ColumnDef<TData> {
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 48,
+    size: STICKY_COLUMN_WIDTH,
+    minSize: STICKY_COLUMN_WIDTH,
+    maxSize: STICKY_COLUMN_WIDTH,
   }
 }
 
@@ -177,6 +182,49 @@ export function DataTable<TData>({
     },
     [getStickyStartClass, hasRowIndexColumn, hasRowSelectColumn, shouldInjectRowIndex, shouldInjectRowSelection]
   )
+
+  // Helper to determine sticky column style for exact pixel sizing and seamless alignment
+  const getStickyColStyle = useCallback(
+    (colId: string): React.CSSProperties | undefined => {
+      const isRowIndex = colId === 'row_index' || colId === 'rowIndex'
+      const isRowSelect = colId === 'select' || colId === 'row_select' || colId === 'rowSelect'
+
+      if (!isRowIndex && !isRowSelect) return undefined
+
+      const hasIndex = shouldInjectRowIndex || hasRowIndexColumn
+      const hasSelect = shouldInjectRowSelection || hasRowSelectColumn
+
+      let left = 0
+      if (hasIndex && hasSelect) {
+        if (isRowIndex) {
+          const indexIdx = allColumns.findIndex((c) => c.id === 'row_index' || c.id === 'rowIndex')
+          const selectIdx = allColumns.findIndex(
+            (c) => c.id === 'select' || c.id === 'row_select' || c.id === 'rowSelect'
+          )
+          const isFirst =
+            shouldInjectRowIndex || (indexIdx !== -1 && (selectIdx === -1 || indexIdx < selectIdx))
+          left = isFirst ? 0 : STICKY_COLUMN_WIDTH
+        }
+        if (isRowSelect) {
+          const indexIdx = allColumns.findIndex((c) => c.id === 'row_index' || c.id === 'rowIndex')
+          const selectIdx = allColumns.findIndex(
+            (c) => c.id === 'select' || c.id === 'row_select' || c.id === 'rowSelect'
+          )
+          const isSecond =
+            shouldInjectRowIndex || (indexIdx !== -1 && selectIdx !== -1 && indexIdx < selectIdx)
+          left = isSecond ? STICKY_COLUMN_WIDTH : 0
+        }
+      }
+
+      return {
+        width: STICKY_COLUMN_WIDTH,
+        minWidth: STICKY_COLUMN_WIDTH,
+        maxWidth: STICKY_COLUMN_WIDTH,
+        left,
+      }
+    },
+    [allColumns, hasRowIndexColumn, hasRowSelectColumn, shouldInjectRowIndex, shouldInjectRowSelection]
+  )
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
@@ -254,8 +302,9 @@ export function DataTable<TData>({
                   <TableHead
                     data-row-index="true"
                     aria-label="Row number"
+                    style={getStickyColStyle('row_index')}
                     className={cn(
-                      'sticky z-20 w-12 text-center font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
+                      'sticky z-20 w-12 min-w-12 max-w-12 text-center font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
                       getStickyStartClass('row_index'),
                       isRightmostStickyLeft('row_index') && 'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
                     )}
@@ -267,8 +316,9 @@ export function DataTable<TData>({
                   <TableHead
                     data-row-select="true"
                     aria-label="Select all rows"
+                    style={getStickyColStyle('select')}
                     className={cn(
-                      'sticky z-20 w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
+                      'sticky z-20 w-12 min-w-12 max-w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
                       getStickyStartClass('select'),
                       isRightmostStickyLeft('select') && 'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
                     )}
@@ -310,12 +360,16 @@ export function DataTable<TData>({
                       aria-sort={ariaSort}
                       data-row-index={isRowIndex ? 'true' : undefined}
                       data-row-select={isRowSelect ? 'true' : undefined}
+                      style={{
+                        ...getStickyColStyle(header.column.id),
+                        ...header.column.columnDef.meta?.thStyle,
+                      }}
                       className={cn(
                         header.column.columnDef.meta?.className,
                         header.column.columnDef.meta?.thClassName,
                         isStickyLeft &&
                         cn(
-                          'sticky z-20 w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
+                          'sticky z-20 w-12 min-w-12 max-w-12 text-center bg-background/95 dark:bg-slate-900/95 backdrop-blur-md border-e border-white/20 dark:border-white/10',
                           isRowIndex &&
                           'font-semibold text-muted-foreground uppercase tracking-wider text-[11px] font-mono select-none',
                           getStickyStartClass(header.column.id),
@@ -378,8 +432,9 @@ export function DataTable<TData>({
                     {shouldInjectRowIndex && (
                       <TableCell
                         data-row-index="true"
+                        style={getStickyColStyle('row_index')}
                         className={cn(
-                          "sticky z-10 w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 font-mono text-[11px] text-muted-foreground/80 font-medium select-none transition-[background-color]",
+                          "sticky z-10 w-12 min-w-12 max-w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 font-mono text-[11px] text-muted-foreground/80 font-medium select-none transition-[background-color]",
                           getStickyStartClass('row_index'),
                           isRightmostStickyLeft('row_index') && 'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
                         )}
@@ -391,9 +446,10 @@ export function DataTable<TData>({
                     {shouldInjectRowSelection && (
                       <TableCell
                         data-row-select="true"
+                        style={getStickyColStyle('select')}
                         onClick={(e) => e.stopPropagation()}
                         className={cn(
-                          "sticky z-10 w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]",
+                          "sticky z-10 w-12 min-w-12 max-w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]",
                           getStickyStartClass('select'),
                           isRightmostStickyLeft('select') && 'shadow-[6px_0_12px_-4px_rgba(0,0,0,0.06)]'
                         )}
@@ -421,6 +477,10 @@ export function DataTable<TData>({
                           data-action={isAction ? 'true' : undefined}
                           data-row-index={isRowIndex ? 'true' : undefined}
                           data-row-select={isRowSelect ? 'true' : undefined}
+                          style={{
+                            ...getStickyColStyle(cell.column.id),
+                            ...cell.column.columnDef.meta?.tdStyle,
+                          }}
                           onClick={(e) => {
                             if (isAction || isRowSelect) {
                               e.stopPropagation();
@@ -431,7 +491,7 @@ export function DataTable<TData>({
                             cell.column.columnDef.meta?.tdClassName,
                             isStickyLeft &&
                             cn(
-                              'sticky z-10 w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]',
+                              'sticky z-10 w-12 min-w-12 max-w-12 text-center bg-background/90 group-hover:bg-background/95 dark:bg-slate-900/90 dark:group-hover:bg-slate-800/95 backdrop-blur-xl border-e border-white/20 dark:border-white/10 transition-[background-color]',
                               isRowIndex &&
                               'font-mono text-[11px] text-muted-foreground/80 font-medium select-none',
                               getStickyStartClass(cell.column.id),
