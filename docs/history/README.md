@@ -183,6 +183,7 @@
 | [176](176_data_table_sticky_row_order_column.md) | 2026-10-21 | DataTable Row Order Increment Sticky Column | Implemented sticky left row order increment column (#) in DataTable matching EntityDataGrid with 48px fixed width, frosted Liquid Glass backdrop blur, and pagination index math (372/372 console tests passing, 0 TypeScript errors). |
 | [177](177_data_table_sticky_bulk_row_select_column.md) | 2026-10-21 | DataTable Sticky Bulk Row Selection Column | Implemented sticky left bulk row selection column in DataTable matching EntityDataGrid with dynamic offsets (start-0 vs start-12), frosted Liquid Glass surfaces, row click isolation, and createRowSelectColumn helper (14/14 data-table tests passing, 0 TypeScript errors). |
 | [178](178_data_table_sticky_columns_seamless_zero_gap_alignment.md) | 2026-10-21 | DataTable Sticky Columns Seamless Zero-Gap Alignment | Resolved column compression in auto table layout by enforcing strict min/max width constraints and computed left offsets on sticky row index (#) and row selection columns, eliminating all gaps (14/14 data-table tests passing, 0 TypeScript errors). |
+| [179](179_visual_dag_studio_ergonomics_hardening_and_popover_alignment.md) | 2026-10-22 | Visual DAG Studio Ergonomics Hardening & Edge Quick-Insert Callback Alignment | Resolved prop signature mismatch between VisualDagStudio and DagQuickInsertPopover, added dual onSelect/onSelectNodeType support, enabled marquee box drag selection on ReactFlow canvas, and verified full 68-test studio suite (68/68 tests green, 0 TypeScript errors). |
 
 
 

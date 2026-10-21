@@ -15,6 +15,7 @@ import {
   addEdge,
   useReactFlow,
   ReactFlowProvider,
+  SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { DagWorkflowNodeComponent, type DagNodeData, type DagNodeType, type ExecutionState } from './dag-node';
@@ -1862,7 +1863,11 @@ function DagStudioCanvas({
       {!isReadOnly && edgeSplitTarget && (
         <DagQuickInsertPopover
           position={edgeSplitTarget.position}
-          onSelect={(taskType, label, extraData) => {
+          onSelectNodeType={(taskType: DagNodeType, defaultData?: Partial<DagNodeData>) => {
+            handleSplitEdge(edgeSplitTarget.edgeId, taskType, defaultData);
+            setEdgeSplitTarget(null);
+          }}
+          onSelect={(taskType: DagNodeType, label?: string, extraData?: Partial<DagNodeData>) => {
             handleSplitEdge(edgeSplitTarget.edgeId, taskType, { label, ...extraData });
             setEdgeSplitTarget(null);
           }}
@@ -1954,6 +1959,9 @@ function DagStudioCanvas({
           nodesDraggable={!isReadOnly}
           nodesConnectable={!isReadOnly}
           elementsSelectable={true}
+          selectionOnDrag={!isReadOnly}
+          selectionMode={SelectionMode?.Partial || ('partial' as SelectionMode)}
+          panOnDrag={[1, 2]}
           snapToGrid={isSnapToGrid}
           snapGrid={[16, 16]}
           fitView

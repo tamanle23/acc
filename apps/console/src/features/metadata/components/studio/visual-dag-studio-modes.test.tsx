@@ -24,6 +24,7 @@ vi.mock('@xyflow/react', () => ({
   applyNodeChanges: (_: any, nds: any) => nds,
   applyEdgeChanges: (_: any, eds: any) => eds,
   addEdge: (params: any, eds: any) => [...eds, params],
+  SelectionMode: { Partial: 'partial', Full: 'full' },
 }));
 
 // Mock router

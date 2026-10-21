@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
 import { PALETTE_ITEMS, CATEGORIES, type PaletteItem } from './dag-palette';
 import { type DagNodeType, type DagNodeData } from './dag-node';
@@ -7,15 +7,27 @@ import { Input } from '@/components/ui/input';
 
 export interface DagQuickInsertPopoverProps {
   position: { x: number; y: number };
-  onSelectNodeType: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
+  onSelectNodeType?: (type: DagNodeType, defaultData?: Partial<DagNodeData>) => void;
+  onSelect?: (type: DagNodeType, label?: string, defaultData?: Partial<DagNodeData>) => void;
   onClose: () => void;
 }
 
 export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
   position,
   onSelectNodeType,
+  onSelect,
   onClose,
 }) => {
+  const handleSelectType = useCallback(
+    (type: DagNodeType, defaultData?: Partial<DagNodeData>, label?: string) => {
+      if (onSelectNodeType) {
+        onSelectNodeType(type, defaultData);
+      } else if (onSelect) {
+        onSelect(type, label, defaultData);
+      }
+    },
+    [onSelectNodeType, onSelect]
+  );
   const popoverRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,14 +74,14 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
         e.preventDefault();
         if (filteredItems[selectedIndex]) {
           const item = filteredItems[selectedIndex];
-          onSelectNodeType(item.type, item.defaultData);
+          handleSelectType(item.type, item.defaultData, item.label);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredItems, selectedIndex, onSelectNodeType, onClose]);
+  }, [filteredItems, selectedIndex, handleSelectType, onClose]);
 
   // Handle outside click to close
   useEffect(() => {
@@ -185,7 +197,7 @@ export const DagQuickInsertPopover: React.FC<DagQuickInsertPopoverProps> = ({
                 role="option"
                 aria-selected={isSelected}
                 tabIndex={0}
-                onClick={() => onSelectNodeType(item.type, item.defaultData)}
+                onClick={() => handleSelectType(item.type, item.defaultData, item.label)}
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={cn(
                   'flex items-center gap-2.5 p-2 rounded-xl cursor-pointer text-left transition-all',

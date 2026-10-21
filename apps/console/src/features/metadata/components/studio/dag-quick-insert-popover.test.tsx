@@ -105,4 +105,26 @@ describe('DagQuickInsertPopover Component Unit Tests', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalled();
   });
+
+  it('supports onSelect callback prop as well for backward compatibility', () => {
+    const handleSelect = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <DagQuickInsertPopover
+        position={{ x: 200, y: 200 }}
+        onSelect={handleSelect}
+        onClose={handleClose}
+      />
+    );
+
+    const item = screen.getByTestId('dag-quick-insert-item-SIMPLE');
+    fireEvent.click(item);
+
+    expect(handleSelect).toHaveBeenCalledWith(
+      'SIMPLE',
+      'Simple Task',
+      expect.objectContaining({ taskType: 'SIMPLE' })
+    );
+  });
 });
