@@ -5,7 +5,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { VisualDagStudio } from '@/features/metadata/components/studio';
+import { VisualDagStudio } from '@/features/workflows/components/studio';
 import { Badge } from '@/components/ui/badge';
 import { Activity, Clock, Cpu, AlertCircle, CheckCircle2, Play } from 'lucide-react';
 import { type WorkflowExecution } from '../schema';

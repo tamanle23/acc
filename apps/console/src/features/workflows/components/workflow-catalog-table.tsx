@@ -21,6 +21,7 @@ import {
   useDeleteWorkflowDefinition,
 } from '../api/workflow-api';
 import { createWorkflowCatalogColumns } from './workflow-catalog-columns';
+import { cn } from '@/lib/utils';
 
 interface WorkflowCatalogTableProps {
   data: WorkflowDefinitionSummary[];
@@ -79,26 +80,13 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
   });
 
   return (
-    <div className="space-y-4">
-      {/* Header Toolbar & Action Bar */}
+    <div
+      className={cn(
+        'max-sm:has-[div[role="toolbar"]]:mb-16', // Add margin bottom to the table on mobile when the toolbar is visible
+        'flex flex-1 flex-col gap-4'
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex-1 min-w-[280px]">
-          <DataTableToolbar
-            table={table}
-            searchPlaceholder="Search workflows by key or name..."
-            filters={[
-              {
-                columnId: 'status',
-                title: 'Status',
-                options: [
-                  { label: 'Active', value: 'ACTIVE' },
-                  { label: 'Disabled', value: 'DISABLED' },
-                ],
-              },
-            ]}
-          />
-        </div>
-
         <Button
           onClick={onCreateNew}
           size="sm"
@@ -108,6 +96,22 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
           Create Workflow
         </Button>
       </div>
+      {/* Header Toolbar & Action Bar */}
+      <DataTableToolbar
+        table={table}
+        searchPlaceholder="Search workflows by key or name..."
+        filters={[
+          {
+            columnId: 'status',
+            title: 'Status',
+            options: [
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Disabled', value: 'DISABLED' },
+            ],
+          },
+        ]}
+      />
+
 
       {/* Shared DataTable Component */}
       <DataTable
@@ -129,7 +133,7 @@ export const WorkflowCatalogTable: React.FC<WorkflowCatalogTableProps> = ({
       />
 
       {/* Pagination */}
-      <DataTablePagination table={table} />
+      <DataTablePagination table={table} className='mt-auto' />
     </div>
   );
 };

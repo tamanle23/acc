@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { VisualDagStudio } from '@/features/metadata/components/studio';
+import { VisualDagStudio } from '@/features/workflows/components/studio';
 import { Badge } from '@/components/ui/badge';
 import { Activity } from 'lucide-react';
 import { type WorkflowExecution } from '../schema';

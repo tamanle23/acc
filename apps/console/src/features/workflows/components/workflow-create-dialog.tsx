@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSaveWorkflowDefinition } from '../api/workflow-api';
-import type { WorkflowIR } from '@/features/metadata/components/studio/workflow-ir-converter';
+import type { WorkflowIR } from './studio';
 
 interface WorkflowCreateDialogProps {
   open: boolean;

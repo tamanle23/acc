@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { ExecutionState } from '@/features/metadata/components/studio/dag-node';
+import type { ExecutionState } from '@/features/workflows/components/studio';
 import { useWorkflowExecutionStatus } from '../api/workflow-api';
 
 export interface WorkflowStreamEvent {

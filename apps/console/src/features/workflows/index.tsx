@@ -7,7 +7,7 @@ import { ThemeSwitch } from '@/components/theme-switch';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ConfigDrawer } from '@/components/config-drawer';
 import { ProfileDropdown } from '@/components/profile-dropdown';
-import { VisualDagStudio } from '@/features/metadata/components/studio';
+import { VisualDagStudio } from './components/studio';
 import { Workflow, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

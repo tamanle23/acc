@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
-import type { WorkflowIR } from '@/features/metadata/components/studio/workflow-ir-converter';
+import type { WorkflowIR } from '../components/studio';
 import type { WorkflowDefinitionSummary, WorkflowExecutionSnapshot } from '@unipost/client';
 import type { ApprovalTask } from '@/core/sandbox/handlers/approvals-sandbox-handler';
 import { toast } from 'sonner';
