@@ -112,7 +112,7 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
           },
         ]}
       />
-      <DataTable table={table} showRowIndex/>
+      <DataTable table={table} showRowIndex showRowSelection/>
       <DataTablePagination table={table} className='mt-auto' />
       <DataTableBulkActions table={table} />
     </div>
