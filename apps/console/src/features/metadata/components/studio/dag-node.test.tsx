@@ -134,7 +134,7 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     expect(screen.getByText('modified')).toBeDefined();
   });
 
-  it('renders START and END boundary badges correctly on entry and exit nodes', () => {
+  it('renders START and END boundary badges correctly on entry and exit nodes with directional handle constraints', () => {
     const { rerender } = render(
       <ReactFlowProvider>
         <DagWorkflowNodeComponent
@@ -142,10 +142,11 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
           type="dagNode"
           data={{
             taskReferenceName: 'startTask',
-            taskType: 'SIMPLE',
+            taskType: 'NOOP',
             label: 'Start Task',
             isStartNode: true,
             isPermanent: true,
+            inputParameters: { orderId: 'ORD-1', customerId: 'CUST-2' },
           }}
           selected={false}
           zIndex={0}
@@ -159,6 +160,10 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
 
     expect(screen.getByTestId('dag-node-start-badge-startTask')).toBeDefined();
     expect(screen.getByText('START')).toBeDefined();
+    expect(screen.getByText('Workflow Input (2 params)')).toBeDefined();
+    // START node only has source handle (out-degree), NO target handle (in-degree is 0)
+    expect(screen.getByTestId('dag-handle-source-startTask')).toBeDefined();
+    expect(screen.queryByTestId('dag-handle-target-startTask')).toBeNull();
 
     rerender(
       <ReactFlowProvider>
@@ -171,6 +176,7 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
             label: 'End Task',
             isEndNode: true,
             isPermanent: true,
+            inputParameters: { result: '${task.output.data}' },
           }}
           selected={false}
           zIndex={0}
@@ -184,5 +190,9 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
 
     expect(screen.getByTestId('dag-node-end-badge-endTask')).toBeDefined();
     expect(screen.getByText('END')).toBeDefined();
+    expect(screen.getByText('Workflow Output (1 mappings)')).toBeDefined();
+    // END node only has target handle (in-degree), NO source handle (out-degree is 0)
+    expect(screen.getByTestId('dag-handle-target-endTask')).toBeDefined();
+    expect(screen.queryByTestId('dag-handle-source-endTask')).toBeNull();
   });
 });

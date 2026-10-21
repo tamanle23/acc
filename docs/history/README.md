@@ -177,6 +177,8 @@
 | [170](170_iteration14_visual_dag_studio_enhancements.md) | 2026-10-21 | Iteration 14 Visual DAG Studio & Execution Inspector Enhancements | Master-detail execution inspection drawer on row click, traversed-path lighting & dead branch dimming, concurrency flamegraph/Gantt timeline view with cross-hover highlighting, and zero-side-effect in-memory designer dry-run simulator harness. |
 | [171](171_fix_datatable_row_click_event_propagation.md) | 2026-10-21 | Fix DataTable Row-Click Event Propagation on Action Controls | Prevented row-level master-detail drawer from triggering when clicking row action menus, buttons, inputs, links, or checkboxes by adding event target filtering and stopPropagation. |
 | [172](172_iteration15_dag_topology_invariants_and_studio_enhancements.md) | 2026-10-21 | Single-Start/End DAG Topology Invariants & Visual Studio Enhancements | Enforced single-start/end graph topology invariants with boundary node protection, custom DagConditionEdge & modal, and WorkflowVariableWatchDrawer (47/47 tests green). |
+| [173](173_pure_conventional_start_and_end_workflow_nodes.md) | 2026-10-21 | Pure Conventional START & END Workflow Boundary Nodes | Streamlined START and END nodes into pure conventional boundaries dedicated strictly to workflow input parameters and output payload mapping (50/50 tests green). |
+
 
 
 

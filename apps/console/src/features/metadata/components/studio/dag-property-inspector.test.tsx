@@ -84,4 +84,73 @@ describe('DagPropertyInspector Drawer', () => {
       expect.objectContaining({ domain: 'warehouse' })
     );
   });
+
+  it('renders dedicated pure Workflow Start input inspector for START nodes', () => {
+    const handleUpdate = vi.fn();
+    const startNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_start',
+      taskType: 'NOOP',
+      label: 'Workflow Start',
+      isStartNode: true,
+      isPermanent: true,
+      inputParameters: {
+        orderId: 'ORD-9821',
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-start"
+        nodeData={startNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['workflow_start', 'checkInventory']}
+      />
+    );
+
+    expect(screen.getByText('Workflow Start')).toBeDefined();
+    expect(screen.getByText('Pure Conventional Start Node')).toBeDefined();
+    expect(screen.getByText('Workflow Input Parameters & Default Schema')).toBeDefined();
+    // Worker and Policy tabs should not exist on pure start node
+    expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
+    expect(screen.queryByText('Policies')).toBeNull();
+  });
+
+  it('renders dedicated pure Workflow End output inspector for END nodes', () => {
+    const handleUpdate = vi.fn();
+    const endNodeData: DagNodeData = {
+      taskReferenceName: 'workflow_end',
+      taskType: 'TERMINATE',
+      label: 'Workflow End',
+      isEndNode: true,
+      isPermanent: true,
+      inputParameters: {
+        status: 'FULFILLED',
+      },
+      terminateParams: {
+        terminationStatus: 'COMPLETED',
+        terminationReason: 'Success',
+      },
+    };
+
+    renderWithClient(
+      <DagPropertyInspector
+        nodeId="node-end"
+        nodeData={endNodeData}
+        open={true}
+        onOpenChange={vi.fn()}
+        onUpdateNodeData={handleUpdate}
+        availableTaskRefs={['workflow_start', 'checkInventory', 'workflow_end']}
+      />
+    );
+
+    expect(screen.getByText('Workflow End')).toBeDefined();
+    expect(screen.getByText('Pure Conventional End Node')).toBeDefined();
+    expect(screen.getByText('Workflow Output Payload Mapping')).toBeDefined();
+    expect(screen.getByText('Termination Status')).toBeDefined();
+    // Worker and Policy tabs should not exist on pure end node
+    expect(screen.queryByText('Bind to Registered SIMPLE Worker')).toBeNull();
+    expect(screen.queryByText('Policies')).toBeNull();
+  });
 });

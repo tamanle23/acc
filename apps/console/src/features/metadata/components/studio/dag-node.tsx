@@ -188,6 +188,12 @@ export type ConductorNodeData = DagNodeData;
 
 export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
   const getNodeIcon = () => {
+    if (data.isStartNode) {
+      return <PlaySquare className="w-4 h-4 text-emerald-500" />;
+    }
+    if (data.isEndNode) {
+      return <StopCircle className="w-4 h-4 text-purple-500" />;
+    }
     switch (data.taskType) {
       // Control Flow
       case 'SWITCH':
@@ -281,6 +287,20 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           </span>
         );
       default:
+        if (data.isStartNode) {
+          return (
+            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">
+              INPUT
+            </span>
+          );
+        }
+        if (data.isEndNode) {
+          return (
+            <span className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded-full border border-purple-500/20">
+              OUTPUT
+            </span>
+          );
+        }
         return (
           <span className="text-[10px] font-medium text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded-full">
             {data.taskType}
@@ -345,13 +365,16 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           </span>
         </div>
       )}
-      {/* Target Handle (Left) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="target-left"
-        className="w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 -left-1.5"
-      />
+      {/* Target Handle (Left) - omitted on pure START node since in-degree is strictly 0 */}
+      {!data.isStartNode && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="target-left"
+          className="w-2.5 h-2.5 rounded-full bg-slate-400 border-2 border-white dark:border-slate-900 -left-1.5"
+          data-testid={`dag-handle-target-${data.taskReferenceName}`}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -364,7 +387,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           </span>
           {data.isStartNode && (
             <span
-              className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+              className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
               data-testid={`dag-node-start-badge-${data.taskReferenceName}`}
             >
               START
@@ -372,7 +395,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           )}
           {data.isEndNode && (
             <span
-              className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
+              className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30"
               data-testid={`dag-node-end-badge-${data.taskReferenceName}`}
             >
               END
@@ -383,19 +406,31 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       </div>
 
       {/* Body details */}
-      <div className="text-[11px] text-muted-foreground line-clamp-1 mb-1">
-        Ref: <span className="font-mono text-[10px] text-foreground/80">{data.taskReferenceName}</span>
-      </div>
+      {data.isStartNode ? (
+        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+          Workflow Input ({Object.keys(data.inputParameters || {}).length} params)
+        </div>
+      ) : data.isEndNode ? (
+        <div className="text-[10px] text-purple-600 dark:text-purple-400 font-mono mt-1">
+          Workflow Output ({Object.keys(data.inputParameters || {}).length} mappings)
+        </div>
+      ) : (
+        <>
+          <div className="text-[11px] text-muted-foreground line-clamp-1 mb-1">
+            Ref: <span className="font-mono text-[10px] text-foreground/80">{data.taskReferenceName}</span>
+          </div>
 
-      {data.durationMs !== undefined && (
-        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-          Duration: {data.durationMs}ms {data.attemptNumber ? `· Attempt ${data.attemptNumber}` : ''}
-        </div>
-      )}
-      {data.timeoutSeconds && data.durationMs === undefined && (
-        <div className="text-[10px] text-muted-foreground/70">
-          Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
-        </div>
+          {data.durationMs !== undefined && (
+            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+              Duration: {data.durationMs}ms {data.attemptNumber ? `· Attempt ${data.attemptNumber}` : ''}
+            </div>
+          )}
+          {data.timeoutSeconds && data.durationMs === undefined && (
+            <div className="text-[10px] text-muted-foreground/70">
+              Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
+            </div>
+          )}
+        </>
       )}
 
       {/* Validation Error Banner */}
@@ -406,13 +441,16 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         </div>
       )}
 
-      {/* Source Handle (Right) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="source-right"
-        className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-white dark:border-slate-900 -right-1.5"
-      />
+      {/* Source Handle (Right) - omitted on pure END node since out-degree is strictly 0 */}
+      {!data.isEndNode && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="source-right"
+          className="w-2.5 h-2.5 rounded-full bg-primary border-2 border-white dark:border-slate-900 -right-1.5"
+          data-testid={`dag-handle-source-${data.taskReferenceName}`}
+        />
+      )}
     </div>
   );
 });

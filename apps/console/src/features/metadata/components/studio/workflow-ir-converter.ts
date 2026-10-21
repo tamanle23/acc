@@ -329,7 +329,10 @@ export function exportToWorkflowIR(
     layoutMetadata[node.data.taskReferenceName] = {
       x: Math.round(node.position.x),
       y: Math.round(node.position.y),
-    };
+      ...(node.data.isPermanent ? { isPermanent: true } : {}),
+      ...(node.data.isStartNode ? { isStartNode: true } : {}),
+      ...(node.data.isEndNode ? { isEndNode: true } : {}),
+    } as any;
 
     const task: WorkflowTaskIR = {
       taskReferenceName: node.data.taskReferenceName,
@@ -404,6 +407,21 @@ export function importFromWorkflowIR(
       y: 150 + (idx % 2 === 0 ? 0 : 80),
     };
 
+    const metaLayout = (ir.layoutMetadata?.[task.taskReferenceName] as any) || {};
+    const isStartNode = Boolean(
+      metaLayout.isStartNode ||
+        (idx === 0 &&
+          ir.tasks.length > 1 &&
+          (task.taskReferenceName === 'workflow_start' || task.taskReferenceName === 'start' || task.taskType === 'NOOP'))
+    );
+    const isEndNode = Boolean(
+      metaLayout.isEndNode ||
+        (idx === ir.tasks.length - 1 &&
+          ir.tasks.length > 1 &&
+          (task.taskReferenceName === 'workflow_end' || task.taskReferenceName === 'end' || task.taskType === 'TERMINATE'))
+    );
+    const isPermanent = Boolean(metaLayout.isPermanent || isStartNode || isEndNode);
+
     nodes.push({
       id: nodeId,
       type: 'dagNode',
@@ -434,6 +452,9 @@ export function importFromWorkflowIR(
         subWorkflowParams: task.subWorkflowParams,
         kafkaParams: task.kafkaParams,
         executionState: 'PENDING',
+        isPermanent,
+        isStartNode,
+        isEndNode,
       },
     });
   });

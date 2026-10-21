@@ -9,6 +9,7 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type OnConnect,
+  type Connection,
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
@@ -96,9 +97,27 @@ const edgeTypes = {
 
 const INITIAL_NODES: Node<DagNodeData>[] = [
   {
+    id: 'node-start',
+    type: 'dagNode',
+    position: { x: 40, y: 150 },
+    data: {
+      taskReferenceName: 'workflow_start',
+      taskType: 'NOOP',
+      label: 'Workflow Start',
+      executionState: 'COMPLETED',
+      isPermanent: true,
+      isStartNode: true,
+      inputParameters: {
+        orderId: 'ORD-9821',
+        speed: 'EXPRESS',
+        postalCode: '94107',
+      },
+    },
+  },
+  {
     id: 'node-inventory',
     type: 'dagNode',
-    position: { x: 50, y: 150 },
+    position: { x: 280, y: 150 },
     data: {
       taskReferenceName: 'checkInventory',
       taskType: 'SIMPLE',
@@ -112,14 +131,13 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
       inputParameters: {
         orderId: '${workflow.input.orderId}',
       },
-      isPermanent: true,
-      isStartNode: true,
+      compensateHandlerRef: 'cancelInventoryReservation',
     },
   },
   {
     id: 'node-route',
     type: 'dagNode',
-    position: { x: 340, y: 150 },
+    position: { x: 520, y: 150 },
     data: {
       taskReferenceName: 'routeShipping',
       taskType: 'SWITCH',
@@ -136,7 +154,7 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-courier',
     type: 'dagNode',
-    position: { x: 620, y: 70 },
+    position: { x: 760, y: 70 },
     data: {
       taskReferenceName: 'expressCourier',
       taskType: 'SIMPLE',
@@ -154,7 +172,7 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
   {
     id: 'node-ground',
     type: 'dagNode',
-    position: { x: 620, y: 230 },
+    position: { x: 760, y: 230 },
     data: {
       taskReferenceName: 'groundPostal',
       taskType: 'SIMPLE',
@@ -169,16 +187,21 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
     },
   },
   {
-    id: 'node-complete',
+    id: 'node-end',
     type: 'dagNode',
-    position: { x: 900, y: 150 },
+    position: { x: 1020, y: 150 },
     data: {
-      taskReferenceName: 'completeOrder',
+      taskReferenceName: 'workflow_end',
       taskType: 'TERMINATE',
-      label: 'Complete Order',
+      label: 'Workflow End',
       executionState: 'PENDING',
       isPermanent: true,
       isEndNode: true,
+      inputParameters: {
+        orderId: '${workflow.input.orderId}',
+        trackingNumber: '${expressCourier.output.trackingNumber}',
+        status: 'FULFILLED',
+      },
       terminateParams: {
         terminationStatus: 'COMPLETED',
         terminationReason: 'Order fulfillment completed successfully',
@@ -188,11 +211,12 @@ const INITIAL_NODES: Node<DagNodeData>[] = [
 ];
 
 const INITIAL_EDGES: Edge[] = [
+  { id: 'e0', type: 'dagEdge', source: 'node-start', target: 'node-inventory', animated: true },
   { id: 'e1', type: 'dagEdge', source: 'node-inventory', target: 'node-route', animated: true },
   { id: 'e2', type: 'dagEdge', source: 'node-route', target: 'node-courier', label: 'EXPRESS', animated: true, data: { decisionCase: 'EXPRESS' } },
   { id: 'e3', type: 'dagEdge', source: 'node-route', target: 'node-ground', label: 'STANDARD', data: { decisionCase: 'STANDARD', isDefaultCase: true } },
-  { id: 'e4', type: 'dagEdge', source: 'node-courier', target: 'node-complete', animated: true },
-  { id: 'e5', type: 'dagEdge', source: 'node-ground', target: 'node-complete' },
+  { id: 'e4', type: 'dagEdge', source: 'node-courier', target: 'node-end', animated: true },
+  { id: 'e5', type: 'dagEdge', source: 'node-ground', target: 'node-end' },
 ];
 
 function DagStudioCanvas({
@@ -486,9 +510,28 @@ function DagStudioCanvas({
     [isReadOnly]
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection | Edge) => {
+      if (connection.source === connection.target) return false;
+      const targetNode = nodes.find((n) => n.id === connection.target);
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      // START node cannot have incoming edges (in-degree is strictly 0)
+      if (targetNode?.data?.isStartNode) return false;
+      // END node cannot have outgoing edges (out-degree is strictly 0)
+      if (sourceNode?.data?.isEndNode) return false;
+      return true;
+    },
+    [nodes]
+  );
+
   const onConnect: OnConnect = useCallback(
     (params) => {
       if (isReadOnly) return;
+      const targetNode = nodes.find((n) => n.id === params.target);
+      const sourceNode = nodes.find((n) => n.id === params.source);
+      if (targetNode?.data?.isStartNode || sourceNode?.data?.isEndNode || params.source === params.target) {
+        return;
+      }
       setEdges((eds) =>
         addEdge(
           {
@@ -501,7 +544,7 @@ function DagStudioCanvas({
         )
       );
     },
-    [isReadOnly]
+    [isReadOnly, nodes]
   );
 
   const handleOpenEdgeEditor = useCallback(
@@ -1544,6 +1587,7 @@ function DagStudioCanvas({
           onNodesChange={isReadOnly ? undefined : onNodesChange}
           onEdgesChange={isReadOnly ? undefined : onEdgesChange}
           onConnect={isReadOnly ? undefined : onConnect}
+          isValidConnection={isValidConnection}
           onNodeClick={onNodeClick}
           onEdgeClick={isReadOnly ? undefined : onEdgeClick}
           nodesDraggable={!isReadOnly}

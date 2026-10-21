@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import type { DagNodeData } from './dag-node';
 import { validateBindingExpression } from './workflow-ir-converter';
+import { cn } from '@/lib/utils';
 import {
   Plus,
   Trash2,
@@ -25,6 +26,8 @@ import {
   Settings2,
   Cpu,
   Braces,
+  PlaySquare,
+  StopCircle,
 } from 'lucide-react';
 import { useWorkerCatalog, type TaskWorkerDescriptor } from '@/features/workers/api/worker-fleet-api';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
@@ -557,6 +560,279 @@ export function DagPropertyInspector({
         );
     }
   };
+
+  if (formData.isStartNode) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md md:max-w-lg p-0 flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border-l border-white/20 dark:border-white/10 shadow-2xl z-50 overflow-hidden"
+        >
+          <SheetHeader className="p-6 pb-4 border-b border-border/40 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-base font-bold flex items-center gap-2">
+                  <PlaySquare className="w-4 h-4 text-emerald-500" />
+                  <span>Workflow Start</span>
+                  <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]">
+                    START · INPUT
+                  </Badge>
+                </SheetTitle>
+              </div>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
+                Entry Boundary
+              </Badge>
+            </div>
+            <SheetDescription className="text-xs text-muted-foreground">
+              Conventional entry boundary node. Defines the initial inputs and payload schema accepted by the entire workflow (${'workflow.input'}).
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                Pure Conventional Start Node
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                This node contains no execution workers, retry policies, or task logic. It acts purely as the formal input definition for the workflow. All downstream nodes can reference these parameters using <code className="font-mono font-bold bg-emerald-500/20 px-1 py-0.5 rounded text-[10px]">${'{workflow.input.<field>}'}</code>.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="startTaskRef" className="text-xs font-semibold">
+                Task Reference Name
+              </Label>
+              <Input
+                id="startTaskRef"
+                value={formData.taskReferenceName}
+                onChange={(e) => handleFieldChange('taskReferenceName', e.target.value)}
+                className="font-mono text-xs h-8 bg-muted/40"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="startLabel" className="text-xs font-semibold">
+                Display Label
+              </Label>
+              <Input
+                id="startLabel"
+                value={formData.label || 'Workflow Start'}
+                onChange={(e) => handleFieldChange('label', e.target.value)}
+                className="text-xs h-8"
+              />
+            </div>
+
+            {/* Structured Input Parameters Editor via VisualJsonEditor */}
+            <div className="space-y-2 pt-2 border-t border-border/40">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Braces className="w-3.5 h-3.5 text-emerald-500" />
+                  Workflow Input Parameters & Default Schema
+                </Label>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {Object.keys(formData.inputParameters || {}).length} variables
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Define the default input JSON payload or parameter bindings for this workflow.
+              </p>
+
+              <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
+                <VisualJsonEditor
+                  data={formData.inputParameters || {}}
+                  onChange={(updated) => handleFieldChange('inputParameters', updated)}
+                  allowModeSwitch={true}
+                  defaultMode="tree"
+                />
+              </div>
+            </div>
+
+            {/* Quick reference variable tags */}
+            {Object.keys(formData.inputParameters || {}).length > 0 && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-[11px] font-semibold text-muted-foreground">
+                  Available Downstream Expressions:
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.keys(formData.inputParameters || {}).map((paramName) => (
+                    <button
+                      key={paramName}
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`\${workflow.input.${paramName}}`);
+                      }}
+                      title="Click to copy expression"
+                      className="px-2 py-0.5 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-mono text-[10px] border border-emerald-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>${`{workflow.input.${paramName}}`}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  if (formData.isEndNode) {
+    const precedingRefs = availableTaskRefs.filter((r) => r !== formData.taskReferenceName);
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md md:max-w-lg p-0 flex flex-col backdrop-blur-2xl bg-white/95 dark:bg-slate-900/95 border-l border-white/20 dark:border-white/10 shadow-2xl z-50 overflow-hidden"
+        >
+          <SheetHeader className="p-6 pb-4 border-b border-border/40 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-base font-bold flex items-center gap-2">
+                  <StopCircle className="w-4 h-4 text-purple-500" />
+                  <span>Workflow End</span>
+                  <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-[10px]">
+                    END · OUTPUT
+                  </Badge>
+                </SheetTitle>
+              </div>
+              <Badge variant="outline" className="text-[10px] text-muted-foreground font-mono">
+                Terminal Boundary
+              </Badge>
+            </div>
+            <SheetDescription className="text-xs text-muted-foreground">
+              Conventional terminal boundary node. Aggregates upstream task outputs to construct the final output payload returned by the workflow execution (${'workflow.output'}).
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-800 dark:text-purple-300 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                Pure Conventional End Node
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-90">
+                This node contains no execution workers, retry policies, or task logic. It acts purely as the final output aggregator for the workflow execution. Map preceding task outputs to define the response returned to callers.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="endTaskRef" className="text-xs font-semibold">
+                Task Reference Name
+              </Label>
+              <Input
+                id="endTaskRef"
+                value={formData.taskReferenceName}
+                onChange={(e) => handleFieldChange('taskReferenceName', e.target.value)}
+                className="font-mono text-xs h-8 bg-muted/40"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="endLabel" className="text-xs font-semibold">
+                Display Label
+              </Label>
+              <Input
+                id="endLabel"
+                value={formData.label || 'Workflow End'}
+                onChange={(e) => handleFieldChange('label', e.target.value)}
+                className="text-xs h-8"
+              />
+            </div>
+
+            {/* Termination Status & Reason */}
+            <div className="space-y-3 pt-2 border-t border-border/40">
+              <Label className="text-xs font-semibold">Termination Status</Label>
+              <div className="flex gap-2">
+                {(['COMPLETED', 'FAILED'] as const).map((status) => {
+                  const currentStatus = formData.terminateParams?.terminationStatus || 'COMPLETED';
+                  const isSelected = currentStatus === status;
+                  return (
+                    <Button
+                      key={status}
+                      type="button"
+                      size="sm"
+                      variant={isSelected ? 'default' : 'outline'}
+                      className={cn(
+                        'h-8 text-xs font-semibold flex-1',
+                        isSelected && status === 'COMPLETED' && 'bg-emerald-600 hover:bg-emerald-700 text-white',
+                        isSelected && status === 'FAILED' && 'bg-rose-600 hover:bg-rose-700 text-white'
+                      )}
+                      onClick={() => handleSpecializedChange('terminateParams', 'terminationStatus', status)}
+                    >
+                      {status}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="terminationReason" className="text-xs font-semibold">
+                  Completion Reason / Message
+                </Label>
+                <Input
+                  id="terminationReason"
+                  value={formData.terminateParams?.terminationReason || ''}
+                  onChange={(e) => handleSpecializedChange('terminateParams', 'terminationReason', e.target.value)}
+                  placeholder="e.g. Workflow execution successfully completed"
+                  className="text-xs h-8"
+                />
+              </div>
+            </div>
+
+            {/* Workflow Output Payload Mapping via VisualJsonEditor */}
+            <div className="space-y-2 pt-2 border-t border-border/40">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold flex items-center gap-1.5">
+                  <Braces className="w-3.5 h-3.5 text-purple-500" />
+                  Workflow Output Payload Mapping
+                </Label>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {Object.keys(formData.inputParameters || {}).length} output fields
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Map preceding step outputs (e.g. <code className="text-foreground font-mono font-bold">${'{task.output.field}'}</code>) to format the final execution result.
+              </p>
+
+              <div className="rounded-xl border border-border/50 overflow-hidden bg-background/60">
+                <VisualJsonEditor
+                  data={formData.inputParameters || {}}
+                  onChange={(updated) => handleFieldChange('inputParameters', updated)}
+                  allowModeSwitch={true}
+                  defaultMode="tree"
+                />
+              </div>
+            </div>
+
+            {/* Quick helper of preceding task outputs */}
+            {precedingRefs.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-[11px] font-semibold text-muted-foreground">
+                  Available Preceding Task Outputs:
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {precedingRefs.map((ref) => (
+                    <button
+                      key={ref}
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`\${${ref}.output}`);
+                      }}
+                      title="Click to copy output expression"
+                      className="px-2 py-0.5 rounded-md bg-purple-500/10 hover:bg-purple-500/20 text-purple-700 dark:text-purple-300 font-mono text-[10px] border border-purple-500/30 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>${`{${ref}.output.*}`}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

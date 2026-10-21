@@ -341,6 +341,66 @@ describe('Workflow IR Converter & Graph Validation Engine', () => {
       const errors = validateGraphTopology(nodes, edges);
       expect(errors).toHaveLength(0);
     });
+
+    it('roundtrips pure START and END boundary nodes with metadata preservation', () => {
+      const nodes: Node<DagNodeData>[] = [
+        {
+          id: 'node-start',
+          type: 'dagNode',
+          position: { x: 50, y: 100 },
+          data: {
+            taskReferenceName: 'workflow_start',
+            taskType: 'NOOP',
+            label: 'Workflow Start',
+            isStartNode: true,
+            isPermanent: true,
+            inputParameters: { orderId: 'ORD-9821', amount: 500 },
+          },
+        },
+        {
+          id: 'node-task',
+          type: 'dagNode',
+          position: { x: 300, y: 100 },
+          data: {
+            taskReferenceName: 'processOrder',
+            taskType: 'SIMPLE',
+            inputParameters: { orderId: '${workflow.input.orderId}' },
+          },
+        },
+        {
+          id: 'node-end',
+          type: 'dagNode',
+          position: { x: 550, y: 100 },
+          data: {
+            taskReferenceName: 'workflow_end',
+            taskType: 'TERMINATE',
+            label: 'Workflow End',
+            isEndNode: true,
+            isPermanent: true,
+            inputParameters: { status: 'SUCCESS' },
+          },
+        },
+      ];
+
+      const edges: Edge[] = [
+        { id: 'e1', source: 'node-start', target: 'node-task' },
+        { id: 'e2', source: 'node-task', target: 'node-end' },
+      ];
+
+      const ir = exportToWorkflowIR(nodes, edges);
+      expect(ir.tasks).toHaveLength(3);
+      expect(ir.layoutMetadata?.workflow_start).toBeDefined();
+
+      const imported = importFromWorkflowIR(ir);
+      expect(imported.nodes).toHaveLength(3);
+      const startNode = imported.nodes.find((n) => n.data.taskReferenceName === 'workflow_start');
+      const endNode = imported.nodes.find((n) => n.data.taskReferenceName === 'workflow_end');
+
+      expect(startNode?.data.isStartNode).toBe(true);
+      expect(startNode?.data.isPermanent).toBe(true);
+      expect(endNode?.data.isEndNode).toBe(true);
+      expect(endNode?.data.isPermanent).toBe(true);
+    });
   });
 });
 
