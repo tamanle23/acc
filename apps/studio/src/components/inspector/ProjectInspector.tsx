@@ -30,16 +30,16 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
 
   return (
     <div className="space-y-3">
-      <Card className="p-3 bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 space-y-3 text-xs">
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-white/10">
-          <div className="w-8 h-8 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center">
+      <Card className="p-3 bg-card/60 border-border/50 space-y-3 text-xs">
+        <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+          <div className="w-8 h-8 rounded bg-accent-theme/15 text-accent-theme flex items-center justify-center">
             <Settings className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-xs">
+            <h3 className="font-bold text-foreground text-xs">
               Project Master Settings
             </h3>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10px] text-muted-foreground">
               Global canvas resolution & timeline timing
             </p>
           </div>

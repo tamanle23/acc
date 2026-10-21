@@ -62,8 +62,8 @@ export function ParameterSlider({
         min={min}
         max={max}
         step={step}
-        value={value}
-        onValueChange={(val) => onChange(val)}
+        value={[value]}
+        onValueChange={(val) => onChange(val[0])}
         onDoubleClick={() => onChange(defaultValue)}
       />
     </div>

@@ -115,8 +115,8 @@ function ParameterSlider({
         min={min}
         max={max}
         step={step}
-        value={value}
-        onValueChange={(val) => onChange(val)}
+        value={[value]}
+        onValueChange={(val) => onChange(val[0])}
         onDoubleClick={() => onChange(defaultValue)}
       />
     </div>
@@ -397,7 +397,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         className="flex flex-col h-full"
       >
         {/* Tabs Header */}
-        <div className="p-3 border-b border-slate-200 bg-slate-50/50">
+        <div className="p-3 border-b border-border/40 bg-muted/20">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="library" className="gap-1.5 text-xs">
               <Library className="w-3.5 h-3.5" />
@@ -416,14 +416,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
         {/* Tab 0: Staging Library */}
         <TabsContent value="library" className="flex-1 flex flex-col m-0 overflow-hidden">
-          <div className="p-3 border-b border-slate-100 bg-white space-y-2">
+          <div className="p-3 border-b border-border/40 bg-transparent space-y-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search presets & partial VFX..."
                 value={libraryFilterQuery}
                 onChange={(e) => setLibraryFilterQuery(e.target.value)}
-                className="pl-8 h-8 text-xs bg-slate-50/50"
+                className="pl-8 h-8 text-xs bg-muted/40 border-border/50"
               />
             </div>
             {/* Category Filter Pills */}
@@ -436,8 +436,8 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   onClick={() => setSelectedCategory(cat)}
                   className={`h-6 text-[10px] px-2 capitalize ${
                     selectedCategory === cat
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                      ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                      : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
                   }`}
                 >
                   {cat === 'all' ? 'All' : cat === 'vfx' ? 'Partial VFX' : cat + 's'}
@@ -456,27 +456,27 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                     e.dataTransfer.setData('application/json', JSON.stringify({ presetId: preset.id }));
                     e.dataTransfer.effectAllowed = 'copy';
                   }}
-                  className="p-3 border border-slate-200 rounded-lg hover:border-indigo-400 bg-white shadow-2xs hover:shadow-xs transition-all cursor-grab active:cursor-grabbing group select-none"
+                  className="p-3 border border-border/50 rounded-lg hover:border-accent-theme/50 bg-card shadow-2xs hover:shadow-xs transition-all cursor-grab active:cursor-grabbing group select-none"
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded bg-slate-100 group-hover:bg-indigo-50 transition-colors">
+                      <div className="p-1 rounded bg-muted group-hover:bg-accent-theme/15 transition-colors">
                         {renderPresetIcon(preset.iconName)}
                       </div>
-                      <span className="font-semibold text-slate-800 text-xs">
+                      <span className="font-semibold text-foreground text-xs">
                         {preset.name}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-[9px] font-mono border-slate-200">
+                    <Badge variant="outline" className="text-[9px] font-mono border-border/40">
                       {preset.badge}
                     </Badge>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-tight mb-2.5">
+                  <p className="text-[11px] text-muted-foreground leading-tight mb-2.5">
                     {preset.description}
                   </p>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
-                    <span className="text-slate-400 font-mono flex items-center gap-1">
-                      <GripVertical className="w-3 h-3 text-slate-300" />
+                  <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[10px]">
+                    <span className="text-muted-foreground font-mono flex items-center gap-1">
+                      <GripVertical className="w-3 h-3 text-muted-foreground/60" />
                       Drag to stage
                     </span>
                     <Button
@@ -486,7 +486,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                         e.stopPropagation();
                         insertPresetAtCenter(preset);
                       }}
-                      className="h-5 px-2 text-[10px] font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 gap-1"
+                      className="h-5 px-2 text-[10px] font-medium text-accent-theme hover:text-accent-theme hover:bg-accent-theme/15 gap-1"
                     >
                       <Plus className="w-3 h-3" />
                       Insert
@@ -495,7 +495,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 </div>
               ))}
               {filteredPresets.length === 0 && (
-                <p className="text-xs text-slate-400 italic text-center py-6">
+                <p className="text-xs text-muted-foreground italic text-center py-6">
                   No presets found matching "{libraryFilterQuery}".
                 </p>
               )}
@@ -505,21 +505,21 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
         {/* Tab 1: Video IR Asset Vault */}
         <TabsContent value="vault" className="flex-1 flex flex-col m-0 overflow-hidden">
-          <div className="p-3 border-b border-slate-100 bg-white">
+          <div className="p-3 border-b border-border/40 bg-transparent">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Filter IR assets..."
                 value={filterQuery}
                 onChange={(e) => setFilterQuery(e.target.value)}
-                className="pl-8 h-8 text-xs bg-slate-50/50"
+                className="pl-8 h-8 text-xs bg-muted/40 border-border/50"
               />
             </div>
           </div>
 
           <ScrollArea className="flex-1 p-4 space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Registered IR Assets
               </h3>
               <Badge variant="secondary" className="font-mono text-[10px]">
@@ -528,16 +528,16 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             </div>
 
             {filteredAssets.length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-2">No assets registered in Video IR.</p>
+              <p className="text-xs text-muted-foreground italic py-2">No assets registered in Video IR.</p>
             ) : (
               <div className="space-y-2">
                 {filteredAssets.map((asset) => (
                   <Card
                     key={asset.id}
-                    className="p-2.5 border-slate-200 hover:border-indigo-300 transition-colors shadow-2xs"
+                    className="p-2.5 border-border/50 hover:border-accent-theme/40 transition-colors shadow-2xs"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-slate-900 truncate text-xs font-mono">
+                      <span className="font-medium text-foreground truncate text-xs font-mono">
                         {asset.id}
                       </span>
                       <Badge variant="outline" className="text-[9px] uppercase font-mono">

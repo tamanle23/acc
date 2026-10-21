@@ -923,40 +923,40 @@ export function Preview({
               <TransformHandle
                 handleType="tl"
                 isLocked={isLocked}
-                className={`absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-nwse-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Scale Top-Left'}
               />
               <TransformHandle
                 handleType="tr"
                 isLocked={isLocked}
-                className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-nesw-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Scale Top-Right'}
               />
               <TransformHandle
                 handleType="bl"
                 isLocked={isLocked}
-                className={`absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-nesw-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-nesw-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Scale Bottom-Left'}
               />
               <TransformHandle
                 handleType="br"
                 isLocked={isLocked}
-                className={`absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-nwse-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-nwse-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Scale Bottom-Right'}
               />
@@ -965,40 +965,40 @@ export function Preview({
               <TransformHandle
                 handleType="tc"
                 isLocked={isLocked}
-                className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-ns-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Stretch Top'}
               />
               <TransformHandle
                 handleType="bc"
                 isLocked={isLocked}
-                className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-ns-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-ns-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Stretch Bottom'}
               />
               <TransformHandle
                 handleType="ml"
                 isLocked={isLocked}
-                className={`absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute top-1/2 -translate-y-1/2 -left-1.5 w-2 h-4 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-ew-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Stretch Left'}
               />
               <TransformHandle
                 handleType="mr"
                 isLocked={isLocked}
-                className={`absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-white dark:bg-slate-100 border-2 ${
+                className={`absolute top-1/2 -translate-y-1/2 -right-1.5 w-2 h-4 bg-background border-2 ${
                   isLocked
                     ? 'border-amber-400 cursor-not-allowed opacity-40'
-                    : 'border-[var(--accent-primary)] cursor-ew-resize hover:scale-130 active:scale-110'
+                    : 'border-accent-theme cursor-ew-resize hover:scale-130 active:scale-110'
                 } rounded-xs shadow-md transition-transform`}
                 title={isLocked ? 'Locked' : 'Stretch Right'}
               />
@@ -1011,7 +1011,7 @@ export function Preview({
                   className={`w-5 h-5 ${
                     isLocked
                       ? 'bg-amber-500 text-slate-950 cursor-not-allowed opacity-50'
-                      : 'bg-[var(--accent-primary)] text-slate-950 cursor-grab active:cursor-grabbing hover:brightness-110 shadow-[0_0_12px_var(--accent-glow)] hover:scale-115'
+                      : 'bg-accent-theme text-primary-foreground cursor-grab active:cursor-grabbing hover:brightness-110 shadow-accent-glow hover:scale-115'
                   } rounded-full flex items-center justify-center transition-transform`}
                   title={isLocked ? 'Locked' : 'Drag to Rotate'}
                 >
@@ -1019,7 +1019,7 @@ export function Preview({
                 </TransformHandle>
                 <div
                   className={`w-0.5 h-3 ${
-                    isLocked ? 'bg-amber-400/50' : 'bg-[var(--accent-primary)] shadow-[0_0_6px_var(--accent-glow)]'
+                    isLocked ? 'bg-amber-400/50' : 'bg-accent-theme shadow-accent-glow'
                   }`}
                 />
               </div>

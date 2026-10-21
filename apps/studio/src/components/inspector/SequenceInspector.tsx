@@ -165,12 +165,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   return (
     <div className="space-y-3">
       {/* Sequence Meta Card */}
-      <Card className="p-2.5 bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 space-y-2 text-xs">
+      <Card className="p-2.5 bg-card/60 border-border/50 space-y-2 text-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
             <Badge
               variant="outline"
-              className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200 truncate"
+              className="font-mono text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30 truncate"
             >
               {selectedSeq.id}
             </Badge>
@@ -178,7 +178,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               variant="ghost"
               size="icon"
               onClick={handleCopyId}
-              className="h-5 w-5 text-slate-400 hover:text-indigo-600 cursor-pointer"
+              className="h-5 w-5 text-muted-foreground hover:text-accent-theme cursor-pointer"
               title="Copy Sequence ID"
             >
               {copiedId ? (
@@ -193,45 +193,45 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
           </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-200/60 dark:border-white/10">
+        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-border/40">
           <div>
-            <span className="text-slate-400">Track: </span>
-            <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+            <span className="text-muted-foreground">Track: </span>
+            <span className="font-mono font-medium text-foreground">
               {selectedTrack?.id}
             </span>
           </div>
           <div>
-            <span className="text-slate-400">Duration: </span>
-            <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+            <span className="text-muted-foreground">Duration: </span>
+            <span className="font-mono font-medium text-foreground">
               {resolvedDurationFrames}f ({(resolvedDurationFrames / fps).toFixed(2)}s)
             </span>
           </div>
         </div>
 
         {/* Sequence Timing Card */}
-        <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+        <div className="pt-2 border-t border-border/40 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="font-semibold text-[11px] text-foreground/90 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-accent-theme" />
               Sequence Timing
             </span>
-            <span className="text-[10px] font-mono text-slate-400">
+            <span className="text-[10px] font-mono text-muted-foreground">
               {resolvedStartFrame}f - {resolvedEndFrame}f ({formatTimecode(resolvedStartFrame, fps)})
             </span>
           </div>
 
           {/* Start Time Section */}
-          <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded border border-slate-200/80 dark:border-white/10 space-y-1.5">
+          <div className="bg-muted/30 p-2 rounded border border-border/40 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-medium text-slate-600 dark:text-slate-400">Start Time</span>
+              <span className="font-medium text-muted-foreground">Start Time</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleToggleStartRelational(false)}
                   className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
                     !isStartRelational
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                      ? 'bg-accent-theme text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Absolute
@@ -241,8 +241,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   onClick={() => handleToggleStartRelational(true)}
                   className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
                     isStartRelational
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                      ? 'bg-accent-theme text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Relational
@@ -253,7 +253,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             {!isStartRelational ? (
               <div className="flex items-center gap-2">
                 <div className="flex-1">
-                  <label className="text-[10px] text-slate-400">Frame</label>
+                  <label className="text-[10px] text-muted-foreground">Frame</label>
                   <Input
                     type="number"
                     min={0}
@@ -264,12 +264,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                         time: { ...selectedSeq.time, start: val },
                       });
                     }}
-                    className="h-6 text-[11px] font-mono"
+                    className="h-6 text-[11px] font-mono bg-background"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] text-slate-400">Timecode</label>
-                  <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300">
+                  <label className="text-[10px] text-muted-foreground">Timecode</label>
+                  <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-muted/60 rounded text-foreground border border-border/40">
                     {formatTimecode(currentStartNumber, fps)}
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               <div className="space-y-1.5 text-[11px]">
                 <div className="grid grid-cols-2 gap-1.5">
                   <div>
-                    <label className="text-[10px] text-slate-400">Relation</label>
+                    <label className="text-[10px] text-muted-foreground">Relation</label>
                     <select
                       value={relStartType}
                       onChange={(e) => {
@@ -290,14 +290,14 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                           time: { ...selectedSeq.time, start: newRel },
                         });
                       }}
-                      className="w-full h-6 text-[10px] bg-background border border-slate-200 dark:border-white/10 rounded px-1"
+                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 text-foreground"
                     >
                       <option value="after">after (sequential)</option>
                       <option value="syncWith">syncWith (parallel)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400">Target Sequence</label>
+                    <label className="text-[10px] text-muted-foreground">Target Sequence</label>
                     <select
                       value={relStartTarget}
                       onChange={(e) => {
@@ -309,7 +309,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                           time: { ...selectedSeq.time, start: newRel },
                         });
                       }}
-                      className="w-full h-6 text-[10px] bg-background border border-slate-200 dark:border-white/10 rounded px-1 font-mono"
+                      className="w-full h-6 text-[10px] bg-background border border-border/50 rounded px-1 font-mono text-foreground"
                     >
                       {otherSequenceIds.map((id) => (
                         <option key={id} value={id}>
@@ -324,17 +324,17 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
           </div>
 
           {/* Duration Section */}
-          <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded border border-slate-200/80 dark:border-white/10 space-y-1.5">
+          <div className="bg-muted/30 p-2 rounded border border-border/40 space-y-1.5">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="font-medium text-slate-600 dark:text-slate-400">Duration</span>
+              <span className="font-medium text-muted-foreground">Duration</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleToggleDurationRelational(false)}
                   className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
                     !isDurationRelational
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                      ? 'bg-accent-theme text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Absolute
@@ -344,8 +344,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   onClick={() => handleToggleDurationRelational(true)}
                   className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors cursor-pointer ${
                     isDurationRelational
-                      ? 'bg-indigo-600 text-white'
-                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                      ? 'bg-accent-theme text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Relational
@@ -356,7 +356,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             {!isDurationRelational ? (
               <div className="flex items-center gap-2">
                 <div className="flex-1">
-                  <label className="text-[10px] text-slate-400">Frames</label>
+                  <label className="text-[10px] text-muted-foreground">Frames</label>
                   <Input
                     type="number"
                     min={1}
@@ -367,12 +367,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                         time: { ...selectedSeq.time, duration: val },
                       });
                     }}
-                    className="h-6 text-[11px] font-mono"
+                    className="h-6 text-[11px] font-mono bg-background"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-[10px] text-slate-400">Seconds</label>
-                  <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300">
+                  <label className="text-[10px] text-muted-foreground">Seconds</label>
+                  <div className="h-6 px-2 text-[10px] font-mono flex items-center bg-muted/60 rounded text-foreground border border-border/40">
                     {(currentDurationNumber / fps).toFixed(2)}s
                   </div>
                 </div>
@@ -380,7 +380,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             ) : (
               <div className="space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-500">Match Asset Duration</span>
+                  <span className="text-[10px] text-muted-foreground">Match Asset Duration</span>
                   <Switch
                     checked={relDurMatchAsset}
                     onCheckedChange={(checked) => {
@@ -400,9 +400,9 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
         {/* Timed Text Subtitle Cues */}
         {(selectedTrack?.type === 'timed_text' || selectedSeq?.cues !== undefined) && (
-          <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-2">
+          <div className="pt-2 border-t border-border/40 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-[11px] text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <span className="font-semibold text-[11px] text-foreground/90 flex items-center gap-1.5">
                 <Type className="w-3.5 h-3.5 text-amber-500" />
                 Timed Text Cues ({selectedSeq?.cues?.length || 0})
               </span>
@@ -421,7 +421,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   });
                   IRStateManager.getInstance().updateSequenceProps(selectedSeqId, { cues: existing });
                 }}
-                className="h-5 px-1.5 text-[10px] text-indigo-600 hover:bg-indigo-50 cursor-pointer"
+                className="h-5 px-1.5 text-[10px] text-accent-theme hover:bg-accent-theme/10 cursor-pointer"
               >
                 + Add Cue
               </Button>
@@ -430,12 +430,12 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
         )}
 
         {/* Action Bar */}
-        <div className="flex items-center gap-1 pt-2 border-t border-slate-200/60 dark:border-white/10">
+        <div className="flex items-center gap-1 pt-2 border-t border-border/40">
           <Button
             variant="outline"
             size="sm"
             onClick={handleDuplicate}
-            className="flex-1 h-6 text-[10px] gap-1 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 border-slate-200 dark:border-white/10 cursor-pointer"
+            className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-border/50 cursor-pointer"
             title="Duplicate sequence"
           >
             <CopyPlus className="w-3 h-3" />
@@ -445,8 +445,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             variant="outline"
             size="sm"
             onClick={() => setIsLocked(!isLocked)}
-            className={`h-6 px-2 text-[10px] gap-1 border-slate-200 dark:border-white/10 cursor-pointer ${
-              isLocked ? 'bg-amber-50 text-amber-700 border-amber-300' : 'text-slate-600'
+            className={`h-6 px-2 text-[10px] gap-1 border-border/50 cursor-pointer ${
+              isLocked ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300' : 'text-muted-foreground'
             }`}
             title={isLocked ? 'Locked' : 'Unlocked'}
           >
@@ -466,13 +466,13 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
       {/* Pure Attached-Only Empty State */}
       {modifiers.length === 0 && (
-        <div className="p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-lg text-center space-y-2 text-slate-400 bg-slate-50/40 dark:bg-slate-900/20">
-          <Sliders className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+        <div className="p-6 border-2 border-dashed border-border/60 rounded-lg text-center space-y-2 text-muted-foreground bg-muted/20">
+          <Sliders className="w-8 h-8 mx-auto text-muted-foreground/60" />
+          <p className="text-xs font-semibold text-foreground/90">
             No Effects Attached
           </p>
-          <p className="text-[11px] text-slate-400 max-w-[220px] mx-auto">
-            Click <span className="font-semibold text-indigo-500">+ Add Effect</span> above to attach visual, audio, or motion modifiers to this sequence.
+          <p className="text-[11px] text-muted-foreground max-w-[220px] mx-auto">
+            Click <span className="font-semibold text-accent-theme">+ Add Effect</span> above to attach visual, audio, or motion modifiers to this sequence.
           </p>
         </div>
       )}
@@ -495,7 +495,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             <AccordionItem
               key={mod.type}
               value={sectionId}
-              className="border border-slate-200 dark:border-white/10 rounded-md overflow-hidden bg-white dark:bg-slate-900/40 shadow-2xs"
+              className="border border-border/50 rounded-md overflow-hidden bg-card shadow-2xs"
             >
               <AccordionTrigger
                 actions={
@@ -539,8 +539,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                 }
               >
                 <div className="flex items-center gap-1.5">
-                  <Icon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <Icon className="w-3.5 h-3.5 text-accent-theme" />
+                  <span className="text-xs font-bold text-foreground">
                     {title}
                   </span>
                 </div>

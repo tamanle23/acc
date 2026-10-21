@@ -1,5 +1,52 @@
 @import "tailwindcss";
 
+@custom-variant glass-cyber (&:where([data-glass-style="cyber"], [data-glass-style="cyber"] *));
+@custom-variant glass-frosted (&:where([data-glass-style="frosted"], [data-glass-style="frosted"] *));
+@custom-variant glass-specular (&:where([data-glass-style="specular"], [data-glass-style="specular"] *));
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Studio Liquid Glass Design Tokens */
+  --color-accent-theme: var(--accent-primary);
+  --color-accent-glow: var(--accent-glow);
+  --color-glass-surface: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-glass-border-highlight: var(--glass-border-highlight);
+}
+
 @layer base {
   :root {
     --background: 210 40% 98%;
@@ -11,7 +58,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 189 94% 43%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -28,7 +75,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 243.4 75.4% 58.6%;
+    --ring: 189 94% 43%;
 
     --radius: 0.5rem;
 
@@ -40,7 +87,7 @@
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
     --glass-blur: blur(16px);
     --ambient-mesh: radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.06) 0px, transparent 50%),
-                     radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
 
     --accent-primary: #06b6d4;
     --accent-glow: rgba(6, 182, 212, 0.35);
@@ -56,7 +103,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 189 94% 43%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -73,7 +120,7 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 189 94% 43%;
 
     /* Dark Obsidian Glass Tokens */
     --glass-bg: rgba(11, 17, 33, 0.72);
@@ -83,7 +130,7 @@
     --glass-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65);
     --glass-blur: blur(20px);
     --ambient-mesh: radial-gradient(at 10% 10%, rgba(6, 182, 212, 0.10) 0px, transparent 45%),
-                     radial-gradient(at 90% 90%, rgba(139, 92, 246, 0.10) 0px, transparent 45%);
+      radial-gradient(at 90% 90%, rgba(139, 92, 246, 0.10) 0px, transparent 45%);
 
     --accent-primary: #38bdf8;
     --accent-glow: rgba(56, 189, 248, 0.4);
@@ -107,32 +154,58 @@
   [data-blur-intensity="low"] {
     --glass-blur: blur(6px);
   }
+
   [data-blur-intensity="medium"] {
     --glass-blur: blur(18px);
   }
+
   [data-blur-intensity="high"] {
     --glass-blur: blur(40px);
   }
 
-  /* Dynamic Accent Colors */
+  /* Dynamic Accent Colors synchronized with shadcn --primary and --ring */
   [data-accent="cyan"] {
+    --primary: 189 94% 43%;
+    --ring: 189 94% 43%;
     --accent-primary: #06b6d4;
+    --color-brand-accent: #06b6d4;
+    --glass-border-highlight: #06b6d4;
     --accent-glow: rgba(6, 182, 212, 0.4);
   }
+
   [data-accent="violet"] {
+    --primary: 258 90% 66%;
+    --ring: 258 90% 66%;
     --accent-primary: #8b5cf6;
+    --color-brand-accent: #8b5cf6;
+    --glass-border-highlight: #8b5cf6;
     --accent-glow: rgba(139, 92, 246, 0.4);
   }
+
   [data-accent="emerald"] {
+    --primary: 160 84% 39%;
+    --ring: 160 84% 39%;
     --accent-primary: #10b981;
+    --color-brand-accent: #10b981;
+    --glass-border-highlight: #10b981;
     --accent-glow: rgba(16, 185, 129, 0.4);
   }
+
   [data-accent="amber"] {
+    --primary: 38 92% 50%;
+    --ring: 38 92% 50%;
     --accent-primary: #f59e0b;
+    --color-brand-accent: #f59e0b;
+    --glass-border-highlight: #f59e0b;
     --accent-glow: rgba(245, 158, 11, 0.4);
   }
+
   [data-accent="rose"] {
+    --primary: 350 89% 60%;
+    --ring: 350 89% 60%;
     --accent-primary: #f43f5e;
+    --color-brand-accent: #f43f5e;
+    --glass-border-highlight: #f43f5e;
     --accent-glow: rgba(244, 63, 94, 0.4);
   }
 }
@@ -248,12 +321,15 @@ body {
     offset-distance: 0%;
     opacity: 0;
   }
+
   15% {
     opacity: 1;
   }
+
   85% {
     opacity: 1;
   }
+
   100% {
     offset-distance: 100%;
     opacity: 0;

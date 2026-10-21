@@ -181,14 +181,13 @@ function JsonTreeNode({
       typeof value === 'number'
         ? 'text-amber-400'
         : typeof value === 'boolean'
-        ? 'text-emerald-400'
-        : 'text-cyan-300';
+          ? 'text-emerald-400'
+          : 'text-cyan-300';
 
     return (
       <div
-        className={`flex items-center gap-1.5 py-0.5 px-1.5 rounded text-[11px] font-mono ${
-          matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
-        }`}
+        className={`flex items-center gap-1.5 py-0.5 px-1.5 rounded text-[11px] font-mono ${matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
+          }`}
         style={{ paddingLeft: `${depth * 14 + 8}px` }}
       >
         <span className="text-slate-400">{label}:</span>
@@ -210,9 +209,8 @@ function JsonTreeNode({
     <div>
       <div
         onClick={() => setExpanded(!expanded)}
-        className={`flex items-center justify-between py-0.5 px-1.5 rounded cursor-pointer text-[11px] font-mono select-none ${
-          matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
-        }`}
+        className={`flex items-center justify-between py-0.5 px-1.5 rounded cursor-pointer text-[11px] font-mono select-none ${matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
+          }`}
         style={{ paddingLeft: `${depth * 14}px` }}
       >
         <div className="flex items-center gap-1">
@@ -347,10 +345,10 @@ export function VisualIRJsonDebuggerModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="visual-ir-json-debugger-modal"
-        className="max-w-5xl w-[92vw] h-[85vh] flex flex-col glass-panel border border-[var(--glass-border)] p-0 rounded-2xl shadow-2xl backdrop-blur-2xl overflow-hidden"
+        className="sm:max-w-none max-w-5xl w-[92vw] h-[85vh] flex flex-col glass-panel border border-[var(--glass-border)] p-0 rounded-2xl overflow-hidden"
       >
         {/* Modal Header */}
-        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3.5 border-b border-[var(--glass-border)] bg-slate-950/60 shrink-0">
+        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3.5 border-b border-[var(--glass-border) shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 flex items-center justify-center">
               <Code2 className="w-4 h-4" />
@@ -410,7 +408,7 @@ export function VisualIRJsonDebuggerModal({
         </DialogHeader>
 
         {/* Sub-Toolbar: Mode Switcher + Formatting Utilities */}
-        <div className="flex items-center justify-between px-5 py-2 border-b border-[var(--glass-border)] bg-slate-900/50 shrink-0">
+        <div className="flex items-center justify-between px-5 py-2 border-b border-[var(--glass-border)] shrink-0">
           <div className="flex items-center gap-1">
             <Button
               type="button"
@@ -457,13 +455,13 @@ export function VisualIRJsonDebuggerModal({
           <div className="flex items-center gap-1.5">
             {activeTab === 'tree' && (
               <div className="relative w-48 mr-2">
-                <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3 h-3  absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <Input
                   type="text"
                   placeholder="Filter keys or values..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-7 pl-7 text-[11px] font-mono bg-slate-950/80 border-slate-800"
+                  className="h-7 pl-7 text-[11px] font-mono  "
                 />
               </div>
             )}
@@ -520,7 +518,7 @@ export function VisualIRJsonDebuggerModal({
         </div>
 
         {/* Main Workspace Body */}
-        <div className="flex-1 min-h-0 flex overflow-hidden bg-slate-950/80">
+        <div className="flex-1 min-h-0 flex overflow-hidde">
           {activeTab === 'editor' && (
             <div className="flex-1 flex min-h-0 overflow-hidden">
               {/* Line-Numbered Monospace Code Editor */}
@@ -726,7 +724,7 @@ export function VisualIRJsonDebuggerModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--glass-border)] bg-slate-950/80 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--glass-border)]  shrink-0">
           <div className="text-xs font-mono text-muted-foreground flex items-center gap-2">
             {applyFeedback ? (
               <span className="text-emerald-400 flex items-center gap-1.5">

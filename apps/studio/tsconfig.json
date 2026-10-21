@@ -7,7 +7,15 @@
       "ESNext"
     ],
     "outDir": "dist",
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@acc/studio": [
+        "./src/*"
+      ],
+      "@acc/studio/*": [
+        "./src/*"
+      ]
+    }
   },
   "include": [
     "src/**/*"

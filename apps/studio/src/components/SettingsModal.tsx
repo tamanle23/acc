@@ -43,7 +43,7 @@ export function SettingsModal() {
 
   return (
     <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-      <DialogContent className="max-w-xl glass-panel text-foreground border-[var(--glass-border)] p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
+      <DialogContent className="sm:max-w-2xl max-w-xl glass-panel text-foreground border-[var(--glass-border)] p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
         <DialogHeader className="pb-3 border-b border-[var(--glass-border)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">

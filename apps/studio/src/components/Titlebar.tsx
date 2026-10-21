@@ -3,6 +3,7 @@ import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, Pane
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
+import { TooltipProvider } from "./ui/tooltip";
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { IRStateManager } from '../lib/ir/irState';
@@ -100,7 +101,7 @@ export function Titlebar({
               size="icon"
               onClick={onToggleLeft}
               aria-label={isLeftOpen ? 'Collapse Left Drawer' : 'Expand Left Drawer'}
-              className={`h-8 w-8 transition-colors ${isLeftOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`h-8 w-8 transition-colors ${isLeftOpen ? 'bg-accent-theme/15 text-accent-theme' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <PanelLeft className="w-4 h-4" />
             </Button>
@@ -114,7 +115,7 @@ export function Titlebar({
             <h1 className="text-sm font-semibold text-foreground tracking-tight">{projectTitle}</h1>
             <Badge
               variant="outline"
-              className="font-mono text-[10px] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30"
+              className="font-mono text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30"
             >
               Universal Video IR V1.0
             </Badge>
@@ -199,7 +200,7 @@ export function Titlebar({
             variant="outline"
             size="sm"
             onClick={handleDownloadIR}
-            className="gap-1.5 text-xs h-8 text-[var(--accent-primary)] border-[var(--accent-primary)]/40 bg-[var(--accent-primary)]/10 hover:bg-[var(--accent-primary)]/20 shadow-xs"
+            className="gap-1.5 text-xs h-8 text-accent-theme border-accent-theme/40 bg-accent-theme/10 hover:bg-accent-theme/20 shadow-xs"
           >
             <FileJson className="w-3.5 h-3.5" />
             Save IR
@@ -213,9 +214,9 @@ export function Titlebar({
             size="sm"
             onClick={() => setIsDebuggerOpen(true)}
             data-testid="titlebar-debugger-btn"
-            className="gap-1.5 text-xs h-8 font-mono text-indigo-300 border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 shadow-xs"
+            className="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs"
           >
-            <Code2 className="w-3.5 h-3.5" />
+            <Code2 className="w-3.5 h-3.5 text-accent-theme" />
             Debugger
           </Button>
         </Tooltip>
@@ -260,7 +261,7 @@ export function Titlebar({
             aria-label={preferences.mode === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
-            {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-[var(--accent-primary)]" />}
+            {preferences.mode === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-accent-theme" />}
           </Button>
         </Tooltip>
 
@@ -299,7 +300,7 @@ export function Titlebar({
                 size="icon"
                 onClick={onToggleRight}
                 aria-label={isRightOpen ? 'Collapse Inspector' : 'Expand Inspector'}
-                className={`h-8 w-8 transition-colors ${isRightOpen ? 'bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`h-8 w-8 transition-colors ${isRightOpen ? 'bg-accent-theme/15 text-accent-theme' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 <PanelRight className="w-4 h-4" />
               </Button>

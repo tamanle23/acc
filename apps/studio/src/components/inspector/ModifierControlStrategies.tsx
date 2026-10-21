@@ -72,8 +72,8 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
         min={min}
         max={max}
         step={step}
-        value={numericVal}
-        onValueChange={(v) => onChange(v)}
+        value={[numericVal]}
+        onValueChange={(v) => onChange(v[0])}
       />
     </div>
   );

@@ -33,12 +33,12 @@ export const TrackInspector: React.FC<TrackInspectorProps> = ({
 
   return (
     <div className="space-y-3">
-      <Card className="p-2.5 bg-slate-50/70 dark:bg-slate-900/60 border-slate-200 dark:border-white/10 space-y-2 text-xs">
+      <Card className="p-2.5 bg-card/60 border-border/50 space-y-2 text-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
             <Badge
               variant="outline"
-              className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200 truncate"
+              className="font-mono text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30 truncate"
             >
               {selectedTrack.id}
             </Badge>

@@ -254,9 +254,9 @@ export function ShapePresetThumbnail({ preset }: { preset: StagingPreset }) {
   };
 
   return (
-    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-slate-950/40 pointer-events-none group-hover:border-[var(--accent-primary)]/50 group-hover:bg-slate-950/60 transition-all flex items-center justify-center">
+    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center">
       <div
-        className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:12px_12px]"
+        className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:12px_12px]"
       />
       <svg viewBox="0 0 200 80" className="w-full h-full relative z-10 drop-shadow-sm">
         {gradient && (
@@ -316,9 +316,9 @@ export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset })
   const webkitTextStroke = strokeColor && strokeWidth ? `${strokeWidth}px ${strokeColor}` : undefined;
 
   return (
-    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-slate-950/60 pointer-events-none group-hover:border-[var(--accent-primary)]/50 group-hover:bg-slate-950/80 transition-all flex items-center justify-center p-2">
+    <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center p-2">
       {/* Background typographic grid texture */}
-      <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#38bdf8_1px,transparent_1px),linear-gradient(to_bottom,#38bdf8_1px,transparent_1px)] bg-[size:16px_16px]" />
+      <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,var(--accent-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--accent-primary)_1px,transparent_1px)] bg-[size:16px_16px]" />
       
       {/* Centered stylized typographic specimen */}
       <div className="relative z-10 text-center px-2 w-full flex flex-col items-center justify-center overflow-hidden">
@@ -368,15 +368,15 @@ export function DraggablePresetCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-[var(--accent-primary)]/40 hover:shadow-[0_4px_16px_var(--accent-glow)]/15 ${
+      className={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-accent-theme/40 hover:shadow-accent-glow/15 ${
         isDragging
-          ? 'opacity-40 border-cyan-400 scale-[0.98]'
-          : 'hover:border-[var(--accent-primary)]/40'
+          ? 'opacity-40 border-accent-theme scale-[0.98]'
+          : 'hover:border-accent-theme/40'
       }`}
     >
       <div className="flex items-center justify-between mb-1.5 pointer-events-none">
         <div className="flex items-center gap-2">
-          <div className="p-1 rounded-lg bg-slate-500/10 group-hover:bg-[var(--accent-glow)]/20 group-hover:scale-110 transition-all duration-200">
+          <div className="p-1 rounded-lg bg-muted/60 group-hover:bg-accent-theme/20 group-hover:scale-110 transition-all duration-200">
             {renderPresetIcon(preset.iconName)}
           </div>
           <span className="font-semibold text-foreground/90 text-xs">{preset.name}</span>
@@ -525,16 +525,16 @@ export function DraggableAssetCard({
       {...attributes}
       className={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${
         isDragging
-          ? 'opacity-40 border-cyan-400 scale-[0.98]'
-          : 'hover:border-cyan-400/60'
+          ? 'opacity-40 border-accent-theme scale-[0.98]'
+          : 'hover:border-accent-theme/60'
       }`}
     >
       <div className="flex items-center justify-between mb-1 pointer-events-none">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className="p-1 rounded bg-slate-500/10 group-hover:bg-cyan-500/20 transition-colors">
+          <div className="p-1 rounded bg-muted group-hover:bg-accent-theme/20 transition-colors">
             {getAssetIcon(asset.type)}
           </div>
-          <span className="font-medium text-slate-800 dark:text-slate-100 truncate text-xs font-mono">
+          <span className="font-medium text-foreground truncate text-xs font-mono">
             {assetId}
           </span>
         </div>
@@ -542,10 +542,10 @@ export function DraggableAssetCard({
           {asset.type}
         </Badge>
       </div>
-      <p className="text-[10px] text-slate-400 truncate font-mono pointer-events-none">{asset.src}</p>
-      <div className="flex items-center justify-between pt-1 mt-1 border-t border-slate-100 text-[10px] text-slate-400 font-mono pointer-events-none">
+      <p className="text-[10px] text-muted-foreground truncate font-mono pointer-events-none">{asset.src}</p>
+      <div className="flex items-center justify-between pt-1 mt-1 border-t border-border/40 text-[10px] text-muted-foreground font-mono pointer-events-none">
         <span className="flex items-center gap-1">
-          <GripVertical className="w-3 h-3 text-slate-300" />
+          <GripVertical className="w-3 h-3 text-muted-foreground/60" />
           Drag into canvas
         </span>
         {asset.durationSec && <span>{asset.durationSec.toFixed(1)}s</span>}
@@ -560,27 +560,27 @@ export function DragOverlayPreview({ item }: { item: any }) {
   if (item.type === 'preset' && item.preset) {
     const p = item.preset as StagingPreset;
     return (
-      <div className="p-3 border-2 border-indigo-500 bg-white/95 rounded-lg shadow-xl w-64 pointer-events-none backdrop-blur-xs">
+      <div className="p-3 border-2 border-accent-theme bg-popover/95 text-popover-foreground rounded-lg shadow-xl w-64 pointer-events-none backdrop-blur-md">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             {renderPresetIcon(p.iconName)}
-            <span className="font-semibold text-slate-900 text-xs">{p.name}</span>
+            <span className="font-semibold text-foreground text-xs">{p.name}</span>
           </div>
-          <Badge className="text-[9px] bg-indigo-600 text-white font-mono">{p.badge}</Badge>
+          <Badge className="text-[9px] bg-accent-theme text-primary-foreground font-mono">{p.badge}</Badge>
         </div>
-        <p className="text-[10px] text-slate-500 line-clamp-1">{p.description}</p>
+        <p className="text-[10px] text-muted-foreground line-clamp-1">{p.description}</p>
       </div>
     );
   }
 
   if (item.type === 'asset' && item.asset) {
     return (
-      <div className="p-2.5 border-2 border-indigo-500 bg-white/95 rounded-lg shadow-xl w-60 pointer-events-none backdrop-blur-xs">
+      <div className="p-2.5 border-2 border-accent-theme bg-popover/95 text-popover-foreground rounded-lg shadow-xl w-60 pointer-events-none backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs font-semibold text-slate-900 truncate">{item.assetId}</span>
-          <Badge className="text-[9px] uppercase font-mono bg-indigo-600 text-white">{item.asset.type}</Badge>
+          <span className="font-mono text-xs font-semibold text-foreground truncate">{item.assetId}</span>
+          <Badge className="text-[9px] uppercase font-mono bg-accent-theme text-primary-foreground">{item.asset.type}</Badge>
         </div>
-        <p className="text-[10px] text-slate-400 truncate font-mono mt-0.5">{item.asset.src}</p>
+        <p className="text-[10px] text-muted-foreground truncate font-mono mt-0.5">{item.asset.src}</p>
       </div>
     );
   }
@@ -770,8 +770,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'vault' && isOpen
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Assets Vault (Upload & Media) ([)"
           >
@@ -795,8 +795,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'typography' && isOpen
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Typography Library (16+ Styles)"
           >
@@ -818,8 +818,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'shapes' && isOpen
-                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Designer Shapes (16+ Vector Geometries)"
           >
@@ -841,8 +841,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'vfx' && isOpen
-                ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Cinematic VFX Overlays (16+ Atmospheric Layers)"
           >
@@ -864,8 +864,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'sfx' && isOpen
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Sound FX Catalog (104+ Curated SFX)"
           >
@@ -887,8 +887,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'video' && isOpen
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Production Video Footages (Curated 4K/HD Plates)"
           >
@@ -910,8 +910,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               activeNav === 'audio' && isOpen
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="Production Audio Scores (BGM & Soundtracks)"
           >
@@ -933,8 +933,8 @@ export function LeftSidebar({
             }}
             className={`w-9 h-9 rounded-lg transition-colors ${
               (activeNav === 'all' || activeNav === 'library') && isOpen
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-xs'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
             title="All Staging Presets Catalog"
           >
@@ -947,7 +947,7 @@ export function LeftSidebar({
           variant="ghost"
           size="icon"
           onClick={onToggle}
-          className="w-9 h-9 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors"
+          className="w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           title={isOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}
         >
           {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -961,7 +961,7 @@ export function LeftSidebar({
           <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {headerInfo.icon}
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 {headerInfo.title}
               </h2>
             </div>
@@ -975,12 +975,12 @@ export function LeftSidebar({
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="p-3 border-b border-border/30 bg-transparent space-y-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <Input
                     placeholder={`Search ${headerInfo.title.toLowerCase()}...`}
                     value={libraryFilterQuery}
                     onChange={(e) => setLibraryFilterQuery(e.target.value)}
-                    className="pl-8 h-8 text-xs bg-slate-50/50"
+                    className="pl-8 h-8 text-xs bg-muted/40 border-border/50"
                   />
                 </div>
                 {/* Category Filter Pills (shown in All / Library overview) */}
@@ -994,8 +994,8 @@ export function LeftSidebar({
                         onClick={() => setSelectedCategory(cat)}
                         className={`h-6 text-[10px] px-2 capitalize shrink-0 ${
                           selectedCategory === cat
-                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                            : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                            : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
                         }`}
                       >
                         {cat === 'all'
@@ -1027,8 +1027,8 @@ export function LeftSidebar({
                         onClick={() => setSelectedSfxBank(b.id)}
                         className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${
                           selectedSfxBank === b.id
-                            ? 'bg-rose-600 text-white hover:bg-rose-700'
-                            : 'text-slate-500 border-border/40 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                            : 'text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground'
                         }`}
                       >
                         {b.name} ({b.count})
@@ -1058,14 +1058,14 @@ export function LeftSidebar({
           ) : (
             /* Assets Vault View */
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="p-3 border-b border-slate-100 bg-white space-y-2">
+              <div className="p-3 border-b border-border/40 bg-transparent space-y-2">
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                   <Input
                     placeholder="Filter IR assets..."
                     value={assetFilterQuery}
                     onChange={(e) => setAssetFilterQuery(e.target.value)}
-                    className="pl-8 h-8 text-xs bg-slate-50/50"
+                    className="pl-8 h-8 text-xs bg-muted/40 border-border/50"
                   />
                 </div>
 
@@ -1079,8 +1079,8 @@ export function LeftSidebar({
                       onClick={() => setSelectedAssetType(type)}
                       className={`h-6 text-[10px] px-2 capitalize ${
                         selectedAssetType === type
-                          ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                          : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                          : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
                       }`}
                     >
                       {type === 'all' ? 'All' : type}
@@ -1103,8 +1103,8 @@ export function LeftSidebar({
                   onClick={() => fileInputRef.current?.click()}
                   className={`mt-2 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
                     isVaultDragOver
-                      ? 'border-indigo-500 bg-indigo-50/50 text-indigo-700'
-                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 text-slate-500'
+                      ? 'border-accent-theme bg-accent-theme/10 text-accent-theme'
+                      : 'border-border/60 hover:border-accent-theme/40 hover:bg-muted/40 text-muted-foreground'
                   }`}
                 >
                   <input
@@ -1118,9 +1118,9 @@ export function LeftSidebar({
                     }}
                   />
                   <div className="flex flex-col items-center gap-1 pointer-events-none">
-                    <UploadCloud className="w-5 h-5 text-slate-400" />
+                    <UploadCloud className="w-5 h-5 text-muted-foreground" />
                     <span className="text-[11px] font-medium">Click or drag files here</span>
-                    <span className="text-[9px] text-slate-400">MP4, WEBM, MP3, WAV, PNG, JPG</span>
+                    <span className="text-[9px] text-muted-foreground">MP4, WEBM, MP3, WAV, PNG, JPG</span>
                   </div>
                 </div>
               </div>
@@ -1135,7 +1135,7 @@ export function LeftSidebar({
                     />
                   ))}
                   {filteredAssets.length === 0 && (
-                    <p className="text-xs text-slate-400 italic text-center py-6">
+                    <p className="text-xs text-muted-foreground italic text-center py-6">
                       No assets found matching "{assetFilterQuery}".
                     </p>
                   )}

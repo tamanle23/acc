@@ -144,8 +144,8 @@ export function RightSidebar() {
             onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
             className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer ${
               currentMode === 'project'
-                ? 'bg-indigo-600 text-white shadow-2xs'
-                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                ? 'bg-accent-theme text-primary-foreground shadow-2xs'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
             }`}
             title="Inspect Project Master Settings"
           >
@@ -153,7 +153,7 @@ export function RightSidebar() {
             <span className="truncate">{irState.doc.meta?.contentId || 'Project'}</span>
           </button>
 
-          <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
 
           {/* Track Tier Pill */}
           <button
@@ -167,10 +167,10 @@ export function RightSidebar() {
             }}
             className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] ${
               !selectedTrack
-                ? 'opacity-40 cursor-not-allowed text-slate-400'
+                ? 'opacity-40 cursor-not-allowed text-muted-foreground'
                 : currentMode === 'track'
-                ? 'bg-indigo-600 text-white shadow-2xs cursor-pointer'
-                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer'
+                ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
             }`}
             title={selectedTrack ? `Inspect Track ${selectedTrack.id}` : 'No track selected'}
           >
@@ -182,7 +182,7 @@ export function RightSidebar() {
 
           {selectedSeq && (
             <>
-              <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
+              <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
 
               {/* Sequence Tier Pill */}
               <button
@@ -193,8 +193,8 @@ export function RightSidebar() {
                 }}
                 className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer ${
                   currentMode === 'sequence'
-                    ? 'bg-indigo-600 text-white shadow-2xs'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    ? 'bg-accent-theme text-primary-foreground shadow-2xs'
+                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
                 }`}
                 title={`Inspect Sequence ${selectedSeq.id}`}
               >

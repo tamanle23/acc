@@ -68,16 +68,25 @@ function loadSavedPreferences(): ThemePreferences {
   }
 }
 
+export const ACCENT_CONFIGS: Record<AccentColor, { label: string; hex: string; hsl: string }> = {
+  cyan: { label: 'Cyan', hex: '#06b6d4', hsl: '189 94% 43%' },
+  violet: { label: 'Violet', hex: '#8b5cf6', hsl: '258 90% 66%' },
+  emerald: { label: 'Emerald', hex: '#10b981', hsl: '160 84% 39%' },
+  amber: { label: 'Amber', hex: '#f59e0b', hsl: '38 92% 50%' },
+  rose: { label: 'Rose', hex: '#f43f5e', hsl: '350 89% 60%' },
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [preferences, setPreferences] = useState<ThemePreferences>(loadSavedPreferences);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Sync state to DOM and localStorage
+  // Sync state to DOM, html attributes, colorScheme, and localStorage
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
     root.classList.toggle('dark', preferences.mode === 'dark');
+    root.style.colorScheme = preferences.mode;
     root.setAttribute('data-glass-style', preferences.glassStyle);
     root.setAttribute('data-blur-intensity', preferences.blurIntensity);
     root.setAttribute('data-accent', preferences.accentColor);

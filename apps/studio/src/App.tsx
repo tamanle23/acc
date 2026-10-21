@@ -24,6 +24,7 @@ import {
   Progress,
   Button,
   Badge,
+  TooltipProvider,
 } from './components/ui';
 import { MediabunnyClientSink } from '@acc/ir/client';
 import { IRPreviewEngine } from '@acc/ir';
@@ -461,7 +462,9 @@ function StudioWorkspace() {
 export default function App() {
   return (
     <ThemeProvider>
-      <StudioWorkspace />
+      <TooltipProvider>
+        <StudioWorkspace />
+      </TooltipProvider>
     </ThemeProvider>
   );
 }
