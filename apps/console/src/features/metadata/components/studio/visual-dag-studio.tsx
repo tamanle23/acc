@@ -28,6 +28,8 @@ import { WorkflowIrDialog } from './workflow-ir-dialog';
 import { DagConditionEdge, type DagConditionEdgeData } from './dag-condition-edge';
 import { DagEdgeConditionModal, type EdgeConditionModalData } from './dag-edge-condition-modal';
 import { WorkflowVariableWatchDrawer } from './workflow-variable-watch-drawer';
+import { DagQuickInsertPopover } from './dag-quick-insert-popover';
+import { DagSelectionToolbar } from './dag-selection-toolbar';
 import {
   exportToWorkflowIR,
   importFromWorkflowIR,
@@ -61,6 +63,9 @@ import {
   Braces,
   BarChart2,
   Sparkles,
+  Magnet,
+  Route,
+  Spline,
 } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
@@ -279,6 +284,14 @@ function DagStudioCanvas({
   const [nodes, setNodes] = useState<Node<DagNodeData>[]>(defaultNodes);
   const [edges, setEdges] = useState<Edge[]>(defaultEdges);
   const [showPalette, setShowPalette] = useState(!isReadOnly);
+
+  // Iteration 17: Edge routing, Snap-to-Grid, and Quick-Insert Popover target
+  const [edgeRoutingMode, setEdgeRoutingMode] = useState<'bezier' | 'smoothstep'>('bezier');
+  const [isSnapToGrid, setIsSnapToGrid] = useState<boolean>(true);
+  const [edgeSplitTarget, setEdgeSplitTarget] = useState<{
+    edgeId: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
   // Real-time execution stream integration
   const stream = useWorkflowExecutionStream(executionId || null);
@@ -832,7 +845,7 @@ function DagStudioCanvas({
   }, [redoStack, nodes, edges]);
 
   const handleSplitEdge = useCallback(
-    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE') => {
+    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE', customData?: Partial<DagNodeData>) => {
       if (isReadOnly) return;
       const targetEdge = edges.find((e) => e.id === edgeId);
       if (!targetEdge) return;
@@ -859,7 +872,7 @@ function DagStudioCanvas({
         data: {
           taskReferenceName: taskRef,
           taskType: newNodeType,
-          label: `${newNodeType} Task`,
+          label: customData?.label || `${newNodeType} Task`,
           executionState: 'PENDING',
           domain: 'default',
           timeoutSeconds: 30,
@@ -867,6 +880,7 @@ function DagStudioCanvas({
           retryDelaySeconds: 2,
           backoffRate: 2.0,
           inputParameters: {},
+          ...customData,
         },
       };
 
@@ -895,10 +909,155 @@ function DagStudioCanvas({
     [isReadOnly, edges, nodes, pushUndoSnapshot]
   );
 
-  // Keyboard shortcuts Cmd+Z / Cmd+Y
+  const handleRequestSplitEdge = useCallback(
+    (edgeId: string, position?: { x: number; y: number }) => {
+      if (isReadOnly) return;
+      setEdgeSplitTarget({
+        edgeId,
+        position: position || { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+      });
+    },
+    [isReadOnly]
+  );
+
+  // Iteration 17: Multi-Node Selection & Alignment Handlers
+  const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
+
+  const handleAlignLeft = useCallback(() => {
+    if (selectedNodes.length < 2) return;
+    pushUndoSnapshot();
+    const minX = Math.min(...selectedNodes.map((n) => n.position.x));
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, x: minX } } : n))
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleAlignCenterX = useCallback(() => {
+    if (selectedNodes.length < 2) return;
+    pushUndoSnapshot();
+    const avgX = Math.round(
+      selectedNodes.reduce((acc, n) => acc + n.position.x, 0) / selectedNodes.length
+    );
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, x: avgX } } : n))
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleAlignTop = useCallback(() => {
+    if (selectedNodes.length < 2) return;
+    pushUndoSnapshot();
+    const minY = Math.min(...selectedNodes.map((n) => n.position.y));
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, y: minY } } : n))
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleAlignMiddleY = useCallback(() => {
+    if (selectedNodes.length < 2) return;
+    pushUndoSnapshot();
+    const avgY = Math.round(
+      selectedNodes.reduce((acc, n) => acc + n.position.y, 0) / selectedNodes.length
+    );
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, y: avgY } } : n))
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleDistributeHorizontal = useCallback(() => {
+    if (selectedNodes.length < 3) return;
+    pushUndoSnapshot();
+    const sorted = [...selectedNodes].sort((a, b) => a.position.x - b.position.x);
+    const minX = sorted[0].position.x;
+    const maxX = sorted[sorted.length - 1].position.x;
+    const step = (maxX - minX) / (sorted.length - 1);
+    const posMap = new Map<string, number>();
+    sorted.forEach((n, idx) => {
+      posMap.set(n.id, Math.round(minX + idx * step));
+    });
+    setNodes((nds) =>
+      nds.map((n) =>
+        posMap.has(n.id) ? { ...n, position: { ...n.position, x: posMap.get(n.id)! } } : n
+      )
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleDistributeVertical = useCallback(() => {
+    if (selectedNodes.length < 3) return;
+    pushUndoSnapshot();
+    const sorted = [...selectedNodes].sort((a, b) => a.position.y - b.position.y);
+    const minY = sorted[0].position.y;
+    const maxY = sorted[sorted.length - 1].position.y;
+    const step = (maxY - minY) / (sorted.length - 1);
+    const posMap = new Map<string, number>();
+    sorted.forEach((n, idx) => {
+      posMap.set(n.id, Math.round(minY + idx * step));
+    });
+    setNodes((nds) =>
+      nds.map((n) =>
+        posMap.has(n.id) ? { ...n, position: { ...n.position, y: posMap.get(n.id)! } } : n
+      )
+    );
+  }, [selectedNodes, pushUndoSnapshot]);
+
+  const handleDuplicateSelected = useCallback(() => {
+    if (isReadOnly || selectedNodes.length === 0) return;
+    pushUndoSnapshot();
+    const clonableNodes = selectedNodes.filter((n) => !n.data.isPermanent);
+    if (clonableNodes.length === 0) return;
+
+    const newNodes: Node<DagNodeData>[] = clonableNodes.map((n) => {
+      const uniqueSuffix = Date.now().toString().slice(-4) + Math.random().toString(36).slice(2, 5);
+      const newRef = `${n.data.taskReferenceName}_copy_${uniqueSuffix}`;
+      const newId = `node-${newRef}`;
+
+      return {
+        ...n,
+        id: newId,
+        selected: true,
+        position: {
+          x: n.position.x + 40,
+          y: n.position.y + 40,
+        },
+        data: {
+          ...n.data,
+          taskReferenceName: newRef,
+          label: `${n.data.label || n.data.taskType} (Copy)`,
+          isStartNode: false,
+          isEndNode: false,
+          isPermanent: false,
+        },
+      };
+    });
+
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, selected: false } : n)).concat(newNodes)
+    );
+  }, [isReadOnly, selectedNodes, pushUndoSnapshot]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (isReadOnly) return;
+    pushUndoSnapshot();
+    const deletedNodeIds = new Set(
+      nodes.filter((n) => n.selected && !n.data.isPermanent).map((n) => n.id)
+    );
+    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
+    setEdges((eds) =>
+      eds.filter((e) => !e.selected && !deletedNodeIds.has(e.source) && !deletedNodeIds.has(e.target))
+    );
+  }, [isReadOnly, nodes, pushUndoSnapshot]);
+
+  // Keyboard shortcuts Cmd+Z / Cmd+Y / Cmd+D / Delete
   useEffect(() => {
     if (isReadOnly) return;
     const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (isInput) return;
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
@@ -908,11 +1067,19 @@ function DagStudioCanvas({
       ) {
         e.preventDefault();
         handleRedo();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        handleDuplicateSelected();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedNodes.length > 0) {
+          e.preventDefault();
+          handleBulkDelete();
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isReadOnly, handleUndo, handleRedo]);
+  }, [isReadOnly, handleUndo, handleRedo, handleDuplicateSelected, handleBulkDelete, selectedNodes.length]);
 
   // Topological Auto-Layout (LR or TB)
   const handleAutoLayout = useCallback(
@@ -1030,8 +1197,9 @@ function DagStudioCanvas({
           type: 'dagEdge',
           data: {
             ...baseEdgeData,
+            routingMode: edgeRoutingMode,
             onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
-            onSplitEdge: isReadOnly ? undefined : handleSplitEdge,
+            onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
           },
         };
       });
@@ -1044,8 +1212,9 @@ function DagStudioCanvas({
       const baseEdgeData = (e.data as object) || {};
       const withHandler = {
         ...baseEdgeData,
+        routingMode: edgeRoutingMode,
         onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
-        onSplitEdge: isReadOnly ? undefined : handleSplitEdge,
+        onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
       };
 
       const sourceNode = nodeMap.get(e.source);
@@ -1097,7 +1266,7 @@ function DagStudioCanvas({
         className,
       };
     });
-  }, [edges, nodes, isExecutionMode, isReadOnly, handleOpenEdgeEditor, handleSplitEdge]);
+  }, [edges, nodes, isExecutionMode, isReadOnly, edgeRoutingMode, handleOpenEdgeEditor, handleRequestSplitEdge]);
 
   // Compute aggregated Variable Watch state from workflow snapshot or current node states
   const variableWatchSnapshot = useMemo(() => {
@@ -1342,6 +1511,43 @@ function DagStudioCanvas({
             >
               <LayoutGrid className="w-3 h-3 text-indigo-500" />
               Auto-Layout
+            </Button>
+
+            {/* Iteration 17: Snap to grid toggle */}
+            <Button
+              size="sm"
+              variant={isSnapToGrid ? 'default' : 'outline'}
+              className="h-7 px-2 text-xs gap-1"
+              onClick={() => setIsSnapToGrid((prev) => !prev)}
+              title={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'} (16px grid)`}
+              data-testid="dag-snap-grid-btn"
+            >
+              <Magnet className={cn('w-3 h-3', isSnapToGrid ? 'text-primary-foreground' : 'text-muted-foreground')} />
+              <span>Snap</span>
+            </Button>
+
+            {/* Iteration 17: Edge routing toggle (Bezier vs Orthogonal SmoothStep) */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs gap-1"
+              onClick={() =>
+                setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
+              }
+              title={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
+              data-testid="dag-edge-routing-btn"
+            >
+              {edgeRoutingMode === 'bezier' ? (
+                <>
+                  <Spline className="w-3 h-3 text-sky-500" />
+                  <span>Curves</span>
+                </>
+              ) : (
+                <>
+                  <Route className="w-3 h-3 text-indigo-500" />
+                  <span>Orthogonal</span>
+                </>
+              )}
             </Button>
 
             <Button
@@ -1637,6 +1843,33 @@ function DagStudioCanvas({
         />
       )}
 
+      {/* Iteration 17: Floating Multi-Node Selection & Alignment Toolbar */}
+      {!isReadOnly && selectedNodes.length >= 2 && (
+        <DagSelectionToolbar
+          selectedNodes={selectedNodes}
+          onAlignLeft={handleAlignLeft}
+          onAlignCenterX={handleAlignCenterX}
+          onAlignTop={handleAlignTop}
+          onAlignMiddleY={handleAlignMiddleY}
+          onDistributeHorizontal={handleDistributeHorizontal}
+          onDistributeVertical={handleDistributeVertical}
+          onDuplicate={handleDuplicateSelected}
+          onBulkDelete={handleBulkDelete}
+        />
+      )}
+
+      {/* Iteration 17: Edge Quick-Insert Popover */}
+      {!isReadOnly && edgeSplitTarget && (
+        <DagQuickInsertPopover
+          position={edgeSplitTarget.position}
+          onSelect={(taskType, label, extraData) => {
+            handleSplitEdge(edgeSplitTarget.edgeId, taskType, { label, ...extraData });
+            setEdgeSplitTarget(null);
+          }}
+          onClose={() => setEdgeSplitTarget(null)}
+        />
+      )}
+
       {/* Validation Status Notification Banner */}
       {!isReadOnly && validationBannerVisible && (
         <div className="absolute top-16 right-4 z-20 max-w-sm p-3 rounded-xl backdrop-blur-xl shadow-2xl border transition-all animate-in fade-in slide-in-from-top-2">
@@ -1721,6 +1954,8 @@ function DagStudioCanvas({
           nodesDraggable={!isReadOnly}
           nodesConnectable={!isReadOnly}
           elementsSelectable={true}
+          snapToGrid={isSnapToGrid}
+          snapGrid={[16, 16]}
           fitView
         >
           <Background gap={16} size={1} />

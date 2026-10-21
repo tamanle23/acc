@@ -3,6 +3,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
+  getSmoothStepPath,
   type EdgeProps,
 } from '@xyflow/react';
 import { cn } from '@/lib/utils';
@@ -12,8 +13,9 @@ export interface DagConditionEdgeData {
   condition?: string;
   decisionCase?: string;
   isDefaultCase?: boolean;
+  routingMode?: 'bezier' | 'smoothstep';
   onEditEdge?: (edgeId: string) => void;
-  onSplitEdge?: (edgeId: string) => void;
+  onSplitEdge?: (edgeId: string, position?: { x: number; y: number }) => void;
   [key: string]: unknown;
 }
 
@@ -33,16 +35,28 @@ export const DagConditionEdge = memo(
     style,
     label,
   }: EdgeProps) => {
-    const [edgePath, labelX, labelY] = getBezierPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-    });
-
     const edgeData = data as DagConditionEdgeData | undefined;
+    const isSmoothstep = edgeData?.routingMode === 'smoothstep';
+
+    const [edgePath, labelX, labelY] = isSmoothstep
+      ? getSmoothStepPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          borderRadius: 8,
+        })
+      : getBezierPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+        });
+
     const displayLabel =
       (label as string) ||
       edgeData?.decisionCase ||
@@ -58,7 +72,7 @@ export const DagConditionEdge = memo(
     const handleSplitClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (edgeData?.onSplitEdge) {
-        edgeData.onSplitEdge(id);
+        edgeData.onSplitEdge(id, { x: e.clientX, y: e.clientY });
       }
     };
 
