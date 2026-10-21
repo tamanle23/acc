@@ -14,6 +14,30 @@ export class PitchModifierPlugin implements ModifierPlugin<PitchModifierParams> 
   public readonly type = 'audio/pitch';
   public readonly targetScope = 'both';
   public readonly targetPhase = 4;
+  public readonly schema = {
+    fields: {
+      playbackRate: {
+        key: 'playbackRate',
+        label: 'Playback Rate',
+        type: 'number' as const,
+        min: 0.25,
+        max: 3.0,
+        step: 0.05,
+        defaultValue: 1.0,
+        unit: 'x',
+      },
+      detuneCents: {
+        key: 'detuneCents',
+        label: 'Detune Shift',
+        type: 'number' as const,
+        min: -1200,
+        max: 1200,
+        step: 25,
+        defaultValue: 0,
+        unit: 'cents',
+      },
+    },
+  };
 
   public validate(params: unknown): params is PitchModifierParams {
     return Boolean(

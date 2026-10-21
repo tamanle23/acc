@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { GSAP_EASING_PRESETS } from '../apps/studio/src/components/EasingCurveSelector';
-import { ProceduralAudioSynthesizer } from '../packages/effect-engines/src/audio/ProceduralAudioSynthesizer';
+import { ProceduralAudioSynthesizer } from '../packages/ir/src/renderer/audio/ProceduralAudioSynthesizer';
 import { STAGING_PRESETS } from '../apps/studio/src/lib/library/stagingPresets';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import fs from 'fs';
@@ -113,16 +113,20 @@ describe('Phase 5: GSAP Easing Inspector & Sidebar Enhancements', () => {
   });
 
   describe('5. Component Integration & Verification', () => {
-    it('verifies RightSidebar contains EasingCurveSelector and procedural SFX controls', () => {
-      const rightSidebarCode = fs.readFileSync(
-        path.join(__dirname, '../apps/studio/src/components/RightSidebar.tsx'),
+    it('verifies inspector strategies contain EasingCurveSelector and procedural SFX controls', () => {
+      const strategiesCode = fs.readFileSync(
+        path.join(__dirname, '../apps/studio/src/components/inspector/ModifierControlStrategies.tsx'),
         'utf-8'
       );
-      expect(rightSidebarCode).toContain('<EasingCurveSelector');
-      expect(rightSidebarCode).toContain('value="procedural_sfx"');
-      expect(rightSidebarCode).toContain('handleAuditionSFX');
-      expect(rightSidebarCode).toContain('handleInsertProceduralSFX');
-      expect(rightSidebarCode).toContain('ProceduralAudioSynthesizer.synthWhoosh');
+      const sequenceInspectorCode = fs.readFileSync(
+        path.join(__dirname, '../apps/studio/src/components/inspector/SequenceInspector.tsx'),
+        'utf-8'
+      );
+      expect(strategiesCode).toContain('<EasingCurveSelector');
+      expect(sequenceInspectorCode).toContain("'procedural_sfx'");
+      expect(strategiesCode).toContain('handleAuditionSFX');
+      expect(strategiesCode).toContain('handleInsertProceduralSFX');
+      expect(strategiesCode).toContain('ProceduralAudioSynthesizer.synthWhoosh');
     });
 
     it('verifies LeftSidebar contains SFX category pills, non-intrusive card styling, and dropzone', () => {

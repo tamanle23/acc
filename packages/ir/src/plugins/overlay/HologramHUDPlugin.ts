@@ -30,6 +30,44 @@ export class HologramHUDPlugin implements ModifierPlugin<HologramHUDParams> {
   public readonly type = 'overlay/hologram_hud';
   public readonly targetScope = 'both';
   public readonly targetPhase = 3;
+  public readonly schema = {
+    fields: {
+      ringRadius: {
+        key: 'ringRadius',
+        label: 'Outer Ring Radius',
+        type: 'number' as const,
+        min: 0.1,
+        max: 0.9,
+        step: 0.02,
+        defaultValue: 0.35,
+      },
+      scanlineDensity: {
+        key: 'scanlineDensity',
+        label: 'Scanline Density',
+        type: 'number' as const,
+        min: 8,
+        max: 120,
+        step: 2,
+        defaultValue: 40,
+      },
+      rotationSpeed: {
+        key: 'rotationSpeed',
+        label: 'Reticle Rotation Speed',
+        type: 'number' as const,
+        min: -4.0,
+        max: 4.0,
+        step: 0.1,
+        defaultValue: 0.5,
+        unit: 'rad/s',
+      },
+      color: {
+        key: 'color',
+        label: 'HUD Emission Color',
+        type: 'color' as const,
+        defaultValue: '#00ffff',
+      },
+    },
+  };
 
   public validate(params: unknown): params is HologramHUDParams {
     return Boolean(params && typeof params === 'object');

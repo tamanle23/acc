@@ -20,6 +20,45 @@ export class DynamicDuckingPlugin implements ModifierPlugin<DynamicDuckingParams
   public readonly type = 'sfx/dynamic_ducking';
   public readonly targetScope = 'both';
   public readonly targetPhase = 3;
+  public readonly schema = {
+    fields: {
+      duckVolume: {
+        key: 'duckVolume',
+        label: 'Ducking Attenuation Ratio',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.25,
+      },
+      attackMs: {
+        key: 'attackMs',
+        label: 'Attack Envelope',
+        type: 'number' as const,
+        min: 10,
+        max: 1000,
+        step: 10,
+        defaultValue: 150,
+        unit: 'ms',
+      },
+      releaseMs: {
+        key: 'releaseMs',
+        label: 'Release Envelope',
+        type: 'number' as const,
+        min: 50,
+        max: 2000,
+        step: 25,
+        defaultValue: 300,
+        unit: 'ms',
+      },
+      targetBus: {
+        key: 'targetBus',
+        label: 'Target Audio Bus ID',
+        type: 'string' as const,
+        defaultValue: 'track-a3',
+      },
+    },
+  };
 
   public validate(params: unknown): params is DynamicDuckingParams {
     return Boolean(

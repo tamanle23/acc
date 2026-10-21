@@ -186,17 +186,17 @@ describe('Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulati
       expect(timelineCode).toContain('snapEnabled');
     });
 
-    it('verifies RightSidebar.tsx exposes Motion Preset & Lifecycle controls', () => {
-      const rightSidebarCode = fs.readFileSync(
-        path.join(__dirname, '../apps/studio/src/components/RightSidebar.tsx'),
+    it('verifies ModifierControlStrategies.tsx exposes Motion Preset & Lifecycle controls', () => {
+      const strategiesCode = fs.readFileSync(
+        path.join(__dirname, '../apps/studio/src/components/inspector/ModifierControlStrategies.tsx'),
         'utf-8'
       );
-      expect(rightSidebarCode).toContain('Motion Preset & Lifecycle');
-      expect(rightSidebarCode).toContain('Pop In');
-      expect(rightSidebarCode).toContain('Slide In');
-      expect(rightSidebarCode).toContain('Bounce');
-      expect(rightSidebarCode).toContain('Intro Duration');
-      expect(rightSidebarCode).toContain('Outro Duration');
+      expect(strategiesCode).toContain('Motion Preset & Lifecycle');
+      expect(strategiesCode).toContain('Pop In');
+      expect(strategiesCode).toContain('Slide In');
+      expect(strategiesCode).toContain('Bounce');
+      expect(strategiesCode).toContain('Intro Duration');
+      expect(strategiesCode).toContain('Outro Duration');
     });
 
     it('verifies Preview.tsx binds live GSAP interpolated transform to canvas overlay', () => {

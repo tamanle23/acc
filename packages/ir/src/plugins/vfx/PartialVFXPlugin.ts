@@ -37,6 +37,91 @@ export class PartialVFXPlugin implements ModifierPlugin<PartialVFXPluginParams> 
   public readonly type = 'vfx/partial';
   public readonly targetScope = 'both';
   public readonly targetPhase = 3;
+  public readonly schema = {
+    fields: {
+      regions: {
+        key: 'regions',
+        label: 'Localized VFX Regions',
+        type: 'regions_array' as const,
+        description: 'Interactive localized regions for spotlights, chromatic glitch slices, blur, or spark emitters',
+        fields: {
+          type: {
+            key: 'type',
+            label: 'Region Effect Type',
+            type: 'select' as const,
+            defaultValue: 'spotlight',
+            options: [
+              { label: 'Spotlight Beam', value: 'spotlight' },
+              { label: 'Chromatic Glitch', value: 'glitch' },
+              { label: 'Privacy Blur', value: 'blur' },
+              { label: 'Spark Point Emitter', value: 'point_emitter' },
+            ],
+          },
+          x: {
+            key: 'x',
+            label: 'Center X',
+            type: 'number' as const,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            defaultValue: 0.5,
+          },
+          y: {
+            key: 'y',
+            label: 'Center Y',
+            type: 'number' as const,
+            min: 0,
+            max: 1,
+            step: 0.01,
+            defaultValue: 0.5,
+          },
+          radius: {
+            key: 'radius',
+            label: 'Radius',
+            type: 'number' as const,
+            min: 20,
+            max: 600,
+            step: 5,
+            defaultValue: 160,
+            unit: 'px',
+          },
+          width: {
+            key: 'width',
+            label: 'Region Width',
+            type: 'number' as const,
+            min: 0.05,
+            max: 1.0,
+            step: 0.05,
+            defaultValue: 0.3,
+          },
+          height: {
+            key: 'height',
+            label: 'Region Height',
+            type: 'number' as const,
+            min: 0.05,
+            max: 1.0,
+            step: 0.05,
+            defaultValue: 0.2,
+          },
+          intensity: {
+            key: 'intensity',
+            label: 'Intensity',
+            type: 'number' as const,
+            min: 0.1,
+            max: 4.0,
+            step: 0.1,
+            defaultValue: 1.5,
+          },
+          color: {
+            key: 'color',
+            label: 'Tint Color',
+            type: 'color' as const,
+            defaultValue: '#00d4ff',
+          },
+        },
+      },
+    },
+  };
 
   public validate(params: unknown): params is PartialVFXPluginParams {
     return Boolean(params && typeof params === 'object' && Array.isArray((params as any).regions));

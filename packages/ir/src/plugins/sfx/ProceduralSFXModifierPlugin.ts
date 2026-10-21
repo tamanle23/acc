@@ -42,9 +42,83 @@ export class ProceduralSFXModifierPlugin implements ModifierPlugin<ProceduralSFX
   public readonly type = 'sfx/procedural';
   public readonly targetScope = 'both';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    displayName: 'Procedural Audio Synthesizer',
+    category: 'sfx' as const,
+    fields: {
+      synthType: {
+        key: 'synthType',
+        label: 'Synthesizer Preset',
+        type: 'select' as const,
+        defaultValue: 'impact',
+        options: [
+          { label: 'Cinematic Impact', value: 'impact' },
+          { label: 'Whoosh Sweep', value: 'whoosh' },
+          { label: 'Digital Glitch Burst', value: 'glitch' },
+          { label: 'Tension Riser', value: 'riser' },
+          { label: 'Sci-Fi Laser Pulse', value: 'laser' },
+        ],
+      },
+      durationSec: {
+        key: 'durationSec',
+        label: 'Synth Duration',
+        type: 'number' as const,
+        min: 0.2,
+        max: 4.0,
+        step: 0.1,
+        defaultValue: 1.5,
+        unit: 's',
+      },
+      duckingFactor: {
+        key: 'duckingFactor',
+        label: 'Auto-Ducking Level',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.75,
+      },
+      gain: {
+        key: 'gain',
+        label: 'Output Gain',
+        type: 'number' as const,
+        min: 0.1,
+        max: 2.0,
+        step: 0.05,
+        defaultValue: 1.0,
+      },
+      sfxActions: {
+        key: 'sfxActions',
+        label: 'Synthesizer Audition Actions',
+        type: 'sfx_actions' as const,
+      },
+      actions: {
+        key: 'actions',
+        label: 'Synthesizer Audition Actions',
+        type: 'sfx_actions' as const,
+      },
+    },
+  };
 
   public validate(params: unknown): params is ProceduralSFXModifierParams {
     return Boolean(params && typeof params === 'object');
+  }
+
+  public normalizeParams(
+    params: Partial<ProceduralSFXModifierParams> & Record<string, any> = {}
+  ): ProceduralSFXModifierParams {
+    const synthType = params.synthType || params.sfxType || 'impact';
+    const gain = params.gain ?? params.volume ?? 1.0;
+    return {
+      synthType,
+      sfxType: synthType,
+      durationSec: params.durationSec ?? 1.5,
+      duckingFactor: params.duckingFactor ?? 0.75,
+      gain,
+      volume: gain,
+      label: params.label || String(synthType).toUpperCase(),
+      ...params,
+    };
   }
 
   public execute(context: ModifierContext, params: ProceduralSFXModifierParams): void {
@@ -71,9 +145,9 @@ export class ProceduralSFXModifierPlugin implements ModifierPlugin<ProceduralSFX
     params: ProceduralSFXModifierParams,
     sampleRate: number = 44100
   ): Float32Array {
-    const sfxType = params.sfxType || 'whoosh';
+    const sfxType = (params as any).synthType || params.sfxType || 'whoosh';
     const duration = params.durationSec || 1.0;
-    const vol = params.volume !== undefined ? params.volume : 1.0;
+    const vol = (params as any).gain !== undefined ? (params as any).gain : (params.volume !== undefined ? params.volume : 1.0);
 
     let rawBuffer: Float32Array;
 

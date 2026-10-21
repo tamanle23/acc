@@ -27,6 +27,7 @@ import { UpdateTrackCommand, type UpdateTrackProperties } from '../commands/Upda
 import { ReorderTrackCommand } from '../commands/ReorderTrackCommand';
 import { UpdateSequencePropsCommand, type UpdateSequenceProperties } from '../commands/UpdateSequencePropsCommand';
 import { UpdateProjectMetaCommand, type UpdateProjectMetaProperties } from '../commands/UpdateProjectMetaCommand';
+import { ReplaceDocumentCommand } from '../commands/ReplaceDocumentCommand';
 import type { IRSequence, SequenceTime } from '@acc/ir';
 
 export type InspectorMode = 'sequence' | 'track' | 'project';
@@ -252,6 +253,21 @@ export class IRStateManager {
     }
   }
 
+  public applyJSONEdit(jsonString: string): ValidationResult {
+    try {
+      const parsed = JSON.parse(jsonString);
+      const val = VideoIRSchemaValidator.validate(parsed);
+      if (!val.valid) {
+        return val;
+      }
+      this.dispatch(new ReplaceDocumentCommand(parsed));
+      return { valid: true, errors: [] };
+    } catch (e: any) {
+      const err = e.message || 'Invalid JSON';
+      return { valid: false, errors: [`JSON parse error: ${err}`] };
+    }
+  }
+
   public exportJSON(): string {
     return JSON.stringify(this.state.doc, null, 2);
   }
@@ -277,6 +293,18 @@ export class IRStateManager {
 
   public updateModifier(sequenceId: string, modifierType: string, params: Record<string, unknown>): void {
     this.dispatch(new UpdateModifierCommand(sequenceId, modifierType, params));
+  }
+
+  public addModifier(
+    sequenceId: string,
+    modifierOrType: string | { type: string; params?: Record<string, unknown> },
+    params?: Record<string, unknown>
+  ): void {
+    if (typeof modifierOrType === 'string') {
+      this.updateModifier(sequenceId, modifierOrType, params || {});
+    } else {
+      this.updateModifier(sequenceId, modifierOrType.type, modifierOrType.params || {});
+    }
   }
 
   public removeModifier(sequenceId: string, modifierType: string): void {

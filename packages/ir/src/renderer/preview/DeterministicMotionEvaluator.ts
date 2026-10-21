@@ -12,7 +12,78 @@ export type EasingType =
   | 'back.out'
   | 'back.in'
   | 'bounce.out'
+  | 'elastic.out'
+  | 'expo.out'
   | 'sine.inOut';
+
+export interface EasingPresetDefinition {
+  id: string;
+  name: string;
+  badge: string;
+  description: string;
+  path: string;
+}
+
+export const GSAP_EASING_PRESETS: EasingPresetDefinition[] = [
+  {
+    id: 'power2.out',
+    name: 'Quad Smooth',
+    badge: 'Default',
+    description: 'Fast entry with natural, smooth deceleration',
+    path: 'M 0 45 Q 25 5, 100 5',
+  },
+  {
+    id: 'power2.inOut',
+    name: 'S-Curve',
+    badge: 'Smooth',
+    description: 'Gradual acceleration and gentle deceleration',
+    path: 'M 0 45 C 45 45, 55 5, 100 5',
+  },
+  {
+    id: 'back.out',
+    name: 'Overshoot',
+    badge: 'Punchy',
+    description: 'Dynamic overshoot past boundary and snap back',
+    path: 'M 0 45 C 35 15, 60 -5, 100 5',
+  },
+  {
+    id: 'elastic.out',
+    name: 'Spring',
+    badge: 'Rubber',
+    description: 'Damped harmonic spring oscillation',
+    path: 'M 0 45 C 18 -6, 32 18, 50 -2 Q 75 6, 100 5',
+  },
+  {
+    id: 'bounce.out',
+    name: 'Physical Bounce',
+    badge: 'Impact',
+    description: 'Realistic gravity rebound bounces',
+    path: 'M 0 45 Q 18 35, 36 5 Q 45 18, 54 18 Q 63 18, 72 5 Q 79 9, 86 9 Q 93 9, 100 5',
+  },
+  {
+    id: 'expo.out',
+    name: 'Snappy Flash',
+    badge: 'Aggressive',
+    description: 'Instantaneous surge followed by sudden stop',
+    path: 'M 0 45 C 5 5, 20 5, 100 5',
+  },
+  {
+    id: 'linear',
+    name: 'Linear',
+    badge: 'Uniform',
+    description: 'Constant unaccelerated velocity',
+    path: 'M 0 45 L 100 5',
+  },
+];
+
+export const MOTION_LIFECYCLE_PRESETS = [
+  { id: 'none', label: 'Static', ease: 'linear' },
+  { id: 'pop_in', label: 'Pop In', ease: 'elastic.out' },
+  { id: 'slide_left', label: 'Slide In', ease: 'power2.out' },
+  { id: 'bounce', label: 'Bounce', ease: 'bounce.out' },
+  { id: 'overshoot', label: 'Overshoot', ease: 'back.out' },
+  { id: 'drift', label: 'Drift', ease: 'power2.inOut' },
+] as const;
 
 export function evaluateEase(ease: EasingType | string, t: number): number {
   const p = Math.max(0, Math.min(1, t));
@@ -54,6 +125,14 @@ export function evaluateEase(ease: EasingType | string, t: number): number {
         return n1 * p2 * p2 + 0.984375;
       }
     }
+    case 'elastic.out': {
+      if (p === 0) return 0;
+      if (p === 1) return 1;
+      const c4 = (2 * Math.PI) / 3;
+      return Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * c4) + 1;
+    }
+    case 'expo.out':
+      return p === 1 ? 1 : 1 - Math.pow(2, -10 * p);
     case 'sine.inOut':
       return -(Math.cos(Math.PI * p) - 1) / 2;
     case 'linear':
@@ -61,6 +140,8 @@ export function evaluateEase(ease: EasingType | string, t: number): number {
       return p;
   }
 }
+
+export const evaluateGSAPEasing = evaluateEase;
 
 export interface InterpolatedTransformState {
   x: number;

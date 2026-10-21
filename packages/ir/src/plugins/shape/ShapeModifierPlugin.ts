@@ -54,6 +54,69 @@ export class ShapeModifierPlugin implements ModifierPlugin<ShapeModifierParams> 
   public readonly type: string;
   public readonly targetScope = 'sequence';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    fields: {
+      geometry: {
+        key: 'geometry',
+        label: 'Vector Geometry',
+        type: 'select' as const,
+        defaultValue: 'rounded_rect',
+        options: [
+          { label: 'Rectangle', value: 'rect' },
+          { label: 'Rounded Rectangle', value: 'rounded_rect' },
+          { label: 'Circle', value: 'circle' },
+          { label: 'Pill Badge', value: 'pill' },
+          { label: 'Star', value: 'star' },
+          { label: 'Hexagon', value: 'hexagon' },
+          { label: 'Triangle', value: 'triangle' },
+          { label: 'Cross', value: 'cross' },
+          { label: 'Border Frame', value: 'frame' },
+        ],
+      },
+      width: {
+        key: 'width',
+        label: 'Shape Width',
+        type: 'number' as const,
+        min: 10,
+        max: 1920,
+        step: 5,
+        defaultValue: 320,
+        unit: 'px',
+      },
+      height: {
+        key: 'height',
+        label: 'Shape Height',
+        type: 'number' as const,
+        min: 10,
+        max: 1080,
+        step: 5,
+        defaultValue: 180,
+        unit: 'px',
+      },
+      fillColor: {
+        key: 'fillColor',
+        label: 'Fill Color',
+        type: 'color' as const,
+        defaultValue: '#00d4ff',
+      },
+      strokeWidth: {
+        key: 'strokeWidth',
+        label: 'Stroke Thickness',
+        type: 'number' as const,
+        min: 0,
+        max: 24,
+        step: 1,
+        defaultValue: 2,
+        unit: 'px',
+      },
+      strokeColor: {
+        key: 'strokeColor',
+        label: 'Stroke Color',
+        type: 'color' as const,
+        defaultValue: '#ffffff',
+      },
+    },
+  };
 
   constructor(type: string = 'shape/draw') {
     this.type = type;

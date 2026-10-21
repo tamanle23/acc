@@ -26,6 +26,103 @@ export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
   public readonly type = 'text/style';
   public readonly targetScope = 'both';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    displayName: 'Typography & Karaoke Glow',
+    category: 'text' as const,
+    fields: {
+      fontFamily: {
+        key: 'fontFamily',
+        label: 'Font Family',
+        type: 'select' as const,
+        defaultValue: 'Inter',
+        options: [
+          { label: 'Inter (Sans-Serif)', value: 'Inter' },
+          { label: 'Fira Code (Monospace)', value: 'Fira Code' },
+          { label: 'Outfit (Modern Clean)', value: 'Outfit' },
+          { label: 'Cinzel (Cinematic Serif)', value: 'Cinzel' },
+          { label: 'Montserrat (Geometric)', value: 'Montserrat' },
+        ],
+      },
+      fontSize: {
+        key: 'fontSize',
+        label: 'Font Size',
+        type: 'number' as const,
+        min: 12,
+        max: 120,
+        step: 1,
+        defaultValue: 28,
+        unit: 'px',
+      },
+      fontWeight: {
+        key: 'fontWeight',
+        label: 'Font Weight',
+        type: 'number' as const,
+        min: 300,
+        max: 900,
+        step: 100,
+        defaultValue: 600,
+      },
+      letterSpacing: {
+        key: 'letterSpacing',
+        label: 'Letter Spacing',
+        type: 'number' as const,
+        min: -2,
+        max: 10,
+        step: 0.5,
+        defaultValue: 0,
+        unit: 'px',
+      },
+      fillColor: {
+        key: 'fillColor',
+        label: 'Text Fill Color',
+        type: 'color' as const,
+        defaultValue: '#ffffff',
+        presets: [
+          { name: 'Pure White', hex: '#ffffff' },
+          { name: 'Cyber Yellow', hex: '#facc15' },
+          { name: 'Neon Green', hex: '#4ade80' },
+          { name: 'Cyan Glow', hex: '#22d3ee' },
+          { name: 'Dark Slate', hex: '#0f172a' },
+        ],
+      },
+      glowColor: {
+        key: 'glowColor',
+        label: 'Glow / Shadow Color',
+        type: 'color' as const,
+        defaultValue: '#00d4ff',
+        presets: [
+          { name: 'Cyan Neon', hex: '#00d4ff' },
+          { name: 'Electric Violet', hex: '#8b5cf6' },
+          { name: 'Hot Pink', hex: '#ec4899' },
+          { name: 'Amber Gold', hex: '#f59e0b' },
+        ],
+      },
+      activeWordHighlight: {
+        key: 'activeWordHighlight',
+        label: 'Active-Word Karaoke Glow',
+        type: 'karaoke_group' as const,
+        defaultValue: {
+          enabled: true,
+          animationPreset: 'pop',
+          scale: 1.15,
+          fillColor: '#facc15',
+          glowColor: '#00d4ff',
+        },
+      },
+      karaoke: {
+        key: 'karaoke',
+        label: 'Active-Word Karaoke Glow',
+        type: 'karaoke_group' as const,
+        defaultValue: {
+          enabled: true,
+          animationPreset: 'pop',
+          scale: 1.15,
+          fillColor: '#facc15',
+          glowColor: '#00d4ff',
+        },
+      },
+    },
+  };
 
   private captionStrategy = new BoundedAcousticCaptionStrategy();
   private captionConfigCache = new WeakMap<any, CaptionConfig[]>();

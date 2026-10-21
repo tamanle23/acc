@@ -13,6 +13,19 @@ export class PanModifierPlugin implements ModifierPlugin<PanModifierParams> {
   public readonly type = 'audio/pan';
   public readonly targetScope = 'both';
   public readonly targetPhase = 4;
+  public readonly schema = {
+    fields: {
+      stereoPan: {
+        key: 'stereoPan',
+        label: 'Stereo Pan Balance',
+        type: 'number' as const,
+        min: -1.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 0.0,
+      },
+    },
+  };
 
   public validate(params: unknown): params is PanModifierParams {
     return Boolean(

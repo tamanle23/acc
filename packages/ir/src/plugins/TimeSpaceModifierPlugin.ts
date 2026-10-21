@@ -15,6 +15,28 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
   public readonly type = 'time_space';
   public readonly targetScope = 'both';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    fields: {
+      templateId: {
+        key: 'templateId',
+        label: 'Motion Template ID',
+        type: 'string' as const,
+        defaultValue: 'callout_pulse',
+      },
+      boundary: {
+        key: 'boundary',
+        label: 'Temporal Boundary Mode',
+        type: 'select' as const,
+        defaultValue: 'loop',
+        options: [
+          { label: 'Loop Continuously', value: 'loop' },
+          { label: 'Ping-Pong Oscillate', value: 'pingpong' },
+          { label: 'Clamp Terminal Frame', value: 'clamp' },
+          { label: 'Play Once', value: 'once' },
+        ],
+      },
+    },
+  };
 
   private machineCache: Map<string, TimeSpaceStateMachine> = new Map();
 

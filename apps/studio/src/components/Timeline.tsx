@@ -92,9 +92,8 @@ function TrimHandle({ seq, handle }: TrimHandleProps) {
       {...listeners}
       {...attributes}
       onClick={(e) => e.stopPropagation()}
-      className={`w-2 h-full ${
-        handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
-      } cursor-col-resize hover:bg-white/50 active:bg-[var(--accent-primary)]/60 flex items-center justify-center transition-colors z-30`}
+      className={`w-2 h-full ${handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
+        } cursor-col-resize hover:bg-white/50 active:bg-[var(--accent-primary)]/60 flex items-center justify-center transition-colors z-30`}
       title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
     >
       <div className="w-0.5 h-3 bg-white/60 rounded-full" />
@@ -174,17 +173,15 @@ function TimelineClipItem({
         left: `${leftPx}px`,
         width: `${widthPx}px`,
       }}
-      className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${
-        activeTool === 'razor'
-          ? 'cursor-crosshair'
-          : isBeingDragged && activeDragState?.type === 'clip'
+      className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${activeTool === 'razor'
+        ? 'cursor-crosshair'
+        : isBeingDragged && activeDragState?.type === 'clip'
           ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
           : 'cursor-grab'
-      } ${
-        isSelected
+        } ${isSelected
           ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20'
           : 'hover:brightness-95 z-10'
-      } ${getTrackBadgeStyle(track)}`}
+        } ${getTrackBadgeStyle(track)}`}
     >
       <TrimHandle seq={seq} handle="start" />
 
@@ -237,13 +234,12 @@ function DroppableTrackLane({ track, isLocked, children }: DroppableTrackLanePro
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
-        isLocked
-          ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'
-          : isOver
+      className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${isLocked
+        ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'
+        : isOver
           ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/40 ring-1 ring-[var(--accent-primary)]/30'
           : 'bg-background/25 border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)]/40'
-      }`}
+        }`}
     >
       {children}
     </div>
@@ -287,8 +283,8 @@ export function Timeline({
   const tracks = rawTracks instanceof Map
     ? Array.from(rawTracks.values())
     : Array.isArray(rawTracks)
-    ? rawTracks
-    : [];
+      ? rawTracks
+      : [];
   const selectedSeqId = irState.selectedSequenceId;
 
   const pixelsPerFrame = Math.max(1, 4 * zoomScale);
@@ -464,15 +460,15 @@ export function Timeline({
       selectedClipId: selectedSeqId,
       ghostDrag: canvasGhostDrag
         ? {
-            seqId: canvasGhostDrag.seqId,
-            startFrame: canvasGhostDrag.currentStartFrame,
-            durationFrames: canvasGhostDrag.currentDurationFrames,
-            trackIndex: canvasGhostDrag.targetTrackIndex,
-            isValid: canvasGhostDrag.isValidDrop,
-            ghostType: canvasGhostDrag.type,
-            handle: canvasGhostDrag.handle,
-            dropMessage: canvasGhostDrag.dropMessage,
-          }
+          seqId: canvasGhostDrag.seqId,
+          startFrame: canvasGhostDrag.currentStartFrame,
+          durationFrames: canvasGhostDrag.currentDurationFrames,
+          trackIndex: canvasGhostDrag.targetTrackIndex,
+          isValid: canvasGhostDrag.isValidDrop,
+          ghostType: canvasGhostDrag.type,
+          handle: canvasGhostDrag.handle,
+          dropMessage: canvasGhostDrag.dropMessage,
+        }
         : null,
     };
 
@@ -662,10 +658,10 @@ export function Timeline({
       setActiveDragState((prev) =>
         prev
           ? {
-              ...prev,
-              deltaFrames,
-              targetTrackId: overTrackId,
-            }
+            ...prev,
+            deltaFrames,
+            targetTrackId: overTrackId,
+          }
           : null
       );
     } else if (activeDragState.type === 'trim') {
@@ -997,11 +993,10 @@ export function Timeline({
                 variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setTimelineMode('dom')}
-                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
-                  timelineMode === 'dom'
-                    ? 'bg-secondary text-secondary-foreground font-semibold shadow-2xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${timelineMode === 'dom'
+                  ? 'bg-secondary text-secondary-foreground font-semibold shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <LayoutGrid className="w-3 h-3" />
                 DOM
@@ -1012,11 +1007,10 @@ export function Timeline({
                 variant={timelineMode === 'canvas' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setTimelineMode('canvas')}
-                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
-                  timelineMode === 'canvas'
-                    ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40 font-semibold shadow-2xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${timelineMode === 'canvas'
+                  ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40 font-semibold shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <Monitor className="w-3 h-3" />
                 Canvas
@@ -1088,9 +1082,8 @@ export function Timeline({
           onMouseDown={handleTimelineMouseDown}
           onMouseMove={handleTimelineMouseMove}
           onMouseUp={handleTimelineMouseUp}
-          className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${
-            activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
-          }`}
+          className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
+            }`}
         >
           <div style={{ width: `${timelineWidth + 208}px` }} className="space-y-1 relative">
             {/* Sticky Timeline Head: Track Headers title & Timecode Ruler */}
@@ -1148,9 +1141,8 @@ export function Timeline({
             <canvas
               key={canvasKey}
               ref={offscreenCanvasRef}
-              className={`absolute top-7 left-52 pointer-events-none ${
-                timelineMode === 'canvas' ? 'z-10' : 'z-0 opacity-0'
-              }`}
+              className={`absolute top-7 left-52 pointer-events-none ${timelineMode === 'canvas' ? 'z-10' : 'z-0 opacity-0'
+                }`}
               style={{
                 width: `${timelineWidth}px`,
                 height: `${Math.max(120, rowVirtualizer.getTotalSize())}px`,
@@ -1202,8 +1194,8 @@ export function Timeline({
                     timecodeHUD.deltaFrames > 0
                       ? 'text-emerald-400 font-bold'
                       : timecodeHUD.deltaFrames < 0
-                      ? 'text-amber-400 font-bold'
-                      : 'text-muted-foreground'
+                        ? 'text-amber-400 font-bold'
+                        : 'text-muted-foreground'
                   }
                 >
                   ({timecodeHUD.deltaFrames >= 0 ? `+${timecodeHUD.deltaFrames}` : timecodeHUD.deltaFrames}f)
@@ -1276,12 +1268,12 @@ export function Timeline({
                           IRStateManager.getInstance().setInspectorMode('track');
                         }}
                         className="sticky left-0 z-20 w-52 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-slate-100/60 dark:hover:bg-slate-800/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
-                        title={`Inspect Track ${track.id}`}
+                        title={`Inspect Track ${track.type} - ${track.id}`}
                       >
                         <div className="flex items-center gap-1.5 min-w-0">
                           <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
                           <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
-                            {track.id}
+                            {track.type} - {track.id}
                           </span>
                         </div>
 
@@ -1321,11 +1313,10 @@ export function Timeline({
                               e.stopPropagation();
                               toggleLock(track.id);
                             }}
-                            className={`h-5 w-5 rounded transition-colors ${
-                              isLocked
-                                ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
-                                : 'text-muted-foreground hover:text-foreground'
-                            }`}
+                            className={`h-5 w-5 rounded transition-colors ${isLocked
+                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                              }`}
                             title={isLocked ? 'Unlock Track' : 'Lock Track'}
                           >
                             {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
@@ -1338,11 +1329,10 @@ export function Timeline({
                               e.stopPropagation();
                               toggleMute(track.id);
                             }}
-                            className={`h-5 w-5 rounded transition-colors ${
-                              isMuted
-                                ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-                                : 'text-muted-foreground hover:text-foreground'
-                            }`}
+                            className={`h-5 w-5 rounded transition-colors ${isMuted
+                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                              }`}
                             title={isMuted ? 'Unmute Track' : 'Mute Track'}
                           >
                             {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}

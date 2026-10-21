@@ -61,6 +61,54 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public readonly type = 'vfx/depth3d';
   public readonly targetScope = 'sequence';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    fields: {
+      mode: {
+        key: 'mode',
+        label: '3D Depth Projection Mode',
+        type: 'select' as const,
+        defaultValue: 'frame_breaker',
+        options: [
+          { label: 'Frame Breaker Pop-Out', value: 'frame_breaker' },
+          { label: '2.5D Parallax Plane', value: 'parallax_25d' },
+          { label: 'Dolly Zoom Push', value: 'parallax_dolly' },
+          { label: 'Volumetric Sandwich', value: 'volumetric_sandwich' },
+          { label: 'Silhouette Rim Light', value: 'silhouette_rim_light' },
+        ],
+      },
+      popOutIntensity: {
+        key: 'popOutIntensity',
+        label: 'Pop-Out Intensity',
+        type: 'number' as const,
+        min: 0.5,
+        max: 3.0,
+        step: 0.05,
+        defaultValue: 1.25,
+      },
+      backdropBlur: {
+        key: 'backdropBlur',
+        label: 'Backdrop Blur Radius',
+        type: 'number' as const,
+        min: 0,
+        max: 32,
+        step: 1,
+        defaultValue: 8,
+        unit: 'px',
+      },
+      floatMotion: {
+        key: 'floatMotion',
+        label: 'Organic Floating Motion',
+        type: 'boolean' as const,
+        defaultValue: true,
+      },
+      shadow: {
+        key: 'shadow',
+        label: 'Drop Shadow Depth',
+        type: 'boolean' as const,
+        defaultValue: true,
+      },
+    },
+  };
 
   // Cache resolved cutouts and depth layers per sequence to maintain ZERO-ALLOC-FRAME-LOOP
   private cutoutCache = new Map<string, { subjectImg: any | null; subjectBBox: any | null }>();

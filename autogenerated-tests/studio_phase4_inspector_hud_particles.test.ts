@@ -84,9 +84,9 @@ describe('Phase 4: RightSidebar Inspector Panels for HUD & Particles Suite', () 
       }
     });
 
-    it('should register overlay/hologram_hud in RightSidebar with default parameters', () => {
+    it('should register overlay/hologram_hud in RightSidebar catalog with default parameters', () => {
       const source = readFileSync(
-        join(process.cwd(), 'apps/studio/src/components/RightSidebar.tsx'),
+        join(process.cwd(), 'apps/studio/src/components/inspector/modifierCatalog.ts'),
         'utf-8'
       );
 
@@ -100,7 +100,7 @@ describe('Phase 4: RightSidebar Inspector Panels for HUD & Particles Suite', () 
 
     it('should register overlay/canvas_particles with schema-aligned default parameters', () => {
       const source = readFileSync(
-        join(process.cwd(), 'apps/studio/src/components/RightSidebar.tsx'),
+        join(process.cwd(), 'apps/studio/src/components/inspector/modifierCatalog.ts'),
         'utf-8'
       );
 
@@ -258,9 +258,9 @@ describe('Phase 4: RightSidebar Inspector Panels for HUD & Particles Suite', () 
   });
 
   describe('5. Rule 229 Guardrail & DOM Integrity Verification', () => {
-    it('should verify that all AccordionTrigger components in RightSidebar use the actions prop for interactive elements', () => {
+    it('should verify that all AccordionTrigger components in SequenceInspector use the actions prop for interactive elements', () => {
       const source = readFileSync(
-        join(process.cwd(), 'apps/studio/src/components/RightSidebar.tsx'),
+        join(process.cwd(), 'apps/studio/src/components/inspector/SequenceInspector.tsx'),
         'utf-8'
       );
 
@@ -277,9 +277,9 @@ describe('Phase 4: RightSidebar Inspector Panels for HUD & Particles Suite', () 
         }
       }
 
-      // Check Hologram HUD and Particle VFX AccordionItem presence
-      expect(source).toContain('AccordionItem value="hologram_hud"');
-      expect(source).toContain('AccordionItem value="particles"');
+      // Check Hologram HUD and Particle VFX section presence in openSections
+      expect(source).toContain("'hologram_hud'");
+      expect(source).toContain("'particles'");
     });
   });
 

@@ -17,6 +17,40 @@ export class FilterModifierPlugin implements ModifierPlugin<FilterModifierParams
   public readonly type = 'audio/filter';
   public readonly targetScope = 'both';
   public readonly targetPhase = 4;
+  public readonly schema = {
+    fields: {
+      filterType: {
+        key: 'filterType',
+        label: 'Filter Topology',
+        type: 'select' as const,
+        defaultValue: 'lowpass',
+        options: [
+          { label: 'Low-Pass Filter (LPF)', value: 'lowpass' },
+          { label: 'High-Pass Filter (HPF)', value: 'highpass' },
+          { label: 'Band-Pass Intercom (BPF)', value: 'bandpass' },
+        ],
+      },
+      cutoffHz: {
+        key: 'cutoffHz',
+        label: 'Cutoff Frequency',
+        type: 'number' as const,
+        min: 20,
+        max: 20000,
+        step: 10,
+        defaultValue: 1200,
+        unit: 'Hz',
+      },
+      q: {
+        key: 'q',
+        label: 'Resonance (Q)',
+        type: 'number' as const,
+        min: 0.1,
+        max: 10.0,
+        step: 0.05,
+        defaultValue: 0.707,
+      },
+    },
+  };
 
   public validate(params: unknown): params is FilterModifierParams {
     return Boolean(

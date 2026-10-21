@@ -14,6 +14,36 @@ export interface SplitEditParams {
 export class SplitEditPlugin implements ModifierPlugin<SplitEditParams> {
   public readonly type = 'editorial/split_edit';
   public readonly targetScope = 'sequence';
+  public readonly schema = {
+    fields: {
+      mode: {
+        key: 'mode',
+        label: 'Split Edit Mode',
+        type: 'select' as const,
+        defaultValue: 'j_cut',
+        options: [
+          { label: 'J-Cut (Audio Leads Video)', value: 'j_cut' },
+          { label: 'L-Cut (Audio Trails Video)', value: 'l_cut' },
+        ],
+      },
+      splitDurationFrames: {
+        key: 'splitDurationFrames',
+        label: 'Split Offset Duration',
+        type: 'number' as const,
+        min: 1,
+        max: 120,
+        step: 1,
+        defaultValue: 15,
+        unit: 'f',
+      },
+      crossfadeAudio: {
+        key: 'crossfadeAudio',
+        label: 'Crossfade Audio Seam',
+        type: 'boolean' as const,
+        defaultValue: true,
+      },
+    },
+  };
 
   public validate(params: unknown): params is SplitEditParams {
     return Boolean(

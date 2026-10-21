@@ -18,15 +18,19 @@ import { PitchModifierPlugin } from './audio/PitchModifierPlugin';
 import { ShapeModifierPlugin } from './shape/ShapeModifierPlugin';
 import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
 import { TimeSpaceModifierPlugin } from './TimeSpaceModifierPlugin';
+import { GSAPMotionPlugin } from './motion/GSAPMotionPlugin';
+import { DepthRelightingAdapterPlugin } from './vfx/DepthRelightingAdapterPlugin';
 
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
 export * from './TimeSpaceModifierPlugin';
 export * from './vfx/Depth3DPlugin';
+export * from './vfx/DepthRelightingAdapterPlugin';
 export * from './vfx/Camera3DPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
 export * from './transform/TransformModifierPlugin';
+export * from './motion/GSAPMotionPlugin';
 export * from './text/CaptionModifierPlugin';
 export * from './shape/ShapeModifierPlugin';
 export * from './sfx/ProceduralSFXModifierPlugin';
@@ -48,11 +52,16 @@ export function registerCoreModifierPlugins(
   targetRegistry?: ModifierPluginRegistry
 ): ModifierPluginRegistry {
   const registry = targetRegistry ?? ModifierPluginRegistry.getInstance();
-  registry.register(new Depth3DPlugin());
+  const depthPlugin = new Depth3DPlugin();
+  registry.register(depthPlugin);
+  registry.register(new DepthRelightingAdapterPlugin(depthPlugin));
   registry.register(new Camera3DPlugin());
   registry.register(new ColorGradingPlugin());
   registry.register(new PartialVFXPlugin());
   registry.register(new TransformModifierPlugin());
+  const gsapPlugin = new GSAPMotionPlugin();
+  registry.register(gsapPlugin);
+  registry.register(new GSAPMotionPlugin('animation/gsap'));
   registry.register(new CaptionModifierPlugin());
   registry.register(new ShapeModifierPlugin('shape/draw'));
   registry.register(new ShapeModifierPlugin('shape/vector'));
@@ -61,7 +70,7 @@ export function registerCoreModifierPlugins(
   registry.register(new SplitEditPlugin());
   const xfadePlugin = new TransitionCrossfadePlugin();
   registry.register(xfadePlugin);
-  registry.register({ ...xfadePlugin, type: 'editorial/transition_crossfade' });
+  registry.register({ ...xfadePlugin, type: 'editorial/transition_crossfade', schema: xfadePlugin.schema });
   registry.register(new BlendModePlugin());
   registry.register(new CanvasParticleOverlayPlugin());
   const hudPlugin = new HologramHUDPlugin();
@@ -70,13 +79,11 @@ export function registerCoreModifierPlugins(
   registry.register({
     ...hudPlugin,
     type: 'overlay/sci_fi_hud',
+    schema: hudPlugin.schema,
   });
   // Backward compatibility alias for camera/3d -> vfx/camera_3d
   const camPlugin = new Camera3DPlugin();
-  registry.register({ ...camPlugin, type: 'camera/3d' });
-  // Backward compatibility alias for vfx/depth_relighting -> vfx/depth3d
-  const depthPlugin = new Depth3DPlugin();
-  registry.register({ ...depthPlugin, type: 'vfx/depth_relighting' });
+  registry.register({ ...camPlugin, type: 'camera/3d', schema: camPlugin.schema });
   registry.register(new VolumeModifierPlugin());
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());

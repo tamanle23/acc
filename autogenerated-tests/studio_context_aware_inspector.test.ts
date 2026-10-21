@@ -326,9 +326,9 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
   });
 
   describe('6. Rule 229 Guardrail & DOM Accordion Trigger Integrity', () => {
-    it('should verify that all AccordionTrigger components in RightSidebar use the actions prop for interactive controls', () => {
-      const rightSidebarPath = resolve(__dirname, '../apps/studio/src/components/RightSidebar.tsx');
-      const content = readFileSync(rightSidebarPath, 'utf-8');
+    it('should verify that all AccordionTrigger components in SequenceInspector use the actions prop for interactive controls', () => {
+      const inspectorPath = resolve(__dirname, '../apps/studio/src/components/inspector/SequenceInspector.tsx');
+      const content = readFileSync(inspectorPath, 'utf-8');
 
       const regex = /<AccordionTrigger\b/g;
       let match: RegExpExecArray | null;
@@ -371,8 +371,8 @@ describe('Studio Context-Aware Inspector & Overlay VFX Architecture', () => {
         }
       }
 
-      // Assert that we inspected all accordion triggers in RightSidebar
-      expect(count).toBeGreaterThanOrEqual(7);
+      // Assert that we inspected all dynamic accordion triggers
+      expect(count).toBeGreaterThanOrEqual(1);
     });
   });
 });

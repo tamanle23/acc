@@ -37,6 +37,7 @@ const SHORTCUT_GROUPS = [
       { key: 'Ctrl + Shift + Z / Ctrl + Y', description: 'Redo last operation' },
       { key: '[', description: 'Toggle Left Sidebar (Library & Assets Vault)' },
       { key: ']', description: 'Toggle Right Sidebar (Inspector & GSAP Motion)' },
+      { key: 'Ctrl + Shift + J', description: 'Open Visual VideoIR JSON Editor & Debugger' },
       { key: '?', description: 'Open Keyboard Shortcuts cheat sheet' },
     ],
   },

@@ -27,11 +27,50 @@ export interface ModifierContext {
 
 import type { ModifierNode, ResolvedSequence, ResolvedTrack, SequenceType } from '../types/VideoIR';
 
+export type ParamFieldType =
+  | 'number'
+  | 'boolean'
+  | 'string'
+  | 'select'
+  | 'color'
+  | 'curve'
+  | 'motion_lifecycle'
+  | 'shader_group'
+  | 'karaoke_group'
+  | 'sfx_actions'
+  | 'regions_array'
+  | 'group';
+
+export interface ParamFieldDescriptor {
+  key: string;
+  label: string;
+  type: ParamFieldType;
+  description?: string;
+  defaultValue?: any;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+  options?: Array<{ label: string; value: string | number }>;
+  presets?: Array<{ name: string; hex: string }>;
+  fields?: Record<string, ParamFieldDescriptor>;
+  group?: string;
+}
+
+export interface ModifierParameterSchema {
+  displayName?: string;
+  category?: 'vfx' | 'sfx' | 'motion' | 'text' | 'editorial' | 'overlay';
+  resetDefaults?: Record<string, any>;
+  fields: Record<string, ParamFieldDescriptor>;
+  groups?: Array<{ id: string; label: string }>;
+}
+
 export interface ModifierPlugin<TParams = Record<string, unknown>> {
   readonly type: string;
   readonly defaultTarget?: SequenceType | SequenceType[];
   readonly targetScope: 'track' | 'sequence' | 'master' | 'audio' | 'both';
   readonly targetPhase?: PluginTargetPhase;
+  readonly schema?: ModifierParameterSchema;
   validate?(params: unknown): params is TParams;
   execute?(context: ModifierContext, params: TParams): Promise<void> | void;
   // Support 4-phase lifecycle methods
@@ -72,6 +111,10 @@ export class ModifierPluginRegistry {
 
   public get(type: string): ModifierPlugin<any> | undefined {
     return this.plugins.get(type);
+  }
+
+  public getSchema(type: string): ModifierParameterSchema | undefined {
+    return this.plugins.get(type)?.schema;
   }
 
   public has(type: string): boolean {

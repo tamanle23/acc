@@ -136,11 +136,11 @@ describe("Phase 2: Deep Collapsible Inspector Panels & 3D Numeric Suite", () => 
     expect(seq?.modifiers?.some((m) => m.type === "sfx/dynamic_ducking")).toBe(true);
   });
 
-  it("should ensure no nested buttons or switches are children of AccordionTrigger in RightSidebar", async () => {
+  it("should ensure no nested buttons or switches are children of AccordionTrigger in RightSidebar and SequenceInspector", async () => {
     const fs = await import("fs");
     const path = await import("path");
-    const rightSidebarPath = path.resolve(__dirname, "../apps/studio/src/components/RightSidebar.tsx");
-    const content = fs.readFileSync(rightSidebarPath, "utf-8");
+    const inspectorPath = path.resolve(__dirname, "../apps/studio/src/components/inspector/SequenceInspector.tsx");
+    const content = fs.readFileSync(inspectorPath, "utf-8");
 
     // Match each <AccordionItem ... </AccordionItem> block
     const itemRegex = /<AccordionItem[\s\S]*?<\/AccordionItem>/g;

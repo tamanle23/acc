@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings, Keyboard } from 'lucide-react';
+import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings, Keyboard, Code2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { IRStateManager } from '../lib/ir/irState';
 import { useTheme } from '../lib/theme/ThemeProvider';
 import { ShortcutsModal } from './ShortcutsModal';
+import { VisualIRJsonDebuggerModal } from './debugger/VisualIRJsonDebuggerModal';
 
 interface TitlebarProps {
   projectTitle: string;
@@ -41,9 +42,15 @@ export function Titlebar({
   const state = manager.getState();
   const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isDebuggerOpen, setIsDebuggerOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setIsDebuggerOpen((prev) => !prev);
+        return;
+      }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === '?' || (e.ctrlKey && e.key === '/')) {
         e.preventDefault();
@@ -84,7 +91,7 @@ export function Titlebar({
   };
 
   return (
-    <header className="h-14 glass-panel px-4 flex items-center justify-between select-none z-20 transition-colors">
+    <header className="h-14 glass-panel px-4 flex justify-between select-none z-20 transition-colors">
       <div className="flex items-center gap-3">
         {onToggleLeft && (
           <Tooltip content={isLeftOpen ? 'Collapse Left Drawer ([)' : 'Expand Left Drawer ([)'}>
@@ -199,6 +206,20 @@ export function Titlebar({
           </Button>
         </Tooltip>
 
+        {/* Visual VideoIR JSON Debugger Modal Trigger */}
+        <Tooltip content="Visual VideoIR JSON Editor & Debugger (Ctrl+Shift+J)">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDebuggerOpen(true)}
+            data-testid="titlebar-debugger-btn"
+            className="gap-1.5 text-xs h-8 font-mono text-indigo-300 border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 shadow-xs"
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            Debugger
+          </Button>
+        </Tooltip>
+
         <Separator orientation="vertical" className="h-4 mx-1" />
 
         {/* MP4 Export Button */}
@@ -288,6 +309,7 @@ export function Titlebar({
       </div>
 
       <ShortcutsModal open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
+      <VisualIRJsonDebuggerModal open={isDebuggerOpen} onOpenChange={setIsDebuggerOpen} />
     </header>
   );
 }

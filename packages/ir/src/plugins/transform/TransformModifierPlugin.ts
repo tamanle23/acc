@@ -44,6 +44,59 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
   public readonly type = 'transform';
   public readonly targetScope = 'both';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    fields: {
+      x: {
+        key: 'x',
+        label: 'Offset X',
+        type: 'number' as const,
+        min: -960,
+        max: 960,
+        step: 1,
+        defaultValue: 0,
+        unit: 'px',
+      },
+      y: {
+        key: 'y',
+        label: 'Offset Y',
+        type: 'number' as const,
+        min: -540,
+        max: 540,
+        step: 1,
+        defaultValue: 0,
+        unit: 'px',
+      },
+      scale: {
+        key: 'scale',
+        label: 'Uniform Scale',
+        type: 'number' as const,
+        min: 0.1,
+        max: 4.0,
+        step: 0.05,
+        defaultValue: 1.0,
+        unit: 'x',
+      },
+      rotation: {
+        key: 'rotation',
+        label: 'Rotation',
+        type: 'number' as const,
+        min: -180,
+        max: 180,
+        step: 1,
+        defaultValue: 0,
+        unit: '°',
+      },
+      opacity: {
+        key: 'opacity',
+        label: 'Opacity',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 1.0,
+      },
+    },
+  };
 
   public validate(params: unknown): params is TransformModifierParams {
     return Boolean(params && typeof params === 'object');

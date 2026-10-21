@@ -14,6 +14,32 @@ export class BlendModePlugin implements ModifierPlugin<BlendModeParams> {
   public readonly type = 'overlay/blend_mode';
   public readonly targetScope = 'both';
   public readonly targetPhase = 4;
+  public readonly schema = {
+    fields: {
+      mode: {
+        key: 'mode',
+        label: 'Composite Blend Mode',
+        type: 'select' as const,
+        defaultValue: 'screen',
+        options: [
+          { label: 'Screen (Additive Glow)', value: 'screen' },
+          { label: 'Multiply (Darken)', value: 'multiply' },
+          { label: 'Overlay (Contrast)', value: 'overlay' },
+          { label: 'Color Dodge (Intense Highlights)', value: 'color_dodge' },
+          { label: 'Soft Light (Subtle Wash)', value: 'soft_light' },
+        ],
+      },
+      opacity: {
+        key: 'opacity',
+        label: 'Blend Opacity',
+        type: 'number' as const,
+        min: 0.0,
+        max: 1.0,
+        step: 0.05,
+        defaultValue: 1.0,
+      },
+    },
+  };
 
   public validate(params: unknown): params is BlendModeParams {
     return Boolean(

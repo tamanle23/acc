@@ -47,6 +47,69 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
   public readonly type = 'vfx/camera_3d';
   public readonly targetScope = 'sequence';
   public readonly targetPhase = 2;
+  public readonly schema = {
+    displayName: '3D Camera & Lens',
+    category: 'vfx' as const,
+    fields: {
+      fov: {
+        key: 'fov',
+        label: 'Field of View (FOV)',
+        type: 'number' as const,
+        min: 20,
+        max: 110,
+        step: 1,
+        defaultValue: 45,
+        unit: '°',
+      },
+      focalDistance: {
+        key: 'focalDistance',
+        label: 'Focal Distance',
+        type: 'number' as const,
+        min: 0.5,
+        max: 20.0,
+        step: 0.1,
+        defaultValue: 2.5,
+        unit: 'm',
+      },
+      bokehRadius: {
+        key: 'bokehRadius',
+        label: 'Bokeh Blur Radius',
+        type: 'number' as const,
+        min: 0.0,
+        max: 25.0,
+        step: 0.5,
+        defaultValue: 6.0,
+        unit: 'px',
+      },
+      roll: {
+        key: 'roll',
+        label: 'Camera Roll',
+        type: 'number' as const,
+        min: -180,
+        max: 180,
+        step: 1,
+        defaultValue: 0,
+        unit: '°',
+      },
+      motionBlur: {
+        key: 'motionBlur',
+        label: 'Optical Motion Blur',
+        type: 'boolean' as const,
+        defaultValue: false,
+      },
+    },
+  };
+
+  public normalizeParams(params: Partial<Camera3DPluginParams> = {}): Camera3DPluginParams {
+    return {
+      fov: params.fov ?? 45,
+      focalDistance: params.focalDistance ?? 2.5,
+      bokehRadius: params.bokehRadius ?? 6.0,
+      roll: params.roll ?? 0,
+      motionBlur: params.motionBlur ?? false,
+      ...params,
+    };
+  }
 
   // Cached pre-computed trajectory arrays per sequence/asset
   private trajectoryCache = new Map<string, Float32Array>();

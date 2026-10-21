@@ -18,6 +18,57 @@ export class VolumeModifierPlugin implements ModifierPlugin<VolumeModifierParams
   public readonly type = 'audio/volume';
   public readonly targetScope = 'both';
   public readonly targetPhase = 4;
+  public readonly schema = {
+    fields: {
+      volume: {
+        key: 'volume',
+        label: 'Gain Multiplier',
+        type: 'number' as const,
+        min: 0.0,
+        max: 2.0,
+        step: 0.05,
+        defaultValue: 1.0,
+        unit: 'x',
+      },
+      fadeInSec: {
+        key: 'fadeInSec',
+        label: 'Fade In Duration',
+        type: 'number' as const,
+        min: 0.0,
+        max: 5.0,
+        step: 0.05,
+        defaultValue: 0.0,
+        unit: 's',
+      },
+      fadeOutSec: {
+        key: 'fadeOutSec',
+        label: 'Fade Out Duration',
+        type: 'number' as const,
+        min: 0.0,
+        max: 5.0,
+        step: 0.05,
+        defaultValue: 0.0,
+        unit: 's',
+      },
+      fadeCurve: {
+        key: 'fadeCurve',
+        label: 'Fade Curve Shape',
+        type: 'select' as const,
+        defaultValue: 'cosine',
+        options: [
+          { label: 'Cosine S-Curve', value: 'cosine' },
+          { label: 'Linear Ramp', value: 'linear' },
+          { label: 'Exponential', value: 'exponential' },
+        ],
+      },
+      muted: {
+        key: 'muted',
+        label: 'Mute Clip Audio',
+        type: 'boolean' as const,
+        defaultValue: false,
+      },
+    },
+  };
 
   public validate(params: unknown): params is VolumeModifierParams {
     return Boolean(
