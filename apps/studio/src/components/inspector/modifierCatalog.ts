@@ -361,7 +361,84 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     defaultParams: {
       enabled: true,
       durationFrames: 15,
-      crossfadeType: 'crossfade',
+      transitionType: 'crossfade',
+      alignment: 'center_on_cut',
+      ease: 'linear',
+    },
+  },
+  'transition/crossfade': {
+    name: 'Transition Crossfade (Dissolve)',
+    icon: Film,
+    supportedTrackTypes: ['video', 'audio'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      transitionType: 'crossfade',
+      alignment: 'center_on_cut',
+      ease: 'linear',
+    },
+  },
+  'transition/wipe': {
+    name: 'Transition Wipe',
+    icon: Film,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      transitionType: 'wipe',
+      direction: 'left',
+      alignment: 'center_on_cut',
+      ease: 'linear',
+    },
+  },
+  'transition/push': {
+    name: 'Transition Push (Slide)',
+    icon: Film,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      transitionType: 'push',
+      direction: 'left',
+      alignment: 'center_on_cut',
+      ease: 'linear',
+    },
+  },
+  'transition/zoom': {
+    name: 'Transition Whip Zoom',
+    icon: Film,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      transitionType: 'zoom',
+      alignment: 'center_on_cut',
+      ease: 'ease_in_out',
+    },
+  },
+  'transition/dip': {
+    name: 'Transition Dip to Color',
+    icon: Film,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 15,
+      transitionType: 'dip',
+      dipColor: '#000000',
+      alignment: 'center_on_cut',
+      ease: 'linear',
+    },
+  },
+  'transition/glitch': {
+    name: 'Transition Glitch',
+    icon: Film,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      durationFrames: 12,
+      transitionType: 'glitch',
+      alignment: 'center_on_cut',
+      ease: 'linear',
     },
   },
   'overlay/blend_mode': {
@@ -393,16 +470,6 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
           color: '#00f0ff',
         },
       ],
-    },
-  },
-  'transition/crossfade': {
-    name: 'Crossfade & Wipe Transition',
-    icon: Film,
-    supportedTrackTypes: ['video', 'audio'],
-    defaultParams: {
-      enabled: true,
-      durationFrames: 24,
-      crossfadeType: 'crossfade',
     },
   },
   'shape/draw': {
@@ -575,6 +642,19 @@ export function getSectionIdForModifierType(type: string): string {
       return 'audio';
     case 'sfx/procedural':
       return 'procedural_sfx';
+    case 'transition/crossfade':
+    case 'transition/wipe':
+    case 'transition/push':
+    case 'transition/zoom':
+    case 'transition/dip':
+    case 'transition/glitch':
+    case 'transition/light_leak':
+    case 'transition/radial_wipe':
+    case 'transition/iris':
+    case 'editorial/transition_crossfade':
+    case 'editorial/transition':
+    case 'transition':
+      return 'transitions';
     default:
       return `generic_${type.replace(/[^a-zA-Z0-9_]/g, '_')}`;
   }

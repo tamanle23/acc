@@ -48,6 +48,7 @@ export function RightSidebar() {
     'color',
     'audio',
     'procedural_sfx',
+    'transitions',
   ]);
   const [isSequenceLocked, setIsSequenceLocked] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);

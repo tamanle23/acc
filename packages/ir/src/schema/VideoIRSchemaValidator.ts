@@ -622,11 +622,28 @@ export class VideoIRSchemaValidator {
       }
 
       case 'transition/crossfade':
+      case 'transition/wipe':
+      case 'transition/push':
+      case 'transition/zoom':
+      case 'transition/dip':
+      case 'transition/glitch':
+      case 'transition/light_leak':
+      case 'transition/radial_wipe':
+      case 'transition/iris':
       case 'editorial/transition':
       case 'transition': {
         const dur = p.durationSec !== undefined ? p.durationSec : p.durationFrames;
         if (dur !== undefined && (typeof dur !== 'number' || dur < 0)) {
           errors.push(`Modifier "${type}" on ${context}: transition duration must be a non-negative number`);
+        }
+        if (p.alignment !== undefined && !['center_on_cut', 'start_at_cut', 'end_at_cut'].includes(p.alignment)) {
+          errors.push(`Modifier "${type}" on ${context}: alignment must be 'center_on_cut', 'start_at_cut', or 'end_at_cut'`);
+        }
+        if (p.direction !== undefined && !['left', 'right', 'up', 'down'].includes(p.direction)) {
+          errors.push(`Modifier "${type}" on ${context}: direction must be 'left', 'right', 'up', or 'down'`);
+        }
+        if (p.dipColor !== undefined && typeof p.dipColor !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: dipColor must be a valid color string`);
         }
         break;
       }

@@ -11,6 +11,7 @@ import {
   Sliders,
   RotateCcw,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -706,6 +707,22 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               </AccordionTrigger>
 
               <AccordionContent className="p-3 space-y-3">
+                {sectionId === 'transitions' && (() => {
+                  const transDur = mod.params?.durationFrames ?? 15;
+                  const seqDur = selectedSeq?.durationFrames ?? 90;
+                  const hasInsufficientHead = transDur > seqDur;
+                  if (hasInsufficientHead) {
+                    return (
+                      <div className="flex items-start gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px]">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Insufficient Media Handles:</strong> Transition duration ({transDur}f) exceeds sequence duration ({seqDur}f). Clip may freeze or clip abruptly.
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
                 <DynamicModifierInspector
                   modifierType={mod.type}
                   params={mod.params || {}}

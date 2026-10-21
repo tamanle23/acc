@@ -240,11 +240,32 @@ export interface SplitEditModifierParams {
   crossfadeAudio?: boolean;
 }
 
+export type TransitionType =
+  | 'crossfade'
+  | 'dip'
+  | 'wipe'
+  | 'push'
+  | 'zoom'
+  | 'glitch'
+  | 'light_leak'
+  | 'radial_wipe'
+  | 'iris';
+
+export type TransitionAlignment = 'center_on_cut' | 'start_at_cut' | 'end_at_cut';
+
+export type TransitionDirection = 'left' | 'right' | 'up' | 'down';
+
 export interface TransitionModifierParams {
-  transitionType: 'crossfade' | 'slide_left' | 'slide_right' | 'whip_zoom' | 'dip_black';
-  durationSec: number;
+  transitionType?: TransitionType | 'slide_left' | 'slide_right' | 'whip_zoom' | 'dip_black';
+  durationFrames?: number;
+  durationSec?: number;
   ease?: string;
+  alignment?: TransitionAlignment;
+  direction?: TransitionDirection;
+  dipColor?: string;
+  outgoingSeqId?: string;
   overlapTarget?: string;
+  enabled?: boolean;
 }
 
 // ============================================================================
@@ -283,7 +304,21 @@ export type StandardModifierNode =
   | TypedModifierNode<'sfx/dynamic_ducking', 'audio' | SequenceType[], DynamicDuckingModifierParams>
   | TypedModifierNode<'sfx/procedural', 'audio' | SequenceType[], ProceduralSfxModifierParams>
   | TypedModifierNode<'editorial/split_edit', 'video' | 'audio' | SequenceType[], SplitEditModifierParams>
-  | TypedModifierNode<'transition/crossfade' | 'editorial/transition', 'video' | 'image' | 'overlay' | 'audio' | SequenceType[], TransitionModifierParams>;
+  | TypedModifierNode<
+      | 'transition/crossfade'
+      | 'transition/wipe'
+      | 'transition/push'
+      | 'transition/zoom'
+      | 'transition/dip'
+      | 'transition/glitch'
+      | 'transition/light_leak'
+      | 'transition/radial_wipe'
+      | 'transition/iris'
+      | 'editorial/transition'
+      | 'transition',
+      'video' | 'image' | 'overlay' | 'audio' | SequenceType[],
+      TransitionModifierParams
+    >;
 
 export interface CustomModifierNode<TParams = Record<string, unknown>> {
   type: string;

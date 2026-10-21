@@ -30,6 +30,7 @@ import { AudioWaveform } from './timeline/AudioWaveform';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
+import { TimelineTransitionBlock } from './timeline/TimelineTransitionBlock';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -184,6 +185,27 @@ function TimelineClipItem({
         } ${getTrackBadgeStyle(track)}`}
     >
       <TrimHandle seq={seq} handle="start" />
+
+      {/* Visual Transition Block Handle (Cut boundary) */}
+      {seq.modifiers &&
+        (() => {
+          const transMod = seq.modifiers.find((m: any) =>
+            m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
+          );
+          if (!transMod || transMod.params?.enabled === false) return null;
+          return (
+            <TimelineTransitionBlock
+              transitionModifier={transMod}
+              sequenceId={seq.id}
+              pixelsPerFrame={pixelsPerFrame}
+              onClick={(e) => {
+                e.stopPropagation();
+                IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+                IRStateManager.getInstance().setInspectorMode('sequence');
+              }}
+            />
+          );
+        })()}
 
       <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
         {isAudio ? (
