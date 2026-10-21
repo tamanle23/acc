@@ -405,6 +405,16 @@
         "gain": { "type": "number" }
       }
     },
+    "AVLinkModifierParams": {
+      "type": "object",
+      "required": ["linkedSequenceId", "linkedTrackId"],
+      "properties": {
+        "linkedSequenceId": { "type": "string" },
+        "linkedTrackId": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "syncTrim": { "type": "boolean" }
+      }
+    },
     "SplitEditModifierParams": {
       "type": "object",
       "required": ["mode", "splitDurationFrames"],

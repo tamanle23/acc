@@ -20,6 +20,8 @@ import {
   GripVertical,
   Film,
   ArrowRightLeft,
+  Link2,
+  Unlink,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -226,6 +228,42 @@ function TimelineClipItem({
         <span className="text-[10px] font-mono font-medium truncate relative z-10 drop-shadow-xs">
           {seq.id}
         </span>
+        {(() => {
+          const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
+          if (!avLink) return null;
+          const isLinked = avLink.params?.enabled !== false;
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const newEnabled = !isLinked;
+                // Update on this sequence
+                IRStateManager.getInstance().updateModifier(seq.id, 'editorial/av_link', {
+                  ...avLink.params,
+                  enabled: newEnabled,
+                });
+                // Also update on partner sequence if present
+                if (avLink.params?.linkedSequenceId) {
+                  IRStateManager.getInstance().updateModifier(avLink.params.linkedSequenceId, 'editorial/av_link', {
+                    ...avLink.params,
+                    linkedSequenceId: seq.id,
+                    linkedTrackId: track.id,
+                    enabled: newEnabled,
+                  });
+                }
+              }}
+              className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
+                isLinked
+                  ? 'text-cyan-400 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40'
+                  : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
+              }`}
+              title={isLinked ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)` : 'Unlinked A/V (Click to re-link)'}
+            >
+              {isLinked ? <Link2 className="w-2.5 h-2.5" /> : <Unlink className="w-2.5 h-2.5" />}
+            </button>
+          );
+        })()}
         {seq.modifiers && seq.modifiers.length > 0 && (
           <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
             {seq.modifiers.length} mod
@@ -1182,32 +1220,28 @@ export function Timeline({
                 }}
               >
                 <div
-                  className={`w-2 h-2 rotate-45 -mt-1 ${
-                    activeSnapGuideline.isAbut
-                      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] ring-1 ring-emerald-300'
-                      : 'bg-accent-theme shadow-accent-glow'
-                  }`}
+                  className={`w-2 h-2 rotate-45 -mt-1 ${activeSnapGuideline.isAbut
+                    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] ring-1 ring-emerald-300'
+                    : 'bg-accent-theme shadow-accent-glow'
+                    }`}
                 />
                 <div
-                  className={`w-[1.5px] flex-1 ${
-                    activeSnapGuideline.isAbut
-                      ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]'
-                      : 'bg-accent-theme shadow-accent-glow'
-                  }`}
+                  className={`w-[1.5px] flex-1 ${activeSnapGuideline.isAbut
+                    ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]'
+                    : 'bg-accent-theme shadow-accent-glow'
+                    }`}
                 />
                 <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded -mt-4 shadow-sm border flex items-center gap-1 backdrop-blur-md ${
-                    activeSnapGuideline.isAbut
-                      ? 'text-emerald-300 bg-emerald-950/90 border-emerald-500/60'
-                      : 'text-accent-theme bg-popover/95 border-accent-theme/40'
-                  }`}
+                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded -mt-4 shadow-sm border flex items-center gap-1 backdrop-blur-md ${activeSnapGuideline.isAbut
+                    ? 'text-emerald-300 bg-emerald-950/90 border-emerald-500/60'
+                    : 'text-accent-theme bg-popover/95 border-accent-theme/40'
+                    }`}
                 >
                   <span>{activeSnapGuideline.frame}f</span>
                   {activeSnapGuideline.label && (
                     <span
-                      className={`text-[8px] uppercase font-semibold ${
-                        activeSnapGuideline.isAbut ? 'text-emerald-200' : 'text-accent-theme/80'
-                      }`}
+                      className={`text-[8px] uppercase font-semibold ${activeSnapGuideline.isAbut ? 'text-emerald-200' : 'text-accent-theme/80'
+                        }`}
                     >
                       ({activeSnapGuideline.label})
                     </span>
@@ -1338,7 +1372,7 @@ export function Timeline({
                         width: `${timelineWidth + 208}px`,
                         height: '40px',
                       }}
-                      className="h-10 flex items-center gap-2"
+                      className="h-10 flex items-center gap-2 bg-[var(--glass-bg)]"
                     >
                       {/* Sticky Track Header Card */}
                       <div

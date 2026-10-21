@@ -8,6 +8,7 @@ export interface AssetMetadata {
   height?: number;
   sampleRate?: number;
   channels?: number;
+  hasAudio?: boolean;
 }
 
 export interface IAssetMetadataProber {

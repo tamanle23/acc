@@ -12,6 +12,8 @@ import {
   RotateCcw,
   Sparkles,
   AlertCircle,
+  Link2,
+  Unlink,
 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -569,6 +571,66 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             )}
           </div>
         )}
+
+        {/* A/V Link Status & Controls */}
+        {(() => {
+          const avLink = modifiers.find((m: any) => m.type === 'editorial/av_link');
+          if (!avLink) return null;
+          const isLinked = avLink.params?.enabled !== false;
+          const partnerId = avLink.params?.linkedSequenceId;
+          const partnerTrack = avLink.params?.linkedTrackId;
+          return (
+            <div className="pt-2 border-t border-border/40 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[11px] text-foreground/90 flex items-center gap-1.5">
+                  <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+                  Linked Audio / Video
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isLocked}
+                  onClick={() => {
+                    const newEnabled = !isLinked;
+                    updateModifierParams('editorial/av_link', {
+                      ...avLink.params,
+                      enabled: newEnabled,
+                    });
+                    if (partnerId) {
+                      IRStateManager.getInstance().updateModifier(partnerId, 'editorial/av_link', {
+                        ...avLink.params,
+                        linkedSequenceId: selectedSeqId,
+                        linkedTrackId: selectedTrack?.id,
+                        enabled: newEnabled,
+                      });
+                    }
+                  }}
+                  className={`h-5 px-2 text-[10px] gap-1 cursor-pointer transition-colors ${
+                    isLinked
+                      ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60'
+                      : 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {isLinked ? (
+                    <>
+                      <Link2 className="w-2.5 h-2.5" />
+                      Linked
+                    </>
+                  ) : (
+                    <>
+                      <Unlink className="w-2.5 h-2.5" />
+                      Unlinked
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="p-1.5 rounded bg-muted/30 border border-border/30 text-[10px] text-muted-foreground flex items-center justify-between">
+                <span>Partner: <span className="font-mono text-foreground font-medium">{partnerId}</span></span>
+                <span className="font-mono text-[9px] uppercase px-1 py-0.5 rounded bg-muted">{partnerTrack}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Action Bar */}
         <div className="flex items-center gap-1 pt-2 border-t border-border/40">

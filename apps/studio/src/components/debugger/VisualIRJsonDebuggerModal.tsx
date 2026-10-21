@@ -520,12 +520,12 @@ export function VisualIRJsonDebuggerModal({
         {/* Main Workspace Body */}
         <div className="flex-1 min-h-0 flex overflow-hidde">
           {activeTab === 'editor' && (
-            <div className="flex-1 flex min-h-0 overflow-hidden">
+            <div className="flex-1 flex min-h-0 overflow-auto">
               {/* Line-Numbered Monospace Code Editor */}
-              <div className="flex-1 flex min-h-0 overflow-auto relative font-mono text-xs">
+              <div className="flex-1 flex min-h-0 overflow-auto relative font-mono text-balance">
                 <div
                   aria-hidden="true"
-                  className="select-none py-3 px-2.5 text-right bg-slate-950 text-slate-600 border-r border-slate-800/80 font-mono text-[11px] leading-[1.5rem] shrink-0"
+                  className="select-none py-3 px-2.5 text-right border-r font-mono text-[11px] leading-[1.5rem] shrink-0"
                 >
                   {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => (
                     <div key={i}>{i + 1}</div>
@@ -535,8 +535,8 @@ export function VisualIRJsonDebuggerModal({
                   data-testid="debugger-json-textarea"
                   value={rawJson}
                   onChange={(e) => setRawJson(e.target.value)}
-                  spellCheck={false}
-                  className="flex-1 w-full min-h-full p-3 bg-transparent text-slate-100 font-mono text-xs leading-[1.5rem] focus:outline-none resize-none overflow-y-visible"
+
+                  className="flex-1 w-full min-h-full p-3 spellCheck={false} font-mono leading-[1.5rem] focus:outline-none resize-none overflow-hidden"
                 />
               </div>
 

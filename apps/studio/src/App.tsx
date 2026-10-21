@@ -106,9 +106,13 @@ function StudioWorkspace() {
     const { active, over } = event;
     setActiveDragItem(null);
 
-    if (over && over.id === 'canvas-viewport-drop-zone') {
-      const data = active.data.current;
-      if (data?.type === 'preset' && data.preset) {
+    if (!over) return;
+
+    const data = active.data.current;
+    if (!data) return;
+
+    if (over.id === 'canvas-viewport-drop-zone') {
+      if (data.type === 'preset' && data.preset) {
         const preset = data.preset as StagingPreset;
         const seq = preset.createSequence({
           startFrame: currentFrame,
@@ -120,7 +124,7 @@ function StudioWorkspace() {
           trackNameFallback: preset.targetTrackName,
         });
         setIsRightOpen(true);
-      } else if (data?.type === 'asset' && data.asset) {
+      } else if (data.type === 'asset' && data.asset) {
         const asset = data.asset;
         const assetId = data.assetId;
         const targetTrackId = asset.type === 'audio' ? 'track-a1' : 'track-v1';
@@ -141,6 +145,126 @@ function StudioWorkspace() {
           trackTypeFallback: targetTrackType,
           trackNameFallback: targetTrackId,
         });
+        setIsRightOpen(true);
+      }
+      return;
+    }
+
+    // Direct Track Dropping from LeftSidebar Preset or Asset Library
+    const overIdStr = String(over.id);
+    if (overIdStr.startsWith('track-') || (over.data.current as any)?.type === 'track') {
+      const targetTrackId = (over.data.current as any)?.trackId || overIdStr.replace(/^track-/, '');
+      
+      // Calculate drop frame from translated pointer coordinate relative to target lane
+      let dropFrame = currentFrame;
+      const zoomScale = 1.0; // default baseline zoom scale
+      const pixelsPerFrame = Math.max(1, 4 * zoomScale);
+      
+      if (event.active.rect.current.translated && over.rect) {
+        const relX = event.active.rect.current.translated.left - over.rect.left;
+        if (relX > 0) {
+          dropFrame = Math.max(0, Math.round(relX / pixelsPerFrame));
+        } else {
+          dropFrame = currentFrame;
+        }
+      }
+
+      // Magnetic Snapping check against current playhead
+      if (Math.abs(dropFrame - currentFrame) <= 4) {
+        dropFrame = currentFrame;
+      }
+
+      if (data.type === 'preset' && data.preset) {
+        const preset = data.preset as StagingPreset;
+        const seq = preset.createSequence({
+          startFrame: dropFrame,
+          normX: 0.5,
+          normY: 0.5,
+        });
+        IRStateManager.getInstance().addSequence(targetTrackId, seq, {
+          trackTypeFallback: preset.targetTrackType,
+          trackNameFallback: preset.targetTrackName,
+        });
+        setIsRightOpen(true);
+      } else if (data.type === 'asset' && data.asset) {
+        const asset = data.asset;
+        const assetId = data.assetId;
+        const durationFrames = asset.durationSec ? Math.round(asset.durationSec * fps) : 90;
+
+        // Check if asset is video with audio -> Ingest with Linked A/V Split Engine
+        if (asset.type === 'video' && asset.hasAudio !== false) {
+          const timestamp = Date.now().toString(36);
+          const vSeqId = `seq_${assetId}_v_${timestamp}`;
+          const aSeqId = `seq_${assetId}_a_${timestamp}`;
+          const audioTrackId = 'track-a1';
+
+          const videoSeq = {
+            id: vSeqId,
+            name: `${assetId} (Video)`,
+            startFrame: dropFrame,
+            timelineStartFrame: dropFrame,
+            durationFrames,
+            assetId,
+            modifiers: [
+              {
+                id: `mod_link_${vSeqId}`,
+                type: 'editorial/av_link' as const,
+                params: {
+                  linkedSequenceId: aSeqId,
+                  linkedTrackId: audioTrackId,
+                  enabled: true,
+                  syncTrim: true,
+                },
+              },
+            ],
+          };
+
+          const audioSeq = {
+            id: aSeqId,
+            name: `${assetId} (Audio)`,
+            startFrame: dropFrame,
+            timelineStartFrame: dropFrame,
+            durationFrames,
+            assetId,
+            modifiers: [
+              {
+                id: `mod_link_${aSeqId}`,
+                type: 'editorial/av_link' as const,
+                params: {
+                  linkedSequenceId: vSeqId,
+                  linkedTrackId: targetTrackId,
+                  enabled: true,
+                  syncTrim: true,
+                },
+              },
+            ],
+          };
+
+          IRStateManager.getInstance().addLinkedAVSequences({
+            videoSeq: videoSeq as any,
+            audioSeq: audioSeq as any,
+            videoTrackId: targetTrackId,
+            audioTrackId,
+          });
+        } else {
+          // Standard single sequence ingestion (Pure Audio or Video without audio stream)
+          const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
+          const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
+          const newSeq = {
+            id: seqId,
+            name: assetId,
+            startFrame: dropFrame,
+            timelineStartFrame: dropFrame,
+            durationFrames,
+            assetId,
+            modifiers: [],
+          };
+
+          IRStateManager.getInstance().addSequence(targetTrackId, newSeq as any, {
+            trackTypeFallback: targetTrackType,
+            trackNameFallback: targetTrackId,
+          });
+        }
         setIsRightOpen(true);
       }
     }

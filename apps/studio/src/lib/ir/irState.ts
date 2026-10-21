@@ -20,6 +20,7 @@ import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
 import { AddSequenceCommand, type AddSequenceOptions } from '../commands/AddSequenceCommand';
+import { AddLinkedAVSequenceCommand, type AddLinkedAVSequenceOptions } from '../commands/AddLinkedAVSequenceCommand';
 import { DuplicateSequenceCommand } from '../commands/DuplicateSequenceCommand';
 import { DeleteSequenceCommand } from '../commands/DeleteSequenceCommand';
 import { RippleDeleteSequenceCommand } from '../commands/RippleDeleteSequenceCommand';
@@ -324,6 +325,11 @@ export class IRStateManager {
   ): void {
     this.dispatch(new AddSequenceCommand(targetTrackId, sequence, options));
     this.setSelectedSequenceId(sequence.id);
+  }
+
+  public addLinkedAVSequences(options: AddLinkedAVSequenceOptions): void {
+    this.dispatch(new AddLinkedAVSequenceCommand(options));
+    this.setSelectedSequenceId(options.videoSequence.id);
   }
 
   public updateTextCue(sequenceId: string, cueIndex: number, newText: string): void {

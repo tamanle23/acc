@@ -27,6 +27,7 @@ import {
   UploadCloud,
 } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -603,6 +604,8 @@ export function LeftSidebar({
   const [selectedAssetType, setSelectedAssetType] = useState<'all' | 'video' | 'audio' | 'image'>('all');
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [isVaultDragOver, setIsVaultDragOver] = useState(false);
+  const presetScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const assetScrollRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleFilesIngest = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -692,6 +695,27 @@ export function LeftSidebar({
       a.id.toLowerCase().includes(assetFilterQuery.toLowerCase()) ||
       a.src.toLowerCase().includes(assetFilterQuery.toLowerCase());
     return matchesType && matchesQuery;
+  });
+
+  const presetVirtualizer = useVirtualizer({
+    count: filteredPresets.length,
+    getScrollElement: () => presetScrollRef.current,
+    estimateSize: (index) => {
+      const p = filteredPresets[index];
+      if (!p) return 140;
+      if (p.thumbnailUrl) return 210;
+      if (p.category === 'shape' || p.category === 'text') return 185;
+      if (p.category === 'audio' || p.category === 'sfx') return 155;
+      return 140;
+    },
+    overscan: 5,
+  });
+
+  const assetVirtualizer = useVirtualizer({
+    count: filteredAssets.length,
+    getScrollElement: () => assetScrollRef.current,
+    estimateSize: () => 80,
+    overscan: 5,
   });
 
   const getDrawerHeader = () => {
@@ -1038,22 +1062,46 @@ export function LeftSidebar({
                 )}
               </div>
 
-              <ScrollArea className="flex-1 p-3">
-                <div className="space-y-2.5 pb-4">
-                  {filteredPresets.map((preset) => (
-                    <DraggablePresetCard
-                      key={preset.id}
-                      preset={preset}
-                      onInsert={handleInsert}
-                    />
-                  ))}
-                  {filteredPresets.length === 0 && (
-                    <p className="text-xs text-slate-400 italic text-center py-6">
-                      No presets found matching "{libraryFilterQuery}".
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+              <div ref={presetScrollRef} className="flex-1 p-3 overflow-y-auto">
+                {filteredPresets.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic text-center py-6">
+                    No presets found matching "{libraryFilterQuery}".
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      height: `${presetVirtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative',
+                    }}
+                  >
+                    {presetVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const preset = filteredPresets[virtualItem.index];
+                      if (!preset) return null;
+                      return (
+                        <div
+                          key={preset.id}
+                          data-index={virtualItem.index}
+                          ref={presetVirtualizer.measureElement}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualItem.start}px)`,
+                            paddingBottom: '10px',
+                          }}
+                        >
+                          <DraggablePresetCard
+                            preset={preset}
+                            onInsert={handleInsert}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             /* Assets Vault View */
@@ -1125,22 +1173,46 @@ export function LeftSidebar({
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 p-3">
-                <div className="space-y-2 pb-4">
-                  {filteredAssets.map((asset) => (
-                    <DraggableAssetCard
-                      key={asset.id}
-                      assetId={asset.id}
-                      asset={asset}
-                    />
-                  ))}
-                  {filteredAssets.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic text-center py-6">
-                      No assets found matching "{assetFilterQuery}".
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+              <div ref={assetScrollRef} className="flex-1 p-3 overflow-y-auto">
+                {filteredAssets.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic text-center py-6">
+                    No assets found matching "{assetFilterQuery}".
+                  </p>
+                ) : (
+                  <div
+                    style={{
+                      height: `${assetVirtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative',
+                    }}
+                  >
+                    {assetVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const asset = filteredAssets[virtualItem.index];
+                      if (!asset) return null;
+                      return (
+                        <div
+                          key={asset.id}
+                          data-index={virtualItem.index}
+                          ref={assetVirtualizer.measureElement}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualItem.start}px)`,
+                            paddingBottom: '8px',
+                          }}
+                        >
+                          <DraggableAssetCard
+                            assetId={asset.id}
+                            asset={asset}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </aside>

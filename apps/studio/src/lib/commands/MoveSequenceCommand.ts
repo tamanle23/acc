@@ -57,6 +57,10 @@ export class MoveSequenceCommand implements ICommand {
       }
     }
 
+    // 1. Calculate delta shift
+    const initialStart = this.previousStartFrame ?? 0;
+    const deltaShift = this.targetStartFrame - initialStart;
+
     // Update start frame
     if (typeof sequenceToMove.time.start === 'number') {
       sequenceToMove.time.start = this.targetStartFrame;
@@ -64,6 +68,24 @@ export class MoveSequenceCommand implements ICommand {
       sequenceToMove.time.start.offsetFrames = this.targetStartFrame;
     } else {
       sequenceToMove.time.start = this.targetStartFrame;
+    }
+
+    // Synchronize linked sequence if editorial/av_link is present and enabled
+    const avLink = sequenceToMove.modifiers?.find((m) => m.type === 'editorial/av_link');
+    if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
+      const linkedId = avLink.params.linkedSequenceId as string;
+      for (const t of copy.tracks) {
+        const linkedSeq = t.sequences.find((s) => s.id === linkedId);
+        if (linkedSeq) {
+          if (typeof linkedSeq.time.start === 'number') {
+            linkedSeq.time.start = Math.max(0, linkedSeq.time.start + deltaShift);
+          } else if (linkedSeq.time.start && typeof linkedSeq.time.start === 'object') {
+            const cur = linkedSeq.time.start.offsetFrames ?? 0;
+            linkedSeq.time.start.offsetFrames = Math.max(0, cur + deltaShift);
+          }
+          break;
+        }
+      }
     }
 
     // If changing track
@@ -104,12 +126,31 @@ export class MoveSequenceCommand implements ICommand {
     }
 
     // Restore start frame
+    const deltaShift = (this.targetStartFrame) - (this.previousStartFrame);
     if (typeof sequenceToRestore.time.start === 'number') {
       sequenceToRestore.time.start = this.previousStartFrame;
     } else if (sequenceToRestore.time.start && typeof sequenceToRestore.time.start === 'object') {
       sequenceToRestore.time.start.offsetFrames = this.previousStartFrame;
     } else {
       sequenceToRestore.time.start = this.previousStartFrame;
+    }
+
+    // Restore linked sequence if editorial/av_link is present and enabled
+    const avLink = sequenceToRestore.modifiers?.find((m) => m.type === 'editorial/av_link');
+    if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
+      const linkedId = avLink.params.linkedSequenceId as string;
+      for (const t of copy.tracks) {
+        const linkedSeq = t.sequences.find((s) => s.id === linkedId);
+        if (linkedSeq) {
+          if (typeof linkedSeq.time.start === 'number') {
+            linkedSeq.time.start = Math.max(0, linkedSeq.time.start - deltaShift);
+          } else if (linkedSeq.time.start && typeof linkedSeq.time.start === 'object') {
+            const cur = linkedSeq.time.start.offsetFrames ?? 0;
+            linkedSeq.time.start.offsetFrames = Math.max(0, cur - deltaShift);
+          }
+          break;
+        }
+      }
     }
 
     // Restore track if changed

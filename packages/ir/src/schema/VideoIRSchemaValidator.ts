@@ -621,6 +621,16 @@ export class VideoIRSchemaValidator {
         break;
       }
 
+      case 'editorial/av_link': {
+        if (!p.linkedSequenceId || typeof p.linkedSequenceId !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: linkedSequenceId is required and must be a string`);
+        }
+        if (!p.linkedTrackId || typeof p.linkedTrackId !== 'string') {
+          errors.push(`Modifier "${type}" on ${context}: linkedTrackId is required and must be a string`);
+        }
+        break;
+      }
+
       case 'transition/crossfade':
       case 'transition/wipe':
       case 'transition/push':

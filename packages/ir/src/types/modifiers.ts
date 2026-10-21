@@ -232,7 +232,12 @@ export interface ProceduralSfxModifierParams {
 
 // ============================================================================
 // 6. Editorial & Transition Modifiers
-// ============================================================================
+export interface AVLinkModifierParams {
+  linkedSequenceId: string;
+  linkedTrackId: string;
+  enabled?: boolean;
+  syncTrim?: boolean;
+}
 
 export interface SplitEditModifierParams {
   mode: 'j_cut' | 'l_cut';
@@ -304,6 +309,7 @@ export type StandardModifierNode =
   | TypedModifierNode<'sfx/dynamic_ducking', 'audio' | SequenceType[], DynamicDuckingModifierParams>
   | TypedModifierNode<'sfx/procedural', 'audio' | SequenceType[], ProceduralSfxModifierParams>
   | TypedModifierNode<'editorial/split_edit', 'video' | 'audio' | SequenceType[], SplitEditModifierParams>
+  | TypedModifierNode<'editorial/av_link', 'video' | 'audio' | SequenceType[], AVLinkModifierParams>
   | TypedModifierNode<
       | 'transition/crossfade'
       | 'transition/wipe'

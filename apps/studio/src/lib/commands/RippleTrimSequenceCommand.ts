@@ -86,6 +86,45 @@ export class RippleTrimSequenceCommand implements ICommand {
         }
       }
 
+      // Symmetrical linked sequence trimming if editorial/av_link is present and enabled
+      const avLink = targetSeq.modifiers?.find((m) => m.type === 'editorial/av_link');
+      if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId && avLink.params?.syncTrim !== false) {
+        const linkedId = avLink.params.linkedSequenceId as string;
+        for (const linkedTrack of copy.tracks) {
+          const linkedIdx = linkedTrack.sequences.findIndex((s) => s.id === linkedId);
+          if (linkedIdx >= 0) {
+            const linkedSeq = linkedTrack.sequences[linkedIdx];
+            const linkedStartBefore = typeof linkedSeq.time.start === 'number' ? linkedSeq.time.start : 0;
+            if (typeof linkedSeq.time.start === 'number') {
+              linkedSeq.time.start = Math.max(0, linkedSeq.time.start + dStart);
+            } else if (linkedSeq.time.start && typeof linkedSeq.time.start === 'object') {
+              const cur = linkedSeq.time.start.offsetFrames ?? 0;
+              linkedSeq.time.start.offsetFrames = cur + dStart;
+            }
+            if (typeof linkedSeq.time.duration === 'number') {
+              linkedSeq.time.duration = Math.max(1, linkedSeq.time.duration + dDur);
+            } else if (linkedSeq.time.duration && typeof linkedSeq.time.duration === 'object') {
+              const curPad = linkedSeq.time.duration.paddingFrames ?? 0;
+              linkedSeq.time.duration.paddingFrames = curPad + dDur;
+            }
+            // Also ripple downstream on the linked track
+            if (downstreamShift !== 0) {
+              for (let j = 0; j < linkedTrack.sequences.length; j++) {
+                if (j === linkedIdx) continue;
+                const oSeq = linkedTrack.sequences[j];
+                if (typeof oSeq.time.start === 'number' && oSeq.time.start >= linkedStartBefore) {
+                  oSeq.time.start = Math.max(0, oSeq.time.start + downstreamShift);
+                } else if (oSeq.time.start && typeof oSeq.time.start === 'object') {
+                  const cur = oSeq.time.start.offsetFrames ?? 0;
+                  oSeq.time.start.offsetFrames = cur + downstreamShift;
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+
       return copy;
     }
 

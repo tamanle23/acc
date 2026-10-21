@@ -56,6 +56,31 @@ export class TrimSequenceCommand implements ICommand {
             const currentPad = seq.time.duration.paddingFrames ?? 0;
             seq.time.duration.paddingFrames = currentPad + dDur;
           }
+
+          // Symmetrical linked sequence trimming if editorial/av_link is present and enabled
+          const avLink = seq.modifiers?.find((m) => m.type === 'editorial/av_link');
+          if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId && avLink.params?.syncTrim !== false) {
+            const linkedId = avLink.params.linkedSequenceId as string;
+            for (const t of copy.tracks) {
+              const linkedSeq = t.sequences.find((s) => s.id === linkedId);
+              if (linkedSeq) {
+                if (typeof linkedSeq.time.start === 'number') {
+                  linkedSeq.time.start = Math.max(0, linkedSeq.time.start + dStart);
+                } else if (linkedSeq.time.start && typeof linkedSeq.time.start === 'object') {
+                  const currentOffset = linkedSeq.time.start.offsetFrames ?? 0;
+                  linkedSeq.time.start.offsetFrames = currentOffset + dStart;
+                }
+                if (typeof linkedSeq.time.duration === 'number') {
+                  linkedSeq.time.duration = Math.max(1, linkedSeq.time.duration + dDur);
+                } else if (linkedSeq.time.duration && typeof linkedSeq.time.duration === 'object') {
+                  const currentPad = linkedSeq.time.duration.paddingFrames ?? 0;
+                  linkedSeq.time.duration.paddingFrames = currentPad + dDur;
+                }
+                break;
+              }
+            }
+          }
+
           return copy;
         }
       }

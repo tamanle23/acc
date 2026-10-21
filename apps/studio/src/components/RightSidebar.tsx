@@ -9,7 +9,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from './ui/button';
-import { ScrollArea } from './ui/scroll-area';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -101,6 +101,25 @@ export function RightSidebar() {
     const sectionId = getSectionIdForModifierType(mod.type);
     setOpenSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
   };
+
+  const inspectorScrollRef = React.useRef<HTMLDivElement | null>(null);
+
+  const inspectorSections = React.useMemo(() => {
+    if (currentMode === 'track' && selectedTrack) {
+      return [{ id: `track-${selectedTrack.id}`, type: 'track' }];
+    }
+    if (currentMode === 'project' || !selectedSeq) {
+      return [{ id: 'project-inspector', type: 'project' }];
+    }
+    return [{ id: `sequence-${selectedSeq.id}`, type: 'sequence' }];
+  }, [currentMode, selectedTrack, selectedSeq]);
+
+  const inspectorVirtualizer = useVirtualizer({
+    count: inspectorSections.length,
+    getScrollElement: () => inspectorScrollRef.current,
+    estimateSize: () => 500,
+    overscan: 2,
+  });
 
   return (
     <aside className="w-[336px] glass-panel border-l border-border/50 flex flex-col h-full select-none shadow-xs z-10 shrink-0">
@@ -224,26 +243,53 @@ export function RightSidebar() {
         </nav>
       </div>
 
-      {/* 2. Main Content Area */}
-      <ScrollArea className="flex-1 p-3 space-y-4">
-        {currentMode === 'track' && selectedTrack ? (
-          <TrackInspector selectedTrack={selectedTrack} irState={irState} />
-        ) : currentMode === 'project' || !selectedSeq ? (
-          <ProjectInspector irState={irState} />
-        ) : (
-          <SequenceInspector
-            selectedSeq={selectedSeq}
-            selectedTrack={selectedTrack}
-            irState={irState}
-            fps={fps}
-            isLocked={isSequenceLocked}
-            onToggleLock={setIsSequenceLocked}
-            openSections={openSections}
-            onOpenSectionsChange={setOpenSections}
-            onAddEffectClick={() => setIsAddMenuOpen(true)}
-          />
-        )}
-      </ScrollArea>
+      {/* 2. Main Content Area Virtualized with TanStack Virtual */}
+      <div ref={inspectorScrollRef} className="flex-1 p-3 overflow-y-auto">
+        <div
+          style={{
+            height: `${inspectorVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {inspectorVirtualizer.getVirtualItems().map((virtualItem) => {
+            const section = inspectorSections[virtualItem.index];
+            if (!section) return null;
+            return (
+              <div
+                key={section.id}
+                data-index={virtualItem.index}
+                ref={inspectorVirtualizer.measureElement}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                {section.type === 'track' && selectedTrack ? (
+                  <TrackInspector selectedTrack={selectedTrack} irState={irState} />
+                ) : section.type === 'project' || !selectedSeq ? (
+                  <ProjectInspector irState={irState} />
+                ) : (
+                  <SequenceInspector
+                    selectedSeq={selectedSeq}
+                    selectedTrack={selectedTrack}
+                    irState={irState}
+                    fps={fps}
+                    isLocked={isSequenceLocked}
+                    onToggleLock={setIsSequenceLocked}
+                    openSections={openSections}
+                    onOpenSectionsChange={setOpenSections}
+                    onAddEffectClick={() => setIsAddMenuOpen(true)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </aside>
   );
 }
