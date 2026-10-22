@@ -1573,22 +1573,16 @@ function DagStudioCanvas({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {/* Header Command Bar: Floating clusters on >= 960px, responsive flex-wrap bar on < 960px */}
+      {/* Header Command Bar: Unified responsive top dock with 3 clusters */}
       <div
-        className={cn(
-          containerWidth < 960
-            ? "absolute top-2 left-2 right-2 z-10 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none [&>*]:pointer-events-auto"
-            : "contents"
-        )}
+        ref={headerToolbarRef}
+        data-testid="dag-header-command-bar"
+        className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none transition-all duration-200"
       >
         {/* 1. Left Cluster: Identity & Context */}
         <div
-          ref={headerToolbarRef}
           data-testid="dag-toolbar-left-cluster"
-          className={cn(
-            "z-10 flex items-center gap-1.5 sm:gap-2 p-1.5 px-2 sm:px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
-            containerWidth < 960 ? "relative" : "absolute top-4 left-4"
-          )}
+          className="pointer-events-auto shrink-0 flex items-center gap-1.5 sm:gap-2 p-1.5 px-2 sm:px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all"
         >
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Activity className="w-4 h-4 text-primary animate-pulse shrink-0" />
@@ -1658,10 +1652,7 @@ function DagStudioCanvas({
       {!isReadOnly && (
         <div
           data-testid="dag-toolbar-center-cluster"
-          className={cn(
-            "z-10 flex items-center gap-1 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
-            containerWidth < 960 ? "relative" : "absolute top-4 left-1/2 -translate-x-1/2"
-          )}
+          className="pointer-events-auto shrink-0 flex items-center gap-1 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-3 xl:order-2 mx-auto xl:mx-0"
         >
           <Button
             size="sm"
@@ -1748,10 +1739,7 @@ function DagStudioCanvas({
       {isReadOnly && (
         <div
           data-testid="dag-toolbar-center-cluster-readonly"
-          className={cn(
-            "z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
-            containerWidth < 960 ? "relative" : "absolute top-4 left-1/2 -translate-x-1/2"
-          )}
+          className="pointer-events-auto shrink-0 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-3 sm:order-2 mx-auto sm:mx-0"
         >
           <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
             <Button
@@ -1781,10 +1769,7 @@ function DagStudioCanvas({
       {/* 3. Right Cluster: Workflow Actions & CTAs */}
       <div
         data-testid="dag-toolbar-right-cluster"
-        className={cn(
-          "z-10 flex items-center gap-1 sm:gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
-          containerWidth < 960 ? "relative" : "absolute top-4 right-4"
-        )}
+        className="pointer-events-auto shrink-0 flex items-center gap-1 sm:gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-2 xl:order-3"
       >
         {!isReadOnly && (
           <>
@@ -2000,8 +1985,8 @@ function DagStudioCanvas({
       {isExecutionMode && (
         <div
           data-testid="dag-execution-debugger-subpill"
-          style={{ top: `${16 + headerToolbarHeight + 8}px` }}
-          className="absolute left-4 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 max-w-[calc(100%-2rem)] overflow-x-auto scrollbar-none animate-in fade-in slide-in-from-top-1"
+          style={{ top: `${12 + headerToolbarHeight + 8}px` }}
+          className="absolute left-3 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 max-w-[calc(100%-1.5rem)] overflow-x-auto scrollbar-none animate-in fade-in slide-in-from-top-1"
         >
           <div className="flex items-center gap-1 mr-1 shrink-0">
             <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -2187,15 +2172,15 @@ function DagStudioCanvas({
       {/* Floating Drag-and-Drop Task Palette (Full mode only) */}
       {!isReadOnly && showPalette && (() => {
         // Snapped directly beneath header toolbar:
-        // top is 16px (top-4) + headerToolbarHeight + 8px gap
-        const paletteTop = 16 + headerToolbarHeight + 8;
+        // top is 12px (top-3) + headerToolbarHeight + 8px gap
+        const paletteTop = 12 + headerToolbarHeight + 8;
         // Bottom reserve: bottom panel/controls (approx 16px bottom + 120-140px height for controls/minimap + 16px buffer = 180px)
         // Ensure max-height stays between header toolbar and bottom react-flow__panel controls
         const computedMaxHeight = Math.max(180, containerHeight - paletteTop - 180);
 
         return (
           <div
-            className="absolute left-4 z-10 transition-all duration-150 ease-out"
+            className="absolute left-3 z-10 transition-all duration-150 ease-out"
             style={{ top: `${paletteTop}px` }}
           >
             <DagPalette
