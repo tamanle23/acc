@@ -418,9 +418,9 @@ export class IRCanvasCompositor {
 
         // Base Asset Blitting (Cover vs Contain) in Universal Top-Left (0, 0) Coordinate Space
         const hasDepth3D = seq.modifiers?.some((m) => m.type === 'vfx/depth3d');
-        if (!hasDepth3D && seq.assetId) {
-          const asset = assets?.has(seq.assetId) ? assets.get(seq.assetId) : undefined;
+        const asset = seq.assetId && assets?.has(seq.assetId) ? assets.get(seq.assetId) : undefined;
 
+        if (!hasDepth3D && seq.assetId) {
           if (asset) {
             const srcW = asset.width || asset.videoWidth || width;
             const srcH = asset.height || asset.videoHeight || height;
@@ -449,8 +449,17 @@ export class IRCanvasCompositor {
             if (rawAsset && typeof ctx.drawImage === 'function') {
               ctx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
             }
-          } else {
-            // Non-blocking neutral placeholder fallback in standard top-left space
+          } else if (seq.type !== 'overlay' && (!seq.modifiers || seq.modifiers.length === 0)) {
+            // Non-blocking neutral placeholder fallback only if sequence is a primary media clip without procedural modifiers
+            ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
+            ctx.fillRect(0, 0, width, height);
+          }
+        } else if (hasDepth3D && !asset) {
+          // Fallback if Depth3D asset has not finished loading/decoding yet
+          const rawAsset = typeof (asset as any)?.getRawCanvas === 'function'
+            ? (asset as any).getRawCanvas()
+            : asset;
+          if (!rawAsset && seq.type !== 'overlay') {
             ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
             ctx.fillRect(0, 0, width, height);
           }

@@ -1,9 +1,14 @@
-import { IRPreviewEngine, type ResolvedTimeline } from '@acc/ir';
-import { DeterministicTimelineClock } from '@acc/core-isomorphic';
+import { IRPreviewEngine, registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
+import { DeterministicTimelineClock, UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { WebCanvasAdapter } from '@acc/core-web';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
 import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
 import { ContentHashTextureCache } from './ContentHashTextureCache';
+
+// Register isomorphic canvas adapter and canonical core modifiers for the dedicated worker thread
+UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
+registerCoreModifierPlugins();
 
 let canvas: OffscreenCanvas | null = null;
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -121,7 +126,7 @@ function renderCurrentFrame(
       clearColor,
     });
   } catch (err) {
-    // Graceful render error suppression during fast scrubs
+    console.error('[preview.worker] Render error at frame', frame, err);
   }
 
   ctx.restore();

@@ -268,4 +268,84 @@ describe('Iteration 27: Multi-Track Blending & Layer Isolation Architecture', ()
     expect(pixel[2]).toBe(255);
     expect(pixel[3]).toBe(255);
   });
+
+  it('should not occlude lower tracks with black fill when overlay sequence has no asset', () => {
+    const pluginRegistry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
+    const tracks = new Map<string, ResolvedTrack>();
+
+    // Track 1: Solid Red background (video)
+    tracks.set('track_v1', {
+      id: 'track_v1',
+      type: 'video',
+      blendMode: 'normal',
+      opacity: 1.0,
+      sequences: [
+        {
+          id: 'seq_v1',
+          type: 'video',
+          trackId: 'track_v1',
+          assetId: 'asset_red',
+          startFrame: 0,
+          endFrame: 10,
+          durationFrames: 10,
+        },
+      ],
+    });
+
+    // Track 2: Overlay track with a procedural modifier (no assetId)
+    tracks.set('track_v2', {
+      id: 'track_v2',
+      type: 'overlay',
+      blendMode: 'normal',
+      opacity: 1.0,
+      sequences: [
+        {
+          id: 'seq_overlay',
+          type: 'overlay',
+          trackId: 'track_v2',
+          startFrame: 0,
+          endFrame: 10,
+          durationFrames: 10,
+          modifiers: [],
+        },
+      ],
+    });
+
+    const timeline: ResolvedTimeline = {
+      meta: {
+        contentId: 'overlay_no_occlude_test',
+        globalFps: 30,
+        canvasSize: { w: 50, h: 50 },
+      },
+      tracks,
+      sequences: new Map(),
+      totalFrames: 10,
+      durationSeconds: 0.33,
+    };
+
+    const redCanvas = UniversalCanvasProvider.createCanvas(50, 50);
+    const redCtx = redCanvas.getContext('2d');
+    redCtx.fillStyle = '#FF0000';
+    redCtx.fillRect(0, 0, 50, 50);
+
+    const destCanvas = UniversalCanvasProvider.createCanvas(50, 50);
+    const destCtx = destCanvas.getContext('2d');
+
+    IRCanvasCompositor.renderFrame(destCtx, timeline, 5, {
+      pluginRegistry,
+      assetResolver: {
+        has: (id) => id === 'asset_red',
+        get: () => redCanvas.getRawCanvas(),
+      },
+      executionProfile: 'preview',
+      clearColor: '#000000',
+    });
+
+    const pixel = destCtx.getImageData(25, 25, 1, 1).data;
+    // Lower red track should NOT be overwritten by opaque/dark placeholder
+    expect(pixel[0]).toBe(255);
+    expect(pixel[1]).toBe(0);
+    expect(pixel[2]).toBe(0);
+    expect(pixel[3]).toBe(255);
+  });
 });
