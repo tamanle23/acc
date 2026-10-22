@@ -942,28 +942,7 @@ export function LeftSidebar({
             <Music className="w-4 h-4" />
           </Button>
 
-          {/* 8. All Presets Overview */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              if ((activeNav === 'all' || activeNav === 'library') && isOpen) {
-                onToggle();
-              } else {
-                setActiveNav('all');
-                setSelectedCategory('all');
-                if (!isOpen) onToggle();
-              }
-            }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              (activeNav === 'all' || activeNav === 'library') && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-            title="All Staging Presets Catalog"
-          >
-            <Library className="w-4 h-4" />
-          </Button>
+         
         </div>
 
         {/* Drawer Collapse Trigger */}

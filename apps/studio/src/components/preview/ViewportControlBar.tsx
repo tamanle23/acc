@@ -11,7 +11,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
-import type { SnappingGuide } from '@acc/effect-engines/client';
+import { SnappingGuide } from '../../lib/gizmo';
 
 export interface ViewportControlBarProps {
   width: number;

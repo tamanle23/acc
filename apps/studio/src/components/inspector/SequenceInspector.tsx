@@ -263,13 +263,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   type="button"
                   disabled={isLocked}
                   onClick={() => handleToggleStartRelational(false)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
-                    isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                  } ${
-                    !isStartRelational
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                    } ${!isStartRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Absolute
                 </button>
@@ -278,13 +276,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   disabled={isLocked || otherSequenceIds.length === 0}
                   onClick={() => handleToggleStartRelational(true)}
                   title={otherSequenceIds.length === 0 ? "Requires ≥2 sequences" : "Switch to Relational timing"}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
-                    isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                  } ${
-                    isStartRelational
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                    } ${isStartRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Relational
                 </button>
@@ -420,13 +416,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   type="button"
                   disabled={isLocked}
                   onClick={() => handleToggleDurationRelational(false)}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
-                    isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                  } ${
-                    !isDurationRelational
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${isLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                    } ${!isDurationRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Absolute
                 </button>
@@ -435,13 +429,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   disabled={isLocked || otherSequenceIds.length === 0}
                   onClick={() => handleToggleDurationRelational(true)}
                   title={otherSequenceIds.length === 0 ? "Requires ≥2 sequences" : "Switch to Relational duration"}
-                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${
-                    isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                  } ${
-                    isDurationRelational
+                  className={`px-1.5 py-0.5 text-[9px] rounded font-medium transition-colors ${isLocked || otherSequenceIds.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                    } ${isDurationRelational
                       ? 'bg-accent-theme text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   Relational
                 </button>
@@ -605,11 +597,10 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                       });
                     }
                   }}
-                  className={`h-5 px-2 text-[10px] gap-1 cursor-pointer transition-colors ${
-                    isLinked
-                      ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60'
-                      : 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted'
-                  }`}
+                  className={`h-5 px-2 text-[10px] gap-1 cursor-pointer transition-colors ${isLinked
+                    ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60'
+                    : 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted'
+                    }`}
                 >
                   {isLinked ? (
                     <>
@@ -649,9 +640,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             variant="outline"
             size="sm"
             onClick={() => setIsLocked(!isLocked)}
-            className={`h-6 px-2 text-[10px] gap-1 border-border/50 cursor-pointer ${
-              isLocked ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300' : 'text-muted-foreground'
-            }`}
+            className={`h-6 px-2 text-[10px] gap-1 border-border/50 cursor-pointer ${isLocked ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300' : 'text-muted-foreground'
+              }`}
             title={isLocked ? 'Locked (Click to unlock)' : 'Unlocked (Click to lock)'}
           >
             {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
@@ -712,7 +702,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
         type="multiple"
         value={openSections}
         onValueChange={setOpenSections}
-        className="space-y-2"
+        className="border-[var(--glass-border)] space-y-2"
       >
         {modifiers.map((mod: any) => {
           const sectionId = getSectionIdForModifierType(mod.type);
@@ -725,7 +715,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             <AccordionItem
               key={mod.type}
               value={sectionId}
-              className="border border-border/50 rounded-md overflow-hidden bg-card shadow-2xs"
+              className="rounded-md overflow-hidden bg-card shadow-2xs border-[var(--glass-border)]"
             >
               <AccordionTrigger
                 actions={
