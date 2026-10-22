@@ -43,6 +43,9 @@ export interface DagHeaderCommandBarProps {
   onDiffVersionChange: (version: number | null) => void;
   isExecutionMode: boolean;
   executionId?: string | null;
+  connectionState?: 'IDLE' | 'CONNECTING' | 'LIVE' | 'RECONNECTING' | 'POLLING_FALLBACK' | 'DISCONNECTED';
+  retryAttempt?: number;
+  nextRetryDelayMs?: number | null;
   onOpenHotMigration?: () => void;
   undoDisabled: boolean;
   redoDisabled: boolean;
@@ -82,6 +85,9 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onDiffVersionChange,
   isExecutionMode,
   executionId,
+  connectionState,
+  retryAttempt,
+  nextRetryDelayMs,
   onOpenHotMigration,
   undoDisabled,
   redoDisabled,
@@ -181,6 +187,56 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
                 ))}
               </select>
             </div>
+          </>
+        )}
+
+        {/* Connection Lifecycle & Health Pill in Execution Mode */}
+        {isExecutionMode && connectionState && (
+          <>
+            <div className="h-3.5 w-[1px] bg-border/50" />
+            {connectionState === 'LIVE' && (
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1 px-1.5 font-medium"
+                title="Real-time SSE telemetry channel active"
+                data-testid="dag-sse-live-pill"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="hidden xs:inline">Live SSE</span>
+              </Badge>
+            )}
+            {connectionState === 'RECONNECTING' && (
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 flex items-center gap-1 px-1.5 font-medium animate-pulse"
+                title={nextRetryDelayMs ? `Reconnecting in ${Math.round(nextRetryDelayMs / 1000)}s...` : 'Reconnecting...'}
+                data-testid="dag-sse-reconnecting-pill"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                <span>Reconnecting {retryAttempt ? `(${retryAttempt}/5)` : ''}</span>
+              </Badge>
+            )}
+            {connectionState === 'POLLING_FALLBACK' && (
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1 px-1.5 font-medium"
+                title="Operating via periodic HTTP polling fallback"
+                data-testid="dag-sse-polling-pill"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                <span className="hidden xs:inline">Polling Fallback</span>
+              </Badge>
+            )}
+            {connectionState === 'CONNECTING' && (
+              <Badge
+                variant="outline"
+                className="text-[10px] bg-muted/50 text-muted-foreground border-border/40 flex items-center gap-1 px-1.5 font-medium"
+                title="Connecting to execution stream..."
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-ping" />
+                <span className="hidden xs:inline">Connecting...</span>
+              </Badge>
+            )}
           </>
         )}
 

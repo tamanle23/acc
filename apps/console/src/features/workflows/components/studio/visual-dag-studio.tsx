@@ -580,6 +580,9 @@ function DagStudioCanvas({
         onDiffVersionChange={setDiffTargetVersion}
         isExecutionMode={isExecutionMode}
         executionId={executionId}
+        connectionState={stream.connectionState}
+        retryAttempt={stream.retryAttempt}
+        nextRetryDelayMs={stream.nextRetryDelayMs}
         onOpenHotMigration={() => setIsHotMigrationOpen(true)}
         undoDisabled={undoStack.length === 0}
         redoDisabled={redoStack.length === 0}

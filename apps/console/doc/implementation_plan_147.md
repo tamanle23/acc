@@ -24,6 +24,9 @@ When users inspect workflow instances (from `/workflow-executions` or inside `Vi
 | **SSE Reconnect Resilience** | **Dynamic Reconnect Banner with Exponential Backoff + Seamless Polling Fallback**: Display an amber non-intrusive status pill in the toolbar (`"Reconnecting in 2s (Attempt 1/5)..."`) while polling snapshots in the background every 2s, automatically recovering to full SSE when the stream reconnects. |
 | **Unified Sandbox Simulation** | **Realistic Multi-Branch Scenario with Interactive Playback Controls**: Multi-branch order pipeline (validation -> parallel fraud check & inventory reserve -> dynamic approval condition -> payment -> fulfillment) with Play, Pause, Step-by-Step, and Inject Failure / Timed-Out buttons in `SandboxDock`. |
 | **Backend SSE Broadcaster** | **Java 21 Virtual Threads (Loom) + Heartbeat**: Non-blocking asynchronous broadcast via virtual thread executor (`Executors.newVirtualThreadPerTaskExecutor()`), periodic 15-second background `HEARTBEAT` event to prevent TCP/proxy timeouts, and support for streaming task logs (`TASK_LOG`). |
+| **Connection State Model (WS-2)** | **Connection Lifecycle Enum with Diagnostics**: State machine (`IDLE` -> `CONNECTING` -> `LIVE` -> `RECONNECTING` -> `POLLING_FALLBACK` -> `DISCONNECTED`), tracking `retryAttempt` (1..5), `nextRetryDelayMs`, and `lastHeartbeatTimestamp`. |
+| **Log Ingestion & Storage (WS-2)** | **Structured In-Memory Ring Buffer + Async IndexedDB Spooling**: Ingest structured `TASK_LOG` events into an in-memory ring buffer (up to 1,000 items) with asynchronous non-blocking session writes to IndexedDB/sessionStorage, preventing memory bloat and preserving full execution history. |
+| **Event Batching & Performance (WS-2)** | **requestAnimationFrame (rAF) Micro-Batching (~50ms window)**: Ingest incoming SSE bursts into a pending event queue and flush to React state via `requestAnimationFrame` micro-batches to guarantee 60fps canvas animation and zero main-thread lockup. |
 
 ---
 
@@ -35,7 +38,8 @@ sequenceDiagram
     actor Operator as Operator / UI
     participant Studio as VisualDagStudio (mode='execution')
     participant Hook as useWorkflowExecutionStream
-    participant Backend as Backend ExecutionStreamBroadcaster (Loom Virtual Threads)
+    participant RingBuffer as In-Memory RingBuffer & Storage
+    participant Backend as Backend ExecutionStreamBroadcaster
     participant Scrubber as TimeTravelScrubber & Flamegraph
     participant Drawer as ExecutionRunDrawer (Logs & Payloads)
 
@@ -45,11 +49,14 @@ sequenceDiagram
     Backend-->>Hook: Event: CONNECTED (Initial Snapshot)
     Note over Backend: Scheduled 15s Heartbeat Loop
     Backend-->>Hook: Event: HEARTBEAT (ping, timestamp)
+    Hook->>Hook: Update lastHeartbeatTimestamp (Health: LIVE)
     Backend-->>Hook: Event: TASK_IN_PROGRESS (order_validation)
-    Hook->>Studio: Update Node State -> IN_PROGRESS (Amber pulse + edge glow)
+    Hook->>Hook: Queue event in rAF micro-batch buffer (50ms)
+    Hook->>Studio: Batch flush -> Update Node State -> IN_PROGRESS
     Studio->>Studio: Auto-Pan Viewport to order_validation Node
     Backend-->>Hook: Event: TASK_LOG [INFO] Validating payment credentials...
-    Hook->>Drawer: Append Terminal Log Line
+    Hook->>RingBuffer: Push structured log (ring buffer FIFO + async persist)
+    Hook->>Drawer: Batch update Terminal Logs
     Backend-->>Hook: Event: TASK_COMPLETED (order_validation)
     Hook->>Studio: Update Node State -> COMPLETED (Green halo + traversed edge)
     Hook->>Scrubber: Push Timeline Event to History
@@ -65,21 +72,21 @@ sequenceDiagram
 
 ## 4. Proposed Changes
 
-### Workstream 1: Backend Loom Virtual Threads & SSE Broadcaster
+### Workstream 1: Backend Loom Virtual Threads & SSE Broadcaster [COMPLETED]
 - **File**: `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/ExecutionStreamBroadcaster.java`
-  - Initialize `ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor()` to broadcast events asynchronously without blocking HTTP caller threads.
-  - Implement periodic background heartbeat scheduler (`@Scheduled(fixedRate = 15000)`) broadcasting `HEARTBEAT` events to active emitters.
-  - Support `TASK_LOG` broadcast method for workers streaming chunked stdout/stderr log output.
+  - Upgraded with Java 21 Loom virtual threads executor, scheduled 15s heartbeat pings, and task log broadcast method.
 - **File**: `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/TaskWorkerController.java`
-  - Add task log chunk endpoint: `POST /api/v1/workflow/tasks/{id}/log` dispatching `TASK_LOG` events to the active stream.
+  - Added `POST /api/v1/workflow/tasks/{id}/log` endpoint for task stdout/stderr log chunk streaming.
 
 ### Workstream 2: Frontend Real-Time SSE Telemetry & State Synchronization
 - **File**: `apps/console/src/features/workflows/hooks/use-workflow-execution-stream.ts`
   - Enhance `useWorkflowExecutionStream` with:
-    - Connection health state (`CONNECTING`, `LIVE`, `RECONNECTING`, `POLLING_FALLBACK`, `DISCONNECTED`).
-    - Exponential backoff retry logic (1s, 2s, 4s, 8s...) with max 5 attempts before falling back to HTTP polling.
-    - Handling for `HEARTBEAT`, `TASK_LOG`, `TASK_STEP_PROGRESS`, `WORKFLOW_PAUSED`, `WORKFLOW_RESUMED`, `VARIABLE_MUTATED`.
-    - Buffer-based log ingestion with max limit (default 1,000 events) and deduplication.
+    - Connection health state machine (`IDLE` | `CONNECTING` | `LIVE` | `RECONNECTING` | `POLLING_FALLBACK` | `DISCONNECTED`).
+    - Exponential backoff retry logic (1s, 2s, 4s, 8s, 16s) up to 5 attempts before falling back to HTTP polling.
+    - Heartbeat monitor (`HEARTBEAT`) updating `lastHeartbeatTimestamp` and detecting stalled connections.
+    - Handling for `TASK_LOG`, `TASK_STEP_PROGRESS`, `WORKFLOW_PAUSED`, `WORKFLOW_RESUMED`, `VARIABLE_MUTATED`.
+    - In-memory ring buffer (up to 1,000 items) with `requestAnimationFrame` micro-batching to eliminate React re-render thrashing.
+    - Asynchronous IndexedDB/sessionStorage spooling for full execution history.
 
 ### Workstream 3: Canvas Edge Flow, Node Visuals & Auto-Pan
 - **File**: `apps/console/src/features/workflows/components/studio/canvas/dag-condition-edge.tsx`
@@ -122,9 +129,9 @@ sequenceDiagram
 ### Automated Tests
 1. **Backend Unit & Sliced Rest Controller Tests**:
    ```bash
-   ./mvnw test -q -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
+   node ./apps/backend/mvnw.cjs test -pl unipost-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
    ```
-   Verify that async virtual thread broadcasts and task log endpoints work without error.
+   Verified green (3/3 passed).
 2. **Console Workflows & Execution Unit/Component Tests**:
    ```bash
    pnpm --filter @unipost/console test -- src/features/workflows/ src/features/workflow-executions/
