@@ -113,6 +113,16 @@ class WorkflowEngineRestApiTest {
         assertThat(heartbeatResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(((Map<?, ?>) heartbeatResp.getBody()).get("renewed")).isEqualTo(true);
 
+        // 6b. Worker streams log chunk for step1-validate and broadcaster sends heartbeat
+        ResponseEntity<?> logResp = workerController.appendTaskLog(
+            taskId,
+            new TaskWorkerController.TaskLogRequest("INFO", "Validating order items and calculating tax", Map.of("step", 1))
+        );
+        assertThat(logResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(((Map<?, ?>) logResp.getBody()).get("logged")).isEqualTo(true);
+        broadcaster.sendHeartbeat();
+        assertThat(broadcaster.getActiveClientCount(workflowId)).isEqualTo(1);
+
         // 7. Worker completes step1-validate
         var resultReq = new TaskWorkerController.TaskResultRequest(
             true,

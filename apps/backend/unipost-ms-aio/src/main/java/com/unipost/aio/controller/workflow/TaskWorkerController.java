@@ -169,6 +169,34 @@ public class TaskWorkerController {
         return ResponseEntity.ok(Map.of("renewed", renewed, "taskId", taskId));
     }
 
+    public record TaskLogRequest(
+        String level,
+        String message,
+        Object raw
+    ) {}
+
+    @PostMapping("/{id}/log")
+    public ResponseEntity<?> appendTaskLog(
+        @PathVariable("id") String taskId,
+        @RequestBody TaskLogRequest request
+    ) {
+        TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
+        if (task == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        broadcaster.broadcastTaskLog(
+            task.workflowId(),
+            taskId,
+            task.taskReferenceName(),
+            request != null && request.level() != null ? request.level() : "INFO",
+            request != null && request.message() != null ? request.message() : "",
+            request != null ? request.raw() : null
+        );
+
+        return ResponseEntity.ok(Map.of("logged", true, "taskId", taskId));
+    }
+
     @PostMapping("/{id}/claim")
     public ResponseEntity<?> claimTask(
         @PathVariable("id") String taskId,
