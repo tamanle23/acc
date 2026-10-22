@@ -3,6 +3,8 @@ export * from './Sidebar';
 export * from './LeftSidebar';
 export * from './RightSidebar';
 export * from './Preview';
+export * from './preview';
 export * from './Timeline';
+export * from './timeline';
 export * from './SettingsModal';
 export * from './ui';
