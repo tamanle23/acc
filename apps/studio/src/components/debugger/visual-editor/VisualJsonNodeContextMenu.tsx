@@ -35,12 +35,12 @@ export function VisualJsonNodeContextMenu({
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="opacity-0 group-hover/node:opacity-100 transition-opacity flex items-center gap-0.5 ml-2 bg-slate-900/90 border border-slate-800 rounded-md px-1 py-0.5 shadow-xs shrink-0"
+      className="opacity-0 group-hover/node:opacity-100 transition-opacity flex items-center gap-0.5 ml-2 glass-card px-1 py-0.5 rounded-md shadow-xs shrink-0"
     >
       <button
         type="button"
         onClick={handleCopy}
-        className="p-1 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
+        className="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
         title="Copy JSON path pointer"
       >
         {copied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
@@ -53,7 +53,7 @@ export function VisualJsonNodeContextMenu({
             e.stopPropagation();
             onInsertChild(path);
           }}
-          className="p-1 rounded text-slate-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-muted-foreground hover:text-emerald-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Add element to array"
         >
           <Plus className="w-2.5 h-2.5" />
@@ -67,7 +67,7 @@ export function VisualJsonNodeContextMenu({
             e.stopPropagation();
             onDuplicate(path);
           }}
-          className="p-1 rounded text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-muted-foreground hover:text-[var(--accent-primary)] hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Duplicate this node"
         >
           <Layers className="w-2.5 h-2.5" />
@@ -81,7 +81,7 @@ export function VisualJsonNodeContextMenu({
             e.stopPropagation();
             onDelete(path);
           }}
-          className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+          className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-[var(--glass-bg)] transition-colors cursor-pointer"
           title="Delete this node"
         >
           <Trash2 className="w-2.5 h-2.5" />

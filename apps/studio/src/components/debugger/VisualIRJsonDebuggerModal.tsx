@@ -244,12 +244,12 @@ export function VisualIRJsonDebuggerModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="visual-ir-json-debugger-modal"
-        className="sm:max-w-none max-w-6xl w-[94vw] h-[88vh] flex flex-col glass-panel border border-[var(--glass-border)] p-0 rounded-2xl overflow-hidden shadow-2xl"
+        className="sm:max-w-none max-w-6xl w-[94vw] h-[88vh] flex flex-col glass-panel border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] p-0 rounded-2xl overflow-hidden shadow-2xl"
       >
         {/* Modal Header */}
-        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-[var(--glass-border)] shrink-0 bg-slate-950/70">
+        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-[var(--glass-border)] shrink-0 bg-[var(--glass-bg)]/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 flex items-center justify-center shadow-[0_0_12px_var(--accent-glow)]">
               <Code2 className="w-4 h-4" />
             </div>
             <div>
@@ -307,51 +307,59 @@ export function VisualIRJsonDebuggerModal({
         </DialogHeader>
 
         {/* View Mode Switcher Toolbar */}
-        <div className="flex items-center justify-between px-5 py-1.5 border-b border-[var(--glass-border)] shrink-0 bg-slate-900/40">
-          <div className="flex items-center gap-1">
-            <Button
+        <div className="flex items-center justify-between px-5 py-1.5 border-b border-[var(--glass-border)] shrink-0 bg-[var(--glass-bg)]/40 backdrop-blur-xs">
+          <div className="flex items-center gap-1.5">
+            <button
               type="button"
-              variant={viewMode === 'split' ? 'default' : 'ghost'}
-              size="sm"
               onClick={() => setViewMode('split')}
               data-testid="debugger-tab-split"
-              className="h-7 text-xs font-mono gap-1.5"
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'split'
+                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  : 'glass-pill'
+              }`}
             >
               <Columns className="w-3.5 h-3.5" />
               Split Visual & Code
-            </Button>
+            </button>
 
-            <Button
+            <button
               type="button"
-              variant={viewMode === 'tree' ? 'default' : 'ghost'}
-              size="sm"
               onClick={() => setViewMode('tree')}
               data-testid="debugger-tab-tree"
-              className="h-7 text-xs font-mono gap-1.5"
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'tree'
+                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  : 'glass-pill'
+              }`}
             >
               <ListTree className="w-3.5 h-3.5" />
               Visual Tree Only
-            </Button>
+            </button>
 
-            <Button
+            <button
               type="button"
-              variant={viewMode === 'code' ? 'default' : 'ghost'}
-              size="sm"
               onClick={() => setViewMode('code')}
               data-testid="debugger-tab-editor"
-              className="h-7 text-xs font-mono gap-1.5"
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'code'
+                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  : 'glass-pill'
+              }`}
             >
               <FileCode className="w-3.5 h-3.5" />
               Raw Code Only
-            </Button>
+            </button>
 
-            <Button
+            <button
               type="button"
-              variant={viewMode === 'diagnostics' ? 'default' : 'ghost'}
-              size="sm"
               onClick={() => setViewMode('diagnostics')}
               data-testid="debugger-tab-diagnostics"
-              className="h-7 text-xs font-mono gap-1.5"
+              className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === 'diagnostics'
+                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  : 'glass-pill'
+              }`}
             >
               <GitBranch className="w-3.5 h-3.5" />
               Diagnostics & Health
@@ -362,7 +370,7 @@ export function VisualIRJsonDebuggerModal({
                     diagnostics.unregisteredModifiers.length}
                 </span>
               )}
-            </Button>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -377,7 +385,7 @@ export function VisualIRJsonDebuggerModal({
           {/* Split Mode: Tree (left) + Code (right) + Telemetry (far right) */}
           {viewMode === 'split' && (
             <div className="flex-1 flex min-h-0 overflow-hidden">
-              <div className="w-[52%] h-full flex flex-col min-h-0 border-r border-slate-800">
+              <div className="w-[52%] h-full flex flex-col min-h-0 border-r border-[var(--glass-border)]">
                 <VisualJsonTreeEditor
                   data={parsedDoc}
                   onChange={handleVisualTreeChange}
@@ -385,7 +393,7 @@ export function VisualIRJsonDebuggerModal({
                 />
               </div>
 
-              <div className="flex-1 h-full flex flex-col min-h-0">
+              <div className="flex-1 h-full flex flex-col min-h-0 border-r border-[var(--glass-border)]">
                 <CodeEditorToolbar
                   onPrettify={handlePrettify}
                   onMinify={handleMinify}
@@ -457,8 +465,8 @@ export function VisualIRJsonDebuggerModal({
           {viewMode === 'diagnostics' && (
             <div className="flex-1 p-6 overflow-y-auto space-y-4 font-mono">
               <div className="grid grid-cols-3 gap-3">
-                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
-                  <div className="text-xs text-slate-400">JSON Schema Draft-07</div>
+                <div className="p-4 rounded-xl glass-card border border-[var(--glass-border)]">
+                  <div className="text-xs text-muted-foreground">JSON Schema Draft-07</div>
                   <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.schemaValidation.valid ? (
                       <>
@@ -476,8 +484,8 @@ export function VisualIRJsonDebuggerModal({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
-                  <div className="text-xs text-slate-400">Relational DAG Anchors</div>
+                <div className="p-4 rounded-xl glass-card border border-[var(--glass-border)]">
+                  <div className="text-xs text-muted-foreground">Relational DAG Anchors</div>
                   <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.danglingAnchors.length === 0 ? (
                       <>
@@ -495,8 +503,8 @@ export function VisualIRJsonDebuggerModal({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
-                  <div className="text-xs text-slate-400">ModifierPluginRegistry Coverage</div>
+                <div className="p-4 rounded-xl glass-card border border-[var(--glass-border)]">
+                  <div className="text-xs text-muted-foreground">ModifierPluginRegistry Coverage</div>
                   <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.unregisteredModifiers.length === 0 ? (
                       <>
@@ -535,7 +543,7 @@ export function VisualIRJsonDebuggerModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-2.5 border-t border-[var(--glass-border)] shrink-0 bg-slate-950/80">
+        <div className="flex items-center justify-between px-5 py-2.5 border-t border-[var(--glass-border)] shrink-0 bg-[var(--glass-bg)]/80 backdrop-blur-md">
           <div className="text-xs font-mono text-muted-foreground flex items-center gap-2">
             {applyFeedback ? (
               <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
@@ -553,22 +561,20 @@ export function VisualIRJsonDebuggerModal({
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-8 text-xs font-mono"
+              className="h-8 text-xs font-mono glass-pill"
             >
               Close
             </Button>
-            <Button
+            <button
               type="button"
-              variant="default"
-              size="sm"
               disabled={!diagnostics.schemaValidation.valid || !!diagnostics.parseError}
               onClick={handleApplyToStudio}
               data-testid="debugger-apply-btn"
-              className="h-8 text-xs font-mono gap-1.5 bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 disabled:opacity-40 font-bold"
+              className="h-8 px-3.5 rounded-lg text-xs font-mono flex items-center gap-1.5 glass-button-primary disabled:opacity-40 disabled:cursor-not-allowed font-bold cursor-pointer"
             >
               <Play className="w-3.5 h-3.5" />
               Apply to Studio
-            </Button>
+            </button>
           </div>
         </div>
       </DialogContent>

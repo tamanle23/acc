@@ -47,11 +47,11 @@ export function ShikiCodeViewer({
   };
 
   return (
-    <div className={`relative flex flex-1 h-full overflow-hidden font-mono bg-slate-950 text-xs ${className}`}>
+    <div className={`relative flex flex-1 h-full overflow-hidden font-mono bg-transparent text-xs ${className}`}>
       {/* Line Numbers with Gutter Indicators */}
       <div
         aria-hidden="true"
-        className="select-none py-3 px-2 text-right border-r border-slate-800 bg-slate-900/60 font-mono text-[11px] leading-[1.4rem] shrink-0 text-slate-500 w-12"
+        className="select-none py-3 px-2 text-right border-r border-[var(--glass-border)] bg-[var(--glass-bg)]/50 font-mono text-[11px] leading-[1.4rem] shrink-0 text-muted-foreground/60 w-12 backdrop-blur-xs"
       >
         {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => {
           const lineNum = i + 1;
@@ -60,7 +60,7 @@ export function ShikiCodeViewer({
             <div
               key={i}
               className={`flex items-center justify-end gap-1 ${
-                isError ? 'text-rose-400 font-bold bg-rose-950/60 -mx-2 px-2' : ''
+                isError ? 'text-rose-400 font-bold bg-rose-500/20 -mx-2 px-2' : ''
               }`}
             >
               {isError && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}

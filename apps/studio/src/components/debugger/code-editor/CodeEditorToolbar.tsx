@@ -20,60 +20,52 @@ export function CodeEditorToolbar({
   canFormat,
 }: CodeEditorToolbarProps) {
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900/60 border-b border-slate-800 shrink-0">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+    <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--glass-bg)]/40 border-b border-[var(--glass-border)] shrink-0 backdrop-blur-xs">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold">
         JSON Source Code
       </span>
 
       <div className="flex items-center gap-1.5">
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={onPrettify}
           disabled={!canFormat}
           title="Format JSON (2-space indentation)"
-          className="h-6 text-[10px] font-mono gap-1 border-slate-700 bg-slate-900/80 px-2"
+          className="h-6 px-2 text-[10px] font-mono flex items-center gap-1 glass-card rounded text-foreground hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
         >
           <Wand2 className="w-2.5 h-2.5 text-[var(--accent-primary)]" />
           Format
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={onMinify}
           disabled={!canFormat}
           title="Minify JSON (Compact single-line)"
-          className="h-6 text-[10px] font-mono gap-1 border-slate-700 bg-slate-900/80 px-2"
+          className="h-6 px-2 text-[10px] font-mono flex items-center gap-1 glass-card rounded text-foreground hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
         >
           <Minimize2 className="w-2.5 h-2.5" />
           Minify
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={onCopy}
-          className="h-6 text-[10px] font-mono gap-1 border-slate-700 bg-slate-900/80 px-2"
+          className="h-6 px-2 text-[10px] font-mono flex items-center gap-1 glass-card rounded text-foreground hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] cursor-pointer transition-all"
         >
           {copied ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5" />}
           {copied ? 'Copied' : 'Copy'}
-        </Button>
+        </button>
 
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={onReset}
           title="Reset to live Studio state"
-          className="h-6 text-[10px] font-mono gap-1 border-slate-700 bg-slate-900/80 px-2 text-slate-300"
+          className="h-6 px-2 text-[10px] font-mono flex items-center gap-1 glass-card rounded text-muted-foreground hover:text-foreground cursor-pointer transition-all"
         >
           <RotateCcw className="w-2.5 h-2.5" />
           Reset
-        </Button>
+        </button>
       </div>
     </div>
   );

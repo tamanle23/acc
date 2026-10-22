@@ -121,7 +121,7 @@ export function VisualJsonTreeNode({
           <span className="text-indigo-300 font-semibold tracking-wide">{label}</span>
 
           {objName && (
-            <span className="text-slate-300 font-sans text-[10px] truncate max-w-[120px] bg-slate-800/80 px-1.5 py-0.2 rounded">
+            <span className="text-foreground/80 font-sans text-[10px] truncate max-w-[120px] bg-[var(--glass-bg)] border border-[var(--glass-border)] px-1.5 py-0.2 rounded-md">
               "{objName}"
             </span>
           )}
@@ -129,7 +129,7 @@ export function VisualJsonTreeNode({
           {objId && (
             <Badge
               variant="outline"
-              className="text-[9px] py-0 px-1 font-mono border-cyan-500/40 text-cyan-300 bg-cyan-500/10 shrink-0"
+              className="text-[9px] py-0 px-1 font-mono border-[var(--accent-primary)]/40 text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 shrink-0"
             >
               #{objId}
             </Badge>
@@ -144,25 +144,23 @@ export function VisualJsonTreeNode({
             </Badge>
           )}
 
-          <span className="text-[10px] text-slate-500 font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono">
             {isArray ? `[${entries.length}]` : `{${entries.length}}`}
           </span>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
           {objId && objId.startsWith('seq-') && onSelectSequence && (
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectSequence(objId);
               }}
-              className="h-5 px-1.5 text-[9px] font-mono text-cyan-400 hover:text-cyan-200 hover:bg-cyan-500/10"
+              className="h-5 px-1.5 text-[9px] font-mono rounded glass-pill text-[var(--accent-primary)] hover:text-foreground cursor-pointer"
             >
               Inspect Clip
-            </Button>
+            </button>
           )}
 
           <VisualJsonNodeContextMenu
@@ -177,7 +175,7 @@ export function VisualJsonTreeNode({
       </div>
 
       {expanded && (
-        <div className="border-l border-slate-800/80 ml-3">
+        <div className="border-l border-[var(--glass-border)] ml-3">
           {entries.map(([k, v]) => (
             <VisualJsonTreeNode
               key={k}

@@ -67,10 +67,10 @@ export function VisualJsonFieldEditor({
           e.stopPropagation();
           onUpdate(path, e.target.value);
         }}
-        className="bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] font-mono text-cyan-300 focus:outline-hidden focus:border-[var(--accent-primary)] cursor-pointer"
+        className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded px-1.5 py-0.5 text-[11px] font-mono text-[var(--accent-primary)] focus:outline-hidden focus:border-[var(--accent-primary)] focus:shadow-[0_0_8px_var(--accent-glow)] cursor-pointer"
       >
         {enumOptions.map((opt) => (
-          <option key={opt} value={opt}>
+          <option key={opt} value={opt} className="bg-slate-900 text-foreground">
             "{opt}"
           </option>
         ))}
@@ -113,7 +113,7 @@ export function VisualJsonFieldEditor({
             if (e.key === 'Enter') handleCommit();
             if (e.key === 'Escape') handleCancel();
           }}
-          className="bg-slate-900/90 border border-[var(--accent-primary)] rounded px-1.5 py-0.5 text-[11px] font-mono text-foreground focus:outline-hidden shadow-xs w-36"
+          className="bg-[var(--glass-bg)] border border-[var(--accent-primary)] rounded px-1.5 py-0.5 text-[11px] font-mono text-foreground focus:outline-hidden shadow-[0_0_8px_var(--accent-glow)] w-36"
         />
         <button
           type="button"

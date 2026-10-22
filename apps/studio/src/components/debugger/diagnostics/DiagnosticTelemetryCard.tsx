@@ -14,17 +14,17 @@ export function DiagnosticTelemetryCard({
   onQuickRepairDanglingAnchors,
 }: DiagnosticTelemetryCardProps) {
   return (
-    <div className="w-80 border-l border-slate-800 bg-slate-900/50 p-3.5 overflow-y-auto space-y-3.5 shrink-0 font-mono text-xs">
-      <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
+    <div className="w-80 border-l border-[var(--glass-border)] bg-[var(--glass-bg)]/40 p-3.5 overflow-y-auto space-y-3.5 shrink-0 font-mono text-xs backdrop-blur-xs">
+      <div className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
         <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
         Live AST Telemetry
       </div>
 
       {/* Grid of Key Metrics */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-            <Layers className="w-3 h-3 text-slate-400" />
+        <div className="p-2 rounded-lg glass-card border border-[var(--glass-border)]">
+          <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+            <Layers className="w-3 h-3 text-muted-foreground" />
             Tracks
           </div>
           <div className="text-sm font-bold font-mono text-foreground mt-0.5">
@@ -32,28 +32,28 @@ export function DiagnosticTelemetryCard({
           </div>
         </div>
 
-        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-            <Film className="w-3 h-3 text-cyan-400" />
+        <div className="p-2 rounded-lg glass-card border border-[var(--glass-border)]">
+          <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+            <Film className="w-3 h-3 text-[var(--accent-primary)]" />
             Sequences
           </div>
-          <div className="text-sm font-bold font-mono text-cyan-400 mt-0.5">
+          <div className="text-sm font-bold font-mono text-[var(--accent-primary)] mt-0.5">
             {diagnostics.sequenceCount}
           </div>
         </div>
 
-        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-indigo-400" />
+        <div className="p-2 rounded-lg glass-card border border-[var(--glass-border)]">
+          <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-purple-400" />
             Modifiers
           </div>
-          <div className="text-sm font-bold font-mono text-indigo-400 mt-0.5">
+          <div className="text-sm font-bold font-mono text-purple-400 mt-0.5">
             {diagnostics.modifierCount}
           </div>
         </div>
 
-        <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+        <div className="p-2 rounded-lg glass-card border border-[var(--glass-border)]">
+          <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
             <Box className="w-3 h-3 text-emerald-400" />
             Assets
           </div>
