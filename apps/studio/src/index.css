@@ -89,10 +89,8 @@
     --ambient-mesh: radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.06) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
 
-    --accent-primary: #06b6d4;
-    --accent-glow: rgba(6, 182, 212, 0.35);
 
-    scroll-behavior: smooth;
+
   }
 
   .dark {
@@ -133,9 +131,6 @@
     --glass-blur: blur(20px);
     --ambient-mesh: radial-gradient(at 10% 10%, rgba(6, 182, 212, 0.10) 0px, transparent 45%),
       radial-gradient(at 90% 90%, rgba(139, 92, 246, 0.10) 0px, transparent 45%);
-
-    --accent-primary: #38bdf8;
-    --accent-glow: rgba(56, 189, 248, 0.4);
   }
 
   /* Optical Glass Styles */
@@ -146,10 +141,10 @@
   }
 
   [data-glass-style="cyber"] {
-    --glass-border: rgba(56, 189, 248, 0.25);
-    --glass-border-highlight: rgba(56, 189, 248, 0.6);
-    --glass-specular: inset 0 1px 0 0 rgba(56, 189, 248, 0.35);
-    --glass-shadow: 0 0 24px -4px rgba(6, 182, 212, 0.2);
+    --glass-specular: inset 0 1px 0 0 var(--alpha(var(--accent-primary) / 16%));
+    --glass-border-highlight: var(--accent-primary);
+    --glass-border: var(--accent-primary);
+    --glass-shadow: 0 0 24px -4px var(--alpha(var(--accent-primary) / 20%));
   }
 
   /* Blur Intensities */
@@ -171,7 +166,6 @@
     --ring: 189 94% 43%;
     --accent-primary: #06b6d4;
     --color-brand-accent: #06b6d4;
-    --glass-border-highlight: #06b6d4;
     --accent-glow: rgba(6, 182, 212, 0.4);
   }
 
@@ -180,7 +174,6 @@
     --ring: 258 90% 66%;
     --accent-primary: #8b5cf6;
     --color-brand-accent: #8b5cf6;
-    --glass-border-highlight: #8b5cf6;
     --accent-glow: rgba(139, 92, 246, 0.4);
   }
 
@@ -189,7 +182,6 @@
     --ring: 160 84% 39%;
     --accent-primary: #10b981;
     --color-brand-accent: #10b981;
-    --glass-border-highlight: #10b981;
     --accent-glow: rgba(16, 185, 129, 0.4);
   }
 
@@ -198,7 +190,6 @@
     --ring: 38 92% 50%;
     --accent-primary: #f59e0b;
     --color-brand-accent: #f59e0b;
-    --glass-border-highlight: #f59e0b;
     --accent-glow: rgba(245, 158, 11, 0.4);
   }
 
@@ -207,7 +198,6 @@
     --ring: 350 89% 60%;
     --accent-primary: #f43f5e;
     --color-brand-accent: #f43f5e;
-    --glass-border-highlight: #f43f5e;
     --accent-glow: rgba(244, 63, 94, 0.4);
   }
 }

@@ -33,7 +33,6 @@ export { ProjectInspector } from './inspector/ProjectInspector';
 export { TrackInspector } from './inspector/TrackInspector';
 export { SequenceInspector } from './inspector/SequenceInspector';
 export { DynamicModifierInspector } from './inspector/DynamicModifierInspector';
-export { EasingCurveSelector } from './EasingCurveSelector';
 
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
@@ -181,8 +180,8 @@ export function RightSidebar() {
             aria-current={currentMode === 'project' ? 'page' : undefined}
             onClick={() => IRStateManager.getInstance().setInspectorMode('project')}
             className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[90px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'project'
-                ? 'bg-accent-theme text-primary-foreground shadow-2xs'
-                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+              ? 'bg-accent-theme text-primary-foreground shadow-2xs'
+              : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
               }`}
             title="Inspect Project Master Settings"
           >
@@ -204,10 +203,10 @@ export function RightSidebar() {
               }
             }}
             className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[100px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${!selectedTrack
-                ? 'opacity-40 cursor-not-allowed text-muted-foreground'
-                : currentMode === 'track'
-                  ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
-                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
+              ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+              : currentMode === 'track'
+                ? 'bg-accent-theme text-primary-foreground shadow-2xs cursor-pointer'
+                : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground cursor-pointer'
               }`}
             title={selectedTrack ? `Inspect Track ${selectedTrack.id}` : 'No track selected'}
           >
@@ -230,8 +229,8 @@ export function RightSidebar() {
                   IRStateManager.getInstance().setInspectorMode('sequence');
                 }}
                 className={`px-1.5 py-0.5 rounded font-medium transition-colors flex items-center gap-1 truncate max-w-[105px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${currentMode === 'sequence'
-                    ? 'bg-accent-theme text-primary-foreground shadow-2xs'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent-theme text-primary-foreground shadow-2xs'
+                  : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground'
                   }`}
                 title={`Inspect Sequence ${selectedSeq.id}`}
               >

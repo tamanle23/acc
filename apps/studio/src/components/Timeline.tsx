@@ -63,7 +63,7 @@ export function Timeline({
 
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [rippleEnabled, setRippleEnabled] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~4px per frame
+  const [zoomScale, setZoomScale] = useState(1.65); // 1.0 = ~4px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
   const [canvasCursor, setCanvasCursor] = useState<string>('default');
