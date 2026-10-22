@@ -11,8 +11,8 @@ export const ViewportSafeGuides: React.FC<ViewportSafeGuidesProps> = ({ mode }) 
     return (
       <div className="absolute inset-0 pointer-events-none z-20">
         {/* Action Safe 93% */}
-        <div className="absolute inset-[3.5%] border border-dashed border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.2)]">
-          <span className="absolute top-1 left-1.5 text-[9px] font-mono font-semibold bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 px-1 py-0.2 rounded">
+        <div className="absolute inset-[3.5%] border border-dashed border-accent-theme/60 shadow-accent-glow">
+          <span className="absolute top-1 left-1.5 text-[9px] font-mono font-semibold glass-badge-accent px-1 py-0.2 rounded">
             16:9 Action Safe (93%)
           </span>
         </div>
@@ -24,8 +24,8 @@ export const ViewportSafeGuides: React.FC<ViewportSafeGuidesProps> = ({ mode }) 
         </div>
         {/* Center Crosshair */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
-          <div className="w-6 h-px bg-cyan-400/80 shadow-[0_0_4px_#06b6d4]" />
-          <div className="h-6 w-px bg-cyan-400/80 shadow-[0_0_4px_#06b6d4] absolute" />
+          <div className="w-6 h-px bg-accent-theme/80 shadow-accent-glow" />
+          <div className="h-6 w-px bg-accent-theme/80 shadow-accent-glow absolute" />
         </div>
       </div>
     );

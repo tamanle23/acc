@@ -127,13 +127,14 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
     });
   });
 
-  it('ensures inspector, titlebar, modals, and timeline components use unified semantic theme tokens', () => {
+  it('ensures inspector, titlebar, modals, preview, debugger, and timeline components use unified semantic theme tokens', () => {
     const filesToVerify = [
       'apps/studio/src/App.tsx',
       'apps/studio/src/components/Titlebar.tsx',
       'apps/studio/src/components/RightSidebar.tsx',
       'apps/studio/src/components/LeftSidebar.tsx',
       'apps/studio/src/components/ShortcutsModal.tsx',
+      'apps/studio/src/components/SettingsModal.tsx',
       'apps/studio/src/components/EasingCurveSelector.tsx',
       'apps/studio/src/components/audio/MasterAudioMeter.tsx',
       'apps/studio/src/components/inspector/ProjectInspector.tsx',
@@ -141,12 +142,21 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
       'apps/studio/src/components/inspector/SequenceInspector.tsx',
       'apps/studio/src/components/inspector/ModifierControlStrategies.tsx',
       'apps/studio/src/components/inspector/ParameterControls.tsx',
+      'apps/studio/src/components/inspector/DynamicModifierInspector.tsx',
       'apps/studio/src/components/inspector/CueTimelineDialog.tsx',
       'apps/studio/src/components/timeline/TimelineToolbar.tsx',
+      'apps/studio/src/components/timeline/TimelineClipItem.tsx',
+      'apps/studio/src/components/timeline/TrimHandle.tsx',
       'apps/studio/src/components/preview/ViewportControlBar.tsx',
       'apps/studio/src/components/preview/ViewportQuickTransport.tsx',
+      'apps/studio/src/components/preview/TransformGizmoOverlay.tsx',
       'apps/studio/src/components/preview/BentoCompanionCard.tsx',
+      'apps/studio/src/components/preview/ContextualActionPill.tsx',
+      'apps/studio/src/components/preview/ViewportSafeGuides.tsx',
       'apps/studio/src/components/debugger/VisualIRJsonDebuggerModal.tsx',
+      'apps/studio/src/components/debugger/code-editor/ShikiCodeViewer.tsx',
+      'apps/studio/src/components/debugger/visual-editor/VisualJsonFieldEditor.tsx',
+      'apps/studio/src/components/debugger/visual-editor/VisualJsonTreeNode.tsx',
     ];
 
     for (const relPath of filesToVerify) {
@@ -157,10 +167,24 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
       expect(content).not.toContain('accent-theme/200');
       expect(content).not.toContain('accent-theme/600');
 
-      // Must not have legacy light-only hardcodedslate/indigo classes
+      // Must not have legacy light-only hardcoded slate/indigo classes
       expect(content).not.toContain('bg-indigo-600');
       expect(content).not.toContain('text-indigo-600');
       expect(content).not.toContain('border-slate-200');
+      expect(content).not.toContain('text-slate-600');
+      expect(content).not.toContain('bg-slate-900');
     }
+  });
+
+  it('documents the unified Studio Theme System & Tailwind v4 styling guide', () => {
+    const guidePath = path.join(process.cwd(), 'docs/studio_theme_styling_guide.md');
+    expect(fs.existsSync(guidePath)).toBe(true);
+    const guideContent = fs.readFileSync(guidePath, 'utf-8');
+    expect(guideContent).toContain('applyThemeToDocument');
+    expect(guideContent).toContain('bg-accent-theme');
+    expect(guideContent).toContain('text-primary-foreground');
+    expect(guideContent).toContain('glass-panel');
+    expect(guideContent).toContain('glass-card');
+    expect(guideContent).toContain('glass-pill');
   });
 });
