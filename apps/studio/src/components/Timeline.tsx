@@ -143,6 +143,36 @@ function TimelineClipItem({
   const isTextOrOverlay = track.type === 'overlay' || track.type === 'timed_text' || seq.type === 'text' || (seq.cues && seq.cues.length > 0);
   const isVfx = track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx') || seq.modifiers?.some((m: any) => m.type?.startsWith('vfx/'));
 
+  const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
+  let displayStartFrame = rawStart;
+  let displayDurationFrames = seq.durationFrames;
+
+  if (isBeingDragged && activeDragState) {
+    if (activeDragState.type === 'clip') {
+      displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
+    } else if (activeDragState.type === 'trim') {
+      if (activeDragState.handle === 'start') {
+        displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
+        displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
+      } else {
+        displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
+      }
+    }
+  }
+
+  const leftPx = displayStartFrame * pixelsPerFrame;
+  const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
+
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `clip-${seq.id}`,
+    data: {
+      type: 'clip',
+      seq,
+      trackId: track.id,
+    },
+    disabled: activeTool === 'razor',
+  });
+
   // Extract first cue text snippet if present
   const cueSnippet = seq.cues && seq.cues.length > 0 && seq.cues[0]?.text
     ? String(seq.cues[0].text).trim()
