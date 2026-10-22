@@ -44,7 +44,8 @@ function renderCurrentFrame(
   frame: number,
   lod = 1.0,
   popOutIntensity = 1.0,
-  isScrubbing = false
+  isScrubbing = false,
+  clearColor = '#000000'
 ) {
   if (!canvas || !ctx || !engine) return;
 
@@ -93,7 +94,7 @@ function renderCurrentFrame(
           // If paused or idling, trigger immediate repaint with new frame
           if (!isPlaying) {
             texturesDirty = true;
-            renderCurrentFrame(currentFrame, lod, popOutIntensity, false);
+            renderCurrentFrame(currentFrame, lod, popOutIntensity, false, clearColor);
           }
         }
       });
@@ -106,13 +107,18 @@ function renderCurrentFrame(
     ctx.imageSmoothingQuality = 'low';
   }
 
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, w, h);
+  if (clearColor === 'transparent') {
+    ctx.clearRect(0, 0, w, h);
+  } else {
+    ctx.fillStyle = clearColor || '#000000';
+    ctx.fillRect(0, 0, w, h);
+  }
 
   try {
     engine.renderFrame(frame, ctx as any, {
       textureCache,
       popOutIntensity,
+      clearColor,
     });
   } catch (err) {
     // Graceful render error suppression during fast scrubs
@@ -129,7 +135,7 @@ function renderCurrentFrame(
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing);
+    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing, clearColor);
   }
 }
 
@@ -274,7 +280,13 @@ self.onmessage = (e: MessageEvent) => {
     case 'renderFrame': {
       currentFrame = data.frame;
       const isScrub = !!data.isScrubbing;
-      renderCurrentFrame(currentFrame, data.lod ?? 1.0, data.popOutIntensity ?? 1.0, isScrub);
+      renderCurrentFrame(
+        currentFrame,
+        data.lod ?? 1.0,
+        data.popOutIntensity ?? 1.0,
+        isScrub,
+        data.clearColor ?? '#000000'
+      );
       break;
     }
 

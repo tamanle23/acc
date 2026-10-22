@@ -8,7 +8,18 @@ export type TrackType = 'video' | 'audio' | 'data' | 'timed_text';
 
 export type SequenceType = 'video' | 'image' | 'audio' | 'text' | 'overlay';
 
-export type BlendMode = 'normal' | 'screen' | 'multiply' | 'overlay' | 'add' | 'color_dodge' | 'soft_light';
+export type BlendMode =
+  | 'normal'
+  | 'screen'
+  | 'multiply'
+  | 'overlay'
+  | 'add'
+  | 'color_dodge'
+  | 'soft_light'
+  | 'lighten'
+  | 'darken'
+  | 'difference'
+  | 'exclusion';
 
 export type AssetType = 'media' | 'image' | 'audio' | 'font' | 'lottie' | 'text_cues';
 
@@ -116,6 +127,8 @@ export interface ResolvedSequence {
 export interface ResolvedTrack {
   id: string;
   type: TrackType;
+  blendMode?: BlendMode;
+  opacity?: number;
   style?: Record<string, unknown>;
   modifiers?: ModifierNode[];
   sequences: ResolvedSequence[];

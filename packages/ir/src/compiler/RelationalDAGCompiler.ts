@@ -46,6 +46,8 @@ export class RelationalDAGCompiler {
         type: track.type,
         style: track.style,
         modifiers: track.modifiers,
+        blendMode: track.blendMode || (track.style as any)?.blendMode || 'normal',
+        opacity: typeof (track.style as any)?.opacity === 'number' ? (track.style as any).opacity : 1.0,
         sequences: [],
       });
 

@@ -260,7 +260,11 @@
         "overlay",
         "add",
         "color_dodge",
-        "soft_light"
+        "soft_light",
+        "lighten",
+        "darken",
+        "difference",
+        "exclusion"
       ],
       "default": "normal",
       "description": "Compositing blend mode"

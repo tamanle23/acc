@@ -14,6 +14,10 @@ const VALID_BLEND_MODES = new Set<string>([
   'add',
   'color_dodge',
   'soft_light',
+  'lighten',
+  'darken',
+  'difference',
+  'exclusion',
 ]);
 
 const TRACK_COMPATIBLE_SEQUENCE_TYPES: Record<string, Set<string>> = {

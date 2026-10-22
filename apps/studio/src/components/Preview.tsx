@@ -272,16 +272,18 @@ export function Preview({
         }
       }
 
+      const clearColor = showCheckerboard ? 'transparent' : '#000000';
+
       if (syncPromises.length > 0) {
         Promise.all(syncPromises).then(() => {
           if (Object.keys(activeTexturesToSync).length > 0) {
             bridge.updateTextures(activeTexturesToSync);
           }
           // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
-          bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+          bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity, false, clearColor);
         });
       } else {
-        bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity);
+        bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity, false, clearColor);
       }
     } else {
       // Main-thread fallback
@@ -290,6 +292,7 @@ export function Preview({
       if (baseCanvas && engine) {
         const baseCtx = baseCanvas.getContext('2d');
         if (baseCtx) {
+          const clearColor = showCheckerboard ? 'transparent' : '#000000';
           if (!showCheckerboard) {
             baseCtx.fillStyle = '#000000';
             baseCtx.fillRect(0, 0, width, height);
@@ -323,6 +326,7 @@ export function Preview({
           engine.renderFrame(currentFrame, baseCtx, {
             textureCache: engineTextures,
             popOutIntensity,
+            clearColor,
           });
         }
       }

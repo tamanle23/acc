@@ -336,11 +336,12 @@ export class IRMasterRenderer {
       get: (id: string) => activeVideoFrames.get(id) || this.imageCache.get(id),
     };
 
-    // 3. Delegate to canonical IRCanvasCompositor
+    // 3. Delegate to canonical IRCanvasCompositor with 'master' execution profile
     IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
       pluginRegistry: this.pluginRegistry,
       assetResolver,
       clearColor: '#000000',
+      executionProfile: 'master',
       generatePixelBuffer: buffer,
     });
   }

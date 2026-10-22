@@ -10,3 +10,4 @@ export * from './renderer/sink/MediabunnyClientSink';
 export * from './renderer/preview/IRPreviewEngine';
 export * from './renderer/preview/AssetTextureCache';
 export * from './renderer/preview/DeterministicMotionEvaluator';
+export * from './plugins';

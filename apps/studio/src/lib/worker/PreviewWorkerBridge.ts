@@ -118,7 +118,13 @@ export class PreviewWorkerBridge {
     });
   }
 
-  public renderFrame(frame: number, lod = 1.0, popOutIntensity = 1.0, isScrubbing = false) {
+  public renderFrame(
+    frame: number,
+    lod = 1.0,
+    popOutIntensity = 1.0,
+    isScrubbing = false,
+    clearColor?: string
+  ) {
     if (!this.worker || !this.isTransferred) return;
     this.worker.postMessage({
       type: 'renderFrame',
@@ -126,6 +132,7 @@ export class PreviewWorkerBridge {
       lod,
       popOutIntensity,
       isScrubbing,
+      clearColor,
     });
   }
 

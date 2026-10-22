@@ -2,6 +2,7 @@ import type {
   ResolvedTimeline,
   ResolvedTrack,
   ResolvedSequence,
+  BlendMode,
 } from '../../types/VideoIR';
 import type { ModifierPluginRegistry } from '../../plugins/ModifierPluginRegistry';
 import {
@@ -11,6 +12,7 @@ import {
   type CaptionSettings,
   type SafeZonePlatform,
 } from '@acc/effect-engines/client';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export interface IAssetSourceResolver {
   get(assetId: string): any | undefined;
@@ -23,6 +25,38 @@ export interface CanvasCompositorOptions {
   popOutIntensity?: number;
   clearColor?: string;
   generatePixelBuffer?: Uint8Array;
+  executionProfile?: 'preview' | 'master';
+}
+
+/**
+ * Maps Video IR BlendMode to standard CanvasRenderingContext2D globalCompositeOperation.
+ */
+export function mapBlendModeToCanvasCompositeOperation(mode?: BlendMode | string): GlobalCompositeOperation {
+  switch (mode) {
+    case 'screen':
+      return 'screen';
+    case 'multiply':
+      return 'multiply';
+    case 'overlay':
+      return 'overlay';
+    case 'add':
+      return 'lighter';
+    case 'color_dodge':
+      return 'color-dodge';
+    case 'soft_light':
+      return 'soft-light';
+    case 'lighten':
+      return 'lighten';
+    case 'darken':
+      return 'darken';
+    case 'difference':
+      return 'difference';
+    case 'exclusion':
+      return 'exclusion';
+    case 'normal':
+    default:
+      return 'source-over';
+  }
 }
 
 /**
@@ -42,6 +76,29 @@ export class IRCanvasCompositor {
   private static captionStrategy = new BoundedAcousticCaptionStrategy();
   private static captionConfigCache = new WeakMap<ResolvedSequence, CaptionConfig[]>();
 
+  // Reusable singleton scratch canvas instances to guarantee ZERO-ALLOC-FRAME-LOOP
+  private static scratchCanvasInstance: any | null = null;
+  private static scratchCanvas: any | null = null;
+  private static scratchCtx: any | null = null;
+
+  private static getScratchContext(width: number, height: number): { canvas: any; ctx: any } {
+    if (
+      !IRCanvasCompositor.scratchCanvas ||
+      IRCanvasCompositor.scratchCanvas.width !== width ||
+      IRCanvasCompositor.scratchCanvas.height !== height
+    ) {
+      IRCanvasCompositor.scratchCanvasInstance = UniversalCanvasProvider.createCanvas(width, height);
+      IRCanvasCompositor.scratchCanvas = IRCanvasCompositor.scratchCanvasInstance.getRawCanvas
+        ? IRCanvasCompositor.scratchCanvasInstance.getRawCanvas()
+        : IRCanvasCompositor.scratchCanvasInstance;
+      IRCanvasCompositor.scratchCtx = IRCanvasCompositor.scratchCanvas.getContext('2d');
+    }
+    return {
+      canvas: IRCanvasCompositor.scratchCanvas,
+      ctx: IRCanvasCompositor.scratchCtx,
+    };
+  }
+
   /**
    * Renders frame t deterministically onto target 2D canvas context.
    */
@@ -59,19 +116,26 @@ export class IRCanvasCompositor {
     const assets = options.assetResolver;
     const popOutIntensity = options.popOutIntensity ?? 1.0;
     const canvas = canvasCtx.canvas || canvasCtx;
+    const profile = options.executionProfile || 'preview';
 
-    // 1. Clear Viewport (Standardized Pure Black #000000)
+    // 1. Clear Viewport (Standardized background or transparent for checkerboard)
     canvasCtx.save();
     canvasCtx.globalCompositeOperation = 'source-over';
     canvasCtx.globalAlpha = 1.0;
-    canvasCtx.fillStyle = options.clearColor || '#000000';
-    canvasCtx.fillRect(0, 0, width, height);
+    if (options.clearColor === 'transparent') {
+      canvasCtx.clearRect(0, 0, width, height);
+    } else {
+      canvasCtx.fillStyle = options.clearColor || '#000000';
+      canvasCtx.fillRect(0, 0, width, height);
+    }
     canvasCtx.restore();
 
-    // 2. Iterate Visual Tracks in Pure Document Order (Track 0 -> Track N)
+    // 2. Iterate Visual Tracks in NLE Document Order (Track 0 -> Track N: Bottom-to-Top)
     const tracksList = Array.from(timeline.tracks.values());
 
-    for (const track of tracksList) {
+    for (let tIdx = 0; tIdx < tracksList.length; tIdx++) {
+      const track = tracksList[tIdx];
+
       // Explicit Culling: Skip if muted or explicitly hidden
       if ((track as any).muted === true || (track.style as any)?.visible === false) {
         continue;
@@ -82,128 +146,102 @@ export class IRCanvasCompositor {
       }
 
       const activeTrackSeqs: ResolvedSequence[] = [];
-
       for (const seq of track.sequences) {
-        // Explicit Culling: Skip if sequence explicitly disabled
-        if ((seq as any).enabled === false) {
-          continue;
-        }
-
-        if (clampedFrame >= seq.startFrame && clampedFrame < seq.endFrame) {
+        if ((seq as any).enabled !== false && clampedFrame >= seq.startFrame && clampedFrame < seq.endFrame) {
           activeTrackSeqs.push(seq);
-          const localFrame = clampedFrame - seq.startFrame;
-          const localSec = Math.max(0, localFrame / fps);
-          const durationSec = Math.max(0.01, (seq.durationFrames || 1) / fps);
-
-          canvasCtx.save();
-          try {
-            // Apply scoped blend mode
-            const blend = seq.blendMode || (track.style as any)?.blendMode || track.blendMode;
-            if (blend === 'screen') canvasCtx.globalCompositeOperation = 'screen';
-            else if (blend === 'multiply') canvasCtx.globalCompositeOperation = 'multiply';
-            else if (blend === 'overlay') canvasCtx.globalCompositeOperation = 'overlay';
-            else if (blend === 'add') canvasCtx.globalCompositeOperation = 'lighter';
-            else if (blend === 'normal') canvasCtx.globalCompositeOperation = 'source-over';
-
-            // Clip-Space Modifiers (Phase 2): Render sequence-level modifiers (including 'transform')
-            if (seq.modifiers) {
-              for (const mod of seq.modifiers) {
-                if (mod.target === 'track' || mod.target === 'global') continue;
-
-                const plugin = registry.get(mod.type);
-                if (plugin && plugin.renderClipSpace) {
-                  plugin.renderClipSpace(
-                    {
-                      canvas,
-                      ctx: canvasCtx,
-                      frame: clampedFrame,
-                      localFrame,
-                      width,
-                      height,
-                      sequence: seq,
-                      baseAsset: seq.assetId && assets ? assets.get(seq.assetId) : undefined,
-                    },
-                    {
-                      ...mod.params,
-                      popOutIntensity,
-                    }
-                  );
-                }
-              }
-            }
-
-            // Skip rendering if modifier set opacity to 0
-            if (canvasCtx.globalAlpha <= 0.001) {
-              continue;
-            }
-
-            // Base Asset Blitting (Cover vs Contain) in Universal Top-Left (0, 0) Coordinate Space
-            const hasDepth3D = seq.modifiers?.some((m) => m.type === 'vfx/depth3d');
-            if (!hasDepth3D && seq.assetId) {
-              const asset = assets?.has(seq.assetId) ? assets.get(seq.assetId) : undefined;
-
-              if (asset) {
-                const srcW = asset.width || asset.videoWidth || width;
-                const srcH = asset.height || asset.videoHeight || height;
-                const fitMode = (seq as any).fitMode || 'cover';
-
-                let drawW = width;
-                let drawH = height;
-
-                if (fitMode === 'cover') {
-                  const scale = Math.max(width / srcW, height / srcH);
-                  drawW = srcW * scale;
-                  drawH = srcH * scale;
-                } else {
-                  const scale = Math.min(width / srcW, height / srcH);
-                  drawW = srcW * scale;
-                  drawH = srcH * scale;
-                }
-
-                const drawX = (width - drawW) * 0.5;
-                const drawY = (height - drawH) * 0.5;
-
-                const rawAsset = typeof (asset as any).getRawCanvas === 'function'
-                  ? (asset as any).getRawCanvas()
-                  : asset;
-
-                if (rawAsset && typeof canvasCtx.drawImage === 'function') {
-                  canvasCtx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
-                }
-              } else {
-                // Non-blocking neutral placeholder fallback in standard top-left space
-                canvasCtx.fillStyle = 'rgba(20, 20, 28, 0.4)';
-                canvasCtx.fillRect(0, 0, width, height);
-              }
-            }
-          } finally {
-            canvasCtx.restore();
-          }
         }
       }
 
-      // Track Stream-Space Modifiers (Phase 3)
-      if (track.modifiers) {
-        for (const mod of track.modifiers) {
-          const plugin = registry.get(mod.type);
-          if (plugin && plugin.renderStreamSpace) {
-            plugin.renderStreamSpace(
-              {
-                canvas,
-                ctx: canvasCtx,
-                frame: clampedFrame,
-                width,
-                height,
-                track,
-                activeSequences: activeTrackSeqs,
-              },
-              {
-                ...mod.params,
-                popOutIntensity,
-              }
-            );
+      if (activeTrackSeqs.length === 0) {
+        continue;
+      }
+
+      const trackBlend = track.blendMode || (track.style as any)?.blendMode || 'normal';
+      const trackOpacity = typeof track.opacity === 'number'
+        ? track.opacity
+        : typeof (track.style as any)?.opacity === 'number'
+          ? (track.style as any).opacity
+          : 1.0;
+      const hasTrackModifiers = Boolean(track.modifiers && track.modifiers.length > 0);
+
+      // Dual-Profile Stacking Decision:
+      // In 'master' mode: all visual tracks isolate to guarantee zero filter bleed.
+      // In 'preview' mode: fast-path direct draw for clean tracks (blend normal, opacity 1, no track stream mods).
+      const requiresIsolation =
+        profile === 'master' ||
+        trackBlend !== 'normal' ||
+        trackOpacity < 0.999 ||
+        hasTrackModifiers;
+
+      if (!requiresIsolation) {
+        // Fast-path Direct Draw to Master Canvas
+        IRCanvasCompositor.renderTrackSequences(
+          canvasCtx,
+          canvas,
+          track,
+          activeTrackSeqs,
+          clampedFrame,
+          width,
+          height,
+          fps,
+          popOutIntensity,
+          registry,
+          assets
+        );
+      } else {
+        // Isolated Scratch Compositing Pass
+        const { canvas: scratchCanvas, ctx: scratchCtx } = IRCanvasCompositor.getScratchContext(width, height);
+        scratchCtx.save();
+        scratchCtx.clearRect(0, 0, width, height);
+        scratchCtx.globalAlpha = 1.0;
+        scratchCtx.globalCompositeOperation = 'source-over';
+
+        // Render sequences inside isolated track buffer
+        IRCanvasCompositor.renderTrackSequences(
+          scratchCtx,
+          scratchCanvas,
+          track,
+          activeTrackSeqs,
+          clampedFrame,
+          width,
+          height,
+          fps,
+          popOutIntensity,
+          registry,
+          assets
+        );
+
+        // Apply Track Stream-Space Modifiers on the scratch buffer
+        if (track.modifiers) {
+          for (const mod of track.modifiers) {
+            const plugin = registry.get(mod.type);
+            if (plugin && plugin.renderStreamSpace) {
+              plugin.renderStreamSpace(
+                {
+                  canvas: scratchCanvas,
+                  ctx: scratchCtx,
+                  frame: clampedFrame,
+                  width,
+                  height,
+                  track,
+                  activeSequences: activeTrackSeqs,
+                },
+                {
+                  ...mod.params,
+                  popOutIntensity,
+                }
+              );
+            }
           }
         }
+        scratchCtx.restore();
+
+        // Blit scratch track buffer onto master canvas with mapped blend mode and track opacity
+        canvasCtx.save();
+        canvasCtx.globalCompositeOperation = mapBlendModeToCanvasCompositeOperation(trackBlend);
+        canvasCtx.globalAlpha = Math.max(0, Math.min(1, trackOpacity));
+        canvasCtx.drawImage(scratchCanvas, 0, 0, width, height);
+        canvasCtx.restore();
       }
     }
 
@@ -317,6 +355,108 @@ export class IRCanvasCompositor {
       } else if (typeof canvasCtx.getImageData === 'function') {
         const imgData = canvasCtx.getImageData(0, 0, width, height);
         options.generatePixelBuffer.set(imgData.data);
+      }
+    }
+  }
+
+  /**
+   * Helper to render active sequences within a track into a given 2D context.
+   */
+  private static renderTrackSequences(
+    ctx: any,
+    canvas: any,
+    track: ResolvedTrack,
+    activeTrackSeqs: ResolvedSequence[],
+    clampedFrame: number,
+    width: number,
+    height: number,
+    fps: number,
+    popOutIntensity: number,
+    registry: ModifierPluginRegistry,
+    assets?: IAssetSourceResolver
+  ): void {
+    for (const seq of activeTrackSeqs) {
+      const localFrame = clampedFrame - seq.startFrame;
+      ctx.save();
+      try {
+        // Scoped sequence-level blend mode override if specified
+        if (seq.blendMode && seq.blendMode !== 'normal') {
+          ctx.globalCompositeOperation = mapBlendModeToCanvasCompositeOperation(seq.blendMode);
+        }
+
+        // Clip-Space Modifiers (Phase 2): Render sequence-level modifiers (including 'transform')
+        if (seq.modifiers) {
+          for (const mod of seq.modifiers) {
+            if (mod.target === 'track' || mod.target === 'global') continue;
+
+            const plugin = registry.get(mod.type);
+            if (plugin && plugin.renderClipSpace) {
+              plugin.renderClipSpace(
+                {
+                  canvas,
+                  ctx,
+                  frame: clampedFrame,
+                  localFrame,
+                  width,
+                  height,
+                  sequence: seq,
+                  baseAsset: seq.assetId && assets ? assets.get(seq.assetId) : undefined,
+                },
+                {
+                  ...mod.params,
+                  popOutIntensity,
+                }
+              );
+            }
+          }
+        }
+
+        // Skip rendering if modifier set opacity to 0
+        if (ctx.globalAlpha <= 0.001) {
+          continue;
+        }
+
+        // Base Asset Blitting (Cover vs Contain) in Universal Top-Left (0, 0) Coordinate Space
+        const hasDepth3D = seq.modifiers?.some((m) => m.type === 'vfx/depth3d');
+        if (!hasDepth3D && seq.assetId) {
+          const asset = assets?.has(seq.assetId) ? assets.get(seq.assetId) : undefined;
+
+          if (asset) {
+            const srcW = asset.width || asset.videoWidth || width;
+            const srcH = asset.height || asset.videoHeight || height;
+            const fitMode = (seq as any).fitMode || 'cover';
+
+            let drawW = width;
+            let drawH = height;
+
+            if (fitMode === 'cover') {
+              const scale = Math.max(width / srcW, height / srcH);
+              drawW = srcW * scale;
+              drawH = srcH * scale;
+            } else {
+              const scale = Math.min(width / srcW, height / srcH);
+              drawW = srcW * scale;
+              drawH = srcH * scale;
+            }
+
+            const drawX = (width - drawW) * 0.5;
+            const drawY = (height - drawH) * 0.5;
+
+            const rawAsset = typeof (asset as any).getRawCanvas === 'function'
+              ? (asset as any).getRawCanvas()
+              : asset;
+
+            if (rawAsset && typeof ctx.drawImage === 'function') {
+              ctx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
+            }
+          } else {
+            // Non-blocking neutral placeholder fallback in standard top-left space
+            ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
+            ctx.fillRect(0, 0, width, height);
+          }
+        }
+      } finally {
+        ctx.restore();
       }
     }
   }
