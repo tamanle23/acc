@@ -23,6 +23,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      // Resolve shadcn/ui bare 'cn' import to the project's clsx+tailwind-merge util
+      'cn': path.resolve(__dirname, 'src/lib/utils'),
       '@acc/core-isomorphic': path.resolve(__dirname, '../../packages/core-isomorphic/src'),
       '@acc/core-web': path.resolve(__dirname, '../../packages/core-web/src'),
       '@acc/core': path.resolve(__dirname, '../../packages/core/src'),

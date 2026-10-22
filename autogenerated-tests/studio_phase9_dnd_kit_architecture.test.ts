@@ -62,12 +62,19 @@ describe('Phase 9: Unified @dnd-kit Architecture & State Management Suite', () =
 
   describe('2. Timeline.tsx @dnd-kit Component Architecture', () => {
     it('verifies Timeline.tsx implements declarative @dnd-kit draggables and droppables without window mousemove listeners', () => {
-      const timelineCode = fs.readFileSync(
+      const timelineDir = path.join(__dirname, '../apps/studio/src/components/timeline');
+      const timelineCoordinator = fs.readFileSync(
         path.join(__dirname, '../apps/studio/src/components/Timeline.tsx'),
         'utf-8'
       );
+      // Task 302: Timeline.tsx was decomposed — useDraggable lives in TimelineClipItem.tsx / TrimHandle.tsx
+      const subFiles = fs.readdirSync(timelineDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+      const timelineCode = [
+        timelineCoordinator,
+        ...subFiles.map(f => fs.readFileSync(path.join(timelineDir, f), 'utf-8')),
+      ].join('\n');
 
-      // Verify @dnd-kit imports & hooks
+      // Verify @dnd-kit imports & hooks (across coordinator + submodules)
       expect(timelineCode).toContain("from '@dnd-kit/core'");
       expect(timelineCode).toContain('useDraggable');
       expect(timelineCode).toContain('useDroppable');

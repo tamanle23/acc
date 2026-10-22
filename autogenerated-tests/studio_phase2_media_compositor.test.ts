@@ -32,6 +32,14 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
 
   describe('Preview.tsx Multi-Track Compositor Source Verification', () => {
     const previewFile = path.resolve(process.cwd(), 'apps/studio/src/components/Preview.tsx');
+    const previewDir = path.resolve(process.cwd(), 'apps/studio/src/components/preview');
+
+    // Aggregate coordinator + all preview submodules (Tasks 302–303 decomposed Preview.tsx)
+    function readPreviewModuleTree(): string {
+      const coordinator = fs.readFileSync(previewFile, 'utf-8');
+      const subFiles = fs.readdirSync(previewDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+      return [coordinator, ...subFiles.map(f => fs.readFileSync(path.join(previewDir, f), 'utf-8'))].join('\n');
+    }
 
     it('should query visual assets via AssetTextureCache in render loop and delegate to IRPreviewEngine.renderFrame', () => {
       const code = fs.readFileSync(previewFile, 'utf-8');
@@ -48,7 +56,8 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
     });
 
     it('should implement decoupled 2-layer viewport canvas architecture', () => {
-      const code = fs.readFileSync(previewFile, 'utf-8');
+      // Task 303 moved canvas elements into ViewportCanvasLayer.tsx — read full module tree
+      const code = readPreviewModuleTree();
 
       expect(code).toContain('id="studio-canvas"');
       expect(code).toContain('id="studio-overlay-canvas"');

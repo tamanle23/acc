@@ -214,6 +214,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               onClick={handleCopyId}
               className="h-5 w-5 text-muted-foreground hover:text-accent-theme cursor-pointer"
               title="Copy Sequence ID"
+              aria-label="Copy sequence ID to clipboard"
             >
               {copiedId ? (
                 <Check className="w-3 h-3 text-emerald-600" />
@@ -632,6 +633,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             onClick={handleDuplicate}
             className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-glass-border cursor-pointer disabled:cursor-not-allowed"
             title="Duplicate sequence"
+            aria-label="Duplicate this sequence"
           >
             <CopyPlus className="w-3 h-3" />
             Duplicate
@@ -643,6 +645,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             className={`h-6 px-2 text-[10px] gap-1 border-glass-border cursor-pointer ${isLocked ? 'bg-amber-500/15 text-amber-500 border-amber-500/40' : 'text-muted-foreground'
               }`}
             title={isLocked ? 'Locked (Click to unlock)' : 'Unlocked (Click to lock)'}
+            aria-label={isLocked ? 'Unlock sequence' : 'Lock sequence'}
+            aria-pressed={isLocked}
           >
             {isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
           </Button>
@@ -653,6 +657,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             onClick={handleDelete}
             className="h-6 px-2 text-[10px] text-destructive hover:bg-destructive/15 border-destructive/30 cursor-pointer disabled:cursor-not-allowed"
             title="Delete sequence (undoable)"
+            aria-label="Delete this sequence"
           >
             <Trash2 className="w-3 h-3" />
           </Button>

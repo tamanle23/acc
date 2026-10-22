@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { TransitionCurveGraph } from './inspector/TransitionCurveGraph';
 
 export interface EasingPreset {
   id: string;
@@ -71,6 +72,7 @@ export function EasingCurveSelector({
   onChange,
 }: EasingCurveSelectorProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [showGraph, setShowGraph] = useState(false);
 
   return (
     <div className="space-y-2">
@@ -79,9 +81,21 @@ export function EasingCurveSelector({
           <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
           GSAP Motion Curve
         </span>
-        <span className="text-[10px] text-accent-theme font-mono font-bold uppercase">
-          {value}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-accent-theme font-mono font-bold uppercase">
+            {value}
+          </span>
+          {/* Toggle expanded Bezier curve graph */}
+          <button
+            type="button"
+            onClick={() => setShowGraph(v => !v)}
+            className="flex items-center gap-0.5 text-[9px] text-muted-foreground hover:text-accent-theme transition-colors"
+            aria-label={showGraph ? 'Hide curve graph' : 'Show curve graph'}
+          >
+            {showGraph ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Graph
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -198,6 +212,18 @@ export function EasingCurveSelector({
           );
         })}
       </div>
+
+      {/* Expanded interactive Bezier curve graph */}
+      {showGraph && (
+        <div className="mt-2 px-1">
+          <TransitionCurveGraph
+            easingId={value}
+            width={248}
+            height={160}
+            showScrubber
+          />
+        </div>
+      )}
     </div>
   );
 }

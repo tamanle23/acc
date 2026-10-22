@@ -173,15 +173,20 @@ describe('Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulati
 
   describe('4. Component Integration Verification', () => {
     it('verifies Timeline.tsx implements drag trimming, snapping, and razor tool', () => {
-      const timelineCode = fs.readFileSync(
+      // Task 302 decomposed Timeline.tsx into submodules — aggregate full module tree for assertions
+      const timelineDir = path.join(__dirname, '../apps/studio/src/components/timeline');
+      const coordinator = fs.readFileSync(
         path.join(__dirname, '../apps/studio/src/components/Timeline.tsx'),
         'utf-8'
       );
+      const subFiles = fs.readdirSync(timelineDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+      const timelineCode = [coordinator, ...subFiles.map(f => fs.readFileSync(path.join(timelineDir, f), 'utf-8'))].join('\n');
+
       expect(timelineCode).toContain('trimmingState');
       expect(timelineCode).toContain('startTrim');
       expect(timelineCode).toContain('cursor-col-resize');
       expect(timelineCode).toContain('handleClipClick');
-      expect(timelineCode).toContain('activeTool === \'razor\'');
+      expect(timelineCode).toContain("activeTool === 'razor'");
       expect(timelineCode).toContain('cursor-crosshair');
       expect(timelineCode).toContain('snapEnabled');
     });
@@ -200,10 +205,15 @@ describe('Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulati
     });
 
     it('verifies Preview.tsx binds live GSAP interpolated transform to canvas overlay', () => {
-      const previewCode = fs.readFileSync(
+      // Task 303 decomposed Preview.tsx — GSAP interpolation is now in TransformGizmoOverlay.tsx
+      const previewDir = path.join(__dirname, '../apps/studio/src/components/preview');
+      const coordinator = fs.readFileSync(
         path.join(__dirname, '../apps/studio/src/components/Preview.tsx'),
         'utf-8'
       );
+      const subFiles = fs.readdirSync(previewDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+      const previewCode = [coordinator, ...subFiles.map(f => fs.readFileSync(path.join(previewDir, f), 'utf-8'))].join('\n');
+
       expect(previewCode).toContain('getActiveInterpolatedTransform');
       expect(previewCode).toContain('activeInterp');
     });

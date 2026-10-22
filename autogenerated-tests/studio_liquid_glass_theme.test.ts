@@ -181,33 +181,43 @@ describe('Studio Liquid Glass Theme System & Design Tokens', () => {
 
   describe('Preview Component Liquid Glass Consistency', () => {
     it('should style Preview viewport with glass-panel, liquid-ambient-mesh, and no hardcoded opaque card', () => {
+      // Since Tasks 302–303 decomposed Preview.tsx into modular subcomponents under preview/,
+      // we aggregate the full source tree for assertions across coordinator + all submodules.
+      const previewDir = path.resolve(__dirname, '../apps/studio/src/components/preview');
       const previewPath = path.resolve(__dirname, '../apps/studio/src/components/Preview.tsx');
+
       expect(fs.existsSync(previewPath)).toBe(true);
+      expect(fs.existsSync(previewDir)).toBe(true);
 
-      const previewCode = fs.readFileSync(previewPath, 'utf8');
+      // Aggregate coordinator + all submodule sources
+      const submoduleFiles = fs.readdirSync(previewDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+      const allPreviewCode = [
+        fs.readFileSync(previewPath, 'utf8'),
+        ...submoduleFiles.map(f => fs.readFileSync(path.join(previewDir, f), 'utf8')),
+      ].join('\n');
 
-      // Root viewport container must use glass-panel and ambient mesh
-      expect(previewCode).toContain('glass-panel');
-      expect(previewCode).toContain('liquid-ambient-mesh');
-      expect(previewCode).not.toContain('bg-slate-950/90');
-      expect(previewCode).not.toContain('border-slate-800');
+      // Root viewport container must use glass-panel and ambient mesh (across module tree)
+      expect(allPreviewCode).toContain('glass-panel');
+      expect(allPreviewCode).toContain('liquid-ambient-mesh');
+      expect(allPreviewCode).not.toContain('bg-slate-950/90');
+      expect(allPreviewCode).not.toContain('border-slate-800');
 
       // Uses dynamic CSS variables for accent highlights
-      expect(previewCode).toContain('var(--accent-primary)');
-      expect(previewCode).toContain('var(--accent-glow)');
-      expect(previewCode).toContain('var(--glass-border)');
+      expect(allPreviewCode).toContain('var(--accent-primary)');
+      expect(allPreviewCode).toContain('var(--accent-glow)');
+      expect(allPreviewCode).toContain('var(--glass-border)');
 
-      // Floating quick transport bar uses glass-panel
-      expect(previewCode).toContain('glass-panel px-4 py-2 rounded-full');
+      // ViewportQuickTransport submodule: floating quick transport bar uses glass-panel
+      expect(allPreviewCode).toContain('glass-panel px-4 py-2 rounded-full');
 
-      // Canvas viewport stage & studio-canvas must be strictly isolated from outside theme
-      expect(previewCode).toContain('id="studio-canvas"');
-      expect(previewCode).toContain('isolate rounded-xl overflow-hidden');
-      expect(previewCode).toContain('backgroundColor: \'#000000\'');
+      // ViewportCanvasLayer submodule: studio-canvas must be strictly isolated from outside theme
+      expect(allPreviewCode).toContain('id="studio-canvas"');
+      expect(allPreviewCode).toContain('isolate rounded-xl overflow-hidden');
+      expect(allPreviewCode).toContain('backgroundColor: \'#000000\'');
 
-      // Subtitles & time-cued text must follow video styling, NOT outer glass-panel or text-foreground
-      expect(previewCode).toContain('bg-black/80 text-white');
-      expect(previewCode).not.toContain('glass-panel px-5 py-2 rounded-xl');
+      // SubtitlesOverlay submodule: subtitles must follow video styling, NOT outer glass-panel
+      expect(allPreviewCode).toContain('bg-black/80 text-white');
+      expect(allPreviewCode).not.toContain('glass-panel px-5 py-2 rounded-xl');
     });
   });
 

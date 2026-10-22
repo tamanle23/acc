@@ -11,6 +11,7 @@ import { TimelineClipItem } from './timeline/TimelineClipItem';
 import { TrackHeaderCard } from './timeline/TrackHeaderCard';
 import { TimelineToolbar } from './timeline/TimelineToolbar';
 import { TimelineOverlayHUD } from './timeline/TimelineOverlayHUD';
+import { TimelineEmptyState } from './timeline/TimelineEmptyState';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -814,15 +815,9 @@ export function Timeline({
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-36 rounded-lg border border-dashed border-border/40 bg-muted/10 p-6 text-center space-y-2">
-                <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-accent-theme">
-                  <Film className="w-4 h-4" />
-                </div>
-                <div className="text-xs font-medium text-foreground/80">No Tracks in Timeline</div>
-                <p className="text-[11px] text-muted-foreground max-w-sm">
-                  Drag media from the Asset Library or click below to generate your initial composition.
-                </p>
-              </div>
+              <TimelineEmptyState
+                onLoadSample={() => IRStateManager.getInstance().switchTemplate('default')}
+              />
             ) : (
               <div
                 style={{
