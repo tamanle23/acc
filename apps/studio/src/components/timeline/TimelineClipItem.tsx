@@ -166,7 +166,7 @@ export function TimelineClipItem({
           />
         )}
 
-        {/* Semantic Archetype Leading Icon */}
+        {/* Semantic Archetype Leading Icon: Always rendered across all LODs */}
         <span className="shrink-0 relative z-10 opacity-90">
           {isAudio ? (
             <Music className="w-3 h-3 text-emerald-400" />
@@ -176,86 +176,106 @@ export function TimelineClipItem({
             <Sparkles className="w-3 h-3 text-amber-400" />
           ) : isImageAsset ? (
             <Image className="w-3 h-3 text-blue-400" />
-          ) :
-            (
-              <Film className="w-3 h-3 text-indigo-400" />
-            )}
+          ) : (
+            <Film className="w-3 h-3 text-indigo-400" />
+          )}
         </span>
 
-        {/* Clip Title & Content Cue Snippet (LOD 1, 2, 3) */}
+        {/* LOD 1+: Compact & Above - Clip ID (truncated for compact, full for standard/expanded) */}
         {lod >= 1 && (
-          <div className="flex items-center gap-1 min-w-0 truncate relative z-10 drop-shadow-xs">
-            <span className="text-[10px] font-mono font-semibold truncate text-white">
-              {seq.id}
-            </span>
-
-            {/* In-Line Text Cue Preview Snippet for Subtitles/Captions (LOD 2 & 3) */}
-            {lod >= 2 && cueSnippet && (
-              <span className="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1 rounded border border-violet-400/30">
-                "{cueSnippet}"
-              </span>
-            )}
-          </div>
+          <span
+            className={`font-mono font-semibold text-white relative z-10 drop-shadow-xs truncate ${
+              lod === 1 ? 'text-[9px] max-w-[50px]' : 'text-[10px]'
+            }`}
+          >
+            {seq.id}
+          </span>
         )}
 
-        {/* Duration Badge (LOD 2 & 3) */}
+        {/* LOD 2+: Standard & Expanded - Duration Badge & Linked A/V button */}
         {lod >= 2 && (
-          <span className="shrink-0 text-[8px] font-mono text-white/70 bg-black/40 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
+          <span className="shrink-0 text-[8px] font-mono text-white/80 bg-black/50 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
             <Clock className="w-2 h-2 text-white/60" />
             {durationBadge}
           </span>
         )}
 
-        {/* Linked A/V Button */}
-        {(() => {
-          const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
-          if (!avLink) return null;
-          const isLinked = avLink.params?.enabled !== false;
-          return (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const newEnabled = !isLinked;
-                // Update on this sequence
-                IRStateManager.getInstance().updateModifier(seq.id, 'editorial/av_link', {
-                  ...avLink.params,
-                  enabled: newEnabled,
-                });
-                // Also update on partner sequence if present
-                if (avLink.params?.linkedSequenceId) {
-                  IRStateManager.getInstance().updateModifier(
-                    avLink.params.linkedSequenceId,
-                    'editorial/av_link',
-                    {
-                      ...avLink.params,
-                      linkedSequenceId: seq.id,
-                      linkedTrackId: track.id,
-                      enabled: newEnabled,
-                    }
-                  );
-                }
-              }}
-              className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${isLinked
-                  ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
-                  : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
-                }`}
-              title={
-                isLinked
-                  ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)`
-                  : 'Unlinked A/V (Click to re-link)'
-              }
-            >
-              {isLinked ? <Link2 className="w-2.5 h-2.5" /> : <Unlink className="w-2.5 h-2.5" />}
-            </button>
-          );
-        })()}
+        {/* LOD 3 Exclusively: Expanded View (>= 220px) - Dialogue Cue Snippet, Modifiers Pills, and AV Link */}
+        {lod === 3 && cueSnippet && (
+          <span className="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1.5 py-0.5 rounded border border-violet-400/30">
+            "{cueSnippet}"
+          </span>
+        )}
 
-        {/* Active Modifier Count Badge (LOD 2 & 3) */}
-        {lod >= 2 && seq.modifiers && seq.modifiers.length > 0 && (
+        {/* Linked A/V Button (Available on LOD 2 and LOD 3) */}
+        {lod >= 2 &&
+          (() => {
+            const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
+            if (!avLink) return null;
+            const isLinked = avLink.params?.enabled !== false;
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newEnabled = !isLinked;
+                  // Update on this sequence
+                  IRStateManager.getInstance().updateModifier(seq.id, 'editorial/av_link', {
+                    ...avLink.params,
+                    enabled: newEnabled,
+                  });
+                  // Also update on partner sequence if present
+                  if (avLink.params?.linkedSequenceId) {
+                    IRStateManager.getInstance().updateModifier(
+                      avLink.params.linkedSequenceId,
+                      'editorial/av_link',
+                      {
+                        ...avLink.params,
+                        linkedSequenceId: seq.id,
+                        linkedTrackId: track.id,
+                        enabled: newEnabled,
+                      }
+                    );
+                  }
+                }}
+                className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
+                  isLinked
+                    ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
+                    : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
+                }`}
+                title={
+                  isLinked
+                    ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)`
+                    : 'Unlinked A/V (Click to re-link)'
+                }
+              >
+                {isLinked ? <Link2 className="w-2.5 h-2.5" /> : <Unlink className="w-2.5 h-2.5" />}
+              </button>
+            );
+          })()}
+
+        {/* LOD 2 Modifier Count Badge (compact) vs LOD 3 Individual Modifier Chips */}
+        {lod === 2 && seq.modifiers && seq.modifiers.length > 0 && (
           <span className="shrink-0 text-[8px] font-mono bg-white/20 text-white font-medium px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
             {seq.modifiers.length} mod
           </span>
+        )}
+
+        {/* LOD 3: Individual Active Modifier Pills */}
+        {lod === 3 && seq.modifiers && seq.modifiers.length > 0 && (
+          <div className="flex items-center gap-1 shrink-0 relative z-10">
+            {seq.modifiers.slice(0, 3).map((mod: any, mIdx: number) => {
+              const modShortName = (mod.type || '').split('/').pop() || 'mod';
+              return (
+                <span
+                  key={mIdx}
+                  className="text-[7.5px] font-mono uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded-xs"
+                >
+                  {modShortName}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
 

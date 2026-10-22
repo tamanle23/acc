@@ -229,19 +229,19 @@ export function TimelineToolbar({
       <div className="flex items-center gap-2">
         <ZoomOut
           className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-          onClick={() => onSetZoomScale((z) => Math.max(0.4, z - 0.2))}
+          onClick={() => onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
         />
         <Slider
-          min={0.4}
-          max={3.0}
-          step={0.1}
+          min={0.1}
+          max={4.0}
+          step={0.05}
           value={[zoomScale]}
           onValueChange={(val) => onSetZoomScale(val[0])}
           className="w-24 cursor-pointer"
         />
         <ZoomIn
           className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-          onClick={() => onSetZoomScale((z) => Math.min(3.0, z + 0.2))}
+          onClick={() => onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
         />
 
         <Tooltip content="Zoom to Fit (Z)">

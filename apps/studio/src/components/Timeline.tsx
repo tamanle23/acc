@@ -93,7 +93,9 @@ export function Timeline({
       : [];
   const selectedSeqId = irState.selectedSequenceId;
 
-  const pixelsPerFrame = Math.max(1, 4 * zoomScale);
+  // Adaptive Zoom Scaling: 1.5px/frame at 1.0x allows standard 3s (90f) clips to render at 135px (LOD 2)
+  // Zooming out to 0.4x scales to 54px (LOD 1) and 0.2x to 27px (LOD 0)
+  const pixelsPerFrame = Math.max(0.2, 1.5 * zoomScale);
   const timelineWidth = Math.max(800, totalFrames * pixelsPerFrame);
 
   const handleScrub = (frame: number) => {
