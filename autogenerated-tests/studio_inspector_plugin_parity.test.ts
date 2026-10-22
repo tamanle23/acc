@@ -48,7 +48,8 @@ describe('Studio Inspector & Modifier Plugin Parity Suite', () => {
     it('registers motion/gsap and evaluates deterministic easing curves', () => {
       const registry = createIsolatedCoreModifierPlugins();
       expect(registry.has('motion/gsap')).toBe(true);
-      expect(registry.has('animation/gsap')).toBe(true);
+      // Canonical IR registry refactor: legacy animation/gsap alias is eliminated
+      expect(registry.has('animation/gsap')).toBe(false);
 
       const plugin = registry.get('motion/gsap');
       expect(plugin).toBeDefined();

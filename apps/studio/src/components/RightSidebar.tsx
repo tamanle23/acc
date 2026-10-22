@@ -7,6 +7,11 @@ import {
   Plus,
   Check,
   ChevronRight,
+  Sparkles,
+  Move,
+  Volume2,
+  Type,
+  FolderPlus,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -15,7 +20,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from './ui/dropdown-menu';
 import { IRStateManager } from '../lib/ir/irState';
 import { ProjectInspector } from './inspector/ProjectInspector';
@@ -23,16 +30,27 @@ import { TrackInspector } from './inspector/TrackInspector';
 import { SequenceInspector } from './inspector/SequenceInspector';
 import {
   getAvailableModifiersFromRegistry,
+  getSectionIdForModifierType,
   type AvailableModifierDef,
+  type ModifierCategory,
 } from './inspector/modifierCatalog';
 
-// Re-export all catalog definitions and helper controls for 100% backward compatibility
 export * from './inspector/modifierCatalog';
 export * from './inspector/ParameterControls';
 export { ProjectInspector } from './inspector/ProjectInspector';
 export { TrackInspector } from './inspector/TrackInspector';
 export { SequenceInspector } from './inspector/SequenceInspector';
 export { DynamicModifierInspector } from './inspector/DynamicModifierInspector';
+
+const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: any }> = {
+  motion: { label: 'Motion & Spatial', icon: Move },
+  vfx: { label: 'Visual Effects (VFX)', icon: Sparkles },
+  transitions: { label: 'Transitions', icon: Film },
+  audio: { label: 'Audio & DSP', icon: Volume2 },
+  text: { label: 'Typography & Shapes', icon: Type },
+  custom: { label: 'Extensions & Custom', icon: FolderPlus },
+};
+const CATEGORY_KEYS = Object.keys(CATEGORY_CONFIG) as ModifierCategory[];
 
 export function RightSidebar() {
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
@@ -145,28 +163,50 @@ export function RightSidebar() {
                   Add Effect
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuGroup>
-                  {relevantModifiers.map((mod) => {
-                    const isAttached = modifiers.some((m: any) => m.type === mod.type);
-                    const Icon = mod.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={mod.type}
-                        disabled={isAttached || isSequenceLocked}
-                        onSelect={() => handleAddEffect(mod)}
-                        onClick={() => handleAddEffect(mod)}
-                        className="flex items-center justify-between cursor-pointer py-1.5"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Icon className="w-3.5 h-3.5 text-accent-theme" />
-                          <span>{mod.name}</span>
-                        </div>
-                        {isAttached && <Check className="w-3.5 h-3.5 text-accent-theme" />}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
+              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto">
+                {CATEGORY_KEYS.map((catKey) => {
+                  const groupModifiers = relevantModifiers.filter(
+                    (m) => (m.category || 'custom') === catKey
+                  );
+                  if (groupModifiers.length === 0) return null;
+                  const catMeta = CATEGORY_CONFIG[catKey];
+                  const CatIcon = catMeta.icon;
+
+                  return (
+                    <DropdownMenuSub key={catKey}>
+                      <DropdownMenuSubTrigger className="cursor-pointer py-1.5 text-xs flex items-center gap-2">
+                        <CatIcon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                        <span className="font-medium">{catMeta.label}</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto pr-1">
+                          {groupModifiers.length}
+                        </span>
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="w-56">
+                        {groupModifiers.map((mod) => {
+                          const isAttached = modifiers.some((m: any) => m.type === mod.type);
+                          const Icon = mod.icon;
+                          return (
+                            <DropdownMenuItem
+                              key={mod.type}
+                              disabled={isAttached || isSequenceLocked}
+                              onSelect={() => handleAddEffect(mod)}
+                              onClick={() => handleAddEffect(mod)}
+                              className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <Icon className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                                <span className="truncate">{mod.name}</span>
+                              </div>
+                              {isAttached && (
+                                <Check className="w-3.5 h-3.5 text-accent-theme shrink-0" />
+                              )}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

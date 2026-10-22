@@ -95,6 +95,16 @@ export class TransformModifierPlugin implements ModifierPlugin<TransformModifier
         step: 0.05,
         defaultValue: 1.0,
       },
+      animation: {
+        key: 'animation',
+        label: 'Motion Lifecycle Animation',
+        type: 'motion_lifecycle' as const,
+        defaultValue: {
+          preset: 'none',
+          intro: { durationSec: 0.4, ease: 'power2.out' },
+          outro: { durationSec: 0.3, ease: 'power2.in' },
+        },
+      },
     },
   };
 

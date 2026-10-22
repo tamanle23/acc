@@ -37,7 +37,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
     expect(types).toContain('overlay/hologram_hud');
     expect(types).toContain('vfx/depth_relighting');
     expect(types).toContain('vfx/depth3d');
-    expect(types).toContain('camera/3d');
+    expect(types).toContain('vfx/camera_3d');
     expect(types).toContain('vfx/color_grading');
     expect(types).toContain('text/style');
     expect(types).toContain('audio/volume');
@@ -47,7 +47,7 @@ describe('ModifierPluginRegistry & RightSidebar Dynamic Integration', () => {
     expect(types).toContain('sfx/dynamic_ducking');
     expect(types).toContain('sfx/procedural');
     expect(types).toContain('editorial/split_edit');
-    expect(types).toContain('editorial/transition_crossfade');
+    expect(types).toContain('transition/crossfade');
     expect(types).toContain('overlay/blend_mode');
   });
 

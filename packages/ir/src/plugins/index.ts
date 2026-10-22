@@ -63,16 +63,13 @@ export function registerCoreModifierPlugins(
   registry.register(new TransformModifierPlugin());
   const gsapPlugin = new GSAPMotionPlugin();
   registry.register(gsapPlugin);
-  registry.register(new GSAPMotionPlugin('animation/gsap'));
   registry.register(new CaptionModifierPlugin());
   registry.register(new ShapeModifierPlugin('shape/draw'));
   registry.register(new ShapeModifierPlugin('shape/vector'));
   registry.register(new ProceduralSFXModifierPlugin());
   registry.register(new DynamicDuckingPlugin());
   registry.register(new SplitEditPlugin());
-  const xfadePlugin = new TransitionCrossfadePlugin();
-  registry.register(xfadePlugin);
-  registry.register({ ...xfadePlugin, type: 'editorial/transition_crossfade', schema: xfadePlugin.schema });
+  registry.register(new TransitionCrossfadePlugin());
   const universalTrans = new UniversalTransitionPlugin();
   registry.register(universalTrans);
   registry.register(new UniversalTransitionPlugin('transition/wipe'));
@@ -83,21 +80,9 @@ export function registerCoreModifierPlugins(
   registry.register(new UniversalTransitionPlugin('transition/light_leak'));
   registry.register(new UniversalTransitionPlugin('transition/radial_wipe'));
   registry.register(new UniversalTransitionPlugin('transition/iris'));
-  registry.register(new UniversalTransitionPlugin('editorial/transition'));
-  registry.register(new UniversalTransitionPlugin('transition'));
   registry.register(new BlendModePlugin());
   registry.register(new CanvasParticleOverlayPlugin());
-  const hudPlugin = new HologramHUDPlugin();
-  registry.register(hudPlugin);
-  // Alias overlay/sci_fi_hud to HologramHUDPlugin for full backward compatibility
-  registry.register({
-    ...hudPlugin,
-    type: 'overlay/sci_fi_hud',
-    schema: hudPlugin.schema,
-  });
-  // Backward compatibility alias for camera/3d -> vfx/camera_3d
-  const camPlugin = new Camera3DPlugin();
-  registry.register({ ...camPlugin, type: 'camera/3d', schema: camPlugin.schema });
+  registry.register(new HologramHUDPlugin());
   registry.register(new VolumeModifierPlugin());
   registry.register(new PanModifierPlugin());
   registry.register(new FilterModifierPlugin());

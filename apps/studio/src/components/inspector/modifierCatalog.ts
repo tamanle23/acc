@@ -118,9 +118,18 @@ export const PARTICLE_PRESET_DEFAULTS: Record<
   },
 };
 
+export type ModifierCategory =
+  | 'motion'
+  | 'vfx'
+  | 'transitions'
+  | 'audio'
+  | 'text'
+  | 'custom';
+
 export interface AvailableModifierDef {
   type: string;
   name: string;
+  category: ModifierCategory;
   icon: any;
   supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
   defaultParams: Record<string, unknown>;
@@ -130,6 +139,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   string,
   {
     name: string;
+    category: ModifierCategory;
     icon: any;
     supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
     defaultParams: Record<string, unknown>;
@@ -137,6 +147,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
 > = {
   transform: {
     name: 'In-Canvas Transform',
+    category: 'motion',
     icon: Move,
     supportedTrackTypes: ['video', 'timed_text'],
     defaultParams: {
@@ -149,7 +160,8 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
     },
   },
   'motion/gsap': {
-    name: 'GSAP Motion & Easings',
+    name: 'GSAP Motions & Easings',
+    category: 'motion',
     icon: Sparkles,
     supportedTrackTypes: ['video', 'timed_text', 'audio'],
     defaultParams: {
@@ -162,6 +174,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'overlay/canvas_particles': {
     name: 'Particle VFX & Shaders',
+    category: 'vfx',
     icon: Layers,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -185,6 +198,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'overlay/hologram_hud': {
     name: 'Hologram HUD',
+    category: 'vfx',
     icon: Monitor,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -197,6 +211,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'vfx/depth_relighting': {
     name: '3D Relighting',
+    category: 'vfx',
     icon: Sparkles,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -213,6 +228,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'vfx/depth3d': {
     name: 'Depth 3D & Parallax',
+    category: 'vfx',
     icon: Sparkles,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -223,8 +239,29 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       autoDepth: true,
     },
   },
+  'vfx/camera_3d': {
+    name: '3D Camera & Lens',
+    category: 'vfx',
+    icon: Camera,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      eyeX: 0.0,
+      eyeY: 0.0,
+      eyeZ: 10.0,
+      targetX: 0.0,
+      targetY: 0.0,
+      targetZ: 0.0,
+      fov: 45,
+      roll: 0,
+      focalDistance: 2.5,
+      focalRange: 1.0,
+      bokehRadius: 6.0,
+    },
+  },
   'camera/3d': {
     name: '3D Camera & Lens',
+    category: 'vfx',
     icon: Camera,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -244,6 +281,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'vfx/color_grading': {
     name: 'Color Grading',
+    category: 'vfx',
     icon: Palette,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -256,6 +294,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'text/style': {
     name: 'Typography & Karaoke Glow',
+    category: 'text',
     icon: Type,
     supportedTrackTypes: ['timed_text'],
     defaultParams: {
@@ -281,6 +320,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'sfx/dynamic_ducking': {
     name: 'Audio Ducking & Pan',
+    category: 'audio',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -294,6 +334,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'audio/volume': {
     name: 'Volume & Gain DSP',
+    category: 'audio',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -304,6 +345,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'audio/pan': {
     name: 'Stereo Panner DSP',
+    category: 'audio',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -313,6 +355,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'audio/filter': {
     name: 'Equalizer / Filter DSP',
+    category: 'audio',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -324,6 +367,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'audio/pitch': {
     name: 'Pitch Shift DSP',
+    category: 'audio',
     icon: Volume2,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -334,6 +378,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'sfx/procedural': {
     name: 'Procedural Audio Synthesizer',
+    category: 'audio',
     icon: Music,
     supportedTrackTypes: ['audio'],
     defaultParams: {
@@ -346,6 +391,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'editorial/split_edit': {
     name: 'L/J Cut Split Edit',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
@@ -356,6 +402,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'editorial/transition_crossfade': {
     name: 'Transition Crossfade',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
@@ -368,6 +415,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/crossfade': {
     name: 'Transition Crossfade (Dissolve)',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
@@ -380,6 +428,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/wipe': {
     name: 'Transition Wipe',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -393,6 +442,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/push': {
     name: 'Transition Push (Slide)',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -406,6 +456,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/zoom': {
     name: 'Transition Whip Zoom',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -418,6 +469,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/dip': {
     name: 'Transition Dip to Color',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -431,6 +483,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'transition/glitch': {
     name: 'Transition Glitch',
+    category: 'transitions',
     icon: Film,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -443,6 +496,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'overlay/blend_mode': {
     name: 'Blend Mode Composite',
+    category: 'vfx',
     icon: Layers,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -453,6 +507,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'vfx/partial': {
     name: 'Partial Region VFX & Lens',
+    category: 'vfx',
     icon: Sparkles,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -474,6 +529,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   'shape/draw': {
     name: 'Vector Shape & Callout',
+    category: 'text',
     icon: Layers,
     supportedTrackTypes: ['video', 'timed_text'],
     defaultParams: {
@@ -491,6 +547,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   },
   time_space: {
     name: 'Time-Space Speed Ramp',
+    category: 'motion',
     icon: Clock,
     supportedTrackTypes: ['video', 'audio'],
     defaultParams: {
@@ -517,6 +574,7 @@ export function getAvailableModifiersFromRegistry(
       result.push({
         type: plugin.type,
         name: catalogEntry.name,
+        category: catalogEntry.category || 'vfx',
         icon: catalogEntry.icon,
         supportedTrackTypes: catalogEntry.supportedTrackTypes,
         defaultParams: { ...catalogEntry.defaultParams },
@@ -538,6 +596,7 @@ export function getAvailableModifiersFromRegistry(
       result.push({
         type: plugin.type,
         name: formattedName,
+        category: 'custom',
         icon: isAudio ? Volume2 : Sparkles,
         supportedTrackTypes: defaultSupportedTrackTypes,
         defaultParams: { enabled: true },
@@ -550,6 +609,7 @@ export function getAvailableModifiersFromRegistry(
       result.push({
         type,
         name: entry.name,
+        category: entry.category || 'custom',
         icon: entry.icon,
         supportedTrackTypes: entry.supportedTrackTypes,
         defaultParams: { ...entry.defaultParams },
@@ -566,6 +626,7 @@ export const AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
   {
     type: 'overlay/hologram_hud',
     name: 'Hologram HUD',
+    category: 'vfx',
     icon: Monitor,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -579,6 +640,7 @@ export const AVAILABLE_MODIFIERS: AvailableModifierDef[] = [
   {
     type: 'overlay/canvas_particles',
     name: 'Particle VFX & Shaders',
+    category: 'vfx',
     icon: Layers,
     supportedTrackTypes: ['video'],
     defaultParams: {
@@ -618,11 +680,12 @@ export function getSectionIdForModifierType(type: string): string {
     case 'transform':
       return 'transform';
     case 'motion/gsap':
-    case 'animation/gsap':
       return 'motion_gsap';
     case 'vfx/depth_relighting':
     case 'vfx/depth3d_relighting':
+    case 'vfx/depth3d':
       return 'relighting';
+    case 'vfx/camera_3d':
     case 'camera/3d':
     case 'camera/path':
       return 'camera';
@@ -651,9 +714,6 @@ export function getSectionIdForModifierType(type: string): string {
     case 'transition/light_leak':
     case 'transition/radial_wipe':
     case 'transition/iris':
-    case 'editorial/transition_crossfade':
-    case 'editorial/transition':
-    case 'transition':
       return 'transitions';
     default:
       return `generic_${type.replace(/[^a-zA-Z0-9_]/g, '_')}`;

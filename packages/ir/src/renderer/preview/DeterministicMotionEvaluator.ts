@@ -1,3 +1,5 @@
+import { parseCubicBezier, solveCubicBezier } from './BezierMath';
+
 /**
  * Pure closed-form deterministic easing curves matching standard GSAP curves.
  * Eliminates DOM and external bundle dependencies for deterministic SSR/preview math.
@@ -87,6 +89,15 @@ export const MOTION_LIFECYCLE_PRESETS = [
 
 export function evaluateEase(ease: EasingType | string, t: number): number {
   const p = Math.max(0, Math.min(1, t));
+  if (p <= 0) return 0;
+  if (p >= 1) return 1;
+
+  if (typeof ease === 'string' && ease.startsWith('cubic-bezier(')) {
+    const coords = parseCubicBezier(ease);
+    if (coords) {
+      return solveCubicBezier(coords[0], coords[1], coords[2], coords[3], p);
+    }
+  }
 
   switch (ease) {
     case 'power1.out':

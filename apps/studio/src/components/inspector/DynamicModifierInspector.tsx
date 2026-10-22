@@ -185,6 +185,18 @@ export function inferFieldDescriptor(key: string, val: unknown): ParamFieldDescr
     };
   }
 
+  if (
+    key === 'animation' ||
+    (typeof val === 'object' && val !== null && !Array.isArray(val) && ('preset' in val || 'intro' in val || 'outro' in val))
+  ) {
+    return {
+      key,
+      label: 'Motion Lifecycle Animation',
+      type: 'motion_lifecycle',
+      defaultValue: val as any,
+    };
+  }
+
   if (typeof val === 'boolean') {
     return {
       key,

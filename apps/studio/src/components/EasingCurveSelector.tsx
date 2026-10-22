@@ -220,6 +220,13 @@ export function EasingCurveSelector({
             easingId={value}
             height={160}
             showScrubber
+            onCurveChange={(p1, p2) => {
+              const x1 = p1.x.toFixed(2);
+              const y1 = p1.y.toFixed(2);
+              const x2 = p2.x.toFixed(2);
+              const y2 = p2.y.toFixed(2);
+              onChange(`cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`);
+            }}
           />
         </div>
       )}

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { GSAP_EASING_PRESETS, type EasingPreset } from '../EasingCurveSelector';
 
+import { parseCubicBezier } from '@acc/ir';
+
 // --- Types ---
 
 /** A 2D point normalized to [0,1] range */
@@ -29,6 +31,15 @@ const EASING_TO_BEZIER: Record<string, CubicBezier> = {
 };
 
 function getDefaultBezier(easingId: string): CubicBezier {
+  if (easingId && easingId.startsWith('cubic-bezier(')) {
+    const parsed = parseCubicBezier(easingId);
+    if (parsed) {
+      return {
+        p1: { x: parsed[0], y: parsed[1] },
+        p2: { x: parsed[2], y: parsed[3] },
+      };
+    }
+  }
   return EASING_TO_BEZIER[easingId] ?? { p1: { x: 0.25, y: 0.1 }, p2: { x: 0.25, y: 1.0 } };
 }
 
