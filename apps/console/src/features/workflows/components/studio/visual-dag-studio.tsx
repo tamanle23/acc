@@ -6,85 +6,61 @@ import {
   MiniMap,
   type Node,
   type Edge,
-  type OnNodesChange,
-  type OnEdgesChange,
-  type OnConnect,
-  type Connection,
-  applyNodeChanges,
-  applyEdgeChanges,
-  addEdge,
   useReactFlow,
   ReactFlowProvider,
   SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { DagWorkflowNodeComponent, type DagNodeData, type DagNodeType, type ExecutionState } from './dag-node';
-import { DagPalette } from './dag-palette';
-import { DagPropertyInspector } from './dag-property-inspector';
-import { TaskTelemetryInspector } from './task-telemetry-inspector';
-import { TimeTravelScrubber } from './time-travel-scrubber';
-import { WorkflowExecutionFlamegraph } from './workflow-execution-flamegraph';
-import { WorkflowDryRunModal } from './workflow-dry-run-modal';
-import { WorkflowIrDialog } from './workflow-ir-dialog';
-import { DagConditionEdge, type DagConditionEdgeData } from './dag-condition-edge';
-import { DagEdgeConditionModal, type EdgeConditionModalData } from './dag-edge-condition-modal';
-import { WorkflowVariableWatchDrawer } from './workflow-variable-watch-drawer';
-import { DagQuickInsertPopover } from './dag-quick-insert-popover';
-import { DagSelectionToolbar } from './dag-selection-toolbar';
+
+// Subgroup imports
+import {
+  DagWorkflowNodeComponent,
+  type DagNodeData,
+  type DagNodeType,
+  type ExecutionState,
+} from './canvas/dag-node';
+import { DagConditionEdge, type DagConditionEdgeData } from './canvas/dag-condition-edge';
+import { DagCanvasEmptyState } from './canvas/dag-canvas-empty-state';
+import { DagQuickInsertPopover } from './canvas/dag-quick-insert-popover';
+import { DagSelectionToolbar } from './canvas/dag-selection-toolbar';
+
+import { DagHeaderCommandBar } from './toolbar/dag-header-command-bar';
+import { DagDebuggerSubpill } from './toolbar/dag-debugger-subpill';
+import { DagValidationBanner } from './toolbar/dag-validation-banner';
+
+import { DagPalette } from './palette/dag-palette';
+import { DagPropertyInspector } from './inspectors/dag-property-inspector';
+import { TaskTelemetryInspector } from './inspectors/task-telemetry-inspector';
+import { TimeTravelScrubber } from './timeline/time-travel-scrubber';
+import { WorkflowExecutionFlamegraph } from './timeline/workflow-execution-flamegraph';
+
+import { DagEdgeConditionModal, type EdgeConditionModalData } from './modals/dag-edge-condition-modal';
+import { WorkflowIrDialog } from './modals/workflow-ir-dialog';
+import { WorkflowDryRunModal } from './modals/workflow-dry-run-modal';
+import { WorkflowVariableWatchDrawer } from './modals/workflow-variable-watch-drawer';
+import { HotMigrationModal } from '@/features/workflows/components/migration/hot-migration-modal';
+
+import { useDagStudioState } from './hooks/use-dag-studio-state';
+import { useDagExecutionSync } from './hooks/use-dag-execution-sync';
 import {
   exportToWorkflowIR,
   importFromWorkflowIR,
   validateGraphTopology,
   type WorkflowIR,
-  type GraphValidationError,
-} from './workflow-ir-converter';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from './utils/workflow-ir-converter';
+import {
+  BLANK_WORKFLOW_NODES,
+  BLANK_WORKFLOW_EDGES,
+  INITIAL_NODES,
+  INITIAL_EDGES,
+} from './utils/dag-sample-data';
+
 import { cn } from '@/lib/utils';
-import {
-  Play,
-  Pause,
-  StepForward,
-  RotateCcw,
-  Activity,
-  Plus,
-  Trash2,
-  FileCode,
-  Upload,
-  CheckCircle2,
-  AlertTriangle,
-  Save,
-  Eye,
-  Lock,
-  GitCompare,
-  Undo2,
-  Redo2,
-  LayoutGrid,
-  Bug,
-  Braces,
-  BarChart2,
-  Sparkles,
-  Magnet,
-  Route,
-  Spline,
-  Maximize2,
-  Minimize2,
-  ChevronDown,
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { DagCanvasEmptyState } from './dag-canvas-empty-state';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
 } from '@/features/workflows/hooks/use-workflow-execution-stream';
 import * as workflowApi from '@/features/workflows/api/workflow-api';
-import { HotMigrationModal } from '@/features/workflows/components/hot-migration-modal';
 import {
   useSaveWorkflowDefinition,
   useWorkflowDefinition,
@@ -93,7 +69,14 @@ import {
   useResumeWorkflowExecution,
   useStepOverWorkflowExecution,
 } from '@/features/workflows/api/workflow-api';
-import { VisualJsonEditor } from '@/components/ui/json-editor';
+
+// Export sample constants for backward-compatibility
+export {
+  BLANK_WORKFLOW_NODES,
+  BLANK_WORKFLOW_EDGES,
+  INITIAL_NODES,
+  INITIAL_EDGES,
+};
 
 export interface VisualDagStudioProps {
   mode?: 'full' | 'readonly' | 'designer' | 'execution';
@@ -115,167 +98,6 @@ const edgeTypes = {
   dagEdge: DagConditionEdge,
 };
 
-export const BLANK_WORKFLOW_NODES: Node<DagNodeData>[] = [
-  {
-    id: 'node-start',
-    type: 'dagNode',
-    position: { x: 100, y: 200 },
-    data: {
-      taskReferenceName: 'workflow_start',
-      taskType: 'NOOP',
-      label: 'Workflow Start',
-      executionState: 'PENDING',
-      isPermanent: true,
-      isStartNode: true,
-      inputParameters: {},
-    },
-  },
-  {
-    id: 'node-end',
-    type: 'dagNode',
-    position: { x: 500, y: 200 },
-    data: {
-      taskReferenceName: 'workflow_end',
-      taskType: 'NOOP',
-      label: 'Workflow End',
-      executionState: 'PENDING',
-      isPermanent: true,
-      isEndNode: true,
-      inputParameters: {},
-    },
-  },
-];
-
-export const BLANK_WORKFLOW_EDGES: Edge[] = [
-  {
-    id: 'e_start_to_end',
-    type: 'dagEdge',
-    source: 'node-start',
-    target: 'node-end',
-    animated: true,
-  },
-];
-
-export const INITIAL_NODES: Node<DagNodeData>[] = [
-  {
-    id: 'node-start',
-    type: 'dagNode',
-    position: { x: 40, y: 150 },
-    data: {
-      taskReferenceName: 'workflow_start',
-      taskType: 'NOOP',
-      label: 'Workflow Start',
-      executionState: 'COMPLETED',
-      isPermanent: true,
-      isStartNode: true,
-      inputParameters: {
-        orderId: 'ORD-9821',
-        speed: 'EXPRESS',
-        postalCode: '94107',
-      },
-    },
-  },
-  {
-    id: 'node-inventory',
-    type: 'dagNode',
-    position: { x: 280, y: 150 },
-    data: {
-      taskReferenceName: 'checkInventory',
-      taskType: 'SIMPLE',
-      label: 'Check Inventory',
-      domain: 'inventory',
-      timeoutSeconds: 15,
-      retryCount: 3,
-      retryDelaySeconds: 2,
-      backoffRate: 2.0,
-      executionState: 'COMPLETED',
-      inputParameters: {
-        orderId: '${workflow.input.orderId}',
-      },
-      compensateHandlerRef: 'cancelInventoryReservation',
-    },
-  },
-  {
-    id: 'node-route',
-    type: 'dagNode',
-    position: { x: 520, y: 150 },
-    data: {
-      taskReferenceName: 'routeShipping',
-      taskType: 'SWITCH',
-      label: 'Route Shipping',
-      condition: '${workflow.input.speed}',
-      executionState: 'COMPLETED',
-      decisionCases: {
-        EXPRESS: ['expressCourier'],
-        STANDARD: ['groundPostal'],
-      },
-      defaultCase: ['groundPostal'],
-    },
-  },
-  {
-    id: 'node-courier',
-    type: 'dagNode',
-    position: { x: 760, y: 70 },
-    data: {
-      taskReferenceName: 'expressCourier',
-      taskType: 'SIMPLE',
-      label: 'Express Courier',
-      domain: 'shipping',
-      timeoutSeconds: 30,
-      retryCount: 3,
-      executionState: 'IN_PROGRESS',
-      inputParameters: {
-        trackingNumber: '${checkInventory.output.trackingNumber}',
-      },
-      compensateHandlerRef: 'cancelCourierBooking',
-    },
-  },
-  {
-    id: 'node-ground',
-    type: 'dagNode',
-    position: { x: 760, y: 230 },
-    data: {
-      taskReferenceName: 'groundPostal',
-      taskType: 'SIMPLE',
-      label: 'Ground Postal',
-      domain: 'shipping',
-      timeoutSeconds: 30,
-      retryCount: 2,
-      executionState: 'PENDING',
-      inputParameters: {
-        postalCode: '${workflow.input.postalCode}',
-      },
-    },
-  },
-  {
-    id: 'node-end',
-    type: 'dagNode',
-    position: { x: 1020, y: 150 },
-    data: {
-      taskReferenceName: 'workflow_end',
-      taskType: 'NOOP',
-      label: 'Workflow End',
-      executionState: 'PENDING',
-      isPermanent: true,
-      isEndNode: true,
-      inputParameters: {
-        orderId: '${workflow.input.orderId}',
-        trackingNumber: '${expressCourier.output.trackingNumber}',
-        status: 'FULFILLED',
-      },
-    },
-  },
-];
-
-export const INITIAL_EDGES: Edge[] = [
-  { id: 'e0', type: 'dagEdge', source: 'node-start', target: 'node-inventory', animated: true },
-  { id: 'e1', type: 'dagEdge', source: 'node-inventory', target: 'node-route', animated: true },
-  { id: 'e2', type: 'dagEdge', source: 'node-route', target: 'node-courier', label: 'EXPRESS', animated: true, data: { decisionCase: 'EXPRESS' } },
-  { id: 'e3', type: 'dagEdge', source: 'node-route', target: 'node-ground', label: 'STANDARD', data: { decisionCase: 'STANDARD', isDefaultCase: true } },
-  { id: 'e4', type: 'dagEdge', source: 'node-courier', target: 'node-end', animated: true },
-  { id: 'e5', type: 'dagEdge', source: 'node-ground', target: 'node-end' },
-];
-
 function DagStudioCanvas({
   mode = 'full',
   workflowKey,
@@ -288,65 +110,150 @@ function DagStudioCanvas({
   className,
 }: VisualDagStudioProps) {
   const isReadOnly = mode === 'readonly' || mode === 'execution';
+  const isExecutionMode = Boolean(isReadOnly && executionId);
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const headerToolbarRef = useRef<HTMLDivElement>(null);
+  const [headerToolbarHeight, setHeaderToolbarHeight] = useState<number>(44);
+  const [containerHeight, setContainerHeight] = useState<number>(650);
+  const [containerWidth, setContainerWidth] = useState<number>(1200);
+
   const { screenToFlowPosition } = useReactFlow();
 
-  const isExecutionOrLoaded = Boolean(executionId || workflowKey);
-  const defaultNodes = initialNodes || (isExecutionOrLoaded ? INITIAL_NODES : BLANK_WORKFLOW_NODES);
-  const defaultEdges = initialEdges || (isExecutionOrLoaded ? INITIAL_EDGES : BLANK_WORKFLOW_EDGES);
+  // Core DAG state management hook
+  const {
+    nodes,
+    setNodes,
+    edges,
+    setEdges,
+    undoStack,
+    redoStack,
+    pushUndoSnapshot,
+    handleUndo,
+    handleRedo,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    isValidConnection,
+    selectedNodeId,
+    setSelectedNodeId,
+    selectedNodes,
+    edgeSplitTarget,
+    setEdgeSplitTarget,
+    handleSplitEdge,
+    handleRequestSplitEdge,
+    handleAlignLeft,
+    handleAlignCenterX,
+    handleAlignTop,
+    handleAlignMiddleY,
+    handleDistributeHorizontal,
+    handleDistributeVertical,
+    handleDuplicateSelected,
+    handleBulkDelete,
+    handleAutoLayout,
+    handleValidateDag,
+    validationErrors,
+    setValidationErrors,
+    validationBannerVisible,
+    setValidationBannerVisible,
+    edgeRoutingMode,
+    setEdgeRoutingMode,
+    isSnapToGrid,
+    setIsSnapToGrid,
+    onDragOver,
+    onDrop,
+    isWorkflowBlank,
+    setIsDismissedEmptyState,
+    handleInsertStarterTask,
+    handleUpdateNodeData,
+    handleSaveEdgeCondition,
+    handleNewBlank,
+    handleResetInitial,
+    handleClearSelected,
+    handleApplyImportedJson,
+  } = useDagStudioState({
+    isReadOnly,
+    initialNodes,
+    initialEdges,
+    screenToFlowPosition,
+  });
 
-  const [nodes, setNodes] = useState<Node<DagNodeData>[]>(defaultNodes);
-  const [edges, setEdges] = useState<Edge[]>(defaultEdges);
+  // UI Drawer & Modal display states
   const [showPalette, setShowPalette] = useState(!isReadOnly);
-
-  // Iteration 17: Edge routing, Snap-to-Grid, and Quick-Insert Popover target
-  const [edgeRoutingMode, setEdgeRoutingMode] = useState<'bezier' | 'smoothstep'>('bezier');
-  const [isSnapToGrid, setIsSnapToGrid] = useState<boolean>(true);
-  const [edgeSplitTarget, setEdgeSplitTarget] = useState<{
-    edgeId: string;
-    position: { x: number; y: number };
-  } | null>(null);
-
-  // Real-time execution stream integration
-  const stream = useWorkflowExecutionStream(executionId || null);
-
-  // Time-travel history & scrubber state
-  const [timelineEvents, setTimelineEvents] = useState<WorkflowStreamEvent[]>(initialEvents || []);
-  const [currentScrubberIndex, setCurrentScrubberIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-  const [isLiveHead, setIsLiveHead] = useState(true);
-
-  // Property Inspector & Telemetry Sheet States
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
-
-  // Iteration 14: Execution View Tabs & Hover Cross-Highlighting
   const [activeViewTab, setActiveViewTab] = useState<'graph' | 'timeline'>('graph');
   const [activeHoveredTaskRef, setActiveHoveredTaskRef] = useState<string | null>(null);
-
-  // Phase 39: Visual Graph Diff & Hot Migration States
   const [isHotMigrationOpen, setIsHotMigrationOpen] = useState(false);
   const [diffTargetVersion, setDiffTargetVersion] = useState<number | null>(null);
-  const versionsQuery = workflowApi.useWorkflowVersions ? workflowApi.useWorkflowVersions(workflowKey || null) : { data: [] };
-  const workflowVersions = useMemo(() => versionsQuery?.data || [], [versionsQuery?.data]);
-
-  // IR Dialog State
-  const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [isIrDialogOpen, setIsIrDialogOpen] = useState(false);
+  const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [irDialogContent, setIrDialogContent] = useState('');
-
-  // Dry-Run Simulation Modal State
   const [isDryRunOpen, setIsDryRunOpen] = useState(false);
-
-  // Validation State
-  const [validationErrors, setValidationErrors] = useState<GraphValidationError[]>([]);
-  const [validationBannerVisible, setValidationBannerVisible] = useState(false);
-
-  // Iteration 18: Fullscreen & Empty State Dismiss
+  const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
+  const [isEdgeConditionOpen, setIsEdgeConditionOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDismissedEmptyState, setIsDismissedEmptyState] = useState(false);
+  const [isVariableWatchOpen, setIsVariableWatchOpen] = useState(false);
+  const [breakpoints, setBreakpoints] = useState<string[]>([]);
+
+  // Workflow API & Execution stream integrations
+  const stream = useWorkflowExecutionStream(executionId || null);
+  const versionsQuery = workflowApi.useWorkflowVersions
+    ? workflowApi.useWorkflowVersions(workflowKey || null)
+    : { data: [] };
+  const workflowVersions = useMemo(() => versionsQuery?.data || [], [versionsQuery?.data]);
+  const workflowDefQuery = useWorkflowDefinition(workflowKey || null);
+  const saveWorkflowMutation = useSaveWorkflowDefinition();
+  const updateBreakpointsMutation = useUpdateWorkflowBreakpoints();
+  const pauseExecutionMutation = usePauseWorkflowExecution();
+  const resumeExecutionMutation = useResumeWorkflowExecution();
+  const stepOverExecutionMutation = useStepOverWorkflowExecution();
+
+  // Execution sync & time travel hook
+  const {
+    timelineEvents,
+    currentScrubberIndex,
+    isPlaying,
+    setIsPlaying,
+    playbackSpeed,
+    setPlaybackSpeed,
+    isLiveHead,
+    handleSeek,
+    handleStepForward,
+    handleStepBackward,
+    handleResumeLive,
+  } = useDagExecutionSync({
+    isReadOnly,
+    executionId,
+    initialEvents,
+    stream,
+    setNodes,
+    diffTargetVersion,
+    workflowVersions,
+  });
+
+  // Track container dimensions via ResizeObserver
+  useEffect(() => {
+    if (!reactFlowWrapper.current) return;
+    const updateDimensions = () => {
+      if (headerToolbarRef.current) {
+        setHeaderToolbarHeight(headerToolbarRef.current.offsetHeight);
+      }
+      if (reactFlowWrapper.current) {
+        setContainerHeight(reactFlowWrapper.current.offsetHeight);
+        setContainerWidth(reactFlowWrapper.current.offsetWidth);
+      }
+    };
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
+    });
+    if (headerToolbarRef.current) resizeObserver.observe(headerToolbarRef.current);
+    if (reactFlowWrapper.current) resizeObserver.observe(reactFlowWrapper.current);
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Escape key exits fullscreen
   useEffect(() => {
@@ -360,204 +267,7 @@ function DagStudioCanvas({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen((prev) => !prev);
-  }, []);
-
-  // Seed events from snapshot or logs if timelineEvents is empty
-  useEffect(() => {
-    if (timelineEvents.length === 0 && stream.snapshot?.tasksByRef) {
-      const syntheticEvents: WorkflowStreamEvent[] = [];
-      Object.entries(stream.snapshot.tasksByRef).forEach(([ref, t], idx) => {
-        syntheticEvents.push({
-          event: `TASK_${t.status}`,
-          data: {
-            taskReferenceName: ref,
-            taskId: t.taskId,
-            taskType: t.taskType,
-            status: t.status,
-            output: t.output,
-            error: t.error,
-            timestamp: Date.now() - (10 - idx) * 1000,
-          },
-        });
-      });
-      if (syntheticEvents.length > 0) {
-        setTimelineEvents(syntheticEvents);
-        setCurrentScrubberIndex(syntheticEvents.length - 1);
-      }
-    }
-  }, [stream.snapshot, timelineEvents.length]);
-
-  // Sync live execution stream states onto canvas nodes when at live HEAD
-  useEffect(() => {
-    if (isReadOnly && isLiveHead && stream.nodeStates && Object.keys(stream.nodeStates).length > 0) {
-      setNodes((nds) => {
-        let hasChanges = false;
-        const updated = nds.map((n) => {
-          const taskRef = n.data.taskReferenceName;
-          const liveState = stream.nodeStates[taskRef];
-          if (liveState && liveState !== n.data.executionState) {
-            hasChanges = true;
-            return {
-              ...n,
-              data: {
-                ...n.data,
-                executionState: liveState,
-              },
-            };
-          }
-          return n;
-        });
-        return hasChanges ? updated : nds;
-      });
-    }
-  }, [isReadOnly, isLiveHead, stream.nodeStates]);
-
-  // Phase 39: Compute visual graph diff overlay when comparison target is selected
-  useEffect(() => {
-    if (!diffTargetVersion) {
-      setNodes((nds) => {
-        if (!nds.some((n) => n.data.diffStatus !== undefined)) return nds;
-        return nds.map((n) => (n.data.diffStatus ? { ...n, data: { ...n.data, diffStatus: undefined } } : n));
-      });
-      return;
-    }
-
-    const targetVer = workflowVersions.find((v) => v.version === diffTargetVersion);
-    if (!targetVer || !targetVer.definition) return;
-
-    const targetTasks = ((targetVer.definition as any).tasks || []) as Array<{ taskReferenceName: string; taskType: string }>;
-    const targetRefMap = new Map(targetTasks.map((t) => [t.taskReferenceName, t]));
-
-    setNodes((nds) => {
-      const currentRefMap = new Map(nds.map((n) => [n.data.taskReferenceName, n]));
-
-      // 1. Tag existing nodes (modified or removed)
-      const updatedNodes = nds.map((n) => {
-        const targetTask = targetRefMap.get(n.data.taskReferenceName);
-        let diffStatus: 'added' | 'removed' | 'modified' | undefined = undefined;
-        if (!targetTask) {
-          diffStatus = 'removed';
-        } else if (targetTask.taskType !== n.data.taskType) {
-          diffStatus = 'modified';
-        }
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            diffStatus,
-          },
-        };
-      });
-
-      // 2. Add placeholder nodes for tasks added in target definition
-      const addedTasks = targetTasks.filter((t) => !currentRefMap.has(t.taskReferenceName));
-      const newlyAddedNodes: Node<DagNodeData>[] = addedTasks.map((t, idx) => ({
-        id: `node-diff-added-${t.taskReferenceName}`,
-        type: 'dagNode',
-        position: { x: 300 + idx * 220, y: 320 },
-        data: {
-          taskReferenceName: t.taskReferenceName,
-          taskType: (t.taskType as any) || 'SIMPLE',
-          label: `${t.taskReferenceName} (v${diffTargetVersion})`,
-          diffStatus: 'added',
-          executionState: 'PENDING',
-        },
-      }));
-
-      return [...updatedNodes, ...newlyAddedNodes];
-    });
-  }, [diffTargetVersion, workflowVersions]);
-
-  // Apply node states based on timeline scrubber position
-  const applyEventsUpToIndex = useCallback(
-    (targetIndex: number) => {
-      const activeEvents = timelineEvents.slice(0, targetIndex + 1);
-      const stateMap: Record<
-        string,
-        {
-          state: ExecutionState;
-          output?: any;
-          error?: string;
-          durationMs?: number;
-          attemptNumber?: number;
-        }
-      > = {};
-
-      for (const ev of activeEvents) {
-        const ref = ev.data?.taskReferenceName;
-        if (ref) {
-          let state: ExecutionState = 'PENDING';
-          const status = ev.data.status;
-          if (status === 'IN_PROGRESS' || status === 'RUNNING') state = 'IN_PROGRESS';
-          else if (status === 'COMPLETED') state = 'COMPLETED';
-          else if (status === 'FAILED') state = 'FAILED';
-          else if (status === 'TIMED_OUT') state = 'TIMED_OUT';
-          else if (status === 'WAITING_FOR_APPROVAL') state = 'WAITING_FOR_APPROVAL';
-
-          stateMap[ref] = {
-            state,
-            output: ev.data.output as any,
-            error: ev.data.error,
-            durationMs: (ev.data.durationMs as number) || undefined,
-            attemptNumber: (ev.data.attemptNumber as number) || 1,
-          };
-        }
-      }
-
-      setNodes((nds) =>
-        nds.map((n) => {
-          const taskRef = n.data.taskReferenceName;
-          const computed = stateMap[taskRef];
-          if (computed) {
-            return {
-              ...n,
-              data: {
-                ...n.data,
-                executionState: computed.state,
-                outputParameters: computed.output ?? n.data.outputParameters,
-                error: computed.error ?? n.data.error,
-                durationMs: computed.durationMs ?? n.data.durationMs,
-                attemptNumber: computed.attemptNumber ?? n.data.attemptNumber,
-              },
-            };
-          }
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              executionState: 'PENDING',
-            },
-          };
-        })
-      );
-    },
-    [timelineEvents]
-  );
-
-  // Playback timer for time-travel scrubber
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentScrubberIndex((prev) => {
-        if (prev >= timelineEvents.length - 1) {
-          setIsPlaying(false);
-          return prev;
-        }
-        const next = prev + 1;
-        applyEventsUpToIndex(next);
-        return next;
-      });
-    }, 1000 / playbackSpeed);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, playbackSpeed, timelineEvents.length, applyEventsUpToIndex]);
-
-  // Load existing workflow definition if workflowKey is provided
-  const workflowDefQuery = useWorkflowDefinition(workflowKey || null);
-  const saveWorkflowMutation = useSaveWorkflowDefinition();
-
+  // Load existing workflow definition from backend catalog
   useEffect(() => {
     if (workflowDefQuery.data) {
       try {
@@ -570,75 +280,9 @@ function DagStudioCanvas({
         console.warn('Failed to parse imported workflow definition:', e);
       }
     }
-  }, [workflowDefQuery.data]);
+  }, [workflowDefQuery.data, setNodes, setEdges]);
 
-  const availableTaskRefs = useMemo(
-    () => nodes.map((n) => n.data.taskReferenceName),
-    [nodes]
-  );
-
-  const selectedNode = useMemo(
-    () => nodes.find((n) => n.id === selectedNodeId) || null,
-    [nodes, selectedNodeId]
-  );
-
-  // Edge Condition Modal State (Iteration 15)
-  const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
-  const [isEdgeConditionOpen, setIsEdgeConditionOpen] = useState(false);
-
-  const onNodesChange: OnNodesChange<Node<DagNodeData>> = useCallback(
-    (changes) => {
-      if (isReadOnly) return;
-      setNodes((nds) => applyNodeChanges(changes, nds));
-    },
-    [isReadOnly]
-  );
-
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => {
-      if (isReadOnly) return;
-      setEdges((eds) => applyEdgeChanges(changes, eds));
-    },
-    [isReadOnly]
-  );
-
-  const isValidConnection = useCallback(
-    (connection: Connection | Edge) => {
-      if (connection.source === connection.target) return false;
-      const targetNode = nodes.find((n) => n.id === connection.target);
-      const sourceNode = nodes.find((n) => n.id === connection.source);
-      // START node cannot have incoming edges (in-degree is strictly 0)
-      if (targetNode?.data?.isStartNode) return false;
-      // END node cannot have outgoing edges (out-degree is strictly 0)
-      if (sourceNode?.data?.isEndNode) return false;
-      return true;
-    },
-    [nodes]
-  );
-
-  const onConnect: OnConnect = useCallback(
-    (params) => {
-      if (isReadOnly) return;
-      const targetNode = nodes.find((n) => n.id === params.target);
-      const sourceNode = nodes.find((n) => n.id === params.source);
-      if (targetNode?.data?.isStartNode || sourceNode?.data?.isEndNode || params.source === params.target) {
-        return;
-      }
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            type: 'dagEdge',
-            animated: true,
-            data: {},
-          },
-          eds
-        )
-      );
-    },
-    [isReadOnly, nodes]
-  );
-
+  // Edge condition modal opening
   const handleOpenEdgeEditor = useCallback(
     (edgeId: string) => {
       if (isReadOnly) return;
@@ -662,520 +306,6 @@ function DagStudioCanvas({
     [edges, nodes, isReadOnly]
   );
 
-  const handleSaveEdgeCondition = useCallback(
-    (
-      edgeId: string,
-      updates: {
-        label?: string;
-        condition?: string;
-        decisionCase?: string;
-        isDefaultCase?: boolean;
-      }
-    ) => {
-      if (isReadOnly) return;
-      setEdges((eds) =>
-        eds.map((e) => {
-          if (e.id === edgeId) {
-            return {
-              ...e,
-              label: updates.label || updates.decisionCase || (updates.isDefaultCase ? 'DEFAULT' : updates.condition),
-              data: {
-                ...((e.data as object) || {}),
-                condition: updates.condition,
-                decisionCase: updates.decisionCase,
-                isDefaultCase: updates.isDefaultCase,
-              },
-            };
-          }
-          return e;
-        })
-      );
-
-      // If source is a SWITCH node, sync decisionCases and defaultCase
-      const targetEdge = edges.find((e) => e.id === edgeId);
-      if (targetEdge) {
-        const sourceNode = nodes.find((n) => n.id === targetEdge.source);
-        const targetNode = nodes.find((n) => n.id === targetEdge.target);
-        if (sourceNode?.data.taskType === 'SWITCH' && targetNode) {
-          const targetRef = targetNode.data.taskReferenceName;
-          const currentCases = { ...(sourceNode.data.decisionCases || {}) };
-          let currentDefaults = [...(sourceNode.data.defaultCase || [])];
-
-          if (updates.isDefaultCase) {
-            if (!currentDefaults.includes(targetRef)) {
-              currentDefaults.push(targetRef);
-            }
-          } else if (updates.decisionCase) {
-            currentCases[updates.decisionCase] = [targetRef];
-          }
-
-          setNodes((nds) =>
-            nds.map((n) =>
-              n.id === sourceNode.id
-                ? {
-                    ...n,
-                    data: {
-                      ...n.data,
-                      decisionCases: currentCases,
-                      defaultCase: currentDefaults,
-                    },
-                  }
-                : n
-            )
-          );
-        }
-      }
-    },
-    [isReadOnly, edges, nodes]
-  );
-
-  const onEdgeClick = useCallback(
-    (_: React.MouseEvent, edge: Edge) => {
-      handleOpenEdgeEditor(edge.id);
-    },
-    [handleOpenEdgeEditor]
-  );
-
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
-      if (isReadOnly) {
-        setIsTelemetryOpen(true);
-      } else {
-        setIsInspectorOpen(true);
-      }
-    },
-    [isReadOnly]
-  );
-
-  const handleUpdateNodeData = useCallback(
-    (nodeId: string, updatedData: Partial<DagNodeData>) => {
-      if (isReadOnly) return;
-      setNodes((nds) =>
-        nds.map((n) => {
-          if (n.id === nodeId) {
-            return {
-              ...n,
-              data: {
-                ...n.data,
-                ...updatedData,
-              },
-            };
-          }
-          return n;
-        })
-      );
-    },
-    [isReadOnly]
-  );
-
-  const onDragOver = useCallback(
-    (event: React.DragEvent) => {
-      if (isReadOnly) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-    },
-    [isReadOnly]
-  );
-
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      if (isReadOnly) return;
-      event.preventDefault();
-
-      const type = event.dataTransfer.getData('application/dag-node-type') as DagNodeType;
-      const rawData = event.dataTransfer.getData('application/dag-node-data');
-
-      if (!type || !rawData) return;
-
-      const parsedData = JSON.parse(rawData);
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-
-      const uniqueSuffix = Date.now().toString().slice(-4);
-      const taskRef = `${type.toLowerCase()}_task_${uniqueSuffix}`;
-      const newNodeId = `node-${taskRef}`;
-
-      const newNode: Node<DagNodeData> = {
-        id: newNodeId,
-        type: 'dagNode',
-        position,
-        data: {
-          taskReferenceName: taskRef,
-          taskType: type,
-          executionState: 'PENDING',
-          domain: 'default',
-          timeoutSeconds: 30,
-          retryCount: 3,
-          retryDelaySeconds: 2,
-          backoffRate: 2.0,
-          inputParameters: {},
-          ...parsedData,
-        },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
-    },
-    [isReadOnly, screenToFlowPosition]
-  );
-
-  const handleValidateDag = useCallback(() => {
-    const errors = validateGraphTopology(nodes, edges);
-    setValidationErrors(errors);
-    setValidationBannerVisible(true);
-
-    const errorMap = new Map<string, string>();
-    for (const err of errors) {
-      if (err.nodeId) {
-        errorMap.set(err.nodeId, err.message);
-      }
-    }
-
-    setNodes((nds) =>
-      nds.map((n) => ({
-        ...n,
-        data: {
-          ...n.data,
-          validationError: errorMap.get(n.id) || undefined,
-        },
-      }))
-    );
-  }, [nodes, edges]);
-
-  // Phase 5 & 7: Undo/Redo history, Auto-Layout, Breakpoints & Debugger Controls
-  const [undoStack, setUndoStack] = useState<Array<{ nodes: Node<DagNodeData>[]; edges: Edge[] }>>([]);
-  const [redoStack, setRedoStack] = useState<Array<{ nodes: Node<DagNodeData>[]; edges: Edge[] }>>([]);
-  const [breakpoints, setBreakpoints] = useState<string[]>([]);
-  const [isVariableWatchOpen, setIsVariableWatchOpen] = useState<boolean>(false);
-
-  const updateBreakpointsMutation = useUpdateWorkflowBreakpoints();
-  const pauseExecutionMutation = usePauseWorkflowExecution();
-  const resumeExecutionMutation = useResumeWorkflowExecution();
-  const stepOverExecutionMutation = useStepOverWorkflowExecution();
-
-  const pushUndoSnapshot = useCallback(() => {
-    setUndoStack((prev) => [...prev.slice(-24), { nodes, edges }]);
-    setRedoStack([]);
-  }, [nodes, edges]);
-
-  const handleUndo = useCallback(() => {
-    if (undoStack.length === 0) return;
-    const previous = undoStack[undoStack.length - 1];
-    setRedoStack((r) => [...r, { nodes, edges }]);
-    setUndoStack((u) => u.slice(0, -1));
-    setNodes(previous.nodes);
-    setEdges(previous.edges);
-  }, [undoStack, nodes, edges]);
-
-  const handleRedo = useCallback(() => {
-    if (redoStack.length === 0) return;
-    const next = redoStack[redoStack.length - 1];
-    setUndoStack((u) => [...u, { nodes, edges }]);
-    setRedoStack((r) => r.slice(0, -1));
-    setNodes(next.nodes);
-    setEdges(next.edges);
-  }, [redoStack, nodes, edges]);
-
-  const handleSplitEdge = useCallback(
-    (edgeId: string, newNodeType: DagNodeType = 'SIMPLE', customData?: Partial<DagNodeData>) => {
-      if (isReadOnly) return;
-      const targetEdge = edges.find((e) => e.id === edgeId);
-      if (!targetEdge) return;
-
-      pushUndoSnapshot();
-
-      const sourceNode = nodes.find((n) => n.id === targetEdge.source);
-      const targetNode = nodes.find((n) => n.id === targetEdge.target);
-
-      const sourcePos = sourceNode?.position || { x: 100, y: 200 };
-      const targetPos = targetNode?.position || { x: 500, y: 200 };
-
-      const newX = Math.round((sourcePos.x + targetPos.x) / 2);
-      const newY = Math.round((sourcePos.y + targetPos.y) / 2);
-
-      const uniqueSuffix = Date.now().toString().slice(-4);
-      const taskRef = `${newNodeType.toLowerCase()}_task_${uniqueSuffix}`;
-      const newNodeId = `node-${taskRef}`;
-
-      const newNode: Node<DagNodeData> = {
-        id: newNodeId,
-        type: 'dagNode',
-        position: { x: newX, y: newY },
-        data: {
-          taskReferenceName: taskRef,
-          taskType: newNodeType,
-          label: customData?.label || `${newNodeType} Task`,
-          executionState: 'PENDING',
-          domain: 'default',
-          timeoutSeconds: 30,
-          retryCount: 3,
-          retryDelaySeconds: 2,
-          backoffRate: 2.0,
-          inputParameters: {},
-          ...customData,
-        },
-      };
-
-      const edgeIn: Edge = {
-        id: `e_${targetEdge.source}_to_${newNodeId}`,
-        type: 'dagEdge',
-        source: targetEdge.source,
-        target: newNodeId,
-        animated: true,
-        label: targetEdge.label,
-        data: targetEdge.data ? { ...targetEdge.data } : {},
-      };
-
-      const edgeOut: Edge = {
-        id: `e_${newNodeId}_to_${targetEdge.target}`,
-        type: 'dagEdge',
-        source: newNodeId,
-        target: targetEdge.target,
-        animated: true,
-      };
-
-      setNodes((nds) => [...nds, newNode]);
-      setEdges((eds) => [...eds.filter((e) => e.id !== edgeId), edgeIn, edgeOut]);
-      setSelectedNodeId(newNodeId);
-    },
-    [isReadOnly, edges, nodes, pushUndoSnapshot]
-  );
-
-  const handleRequestSplitEdge = useCallback(
-    (edgeId: string, position?: { x: number; y: number }) => {
-      if (isReadOnly) return;
-      setEdgeSplitTarget({
-        edgeId,
-        position: position || { x: window.innerWidth / 2, y: window.innerHeight / 2 },
-      });
-    },
-    [isReadOnly]
-  );
-
-  // Iteration 17: Multi-Node Selection & Alignment Handlers
-  const selectedNodes = useMemo(() => nodes.filter((n) => n.selected), [nodes]);
-
-  const handleAlignLeft = useCallback(() => {
-    if (selectedNodes.length < 2) return;
-    pushUndoSnapshot();
-    const minX = Math.min(...selectedNodes.map((n) => n.position.x));
-    setNodes((nds) =>
-      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, x: minX } } : n))
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleAlignCenterX = useCallback(() => {
-    if (selectedNodes.length < 2) return;
-    pushUndoSnapshot();
-    const avgX = Math.round(
-      selectedNodes.reduce((acc, n) => acc + n.position.x, 0) / selectedNodes.length
-    );
-    setNodes((nds) =>
-      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, x: avgX } } : n))
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleAlignTop = useCallback(() => {
-    if (selectedNodes.length < 2) return;
-    pushUndoSnapshot();
-    const minY = Math.min(...selectedNodes.map((n) => n.position.y));
-    setNodes((nds) =>
-      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, y: minY } } : n))
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleAlignMiddleY = useCallback(() => {
-    if (selectedNodes.length < 2) return;
-    pushUndoSnapshot();
-    const avgY = Math.round(
-      selectedNodes.reduce((acc, n) => acc + n.position.y, 0) / selectedNodes.length
-    );
-    setNodes((nds) =>
-      nds.map((n) => (n.selected ? { ...n, position: { ...n.position, y: avgY } } : n))
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleDistributeHorizontal = useCallback(() => {
-    if (selectedNodes.length < 3) return;
-    pushUndoSnapshot();
-    const sorted = [...selectedNodes].sort((a, b) => a.position.x - b.position.x);
-    const minX = sorted[0].position.x;
-    const maxX = sorted[sorted.length - 1].position.x;
-    const step = (maxX - minX) / (sorted.length - 1);
-    const posMap = new Map<string, number>();
-    sorted.forEach((n, idx) => {
-      posMap.set(n.id, Math.round(minX + idx * step));
-    });
-    setNodes((nds) =>
-      nds.map((n) =>
-        posMap.has(n.id) ? { ...n, position: { ...n.position, x: posMap.get(n.id)! } } : n
-      )
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleDistributeVertical = useCallback(() => {
-    if (selectedNodes.length < 3) return;
-    pushUndoSnapshot();
-    const sorted = [...selectedNodes].sort((a, b) => a.position.y - b.position.y);
-    const minY = sorted[0].position.y;
-    const maxY = sorted[sorted.length - 1].position.y;
-    const step = (maxY - minY) / (sorted.length - 1);
-    const posMap = new Map<string, number>();
-    sorted.forEach((n, idx) => {
-      posMap.set(n.id, Math.round(minY + idx * step));
-    });
-    setNodes((nds) =>
-      nds.map((n) =>
-        posMap.has(n.id) ? { ...n, position: { ...n.position, y: posMap.get(n.id)! } } : n
-      )
-    );
-  }, [selectedNodes, pushUndoSnapshot]);
-
-  const handleDuplicateSelected = useCallback(() => {
-    if (isReadOnly || selectedNodes.length === 0) return;
-    pushUndoSnapshot();
-    const clonableNodes = selectedNodes.filter((n) => !n.data.isPermanent);
-    if (clonableNodes.length === 0) return;
-
-    const newNodes: Node<DagNodeData>[] = clonableNodes.map((n) => {
-      const uniqueSuffix = Date.now().toString().slice(-4) + Math.random().toString(36).slice(2, 5);
-      const newRef = `${n.data.taskReferenceName}_copy_${uniqueSuffix}`;
-      const newId = `node-${newRef}`;
-
-      return {
-        ...n,
-        id: newId,
-        selected: true,
-        position: {
-          x: n.position.x + 40,
-          y: n.position.y + 40,
-        },
-        data: {
-          ...n.data,
-          taskReferenceName: newRef,
-          label: `${n.data.label || n.data.taskType} (Copy)`,
-          isStartNode: false,
-          isEndNode: false,
-          isPermanent: false,
-        },
-      };
-    });
-
-    setNodes((nds) =>
-      nds.map((n) => (n.selected ? { ...n, selected: false } : n)).concat(newNodes)
-    );
-  }, [isReadOnly, selectedNodes, pushUndoSnapshot]);
-
-  const handleBulkDelete = useCallback(() => {
-    if (isReadOnly) return;
-    pushUndoSnapshot();
-    const deletedNodeIds = new Set(
-      nodes.filter((n) => n.selected && !n.data.isPermanent).map((n) => n.id)
-    );
-    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
-    setEdges((eds) =>
-      eds.filter((e) => !e.selected && !deletedNodeIds.has(e.source) && !deletedNodeIds.has(e.target))
-    );
-  }, [isReadOnly, nodes, pushUndoSnapshot]);
-
-  // Keyboard shortcuts Cmd+Z / Cmd+Y / Cmd+D / Delete
-  useEffect(() => {
-    if (isReadOnly) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
-      if (isInput) return;
-
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      } else if (
-        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') ||
-        ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z')
-      ) {
-        e.preventDefault();
-        handleRedo();
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        handleDuplicateSelected();
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedNodes.length > 0) {
-          e.preventDefault();
-          handleBulkDelete();
-        }
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isReadOnly, handleUndo, handleRedo, handleDuplicateSelected, handleBulkDelete, selectedNodes.length]);
-
-  // Topological Auto-Layout (LR or TB)
-  const handleAutoLayout = useCallback(
-    (direction: 'LR' | 'TB' = 'LR') => {
-      pushUndoSnapshot();
-      const inDegree = new Map<string, number>();
-      const adj = new Map<string, string[]>();
-      nodes.forEach((n) => {
-        inDegree.set(n.id, 0);
-        adj.set(n.id, []);
-      });
-      edges.forEach((e) => {
-        if (adj.has(e.source) && inDegree.has(e.target)) {
-          adj.get(e.source)!.push(e.target);
-          inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
-        }
-      });
-
-      const layerMap = new Map<string, number>();
-      const queue: string[] = [];
-      inDegree.forEach((deg, id) => {
-        if (deg === 0) {
-          queue.push(id);
-          layerMap.set(id, 0);
-        }
-      });
-
-      while (queue.length > 0) {
-        const curr = queue.shift()!;
-        const currLayer = layerMap.get(curr) || 0;
-        for (const nxt of adj.get(curr) || []) {
-          layerMap.set(nxt, Math.max(layerMap.get(nxt) || 0, currLayer + 1));
-          inDegree.set(nxt, (inDegree.get(nxt) || 1) - 1);
-          if (inDegree.get(nxt) === 0) {
-            queue.push(nxt);
-          }
-        }
-      }
-
-      const layers = new Map<number, string[]>();
-      nodes.forEach((n) => {
-        const l = layerMap.get(n.id) ?? 0;
-        if (!layers.has(l)) layers.set(l, []);
-        layers.get(l)!.push(n.id);
-      });
-
-      setNodes((nds) =>
-        nds.map((n) => {
-          const l = layerMap.get(n.id) ?? 0;
-          const siblings = layers.get(l) || [n.id];
-          const idx = siblings.indexOf(n.id);
-          const position =
-            direction === 'LR'
-              ? { x: 60 + l * 280, y: 100 + idx * 150 }
-              : { x: 120 + idx * 250, y: 70 + l * 160 };
-          return { ...n, position };
-        })
-      );
-    },
-    [nodes, edges, pushUndoSnapshot]
-  );
-
   // Toggle node breakpoint
   const handleToggleBreakpoint = useCallback(
     (taskReferenceName: string) => {
@@ -1191,190 +321,7 @@ function DagStudioCanvas({
     [executionId, updateBreakpointsMutation]
   );
 
-  // Decorate nodes with boundary badges, permanent status, and breakpoint handler
-  const isExecutionMode = Boolean(isReadOnly && executionId);
-  const decoratedNodes = useMemo(() => {
-    const inDegree = new Map<string, number>();
-    const outDegree = new Map<string, number>();
-    nodes.forEach((n) => {
-      inDegree.set(n.id, 0);
-      outDegree.set(n.id, 0);
-    });
-    edges.forEach((e) => {
-      if (inDegree.has(e.target)) inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
-      if (outDegree.has(e.source)) outDegree.set(e.source, (outDegree.get(e.source) || 0) + 1);
-    });
-
-    return nodes.map((n) => {
-      const degIn = inDegree.get(n.id) ?? 0;
-      const degOut = outDegree.get(n.id) ?? 0;
-      return {
-        ...n,
-        data: {
-          ...n.data,
-          isStartNode: degIn === 0,
-          isEndNode: degOut === 0,
-          hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
-          onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
-        },
-      };
-    });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, isExecutionMode]);
-
-  // Traversed Path & Dead Branch Contrast Highlighting + Condition Edge edit triggers
-  const decoratedEdges = useMemo(() => {
-    if (!isExecutionMode) {
-      return edges.map((e) => {
-        const baseEdgeData = (e.data as object) || {};
-        return {
-          ...e,
-          type: 'dagEdge',
-          data: {
-            ...baseEdgeData,
-            routingMode: edgeRoutingMode,
-            onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
-            onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
-          },
-        };
-      });
-    }
-
-    const nodeMap = new Map<string, Node<DagNodeData>>();
-    nodes.forEach((n) => nodeMap.set(n.id, n));
-
-    return edges.map((e) => {
-      const baseEdgeData = (e.data as object) || {};
-      const withHandler = {
-        ...baseEdgeData,
-        routingMode: edgeRoutingMode,
-        onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
-        onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
-      };
-
-      const sourceNode = nodeMap.get(e.source);
-      const targetNode = nodeMap.get(e.target);
-
-      const sourceState = sourceNode?.data?.executionState;
-      const targetState = targetNode?.data?.executionState;
-
-      const isSourceCompleted = sourceState === 'COMPLETED';
-      const isTargetActiveOrDone =
-        targetState === 'COMPLETED' ||
-        targetState === 'IN_PROGRESS' ||
-        targetState === 'PAUSED_AT_BREAKPOINT';
-
-      const isTraversed = isSourceCompleted && isTargetActiveOrDone;
-
-      // Dead branch if upstream node finished, but this downstream branch was bypassed/skipped (remains PENDING)
-      const isBypassedBranch =
-        isSourceCompleted && targetState === 'PENDING' && !isTargetActiveOrDone;
-
-      let edgeStyle: React.CSSProperties = { ...e.style };
-      let className = e.className || '';
-
-      if (isTraversed) {
-        edgeStyle = {
-          ...edgeStyle,
-          stroke: '#10b981', // Emerald glow
-          strokeWidth: 3,
-          filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))',
-        };
-        className = cn(className, 'stroke-emerald-500 animate-pulse');
-      } else if (isBypassedBranch) {
-        edgeStyle = {
-          ...edgeStyle,
-          stroke: '#94a3b8',
-          strokeWidth: 1.5,
-          strokeDasharray: '4 4',
-          opacity: 0.35,
-        };
-        className = cn(className, 'opacity-35');
-      }
-
-      return {
-        ...e,
-        type: 'dagEdge',
-        data: withHandler,
-        animated: isTraversed ? true : e.animated,
-        style: edgeStyle,
-        className,
-      };
-    });
-  }, [edges, nodes, isExecutionMode, isReadOnly, edgeRoutingMode, handleOpenEdgeEditor, handleRequestSplitEdge]);
-
-  // Compute aggregated Variable Watch state from workflow snapshot or current node states
-  const variableWatchSnapshot = useMemo(() => {
-    const taskOutputs: Record<string, unknown> = {};
-    nodes.forEach((n) => {
-      if (n.data.outputParameters && Object.keys(n.data.outputParameters).length > 0) {
-        taskOutputs[n.data.taskReferenceName] = n.data.outputParameters;
-      }
-    });
-    return {
-      workflowStatus: stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
-      breakpoints,
-      workflowVariables: (stream.snapshot as any)?.variables || {
-        orderId: 'ORD-2026-991',
-        tier: 'EXPRESS',
-      },
-      taskOutputs,
-    };
-  }, [nodes, stream.workflowStatus, stream.snapshot, breakpoints]);
-
-  const handleExportJson = useCallback(() => {
-    const ir = exportToWorkflowIR(nodes, edges);
-    setIrDialogContent(JSON.stringify(ir, null, 2));
-    setIrDialogMode('export');
-    setIsIrDialogOpen(true);
-  }, [nodes, edges]);
-
-  const handleOpenImportDialog = useCallback(() => {
-    setIrDialogContent('');
-    setIrDialogMode('import');
-    setIsIrDialogOpen(true);
-  }, []);
-
-  const handleApplyImportedJson = useCallback((importedIr: WorkflowIR) => {
-    try {
-      const { nodes: newNodes, edges: newEdges } = importFromWorkflowIR(importedIr);
-      setNodes(newNodes);
-      setEdges(newEdges);
-      setValidationErrors([]);
-      setValidationBannerVisible(false);
-    } catch (e: any) {
-      alert(`Import error: ${e.message}`);
-    }
-  }, []);
-
-  const handleSimulationSuccess = useCallback((simResult: any) => {
-    if (!simResult) return;
-    const tasksByRef = simResult.tasksByRef || {};
-    setNodes((nds) =>
-      nds.map((n) => {
-        const ref = n.data.taskReferenceName;
-        const taskSim = tasksByRef[ref];
-        if (taskSim) {
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              executionState: taskSim.status || 'COMPLETED',
-              outputParameters: taskSim.output || n.data.outputParameters,
-              durationMs: taskSim.durationMs ?? 15,
-            },
-          };
-        }
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            executionState: 'PENDING',
-          },
-        };
-      })
-    );
-  }, []);
-
+  // Debugger Execution Controls
   const handleDebuggerPause = () => {
     if (executionId) {
       pauseExecutionMutation.mutate(executionId);
@@ -1430,137 +377,187 @@ function DagStudioCanvas({
     );
   };
 
-  const handleReset = () => {
-    setNodes(INITIAL_NODES);
-    setEdges(INITIAL_EDGES);
-    setSelectedNodeId(null);
-    setIsInspectorOpen(false);
-    setIsTelemetryOpen(false);
-    setValidationErrors([]);
-    setValidationBannerVisible(false);
-    setIsLiveHead(true);
-  };
+  const handleExportJson = useCallback(() => {
+    const ir = exportToWorkflowIR(nodes, edges);
+    setIrDialogContent(JSON.stringify(ir, null, 2));
+    setIrDialogMode('export');
+    setIsIrDialogOpen(true);
+  }, [nodes, edges]);
 
-  const handleClearSelected = () => {
-    if (isReadOnly) return;
-    pushUndoSnapshot();
-    // Do not allow deleting permanent boundary nodes (Start/End)
-    setNodes((nds) => nds.filter((n) => !n.selected || n.data.isPermanent));
-    setEdges((eds) => eds.filter((e) => !e.selected));
-  };
+  const handleOpenImportDialog = useCallback(() => {
+    setIrDialogContent('');
+    setIrDialogMode('import');
+    setIsIrDialogOpen(true);
+  }, []);
 
-  // Time-travel handler callbacks
-  const handleSeek = (index: number) => {
-    setIsLiveHead(false);
-    setIsPlaying(false);
-    setCurrentScrubberIndex(index);
-    applyEventsUpToIndex(index);
-  };
-
-  const handleStepForward = () => {
-    if (currentScrubberIndex < timelineEvents.length - 1) {
-      handleSeek(currentScrubberIndex + 1);
-    }
-  };
-
-  const handleStepBackward = () => {
-    if (currentScrubberIndex > 0) {
-      handleSeek(currentScrubberIndex - 1);
-    }
-  };
-
-  const handleResumeLive = () => {
-    setIsLiveHead(true);
-    setIsPlaying(false);
-    if (timelineEvents.length > 0) {
-      const lastIdx = timelineEvents.length - 1;
-      setCurrentScrubberIndex(lastIdx);
-      applyEventsUpToIndex(lastIdx);
-    }
-  };
-
-  // Iteration 18: Blank Workflow Detection & Starter Insertion
-  const isWorkflowBlank = useMemo(() => {
-    if (isReadOnly || isDismissedEmptyState) return false;
-    // Exactly 2 nodes that are START and END
-    return (
-      nodes.length === 2 &&
-      nodes.every((n) => n.data.isStartNode || n.data.isEndNode || n.data.isPermanent)
-    );
-  }, [isReadOnly, isDismissedEmptyState, nodes]);
-
-  const handleInsertStarterTask = useCallback(
-    (taskType: DagNodeType, customData?: Partial<DagNodeData>) => {
-      // Find edge connecting start to end if exists
-      const directEdge = edges.find(
-        (e) =>
-          nodes.find((n) => n.id === e.source)?.data.isStartNode &&
-          nodes.find((n) => n.id === e.target)?.data.isEndNode
-      ) || edges[0];
-
-      if (directEdge) {
-        handleSplitEdge(directEdge.id, taskType, customData);
-      } else {
-        // Fallback: insert node at center (x: 300, y: 200)
-        pushUndoSnapshot();
-        const uniqueSuffix = Date.now().toString().slice(-4);
-        const taskRef = `${taskType.toLowerCase()}_task_${uniqueSuffix}`;
-        const newNodeId = `node-${taskRef}`;
-        const newNode: Node<DagNodeData> = {
-          id: newNodeId,
-          type: 'dagNode',
-          position: { x: 300, y: 200 },
-          data: {
-            taskReferenceName: taskRef,
-            taskType,
-            label: customData?.label || `${taskType} Task`,
-            executionState: 'PENDING',
-            domain: 'default',
-            timeoutSeconds: 30,
-            retryCount: 3,
-            retryDelaySeconds: 2,
-            backoffRate: 2.0,
-            inputParameters: {},
-            ...customData,
-          },
-        };
-        setNodes((nds) => [...nds, newNode]);
-        setSelectedNodeId(newNodeId);
-      }
-      setIsDismissedEmptyState(true);
+  const handleSimulationSuccess = useCallback(
+    (simResult: any) => {
+      if (!simResult) return;
+      const tasksByRef = simResult.tasksByRef || {};
+      setNodes((nds) =>
+        nds.map((n) => {
+          const ref = n.data.taskReferenceName;
+          const taskSim = tasksByRef[ref];
+          if (taskSim) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                executionState: taskSim.status || 'COMPLETED',
+                outputParameters: taskSim.output || n.data.outputParameters,
+                durationMs: taskSim.durationMs ?? 15,
+              },
+            };
+          }
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              executionState: 'PENDING',
+            },
+          };
+        })
+      );
     },
-    [edges, nodes, handleSplitEdge, pushUndoSnapshot]
+    [setNodes]
   );
 
-  // Snapping and responsive height calculation for DagPalette:
-  // Pallet DagPalette always snaps directly beneath the Studio Header Toolbar (top: 16px + headerHeight + 8px)
-  // and dynamically bounds its maxHeight so it never covers React Flow bottom controls/panel (react-flow__panel).
-  const headerToolbarRef = useRef<HTMLDivElement>(null);
-  const [headerToolbarHeight, setHeaderToolbarHeight] = useState<number>(44);
-  const [containerHeight, setContainerHeight] = useState<number>(650);
-  const [containerWidth, setContainerWidth] = useState<number>(1200);
+  const availableTaskRefs = useMemo(
+    () => nodes.map((n) => n.data.taskReferenceName),
+    [nodes]
+  );
 
-  useEffect(() => {
-    if (!reactFlowWrapper.current) return;
-    const updateDimensions = () => {
-      if (headerToolbarRef.current) {
-        setHeaderToolbarHeight(headerToolbarRef.current.offsetHeight);
-      }
-      if (reactFlowWrapper.current) {
-        setContainerHeight(reactFlowWrapper.current.offsetHeight);
-        setContainerWidth(reactFlowWrapper.current.offsetWidth);
-      }
-    };
-    updateDimensions();
+  const selectedNode = useMemo(
+    () => nodes.find((n) => n.id === selectedNodeId) || null,
+    [nodes, selectedNodeId]
+  );
 
-    const resizeObserver = new ResizeObserver(() => {
-      updateDimensions();
+  // Decorate nodes with in/out degree flags and breakpoint bindings
+  const decoratedNodes = useMemo(() => {
+    const inDegree = new Map<string, number>();
+    const outDegree = new Map<string, number>();
+    nodes.forEach((n) => {
+      inDegree.set(n.id, 0);
+      outDegree.set(n.id, 0);
     });
-    if (headerToolbarRef.current) resizeObserver.observe(headerToolbarRef.current);
-    if (reactFlowWrapper.current) resizeObserver.observe(reactFlowWrapper.current);
+    edges.forEach((e) => {
+      if (inDegree.has(e.target)) inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+      if (outDegree.has(e.source)) outDegree.set(e.source, (outDegree.get(e.source) || 0) + 1);
+    });
 
-    return () => resizeObserver.disconnect();
-  }, []);
+    return nodes.map((n) => {
+      const degIn = inDegree.get(n.id) ?? 0;
+      const degOut = outDegree.get(n.id) ?? 0;
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          isStartNode: degIn === 0,
+          isEndNode: degOut === 0,
+          hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
+          onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
+        },
+      };
+    });
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, isExecutionMode]);
+
+  // Decorate edges with styling, routing, traversed emerald pulse, and dead branch dimming
+  const decoratedEdges = useMemo(() => {
+    if (!isExecutionMode) {
+      return edges.map((e) => {
+        const baseEdgeData = (e.data as object) || {};
+        return {
+          ...e,
+          type: 'dagEdge',
+          data: {
+            ...baseEdgeData,
+            routingMode: edgeRoutingMode,
+            onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+            onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
+          },
+        };
+      });
+    }
+
+    const nodeMap = new Map<string, Node<DagNodeData>>();
+    nodes.forEach((n) => nodeMap.set(n.id, n));
+
+    return edges.map((e) => {
+      const baseEdgeData = (e.data as object) || {};
+      const withHandler = {
+        ...baseEdgeData,
+        routingMode: edgeRoutingMode,
+        onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+        onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
+      };
+
+      const sourceNode = nodeMap.get(e.source);
+      const targetNode = nodeMap.get(e.target);
+      const sourceState = sourceNode?.data?.executionState;
+      const targetState = targetNode?.data?.executionState;
+
+      const isSourceCompleted = sourceState === 'COMPLETED';
+      const isTargetActiveOrDone =
+        targetState === 'COMPLETED' ||
+        targetState === 'IN_PROGRESS' ||
+        targetState === 'PAUSED_AT_BREAKPOINT';
+
+      const isTraversed = isSourceCompleted && isTargetActiveOrDone;
+      const isBypassedBranch =
+        isSourceCompleted && targetState === 'PENDING' && !isTargetActiveOrDone;
+
+      let edgeStyle: React.CSSProperties = { ...e.style };
+      let className = e.className || '';
+
+      if (isTraversed) {
+        edgeStyle = {
+          ...edgeStyle,
+          stroke: '#10b981',
+          strokeWidth: 3,
+          filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))',
+        };
+        className = cn(className, 'stroke-emerald-500 animate-pulse');
+      } else if (isBypassedBranch) {
+        edgeStyle = {
+          ...edgeStyle,
+          stroke: '#94a3b8',
+          strokeWidth: 1.5,
+          strokeDasharray: '4 4',
+          opacity: 0.35,
+        };
+        className = cn(className, 'opacity-35');
+      }
+
+      return {
+        ...e,
+        type: 'dagEdge',
+        data: withHandler,
+        animated: isTraversed ? true : e.animated,
+        style: edgeStyle,
+        className,
+      };
+    });
+  }, [edges, nodes, isExecutionMode, isReadOnly, edgeRoutingMode, handleOpenEdgeEditor, handleRequestSplitEdge]);
+
+  // Aggregated Variable Watch state
+  const variableWatchSnapshot = useMemo(() => {
+    const taskOutputs: Record<string, unknown> = {};
+    nodes.forEach((n) => {
+      if (n.data.outputParameters && Object.keys(n.data.outputParameters).length > 0) {
+        taskOutputs[n.data.taskReferenceName] = n.data.outputParameters;
+      }
+    });
+    return {
+      workflowStatus:
+        stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
+      breakpoints,
+      workflowVariables: (stream.snapshot as any)?.variables || {
+        orderId: 'ORD-2026-991',
+        tier: 'EXPRESS',
+      },
+      taskOutputs,
+    };
+  }, [nodes, stream.workflowStatus, stream.snapshot, breakpoints]);
 
   return (
     <div
@@ -1573,611 +570,87 @@ function DagStudioCanvas({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {/* Header Command Bar: Unified responsive top dock with 3 clusters */}
-      <div
-        ref={headerToolbarRef}
-        data-testid="dag-header-command-bar"
-        className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none transition-all duration-200"
-      >
-        {/* 1. Left Cluster: Identity & Context */}
-        <div
-          data-testid="dag-toolbar-left-cluster"
-          className="pointer-events-auto shrink-0 flex items-center gap-1.5 sm:gap-2 p-1.5 px-2 sm:px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all"
-        >
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <Activity className="w-4 h-4 text-primary animate-pulse shrink-0" />
-          <span className="text-xs font-bold text-foreground tracking-tight hidden sm:inline">Visual DAG Studio 2.0</span>
-          <span className="text-xs font-bold text-foreground tracking-tight sm:hidden">Studio</span>
-          {isReadOnly ? (
-            <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1 px-1.5">
-              <Lock className="w-2.5 h-2.5" />
-              <span className="hidden xs:inline">Read-Only</span>
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 px-1.5">
-              <span className="hidden sm:inline">Full Authoring</span>
-              <span className="sm:hidden">Author</span>
-            </Badge>
-          )}
-        </div>
-
-        {workflowKey && (
-          <>
-            <div className="h-3.5 w-[1px] bg-border/50 hidden xs:block" />
-            <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px] sm:max-w-[120px] hidden xs:inline" title={workflowKey}>
-              {workflowKey}
-            </span>
-          </>
-        )}
-
-        {/* Phase 39: Visual Graph Diff Version Selector */}
-        {workflowVersions.length > 0 && (
-          <>
-            <div className="h-3.5 w-[1px] bg-border/50" />
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/40 border border-border/50">
-              <GitCompare className="w-3 h-3 text-primary" />
-              <select
-                aria-label="Diff comparison version"
-                value={diffTargetVersion ?? ''}
-                onChange={(e) => setDiffTargetVersion(e.target.value ? Number(e.target.value) : null)}
-                className="text-[10px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground max-w-[70px] sm:max-w-none truncate"
-              >
-                <option value="">Diff: None</option>
-                {workflowVersions.map((v) => (
-                  <option key={v.version} value={v.version}>
-                    v{v.version} ({v.status})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
-
-        {/* Phase 39: Hot Migration Operator Modal Button */}
-        {executionId && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 text-[10px] gap-1 px-2 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 shadow-sm"
-            onClick={() => setIsHotMigrationOpen(true)}
-            title="Open Hot Migration compatibility checker & execution rewiring"
-          >
-            <GitCompare className="w-2.5 h-2.5" />
-            <span className="hidden sm:inline">Hot Migrate</span>
-          </Button>
-        )}
-      </div>
-
-      {/* 2. Center Cluster: Canvas Ergonomics */}
-      {!isReadOnly && (
-        <div
-          data-testid="dag-toolbar-center-cluster"
-          className="pointer-events-auto shrink-0 flex items-center gap-1 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-3 xl:order-2 mx-auto xl:mx-0"
-        >
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => handleAutoLayout('LR')}
-            title="Topological Auto-Layout (Left-to-Right)"
-            aria-label="Topological Auto-Layout"
-            data-testid="dag-auto-layout-btn"
-          >
-            <LayoutGrid className="w-3 h-3 text-indigo-500" />
-            <span className="hidden xl:inline">Auto-Layout</span>
-          </Button>
-
-          {/* Snap to grid toggle */}
-          <Button
-            size="sm"
-            variant={isSnapToGrid ? 'default' : 'outline'}
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => setIsSnapToGrid((prev) => !prev)}
-            title={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'} (16px grid)`}
-            aria-label={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'}`}
-            data-testid="dag-snap-grid-btn"
-          >
-            <Magnet className={cn('w-3 h-3', isSnapToGrid ? 'text-primary-foreground' : 'text-muted-foreground')} />
-            <span className="hidden sm:inline">Snap</span>
-          </Button>
-
-          {/* Edge routing toggle (Bezier vs Orthogonal SmoothStep) */}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() =>
-              setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
-            }
-            title={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
-            aria-label={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
-            data-testid="dag-edge-routing-btn"
-          >
-            {edgeRoutingMode === 'bezier' ? (
-              <>
-                <Spline className="w-3 h-3 text-sky-500" />
-                <span className="hidden sm:inline">Curves</span>
-              </>
-            ) : (
-              <>
-                <Route className="w-3 h-3 text-indigo-500" />
-                <span className="hidden sm:inline">Orthogonal</span>
-              </>
-            )}
-          </Button>
-
-          <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
-
-          {/* Undo / Redo pair */}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            onClick={handleUndo}
-            disabled={undoStack.length === 0}
-            title="Undo (Cmd+Z)"
-            aria-label="Undo"
-          >
-            <Undo2 className="w-3 h-3" />
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            onClick={handleRedo}
-            disabled={redoStack.length === 0}
-            title="Redo (Cmd+Y)"
-            aria-label="Redo"
-          >
-            <Redo2 className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
-
-      {/* Read-Only View Switcher (Center cluster in Read-Only / Execution Mode) */}
-      {isReadOnly && (
-        <div
-          data-testid="dag-toolbar-center-cluster-readonly"
-          className="pointer-events-auto shrink-0 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-3 sm:order-2 mx-auto sm:mx-0"
-        >
-          <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
-            <Button
-              size="sm"
-              variant={activeViewTab === 'graph' ? 'default' : 'ghost'}
-              className="h-6 px-2 text-[10px] gap-1"
-              onClick={() => setActiveViewTab('graph')}
-              data-testid="dag-view-graph-tab"
-            >
-              <LayoutGrid className="w-3 h-3" />
-              Graph
-            </Button>
-            <Button
-              size="sm"
-              variant={activeViewTab === 'timeline' ? 'default' : 'ghost'}
-              className="h-6 px-2 text-[10px] gap-1"
-              onClick={() => setActiveViewTab('timeline')}
-              data-testid="dag-view-timeline-tab"
-            >
-              <BarChart2 className="w-3 h-3" />
-              Timeline
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Right Cluster: Workflow Actions & CTAs */}
-      <div
-        data-testid="dag-toolbar-right-cluster"
-        className="pointer-events-auto shrink-0 flex items-center gap-1 sm:gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-2 xl:order-3"
-      >
-        {!isReadOnly && (
-          <>
-            <Button
-              size="sm"
-              variant={showPalette ? 'default' : 'outline'}
-              className="h-7 px-2 text-xs gap-1"
-              onClick={() => setShowPalette((prev) => !prev)}
-              title="Toggle Node Palette"
-              aria-label="Palette"
-            >
-              <Plus className="w-3 h-3" />
-              <span className="hidden xl:inline">Palette</span>
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs gap-1"
-              onClick={() => {
-                pushUndoSnapshot();
-                setNodes(BLANK_WORKFLOW_NODES);
-                setEdges(BLANK_WORKFLOW_EDGES);
-                setSelectedNodeId(null);
-                setIsDismissedEmptyState(false);
-              }}
-              title="Reset canvas to blank workflow (START and END only)"
-              aria-label="Blank"
-              data-testid="dag-new-blank-btn"
-            >
-              <RotateCcw className="w-3 h-3 text-muted-foreground" />
-              <span className="hidden xl:inline">Blank</span>
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs gap-1"
-              onClick={handleValidateDag}
-              title="Run Kahn & Tarjan cycle checks and binding validation"
-              aria-label="Validate DAG"
-            >
-              {validationErrors.length > 0 ? (
-                <AlertTriangle className="w-3 h-3 text-rose-500" />
-              ) : (
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              )}
-              <span className="hidden lg:inline">Validate DAG</span>
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
-              onClick={() => setIsDryRunOpen(true)}
-              title="Dry-run simulate workflow execution with mock inputs"
-              aria-label="Dry Run"
-              data-testid="dag-dry-run-btn"
-            >
-              <Sparkles className="w-3 h-3 text-amber-500" />
-              <span className="hidden lg:inline">Dry Run</span>
-            </Button>
-
-            {/* Dropdown Menu for Export / Import IR & Blank Reset */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs gap-1 px-2"
-                  title="Workflow IR and Graph options"
-                  data-testid="dag-ir-dropdown-btn"
-                >
-                  <FileCode className="w-3 h-3 text-sky-500" />
-                  <span>IR</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-xl">
-                <DropdownMenuItem
-                  onClick={handleExportJson}
-                  className="text-xs gap-2 cursor-pointer"
-                >
-                  <FileCode className="w-3.5 h-3.5 text-sky-500" />
-                  <span>Export JSON IR</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleOpenImportDialog}
-                  className="text-xs gap-2 cursor-pointer"
-                >
-                  <Upload className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Import JSON IR</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    pushUndoSnapshot();
-                    setNodes(BLANK_WORKFLOW_NODES);
-                    setEdges(BLANK_WORKFLOW_EDGES);
-                    setSelectedNodeId(null);
-                    setIsDismissedEmptyState(false);
-                  }}
-                  className="text-xs gap-2 cursor-pointer"
-                  data-testid="dag-new-blank-btn"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Reset to Blank DAG</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleReset}
-                  className="text-xs gap-2 cursor-pointer text-muted-foreground"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Initial Nodes</span>
-                </DropdownMenuItem>
-                {selectedNodes.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleClearSelected}
-                      className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Selected</span>
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* 1-Click Fullscreen Toggle */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
-              data-testid="dag-fullscreen-btn"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-3 h-3 text-muted-foreground" />
-              ) : (
-                <Maximize2 className="w-3 h-3 text-muted-foreground" />
-              )}
-            </Button>
-
-            <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
-
-            {/* Primary Save CTA */}
-            <Button
-              size="sm"
-              variant="default"
-              className="h-7 text-xs gap-1 bg-primary text-primary-foreground shadow-sm disabled:opacity-50"
-              onClick={() => {
-                const errors = validateGraphTopology(nodes, edges);
-                if (errors.length > 0) {
-                  setValidationErrors(errors);
-                  setValidationBannerVisible(true);
-                  return;
-                }
-                const ir = exportToWorkflowIR(nodes, edges);
-                saveWorkflowMutation.mutate(ir, {
-                  onSuccess: () => {
-                    if (onSaveSuccess) onSaveSuccess();
-                  },
-                });
-              }}
-              disabled={saveWorkflowMutation.isPending || validationErrors.length > 0}
-              title={
-                validationErrors.length > 0
-                  ? `Cannot save: ${validationErrors.length} DAG topology issue(s)`
-                  : 'Save workflow definition to backend catalog'
-              }
-              data-testid="dag-save-btn"
-              aria-label="Save DAG"
-            >
-              <Save className="w-3 h-3" />
-              <span>{saveWorkflowMutation.isPending ? 'Saving...' : 'Save'}</span>
-              <span className="hidden sm:inline">{!saveWorkflowMutation.isPending && ' DAG'}</span>
-            </Button>
-          </>
-        )}
-
-        {/* Read-Only Exit / Fullscreen Actions */}
-        {isReadOnly && (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
-              data-testid="dag-fullscreen-btn"
-            >
-              {isFullscreen ? (
-                <Minimize2 className="w-3 h-3 text-muted-foreground" />
-              ) : (
-                <Maximize2 className="w-3 h-3 text-muted-foreground" />
-              )}
-            </Button>
-
-            {onCloseExecution && (
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCloseExecution}>
-                Exit View
-              </Button>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-
-      {/* Contextual Floating Debugger Sub-Pill (Only active in execution inspection mode) */}
-      {isExecutionMode && (
-        <div
-          data-testid="dag-execution-debugger-subpill"
-          style={{ top: `${12 + headerToolbarHeight + 8}px` }}
-          className="absolute left-3 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 max-w-[calc(100%-1.5rem)] overflow-x-auto scrollbar-none animate-in fade-in slide-in-from-top-1"
-        >
-          <div className="flex items-center gap-1 mr-1 shrink-0">
-            <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wider hidden xs:inline">
-              Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
-            </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider xs:hidden">
-              Debug
-            </span>
-          </div>
-
-          <div className="h-3 w-[1px] bg-amber-500/30" />
-
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerPause}
-            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
-            title="Pause execution before next task"
-            data-testid="debugger-pause-btn"
-          >
-            <Pause className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-            Pause
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerStepOver}
-            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
-            title="Step Over single frontier task"
-            data-testid="debugger-step-btn"
-          >
-            <StepForward className="w-3 h-3 text-sky-500" />
-            Step Over
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDebuggerResume}
-            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
-            title="Resume workflow execution"
-            data-testid="debugger-resume-btn"
-          >
-            <Play className="w-3 h-3 text-emerald-500" />
-            Resume
-          </Button>
-
-          <div className="h-3 w-[1px] bg-amber-500/30" />
-
-          <Button
-            type="button"
-            size="sm"
-            variant={isVariableWatchOpen ? 'default' : 'ghost'}
-            onClick={() => setIsVariableWatchOpen((prev) => !prev)}
-            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20"
-            title="Toggle Live Variable Watch & State Diff Drawer"
-            data-testid="debugger-variable-watch-btn"
-          >
-            <Braces className="w-3 h-3" />
-            Watch
-          </Button>
-        </div>
-      )}
-
-      {/* Phase 7 / Iteration 15: Execution Variable Watch Drawer */}
-      {isExecutionMode && (
-        <WorkflowVariableWatchDrawer
-          open={isVariableWatchOpen}
-          onOpenChange={setIsVariableWatchOpen}
-          executionId={executionId}
-          workflowStatus={stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')}
-          pausedAtNode={stream.snapshot?.outputPayload?.pausedAtNode as string || null}
-          breakpoints={breakpoints}
-          onRemoveBreakpoint={handleToggleBreakpoint}
-          variablesSnapshot={
-            (stream.snapshot as any)?.variables ||
-            (stream.snapshot as any)?.inputPayload || {
-              orderId: 'ORD-2026-991',
-              tier: 'EXPRESS',
-            }
+      {/* 1. Floating Header Command Dock */}
+      <DagHeaderCommandBar
+        containerRef={headerToolbarRef}
+        isReadOnly={isReadOnly}
+        workflowKey={workflowKey}
+        workflowVersions={workflowVersions}
+        diffTargetVersion={diffTargetVersion}
+        onDiffVersionChange={setDiffTargetVersion}
+        isExecutionMode={isExecutionMode}
+        executionId={executionId}
+        onOpenHotMigration={() => setIsHotMigrationOpen(true)}
+        undoDisabled={undoStack.length === 0}
+        redoDisabled={redoStack.length === 0}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onAutoLayout={handleAutoLayout}
+        isSnapToGrid={isSnapToGrid}
+        onToggleSnapToGrid={() => setIsSnapToGrid((prev) => !prev)}
+        edgeRoutingMode={edgeRoutingMode}
+        onToggleEdgeRouting={() =>
+          setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
+        }
+        activeViewTab={activeViewTab}
+        onChangeViewTab={setActiveViewTab}
+        showPalette={showPalette}
+        onTogglePalette={() => setShowPalette((prev) => !prev)}
+        onNewBlank={handleNewBlank}
+        onValidateDag={handleValidateDag}
+        validationErrorsCount={validationErrors.length}
+        onDryRun={() => setIsDryRunOpen(true)}
+        onExportJson={handleExportJson}
+        onOpenImportDialog={handleOpenImportDialog}
+        onResetInitial={handleResetInitial}
+        onClearSelected={handleClearSelected}
+        hasSelectedNodes={selectedNodes.length > 0}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => setIsFullscreen((prev) => !prev)}
+        onSave={() => {
+          const errors = validateGraphTopology(nodes, edges);
+          if (errors.length > 0) {
+            setValidationErrors(errors);
+            setValidationBannerVisible(true);
+            return;
           }
-          taskOutputs={variableWatchSnapshot.taskOutputs}
-          onStepOver={handleDebuggerStepOver}
+          const ir = exportToWorkflowIR(nodes, edges);
+          saveWorkflowMutation.mutate(ir, {
+            onSuccess: () => {
+              if (onSaveSuccess) onSaveSuccess();
+            },
+          });
+        }}
+        isSaving={saveWorkflowMutation.isPending}
+        onCloseExecution={onCloseExecution}
+      />
+
+      {/* 2. Floating Debugger Sub-Pill */}
+      {isExecutionMode && (
+        <DagDebuggerSubpill
+          top={12 + headerToolbarHeight + 8}
+          breakpointsCount={breakpoints.length}
           onPause={handleDebuggerPause}
+          onStepOver={handleDebuggerStepOver}
           onResume={handleDebuggerResume}
-          isStepping={stepOverExecutionMutation.isPending}
+          isVariableWatchOpen={isVariableWatchOpen}
+          onToggleVariableWatch={() => setIsVariableWatchOpen((prev) => !prev)}
         />
       )}
 
-      {/* Iteration 15: Visual Edge Condition Modal */}
+      {/* 3. Validation Banner */}
       {!isReadOnly && (
-        <DagEdgeConditionModal
-          open={isEdgeConditionOpen}
-          onOpenChange={setIsEdgeConditionOpen}
-          edgeData={selectedEdgeData}
-          availableTaskRefs={availableTaskRefs}
-          onSaveEdgeCondition={handleSaveEdgeCondition}
+        <DagValidationBanner
+          visible={validationBannerVisible}
+          errors={validationErrors}
+          onDismiss={() => setValidationBannerVisible(false)}
         />
       )}
 
-      {/* Iteration 17: Floating Multi-Node Selection & Alignment Toolbar */}
-      {!isReadOnly && selectedNodes.length >= 2 && (
-        <DagSelectionToolbar
-          selectedNodes={selectedNodes}
-          onAlignLeft={handleAlignLeft}
-          onAlignCenterX={handleAlignCenterX}
-          onAlignTop={handleAlignTop}
-          onAlignMiddleY={handleAlignMiddleY}
-          onDistributeHorizontal={handleDistributeHorizontal}
-          onDistributeVertical={handleDistributeVertical}
-          onDuplicate={handleDuplicateSelected}
-          onBulkDelete={handleBulkDelete}
-        />
-      )}
-
-      {/* Iteration 17: Edge Quick-Insert Popover */}
-      {!isReadOnly && edgeSplitTarget && (
-        <DagQuickInsertPopover
-          position={edgeSplitTarget.position}
-          onSelectNodeType={(taskType: DagNodeType, defaultData?: Partial<DagNodeData>) => {
-            handleSplitEdge(edgeSplitTarget.edgeId, taskType, defaultData);
-            setEdgeSplitTarget(null);
-          }}
-          onSelect={(taskType: DagNodeType, label?: string, extraData?: Partial<DagNodeData>) => {
-            handleSplitEdge(edgeSplitTarget.edgeId, taskType, { label, ...extraData });
-            setEdgeSplitTarget(null);
-          }}
-          onClose={() => setEdgeSplitTarget(null)}
-        />
-      )}
-
-      {/* Validation Status Notification Banner */}
-      {!isReadOnly && validationBannerVisible && (
-        <div className="absolute top-16 right-4 z-20 max-w-sm p-3 rounded-xl backdrop-blur-xl shadow-2xl border transition-all animate-in fade-in slide-in-from-top-2">
-          {validationErrors.length === 0 ? (
-            <div className="flex items-center justify-between gap-3 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-lg">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span className="font-semibold">DAG is acyclic & all bindings valid!</span>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-5 text-[10px] px-1"
-                onClick={() => setValidationBannerVisible(false)}
-              >
-                Dismiss
-              </Button>
-            </div>
-          ) : (
-            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs space-y-1.5">
-              <div className="flex items-center justify-between font-bold">
-                <div className="flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span>{validationErrors.length} DAG Issue(s) Found</span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 text-[10px] px-1"
-                  onClick={() => setValidationBannerVisible(false)}
-                >
-                  Dismiss
-                </Button>
-              </div>
-              <ul className="list-disc list-inside text-[11px] space-y-1 max-h-32 overflow-y-auto">
-                {validationErrors.map((err, i) => (
-                  <li key={i} className="truncate">
-                    {err.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Floating Drag-and-Drop Task Palette (Full mode only) */}
+      {/* 4. Floating Drag-and-Drop Task Palette */}
       {!isReadOnly && showPalette && (() => {
-        // Snapped directly beneath header toolbar:
-        // top is 12px (top-3) + headerToolbarHeight + 8px gap
         const paletteTop = 12 + headerToolbarHeight + 8;
-        // Bottom reserve: bottom panel/controls (approx 16px bottom + 120-140px height for controls/minimap + 16px buffer = 180px)
-        // Ensure max-height stays between header toolbar and bottom react-flow__panel controls
         const computedMaxHeight = Math.max(180, containerHeight - paletteTop - 180);
-
         return (
           <div
             className="absolute left-3 z-10 transition-all duration-150 ease-out"
@@ -2193,7 +666,7 @@ function DagStudioCanvas({
         );
       })()}
 
-      {/* Iteration 18: Blank Workflow Helper Prompt */}
+      {/* 5. Blank Workflow Empty State Helper */}
       {isWorkflowBlank && (
         <DagCanvasEmptyState
           onInsertNode={handleInsertStarterTask}
@@ -2202,7 +675,7 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* Viewport: Either React Flow Canvas or Concurrency Flamegraph */}
+      {/* 6. Main Viewport: Concurrency Flamegraph or React Flow Canvas */}
       {activeViewTab === 'timeline' && isReadOnly ? (
         <div className="absolute inset-0 pt-16 p-6 overflow-y-auto">
           <WorkflowExecutionFlamegraph
@@ -2228,8 +701,17 @@ function DagStudioCanvas({
           onEdgesChange={isReadOnly ? undefined : onEdgesChange}
           onConnect={isReadOnly ? undefined : onConnect}
           isValidConnection={isValidConnection}
-          onNodeClick={onNodeClick}
-          onEdgeClick={isReadOnly ? undefined : onEdgeClick}
+          onNodeClick={(_: React.MouseEvent, node: Node) => {
+            setSelectedNodeId(node.id);
+            if (isReadOnly) {
+              setIsTelemetryOpen(true);
+            } else {
+              setIsInspectorOpen(true);
+            }
+          }}
+          onEdgeClick={(_: React.MouseEvent, edge: Edge) => {
+            handleOpenEdgeEditor(edge.id);
+          }}
           nodesDraggable={!isReadOnly}
           nodesConnectable={!isReadOnly}
           elementsSelectable={true}
@@ -2257,7 +739,38 @@ function DagStudioCanvas({
         </ReactFlow>
       )}
 
-      {/* Full Mode Property Inspector Drawer */}
+      {/* 7. Multi-Node Selection & Alignment Floating Toolbar */}
+      {!isReadOnly && selectedNodes.length >= 2 && (
+        <DagSelectionToolbar
+          selectedNodes={selectedNodes}
+          onAlignLeft={handleAlignLeft}
+          onAlignCenterX={handleAlignCenterX}
+          onAlignTop={handleAlignTop}
+          onAlignMiddleY={handleAlignMiddleY}
+          onDistributeHorizontal={handleDistributeHorizontal}
+          onDistributeVertical={handleDistributeVertical}
+          onDuplicate={handleDuplicateSelected}
+          onBulkDelete={handleBulkDelete}
+        />
+      )}
+
+      {/* 8. Quick Insert Popover */}
+      {!isReadOnly && edgeSplitTarget && (
+        <DagQuickInsertPopover
+          position={edgeSplitTarget.position}
+          onSelectNodeType={(taskType: DagNodeType, defaultData?: Partial<DagNodeData>) => {
+            handleSplitEdge(edgeSplitTarget.edgeId, taskType, defaultData);
+            setEdgeSplitTarget(null);
+          }}
+          onSelect={(taskType: DagNodeType, label?: string, extraData?: Partial<DagNodeData>) => {
+            handleSplitEdge(edgeSplitTarget.edgeId, taskType, { label, ...extraData });
+            setEdgeSplitTarget(null);
+          }}
+          onClose={() => setEdgeSplitTarget(null)}
+        />
+      )}
+
+      {/* 9. Full Mode Property Inspector Drawer */}
       {!isReadOnly && (
         <DagPropertyInspector
           nodeId={selectedNodeId}
@@ -2269,7 +782,7 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* Read-Only Mode Task Telemetry Inspector */}
+      {/* 10. Read-Only Task Telemetry Inspector Sheet */}
       {isReadOnly && (
         <TaskTelemetryInspector
           nodeId={selectedNodeId}
@@ -2298,7 +811,7 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* Read-Only Mode Time-Travel Replay & Back-Test Scrubber (Only in Graph view) */}
+      {/* 11. Time-Travel History Scrubber */}
       {isReadOnly && activeViewTab === 'graph' && (
         <TimeTravelScrubber
           events={timelineEvents}
@@ -2317,28 +830,59 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* Workflow IR Dialog (Export / Import - Full mode only) */}
+      {/* 12. Modals & Drawers */}
       {!isReadOnly && (
-        <WorkflowIrDialog
-          open={isIrDialogOpen}
-          onOpenChange={setIsIrDialogOpen}
-          mode={irDialogMode}
-          initialJson={irDialogContent}
-          onImportJson={handleApplyImportedJson}
+        <>
+          <DagEdgeConditionModal
+            open={isEdgeConditionOpen}
+            onOpenChange={setIsEdgeConditionOpen}
+            edgeData={selectedEdgeData}
+            availableTaskRefs={availableTaskRefs}
+            onSaveEdgeCondition={handleSaveEdgeCondition}
+          />
+          <WorkflowIrDialog
+            open={isIrDialogOpen}
+            onOpenChange={setIsIrDialogOpen}
+            mode={irDialogMode}
+            initialJson={irDialogContent}
+            onImportJson={handleApplyImportedJson}
+          />
+          <WorkflowDryRunModal
+            open={isDryRunOpen}
+            onOpenChange={setIsDryRunOpen}
+            workflowIR={exportToWorkflowIR(nodes, edges)}
+            onSimulationSuccess={handleSimulationSuccess}
+          />
+        </>
+      )}
+
+      {isExecutionMode && (
+        <WorkflowVariableWatchDrawer
+          open={isVariableWatchOpen}
+          onOpenChange={setIsVariableWatchOpen}
+          executionId={executionId}
+          workflowStatus={
+            stream.workflowStatus ||
+            (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')
+          }
+          pausedAtNode={(stream.snapshot?.outputPayload?.pausedAtNode as string) || null}
+          breakpoints={breakpoints}
+          onRemoveBreakpoint={handleToggleBreakpoint}
+          variablesSnapshot={
+            (stream.snapshot as any)?.variables ||
+            (stream.snapshot as any)?.inputPayload || {
+              orderId: 'ORD-2026-991',
+              tier: 'EXPRESS',
+            }
+          }
+          taskOutputs={variableWatchSnapshot.taskOutputs}
+          onStepOver={handleDebuggerStepOver}
+          onPause={handleDebuggerPause}
+          onResume={handleDebuggerResume}
+          isStepping={stepOverExecutionMutation.isPending}
         />
       )}
 
-      {/* Iteration 14: Designer Dry-Run Simulation Harness */}
-      {!isReadOnly && (
-        <WorkflowDryRunModal
-          open={isDryRunOpen}
-          onOpenChange={setIsDryRunOpen}
-          workflowIR={exportToWorkflowIR(nodes, edges)}
-          onSimulationSuccess={handleSimulationSuccess}
-        />
-      )}
-
-      {/* Phase 39: Hot Migration Operator Modal */}
       {executionId && (
         <HotMigrationModal
           isOpen={isHotMigrationOpen}
@@ -2346,9 +890,7 @@ function DagStudioCanvas({
           workflowKey={workflowKey || 'order-fulfillment-v1'}
           executionId={executionId}
           currentVersion={1}
-          onMigrationSuccess={() => {
-            setIsHotMigrationOpen(false);
-          }}
+          onMigrationSuccess={() => setIsHotMigrationOpen(false)}
         />
       )}
     </div>

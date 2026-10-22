@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
-import { PALETTE_ITEMS, CATEGORIES, type PaletteItem } from './dag-palette';
+import { PALETTE_ITEMS, CATEGORIES, type PaletteItem } from '../palette/dag-palette';
 import { type DagNodeType, type DagNodeData } from './dag-node';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';

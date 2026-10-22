@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { GitBranch, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { validateBindingExpression } from './workflow-ir-converter';
+import { validateBindingExpression } from '../utils/workflow-ir-converter';
 
 export interface EdgeConditionModalData {
   edgeId: string;

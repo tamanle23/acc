@@ -30,7 +30,7 @@ import {
   Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type DagNodeType, type DagNodeData } from './dag-node';
+import { type DagNodeType, type DagNodeData } from '../canvas/dag-node';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

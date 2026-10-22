@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { ExecutionTimeTravelScrubber } from '../execution-time-travel-scrubber';
+import { ExecutionTimeTravelScrubber } from '../execution/execution-time-travel-scrubber';
 import type { WorkflowStreamEvent } from '../../hooks/use-workflow-execution-stream';
 
 describe('ExecutionTimeTravelScrubber Component', () => {

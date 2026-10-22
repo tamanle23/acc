@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { PayloadDiffViewer } from '../payload-diff-viewer';
+import { PayloadDiffViewer } from '../execution/payload-diff-viewer';
 
 describe('PayloadDiffViewer Component', () => {
   const previousPayload = {

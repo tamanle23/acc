@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FleetMigrationModal } from '../fleet-migration-modal';
+import { FleetMigrationModal } from '../migration/fleet-migration-modal';
 import * as workflowApi from '@/features/workflows/api/workflow-api';
 
 vi.mock('@/features/workflows/api/workflow-api', () => ({

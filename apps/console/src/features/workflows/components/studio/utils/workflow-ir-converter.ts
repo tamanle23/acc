@@ -12,7 +12,7 @@ import type {
   TerminateTaskParams,
   SubWorkflowTaskParams,
   KafkaTaskParams,
-} from './dag-node';
+} from '../canvas/dag-node';
 
 export interface WorkflowTaskIR {
   taskReferenceName: string;

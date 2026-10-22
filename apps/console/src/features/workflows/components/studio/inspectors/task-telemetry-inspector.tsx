@@ -21,7 +21,7 @@ import {
   ShieldAlert,
   RotateCcw,
 } from 'lucide-react';
-import type { DagNodeData } from './dag-node';
+import type { DagNodeData } from '../canvas/dag-node';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 import { useRerunWorkflowTask } from '@/features/workflows/api/workflow-api';
 

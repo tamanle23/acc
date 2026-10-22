@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import type { DagNodeData } from './dag-node';
-import { validateBindingExpression } from './workflow-ir-converter';
+import type { DagNodeData } from '../canvas/dag-node';
+import { validateBindingExpression } from '../utils/workflow-ir-converter';
 import { cn } from '@/lib/utils';
 import {
   Plus,

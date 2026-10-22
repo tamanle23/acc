@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Play, Sparkles } from 'lucide-react';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 import { useSimulateWorkflowDefinition } from '@/features/workflows/api/workflow-api';
-import type { WorkflowIR } from './workflow-ir-converter';
+import type { WorkflowIR } from '../utils/workflow-ir-converter';
 
 interface WorkflowDryRunModalProps {
   open: boolean;

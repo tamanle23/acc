@@ -19,7 +19,7 @@ import {
   type WorkflowDefinitionSummary,
   useToggleWorkflowStatus,
   useDeleteWorkflowDefinition,
-} from '../api/workflow-api';
+} from '@/features/workflows/api/workflow-api';
 import { createWorkflowCatalogColumns } from './workflow-catalog-columns';
 import { cn } from '@/lib/utils';
 

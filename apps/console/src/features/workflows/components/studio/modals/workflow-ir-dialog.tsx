@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Code2, Copy, Download, Upload, Check, AlertCircle } from 'lucide-react';
-import type { WorkflowIR } from './workflow-ir-converter';
+import type { WorkflowIR } from '../utils/workflow-ir-converter';
 
 interface WorkflowIrDialogProps {
   open: boolean;

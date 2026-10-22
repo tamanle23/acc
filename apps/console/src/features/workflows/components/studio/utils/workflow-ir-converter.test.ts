@@ -6,7 +6,7 @@ import {
   validateGraphTopology,
   validateBindingExpression,
 } from './workflow-ir-converter';
-import type { DagNodeData } from './dag-node';
+import type { DagNodeData } from '../canvas/dag-node';
 
 describe('Workflow IR Converter & Graph Validation Engine', () => {
   it('validates parameter binding expressions correctly', () => {

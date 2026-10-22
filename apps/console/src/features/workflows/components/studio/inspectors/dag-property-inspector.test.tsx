@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DagPropertyInspector } from './dag-property-inspector';
-import type { DagNodeData } from './dag-node';
+import type { DagNodeData } from '../canvas/dag-node';
 
 function renderWithClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({

@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { HotMigrationModal } from '../hot-migration-modal';
+import { HotMigrationModal } from '../migration/hot-migration-modal';
 
 // Mock workflow API queries
 const mockDryRun = vi.fn().mockResolvedValue({

@@ -17,8 +17,8 @@ import {
   WifiOff,
   FileDiff,
 } from 'lucide-react';
-import type { WorkflowExecutionStreamState } from '../hooks/use-workflow-execution-stream';
-import type { WorkflowExecutionSnapshot } from '../api/workflow-api';
+import type { WorkflowExecutionStreamState } from '@/features/workflows/hooks/use-workflow-execution-stream';
+import type { WorkflowExecutionSnapshot } from '@/features/workflows/api/workflow-api';
 import { PayloadDiffViewer } from './payload-diff-viewer';
 
 interface ExecutionRunDrawerProps {

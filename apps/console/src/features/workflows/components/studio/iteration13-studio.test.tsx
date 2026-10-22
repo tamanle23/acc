@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DagPropertyInspector } from './dag-property-inspector';
-import { DagWorkflowNodeComponent } from './dag-node';
+import { DagPropertyInspector } from './inspectors/dag-property-inspector';
+import { DagWorkflowNodeComponent } from './canvas/dag-node';
 import { VisualDagStudio } from './visual-dag-studio';
 import { ReactFlowProvider } from '@xyflow/react';
 

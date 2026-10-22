@@ -1,8 +1,8 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { DagPalette } from './dag-palette';
-import { DagCanvasEmptyState } from './dag-canvas-empty-state';
+import { DagPalette } from './palette/dag-palette';
+import { DagCanvasEmptyState } from './canvas/dag-canvas-empty-state';
 import { VisualDagStudio, BLANK_WORKFLOW_NODES, BLANK_WORKFLOW_EDGES } from './visual-dag-studio';
 
 // Lightweight mock for @xyflow/react to avoid JSDOM layout issues

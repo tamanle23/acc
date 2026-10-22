@@ -2,11 +2,11 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { VisualDagStudio } from './visual-dag-studio';
-import { DagPalette, CATEGORIES, PALETTE_ITEMS } from './dag-palette';
-import { TimeTravelScrubber } from './time-travel-scrubber';
-import { TaskTelemetryInspector } from './task-telemetry-inspector';
-import { DagPropertyInspector } from './dag-property-inspector';
-import { DagWorkflowNodeComponent } from './dag-node';
+import { DagPalette, CATEGORIES, PALETTE_ITEMS } from './palette/dag-palette';
+import { TimeTravelScrubber } from './timeline/time-travel-scrubber';
+import { TaskTelemetryInspector } from './inspectors/task-telemetry-inspector';
+import { DagPropertyInspector } from './inspectors/dag-property-inspector';
+import { DagWorkflowNodeComponent } from './canvas/dag-node';
 import type { WorkflowStreamEvent } from '@/features/workflows/hooks/use-workflow-execution-stream';
 
 // Lightweight mock for @xyflow/react to avoid JSDOM memory/layout leaks

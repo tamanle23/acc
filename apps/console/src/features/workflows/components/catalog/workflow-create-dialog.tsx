@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useSaveWorkflowDefinition } from '../api/workflow-api';
-import type { WorkflowIR } from './studio';
+import { useSaveWorkflowDefinition } from '@/features/workflows/api/workflow-api';
+import type { WorkflowIR } from '@/features/workflows/components/studio';
 
 interface WorkflowCreateDialogProps {
   open: boolean;
