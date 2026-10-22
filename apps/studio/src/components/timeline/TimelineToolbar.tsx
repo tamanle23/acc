@@ -226,7 +226,7 @@ export function TimelineToolbar({
       </div>
 
       {/* Center: Zoom Controls & Fit */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <ZoomOut
           className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
           onClick={() => onSetZoomScale((z) => Math.max(0.1, +(z - 0.2).toFixed(2)))}
@@ -244,7 +244,18 @@ export function TimelineToolbar({
           onClick={() => onSetZoomScale((z) => Math.min(4.0, +(z + 0.2).toFixed(2)))}
         />
 
-        <Tooltip content="Zoom to Fit (Z)">
+        {/* Current Zoom Readout Badge (Clickable to reset to 1.0x / 100%) */}
+        <Tooltip content="Current Zoom Level (Click to reset to 100%)">
+          <Badge
+            variant="outline"
+            onClick={() => onSetZoomScale(1.0)}
+            className="font-mono text-[10px] px-1.5 py-0.5 border-[var(--glass-border)] text-muted-foreground hover:text-foreground hover:border-[var(--accent-primary)]/40 cursor-pointer transition-colors shadow-2xs select-none"
+          >
+            {Math.round(zoomScale * 100)}%
+          </Badge>
+        </Tooltip>
+
+        <Tooltip content="Zoom to Fit 100% (Z)">
           <Button
             variant="ghost"
             size="icon"
