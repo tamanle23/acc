@@ -1,43 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  Magnet,
-  Scissors,
-  ZoomIn,
-  ZoomOut,
-  Lock,
-  Unlock,
-  MousePointer,
-  Hand,
-  Maximize,
-  ChevronUp,
-  ChevronDown,
-  GripVertical,
-  Film,
-  ArrowRightLeft,
-  Link2,
-  Unlink,
-  Type,
-  Music,
-  Sparkles,
-  Clock,
-} from 'lucide-react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Slider } from './ui/slider';
-import { Tooltip } from './ui/tooltip';
-import { Toggle } from './ui/toggle';
-import { Separator } from './ui/separator';
+import { Film } from 'lucide-react';
 import { AudioWaveform } from './timeline/AudioWaveform';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
 import { TimelineTransitionBlock } from './timeline/TimelineTransitionBlock';
+import { TrimHandle } from './timeline/TrimHandle';
+import { DroppableTrackLane } from './timeline/DroppableTrackLane';
+import { TimelineClipItem } from './timeline/TimelineClipItem';
+import { TrackHeaderCard } from './timeline/TrackHeaderCard';
+import { TimelineToolbar } from './timeline/TimelineToolbar';
+import { TimelineOverlayHUD } from './timeline/TimelineOverlayHUD';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -49,8 +22,6 @@ import type { TimelineRenderModel, ClipLayoutEntry } from '../workers/timelineTy
 import { RationalTime } from '@acc/core-isomorphic';
 import {
   DndContext,
-  useDraggable,
-  useDroppable,
   PointerSensor,
   useSensor,
   useSensors,
@@ -65,7 +36,6 @@ import {
 import { TimelineCommandDispatcher, RazorCutCommand } from '../lib/timeline/commands/TimelineCommands';
 import type { HitTestTrack } from '../lib/timeline/interaction/TimelineHitTester';
 import type { TimelineMode } from '../lib/timeline/strategies/ITimelineRenderStrategy';
-import { LayoutGrid, Monitor } from 'lucide-react';
 
 interface TimelineProps {
   playhead: {
@@ -79,297 +49,7 @@ interface TimelineProps {
   shuttle?: UseShuttleEngineReturn;
 }
 
-interface TrimHandleProps {
-  seq: any;
-  handle: 'start' | 'end';
-}
 
-function TrimHandle({ seq, handle }: TrimHandleProps) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `trim-${handle}-${seq.id}`,
-    data: {
-      type: 'trim',
-      handle,
-      seq,
-    },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={(e) => e.stopPropagation()}
-      className={`w-2 h-full ${handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
-        } cursor-col-resize hover:bg-white/50 active:bg-[var(--accent-primary)]/60 flex items-center justify-center transition-colors z-30`}
-      title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
-    >
-      <div className="w-0.5 h-3 bg-white/60 rounded-full" />
-    </div>
-  );
-}
-
-interface TimelineClipItemProps {
-  seq: any;
-  track: any;
-  pixelsPerFrame: number;
-  isSelected: boolean;
-  activeTool: 'select' | 'razor' | 'hand';
-  getTrackBadgeStyle: (track: any) => string;
-  onClipClick: (seq: any, e: React.MouseEvent) => void;
-  activeDragState: {
-    type: 'clip' | 'trim';
-    seqId: string;
-    handle?: 'start' | 'end';
-    initialStartFrame: number;
-    initialDurationFrames: number;
-    deltaFrames: number;
-    targetTrackId?: string;
-  } | null;
-}
-
-function TimelineClipItem({
-  seq,
-  track,
-  pixelsPerFrame,
-  isSelected,
-  activeTool,
-  getTrackBadgeStyle,
-  onClipClick,
-  activeDragState,
-}: TimelineClipItemProps) {
-  const isBeingDragged = activeDragState?.seqId === seq.id;
-  const isAudio = track.type === 'audio';
-  const isTextOrOverlay = track.type === 'overlay' || track.type === 'timed_text' || seq.type === 'text' || (seq.cues && seq.cues.length > 0);
-  const isVfx = track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx') || seq.modifiers?.some((m: any) => m.type?.startsWith('vfx/'));
-
-  const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
-  let displayStartFrame = rawStart;
-  let displayDurationFrames = seq.durationFrames;
-
-  if (isBeingDragged && activeDragState) {
-    if (activeDragState.type === 'clip') {
-      displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-    } else if (activeDragState.type === 'trim') {
-      if (activeDragState.handle === 'start') {
-        displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-        displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
-      } else {
-        displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
-      }
-    }
-  }
-
-  const leftPx = displayStartFrame * pixelsPerFrame;
-  const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
-
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `clip-${seq.id}`,
-    data: {
-      type: 'clip',
-      seq,
-      trackId: track.id,
-    },
-    disabled: activeTool === 'razor',
-  });
-
-  // Extract first cue text snippet if present
-  const cueSnippet = seq.cues && seq.cues.length > 0 && seq.cues[0]?.text
-    ? String(seq.cues[0].text).trim()
-    : null;
-
-  // Derive LOD Mode based on rendered pixel width
-  // LOD 0 (< 36px): Micro icon only
-  // LOD 1 (36px - 90px): Compact (Icon + Truncated ID)
-  // LOD 2 (90px - 220px): Standard (Icon + ID + Duration + Waveform/Filmstrip)
-  // LOD 3 (> 220px): Expanded (Icon + ID + Cue Text / Asset + Full SMPTE + Modifier Badges)
-  const lod = widthPx < 36 ? 0 : widthPx < 90 ? 1 : widthPx < 220 ? 2 : 3;
-
-  // Format Duration string
-  const durationSec = (displayDurationFrames / 30).toFixed(1);
-  const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
-
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={(e) => onClipClick(seq, e)}
-      style={{
-        left: `${leftPx}px`,
-        width: `${widthPx}px`,
-      }}
-      title={`[${track.type?.toUpperCase()}] ${seq.id} (${displayDurationFrames} frames / ${durationSec}s)${cueSnippet ? `\nCue: "${cueSnippet}"` : ''}`}
-      className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${
-        activeTool === 'razor'
-          ? 'cursor-crosshair'
-          : isBeingDragged && activeDragState?.type === 'clip'
-            ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
-            : 'cursor-grab'
-      } ${
-        isSelected
-          ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20 brightness-110'
-          : 'hover:brightness-110 z-10'
-      } ${getTrackBadgeStyle(track)}`}
-    >
-      <TrimHandle seq={seq} handle="start" />
-
-      {/* Visual Transition Block Handle (Cut boundary) */}
-      {seq.modifiers &&
-        (() => {
-          const transMod = seq.modifiers.find((m: any) =>
-            m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
-          );
-          if (!transMod || transMod.params?.enabled === false) return null;
-          return (
-            <TimelineTransitionBlock
-              transitionModifier={transMod}
-              sequenceId={seq.id}
-              pixelsPerFrame={pixelsPerFrame}
-              onClick={(e) => {
-                e.stopPropagation();
-                IRStateManager.getInstance().setSelectedSequenceId(seq.id);
-                IRStateManager.getInstance().setInspectorMode('sequence');
-              }}
-            />
-          );
-        })()}
-
-      <div className="flex-1 truncate px-0.5 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
-        {/* Background Visual Artifact (Waveform or Filmstrip) */}
-        {isAudio ? (
-          <AudioWaveform
-            id={seq.assetId || seq.id}
-            durationFrames={seq.durationFrames}
-            width={widthPx}
-            height={28}
-          />
-        ) : (
-          <FilmstripThumbnail
-            assetId={seq.assetId || seq.id}
-            width={widthPx}
-            height={28}
-          />
-        )}
-
-        {/* Semantic Archetype Leading Icon */}
-        <span className="shrink-0 relative z-10 opacity-90">
-          {isAudio ? (
-            <Music className="w-3 h-3 text-emerald-400" />
-          ) : isTextOrOverlay ? (
-            <Type className="w-3 h-3 text-violet-400" />
-          ) : isVfx ? (
-            <Sparkles className="w-3 h-3 text-amber-400" />
-          ) : (
-            <Film className="w-3 h-3 text-indigo-400" />
-          )}
-        </span>
-
-        {/* Clip Title & Content Cue Snippet (LOD 1, 2, 3) */}
-        {lod >= 1 && (
-          <div className="flex items-center gap-1 min-w-0 truncate relative z-10 drop-shadow-xs">
-            <span className="text-[10px] font-mono font-semibold truncate text-white">
-              {seq.id}
-            </span>
-
-            {/* In-Line Text Cue Preview Snippet for Subtitles/Captions (LOD 2 & 3) */}
-            {lod >= 2 && cueSnippet && (
-              <span className="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1 rounded border border-violet-400/30">
-                "{cueSnippet}"
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Duration Badge (LOD 2 & 3) */}
-        {lod >= 2 && (
-          <span className="shrink-0 text-[8px] font-mono text-white/70 bg-black/40 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
-            <Clock className="w-2 h-2 text-white/60" />
-            {durationBadge}
-          </span>
-        )}
-
-        {/* Linked A/V Button */}
-        {(() => {
-          const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
-          if (!avLink) return null;
-          const isLinked = avLink.params?.enabled !== false;
-          return (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                const newEnabled = !isLinked;
-                // Update on this sequence
-                IRStateManager.getInstance().updateModifier(seq.id, 'editorial/av_link', {
-                  ...avLink.params,
-                  enabled: newEnabled,
-                });
-                // Also update on partner sequence if present
-                if (avLink.params?.linkedSequenceId) {
-                  IRStateManager.getInstance().updateModifier(avLink.params.linkedSequenceId, 'editorial/av_link', {
-                    ...avLink.params,
-                    linkedSequenceId: seq.id,
-                    linkedTrackId: track.id,
-                    enabled: newEnabled,
-                  });
-                }
-              }}
-              className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
-                isLinked
-                  ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
-                  : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
-              }`}
-              title={isLinked ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)` : 'Unlinked A/V (Click to re-link)'}
-            >
-              {isLinked ? <Link2 className="w-2.5 h-2.5" /> : <Unlink className="w-2.5 h-2.5" />}
-            </button>
-          );
-        })()}
-
-        {/* Active Modifier Count Badge (LOD 2 & 3) */}
-        {lod >= 2 && seq.modifiers && seq.modifiers.length > 0 && (
-          <span className="shrink-0 text-[8px] font-mono bg-white/20 text-white font-medium px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
-            {seq.modifiers.length} mod
-          </span>
-        )}
-      </div>
-
-      <TrimHandle seq={seq} handle="end" />
-    </div>
-  );
-}
-
-interface DroppableTrackLaneProps {
-  track: any;
-  isLocked: boolean;
-  children: React.ReactNode;
-}
-
-function DroppableTrackLane({ track, isLocked, children }: DroppableTrackLaneProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `track-${track.id}`,
-    data: {
-      type: 'track',
-      trackId: track.id,
-    },
-    disabled: isLocked,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${isLocked
-        ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'
-        : isOver
-          ? 'bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/40 ring-1 ring-[var(--accent-primary)]/30'
-          : 'bg-background/25 border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)]/40'
-        }`}
-    >
-      {children}
-    </div>
-  );
-}
 
 export function Timeline({
   playhead,
@@ -1027,206 +707,24 @@ export function Timeline({
   return (
     <footer className="h-72 glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
-      <div className="h-11 border-b border-[var(--glass-border)] px-6 flex items-center justify-between bg-[var(--glass-bg)]/40 backdrop-blur-md">
-        <div className="flex items-center gap-1.5">
-          {/* Tool Selector Bar */}
-          <Tooltip content="Selection Tool (V)">
-            <Button
-              variant={activeTool === 'select' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setActiveTool('select')}
-              className={`h-7 w-7 transition-colors ${activeTool === 'select' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <MousePointer className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Tooltip content="Razor Split Tool (C)">
-            <Button
-              variant={activeTool === 'razor' ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => {
-                setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
-              }}
-              className={`h-7 w-7 transition-colors ${activeTool === 'razor' ? 'bg-[var(--accent-primary)] text-slate-950 font-semibold shadow-[0_0_10px_var(--accent-glow)]' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Scissors className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Tooltip content="Hand Pan Tool (H)">
-            <Button
-              variant={activeTool === 'hand' ? 'secondary' : 'ghost'}
-              size="icon"
-              onClick={() => setActiveTool('hand')}
-              className={`h-7 w-7 transition-colors ${activeTool === 'hand' ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Hand className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-4 mx-1" />
-
-          {/* Transport Controls */}
-          <Tooltip content="Rewind to Start (Home)">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleScrub(0)}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Tooltip content={`Shuttle Reverse (J): ${shuttle.speed < 0 ? shuttle.speed + 'x' : '-1x'}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={shuttle.shuttleReverse}
-              className={`h-7 w-7 transition-colors ${shuttle.speed < 0 ? 'text-amber-400 bg-amber-500/15' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Tooltip content={shuttle.isPlaying ? `Pause / Stop (K / Space): ${shuttle.speed}x` : 'Play (Space / L)'}>
-            <Button
-              variant={shuttle.isPlaying ? 'secondary' : 'default'}
-              size="icon"
-              onClick={togglePlay}
-              className={`h-7 w-7 transition-transform active:scale-95 ${shuttle.isPlaying ? 'bg-secondary text-secondary-foreground' : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'}`}
-            >
-              {shuttle.isPlaying ? (
-                <Pause className="w-3.5 h-3.5 fill-current" />
-              ) : (
-                <Play className="w-3.5 h-3.5 fill-current" />
-              )}
-            </Button>
-          </Tooltip>
-
-          <Tooltip content={`Shuttle Forward (L): ${shuttle.speed > 0 ? shuttle.speed + 'x' : '1x'}`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={shuttle.shuttleForward}
-              className={`h-7 w-7 transition-colors ${shuttle.speed > 0 ? 'text-emerald-400 bg-emerald-500/15' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-4 mx-1" />
-
-          <Tooltip content="Magnetic Snapping">
-            <Toggle
-              pressed={snapEnabled}
-              onPressedChange={setSnapEnabled}
-              size="sm"
-              className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-[var(--accent-primary)]/15 data-[state=on]:text-[var(--accent-primary)] data-[state=on]:border-[var(--accent-primary)]/30 border border-transparent transition-colors"
-            >
-              <Magnet className="w-3 h-3" />
-              Snap
-            </Toggle>
-          </Tooltip>
-
-          <Tooltip content="Ripple Edit Mode: Trimming or deleting automatically shifts downstream clips on track">
-            <Toggle
-              pressed={rippleEnabled}
-              onPressedChange={setRippleEnabled}
-              size="sm"
-              className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-amber-500/20 data-[state=on]:text-amber-400 data-[state=on]:border-amber-500/40 border border-transparent transition-colors"
-            >
-              <ArrowRightLeft className="w-3 h-3" />
-              Ripple
-            </Toggle>
-          </Tooltip>
-
-          <Separator orientation="vertical" className="h-4 mx-1" />
-
-          {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
-          <div className="flex items-center rounded-md border border-border/40 p-0.5 bg-muted/20 text-xs shadow-2xs">
-            <Tooltip content="DOM Mode: Interactive HTML Elements with @dnd-kit">
-              <Button
-                variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setTimelineMode('dom')}
-                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${timelineMode === 'dom'
-                  ? 'bg-secondary text-secondary-foreground font-semibold shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-                  }`}
-              >
-                <LayoutGrid className="w-3 h-3" />
-                DOM
-              </Button>
-            </Tooltip>
-            <Tooltip content="Canvas Mode: 60fps High-Performance OffscreenCanvas & Pure Math Hit-Testing">
-              <Button
-                variant={timelineMode === 'canvas' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setTimelineMode('canvas')}
-                className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${timelineMode === 'canvas'
-                  ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40 font-semibold shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-                  }`}
-              >
-                <Monitor className="w-3 h-3" />
-                Canvas
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Center: Zoom Controls & Fit */}
-        <div className="flex items-center gap-2">
-          <ZoomOut
-            className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-            onClick={() => setZoomScale((z) => Math.max(0.4, z - 0.2))}
-          />
-          <Slider
-            min={0.4}
-            max={3.0}
-            step={0.1}
-            value={[zoomScale]}
-            onValueChange={(val) => setZoomScale(val[0])}
-            className="w-24 cursor-pointer"
-          />
-          <ZoomIn
-            className="w-3.5 h-3.5 text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
-            onClick={() => setZoomScale((z) => Math.min(3.0, z + 0.2))}
-          />
-
-          <Tooltip content="Zoom to Fit (Z)">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setZoomScale(1.0)}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            >
-              <Maximize className="w-3.5 h-3.5" />
-            </Button>
-          </Tooltip>
-        </div>
-
-        {/* Right: Master Audio VU Meter & Timecode Readout */}
-        <div className="flex items-center gap-3">
-          <MasterAudioMeter isPlaying={isPlaying} currentFrame={currentFrame} />
-
-          <div className="flex items-center gap-1.5">
-            {shuttle.speed !== 0 && (
-              <Badge variant="outline" className="font-mono text-[11px] text-amber-400 border-amber-500/30 bg-amber-500/10 font-semibold shadow-2xs">
-                {shuttle.speed}x
-              </Badge>
-            )}
-            <Badge variant="outline" className="font-mono text-[11px] border-[var(--glass-border)] text-muted-foreground bg-[var(--glass-bg)] shadow-2xs">
-              {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)} / {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
-            </Badge>
-            <Badge variant="outline" className="font-mono text-[11px] text-[var(--accent-primary)] border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 font-semibold shadow-2xs">
-              F {currentFrame} / {totalFrames}
-            </Badge>
-          </div>
-        </div>
-      </div>
+      <TimelineToolbar
+        activeTool={activeTool}
+        onSetActiveTool={setActiveTool}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        shuttle={shuttle}
+        snapEnabled={snapEnabled}
+        onSetSnapEnabled={setSnapEnabled}
+        rippleEnabled={rippleEnabled}
+        onSetRippleEnabled={setRippleEnabled}
+        timelineMode={timelineMode}
+        onSetTimelineMode={setTimelineMode}
+        zoomScale={zoomScale}
+        onSetZoomScale={setZoomScale}
+        currentFrame={currentFrame}
+        totalFrames={totalFrames}
+        fps={fps}
+      />
 
       {/* 2. Unified Scroll Container with Sticky Track Headers and Sticky Timecode Ruler */}
       <DndContext
@@ -1276,45 +774,6 @@ export function Timeline({
               <div className="w-0.5 flex-1 bg-rose-500/80" />
             </div>
 
-            {/* Magnetic Snapping Guideline (Cyan for grid/playhead, Emerald for abutting clip seams) */}
-            {activeSnapGuideline !== null && (
-              <div
-                className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
-                style={{
-                  left: `${208 + activeSnapGuideline.frame * pixelsPerFrame}px`,
-                }}
-              >
-                <div
-                  className={`w-2 h-2 rotate-45 -mt-1 ${activeSnapGuideline.isAbut
-                    ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)] ring-1 ring-emerald-300'
-                    : 'bg-accent-theme shadow-accent-glow'
-                    }`}
-                />
-                <div
-                  className={`w-[1.5px] flex-1 ${activeSnapGuideline.isAbut
-                    ? 'bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.6)]'
-                    : 'bg-accent-theme shadow-accent-glow'
-                    }`}
-                />
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded -mt-4 shadow-sm border flex items-center gap-1 backdrop-blur-md ${activeSnapGuideline.isAbut
-                    ? 'text-emerald-300 bg-emerald-950/90 border-emerald-500/60'
-                    : 'text-accent-theme bg-popover/95 border-accent-theme/40'
-                    }`}
-                >
-                  <span>{activeSnapGuideline.frame}f</span>
-                  {activeSnapGuideline.label && (
-                    <span
-                      className={`text-[8px] uppercase font-semibold ${activeSnapGuideline.isAbut ? 'text-emerald-200' : 'text-accent-theme/80'
-                        }`}
-                    >
-                      ({activeSnapGuideline.label})
-                    </span>
-                  )}
-                </span>
-              </div>
-            )}
-
             {/* OffscreenCanvas Background Track Renderer (Transferred to dedicated Timeline Web Worker) */}
             <canvas
               key={canvasKey}
@@ -1342,54 +801,14 @@ export function Timeline({
               />
             )}
 
-            {/* Razor Tool Hover Cut Indicator Guideline */}
-            {timelineMode === 'canvas' && razorHoverFrame !== null && (
-              <div
-                className="absolute top-7 bottom-0 z-35 pointer-events-none flex flex-col items-center"
-                style={{
-                  left: `${208 + razorHoverFrame * pixelsPerFrame}px`,
-                }}
-              >
-                <div className="w-1.5 h-1.5 bg-rose-400 rotate-45 -mt-1 shadow-[0_0_8px_#f43f5e]" />
-                <div className="w-[1.5px] flex-1 bg-rose-500 shadow-[0_0_6px_#f43f5e]" />
-                <span className="text-[9px] font-mono text-rose-300 bg-popover/95 px-1 py-0.5 rounded -mt-4 shadow-sm border border-rose-500/40">
-                  ✂ Cut @ {razorHoverFrame}f
-                </span>
-              </div>
-            )}
-
-            {/* Floating Timecode HUD Badge during Drag or Trim */}
-            {timelineMode === 'canvas' && timecodeHUD && (
-              <div
-                className="absolute z-40 pointer-events-none -top-1 px-2.5 py-1 rounded bg-popover/95 border border-accent-theme text-accent-theme font-mono text-[10px] shadow-xl flex items-center gap-2 backdrop-blur-md transition-transform"
-                style={{
-                  left: `${Math.max(210, 208 + timecodeHUD.frame * pixelsPerFrame - 40)}px`,
-                }}
-              >
-                <span className="font-semibold text-foreground">Frame {timecodeHUD.frame}</span>
-                <span
-                  className={
-                    timecodeHUD.deltaFrames > 0
-                      ? 'text-emerald-400 font-bold'
-                      : timecodeHUD.deltaFrames < 0
-                        ? 'text-amber-400 font-bold'
-                        : 'text-muted-foreground'
-                  }
-                >
-                  ({timecodeHUD.deltaFrames >= 0 ? `+${timecodeHUD.deltaFrames}` : timecodeHUD.deltaFrames}f)
-                </span>
-                {timecodeHUD.durationFrames !== undefined && (
-                  <span className="text-muted-foreground text-[9px] border-l border-border pl-1.5">
-                    Dur: {timecodeHUD.durationFrames}f
-                  </span>
-                )}
-                {timecodeHUD.snapLabel && (
-                  <span className="text-accent-theme text-[9px] bg-accent-theme/15 border border-accent-theme/30 px-1 rounded">
-                    {timecodeHUD.snapLabel}
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Magnetic Snapping, Razor Indicator, and Floating Timecode HUD Overlay */}
+            <TimelineOverlayHUD
+              pixelsPerFrame={pixelsPerFrame}
+              activeSnapGuideline={activeSnapGuideline}
+              timelineMode={timelineMode}
+              razorHoverFrame={razorHoverFrame}
+              timecodeHUD={timecodeHUD}
+            />
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
@@ -1440,83 +859,15 @@ export function Timeline({
                       className="h-10 flex items-center gap-2 bg-[var(--glass-bg)]"
                     >
                       {/* Sticky Track Header Card */}
-                      <div
-                        onClick={() => {
-                          IRStateManager.getInstance().setSelectedTrackId(track.id);
-                          IRStateManager.getInstance().setInspectorMode('track');
-                        }}
-                        className="sticky left-0 z-20 w-52 h-full bg-[var(--glass-bg)] rounded-md border border-[var(--glass-border)] hover:bg-muted/60 cursor-pointer transition-colors flex items-center justify-between px-2.5 shrink-0 shadow-2xs backdrop-blur-md"
-                        title={`Inspect Track ${track.type} - ${track.id}`}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 cursor-grab" />
-                          <span className="text-[11px] font-medium text-foreground truncate max-w-[85px]">
-                            {track.type} - {track.id}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          {/* Track Reorder Up/Down */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={!canMoveUp}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              IRStateManager.getInstance().reorderTrack(track.id, 'up');
-                            }}
-                            className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                            title="Move Track Up"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={!canMoveDown}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              IRStateManager.getInstance().reorderTrack(track.id, 'down');
-                            }}
-                            className="h-5 w-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30"
-                            title="Move Track Down"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleLock(track.id);
-                            }}
-                            className={`h-5 w-5 rounded transition-colors ${isLocked
-                              ? 'text-amber-400 bg-amber-500/15 hover:bg-amber-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                            title={isLocked ? 'Unlock Track' : 'Lock Track'}
-                          >
-                            {isLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleMute(track.id);
-                            }}
-                            className={`h-5 w-5 rounded transition-colors ${isMuted
-                              ? 'text-rose-400 bg-rose-500/15 hover:bg-rose-500/25 font-bold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                            title={isMuted ? 'Unmute Track' : 'Mute Track'}
-                          >
-                            {isMuted ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
-                          </Button>
-                        </div>
-                      </div>
+                      <TrackHeaderCard
+                        track={track}
+                        isLocked={isLocked}
+                        isMuted={isMuted}
+                        canMoveUp={canMoveUp}
+                        canMoveDown={canMoveDown}
+                        onToggleLock={toggleLock}
+                        onToggleMute={toggleMute}
+                      />
 
                       {/* Track Sequence Lane: Render DOM clips only in DOM mode to prevent double rendering */}
                       <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
