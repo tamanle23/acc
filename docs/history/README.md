@@ -186,6 +186,7 @@
 | [179](179_visual_dag_studio_ergonomics_hardening_and_popover_alignment.md) | 2026-10-22 | Visual DAG Studio Ergonomics Hardening & Edge Quick-Insert Callback Alignment | Resolved prop signature mismatch between VisualDagStudio and DagQuickInsertPopover, added dual onSelect/onSelectNodeType support, enabled marquee box drag selection on ReactFlow canvas, and verified full 68-test studio suite (68/68 tests green, 0 TypeScript errors). |
 | [180](180_migrate_visual_dag_studio_to_workflows_domain.md) | 2026-10-22 | Clean Migration of Visual DAG Studio to Workflows Domain | Migrated 27 Visual DAG Studio components and tests from metadata domain to apps/console/src/features/workflows/components/studio/ without re-export aliases, updated all consumers, and verified 0 errors (68/68 tests passing, 0 TypeScript errors). |
 | [181](181_dag_palette_toolbar_snapping_and_responsive_height.md) | 2026-10-22 | DagPalette Toolbar Snapping & Responsive Height Bound | Snapped DagPalette directly beneath Studio Header Toolbar with ResizeObserver height tracking and responsive maxHeight bound, preventing obscuration of bottom react-flow__panel controls (55/55 studio tests passing, 0 TypeScript errors). |
+| [182](182_visual_dag_studio_layout_uiux_overhaul.md) | 2026-10-22 | Visual DAG Studio Layout & UI/UX Overhaul | Segmented top command bar into 3 floating clusters, contextual debugger sub-pill, collapsible palette with slim rail mode, blank canvas starter prompt, and 1-click fullscreen mode (62/62 tests passing, 0 TypeScript errors). |
 
 
 

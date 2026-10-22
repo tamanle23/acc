@@ -87,7 +87,7 @@ describe('Visual DAG Studio 2.0 - Dual Modes & 23-Node Studio', () => {
       expect(screen.getByText('Full Authoring')).toBeDefined();
 
       // Palette toggle button exists
-      expect(screen.getByRole('button', { name: /Palette/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /^Palette$/i })).toBeDefined();
 
       // Validate DAG and Save DAG buttons exist
       expect(screen.getByRole('button', { name: /Validate DAG/i })).toBeDefined();

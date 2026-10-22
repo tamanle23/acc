@@ -12,4 +12,5 @@ export * from './workflow-dry-run-modal';
 export * from './workflow-ir-dialog';
 export * from './workflow-ir-converter';
 export * from './workflow-variable-watch-drawer';
+export * from './dag-canvas-empty-state';
 export * from './visual-dag-studio';

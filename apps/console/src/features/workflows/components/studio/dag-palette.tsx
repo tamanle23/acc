@@ -24,12 +24,16 @@ import {
   GripVertical,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type DagNodeType, type DagNodeData } from './dag-node';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export interface PaletteItem {
   type: DagNodeType;
@@ -379,6 +383,7 @@ export const PALETTE_ITEMS: PaletteItem[] = [
 ];
 
 export function DagPalette({ className, style }: DagPaletteProps = {}) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     control: true,
@@ -390,6 +395,26 @@ export function DagPalette({ className, style }: DagPaletteProps = {}) {
 
   const toggleCategory = (catId: string) => {
     setOpenCategories((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  const handleExpandAll = () => {
+    setOpenCategories({
+      control: true,
+      data: true,
+      connectors: true,
+      human: true,
+      ai: true,
+    });
+  };
+
+  const handleCollapseAll = () => {
+    setOpenCategories({
+      control: false,
+      data: false,
+      connectors: false,
+      human: false,
+      ai: false,
+    });
   };
 
   const filteredItems = useMemo(() => {
@@ -409,11 +434,56 @@ export function DagPalette({ className, style }: DagPaletteProps = {}) {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  if (isCollapsed) {
+    return (
+      <div
+        style={style}
+        data-testid="dag-palette-collapsed"
+        className={cn(
+          'flex flex-col items-center gap-2 p-2 w-14 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden transition-all duration-200',
+          className
+        )}
+      >
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          onClick={() => setIsCollapsed(false)}
+          title="Expand Node Palette"
+          aria-label="Expand Node Palette"
+          data-testid="dag-palette-collapse-toggle-btn"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+
+        <div className="h-[1px] w-6 bg-border/50 shrink-0 my-1" />
+
+        <div
+          data-testid="dag-palette-rail"
+          className="flex flex-col items-center gap-1.5 overflow-y-auto pr-0.5 flex-1 w-full scrollbar-none"
+        >
+          {PALETTE_ITEMS.map((item) => (
+            <div
+              key={item.type}
+              draggable
+              onDragStart={(e) => onDragStart(e, item)}
+              title={`${item.label} (${item.type}): ${item.description}`}
+              className="p-2 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none shrink-0"
+            >
+              {item.icon}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={style}
+      data-testid="dag-palette-expanded"
       className={cn(
-        'flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden',
+        'flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden transition-all duration-200',
         className
       )}
     >
@@ -425,17 +495,45 @@ export function DagPalette({ className, style }: DagPaletteProps = {}) {
             23 Types
           </Badge>
         </div>
-        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/40">Drag & Drop</Badge>
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/40">Drag & Drop</Badge>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => setIsCollapsed(true)}
+            title="Collapse to slim rail"
+            aria-label="Collapse to slim rail"
+            data-testid="dag-palette-collapse-toggle-btn"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
-      <div className="relative shrink-0">
-        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          placeholder="Filter nodes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="h-8 pl-8 text-xs bg-background/50 border-white/20 dark:border-white/10"
-        />
+      <div className="flex items-center gap-1 shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Filter nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-xs bg-background/50 border-white/20 dark:border-white/10"
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 px-1.5 text-[10px] text-muted-foreground hover:text-foreground shrink-0"
+          onClick={Object.values(openCategories).every(Boolean) ? handleCollapseAll : handleExpandAll}
+          title={Object.values(openCategories).every(Boolean) ? 'Collapse all categories' : 'Expand all categories'}
+        >
+          {Object.values(openCategories).every(Boolean) ? (
+            <ChevronsRight className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronsLeft className="w-3.5 h-3.5" />
+          )}
+        </Button>
       </div>
 
       {/* Accordion Categories */}

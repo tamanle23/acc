@@ -67,7 +67,18 @@ import {
   Magnet,
   Route,
   Spline,
+  Maximize2,
+  Minimize2,
+  ChevronDown,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { DagCanvasEmptyState } from './dag-canvas-empty-state';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -93,6 +104,7 @@ export interface VisualDagStudioProps {
   initialEdges?: Edge[];
   onCloseExecution?: () => void;
   onSaveSuccess?: () => void;
+  className?: string;
 }
 
 const nodeTypes = {
@@ -273,6 +285,7 @@ function DagStudioCanvas({
   initialEdges,
   onCloseExecution,
   onSaveSuccess,
+  className,
 }: VisualDagStudioProps) {
   const isReadOnly = mode === 'readonly' || mode === 'execution';
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -331,6 +344,26 @@ function DagStudioCanvas({
   const [validationErrors, setValidationErrors] = useState<GraphValidationError[]>([]);
   const [validationBannerVisible, setValidationBannerVisible] = useState(false);
 
+  // Iteration 18: Fullscreen & Empty State Dismiss
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDismissedEmptyState, setIsDismissedEmptyState] = useState(false);
+
+  // Escape key exits fullscreen
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((prev) => !prev);
+  }, []);
+
   // Seed events from snapshot or logs if timelineEvents is empty
   useEffect(() => {
     if (timelineEvents.length === 0 && stream.snapshot?.tasksByRef) {
@@ -358,7 +391,7 @@ function DagStudioCanvas({
 
   // Sync live execution stream states onto canvas nodes when at live HEAD
   useEffect(() => {
-    if (isReadOnly && isLiveHead && Object.keys(stream.nodeStates).length > 0) {
+    if (isReadOnly && isLiveHead && stream.nodeStates && Object.keys(stream.nodeStates).length > 0) {
       setNodes((nds) => {
         let hasChanges = false;
         const updated = nds.map((n) => {
@@ -1446,6 +1479,59 @@ function DagStudioCanvas({
     }
   };
 
+  // Iteration 18: Blank Workflow Detection & Starter Insertion
+  const isWorkflowBlank = useMemo(() => {
+    if (isReadOnly || isDismissedEmptyState) return false;
+    // Exactly 2 nodes that are START and END
+    return (
+      nodes.length === 2 &&
+      nodes.every((n) => n.data.isStartNode || n.data.isEndNode || n.data.isPermanent)
+    );
+  }, [isReadOnly, isDismissedEmptyState, nodes]);
+
+  const handleInsertStarterTask = useCallback(
+    (taskType: DagNodeType, customData?: Partial<DagNodeData>) => {
+      // Find edge connecting start to end if exists
+      const directEdge = edges.find(
+        (e) =>
+          nodes.find((n) => n.id === e.source)?.data.isStartNode &&
+          nodes.find((n) => n.id === e.target)?.data.isEndNode
+      ) || edges[0];
+
+      if (directEdge) {
+        handleSplitEdge(directEdge.id, taskType, customData);
+      } else {
+        // Fallback: insert node at center (x: 300, y: 200)
+        pushUndoSnapshot();
+        const uniqueSuffix = Date.now().toString().slice(-4);
+        const taskRef = `${taskType.toLowerCase()}_task_${uniqueSuffix}`;
+        const newNodeId = `node-${taskRef}`;
+        const newNode: Node<DagNodeData> = {
+          id: newNodeId,
+          type: 'dagNode',
+          position: { x: 300, y: 200 },
+          data: {
+            taskReferenceName: taskRef,
+            taskType,
+            label: customData?.label || `${taskType} Task`,
+            executionState: 'PENDING',
+            domain: 'default',
+            timeoutSeconds: 30,
+            retryCount: 3,
+            retryDelaySeconds: 2,
+            backoffRate: 2.0,
+            inputParameters: {},
+            ...customData,
+          },
+        };
+        setNodes((nds) => [...nds, newNode]);
+        setSelectedNodeId(newNodeId);
+      }
+      setIsDismissedEmptyState(true);
+    },
+    [edges, nodes, handleSplitEdge, pushUndoSnapshot]
+  );
+
   // Snapping and responsive height calculation for DagPalette:
   // Pallet DagPalette always snaps directly beneath the Studio Header Toolbar (top: 16px + headerHeight + 8px)
   // and dynamically bounds its maxHeight so it never covers React Flow bottom controls/panel (react-flow__panel).
@@ -1477,18 +1563,23 @@ function DagStudioCanvas({
   return (
     <div
       ref={reactFlowWrapper}
-      className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl backdrop-blur-xl bg-card/60"
+      className={cn(
+        'relative w-full rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl backdrop-blur-xl bg-card/60 transition-all duration-300',
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none w-screen h-screen border-none' : 'h-[650px]',
+        className
+      )}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {/* Studio Header Toolbar */}
+      {/* 1. Left Cluster: Identity & Context */}
       <div
         ref={headerToolbarRef}
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 p-2 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-lg flex-wrap"
+        data-testid="dag-toolbar-left-cluster"
+        className="absolute top-4 left-4 z-10 flex items-center gap-2 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
       >
-        <div className="flex items-center gap-2 mr-1">
+        <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-xs font-bold text-foreground">Visual DAG Studio 2.0</span>
+          <span className="text-xs font-bold text-foreground tracking-tight">Visual DAG Studio 2.0</span>
           {isReadOnly ? (
             <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
@@ -1501,9 +1592,173 @@ function DagStudioCanvas({
           )}
         </div>
 
-        <div className="h-4 w-[1px] bg-border/50" />
+        {workflowKey && (
+          <>
+            <div className="h-3.5 w-[1px] bg-border/50" />
+            <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[120px]" title={workflowKey}>
+              {workflowKey}
+            </span>
+          </>
+        )}
 
-        {/* Full Mode Actions */}
+        {/* Phase 39: Visual Graph Diff Version Selector */}
+        {workflowVersions.length > 0 && (
+          <>
+            <div className="h-3.5 w-[1px] bg-border/50" />
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/40 border border-border/50">
+              <GitCompare className="w-3 h-3 text-primary" />
+              <select
+                aria-label="Diff comparison version"
+                value={diffTargetVersion ?? ''}
+                onChange={(e) => setDiffTargetVersion(e.target.value ? Number(e.target.value) : null)}
+                className="text-[10px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground"
+              >
+                <option value="">Diff: None</option>
+                {workflowVersions.map((v) => (
+                  <option key={v.version} value={v.version}>
+                    v{v.version} ({v.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+
+        {/* Phase 39: Hot Migration Operator Modal Button */}
+        {executionId && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-[10px] gap-1 px-2 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 shadow-sm"
+            onClick={() => setIsHotMigrationOpen(true)}
+            title="Open Hot Migration compatibility checker & execution rewiring"
+          >
+            <GitCompare className="w-2.5 h-2.5" />
+            Hot Migrate
+          </Button>
+        )}
+      </div>
+
+      {/* 2. Center Cluster: Canvas Ergonomics */}
+      {!isReadOnly && (
+        <div
+          data-testid="dag-toolbar-center-cluster"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1"
+            onClick={() => handleAutoLayout('LR')}
+            title="Topological Auto-Layout (Left-to-Right)"
+            data-testid="dag-auto-layout-btn"
+          >
+            <LayoutGrid className="w-3 h-3 text-indigo-500" />
+            Auto-Layout
+          </Button>
+
+          {/* Snap to grid toggle */}
+          <Button
+            size="sm"
+            variant={isSnapToGrid ? 'default' : 'outline'}
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => setIsSnapToGrid((prev) => !prev)}
+            title={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'} (16px grid)`}
+            data-testid="dag-snap-grid-btn"
+          >
+            <Magnet className={cn('w-3 h-3', isSnapToGrid ? 'text-primary-foreground' : 'text-muted-foreground')} />
+            <span>Snap</span>
+          </Button>
+
+          {/* Edge routing toggle (Bezier vs Orthogonal SmoothStep) */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() =>
+              setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
+            }
+            title={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
+            data-testid="dag-edge-routing-btn"
+          >
+            {edgeRoutingMode === 'bezier' ? (
+              <>
+                <Spline className="w-3 h-3 text-sky-500" />
+                <span>Curves</span>
+              </>
+            ) : (
+              <>
+                <Route className="w-3 h-3 text-indigo-500" />
+                <span>Orthogonal</span>
+              </>
+            )}
+          </Button>
+
+          <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
+
+          {/* Undo / Redo pair */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            title="Undo (Cmd+Z)"
+            aria-label="Undo"
+          >
+            <Undo2 className="w-3 h-3" />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+            title="Redo (Cmd+Y)"
+            aria-label="Redo"
+          >
+            <Redo2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Read-Only View Switcher (Center cluster in Read-Only / Execution Mode) */}
+      {isReadOnly && (
+        <div
+          data-testid="dag-toolbar-center-cluster-readonly"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+        >
+          <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
+            <Button
+              size="sm"
+              variant={activeViewTab === 'graph' ? 'default' : 'ghost'}
+              className="h-6 px-2 text-[10px] gap-1"
+              onClick={() => setActiveViewTab('graph')}
+              data-testid="dag-view-graph-tab"
+            >
+              <LayoutGrid className="w-3 h-3" />
+              Graph
+            </Button>
+            <Button
+              size="sm"
+              variant={activeViewTab === 'timeline' ? 'default' : 'ghost'}
+              className="h-6 px-2 text-[10px] gap-1"
+              onClick={() => setActiveViewTab('timeline')}
+              data-testid="dag-view-timeline-tab"
+            >
+              <BarChart2 className="w-3 h-3" />
+              Timeline
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Right Cluster: Workflow Actions & CTAs */}
+      <div
+        data-testid="dag-toolbar-right-cluster"
+        className="absolute top-4 right-4 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+      >
         {!isReadOnly && (
           <>
             <Button
@@ -1525,85 +1780,13 @@ function DagStudioCanvas({
                 setNodes(BLANK_WORKFLOW_NODES);
                 setEdges(BLANK_WORKFLOW_EDGES);
                 setSelectedNodeId(null);
+                setIsDismissedEmptyState(false);
               }}
               title="Reset canvas to blank workflow (START and END only)"
               data-testid="dag-new-blank-btn"
             >
               <RotateCcw className="w-3 h-3 text-muted-foreground" />
               Blank
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1"
-              onClick={() => handleAutoLayout('LR')}
-              title="Topological Auto-Layout (Left-to-Right)"
-              data-testid="dag-auto-layout-btn"
-            >
-              <LayoutGrid className="w-3 h-3 text-indigo-500" />
-              Auto-Layout
-            </Button>
-
-            {/* Iteration 17: Snap to grid toggle */}
-            <Button
-              size="sm"
-              variant={isSnapToGrid ? 'default' : 'outline'}
-              className="h-7 px-2 text-xs gap-1"
-              onClick={() => setIsSnapToGrid((prev) => !prev)}
-              title={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'} (16px grid)`}
-              data-testid="dag-snap-grid-btn"
-            >
-              <Magnet className={cn('w-3 h-3', isSnapToGrid ? 'text-primary-foreground' : 'text-muted-foreground')} />
-              <span>Snap</span>
-            </Button>
-
-            {/* Iteration 17: Edge routing toggle (Bezier vs Orthogonal SmoothStep) */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs gap-1"
-              onClick={() =>
-                setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
-              }
-              title={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
-              data-testid="dag-edge-routing-btn"
-            >
-              {edgeRoutingMode === 'bezier' ? (
-                <>
-                  <Spline className="w-3 h-3 text-sky-500" />
-                  <span>Curves</span>
-                </>
-              ) : (
-                <>
-                  <Route className="w-3 h-3 text-indigo-500" />
-                  <span>Orthogonal</span>
-                </>
-              )}
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={handleUndo}
-              disabled={undoStack.length === 0}
-              title="Undo (Cmd+Z)"
-              aria-label="Undo"
-            >
-              <Undo2 className="w-3 h-3" />
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={handleRedo}
-              disabled={redoStack.length === 0}
-              title="Redo (Cmd+Y)"
-              aria-label="Redo"
-            >
-              <Redo2 className="w-3 h-3" />
             </Button>
 
             <Button
@@ -1624,28 +1807,6 @@ function DagStudioCanvas({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1"
-              onClick={handleExportJson}
-              title="Export graph to canonical workflow-ir-schema-v1.json"
-            >
-              <FileCode className="w-3 h-3 text-sky-500" />
-              Export IR
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1"
-              onClick={handleOpenImportDialog}
-              title="Import canonical JSON IR onto canvas"
-            >
-              <Upload className="w-3 h-3 text-indigo-500" />
-              Import IR
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
               className="h-7 text-xs gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
               onClick={() => setIsDryRunOpen(true)}
               title="Dry-run simulate workflow execution with mock inputs"
@@ -1655,8 +1816,92 @@ function DagStudioCanvas({
               Dry Run
             </Button>
 
-            <div className="h-4 w-[1px] bg-border/50" />
+            {/* Dropdown Menu for Export / Import IR & Blank Reset */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1 px-2"
+                  title="Workflow IR and Graph options"
+                  data-testid="dag-ir-dropdown-btn"
+                >
+                  <FileCode className="w-3 h-3 text-sky-500" />
+                  <span>IR</span>
+                  <ChevronDown className="w-3 h-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-xl">
+                <DropdownMenuItem
+                  onClick={handleExportJson}
+                  className="text-xs gap-2 cursor-pointer"
+                >
+                  <FileCode className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Export JSON IR</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleOpenImportDialog}
+                  className="text-xs gap-2 cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Import JSON IR</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    pushUndoSnapshot();
+                    setNodes(BLANK_WORKFLOW_NODES);
+                    setEdges(BLANK_WORKFLOW_EDGES);
+                    setSelectedNodeId(null);
+                    setIsDismissedEmptyState(false);
+                  }}
+                  className="text-xs gap-2 cursor-pointer"
+                  data-testid="dag-new-blank-btn"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Reset to Blank DAG</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleReset}
+                  className="text-xs gap-2 cursor-pointer text-muted-foreground"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Initial Nodes</span>
+                </DropdownMenuItem>
+                {selectedNodes.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleClearSelected}
+                      className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Selected</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
+            {/* 1-Click Fullscreen Toggle */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
+              data-testid="dag-fullscreen-btn"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-3 h-3 text-muted-foreground" />
+              ) : (
+                <Maximize2 className="w-3 h-3 text-muted-foreground" />
+              )}
+            </Button>
+
+            <div className="h-3.5 w-[1px] bg-border/50 mx-0.5" />
+
+            {/* Primary Save CTA */}
             <Button
               size="sm"
               variant="default"
@@ -1686,158 +1931,106 @@ function DagStudioCanvas({
               <Save className="w-3 h-3" />
               {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
             </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs gap-1 text-destructive hover:bg-destructive/10"
-              onClick={handleClearSelected}
-              title="Delete selected nodes/edges"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </Button>
           </>
         )}
 
-        {/* Read-Only Mode Actions & View Switcher */}
+        {/* Read-Only Exit / Fullscreen Actions */}
         {isReadOnly && (
-          <div className="flex items-center gap-2">
-            <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 text-[10px]">
-              <Eye className="w-3 h-3 mr-1" />
-              Execution & Back-Test View
-            </Badge>
-
-            {/* View Switcher: Graph vs Timeline */}
-            <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
-              <Button
-                size="sm"
-                variant={activeViewTab === 'graph' ? 'default' : 'ghost'}
-                className="h-6 px-2 text-[10px] gap-1"
-                onClick={() => setActiveViewTab('graph')}
-                data-testid="dag-view-graph-tab"
-              >
-                <LayoutGrid className="w-3 h-3" />
-                Graph
-              </Button>
-              <Button
-                size="sm"
-                variant={activeViewTab === 'timeline' ? 'default' : 'ghost'}
-                className="h-6 px-2 text-[10px] gap-1"
-                onClick={() => setActiveViewTab('timeline')}
-                data-testid="dag-view-timeline-tab"
-              >
-                <BarChart2 className="w-3 h-3" />
-                Timeline
-              </Button>
-            </div>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
+              data-testid="dag-fullscreen-btn"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-3 h-3 text-muted-foreground" />
+              ) : (
+                <Maximize2 className="w-3 h-3 text-muted-foreground" />
+              )}
+            </Button>
 
             {onCloseExecution && (
               <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCloseExecution}>
                 Exit View
               </Button>
             )}
-          </div>
+          </>
         )}
+      </div>
 
-        {/* Phase 7: Visual Debugger Control Bar (Only active in execution inspection mode) */}
-        {isExecutionMode && (
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-            <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mr-0.5" />
-            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase">
+      {/* Contextual Floating Debugger Sub-Pill (Only active in execution inspection mode) */}
+      {isExecutionMode && (
+        <div
+          data-testid="dag-execution-debugger-subpill"
+          className="absolute top-[68px] left-4 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 animate-in fade-in slide-in-from-top-1"
+        >
+          <div className="flex items-center gap-1 mr-1">
+            <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">
               Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
             </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDebuggerPause}
-              className="h-6 px-1.5 text-[10px] gap-1"
-              title="Pause execution before next task"
-              data-testid="debugger-pause-btn"
-            >
-              <Pause className="w-3 h-3 text-amber-500" />
-              Pause
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDebuggerStepOver}
-              className="h-6 px-1.5 text-[10px] gap-1"
-              title="Step Over single frontier task"
-              data-testid="debugger-step-btn"
-            >
-              <StepForward className="w-3 h-3 text-sky-500" />
-              Step Over
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDebuggerResume}
-              className="h-6 px-1.5 text-[10px] gap-1"
-              title="Resume workflow execution"
-              data-testid="debugger-resume-btn"
-            >
-              <Play className="w-3 h-3 text-emerald-500" />
-              Resume
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={isVariableWatchOpen ? 'default' : 'ghost'}
-              onClick={() => setIsVariableWatchOpen((prev) => !prev)}
-              className="h-6 px-1.5 text-[10px] gap-1"
-              title="Toggle Live Variable Watch & State Diff Drawer"
-              data-testid="debugger-variable-watch-btn"
-            >
-              <Braces className="w-3 h-3" />
-              Watch
-            </Button>
           </div>
-        )}
 
-        {/* Phase 39: Visual Graph Diff Version Selector */}
-        {workflowVersions.length > 0 && (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-muted/40 border border-border/50">
-            <GitCompare className="w-3 h-3 text-primary" />
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase">Diff:</span>
-            <select
-              aria-label="Diff comparison version"
-              value={diffTargetVersion ?? ''}
-              onChange={(e) => setDiffTargetVersion(e.target.value ? Number(e.target.value) : null)}
-              className="text-[11px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground"
-            >
-              <option value="">None (Current)</option>
-              {workflowVersions.map((v) => (
-                <option key={v.version} value={v.version}>
-                  v{v.version} ({v.status})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+          <div className="h-3 w-[1px] bg-amber-500/30" />
 
-        {/* Phase 39: Hot Migration Operator Modal Button */}
-        {executionId && (
           <Button
+            type="button"
             size="sm"
-            variant="outline"
-            className="h-7 text-xs gap-1 border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 shadow-sm"
-            onClick={() => setIsHotMigrationOpen(true)}
-            title="Open Hot Migration compatibility checker & execution rewiring"
+            variant="ghost"
+            onClick={handleDebuggerPause}
+            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
+            title="Pause execution before next task"
+            data-testid="debugger-pause-btn"
           >
-            <GitCompare className="w-3 h-3" />
-            Hot Migrate
+            <Pause className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+            Pause
           </Button>
-        )}
 
-        <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={handleReset}>
-          <RotateCcw className="w-3 h-3" />
-          Reset
-        </Button>
-      </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleDebuggerStepOver}
+            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
+            title="Step Over single frontier task"
+            data-testid="debugger-step-btn"
+          >
+            <StepForward className="w-3 h-3 text-sky-500" />
+            Step Over
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleDebuggerResume}
+            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20 text-amber-800 dark:text-amber-200"
+            title="Resume workflow execution"
+            data-testid="debugger-resume-btn"
+          >
+            <Play className="w-3 h-3 text-emerald-500" />
+            Resume
+          </Button>
+
+          <div className="h-3 w-[1px] bg-amber-500/30" />
+
+          <Button
+            type="button"
+            size="sm"
+            variant={isVariableWatchOpen ? 'default' : 'ghost'}
+            onClick={() => setIsVariableWatchOpen((prev) => !prev)}
+            className="h-6 px-1.5 text-[10px] gap-1 hover:bg-amber-500/20"
+            title="Toggle Live Variable Watch & State Diff Drawer"
+            data-testid="debugger-variable-watch-btn"
+          >
+            <Braces className="w-3 h-3" />
+            Watch
+          </Button>
+        </div>
+      )}
 
       {/* Phase 7 / Iteration 15: Execution Variable Watch Drawer */}
       {isExecutionMode && (
@@ -1974,6 +2167,15 @@ function DagStudioCanvas({
           </div>
         );
       })()}
+
+      {/* Iteration 18: Blank Workflow Helper Prompt */}
+      {isWorkflowBlank && (
+        <DagCanvasEmptyState
+          onInsertNode={handleInsertStarterTask}
+          onOpenPalette={() => setShowPalette(true)}
+          onDismiss={() => setIsDismissedEmptyState(true)}
+        />
+      )}
 
       {/* Viewport: Either React Flow Canvas or Concurrency Flamegraph */}
       {activeViewTab === 'timeline' && isReadOnly ? (
