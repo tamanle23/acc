@@ -107,7 +107,7 @@ export function Titlebar({
             </Button>
           </Tooltip>
         )}
-        <div className="h-8 w-8 rounded-lg bg-[var(--accent-primary)] text-slate-950 flex items-center justify-center font-bold text-xs shadow-[0_0_12px_var(--accent-glow)] select-none">
+        <div className="h-8 w-8 rounded-lg bg-accent-theme text-primary-foreground flex items-center justify-center font-bold text-xs shadow-accent-glow select-none">
           IR
         </div>
         <div>

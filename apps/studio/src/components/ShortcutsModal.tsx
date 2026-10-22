@@ -46,10 +46,10 @@ const SHORTCUT_GROUPS = [
 export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl glass-panel border border-[var(--glass-border)] p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
-        <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-[var(--glass-border)]">
+      <DialogContent className="max-w-xl glass-panel border border-glass-border p-6 rounded-2xl shadow-2xl backdrop-blur-2xl">
+        <DialogHeader className="flex flex-row items-center justify-between pb-3 border-b border-glass-border">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg glass-badge-accent flex items-center justify-center">
               <Keyboard className="w-4 h-4" />
             </div>
             <div>
@@ -77,10 +77,10 @@ export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
                 {group.shortcuts.map((sc) => (
                   <div
                     key={sc.key}
-                    className="flex items-center justify-between text-xs py-1 px-2 rounded-md bg-white/5 border border-white/5 hover:border-white/10"
+                    className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-md bg-muted/40 border border-glass-border hover:border-accent-theme/40 transition-colors"
                   >
                     <span className="text-muted-foreground">{sc.description}</span>
-                    <Badge variant="outline" className="font-mono text-[11px] bg-white/10 border-white/10 text-foreground px-1.5 py-0.5">
+                    <Badge variant="outline" className="font-mono text-[11px] bg-glass-surface border-glass-border text-foreground px-1.5 py-0.5">
                       {sc.key}
                     </Badge>
                   </div>

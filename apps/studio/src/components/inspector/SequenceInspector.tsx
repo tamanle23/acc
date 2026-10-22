@@ -95,7 +95,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
   if (!selectedSeq) {
     return (
-      <div className="p-3 text-center text-xs text-slate-400">
+      <div className="p-3 text-center text-xs text-muted-foreground">
         No sequence selected.
       </div>
     );
@@ -199,7 +199,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   return (
     <div className="space-y-3">
       {/* Sequence Meta Card */}
-      <Card className="p-2.5 bg-card/60 border-border/50 space-y-2 text-xs">
+      <Card className="p-2.5 glass-card border-glass-border space-y-2 text-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
             <Badge
@@ -572,10 +572,10 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
           const partnerId = avLink.params?.linkedSequenceId;
           const partnerTrack = avLink.params?.linkedTrackId;
           return (
-            <div className="pt-2 border-t border-border/40 space-y-1.5">
+            <div className="pt-2 border-t border-glass-border space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-[11px] text-foreground/90 flex items-center gap-1.5">
-                  <Link2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <Link2 className="w-3.5 h-3.5 text-accent-theme" />
                   Linked Audio / Video
                 </span>
                 <Button
@@ -598,8 +598,8 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                     }
                   }}
                   className={`h-5 px-2 text-[10px] gap-1 cursor-pointer transition-colors ${isLinked
-                    ? 'border-cyan-500/50 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60'
-                    : 'border-border/60 bg-muted/40 text-muted-foreground hover:bg-muted'
+                    ? 'border-accent-theme/50 bg-accent-theme/15 text-accent-theme hover:bg-accent-theme/25'
+                    : 'border-glass-border bg-muted/40 text-muted-foreground hover:bg-muted'
                     }`}
                 >
                   {isLinked ? (
@@ -615,7 +615,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                   )}
                 </Button>
               </div>
-              <div className="p-1.5 rounded bg-muted/30 border border-border/30 text-[10px] text-muted-foreground flex items-center justify-between">
+              <div className="p-1.5 rounded bg-muted/30 border border-glass-border text-[10px] text-muted-foreground flex items-center justify-between">
                 <span>Partner: <span className="font-mono text-foreground font-medium">{partnerId}</span></span>
                 <span className="font-mono text-[9px] uppercase px-1 py-0.5 rounded bg-muted">{partnerTrack}</span>
               </div>
@@ -624,13 +624,13 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
         })()}
 
         {/* Action Bar */}
-        <div className="flex items-center gap-1 pt-2 border-t border-border/40">
+        <div className="flex items-center gap-1 pt-2 border-t border-glass-border">
           <Button
             variant="outline"
             size="sm"
             disabled={isLocked}
             onClick={handleDuplicate}
-            className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-border/50 cursor-pointer disabled:cursor-not-allowed"
+            className="flex-1 h-6 text-[10px] gap-1 text-foreground hover:bg-accent-theme/10 hover:text-accent-theme border-glass-border cursor-pointer disabled:cursor-not-allowed"
             title="Duplicate sequence"
           >
             <CopyPlus className="w-3 h-3" />
@@ -640,7 +640,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             variant="outline"
             size="sm"
             onClick={() => setIsLocked(!isLocked)}
-            className={`h-6 px-2 text-[10px] gap-1 border-border/50 cursor-pointer ${isLocked ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-300' : 'text-muted-foreground'
+            className={`h-6 px-2 text-[10px] gap-1 border-glass-border cursor-pointer ${isLocked ? 'bg-amber-500/15 text-amber-500 border-amber-500/40' : 'text-muted-foreground'
               }`}
             title={isLocked ? 'Locked (Click to unlock)' : 'Unlocked (Click to lock)'}
           >
@@ -651,7 +651,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             size="sm"
             disabled={isLocked}
             onClick={handleDelete}
-            className="h-6 px-2 text-[10px] text-rose-600 hover:bg-rose-50 hover:text-rose-700 border-rose-200 cursor-pointer disabled:cursor-not-allowed"
+            className="h-6 px-2 text-[10px] text-destructive hover:bg-destructive/15 border-destructive/30 cursor-pointer disabled:cursor-not-allowed"
             title="Delete sequence (undoable)"
           >
             <Trash2 className="w-3 h-3" />
@@ -664,7 +664,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               if (!selectedSeqId) return;
               IRStateManager.getInstance().rippleDeleteSequence(selectedSeqId);
             }}
-            className="h-6 px-2 text-[10px] text-amber-600 hover:bg-amber-50 hover:text-amber-700 border-amber-200 cursor-pointer disabled:cursor-not-allowed"
+            className="h-6 px-2 text-[10px] text-amber-500 hover:bg-amber-500/15 border-amber-500/30 cursor-pointer disabled:cursor-not-allowed"
             title="Ripple Delete (Closes track gap, undoable)"
           >
             Ripple Del
@@ -674,7 +674,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
       {/* Pure Attached-Only Empty State */}
       {modifiers.length === 0 && (
-        <div className="p-6 border-2 border-dashed border-border/60 rounded-lg text-center space-y-2.5 text-muted-foreground bg-muted/20">
+        <div className="p-6 border-2 border-dashed border-glass-border rounded-lg text-center space-y-2.5 text-muted-foreground bg-glass-surface/30">
           <Sliders className="w-8 h-8 mx-auto text-muted-foreground/60" />
           <p className="text-xs font-semibold text-foreground/90">
             No Effects Attached
@@ -688,7 +688,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
               size="sm"
               disabled={isLocked}
               onClick={onAddEffectClick}
-              className="h-7 text-xs gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/40 cursor-pointer disabled:cursor-not-allowed mx-auto"
+              className="h-7 text-xs gap-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed mx-auto"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Add First Effect
@@ -702,7 +702,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
         type="multiple"
         value={openSections}
         onValueChange={setOpenSections}
-        className="border-[var(--glass-border)] space-y-2"
+        className="border-glass-border space-y-2"
       >
         {modifiers.map((mod: any) => {
           const sectionId = getSectionIdForModifierType(mod.type);
@@ -715,7 +715,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             <AccordionItem
               key={mod.type}
               value={sectionId}
-              className="rounded-md overflow-hidden bg-card shadow-2xs border-[var(--glass-border)]"
+              className="rounded-md overflow-hidden glass-card border-glass-border"
             >
               <AccordionTrigger
                 actions={
@@ -726,7 +726,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                         variant="ghost"
                         size="icon"
                         disabled={isLocked}
-                        className="h-6 w-6 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer disabled:cursor-not-allowed"
+                        className="h-6 w-6 text-muted-foreground hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
                         onClick={() =>
                           !isLocked &&
                           updateModifierParams(mod.type, {
@@ -743,11 +743,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
                       variant="ghost"
                       size="icon"
                       disabled={isLocked}
-                      className="h-6 w-6 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer disabled:cursor-not-allowed"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive cursor-pointer disabled:cursor-not-allowed"
                       onClick={() => !isLocked && removeModifier(mod.type)}
                       title="Remove modifier"
                     >
-                      <Trash2 className="w-3 h-3 text-rose-500" />
+                      <Trash2 className="w-3 h-3 text-destructive" />
                     </Button>
                     <Switch
                       checked={isEnabled}

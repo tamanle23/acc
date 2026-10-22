@@ -64,7 +64,7 @@ export function TimelineToolbar({
   fps,
 }: TimelineToolbarProps) {
   return (
-    <div className="h-11 border-b border-[var(--glass-border)] px-6 flex items-center justify-between bg-[var(--glass-bg)]/40 backdrop-blur-md">
+    <div className="h-11 border-b border-glass-border px-6 flex items-center justify-between bg-glass-surface/60 backdrop-blur-md">
       <div className="flex items-center gap-1.5">
         {/* Tool Selector Bar */}
         <Tooltip content="Selection Tool (V)">
@@ -91,7 +91,7 @@ export function TimelineToolbar({
             }}
             className={`h-7 w-7 transition-colors ${
               activeTool === 'razor'
-                ? 'bg-[var(--accent-primary)] text-slate-950 font-semibold shadow-[0_0_10px_var(--accent-glow)]'
+                ? 'bg-accent-theme text-primary-foreground font-semibold shadow-accent-glow'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -139,7 +139,7 @@ export function TimelineToolbar({
             onClick={onTogglePlay}
             className={`h-7 w-7 transition-colors ${
               isPlaying
-                ? 'text-[var(--accent-primary)] bg-[var(--accent-primary)]/15 font-bold shadow-xs'
+                ? 'text-accent-theme bg-accent-theme/15 font-bold shadow-xs'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -169,7 +169,7 @@ export function TimelineToolbar({
             pressed={snapEnabled}
             onPressedChange={onSetSnapEnabled}
             size="sm"
-            className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-[var(--accent-primary)]/15 data-[state=on]:text-[var(--accent-primary)] data-[state=on]:border-[var(--accent-primary)]/30 border border-transparent transition-colors"
+            className="h-7 px-2 text-[11px] gap-1 data-[state=on]:bg-accent-theme/15 data-[state=on]:text-accent-theme data-[state=on]:border-accent-theme/30 border border-transparent transition-colors"
           >
             <Magnet className="w-3 h-3" />
             Snap
@@ -191,7 +191,7 @@ export function TimelineToolbar({
         <Separator orientation="vertical" className="h-4 mx-1" />
 
         {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
-        <div className="flex items-center rounded-md border border-border/40 p-0.5 bg-muted/20 text-xs shadow-2xs">
+        <div className="flex items-center rounded-md border border-glass-border p-0.5 bg-muted/20 text-xs shadow-2xs">
           <Tooltip content="DOM Mode: Interactive HTML Elements with @dnd-kit">
             <Button
               variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
@@ -214,7 +214,7 @@ export function TimelineToolbar({
               onClick={() => onSetTimelineMode('canvas')}
               className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
                 timelineMode === 'canvas'
-                  ? 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40 font-semibold shadow-2xs'
+                  ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 font-semibold shadow-2xs'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -249,7 +249,7 @@ export function TimelineToolbar({
           <Badge
             variant="outline"
             onClick={() => onSetZoomScale(1.0)}
-            className="font-mono text-[10px] px-1.5 py-0.5 border-[var(--glass-border)] text-muted-foreground hover:text-foreground hover:border-[var(--accent-primary)]/40 cursor-pointer transition-colors shadow-2xs select-none"
+            className="font-mono text-[10px] px-1.5 py-0.5 border-glass-border text-muted-foreground hover:text-foreground hover:border-accent-theme/40 cursor-pointer transition-colors shadow-2xs select-none"
           >
             {Math.round(zoomScale * 100)}%
           </Badge>
@@ -282,14 +282,14 @@ export function TimelineToolbar({
           )}
           <Badge
             variant="outline"
-            className="font-mono text-[11px] border-[var(--glass-border)] text-muted-foreground bg-[var(--glass-bg)] shadow-2xs"
+            className="font-mono text-[11px] border-glass-border text-muted-foreground bg-glass-surface shadow-2xs"
           >
             {RationalTime.fromFrame(currentFrame, fps).toSMPTE(fps)} /{' '}
             {RationalTime.fromFrame(totalFrames, fps).toSMPTE(fps)}
           </Badge>
           <Badge
             variant="outline"
-            className="font-mono text-[11px] text-[var(--accent-primary)] border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 font-semibold shadow-2xs"
+            className="font-mono text-[11px] text-accent-theme border-accent-theme/30 bg-accent-theme/10 font-semibold shadow-2xs"
           >
             F {currentFrame} / {totalFrames}
           </Badge>

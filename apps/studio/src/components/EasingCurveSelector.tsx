@@ -76,10 +76,10 @@ export function EasingCurveSelector({
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs font-mono">
         <span className="text-foreground/90 font-semibold flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+          <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
           GSAP Motion Curve
         </span>
-        <span className="text-[10px] text-[var(--accent-primary)] font-mono font-bold uppercase">
+        <span className="text-[10px] text-accent-theme font-mono font-bold uppercase">
           {value}
         </span>
       </div>
@@ -98,15 +98,15 @@ export function EasingCurveSelector({
               onMouseLeave={() => setHoveredId(null)}
               className={`relative p-2 rounded-xl border text-left transition-all duration-200 cursor-pointer overflow-hidden group ${
                 isSelected
-                  ? 'border-[var(--accent-primary)] bg-[var(--accent-glow)]/15 shadow-[0_0_15px_var(--accent-glow)]/20'
-                  : 'border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--accent-primary)]/40 hover:-translate-y-0.5 hover:shadow-md'
+                  ? 'border-accent-theme bg-accent-theme/10 shadow-accent-glow'
+                  : 'border-glass-border bg-glass-surface hover:border-accent-theme/40 hover:-translate-y-0.5 hover:shadow-md'
               }`}
             >
               {/* Top label & badge */}
               <div className="flex items-center justify-between mb-1.5">
                 <span
                   className={`text-[11px] font-semibold truncate ${
-                    isSelected ? 'text-[var(--accent-primary)] font-bold' : 'text-foreground/90'
+                    isSelected ? 'text-accent-theme font-bold' : 'text-foreground/90'
                   }`}
                 >
                   {preset.name}
@@ -114,8 +114,8 @@ export function EasingCurveSelector({
                 <span
                   className={`text-[8px] font-mono px-1 py-0.2 rounded uppercase ${
                     isSelected
-                      ? 'bg-[var(--accent-primary)] text-slate-950 font-bold'
-                      : 'bg-white/10 text-muted-foreground'
+                      ? 'bg-accent-theme text-primary-foreground font-bold'
+                      : 'bg-muted/60 text-muted-foreground'
                   }`}
                 >
                   {preset.badge}
@@ -123,9 +123,9 @@ export function EasingCurveSelector({
               </div>
 
               {/* SVG Curve Preview */}
-              <div className="relative h-12 w-full bg-black/40 rounded-lg p-1 border border-white/5 flex items-center justify-center overflow-hidden">
+              <div className="relative h-12 w-full bg-background/70 rounded-lg p-1 border border-glass-border flex items-center justify-center overflow-hidden">
                 {/* Background grid lines */}
-                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:8px_8px]" />
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(var(--accent-primary)_1px,transparent_1px)] [background-size:8px_8px]" />
 
                 <svg
                   viewBox="-5 -15 110 70"
@@ -137,7 +137,8 @@ export function EasingCurveSelector({
                     y1="45"
                     x2="100"
                     y2="45"
-                    stroke="rgba(255,255,255,0.15)"
+                    stroke="currentColor"
+                    className="text-muted-foreground/30"
                     strokeDasharray="2,2"
                     strokeWidth="0.8"
                   />
@@ -146,7 +147,8 @@ export function EasingCurveSelector({
                     y1="5"
                     x2="100"
                     y2="5"
-                    stroke="rgba(255,255,255,0.15)"
+                    stroke="currentColor"
+                    className="text-muted-foreground/30"
                     strokeDasharray="2,2"
                     strokeWidth="0.8"
                   />
@@ -155,10 +157,10 @@ export function EasingCurveSelector({
                   <path
                     d={preset.path}
                     fill="none"
-                    stroke={isSelected ? 'var(--accent-primary)' : isHovered ? '#38bdf8' : 'rgba(255,255,255,0.6)'}
+                    stroke={isSelected || isHovered ? 'var(--accent-primary)' : 'currentColor'}
                     strokeWidth={isSelected ? '2.5' : '1.8'}
                     strokeLinecap="round"
-                    className="transition-colors duration-200"
+                    className={`transition-colors duration-200 ${isSelected || isHovered ? '' : 'text-muted-foreground/70'}`}
                     style={{
                       filter: isSelected
                         ? 'drop-shadow(0 0 4px var(--accent-glow))'
@@ -170,7 +172,7 @@ export function EasingCurveSelector({
                   {(isSelected || isHovered) && (
                     <circle
                       r="3.5"
-                      fill={isSelected ? 'var(--accent-primary)' : '#38bdf8'}
+                      fill="var(--accent-primary)"
                       className="shadow-sm"
                       style={{
                         offsetPath: `path('${preset.path}')`,
@@ -188,7 +190,7 @@ export function EasingCurveSelector({
 
               {/* Active Selection Checkmark Badge */}
               {isSelected && (
-                <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 bg-[var(--accent-primary)] text-slate-950 rounded-full flex items-center justify-center shadow-xs">
+                <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 bg-accent-theme text-primary-foreground rounded-full flex items-center justify-center shadow-xs">
                   <Check className="w-2.5 h-2.5 stroke-[3]" />
                 </div>
               )}

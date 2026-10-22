@@ -122,7 +122,7 @@ export function SettingsModal() {
           {/* 3. Backdrop Blur Intensity */}
           <div className="space-y-2">
             <label className="font-semibold text-foreground/90 tracking-wide uppercase text-[11px] flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
               Diffusion Filter Strength
             </label>
             <div className="grid grid-cols-3 gap-2">

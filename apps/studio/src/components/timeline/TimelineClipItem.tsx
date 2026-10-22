@@ -118,10 +118,10 @@ export function TimelineClipItem({
       className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
           ? 'cursor-crosshair'
           : isBeingDragged && activeDragState?.type === 'clip'
-            ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
+            ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-accent-theme/80 z-30'
             : 'cursor-grab'
         } ${isSelected
-          ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20 brightness-110'
+          ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
           : 'hover:brightness-110 z-10'
         } ${getTrackBadgeStyle(track)}`}
     >
@@ -240,7 +240,7 @@ export function TimelineClipItem({
                 }}
                 className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
                   isLinked
-                    ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
+                    ? 'text-accent-theme bg-accent-theme/20 hover:bg-accent-theme/30 border border-accent-theme/50'
                     : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
                 }`}
                 title={

@@ -33,7 +33,7 @@ export function VisualJsonFieldEditor({
     setDraftValue(value === null ? 'null' : String(value));
   }, [value]);
 
-  // 1. Boolean Toggle (Emerald true / Slate false)
+  // 1. Boolean Toggle (Emerald true / Muted false)
   if (typeof value === 'boolean') {
     return (
       <button
@@ -45,8 +45,8 @@ export function VisualJsonFieldEditor({
         }}
         className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer select-none border ${
           value
-            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+            : 'bg-muted/60 text-muted-foreground border-glass-border hover:bg-muted'
         }`}
         title={`Click to toggle to ${!value}`}
       >
@@ -67,10 +67,10 @@ export function VisualJsonFieldEditor({
           e.stopPropagation();
           onUpdate(path, e.target.value);
         }}
-        className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded px-1.5 py-0.5 text-[11px] font-mono text-[var(--accent-primary)] focus:outline-hidden focus:border-[var(--accent-primary)] focus:shadow-[0_0_8px_var(--accent-glow)] cursor-pointer"
+        className="bg-glass-surface border border-glass-border rounded px-1.5 py-0.5 text-[11px] font-mono text-accent-theme focus:outline-hidden focus:border-accent-theme focus:shadow-accent-glow cursor-pointer"
       >
         {enumOptions.map((opt) => (
-          <option key={opt} value={opt} className="bg-slate-900 text-foreground">
+          <option key={opt} value={opt} className="text-foreground bg-background">
             "{opt}"
           </option>
         ))}
@@ -113,7 +113,7 @@ export function VisualJsonFieldEditor({
             if (e.key === 'Enter') handleCommit();
             if (e.key === 'Escape') handleCancel();
           }}
-          className="bg-[var(--glass-bg)] border border-[var(--accent-primary)] rounded px-1.5 py-0.5 text-[11px] font-mono text-foreground focus:outline-hidden shadow-[0_0_8px_var(--accent-glow)] w-36"
+          className="bg-glass-surface border border-accent-theme rounded px-1.5 py-0.5 text-[11px] font-mono text-foreground focus:outline-hidden shadow-accent-glow w-36"
         />
         <button
           type="button"
@@ -146,18 +146,18 @@ export function VisualJsonFieldEditor({
         e.stopPropagation();
         setIsEditing(true);
       }}
-      className="group flex items-center gap-1.5 cursor-pointer py-0.5 px-1 rounded hover:bg-white/10 transition-colors"
+      className="group flex items-center gap-1.5 cursor-pointer py-0.5 px-1 rounded hover:bg-foreground/10 transition-colors"
       title="Click to edit value"
     >
       {isHexColor && (
         <span
-          className="w-3 h-3 rounded-full border border-white/30 shrink-0 shadow-xs"
+          className="w-3 h-3 rounded-full border border-glass-border shrink-0 shadow-xs"
           style={{ backgroundColor: value as string }}
         />
       )}
       <span
         className={`font-mono text-[11px] truncate max-w-xs ${
-          isNumber ? 'text-amber-400' : 'text-cyan-300'
+          isNumber ? 'text-amber-500 dark:text-amber-400' : 'text-accent-theme'
         }`}
       >
         {valStr}

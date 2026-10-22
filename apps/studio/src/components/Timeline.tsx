@@ -63,7 +63,7 @@ export function Timeline({
 
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [rippleEnabled, setRippleEnabled] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1.65); // 1.0 = ~4px per frame
+  const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~1.5px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
   const [canvasCursor, setCanvasCursor] = useState<string>('default');
@@ -703,7 +703,7 @@ export function Timeline({
     if (track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx')) return 'bg-amber-950/85 border-amber-500/50 text-amber-200 shadow-amber-950/30';
     if (track.type === 'overlay' || track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub')) return 'bg-violet-950/85 border-violet-500/50 text-violet-200 shadow-violet-950/30';
     if (track.type === 'video') return 'bg-indigo-950/85 border-indigo-500/50 text-indigo-200 shadow-indigo-950/30';
-    return 'bg-slate-900/85 border-slate-700/60 text-slate-200 shadow-slate-950/30';
+    return 'bg-muted/85 border-glass-border text-foreground shadow-sm';
   };
 
   return (

@@ -247,9 +247,9 @@ export function VisualIRJsonDebuggerModal({
         className="sm:max-w-none max-w-6xl w-[94vw] h-[88vh] flex flex-col glass-panel border border-[var(--glass-border)] border-t-[var(--glass-border-highlight)] p-0 rounded-2xl overflow-hidden shadow-2xl"
       >
         {/* Modal Header */}
-        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-[var(--glass-border)] shrink-0 bg-[var(--glass-bg)]/80 backdrop-blur-md">
+        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-glass-border shrink-0 bg-glass-surface/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 flex items-center justify-center shadow-[0_0_12px_var(--accent-glow)]">
+            <div className="w-8 h-8 rounded-lg bg-accent-theme/15 text-accent-theme border border-accent-theme/30 flex items-center justify-center shadow-accent-glow">
               <Code2 className="w-4 h-4" />
             </div>
             <div>
@@ -259,7 +259,7 @@ export function VisualIRJsonDebuggerModal({
                 </DialogTitle>
                 <Badge
                   variant="outline"
-                  className="font-mono text-[10px] border-indigo-500/30 text-indigo-300 bg-indigo-500/10"
+                  className="font-mono text-[10px] border-accent-theme/30 text-accent-theme bg-accent-theme/10"
                 >
                   Draft-07 Schema + DAG Verifier
                 </Badge>
@@ -276,7 +276,7 @@ export function VisualIRJsonDebuggerModal({
               <Badge
                 data-testid="debugger-status-valid"
                 variant="outline"
-                className="font-mono text-[10px] gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-300 px-2.5 py-1"
+                className="font-mono text-[10px] gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-500 dark:text-emerald-300 px-2.5 py-1"
               >
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                 Valid VideoIR ({diagnostics.trackCount}T / {diagnostics.sequenceCount}S /{' '}
@@ -286,7 +286,7 @@ export function VisualIRJsonDebuggerModal({
               <Badge
                 data-testid="debugger-status-invalid"
                 variant="outline"
-                className="font-mono text-[10px] gap-1 border-rose-500/40 bg-rose-500/10 text-rose-300 px-2.5 py-1"
+                className="font-mono text-[10px] gap-1 border-rose-500/40 bg-rose-500/10 text-rose-500 dark:text-rose-300 px-2.5 py-1"
               >
                 <XCircle className="w-3 h-3 text-rose-400" />
                 {diagnostics.parseError
@@ -307,7 +307,7 @@ export function VisualIRJsonDebuggerModal({
         </DialogHeader>
 
         {/* View Mode Switcher Toolbar */}
-        <div className="flex items-center justify-between px-5 py-1.5 border-b border-[var(--glass-border)] shrink-0 bg-[var(--glass-bg)]/40 backdrop-blur-xs">
+        <div className="flex items-center justify-between px-5 py-1.5 border-b border-glass-border shrink-0 bg-glass-surface/40 backdrop-blur-xs">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -315,7 +315,7 @@ export function VisualIRJsonDebuggerModal({
               data-testid="debugger-tab-split"
               className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'split'
-                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
                   : 'glass-pill'
               }`}
             >
@@ -329,7 +329,7 @@ export function VisualIRJsonDebuggerModal({
               data-testid="debugger-tab-tree"
               className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'tree'
-                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
                   : 'glass-pill'
               }`}
             >
@@ -343,7 +343,7 @@ export function VisualIRJsonDebuggerModal({
               data-testid="debugger-tab-editor"
               className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'code'
-                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
                   : 'glass-pill'
               }`}
             >
@@ -357,7 +357,7 @@ export function VisualIRJsonDebuggerModal({
               data-testid="debugger-tab-diagnostics"
               className={`h-7 px-3 text-xs font-mono rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'diagnostics'
-                  ? 'glass-button-primary text-slate-950 shadow-[0_0_12px_var(--accent-glow)]'
+                  ? 'glass-button-primary text-primary-foreground shadow-accent-glow'
                   : 'glass-pill'
               }`}
             >

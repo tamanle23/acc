@@ -111,10 +111,10 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-card border-border/60 text-card-foreground shadow-2xl">
+      <DialogContent className="max-w-2xl glass-panel border-glass-border text-foreground shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Type className="w-4 h-4 text-amber-500" />
+            <Type className="w-4 h-4 text-accent-theme" />
             Manage Timed Text Subtitle Cues
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
@@ -123,7 +123,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
         </DialogHeader>
 
         <div className="py-2 space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-border/40">
+          <div className="flex items-center justify-between pb-2 border-b border-glass-border">
             <span className="text-xs font-medium text-foreground">
               Total Cues: {localCues.length}
             </span>
@@ -132,7 +132,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
               size="sm"
               disabled={disabled}
               onClick={handleAddCue}
-              className="h-7 text-xs gap-1 cursor-pointer border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+              className="h-7 text-xs gap-1 cursor-pointer border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Cue
@@ -141,7 +141,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
 
           <ScrollArea className="max-h-[360px] pr-2">
             {localCues.length === 0 ? (
-              <div className="p-8 text-center border-2 border-dashed border-border/50 rounded-lg space-y-2 bg-muted/20">
+              <div className="p-8 text-center border-2 border-dashed border-glass-border rounded-lg space-y-2 bg-muted/20">
                 <Clock className="w-8 h-8 mx-auto text-muted-foreground/60" />
                 <p className="text-xs font-semibold text-foreground">No Subtitle Cues</p>
                 <p className="text-[11px] text-muted-foreground">
@@ -159,7 +159,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
                   return (
                     <div
                       key={idx}
-                      className="p-2.5 rounded-md border border-border/60 bg-muted/30 hover:bg-muted/50 transition-colors space-y-2 text-xs"
+                      className="p-2.5 rounded-md border border-glass-border bg-glass-surface hover:bg-muted/40 transition-colors space-y-2 text-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-[10px] text-muted-foreground font-semibold">
@@ -184,7 +184,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
                             size="icon"
                             disabled={disabled}
                             onClick={() => handleDeleteCue(idx)}
-                            className="h-6 w-6 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                            className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                             title="Delete Cue"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -203,7 +203,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
                             disabled={disabled}
                             onChange={(e) => handleCueTextChange(idx, e.target.value)}
                             placeholder="Subtitle text..."
-                            className="h-7 text-xs bg-background"
+                            className="h-7 text-xs bg-background border-glass-border"
                           />
                         </div>
                         <div className="col-span-2">
@@ -217,7 +217,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
                             value={cue.startOffsetMs}
                             disabled={disabled}
                             onChange={(e) => handleCueTimingChange(idx, 'startOffsetMs', e.target.value)}
-                            className="h-7 text-xs font-mono bg-background"
+                            className="h-7 text-xs font-mono bg-background border-glass-border"
                           />
                         </div>
                         <div className="col-span-3">
@@ -231,7 +231,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
                             value={typeof cue.endOffsetMs === 'number' ? cue.endOffsetMs : 0}
                             disabled={disabled}
                             onChange={(e) => handleCueTimingChange(idx, 'endOffsetMs', e.target.value)}
-                            className="h-7 text-xs font-mono bg-background"
+                            className="h-7 text-xs font-mono bg-background border-glass-border"
                           />
                         </div>
                       </div>
@@ -243,7 +243,7 @@ export const CueTimelineDialog: React.FC<CueTimelineDialogProps> = ({
           </ScrollArea>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between pt-2 border-t border-border/40">
+        <DialogFooter className="flex items-center justify-between sm:justify-between pt-2 border-t border-glass-border">
           <Button
             variant="ghost"
             size="sm"

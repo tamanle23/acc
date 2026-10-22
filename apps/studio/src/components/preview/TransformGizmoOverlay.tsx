@@ -93,7 +93,7 @@ export function TransformGizmoOverlay({
         className={`absolute border-2 ${
           isLocked
             ? 'border-amber-400/80 bg-amber-500/5 cursor-not-allowed shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-            : 'border-[var(--accent-primary)] bg-[var(--accent-glow)]/10 cursor-move shadow-[0_0_20px_var(--accent-glow)]'
+            : 'border-accent-theme bg-accent-theme/10 cursor-move shadow-accent-glow'
         } rounded-md flex items-center justify-center group pointer-events-auto z-10 backdrop-blur-[2px]`}
       >
         {/* Floating Contextual Action Pill HUD */}
@@ -225,7 +225,7 @@ export function TransformGizmoOverlay({
           className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full shadow-md select-none border flex items-center gap-1 ${
             isLocked
               ? 'bg-amber-950/80 text-amber-200 border-amber-500/40'
-              : 'bg-black/80 text-white/90 border-white/20'
+              : 'glass-pill text-foreground border-glass-border'
           }`}
         >
           {isLocked && <Lock className="w-2.5 h-2.5 text-amber-400" />}

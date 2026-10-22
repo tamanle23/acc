@@ -477,14 +477,14 @@ function StudioWorkspace() {
 
         {/* IR Error Banner if any */}
         {irState.error && (
-          <div className="bg-rose-50 border-b border-rose-200 px-6 py-2 flex items-center gap-2 text-xs text-rose-800">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="bg-destructive/15 border-b border-destructive/30 px-6 py-2 flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
             <span className="font-mono font-medium truncate">{irState.error}</span>
           </div>
         )}
 
         {/* 2. Main Middle Workspace (LeftSidebar, Preview, RightSidebar) */}
-        <div className="flex flex-1 overflow-hidden border-b border-slate-200">
+        <div className="flex flex-1 overflow-hidden border-b border-glass-border">
           <LeftSidebar
             isOpen={isLeftOpen}
             onToggle={() => setIsLeftOpen(!isLeftOpen)}
@@ -524,14 +524,14 @@ function StudioWorkspace() {
                 if (!open) handleCancelExport();
               }}
             >
-              <DialogContent className="max-w-sm border-slate-200">
+              <DialogContent className="max-w-sm glass-panel border-glass-border text-foreground">
                 <DialogHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-indigo-600" />
+                      <Video className="w-4 h-4 text-accent-theme" />
                       <DialogTitle>WebCodecs Video Export</DialogTitle>
                     </div>
-                    <Badge variant="secondary" className="font-mono text-indigo-700 bg-indigo-50">
+                    <Badge variant="outline" className="font-mono text-accent-theme bg-accent-theme/10 border-accent-theme/30">
                       {exportProgress}%
                     </Badge>
                   </div>
@@ -546,10 +546,9 @@ function StudioWorkspace() {
 
                 <DialogFooter>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
                     onClick={handleCancelExport}
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200"
                   >
                     Cancel Export
                   </Button>

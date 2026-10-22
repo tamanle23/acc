@@ -42,7 +42,7 @@ export function ParameterSlider({
       <div className="flex justify-between items-center text-[11px]">
         <span
           onDoubleClick={() => onChange(defaultValue)}
-          className="text-slate-600 select-none cursor-pointer hover:text-indigo-600 transition-colors"
+          className="text-muted-foreground select-none cursor-pointer hover:text-accent-theme transition-colors"
           title="Double-click to reset"
         >
           {label}
@@ -53,9 +53,9 @@ export function ParameterSlider({
             step={step}
             value={localVal}
             onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-slate-200 bg-white"
+            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface text-foreground"
           />
-          {unit && <span className="text-[10px] text-slate-400 font-mono">{unit}</span>}
+          {unit && <span className="text-[10px] text-muted-foreground font-mono">{unit}</span>}
         </div>
       </div>
       <Slider
@@ -80,16 +80,16 @@ export interface ColorPickerRowProps {
 export function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps) {
   return (
     <div className="space-y-1.5">
-      <div className="flex justify-between items-center text-[11px] text-slate-600">
+      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
         <span>{label}</span>
         <div className="flex items-center gap-1.5">
           <input
             type="color"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0"
+            className="w-5 h-5 rounded cursor-pointer border border-glass-border p-0 bg-transparent"
           />
-          <span className="font-mono text-[10px] text-slate-500 uppercase">{value}</span>
+          <span className="font-mono text-[10px] text-muted-foreground uppercase">{value}</span>
         </div>
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -99,8 +99,8 @@ export function ColorPickerRow({ label, value, presets, onChange }: ColorPickerR
             onClick={() => onChange(preset.hex)}
             className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
               value.toLowerCase() === preset.hex.toLowerCase()
-                ? 'ring-2 ring-indigo-500 border-white scale-110'
-                : 'border-slate-300'
+                ? 'ring-2 ring-accent-theme border-background scale-110'
+                : 'border-glass-border'
             }`}
             style={{ backgroundColor: preset.hex }}
             title={preset.name}

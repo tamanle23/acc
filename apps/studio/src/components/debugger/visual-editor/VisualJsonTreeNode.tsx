@@ -63,13 +63,13 @@ export function VisualJsonTreeNode({
     return (
       <div
         className={`group/node flex items-center justify-between py-1 px-2 rounded text-[11px] font-mono transition-colors ${
-          matchesSearch ? 'bg-indigo-500/20 ring-1 ring-indigo-500' : 'hover:bg-white/5'
+          matchesSearch ? 'bg-accent-theme/20 ring-1 ring-accent-theme' : 'hover:bg-foreground/5'
         }`}
         style={{ paddingLeft: `${depth * 14 + 10}px` }}
         onClick={() => onFocusPath?.(path)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-slate-400 select-none">{label}:</span>
+          <span className="text-muted-foreground select-none">{label}:</span>
           <VisualJsonFieldEditor
             fieldKey={label}
             value={value}
@@ -106,22 +106,22 @@ export function VisualJsonTreeNode({
       <div
         onClick={handleNodeClick}
         className={`group/node flex items-center justify-between py-1 px-2 rounded cursor-pointer text-[11px] font-mono transition-colors ${
-          matchesSearch ? 'bg-indigo-500/20 ring-1 ring-indigo-500' : 'hover:bg-white/5'
+          matchesSearch ? 'bg-accent-theme/20 ring-1 ring-accent-theme' : 'hover:bg-foreground/5'
         }`}
         style={{ paddingLeft: `${depth * 14}px` }}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           <button
             type="button"
-            className="p-0.5 text-slate-400 hover:text-foreground shrink-0 focus:outline-hidden"
+            className="p-0.5 text-muted-foreground hover:text-foreground shrink-0 focus:outline-hidden"
           >
             {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           </button>
 
-          <span className="text-indigo-300 font-semibold tracking-wide">{label}</span>
+          <span className="text-foreground font-semibold tracking-wide">{label}</span>
 
           {objName && (
-            <span className="text-foreground/80 font-sans text-[10px] truncate max-w-[120px] bg-[var(--glass-bg)] border border-[var(--glass-border)] px-1.5 py-0.2 rounded-md">
+            <span className="text-foreground/80 font-sans text-[10px] truncate max-w-[120px] bg-glass-surface border border-glass-border px-1.5 py-0.2 rounded-md">
               "{objName}"
             </span>
           )}
@@ -129,7 +129,7 @@ export function VisualJsonTreeNode({
           {objId && (
             <Badge
               variant="outline"
-              className="text-[9px] py-0 px-1 font-mono border-[var(--accent-primary)]/40 text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 shrink-0"
+              className="text-[9px] py-0 px-1 font-mono border-accent-theme/40 text-accent-theme bg-accent-theme/10 shrink-0"
             >
               #{objId}
             </Badge>
@@ -138,7 +138,7 @@ export function VisualJsonTreeNode({
           {objType && (
             <Badge
               variant="outline"
-              className="text-[9px] py-0 px-1 font-mono border-purple-500/40 text-purple-300 bg-purple-500/10 shrink-0"
+              className="text-[9px] py-0 px-1 font-mono border-purple-500/40 text-purple-500 dark:text-purple-300 bg-purple-500/10 shrink-0"
             >
               {objType}
             </Badge>
@@ -157,7 +157,7 @@ export function VisualJsonTreeNode({
                 e.stopPropagation();
                 onSelectSequence(objId);
               }}
-              className="h-5 px-1.5 text-[9px] font-mono rounded glass-pill text-[var(--accent-primary)] hover:text-foreground cursor-pointer"
+              className="h-5 px-1.5 text-[9px] font-mono rounded glass-pill text-accent-theme hover:text-foreground cursor-pointer"
             >
               Inspect Clip
             </button>

@@ -96,7 +96,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
 
   if (paramEntries.length === 0) {
     return (
-      <p className="text-[10px] text-slate-400 italic">
+      <p className="text-[10px] text-muted-foreground italic">
         No configurable parameters exposed for {modifierType}.
       </p>
     );

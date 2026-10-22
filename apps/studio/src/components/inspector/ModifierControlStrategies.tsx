@@ -53,8 +53,8 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
       <div className="flex justify-between items-center text-[11px]">
         <span
           onDoubleClick={() => !disabled && onChange(defaultVal)}
-          className={` select-none ${
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer '
+          className={`text-muted-foreground hover:text-accent-theme select-none ${
+            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
           } transition-colors`}
           title={disabled ? undefined : "Double-click to reset to default"}
         >
@@ -67,10 +67,10 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
             value={localVal}
             disabled={disabled}
             onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 "
+            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface text-foreground"
           />
           {descriptor.unit && (
-            <span className="text-[10px]  font-mono">{descriptor.unit}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">{descriptor.unit}</span>
           )}
         </div>
       </div>
@@ -100,7 +100,7 @@ export const SwitchControlStrategy: React.FC<ControlStrategyProps> = ({
 
   return (
     <div className={`flex items-center justify-between py-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+      <span className="text-[11px] font-medium text-foreground/90">
         {descriptor.label}
       </span>
       <Switch checked={checked} disabled={disabled} onCheckedChange={(c) => !disabled && onChange(c)} />
@@ -122,14 +122,14 @@ export const SelectControlStrategy: React.FC<ControlStrategyProps> = ({
 
   return (
     <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground block">
         {descriptor.label}
       </label>
       <select
         value={String(currentVal)}
         disabled={disabled}
         onChange={(e) => !disabled && onChange(e.target.value)}
-        className="w-full h-7 rounded-md border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-2 text-xs font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed"
+        className="w-full h-7 rounded-md border border-glass-border bg-glass-surface px-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-accent-theme disabled:cursor-not-allowed"
       >
         {(descriptor.options || []).map((opt) => (
           <option key={String(opt.value)} value={String(opt.value)}>
@@ -155,7 +155,7 @@ export const ColorControlStrategy: React.FC<ControlStrategyProps> = ({
 
   return (
     <div className={`flex items-center justify-between pt-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+      <span className="text-[11px] text-foreground/90 font-medium">
         {descriptor.label}
       </span>
       <div className="flex items-center gap-1.5">
@@ -164,9 +164,9 @@ export const ColorControlStrategy: React.FC<ControlStrategyProps> = ({
           disabled={disabled}
           value={colorVal.slice(0, 7)}
           onChange={(e) => !disabled && onChange(e.target.value)}
-          className="w-6 h-6 rounded border border-slate-200 dark:border-white/10 cursor-pointer p-0 bg-transparent disabled:cursor-not-allowed"
+          className="w-6 h-6 rounded border border-glass-border cursor-pointer p-0 bg-transparent disabled:cursor-not-allowed"
         />
-        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+        <span className="text-[10px] font-mono text-muted-foreground uppercase">
           {colorVal}
         </span>
       </div>
@@ -186,7 +186,7 @@ export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
 }) => {
   return (
     <div className={`space-y-1 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 block">
+      <span className="text-[11px] font-medium text-foreground/90 block">
         {descriptor.label}
       </span>
       <Input
@@ -194,7 +194,7 @@ export const StringControlStrategy: React.FC<ControlStrategyProps> = ({
         disabled={disabled}
         value={String(value ?? descriptor.defaultValue ?? '')}
         onChange={(e) => !disabled && onChange(e.target.value)}
-        className="w-full h-7 px-2 text-xs font-mono rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 disabled:cursor-not-allowed"
+        className="w-full h-7 px-2 text-xs font-mono rounded border border-glass-border bg-glass-surface text-foreground disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -256,14 +256,14 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Localized Regions ({regions.length})
         </span>
         <Button
           variant="outline"
           size="sm"
           onClick={handleAddRegion}
-          className="h-5 px-1.5 text-[10px] gap-1 border-cyan-500/30 text-cyan-600 dark:text-cyan-400"
+          className="h-5 px-1.5 text-[10px] gap-1 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20"
         >
           <Plus className="w-3 h-3" />
           Add Region
@@ -271,7 +271,7 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
       </div>
 
       {regions.length === 0 ? (
-        <div className="p-3 text-center text-[10px] text-slate-400 border border-dashed border-slate-200 dark:border-white/10 rounded">
+        <div className="p-3 text-center text-[10px] text-muted-foreground border border-dashed border-glass-border rounded">
           No regions active. Click &quot;+ Add Region&quot; to place a spotlight or glitch zone.
         </div>
       ) : (
@@ -283,8 +283,8 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
                 key={idx}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border cursor-pointer transition-colors ${
                   idx === activeIndex
-                    ? 'bg-cyan-500/15 border-cyan-500 text-cyan-600 dark:text-cyan-300 font-bold'
-                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'
+                    ? 'bg-accent-theme/15 border-accent-theme text-accent-theme font-bold'
+                    : 'bg-glass-surface border-glass-border text-muted-foreground hover:text-foreground'
                 }`}
                 onClick={() => setSelectedIdx(idx)}
               >
@@ -295,7 +295,7 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
                     e.stopPropagation();
                     handleRemoveRegion(idx);
                   }}
-                  className="hover:text-rose-500 ml-0.5"
+                  className="hover:text-destructive ml-0.5"
                   title="Delete region"
                 >
                   <Trash2 className="w-2.5 h-2.5" />
@@ -305,12 +305,12 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
           </div>
 
           {activeRegion && (
-            <div className="p-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50 space-y-2.5">
+            <div className="p-2.5 rounded-md border border-glass-border bg-glass-surface/60 space-y-2.5">
               {/* Interactive 2D Coordinate Pad */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
                   <span className="flex items-center gap-1">
-                    <Crosshair className="w-3 h-3 text-cyan-400" />
+                    <Crosshair className="w-3 h-3 text-accent-theme" />
                     2D Region Target Pad (Click to position)
                   </span>
                   <span>
@@ -319,12 +319,12 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
                 </div>
                 <div
                   onClick={handlePadPointer}
-                  className="relative w-full h-24 rounded border border-slate-300 dark:border-slate-700 bg-slate-950 overflow-hidden cursor-crosshair select-none"
+                  className="relative w-full h-24 rounded border border-glass-border bg-black/80 overflow-hidden cursor-crosshair select-none"
                 >
                   {/* Grid lines */}
                   <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 pointer-events-none opacity-20">
                     {Array.from({ length: 16 }).map((_, i) => (
-                      <div key={i} className="border border-cyan-500/30" />
+                      <div key={i} className="border border-accent-theme/30" />
                     ))}
                   </div>
                   {/* Reticle marker */}
@@ -333,7 +333,7 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
                       left: `${(activeRegion.x ?? 0.5) * 100}%`,
                       top: `${(activeRegion.y ?? 0.5) * 100}%`,
                     }}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-cyan-400 shadow-[0_0_10px_#00ffff] pointer-events-none flex items-center justify-center"
+                    className="absolute -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-accent-theme shadow-accent-glow pointer-events-none flex items-center justify-center"
                   >
                     <div className="w-1 h-1 rounded-full bg-white" />
                   </div>
@@ -342,13 +342,13 @@ export const RegionsArrayControlStrategy: React.FC<ControlStrategyProps> = ({
 
               {/* Region Type */}
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400 block">
+                <label className="text-[10px] font-semibold uppercase text-muted-foreground block">
                   Effect Type
                 </label>
                 <select
                   value={activeRegion.type || 'spotlight'}
                   onChange={(e) => updateRegion(activeIndex, { type: e.target.value })}
-                  className="w-full h-6 rounded border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 px-1.5 text-[11px]"
+                  className="w-full h-6 rounded border border-glass-border bg-glass-surface text-foreground px-1.5 text-[11px] focus:outline-none focus:border-accent-theme"
                 >
                   <option value="spotlight">Spotlight Beam</option>
                   <option value="glitch">Chromatic Glitch Slice</option>
@@ -518,10 +518,10 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
   };
 
   return (
-    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`pt-2 border-t border-glass-border space-y-2.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-indigo-400" />
+          <Sparkles className="w-3 h-3 text-accent-theme" />
           Motion Preset & Lifecycle
         </span>
         <span className="text-[10px] text-muted-foreground uppercase font-mono">GSAP</span>
@@ -538,8 +538,8 @@ export const MotionLifecycleControlStrategy: React.FC<ControlStrategyProps> = ({
               onClick={() => handlePresetClick(p)}
               className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all ${
                 isSelected
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10'
+                  ? 'bg-accent-theme text-primary-foreground shadow-accent-glow'
+                  : 'bg-glass-surface border border-glass-border text-muted-foreground hover:text-foreground hover:border-accent-theme/40'
               } disabled:cursor-not-allowed`}
             >
               {p.label}
@@ -620,16 +620,16 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
   const chromatic = shaders.chromaticAberration || { enabled: false, offsetPx: 2.0 };
 
   return (
-    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`pt-2 border-t border-glass-border space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <Sparkles className="w-3 h-3 text-accent-theme" />
           Post-Processing Shaders
         </span>
       </div>
 
       {/* Bloom */}
-      <div className="p-2 rounded bg-slate-50 dark:bg-white/5 space-y-1.5">
+      <div className="p-2 rounded bg-glass-surface/60 border border-glass-border space-y-1.5">
         <SwitchControlStrategy
           descriptor={{ key: 'bloomEnabled', label: 'Bloom Glow', type: 'boolean' }}
           value={bloom.enabled}
@@ -686,7 +686,7 @@ export const ShaderGroupControlStrategy: React.FC<ControlStrategyProps> = ({
       </div>
 
       {/* Chromatic Aberration */}
-      <div className="p-2 rounded bg-slate-50 dark:bg-white/5 space-y-1.5">
+      <div className="p-2 rounded bg-glass-surface/60 border border-glass-border space-y-1.5">
         <SwitchControlStrategy
           descriptor={{ key: 'chromaticEnabled', label: 'Chromatic Aberration', type: 'boolean' }}
           value={chromatic.enabled}
@@ -737,7 +737,7 @@ export const KaraokeGroupControlStrategy: React.FC<ControlStrategyProps> = ({
   const karaoke = typeof value === 'object' && value !== null ? value : {};
 
   return (
-    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`pt-2 border-t border-glass-border space-y-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-foreground flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-amber-400" />
@@ -854,17 +854,17 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
   const ducking = value?.duckingFactor ?? 0.75;
 
   return (
-    <div className={`pt-2 border-t border-slate-200 dark:border-white/10 flex items-center gap-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div className={`pt-2 border-t border-glass-border flex items-center gap-2 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <Button
         size="sm"
         variant="outline"
         onClick={() => handleAuditionSFX(currentType, durationSec)}
         disabled={disabled || isPlayingAudition}
-        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer hover:border-indigo-500 hover:text-indigo-500 disabled:cursor-not-allowed"
+        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer border-glass-border hover:border-accent-theme hover:text-accent-theme disabled:cursor-not-allowed"
       >
         <Volume2
           className={`w-3.5 h-3.5 ${
-            isPlayingAudition ? 'text-indigo-500 animate-pulse' : ''
+            isPlayingAudition ? 'text-accent-theme animate-pulse' : ''
           }`}
         />
         {isPlayingAudition ? 'Playing...' : 'Audition SFX'}
@@ -872,9 +872,10 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
 
       <Button
         size="sm"
+        variant="accent"
         disabled={disabled}
         onClick={() => handleInsertProceduralSFX(currentType, durationSec, ducking)}
-        className="flex-1 text-[11px] font-mono gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer disabled:cursor-not-allowed"
+        className="flex-1 text-[11px] font-mono gap-1.5 cursor-pointer disabled:cursor-not-allowed"
       >
         <Plus className="w-3.5 h-3.5" />
         Insert to Track

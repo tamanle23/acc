@@ -30,8 +30,8 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
 
   return (
     <div className="space-y-3">
-      <Card className="p-3 bg-card/60 border-border/50 space-y-3 text-xs">
-        <div className="flex items-center gap-2 pb-2 border-b border-border/40">
+      <Card className="p-3 glass-card border-glass-border space-y-3 text-xs">
+        <div className="flex items-center gap-2 pb-2 border-b border-glass-border">
           <div className="w-8 h-8 rounded bg-accent-theme/15 text-accent-theme flex items-center justify-center">
             <Settings className="w-4 h-4" />
           </div>
@@ -47,7 +47,7 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
 
         {/* Content ID */}
         <div className="space-y-1">
-          <label className="text-[10px] text-slate-400 font-mono">
+          <label className="text-[10px] text-muted-foreground font-mono">
             Content ID / Project Title
           </label>
           <Input
@@ -58,13 +58,13 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
                 contentId: e.target.value,
               });
             }}
-            className="h-6 text-[11px] font-sans"
+            className="h-6 text-[11px] font-sans bg-background/60 border-glass-border"
           />
         </div>
 
         {/* Aspect Ratio 1-Click Pills */}
         <div className="space-y-1.5">
-          <label className="text-[10px] text-slate-400 font-mono">Aspect Ratio Presets</label>
+          <label className="text-[10px] text-muted-foreground font-mono">Aspect Ratio Presets</label>
           <div className="grid grid-cols-4 gap-1">
             {ASPECT_PRESETS.map((preset) => {
               const isSelected = width === preset.w && height === preset.h;
@@ -79,8 +79,8 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
                   }}
                   className={`px-1.5 py-1 text-[10px] font-mono rounded border transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-2xs'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-indigo-400'
+                      ? 'bg-accent-theme text-primary-foreground border-accent-theme font-bold shadow-accent-glow'
+                      : 'bg-glass-surface border-glass-border text-foreground/80 hover:border-accent-theme/60 hover:text-foreground'
                   }`}
                 >
                   {preset.label}
@@ -93,7 +93,7 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
         {/* Numerical Width / Height Inputs */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-mono">Width (px)</label>
+            <label className="text-[10px] text-muted-foreground font-mono">Width (px)</label>
             <Input
               type="number"
               min={320}
@@ -106,11 +106,11 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
                   canvasSize: { w: val, h: height },
                 });
               }}
-              className="h-6 text-[11px] font-mono"
+              className="h-6 text-[11px] font-mono bg-background/60 border-glass-border"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] text-slate-400 font-mono">Height (px)</label>
+            <label className="text-[10px] text-muted-foreground font-mono">Height (px)</label>
             <Input
               type="number"
               min={240}
@@ -123,15 +123,15 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
                   canvasSize: { w: width, h: val },
                 });
               }}
-              className="h-6 text-[11px] font-mono"
+              className="h-6 text-[11px] font-mono bg-background/60 border-glass-border"
             />
           </div>
         </div>
 
         {/* Global FPS Selector */}
         <div className="flex items-center justify-between pt-1">
-          <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-muted-foreground text-[11px] flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-accent-theme" />
             Timeline Framerate
           </span>
           <select
@@ -140,7 +140,7 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
               const val = parseInt(e.target.value) || 30;
               IRStateManager.getInstance().updateProjectMeta({ globalFps: val });
             }}
-            className="h-6 text-[10px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded px-1.5 text-slate-700 dark:text-slate-200"
+            className="h-6 text-[10px] font-mono bg-glass-surface border border-glass-border rounded px-1.5 text-foreground focus:outline-none focus:border-accent-theme"
           >
             <option value={24}>24 FPS (Cinematic)</option>
             <option value={30}>30 FPS (Standard)</option>
@@ -149,25 +149,25 @@ export const ProjectInspector: React.FC<ProjectInspectorProps> = ({ irState }) =
         </div>
 
         {/* Project Stats Summary */}
-        <div className="pt-2 border-t border-slate-200/60 dark:border-white/10 space-y-1.5 text-[11px]">
+        <div className="pt-2 border-t border-glass-border space-y-1.5 text-[11px]">
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Total Duration:</span>
-            <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+            <span className="text-muted-foreground">Total Duration:</span>
+            <span className="font-mono font-medium text-foreground">
               {totalDurationFrames}f ({(totalDurationFrames / Math.max(1, fps)).toFixed(2)}s)
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Active Tracks:</span>
+            <span className="text-muted-foreground">Active Tracks:</span>
             <Badge
               variant="outline"
-              className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200"
+              className="font-mono text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30"
             >
               {irState.doc.tracks.length} Tracks
             </Badge>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Total Sequences:</span>
-            <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+            <span className="text-muted-foreground">Total Sequences:</span>
+            <span className="font-mono font-medium text-foreground">
               {activeSequencesCount} items
             </span>
           </div>

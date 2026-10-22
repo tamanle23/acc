@@ -44,13 +44,13 @@ export function MasterAudioMeter({ isPlaying, currentFrame }: MasterAudioMeterPr
   }, [isPlaying, currentFrame]);
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1  text-slate-300 rounded-md border  border-[var(--glass-border)] shadow-inner select-none">
-      <Volume2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+    <div className="flex items-center gap-2 px-3 py-1 bg-glass-surface text-foreground rounded-md border border-glass-border shadow-inner select-none">
+      <Volume2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
       <div className="flex flex-col gap-1 w-20">
         {/* Left Channel */}
         <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono text-slate-500 w-2.5">L</span>
-          <div className="flex-1 h-1.5 bg-slate-950/30 rounded-xs overflow-hidden flex">
+          <span className="text-[8px] font-mono text-muted-foreground w-2.5">L</span>
+          <div className="flex-1 h-1.5 bg-muted/60 rounded-xs overflow-hidden flex">
             <div
               className={`h-full transition-all duration-75 rounded-xs ${levelL > 0.85 ? 'bg-rose-500' : levelL > 0.65 ? 'bg-amber-400' : 'bg-emerald-400'
                 }`}
@@ -61,8 +61,8 @@ export function MasterAudioMeter({ isPlaying, currentFrame }: MasterAudioMeterPr
 
         {/* Right Channel */}
         <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono text-slate-500 w-2.5">R</span>
-          <div className="flex-1 h-1.5 bg-slate-950/30 rounded-xs overflow-hidden flex">
+          <span className="text-[8px] font-mono text-muted-foreground w-2.5">R</span>
+          <div className="flex-1 h-1.5 bg-muted/60 rounded-xs overflow-hidden flex">
             <div
               className={`h-full transition-all duration-75 rounded-xs ${levelR > 0.85 ? 'bg-rose-500' : levelR > 0.65 ? 'bg-amber-400' : 'bg-emerald-400'
                 }`}
@@ -71,7 +71,7 @@ export function MasterAudioMeter({ isPlaying, currentFrame }: MasterAudioMeterPr
           </div>
         </div>
       </div>
-      <span className="text-[9px] font-mono text-slate-400 min-w-8 text-right">
+      <span className="text-[9px] font-mono text-muted-foreground min-w-8 text-right">
         {peakDbText}
       </span>
     </div>

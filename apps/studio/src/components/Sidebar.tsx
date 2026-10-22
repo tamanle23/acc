@@ -95,7 +95,7 @@ function ParameterSlider({
       <div className="flex justify-between items-center text-[11px]">
         <span
           onDoubleClick={() => onChange(defaultValue)}
-          className="text-slate-600 select-none cursor-pointer hover:text-indigo-600 transition-colors"
+          className="text-muted-foreground select-none cursor-pointer hover:text-accent-theme transition-colors"
           title="Double-click to reset"
         >
           {label}
@@ -106,9 +106,9 @@ function ParameterSlider({
             step={step}
             value={localVal}
             onChange={handleInputChange}
-            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-slate-200 bg-white"
+            className="w-14 h-5 text-[10px] text-right font-mono px-1 py-0 border-glass-border bg-glass-surface"
           />
-          {unit && <span className="text-[10px] text-slate-400 font-mono">{unit}</span>}
+          {unit && <span className="text-[10px] text-muted-foreground font-mono">{unit}</span>}
         </div>
       </div>
       <Slider
@@ -133,16 +133,16 @@ interface ColorPickerRowProps {
 function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps) {
   return (
     <div className="space-y-1.5">
-      <div className="flex justify-between items-center text-[11px] text-slate-600">
+      <div className="flex justify-between items-center text-[11px] text-muted-foreground">
         <span>{label}</span>
         <div className="flex items-center gap-1.5">
           <input
             type="color"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0"
+            className="w-5 h-5 rounded cursor-pointer border border-glass-border p-0"
           />
-          <span className="font-mono text-[10px] text-slate-500 uppercase">{value}</span>
+          <span className="font-mono text-[10px] text-muted-foreground uppercase">{value}</span>
         </div>
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -152,8 +152,8 @@ function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps
             onClick={() => onChange(preset.hex)}
             className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
               value.toLowerCase() === preset.hex.toLowerCase()
-                ? 'ring-2 ring-indigo-500 border-white scale-110'
-                : 'border-slate-300'
+                ? 'ring-2 ring-accent-theme border-white scale-110'
+                : 'border-glass-border'
             }`}
             style={{ backgroundColor: preset.hex }}
             title={preset.name}
@@ -370,7 +370,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const renderPresetIcon = (iconName: string) => {
     switch (iconName) {
       case 'Type':
-        return <Type className="w-3.5 h-3.5 text-indigo-600" />;
+        return <Type className="w-3.5 h-3.5 text-accent-theme" />;
       case 'Square':
         return <Square className="w-3.5 h-3.5 text-violet-600" />;
       case 'Circle':
@@ -390,7 +390,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   };
 
   return (
-    <aside className="w-84 bg-white border-l border-slate-200 flex flex-col h-full select-none shadow-xs">
+    <aside className="w-84 bg-glass-surface border-l border-glass-border flex flex-col h-full select-none shadow-xs">
       <Tabs
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as 'library' | 'vault' | 'inspector')}
@@ -544,7 +544,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                         {asset.type}
                       </Badge>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate font-mono">{asset.src}</p>
+                    <p className="text-[10px] text-muted-foreground truncate font-mono">{asset.src}</p>
                   </Card>
                 ))}
               </div>
@@ -558,10 +558,10 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             {/* Inspector Header & Add Modifier Dropdown */}
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Inspector
                 </h3>
-                <Badge variant="outline" className="font-mono text-[10px] text-indigo-700 bg-indigo-50 border-indigo-200">
+                <Badge variant="outline" className="font-mono text-[10px] text-accent-theme bg-accent-theme/10 border-accent-theme/30">
                   {selectedSeqId || 'None'}
                 </Badge>
               </div>
@@ -569,7 +569,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               {selectedSeq && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 px-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50">
+                    <Button variant="outline" size="sm" className="h-7 text-[11px] gap-1 px-2 border-accent-theme/30 text-accent-theme hover:bg-accent-theme/10">
                       <Plus className="w-3 h-3" />
                       Add Effect
                     </Button>
@@ -587,7 +587,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                             className="flex items-center justify-between cursor-pointer py-1.5"
                           >
                             <div className="flex items-center gap-2">
-                              <Icon className="w-3.5 h-3.5 text-indigo-500" />
+                              <Icon className="w-3.5 h-3.5 text-accent-theme" />
                               <span>{mod.name}</span>
                             </div>
                             {isAttached && <Check className="w-3.5 h-3.5 text-emerald-600" />}
@@ -601,27 +601,27 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             </div>
 
             {!selectedSeq ? (
-              <p className="text-xs text-slate-400 italic py-6 text-center">
+              <p className="text-xs text-muted-foreground italic py-6 text-center">
                 Select a sequence on the timeline to inspect and edit its 3D, VFX, and audio parameters.
               </p>
             ) : (
               <div className="space-y-3">
                 {/* General Sequence Info Card */}
-                <Card className="p-2.5 bg-slate-50/70 border-slate-200 space-y-1.5 text-xs">
+                <Card className="p-2.5 bg-muted/30 border-glass-border space-y-1.5 text-xs">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 text-[11px]">Track:</span>
-                    <span className="font-mono font-medium text-slate-800 text-[11px]">{selectedTrack?.id}</span>
+                    <span className="text-muted-foreground text-[11px]">Track:</span>
+                    <span className="font-mono font-medium text-foreground text-[11px]">{selectedTrack?.id}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 text-[11px]">Type:</span>
+                    <span className="text-muted-foreground text-[11px]">Type:</span>
                     <Badge variant="secondary" className="font-mono text-[9px] uppercase">
                       {selectedTrack?.type}
                     </Badge>
                   </div>
                   {selectedSeq.assetId && (
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-500 text-[11px]">Asset:</span>
-                      <span className="font-mono text-slate-700 truncate max-w-[140px] text-[11px]">
+                      <span className="text-muted-foreground text-[11px]">Asset:</span>
+                      <span className="font-mono text-foreground truncate max-w-[140px] text-[11px]">
                         {selectedSeq.assetId}
                       </span>
                     </div>
@@ -636,14 +636,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                 >
                   {/* 1. 3D Depth Relighting Section */}
                   {relightMod && (
-                    <AccordionItem value="relighting" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="relighting" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams(relightMod.type, {
                                   lightColor: '#00d4ff',
@@ -677,8 +677,8 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                         }
                       >
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                          <span className="text-xs font-bold text-slate-800">3D Relighting</span>
+                          <Sparkles className="w-3.5 h-3.5 text-accent-theme" />
+                          <span className="text-xs font-bold text-foreground">3D Relighting</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -766,14 +766,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
                   {/* 2. 3D Camera & Rack Focus Section */}
                   {cameraMod && (
-                    <AccordionItem value="camera" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="camera" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams(cameraMod.type, {
                                   eyeX: 0.0,
@@ -808,7 +808,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       >
                         <div className="flex items-center gap-1.5">
                           <Camera className="w-3.5 h-3.5 text-violet-600" />
-                          <span className="text-xs font-bold text-slate-800">3D Camera & Lens</span>
+                          <span className="text-xs font-bold text-foreground">3D Camera & Lens</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -863,7 +863,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                           onChange={(v) => updateModifierParams(cameraMod.type, { eyeZ: v })}
                         />
                         <div className="pt-1 border-t border-slate-100">
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
                             Rack Focus & Bokeh
                           </span>
                           <ParameterSlider
@@ -903,14 +903,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
                   {/* 3. Particle VFX & Shaders Section */}
                   {particleMod && (
-                    <AccordionItem value="particles" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="particles" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams(particleMod.type, {
                                   preset: 'cyber_sparks',
@@ -944,13 +944,13 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       >
                         <div className="flex items-center gap-1.5">
                           <Layers className="w-3.5 h-3.5 text-cyan-600" />
-                          <span className="text-xs font-bold text-slate-800">Particle VFX & Shaders</span>
+                          <span className="text-xs font-bold text-foreground">Particle VFX & Shaders</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
                         {/* Preset Badges */}
                         <div className="space-y-1.5">
-                          <span className="text-[11px] text-slate-600">Particle Preset</span>
+                          <span className="text-[11px] text-muted-foreground">Particle Preset</span>
                           <div className="grid grid-cols-2 gap-1.5">
                             {['cyber_sparks', 'cosmic_dust', 'matrix_rain', 'magic_embers'].map((pst) => (
                               <button
@@ -959,7 +959,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                                 className={`text-[10px] font-mono py-1 px-2 rounded border transition-colors ${
                                   (particleMod.params?.preset || 'cyber_sparks') === pst
                                     ? 'bg-cyan-50 border-cyan-400 text-cyan-800 font-semibold shadow-2xs'
-                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                    : 'border-glass-border text-muted-foreground hover:bg-muted/30'
                                 }`}
                               >
                                 {pst.replace('_', ' ')}
@@ -1006,7 +1006,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                           onChange={(v) => updateModifierParams(particleMod.type, { turbulence: v })}
                         />
                         <div className="pt-1 border-t border-slate-100">
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
                             Post Processing Shaders
                           </span>
                           <ParameterSlider
@@ -1035,14 +1035,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
                   {/* 4. Color Grading Section */}
                   {colorGradingMod && (
-                    <AccordionItem value="color" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="color" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams(colorGradingMod.type, {
                                   contrast: 1.0,
@@ -1073,7 +1073,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       >
                         <div className="flex items-center gap-1.5">
                           <Palette className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-xs font-bold text-slate-800">Color Grading</span>
+                          <span className="text-xs font-bold text-foreground">Color Grading</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
@@ -1122,14 +1122,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
                   {/* 5. Typography & Styling Section (if text sequence) */}
                   {(textStyleMod || selectedSeq.cues || selectedTrack?.type === 'timed_text') && (
-                    <AccordionItem value="typography" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="typography" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams('text/style', {
                                   fontFamily: 'Inter',
@@ -1156,16 +1156,16 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       >
                         <div className="flex items-center gap-1.5">
                           <Type className="w-3.5 h-3.5 text-amber-600" />
-                          <span className="text-xs font-bold text-slate-800">Typography & Styling</span>
+                          <span className="text-xs font-bold text-foreground">Typography & Styling</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">
                         <div className="space-y-1">
-                          <span className="text-[11px] text-slate-600">Font Family</span>
+                          <span className="text-[11px] text-muted-foreground">Font Family</span>
                           <select
                             value={textStyleMod?.params?.fontFamily || 'Inter'}
                             onChange={(e) => updateModifierParams('text/style', { fontFamily: e.target.value })}
-                            className="w-full h-7 text-xs border border-slate-200 rounded px-2 bg-white"
+                            className="w-full h-7 text-xs border border-glass-border rounded px-2 bg-glass-surface"
                           >
                             <option value="Inter">Inter (Sans-Serif)</option>
                             <option value="Fira Code">Fira Code (Monospace)</option>
@@ -1232,14 +1232,14 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
 
                   {/* 6. Audio Dynamic Ducking & Pan Section */}
                   {(duckingMod || selectedTrack?.type === 'audio') && (
-                    <AccordionItem value="audio" className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+                    <AccordionItem value="audio" className="border border-glass-border rounded-md overflow-hidden bg-glass-surface shadow-2xs">
                       <AccordionTrigger
                         actions={
                           <>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-slate-700"
+                              className="h-6 w-6 text-muted-foreground hover:text-foreground"
                               onClick={() =>
                                 updateModifierParams('sfx/dynamic_ducking', {
                                   duckVolume: 0.25,
@@ -1262,7 +1262,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                       >
                         <div className="flex items-center gap-1.5">
                           <Volume2 className="w-3.5 h-3.5 text-rose-600" />
-                          <span className="text-xs font-bold text-slate-800">Audio Ducking & Pan</span>
+                          <span className="text-xs font-bold text-foreground">Audio Ducking & Pan</span>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="p-3 space-y-3">

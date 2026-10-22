@@ -22,12 +22,12 @@ export function ViewportQuickTransport({
   const safeFps = Math.max(1, fps);
 
   return (
-    <div className="mt-2 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02] z-30">
+    <div className="mt-2 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-lg pointer-events-auto border border-glass-border-highlight transition-all duration-200 hover:scale-[1.02] z-30">
       <Tooltip content="Rewind to Start (Home)">
         <button
           type="button"
           onClick={() => onScrub?.(0)}
-          className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+          className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-foreground/10 active:scale-90 transition-all cursor-pointer"
         >
           <SkipBack className="w-3.5 h-3.5" />
         </button>
@@ -40,7 +40,7 @@ export function ViewportQuickTransport({
           className={`relative p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer ${
             isPlaying
               ? 'bg-amber-500 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
-              : 'bg-[var(--accent-primary)] text-slate-950 shadow-[0_0_20px_var(--accent-glow)]'
+              : 'bg-accent-theme text-primary-foreground shadow-accent-glow'
           }`}
         >
           {isPlaying ? (
@@ -55,17 +55,17 @@ export function ViewportQuickTransport({
         <button
           type="button"
           onClick={() => onScrub?.(Math.min(totalFrames, currentFrame + 1))}
-          className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-white/10 dark:hover:bg-white/10 active:scale-90 transition-all cursor-pointer"
+          className="p-1.5 text-foreground/70 hover:text-foreground rounded-full hover:bg-foreground/10 active:scale-90 transition-all cursor-pointer"
         >
           <SkipForward className="w-3.5 h-3.5" />
         </button>
       </Tooltip>
 
-      <div className="h-4 w-px bg-[var(--glass-border-highlight)] mx-1" />
+      <div className="h-4 w-px bg-glass-border-highlight mx-1" />
 
       {/* Timecode Readout Pill */}
-      <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full glass-card border border-[var(--glass-border)] text-foreground/90 font-mono text-[11px] select-none tracking-tight">
-        <span className="font-semibold text-[var(--accent-primary)]">
+      <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full glass-card border border-glass-border text-foreground/90 font-mono text-[11px] select-none tracking-tight">
+        <span className="font-semibold text-accent-theme">
           {(currentFrame / safeFps).toFixed(2)}s
         </span>
         <span className="text-muted-foreground text-[10px]">

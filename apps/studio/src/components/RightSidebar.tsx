@@ -121,13 +121,13 @@ export function RightSidebar() {
   });
 
   return (
-    <aside className="w-[336px] glass-panel border-l border-border/50 flex flex-col h-full select-none shadow-xs z-10 shrink-0">
+    <aside className="w-[336px] glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-xs z-10 shrink-0">
       {/* 1. Multi-Tier Interactive Breadcrumbs & Header */}
-      <div className="p-2.5 border-b border-border/40 bg-background/50 flex flex-col gap-2">
+      <div className="p-2.5 border-b border-glass-border bg-glass-surface/40 flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
-            <Sliders className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+            <Sliders className="w-4 h-4 text-accent-theme shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
               Inspector
             </span>
           </div>
@@ -139,7 +139,7 @@ export function RightSidebar() {
                   variant="outline"
                   size="sm"
                   disabled={isSequenceLocked}
-                  className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/200 text-accent-theme/600 hover:bg-accent-theme/100 cursor-pointer disabled:cursor-not-allowed"
+                  className="h-6 text-[10px] gap-1 px-1.5 border-accent-theme/40 text-accent-theme bg-accent-theme/10 hover:bg-accent-theme/20 cursor-pointer disabled:cursor-not-allowed"
                 >
                   <Plus className="w-3 h-3" />
                   Add Effect

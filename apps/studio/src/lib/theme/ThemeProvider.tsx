@@ -68,28 +68,76 @@ function loadSavedPreferences(): ThemePreferences {
   }
 }
 
-export const ACCENT_CONFIGS: Record<AccentColor, { label: string; hex: string; hsl: string }> = {
-  cyan: { label: 'Cyan', hex: '#06b6d4', hsl: '189 94% 43%' },
-  violet: { label: 'Violet', hex: '#8b5cf6', hsl: '258 90% 66%' },
-  emerald: { label: 'Emerald', hex: '#10b981', hsl: '160 84% 39%' },
-  amber: { label: 'Amber', hex: '#f59e0b', hsl: '38 92% 50%' },
-  rose: { label: 'Rose', hex: '#f43f5e', hsl: '350 89% 60%' },
+export const ACCENT_CONFIGS: Record<
+  AccentColor,
+  { label: string; hex: string; hsl: string; glow: string }
+> = {
+  cyan: {
+    label: 'Cyan',
+    hex: '#06b6d4',
+    hsl: '189 94% 43%',
+    glow: 'rgba(6, 182, 212, 0.4)',
+  },
+  violet: {
+    label: 'Violet',
+    hex: '#8b5cf6',
+    hsl: '258 90% 66%',
+    glow: 'rgba(139, 92, 246, 0.4)',
+  },
+  emerald: {
+    label: 'Emerald',
+    hex: '#10b981',
+    hsl: '160 84% 39%',
+    glow: 'rgba(16, 185, 129, 0.4)',
+  },
+  amber: {
+    label: 'Amber',
+    hex: '#f59e0b',
+    hsl: '38 92% 50%',
+    glow: 'rgba(245, 158, 11, 0.4)',
+  },
+  rose: {
+    label: 'Rose',
+    hex: '#f43f5e',
+    hsl: '350 89% 60%',
+    glow: 'rgba(244, 63, 94, 0.4)',
+  },
 };
 
+export function applyThemeToDocument(preferences: ThemePreferences): void {
+  if (typeof document === 'undefined') return;
+
+  const root = document.documentElement;
+  const isDark = preferences.mode === 'dark';
+
+  root.classList.toggle('dark', isDark);
+  root.classList.toggle('light', !isDark);
+  root.style.colorScheme = preferences.mode;
+
+  root.setAttribute('data-theme-mode', preferences.mode);
+  root.setAttribute('data-glass-style', preferences.glassStyle);
+  root.setAttribute('data-blur-intensity', preferences.blurIntensity);
+  root.setAttribute('data-accent', preferences.accentColor);
+
+  const accentCfg = ACCENT_CONFIGS[preferences.accentColor] || ACCENT_CONFIGS.cyan;
+  root.style.setProperty('--primary', accentCfg.hsl);
+  root.style.setProperty('--ring', accentCfg.hsl);
+  root.style.setProperty('--accent-primary', accentCfg.hex);
+  root.style.setProperty('--color-brand-accent', accentCfg.hex);
+  root.style.setProperty('--accent-glow', accentCfg.glow);
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [preferences, setPreferences] = useState<ThemePreferences>(loadSavedPreferences);
+  const [preferences, setPreferences] = useState<ThemePreferences>(() => {
+    const initial = loadSavedPreferences();
+    applyThemeToDocument(initial);
+    return initial;
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Sync state to DOM, html attributes, colorScheme, and localStorage
+  // Sync state to DOM, html attributes, colorScheme, CSS variables, and localStorage
   useEffect(() => {
-    if (typeof document === 'undefined') return;
-
-    const root = document.documentElement;
-    root.classList.toggle('dark', preferences.mode === 'dark');
-    root.style.colorScheme = preferences.mode;
-    root.setAttribute('data-glass-style', preferences.glassStyle);
-    root.setAttribute('data-blur-intensity', preferences.blurIntensity);
-    root.setAttribute('data-accent', preferences.accentColor);
+    applyThemeToDocument(preferences);
 
     try {
       const storage = getStorage();

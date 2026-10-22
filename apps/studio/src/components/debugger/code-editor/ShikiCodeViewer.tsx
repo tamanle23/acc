@@ -51,7 +51,7 @@ export function ShikiCodeViewer({
       {/* Line Numbers with Gutter Indicators */}
       <div
         aria-hidden="true"
-        className="select-none py-3 px-2 text-right border-r border-[var(--glass-border)] bg-[var(--glass-bg)]/50 font-mono text-[11px] leading-[1.4rem] shrink-0 text-muted-foreground/60 w-12 backdrop-blur-xs"
+        className="select-none py-3 px-2 text-right border-r border-glass-border bg-glass-surface/50 font-mono text-[11px] leading-[1.4rem] shrink-0 text-muted-foreground/60 w-12 backdrop-blur-xs"
       >
         {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => {
           const lineNum = i + 1;
@@ -76,7 +76,7 @@ export function ShikiCodeViewer({
         <pre
           ref={preRef}
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none p-3 m-0 font-mono text-[11px] leading-[1.4rem] overflow-hidden whitespace-pre tab-4 select-none opacity-90 z-0 text-slate-300"
+          className="absolute inset-0 pointer-events-none p-3 m-0 font-mono text-[11px] leading-[1.4rem] overflow-hidden whitespace-pre tab-4 select-none opacity-90 z-0 text-foreground"
         >
           {highlightedLines ? (
             highlightedLines.map((lineTokens, i) => (
@@ -100,7 +100,7 @@ export function ShikiCodeViewer({
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="absolute inset-0 w-full h-full p-3 font-mono text-[11px] leading-[1.4rem] bg-transparent text-transparent caret-foreground focus:outline-hidden resize-none whitespace-pre overflow-auto tab-4 z-10 selection:bg-indigo-500/30 selection:text-white"
+          className="absolute inset-0 w-full h-full p-3 font-mono text-[11px] leading-[1.4rem] bg-transparent text-transparent caret-foreground focus:outline-hidden resize-none whitespace-pre overflow-auto tab-4 z-10 selection:bg-accent-theme/30 selection:text-foreground"
         />
       </div>
     </div>

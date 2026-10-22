@@ -60,11 +60,11 @@ export interface LeftSidebarProps {
 export function renderPresetIcon(iconName: string) {
   switch (iconName) {
     case 'Type':
-      return <Type className="w-3.5 h-3.5 text-indigo-500" />;
+      return <Type className="w-3.5 h-3.5 text-accent-theme" />;
     case 'Square':
-      return <Square className="w-3.5 h-3.5 text-violet-500" />;
+      return <Square className="w-3.5 h-3.5 text-accent-theme" />;
     case 'Circle':
-      return <Circle className="w-3.5 h-3.5 text-cyan-400" />;
+      return <Circle className="w-3.5 h-3.5 text-accent-theme" />;
     case 'ArrowUpRight':
       return <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" />;
     case 'Eye':
@@ -80,14 +80,14 @@ export function renderPresetIcon(iconName: string) {
     case 'Video':
       return <Video className="w-3.5 h-3.5 text-blue-500" />;
     case 'Film':
-      return <Film className="w-3.5 h-3.5 text-indigo-400" />;
+      return <Film className="w-3.5 h-3.5 text-accent-theme" />;
     case 'Radio':
       return <Radio className="w-3.5 h-3.5 text-amber-500" />;
     case 'Play':
-      return <Play className="w-3.5 h-3.5 text-cyan-500" />;
+      return <Play className="w-3.5 h-3.5 text-accent-theme" />;
     case 'Sparkles':
     default:
-      return <Sparkles className="w-3.5 h-3.5 text-pink-400" />;
+      return <Sparkles className="w-3.5 h-3.5 text-accent-theme" />;
   }
 }
 
@@ -480,7 +480,7 @@ export function DraggablePresetCard({
             e.stopPropagation();
             onInsert(preset);
           }}
-          className="h-5 px-2 text-[10px] font-medium text-[var(--accent-primary)] hover:bg-[var(--accent-glow)]/20 rounded-full gap-1 cursor-pointer transition-all active:scale-95"
+          className="h-5 px-2 text-[10px] font-medium text-accent-theme hover:bg-accent-theme/20 rounded-full gap-1 cursor-pointer transition-all active:scale-95"
         >
           <Plus className="w-3 h-3" />
           Insert
@@ -515,7 +515,7 @@ export function DraggableAssetCard({
       case 'image':
         return <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />;
       default:
-        return <FileBox className="w-3.5 h-3.5 text-slate-500" />;
+        return <FileBox className="w-3.5 h-3.5 text-muted-foreground" />;
     }
   };
 
@@ -723,43 +723,43 @@ export function LeftSidebar({
       case 'vault':
         return {
           title: 'Assets Vault',
-          icon: <Folder className="w-4 h-4 text-cyan-400" />,
+          icon: <Folder className="w-4 h-4 text-accent-theme" />,
           count: `${filteredAssets.length} assets`,
         };
       case 'typography':
         return {
           title: 'Typography Library',
-          icon: <Type className="w-4 h-4 text-indigo-400" />,
+          icon: <Type className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} styles`,
         };
       case 'shapes':
         return {
           title: 'Designer Shapes',
-          icon: <Square className="w-4 h-4 text-violet-400" />,
+          icon: <Square className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} shapes`,
         };
       case 'vfx':
         return {
           title: 'Cinematic VFX',
-          icon: <Sparkles className="w-4 h-4 text-pink-400" />,
+          icon: <Sparkles className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} effects`,
         };
       case 'sfx':
         return {
           title: 'Sound FX Catalog',
-          icon: <Volume2 className="w-4 h-4 text-rose-400" />,
+          icon: <Volume2 className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} sounds`,
         };
       case 'video':
         return {
           title: 'Video Footages',
-          icon: <Film className="w-4 h-4 text-blue-400" />,
+          icon: <Film className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} plates`,
         };
       case 'audio':
         return {
           title: 'Production Audio',
-          icon: <Music className="w-4 h-4 text-emerald-400" />,
+          icon: <Music className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} scores`,
         };
       case 'all':
@@ -767,7 +767,7 @@ export function LeftSidebar({
       default:
         return {
           title: 'Staging Library',
-          icon: <Library className="w-4 h-4 text-cyan-400" />,
+          icon: <Library className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} items`,
         };
     }

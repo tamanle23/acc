@@ -65,11 +65,11 @@ export function DiagnosticTelemetryCard({
 
       {/* Validation Status Notice */}
       {isFullyValid ? (
-        <div className="p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 flex items-start gap-2 shadow-xs">
+        <div className="p-2.5 rounded-lg bg-[var(--glass-bg)] border-[var(--glass-border)] focus-visible:ring-[var(--accent-primary)] text-[11px] font-mono  flex items-start gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold text-emerald-300">Schema & DAG Verified</div>
-            <p className="text-[10px] text-emerald-400/80 mt-0.5 leading-relaxed">
+            <div className="font-semibold ">Schema & DAG Verified</div>
+            <p className="text-[10px]  mt-0.5 leading-relaxed">
               VideoIR Document is 100% compliant with Draft-07 schema and ready to apply.
             </p>
           </div>

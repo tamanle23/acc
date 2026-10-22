@@ -24,7 +24,7 @@ export function TrimHandle({ seq, handle }: TrimHandleProps) {
       onClick={(e) => e.stopPropagation()}
       className={`w-2 h-full ${
         handle === 'start' ? '-ml-2 rounded-l-xs' : '-mr-2 rounded-r-xs'
-      } cursor-col-resize hover:bg-white/50 active:bg-[var(--accent-primary)]/60 flex items-center justify-center transition-colors z-30`}
+      } cursor-col-resize hover:bg-white/50 active:bg-accent-theme/60 flex items-center justify-center transition-colors z-30`}
       title={`Drag to Trim ${handle === 'start' ? 'Start' : 'End'} (Snap enabled)`}
     >
       <div className="w-0.5 h-3 bg-white/60 rounded-full" />
