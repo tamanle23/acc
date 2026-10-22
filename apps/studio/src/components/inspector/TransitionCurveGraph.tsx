@@ -34,8 +34,6 @@ function getDefaultBezier(easingId: string): CubicBezier {
 
 /** Evaluate a cubic bezier at parameter t ∈ [0,1] */
 function cubicBezierY(t: number, p1y: number, p2y: number): number {
-  // Standard cubic bezier: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3
-  // P0=(0,0), P3=(1,1), P1=(p1x,p1y), P2=(p2x,p2y)
   const mt = 1 - t;
   return 3 * mt * mt * t * p1y + 3 * mt * t * t * p2y + t * t * t;
 }
@@ -44,15 +42,14 @@ function cubicBezierY(t: number, p1y: number, p2y: number): number {
 function buildBezierPath(p1: BezierPoint, p2: BezierPoint, width: number, height: number, padding: number): string {
   const w = width - 2 * padding;
   const h = height - 2 * padding;
-  // Map bezier [0,1] to SVG coords (y is inverted)
   const toX = (x: number) => padding + x * w;
   const toY = (y: number) => padding + (1 - y) * h;
   const pts: string[] = [];
   const steps = 80;
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    const bx = cubicBezierY(t, p1.x, p2.x); // x-axis bezier
-    const by = cubicBezierY(t, p1.y, p2.y); // y-axis bezier
+    const bx = cubicBezierY(t, p1.x, p2.x);
+    const by = cubicBezierY(t, p1.y, p2.y);
     pts.push(`${i === 0 ? 'M' : 'L'} ${toX(bx).toFixed(2)} ${toY(by).toFixed(2)}`);
   }
   return pts.join(' ');
@@ -63,9 +60,7 @@ function buildBezierPath(p1: BezierPoint, p2: BezierPoint, width: number, height
 export interface TransitionCurveGraphProps {
   /** Currently selected GSAP easing preset ID */
   easingId?: string;
-  /** Width in pixels (default: 280) */
-  width?: number;
-  /** Height in pixels (default: 200) */
+  /** Height in pixels (default: 160) */
   height?: number;
   /** Called when user drags control points to a custom curve */
   onCurveChange?: (p1: BezierPoint, p2: BezierPoint) => void;
@@ -75,6 +70,7 @@ export interface TransitionCurveGraphProps {
 
 const PADDING = 28;
 const HANDLE_RADIUS = 6;
+const BASE_WIDTH = 280;
 
 /**
  * TransitionCurveGraph — Interactive cubic Bézier curve visualizer.
@@ -87,8 +83,7 @@ const HANDLE_RADIUS = 6;
  */
 export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
   easingId = 'power2.out',
-  width = 280,
-  height = 200,
+  height = 160,
   onCurveChange,
   showScrubber = true,
 }) => {
@@ -122,21 +117,23 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
   }, [showScrubber, easingId]);
 
   const toSvgCoords = useCallback((norm: BezierPoint) => ({
-    x: PADDING + norm.x * (width - 2 * PADDING),
+    x: PADDING + norm.x * (BASE_WIDTH - 2 * PADDING),
     y: PADDING + (1 - norm.y) * (height - 2 * PADDING),
-  }), [width, height]);
+  }), [height]);
 
   const fromSvgCoords = useCallback((svgX: number, svgY: number): BezierPoint => ({
-    x: Math.max(0, Math.min(1, (svgX - PADDING) / (width - 2 * PADDING))),
-    y: (1 - (svgY - PADDING) / (height - 2 * PADDING)), // unclamped for overshoot curves
-  }), [width, height]);
+    x: Math.max(0, Math.min(1, (svgX - PADDING) / (BASE_WIDTH - 2 * PADDING))),
+    y: (1 - (svgY - PADDING) / (height - 2 * PADDING)),
+  }), [height]);
 
   const getSvgPoint = useCallback((e: React.PointerEvent<SVGSVGElement>): BezierPoint | null => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
-    return fromSvgCoords(e.clientX - rect.left, e.clientY - rect.top);
-  }, [fromSvgCoords]);
+    const scaleX = BASE_WIDTH / rect.width;
+    const scaleY = height / rect.height;
+    return fromSvgCoords((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+  }, [fromSvgCoords, height]);
 
   const handlePointerDown = (point: 'p1' | 'p2') => (e: React.PointerEvent<SVGCircleElement>) => {
     e.preventDefault();
@@ -159,7 +156,7 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
   }, []);
 
   // Build curve path
-  const curvePath = buildBezierPath(bezier.p1, bezier.p2, width, height, PADDING);
+  const curvePath = buildBezierPath(bezier.p1, bezier.p2, BASE_WIDTH, height, PADDING);
 
   // Handle positions
   const p1svg = toSvgCoords(bezier.p1);
@@ -176,17 +173,17 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
   const preset = GSAP_EASING_PRESETS.find(p => p.id === easingId);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 w-full">
       {/* Header */}
       <div className="flex items-center justify-between text-[10px] font-mono">
         <span className="text-muted-foreground uppercase tracking-wider">Bezier Curve</span>
         <span className="text-accent-theme font-semibold">{preset?.name ?? easingId}</span>
       </div>
 
-      {/* SVG Graph */}
+      {/* SVG Graph Container */}
       <div
-        className="relative rounded-xl border border-glass-border bg-background/70 overflow-hidden"
-        style={{ width, height }}
+        className="relative w-full rounded-xl border border-glass-border bg-background/70 overflow-hidden"
+        style={{ height }}
       >
         {/* Subtle dot grid background */}
         <div
@@ -199,10 +196,9 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
 
         <svg
           ref={svgRef}
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          className="absolute inset-0 touch-none"
+          viewBox={`0 0 ${BASE_WIDTH} ${height}`}
+          className="w-full h-full touch-none block"
+          preserveAspectRatio="none"
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
           onPointerLeave={handleSvgPointerUp}
@@ -210,14 +206,14 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
         >
           {/* Grid lines */}
           {gridLines.map(v => {
-            const xPos = PADDING + v * (width - 2 * PADDING);
+            const xPos = PADDING + v * (BASE_WIDTH - 2 * PADDING);
             const yPos = PADDING + v * (height - 2 * PADDING);
             return (
               <g key={v}>
                 <line x1={xPos} y1={PADDING} x2={xPos} y2={height - PADDING}
                   stroke="currentColor" strokeWidth="0.5" strokeDasharray="3,3"
                   className="text-muted-foreground/20" />
-                <line x1={PADDING} y1={yPos} x2={width - PADDING} y2={yPos}
+                <line x1={PADDING} y1={yPos} x2={BASE_WIDTH - PADDING} y2={yPos}
                   stroke="currentColor" strokeWidth="0.5" strokeDasharray="3,3"
                   className="text-muted-foreground/20" />
               </g>
@@ -227,11 +223,11 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
           {/* Axes */}
           <line x1={PADDING} y1={PADDING} x2={PADDING} y2={height - PADDING}
             stroke="currentColor" strokeWidth="1" className="text-muted-foreground/40" />
-          <line x1={PADDING} y1={height - PADDING} x2={width - PADDING} y2={height - PADDING}
+          <line x1={PADDING} y1={height - PADDING} x2={BASE_WIDTH - PADDING} y2={height - PADDING}
             stroke="currentColor" strokeWidth="1" className="text-muted-foreground/40" />
 
           {/* Diagonal reference line */}
-          <line x1={PADDING} y1={height - PADDING} x2={width - PADDING} y2={PADDING}
+          <line x1={PADDING} y1={height - PADDING} x2={BASE_WIDTH - PADDING} y2={PADDING}
             stroke="currentColor" strokeWidth="1" strokeDasharray="4,4"
             className="text-muted-foreground/25" />
 
@@ -242,7 +238,7 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
             stroke="var(--accent-primary)" strokeWidth="1" opacity="0.5"
           />
           <line
-            x1={width - PADDING} y1={PADDING}
+            x1={BASE_WIDTH - PADDING} y1={PADDING}
             x2={p2svg.x} y2={p2svg.y}
             stroke="var(--accent-primary)" strokeWidth="1" opacity="0.5"
           />
@@ -260,14 +256,14 @@ export const TransitionCurveGraph: React.FC<TransitionCurveGraphProps> = ({
 
           {/* Area fill under curve */}
           <path
-            d={`${curvePath} L ${width - PADDING} ${height - PADDING} L ${PADDING} ${height - PADDING} Z`}
+            d={`${curvePath} L ${BASE_WIDTH - PADDING} ${height - PADDING} L ${PADDING} ${height - PADDING} Z`}
             fill="var(--accent-primary)"
             opacity="0.06"
           />
 
           {/* Start & end fixed points */}
           <circle cx={PADDING} cy={height - PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
-          <circle cx={width - PADDING} cy={PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
+          <circle cx={BASE_WIDTH - PADDING} cy={PADDING} r="4" fill="var(--accent-primary)" opacity="0.7" />
 
           {/* Control point P1 (draggable) */}
           <circle

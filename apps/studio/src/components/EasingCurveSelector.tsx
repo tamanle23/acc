@@ -215,10 +215,9 @@ export function EasingCurveSelector({
 
       {/* Expanded interactive Bezier curve graph */}
       {showGraph && (
-        <div className="mt-2 px-1">
+        <div className="mt-2 w-full">
           <TransitionCurveGraph
             easingId={value}
-            width={248}
             height={160}
             showScrubber
           />
