@@ -1538,6 +1538,7 @@ function DagStudioCanvas({
   const headerToolbarRef = useRef<HTMLDivElement>(null);
   const [headerToolbarHeight, setHeaderToolbarHeight] = useState<number>(44);
   const [containerHeight, setContainerHeight] = useState<number>(650);
+  const [containerWidth, setContainerWidth] = useState<number>(1200);
 
   useEffect(() => {
     if (!reactFlowWrapper.current) return;
@@ -1547,6 +1548,7 @@ function DagStudioCanvas({
       }
       if (reactFlowWrapper.current) {
         setContainerHeight(reactFlowWrapper.current.offsetHeight);
+        setContainerWidth(reactFlowWrapper.current.offsetWidth);
       }
     };
     updateDimensions();
@@ -1571,31 +1573,44 @@ function DagStudioCanvas({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
-      {/* 1. Left Cluster: Identity & Context */}
+      {/* Header Command Bar: Floating clusters on >= 960px, responsive flex-wrap bar on < 960px */}
       <div
-        ref={headerToolbarRef}
-        data-testid="dag-toolbar-left-cluster"
-        className="absolute top-4 left-4 z-10 flex items-center gap-2 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+        className={cn(
+          containerWidth < 960
+            ? "absolute top-2 left-2 right-2 z-10 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none [&>*]:pointer-events-auto"
+            : "contents"
+        )}
       >
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-primary animate-pulse" />
-          <span className="text-xs font-bold text-foreground tracking-tight">Visual DAG Studio 2.0</span>
+        {/* 1. Left Cluster: Identity & Context */}
+        <div
+          ref={headerToolbarRef}
+          data-testid="dag-toolbar-left-cluster"
+          className={cn(
+            "z-10 flex items-center gap-1.5 sm:gap-2 p-1.5 px-2 sm:px-2.5 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
+            containerWidth < 960 ? "relative" : "absolute top-4 left-4"
+          )}
+        >
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Activity className="w-4 h-4 text-primary animate-pulse shrink-0" />
+          <span className="text-xs font-bold text-foreground tracking-tight hidden sm:inline">Visual DAG Studio 2.0</span>
+          <span className="text-xs font-bold text-foreground tracking-tight sm:hidden">Studio</span>
           {isReadOnly ? (
-            <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1">
+            <Badge variant="outline" className="text-[10px] bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 flex items-center gap-1 px-1.5">
               <Lock className="w-2.5 h-2.5" />
-              Read-Only
+              <span className="hidden xs:inline">Read-Only</span>
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
-              Full Authoring
+            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20 px-1.5">
+              <span className="hidden sm:inline">Full Authoring</span>
+              <span className="sm:hidden">Author</span>
             </Badge>
           )}
         </div>
 
         {workflowKey && (
           <>
-            <div className="h-3.5 w-[1px] bg-border/50" />
-            <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[120px]" title={workflowKey}>
+            <div className="h-3.5 w-[1px] bg-border/50 hidden xs:block" />
+            <span className="text-[11px] font-medium text-muted-foreground truncate max-w-[80px] sm:max-w-[120px] hidden xs:inline" title={workflowKey}>
               {workflowKey}
             </span>
           </>
@@ -1611,7 +1626,7 @@ function DagStudioCanvas({
                 aria-label="Diff comparison version"
                 value={diffTargetVersion ?? ''}
                 onChange={(e) => setDiffTargetVersion(e.target.value ? Number(e.target.value) : null)}
-                className="text-[10px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground"
+                className="text-[10px] bg-transparent border-none focus:outline-none cursor-pointer font-medium text-foreground max-w-[70px] sm:max-w-none truncate"
               >
                 <option value="">Diff: None</option>
                 {workflowVersions.map((v) => (
@@ -1634,7 +1649,7 @@ function DagStudioCanvas({
             title="Open Hot Migration compatibility checker & execution rewiring"
           >
             <GitCompare className="w-2.5 h-2.5" />
-            Hot Migrate
+            <span className="hidden sm:inline">Hot Migrate</span>
           </Button>
         )}
       </div>
@@ -1643,18 +1658,22 @@ function DagStudioCanvas({
       {!isReadOnly && (
         <div
           data-testid="dag-toolbar-center-cluster"
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+          className={cn(
+            "z-10 flex items-center gap-1 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
+            containerWidth < 960 ? "relative" : "absolute top-4 left-1/2 -translate-x-1/2"
+          )}
         >
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs gap-1"
+            className="h-7 px-2 text-xs gap-1"
             onClick={() => handleAutoLayout('LR')}
             title="Topological Auto-Layout (Left-to-Right)"
+            aria-label="Topological Auto-Layout"
             data-testid="dag-auto-layout-btn"
           >
             <LayoutGrid className="w-3 h-3 text-indigo-500" />
-            Auto-Layout
+            <span className="hidden xl:inline">Auto-Layout</span>
           </Button>
 
           {/* Snap to grid toggle */}
@@ -1664,10 +1683,11 @@ function DagStudioCanvas({
             className="h-7 px-2 text-xs gap-1"
             onClick={() => setIsSnapToGrid((prev) => !prev)}
             title={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'} (16px grid)`}
+            aria-label={`Snap to Grid: ${isSnapToGrid ? 'ON' : 'OFF'}`}
             data-testid="dag-snap-grid-btn"
           >
             <Magnet className={cn('w-3 h-3', isSnapToGrid ? 'text-primary-foreground' : 'text-muted-foreground')} />
-            <span>Snap</span>
+            <span className="hidden sm:inline">Snap</span>
           </Button>
 
           {/* Edge routing toggle (Bezier vs Orthogonal SmoothStep) */}
@@ -1679,17 +1699,18 @@ function DagStudioCanvas({
               setEdgeRoutingMode((prev) => (prev === 'bezier' ? 'smoothstep' : 'bezier'))
             }
             title={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
+            aria-label={`Edge Routing: ${edgeRoutingMode === 'bezier' ? 'Curved (Bezier)' : 'Orthogonal (Step)'}`}
             data-testid="dag-edge-routing-btn"
           >
             {edgeRoutingMode === 'bezier' ? (
               <>
                 <Spline className="w-3 h-3 text-sky-500" />
-                <span>Curves</span>
+                <span className="hidden sm:inline">Curves</span>
               </>
             ) : (
               <>
                 <Route className="w-3 h-3 text-indigo-500" />
-                <span>Orthogonal</span>
+                <span className="hidden sm:inline">Orthogonal</span>
               </>
             )}
           </Button>
@@ -1727,7 +1748,10 @@ function DagStudioCanvas({
       {isReadOnly && (
         <div
           data-testid="dag-toolbar-center-cluster-readonly"
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+          className={cn(
+            "z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
+            containerWidth < 960 ? "relative" : "absolute top-4 left-1/2 -translate-x-1/2"
+          )}
         >
           <div className="flex items-center p-0.5 rounded-lg bg-muted/60 border border-border/40">
             <Button
@@ -1757,24 +1781,29 @@ function DagStudioCanvas({
       {/* 3. Right Cluster: Workflow Actions & CTAs */}
       <div
         data-testid="dag-toolbar-right-cluster"
-        className="absolute top-4 right-4 z-10 flex items-center gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg"
+        className={cn(
+          "z-10 flex items-center gap-1 sm:gap-1.5 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all",
+          containerWidth < 960 ? "relative" : "absolute top-4 right-4"
+        )}
       >
         {!isReadOnly && (
           <>
             <Button
               size="sm"
               variant={showPalette ? 'default' : 'outline'}
-              className="h-7 text-xs gap-1"
+              className="h-7 px-2 text-xs gap-1"
               onClick={() => setShowPalette((prev) => !prev)}
+              title="Toggle Node Palette"
+              aria-label="Palette"
             >
               <Plus className="w-3 h-3" />
-              Palette
+              <span className="hidden xl:inline">Palette</span>
             </Button>
 
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1"
+              className="h-7 px-2 text-xs gap-1"
               onClick={() => {
                 pushUndoSnapshot();
                 setNodes(BLANK_WORKFLOW_NODES);
@@ -1783,37 +1812,40 @@ function DagStudioCanvas({
                 setIsDismissedEmptyState(false);
               }}
               title="Reset canvas to blank workflow (START and END only)"
+              aria-label="Blank"
               data-testid="dag-new-blank-btn"
             >
               <RotateCcw className="w-3 h-3 text-muted-foreground" />
-              Blank
+              <span className="hidden xl:inline">Blank</span>
             </Button>
 
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1"
+              className="h-7 px-2 text-xs gap-1"
               onClick={handleValidateDag}
               title="Run Kahn & Tarjan cycle checks and binding validation"
+              aria-label="Validate DAG"
             >
               {validationErrors.length > 0 ? (
                 <AlertTriangle className="w-3 h-3 text-rose-500" />
               ) : (
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               )}
-              Validate DAG
+              <span className="hidden lg:inline">Validate DAG</span>
             </Button>
 
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+              className="h-7 px-2 text-xs gap-1 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
               onClick={() => setIsDryRunOpen(true)}
               title="Dry-run simulate workflow execution with mock inputs"
+              aria-label="Dry Run"
               data-testid="dag-dry-run-btn"
             >
               <Sparkles className="w-3 h-3 text-amber-500" />
-              Dry Run
+              <span className="hidden lg:inline">Dry Run</span>
             </Button>
 
             {/* Dropdown Menu for Export / Import IR & Blank Reset */}
@@ -1927,9 +1959,11 @@ function DagStudioCanvas({
                   : 'Save workflow definition to backend catalog'
               }
               data-testid="dag-save-btn"
+              aria-label="Save DAG"
             >
               <Save className="w-3 h-3" />
-              {saveWorkflowMutation.isPending ? 'Saving...' : 'Save DAG'}
+              <span>{saveWorkflowMutation.isPending ? 'Saving...' : 'Save'}</span>
+              <span className="hidden sm:inline">{!saveWorkflowMutation.isPending && ' DAG'}</span>
             </Button>
           </>
         )}
@@ -1960,17 +1994,22 @@ function DagStudioCanvas({
           </>
         )}
       </div>
+    </div>
 
       {/* Contextual Floating Debugger Sub-Pill (Only active in execution inspection mode) */}
       {isExecutionMode && (
         <div
           data-testid="dag-execution-debugger-subpill"
-          className="absolute top-[68px] left-4 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 animate-in fade-in slide-in-from-top-1"
+          style={{ top: `${16 + headerToolbarHeight + 8}px` }}
+          className="absolute left-4 z-10 flex items-center gap-1.5 p-1.5 px-2.5 rounded-xl backdrop-blur-xl bg-amber-500/10 border border-amber-500/30 shadow-lg text-amber-700 dark:text-amber-300 max-w-[calc(100%-2rem)] overflow-x-auto scrollbar-none animate-in fade-in slide-in-from-top-1"
         >
-          <div className="flex items-center gap-1 mr-1">
+          <div className="flex items-center gap-1 mr-1 shrink-0">
             <Bug className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">
+            <span className="text-[10px] font-bold uppercase tracking-wider hidden xs:inline">
               Debugger {breakpoints.length > 0 ? `(${breakpoints.length} BP)` : ''}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider xs:hidden">
+              Debug
             </span>
           </div>
 
@@ -2160,6 +2199,7 @@ function DagStudioCanvas({
             style={{ top: `${paletteTop}px` }}
           >
             <DagPalette
+              defaultCollapsed={containerWidth < 900}
               style={{
                 maxHeight: `${computedMaxHeight}px`,
               }}

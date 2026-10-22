@@ -177,6 +177,15 @@ describe('Iteration 18: Visual DAG Studio Layout & UI/UX Overhaul', () => {
       fireEvent.click(expandBtn);
       expect(screen.getByText('Node Palette')).toBeDefined();
     });
+
+    it('supports defaultCollapsed prop to start in slim rail mode on small viewports', () => {
+      render(<DagPalette defaultCollapsed={true} />);
+
+      // Starts directly in collapsed rail mode
+      expect(screen.queryByText('Node Palette')).toBeNull();
+      expect(screen.getByTestId('dag-palette-rail')).toBeDefined();
+      expect(screen.getByTestId('dag-palette-collapse-toggle-btn')).toBeDefined();
+    });
   });
 
   describe('4. Blank Canvas Onboarding Helper Prompt', () => {
@@ -213,6 +222,25 @@ describe('Iteration 18: Visual DAG Studio Layout & UI/UX Overhaul', () => {
 
       // Empty prompt automatically dismisses
       expect(screen.queryByTestId('dag-canvas-empty-state')).toBeNull();
+    });
+  });
+
+  describe('5. Responsive Layout Adaptations', () => {
+    it('renders responsive toolbar elements with proper aria-labels on compact screens', () => {
+      renderWithProviders(<VisualDagStudio mode="full" />);
+
+      const autoLayoutBtn = screen.getByTestId('dag-auto-layout-btn');
+      expect(autoLayoutBtn.getAttribute('aria-label')).toBe('Topological Auto-Layout');
+
+      const snapBtn = screen.getByTestId('dag-snap-grid-btn');
+      expect(snapBtn.getAttribute('aria-label')).toContain('Snap to Grid');
+
+      const edgeBtn = screen.getByTestId('dag-edge-routing-btn');
+      expect(edgeBtn.getAttribute('aria-label')).toContain('Edge Routing');
+
+      const saveBtn = screen.getByTestId('dag-save-btn');
+      expect(saveBtn).toBeDefined();
+      expect(saveBtn.textContent).toContain('Save');
     });
   });
 });

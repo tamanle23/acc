@@ -47,6 +47,7 @@ export const DagSelectionToolbar: React.FC<DagSelectionToolbarProps> = ({
       className={cn(
         'absolute top-16 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 p-1.5 px-3 rounded-2xl',
         'backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/40 dark:border-white/10 shadow-2xl',
+        'max-w-[calc(100%-1.5rem)] overflow-x-auto scrollbar-none',
         'animate-in fade-in-0 slide-in-from-top-2 duration-150'
       )}
       data-testid="dag-selection-toolbar"

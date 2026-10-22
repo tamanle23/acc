@@ -47,6 +47,9 @@ export interface PaletteItem {
 export interface DagPaletteProps {
   className?: string;
   style?: React.CSSProperties;
+  defaultCollapsed?: boolean;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export const CATEGORIES: { id: PaletteItem['category']; label: string }[] = [
@@ -382,8 +385,23 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   },
 ];
 
-export function DagPalette({ className, style }: DagPaletteProps = {}) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function DagPalette({
+  className,
+  style,
+  defaultCollapsed = false,
+  isCollapsed: controlledCollapsed,
+  onCollapsedChange,
+}: DagPaletteProps = {}) {
+  const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleToggleCollapse = (nextVal: boolean) => {
+    setInternalCollapsed(nextVal);
+    if (onCollapsedChange) {
+      onCollapsedChange(nextVal);
+    }
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
     control: true,
@@ -444,72 +462,72 @@ export function DagPalette({ className, style }: DagPaletteProps = {}) {
           className
         )}
       >
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-          onClick={() => setIsCollapsed(false)}
-          title="Expand Node Palette"
-          aria-label="Expand Node Palette"
-          data-testid="dag-palette-collapse-toggle-btn"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-
-        <div className="h-[1px] w-6 bg-border/50 shrink-0 my-1" />
-
-        <div
-          data-testid="dag-palette-rail"
-          className="flex flex-col items-center gap-1.5 overflow-y-auto pr-0.5 flex-1 w-full scrollbar-none"
-        >
-          {PALETTE_ITEMS.map((item) => (
-            <div
-              key={item.type}
-              draggable
-              onDragStart={(e) => onDragStart(e, item)}
-              title={`${item.label} (${item.type}): ${item.description}`}
-              className="p-2 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none shrink-0"
-            >
-              {item.icon}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      style={style}
-      data-testid="dag-palette-expanded"
-      className={cn(
-        'flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden transition-all duration-200',
-        className
-      )}
-    >
-      {/* Header & Search */}
-      <div className="flex items-center justify-between pb-1.5 border-b border-border/40 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Node Palette</span>
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
-            23 Types
-          </Badge>
-        </div>
-        <div className="flex items-center gap-1">
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/40">Drag & Drop</Badge>
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsCollapsed(true)}
-            title="Collapse to slim rail"
-            aria-label="Collapse to slim rail"
+            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            onClick={() => handleToggleCollapse(false)}
+            title="Expand Node Palette"
+            aria-label="Expand Node Palette"
             data-testid="dag-palette-collapse-toggle-btn"
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <ChevronRight className="w-4 h-4" />
           </Button>
+
+          <div className="h-[1px] w-6 bg-border/50 shrink-0 my-1" />
+
+          <div
+            data-testid="dag-palette-rail"
+            className="flex flex-col items-center gap-1.5 overflow-y-auto pr-0.5 flex-1 w-full scrollbar-none"
+          >
+            {PALETTE_ITEMS.map((item) => (
+              <div
+                key={item.type}
+                draggable
+                onDragStart={(e) => onDragStart(e, item)}
+                title={`${item.label} (${item.type}): ${item.description}`}
+                className="p-2 rounded-xl border border-white/40 dark:border-white/5 bg-white/50 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/90 hover:border-primary/40 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none shrink-0"
+              >
+                {item.icon}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      );
+    }
+
+    return (
+      <div
+        style={style}
+        data-testid="dag-palette-expanded"
+        className={cn(
+          'flex flex-col gap-2 p-3 w-64 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/10 shadow-xl max-h-[560px] overflow-hidden transition-all duration-200',
+          className
+        )}
+      >
+        {/* Header & Search */}
+        <div className="flex items-center justify-between pb-1.5 border-b border-border/40 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Node Palette</span>
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+              23 Types
+            </Badge>
+          </div>
+          <div className="flex items-center gap-1">
+            <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-muted/40">Drag & Drop</Badge>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => handleToggleCollapse(true)}
+              title="Collapse to slim rail"
+              aria-label="Collapse to slim rail"
+              data-testid="dag-palette-collapse-toggle-btn"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
 
       <div className="flex items-center gap-1 shrink-0">
         <div className="relative flex-1">

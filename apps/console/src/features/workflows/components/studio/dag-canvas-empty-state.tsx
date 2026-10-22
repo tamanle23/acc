@@ -17,7 +17,7 @@ export function DagCanvasEmptyState({
   return (
     <div
       data-testid="dag-canvas-empty-state"
-      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[360px] p-5 rounded-2xl backdrop-blur-2xl bg-white/85 dark:bg-slate-900/85 border border-white/40 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/40 text-center animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
+      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[360px] max-w-[calc(100%-2rem)] p-4 sm:p-5 rounded-2xl backdrop-blur-2xl bg-white/85 dark:bg-slate-900/85 border border-white/40 dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/40 text-center animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
     >
       <div className="mx-auto w-10 h-10 mb-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
         <Sparkles className="w-5 h-5 animate-pulse" />
