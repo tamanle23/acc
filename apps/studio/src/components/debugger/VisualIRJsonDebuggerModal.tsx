@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Code2,
   CheckCircle2,
@@ -6,23 +6,16 @@ import {
   XCircle,
   Play,
   RotateCcw,
-  Copy,
-  Check,
-  Wand2,
-  Minimize2,
-  GitBranch,
-  FileJson,
-  ListTree,
-  ChevronRight,
-  ChevronDown,
-  Search,
   Sparkles,
   X,
+  Columns,
+  ListTree,
+  FileCode,
+  GitBranch,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
 import {
   VideoIRSchemaValidator,
   type ValidationResult,
@@ -31,6 +24,11 @@ import {
   registerCoreModifierPlugins,
 } from '@acc/ir';
 import { IRStateManager } from '../../lib/ir/irState';
+import { VisualJsonTreeEditor } from './visual-editor/VisualJsonTreeEditor';
+import { ShikiCodeViewer } from './code-editor/ShikiCodeViewer';
+import { CodeEditorToolbar } from './code-editor/CodeEditorToolbar';
+import { DiagnosticTelemetryCard } from './diagnostics/DiagnosticTelemetryCard';
+import type { DebuggerViewMode } from './types';
 
 export interface VisualIRJsonDebuggerModalProps {
   open: boolean;
@@ -150,139 +148,13 @@ export function analyzeVideoIRJson(rawJson: string): {
   };
 }
 
-interface JsonTreeNodeProps {
-  label: string;
-  value: unknown;
-  depth?: number;
-  searchQuery?: string;
-  onSelectSequence?: (seqId: string) => void;
-}
-
-function JsonTreeNode({
-  label,
-  value,
-  depth = 0,
-  searchQuery = '',
-  onSelectSequence,
-}: JsonTreeNodeProps) {
-  const [expanded, setExpanded] = useState(depth < 2);
-
-  const isObject = value !== null && typeof value === 'object';
-  const isArray = Array.isArray(value);
-
-  const matchesSearch =
-    searchQuery.trim().length > 0 &&
-    (label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (!isObject && String(value).toLowerCase().includes(searchQuery.toLowerCase())));
-
-  if (!isObject) {
-    const valStr = typeof value === 'string' ? `"${value}"` : String(value);
-    const valColor =
-      typeof value === 'number'
-        ? 'text-amber-400'
-        : typeof value === 'boolean'
-          ? 'text-emerald-400'
-          : 'text-cyan-300';
-
-    return (
-      <div
-        className={`flex items-center gap-1.5 py-0.5 px-1.5 rounded text-[11px] font-mono ${matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
-          }`}
-        style={{ paddingLeft: `${depth * 14 + 8}px` }}
-      >
-        <span className="text-slate-400">{label}:</span>
-        <span className={`truncate ${valColor}`}>{valStr}</span>
-      </div>
-    );
-  }
-
-  const entries = isArray
-    ? (value as unknown[]).map((v, idx) => [String(idx), v] as const)
-    : Object.entries(value as Record<string, unknown>);
-
-  const objId =
-    !isArray && value && typeof (value as any).id === 'string' ? ((value as any).id as string) : null;
-  const objType =
-    !isArray && value && typeof (value as any).type === 'string' ? ((value as any).type as string) : null;
-
-  return (
-    <div>
-      <div
-        onClick={() => setExpanded(!expanded)}
-        className={`flex items-center justify-between py-0.5 px-1.5 rounded cursor-pointer text-[11px] font-mono select-none ${matchesSearch ? 'bg-indigo-500/25 ring-1 ring-indigo-400' : 'hover:bg-white/5'
-          }`}
-        style={{ paddingLeft: `${depth * 14}px` }}
-      >
-        <div className="flex items-center gap-1">
-          {expanded ? (
-            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-          ) : (
-            <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
-          )}
-          <span className="text-indigo-300 font-semibold">{label}</span>
-          {objId && (
-            <Badge
-              variant="outline"
-              className="ml-1 text-[9px] py-0 px-1 font-mono border-cyan-500/30 text-cyan-300 bg-cyan-500/10"
-            >
-              #{objId}
-            </Badge>
-          )}
-          {objType && (
-            <Badge
-              variant="outline"
-              className="ml-1 text-[9px] py-0 px-1 font-mono border-purple-500/30 text-purple-300 bg-purple-500/10"
-            >
-              {objType}
-            </Badge>
-          )}
-          <span className="text-[10px] text-slate-500 ml-1">
-            {isArray ? `[${entries.length}]` : `{${entries.length}}`}
-          </span>
-        </div>
-
-        {objId && objId.startsWith('seq-') && onSelectSequence && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectSequence(objId);
-            }}
-            className="h-5 px-1.5 text-[9px] font-mono text-cyan-400 hover:text-cyan-200"
-          >
-            Inspect Clip
-          </Button>
-        )}
-      </div>
-
-      {expanded && (
-        <div>
-          {entries.map(([k, v]) => (
-            <JsonTreeNode
-              key={k}
-              label={k}
-              value={v}
-              depth={depth + 1}
-              searchQuery={searchQuery}
-              onSelectSequence={onSelectSequence}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function VisualIRJsonDebuggerModal({
   open,
   onOpenChange,
 }: VisualIRJsonDebuggerModalProps) {
   const manager = IRStateManager.getInstance();
   const [rawJson, setRawJson] = useState<string>(() => manager.exportJSON());
-  const [activeTab, setActiveTab] = useState<'editor' | 'tree' | 'diagnostics'>('editor');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<DebuggerViewMode>('split');
   const [copied, setCopied] = useState(false);
   const [applyFeedback, setApplyFeedback] = useState<string | null>(null);
 
@@ -301,7 +173,15 @@ export function VisualIRJsonDebuggerModal({
     diagnostics.schemaValidation.valid &&
     diagnostics.danglingAnchors.length === 0;
 
-  const lineCount = useMemo(() => rawJson.split('\n').length, [rawJson]);
+  // Visual Editor mutator callback
+  const handleVisualTreeChange = useCallback((newData: unknown) => {
+    try {
+      const formatted = JSON.stringify(newData, null, 2);
+      setRawJson(formatted);
+    } catch {
+      // Ignore serialization errors
+    }
+  }, []);
 
   const handlePrettify = () => {
     if (!parsedDoc) return;
@@ -324,7 +204,7 @@ export function VisualIRJsonDebuggerModal({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // Fallback ignored in headless environments
+      // Fallback
     }
   };
 
@@ -341,14 +221,33 @@ export function VisualIRJsonDebuggerModal({
     onOpenChange(false);
   };
 
+  const handleQuickRepairDanglingAnchors = () => {
+    if (!parsedDoc) return;
+    const docCopy = JSON.parse(JSON.stringify(parsedDoc));
+    // Repair dangling anchors by converting 'after' references with missing IDs to start: 0
+    if (Array.isArray(docCopy.tracks)) {
+      for (const track of docCopy.tracks) {
+        if (Array.isArray(track.sequences)) {
+          for (const seq of track.sequences) {
+            const refId = seq?.time?.start?.referenceId;
+            if (refId && diagnostics.danglingAnchors.some((d) => d.referenceId === refId)) {
+              seq.time.start = 0;
+            }
+          }
+        }
+      }
+    }
+    setRawJson(JSON.stringify(docCopy, null, 2));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-testid="visual-ir-json-debugger-modal"
-        className="sm:max-w-none max-w-5xl w-[92vw] h-[85vh] flex flex-col glass-panel border border-[var(--glass-border)] p-0 rounded-2xl overflow-hidden"
+        className="sm:max-w-none max-w-6xl w-[94vw] h-[88vh] flex flex-col glass-panel border border-[var(--glass-border)] p-0 rounded-2xl overflow-hidden shadow-2xl"
       >
         {/* Modal Header */}
-        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3.5 border-b border-[var(--glass-border) shrink-0">
+        <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-[var(--glass-border)] shrink-0 bg-slate-950/70">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30 flex items-center justify-center">
               <Code2 className="w-4 h-4" />
@@ -366,7 +265,7 @@ export function VisualIRJsonDebuggerModal({
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground font-mono">
-                Inspect, lint, and hot-swap Universal VideoIR AST with full Command undo/redo safety
+                Interactive two-way visual JSON editing & Shiki source synchronization
               </p>
             </div>
           </div>
@@ -392,7 +291,7 @@ export function VisualIRJsonDebuggerModal({
                 <XCircle className="w-3 h-3 text-rose-400" />
                 {diagnostics.parseError
                   ? 'JSON Syntax Error'
-                  : `${diagnostics.schemaValidation.errors.length + diagnostics.danglingAnchors.length} Validation Issue(s)`}
+                  : `${diagnostics.schemaValidation.errors.length + diagnostics.danglingAnchors.length} Issue(s)`}
               </Badge>
             )}
 
@@ -407,41 +306,55 @@ export function VisualIRJsonDebuggerModal({
           </div>
         </DialogHeader>
 
-        {/* Sub-Toolbar: Mode Switcher + Formatting Utilities */}
-        <div className="flex items-center justify-between px-5 py-2 border-b border-[var(--glass-border)] shrink-0">
+        {/* View Mode Switcher Toolbar */}
+        <div className="flex items-center justify-between px-5 py-1.5 border-b border-[var(--glass-border)] shrink-0 bg-slate-900/40">
           <div className="flex items-center gap-1">
             <Button
               type="button"
-              variant={activeTab === 'editor' ? 'default' : 'ghost'}
+              variant={viewMode === 'split' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setActiveTab('editor')}
-              data-testid="debugger-tab-editor"
+              onClick={() => setViewMode('split')}
+              data-testid="debugger-tab-split"
               className="h-7 text-xs font-mono gap-1.5"
             >
-              <FileJson className="w-3.5 h-3.5" />
-              Raw JSON Editor
+              <Columns className="w-3.5 h-3.5" />
+              Split Visual & Code
             </Button>
+
             <Button
               type="button"
-              variant={activeTab === 'tree' ? 'default' : 'ghost'}
+              variant={viewMode === 'tree' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setActiveTab('tree')}
+              onClick={() => setViewMode('tree')}
               data-testid="debugger-tab-tree"
               className="h-7 text-xs font-mono gap-1.5"
             >
               <ListTree className="w-3.5 h-3.5" />
-              AST Tree Navigator
+              Visual Tree Only
             </Button>
+
             <Button
               type="button"
-              variant={activeTab === 'diagnostics' ? 'default' : 'ghost'}
+              variant={viewMode === 'code' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setActiveTab('diagnostics')}
+              onClick={() => setViewMode('code')}
+              data-testid="debugger-tab-editor"
+              className="h-7 text-xs font-mono gap-1.5"
+            >
+              <FileCode className="w-3.5 h-3.5" />
+              Raw Code Only
+            </Button>
+
+            <Button
+              type="button"
+              variant={viewMode === 'diagnostics' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('diagnostics')}
               data-testid="debugger-tab-diagnostics"
               className="h-7 text-xs font-mono gap-1.5"
             >
               <GitBranch className="w-3.5 h-3.5" />
-              DAG & Schema Diagnostics
+              Diagnostics & Health
               {(!isFullyValid || diagnostics.unregisteredModifiers.length > 0) && (
                 <span className="ml-1 px-1.5 py-0.2 rounded-full text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40">
                   {diagnostics.schemaValidation.errors.length +
@@ -452,203 +365,101 @@ export function VisualIRJsonDebuggerModal({
             </Button>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {activeTab === 'tree' && (
-              <div className="relative w-48 mr-2">
-                <Search className="w-3 h-3  absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <Input
-                  type="text"
-                  placeholder="Filter keys or values..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-7 pl-7 text-[11px] font-mono  "
-                />
-              </div>
-            )}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handlePrettify}
-              disabled={!parsedDoc}
-              title="Format JSON (2-space indent)"
-              className="h-7 text-[11px] font-mono gap-1 border-slate-700"
-            >
-              <Wand2 className="w-3 h-3" />
-              Format
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleMinify}
-              disabled={!parsedDoc}
-              title="Minify JSON"
-              className="h-7 text-[11px] font-mono gap-1 border-slate-700"
-            >
-              <Minimize2 className="w-3 h-3" />
-              Minify
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCopy}
-              className="h-7 text-[11px] font-mono gap-1 border-slate-700"
-            >
-              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-              {copied ? 'Copied' : 'Copy'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleResetToLive}
-              title="Revert editor buffer to active Studio state"
-              className="h-7 text-[11px] font-mono gap-1 border-slate-700"
-            >
-              <RotateCcw className="w-3 h-3" />
-              Reset
-            </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-muted-foreground">
+              {parsedDoc ? 'Dual-way synchronized' : 'Syntax error in source'}
+            </span>
           </div>
         </div>
 
-        {/* Main Workspace Body */}
-        <div className="flex-1 min-h-0 flex overflow-hidde">
-          {activeTab === 'editor' && (
-            <div className="flex-1 flex min-h-0 overflow-auto">
-              {/* Line-Numbered Monospace Code Editor */}
-              <div className="flex-1 flex min-h-0 overflow-auto relative font-mono text-balance">
-                <div
-                  aria-hidden="true"
-                  className="select-none py-3 px-2.5 text-right border-r font-mono text-[11px] leading-[1.5rem] shrink-0"
-                >
-                  {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => (
-                    <div key={i}>{i + 1}</div>
-                  ))}
-                </div>
-                <textarea
-                  data-testid="debugger-json-textarea"
-                  value={rawJson}
-                  onChange={(e) => setRawJson(e.target.value)}
-
-                  className="flex-1 w-full min-h-full p-3 spellCheck={false} font-mono leading-[1.5rem] focus:outline-none resize-none overflow-hidden"
-                />
-              </div>
-
-              {/* Right-Side Live Validation & Quick Summary Sidebar */}
-              <div className="w-80 border-l border-slate-800/80 bg-slate-900/40 p-3.5 overflow-y-auto space-y-3 shrink-0">
-                <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                  Live AST Telemetry
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80">
-                    <div className="text-[10px] text-slate-400 font-mono">Tracks</div>
-                    <div className="text-sm font-bold font-mono text-foreground">
-                      {diagnostics.trackCount}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80">
-                    <div className="text-[10px] text-slate-400 font-mono">Sequences</div>
-                    <div className="text-sm font-bold font-mono text-cyan-400">
-                      {diagnostics.sequenceCount}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80">
-                    <div className="text-[10px] text-slate-400 font-mono">Modifiers</div>
-                    <div className="text-sm font-bold font-mono text-indigo-400">
-                      {diagnostics.modifierCount}
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80">
-                    <div className="text-[10px] text-slate-400 font-mono">Assets</div>
-                    <div className="text-sm font-bold font-mono text-emerald-400">
-                      {diagnostics.assetCount}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Validation Errors List */}
-                {diagnostics.schemaValidation.errors.length > 0 && (
-                  <div
-                    data-testid="debugger-error-list"
-                    className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-500/40 space-y-1.5"
-                  >
-                    <div className="text-[11px] font-bold text-rose-300 flex items-center gap-1.5 font-mono">
-                      <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                      Schema / Syntax Errors ({diagnostics.schemaValidation.errors.length})
-                    </div>
-                    <ul className="space-y-1 text-[10px] font-mono text-rose-200/90 list-disc pl-4">
-                      {diagnostics.schemaValidation.errors.map((err, i) => (
-                        <li key={i} className="break-words">
-                          {err}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {diagnostics.danglingAnchors.length > 0 && (
-                  <div className="p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 space-y-1.5">
-                    <div className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5 font-mono">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      Dangling Relational Anchors
-                    </div>
-                    <ul className="space-y-1 text-[10px] font-mono text-amber-200/90">
-                      {diagnostics.danglingAnchors.map((d, idx) => (
-                        <li key={idx}>
-                          <code>{d.sequenceId}</code> references missing <code>{d.referenceId}</code>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {isFullyValid && (
-                  <div className="p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-[11px] font-mono text-emerald-300 flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-semibold">Schema & Topology Verified</div>
-                      <p className="text-[10px] text-emerald-400/80 mt-0.5">
-                        Ready to hot-swap into Studio state. Undoable with Ctrl+Z.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'tree' && (
-            <div className="flex-1 p-4 overflow-y-auto">
-              {parsedDoc ? (
-                <JsonTreeNode
-                  label="VideoIRDocument"
-                  value={parsedDoc}
-                  depth={0}
-                  searchQuery={searchQuery}
+        {/* Main Body Workspace */}
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Split Mode: Tree (left) + Code (right) + Telemetry (far right) */}
+          {viewMode === 'split' && (
+            <div className="flex-1 flex min-h-0 overflow-hidden">
+              <div className="w-[52%] h-full flex flex-col min-h-0 border-r border-slate-800">
+                <VisualJsonTreeEditor
+                  data={parsedDoc}
+                  onChange={handleVisualTreeChange}
                   onSelectSequence={handleSelectSequenceAndClose}
                 />
-              ) : (
-                <div className="h-full flex items-center justify-center text-rose-400 font-mono text-xs">
-                  Fix JSON syntax errors in the Raw JSON Editor to inspect the AST tree.
-                </div>
-              )}
+              </div>
+
+              <div className="flex-1 h-full flex flex-col min-h-0">
+                <CodeEditorToolbar
+                  onPrettify={handlePrettify}
+                  onMinify={handleMinify}
+                  onCopy={handleCopy}
+                  onReset={handleResetToLive}
+                  copied={copied}
+                  canFormat={!!parsedDoc}
+                />
+                <ShikiCodeViewer
+                  code={rawJson}
+                  onChange={setRawJson}
+                />
+              </div>
+
+              <DiagnosticTelemetryCard
+                diagnostics={diagnostics}
+                isFullyValid={isFullyValid}
+                onQuickRepairDanglingAnchors={handleQuickRepairDanglingAnchors}
+              />
             </div>
           )}
 
-          {activeTab === 'diagnostics' && (
-            <div className="flex-1 p-5 overflow-y-auto space-y-4 font-mono">
+          {/* Visual Tree Only Mode */}
+          {viewMode === 'tree' && (
+            <div className="flex-1 flex min-h-0 overflow-hidden">
+              <div className="flex-1 h-full flex flex-col min-h-0">
+                <VisualJsonTreeEditor
+                  data={parsedDoc}
+                  onChange={handleVisualTreeChange}
+                  onSelectSequence={handleSelectSequenceAndClose}
+                />
+              </div>
+
+              <DiagnosticTelemetryCard
+                diagnostics={diagnostics}
+                isFullyValid={isFullyValid}
+                onQuickRepairDanglingAnchors={handleQuickRepairDanglingAnchors}
+              />
+            </div>
+          )}
+
+          {/* Code Only Mode */}
+          {viewMode === 'code' && (
+            <div className="flex-1 flex min-h-0 overflow-hidden">
+              <div className="flex-1 h-full flex flex-col min-h-0">
+                <CodeEditorToolbar
+                  onPrettify={handlePrettify}
+                  onMinify={handleMinify}
+                  onCopy={handleCopy}
+                  onReset={handleResetToLive}
+                  copied={copied}
+                  canFormat={!!parsedDoc}
+                />
+                <ShikiCodeViewer
+                  code={rawJson}
+                  onChange={setRawJson}
+                />
+              </div>
+
+              <DiagnosticTelemetryCard
+                diagnostics={diagnostics}
+                isFullyValid={isFullyValid}
+                onQuickRepairDanglingAnchors={handleQuickRepairDanglingAnchors}
+              />
+            </div>
+          )}
+
+          {/* Diagnostics Mode */}
+          {viewMode === 'diagnostics' && (
+            <div className="flex-1 p-6 overflow-y-auto space-y-4 font-mono">
               <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
                   <div className="text-xs text-slate-400">JSON Schema Draft-07</div>
-                  <div className="text-sm font-bold mt-1 flex items-center gap-1.5">
+                  <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.schemaValidation.valid ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -665,9 +476,9 @@ export function VisualIRJsonDebuggerModal({
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
                   <div className="text-xs text-slate-400">Relational DAG Anchors</div>
-                  <div className="text-sm font-bold mt-1 flex items-center gap-1.5">
+                  <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.danglingAnchors.length === 0 ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -684,9 +495,9 @@ export function VisualIRJsonDebuggerModal({
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800">
                   <div className="text-xs text-slate-400">ModifierPluginRegistry Coverage</div>
-                  <div className="text-sm font-bold mt-1 flex items-center gap-1.5">
+                  <div className="text-sm font-bold mt-1.5 flex items-center gap-1.5">
                     {diagnostics.unregisteredModifiers.length === 0 ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -705,11 +516,11 @@ export function VisualIRJsonDebuggerModal({
               </div>
 
               {diagnostics.missingAssets.length > 0 && (
-                <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 space-y-1">
+                <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/30 space-y-1.5">
                   <div className="text-xs font-bold text-amber-300">
                     Unresolved Asset IDs ({diagnostics.missingAssets.length})
                   </div>
-                  <ul className="text-[11px] text-amber-200/80 list-disc pl-4">
+                  <ul className="text-xs text-amber-200/80 list-disc pl-4">
                     {diagnostics.missingAssets.map((m, i) => (
                       <li key={i}>
                         Sequence <code>{m.sequenceId}</code> references undeclared asset{' '}
@@ -724,15 +535,15 @@ export function VisualIRJsonDebuggerModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--glass-border)]  shrink-0">
+        <div className="flex items-center justify-between px-5 py-2.5 border-t border-[var(--glass-border)] shrink-0 bg-slate-950/80">
           <div className="text-xs font-mono text-muted-foreground flex items-center gap-2">
             {applyFeedback ? (
-              <span className="text-emerald-400 flex items-center gap-1.5">
+              <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 {applyFeedback}
               </span>
             ) : (
-              <span>Shortcut: Ctrl+Shift+J • Changes are validated before dispatch</span>
+              <span>Shortcut: Ctrl+Shift+J • Edits support full Undo/Redo (Ctrl+Z) in Studio</span>
             )}
           </div>
 
@@ -753,7 +564,7 @@ export function VisualIRJsonDebuggerModal({
               disabled={!diagnostics.schemaValidation.valid || !!diagnostics.parseError}
               onClick={handleApplyToStudio}
               data-testid="debugger-apply-btn"
-              className="h-8 text-xs font-mono gap-1.5 bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 disabled:opacity-40"
+              className="h-8 text-xs font-mono gap-1.5 bg-[var(--accent-primary)] text-slate-950 hover:brightness-110 disabled:opacity-40 font-bold"
             >
               <Play className="w-3.5 h-3.5" />
               Apply to Studio
