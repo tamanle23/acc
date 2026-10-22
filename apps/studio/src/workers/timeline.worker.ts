@@ -274,23 +274,39 @@ function renderTimeline(): void {
       ctx.stroke();
     }
 
-    // Clip Header / Label + Type Badge
+    // Clip Header / Label + Type Badge with Multi-Tier LOD
     ctx.save();
     ctx.beginPath();
     ctx.rect(x + 4, y, Math.max(0, w - 8), h);
     ctx.clip();
 
     // Type Badge icon
-    ctx.font = '9px ui-monospace, SFMono-Regular, monospace';
+    ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
     ctx.textBaseline = 'middle';
-    const badgeText = clip.type === 'audio' ? '♫' : clip.type === 'overlay' ? '❖' : '▶';
-    ctx.fillStyle = isSelected ? '#22d3ee' : 'rgba(255, 255, 255, 0.7)';
+    const badgeText = clip.type === 'audio' ? '♫' : clip.type === 'overlay' ? 'T' : '▶';
+    ctx.fillStyle = isSelected ? '#22d3ee' : clip.type === 'audio' ? '#34d399' : clip.type === 'overlay' ? '#c084fc' : '#818cf8';
     ctx.fillText(badgeText, x + 6, y + h / 2);
 
-    // Label Text
-    ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(clip.name || clip.id, x + 18, y + h / 2);
+    // LOD 1+ (w >= 36px): Render Title
+    if (w >= 36) {
+      ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
+      ctx.fillStyle = '#ffffff';
+      const label = clip.name || clip.id;
+      ctx.fillText(label, x + 18, y + h / 2);
+
+      // LOD 2+ (w >= 100px): Render Duration Badge
+      if (w >= 100) {
+        const fps = model.fps || 30;
+        const durSec = (clip.durationFrames / fps).toFixed(1);
+        const durText = `${durSec}s`;
+        ctx.font = '9px ui-monospace, SFMono-Regular, monospace';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        const textWidth = ctx.measureText(label).width;
+        if (x + 24 + textWidth + 40 < x + w) {
+          ctx.fillText(`(${durText})`, x + 24 + textWidth, y + h / 2);
+        }
+      }
+    }
     ctx.restore();
 
     ctx.restore();

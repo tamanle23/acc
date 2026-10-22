@@ -33,6 +33,9 @@ import {
   Hand,
   Shield,
   Grid,
+  Sliders,
+  Activity,
+  Maximize2,
 } from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
 import { DepthMathEngine } from '../lib/math/DepthMathEngine';
@@ -47,6 +50,7 @@ import { ViewportControlBar } from './preview/ViewportControlBar';
 import { ViewportSafeGuides } from './preview/ViewportSafeGuides';
 import { ContextualActionPill } from './preview/ContextualActionPill';
 import { SubtitlesOverlay } from './preview/SubtitlesOverlay';
+import { BentoCompanionCard } from './preview/BentoCompanionCard';
 import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
@@ -197,6 +201,7 @@ export function Preview({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
+  const [isBentoCompanionOpen, setIsBentoCompanionOpen] = useState(true);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [assetTick, setAssetTick] = useState(0);
@@ -711,17 +716,23 @@ export function Preview({
         onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
         showVfxAmbiance={showVfxAmbiance}
         onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+        isBentoOpen={isBentoCompanionOpen}
+        onToggleBento={() => setIsBentoCompanionOpen(!isBentoCompanionOpen)}
       />
 
-      {/* Main Video Viewport Canvas with Mouse Interactive Parallax & Staging Drop Target */}
-      <div
-        className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none ${
-          isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-        }`}
-        style={{
-          aspectRatio: '16/9',
-          maxHeight: '70vh',
-          maxWidth: '80vw',
+      {/* Bento Grid Dynamic Viewport: Canvas Cell + Dockable Telemetry Cell */}
+      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${
+        isBentoCompanionOpen ? 'xl:justify-between' : 'justify-center'
+      }`}>
+        {/* Cell 1: Main Video Viewport Canvas */}
+        <div
+          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
+            isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
+          } ${isBentoCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+          style={{
+            aspectRatio: '16/9',
+            maxHeight: '68vh',
+            maxWidth: isBentoCompanionOpen ? '72vw' : '82vw',
           backgroundImage: showCheckerboard
             ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
             : undefined,
@@ -1052,10 +1063,41 @@ export function Preview({
           }}
           onCancelEditing={() => setEditingCue(null)}
         />
+        </div>
+
+        {/* Cell 2: Dockable Bento Telemetry Companion Card */}
+        {isBentoCompanionOpen && (
+          <div className="w-full xl:w-64 shrink-0 flex flex-col justify-center animate-in fade-in slide-in-from-right-2 duration-200">
+            <BentoCompanionCard
+              width={width}
+              height={height}
+              fps={fps}
+              currentFrame={currentFrame}
+              totalFrames={totalFrames}
+              trackCount={irState.timeline?.tracks?.length || (irState.timeline?.tracks instanceof Map ? irState.timeline.tracks.size : 0) || 0}
+              activeSequenceCount={activeSequences.length}
+              selectedSeqId={selectedSeqId}
+              safeGuidesMode={safeGuidesMode}
+              onCycleSafeGuides={() => {
+                setSafeGuidesMode((prev) => {
+                  if (prev === 'none') return '16:9';
+                  if (prev === '16:9') return '9:16';
+                  return 'none';
+                });
+              }}
+              showCheckerboard={showCheckerboard}
+              onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
+              showVfxAmbiance={showVfxAmbiance}
+              onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+              zoomLevel={zoomLevel}
+              onSetZoomLevel={setZoomLevel}
+            />
+          </div>
+        )}
       </div>
 
       {/* Floating Viewport Quick Transport Bar */}
-      <div className="mt-3 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02] z-30">
+      <div className="mt-2 flex items-center gap-2 glass-panel px-4 py-2 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.5)] pointer-events-auto border border-[var(--glass-border-highlight)] transition-all duration-200 hover:scale-[1.02] z-30">
         <Tooltip content="Rewind to Start (Home)">
           <button
             type="button"

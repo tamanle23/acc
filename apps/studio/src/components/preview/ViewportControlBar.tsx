@@ -9,6 +9,7 @@ import {
   Shield,
   Grid,
   Layers,
+  LayoutPanelTop,
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
@@ -35,6 +36,8 @@ export interface ViewportControlBarProps {
   onToggleCheckerboard: () => void;
   showVfxAmbiance: boolean;
   onToggleVfxAmbiance: () => void;
+  isBentoOpen?: boolean;
+  onToggleBento?: () => void;
 }
 
 export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
@@ -59,6 +62,8 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   onToggleCheckerboard,
   showVfxAmbiance,
   onToggleVfxAmbiance,
+  isBentoOpen,
+  onToggleBento,
 }) => {
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -241,6 +246,22 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         </Tooltip>
+
+        {onToggleBento && (
+          <Tooltip content={isBentoOpen ? 'Hide Bento Telemetry' : 'Show Bento Telemetry'}>
+            <button
+              type="button"
+              onClick={onToggleBento}
+              aria-label={isBentoOpen ? 'Hide Bento Telemetry' : 'Show Bento Telemetry'}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${isBentoOpen
+                ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] shadow-[0_0_10px_var(--accent-glow)]'
+                : 'border-[var(--glass-border)] text-foreground/40 hover:text-foreground hover:bg-white/10'
+                }`}
+            >
+              <LayoutPanelTop className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+        )}
 
         <div className="glass-card px-2.5 py-1 rounded-full text-muted-foreground font-mono text-[10px] flex items-center gap-1 border border-[var(--glass-border)]">
           <Layers className="w-3 h-3 text-[var(--accent-primary)]" />

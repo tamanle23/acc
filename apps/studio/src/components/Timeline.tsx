@@ -22,6 +22,10 @@ import {
   ArrowRightLeft,
   Link2,
   Unlink,
+  Type,
+  Music,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -136,36 +140,24 @@ function TimelineClipItem({
 }: TimelineClipItemProps) {
   const isBeingDragged = activeDragState?.seqId === seq.id;
   const isAudio = track.type === 'audio';
+  const isTextOrOverlay = track.type === 'overlay' || track.type === 'timed_text' || seq.type === 'text' || (seq.cues && seq.cues.length > 0);
+  const isVfx = track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx') || seq.modifiers?.some((m: any) => m.type?.startsWith('vfx/'));
 
-  const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
-  let displayStartFrame = rawStart;
-  let displayDurationFrames = seq.durationFrames;
+  // Extract first cue text snippet if present
+  const cueSnippet = seq.cues && seq.cues.length > 0 && seq.cues[0]?.text
+    ? String(seq.cues[0].text).trim()
+    : null;
 
-  if (isBeingDragged && activeDragState) {
-    if (activeDragState.type === 'clip') {
-      displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-    } else if (activeDragState.type === 'trim') {
-      if (activeDragState.handle === 'start') {
-        displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-        displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
-      } else {
-        displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
-      }
-    }
-  }
+  // Derive LOD Mode based on rendered pixel width
+  // LOD 0 (< 36px): Micro icon only
+  // LOD 1 (36px - 90px): Compact (Icon + Truncated ID)
+  // LOD 2 (90px - 220px): Standard (Icon + ID + Duration + Waveform/Filmstrip)
+  // LOD 3 (> 220px): Expanded (Icon + ID + Cue Text / Asset + Full SMPTE + Modifier Badges)
+  const lod = widthPx < 36 ? 0 : widthPx < 90 ? 1 : widthPx < 220 ? 2 : 3;
 
-  const leftPx = displayStartFrame * pixelsPerFrame;
-  const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
-
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: `clip-${seq.id}`,
-    data: {
-      type: 'clip',
-      seq,
-      trackId: track.id,
-    },
-    disabled: activeTool === 'razor',
-  });
+  // Format Duration string
+  const durationSec = (displayDurationFrames / 30).toFixed(1);
+  const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
 
   return (
     <div
@@ -177,15 +169,18 @@ function TimelineClipItem({
         left: `${leftPx}px`,
         width: `${widthPx}px`,
       }}
-      className={`absolute top-1 bottom-1 rounded-sm border px-2 flex items-center justify-between select-none group transition-all ${activeTool === 'razor'
-        ? 'cursor-crosshair'
-        : isBeingDragged && activeDragState?.type === 'clip'
-          ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
-          : 'cursor-grab'
-        } ${isSelected
-          ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20'
-          : 'hover:brightness-95 z-10'
-        } ${getTrackBadgeStyle(track)}`}
+      title={`[${track.type?.toUpperCase()}] ${seq.id} (${displayDurationFrames} frames / ${durationSec}s)${cueSnippet ? `\nCue: "${cueSnippet}"` : ''}`}
+      className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${
+        activeTool === 'razor'
+          ? 'cursor-crosshair'
+          : isBeingDragged && activeDragState?.type === 'clip'
+            ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
+            : 'cursor-grab'
+      } ${
+        isSelected
+          ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20 brightness-110'
+          : 'hover:brightness-110 z-10'
+      } ${getTrackBadgeStyle(track)}`}
     >
       <TrimHandle seq={seq} handle="start" />
 
@@ -210,7 +205,8 @@ function TimelineClipItem({
           );
         })()}
 
-      <div className="flex-1 truncate px-1 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
+      <div className="flex-1 truncate px-0.5 flex items-center gap-1.5 relative overflow-hidden h-full pointer-events-none">
+        {/* Background Visual Artifact (Waveform or Filmstrip) */}
         {isAudio ? (
           <AudioWaveform
             id={seq.assetId || seq.id}
@@ -225,9 +221,45 @@ function TimelineClipItem({
             height={28}
           />
         )}
-        <span className="text-[10px] font-mono font-medium truncate relative z-10 drop-shadow-xs">
-          {seq.id}
+
+        {/* Semantic Archetype Leading Icon */}
+        <span className="shrink-0 relative z-10 opacity-90">
+          {isAudio ? (
+            <Music className="w-3 h-3 text-emerald-400" />
+          ) : isTextOrOverlay ? (
+            <Type className="w-3 h-3 text-violet-400" />
+          ) : isVfx ? (
+            <Sparkles className="w-3 h-3 text-amber-400" />
+          ) : (
+            <Film className="w-3 h-3 text-indigo-400" />
+          )}
         </span>
+
+        {/* Clip Title & Content Cue Snippet (LOD 1, 2, 3) */}
+        {lod >= 1 && (
+          <div className="flex items-center gap-1 min-w-0 truncate relative z-10 drop-shadow-xs">
+            <span className="text-[10px] font-mono font-semibold truncate text-white">
+              {seq.id}
+            </span>
+
+            {/* In-Line Text Cue Preview Snippet for Subtitles/Captions (LOD 2 & 3) */}
+            {lod >= 2 && cueSnippet && (
+              <span className="text-[9px] font-sans italic text-violet-200/90 truncate max-w-[140px] bg-violet-900/60 px-1 rounded border border-violet-400/30">
+                "{cueSnippet}"
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Duration Badge (LOD 2 & 3) */}
+        {lod >= 2 && (
+          <span className="shrink-0 text-[8px] font-mono text-white/70 bg-black/40 px-1 py-0.2 rounded relative z-10 border border-white/10 flex items-center gap-0.5">
+            <Clock className="w-2 h-2 text-white/60" />
+            {durationBadge}
+          </span>
+        )}
+
+        {/* Linked A/V Button */}
         {(() => {
           const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
           if (!avLink) return null;
@@ -255,7 +287,7 @@ function TimelineClipItem({
               }}
               className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
                 isLinked
-                  ? 'text-cyan-400 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40'
+                  ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
                   : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
               }`}
               title={isLinked ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)` : 'Unlinked A/V (Click to re-link)'}
@@ -264,8 +296,10 @@ function TimelineClipItem({
             </button>
           );
         })()}
-        {seq.modifiers && seq.modifiers.length > 0 && (
-          <span className="text-[8px] bg-white/20 px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
+
+        {/* Active Modifier Count Badge (LOD 2 & 3) */}
+        {lod >= 2 && seq.modifiers && seq.modifiers.length > 0 && (
+          <span className="shrink-0 text-[8px] font-mono bg-white/20 text-white font-medium px-1 py-0.5 rounded-xs relative z-10 backdrop-blur-xs">
             {seq.modifiers.length} mod
           </span>
         )}
@@ -953,10 +987,11 @@ export function Timeline({
   }, [selectedSeqId, currentFrame]);
 
   const getTrackBadgeStyle = (track: any) => {
-    if (track.type === 'audio') return 'bg-emerald-600 border-emerald-700 text-white';
-    if (track.id.includes('v2') || track.id.includes('depth')) return 'bg-violet-600 border-violet-700 text-white';
-    if (track.type === 'video') return 'bg-indigo-600 border-indigo-700 text-white';
-    return 'bg-amber-600 border-amber-700 text-white';
+    if (track.type === 'audio') return 'bg-emerald-950/85 border-emerald-500/50 text-emerald-200 shadow-emerald-950/30';
+    if (track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx')) return 'bg-amber-950/85 border-amber-500/50 text-amber-200 shadow-amber-950/30';
+    if (track.type === 'overlay' || track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub')) return 'bg-violet-950/85 border-violet-500/50 text-violet-200 shadow-violet-950/30';
+    if (track.type === 'video') return 'bg-indigo-950/85 border-indigo-500/50 text-indigo-200 shadow-indigo-950/30';
+    return 'bg-slate-900/85 border-slate-700/60 text-slate-200 shadow-slate-950/30';
   };
 
   return (
