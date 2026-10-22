@@ -223,7 +223,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
             </Button>
           </div>
           <Badge variant="secondary" className="font-mono text-[9px] uppercase">
-            {selectedTrack?.type || 'track'}
+            {selectedSeq?.type || selectedTrack?.type || 'track'}
           </Badge>
         </div>
 

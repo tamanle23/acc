@@ -8,6 +8,7 @@ import {
   Sparkles,
   Clock,
   Film,
+  Image
 } from 'lucide-react';
 import { TrimHandle } from './TrimHandle';
 import { TimelineTransitionBlock } from './TimelineTransitionBlock';
@@ -45,17 +46,15 @@ export function TimelineClipItem({
   activeDragState,
 }: TimelineClipItemProps) {
   const isBeingDragged = activeDragState?.seqId === seq.id;
-  const isAudio = track.type === 'audio';
+  const isAudio = seq.type === 'audio';
   const isTextOrOverlay =
     track.type === 'overlay' ||
     track.type === 'timed_text' ||
     seq.type === 'text' ||
     (seq.cues && seq.cues.length > 0);
-  const isVfx =
-    track.id.includes('v2') ||
-    track.id.includes('depth') ||
-    track.id.includes('vfx') ||
-    seq.modifiers?.some((m: any) => m.type?.startsWith('vfx/'));
+  const isFx = !seq.assetId;
+  const isVideoAsset = seq.type === 'video';
+  const isImageAsset = seq.type === 'image';
 
   const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
   let displayStartFrame = rawStart;
@@ -114,20 +113,17 @@ export function TimelineClipItem({
         left: `${leftPx}px`,
         width: `${widthPx}px`,
       }}
-      title={`[${track.type?.toUpperCase()}] ${seq.id} (${displayDurationFrames} frames / ${durationSec}s)${
-        cueSnippet ? `\nCue: "${cueSnippet}"` : ''
-      }`}
-      className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${
-        activeTool === 'razor'
+      title={`[${track.type?.toUpperCase()}] ${seq.id} (${displayDurationFrames} frames / ${durationSec}s)${cueSnippet ? `\nCue: "${cueSnippet}"` : ''
+        }`}
+      className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
           ? 'cursor-crosshair'
           : isBeingDragged && activeDragState?.type === 'clip'
             ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-[var(--accent-primary)]/80 z-30'
             : 'cursor-grab'
-      } ${
-        isSelected
+        } ${isSelected
           ? 'ring-2 ring-[var(--accent-primary)] shadow-md z-20 brightness-110'
           : 'hover:brightness-110 z-10'
-      } ${getTrackBadgeStyle(track)}`}
+        } ${getTrackBadgeStyle(track)}`}
     >
       <TrimHandle seq={seq} handle="start" />
 
@@ -176,11 +172,14 @@ export function TimelineClipItem({
             <Music className="w-3 h-3 text-emerald-400" />
           ) : isTextOrOverlay ? (
             <Type className="w-3 h-3 text-violet-400" />
-          ) : isVfx ? (
+          ) : isFx ? (
             <Sparkles className="w-3 h-3 text-amber-400" />
-          ) : (
-            <Film className="w-3 h-3 text-indigo-400" />
-          )}
+          ) : isImageAsset ? (
+            <Image className="w-3 h-3 text-blue-400" />
+          ) :
+            (
+              <Film className="w-3 h-3 text-indigo-400" />
+            )}
         </span>
 
         {/* Clip Title & Content Cue Snippet (LOD 1, 2, 3) */}
@@ -237,11 +236,10 @@ export function TimelineClipItem({
                   );
                 }
               }}
-              className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${
-                isLinked
+              className={`p-0.5 rounded pointer-events-auto cursor-pointer relative z-10 transition-colors ${isLinked
                   ? 'text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900/90 border border-cyan-400/50'
                   : 'text-muted-foreground bg-muted/40 hover:bg-muted/80 border border-border/40'
-              }`}
+                }`}
               title={
                 isLinked
                   ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)`
