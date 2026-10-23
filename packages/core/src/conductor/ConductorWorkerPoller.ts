@@ -1,4 +1,4 @@
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { TaskWorkerFactory } from './TaskWorkerFactory';
 import { ConductorTaskInput, ConductorTaskOutput } from './interfaces/IConductorTaskCommand';
 import { IConductorListenerStrategy } from './interfaces/IConductorListenerStrategy';

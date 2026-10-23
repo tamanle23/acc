@@ -1,6 +1,6 @@
 import { AssetContext } from './AssetContext';
 import { VFXCommand } from './VFXCommand';
-import { Logger } from './logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { DeadLetterQueue } from './saga/SagaOrchestrator';
 
 export interface PipelineContext {

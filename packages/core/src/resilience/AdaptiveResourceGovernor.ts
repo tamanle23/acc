@@ -1,5 +1,5 @@
 import os from 'os';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export interface SystemResourceSnapshot {
   totalRamGB: number;

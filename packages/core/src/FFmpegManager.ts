@@ -4,7 +4,7 @@ import os from 'os';
 import https from 'https';
 import { execSync } from 'child_process';
 import extractZip from 'extract-zip';
-import { Logger } from './logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export class FFmpegManager {
   private static ffmpegPath: string | null = null;

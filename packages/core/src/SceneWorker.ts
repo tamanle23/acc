@@ -1,6 +1,6 @@
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
 import { FFmpegManager } from './FFmpegManager';
-import { Logger } from './logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import path from 'path';
 
 export interface SceneTaskPayload {

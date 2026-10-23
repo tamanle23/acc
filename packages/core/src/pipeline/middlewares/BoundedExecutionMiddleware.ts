@@ -1,6 +1,6 @@
 import type { IPipelineMiddleware } from '../../PipelineRunner';
 import type { UnifiedPipelineContext } from '../UnifiedPipelineContext';
-import { Logger } from '../../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export interface ConcurrencyGate {
   acquire(): Promise<() => void>;

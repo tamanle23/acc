@@ -1,4 +1,4 @@
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';

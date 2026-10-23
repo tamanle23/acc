@@ -1,7 +1,7 @@
 import { IConductorTaskCommand, ConductorTaskInput, ConductorTaskOutput } from '../interfaces/IConductorTaskCommand';
 import { ConductorPipelineAdapter } from '../ConductorPipelineAdapter';
 import { ContentStrategyRegistry } from '../strategies/ContentStrategyRegistry';
-import { Logger } from '../../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 /**
  * UniversalStrategyTaskCommand:

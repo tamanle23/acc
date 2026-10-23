@@ -3,7 +3,7 @@ export * from './AssetContext';
 export * from './VFXCommand';
 export * from './BoundedQueue';
 export * from './PipelineRunner';
-export * from './logger';
+export { UniversalLogger, UniversalLogger as Logger, LogLevel } from '@acc/core-isomorphic';
 export * from './EditingEngineFacade';
 export * from './EditingStageMiddleware';
 export * from './editing-commands/RenderTimelineCommand';

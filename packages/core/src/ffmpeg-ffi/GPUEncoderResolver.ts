@@ -1,7 +1,7 @@
 import { FFI, initFFI } from './index';
 import { ptr } from 'bun:ffi';
 import { FFmpegManager } from '../FFmpegManager';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export type HardwareEncoderType = 'nvenc' | 'videotoolbox' | 'vaapi' | 'qsv' | 'amf' | 'cpu';
 
