@@ -819,7 +819,6 @@ export function Timeline({
               timelineMode={timelineMode}
               razorHoverFrame={razorHoverFrame}
               timecodeHUD={timecodeHUD}
-              hoveredClip={hoveredClip}
             />
 
             {/* Track Rows: Virtualized outer container */}
@@ -884,6 +883,7 @@ export function Timeline({
                                 key={seq.id}
                                 seq={seq}
                                 track={track}
+                                fps={fps}
                                 pixelsPerFrame={pixelsPerFrame}
                                 isSelected={selectedSeqId === seq.id}
                                 activeTool={activeTool}

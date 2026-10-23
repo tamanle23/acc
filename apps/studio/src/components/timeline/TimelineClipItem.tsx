@@ -14,6 +14,7 @@ import { TrimHandle } from './TrimHandle';
 import { TimelineTransitionBlock } from './TimelineTransitionBlock';
 import { AudioWaveform } from './AudioWaveform';
 import { FilmstripThumbnail } from './FilmstripThumbnail';
+import { TimelineClipHoverHUD } from './TimelineClipHoverHUD';
 import { IRStateManager } from '../../lib/ir/irState';
 
 export interface TimelineClipItemProps {
@@ -22,6 +23,7 @@ export interface TimelineClipItemProps {
   pixelsPerFrame: number;
   isSelected: boolean;
   activeTool: 'select' | 'razor' | 'hand';
+  fps?: number;
   getTrackBadgeStyle: (track: any) => string;
   onClipClick: (seq: any, e: React.MouseEvent) => void;
   onClipHover?: (clipData: { seq: any; track: any; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
@@ -42,6 +44,7 @@ export function TimelineClipItem({
   pixelsPerFrame,
   isSelected,
   activeTool,
+  fps = 30,
   getTrackBadgeStyle,
   onClipClick,
   onClipHover,
@@ -106,39 +109,40 @@ export function TimelineClipItem({
   const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
 
   return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={(e) => onClipClick(seq, e)}
-      onMouseEnter={(e) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        onClipHover?.({
-          seq,
-          track,
-          position: {
-            leftPx: leftPx,
-            topPx: rect.height + 12,
-            widthPx,
-          },
-        });
-      }}
-      onMouseLeave={() => onClipHover?.(null)}
-      style={{
-        left: `${leftPx}px`,
-        width: `${widthPx}px`,
-      }}
-      className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
-          ? 'cursor-crosshair'
-          : isBeingDragged && activeDragState?.type === 'clip'
-            ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-accent-theme/80 z-30'
-            : 'cursor-grab'
-        } ${isSelected
-          ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
-          : 'hover:brightness-110 z-10'
-        } ${getTrackBadgeStyle(track)}`}
-    >
-      <TrimHandle seq={seq} handle="start" />
+    <TimelineClipHoverHUD seq={seq} track={track} fps={fps}>
+      <div
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        onClick={(e) => onClipClick(seq, e)}
+        onMouseEnter={(e) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          onClipHover?.({
+            seq,
+            track,
+            position: {
+              leftPx: leftPx,
+              topPx: rect.height + 12,
+              widthPx,
+            },
+          });
+        }}
+        onMouseLeave={() => onClipHover?.(null)}
+        style={{
+          left: `${leftPx}px`,
+          width: `${widthPx}px`,
+        }}
+        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
+            ? 'cursor-crosshair'
+            : isBeingDragged && activeDragState?.type === 'clip'
+              ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-accent-theme/80 z-30'
+              : 'cursor-grab'
+          } ${isSelected
+            ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
+            : 'hover:brightness-110 z-10'
+          } ${getTrackBadgeStyle(track)}`}
+      >
+        <TrimHandle seq={seq} handle="start" />
 
       {/* Visual Transition Block Handle (Cut boundary) */}
       {seq.modifiers &&
@@ -294,5 +298,6 @@ export function TimelineClipItem({
 
       <TrimHandle seq={seq} handle="end" />
     </div>
+  </TimelineClipHoverHUD>
   );
 }
