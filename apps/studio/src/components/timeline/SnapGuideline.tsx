@@ -1,15 +1,17 @@
 import React from 'react';
 
-export interface TimelineSnapGuidelineProps {
+export interface SnapGuidelineProps {
   pixelsPerFrame: number;
   activeSnapGuideline: { frame: number; label?: string; isAbut?: boolean } | null;
 }
 
+export type TimelineSnapGuidelineProps = SnapGuidelineProps;
+
 /**
- * TimelineSnapGuideline:
+ * SnapGuideline:
  * Renders the vertical magnetic snapping guideline (cyan for grid/playhead, emerald for abutting clip seams).
  */
-export const TimelineSnapGuideline: React.FC<TimelineSnapGuidelineProps> = ({
+export const SnapGuideline: React.FC<SnapGuidelineProps> = ({
   pixelsPerFrame,
   activeSnapGuideline,
 }) => {
@@ -57,3 +59,6 @@ export const TimelineSnapGuideline: React.FC<TimelineSnapGuidelineProps> = ({
     </div>
   );
 };
+
+// Backward-compatible alias
+export const TimelineSnapGuideline = SnapGuideline;

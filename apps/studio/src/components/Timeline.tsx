@@ -4,14 +4,14 @@ import { AudioWaveform } from './timeline/AudioWaveform';
 import { TimecodeRuler } from './timeline/TimecodeRuler';
 import { FilmstripThumbnail } from './timeline/FilmstripThumbnail';
 import { MasterAudioMeter } from './audio/MasterAudioMeter';
-import { TimelineTransitionBlock } from './timeline/TimelineTransitionBlock';
+import { TransitionBlock } from './timeline/TransitionBlock';
 import { TrimHandle } from './timeline/TrimHandle';
 import { DroppableTrackLane } from './timeline/DroppableTrackLane';
-import { TimelineClipItem } from './timeline/TimelineClipItem';
+import { ClipItem, TimelineClipItem } from './timeline/ClipItem';
 import { TrackHeaderCard } from './timeline/TrackHeaderCard';
-import { TimelineToolbar } from './timeline/TimelineToolbar';
-import { TimelineOverlayHUD } from './timeline/TimelineOverlayHUD';
-import { TimelineEmptyState } from './timeline/TimelineEmptyState';
+import { Toolbar } from './timeline/Toolbar';
+import { OverlayHUD } from './timeline/OverlayHUD';
+import { EmptyState, TimelineEmptyState } from './timeline/EmptyState';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -718,7 +718,7 @@ export function Timeline({
   return (
     <footer className="h-72 glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
-      <TimelineToolbar
+      <Toolbar
         activeTool={activeTool}
         onSetActiveTool={setActiveTool}
         isPlaying={isPlaying}
@@ -813,7 +813,7 @@ export function Timeline({
             )}
 
             {/* Magnetic Snapping, Razor Indicator, and Floating Timecode HUD Overlay */}
-            <TimelineOverlayHUD
+            <OverlayHUD
               pixelsPerFrame={pixelsPerFrame}
               activeSnapGuideline={activeSnapGuideline}
               timelineMode={timelineMode}
@@ -823,7 +823,7 @@ export function Timeline({
 
             {/* Track Rows: Virtualized outer container */}
             {tracks.length === 0 ? (
-              <TimelineEmptyState
+              <EmptyState
                 onLoadSample={() => IRStateManager.getInstance().switchTemplate('default')}
               />
             ) : (
@@ -879,7 +879,7 @@ export function Timeline({
                         {timelineMode === 'dom' ? (
                           <DroppableTrackLane track={track} isLocked={isLocked}>
                             {visibleSequences.map((seq) => (
-                              <TimelineClipItem
+                              <ClipItem
                                 key={seq.id}
                                 seq={seq}
                                 track={track}

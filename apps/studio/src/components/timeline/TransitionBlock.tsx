@@ -2,19 +2,21 @@ import React from 'react';
 import { Film, Sparkles, Layers } from 'lucide-react';
 import type { ModifierNode } from '@acc/ir';
 
-export interface TimelineTransitionBlockProps {
+export interface TransitionBlockProps {
   transitionModifier: ModifierNode;
   sequenceId: string;
   pixelsPerFrame: number;
   onClick?: (e: React.MouseEvent) => void;
 }
 
+export type TimelineTransitionBlockProps = TransitionBlockProps;
+
 /**
- * TimelineTransitionBlock:
+ * TransitionBlock:
  * Renders a stylized transition handle / badge directly on the incoming sequence's cut edge.
  * Visualizes the transition duration footprint and type icon (crossfade, wipe, push, zoom, dip, glitch).
  */
-export const TimelineTransitionBlock: React.FC<TimelineTransitionBlockProps> = ({
+export const TransitionBlock: React.FC<TransitionBlockProps> = ({
   transitionModifier,
   sequenceId,
   pixelsPerFrame,
@@ -63,3 +65,7 @@ export const TimelineTransitionBlock: React.FC<TimelineTransitionBlockProps> = (
     </div>
   );
 };
+
+// Backward-compatible alias
+export const TimelineTransitionBlock = TransitionBlock;
+

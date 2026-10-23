@@ -1,16 +1,18 @@
 import React from 'react';
 
-export interface TimelineRazorGuidelineProps {
+export interface RazorGuidelineProps {
   pixelsPerFrame: number;
   timelineMode: 'dom' | 'canvas';
   razorHoverFrame: number | null;
 }
 
+export type TimelineRazorGuidelineProps = RazorGuidelineProps;
+
 /**
- * TimelineRazorGuideline:
+ * RazorGuideline:
  * Renders the razor/scissors cut position indicator when hovering over the timeline in razor mode.
  */
-export const TimelineRazorGuideline: React.FC<TimelineRazorGuidelineProps> = ({
+export const RazorGuideline: React.FC<RazorGuidelineProps> = ({
   pixelsPerFrame,
   timelineMode,
   razorHoverFrame,
@@ -32,3 +34,6 @@ export const TimelineRazorGuideline: React.FC<TimelineRazorGuidelineProps> = ({
     </div>
   );
 };
+
+// Backward-compatible alias
+export const TimelineRazorGuideline = RazorGuideline;

@@ -2,18 +2,18 @@ import React from 'react';
 import { Film, Music, Type, Sparkles, Clock, Layers } from 'lucide-react';
 import { RationalTime } from '@acc/core-isomorphic';
 
-export interface TimelineClipInsightCardProps {
+export interface ClipInsightCardProps {
   seq: any;
   track: any;
   fps: number;
 }
 
 /**
- * TimelineClipInsightCard:
+ * ClipInsightCard:
  * Semantic content card showing clip archetype, duration, SMPTE In/Out, dialogue cues, and active modifiers.
  * Designed to be embedded cleanly inside Shadcn's HoverCardContent.
  */
-export const TimelineClipInsightCard: React.FC<TimelineClipInsightCardProps> = ({
+export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
   seq,
   track,
   fps,
@@ -103,3 +103,7 @@ export const TimelineClipInsightCard: React.FC<TimelineClipInsightCardProps> = (
     </div>
   );
 };
+
+// Backward-compatible alias
+export const TimelineClipInsightCard = ClipInsightCard;
+export type TimelineClipInsightCardProps = ClipInsightCardProps;

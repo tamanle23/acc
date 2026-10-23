@@ -1,6 +1,6 @@
 import React from 'react';
 
-export interface TimelineTimecodeBadgeProps {
+export interface TimecodeBadgeProps {
   pixelsPerFrame: number;
   timelineMode: 'dom' | 'canvas';
   timecodeHUD: {
@@ -11,11 +11,13 @@ export interface TimelineTimecodeBadgeProps {
   } | null;
 }
 
+export type TimelineTimecodeBadgeProps = TimecodeBadgeProps;
+
 /**
- * TimelineTimecodeBadge:
+ * TimecodeBadge:
  * Renders the floating numeric timecode/delta badge during active clip drag or trim interactions.
  */
-export const TimelineTimecodeBadge: React.FC<TimelineTimecodeBadgeProps> = ({
+export const TimecodeBadge: React.FC<TimecodeBadgeProps> = ({
   pixelsPerFrame,
   timelineMode,
   timecodeHUD,
@@ -54,3 +56,6 @@ export const TimelineTimecodeBadge: React.FC<TimelineTimecodeBadgeProps> = ({
     </div>
   );
 };
+
+// Backward-compatible alias
+export const TimelineTimecodeBadge = TimecodeBadge;

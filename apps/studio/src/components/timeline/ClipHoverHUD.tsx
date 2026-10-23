@@ -1,21 +1,23 @@
 import React from 'react';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '../ui/hover-card';
-import { TimelineClipInsightCard } from './TimelineClipInsightCard';
+import { ClipInsightCard } from './ClipInsightCard';
 
-export interface TimelineClipHoverHUDProps {
+export interface ClipHoverHUDProps {
   seq: any;
   track: any;
   fps: number;
   children: React.ReactNode;
 }
 
+export type TimelineClipHoverHUDProps = ClipHoverHUDProps;
+
 /**
- * TimelineClipHoverHUD:
+ * ClipHoverHUD:
  * Accessible, Radix/Shadcn-powered HoverCard wrapper around a timeline clip.
  * Automatically handles viewport edge detection, floating collision boundaries,
  * portal rendering above sticky headers, and smooth enter/exit transitions without manual coordinate hacking.
  */
-export const TimelineClipHoverHUD: React.FC<TimelineClipHoverHUDProps> = ({
+export const ClipHoverHUD: React.FC<ClipHoverHUDProps> = ({
   seq,
   track,
   fps,
@@ -33,8 +35,11 @@ export const TimelineClipHoverHUD: React.FC<TimelineClipHoverHUDProps> = ({
         avoidCollisions={true}
         className="w-80 p-3 glass-panel border border-glass-border shadow-2xl rounded-xl backdrop-blur-xl bg-popover/95 text-foreground z-[100]"
       >
-        <TimelineClipInsightCard seq={seq} track={track} fps={fps} />
+        <ClipInsightCard seq={seq} track={track} fps={fps} />
       </HoverCardContent>
     </HoverCard>
   );
 };
+
+// Backward-compatible alias
+export const TimelineClipHoverHUD = ClipHoverHUD;

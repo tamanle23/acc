@@ -1,9 +1,9 @@
 import React from 'react';
-import { TimelineSnapGuideline } from './TimelineSnapGuideline';
-import { TimelineRazorGuideline } from './TimelineRazorGuideline';
-import { TimelineTimecodeBadge } from './TimelineTimecodeBadge';
+import { SnapGuideline } from './SnapGuideline';
+import { RazorGuideline } from './RazorGuideline';
+import { TimecodeBadge } from './TimecodeBadge';
 
-export interface TimelineOverlayHUDProps {
+export interface OverlayHUDProps {
   pixelsPerFrame: number;
   activeSnapGuideline: { frame: number; label?: string; isAbut?: boolean } | null;
   timelineMode: 'dom' | 'canvas';
@@ -16,35 +16,37 @@ export interface TimelineOverlayHUDProps {
   } | null;
 }
 
+export type TimelineOverlayHUDProps = OverlayHUDProps;
+
 /**
- * TimelineOverlayHUD:
+ * OverlayHUD:
  * Orchestrates timeline canvas overlays (magnetic snapping guidelines, razor cut indicator, and drag timecode badges).
- * Clip hover insight has been cleanly decoupled into TimelineClipHoverHUD using Radix/Shadcn HoverCard.
+ * Clip hover insight has been cleanly decoupled into ClipHoverHUD using Radix/Shadcn HoverCard.
  */
-export function TimelineOverlayHUD({
+export function OverlayHUD({
   pixelsPerFrame,
   activeSnapGuideline,
   timelineMode,
   razorHoverFrame,
   timecodeHUD,
-}: TimelineOverlayHUDProps) {
+}: OverlayHUDProps) {
   return (
     <>
       {/* 1. Magnetic Snapping Guideline (Cyan grid/playhead, Emerald abutting clip seams) */}
-      <TimelineSnapGuideline
+      <SnapGuideline
         pixelsPerFrame={pixelsPerFrame}
         activeSnapGuideline={activeSnapGuideline}
       />
 
       {/* 2. Razor Tool Hover Cut Indicator Guideline */}
-      <TimelineRazorGuideline
+      <RazorGuideline
         pixelsPerFrame={pixelsPerFrame}
         timelineMode={timelineMode}
         razorHoverFrame={razorHoverFrame}
       />
 
       {/* 3. Floating Timecode HUD Badge during Drag or Trim */}
-      <TimelineTimecodeBadge
+      <TimecodeBadge
         pixelsPerFrame={pixelsPerFrame}
         timelineMode={timelineMode}
         timecodeHUD={timecodeHUD}
@@ -52,3 +54,6 @@ export function TimelineOverlayHUD({
     </>
   );
 }
+
+// Backward-compatible alias
+export const TimelineOverlayHUD = OverlayHUD;
