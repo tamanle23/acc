@@ -111,8 +111,28 @@ export class CanvasHitTester {
       };
     }
 
-    // 4. Visual Media / Video / Image archetype (Exclude pure audio tracks)
-    if (seq.type === 'video' || seq.type === 'image' || (seq.assetId && !trackId.includes('audio') && !trackId.includes('a1') && !trackId.includes('a2'))) {
+    // 4. Procedural Visual Overlays (e.g. particles, rain, snow, HUDs)
+    if (seq.type === 'overlay' || modifiers.some((m: any) => m.type.startsWith('overlay/'))) {
+      return {
+        sequenceId: seq.id,
+        sequenceType: 'overlay',
+        trackIndex,
+        trackId,
+        normX,
+        normY,
+        normWidth: 0.95,
+        normHeight: 0.95,
+        label: `Overlay: ${seq.name || seq.id}`,
+        zIndex: 20 + trackIndex,
+      };
+    }
+
+    // 5. Visual Media / Video / Image archetype (Exclude pure audio tracks)
+    if (
+      seq.type === 'video' ||
+      seq.type === 'image' ||
+      (seq.assetId && !trackId.includes('audio') && !trackId.includes('a1') && !trackId.includes('a2'))
+    ) {
       const scale = Number.isFinite(tp.scale) ? tp.scale : 1.0;
       return {
         sequenceId: seq.id,

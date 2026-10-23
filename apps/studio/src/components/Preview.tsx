@@ -685,14 +685,6 @@ export function Preview({
             dragCoords={dragCoords}
           />
 
-          {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos) */}
-          <UniversalCanvasHitOverlay
-            activeSequences={activeSequences}
-            selectedSeqId={selectedSeqId}
-            tracks={irState.doc?.tracks || []}
-            onStartEditingCue={setEditingCue}
-          />
-
           {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
           <TransformGizmoOverlay
             selectedSeqId={selectedSeqId}
@@ -708,6 +700,14 @@ export function Preview({
             onTransformDragEnd={handleTransformDragEnd}
             onSetTransform={setTransform}
             onToggleLock={() => setIsLocked(!isLocked)}
+            onStartEditingCue={setEditingCue}
+          />
+
+          {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos, Overlays) */}
+          <UniversalCanvasHitOverlay
+            activeSequences={activeSequences}
+            selectedSeqId={selectedSeqId}
+            tracks={irState.doc?.tracks || []}
             onStartEditingCue={setEditingCue}
           />
         </div>
