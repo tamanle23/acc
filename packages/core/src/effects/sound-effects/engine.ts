@@ -1,13 +1,13 @@
 import { Logger } from "@acc/core";
 import { FFmpegManager } from '@acc/core';
 import { FFmpegCommand } from '@acc/core';
-import { RegistryManager } from './core/Registry';
+import { SoundRegistryManager } from './core/Registry';
 import { AudioNormalizer, fileExists } from '@acc/core';
 import path from 'path';
 import fs from 'fs';
 
 export async function renderSoundEffect(
-  registry: RegistryManager,
+  registry: SoundRegistryManager,
   effect: string,
   variant: string,
   subVariant: string,
@@ -40,7 +40,7 @@ export async function renderSoundEffect(
 }
 
 export async function renderCompositeSound(
-  registry: RegistryManager,
+  registry: SoundRegistryManager,
   compositeName: string,
   outDir: string
 ): Promise<string[]> {

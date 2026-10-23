@@ -12,7 +12,7 @@ import { Fallback as FallbackAI } from '../generators/ai/Fallback';
 // --- Library Generators ---
 import { GenericLibrary } from '../generators/library/GenericLibrary';
 
-export class RegistryManager {
+export class SoundRegistryManager {
   private genericLibraryInstance: GenericLibrary;
   private ffmpegUIGenerator: UIFFmpeg;
   private aiGenerators: Map<string, ISoundGenerator> = new Map();

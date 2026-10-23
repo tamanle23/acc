@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
-import { FFmpegManager, initFFI, MediaEngineRegistry, MediabunnyClientSink } from '@acc/core';
+import { FFmpegManager, initFFI, MediaEngineRegistry } from '@acc/core';
+import { MediabunnyClientSink } from '@acc/core-web';
 
 describe('Studio React 19 Client-Side Mediabunny Integration', () => {
   beforeAll(async () => {

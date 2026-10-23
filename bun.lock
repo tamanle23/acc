@@ -58,7 +58,6 @@
       "name": "@acc/studio",
       "version": "1.0.0",
       "dependencies": {
-        "@acc/core": "workspace:*",
         "@acc/core-isomorphic": "workspace:*",
         "@acc/core-web": "workspace:*",
         "@acc/effect-engines": "workspace:*",
@@ -166,7 +165,6 @@
       "name": "@acc/ir",
       "version": "1.0.0",
       "dependencies": {
-        "@acc/core": "workspace:*",
         "@acc/core-isomorphic": "workspace:*",
         "@acc/effect-engines": "workspace:*",
         "mediabunny": "^1.61.5",
