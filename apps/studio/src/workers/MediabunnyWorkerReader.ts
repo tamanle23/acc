@@ -2,6 +2,7 @@ import {
   Input,
   UrlSource,
   CanvasSink,
+  ALL_FORMATS,
   type InputVideoTrack,
 } from 'mediabunny';
 
@@ -66,6 +67,7 @@ export class MediabunnyWorkerReader {
     this.initPromise = (async () => {
       try {
         this.input = new Input({
+          formats: ALL_FORMATS,
           source: new UrlSource(this.src),
         });
 
