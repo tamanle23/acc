@@ -329,6 +329,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`321`](321_fix_missing_audio_in_exported_mp4.md) | 2026-10-23 | Fix Missing Audio in Client-Exported MP4 | Added AAC audio track encoding with Mediabunny AudioBufferSource, decoded PCM sources into interleaved Float32Array, and wired audio progress |
 | [`322`](322_universal_isomorphic_services_foundation.md) | 2026-10-23 | Universal Isomorphic Services Foundation (Iteration 30 Phase 1) | Implemented UniversalLogger, fastChecksum, MemoryCacheStrategy, and ContentCacheRegistry in @acc/core-isomorphic with zero Node dependencies |
 | [`323`](323_consolidate_mediabunny_client_sink_in_core_web.md) | 2026-10-24 | Consolidate MediabunnyClientSink & Cache in @acc/core-web (Iteration 30 Phase 2) | Relocated MediabunnyClientSink SSOT and MediabunnyClientStrategy to @acc/core-web, implemented IndexedDbCacheStrategy, deleted duplicates from @acc/core and @acc/ir, and updated Studio App.tsx |
+| [`324`](324_merge_core_native_into_core.md) | 2026-10-24 | Merge @acc/core-native into @acc/core & Implement NativeFileCacheStrategy (Iteration 30 Phase 3) | Merged NativeBufferPool and NapiCanvasAdapter into @acc/core, permanently deleted packages/core-native, implemented NativeFileCacheStrategy, updated tsconfig and cli dependencies |
 
 
 

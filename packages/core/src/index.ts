@@ -59,4 +59,5 @@ export * from './security/DynamicSecretsManager';
 export * from './autoconfig';
 export * from './media-engine';
 export * from './native';
-export * from '../../core-web/src';
+export * from './buffer';
+export * from './cache';

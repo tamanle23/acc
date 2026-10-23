@@ -34,12 +34,6 @@
       "@acc/core-isomorphic/*": [
         "packages/core-isomorphic/src/*"
       ],
-      "@acc/core-native": [
-        "packages/core-native/src/index.ts"
-      ],
-      "@acc/core-native/*": [
-        "packages/core-native/src/*"
-      ],
       "@acc/core-web": [
         "packages/core-web/src/index.ts"
       ],

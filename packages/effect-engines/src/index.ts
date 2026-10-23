@@ -12,11 +12,11 @@ export * from './types';
 export * from './editing';
 export * from './styles';
 export { UniversalCanvasProvider, CanvasAssetLoader, type ICanvasAdapter, type ICanvasInstance, type ICanvasContext2D } from '@acc/core-isomorphic';
-export { NapiCanvasAdapter as NodeCanvasAdapter, NapiCanvasAdapter } from '@acc/core-native';
+export { NapiCanvasAdapter as NodeCanvasAdapter, NapiCanvasAdapter } from '@acc/core';
 export { WebCanvasAdapter } from '@acc/core-web';
 
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { NapiCanvasAdapter } from '@acc/core-native';
+import { NapiCanvasAdapter } from '@acc/core';
 import { WebCanvasAdapter } from '@acc/core-web';
 
 try {

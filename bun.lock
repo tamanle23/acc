@@ -50,7 +50,6 @@
       "dependencies": {
         "@acc/core": "workspace:*",
         "@acc/core-isomorphic": "workspace:*",
-        "@acc/core-native": "workspace:*",
         "@acc/effect-engines": "workspace:*",
         "@acc/ir": "workspace:*",
       },
@@ -124,6 +123,7 @@
       "dependencies": {
         "@acc/core-isomorphic": "workspace:*",
         "@mediabunny/server": "^1.61.5",
+        "@napi-rs/canvas": "^1.0.9",
         "mediabunny": "^1.61.5",
       },
     },
@@ -133,15 +133,6 @@
       "dependencies": {
         "gsap": "^3.12.7",
         "pts": "^1.0.3",
-      },
-    },
-    "packages/core-native": {
-      "name": "@acc/core-native",
-      "version": "1.0.0",
-      "dependencies": {
-        "@acc/core": "workspace:*",
-        "@acc/core-isomorphic": "workspace:*",
-        "@napi-rs/canvas": "^1.0.9",
       },
     },
     "packages/core-web": {
@@ -158,7 +149,6 @@
       "dependencies": {
         "@acc/core": "workspace:*",
         "@acc/core-isomorphic": "workspace:*",
-        "@acc/core-native": "workspace:*",
         "@acc/core-web": "workspace:*",
         "@huggingface/transformers": "^4.3.0",
         "gsap": "^3.12.7",
@@ -197,8 +187,6 @@
     "@acc/core": ["@acc/core@workspace:packages/core"],
 
     "@acc/core-isomorphic": ["@acc/core-isomorphic@workspace:packages/core-isomorphic"],
-
-    "@acc/core-native": ["@acc/core-native@workspace:packages/core-native"],
 
     "@acc/core-web": ["@acc/core-web@workspace:packages/core-web"],
 

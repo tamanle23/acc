@@ -12,7 +12,6 @@
   "dependencies": {
     "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
-    "@acc/core-native": "workspace:*",
     "@acc/core-web": "workspace:*",
     "@huggingface/transformers": "^4.3.0",
     "gsap": "^3.12.7",

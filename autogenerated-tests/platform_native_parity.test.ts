@@ -9,7 +9,7 @@ import {
   type ICanvasContext2D,
   MediaEngineRegistry,
   type IVideoDecoder,
-} from '../packages/core/src/isomorphic';
+} from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '../packages/core/src/native';
 import { WebCanvasAdapter } from '../packages/core-web/src';
 import { FFIVideoDecoder } from '../packages/core/src/ffmpeg-ffi/FFIVideoDecoder';

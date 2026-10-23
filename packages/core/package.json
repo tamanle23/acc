@@ -1,7 +1,7 @@
 {
   "name": "@acc/core",
   "version": "1.0.0",
-  "description": "Native media processing foundation (FFmpegManager, bun:ffi zero-copy, AssetContext, logger)",
+  "description": "Native media processing foundation (FFmpegManager, bun:ffi zero-copy, NativeBufferPool, NapiCanvasAdapter, logger)",
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -13,10 +13,6 @@
       "bun": "./src/native/index.ts",
       "node": "./src/native/index.ts",
       "default": "./src/native/index.ts"
-    },
-    "./web": {
-      "browser": "./src/web/index.ts",
-      "default": "./src/web/index.ts"
     }
   },
   "type": "module",
@@ -24,6 +20,7 @@
   "dependencies": {
     "@acc/core-isomorphic": "workspace:*",
     "@mediabunny/server": "^1.61.5",
+    "@napi-rs/canvas": "^1.0.9",
     "mediabunny": "^1.61.5"
   }
 }

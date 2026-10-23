@@ -15,7 +15,6 @@
   "dependencies": {
     "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
-    "@acc/core-native": "workspace:*",
     "@acc/ir": "workspace:*",
     "@acc/effect-engines": "workspace:*"
   }
