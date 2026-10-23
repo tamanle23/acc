@@ -332,6 +332,8 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`324`](324_merge_core_native_into_core.md) | 2026-10-24 | Merge @acc/core-native into @acc/core & Implement NativeFileCacheStrategy (Iteration 30 Phase 3) | Merged NativeBufferPool and NapiCanvasAdapter into @acc/core, permanently deleted packages/core-native, implemented NativeFileCacheStrategy, updated tsconfig and cli dependencies |
 | [`325`](325_purify_isomorphic_effect_engines.md) | 2026-10-24 | Purify Isomorphic Effect Engines and Relocate Server Generators to Core (Iteration 30 Phase 4) | Relocated FFmpeg overlay and sound effect generators to @acc/core, converted @acc/effect-engines to pure isomorphic package with single root export, updated CLI and IR callers |
 | [`326`](326_purge_server_code_from_ir_and_unify_isomorphic.md) | 2026-10-24 | Purge Server Code from @acc/ir into Core and Unify Pure Isomorphic Video IR (Iteration 30 Phase 5) | Relocated IRChunkWorkerPool & FFIChunkConcatMuxer to @acc/core, deleted proxy sinks & ./client & ./server subpaths from @acc/ir, removed @acc/core dependency, updated CLI & Exporters |
+| [`327`](327_update_applications_and_studio_boundaries.md) | 2026-10-24 | Update Applications & Studio Client Export Boundary (Iteration 30 Phase 6) | Removed @acc/core from apps/studio dependencies, updated test assertions to verify MediabunnyClientSink from @acc/core-web, and validated app boundaries |
+
 
 
 
