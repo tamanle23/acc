@@ -3,7 +3,7 @@ import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 import { fileExists } from '../utils';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export interface ChunkCheckpointRecord {
   chunkIndex: number;

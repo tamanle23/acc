@@ -1,4 +1,4 @@
-import { Logger } from './logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import type { ExtendedPipelineIR } from '@acc/ir';
 
 export interface EditingStageContext {

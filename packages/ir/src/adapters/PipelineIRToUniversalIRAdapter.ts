@@ -1,4 +1,3 @@
-import path from 'path';
 import type {
   VideoIRDocument,
   IRTrack,
@@ -100,8 +99,10 @@ export class PipelineIRToUniversalIRAdapter implements IConfigToIRAdapter<Pipeli
 
     const resolvePath = (p: string | undefined): string => {
       if (!p) return '';
-      if (!baseDir || path.isAbsolute(p)) return p;
-      return path.resolve(baseDir, p);
+      const isAbsolute = p.startsWith('/') || p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:') || p.startsWith('blob:') || Boolean(p.match(/^[a-zA-Z]:[\\/]/));
+      if (!baseDir || isAbsolute) return p;
+      const trimmedBase = baseDir.endsWith('/') || baseDir.endsWith('\\') ? baseDir : `${baseDir}/`;
+      return `${trimmedBase}${p}`;
     };
 
     let previousVideoSeqId: string | undefined = undefined;

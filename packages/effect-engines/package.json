@@ -1,19 +1,15 @@
 {
   "name": "@acc/effect-engines",
   "version": "1.0.0",
-  "description": "Visual 3D depth suite, overlay shader effects, sound effect generators, and canvas subtitles",
+  "description": "Visual 3D depth suite, overlay shader effects, and canvas subtitles",
   "main": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    ".": "./src/index.ts"
   },
   "type": "module",
   "private": true,
   "dependencies": {
-    "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
-    "@acc/core-native": "workspace:*",
-    "@acc/core-web": "workspace:*",
     "@huggingface/transformers": "^4.3.0",
     "gsap": "^3.12.7",
     "pts": "^1.0.3",

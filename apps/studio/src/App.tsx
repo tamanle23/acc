@@ -26,9 +26,11 @@ import {
   Badge,
   TooltipProvider,
 } from './components/ui';
-import { MediabunnyClientSink } from '@acc/ir/client';
+import { MediabunnyClientSink } from '@acc/core-web';
 import { IRPreviewEngine } from '@acc/ir';
+import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
 import { AssetTextureCache } from './lib/textures/AssetTextureCache';
+import { AudioAssetCache } from './lib/audio/AudioAssetCache';
 import { Video, AlertCircle } from 'lucide-react';
 import { IRStateManager } from './lib/ir/irState';
 import type { StagingPreset } from './lib/library/stagingPresets';
@@ -447,6 +449,29 @@ function StudioWorkspace() {
                 const startSec = (seq.startFrame ?? 0) / fps;
                 const durationSec = (seq.durationFrames ?? 30) / fps;
                 const isVoice = track.id?.includes('voice') || seq.name?.toLowerCase().includes('voice');
+
+                // Resolve real PCM audio source if asset is available
+                let audioSource: DecodedPcmSource | undefined;
+                if (seq.assetId && assetsMap[seq.assetId]) {
+                  const assetDef = assetsMap[seq.assetId];
+                  let decoded = AudioAssetCache.getInstance().getAudioChannels(seq.assetId, assetDef.src);
+                  if (!decoded && assetDef.src) {
+                    try {
+                      decoded = await AudioAssetCache.getInstance().fetchAndDecode(seq.assetId, assetDef.src);
+                    } catch (e) {
+                      console.warn(`[Export] Failed to decode audio for asset ${seq.assetId}:`, e);
+                    }
+                  }
+                  if (decoded) {
+                    audioSource = new DecodedPcmSource({
+                      channels: decoded.channels,
+                      sourceSampleRate: decoded.sampleRate,
+                      sourceTrimStartSec: (seq.sourceTrim?.startFrame || 0) / fps,
+                      loop: track.id?.toLowerCase().includes('bgm') || track.name?.toLowerCase().includes('bgm'),
+                    });
+                  }
+                }
+
                 mixer.addClip({
                   id: seq.id,
                   type: isVoice ? 'voice' : 'bgm',
@@ -454,6 +479,7 @@ function StudioWorkspace() {
                   durationSec: durationSec,
                   volume: 0.85,
                   assetId: seq.assetId,
+                  audioSource,
                   modifiers: seq.modifiers,
                 });
               }

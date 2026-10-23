@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { NativeBufferPool } from '@acc/core-native';
+import { NativeBufferPool } from '@acc/core';
 
 describe('NativeBufferPool Zero-Allocation Test Suite', () => {
   it('prewarms and recycles native buffers across 1,000 frames without new allocations', () => {

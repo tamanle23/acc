@@ -1,7 +1,7 @@
 import { IConductorTaskCommand, ConductorTaskInput, ConductorTaskOutput } from './interfaces/IConductorTaskCommand';
 import { ContentStrategyRegistry } from './strategies/ContentStrategyRegistry';
 import { createUnifiedPipelineContext } from '../pipeline/UnifiedPipelineContext';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export class UniversalStrategyTaskCommand implements IConductorTaskCommand {
   public readonly taskDefName = 'acc.content.render_strategy';

@@ -1,4 +1,4 @@
-import { Logger } from '../../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import os from 'os';

@@ -7,23 +7,24 @@ import {
   StoryConfigToUniversalIRAdapter,
   PipelineIRToUniversalIRAdapter,
   RelationalDAGCompiler,
-  type VideoIRDocument,
-} from '../packages/ir/src';
-import {
   IRMasterRenderer,
-  MediaSinkFactory,
-} from '../packages/ir/src/server';
+  type VideoIRDocument,
+  type IIRFrameSink,
+} from '../packages/ir/src';
 import { MediaEngineRegistry } from '../packages/core/src/media-engine/MediaEngineRegistry';
 import { BunFFIEngineStrategy } from '../packages/core/src/media-engine/strategies/BunFFIEngineStrategy';
 import { FluentFFmpegEngineStrategy } from '../packages/core/src/media-engine/strategies/FluentFFmpegEngineStrategy';
 import { MediabunnyServerStrategy } from '../packages/core/src/media-engine/strategies/MediabunnyServerStrategy';
-import { MediabunnyClientStrategy } from '../packages/core/src/media-engine/strategies/MediabunnyClientStrategy';
+import { MediabunnyClientStrategy } from '../packages/core-web/src/media-engine/MediabunnyClientStrategy';
 
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
+import { NapiCanvasAdapter } from '../packages/core/src/native';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { beforeAll } from 'bun:test';
 
 describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', () => {
   beforeAll(async () => {
+    UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
     await FFmpegManager.prepare();
   });
 
@@ -206,14 +207,14 @@ describe('Phase 4: VideoIR Schema 8-Point Sync & Multi-Engine Parity Testing', (
 
     for (const engine of engines) {
       const outPath = path.join(tmpDir, `render_${engine}.mp4`);
-      const sink = MediaSinkFactory.createVideoSink(engine, {
+      const sink = MediaEngineRegistry.get(engine).createVideoSink({
         width: 320,
         height: 240,
         fps: 30,
         totalFrames: 15,
         durationSeconds: 0.5,
         outputPath: outPath,
-      });
+      }) as IIRFrameSink;
 
       const renderer = new IRMasterRenderer(timeline);
       const res = await renderer.render({

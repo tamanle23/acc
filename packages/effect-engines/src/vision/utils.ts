@@ -1,19 +1,28 @@
-import os from 'os';
-import path from 'path';
 import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { BoundingBox } from './types';
 
-// Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule
-const globalHfCache = path.join(os.homedir(), '.cache', 'huggingface');
-if (typeof process !== 'undefined' && process.env) {
+// Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule when in Node/Bun environment
+function getGlobalHfCache(): string | undefined {
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    try {
+      const os = require('os');
+      const path = require('path');
+      return path.join(os.homedir(), '.cache', 'huggingface');
+    } catch {}
+  }
+  return undefined;
+}
+
+const globalHfCache = getGlobalHfCache();
+if (globalHfCache && typeof process !== 'undefined' && process.env) {
   process.env.HF_HOME = globalHfCache;
 }
 
 export function configureHfEnv(transformersEnv?: any) {
-  if (typeof process !== 'undefined' && process.env) {
+  if (globalHfCache && typeof process !== 'undefined' && process.env) {
     process.env.HF_HOME = globalHfCache;
   }
-  if (transformersEnv) {
+  if (transformersEnv && globalHfCache) {
     transformersEnv.cacheDir = globalHfCache;
     transformersEnv.allowLocalModels = true;
   }

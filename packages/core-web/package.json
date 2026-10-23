@@ -1,12 +1,13 @@
 {
   "name": "@acc/core-web",
   "version": "1.0.0",
-  "description": "Browser client and worker adapters (OffscreenCanvas, HTML5 Canvas, WebCodecs)",
+  "description": "Browser client and worker adapters (OffscreenCanvas, HTML5 Canvas, WebCodecs, Mediabunny)",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "type": "module",
   "private": true,
   "dependencies": {
-    "@acc/core-isomorphic": "workspace:*"
+    "@acc/core-isomorphic": "workspace:*",
+    "mediabunny": "^1.61.5"
   }
 }

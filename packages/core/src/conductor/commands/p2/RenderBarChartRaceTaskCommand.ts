@@ -1,4 +1,4 @@
-import { Logger } from '../../../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import { IConductorTaskCommand, ConductorTaskInput, ConductorTaskOutput } from '../../interfaces/IConductorTaskCommand';
 
 export class RenderBarChartRaceTaskCommand implements IConductorTaskCommand {

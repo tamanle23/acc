@@ -1,7 +1,7 @@
 import { parseArgs } from 'util';
 import { RegistryManager, FFmpegManager, askChoice, askQuestion, askYesNo, closeInteractiveConsole, Logger, intro, outro } from '@acc/core';
 import fs from 'fs';
-import { renderEffectLayer } from '@acc/effect-engines';
+import { renderEffectLayer } from '@acc/core';
 
 export async function generateHeadless(values: any) {
   if (!values.effect && !values.composite) {

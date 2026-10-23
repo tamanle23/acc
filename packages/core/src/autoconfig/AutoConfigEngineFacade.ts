@@ -13,7 +13,7 @@ import type {
   DiscoveredAssetManifest,
   PipelineResolutionResult,
 } from './types';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 /**
  * AutoConfigEngineFacade (GoF Facade Pattern)

@@ -5,7 +5,7 @@ import { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStr
 import { FFmpegManager } from '../FFmpegManager';
 
 export * from './canvas/NapiCanvasAdapter';
-export * from '../../../../packages/core-native/src/buffer/NativeBufferPool';
+export * from '../buffer/NativeBufferPool';
 export { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStrategy';
 export { FFmpegManager } from '../FFmpegManager';
 

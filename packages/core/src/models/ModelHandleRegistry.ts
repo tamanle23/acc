@@ -1,5 +1,5 @@
 import { FlyweightModelRegistry, type ModelHandleEntry } from '../AssetContext';
-import { Logger } from '../logger';
+import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 
 export interface RefCountedModelEntry extends ModelHandleEntry {
   refCount: number;

@@ -1,5 +1,5 @@
 import type { ModifierPlugin, ModifierContext, ClipRenderContext, MasterCompositeContext } from '../ModifierPluginRegistry';
-import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines/client';
+import { ColorGradingEngine, type ColorGradingParams } from '@acc/effect-engines';
 
 /**
  * ColorGradingPlugin:

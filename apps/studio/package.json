@@ -8,7 +8,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
     "@acc/core-web": "workspace:*",
     "@acc/effect-engines": "workspace:*",

@@ -1,18 +1,21 @@
 import fs from 'fs';
 import path from 'path';
-import { Logger, FFmpegManager, Tracer, TraceContext } from '@acc/core';
+import {
+  IRChunkWorkerPool,
+  FFmpegManager,
+  Logger,
+  Tracer,
+  TraceContext,
+  MediaEngineRegistry,
+} from '@acc/core';
 import {
   IRConfigAdapterRegistry,
   RelationalDAGCompiler,
   AssetMetadataProber,
+  IRMasterRenderer,
   type IIRFrameSink,
   type VideoIRDocument,
 } from '@acc/ir';
-import {
-  IRChunkWorkerPool,
-  IRMasterRenderer,
-  MediaSinkFactory,
-} from '@acc/ir/server';
 import type { MediaEngineType } from '@acc/core';
 
 export interface IrRenderCliOptions {
@@ -190,7 +193,7 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
         // Single-Worker Target Sink Resolution
         let sink: IIRFrameSink | undefined;
         if (outputPath) {
-          sink = MediaSinkFactory.createVideoSink(options.engine);
+          sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSink;
           Logger.info('IRRenderCommand', `Configured Output Video Sink: ${sink.name} -> ${outputPath}`);
         }
 

@@ -3,7 +3,7 @@ import type { ModifierPlugin, ModifierContext, StreamRenderContext, ClipRenderCo
 import {
   DeterministicParticleField,
   PostProcessingShaders,
-} from '@acc/effect-engines/client';
+} from '@acc/effect-engines';
 
 export type ProceduralParticleType =
   | 'rain'

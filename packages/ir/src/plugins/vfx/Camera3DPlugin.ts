@@ -9,7 +9,7 @@ import {
   CameraSplineInterpolator,
   type Camera3DKeyframe,
   type Camera3DState
-} from '@acc/effect-engines/client';
+} from '@acc/effect-engines';
 
 export interface Camera3DPluginParams {
   keyframes?: Camera3DKeyframe[];

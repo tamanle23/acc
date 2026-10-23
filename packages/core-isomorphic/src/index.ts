@@ -6,3 +6,5 @@ export * from './math/time';
 export * from './math/clock';
 export * from './assets/IAssetBlob';
 export * from './assets/AssetProtocolRegistry';
+export * from './logger';
+export * from './cache';

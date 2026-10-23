@@ -1,4 +1,4 @@
-import { MediabunnyClientSink } from '../sinks/MediabunnyClientSink';
+import { MediabunnyClientSink } from './MediabunnyClientSink';
 import type {
   IMediaEngineStrategy,
   MediaEngineType,
@@ -10,8 +10,8 @@ import type {
   IChunkExecutionPolicy,
   MediaProbeResult,
   SinkInitMetadata,
-} from '../types';
-import { MediaEngineError } from '../types';
+} from '@acc/core-isomorphic';
+import { MediaEngineError } from '@acc/core-isomorphic';
 
 export class MediabunnyClientProbeStrategy implements IMediaProbeStrategy {
   public async probe(filePathOrUrl: string): Promise<MediaProbeResult> {
@@ -84,7 +84,7 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
     }
   }
 
-  public createVideoSink(options?: SinkInitMetadata): IMediaFrameSink {
+  public createVideoSink(_options?: SinkInitMetadata): IMediaFrameSink {
     return new MediabunnyClientSink();
   }
 

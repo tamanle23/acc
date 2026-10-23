@@ -1,4 +1,4 @@
-import { FFIConcatMuxer } from '@acc/core';
+import { FFIConcatMuxer } from '../ffmpeg-ffi/FFIConcatMuxer';
 
 export interface ChunkConcatOptions {
   cleanupChunks?: boolean;
