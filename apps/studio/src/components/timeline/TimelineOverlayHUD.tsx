@@ -1,4 +1,5 @@
 import React from 'react';
+import { TimelineClipHoverHUD } from './TimelineClipHoverHUD';
 
 export interface TimelineOverlayHUDProps {
   pixelsPerFrame: number;
@@ -11,6 +12,12 @@ export interface TimelineOverlayHUDProps {
     snapLabel?: string;
     durationFrames?: number;
   } | null;
+  hoveredClip?: {
+    seq: any;
+    track: any;
+    fps: number;
+    position: { leftPx: number; topPx: number; widthPx: number };
+  } | null;
 }
 
 export function TimelineOverlayHUD({
@@ -19,9 +26,20 @@ export function TimelineOverlayHUD({
   timelineMode,
   razorHoverFrame,
   timecodeHUD,
+  hoveredClip,
 }: TimelineOverlayHUDProps) {
   return (
     <>
+      {/* Floating Rich Clip Hover HUD Card */}
+      {hoveredClip && (
+        <TimelineClipHoverHUD
+          seq={hoveredClip.seq}
+          track={hoveredClip.track}
+          fps={hoveredClip.fps}
+          pixelsPerFrame={pixelsPerFrame}
+          position={hoveredClip.position}
+        />
+      )}
       {/* Magnetic Snapping Guideline (Cyan for grid/playhead, Emerald for abutting clip seams) */}
       {activeSnapGuideline !== null && (
         <div

@@ -24,6 +24,7 @@ export interface TimelineClipItemProps {
   activeTool: 'select' | 'razor' | 'hand';
   getTrackBadgeStyle: (track: any) => string;
   onClipClick: (seq: any, e: React.MouseEvent) => void;
+  onClipHover?: (clipData: { seq: any; track: any; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
   activeDragState: {
     type: 'clip' | 'trim';
     seqId: string;
@@ -43,6 +44,7 @@ export function TimelineClipItem({
   activeTool,
   getTrackBadgeStyle,
   onClipClick,
+  onClipHover,
   activeDragState,
 }: TimelineClipItemProps) {
   const isBeingDragged = activeDragState?.seqId === seq.id;
@@ -109,12 +111,23 @@ export function TimelineClipItem({
       {...listeners}
       {...attributes}
       onClick={(e) => onClipClick(seq, e)}
+      onMouseEnter={(e) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        onClipHover?.({
+          seq,
+          track,
+          position: {
+            leftPx: leftPx,
+            topPx: rect.height + 12,
+            widthPx,
+          },
+        });
+      }}
+      onMouseLeave={() => onClipHover?.(null)}
       style={{
         left: `${leftPx}px`,
         width: `${widthPx}px`,
       }}
-      title={`[${track.type?.toUpperCase()}] ${seq.id} (${displayDurationFrames} frames / ${durationSec}s)${cueSnippet ? `\nCue: "${cueSnippet}"` : ''
-        }`}
       className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
           ? 'cursor-crosshair'
           : isBeingDragged && activeDragState?.type === 'clip'

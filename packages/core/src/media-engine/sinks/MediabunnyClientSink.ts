@@ -4,6 +4,8 @@ import {
   BufferTarget,
   VideoSampleSource,
   VideoSample,
+  AudioSampleSource,
+  AudioSample,
 } from 'mediabunny';
 import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '../types';
 import { MediaEngineError } from '../types';
@@ -12,7 +14,7 @@ import { MediaEngineError } from '../types';
 /**
  * Client-side Frame Sink powered by Mediabunny & WebCodecs.
  * Designed for browser environments (apps/studio) with zero server dependencies,
- * muxing directly to an in-memory buffer / Blob.
+ * muxing video (AVC/H.264) and audio (AAC) directly to an in-memory buffer / Blob.
  */
 export class MediabunnyClientSink implements IMediaFrameSink {
   public readonly id = 'mediabunny-client-sink';
@@ -23,9 +25,11 @@ export class MediabunnyClientSink implements IMediaFrameSink {
   private framesConsumed: number = 0;
   private output?: Output;
   private videoSource?: VideoSampleSource;
+  private audioSource?: AudioSampleSource;
   private bufferTarget?: BufferTarget;
+  private hasAudioTrack: boolean = false;
 
-  public async initialize(meta: SinkInitMetadata): Promise<void> {
+  public async initialize(meta: SinkInitMetadata & { enableAudio?: boolean }): Promise<void> {
     this.meta = meta;
     this.outputPath = meta.outputPath;
     this.framesConsumed = 0;
@@ -44,6 +48,21 @@ export class MediabunnyClientSink implements IMediaFrameSink {
     });
 
     this.output.addVideoTrack(this.videoSource);
+
+    // If audio is enabled or requested, configure AAC stereo audio track
+    if (meta.enableAudio !== false) {
+      this.audioSource = new AudioSampleSource({
+        codec: 'aac',
+        sampleRate: 48_000,
+        numberOfChannels: 2,
+        bitrate: 192_000,
+      });
+      this.output.addAudioTrack(this.audioSource);
+      this.hasAudioTrack = true;
+    } else {
+      this.hasAudioTrack = false;
+    }
+
     await this.output.start();
   }
 
@@ -73,10 +92,55 @@ export class MediabunnyClientSink implements IMediaFrameSink {
   }
 
   public async finalize(audioResult?: MediaAudioMixResult): Promise<SinkFinalizeResult> {
+    // If audio track is enabled and audioResult is provided, encode PCM audio samples
+    if (this.audioSource && audioResult && audioResult.totalSamples > 0) {
+      const sampleRate = audioResult.sampleRate || 48_000;
+      const channels = audioResult.channels || 2;
+      const totalFrames = audioResult.totalSamples;
+
+      // Prepare planar Float32 chunks (f32-planar format)
+      // Chunk size capped at 1024 or 2048 frames per audio sample
+      const chunkSize = 2048;
+      let frameOffset = 0;
+
+      while (frameOffset < totalFrames) {
+        const framesInChunk = Math.min(chunkSize, totalFrames - frameOffset);
+        const chunkData = new Float32Array(channels * framesInChunk);
+
+        if (audioResult.pcmLeft && audioResult.pcmRight) {
+          // De-interleaved planar source
+          chunkData.set(audioResult.pcmLeft.subarray(frameOffset, frameOffset + framesInChunk), 0);
+          chunkData.set(audioResult.pcmRight.subarray(frameOffset, frameOffset + framesInChunk), framesInChunk);
+        } else if (audioResult.buffer) {
+          // Interleaved source -> convert to f32-planar (L...R...)
+          for (let f = 0; f < framesInChunk; f++) {
+            const srcIdx = (frameOffset + f) * channels;
+            chunkData[f] = audioResult.buffer[srcIdx]; // L
+            chunkData[framesInChunk + f] = channels > 1 ? audioResult.buffer[srcIdx + 1] : audioResult.buffer[srcIdx]; // R
+          }
+        }
+
+        const audioSample = new AudioSample({
+          format: 'f32-planar',
+          sampleRate,
+          numberOfFrames: framesInChunk,
+          numberOfChannels: channels,
+          timestamp: frameOffset / sampleRate,
+          data: chunkData,
+        });
+
+        await this.audioSource.add(audioSample);
+        audioSample.close();
+
+        frameOffset += framesInChunk;
+      }
+    }
+
     if (this.output) {
       await this.output.finalize();
       this.output = undefined;
       this.videoSource = undefined;
+      this.audioSource = undefined;
     }
 
     let buffer: ArrayBuffer | undefined;

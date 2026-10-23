@@ -23,13 +23,12 @@ import {
   ViewportControlBar,
   ViewportSafeGuides,
   ContextualActionPill,
-  SubtitlesOverlay,
   BentoCompanionCard,
   TransformHandle,
   TransformBodyDraggable,
   InlineTextEditorModal,
   ViewportQuickTransport,
-  VectorShapeOverlay,
+  UniversalCanvasHitOverlay,
   StagingDropTargetOverlay,
   TransformGizmoOverlay,
   ViewportCanvasLayer,
@@ -686,8 +685,13 @@ export function Preview({
             dragCoords={dragCoords}
           />
 
-          {/* Active Vector Shapes Overlays */}
-          <VectorShapeOverlay activeShapes={activeShapes} />
+          {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos) */}
+          <UniversalCanvasHitOverlay
+            activeSequences={activeSequences}
+            selectedSeqId={selectedSeqId}
+            tracks={irState.doc?.tracks || []}
+            onStartEditingCue={setEditingCue}
+          />
 
           {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
           <TransformGizmoOverlay
@@ -706,20 +710,6 @@ export function Preview({
             onToggleLock={() => setIsLocked(!isLocked)}
             onStartEditingCue={setEditingCue}
           />
-
-          {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}
-          {/* <SubtitlesOverlay
-          activeCues={activeCues}
-          activeSequences={activeSequences}
-          editingCue={editingCue}
-          onStartEditing={setEditingCue}
-          onUpdateEditingText={(text) => setEditingCue((prev) => prev ? { ...prev, text } : null)}
-          onCommitEditing={(cue) => {
-            IRStateManager.getInstance().updateTextCue(cue.sequenceId, cue.cueIndex, cue.text);
-            setEditingCue(null);
-          }}
-          onCancelEditing={() => setEditingCue(null)}
-        /> */}
         </div>
 
         {/* Cell 2: Dockable Bento Telemetry Companion Card */}

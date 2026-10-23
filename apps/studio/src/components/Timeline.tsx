@@ -150,6 +150,14 @@ export function Timeline({
   // Active snap guideline (frame position and label or null)
   const [activeSnapGuideline, setActiveSnapGuideline] = useState<{ frame: number; label?: string; isAbut?: boolean } | null>(null);
 
+  // Hovered clip state for TimelineClipHoverHUD
+  const [hoveredClip, setHoveredClip] = useState<{
+    seq: any;
+    track: any;
+    fps: number;
+    position: { leftPx: number; topPx: number; widthPx: number };
+  } | null>(null);
+
   // Hand tool panning ref & state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const playheadNeedleRef = useRef<HTMLDivElement>(null);
@@ -811,6 +819,7 @@ export function Timeline({
               timelineMode={timelineMode}
               razorHoverFrame={razorHoverFrame}
               timecodeHUD={timecodeHUD}
+              hoveredClip={hoveredClip}
             />
 
             {/* Track Rows: Virtualized outer container */}
@@ -880,6 +889,16 @@ export function Timeline({
                                 activeTool={activeTool}
                                 getTrackBadgeStyle={getTrackBadgeStyle}
                                 onClipClick={handleClipClick}
+                                onClipHover={(hoverData) => {
+                                  if (hoverData) {
+                                    setHoveredClip({
+                                      ...hoverData,
+                                      fps,
+                                    });
+                                  } else {
+                                    setHoveredClip(null);
+                                  }
+                                }}
                                 activeDragState={activeDragState}
                               />
                             ))}

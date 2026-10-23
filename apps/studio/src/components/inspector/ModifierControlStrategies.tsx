@@ -8,6 +8,7 @@ import type { ParamFieldDescriptor } from '@acc/ir';
 import type { PartialVFXRegionConfig } from '@acc/ir';
 import { ProceduralAudioSynthesizer } from '@acc/ir';
 import { EasingCurveSelector } from '../EasingCurveSelector';
+import { KeyframeDiamondButton } from './KeyframeDiamondButton';
 import { IRStateManager } from '../../lib/ir/irState';
 
 export interface ControlStrategyProps {
@@ -19,7 +20,7 @@ export interface ControlStrategyProps {
 
 /**
  * Strategy 1: NumberControlStrategy
- * Renders a synchronized slider + numerical input with double-click-to-reset and unit badges.
+ * Renders a synchronized slider + numerical input with keyframe toggle button and unit badges.
  */
 export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   descriptor,
@@ -31,7 +32,28 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   const max = descriptor.max ?? 100;
   const step = descriptor.step ?? 1;
   const defaultVal = typeof descriptor.defaultValue === 'number' ? descriptor.defaultValue : min;
-  const numericVal = typeof value === 'number' && !Number.isNaN(value) ? value : defaultVal;
+
+  // Check if current value is a TemporalCurve with keyframes
+  const isKeyframed = Boolean(value && typeof value === 'object' && Array.isArray(value.keyframes));
+  const keyframes: Array<{ timeSec: number; value: number; ease?: string }> = isKeyframed ? value.keyframes : [];
+
+  // Determine current timeline playhead time from IRStateManager
+  const irState = IRStateManager.getInstance().getState();
+  const currentFrame = irState.timeline?.currentFrame ?? 0;
+  const fps = irState.timeline?.meta.globalFps ?? 30;
+  const currentTimeSec = currentFrame / fps;
+
+  // Check if a keyframe exists exactly at or near the current frame (+/- 0.5 frame)
+  const activeKfIndex = keyframes.findIndex((k) => Math.abs(k.timeSec - currentTimeSec) < 0.5 / fps);
+  const hasKeyframeAtCurrent = activeKfIndex !== -1;
+
+  // Resolve current scalar value
+  let numericVal = defaultVal;
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    numericVal = value;
+  } else if (isKeyframed && keyframes.length > 0) {
+    numericVal = hasKeyframeAtCurrent ? keyframes[activeKfIndex].value : keyframes[0].value;
+  }
 
   const [localVal, setLocalVal] = React.useState(String(numericVal));
 
@@ -44,22 +66,62 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
     setLocalVal(e.target.value);
     const num = parseFloat(e.target.value);
     if (!Number.isNaN(num)) {
-      onChange(Math.max(min, Math.min(max, num)));
+      const clamped = Math.max(min, Math.min(max, num));
+      if (isKeyframed) {
+        // Update keyframe at current frame or add one
+        const updated = [...keyframes];
+        if (hasKeyframeAtCurrent) {
+          updated[activeKfIndex] = { ...updated[activeKfIndex], value: clamped };
+        } else {
+          updated.push({ timeSec: currentTimeSec, value: clamped, ease: 'ease-in-out' });
+          updated.sort((a, b) => a.timeSec - b.timeSec);
+        }
+        onChange({ ...value, keyframes: updated });
+      } else {
+        onChange(clamped);
+      }
+    }
+  };
+
+  const handleToggleKeyframe = () => {
+    if (disabled) return;
+    if (hasKeyframeAtCurrent) {
+      // Remove keyframe at current frame
+      const updated = keyframes.filter((_, idx) => idx !== activeKfIndex);
+      if (updated.length === 0) {
+        // Revert to scalar value
+        onChange(numericVal);
+      } else {
+        onChange({ ...value, keyframes: updated });
+      }
+    } else {
+      // Add keyframe at current frame
+      const updated = isKeyframed ? [...keyframes] : [{ timeSec: 0, value: numericVal, ease: 'ease-in-out' }];
+      updated.push({ timeSec: currentTimeSec, value: numericVal, ease: 'ease-in-out' });
+      updated.sort((a, b) => a.timeSec - b.timeSec);
+      onChange({ keyframes: updated });
     }
   };
 
   return (
     <div className={`space-y-1 ${disabled ? 'pointer-events-none' : ''}`}>
       <div className="flex justify-between items-center text-[11px]">
-        <span
-          onDoubleClick={() => !disabled && onChange(defaultVal)}
-          className={`text-muted-foreground hover:text-accent-theme select-none ${
-            disabled ? 'cursor-not-allowed' : 'cursor-pointer'
-          } transition-colors`}
-          title={disabled ? undefined : "Double-click to reset to default"}
-        >
-          {descriptor.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <KeyframeDiamondButton
+            hasKeyframe={hasKeyframeAtCurrent}
+            onToggleKeyframe={handleToggleKeyframe}
+            disabled={disabled}
+          />
+          <span
+            onDoubleClick={() => !disabled && onChange(defaultVal)}
+            className={`text-muted-foreground hover:text-accent-theme select-none ${
+              disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+            } transition-colors`}
+            title={disabled ? undefined : 'Double-click to reset to default'}
+          >
+            {descriptor.label}
+          </span>
+        </div>
         <div className="flex items-center gap-1">
           <Input
             type="number"
@@ -80,7 +142,22 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
         step={step}
         disabled={disabled}
         value={[numericVal]}
-        onValueChange={(v) => !disabled && onChange(v[0])}
+        onValueChange={(v) => {
+          if (disabled) return;
+          const val = v[0];
+          if (isKeyframed) {
+            const updated = [...keyframes];
+            if (hasKeyframeAtCurrent) {
+              updated[activeKfIndex] = { ...updated[activeKfIndex], value: val };
+            } else {
+              updated.push({ timeSec: currentTimeSec, value: val, ease: 'ease-in-out' });
+              updated.sort((a, b) => a.timeSec - b.timeSec);
+            }
+            onChange({ ...value, keyframes: updated });
+          } else {
+            onChange(val);
+          }
+        }}
       />
     </div>
   );

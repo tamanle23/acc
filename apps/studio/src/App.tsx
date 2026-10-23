@@ -333,6 +333,7 @@ function StudioWorkspace() {
         format: 'mp4',
         codec: 'avc1.42E01E',
         videoBitrate: 4_000_000,
+        enableAudio: true,
       });
 
       let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -414,11 +415,58 @@ function StudioWorkspace() {
         }
 
         await sink.consumeFrame(f, rgba);
-        setExportProgress(Math.round(((f + 1) / totalFrames) * 100));
+        setExportProgress(Math.round(((f + 1) / totalFrames) * 85));
       }
 
       if (!cancelExportRef.current) {
-        const result = await sink.finalize();
+        setExportProgress(90);
+
+        // Mix timeline audio using UniversalAudioMixer
+        let audioMixResult: any = undefined;
+        try {
+          const audioTracks = (irState.doc?.tracks || []).filter((t: any) => t.type === 'audio');
+          if (audioTracks.length > 0) {
+            const sampleRate = 48000;
+            const totalDurationSec = totalFrames / fps;
+            const totalSamples = Math.floor(totalDurationSec * sampleRate);
+            const mixer = new UniversalAudioMixer([], sampleRate);
+
+            // Populate clips from audio sequences
+            for (const track of audioTracks) {
+              for (const seq of track.sequences || []) {
+                const startSec = (seq.startFrame ?? 0) / fps;
+                const durationSec = (seq.durationFrames ?? 30) / fps;
+                const isVoice = track.id?.includes('voice') || seq.name?.toLowerCase().includes('voice');
+                mixer.addClip({
+                  id: seq.id,
+                  type: isVoice ? 'voice' : 'bgm',
+                  startTimeSec: startSec,
+                  durationSec: durationSec,
+                  volume: 0.85,
+                  assetId: seq.assetId,
+                  modifiers: seq.modifiers,
+                });
+              }
+            }
+
+            const mix = mixer.mixStereo(0, totalDurationSec);
+            audioMixResult = {
+              totalSamples,
+              sampleRate,
+              channels: 2,
+              durationSeconds: totalDurationSec,
+              buffer: new Float32Array(totalSamples * 2),
+              pcmLeft: mix.left,
+              pcmRight: mix.right,
+            };
+          }
+        } catch (audioErr) {
+          console.warn('Audio mixing for export encountered an error, falling back to silent/video-only:', audioErr);
+        }
+
+        setExportProgress(95);
+        const result = await sink.finalize(audioMixResult);
+        setExportProgress(100);
         const exportBuffer = result.buffer || sink.getBuffer();
 
         if (exportBuffer && typeof document !== 'undefined' && typeof URL !== 'undefined') {

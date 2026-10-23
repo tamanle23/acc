@@ -35,7 +35,9 @@ export interface MediaAudioMixResult {
   sampleRate: number;
   channels: number;
   durationSeconds: number;
-  buffer: Float32Array;
+  buffer: Float32Array; // Interleaved or stereo PCM
+  pcmLeft?: Float32Array;
+  pcmRight?: Float32Array;
 }
 
 export interface SinkInitMetadata {

@@ -1,4 +1,5 @@
 import { parseCubicBezier, solveCubicBezier } from './BezierMath';
+import { TemporalKeyframeEvaluator } from './TemporalKeyframeEvaluator';
 
 /**
  * Pure closed-form deterministic easing curves matching standard GSAP curves.
@@ -172,10 +173,30 @@ export function evaluateSequenceMotion(
   durationSec: number
 ): InterpolatedTransformState {
   const tp = transformParams || {};
+
+  // If explicit keyframes exist on any property, prioritize TemporalKeyframeEvaluator
+  const hasKeyframes =
+    (tp.x && typeof tp.x === 'object' && tp.x.keyframes?.length) ||
+    (tp.y && typeof tp.y === 'object' && tp.y.keyframes?.length) ||
+    (tp.scale && typeof tp.scale === 'object' && tp.scale.keyframes?.length) ||
+    (tp.rotation && typeof tp.rotation === 'object' && tp.rotation.keyframes?.length) ||
+    (tp.opacity && typeof tp.opacity === 'object' && tp.opacity.keyframes?.length);
+
+  if (hasKeyframes) {
+    return {
+      x: TemporalKeyframeEvaluator.evaluateNumeric(tp.x, localSec, 0),
+      y: TemporalKeyframeEvaluator.evaluateNumeric(tp.y, localSec, 0),
+      scale: TemporalKeyframeEvaluator.evaluateNumeric(tp.scale, localSec, 1.0),
+      rotation: TemporalKeyframeEvaluator.evaluateNumeric(tp.rotation, localSec, 0),
+      opacity: TemporalKeyframeEvaluator.evaluateNumeric(tp.opacity, localSec, 1.0),
+    };
+  }
+
   const targetX = Number.isFinite(tp.x) ? tp.x : 0;
   const targetY = Number.isFinite(tp.y) ? tp.y : 0;
   const targetScale = Number.isFinite(tp.scale) && tp.scale > 0 ? tp.scale : 1.0;
   const targetRot = Number.isFinite(tp.rotation) ? tp.rotation : 0;
+  const targetOpacity = Number.isFinite(tp.opacity) ? tp.opacity : 1.0;
   const baseEase = tp.ease || 'power2.out';
 
   const anim = tp.animation;
@@ -262,6 +283,6 @@ export function evaluateSequenceMotion(
     y: targetY,
     scale: targetScale,
     rotation: targetRot,
-    opacity: 1.0,
+    opacity: targetOpacity,
   };
 }
