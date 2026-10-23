@@ -424,16 +424,26 @@ function StudioWorkspace() {
         // Mix timeline audio using UniversalAudioMixer
         let audioMixResult: any = undefined;
         try {
-          const audioTracks = (irState.doc?.tracks || []).filter((t: any) => t.type === 'audio');
+          const resolvedTracks = irState.timeline?.tracks
+            ? (irState.timeline.tracks instanceof Map
+                ? Array.from(irState.timeline.tracks.values())
+                : irState.timeline.tracks)
+            : [];
+          const audioTracks = resolvedTracks.filter((t: any) => t.type === 'audio');
           if (audioTracks.length > 0) {
             const sampleRate = 48000;
             const totalDurationSec = totalFrames / fps;
             const totalSamples = Math.floor(totalDurationSec * sampleRate);
             const mixer = new UniversalAudioMixer([], sampleRate);
 
-            // Populate clips from audio sequences
+            // Populate clips from compiled audio sequences
             for (const track of audioTracks) {
-              for (const seq of track.sequences || []) {
+              const sequences = Array.isArray(track.sequences)
+                ? track.sequences
+                : track.sequences instanceof Map
+                ? Array.from(track.sequences.values())
+                : [];
+              for (const seq of sequences) {
                 const startSec = (seq.startFrame ?? 0) / fps;
                 const durationSec = (seq.durationFrames ?? 30) / fps;
                 const isVoice = track.id?.includes('voice') || seq.name?.toLowerCase().includes('voice');
@@ -574,7 +584,7 @@ function StudioWorkspace() {
             >
               <DialogContent className="max-w-sm glass-panel border-glass-border text-foreground">
                 <DialogHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-left">
                     <div className="flex items-center gap-2">
                       <Video className="w-4 h-4 text-accent-theme" />
                       <DialogTitle>Video Export</DialogTitle>
@@ -584,7 +594,7 @@ function StudioWorkspace() {
                     </Badge>
                   </div>
                   <DialogDescription>
-                    Encoding Video IR timeline into MP4 Blob via WebCodecs...
+                    Encoding Video IR timeline into MP4 ...
                   </DialogDescription>
                 </DialogHeader>
 
