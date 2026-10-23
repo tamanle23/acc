@@ -42,9 +42,10 @@ export class RationalTime implements IRationalTime {
       throw new RangeError(`[RationalTime] FPS must be strictly positive, received: ${fps}`);
     }
     // value = round(frame * timescale / fps)
+    const safeFrame = Number.isFinite(frame) ? frame : 0;
     const bigTimescale = BigInt(timescale);
     const bigFps = BigInt(Math.round(fps * 1000));
-    const scaledFrame = BigInt(Math.round(frame)) * 1000n;
+    const scaledFrame = BigInt(Math.round(safeFrame)) * 1000n;
     const ticks = (scaledFrame * bigTimescale) / bigFps;
     return new RationalTime(ticks, timescale);
   }

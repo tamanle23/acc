@@ -320,7 +320,7 @@ export function TypographyPresetThumbnail({ preset }: { preset: StagingPreset })
     <div className="relative w-full h-20 mb-2 rounded-lg overflow-hidden border border-border/40 bg-card/60 pointer-events-none group-hover:border-accent-theme/50 group-hover:bg-card/80 transition-all flex items-center justify-center p-2">
       {/* Background typographic grid texture */}
       <div className="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,var(--accent-primary)_1px,transparent_1px),linear-gradient(to_bottom,var(--accent-primary)_1px,transparent_1px)] bg-[size:16px_16px]" />
-      
+
       {/* Centered stylized typographic specimen */}
       <div className="relative z-10 text-center px-2 w-full flex flex-col items-center justify-center overflow-hidden">
         <span
@@ -369,11 +369,10 @@ export function DraggablePresetCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-accent-theme/40 hover:shadow-accent-glow/15 ${
-        isDragging
-          ? 'opacity-40 border-accent-theme scale-[0.98]'
-          : 'hover:border-accent-theme/40'
-      }`}
+      className={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-accent-theme/40 hover:shadow-accent-glow/15 ${isDragging
+        ? 'opacity-40 border-accent-theme scale-[0.98]'
+        : 'hover:border-accent-theme/40'
+        }`}
     >
       <div className="flex items-center justify-between mb-1.5 pointer-events-none">
         <div className="flex items-center gap-2">
@@ -524,11 +523,10 @@ export function DraggableAssetCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${
-        isDragging
-          ? 'opacity-40 border-accent-theme scale-[0.98]'
-          : 'hover:border-accent-theme/60'
-      }`}
+      className={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${isDragging
+        ? 'opacity-40 border-accent-theme scale-[0.98]'
+        : 'hover:border-accent-theme/60'
+        }`}
     >
       <div className="flex items-center justify-between mb-1 pointer-events-none">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -654,18 +652,18 @@ export function LeftSidebar({
     activeNav === 'typography'
       ? 'text'
       : activeNav === 'shapes'
-      ? 'shape'
-      : activeNav === 'vfx'
-      ? 'vfx'
-      : activeNav === 'sfx'
-      ? 'sfx'
-      : activeNav === 'video'
-      ? 'video'
-      : activeNav === 'audio'
-      ? 'audio'
-      : activeNav === 'all'
-      ? 'all'
-      : selectedCategory;
+        ? 'shape'
+        : activeNav === 'vfx'
+          ? 'vfx'
+          : activeNav === 'sfx'
+            ? 'sfx'
+            : activeNav === 'video'
+              ? 'video'
+              : activeNav === 'audio'
+                ? 'audio'
+                : activeNav === 'all'
+                  ? 'all'
+                  : selectedCategory;
 
   const filteredPresets = STAGING_PRESETS.filter((p) => {
     const matchesCat =
@@ -720,33 +718,28 @@ export function LeftSidebar({
 
   const getDrawerHeader = () => {
     switch (activeNav) {
-      case 'vault':
-        return {
-          title: 'Assets Vault',
-          icon: <Folder className="w-4 h-4 text-accent-theme" />,
-          count: `${filteredAssets.length} assets`,
-        };
+
       case 'typography':
         return {
-          title: 'Typography Library',
+          title: 'Typography',
           icon: <Type className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} styles`,
         };
       case 'shapes':
         return {
-          title: 'Designer Shapes',
+          title: 'Shapes',
           icon: <Square className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} shapes`,
         };
       case 'vfx':
         return {
-          title: 'Cinematic VFX',
+          title: 'Visual Effects',
           icon: <Sparkles className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} effects`,
         };
       case 'sfx':
         return {
-          title: 'Sound FX Catalog',
+          title: 'Sound Fx',
           icon: <Volume2 className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} sounds`,
         };
@@ -758,17 +751,23 @@ export function LeftSidebar({
         };
       case 'audio':
         return {
-          title: 'Production Audio',
+          title: 'Audio Clips',
           icon: <Music className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} scores`,
         };
       case 'all':
       case 'library':
-      default:
         return {
-          title: 'Staging Library',
+          title: 'Library',
           icon: <Library className="w-4 h-4 text-accent-theme" />,
           count: `${filteredPresets.length} items`,
+        };
+      case 'vault':
+      default:
+        return {
+          title: 'Assets Vault',
+          icon: <Folder className="w-4 h-4 text-accent-theme" />,
+          count: `${filteredAssets.length} assets`,
         };
     }
   };
@@ -792,11 +791,10 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'vault' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'vault' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Assets Vault (Upload & Media) ([)"
           >
             <Folder className="w-4 h-4" />
@@ -817,11 +815,10 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'typography' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'typography' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Typography Library (16+ Styles)"
           >
             <Type className="w-4 h-4" />
@@ -840,11 +837,10 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'shapes' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'shapes' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Designer Shapes (16+ Vector Geometries)"
           >
             <Square className="w-4 h-4" />
@@ -863,11 +859,10 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'vfx' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'vfx' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Cinematic VFX Overlays (16+ Atmospheric Layers)"
           >
             <Sparkles className="w-4 h-4" />
@@ -886,11 +881,10 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'sfx' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'sfx' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Sound FX Catalog (104+ Curated SFX)"
           >
             <Volume2 className="w-4 h-4" />
@@ -909,17 +903,16 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'video' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'video' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
             title="Production Video Footages (Curated 4K/HD Plates)"
           >
             <Film className="w-4 h-4" />
           </Button>
 
-          {/* 7. Production Audio Scores */}
+          {/* 7. Audio Clips */}
           <Button
             variant="ghost"
             size="icon"
@@ -932,17 +925,16 @@ export function LeftSidebar({
                 if (!isOpen) onToggle();
               }
             }}
-            className={`w-9 h-9 rounded-lg transition-colors ${
-              activeNav === 'audio' && isOpen
-                ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-            title="Production Audio Scores (BGM & Soundtracks)"
+            className={`w-9 h-9 rounded-lg transition-colors ${activeNav === 'audio' && isOpen
+              ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 shadow-xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            title="Audio Clips (BGM & Soundtracks)"
           >
             <Music className="w-4 h-4" />
           </Button>
 
-         
+
         </div>
 
         {/* Drawer Collapse Trigger */}
@@ -964,7 +956,7 @@ export function LeftSidebar({
           <div className="p-3 border-b border-border/40 bg-background/50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {headerInfo.icon}
-              <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              <h2 className="text-xs font-bold capitalize tracking-wider text-foreground">
                 {headerInfo.title}
               </h2>
             </div>
@@ -995,25 +987,24 @@ export function LeftSidebar({
                         variant={selectedCategory === cat ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setSelectedCategory(cat)}
-                        className={`h-6 text-[10px] px-2 capitalize shrink-0 ${
-                          selectedCategory === cat
-                            ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
-                            : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
-                        }`}
+                        className={`h-6 text-[10px] px-2 capitalize shrink-0 ${selectedCategory === cat
+                          ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                          : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
+                          }`}
                       >
                         {cat === 'all'
                           ? 'All'
                           : cat === 'vfx'
-                          ? 'VFX'
-                          : cat === 'sfx'
-                          ? 'SFX (100+)'
-                          : cat === 'text'
-                          ? 'Typography'
-                          : cat === 'shape'
-                          ? 'Shapes'
-                          : cat === 'video'
-                          ? 'Video Plates'
-                          : 'Audio Scores'}
+                            ? 'VFX'
+                            : cat === 'sfx'
+                              ? 'SFX (100+)'
+                              : cat === 'text'
+                                ? 'Typography'
+                                : cat === 'shape'
+                                  ? 'Shapes'
+                                  : cat === 'video'
+                                    ? 'Video Plates'
+                                    : 'Audio Scores'}
                       </Button>
                     ))}
                   </div>
@@ -1028,11 +1019,10 @@ export function LeftSidebar({
                         variant={selectedSfxBank === b.id ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setSelectedSfxBank(b.id)}
-                        className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${
-                          selectedSfxBank === b.id
-                            ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
-                            : 'text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground'
-                        }`}
+                        className={`h-5 text-[9px] px-2 shrink-0 rounded-full font-mono ${selectedSfxBank === b.id
+                          ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                          : 'text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground'
+                          }`}
                       >
                         {b.name} ({b.count})
                       </Button>
@@ -1104,11 +1094,10 @@ export function LeftSidebar({
                       variant={selectedAssetType === type ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedAssetType(type)}
-                      className={`h-6 text-[10px] px-2 capitalize ${
-                        selectedAssetType === type
-                          ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
-                          : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
-                      }`}
+                      className={`h-6 text-[10px] px-2 capitalize ${selectedAssetType === type
+                        ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
+                        : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
+                        }`}
                     >
                       {type === 'all' ? 'All' : type}
                     </Button>
@@ -1128,11 +1117,10 @@ export function LeftSidebar({
                     handleFilesIngest(e.dataTransfer.files);
                   }}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`mt-2 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${
-                    isVaultDragOver
-                      ? 'border-accent-theme bg-accent-theme/10 text-accent-theme'
-                      : 'border-border/60 hover:border-accent-theme/40 hover:bg-muted/40 text-muted-foreground'
-                  }`}
+                  className={`mt-2 border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors ${isVaultDragOver
+                    ? 'border-accent-theme bg-accent-theme/10 text-accent-theme'
+                    : 'border-border/60 hover:border-accent-theme/40 hover:bg-muted/40 text-muted-foreground'
+                    }`}
                 >
                   <input
                     type="file"

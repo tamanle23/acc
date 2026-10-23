@@ -266,7 +266,7 @@ export function Preview({
                 .then((bmp) => {
                   activeTexturesToSync[assetId] = bmp;
                 })
-                .catch(() => {})
+                .catch(() => { })
             );
           }
         }
@@ -638,79 +638,77 @@ export function Preview({
       />
 
       {/* Bento Grid Dynamic Viewport: Canvas Cell + Dockable Telemetry Cell */}
-      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${
-        isBentoCompanionOpen ? 'xl:justify-between' : 'justify-center'
-      }`}>
+      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isBentoCompanionOpen ? 'xl:justify-between' : 'justify-center'
+        }`}>
         {/* Cell 1: Main Video Viewport Canvas */}
         <div
-          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
-            isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-          } ${isBentoCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
+            } ${isBentoCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
             aspectRatio: '16/9',
             maxHeight: '68vh',
             maxWidth: isBentoCompanionOpen ? '72vw' : '82vw',
-          backgroundImage: showCheckerboard
-            ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
-            : undefined,
-          backgroundSize: showCheckerboard ? '20px 20px' : undefined,
-          transform: zoomLevel === 'fit' ? 'none' : `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-          transformOrigin: 'center center',
-          transition: isPanning ? 'none' : 'transform 0.15s ease-out',
-        }}
-        onMouseDown={(e) => {
-          if (isPanToolActive || isSpacePressed || e.button === 1) {
-            e.preventDefault();
-            setIsPanning(true);
-            setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-          } else if (e.target === canvasRef.current) {
-            // Clicking directly on canvas background deselects selection and switches to project inspection
-            IRStateManager.getInstance().setSelectedSequenceId(null);
-            IRStateManager.getInstance().setInspectorMode('project');
-          }
-        }}
-      >
-        {/* Decoupled Dual-Layer Viewport Canvas */}
-        <ViewportCanvasLayer
-          canvasRef={canvasRef}
-          overlayCanvasRef={overlayCanvasRef}
-          isPanToolActive={isPanToolActive}
-          isSpacePressed={isSpacePressed}
-        />
+            backgroundImage: showCheckerboard
+              ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
+              : undefined,
+            backgroundSize: showCheckerboard ? '20px 20px' : undefined,
+            transform: zoomLevel === 'fit' ? 'none' : `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+            transformOrigin: 'center center',
+            transition: isPanning ? 'none' : 'transform 0.15s ease-out',
+          }}
+          onMouseDown={(e) => {
+            if (isPanToolActive || isSpacePressed || e.button === 1) {
+              e.preventDefault();
+              setIsPanning(true);
+              setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+            } else if (e.target === canvasRef.current) {
+              // Clicking directly on canvas background deselects selection and switches to project inspection
+              IRStateManager.getInstance().setSelectedSequenceId(null);
+              IRStateManager.getInstance().setInspectorMode('project');
+            }
+          }}
+        >
+          {/* Decoupled Dual-Layer Viewport Canvas */}
+          <ViewportCanvasLayer
+            canvasRef={canvasRef}
+            overlayCanvasRef={overlayCanvasRef}
+            isPanToolActive={isPanToolActive}
+            isSpacePressed={isSpacePressed}
+          />
 
-        {/* Broadcast 16:9 & Social 9:16 Safe Guides */}
-        <ViewportSafeGuides mode={safeGuidesMode} />
+          {/* Broadcast 16:9 & Social 9:16 Safe Guides */}
+          <ViewportSafeGuides mode={safeGuidesMode} />
 
-        {/* Drag-and-Drop Staging Target Indicator */}
-        <StagingDropTargetOverlay
-          isOver={isOver}
-          isDragOver={isDragOver}
-          dragCoords={dragCoords}
-        />
+          {/* Drag-and-Drop Staging Target Indicator */}
+          <StagingDropTargetOverlay
+            isOver={isOver}
+            isDragOver={isDragOver}
+            dragCoords={dragCoords}
+          />
 
-        {/* Active Vector Shapes Overlays */}
-        <VectorShapeOverlay activeShapes={activeShapes} />
+          {/* Active Vector Shapes Overlays */}
+          <VectorShapeOverlay activeShapes={activeShapes} />
 
-        {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
-        <TransformGizmoOverlay
-          selectedSeqId={selectedSeqId}
-          activeSequences={activeSequences}
-          currentFrame={currentFrame}
-          isLocked={isLocked}
-          transform={transform}
-          isDragging={isDragging}
-          previewEngine={previewEngineRef.current}
-          transformSensors={transformSensors}
-          onTransformDragStart={handleTransformDragStart}
-          onTransformDragMove={handleTransformDragMove}
-          onTransformDragEnd={handleTransformDragEnd}
-          onSetTransform={setTransform}
-          onToggleLock={() => setIsLocked(!isLocked)}
-          onStartEditingCue={setEditingCue}
-        />
+          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
+          <TransformGizmoOverlay
+            selectedSeqId={selectedSeqId}
+            activeSequences={activeSequences}
+            currentFrame={currentFrame}
+            isLocked={isLocked}
+            transform={transform}
+            isDragging={isDragging}
+            previewEngine={previewEngineRef.current}
+            transformSensors={transformSensors}
+            onTransformDragStart={handleTransformDragStart}
+            onTransformDragMove={handleTransformDragMove}
+            onTransformDragEnd={handleTransformDragEnd}
+            onSetTransform={setTransform}
+            onToggleLock={() => setIsLocked(!isLocked)}
+            onStartEditingCue={setEditingCue}
+          />
 
-        {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}
-        <SubtitlesOverlay
+          {/* Dynamic Subtitles & Captions Overlay (In-Canvas, Strictly Isolated from Studio Theme) */}
+          {/* <SubtitlesOverlay
           activeCues={activeCues}
           activeSequences={activeSequences}
           editingCue={editingCue}
@@ -721,7 +719,7 @@ export function Preview({
             setEditingCue(null);
           }}
           onCancelEditing={() => setEditingCue(null)}
-        />
+        /> */}
         </div>
 
         {/* Cell 2: Dockable Bento Telemetry Companion Card */}

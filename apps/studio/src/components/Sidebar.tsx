@@ -150,11 +150,10 @@ function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps
           <button
             key={preset.name}
             onClick={() => onChange(preset.hex)}
-            className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${
-              value.toLowerCase() === preset.hex.toLowerCase()
+            className={`w-4 h-4 rounded-full border transition-transform hover:scale-125 ${value.toLowerCase() === preset.hex.toLowerCase()
                 ? 'ring-2 ring-accent-theme border-white scale-110'
                 : 'border-glass-border'
-            }`}
+              }`}
             style={{ backgroundColor: preset.hex }}
             title={preset.name}
           />
@@ -164,7 +163,7 @@ function ColorPickerRow({ label, value, presets, onChange }: ColorPickerRowProps
   );
 }
 
-export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const [filterQuery, setFilterQuery] = useState('');
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
 
@@ -194,8 +193,8 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     const timelineTracks = rawTracks instanceof Map
       ? Array.from(rawTracks.values())
       : Array.isArray(rawTracks)
-      ? rawTracks
-      : [];
+        ? rawTracks
+        : [];
     for (const track of timelineTracks) {
       for (const seq of track.sequences) {
         if (seq.id === selectedSeqId) {
@@ -434,11 +433,10 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   variant={selectedCategory === cat ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`h-6 text-[10px] px-2 capitalize ${
-                    selectedCategory === cat
+                  className={`h-6 text-[10px] px-2 capitalize ${selectedCategory === cat
                       ? 'bg-accent-theme text-primary-foreground hover:bg-accent-theme/90'
                       : 'text-muted-foreground border-border/50 hover:bg-muted hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {cat === 'all' ? 'All' : cat === 'vfx' ? 'Partial VFX' : cat + 's'}
                 </Button>
@@ -956,11 +954,10 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                               <button
                                 key={pst}
                                 onClick={() => updateModifierParams(particleMod.type, { preset: pst })}
-                                className={`text-[10px] font-mono py-1 px-2 rounded border transition-colors ${
-                                  (particleMod.params?.preset || 'cyber_sparks') === pst
+                                className={`text-[10px] font-mono py-1 px-2 rounded border transition-colors ${(particleMod.params?.preset || 'cyber_sparks') === pst
                                     ? 'bg-cyan-50 border-cyan-400 text-cyan-800 font-semibold shadow-2xs'
                                     : 'border-glass-border text-muted-foreground hover:bg-muted/30'
-                                }`}
+                                  }`}
                               >
                                 {pst.replace('_', ' ')}
                               </button>

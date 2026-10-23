@@ -61,8 +61,7 @@ export function registerCoreModifierPlugins(
   registry.register(new ColorGradingPlugin());
   registry.register(new PartialVFXPlugin());
   registry.register(new TransformModifierPlugin());
-  const gsapPlugin = new GSAPMotionPlugin();
-  registry.register(gsapPlugin);
+  registry.register(new GSAPMotionPlugin());
   registry.register(new CaptionModifierPlugin());
   registry.register(new ShapeModifierPlugin('shape/draw'));
   registry.register(new ShapeModifierPlugin('shape/vector'));

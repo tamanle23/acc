@@ -49,7 +49,7 @@ function StudioWorkspace() {
   // Enterprise Dual-Sidebar Workspace Layout
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
-  const [activeNav, setActiveNav] = useState<LeftNavTab>('library');
+  const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
   const [activeDragItem, setActiveDragItem] = useState<any>(null);
 
   const [isExporting, setIsExporting] = useState(false);
@@ -154,12 +154,12 @@ function StudioWorkspace() {
     const overIdStr = String(over.id);
     if (overIdStr.startsWith('track-') || (over.data.current as any)?.type === 'track') {
       const targetTrackId = (over.data.current as any)?.trackId || overIdStr.replace(/^track-/, '');
-      
+
       // Calculate drop frame from translated pointer coordinate relative to target lane
       let dropFrame = currentFrame;
       const zoomScale = 1.0; // default baseline zoom scale
       const pixelsPerFrame = Math.max(1, 4 * zoomScale);
-      
+
       if (event.active.rect.current.translated && over.rect) {
         const relX = event.active.rect.current.translated.left - over.rect.left;
         if (relX > 0) {
@@ -529,7 +529,7 @@ function StudioWorkspace() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Video className="w-4 h-4 text-accent-theme" />
-                      <DialogTitle>WebCodecs Video Export</DialogTitle>
+                      <DialogTitle>Video Export</DialogTitle>
                     </div>
                     <Badge variant="outline" className="font-mono text-accent-theme bg-accent-theme/10 border-accent-theme/30">
                       {exportProgress}%
