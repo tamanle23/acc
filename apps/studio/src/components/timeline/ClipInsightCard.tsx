@@ -52,8 +52,8 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
   // Determine media classification
   const isAudio = track?.type === 'audio' || seq.type === 'audio';
   const isText = track?.type === 'text' || track?.type === 'timed_text' || seq.type === 'text' || Boolean(seq.cues?.length);
-  const isVideo = !isAudio && !isText && (track?.type === 'video' || seq.type === 'video' || seq.type === 'media');
-  const isImage = !isAudio && !isText && (track?.type === 'image' || seq.type === 'image');
+  const isVideo = !isAudio && !isText && (seq.type === 'video');
+  const isImage = !isAudio && !isText && (seq.type === 'image');
   const isFx = seq.modifiers?.some((m: any) => m.type.startsWith('vfx/'));
 
   // Resolve Asset definition from VideoIRDocument
@@ -155,7 +155,7 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
           {getArchetypeIcon()}
           <span className="font-mono font-semibold text-xs truncate text-foreground">{seq.name || seq.id}</span>
           <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-muted/60 text-muted-foreground border border-border/50">
-            {track?.type || 'media'}
+            {track?.type}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0 font-mono text-[10px] text-accent-theme">
@@ -165,7 +165,7 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
       </div>
 
       {/* 2. Interactive Media Preview Section (Video / Audio / Image) */}
-      {(isVideo || assetType === 'video' || assetType === 'media') && assetSrc && (
+      {(isVideo || assetType === 'video') && assetSrc && (
         <div className="mb-2 relative rounded-lg overflow-hidden border border-border/50 bg-black/60 aspect-video flex items-center justify-center group/video">
           {mediaError ? (
             <div className="flex flex-col items-center justify-center p-2 text-center text-muted-foreground">
@@ -184,7 +184,10 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
                 className="w-full h-full object-contain"
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
-                onError={() => setMediaError(true)}
+                onError={(err) => {
+                  console.error('Video Error Code:', err);
+                  setMediaError(true)
+                }}
               />
               {/* Overlay Controls */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 opacity-90 transition-opacity flex flex-col justify-between p-1.5">
@@ -235,7 +238,10 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
               src={assetSrc}
               alt={seq.name || seq.id}
               className="w-full h-full object-cover"
-              onError={() => setMediaError(true)}
+              onError={(err) => {
+                console.error('Image Error Code:', err);
+                setMediaError(true)
+              }}
             />
           ) : thumbDataUrl ? (
             <img

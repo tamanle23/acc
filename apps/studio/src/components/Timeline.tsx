@@ -11,7 +11,7 @@ import { ClipItem, TimelineClipItem } from './timeline/ClipItem';
 import { TrackHeaderCard } from './timeline/TrackHeaderCard';
 import { Toolbar } from './timeline/Toolbar';
 import { OverlayHUD } from './timeline/OverlayHUD';
-import { EmptyState, TimelineEmptyState } from './timeline/EmptyState';
+import { EmptyState } from './timeline/EmptyState';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -64,7 +64,7 @@ export function Timeline({
 
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [rippleEnabled, setRippleEnabled] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1.0); // 1.0 = ~1.5px per frame
+  const [zoomScale, setZoomScale] = useState(1.65); // 1.0 = ~1.5px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
   const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
   const [canvasCursor, setCanvasCursor] = useState<string>('default');

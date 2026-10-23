@@ -21,7 +21,7 @@ export type BlendMode =
   | 'difference'
   | 'exclusion';
 
-export type AssetType = 'media' | 'image' | 'audio' | 'font' | 'lottie' | 'text_cues';
+export type AssetType = 'video' | 'image' | 'audio' | 'font' | 'lottie' | 'text_cues';
 
 export interface AssetDefinition {
   src: string;

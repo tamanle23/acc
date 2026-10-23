@@ -238,10 +238,9 @@ export function Preview({
         if (seq.assetId) {
           const assetDef = assetsMap[seq.assetId];
           const assetSrc = assetDef?.src;
-          const assetType = assetDef?.type || 'media';
+          const assetType = assetDef?.type;
           const isVideo =
             assetType === 'video' ||
-            assetType === 'media' ||
             (assetSrc && assetSrc.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i));
 
           // For video assets, the worker decodes directly via MediabunnyWorkerReader
@@ -253,7 +252,7 @@ export function Preview({
           const visualAsset = studioTextureCache.getVisualAsset(
             seq.assetId,
             assetSrc,
-            assetType === 'audio' ? 'media' : (assetType as any),
+            (assetType as any),
             seqLocalTimeSec
           );
 
@@ -305,14 +304,14 @@ export function Preview({
             if (seq.assetId) {
               const assetDef = assetsMap[seq.assetId];
               const assetSrc = assetDef?.src;
-              const assetType = assetDef?.type || 'media';
+              const assetType = assetDef?.type;
               const seqStart = seq.startFrame ?? 0;
               const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
 
               const visualAsset = studioTextureCache.getVisualAsset(
                 seq.assetId,
                 assetSrc,
-                assetType === 'audio' ? 'media' : (assetType as any),
+               (assetType as any),
                 seqLocalTimeSec
               );
 

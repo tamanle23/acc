@@ -385,14 +385,14 @@ function StudioWorkspace() {
               if (seq.assetId) {
                 const assetDef = assetsMap[seq.assetId];
                 const assetSrc = assetDef?.src;
-                const assetType = assetDef?.type || 'media';
+                const assetType = assetDef?.type;
                 const seqStart = seq.startFrame ?? 0;
                 const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
 
                 const visualAsset = studioTextureCache.getVisualAsset(
                   seq.assetId,
                   assetSrc,
-                  assetType === 'audio' ? 'media' : (assetType as any),
+                  (assetType as any),
                   seqLocalTimeSec
                 );
 

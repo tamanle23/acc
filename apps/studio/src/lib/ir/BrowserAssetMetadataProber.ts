@@ -33,7 +33,7 @@ export class BrowserAssetMetadataProber implements IAssetMetadataProber {
         if (type === 'audio' || src.endsWith('.wav') || src.endsWith('.mp3')) {
           durationSeconds = await this.probeAudioElement(src);
           hasAudio = true;
-        } else if (type === 'media' || src.endsWith('.mp4') || src.endsWith('.webm')) {
+        } else if (type === 'video' || src.endsWith('.mp4') || src.endsWith('.webm')) {
           const videoMeta = await this.probeVideoElement(src);
           durationSeconds = videoMeta.duration;
           width = videoMeta.width;

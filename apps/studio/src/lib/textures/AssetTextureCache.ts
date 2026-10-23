@@ -58,7 +58,7 @@ export class AssetTextureCache {
   public getVisualAsset(
     assetId: string,
     src?: string,
-    assetType: 'image' | 'media' | 'video' = 'image',
+    assetType: 'image' | 'video' = 'image',
     timeSec: number = 0
   ): VisualAssetResult {
     // 1. If real URL provided and image type
@@ -93,7 +93,7 @@ export class AssetTextureCache {
     }
 
     // 2. If real URL provided and video/media type
-    if (src && (assetType === 'media' || assetType === 'video' || src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i))) {
+    if (src && (assetType === 'video' || src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i))) {
       let vEntry = this.videoCache.get(src);
       if (!vEntry) {
         if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
@@ -150,7 +150,7 @@ export class AssetTextureCache {
    */
   public renderMissingAssetPlaceholder(
     assetId: string,
-    assetType: string = 'media',
+    assetType: string = 'video',
     width = 640,
     height = 360
   ): HTMLCanvasElement {
@@ -181,7 +181,7 @@ export class AssetTextureCache {
       ctx.setLineDash([]);
 
       // 3. Neutral Asset Type Badge
-      const isVideo = assetType === 'media' || assetType === 'video';
+      const isVideo = assetType === 'video';
       ctx.fillStyle = '#222227';
       const badgeW = 90;
       const badgeH = 26;

@@ -197,14 +197,13 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
     if (!def.src) continue;
     const isVideo =
       def.type === 'video' ||
-      def.type === 'media' ||
       def.src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i);
 
     if (isVideo) {
       if (!videoReaders.has(id)) {
         const reader = new MediabunnyWorkerReader(def.src, { ringBufferSize: 8 });
         videoReaders.set(id, reader);
-        reader.init().catch(() => {});
+        reader.init().catch(() => { });
       }
     } else {
       // Image asset fallback loading directly in worker
@@ -221,7 +220,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
               renderCurrentFrame(currentFrame, 1.0, 1.0, false);
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
   }

@@ -17,13 +17,13 @@ export * from './ClipInsightCard';
 export * from './EmptyState';
 
 // Legacy Aliases for backwards compatibility with test harnesses
-export { TimelineEmptyState } from './EmptyState';
-export { TimelineClipItem } from './ClipItem';
-export { TimelineToolbar } from './Toolbar';
-export { TimelineOverlayHUD } from './OverlayHUD';
-export { TimelineTransitionBlock } from './TransitionBlock';
-export { TimelineSnapGuideline } from './SnapGuideline';
-export { TimelineRazorGuideline } from './RazorGuideline';
-export { TimelineTimecodeBadge } from './TimecodeBadge';
-export { TimelineClipHoverHUD } from './ClipHoverHUD';
-export { TimelineClipInsightCard } from './ClipInsightCard';
+export { EmptyState } from './EmptyState';
+export { ClipItem } from './ClipItem';
+export { Toolbar } from './Toolbar';
+export { OverlayHUD } from './OverlayHUD';
+export { TransitionBlock } from './TransitionBlock';
+export { SnapGuideline } from './SnapGuideline';
+export { RazorGuideline } from './RazorGuideline';
+export { TimecodeBadge } from './TimecodeBadge';
+export { ClipHoverHUD } from './ClipHoverHUD';
+export { ClipInsightCard } from './ClipInsightCard';

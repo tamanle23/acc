@@ -48,7 +48,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
     },
     'asset-matrix-core': {
       src: 'https://media.gettyimages.com/id/1340037487/video/the-matrix-reloaded-cast-interviews.mp4?s=mp4-640x640-gi&k=20&c=QmuoEVN4gNDv1DFmosfSTKNY5_OgW0MB29aWUAQw1nM=',
-      type: 'media',
+      type: 'video',
     },
     'asset-orbital-skyline': {
       src: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1920&q=80',
@@ -124,7 +124,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-core-reveal',
-          type: 'image',
+          type: 'video',
           assetId: 'asset-matrix-core',
           time: {
             start: {

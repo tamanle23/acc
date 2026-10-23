@@ -57,7 +57,7 @@
     "AssetType": {
       "type": "string",
       "enum": [
-        "media",
+        "video",
         "image",
         "audio",
         "font",
