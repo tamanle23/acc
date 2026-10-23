@@ -742,16 +742,6 @@ export function Preview({
         )}
       </div>
 
-      {/* Floating Viewport Quick Transport Bar */}
-      <ViewportQuickTransport
-        isPlaying={isPlaying}
-        currentFrame={currentFrame}
-        totalFrames={totalFrames}
-        fps={fps}
-        onTogglePlay={onTogglePlay}
-        onScrub={onScrub}
-      />
-
       {/* Floating Inline Canvas Text Editor Modal */}
       <InlineTextEditorModal
         editingCue={editingCue}
