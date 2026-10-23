@@ -92,7 +92,7 @@ export class CanvasHitTester {
       };
     }
 
-    // 2. Vector Shapes archetype
+    // 3. Vector Shapes archetype
     if (shapeMod) {
       const sp = (shapeMod.params || {}) as any;
       const rawW = sp.width ?? 320;
@@ -111,8 +111,8 @@ export class CanvasHitTester {
       };
     }
 
-    // 3. Media / Video / Image archetype
-    if (seq.type === 'video' || seq.type === 'image' || seq.assetId) {
+    // 4. Visual Media / Video / Image archetype (Exclude pure audio tracks)
+    if (seq.type === 'video' || seq.type === 'image' || (seq.assetId && !trackId.includes('audio') && !trackId.includes('a1') && !trackId.includes('a2'))) {
       const scale = Number.isFinite(tp.scale) ? tp.scale : 1.0;
       return {
         sequenceId: seq.id,
@@ -121,10 +121,10 @@ export class CanvasHitTester {
         trackId,
         normX,
         normY,
-        normWidth: Math.min(1.0, 0.8 * scale),
-        normHeight: Math.min(1.0, 0.8 * scale),
+        normWidth: Math.min(1.0, 0.9 * scale),
+        normHeight: Math.min(1.0, 0.9 * scale),
         label: seq.name || seq.id,
-        zIndex: trackIndex,
+        zIndex: 10 + trackIndex,
       };
     }
 
