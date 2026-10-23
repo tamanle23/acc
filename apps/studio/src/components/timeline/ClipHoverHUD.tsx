@@ -33,7 +33,7 @@ export const ClipHoverHUD: React.FC<ClipHoverHUDProps> = ({
         align="center"
         sideOffset={8}
         avoidCollisions={true}
-        className="w-80 p-3 glass-panel border border-glass-border shadow-2xl rounded-xl backdrop-blur-xl bg-popover/95 text-foreground z-[100]"
+        className="w-80 p-3 glass-panel border border-glass-border shadow-2xl rounded-xl backdrop-blur-xl bg-popover/95 text-foreground z-[100] pointer-events-auto select-auto"
       >
         <ClipInsightCard seq={seq} track={track} fps={fps} />
       </HoverCardContent>
