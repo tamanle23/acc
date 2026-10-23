@@ -27,7 +27,7 @@ describe('Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export Suite', () =
   });
 
   it('verifies MediabunnyClientSink exposes ArrayBuffer on finalize and getBuffer', async () => {
-    const { MediabunnyClientSink } = await import('@acc/ir/client');
+    const { MediabunnyClientSink } = await import('@acc/core-web');
     const sink = new MediabunnyClientSink();
     expect(typeof sink.getBuffer).toBe('function');
     expect(typeof sink.consumeFrame).toBe('function');

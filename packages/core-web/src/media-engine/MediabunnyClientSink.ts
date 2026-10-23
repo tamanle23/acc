@@ -7,9 +7,14 @@ import {
   AudioSampleSource,
   AudioSample,
 } from 'mediabunny';
-import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '../types';
-import { MediaEngineError } from '../types';
+import type {
+  IMediaFrameSink,
+  SinkInitMetadata,
+  SinkFinalizeResult,
+  MediaAudioMixResult,
+} from '@acc/core-isomorphic';
 
+export type { SinkInitMetadata, SinkFinalizeResult };
 
 /**
  * Client-side Frame Sink powered by Mediabunny & WebCodecs.
@@ -68,7 +73,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
 
   public async consumeFrame(frameIndex: number, rgbaBuffer: Uint8Array): Promise<void> {
     if (!this.meta || !this.videoSource) {
-      throw new MediaEngineError('mediabunny-client', 'MediabunnyClientSink is not initialized.');
+      throw new Error('[MediabunnyClientSink] Sink is not initialized.');
     }
 
     const timestamp = frameIndex / this.meta.fps;
@@ -99,7 +104,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
       const totalFrames = audioResult.totalSamples;
 
       // Prepare planar Float32 chunks (f32-planar format)
-      // Chunk size capped at 1024 or 2048 frames per audio sample
+      // Chunk size capped at 2048 frames per audio sample
       const chunkSize = 2048;
       let frameOffset = 0;
 
@@ -150,7 +155,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
 
     let fileSizeBytes = buffer ? buffer.byteLength : 0;
 
-    // If an outputPath was specified (e.g. running in Node test or electron desktop mode), persist buffer
+    // If an outputPath was specified (e.g. running in Node test or desktop mode), persist buffer
     if (this.outputPath && buffer && typeof process !== 'undefined' && process.versions?.node) {
       try {
         const nodeFs = await import('fs');
@@ -161,7 +166,7 @@ export class MediabunnyClientSink implements IMediaFrameSink {
         }
         nodeFs.writeFileSync(this.outputPath, Buffer.from(buffer));
         fileSizeBytes = nodeFs.statSync(this.outputPath).size;
-      } catch (err) {
+      } catch {
         // Ignore file save failure in non-Node or browser contexts
       }
     }

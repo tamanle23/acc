@@ -26,8 +26,9 @@ import {
   Badge,
   TooltipProvider,
 } from './components/ui';
-import { MediabunnyClientSink } from '@acc/ir/client';
-import { IRPreviewEngine, UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
+import { MediabunnyClientSink } from '@acc/core-web';
+import { IRPreviewEngine } from '@acc/ir';
+import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
 import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { AudioAssetCache } from './lib/audio/AudioAssetCache';
 import { Video, AlertCircle } from 'lucide-react';
