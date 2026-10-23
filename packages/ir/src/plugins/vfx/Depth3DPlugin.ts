@@ -6,7 +6,7 @@ import {
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type RelightingParams,
-} from '@acc/effect-engines/client';
+} from '@acc/effect-engines';
 
 export type Depth3DMode =
   | 'frame_breaker'

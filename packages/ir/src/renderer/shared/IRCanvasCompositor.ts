@@ -11,7 +11,7 @@ import {
   type CaptionConfig,
   type CaptionSettings,
   type SafeZonePlatform,
-} from '@acc/effect-engines/client';
+} from '@acc/effect-engines';
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export interface IAssetSourceResolver {

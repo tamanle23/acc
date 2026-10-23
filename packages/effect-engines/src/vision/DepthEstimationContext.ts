@@ -1,4 +1,4 @@
-import { Logger } from "@acc/core";
+import { UniversalLogger as Logger } from "@acc/core-isomorphic";
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from './types';
 import { DepthAnythingV2SmallStrategy } from './strategies/depth/DepthAnythingV2SmallStrategy';
 import { DepthAnythingV2BaseStrategy } from './strategies/depth/DepthAnythingV2BaseStrategy';

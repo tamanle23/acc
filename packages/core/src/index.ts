@@ -61,3 +61,4 @@ export * from './media-engine';
 export * from './native';
 export * from './buffer';
 export * from './cache';
+export * from './effects';

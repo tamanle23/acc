@@ -39,7 +39,7 @@ import {
 } from '@acc/ir';
 import {
   UniversalCanvasProvider,
-} from '@acc/effect-engines/client';
+} from '@acc/effect-engines';
 import {
   Gizmo2DTransformation,
   MagneticSnapEngine,

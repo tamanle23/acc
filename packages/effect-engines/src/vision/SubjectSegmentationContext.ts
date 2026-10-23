@@ -1,4 +1,4 @@
-import { Logger } from "@acc/core";
+import { UniversalLogger as Logger } from "@acc/core-isomorphic";
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from './types';
 import { SlimSamStrategy } from './strategies/segmentation/SlimSamStrategy';
 import { SamVitBaseStrategy } from './strategies/segmentation/SamVitBaseStrategy';
