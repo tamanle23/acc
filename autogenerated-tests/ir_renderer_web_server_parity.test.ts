@@ -1,18 +1,21 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { createHash } from 'crypto';
 import {
   UniversalCanvasProvider,
-  NodeCanvasAdapter,
-} from '@acc/effect-engines';
-import { IRMasterRenderer } from '@acc/ir/server';
+} from '@acc/core-isomorphic';
+import { NapiCanvasAdapter } from '@acc/core';
 import {
   IRPreviewEngine,
+  IRMasterRenderer,
   createIsolatedCoreModifierPlugins,
   type ResolvedTimeline,
   type ResolvedTrack,
 } from '@acc/ir';
 
 describe('Iteration 10 Phase 4: IR Master & Preview Web/Server Visual Parity Suite', () => {
+  beforeAll(() => {
+    UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
+  });
   const WIDTH = 640;
   const HEIGHT = 360;
   const FPS = 30;

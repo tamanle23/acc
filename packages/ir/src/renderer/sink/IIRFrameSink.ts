@@ -3,7 +3,7 @@ import type {
   SinkInitMetadata as CoreSinkInitMetadata,
   SinkFinalizeResult as CoreSinkFinalizeResult,
   MediaAudioMixResult,
-} from '@acc/core';
+} from '@acc/core-isomorphic';
 import type { DecoupledAudioMixResult } from '../audio/DecoupledAudioMixer';
 
 export type SinkInitMetadata = CoreSinkInitMetadata;

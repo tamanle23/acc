@@ -45,11 +45,10 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
         PipelineIRToUniversalIRAdapter,
         RelationalDAGCompiler,
         AssetMetadataProber,
-      } = await import('@acc/ir');
-      const {
         IRMasterRenderer,
-        MediaSinkFactory,
-      } = await import('@acc/ir/server');
+      } = await import('@acc/ir');
+      type IIRFrameSinkType = import('@acc/ir').IIRFrameSink;
+      const { MediaEngineRegistry } = await import('@acc/core-isomorphic');
 
       Logger.info('VideoExporter', `⚡ Compiling PipelineIR [${ir.pipelineId}] to Universal Video IR...`);
       const directorConfig = (options as any)?.directorConfig || (options as any)?.videoConfig;
@@ -67,7 +66,7 @@ export class VideoExporter implements IExporter<VideoExportOptions> {
       const timeline = await compiler.compile(irDoc);
 
       const renderer = new IRMasterRenderer(timeline, 42);
-      const sink = MediaSinkFactory.createVideoSink(options.engine);
+      const sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSinkType;
 
       const renderResult = await renderer.render({
         sink,

@@ -62,3 +62,5 @@ export * from './native';
 export * from './buffer';
 export * from './cache';
 export * from './effects';
+export * from './editing';
+export * from './ir-server';

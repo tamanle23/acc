@@ -3,17 +3,15 @@ import fs from 'fs';
 import {
   FFmpegManager,
   Logger,
+  FFIVideoEncoderSink,
 } from '@acc/core';
 import {
   AssetMetadataProber,
   RelationalDAGCompiler,
+  IRMasterRenderer,
   type VideoIRDocument,
   type ResolvedTimeline,
 } from '@acc/ir';
-import {
-  IRMasterRenderer,
-  FFIVideoEncoderSink,
-} from '@acc/ir/server';
 import { StudioTimelineState } from './StudioTimelineState';
 import type {
   ResolvedFramePreview,

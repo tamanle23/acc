@@ -2,15 +2,12 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import type { ResolvedTimeline } from '../types/VideoIR';
-import { IRMasterRenderer, type HeadlessRenderResult } from '../renderer/IRMasterRenderer';
-import { FFIVideoEncoderSink } from '../renderer/sink/FFIVideoEncoderSink';
+import type { ResolvedTimeline, IIRFrameSink } from '@acc/ir';
+import { IRMasterRenderer, type HeadlessRenderResult, DecoupledAudioMixer } from '@acc/ir';
+import { FFIVideoEncoderSink } from '../media-engine/sinks/FFIVideoEncoderSink';
 import { FFIChunkConcatMuxer } from './FFIChunkConcatMuxer';
-import { DecoupledAudioMixer } from '../renderer/audio/DecoupledAudioMixer';
-
-import type { MediaEngineType } from '@acc/core';
-import type { IIRFrameSink } from '../renderer/sink/IIRFrameSink';
-import { MediaSinkFactory } from '../renderer/sink/MediaSinkFactory';
+import { MediaEngineRegistry } from '@acc/core-isomorphic';
+import type { MediaEngineType } from '@acc/core-isomorphic';
 
 export interface ChunkSlice {
   chunkIndex: number;
@@ -224,7 +221,7 @@ export class IRChunkWorkerPool {
 
       let sink: IIRFrameSink | undefined;
       if (chunkMp4Path) {
-        sink = MediaSinkFactory.createVideoSink(options.engine);
+        sink = MediaEngineRegistry.get(options.engine).createVideoSink() as IIRFrameSink;
       }
 
       const chunkResult = await workerRenderer.render({

@@ -14,6 +14,7 @@ import {
   AudioDuckingDSP,
   type RenderContext,
   fileExists,
+  EditingOpFactory,
 } from '@acc/core';
 import type { ResolvedStoryConfig, ResolvedSceneConfig, TransitionSettings } from '@acc/core/types';
 import {
@@ -22,7 +23,6 @@ import {
   type ExtendedPipelineIR,
 } from '@acc/ir';
 import {
-  EditingOpFactory,
   SafeZoneManager,
   generateAssContent,
   getSceneDuration,
@@ -226,8 +226,9 @@ export class VideoEditPipelineOrchestrator {
         StoryConfigToUniversalIRAdapter,
         RelationalDAGCompiler,
         AssetMetadataProber,
+        IRMasterRenderer,
       } = await import('@acc/ir');
-      const { IRMasterRenderer, FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/ir/server');
+      const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
 
       const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);
       const prober = new AssetMetadataProber(baseDir);

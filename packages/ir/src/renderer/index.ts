@@ -1,3 +1,4 @@
+export * from './IRMasterRenderer';
 export * from './DeterministicNoiseGenerator';
 export * from './handshake/FrameBackpressureLock';
 export * from './audio/DecoupledAudioMixer';

@@ -10,8 +10,8 @@ import {
 } from './audio/UniversalAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
-import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/effect-engines';
-import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core';
+import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
+import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
 export interface HeadlessRenderOptions {
@@ -73,7 +73,15 @@ export class IRMasterRenderer {
   public async preloadAssets(baseDir: string = '.', engineType?: MediaEngineType): Promise<void> {
     if (!this.timeline.assets) return;
 
-    const strategy = MediaEngineRegistry.get(engineType);
+    let strategy: any;
+    try {
+      strategy = MediaEngineRegistry.has(engineType)
+        ? MediaEngineRegistry.get(engineType)
+        : (MediaEngineRegistry.has('bun-ffi') ? MediaEngineRegistry.get('bun-ffi') : undefined);
+    } catch {
+      // Strategy not available or prerequisites (e.g. FFmpegManager) not initialized in lightweight test
+      strategy = undefined;
+    }
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
       if (assetDef.type === 'image' || assetDef.type === 'media') {
@@ -89,7 +97,7 @@ export class IRMasterRenderer {
               const img = await CanvasAssetLoader.loadImage(resolvedPath);
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
-              if (typeof strategy.createVideoDecoder === 'function') {
+              if (strategy && typeof strategy.createVideoDecoder === 'function') {
                 const decoder = strategy.createVideoDecoder(
                   resolvedPath,
                   this.timeline.meta.canvasSize.w,

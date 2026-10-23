@@ -25,9 +25,8 @@ export function createStoryOrchestratedRenderStage(
         RelationalDAGCompiler,
         AssetMetadataProber,
         IRMasterRenderer,
-        FFIVideoEncoderSink,
       } = await import('@acc/ir');
-      const { IRChunkWorkerPool } = await import('@acc/ir/server');
+      const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
 
       const irDoc = StoryConfigToUniversalIRAdapter.adapt(resolvedConfig, undefined, absoluteDir);
       const prober = new AssetMetadataProber(absoluteDir);
