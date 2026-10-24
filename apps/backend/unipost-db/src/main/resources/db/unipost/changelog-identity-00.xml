@@ -4,27 +4,6 @@
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd">
   <changeSet author="tamanle23" id="changelog-${schema}-000.000.00000">
-    <createTable tableName="${table_prefix}ADDRESS">
-      <column autoIncrement="true" name="ID" type="INT">
-        <constraints primaryKey="true" primaryKeyName="PK_ADDRESS"/>
-      </column>
-      <column name="NAME" type="VARCHAR(255)"/>
-      <column name="CREATEDDATE" type="TIMESTAMP"/>
-      <column name="LASTUPDATEDDATE" type="TIMESTAMP"/>
-      <column name="VERSION" type="INT"/>
-      <column name="DELETEDDATE" type="TIMESTAMP"/>
-      <column name="MODE" type="VARCHAR(50)"/>
-      <column name="COUNTRY" type="VARCHAR(10)"/>
-      <column name="CITY" type="VARCHAR(200)"/>
-      <column name="COUNTRYSTATE" type="VARCHAR(200)"/>
-      <column name="ADDRESSLINE" type="VARCHAR(200)"/>
-      <column name="ZIPCODE" type="VARCHAR(10)"/>
-      <column name="STATE" type="VARCHAR(20)"/>
-      <column name="UID" type="VARCHAR(50)"/>
-      <column name="DESCRIPTION" type="VARCHAR(200)"/>
-      <column name="CREATEDBY_UID" type="VARCHAR(50)"/>
-      <column name="LASTUPDATEDBY_UID" type="VARCHAR(50)"/>
-    </createTable>
     <createTable tableName="${table_prefix}PERMISSION">
       <column autoIncrement="true" name="ID" type="INT">
         <constraints primaryKey="true" primaryKeyName="PK_PERMISSION"/>
@@ -105,16 +84,6 @@
       <column name="CREATEDBY_UID" type="VARCHAR(50)"/>
       <column name="LASTUPDATEDBY_UID" type="VARCHAR(50)"/>
     </createTable>
-    <createTable tableName="${table_prefix}USERACTIVITY">
-      <column name="DISCRIMINATOR" type="VARCHAR(31)"/>
-      <column autoIncrement="true" name="ID" type="INT">
-        <constraints primaryKey="true" primaryKeyName="PK_USERACTIVITY"/>
-      </column>
-      <column name="OPERATIONUSER_ID" type="INT"/>
-      <column name="OPERATIONTIME" type="TIMESTAMP"/>
-      <column name="AUTHENTICATIONTYPE" type="TINYINT"/>
-      <column name="USERAGENT" type="VARCHAR(2000)"/>
-    </createTable>
     <createTable tableName="${table_prefix}USERPERMISSION">
       <column autoIncrement="true" name="ID" type="INT">
         <constraints primaryKey="true" primaryKeyName="PK_USERPERMISSION"/>
@@ -133,25 +102,6 @@
       <column name="LASTUPDATEDBY_UID" type="VARCHAR(50)"/>
       <column name="STATUS" type="TINYINT"></column>
     </createTable>
-    <createTable tableName="${table_prefix}USERPROFILE">
-      <column autoIncrement="true" name="ID" type="INT">
-        <constraints primaryKey="true" primaryKeyName="PK_USERPROFILE"/>
-      </column>
-      <column name="CREATEDDATE" type="TIMESTAMP"/>
-      <column name="LASTUPDATEDDATE" type="TIMESTAMP"/>
-      <column name="VERSION" type="INT"/>
-      <column name="DELETEDDATE" type="TIMESTAMP"/>
-      <column name="MODE" type="VARCHAR(50)"/>
-      <column name="STATE" type="VARCHAR(20)"/>
-      <column name="DATEFORMAT" type="VARCHAR(100)"/>
-      <column name="DATETIMEFORMAT" type="VARCHAR(100)"/>
-      <column name="LOCALE" type="VARCHAR(10)"/>
-      <column name="PARENT_ID" type="INT"/>
-      <column name="UID" type="VARCHAR(50)"/>
-      <column name="DESCRIPTION" type="VARCHAR(200)"/>
-      <column name="CREATEDBY_UID" type="VARCHAR(50)"/>
-      <column name="LASTUPDATEDBY_UID" type="VARCHAR(50)"/>
-    </createTable>
     <createTable tableName="${table_prefix}USERROLE">
       <column autoIncrement="true" name="ID" type="INT">
         <constraints primaryKey="true" primaryKeyName="PK_USERROLE"/>
@@ -169,27 +119,24 @@
       <column name="CREATEDBY_UID" type="VARCHAR(50)"/>
       <column name="LASTUPDATEDBY_UID" type="VARCHAR(50)"/>
     </createTable>
+
     <addUniqueConstraint columnNames="USERNAME" constraintName="CT_10110" tableName="${table_prefix}USER"/>
     <addUniqueConstraint columnNames="UID" constraintName="UN_10112" tableName="${table_prefix}USER"/>
     <createIndex tableName="${table_prefix}ROLE" indexName="IDX_${table_prefix}ROLE_CODE">
       <column name="code" />
     </createIndex>
-    <addUniqueConstraint columnNames="UID" constraintName="UN_10136" tableName="${table_prefix}PERMISSION"/>
     <addUniqueConstraint columnNames="UID" constraintName="UN_ROLE_UID" tableName="${table_prefix}ROLE"/>
+    <addUniqueConstraint columnNames="UID" constraintName="UN_10136" tableName="${table_prefix}PERMISSION"/>
     <createIndex tableName="${table_prefix}PERMISSION" indexName="IDX_${table_prefix}PERMISSION_CODE">
       <column name="code" />
     </createIndex>
     <addUniqueConstraint columnNames="UID" constraintName="UN_10143" tableName="${table_prefix}PERMISSION"/>
     <addUniqueConstraint columnNames="UID" constraintName="UN_10150" tableName="${table_prefix}USERPERMISSION"/>
     <addUniqueConstraint columnNames="UID" constraintName="UN_10161" tableName="${table_prefix}ROLEPERMISSION"/>
-    <addUniqueConstraint columnNames="UID" constraintName="UN_10172" tableName="${table_prefix}USERPROFILE"/>
-    <addUniqueConstraint columnNames="UID" constraintName="UN_10181" tableName="${table_prefix}ADDRESS"/>
     <addUniqueConstraint columnNames="UID" constraintName="UN_10194" tableName="${table_prefix}USERROLE"/>
+
     <createIndex indexName="IDX_FK_ROLEROLE_USERUID_USER_10201" tableName="${table_prefix}USERROLE">
       <column name="USER_UID"/>
-    </createIndex>
-    <createIndex indexName="IDX_FK_USERACTIVITY_OPERATIONUSERID_USER_10123" tableName="${table_prefix}USERACTIVITY">
-      <column name="OPERATIONUSER_ID"/>
     </createIndex>
     <createIndex indexName="IDX_FK_USERPERMISSION_ROLEUID_PERMISSION_10155" tableName="${table_prefix}USERPERMISSION">
       <column name="PERMISSION_UID"/>
@@ -197,15 +144,13 @@
     <createIndex indexName="IDX_FK_USERPERMISSION_USERUID_USER_10157" tableName="${table_prefix}USERPERMISSION">
       <column name="USER_UID"/>
     </createIndex>
-    <createIndex indexName="IDX_FK_USERPROFILE_PARENTID_USER_10175" tableName="${table_prefix}USERPROFILE">
-      <column name="PARENT_ID"/>
-    </createIndex>
     <createIndex indexName="IDX_FK_USERROLE_ROLEUID_ROLE_10199" tableName="${table_prefix}USERROLE">
       <column name="ROLE_UID"/>
     </createIndex>
     <createIndex indexName="IDX_FK_USER_APPROVER_ID_USER_10115" tableName="${table_prefix}USER">
       <column name="APPROVER_ID"/>
     </createIndex>
+
     <addForeignKeyConstraint baseColumnNames="PERMISSION_UID" baseTableName="${table_prefix}ROLEPERMISSION"
                              constraintName="FK_ROLEPERMISSION_PERMISSIONUID_ROLE" deferrable="false"
                              initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
@@ -219,10 +164,6 @@
                              constraintName="FK_ROLEROLE_USERUID_USER" deferrable="false" initiallyDeferred="false"
                              onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="UID"
                              referencedTableName="${table_prefix}USER" validate="true"/>
-    <addForeignKeyConstraint baseColumnNames="OPERATIONUSER_ID" baseTableName="${table_prefix}USERACTIVITY"
-                             constraintName="FK_USERACTIVITY_OPERATIONUSERID_USER" deferrable="false"
-                             initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
-                             referencedColumnNames="ID" referencedTableName="${table_prefix}USER" validate="true"/>
     <addForeignKeyConstraint baseColumnNames="PERMISSION_UID" baseTableName="${table_prefix}USERPERMISSION"
                              constraintName="FK_USERPERMISSION_ROLEUID_PERMISSION" deferrable="false"
                              initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
@@ -232,10 +173,6 @@
                              constraintName="FK_USERPERMISSION_USERUID_USER" deferrable="false"
                              initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION"
                              referencedColumnNames="UID" referencedTableName="${table_prefix}USER" validate="true"/>
-    <addForeignKeyConstraint baseColumnNames="PARENT_ID" baseTableName="${table_prefix}USERPROFILE"
-                             constraintName="FK_USERPROFILE_PARENTID_USER" deferrable="false" initiallyDeferred="false"
-                             onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="ID"
-                             referencedTableName="${table_prefix}USER" validate="true"/>
     <addForeignKeyConstraint baseColumnNames="ROLE_UID" baseTableName="${table_prefix}USERROLE"
                              constraintName="FK_USERROLE_ROLEUID_ROLE" deferrable="false" initiallyDeferred="false"
                              onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="UID"
