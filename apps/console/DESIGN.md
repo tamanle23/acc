@@ -138,6 +138,19 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 - **Member & Workspace Cards:** `bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 hover:border-white/40 rounded-xl p-4 transition-all`.
 - **Status & RBAC Badges:** Monospace role badges (`ADMIN`, `USER`, `CREATOR`), status badges (`ACTIVE` in emerald, `LOCKED` in rose), and immutable `DEFAULT` workspace badges in primary/indigo.
 
+### 3.8 Visual DAG Studio 2.0 & Workflow Execution Telemetry
+- **Telemetry KPI Bars (`WorkflowCatalogKpiBar` & `WorkflowExecutionsKpiBar`):**
+  - Frosted 4-card grid: `grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4`.
+  - Glass Card: `p-3 sm:p-4 rounded-2xl backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border border-white/40 dark:border-white/10 shadow-lg shadow-black/5`.
+  - Numerical Values: Bold mono-spaced counters (`text-2xl font-bold tracking-tight text-foreground font-mono`).
+- **Canvas Node Component (`DagWorkflowNodeComponent`):**
+  - Glass Container: `min-w-[220px] rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/50 dark:border-white/20 shadow-xl transition-all`.
+  - State Animations: Real-time pulse halos for `IN_PROGRESS`, live 100ms precision duration counters, and amber warning ribbons for `PAUSED_AT_BREAKPOINT`.
+  - Edge Styles: Multi-state bezier and orthogonal routes with directional animated stroke dashing for active flows.
+- **Floating Controls & Scrubbers:**
+  - Segmented Command Bar: 3 floating clusters anchored over top canvas with `backdrop-blur-xl bg-white/75 dark:bg-slate-900/75 border-white/30`.
+  - Time-Travel Scrubber: Floating bottom amber pill with 1-click Return to Live HEAD action.
+
 ---
 
 ## 4. Google Stitch Prompting Blueprint (Zoom-Out-Zoom-In)

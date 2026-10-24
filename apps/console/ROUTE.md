@@ -161,6 +161,22 @@ src/routes/
   - Slide-over inspector sheet detailing formatted Java/JS error stack traces and raw JSON payload snapshots.
   - In-place payload modification textarea with JSON syntax validation and atomic priority re-enqueue (`/replay`).
 
+### 3.11 Workflow Definitions Catalog & Studio (`/workflows`)
+- **Route:** `src/routes/_authenticated/workflows/index.tsx`
+- **Component Stack:** `WorkflowsFeature`, `WorkflowCatalogKpiBar`, `WorkflowCatalogTable`, `WorkflowCreateDialog`, `FleetMigrationModal`, `ApprovalsInbox`, `VisualDagStudio`.
+- **Layout:** Responsive container with Liquid Glass header bar, 4-metric catalog telemetry strip (Active Workflows, DAG Topology Nodes, Fleet Domains, Draft/Disabled), and dual-view switcher (`Definitions Catalog` vs `Approvals Inbox`). Clicking "Design" seamlessly activates full-bleed `VisualDagStudio` in `mode="designer"`.
+- **Glass Spec:** `bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg shadow-black/5` with specular inset borders.
+- **State & Stores:** Backed by `useWorkflowDefinitions`, `useSaveWorkflowDefinition`, and `useWorkflowExecutionStream`. Offline execution backed by `workflowSandboxHandler`.
+- **Navigation Continuity:** Includes "View Executions" action linking to `/workflow-executions?search={workflowKey}`.
+
+### 3.12 Workflow Execution & Telemetry Monitor (`/workflow-executions`)
+- **Route:** `src/routes/_authenticated/workflow-executions/index.tsx`
+- **Component Stack:** `WorkflowExecutionsFeature`, `WorkflowExecutionsKpiBar`, `WorkflowExecutionsTable`, `WorkflowExecutionDetail`, `ExecutionRunDrawer`.
+- **Layout:** Operational dashboard with real-time Liquid Glass KPI strip (In-Flight Units, Reliability SLA %, Avg Duration ms, Worker Nodes), tabbed status filters (`ALL`, `RUNNING`, `COMPLETED`, `FAILED`), and slide-over execution visualizer.
+- **Glass Spec:** Frosted telemetry cards with live pulse indicators, emerald/rose threshold badges, and mono-spaced runtime metrics.
+- **State & Stores:** Backed by `useWorkflowExecutions` and live `useWorkflowExecutionStream` SSE hook.
+- **Zero Simulation Leakage:** Production runtime monitor strictly excludes simulation triggers; simulation is isolated in `SandboxDock`.
+
 ---
 
 ## 4. User Navigation Flow
