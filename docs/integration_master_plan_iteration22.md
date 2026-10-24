@@ -30,7 +30,12 @@ It captures the active, production-grade resilience mechanisms implemented acros
 ## 2. Ratified Architectural Invariants (From `/grill-me` Alignment)
 
 > [!IMPORTANT]
-> - **Zero Regression Invariant**: Documenting the strict 6-stage `RecordMutationPipeline` and its dual-mode OCC (`If-Match` + 3-way auto-merge) ensures downstream feature teams do not bypass validation or cause concurrent record overwrites.
+> - **The 6-Stage Record Mutation Pipeline Rationale**: In dynamic metadata platforms with polymorphic JSONB storage (`UNIPOST_ENTITIES.attributes`), PostgreSQL cannot natively enforce typed schemas, foreign keys, or lifecycle transitions. The 6-stage pipeline replaces missing RDBMS engine guards with deterministic, fail-fast software barriers.
+> - **Strict Atomic Optimistic Concurrency Control (OCC)**: Version increments on every write (`version`). If incoming version != current DB version, the pipeline aborts immediately with `HTTP 409 Conflict` (Strict Atomic Rejection). Silent overwrites (LWW) and uncoordinated field merges are strictly prohibited.
+> - **Boundary Defense (1MB Payload Ceiling)**: Enforced at Stage 1 before byte decoding or JSON deserialization to protect against Garbage Collection thrashing, heap exhaustion, and memory denial-of-service.
+> - **Server-Authoritative Defaults & FSM Guards**: Server injects attribute defaults and evaluates declarative SpEL transition guards (e.g. `DRAFT -> SUBMITTED`) *before* JSON Schema validation in Stage 3, preventing client state forgery.
+> - **Tenant-Scoped Referential Integrity**: Evaluated at Stage 4 prior to database write. Foreign entity references inside JSONB must exist within the caller's PostgreSQL RLS tenant scope, failing with `HTTP 422 Unprocessable Entity` if deleted or inaccessible.
+> - **Zero-Data-Loss Atomic Audit & Outbox**: In Stage 6, computing forward/backward JSON deltas, inserting into `UNIPOST_RECORD_AUDIT_LOG`, and enqueuing into `UNIPOST_EVENT_OUTBOX` execute within the **exact same database transaction** as the entity update.
 > - **ReDoS & Resource Quota Hardening**: Formally specify the 3-tier defense system (1MB payload cap, static nested quantifier pre-flight inspection, 50ms JSON Schema validation budget, and 3000ms database statement timeout) as non-negotiable architectural constraints.
 > - **Hybrid Composite Architecture**: Document the dual execution model of `DynamicQueryCompiler` (SQL pushdown via `jsonb_build_object`/`jsonb_agg`) with automatic fallback to `DataLoaderBatchResolver` during SQL execution failures or complex relationship graphs.
 > - **Provider-Agnostic Multi-Gateway Billing**: Abstract `UNIPOST_TENANT_BILLING` away from provider-specific columns (`payos_customer_id`), replacing them with generic references and `billing_metadata JSONB` via the Strategy & Adapter pattern.
@@ -42,8 +47,8 @@ It captures the active, production-grade resilience mechanisms implemented acros
 
 | Domain / Engine Component | Previous Document State | Actual Monorepo Implementation | Required Architectural Enhancement |
 | :--- | :--- | :--- | :--- |
-| **Write Plane Mutation Pipeline** | Only simple sequential flow diagram in Section 5. | Dedicated 6-stage `RecordMutationPipeline` with OCC, 3-way merge, payload sizing, FSM initialization, and delete cascades. | Add comprehensive specification of the **6-Stage Record Mutation Pipeline** with exact stage responsibilities and error handling contracts. |
-| **Concurrency & OCC Auto-Merge** | Mentioned only as JPA `@Version`. | Dual-mode HTTP ETag OCC (`If-Match` header + body version) with 3-way auto-merge algorithm resolving non-conflicting concurrent edits. | Add formal subsection detailing **Dual-Mode OCC & 3-Way Auto-Merge Algorithm** with conflict detection matrix. |
+| **Write Plane Mutation Pipeline** | Only simple sequential flow diagram in Section 5. | Dedicated 6-stage `RecordMutationPipeline` replacing missing RDBMS guards on JSONB. | Add comprehensive specification of the **6-Stage Record Mutation Pipeline** with exact stage responsibilities and error handling contracts. |
+| **Concurrency & Concurrency Model** | Mentioned only as JPA `@Version`. | Strict Optimistic Concurrency Control (OCC) comparing incoming version vs DB version with atomic `HTTP 409 Conflict` rejection. | Formalize **Strict Atomic OCC Concurrency Model** and version increment contract. |
 | **Resource Quotas & ReDoS Defense** | Mentioned briefly in history logs, omitted from master doc. | 3-tier defense: 1MB payload cap, pre-flight ReDoS static analysis (`DANGEROUS_REGEX_PATTERN`), 50ms validation timeout ceiling via `Future.get(50, ms)`, and DB statement timeouts. | Add Section 6: **Enterprise Resilience & Resource Protection (3-Tier Defense-in-Depth)**. |
 | **Composite Entity Engine** | Tables defined in Section 3, but query execution omitted. | High-performance SQL pushdown compiler (`DynamicQueryCompiler`) compiling recursive JSON documents via `jsonb_build_object` with automatic fallback to in-memory `DataLoaderBatchResolver`. | Add Section 7: **Composite Virtual Schemas & Hybrid Query Execution Engine**. |
 | **Composite Referential Guards** | Absent. | `MetadataService` enforces cycle detection and blocks deleting/archiving base attributes or models referenced in composite specifications. | Document **Composite Dependency & Cycle Detection Invariants**. |
@@ -65,31 +70,34 @@ sequenceDiagram
     participant DB as PostgreSQL (RLS)
     participant Outbox as TransactionalOutbox
 
-    Client->>Pipeline: PUT /records/{id} (Payload, If-Match)
+    Client->>Pipeline: PUT /records/{id} (Payload, If-Match / version)
     Note over Pipeline: Stage 1: Payload Size Cap (1MB)
-    Pipeline->>Pipeline: Verify byte length <= 1,048,576 bytes
+    Pipeline->>Pipeline: Verify byte length <= 1,048,576 bytes (Fail: 413)
     
-    Note over Pipeline: Stage 2: Dual-Mode OCC & Auto-Merge
-    Pipeline->>EntitySvc: Fetch current version & JSON
-    alt Concurrent Edit Detected
-        Pipeline->>Pipeline: Perform 3-Way Auto-Merge on disjoint keys
-        opt True Key Collision
-            Pipeline-->>Client: 409 Conflict (ETag mismatch)
-        end
+    Note over Pipeline: Stage 2: Strict Atomic OCC Check
+    Pipeline->>EntitySvc: Fetch current version from DB
+    alt Incoming Version != DB Version
+        Pipeline-->>Client: 409 Conflict (Strict Atomic Reject)
     end
 
-    Note over Pipeline: Stage 3: Schema Defaults & FSM Guards
-    Pipeline->>Validation: Inject server-side defaults
+    Note over Pipeline: Stage 3: Server Defaults & FSM Guards
+    Pipeline->>Validation: Inject server-authoritative defaults
     Pipeline->>FSM: Evaluate state transition guards (SpEL)
+    Pipeline->>Validation: Compile & validate JSON Schema (50ms budget)
 
     Note over Pipeline: Stage 4: Referential Integrity Check
-    Pipeline->>DB: Verify target foreign keys exist in tenant scope
+    Pipeline->>DB: Verify target foreign keys exist in tenant scope (Fail: 422)
 
     Note over Pipeline: Stage 5: Delete Cascades (on DELETE)
     Pipeline->>DB: Apply RESTRICT, CASCADE, or SET_NULL
 
-    Note over Pipeline: Stage 6: Audit & Outbox Dispatch
-    Pipeline->>DB: Write UNIPOST_RECORD_AUDIT_LOG & UNIPOST_EVENT_OUTBOX
+    Note over Pipeline: Stage 6: Atomic Audit & Outbox Dispatch
+    rect rgb(240, 248, 255)
+        Note over DB: Single Database Transaction
+        Pipeline->>DB: Update UNIPOST_ENTITIES (increment version)
+        Pipeline->>DB: Insert UNIPOST_RECORD_AUDIT_LOG (JSON diff)
+        Pipeline->>DB: Insert UNIPOST_EVENT_OUTBOX
+    end
     DB-->>Pipeline: Transaction Committed
     Pipeline-->>Client: 200 OK (Updated Record & ETag)
 ```
