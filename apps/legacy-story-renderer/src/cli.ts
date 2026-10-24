@@ -1,5 +1,6 @@
 import path from 'path';
-import { fileExists, FFmpegManager } from '@acc/core';
+import { fileExists, FFmpegManager, NapiCanvasAdapter, BunFFIEngineStrategy } from '@acc/core';
+import { UniversalCanvasProvider, MediaEngineRegistry } from '@acc/core-isomorphic';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from '@acc/core/types';
 import { LegacyDiskStoryRenderer } from './LegacyDiskStoryRenderer';
 
@@ -7,12 +8,17 @@ export interface LegacyRenderCliArgs {
   configPath: string;
   outputPath?: string;
   baseDir?: string;
+  concurrency?: number | 'auto';
 }
 
 /**
  * Resolves a story directory containing story-config.json and loads the configuration.
  */
-async function resolveStoryFolderDirect(storyDir: string, outPath?: string): Promise<{
+async function resolveStoryFolderDirect(
+  storyDir: string,
+  outPath?: string,
+  cliConcurrency?: number | 'auto'
+): Promise<{
   resolvedConfig: ResolvedStoryConfig;
   outputFilePath: string;
   absoluteDir: string;
@@ -57,6 +63,10 @@ async function resolveStoryFolderDirect(storyDir: string, outPath?: string): Pro
   }));
 
   const rawSettings = rawConfig.settings || ({} as any);
+  const concurrencySetting = cliConcurrency !== undefined
+    ? cliConcurrency
+    : (rawSettings.concurrency !== undefined ? rawSettings.concurrency : 'auto');
+
   const resolvedSettings = {
     width: rawSettings.width || 1080,
     height: rawSettings.height || 1920,
@@ -70,7 +80,7 @@ async function resolveStoryFolderDirect(storyDir: string, outPath?: string): Pro
     container: rawSettings.container || 'mp4',
     gpuAcceleration: rawSettings.gpuAcceleration || 'auto',
     platform: rawSettings.platform || 'tiktok',
-    concurrency: typeof rawSettings.concurrency === 'number' ? rawSettings.concurrency : 1,
+    concurrency: concurrencySetting,
     fastIntermediate: rawSettings.fastIntermediate ?? true,
     captions: rawSettings.captions,
     transition: rawSettings.transition,
@@ -106,8 +116,9 @@ Usage:
   bun run apps/legacy-story-renderer/src/cli.ts <story-directory> [options]
 
 Options:
-  -o, --output <path>    Custom output MP4 path
-  -h, --help             Show this help message
+  -o, --output <path>         Custom output MP4 path
+  -c, --concurrency <number>  Number of parallel workers (or 'auto')
+  -h, --help                  Show this help message
 
 Description:
   Executes the deprecated multi-pass disk renderer directly through the
@@ -118,17 +129,30 @@ Description:
 
   const inputDir = args[0];
   let customOut: string | undefined;
+  let cliConcurrency: number | 'auto' | undefined;
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '-o' || args[i] === '--output') {
       customOut = args[++i];
+    } else if (args[i] === '-c' || args[i] === '--concurrency') {
+      const val = args[++i];
+      if (val === 'auto') {
+        cliConcurrency = 'auto';
+      } else {
+        const parsed = parseInt(val, 10);
+        cliConcurrency = isNaN(parsed) ? 'auto' : parsed;
+      }
     }
   }
 
   console.log(`\x1b[33m[Legacy Story Renderer]\x1b[0m Executing quarantined disk rendering for: ${inputDir}`);
   await FFmpegManager.prepare();
+  UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
+  if (!MediaEngineRegistry.has('bun-ffi')) {
+    MediaEngineRegistry.register(new BunFFIEngineStrategy());
+  }
 
-  const { resolvedConfig, outputFilePath, absoluteDir } = await resolveStoryFolderDirect(inputDir, customOut);
+  const { resolvedConfig, outputFilePath, absoluteDir } = await resolveStoryFolderDirect(inputDir, customOut, cliConcurrency);
   const outDir = path.dirname(outputFilePath);
   const fsModule = await import('fs');
   if (!fsModule.existsSync(outDir)) {

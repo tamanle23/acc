@@ -85,7 +85,9 @@ export class FluentPipeVideoSink implements IMediaFrameSink {
 
     const codecArgs = encoderCodec === 'libx264'
       ? ['-preset', 'veryfast', '-crf', '20']
-      : ['-b:v', '5M'];
+      : (encoderCodec.includes('videotoolbox')
+          ? ['-b:v', '5M', '-allow_sw', '1']
+          : ['-b:v', '5M']);
 
     const args = [
       ffmpegPath,

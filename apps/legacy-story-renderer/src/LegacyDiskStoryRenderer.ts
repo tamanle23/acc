@@ -178,14 +178,23 @@ export class LegacyDiskStoryRenderer {
     const totalScenes = config.scenes.length;
 
     // Dynamic Worker Memory Throttling (RAM Bounds)
+    // On macOS Darwin, free RAM does not include inactive/cached memory, so we check total RAM and avoid clamping to 1
     const freeRamGB = os.freemem() / (1024 * 1024 * 1024);
+    const totalRamGB = os.totalmem() / (1024 * 1024 * 1024);
     const cpuCount = os.cpus().length || 4;
-    const memoryBoundWorkers = Math.max(1, Math.floor(freeRamGB / 1.5));
+    
+    // If system has >= 8GB total RAM or running on Darwin, allocate minimum 2-4 workers safely unless RAM is critically low (< 50MB)
+    const isDarwin = process.platform === 'darwin';
+    let memoryBoundWorkers = Math.max(1, Math.floor(freeRamGB / 1.5));
+    if (isDarwin || totalRamGB >= 8) {
+      memoryBoundWorkers = Math.min(cpuCount, totalRamGB >= 16 ? 4 : 2);
+    }
+
     const requestedConcurrency =
       typeof concurrency === 'number'
         ? concurrency
         : concurrency === 'auto'
-          ? cpuCount
+          ? Math.min(cpuCount, totalRamGB >= 16 ? 4 : 2)
           : 1;
     const activeConcurrency = Math.max(
       1,

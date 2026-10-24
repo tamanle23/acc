@@ -338,6 +338,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`330`](330_isolate_legacy_story_config_pipeline.md) | 2026-10-24 | Isolate Legacy Story-Config Rendering Pipeline | Quarantined legacy disk-based multi-pass story renderer into legacy/ submodule, refactored VideoEditPipelineOrchestrator into a lightweight facade, added formal deprecations in @acc/ir |
 | [`331`](331_scaffold_legacy_story_renderer_package.md) | 2026-10-24 | Scaffold @acc/legacy-story-renderer and Purge Legacy Pipeline from CLI | Extracted quarantined legacy pipeline into dedicated workspace app package apps/legacy-story-renderer, purified apps/cli, and validated clean monorepo build |
 | [`332`](332_quarantined_cli_exclusive_legacy_execution.md) | 2026-10-24 | Restrict Legacy Mode Strictly to Direct Quarantined CLI | Stripped all legacy fallback routes from VideoEditPipelineOrchestrator in apps/cli; legacy rendering is now exclusively executable via apps/legacy-story-renderer CLI |
+| [`333`](333_fix_legacy_story_renderer_depth3d_and_concurrency.md) | 2026-10-24 | Fix Legacy Story Renderer 3D Depth & Concurrency Throttling | Restored depth cache probing for cutouts and depth maps, fixed macOS RAM concurrency clamping, added CLI concurrency flag, and registered NapiCanvas in worker threads |
 
 
 

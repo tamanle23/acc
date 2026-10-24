@@ -31,6 +31,15 @@ if (!isMainThread) {
         await FFmpegManager.prepare();
       }
 
+      const { UniversalCanvasProvider, MediaEngineRegistry } = await import('@acc/core-isomorphic');
+      const { NapiCanvasAdapter } = await import('./native/canvas/NapiCanvasAdapter');
+      const { BunFFIEngineStrategy } = await import('./media-engine/strategies/BunFFIEngineStrategy');
+
+      UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
+      if (!MediaEngineRegistry.has('bun-ffi')) {
+        MediaEngineRegistry.register(new BunFFIEngineStrategy());
+      }
+
       const { renderDepth3DScene } = await import('@acc/effect-engines');
       const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
 

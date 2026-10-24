@@ -77,4 +77,11 @@ export class SubjectSegmentationContext {
       return await this.fallbackStrategy.segment(imageBuffer, options);
     }
   }
+
+  /**
+   * Alias for segment() providing compatibility for segmentation callers.
+   */
+  public async segmentSubject(imageBuffer: Buffer, options?: SegmentationOptions): Promise<SegmentationResult> {
+    return this.segment(imageBuffer, options);
+  }
 }

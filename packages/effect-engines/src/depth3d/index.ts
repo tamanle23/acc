@@ -378,7 +378,8 @@ export async function resolveSubjectCutout(
 ): Promise<{ subjectImg: any | null; subjectBBox: any | null }> {
   try {
     let imgBuffer: Uint8Array;
-    if (typeof process !== "undefined" && process.versions?.node) {
+    let isNode = typeof process !== "undefined" && !!process.versions?.node;
+    if (isNode) {
       const fs = require("fs");
       imgBuffer = await fs.promises.readFile(imagePath);
     } else {
@@ -388,12 +389,22 @@ export async function resolveSubjectCutout(
       imgBuffer = cached;
     }
 
-    const { depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
-    const imageChecksum = fastChecksum(imgBuffer);
+    const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
     const segContext = SubjectSegmentationContext.getInstance();
     const segStratName = segContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
 
-    const cacheKey = `cutout_${segStratName}_${imageChecksum}`;
+    // Compute both fastChecksum and md5 slice for disk compatibility
+    const fChecksum = fastChecksum(imgBuffer);
+    let md5Checksum = fChecksum;
+    if (isNode) {
+      try {
+        const crypto = require("crypto");
+        md5Checksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
+      } catch {}
+    }
+
+    // 1. Check in-memory ContentCacheRegistry
+    const cacheKey = `cutout_${segStratName}_${fChecksum}`;
     const cache = ContentCacheRegistry.get();
     if (await cache.has(cacheKey)) {
       const data = await cache.get(cacheKey);
@@ -403,7 +414,69 @@ export async function resolveSubjectCutout(
       }
     }
 
-    // Auto-segmentation
+    // 2. Check pre-computed disk cache candidates in Node/Bun environment
+    if (isNode) {
+      const path = require("path");
+      const fs = require("fs");
+      const sceneDir = path.dirname(imagePath);
+      const baseName = path.parse(imagePath).name;
+
+      let resolvedSubPath: string | null = null;
+      if (depthConfig?.subjectImage) {
+        const candidate = path.isAbsolute(depthConfig.subjectImage)
+          ? depthConfig.subjectImage
+          : path.resolve(sceneDir, depthConfig.subjectImage);
+        if (await checkExists(candidate)) resolvedSubPath = candidate;
+        else {
+          const rootCand = path.resolve(storyRoot, depthConfig.subjectImage);
+          if (await checkExists(rootCand)) resolvedSubPath = rootCand;
+          else {
+            const cacheCand = path.resolve(depthCacheDir, depthConfig.subjectImage);
+            if (await checkExists(cacheCand)) resolvedSubPath = cacheCand;
+          }
+        }
+      }
+
+      if (!resolvedSubPath) {
+        const candidates = [
+          path.resolve(depthCacheDir, `${baseName}_subject_${segStratName}_${md5Checksum}.png`),
+          path.resolve(depthCacheDir, `${baseName}_subject_${segStratName}_${fChecksum}.png`),
+          path.resolve(depthCacheDir, `${baseName}_subject_${md5Checksum}.png`),
+          path.resolve(depthCacheDir, `${baseName}_subject_${fChecksum}.png`),
+          path.resolve(depthCacheDir, `${baseName}_subject.png`),
+          path.resolve(sceneDir, `${baseName}_subject_${segStratName}_${md5Checksum}.png`),
+          path.resolve(sceneDir, `${baseName}_subject_${md5Checksum}.png`),
+          path.resolve(sceneDir, `${baseName}_subject.png`),
+          path.resolve(storyRoot, `${baseName}_subject_${md5Checksum}.png`),
+          path.resolve(storyRoot, `${baseName}_subject.png`),
+        ];
+        for (const cand of candidates) {
+          if (await checkExists(cand)) {
+            resolvedSubPath = cand;
+            break;
+          }
+        }
+      }
+
+      if (resolvedSubPath) {
+        try {
+          const data = await fs.promises.readFile(resolvedSubPath);
+          await cache.set(cacheKey, data, { mimeType: 'image/png' });
+          const subjectImg = await CanvasAssetLoader.loadImage(data);
+          let subjectBBox: any = null;
+          const jsonCandidate = resolvedSubPath.replace(/\.png$/i, ".json");
+          if (await checkExists(jsonCandidate)) {
+            try {
+              const meta = JSON.parse(await fs.promises.readFile(jsonCandidate, "utf-8"));
+              if (meta.boundingBox) subjectBBox = meta.boundingBox;
+            } catch {}
+          }
+          return { subjectImg, subjectBBox };
+        } catch {}
+      }
+    }
+
+    // 3. Fallback to active/fallback segmentation strategy
     const segRes = await segContext.segmentSubject(imgBuffer);
     if (segRes && segRes.maskRgbaBuffer) {
       await cache.set(cacheKey, segRes.maskRgbaBuffer, { mimeType: 'image/png' });
@@ -427,7 +500,8 @@ export async function resolveDepthMapData(
   depthConfig?: Depth3DConfig
 ): Promise<{ depthCanvas: ICanvasInstance; depthData: Uint8ClampedArray; normalMap?: any }> {
   let imgBuffer: Uint8Array;
-  if (typeof process !== "undefined" && process.versions?.node) {
+  let isNode = typeof process !== "undefined" && !!process.versions?.node;
+  if (isNode) {
     const fs = require("fs");
     imgBuffer = await fs.promises.readFile(imagePath);
   } else {
@@ -442,8 +516,16 @@ export async function resolveDepthMapData(
 
   const depthContext = DepthEstimationContext.getInstance();
   const depthStratName = depthContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
-  const imageChecksum = fastChecksum(imgBuffer);
-  const cacheKey = `depth_${depthStratName}_${imageChecksum}`;
+  const fChecksum = fastChecksum(imgBuffer);
+  let md5Checksum = fChecksum;
+  if (isNode) {
+    try {
+      const crypto = require("crypto");
+      md5Checksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
+    } catch {}
+  }
+
+  const cacheKey = `depth_${depthStratName}_${fChecksum}`;
   const cache = ContentCacheRegistry.get();
 
   let loadedDepth = false;
@@ -453,6 +535,40 @@ export async function resolveDepthMapData(
       const dm = await CanvasAssetLoader.loadImage(cached);
       drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
       loadedDepth = true;
+    }
+  }
+
+  // Check pre-computed disk cache candidates in Node/Bun environment
+  if (!loadedDepth && isNode) {
+    const path = require("path");
+    const fs = require("fs");
+    const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
+    const sceneDir = path.dirname(imagePath);
+    const baseName = path.parse(imagePath).name;
+
+    const candidates = [
+      path.resolve(depthCacheDir, `${baseName}_depth_${depthStratName}_${md5Checksum}.png`),
+      path.resolve(depthCacheDir, `${baseName}_depth_${depthStratName}_${fChecksum}.png`),
+      path.resolve(depthCacheDir, `${baseName}_depth_${md5Checksum}.png`),
+      path.resolve(depthCacheDir, `${baseName}_depth_${fChecksum}.png`),
+      path.resolve(depthCacheDir, `${baseName}_depth.png`),
+      path.resolve(sceneDir, `${baseName}_depth_${depthStratName}_${md5Checksum}.png`),
+      path.resolve(sceneDir, `${baseName}_depth_${md5Checksum}.png`),
+      path.resolve(sceneDir, `${baseName}_depth.png`),
+      path.resolve(storyRoot, `${baseName}_depth_${md5Checksum}.png`),
+      path.resolve(storyRoot, `${baseName}_depth.png`),
+    ];
+    for (const cand of candidates) {
+      if (await checkExists(cand)) {
+        try {
+          const data = await fs.promises.readFile(cand);
+          await cache.set(cacheKey, data, { mimeType: 'image/png' });
+          const dm = await CanvasAssetLoader.loadImage(data);
+          drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
+          loadedDepth = true;
+          break;
+        } catch {}
+      }
     }
   }
 

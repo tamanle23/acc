@@ -199,7 +199,7 @@ export class GpuVideoEncodingStrategy extends FileVideoEncodingStrategy {
       FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('profile\0')), ptr(Buffer.from('high\0')), 0);
       FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('realtime\0')), ptr(Buffer.from('0\0')), 0);
       FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('q\0')), ptr(Buffer.from(`${crf}\0`)), 0);
-      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('allow_sw\0')), ptr(Buffer.from('0\0')), 0);
+      FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('allow_sw\0')), ptr(Buffer.from('1\0')), 0);
     } else if (enc.includes('vaapi')) {
       FFI.avutil.av_opt_set(codecCtx, ptr(Buffer.from('preset\0')), ptr(Buffer.from('fast\0')), 0);
     } else if (enc.includes('qsv')) {
