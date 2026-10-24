@@ -17,7 +17,9 @@ import {
   Copy,
   Check,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import type { TaskDlqRecordDto } from '@unipost/client';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
@@ -70,7 +72,7 @@ export function DlqInspectorSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 backdrop-blur-2xl bg-background/95 border-l border-border/40 shadow-2xl"
+        className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 liquid-glass"
       >
         <SheetHeader className="text-left space-y-1">
           <div className="flex items-center justify-between">
@@ -83,8 +85,8 @@ export function DlqInspectorSheet({
                 record.status === 'ISOLATED'
                   ? 'destructive'
                   : record.status === 'REPLAYED'
-                  ? 'default'
-                  : 'outline'
+                    ? 'default'
+                    : 'outline'
               }
               className="text-xs"
             >
@@ -100,8 +102,16 @@ export function DlqInspectorSheet({
           {/* Metadata Grid */}
           <div className="grid grid-cols-2 gap-3 p-3.5 rounded-lg border border-border/50 bg-muted/20">
             <div>
-              <span className="text-muted-foreground block text-[11px]">Workflow ID</span>
-              <span className="font-mono font-medium text-foreground">{record.workflowId}</span>
+              <span className="text-muted-foreground block text-[11px]">Workflow Execution ID</span>
+              <Link
+                to={'/workflow-executions' as any}
+                onClick={() => onOpenChange(false)}
+                className="font-mono font-medium text-primary hover:underline inline-flex items-center gap-1"
+                title={`Open workflow execution ${record.workflowId}`}
+              >
+                <span>{record.workflowId}</span>
+                <ExternalLink className="h-3 w-3" />
+              </Link>
             </div>
             <div>
               <span className="text-muted-foreground block text-[11px]">Task Type</span>
@@ -154,7 +164,7 @@ export function DlqInspectorSheet({
             <Label className="text-xs font-semibold">Execution Payload Snapshot</Label>
             <VisualJsonEditor
               value={record.payloadSnapshot ?? {}}
-              onChange={() => {}}
+              onChange={() => { }}
               readOnly
               defaultMode="tree"
               height="200px"

@@ -1,5 +1,6 @@
 import { type Row } from '@tanstack/react-table'
-import { MoreHorizontal, Trash2, Eye, ExternalLink } from 'lucide-react'
+import { MoreHorizontal, Trash2, Eye, ExternalLink, AlertTriangle } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -64,6 +65,14 @@ export function DataTableRowActions<TData>({
           Live Execution Stream
         </DropdownMenuItem>
 
+        {Boolean(workflowExecution.outputData?.dlqId) && (
+          <DropdownMenuItem asChild className='gap-2'>
+            <Link to={'/system/dlq' as any} className='cursor-pointer text-destructive focus:text-destructive'>
+              <AlertTriangle className='size-4 text-destructive' />
+              View in DLQ ({String(workflowExecution.outputData?.dlqId)})
+            </Link>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 

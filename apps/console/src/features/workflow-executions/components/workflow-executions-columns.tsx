@@ -4,7 +4,7 @@ import { DataTableColumnHeader } from '@/components/data-table'
 import { priorities, statuses } from '../types'
 import { type WorkflowExecution } from '../schema'
 import { DataTableRowActions } from './data-table-row-actions'
-import { GitBranch, Cpu, Clock } from 'lucide-react'
+import { GitBranch, Cpu, Clock, AlertTriangle } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export const workflowExecutionsColumns: ColumnDef<WorkflowExecution>[] = [
@@ -88,6 +88,22 @@ export const workflowExecutionsColumns: ColumnDef<WorkflowExecution>[] = [
             <span className='text-[10px] text-rose-500 truncate'>
               Error: {row.original.errorMessage}
             </span>
+          )}
+          {Boolean(row.original.outputData?.dlqId) && (
+            <div className='mt-1 flex items-center gap-1.5'>
+              <Link
+                to={'/system/dlq' as any}
+                onClick={(e) => e.stopPropagation()}
+                className='inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-mono font-medium border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors'
+                title={`Quarantined in Dead-Letter Queue (${String(row.original.outputData?.dlqId)})`}
+              >
+                <AlertTriangle className='w-2.5 h-2.5' />
+                <span>DLQ: {String(row.original.outputData?.dlqId)}</span>
+                {row.original.outputData?.dlqStatus ? (
+                  <span className='opacity-80'>({String(row.original.outputData.dlqStatus)})</span>
+                ) : null}
+              </Link>
+            </div>
           )}
         </div>
       );

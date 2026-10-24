@@ -31,7 +31,24 @@ export const workflowExecutionSchema = z.object({
   taskReferenceName: z.string().optional(), // Internal node reference for telemetry
   // Internal engine implementation metadata (encapsulated from primary table)
   taskType: z
-    .enum(['SIMPLE', 'SWITCH', 'FORK_JOIN', 'DYNAMIC_FORK', 'WAIT', 'DO_WHILE', 'MANUAL'])
+    .union([
+      z.enum([
+        'SIMPLE',
+        'SWITCH',
+        'FORK_JOIN',
+        'DYNAMIC_FORK',
+        'WAIT',
+        'DO_WHILE',
+        'MANUAL',
+        'HTTP',
+        'JDBC',
+        'KAFKA_PUBLISH',
+        'LLM_CHAT_COMPLETE',
+        'EVENT',
+        'SUB_WORKFLOW',
+      ]),
+      z.string(),
+    ])
     .optional(),
   leaseOwner: z.string().nullable().optional(),
   attempt: z.number().default(1),

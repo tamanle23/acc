@@ -1,5 +1,6 @@
 import React from 'react';
 import { type ColumnDef } from '@tanstack/react-table';
+import { Link } from '@tanstack/react-router';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +52,14 @@ export const createDlqColumns = ({
           </span>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <span>WF:</span>
-            <span className="font-mono text-primary/80">{item.workflowId}</span>
+            <Link
+              to={'/workflow-executions' as any}
+              onClick={(e) => e.stopPropagation()}
+              className="font-mono text-primary/80 hover:text-primary hover:underline"
+              title={`View workflow execution ${item.workflowId}`}
+            >
+              {item.workflowId}
+            </Link>
             <span>•</span>
             <span className="font-mono text-muted-foreground/70">{item.dlqId}</span>
           </div>

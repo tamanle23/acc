@@ -43,7 +43,13 @@ export class WorkflowExecutionsSandboxRepository {
   }
 
   public getById(id: string, tenantId?: string): ClientWorkflowExecution | undefined {
-    return this.getTenantList(tenantId).find((t) => t.id === id);
+    const scoped = this.getTenantList(tenantId).find((t) => t.id === id);
+    if (scoped) return scoped;
+    for (const list of this.tenantWorkflowExecutions.values()) {
+      const match = list.find((t) => t.id === id);
+      if (match) return match;
+    }
+    return undefined;
   }
 
   public create(task: ClientWorkflowExecution, tenantId?: string): ClientWorkflowExecution {
@@ -221,6 +227,196 @@ const DEFAULT_DEFINITIONS: WorkflowDefinitionIR[] = [
       archiveInvoice: { x: 580, y: 100 },
     },
   },
+  {
+    workflowKey: 'batch-etl-v3',
+    name: 'High-Throughput Batch Telemetry Ingestion',
+    version: 3,
+    description: 'Dynamic partition fan-out, telemetry transformations, and columnar ingestion into ClickHouse.',
+    status: 'ACTIVE',
+    updatedAt: '4 hours ago',
+    tasks: [
+      {
+        taskReferenceName: 'extractTelemetry',
+        taskType: 'SIMPLE',
+        domain: 'etl-domain',
+        timeoutSeconds: 30,
+      },
+      {
+        taskReferenceName: 'dynamicFanOut',
+        taskType: 'DYNAMIC_FORK',
+        domain: 'etl-domain',
+        timeoutSeconds: 120,
+      },
+      {
+        taskReferenceName: 'transformPartitions',
+        taskType: 'SIMPLE',
+        domain: 'etl-domain',
+        timeoutSeconds: 60,
+      },
+      {
+        taskReferenceName: 'loadClickHouse',
+        taskType: 'SIMPLE',
+        domain: 'storage',
+        timeoutSeconds: 45,
+      },
+    ],
+    layoutMetadata: {
+      extractTelemetry: { x: 80, y: 120 },
+      dynamicFanOut: { x: 320, y: 120 },
+      transformPartitions: { x: 560, y: 120 },
+      loadClickHouse: { x: 800, y: 120 },
+    },
+  },
+  {
+    workflowKey: 'subscription-billing-v1',
+    name: 'Annual Enterprise Subscription Automated Card Renewal',
+    version: 1,
+    description: 'Automated recurring card token settlement, retry threshold isolation, and receipt notification.',
+    status: 'ACTIVE',
+    updatedAt: '1 hour ago',
+    tasks: [
+      {
+        taskReferenceName: 'checkEntitlements',
+        taskType: 'SIMPLE',
+        domain: 'billing',
+        timeoutSeconds: 15,
+      },
+      {
+        taskReferenceName: 'chargeRecurringCard',
+        taskType: 'SIMPLE',
+        domain: 'payment',
+        timeoutSeconds: 30,
+        retryCount: 3,
+      },
+      {
+        taskReferenceName: 'issueInvoiceReceipt',
+        taskType: 'SIMPLE',
+        domain: 'billing',
+        timeoutSeconds: 20,
+      },
+      {
+        taskReferenceName: 'notifyCustomer',
+        taskType: 'SIMPLE',
+        domain: 'notification',
+        timeoutSeconds: 15,
+      },
+    ],
+    layoutMetadata: {
+      checkEntitlements: { x: 80, y: 150 },
+      chargeRecurringCard: { x: 320, y: 150 },
+      issueInvoiceReceipt: { x: 560, y: 150 },
+      notifyCustomer: { x: 800, y: 150 },
+    },
+  },
+  {
+    workflowKey: 'content-enrichment-v1',
+    name: 'Generative AI Content Enrichment & Localization',
+    version: 1,
+    description: 'LLM financial disclosure summarization, automated sentiment tagging, and moderation signoff.',
+    status: 'ACTIVE',
+    updatedAt: 'Yesterday',
+    tasks: [
+      {
+        taskReferenceName: 'extractSourceText',
+        taskType: 'SIMPLE',
+        domain: 'cms',
+        timeoutSeconds: 15,
+      },
+      {
+        taskReferenceName: 'llmGenerateSummary',
+        taskType: 'SIMPLE',
+        domain: 'ai-enrichment',
+        timeoutSeconds: 45,
+        retryCount: 3,
+      },
+      {
+        taskReferenceName: 'humanModerationReview',
+        taskType: 'WAIT',
+        domain: 'moderation',
+        timeoutSeconds: 3600,
+      },
+      {
+        taskReferenceName: 'publishContent',
+        taskType: 'SIMPLE',
+        domain: 'cms',
+        timeoutSeconds: 20,
+      },
+    ],
+    layoutMetadata: {
+      extractSourceText: { x: 80, y: 150 },
+      llmGenerateSummary: { x: 320, y: 150 },
+      humanModerationReview: { x: 560, y: 150 },
+      publishContent: { x: 800, y: 150 },
+    },
+  },
+  {
+    workflowKey: 'inventory-sync-v1',
+    name: 'Multi-Warehouse Inventory Stock Synchronization',
+    version: 1,
+    description: 'Real-time inter-warehouse inventory reservations and stock adjustment delta propagation.',
+    status: 'ACTIVE',
+    updatedAt: '2 days ago',
+    tasks: [
+      {
+        taskReferenceName: 'fetchInventoryDelta',
+        taskType: 'SIMPLE',
+        domain: 'inventory',
+        timeoutSeconds: 15,
+      },
+      {
+        taskReferenceName: 'reserveStockJdbc',
+        taskType: 'SIMPLE',
+        domain: 'inventory',
+        timeoutSeconds: 20,
+        retryCount: 3,
+      },
+      {
+        taskReferenceName: 'notifyWarehouseStaff',
+        taskType: 'SIMPLE',
+        domain: 'notification',
+        timeoutSeconds: 15,
+      },
+    ],
+    layoutMetadata: {
+      fetchInventoryDelta: { x: 80, y: 150 },
+      reserveStockJdbc: { x: 340, y: 150 },
+      notifyWarehouseStaff: { x: 600, y: 150 },
+    },
+  },
+  {
+    workflowKey: 'audit-pipeline-v1',
+    name: 'Enterprise Audit & Compliance Event Dispatcher',
+    version: 1,
+    description: 'Distributed Kafka audit stream distribution, cold storage archiving, and compliance logging.',
+    status: 'ACTIVE',
+    updatedAt: '3 days ago',
+    tasks: [
+      {
+        taskReferenceName: 'gatherSecurityEvents',
+        taskType: 'SIMPLE',
+        domain: 'audit',
+        timeoutSeconds: 15,
+      },
+      {
+        taskReferenceName: 'publishKafkaAudit',
+        taskType: 'SIMPLE',
+        domain: 'audit',
+        timeoutSeconds: 30,
+        retryCount: 3,
+      },
+      {
+        taskReferenceName: 'archiveColdStorage',
+        taskType: 'SIMPLE',
+        domain: 'storage',
+        timeoutSeconds: 30,
+      },
+    ],
+    layoutMetadata: {
+      gatherSecurityEvents: { x: 80, y: 150 },
+      publishKafkaAudit: { x: 340, y: 150 },
+      archiveColdStorage: { x: 600, y: 150 },
+    },
+  },
 ];
 
 export interface SandboxApprovalTask {
@@ -349,6 +545,69 @@ export class WorkflowSandboxRepository {
       });
       this.tenantDefinitions.set(tid, defMap);
       this.tenantApprovals.set(tid, JSON.parse(JSON.stringify(DEFAULT_APPROVALS)));
+
+      const execMap = new Map<string, WorkflowExecution>();
+      workflowExecutions.forEach((rawExec) => {
+        const def = defMap.get(rawExec.workflowId) || DEFAULT_DEFINITIONS.find((d) => d.workflowKey === rawExec.workflowId);
+        const tasks = (def?.tasks || []).map((tDef) => {
+          let tStatus: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' = 'SCHEDULED';
+          let output: any = {};
+          if (rawExec.status === 'COMPLETED') {
+            tStatus = 'COMPLETED';
+            output = { completedAt: (rawExec as any).completedAt || new Date().toISOString() };
+          } else if (rawExec.status === 'FAILED') {
+            if (tDef.taskReferenceName === rawExec.activeStep) {
+              tStatus = 'FAILED';
+              output = rawExec.outputData || { error: rawExec.errorMessage };
+            } else {
+              const defIdx = def?.tasks.findIndex((t) => t.taskReferenceName === tDef.taskReferenceName) ?? -1;
+              const activeIdx = def?.tasks.findIndex((t) => t.taskReferenceName === rawExec.activeStep) ?? -1;
+              tStatus = defIdx < activeIdx ? 'COMPLETED' : 'SCHEDULED';
+            }
+          } else if (rawExec.status === 'IN_PROGRESS') {
+            if (tDef.taskReferenceName === rawExec.activeStep) {
+              tStatus = 'IN_PROGRESS';
+            } else {
+              const defIdx = def?.tasks.findIndex((t) => t.taskReferenceName === tDef.taskReferenceName) ?? -1;
+              const activeIdx = def?.tasks.findIndex((t) => t.taskReferenceName === rawExec.activeStep) ?? -1;
+              tStatus = defIdx < activeIdx ? 'COMPLETED' : 'SCHEDULED';
+            }
+          }
+          const taskId = (rawExec.taskId && tDef.taskReferenceName === rawExec.activeStep)
+            ? rawExec.taskId
+            : `${rawExec.id}_${tDef.taskReferenceName}`;
+          return {
+            taskId,
+            taskReferenceName: tDef.taskReferenceName,
+            taskType: tDef.taskType,
+            status: tStatus,
+            inputData: rawExec.inputData || {},
+            output,
+            outputData: output,
+          };
+        });
+
+        const tasksByRef: Record<string, any> = {};
+        tasks.forEach((t) => {
+          tasksByRef[t.taskReferenceName] = t;
+        });
+
+        const execution: WorkflowExecution = {
+          workflowId: rawExec.id,
+          tenantId: tid,
+          workspaceId: 'default',
+          workflowKey: rawExec.workflowId,
+          status: rawExec.status as any,
+          currentStep: rawExec.activeStep,
+          inputPayload: rawExec.inputData,
+          outputPayload: rawExec.outputData,
+          variables: { ...(rawExec.inputData || {}), ...(rawExec.outputData || {}) },
+          tasks,
+          tasksByRef,
+        };
+        execMap.set(rawExec.id, execution);
+      });
+      this.tenantExecutions.set(tid, execMap);
     });
   }
 
@@ -524,7 +783,13 @@ export class WorkflowSandboxRepository {
   }
 
   public getExecution(workflowId: string, tenantId?: string): WorkflowExecution | undefined {
-    return this.getExecutionMap(tenantId).get(workflowId);
+    const scoped = this.getExecutionMap(tenantId).get(workflowId);
+    if (scoped) return scoped;
+    for (const map of this.tenantExecutions.values()) {
+      const match = map.get(workflowId);
+      if (match) return match;
+    }
+    return undefined;
   }
 
   public updateBreakpoints(workflowId: string, breakpoints: string[], tenantId?: string): WorkflowExecution | null {

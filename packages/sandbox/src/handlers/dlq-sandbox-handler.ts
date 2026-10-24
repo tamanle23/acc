@@ -2,19 +2,20 @@ import type { SandboxRouteHandler, SandboxResponse, SandboxRequest } from '../ty
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
 import type { TaskDlqRecordDto } from '@unipost/client';
+import { workflowExecutionsSandboxRepo, workflowSandboxRepo } from './workflow-handler';
 
 const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
   {
     dlqId: 'dlq-101',
-    taskId: 'wf-order-982_charge-card_att3',
-    workflowId: 'wf-order-982',
+    taskId: 'wf_exec_9105_chargeRecurringCard_att3',
+    workflowId: 'wf_exec_9105',
     tenantId: 'tenant-acme',
     workspaceId: 'default',
-    taskType: 'HTTP',
+    taskType: 'SIMPLE',
     domain: 'payment',
     errorMessage: 'Connection timed out after 30000ms connecting to https://payment.acme.corp/charge',
     errorStacktrace: 'java.net.http.HttpTimeoutException: request timed out\n  at com.unipost.workflow.adapters.transport.HttpWorkerTransport.poll(HttpWorkerTransport.java:142)',
-    payloadSnapshot: { amount: 249.99, currency: 'USD', cardToken: 'tok_visa_4242' },
+    payloadSnapshot: { amount: 249.99, currency: 'USD', cardToken: 'tok_visa_4242', customerId: 'cust_8829' },
     retryCount: 3,
     isolatedAtMs: Date.now() - 3600000,
     replayedAtMs: null,
@@ -22,11 +23,11 @@ const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
   },
   {
     dlqId: 'dlq-102',
-    taskId: 'wf-content-441_llm-gen_att3',
-    workflowId: 'wf-content-441',
+    taskId: 'wf_exec_9106_llmGenerateSummary_att3',
+    workflowId: 'wf_exec_9106',
     tenantId: 'tenant-acme',
     workspaceId: 'default',
-    taskType: 'LLM_CHAT_COMPLETE',
+    taskType: 'SIMPLE',
     domain: 'ai-enrichment',
     errorMessage: 'OpenAI API 429: Rate limit exceeded or token quota reached',
     errorStacktrace: 'com.unipost.workflow.llm.RateLimitException: 429 Too Many Requests\n  at com.unipost.workflow.llm.OpenAiClient.complete(OpenAiClient.java:88)',
@@ -38,11 +39,11 @@ const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
   },
   {
     dlqId: 'dlq-103',
-    taskId: 'wf-sync-112_jdbc-query_att3',
-    workflowId: 'wf-sync-112',
+    taskId: 'wf_exec_9107_reserveStockJdbc_att3',
+    workflowId: 'wf_exec_9107',
     tenantId: 'tenant-acme',
     workspaceId: 'default',
-    taskType: 'JDBC',
+    taskType: 'SIMPLE',
     domain: 'inventory',
     errorMessage: 'PSQLException: ERROR: deadlock detected on relation stock_reservations',
     errorStacktrace: 'org.postgresql.util.PSQLException: ERROR: deadlock detected\n  at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:335)',
@@ -54,11 +55,11 @@ const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
   },
   {
     dlqId: 'dlq-104',
-    taskId: 'wf-cleanup-098_kafka-pub_att3',
-    workflowId: 'wf-cleanup-098',
+    taskId: 'wf_exec_9108_publishKafkaAudit_att3',
+    workflowId: 'wf_exec_9108',
     tenantId: 'tenant-acme',
     workspaceId: 'default',
-    taskType: 'KAFKA_PUBLISH',
+    taskType: 'SIMPLE',
     domain: 'audit',
     errorMessage: 'Org.apache.kafka.common.errors.TimeoutException: Topic orders.audit not present after 60000ms',
     errorStacktrace: 'org.apache.kafka.common.errors.TimeoutException: Failed to update metadata\n  at org.apache.kafka.clients.NetworkClient.poll(NetworkClient.java:540)',
@@ -139,7 +140,72 @@ export class DlqSandboxRepository {
     return undefined;
   }
 
+  private syncWorkflowReplay(record: TaskDlqRecordDto, tenantId?: string): void {
+    try {
+      const exec =
+        workflowExecutionsSandboxRepo.getById(record.workflowId, tenantId) ||
+        workflowExecutionsSandboxRepo.getAll(tenantId).find((e) => e.id === record.workflowId || e.taskId === record.taskId);
+      if (exec) {
+        workflowExecutionsSandboxRepo.update(
+          exec.id,
+          {
+            status: 'IN_PROGRESS',
+            attempt: (exec.attempt || 3) + 1,
+            errorMessage: undefined,
+            inputData: record.payloadSnapshot
+              ? { ...(exec.inputData || {}), ...record.payloadSnapshot }
+              : exec.inputData,
+            outputData: {
+              ...(exec.outputData || {}),
+              dlqStatus: 'REPLAYED',
+              replayedAt: new Date().toISOString(),
+              retryStatus: 'RE-ENQUEUED',
+            },
+          },
+          tenantId
+        );
+      }
+      const activeDag = workflowSandboxRepo.getExecution(record.workflowId, tenantId);
+      if (activeDag) {
+        activeDag.status = 'RUNNING';
+        const task = activeDag.tasks.find(
+          (t) => t.taskId === record.taskId || t.taskReferenceName === exec?.taskReferenceName
+        );
+        if (task) {
+          task.status = 'SCHEDULED';
+          task.outputData = { replayedFromDlq: record.dlqId, timestamp: Date.now() };
+        }
+      }
+    } catch {
+      // Safe fallback in test environments
+    }
+  }
+
+  private syncWorkflowDiscard(record: TaskDlqRecordDto, tenantId?: string): void {
+    try {
+      const exec =
+        workflowExecutionsSandboxRepo.getById(record.workflowId, tenantId) ||
+        workflowExecutionsSandboxRepo.getAll(tenantId).find((e) => e.id === record.workflowId || e.taskId === record.taskId);
+      if (exec) {
+        workflowExecutionsSandboxRepo.update(
+          exec.id,
+          {
+            outputData: {
+              ...(exec.outputData || {}),
+              dlqStatus: 'DISCARDED',
+            },
+          },
+          tenantId
+        );
+      }
+    } catch {
+      // Safe fallback in test environments
+    }
+  }
+
   public replay(id: string, payloadOverrides?: Record<string, unknown>, tenantId?: string): TaskDlqRecordDto | null {
+    let replayedRecord: TaskDlqRecordDto | null = null;
+
     // 1. Try scoped tenant first
     if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL') {
       const list = this.tenantDlq.get(tenantId);
@@ -150,41 +216,59 @@ export class DlqSandboxRepository {
         if (payloadOverrides) {
           existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
         }
-        return { ...existing };
+        replayedRecord = { ...existing };
       }
     }
 
     // 2. Global fallback across all tenant partitions
-    for (const list of this.tenantDlq.values()) {
-      const existing = list.find((r) => r.dlqId === id);
-      if (existing) {
-        existing.status = 'REPLAYED';
-        existing.replayedAtMs = Date.now();
-        if (payloadOverrides) {
-          existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
+    if (!replayedRecord) {
+      for (const list of this.tenantDlq.values()) {
+        const existing = list.find((r) => r.dlqId === id);
+        if (existing) {
+          existing.status = 'REPLAYED';
+          existing.replayedAtMs = Date.now();
+          if (payloadOverrides) {
+            existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
+          }
+          replayedRecord = { ...existing };
+          break;
         }
-        return { ...existing };
       }
     }
-    return null;
+
+    if (replayedRecord) {
+      this.syncWorkflowReplay(replayedRecord, tenantId);
+    }
+
+    return replayedRecord;
   }
 
   public discard(id: string, tenantId?: string): boolean {
+    let targetRecord: TaskDlqRecordDto | null = null;
+
     if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL') {
       const list = this.tenantDlq.get(tenantId);
       const existing = list?.find((r) => r.dlqId === id);
       if (existing) {
         existing.status = 'DISCARDED';
-        return true;
+        targetRecord = existing;
       }
     }
 
-    for (const list of this.tenantDlq.values()) {
-      const existing = list.find((r) => r.dlqId === id);
-      if (existing) {
-        existing.status = 'DISCARDED';
-        return true;
+    if (!targetRecord) {
+      for (const list of this.tenantDlq.values()) {
+        const existing = list.find((r) => r.dlqId === id);
+        if (existing) {
+          existing.status = 'DISCARDED';
+          targetRecord = existing;
+          break;
+        }
       }
+    }
+
+    if (targetRecord) {
+      this.syncWorkflowDiscard(targetRecord, tenantId);
+      return true;
     }
     return false;
   }
@@ -214,6 +298,7 @@ export class DlqSandboxRepository {
 }
 
 export const dlqSandboxRepository = new DlqSandboxRepository();
+export const dlqSandboxRepo = dlqSandboxRepository;
 
 export const dlqSandboxHandler: SandboxRouteHandler = {
   id: 'dlq-handler',
