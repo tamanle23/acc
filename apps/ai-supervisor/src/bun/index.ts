@@ -240,21 +240,26 @@ async function main() {
   const dashboardUrl = `http://127.0.0.1:${server.port}`;
   const windowHost = new WindowHost({ url: dashboardUrl });
 
-  const trayBridge = new NativeTrayBridge({
-    iconDir: assetsDir,
-    initialColor: supervisorEngine.getTrayColor(),
+  const trayCallbacks = {
     onOpenDashboard: () => {
       windowHost.open();
     },
-    onPurgeVram: () => supervisorEngine.purgeAllVram(),
-    onRestartAll: async () => {
-      await supervisorEngine.stopAll();
-      await supervisorEngine.startAll();
+    onMenuItemClick: (itemId: string) => {
+      if (itemId === "open_dashboard") windowHost.open();
+      else if (itemId === "purge_vram") supervisorEngine.purgeAllVram();
+      else if (itemId === "restart_all") {
+        supervisorEngine.stopAll().then(() => supervisorEngine.startAll());
+      } else if (itemId === "check_update") updateManager.checkForUpdates();
+      else if (itemId === "quit") shutdown();
     },
-    onCheckUpdate: () => updateManager.checkForUpdates(),
-    onExit: () => shutdown(),
+    onQuit: () => shutdown(),
+  };
+
+  const trayBridge = new NativeTrayBridge({
+    iconDir: assetsDir,
+    initialColor: supervisorEngine.getTrayColor(),
   });
-  const trayStarted = await trayBridge.start();
+  const trayStarted = await trayBridge.start(trayCallbacks);
 
   // If launching normally (not background autostart with --minimized)
   // or if the tray failed to initialize, automatically present the application window host
