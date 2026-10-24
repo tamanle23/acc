@@ -262,23 +262,65 @@ Append-only chronological history of all dynamic record mutations.
 
 ---
 
-#### 10. `UNIPOST_TENANT_BILLING` (Commercial Subscriptions & payOS VietQR)
-Manages commercial tier subscriptions, payment gateway bindings, and renewal lifecycles.
+#### 10. `UNIPOST_TENANT_BILLING` (Multi-Gateway Commercial Subscriptions & Payments)
+Manages commercial tier subscriptions, billing terms, and decoupled payment provider bindings. The schema is strictly **payment-provider agnostic**, avoiding hardcoded gateway identifiers in physical columns and allowing seamless expansion across payOS VietQR, Stripe, PayPal, VNPay, MoMo, or Wire Invoicing.
 
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `tenant_id` | `VARCHAR(255)` | `PK`, `NOT NULL` | Tenant identifier scoped strictly via PostgreSQL RLS. |
-| `payos_customer_id` | `VARCHAR(255)` | Nullable | External payOS customer identifier. |
-| `current_order_code`| `BIGINT` | Nullable | Numeric payOS order transaction code. |
 | `plan_tier` | `VARCHAR(50)` | `NOT NULL`, Default `'BASIC'` | Commercial entitlement tier: `BASIC`, `PRO`, `PRO_MAX`, `ENTERPRISE`. |
 | `billing_cadence` | `VARCHAR(20)` | `NOT NULL`, Default `'MONTHLY'` | Billing period cadence: `MONTHLY`, `YEARLY`. |
 | `status` | `VARCHAR(50)` | `NOT NULL`, Default `'ACTIVE'` | Subscription status: `ACTIVE`, `PAST_DUE`, `CANCELED`, `TRIALING`. |
-| `amount_paid` | `BIGINT` | Default `0` | Cumulative amount paid in VND (Vietnamese Dong). |
+| `currency` | `VARCHAR(10)` | `NOT NULL`, Default `'VND'` | ISO 4217 currency code (e.g., `VND`, `USD`, `EUR`). |
+| `amount_paid` | `BIGINT` | Default `0` | Cumulative amount paid in minor currency units / base currency. |
+| `payment_provider` | `VARCHAR(50)` | Nullable | Active payment gateway adapter: `PAYOS`, `STRIPE`, `VNPAY`, `MANUAL_INVOICE`. |
+| `provider_customer_ref`| `VARCHAR(255)`| Nullable | Generic provider customer identifier (e.g., Stripe `cus_xxx`, payOS customer ID). |
+| `current_order_ref`| `VARCHAR(255)` | Nullable | Current or last transaction/order reference code across gateways. |
+| `billing_metadata` | `JSONB` | Default `'{}'` | Extensible provider-specific payload (e.g., checkout URLs, webhook IDs, mandates, card last4, QR strings). |
 | `expires_at` | `TIMESTAMP` | Nullable | Subscription term expiration timestamp. |
 | `created_date` | `TIMESTAMP` | Standard | Row creation timestamp. |
 | `last_updated_date` | `TIMESTAMP` | Standard | Row modification timestamp. |
 
 *RLS Policy:* `tenant_isolation_billing ON UNIPOST_TENANT_BILLING` enforces `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR tenant_id = current_tenant`.
+
+##### Generic Multi-Gateway Payment Architecture
+To decouple business logic from third-party vendor lock-in, Unipost employs the **Strategy & Adapter Pattern** in the persistence and service layers:
+
+```mermaid
+classDiagram
+    class PaymentGatewayService {
+        <<interface>>
+        +createCheckoutSession(tenantId, plan, cadence) CheckoutResult
+        +handleWebhook(payload, signature) PaymentEvent
+        +cancelSubscription(tenantId) void
+    }
+
+    class PayOsGatewayAdapter {
+        +createCheckoutSession()
+        +handleWebhook()
+    }
+
+    class StripeGatewayAdapter {
+        +createCheckoutSession()
+        +handleWebhook()
+    }
+
+    class VnPayGatewayAdapter {
+        +createCheckoutSession()
+        +handleWebhook()
+    }
+
+    PaymentGatewayService <|.. PayOsGatewayAdapter : implements
+    PaymentGatewayService <|.. StripeGatewayAdapter : implements
+    PaymentGatewayService <|.. VnPayGatewayAdapter : implements
+```
+
+1. **Provider Independence**: Columns `payment_provider`, `provider_customer_ref`, and `current_order_ref` provide high-speed indexing and lookup without embedding vendor names into column DDL.
+2. **Provider-Specific Metadata in `billing_metadata` JSONB**:
+   - For payOS: `{"qrCode": "...", "accountNumber": "...", "bin": "970422", "paymentLinkId": "..."}`
+   - For Stripe: `{"subscriptionId": "sub_xxx", "paymentMethodId": "pm_xxx", "defaultCardBrand": "visa"}`
+   - For Enterprise Manual: `{"purchaseOrder": "PO-2026-001", "invoiceNumber": "INV-891", "terms": "NET30"}`
+3. **Database Compatibility**: In existing environments where physical columns exist (e.g., legacy `payos_customer_id`), the JPA entity and DDL migrate to generic aliases via database views or non-breaking column mapping (`@Column(name = "payos_customer_id")` alias mapped to generic getter/setter `getProviderCustomerRef()`).
 
 ---
 
@@ -384,7 +426,7 @@ Normalizes access definitions into coarse-grained roles and fine-grained atom pe
 
 ---
 
-#### 10. Sovereign RBAC Permission Matrix Specification
+#### 14. Sovereign RBAC Permission Matrix Specification
 
 The system governs operational boundaries via the following authoritative permission atoms:
 
@@ -405,37 +447,21 @@ The system governs operational boundaries via the following authoritative permis
 
 ---
 
-#### 11. Dual-Context Sovereign Impersonation (`Assume-Tenant`)
+## 4. Multi-Tenant Engine & Sovereign `SYSTEM` Tenant Workflows
 
-To resolve support escalations without sharing passwords or violating zero-trust principles, the system implements **Dual-Context Principal Resolution**:
-
-1. **Token Minting**: A Sovereign Custodian (`ROLE_SYSTEM_CUSTODIAN`) requests an ephemeral token (`POST /api/v1/system/tenants/{id}/assume`).
-2. **Dual-Context JWT Claims**:
-   - `sub`: The custodian's authentic global user ID.
-   - `tid` (Actor Tenant): `'SYSTEM'`.
-   - `effective_tid` (Target Tenant): `'tenant-target-123'`.
-3. **Database Session Binding**:
-   - `TenantContextHolder` detects `effective_tid` and issues:
-     ```sql
-     SET LOCAL app.current_tenant_id = 'tenant-target-123';
-     SET LOCAL app.is_system_custodian = 'true';
-     ```
-   - RLS scopes data access to `tenant-target-123` so the administrator sees the exact workspace view of the tenant.
-4. **Non-Repudiation Audit**: All writes in `UNIPOST_RECORD_AUDIT_LOG` record the custodian's actual UID in `actor`, ensuring complete accountability during delegated sessions.
-
----
-
-Multi-tenancy is enforced natively in the PostgreSQL engine via **Row-Level Security (RLS)**. Spring Modulith connects with a tenant-scoped database session where connection hooks set the active tenant identifier.
+Multi-tenancy is enforced natively in the PostgreSQL engine via **Row-Level Security (RLS)** coupled with Spring Modulith's tenant session interceptor. The platform distinguishes between standard commercial tenants (e.g., `tenant-acme`, `tenant-globex`) and the sovereign root custodian (`SYSTEM`).
 
 ```sql
 SET LOCAL app.current_tenant_id = 'tenant-acme';
 ```
 
-### PostgreSQL Sovereign Custodian Policy Pattern
-All core tables enforce the **Sovereign Custodian RLS Pattern**:
-1. Regular tenants can **only read and write rows matching their assigned `tenant_id`**.
-2. Regular tenants can **never alter or usurp `SYSTEM` global rows**.
-3. Sovereign Custodians (`app.current_tenant_id = 'SYSTEM'`) have unconditional bypass to audit, repair, or seed data across all tenant partitions.
+### 4.1. The Sovereign Custodian RLS Pattern (PostgreSQL RLS Write Paradox Resolution)
+In multi-tenant PostgreSQL systems, naive RLS policies enforce `WITH CHECK (tenant_id = current_setting('app.current_tenant_id'))`. However, this produces the **RLS Write Paradox**: when a platform administrator (`SYSTEM`) attempts to provision blueprints, seed data into another tenant, or repair corrupted records, the check fails because `SYSTEM != tenant-acme`.
+
+Unipost resolves this across all tables via the **Dual-Scope Sovereign Custodian RLS Pattern**:
+1. **Commercial Isolation**: Regular tenants can **only read and write rows matching their assigned `tenant_id`**.
+2. **Global Immutability**: Regular tenants can **never alter, overwrite, or delete `SYSTEM` canonical rows**.
+3. **Sovereign Custody**: Sovereign Custodians (`app.current_tenant_id = 'SYSTEM'`) have unconditional bypass to inspect, repair, seed, or audit across all tenant partitions:
 
 ```sql
 CREATE POLICY tenant_isolation_entity_types ON UNIPOST_ENTITY_TYPES
@@ -453,6 +479,89 @@ CREATE POLICY tenant_isolation_entity_types ON UNIPOST_ENTITY_TYPES
         )
     );
 ```
+
+---
+
+### 4.2. Sovereign `SYSTEM` Operational Workflows
+
+The `SYSTEM` tenant operates four mission-critical governance workflows:
+
+```mermaid
+flowchart TD
+    subgraph SYSTEM_Tenant ["SYSTEM Sovereign Root Custodian (ROLE_SYSTEM_CUSTODIAN)"]
+        WF1["1. Canonical Blueprint Authoring & Publishing"]
+        WF2["2. Ephemeral Assume-Tenant (Dual-Context Impersonation)"]
+        WF3["3. Fleet Resource Quota Overrides (Infinity Quotas)"]
+        WF4["4. Sovereign Audit Recovery & Version Restoration"]
+    end
+
+    subgraph DataPlane ["Persistence Tier"]
+        T_ENTITIES["UNIPOST_ENTITIES (All Tenants)"]
+        T_AUDIT["UNIPOST_RECORD_AUDIT_LOG"]
+        T_TYPES["UNIPOST_ENTITY_TYPES (tenant_id = SYSTEM)"]
+    end
+
+    WF1 -->|Publish global blueprints| T_TYPES
+    WF2 -->|Ephemeral JWT with actor_tid=SYSTEM| T_ENTITIES
+    WF3 -->|Unconstrained limits override| T_ENTITIES
+    WF4 -->|Restore historical version diff| T_AUDIT
+```
+
+#### Workflow 1: Canonical Blueprint Authoring & Ecosystem Publishing
+- **Goal**: Enable system architects to design, update, and publish domain blueprint templates (e.g., Headless CMS, B2B CRM, Healthcare Records) available to all tenants.
+- **Persistence Mechanism**:
+  - `SYSTEM` creates `UNIPOST_ENTITY_TYPES` with `tenant_id = 'SYSTEM'` and `is_composite = false/true`.
+  - The model is globally readable by all tenants via the RLS policy (`OR tenant_id = 'SYSTEM'`).
+  - When commercial tenants onboard, `BlueprintCatalogService` clones the canonical structure into their tenant partition or mounts it as a read-only inherited schema.
+- **Immutability Guard**: Any attempt by a commercial tenant to modify or delete a `tenant_id = 'SYSTEM'` model is immediately rejected at the database engine level via `WITH CHECK (tenant_id != 'SYSTEM')`.
+
+#### Workflow 2: Dual-Context Sovereign Impersonation (`Assume-Tenant`)
+- **Goal**: Resolve tenant support escalations and inspect complex data bugs without asking for customer passwords or compromising zero-trust.
+- **Execution Lifecycle**:
+  ```mermaid
+  sequenceDiagram
+      actor Custodian as Sovereign Admin (ROLE_SYSTEM_CUSTODIAN)
+      participant Gateway as REST Gateway (/system/tenants/{id}/assume)
+      participant JWT as Token Service
+      participant Aspect as TenantSessionAspect
+      participant DB as PostgreSQL 16+
+
+      Custodian->>Gateway: POST /api/v1/system/tenants/tenant-123/assume
+      Gateway->>JWT: Mint Ephemeral Impersonation Token
+      JWT-->>Custodian: Return Token { sub: admin_uid, tid: SYSTEM, effective_tid: tenant-123 }
+      
+      Custodian->>Gateway: GET /api/metadata/entities (with Bearer Token)
+      Gateway->>Aspect: Intercept Request
+      Aspect->>DB: SET LOCAL app.current_tenant_id = 'tenant-123'
+      Aspect->>DB: SET LOCAL app.is_system_custodian = 'true'
+      Gateway->>DB: Query Records (Scoped to tenant-123)
+      DB-->>Gateway: Return Isolated Tenant View
+      Gateway-->>Custodian: Render exact customer dashboard in Console UI
+  ```
+- **Non-Repudiation Audit Invariant**: If the custodian performs a mutation during the session, `UNIPOST_RECORD_AUDIT_LOG` stamps:
+  - `actor`: Custodian's actual global user UID.
+  - `tenant_id`: `tenant-123`.
+  - `delta`: Full before/after attribute diff.
+
+#### Workflow 3: Fleet Resource Quota Overrides (Infinity Quotas)
+- **Goal**: Support high-volume data migrations, benchmark tests, or VIP enterprise onboarding without triggering Noisy Neighbor rate limits.
+- **Persistence Mechanism**:
+  - Regular tenants enforce strict multi-tier guards: 60 req/min rate limit, 50ms ReDoS validation timeout, 3000ms database statement timeout.
+  - When `ROLE_SYSTEM_CUSTODIAN` issues a quota override (`POST /api/v1/system/tenants/{id}/quotas/override`), the active connection sets:
+    ```sql
+    SET LOCAL statement_timeout = 0; -- Unconstrained execution
+    ```
+  - Quota checks in `RateLimitingAspect` evaluate `app.is_system_custodian` and bypass throttling unconditionally.
+
+#### Workflow 4: Sovereign Audit Recovery & Historical Rollback
+- **Goal**: Provide disaster recovery against accidental mass deletions or erroneous batch updates in dynamic metadata.
+- **Execution Lifecycle**:
+  - The Console UI surfaces the Liquid Glass `RecordAuditHistoryDrawer`.
+  - For standard tenant users, the "Restore to this Version" action is strictly disabled.
+  - For `ROLE_SYSTEM_CUSTODIAN`, the restoration button is unlocked, triggering a 2-step dry-run diff preview:
+    1. Compares target version snapshot from `UNIPOST_RECORD_AUDIT_LOG.new_attributes` with current `UNIPOST_ENTITIES.attributes`.
+    2. Performs dry-run JSON Schema validation against current `UNIPOST_ENTITY_TYPES.schema_version`.
+    3. Persists atomic `TRANSITION` record in `UNIPOST_RECORD_AUDIT_LOG` and updates `UNIPOST_ENTITIES`.
 
 ---
 
