@@ -39,13 +39,16 @@ class WebWindowController: NSObject, NSWindowDelegate {
         let prefs = WKWebpagePreferences()
         prefs.allowsContentJavaScript = true
         config.defaultWebpagePreferences = prefs
+        // Disable disk caching for local dev/supervisor webview to guarantee immediate updates
+        config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
 
         webView = WKWebView(frame: rect, configuration: config)
         webView.autoresizingMask = [.width, .height]
         window.contentView = webView
 
         if let url = URL(string: urlStr) {
-            let request = URLRequest(url: url)
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
             webView.load(request)
         }
 
