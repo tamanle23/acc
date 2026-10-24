@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Cpu, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Clock, Cpu, AlertCircle, CheckCircle2, Loader2, Navigation } from 'lucide-react';
 import type { WorkflowStreamEvent } from '@/features/workflows/hooks/use-workflow-execution-stream';
 
 export interface WorkflowExecutionFlamegraphProps {
@@ -8,6 +8,10 @@ export interface WorkflowExecutionFlamegraphProps {
   activeTaskRef?: string | null;
   onHoverTask?: (taskRef: string | null) => void;
   onClickTask?: (taskRef: string) => void;
+  // Bi-directional time travel scrubber sync
+  currentStepIndex?: number;
+  onSeekStep?: (stepIndex: number) => void;
+  isLiveHead?: boolean;
 }
 
 interface TaskInterval {
@@ -21,6 +25,8 @@ interface TaskInterval {
   waitMs: number;
   workerId?: string;
   error?: string;
+  firstEventIndex: number;
+  lastEventIndex: number;
 }
 
 export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphProps> = ({
@@ -28,14 +34,17 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
   activeTaskRef,
   onHoverTask,
   onClickTask,
+  currentStepIndex,
+  onSeekStep,
+  isLiveHead = true,
 }) => {
-  // Aggregate task events into intervals
-  const intervals: TaskInterval[] = React.useMemo(() => {
+  // Aggregate task events into intervals and map to event indices
+  const intervals: TaskInterval[] = useMemo(() => {
     const map = new Map<string, Partial<TaskInterval>>();
 
-    for (const ev of events) {
+    events.forEach((ev, idx) => {
       const data = ev.data;
-      if (!data?.taskReferenceName) continue;
+      if (!data?.taskReferenceName) return;
       const ref = data.taskReferenceName;
       const existing = map.get(ref) || {
         taskReferenceName: ref,
@@ -48,7 +57,11 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
         waitMs: 0,
         workerId: data.workerId as string | undefined,
         error: data.error as string | undefined,
+        firstEventIndex: idx,
+        lastEventIndex: idx,
       };
+
+      existing.lastEventIndex = idx;
 
       if (data.status === 'SCHEDULED') {
         existing.scheduledAt = data.timestamp || existing.scheduledAt;
@@ -68,7 +81,7 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
       }
 
       map.set(ref, existing);
-    }
+    });
 
     return Array.from(map.values()).map((t) => {
       const scheduled = t.scheduledAt || Date.now();
@@ -88,6 +101,8 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
         waitMs,
         workerId: t.workerId,
         error: t.error,
+        firstEventIndex: t.firstEventIndex ?? 0,
+        lastEventIndex: t.lastEventIndex ?? 0,
       };
     });
   }, [events]);
@@ -109,9 +124,29 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
   const maxTime = Math.max(...intervals.map((i) => i.endedAt));
   const totalSpanMs = Math.max(maxTime - minTime, 100);
 
+  // Current scrubber cursor position as a percentage
+  const scrubberTime =
+    currentStepIndex !== undefined && events[currentStepIndex]?.data?.timestamp
+      ? (events[currentStepIndex].data.timestamp as number)
+      : null;
+
+  const scrubberCursorPct =
+    scrubberTime !== null
+      ? Math.max(Math.min(((scrubberTime - minTime) / totalSpanMs) * 100, 100), 0)
+      : null;
+
+  const handleTaskClick = (interval: TaskInterval) => {
+    // 1. Notify parent of task selection
+    onClickTask?.(interval.taskReferenceName);
+    // 2. Scrub timeline to this task's terminal or latest event
+    if (onSeekStep && interval.lastEventIndex !== undefined) {
+      onSeekStep(interval.lastEventIndex);
+    }
+  };
+
   return (
     <div
-      className="p-4 rounded-xl border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-xl flex flex-col gap-3"
+      className="p-4 rounded-xl border border-white/20 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-xl flex flex-col gap-3 relative"
       data-testid="workflow-flamegraph"
     >
       <div className="flex items-center justify-between pb-2 border-b border-border/40">
@@ -123,6 +158,15 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
           <Badge variant="outline" className="text-[10px] font-mono">
             {intervals.length} Tasks ({totalSpanMs}ms Span)
           </Badge>
+          {!isLiveHead && scrubberTime && (
+            <Badge
+              variant="outline"
+              className="text-[10px] font-mono bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 flex items-center gap-1"
+            >
+              <Navigation className="w-2.5 h-2.5 text-amber-500" />
+              Scrubbed: Step {currentStepIndex! + 1}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -140,8 +184,19 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
         </div>
       </div>
 
-      {/* Waterfall Rows */}
-      <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+      {/* Waterfall Rows with Scrubber Playhead Line */}
+      <div className="relative space-y-2 max-h-72 overflow-y-auto pr-1">
+        {/* Playhead vertical needle line */}
+        {scrubberCursorPct !== null && (
+          <div
+            style={{ left: `${scrubberCursorPct}%` }}
+            className="absolute top-0 bottom-0 w-0.5 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] z-20 pointer-events-none transition-all duration-150"
+            data-testid="flamegraph-playhead-line"
+          >
+            <div className="w-2 h-2 -ml-[3px] rounded-full bg-amber-500 border border-white" />
+          </div>
+        )}
+
         {intervals.map((interval) => {
           const waitOffsetPct = ((interval.scheduledAt - minTime) / totalSpanMs) * 100;
           const waitWidthPct = Math.max((interval.waitMs / totalSpanMs) * 100, 0);
@@ -156,7 +211,8 @@ export const WorkflowExecutionFlamegraph: React.FC<WorkflowExecutionFlamegraphPr
               key={interval.taskReferenceName}
               onMouseEnter={() => onHoverTask?.(interval.taskReferenceName)}
               onMouseLeave={() => onHoverTask?.(null)}
-              onClick={() => onClickTask?.(interval.taskReferenceName)}
+              onClick={() => handleTaskClick(interval)}
+              data-testid={`flamegraph-row-${interval.taskReferenceName}`}
               className={`group flex flex-col gap-1 p-1.5 rounded-lg transition-all cursor-pointer ${
                 isHovered
                   ? 'bg-primary/10 ring-1 ring-primary/40'

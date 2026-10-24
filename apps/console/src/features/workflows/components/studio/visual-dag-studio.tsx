@@ -58,6 +58,7 @@ import {
 } from './utils/dag-sample-data';
 
 import { cn } from '@/lib/utils';
+import { Clock, Radio, RotateCcw } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -224,6 +225,9 @@ function DagStudioCanvas({
     handleStepForward,
     handleStepBackward,
     handleResumeLive,
+    replayedVariables,
+    currentStepTimestamp,
+    historicalLogs,
   } = useDagExecutionSync({
     isReadOnly,
     executionId,
@@ -554,7 +558,7 @@ function DagStudioCanvas({
     });
   }, [edges, nodes, isExecutionMode, isReadOnly, edgeRoutingMode, handleOpenEdgeEditor, handleRequestSplitEdge]);
 
-  // Aggregated Variable Watch state
+  // Aggregated Variable Watch state (synchronizes with historical replay if not at live HEAD)
   const variableWatchSnapshot = useMemo(() => {
     const taskOutputs: Record<string, unknown> = {};
     nodes.forEach((n) => {
@@ -562,17 +566,23 @@ function DagStudioCanvas({
         taskOutputs[n.data.taskReferenceName] = n.data.outputParameters;
       }
     });
+
+    const activeVariables =
+      !isLiveHead && replayedVariables
+        ? replayedVariables
+        : (stream.snapshot as any)?.variables || {
+            orderId: 'ORD-2026-991',
+            tier: 'EXPRESS',
+          };
+
     return {
       workflowStatus:
         stream.workflowStatus || (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING'),
       breakpoints,
-      workflowVariables: (stream.snapshot as any)?.variables || {
-        orderId: 'ORD-2026-991',
-        tier: 'EXPRESS',
-      },
+      workflowVariables: activeVariables,
       taskOutputs,
     };
-  }, [nodes, stream.workflowStatus, stream.snapshot, breakpoints]);
+  }, [nodes, stream.workflowStatus, stream.snapshot, breakpoints, isLiveHead, replayedVariables]);
 
   return (
     <div
@@ -658,6 +668,35 @@ function DagStudioCanvas({
         />
       )}
 
+      {/* 2b. Historical Time-Travel Replay Banner */}
+      {isReadOnly && !isLiveHead && (
+        <div
+          data-testid="dag-historical-replay-banner"
+          style={{ top: 12 + headerToolbarHeight + (isExecutionMode ? 44 : 8) }}
+          className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-2xl bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 shadow-xl shadow-amber-500/10 transition-all duration-200"
+        >
+          <div className="flex items-center gap-1.5 font-bold">
+            <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
+            <span>HISTORICAL REPLAY</span>
+          </div>
+          <span className="text-[11px] opacity-80 font-mono">
+            Step {currentScrubberIndex + 1}/{timelineEvents.length}
+            {currentStepTimestamp ? ` · ${new Date(currentStepTimestamp).toLocaleTimeString()}` : ''}
+          </span>
+          <button
+            type="button"
+            onClick={handleResumeLive}
+            title="Snap back to real-time execution HEAD"
+            aria-label="Return to live HEAD"
+            data-testid="dag-return-to-live-btn"
+            className="flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all"
+          >
+            <Radio className="w-2.5 h-2.5 animate-pulse" />
+            <span>Return to Live HEAD</span>
+          </button>
+        </div>
+      )}
+
       {/* 3. Validation Banner */}
       {!isReadOnly && (
         <DagValidationBanner
@@ -702,6 +741,9 @@ function DagStudioCanvas({
             events={timelineEvents}
             activeTaskRef={activeHoveredTaskRef}
             onHoverTask={setActiveHoveredTaskRef}
+            currentStepIndex={currentScrubberIndex}
+            onSeekStep={handleSeek}
+            isLiveHead={isLiveHead}
             onClickTask={(ref) => {
               const node = nodes.find((n) => n.data.taskReferenceName === ref);
               if (node) {
@@ -842,7 +884,7 @@ function DagStudioCanvas({
               )
             );
           }}
-          logs={stream.logs}
+          logs={historicalLogs}
         />
       )}
 
@@ -850,7 +892,10 @@ function DagStudioCanvas({
       {isExecutionMode && executionId && activeViewTab === 'graph' && (
         <ExecutionRunDrawer
           executionId={executionId}
-          stream={stream}
+          stream={{
+            ...stream,
+            logs: historicalLogs,
+          }}
           snapshot={stream.snapshot}
           currentVariables={variableWatchSnapshot.workflowVariables}
           currentStepIndex={currentScrubberIndex}

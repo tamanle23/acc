@@ -1,7 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
 import type { DagNodeData, ExecutionState } from '../canvas/dag-node';
-import type { WorkflowStreamEvent } from '@/features/workflows/hooks/use-workflow-execution-stream';
+import type {
+  WorkflowStreamEvent,
+  WorkflowStreamLogItem,
+} from '@/features/workflows/hooks/use-workflow-execution-stream';
 
 export interface UseDagExecutionSyncOptions {
   isReadOnly?: boolean;
@@ -11,6 +14,7 @@ export interface UseDagExecutionSyncOptions {
     nodeStates?: Record<string, ExecutionState>;
     snapshot?: any;
     workflowStatus?: string;
+    logs?: WorkflowStreamLogItem[];
   };
   setNodes: React.Dispatch<React.SetStateAction<Node<DagNodeData>[]>>;
   diffTargetVersion: number | null;
@@ -30,6 +34,9 @@ export function useDagExecutionSync({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [isLiveHead, setIsLiveHead] = useState(true);
+
+  // Historical reconstructed state at step tk
+  const [replayedVariables, setReplayedVariables] = useState<Record<string, unknown> | null>(null);
 
   // Seed events from snapshot or logs if timelineEvents is empty
   useEffect(() => {
@@ -142,7 +149,7 @@ export function useDagExecutionSync({
     });
   }, [diffTargetVersion, workflowVersions, setNodes]);
 
-  // Apply node states based on timeline scrubber position
+  // Apply node states and reconstruct variables based on timeline scrubber position
   const applyEventsUpToIndex = useCallback(
     (targetIndex: number) => {
       const activeEvents = timelineEvents.slice(0, targetIndex + 1);
@@ -156,6 +163,10 @@ export function useDagExecutionSync({
           attemptNumber?: number;
         }
       > = {};
+
+      const cumulativeVars: Record<string, unknown> = {
+        ...(stream.snapshot?.variables || stream.snapshot?.input || {}),
+      };
 
       for (const ev of activeEvents) {
         const ref = ev.data?.taskReferenceName;
@@ -175,8 +186,16 @@ export function useDagExecutionSync({
             durationMs: (ev.data.durationMs as number) || undefined,
             attemptNumber: (ev.data.attemptNumber as number) || 1,
           };
+
+          // Accumulate output into historical variables snapshot
+          if (ev.data.output && typeof ev.data.output === 'object') {
+            cumulativeVars[ref] = ev.data.output;
+            Object.assign(cumulativeVars, ev.data.output);
+          }
         }
       }
+
+      setReplayedVariables(cumulativeVars);
 
       setNodes((nds) =>
         nds.map((n) => {
@@ -205,7 +224,7 @@ export function useDagExecutionSync({
         })
       );
     },
-    [timelineEvents, setNodes]
+    [timelineEvents, setNodes, stream.snapshot]
   );
 
   // Playback timer for time-travel scrubber
@@ -229,12 +248,13 @@ export function useDagExecutionSync({
   // Time-travel handler callbacks
   const handleSeek = useCallback(
     (index: number) => {
-      setIsLiveHead(false);
+      const isHead = index >= timelineEvents.length - 1;
+      setIsLiveHead(isHead);
       setIsPlaying(false);
       setCurrentScrubberIndex(index);
       applyEventsUpToIndex(index);
     },
-    [applyEventsUpToIndex]
+    [applyEventsUpToIndex, timelineEvents.length]
   );
 
   const handleStepForward = useCallback(() => {
@@ -252,12 +272,28 @@ export function useDagExecutionSync({
   const handleResumeLive = useCallback(() => {
     setIsLiveHead(true);
     setIsPlaying(false);
+    setReplayedVariables(null);
     if (timelineEvents.length > 0) {
       const lastIdx = timelineEvents.length - 1;
       setCurrentScrubberIndex(lastIdx);
       applyEventsUpToIndex(lastIdx);
     }
   }, [timelineEvents.length, applyEventsUpToIndex]);
+
+  // Replay timestamp at current scrubber position
+  const currentStepTimestamp = useMemo(() => {
+    if (timelineEvents.length === 0) return null;
+    const ev = timelineEvents[currentScrubberIndex];
+    return (ev?.data?.timestamp as number) || null;
+  }, [timelineEvents, currentScrubberIndex]);
+
+  // Filtered telemetry logs according to current historical time window
+  const historicalLogs = useMemo(() => {
+    if (isLiveHead || !currentStepTimestamp || !stream.logs) {
+      return stream.logs || [];
+    }
+    return stream.logs.filter((log) => log.timestamp <= currentStepTimestamp);
+  }, [isLiveHead, currentStepTimestamp, stream.logs]);
 
   return {
     timelineEvents,
@@ -271,5 +307,8 @@ export function useDagExecutionSync({
     handleStepForward,
     handleStepBackward,
     handleResumeLive,
+    replayedVariables,
+    currentStepTimestamp,
+    historicalLogs,
   };
 }
