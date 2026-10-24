@@ -31,8 +31,8 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
       </ReactFlowProvider>
     );
 
-    expect(screen.getByText('Inventory Check')).toBeDefined();
-    expect(screen.getByText('COMPLETED')).toBeDefined();
+    expect(screen.getAllByText('Inventory Check').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('COMPLETED').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Ref:/)).toBeDefined();
     expect(screen.getByText(/checkInventory/)).toBeDefined();
   });
@@ -61,7 +61,7 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
       </ReactFlowProvider>
     );
 
-    expect(screen.getByText('Route Order')).toBeDefined();
+    expect(screen.getAllByText('Route Order').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('RUNNING')).toBeDefined();
   });
 

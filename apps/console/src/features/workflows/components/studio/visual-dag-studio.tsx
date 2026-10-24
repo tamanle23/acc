@@ -42,6 +42,7 @@ import { HotMigrationModal } from '@/features/workflows/components/migration/hot
 
 import { useDagStudioState } from './hooks/use-dag-studio-state';
 import { useDagExecutionSync } from './hooks/use-dag-execution-sync';
+import { useDagFollowLive } from './hooks/use-dag-follow-live';
 import {
   exportToWorkflowIR,
   importFromWorkflowIR,
@@ -321,6 +322,22 @@ function DagStudioCanvas({
     [executionId, updateBreakpointsMutation]
   );
 
+  // Open telemetry inspector for a specific task node (used by hover popover CTA)
+  const handleInspectTask = useCallback(
+    (taskReferenceName: string) => {
+      const node = nodes.find((n) => n.data.taskReferenceName === taskReferenceName);
+      if (node) {
+        setSelectedNodeId(node.id);
+        setIsTelemetryOpen(true);
+      }
+    },
+    [nodes, setSelectedNodeId]
+  );
+
+  // Follow-Live auto-pan (execution mode only)
+  const { followLive, handleMoveStart, handleResumeFollow, handleToggleFollowLive } =
+    useDagFollowLive({ nodes, isExecutionMode });
+
   // Debugger Execution Controls
   const handleDebuggerPause = () => {
     if (executionId) {
@@ -456,12 +473,16 @@ function DagStudioCanvas({
           isEndNode: degOut === 0,
           hasBreakpoint: isExecutionMode ? breakpoints.includes(n.data.taskReferenceName) : false,
           onToggleBreakpoint: isExecutionMode ? handleToggleBreakpoint : undefined,
+          // Wire hover-popover "Inspect I/O & Logs" button to open telemetry drawer
+          onInspectTask: isExecutionMode ? handleInspectTask : undefined,
         },
       };
     });
-  }, [nodes, edges, breakpoints, handleToggleBreakpoint, isExecutionMode]);
+  }, [nodes, edges, breakpoints, handleToggleBreakpoint, handleInspectTask, isExecutionMode]);
 
-  // Decorate edges with styling, routing, traversed emerald pulse, and dead branch dimming
+  // Decorate edges with EdgeExecutionFlowState semantics.
+  // DagConditionEdge reads data.executionFlowState and owns all execution-time styling —
+  // we no longer set raw inline style overrides here (prevents double-styling conflicts).
   const decoratedEdges = useMemo(() => {
     if (!isExecutionMode) {
       return edges.map((e) => {
@@ -484,57 +505,50 @@ function DagStudioCanvas({
 
     return edges.map((e) => {
       const baseEdgeData = (e.data as object) || {};
-      const withHandler = {
-        ...baseEdgeData,
-        routingMode: edgeRoutingMode,
-        onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
-        onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
-      };
 
       const sourceNode = nodeMap.get(e.source);
       const targetNode = nodeMap.get(e.target);
       const sourceState = sourceNode?.data?.executionState;
       const targetState = targetNode?.data?.executionState;
 
+      // Determine the semantic flow state for this edge
       const isSourceCompleted = sourceState === 'COMPLETED';
-      const isTargetActiveOrDone =
-        targetState === 'COMPLETED' ||
-        targetState === 'IN_PROGRESS' ||
-        targetState === 'PAUSED_AT_BREAKPOINT';
+      const isSourceFailed =
+        sourceState === 'FAILED' || sourceState === 'TIMED_OUT';
+      const isTargetActive = targetState === 'IN_PROGRESS' || targetState === 'PAUSED_AT_BREAKPOINT';
+      const isTargetDone = targetState === 'COMPLETED';
+      const isTargetPending = targetState === 'PENDING' || targetState === 'SCHEDULED';
+      const isTargetSkipped = targetState === 'SKIPPED';
 
-      const isTraversed = isSourceCompleted && isTargetActiveOrDone;
-      const isBypassedBranch =
-        isSourceCompleted && targetState === 'PENDING' && !isTargetActiveOrDone;
+      let executionFlowState: 'IDLE' | 'ACTIVE_FLOW' | 'COMPLETED_PATH' | 'BYPASSED_PATH' | 'FAILED_PATH' = 'IDLE';
 
-      let edgeStyle: React.CSSProperties = { ...e.style };
-      let className = e.className || '';
-
-      if (isTraversed) {
-        edgeStyle = {
-          ...edgeStyle,
-          stroke: '#10b981',
-          strokeWidth: 3,
-          filter: 'drop-shadow(0 0 6px rgba(16, 185, 129, 0.6))',
-        };
-        className = cn(className, 'stroke-emerald-500 animate-pulse');
-      } else if (isBypassedBranch) {
-        edgeStyle = {
-          ...edgeStyle,
-          stroke: '#94a3b8',
-          strokeWidth: 1.5,
-          strokeDasharray: '4 4',
-          opacity: 0.35,
-        };
-        className = cn(className, 'opacity-35');
+      if (isSourceFailed) {
+        executionFlowState = 'FAILED_PATH';
+      } else if (isSourceCompleted && isTargetActive) {
+        // Edge currently being traversed — glowing particle stream
+        executionFlowState = 'ACTIVE_FLOW';
+      } else if (isSourceCompleted && isTargetDone) {
+        // Fully completed path
+        executionFlowState = 'COMPLETED_PATH';
+      } else if (isSourceCompleted && (isTargetPending || isTargetSkipped)) {
+        // Source completed but target was not visited — bypassed branch
+        executionFlowState = 'BYPASSED_PATH';
       }
 
       return {
         ...e,
         type: 'dagEdge',
-        data: withHandler,
-        animated: isTraversed ? true : e.animated,
-        style: edgeStyle,
-        className,
+        // Let DagConditionEdge own all visual styling — no inline style overrides
+        style: e.style,
+        className: e.className,
+        animated: false,
+        data: {
+          ...baseEdgeData,
+          routingMode: edgeRoutingMode,
+          onEditEdge: isReadOnly ? undefined : handleOpenEdgeEditor,
+          onSplitEdge: isReadOnly ? undefined : handleRequestSplitEdge,
+          executionFlowState,
+        },
       };
     });
   }, [edges, nodes, isExecutionMode, isReadOnly, edgeRoutingMode, handleOpenEdgeEditor, handleRequestSplitEdge]);
@@ -626,6 +640,8 @@ function DagStudioCanvas({
         }}
         isSaving={saveWorkflowMutation.isPending}
         onCloseExecution={onCloseExecution}
+        followLive={followLive}
+        onToggleFollowLive={handleToggleFollowLive}
       />
 
       {/* 2. Floating Debugger Sub-Pill */}
@@ -724,6 +740,7 @@ function DagStudioCanvas({
           snapToGrid={isSnapToGrid}
           snapGrid={[16, 16]}
           fitView
+          onMoveStart={isExecutionMode ? handleMoveStart : undefined}
         >
           <Background gap={16} size={1} />
           <Controls className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl !shadow-lg" />
@@ -739,6 +756,20 @@ function DagStudioCanvas({
               return '#94a3b8';
             }}
           />
+          {/* Resume Follow pill — appears when user has disabled follow-live in execution mode */}
+          {isExecutionMode && !followLive && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+              <button
+                type="button"
+                onClick={handleResumeFollow}
+                aria-label="Resume camera follow for active tasks"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-2xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/15 shadow-xl shadow-black/10 hover:bg-white/95 dark:hover:bg-slate-800/95 transition-all duration-150 text-foreground"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Resume Follow
+              </button>
+            </div>
+          )}
         </ReactFlow>
       )}
 

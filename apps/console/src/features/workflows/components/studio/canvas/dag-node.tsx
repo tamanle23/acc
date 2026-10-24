@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { cn } from '@/lib/utils';
 import {
@@ -26,6 +26,9 @@ import {
   PlaySquare,
   MinusCircle,
   Sparkles,
+  Terminal,
+  Server,
+  Timer,
 } from 'lucide-react';
 
 export type DagNodeType =
@@ -175,6 +178,7 @@ export interface DagNodeData {
   diffStatus?: 'added' | 'removed' | 'modified';
   hasBreakpoint?: boolean;
   onToggleBreakpoint?: (taskReferenceName: string) => void;
+  onInspectTask?: (taskReferenceName: string) => void;
   // Topology Boundary & Permanence Invariants (Iteration 15)
   isPermanent?: boolean;
   isStartNode?: boolean;
@@ -187,6 +191,41 @@ export type ConductorNodeType = DagNodeType;
 export type ConductorNodeData = DagNodeData;
 
 export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
+  const isRunning = data.executionState === 'IN_PROGRESS';
+  const startTimeRef = useRef<number | null>(null);
+  const [liveElapsedMs, setLiveElapsedMs] = useState<number>(data.durationMs ?? 0);
+
+  useEffect(() => {
+    if (isRunning) {
+      const baseStart = data.startedAt || startTimeRef.current || Date.now();
+      startTimeRef.current = baseStart;
+      setLiveElapsedMs(Math.max(0, Date.now() - baseStart));
+
+      const interval = setInterval(() => {
+        setLiveElapsedMs(Math.max(0, Date.now() - baseStart));
+      }, 100);
+
+      return () => clearInterval(interval);
+    } else {
+      startTimeRef.current = null;
+      if (data.durationMs !== undefined) {
+        setLiveElapsedMs(data.durationMs);
+      }
+    }
+  }, [isRunning, data.startedAt, data.durationMs]);
+
+  const hasTelemetryOverlay =
+    !data.isStartNode &&
+    !data.isEndNode &&
+    Boolean(
+      data.executionState &&
+        data.executionState !== 'PENDING' &&
+        data.executionState !== 'SCHEDULED'
+    );
+
+  const displayedDurationMs =
+    data.durationMs !== undefined ? data.durationMs : isRunning ? liveElapsedMs : undefined;
+
   const getNodeIcon = () => {
     if (data.isStartNode) {
       return <PlaySquare className="w-4 h-4 text-emerald-500" />;
@@ -260,7 +299,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         );
       case 'IN_PROGRESS':
         return (
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-full border border-sky-500/20 animate-pulse">
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 rounded-full border border-emerald-500/30 animate-pulse">
             <Loader2 className="w-3 h-3 animate-spin" />
             RUNNING
           </span>
@@ -284,6 +323,13 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
           <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
             <UserCheck className="w-3 h-3" />
             APPROVAL
+          </span>
+        );
+      case 'SKIPPED':
+        return (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-500 bg-slate-500/10 px-1.5 py-0.5 rounded-full border border-slate-500/20">
+            <MinusCircle className="w-3 h-3" />
+            SKIPPED
           </span>
         );
       default:
@@ -317,10 +363,11 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'shadow-[inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]',
         'bg-white/75 dark:bg-slate-900/75 border-white/40 dark:border-white/10',
         data.executionState === 'COMPLETED' && 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.35)]',
-        data.executionState === 'IN_PROGRESS' && 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.45)] animate-pulse',
+        data.executionState === 'IN_PROGRESS' && 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/50 shadow-[0_0_24px_rgba(16,185,129,0.55)] animate-pulse',
         data.executionState === 'PAUSED_AT_BREAKPOINT' && 'border-amber-500 bg-amber-500/20 ring-2 ring-amber-500/70 shadow-[0_0_28px_rgba(245,158,11,0.65)] animate-pulse',
         data.executionState === 'WAITING_FOR_APPROVAL' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_25px_rgba(245,158,11,0.55)] animate-pulse',
         data.executionState === 'FAILED' && 'border-rose-500 bg-rose-500/10 shadow-[0_0_20px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/50',
+        data.executionState === 'SKIPPED' && 'opacity-45 border-dashed border-slate-400/50',
         data.diffStatus === 'added' && 'border-emerald-500 bg-emerald-500/15 ring-2 ring-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.4)]',
         data.diffStatus === 'removed' && 'border-rose-500 bg-rose-500/15 ring-2 ring-rose-500/50 opacity-70 line-through',
         data.diffStatus === 'modified' && 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.4)]',
@@ -329,6 +376,78 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
         'cursor-grab active:cursor-grabbing'
       )}
     >
+      {/* Liquid Glass Execution Telemetry Hover Popover Card */}
+      {hasTelemetryOverlay && (
+        <div
+          data-testid={`dag-node-hover-card-${data.taskReferenceName}`}
+          className={cn(
+            'nodrag nopan absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 z-30 w-56 p-2.5 rounded-xl',
+            'backdrop-blur-2xl bg-white/90 dark:bg-slate-900/90 border border-white/40 dark:border-white/15',
+            'shadow-2xl shadow-black/20 dark:shadow-black/50',
+            'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto',
+            'transition-all duration-150 translate-y-1 group-hover:translate-y-0'
+          )}
+        >
+          <div className="flex items-center justify-between gap-1.5 pb-1.5 mb-1.5 border-b border-border/50">
+            <span className="text-[10px] font-bold text-foreground truncate">
+              {data.label || data.taskReferenceName}
+            </span>
+            <span
+              className={cn(
+                'text-[9px] font-mono font-bold px-1.5 py-0.2 rounded uppercase',
+                data.executionState === 'COMPLETED' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+                data.executionState === 'IN_PROGRESS' && 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300',
+                data.executionState === 'FAILED' && 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+                data.executionState !== 'COMPLETED' &&
+                  data.executionState !== 'IN_PROGRESS' &&
+                  data.executionState !== 'FAILED' &&
+                  'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+              )}
+            >
+              {data.executionState}
+            </span>
+          </div>
+
+          <div className="space-y-1 text-[10px] text-muted-foreground font-mono">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Server className="w-2.5 h-2.5 text-primary" /> Worker:
+              </span>
+              <span className="text-foreground font-medium truncate max-w-[110px]">
+                {data.workerId || 'virtual-thread-pool'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <Timer className="w-2.5 h-2.5 text-emerald-500" /> Elapsed:
+              </span>
+              <span className="text-foreground font-medium">
+                {displayedDurationMs !== undefined ? `${displayedDurationMs}ms` : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Attempt:</span>
+              <span className="text-foreground font-medium">#{data.attemptNumber ?? 1}</span>
+            </div>
+          </div>
+
+          {data.onInspectTask && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                data.onInspectTask?.(data.taskReferenceName);
+              }}
+              data-testid={`dag-node-inspect-btn-${data.taskReferenceName}`}
+              className="mt-2 w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg text-[10px] font-semibold bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors cursor-pointer"
+            >
+              <Terminal className="w-3 h-3" />
+              <span>Inspect I/O & Logs</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Breakpoint Gutter Dot (Top-Left, only in execution inspection mode) */}
       {(data.onToggleBreakpoint || data.hasBreakpoint) && (
         <button
@@ -420,12 +539,19 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
             Ref: <span className="font-mono text-[10px] text-foreground/80">{data.taskReferenceName}</span>
           </div>
 
-          {data.durationMs !== undefined && (
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-              Duration: {data.durationMs}ms {data.attemptNumber ? `· Attempt ${data.attemptNumber}` : ''}
+          {displayedDurationMs !== undefined && (
+            <div
+              className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1"
+              data-testid={`dag-node-duration-${data.taskReferenceName}`}
+            >
+              <Timer className="w-2.5 h-2.5 shrink-0" />
+              <span>
+                {isRunning ? `Elapsed: ${displayedDurationMs}ms` : `Duration: ${displayedDurationMs}ms`}
+                {data.attemptNumber ? ` · Attempt ${data.attemptNumber}` : ''}
+              </span>
             </div>
           )}
-          {data.timeoutSeconds && data.durationMs === undefined && (
+          {data.timeoutSeconds && displayedDurationMs === undefined && (
             <div className="text-[10px] text-muted-foreground/70">
               Timeout: {data.timeoutSeconds}s {data.retryCount ? `· Retries: ${data.retryCount}` : ''}
             </div>

@@ -25,8 +25,8 @@ export const WorkflowExecutionStreamModal: React.FC<WorkflowExecutionStreamModal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] p-0 overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-white/20 dark:border-white/10 shadow-2xl flex flex-col">
-        <DialogHeader className="p-4 border-b border-white/20 dark:border-white/10 flex flex-row items-center justify-between space-y-0 shrink-0">
+      <DialogContent className="sm:max-w-xl lg:max-w-3xl xl:max-w-[90%] w-[94vw] p-0 liquid-glass-card flex flex-col">
+        <DialogHeader className="p-4 flex flex-row items-center space-y-0 shrink-0">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary animate-pulse" />
             <DialogTitle className="text-base font-bold">
@@ -47,14 +47,12 @@ export const WorkflowExecutionStreamModal: React.FC<WorkflowExecutionStreamModal
           </Badge>
         </DialogHeader>
 
-        <div className="flex-1 w-full min-h-0 overflow-hidden relative">
-          <VisualDagStudio
-            mode="execution"
-            workflowKey={workflowExecution.workflowId || 'order-pipeline'}
-            executionId={workflowExecution.id}
-            onCloseExecution={() => onOpenChange(false)}
-          />
-        </div>
+        <VisualDagStudio
+          mode="execution"
+          workflowKey={workflowExecution.workflowId || 'order-pipeline'}
+          executionId={workflowExecution.id}
+          onCloseExecution={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

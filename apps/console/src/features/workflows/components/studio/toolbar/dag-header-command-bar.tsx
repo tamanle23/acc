@@ -24,6 +24,8 @@ import {
   Maximize2,
   Minimize2,
   Save,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -74,6 +76,8 @@ export interface DagHeaderCommandBarProps {
   onSave: () => void;
   isSaving: boolean;
   onCloseExecution?: () => void;
+  followLive?: boolean;
+  onToggleFollowLive?: () => void;
 }
 
 export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
@@ -116,6 +120,8 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onSave,
   isSaving,
   onCloseExecution,
+  followLive,
+  onToggleFollowLive,
 }) => {
   return (
     <div
@@ -373,6 +379,27 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               Timeline
             </Button>
           </div>
+
+          {/* Follow-Live toggle button (execution mode only) */}
+          {isExecutionMode && onToggleFollowLive && (
+            <Button
+              size="sm"
+              variant={followLive ? 'default' : 'outline'}
+              className={cn(
+                'h-6 px-2 text-[10px] gap-1 transition-all',
+                followLive
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-500'
+                  : 'text-muted-foreground'
+              )}
+              onClick={onToggleFollowLive}
+              title={`Camera Follow-Live: ${followLive ? 'ON (Smooth auto-pan to active tasks)' : 'OFF'}`}
+              aria-label={`Follow live camera: ${followLive ? 'ON' : 'OFF'}`}
+              data-testid="dag-follow-live-btn"
+            >
+              {followLive ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+              <span className="hidden xs:inline">Follow</span>
+            </Button>
+          )}
         </div>
       )}
 
