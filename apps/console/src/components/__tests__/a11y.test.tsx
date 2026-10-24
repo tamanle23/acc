@@ -30,6 +30,7 @@ import { SearchProvider } from '@/context/search-provider';
 import { ThemeSwitch } from '../theme-switch';
 import { LanguageSwitch } from '../language-switch';
 import { ThemeProvider } from '@/context/theme-provider';
+import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -161,5 +162,20 @@ describe('Component Accessibility Test Suite (axe-core)', () => {
 
     const trigger = getByRole('button', { name: /Select language \(current: English\)/i });
     expect(trigger).toBeDefined();
+  });
+
+  it('SidebarTrigger component should have zero a11y violations and dynamic state-aware ARIA attributes', async () => {
+    const { container, getByRole } = render(
+      <SidebarProvider defaultOpen={true}>
+        <SidebarTrigger />
+      </SidebarProvider>
+    );
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+
+    const trigger = getByRole('button', { name: 'Collapse sidebar' });
+    expect(trigger).toBeDefined();
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
   });
 });
