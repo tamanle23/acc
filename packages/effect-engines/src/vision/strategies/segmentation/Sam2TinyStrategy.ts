@@ -1,5 +1,5 @@
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
-import { configureHfEnv, createCutoutRgba } from '../../utils';
+import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
 
 export class Sam2TinyStrategy implements ISegmentationStrategy {
   public readonly name = 'sam2-tiny';
@@ -18,7 +18,9 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const { AutoModel, AutoProcessor, RawImage, env } = await import('@huggingface/transformers');
+        const tf = await loadUniversalTransformers();
+        if (!tf) throw new Error('[Sam2TinyStrategy] Transformers unavailable.');
+        const { AutoModel, AutoProcessor, RawImage, env } = tf;
         configureHfEnv(env);
         this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
@@ -38,7 +40,8 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
   public async segment(imageBuffer: Buffer, options?: SegmentationOptions): Promise<SegmentationResult> {
     await this.init();
 
-    const RawImage = this.rawImageClass || (await import('@huggingface/transformers')).RawImage;
+    const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
+    if (!RawImage) throw new Error('[Sam2TinyStrategy] RawImage unavailable.');
     const rawImage = await RawImage.fromBlob(new Blob([imageBuffer]));
     const width = rawImage.width;
     const height = rawImage.height;

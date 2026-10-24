@@ -8,3 +8,4 @@ export * from './assets/IAssetBlob';
 export * from './assets/AssetProtocolRegistry';
 export * from './logger';
 export * from './cache';
+export * from './vision';

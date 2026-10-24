@@ -15,6 +15,7 @@ export interface SceneTaskPayload {
   paddingTime: number;
   hasAnyTransition: boolean;
   is3D: boolean;
+  engine?: string;
 }
 
 export interface SceneTaskResult {
@@ -34,10 +35,18 @@ if (!isMainThread) {
       const { UniversalCanvasProvider, MediaEngineRegistry } = await import('@acc/core-isomorphic');
       const { NapiCanvasAdapter } = await import('./native/canvas/NapiCanvasAdapter');
       const { BunFFIEngineStrategy } = await import('./media-engine/strategies/BunFFIEngineStrategy');
+      const { FluentFFmpegEngineStrategy } = await import('./media-engine/strategies/FluentFFmpegEngineStrategy');
+      const { MediabunnyServerStrategy } = await import('./media-engine/strategies/MediabunnyServerStrategy');
 
       UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
       if (!MediaEngineRegistry.has('bun-ffi')) {
         MediaEngineRegistry.register(new BunFFIEngineStrategy());
+      }
+      if (!MediaEngineRegistry.has('fluent-ffmpeg')) {
+        MediaEngineRegistry.register(new FluentFFmpegEngineStrategy());
+      }
+      if (!MediaEngineRegistry.has('mediabunny')) {
+        MediaEngineRegistry.register(new MediabunnyServerStrategy());
       }
 
       const { renderDepth3DScene } = await import('@acc/effect-engines');
@@ -48,7 +57,7 @@ if (!isMainThread) {
           process.exit(0);
         }
         if (task.type === 'RENDER') {
-          const { scene, duration, assPath, config, outputPath, fallbackImagePath, fallbackAudioPath, paddingTime, hasAnyTransition, is3D } = task.data;
+          const { scene, duration, assPath, config, outputPath, fallbackImagePath, fallbackAudioPath, paddingTime, hasAnyTransition, is3D, engine } = task.data;
           try {
             let result: SceneTaskResult;
             if (is3D) {
@@ -61,7 +70,8 @@ if (!isMainThread) {
                   outputPath,
                   fallbackAudioPath,
                   paddingTime,
-                  useHighQualityIntermediate: hasAnyTransition
+                  useHighQualityIntermediate: hasAnyTransition,
+                  engine,
                 });
               } catch (depthErr: any) {
                 result = await FFISceneEngine.renderScene({

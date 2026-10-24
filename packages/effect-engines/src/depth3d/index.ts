@@ -48,6 +48,7 @@ export interface Depth3DSceneOptions {
   paddingTime?: number;
   useHighQualityIntermediate?: boolean;
   sink?: IMediaFrameSink;
+  engine?: string;
 }
 
 async function getStoryRootAndCacheDir(
@@ -286,9 +287,27 @@ export async function renderDepth3DScene(
 
   let sink: IMediaFrameSink = options.sink!;
   if (!sink) {
-    const strategy = MediaEngineRegistry.has('bun-ffi')
-      ? MediaEngineRegistry.get('bun-ffi')
-      : MediaEngineRegistry.get();
+    const rawEngine =
+      options.engine ||
+      depthConfig.engine ||
+      (config.settings as any)?.mediaEngine ||
+      (config.settings as any)?.engine;
+
+    let strategy;
+    if (rawEngine && MediaEngineRegistry.has(rawEngine)) {
+      strategy = MediaEngineRegistry.get(rawEngine);
+    } else {
+      // Auto-detect platform default strategy:
+      // In web/browser, defaults to registered default (e.g. mediabunny-client)
+      // In node/bun, defaults to bun-ffi if present, else default strategy
+      const isWeb = typeof window !== 'undefined' || typeof document !== 'undefined';
+      if (!isWeb && MediaEngineRegistry.has('bun-ffi')) {
+        strategy = MediaEngineRegistry.get('bun-ffi');
+      } else {
+        strategy = MediaEngineRegistry.get();
+      }
+    }
+
     sink = strategy.createVideoSink({
       width,
       height,

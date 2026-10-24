@@ -1,5 +1,6 @@
 import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
 import type { BoundingBox } from './types';
+import { UniversalOnnxRuntimeProvider } from './UniversalOnnxRuntimeProvider';
 
 // Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule when in Node/Bun environment
 function getGlobalHfCache(): string | undefined {
@@ -26,6 +27,19 @@ export function configureHfEnv(transformersEnv?: any) {
     transformersEnv.cacheDir = globalHfCache;
     transformersEnv.allowLocalModels = true;
   }
+}
+
+/**
+ * Universally imports the optimal HuggingFace Transformers module for the host environment.
+ * If native onnxruntime-node is missing or fails on host architecture (e.g. darwin/x64),
+ * automatically yields the WebAssembly/WebGPU build.
+ */
+export async function loadUniversalTransformers(): Promise<any> {
+  const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+  if (tf?.env) {
+    configureHfEnv(tf.env);
+  }
+  return tf;
 }
 
 /**

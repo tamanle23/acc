@@ -1,5 +1,12 @@
 import path from 'path';
-import { fileExists, FFmpegManager, NapiCanvasAdapter, BunFFIEngineStrategy } from '@acc/core';
+import {
+  fileExists,
+  FFmpegManager,
+  NapiCanvasAdapter,
+  BunFFIEngineStrategy,
+  FluentFFmpegEngineStrategy,
+  MediabunnyServerStrategy,
+} from '@acc/core';
 import { UniversalCanvasProvider, MediaEngineRegistry } from '@acc/core-isomorphic';
 import type { StoryConfig, ResolvedStoryConfig, ResolvedSceneConfig } from '@acc/core/types';
 import { LegacyDiskStoryRenderer } from './LegacyDiskStoryRenderer';
@@ -9,6 +16,7 @@ export interface LegacyRenderCliArgs {
   outputPath?: string;
   baseDir?: string;
   concurrency?: number | 'auto';
+  engine?: string;
 }
 
 /**
@@ -17,7 +25,8 @@ export interface LegacyRenderCliArgs {
 async function resolveStoryFolderDirect(
   storyDir: string,
   outPath?: string,
-  cliConcurrency?: number | 'auto'
+  cliConcurrency?: number | 'auto',
+  cliEngine?: string
 ): Promise<{
   resolvedConfig: ResolvedStoryConfig;
   outputFilePath: string;
@@ -67,6 +76,8 @@ async function resolveStoryFolderDirect(
     ? cliConcurrency
     : (rawSettings.concurrency !== undefined ? rawSettings.concurrency : 'auto');
 
+  const engineSetting = cliEngine || rawSettings.mediaEngine || rawSettings.engine || 'bun-ffi';
+
   const resolvedSettings = {
     width: rawSettings.width || 1080,
     height: rawSettings.height || 1920,
@@ -81,6 +92,8 @@ async function resolveStoryFolderDirect(
     gpuAcceleration: rawSettings.gpuAcceleration || 'auto',
     platform: rawSettings.platform || 'tiktok',
     concurrency: concurrencySetting,
+    mediaEngine: engineSetting,
+    engine: engineSetting,
     fastIntermediate: rawSettings.fastIntermediate ?? true,
     captions: rawSettings.captions,
     transition: rawSettings.transition,
@@ -118,6 +131,7 @@ Usage:
 Options:
   -o, --output <path>         Custom output MP4 path
   -c, --concurrency <number>  Number of parallel workers (or 'auto')
+  -e, --engine <name>         MediaEngine (bun-ffi, mediabunny, fluent-ffmpeg)
   -h, --help                  Show this help message
 
 Description:
@@ -130,6 +144,7 @@ Description:
   const inputDir = args[0];
   let customOut: string | undefined;
   let cliConcurrency: number | 'auto' | undefined;
+  let cliEngine: string | undefined;
 
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '-o' || args[i] === '--output') {
@@ -142,17 +157,32 @@ Description:
         const parsed = parseInt(val, 10);
         cliConcurrency = isNaN(parsed) ? 'auto' : parsed;
       }
+    } else if (args[i] === '-e' || args[i] === '--engine') {
+      cliEngine = args[++i];
     }
   }
 
   console.log(`\x1b[33m[Legacy Story Renderer]\x1b[0m Executing quarantined disk rendering for: ${inputDir}`);
   await FFmpegManager.prepare();
   UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
+
+  // Register all available strategies
   if (!MediaEngineRegistry.has('bun-ffi')) {
     MediaEngineRegistry.register(new BunFFIEngineStrategy());
   }
+  if (!MediaEngineRegistry.has('fluent-ffmpeg')) {
+    MediaEngineRegistry.register(new FluentFFmpegEngineStrategy());
+  }
+  if (!MediaEngineRegistry.has('mediabunny')) {
+    MediaEngineRegistry.register(new MediabunnyServerStrategy());
+  }
 
-  const { resolvedConfig, outputFilePath, absoluteDir } = await resolveStoryFolderDirect(inputDir, customOut, cliConcurrency);
+  const { resolvedConfig, outputFilePath, absoluteDir } = await resolveStoryFolderDirect(
+    inputDir,
+    customOut,
+    cliConcurrency,
+    cliEngine
+  );
   const outDir = path.dirname(outputFilePath);
   const fsModule = await import('fs');
   if (!fsModule.existsSync(outDir)) {

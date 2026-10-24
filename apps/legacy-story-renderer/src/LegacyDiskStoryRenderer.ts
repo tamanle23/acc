@@ -355,6 +355,11 @@ export class LegacyDiskStoryRenderer {
             }
 
             let result;
+            const configuredEngine =
+              (config.settings as any)?.mediaEngine ||
+              (config.settings as any)?.engine ||
+              'bun-ffi';
+
             if (workerPool) {
               result = await workerPool.runTask({
                 sceneIndex: i,
@@ -368,6 +373,7 @@ export class LegacyDiskStoryRenderer {
                 paddingTime,
                 hasAnyTransition,
                 is3D: !!is3D,
+                engine: configuredEngine,
               });
             } else if (is3D) {
               try {
@@ -380,6 +386,7 @@ export class LegacyDiskStoryRenderer {
                   fallbackAudioPath,
                   paddingTime,
                   useHighQualityIntermediate: hasAnyTransition,
+                  engine: configuredEngine,
                 });
               } catch (depthErr: any) {
                 Logger.warn(

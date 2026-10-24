@@ -1,5 +1,6 @@
 export * from './types';
 export * from './utils';
+export * from './UniversalOnnxRuntimeProvider';
 export * from './SubjectSegmentationContext';
 export * from './DepthEstimationContext';
 export * from './AutoReframeStrategy';
