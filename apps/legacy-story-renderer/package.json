@@ -1,0 +1,17 @@
+{
+  "name": "@acc/legacy-story-renderer",
+  "version": "1.0.0",
+  "description": "Quarantined legacy disk-based multi-pass story-config rendering pipeline",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/core-isomorphic": "workspace:*",
+    "@acc/ir": "workspace:*",
+    "@acc/effect-engines": "workspace:*"
+  }
+}

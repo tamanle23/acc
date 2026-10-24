@@ -336,6 +336,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`328`](328_eliminate_core_logger_and_use_universal_logger.md) | 2026-10-24 | Eliminate packages/core/src/logger.ts and Standardize on UniversalLogger | Deleted redundant packages/core/src/logger.ts, migrated 29 core modules to import UniversalLogger from @acc/core-isomorphic, and re-exported from @acc/core |
 | [`329`](329_phase7_monorepo_qa_and_verification.md) | 2026-10-24 | Monorepo Final QA, Verification & Build Hardening (Iteration 30 Phase 7) | Modernized tsconfig paths, disambiguated SoundRegistryManager in core, verified clean turbo build across all 11 packages, validated 0 native leaks, and ran full test suites green |
 | [`330`](330_isolate_legacy_story_config_pipeline.md) | 2026-10-24 | Isolate Legacy Story-Config Rendering Pipeline | Quarantined legacy disk-based multi-pass story renderer into legacy/ submodule, refactored VideoEditPipelineOrchestrator into a lightweight facade, added formal deprecations in @acc/ir |
+| [`331`](331_scaffold_legacy_story_renderer_package.md) | 2026-10-24 | Scaffold @acc/legacy-story-renderer and Purge Legacy Pipeline from CLI | Extracted quarantined legacy pipeline into dedicated workspace app package apps/legacy-story-renderer, purified apps/cli, and validated clean monorepo build |
 
 
 

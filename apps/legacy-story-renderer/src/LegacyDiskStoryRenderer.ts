@@ -19,8 +19,7 @@ import {
   getSceneDuration,
   renderDepth3DScene,
 } from '@acc/effect-engines';
-import { buildFfmpegEncodingFlags } from '../platforms';
-import { UpscalerPlugin } from '../plugins/UpscalerPlugin';
+import { buildFfmpegEncodingFlags } from './encodingFlags';
 
 const ffmpeg = FFmpegExecutor;
 
@@ -167,7 +166,7 @@ async function runConcurrentPool<T, R>(
  * Quarantined legacy disk-based multi-pass story renderer.
  * Spawns intermediate MP4 chunks, disk ASS subtitle files, and runs ad-hoc FFmpeg filtergraph stitches.
  *
- * @deprecated All new workloads should use Universal Video IR with IRMasterRenderer or IRChunkWorkerPool.
+ * @deprecated All modern pipelines should use Universal Video IR with IRMasterRenderer or IRChunkWorkerPool.
  */
 export class LegacyDiskStoryRenderer {
   public static async render(
@@ -209,15 +208,6 @@ export class LegacyDiskStoryRenderer {
       cacheDir: path.join(baseDir, '.cache'),
       tempDir,
     };
-
-    const plugins = [new UpscalerPlugin()];
-    for (const plugin of plugins) {
-      try {
-        await plugin.execute(renderContext);
-      } catch (e: any) {
-        Logger.error('LegacyDiskStoryRenderer', `Plugin ${plugin.name} fatally crashed: ${e.message}`);
-      }
-    }
 
     const fallbackImagePath = path.join(tempDir, '_fallback_black.png');
     fs.writeFileSync(fallbackImagePath, Buffer.from(BLACK_PNG_BASE64, 'base64'));

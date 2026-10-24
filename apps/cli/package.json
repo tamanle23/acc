@@ -16,6 +16,7 @@
     "@acc/core": "workspace:*",
     "@acc/core-isomorphic": "workspace:*",
     "@acc/ir": "workspace:*",
-    "@acc/effect-engines": "workspace:*"
+    "@acc/effect-engines": "workspace:*",
+    "@acc/legacy-story-renderer": "workspace:*"
   }
 }

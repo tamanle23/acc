@@ -6,7 +6,6 @@ export * from './whisper';
 export * from './upscaler';
 export * from './plugins/UpscalerPlugin';
 export * from './VideoEditPipelineOrchestrator';
-export * from './legacy';
 export * from './stages/StoryFolderResolutionStage';
 export * from './stages/StoryOrchestratedRenderStage';
 export * from './stages/StoryMetadataPersistenceStage';

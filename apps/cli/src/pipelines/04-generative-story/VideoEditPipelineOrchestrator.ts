@@ -6,7 +6,7 @@ import {
   LegacyDiskStoryRenderer,
   LegacyIRPreparationAdapter,
   type PipelineExecutionOptions,
-} from './legacy';
+} from '@acc/legacy-story-renderer';
 
 export type { PipelineExecutionOptions };
 

@@ -68,6 +68,12 @@
       ],
       "@acc/cli/*": [
         "./apps/cli/src/*"
+      ],
+      "@acc/legacy-story-renderer": [
+        "./apps/legacy-story-renderer/src/index.ts"
+      ],
+      "@acc/legacy-story-renderer/*": [
+        "./apps/legacy-story-renderer/src/*"
       ]
     }
   }
