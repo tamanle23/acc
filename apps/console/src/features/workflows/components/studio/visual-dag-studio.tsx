@@ -578,7 +578,7 @@ function DagStudioCanvas({
       ref={reactFlowWrapper}
       className={cn(
         'relative w-full rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl backdrop-blur-xl bg-card/60 transition-all duration-300',
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none w-screen h-screen border-none' : 'h-[650px]',
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none' : 'h-[650px]',
         className
       )}
       onDragOver={onDragOver}
