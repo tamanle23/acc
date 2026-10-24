@@ -127,8 +127,12 @@ export class DlqSandboxRepository {
   }
 
   public getById(id: string, tenantId?: string): TaskDlqRecordDto | undefined {
-    for (const [tid, list] of this.tenantDlq.entries()) {
-      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+    if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL') {
+      const list = this.tenantDlq.get(tenantId);
+      const existing = list?.find((r) => r.dlqId === id);
+      if (existing) return existing;
+    }
+    for (const list of this.tenantDlq.values()) {
       const existing = list.find((r) => r.dlqId === id);
       if (existing) return existing;
     }
@@ -136,8 +140,22 @@ export class DlqSandboxRepository {
   }
 
   public replay(id: string, payloadOverrides?: Record<string, unknown>, tenantId?: string): TaskDlqRecordDto | null {
-    for (const [tid, list] of this.tenantDlq.entries()) {
-      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+    // 1. Try scoped tenant first
+    if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL') {
+      const list = this.tenantDlq.get(tenantId);
+      const existing = list?.find((r) => r.dlqId === id);
+      if (existing) {
+        existing.status = 'REPLAYED';
+        existing.replayedAtMs = Date.now();
+        if (payloadOverrides) {
+          existing.payloadSnapshot = { ...existing.payloadSnapshot, ...payloadOverrides };
+        }
+        return { ...existing };
+      }
+    }
+
+    // 2. Global fallback across all tenant partitions
+    for (const list of this.tenantDlq.values()) {
       const existing = list.find((r) => r.dlqId === id);
       if (existing) {
         existing.status = 'REPLAYED';
@@ -152,8 +170,16 @@ export class DlqSandboxRepository {
   }
 
   public discard(id: string, tenantId?: string): boolean {
-    for (const [tid, list] of this.tenantDlq.entries()) {
-      if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL' && tenantId !== tid) continue;
+    if (tenantId && tenantId !== 'SYSTEM' && tenantId !== 'ALL') {
+      const list = this.tenantDlq.get(tenantId);
+      const existing = list?.find((r) => r.dlqId === id);
+      if (existing) {
+        existing.status = 'DISCARDED';
+        return true;
+      }
+    }
+
+    for (const list of this.tenantDlq.values()) {
       const existing = list.find((r) => r.dlqId === id);
       if (existing) {
         existing.status = 'DISCARDED';

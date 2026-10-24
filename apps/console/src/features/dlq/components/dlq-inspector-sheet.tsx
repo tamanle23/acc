@@ -16,10 +16,11 @@ import {
   Trash2,
   Copy,
   Check,
+  Loader2,
 } from 'lucide-react';
 import type { TaskDlqRecordDto } from '@unipost/client';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
-import { VisualJsonEditor } from '@/components/ui/json-editor/visual-json-editor';
+import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 interface DlqInspectorSheetProps {
   record: TaskDlqRecordDto | null;
@@ -27,6 +28,7 @@ interface DlqInspectorSheetProps {
   onOpenChange: (open: boolean) => void;
   onReplay: (record: TaskDlqRecordDto, payloadOverrides?: Record<string, unknown>) => void;
   onDiscard: (record: TaskDlqRecordDto) => void;
+  isReplaying?: boolean;
 }
 
 export function DlqInspectorSheet({
@@ -35,6 +37,7 @@ export function DlqInspectorSheet({
   onOpenChange,
   onReplay,
   onDiscard,
+  isReplaying = false,
 }: DlqInspectorSheetProps) {
   const [copied, setCopied] = useState(false);
   const [overridePayload, setOverridePayload] = useState<Record<string, unknown>>({});
@@ -216,11 +219,16 @@ export function DlqInspectorSheet({
             {record.status === 'ISOLATED' && (
               <Button
                 size="sm"
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm"
+                disabled={isReplaying}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white font-medium shadow-sm min-w-[110px]"
                 onClick={handleTriggerReplay}
               >
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                Replay Task
+                {isReplaying ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                <span>{isReplaying ? 'Replaying...' : 'Replay Task'}</span>
               </Button>
             )}
           </div>

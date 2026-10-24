@@ -283,8 +283,8 @@ public class WorkflowExecutionController {
         try {
             List<com.unipost.workflow.core.model.TaskDlqRecord> dlqTasks = persistencePort.listDlqTasks(tenantId, "ACTIVE", 50);
             for (var dlq : dlqTasks) {
-                if (id.equals(dlq.workflowId()) && (taskRef.equals(dlq.taskId()) || targetRef.equals(dlq.taskId()) || targetRef.equals(dlq.referenceName()))) {
-                    persistencePort.updateDlqStatus(dlq.id(), "REPLAYED", now);
+                if (id.equals(dlq.workflowId()) && (taskRef.equals(dlq.taskId()) || targetRef.equals(dlq.taskId()))) {
+                    persistencePort.updateDlqStatus(dlq.dlqId(), "REPLAYED", now);
                 }
             }
         } catch (Exception ignored) {}

@@ -185,6 +185,7 @@ export function DlqFeature() {
               onInspect={handleInspect}
               onReplay={handleReplay}
               onDiscard={handleDiscard}
+              replayingDlqId={replayMutation.isPending ? (replayMutation.variables?.dlqId ?? null) : null}
             />
           </CardContent>
         </Card>
@@ -196,6 +197,7 @@ export function DlqFeature() {
           onOpenChange={setInspectorOpen}
           onReplay={handleReplay}
           onDiscard={handleDiscard}
+          isReplaying={replayMutation.isPending}
         />
       </Main>
     </>

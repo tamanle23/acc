@@ -19,6 +19,7 @@ import {
   RotateCcw,
   CheckCircle2,
   Archive,
+  Loader2,
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
 import type { TaskDlqRecordDto } from '@unipost/client';
@@ -27,12 +28,14 @@ interface CreateDlqColumnsProps {
   onInspect: (record: TaskDlqRecordDto) => void;
   onReplay: (record: TaskDlqRecordDto) => void;
   onDiscard: (record: TaskDlqRecordDto) => void;
+  replayingDlqId?: string | null;
 }
 
 export const createDlqColumns = ({
   onInspect,
   onReplay,
   onDiscard,
+  replayingDlqId,
 }: CreateDlqColumnsProps): ColumnDef<TaskDlqRecordDto>[] => [
   {
     accessorKey: 'taskId',
@@ -169,13 +172,17 @@ export const createDlqColumns = ({
     id: 'actions',
     cell: ({ row }) => {
       const item = row.original;
+      const isReplaying = replayingDlqId === item.dlqId;
       return (
         <div className="flex items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="sm"
             className="h-8 px-2 text-xs"
-            onClick={() => onInspect(item)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspect(item);
+            }}
             title="Inspect Error & Payload"
             aria-label={`Inspect DLQ task ${item.taskId}`}
           >
@@ -186,13 +193,21 @@ export const createDlqColumns = ({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2 text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-              onClick={() => onReplay(item)}
+              disabled={isReplaying}
+              className="h-8 px-2 text-xs border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 min-w-[76px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReplay(item);
+              }}
               title="Replay Quarantined Task"
               aria-label={`Replay DLQ task ${item.taskId}`}
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1" />
-              Replay
+              {isReplaying ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin text-emerald-500" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              )}
+              {isReplaying ? 'Replaying...' : 'Replay'}
             </Button>
           )}
           <DropdownMenu>

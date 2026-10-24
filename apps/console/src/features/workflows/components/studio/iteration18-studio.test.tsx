@@ -50,6 +50,7 @@ vi.mock('@/features/workflows/api/workflow-api', () => ({
   useResumeWorkflowExecution: () => ({ mutate: vi.fn() }),
   useStepOverWorkflowExecution: () => ({ mutate: vi.fn(), isPending: false }),
   useRerunWorkflowTask: () => ({ mutate: vi.fn(), isPending: false }),
+  useReplayWorkflowTask: () => ({ mutate: vi.fn(), isPending: false }),
   useSimulateWorkflowDefinition: () => ({ mutate: vi.fn(), isPending: false }),
   useMigrationDryRun: () => ({ mutate: vi.fn(), isPending: false }),
   useMigrateExecution: () => ({ mutate: vi.fn(), isPending: false }),

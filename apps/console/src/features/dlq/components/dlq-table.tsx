@@ -22,6 +22,7 @@ interface DlqTableProps {
   onInspect: (record: TaskDlqRecordDto) => void;
   onReplay: (record: TaskDlqRecordDto) => void;
   onDiscard: (record: TaskDlqRecordDto) => void;
+  replayingDlqId?: string | null;
 }
 
 export const DlqTable: React.FC<DlqTableProps> = ({
@@ -29,6 +30,7 @@ export const DlqTable: React.FC<DlqTableProps> = ({
   onInspect,
   onReplay,
   onDiscard,
+  replayingDlqId,
 }) => {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'isolatedAtMs', desc: true },
@@ -43,8 +45,9 @@ export const DlqTable: React.FC<DlqTableProps> = ({
         onInspect,
         onReplay,
         onDiscard,
+        replayingDlqId,
       }),
-    [onInspect, onReplay, onDiscard]
+    [onInspect, onReplay, onDiscard, replayingDlqId]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library

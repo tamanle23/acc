@@ -25,7 +25,7 @@ import java.util.Map;
  * or platform:dlq:manage can inspect poisoned execution units, discard them, or trigger re-enqueuing.
  */
 @RestController
-@RequestMapping({"/api/v1/system/dlq", "/api/v1/workflow/dlq"})
+@RequestMapping({"/api/v1/system/dlq", "/api/system/dlq", "/api/v1/workflow/dlq", "/api/workflow/dlq"})
 @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:dlq:manage')")
 public class WorkflowDlqController {
 

@@ -282,7 +282,7 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               className="h-7 px-2 text-xs gap-1 rounded-r-none border-r-0"
               onClick={() => onAutoLayout('LR')}
               title={`Auto-Layout (${layoutAlgorithm === 'dagre' ? 'Dagre Hierarchical' : 'ELK Compact'})`}
-              aria-label="Auto-Layout"
+              aria-label="Topological Auto-Layout"
               data-testid="dag-auto-layout-btn"
             >
               <LayoutGrid className="w-3 h-3 text-indigo-500" />
