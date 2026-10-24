@@ -223,7 +223,119 @@ Append-only chronological history of all dynamic record mutations.
 
 ---
 
-## 4. Multi-Tenancy & Hardware-Enforced Security (RLS)
+### 3.3. Identity, RBAC Matrix & Global Users Control Plane
+
+The identity layer employs a dual-scope architecture: **Global Authentication (Identity Registry)** combined with **Tenant-Scoped Authorization (RBAC Permission Matrix)** and **Sovereign Fleet Governance**.
+
+```mermaid
+erDiagram
+    APP_USER ||--o{ APP_USERROLE : "assigned"
+    APP_ROLE ||--o{ APP_USERROLE : "belongs to"
+    APP_ROLE ||--o{ APP_ROLEPERMISSION : "contains"
+    APP_PERMISSION ||--o{ APP_ROLEPERMISSION : "mapped to"
+    APP_USER ||--o{ APP_USERACTIVITY : "audited"
+
+    APP_USER {
+        int id PK
+        string uid UK
+        string username UK
+        string email
+        string password
+        boolean nonlocked
+        string type
+        string default_tenant_id
+    }
+
+    APP_ROLE {
+        int id PK
+        string uid UK
+        string code "ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM_CUSTODIAN"
+        string description
+        string mode "SYSTEM vs TENANT_CUSTOM"
+    }
+
+    APP_PERMISSION {
+        int id PK
+        string uid UK
+        string code "platform:fleet:read, METADATA_SCHEMA_WRITE"
+        string target "Fleet, Governance, Metadata, Data Plane"
+        string action "read, mutate, assume, override"
+    }
+```
+
+#### 8. `APP_USER` (Global User Identity Registry)
+Centralized user store supporting cross-tenant membership and universal platform lockout.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `ID` | `INT` | `PK`, Auto-increment | Internal surrogate key. |
+| `UID` | `VARCHAR(50)` | `NOT NULL`, Unique | Globally unique user UUID. |
+| `USERNAME` | `VARCHAR(50)` | `NOT NULL`, Unique | Login credential handle. |
+| `EMAIL` | `VARCHAR(200)` | Nullable | Primary contact & password-reset destination. |
+| `PASSWORD` | `VARCHAR(128)` | `NOT NULL` | Cryptographic password hash (BCrypt / Argon2id). |
+| `NONLOCKED` | `BOOLEAN` | Default `TRUE` | **Universal User Lockout**: When set to `FALSE` by a Sovereign Custodian, denies authentication across *all* tenants instantly. |
+| `NONEXPIRED` | `BOOLEAN` | Default `TRUE` | Account expiration flag. |
+| `CREDENTIALSNONEXPIRED` | `BOOLEAN` | Default `TRUE` | Password expiration / rotation flag. |
+| `STATUS` | `TINYINT` | Default `1` | Account lifecycle state (`1 = Active`, `0 = Inactive`, `2 = Suspended`). |
+| `FIRSTNAME` / `LASTNAME` | `VARCHAR(125)` | Nullable | Legal identity profile names. |
+| *Audit Columns* | `TIMESTAMP`/`INT`/`VARCHAR` | Standard | Standard created/updated timestamps and soft-delete dates. |
+
+---
+
+#### 9. `APP_ROLE` & `APP_PERMISSION` (Role-Based Access Control)
+Normalizes access definitions into coarse-grained roles and fine-grained atom permissions.
+
+- **`APP_ROLE`**:
+  - `CODE`: Role moniker (e.g., `ROLE_SYSTEM_CUSTODIAN`, `ROLE_TENANT_ADMIN`, `ROLE_OPERATOR`, `ROLE_VIEWER`).
+  - `MODE`: Distinguishes immutable system roles (`SYSTEM`) from tenant-defined custom enterprise roles (`TENANT_CUSTOM`).
+- **`APP_PERMISSION`**:
+  - `CODE`: Fine-grained permission atom formatted as `category:domain:action` or upper snake case.
+  - `TARGET` & `ACTION`: Architectural boundary categorization (Fleet, Governance, Metadata, Data Plane, Billing).
+- **`APP_ROLEPERMISSION` & `APP_USERROLE`**:
+  - Join tables linking `USER <-> ROLE` and `ROLE <-> PERMISSION` with unique pairing constraints (`UID` cross-references).
+
+---
+
+#### 10. Sovereign RBAC Permission Matrix Specification
+
+The system governs operational boundaries via the following authoritative permission atoms:
+
+| Domain | Permission Atom (`key`) | Description | Default Roles Granted |
+| :--- | :--- | :--- | :--- |
+| **Fleet Ops** | `platform:fleet:read` | View fleet diagnostics, cross-tenant telemetry & health metrics. | `ROLE_SYSTEM_CUSTODIAN` |
+| **Fleet Ops** | `platform:fleet:mutate` | Provision new tenants, suspend delinquent tenants, edit fleet. | `ROLE_SYSTEM_CUSTODIAN` |
+| **Fleet Ops** | `platform:tenant:assume` | Generate ephemeral dual-context `Assume-Tenant` JWTs. | `ROLE_SYSTEM_CUSTODIAN` |
+| **Fleet Ops** | `platform:quotas:override` | Override resource quotas to unconstrained infinity ($\infty$). | `ROLE_SYSTEM_CUSTODIAN` |
+| **Governance**| `platform:roles:manage` | Mutate the global RBAC Matrix & dynamically bind permissions. | `ROLE_SYSTEM_CUSTODIAN` |
+| **Governance**| `platform:users:lock` | Execute universal account lockout across the global user registry. | `ROLE_SYSTEM_CUSTODIAN` |
+| **Metadata**  | `METADATA_SCHEMA_READ` | Inspect entity types, attributes, validation rules, and FSMs. | Custodian, Admin, Operator, Viewer |
+| **Metadata**  | `METADATA_SCHEMA_WRITE`| Create/modify models, attribute definitions, and relationship edges. | `ROLE_SYSTEM_CUSTODIAN`, `ROLE_TENANT_ADMIN` (Architect Mode) |
+| **Data Plane**| `METADATA_RECORD_READ` | Query and inspect dynamic entity record payloads and edges. | Custodian, Admin, Operator, Viewer |
+| **Data Plane**| `METADATA_RECORD_WRITE`| Create, edit, and soft-delete dynamic records and graph links. | Custodian, Admin, Operator |
+| **Tenancy**   | `TENANT_SETTINGS_MANAGE`| Configure workspaces, custom branding themes, and team users. | Custodian, Admin |
+| **Tenancy**   | `BILLING_MANAGE` | Initiate payOS VietQR upgrades, view invoices, change plans. | Custodian, Admin |
+
+---
+
+#### 11. Dual-Context Sovereign Impersonation (`Assume-Tenant`)
+
+To resolve support escalations without sharing passwords or violating zero-trust principles, the system implements **Dual-Context Principal Resolution**:
+
+1. **Token Minting**: A Sovereign Custodian (`ROLE_SYSTEM_CUSTODIAN`) requests an ephemeral token (`POST /api/v1/system/tenants/{id}/assume`).
+2. **Dual-Context JWT Claims**:
+   - `sub`: The custodian's authentic global user ID.
+   - `tid` (Actor Tenant): `'SYSTEM'`.
+   - `effective_tid` (Target Tenant): `'tenant-target-123'`.
+3. **Database Session Binding**:
+   - `TenantContextHolder` detects `effective_tid` and issues:
+     ```sql
+     SET LOCAL app.current_tenant_id = 'tenant-target-123';
+     SET LOCAL app.is_system_custodian = 'true';
+     ```
+   - RLS scopes data access to `tenant-target-123` so the administrator sees the exact workspace view of the tenant.
+4. **Non-Repudiation Audit**: All writes in `UNIPOST_RECORD_AUDIT_LOG` record the custodian's actual UID in `actor`, ensuring complete accountability during delegated sessions.
+
+---
 
 Multi-tenancy is enforced natively in the PostgreSQL engine via **Row-Level Security (RLS)**. Spring Modulith connects with a tenant-scoped database session where connection hooks set the active tenant identifier.
 
