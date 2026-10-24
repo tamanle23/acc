@@ -16,7 +16,9 @@ import {
   Trash2,
   Power,
   GitCompare,
+  Activity,
 } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { type WorkflowDefinitionSummary } from '../api/workflow-api';
 
@@ -71,12 +73,17 @@ export const createWorkflowCatalogColumns = ({
   {
     id: 'nodes',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nodes" className="w-[120px]" />
+      <DataTableColumnHeader column={column} title="Complexity" className="w-[120px]" />
     ),
     cell: ({ row }) => {
       const item = row.original;
       const nodeCount = item.tasks ? item.tasks.length : Object.keys(item.layoutMetadata || {}).length;
-      return <span className="text-xs font-medium text-foreground">{nodeCount} nodes</span>;
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-muted/60 border border-muted-foreground/15 text-foreground">
+          <span className="size-1.5 rounded-full bg-primary/70" />
+          {nodeCount} {nodeCount === 1 ? 'task' : 'tasks'}
+        </span>
+      );
     },
   },
   {
@@ -143,6 +150,16 @@ export const createWorkflowCatalogColumns = ({
               <DropdownMenuItem onClick={() => onDesignWorkflow(item.workflowKey)}>
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
                 Open in Studio
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  to="/workflow-executions"
+                  search={{ search: item.workflowKey }}
+                  className="flex items-center w-full cursor-pointer"
+                >
+                  <Activity className="h-4 w-4 mr-2 text-sky-500" />
+                  View Executions
+                </Link>
               </DropdownMenuItem>
               {onFleetMigrate && (
                 <DropdownMenuItem onClick={() => onFleetMigrate(item)}>

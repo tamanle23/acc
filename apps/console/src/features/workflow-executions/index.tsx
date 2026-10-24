@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Activity, Play, CheckCircle2, AlertCircle, Layers } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { WorkflowExecutionsKpiBar } from './components/workflow-executions-kpi-bar'
 
 export function WorkflowExecutions() {
   const { data: workflowExecutions = [], isLoading } = useWorkflowExecutionsQuery()
@@ -75,7 +76,10 @@ export function WorkflowExecutions() {
           <WorkflowExecutionsPrimaryButtons />
         </div>
 
-        {/* Lifecycle Status Switcher */}
+        {/* 1. Live Telemetry KPI Cards */}
+        <WorkflowExecutionsKpiBar executions={workflowExecutions} />
+
+        {/* 2. Lifecycle Status Switcher */}
         <div className='flex items-center justify-between border-b border-border/40 pb-2'>
           <Tabs
             value={activeTab}

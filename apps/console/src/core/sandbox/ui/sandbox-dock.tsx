@@ -174,7 +174,7 @@ export function SandboxDock() {
 
   // Expanded Dock Window
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 rounded-2xl bg-white/80 dark:bg-slate-900/85 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl p-4 transition-all">
+    <div className="fixed bottom-4 right-4 z-100 w-96 rounded-2xl bg-white/80 dark:bg-slate-900/85 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl p-4 transition-all">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 mb-3 border-b border-border/50">
         <div className="flex items-center gap-2">

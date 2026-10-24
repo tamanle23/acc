@@ -16,6 +16,7 @@ import { WorkflowCatalogTable } from './components/catalog/workflow-catalog-tabl
 import { WorkflowCreateDialog } from './components/catalog/workflow-create-dialog';
 import { FleetMigrationModal } from './components/migration/fleet-migration-modal';
 import { ApprovalsInbox } from './approvals/approvals-inbox';
+import { WorkflowCatalogKpiBar } from './components/catalog/workflow-catalog-kpi-bar';
 import { getRouteApi } from '@tanstack/react-router';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -63,7 +64,7 @@ export const WorkflowsFeature: React.FC = () => {
                 Workspace / Workflows
               </span>
               <Badge variant="outline" className="text-[10px] uppercase font-mono tracking-widest bg-primary/10 text-primary border-primary/20">
-                POC Faceted Search
+                Orchestration Engine
               </Badge>
             </div>
             <div>
@@ -132,6 +133,11 @@ export const WorkflowsFeature: React.FC = () => {
             </Button>
           )}
         </div>
+
+        {/* High-level Catalog Telemetry KPI Bar */}
+        {!activeWorkflowKey && activeTab === 'catalog' && (
+          <WorkflowCatalogKpiBar definitions={definitions} />
+        )}
 
         {/* Content Area: Catalog Table, Approvals Inbox, or Full-bleed Studio Canvas */}
         {activeWorkflowKey ? (
