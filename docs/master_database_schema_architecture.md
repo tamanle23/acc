@@ -1,0 +1,330 @@
+# Architecture Reference: Persistence & Metadata-Driven Database Engine
+**Document Version:** 1.0.0  
+**Status:** Living Master Specification (Single Source of Truth)  
+**System Domain:** Unipost Enterprise Monorepo Data Persistence Layer  
+**Target Audience:** Staff / Principal Architects, Backend & Frontend Engineers, DevOps/DBAs  
+
+---
+
+## 1. Executive Architecture Summary
+
+Unipost utilizes a **Hybrid Polyglot-Relational / Dynamic Metadata Architecture** built on **PostgreSQL 16+**, **Spring Boot 3.x (Spring Modulith)**, and **Liquibase**. 
+
+The system bridges two traditionally divergent database paradigms:
+1. **Fixed Relational Infrastructure (System Core & Control Plane):** Strongly-typed, normalized tables with static referential integrity for Tenants, Identity/RBAC, Workspaces, Billing, Audit, and Event Outbox.
+2. **Metadata-Driven Dynamic Plane (EAV / JSONB Dynamic Schema):** An in-engine dynamic schema evolution runtime allowing individual tenants and system custodians to declare custom Entities, Dynamic Attributes, Composite Virtual Schemas, Finite State Machine (FSM) Lifecycles, and Typed Edge Graphs **without running DDL migrations or dropping production connections**.
+
+```mermaid
+flowchart TD
+    subgraph ClientLayer ["Client Applications"]
+        Console["Console (React / Vite)"]
+        Mobile["Mobile UI (Expo)"]
+        Desktop["Desktop (Electrobun)"]
+    end
+
+    subgraph AppPlane ["Application Tier (Spring Modulith)"]
+        RestAPI["REST & GraphQL Gateways"]
+        SchemaValidator["Dynamic JSON Schema Validator (L1 / L2 Cache)"]
+        RLSInterceptor["Tenant Context Interceptor (app.current_tenant_id)"]
+        OutboxRelay["Transactional Outbox Relay"]
+    end
+
+    subgraph DataPlane ["Persistence Tier (PostgreSQL 16+)"]
+        subgraph StaticControlPlane ["Static Control Plane (Relational)"]
+            T_TENANT["UNIPOST_WORKSPACES / TENANTS"]
+            T_BILLING["UNIPOST_TENANT_BILLING"]
+            T_IDENTITY["APP_USER / ROLE / PERMISSION"]
+            T_OUTBOX["UNIPOST_EVENT_OUTBOX"]
+            T_AUDIT["UNIPOST_RECORD_AUDIT_LOG (Partitioned)"]
+        end
+
+        subgraph DynamicMetadataPlane ["Dynamic Metadata Plane (EAV / JSONB Hybrid)"]
+            T_TYPE["UNIPOST_ENTITY_TYPES\n(Schema Version, FSM, Composite Spec)"]
+            T_ATTR["UNIPOST_ATTRIBUTE_DEFINITIONS\n(Data Type, Validations, UI Spec)"]
+            T_REL_TYPE["UNIPOST_RELATIONSHIP_TYPES\n(Cardinality, Cascade Policy)"]
+            T_ENTITIES["UNIPOST_ENTITIES\n(PostgreSQL JSONB + GIN jsonb_path_ops)"]
+            T_RELS["UNIPOST_ENTITY_RELATIONSHIPS\n(Graph Edges + Edge Metadata JSONB)"]
+        end
+    end
+
+    Console --> RestAPI
+    Mobile --> RestAPI
+    Desktop --> RestAPI
+
+    RestAPI --> RLSInterceptor
+    RLSInterceptor --> SchemaValidator
+    SchemaValidator --> DynamicMetadataPlane
+    RestAPI --> StaticControlPlane
+    DynamicMetadataPlane -.-> OutboxRelay
+    OutboxRelay --> T_OUTBOX
+```
+
+---
+
+## 2. Core Architectural Principles & Invariants
+
+| Principle | Invariant Rule | Implementation Mechanism |
+| :--- | :--- | :--- |
+| **Strict Multi-Tenancy** | Zero Cross-Tenant Data Leaks at the Hardware/Engine Level. | Native PostgreSQL Row-Level Security (`ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`) bound to session-level variable `app.current_tenant_id`. |
+| **Zero-DDL Extensibility** | Tenants modify business data models at runtime without database restarts or schema locks. | Entity-Attribute-Value (EAV) hybrid schema storing dynamic payloads in binary JSONB with JSON Schema L1/L2 caching. |
+| **Sovereign Custodian Override** | System administrators (`SYSTEM` tenant) possess read/write access across all tenants for fleet telemetry, auditing, and maintenance. | Dual-condition RLS policies: `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR tenant_id = current_tenant`. |
+| **Schema Determinism & Evolution** | Attribute additions or modifications must guarantee backwards and forwards compatibility. | Monotonic increment of `UNIPOST_ENTITY_TYPES.schema_version` on every attribute mutation; JSON Schema compilation with `additionalProperties: false`. |
+| **ACID Eventual Consistency** | Distributed consumers must never miss state changes, even if network partitions occur. | Transactional Outbox Pattern (`UNIPOST_EVENT_OUTBOX`) written atomically in the same local database transaction as business mutations. |
+| **Immutable Temporal Auditability** | Historical revisions of records must be permanent, non-repudiable, and high-performance. | Monthly range-partitioned ledger table `UNIPOST_RECORD_AUDIT_LOG` with JSONB delta calculation. |
+
+---
+
+## 3. Data Plane Topology: Complete Table Registry
+
+### 3.1. Metadata Plane (Dynamic Schema Engine)
+
+#### 1. `UNIPOST_ENTITY_TYPES` (Meta-Entity Definitions)
+Defines dynamic classes (e.g., `Customer`, `Invoice`, `WarehousePackage`, `ShipmentItem`).
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Internal surrogate primary key. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Globally unique immutable identifier (UUIDv7 or NanoID). |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL`, Default `'default-tenant'` | Scopes model to a specific tenant or `'SYSTEM'` for global blueprints. |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Human-readable entity label. |
+| `system_name` | `VARCHAR(255)` | `NOT NULL` | Programmatic identifier (`kebab-case` or `snake_case`). |
+| `description` | `TEXT` | Nullable | Detailed functional purpose of the entity. |
+| `schema_version` | `BIGINT` | `NOT NULL`, Default `1` | Incrementing version counter for compiled JSON Schema cache eviction. |
+| `lifecycle_config` | `JSONB` | Nullable | Declarative Finite State Machine (FSM): initial state, transition rules, required attributes, allowed roles, and guard expressions. |
+| `is_composite` | `BOOLEAN` | `NOT NULL`, Default `FALSE` | Flag determining whether this entity is a physical record or a virtual aggregation. |
+| `composite_spec` | `JSONB` | Nullable | Composite join definition: primary entity, joined child entities, and projections. |
+| `createdBy_uid` | `VARCHAR(255)` | Audit trail | User UID who initialized the model. |
+| `createdDate` | `TIMESTAMP` | Audit trail | Creation timestamp. |
+| `lastUpdatedBy_uid` | `VARCHAR(255)` | Audit trail | User UID who last updated the model. |
+| `lastUpdatedDate` | `TIMESTAMP` | Audit trail | Last update timestamp. |
+| `version` | `BIGINT` | Optimistic Lock | JPA `@Version` concurrency control. |
+| `deletedDate` | `TIMESTAMP` | Soft Delete | Non-null indicates logical deletion. |
+
+*Unique Index:* Partial unique index on `(tenant_id, system_name) WHERE "deletedDate" IS NULL`.
+
+---
+
+#### 2. `UNIPOST_ATTRIBUTE_DEFINITIONS` (Field & Validation Dictionary)
+Defines dynamically typed fields attached to an Entity Type.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Surrogate primary key. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Unique attribute definition UID. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Multi-tenant isolation scope. |
+| `entity_type_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITY_TYPES.id` | Target entity model (Cascade Delete). |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Display label (e.g., "Tracking Code"). |
+| `system_name` | `VARCHAR(255)` | `NOT NULL` | JSON key in `UNIPOST_ENTITIES.attributes` (e.g., `trackingCode`). |
+| `data_type` | `VARCHAR(50)` | `NOT NULL` | Primitive: `STRING`, `NUMBER`, `BOOLEAN`, `DATE`, `DATETIME`, `JSON`, `RELATION_PICKER`. |
+| `ui_component` | `VARCHAR(50)` | `NOT NULL` | UI Form widget: `TEXT_INPUT`, `NUMERIC_INPUT`, `DATE_PICKER`, `DROPDOWN`, `RICH_TEXT`, `SWITCH`. |
+| `is_required` | `BOOLEAN` | Default `FALSE` | Triggers JSON Schema `required: [...]` compilation. |
+| `is_archived` | `BOOLEAN` | Default `FALSE` | Soft deprecation without breaking historical record reads. |
+| `display_order` | `INT` | Default `0` | Form/table layout rendering order. |
+| `options` | `JSONB` | Nullable | Validation rules (regex pattern, min, max, allowed enum list). |
+| `default_value` | `VARCHAR(255)` | Nullable | Default value applied before schema validation. |
+| *Audit Columns* | `VARCHAR`/`TIMESTAMP`/`BIGINT` | Standard | Standard auditing and soft-deletion columns. |
+
+*Unique Constraint:* `(entity_type_id, system_name)` ensures unique attribute names per model.
+
+---
+
+#### 3. `UNIPOST_ENTITIES` (Dynamic Data Plane Records)
+Stores actual business records conforming to dynamic schemas.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Record ID. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Immutable record UID across external APIs. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Multi-tenant isolation key (strictly evaluated by RLS). |
+| `entity_type_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITY_TYPES.id` | Associated entity model. |
+| `attributes` | `JSONB` | Default `'{}'` | Hybrid JSON document containing user-defined key-values validated against the compiled JSON Schema. |
+| *Audit Columns* | `VARCHAR`/`TIMESTAMP`/`BIGINT` | Standard | Authoring and optimistic locking version. |
+
+*Critical Indexes:*
+1. `idx_entities_type_tenant_active`: `ON UNIPOST_ENTITIES (entity_type_id, tenant_id) WHERE "deletedDate" IS NULL` (B-Tree filter index for multi-tenant table queries).
+2. `idx_entities_attributes_gin`: `ON UNIPOST_ENTITIES USING GIN (attributes jsonb_path_ops)` (High-performance JSON path indexing supporting `@>`, `?`, and `@@` operators).
+
+---
+
+#### 4. `UNIPOST_RELATIONSHIP_TYPES` (Graph Schema Definitions)
+Defines semantic directed graph edges between Entity Types.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Edge type ID. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Immutable relationship UID. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Tenant isolation scope. |
+| `system_name` | `VARCHAR(255)` | `NOT NULL` | Edge label (e.g., `INVOICE_HAS_ITEMS`, `PARENT_COMPANY_OF`). |
+| `source_entity_type_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITY_TYPES.id` | Allowed source model type. |
+| `target_entity_type_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITY_TYPES.id` | Allowed target model type. |
+| `cascade_policy` | `VARCHAR(20)` | Default `'RESTRICT'` | Referential deletion policy: `RESTRICT`, `CASCADE`, or `SET_NULL`. |
+| `description` | `TEXT` | Nullable | Edge semantic description. |
+
+---
+
+#### 5. `UNIPOST_ENTITY_RELATIONSHIPS` (Graph Data Plane Edges)
+Stores actual instance-level directed relationships between entity records.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Edge instance ID. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Edge UID. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Multi-tenant isolation key. |
+| `relationship_type_id` | `BIGINT` | `FK` -> `UNIPOST_RELATIONSHIP_TYPES.id` | Edge type classification. |
+| `source_entity_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITIES.id` | Origin record. |
+| `target_entity_id` | `BIGINT` | `FK` -> `UNIPOST_ENTITIES.id` | Destination record. |
+| `edge_metadata` | `JSONB` | Default `'{}'` | Typed attributes attached to the edge itself (e.g., `quantity`, `relationshipStartDate`). |
+
+*Unique Triplet Constraint:* `uk_entity_rel_triplet (source_entity_id, target_entity_id, relationship_type_id)` prevents duplicate parallel edges of the same type.
+
+---
+
+### 3.2. Static Control Plane & Resiliency Tables
+
+#### 6. `UNIPOST_EVENT_OUTBOX` (Transactional Outbox Pattern)
+Guarantees atomicity between local state changes and event pub/sub.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Outbox row ID. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Outbox message UID. |
+| `event_id` | `VARCHAR(255)` | `NOT NULL`, Unique | Deduplication idempotency key for downstream message brokers. |
+| `event_type` | `VARCHAR(150)` | `NOT NULL` | Event classifier (e.g., `METADATA_SCHEMA_UPDATED`, `RECORD_CREATED`). |
+| `aggregate_type` | `VARCHAR(100)` | `NOT NULL` | Target aggregate root (`ENTITY_TYPE`, `RECORD`). |
+| `aggregate_id` | `VARCHAR(255)` | `NOT NULL` | Target aggregate ID. |
+| `payload` | `JSONB` | `NOT NULL` | Complete event state payload. |
+| `status` | `VARCHAR(50)` | Default `'PENDING'` | Lifecycle: `PENDING`, `PUBLISHED`, `FAILED`, `DLQ`. |
+| `retry_count` | `INT` | Default `0` | Number of dispatch attempts. |
+| `max_retries` | `INT` | Default `5` | Maximum retry attempts before routing to Dead Letter Queue (DLQ). |
+| `next_retry_at` | `TIMESTAMPTZ` | Nullable | Exponential backoff scheduled timestamp. |
+| `dead_letter_reason`| `TEXT` | Nullable | Captured stacktrace or failure root-cause. |
+
+---
+
+#### 7. `UNIPOST_RECORD_AUDIT_LOG` (Range-Partitioned Audit Ledger)
+Append-only chronological history of all dynamic record mutations.
+
+- **Partitioning Strategy:** PostgreSQL `PARTITION BY RANGE (created_at)` with automated monthly partitions (`unipost_record_audit_log_YYYY_MM`).
+- **Primary Key:** Composite `(id, created_at)` to satisfy PostgreSQL partition indexing prerequisites.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | Default `nextval(...)` | Sequence-generated sequence ID. |
+| `tenant_id` | `VARCHAR(64)` | `NOT NULL` | Multi-tenant isolation scope. |
+| `record_id` | `BIGINT` | `NOT NULL` | Target record foreign identifier. |
+| `entity_type_id` | `BIGINT` | `NOT NULL` | Target model type ID. |
+| `operation` | `VARCHAR(16)` | `NOT NULL` | Action: `INSERT`, `UPDATE`, `DELETE`, `TRANSITION`. |
+| `actor` | `VARCHAR(64)` | `NOT NULL` | User UID or API service token performing mutation. |
+| `version` | `BIGINT` | `NOT NULL` | Record version at time of snapshot. |
+| `old_attributes` | `JSONB` | Nullable | State prior to modification (null on `INSERT`). |
+| `new_attributes` | `JSONB` | Nullable | State after modification (null on `DELETE`). |
+| `delta` | `JSONB` | Nullable | Exact diff object: `{ field: { old: v1, new: v2 } }`. |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL`, Default `clock_timestamp()` | High-precision mutation timestamp. |
+
+---
+
+## 4. Multi-Tenancy & Hardware-Enforced Security (RLS)
+
+Multi-tenancy is enforced natively in the PostgreSQL engine via **Row-Level Security (RLS)**. Spring Modulith connects with a tenant-scoped database session where connection hooks set the active tenant identifier.
+
+```sql
+SET LOCAL app.current_tenant_id = 'tenant-acme';
+```
+
+### PostgreSQL Sovereign Custodian Policy Pattern
+All core tables enforce the **Sovereign Custodian RLS Pattern**:
+1. Regular tenants can **only read and write rows matching their assigned `tenant_id`**.
+2. Regular tenants can **never alter or usurp `SYSTEM` global rows**.
+3. Sovereign Custodians (`app.current_tenant_id = 'SYSTEM'`) have unconditional bypass to audit, repair, or seed data across all tenant partitions.
+
+```sql
+CREATE POLICY tenant_isolation_entity_types ON UNIPOST_ENTITY_TYPES
+    FOR ALL
+    USING (
+        current_setting('app.current_tenant_id', true) = 'SYSTEM'
+        OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+        OR tenant_id = 'SYSTEM'
+    )
+    WITH CHECK (
+        current_setting('app.current_tenant_id', true) = 'SYSTEM'
+        OR (
+            tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+            AND tenant_id != 'SYSTEM'
+        )
+    );
+```
+
+---
+
+## 5. Dynamic Metadata Execution Lifecycle
+
+The following sequence illustrates how a dynamic record write is validated and persisted without static database compilation:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client (Console / API)
+    participant App as Spring Backend Service
+    participant Cache as L1 / L2 Cache (Hazelcast)
+    participant DB as PostgreSQL 16+
+
+    User->>App: POST /api/metadata/entities/records\n{ entityTypeId: 10, attributes: { sku: "A-123", qty: 5 } }
+    App->>App: Set Session Context: SET LOCAL app.current_tenant_id = 'tenant-acme'
+    
+    App->>Cache: Fetch Compiled Schema (key: "schema:10:v3")
+    alt Cache Miss
+        Cache-->>App: null
+        App->>DB: Query UNIPOST_ENTITY_TYPES & UNIPOST_ATTRIBUTE_DEFINITIONS
+        DB-->>App: Return Schema Definitions
+        App->>App: Compile JSON Schema (Draft 7 / 2020-12)\nEnforce additionalProperties: false
+        App->>Cache: Store Compiled Schema
+    else Cache Hit
+        Cache-->>App: Return Cached JsonSchema
+    end
+
+    App->>App: Validate Payload against Schema
+    alt Validation Failed
+        App-->>User: 422 Unprocessable Entity (ProblemDetail: violations list)
+    else Validation Succeeded
+        App->>DB: BEGIN Transaction
+        App->>DB: INSERT INTO UNIPOST_ENTITIES (attributes) VALUES ('{...}')
+        App->>DB: INSERT INTO UNIPOST_RECORD_AUDIT_LOG (delta, actor, ...)
+        App->>DB: INSERT INTO UNIPOST_EVENT_OUTBOX (event_type: RECORD_CREATED)
+        App->>DB: COMMIT Transaction
+        DB-->>App: OK (Committed)
+        App-->>User: 201 Created (Entity Record DTO)
+    end
+```
+
+### Schema Evolution & Cache Invalidation Invariants
+1. Whenever an attribute is created, modified, or soft-deleted:
+   - `UNIPOST_ENTITY_TYPES.schema_version` is incremented: `schema_version = schema_version + 1`.
+   - The eviction key `schema:{id}:v{old_version}` expires automatically.
+   - Hazelcast L2 distributes the schema invalidation broadcast across the cluster.
+2. Hard schema enforcement (`additionalProperties: false`) guarantees that legacy or rogue fields cannot be injected into dynamic payloads.
+
+---
+
+## 6. Architectural Trade-Off Analysis (ADR)
+
+| Architectural Dimension | Chosen: Hybrid EAV-JSONB with PostgreSQL RLS | Alternative A: Pure Relational DDL per Tenant | Alternative B: Separate NoSQL Database (MongoDB / DynamoDB) |
+| :--- | :--- | :--- | :--- |
+| **Development Velocity** | **High:** Instant runtime schema modifications; no database migration downtime. | **Low:** Requires runtime `ALTER TABLE` DDL executions, lock contention, and high migration failure risks. | **Medium:** Fast initial document writes, but requires maintaining dual database stacks. |
+| **Transactional Integrity** | **High (Full ACID):** Dynamic records, control planes, audit ledgers, and outbox reside in the exact same transaction boundary. | **High:** Native SQL referential integrity. | **Low:** Requires distributed 2PC or Saga patterns to synchronize relational metadata with document stores. |
+| **Operational Simplicity** | **High:** Single PostgreSQL cluster to operate, backup, replica, and monitor. | **Very Low:** Schema drift across thousands of tenants leads to catalog exhaustion. | **Medium/Low:** Requires polyglot monitoring, dual security baselines, and cross-database backup orchestration. |
+| **Query Performance** | **High:** Partial B-Tree + GIN indexing enables sub-millisecond lookups on JSON paths. | **Highest:** Native typed columnar access. | **High:** Fast document retrieval, but joins across entity graphs require expensive application-layer fan-out. |
+
+---
+
+## 7. Operational & Maintenance Runbook
+
+1. **Partition Pruning & Maintenance:**
+   - Run rolling monthly partition creation jobs on `UNIPOST_RECORD_AUDIT_LOG` before the 25th of each month.
+   - Historical partitions older than 365 days can be detached and moved to cold compressed columnar storage (`pg_analytics` / Parquet).
+2. **Vacuum & Reindex Hygiene:**
+   - Because `UNIPOST_ENTITIES.attributes` uses PostgreSQL GIN indexes, configure aggressive auto-vacuum tuning:
+     ```sql
+     ALTER TABLE UNIPOST_ENTITIES SET (autovacuum_vacuum_scale_factor = 0.05);
+     ```
+3. **Outbox Cleanup:**
+   - Published outbox events (`status = 'PUBLISHED'`) older than 7 days must be purged by the scheduled background cleaner job.
