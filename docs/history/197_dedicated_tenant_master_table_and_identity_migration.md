@@ -8,8 +8,11 @@ The database architecture previously relied on floating, denormalized tenant str
    - Create `UNIPOST_TENANTS` master table with PostgreSQL Row-Level Security (RLS).
    - Automatically backfill existing tenants from `UNIPOST_WORKSPACES` / `UNIPOST_TENANT_BILLING` + `SYSTEM` root custodian.
    - Add `tenant_ref_id` foreign key referencing `UNIPOST_TENANTS.id` in `UNIPOST_WORKSPACES`.
-   - Drop obsolete legacy tables `UNIPOST_IDENTITY_ADDRESS`, `UNIPOST_IDENTITY_USERPROFILE`, and `UNIPOST_IDENTITY_USERACTIVITY`.
-2. Unify all migrations under a single authoritative entry point `db/changelog-master.xml`.
+2. Cleanly eliminate obsolete legacy identity tables `ADDRESS`, `USERPROFILE`, and `USERACTIVITY` directly at source:
+   - Removed table, index, and constraint definitions from `changelog-identity-00.xml`.
+   - Removed corresponding mock data inserts from `changelog-identity-mock_data.xml`.
+   - Removed any DROP TABLE runtime statements.
+3. Unify all migrations under a single authoritative entry point `db/changelog-master.xml`.
 3. Create JPA entity `Tenant.java` and `TenantRepository.java` in `unipost-fw`.
 4. Update `TenantProvisioningService.java` to atomically verify/persist `Tenant` in `UNIPOST_TENANTS` and bind `tenant_ref_id`.
 5. Fold active identity components (domain models, repositories, and services) into `unipost-fw` and `unipost-ms-aio`, and decommission the separate `unipost-ms-identity` Maven module.

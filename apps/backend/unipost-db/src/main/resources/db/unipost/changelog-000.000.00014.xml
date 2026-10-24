@@ -6,7 +6,7 @@
                       http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
 
   <changeSet id="dedicated-tenants-table-and-identity-pruning-14" author="antigravity">
-    <comment>Create UNIPOST_TENANTS master table, backfill from workspaces/billing, link FK, and drop legacy identity tables</comment>
+    <comment>Create UNIPOST_TENANTS master table, backfill from workspaces/billing, and link FK</comment>
 
     <!-- 1. Master Tenants Table -->
     <createTable tableName="UNIPOST_TENANTS">
@@ -97,11 +97,6 @@
                   AND code != 'SYSTEM'
               )
           );
-
-      -- 4. Eliminate obsolete legacy identity tables
-      DROP TABLE IF EXISTS UNIPOST_IDENTITY_ADDRESS CASCADE;
-      DROP TABLE IF EXISTS UNIPOST_IDENTITY_USERPROFILE CASCADE;
-      DROP TABLE IF EXISTS UNIPOST_IDENTITY_USERACTIVITY CASCADE;
     </sql>
   </changeSet>
 
