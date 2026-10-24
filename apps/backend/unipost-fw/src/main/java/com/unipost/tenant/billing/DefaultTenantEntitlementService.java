@@ -123,6 +123,9 @@ public class DefaultTenantEntitlementService implements TenantEntitlementService
 
         Optional<TenantBilling> billingOpt = billingRepository.findByCurrentOrderCode(orderCode);
         if (billingOpt.isEmpty()) {
+            billingOpt = billingRepository.findByPaymentProviderAndCurrentOrderRef("PAYOS", String.valueOf(orderCode));
+        }
+        if (billingOpt.isEmpty()) {
             log.warn("No tenant billing found for orderCode: {}", orderCode);
             return;
         }

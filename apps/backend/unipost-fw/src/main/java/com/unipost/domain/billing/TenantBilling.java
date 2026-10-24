@@ -24,6 +24,22 @@ public class TenantBilling implements Serializable {
     @Column(name = "current_order_code")
     private Long currentOrderCode;
 
+    @Column(name = "payment_provider", nullable = false)
+    private String paymentProvider = "PAYOS";
+
+    @Column(name = "provider_customer_ref")
+    private String providerCustomerRef;
+
+    @Column(name = "current_order_ref")
+    private String currentOrderRef;
+
+    @Column(name = "currency", nullable = false)
+    private String currency = "VND";
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "billing_metadata", columnDefinition = "jsonb")
+    private java.util.Map<String, Object> billingMetadata = new java.util.HashMap<>();
+
     @Column(name = "plan_tier", nullable = false)
     private String planTier = "BASIC";
 

@@ -5,8 +5,6 @@ import java.util.Date;
 
 import jakarta.inject.Inject;
 
-import com.unipost.user.model.UserProfile;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;

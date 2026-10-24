@@ -116,6 +116,9 @@ public class PayOsBillingService {
                 });
 
         billing.setCurrentOrderCode(orderCode);
+        billing.setCurrentOrderRef(String.valueOf(orderCode));
+        billing.setPaymentProvider("PAYOS");
+        billing.setCurrency("VND");
         billing.setPlanTier(request.getPlanTier().toUpperCase());
         billing.setBillingCadence(request.getCadence().toUpperCase());
         billing.setStatus("PENDING");
