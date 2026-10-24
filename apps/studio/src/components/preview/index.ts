@@ -4,7 +4,6 @@ export * from './ContextualActionPill';
 export * from './BentoCompanionCard';
 export * from './TransformHandles';
 export * from './InlineTextEditorModal';
-export * from './ViewportQuickTransport';
 export * from './UniversalCanvasHitOverlay';
 export * from './StagingDropTargetOverlay';
 export * from './TransformGizmoOverlay';

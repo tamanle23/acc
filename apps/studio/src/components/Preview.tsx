@@ -10,24 +10,14 @@ import {
   type DragMoveEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Tooltip } from './ui/tooltip';
-import {
-  Monitor,
-  Maximize2,
-} from 'lucide-react';
 import { IRStateManager } from '../lib/ir/irState';
-import { DepthMathEngine } from '../lib/math/DepthMathEngine';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import { useTheme } from '../lib/theme/ThemeProvider';
 import {
   ViewportControlBar,
   ViewportSafeGuides,
-  ContextualActionPill,
   BentoCompanionCard,
-  TransformHandle,
-  TransformBodyDraggable,
   InlineTextEditorModal,
-  ViewportQuickTransport,
   UniversalCanvasHitOverlay,
   StagingDropTargetOverlay,
   TransformGizmoOverlay,
@@ -38,11 +28,7 @@ import {
   IRPreviewEngine,
 } from '@acc/ir';
 import {
-  UniversalCanvasProvider,
-} from '@acc/core-isomorphic';
-import {
   Gizmo2DTransformation,
-  MagneticSnapEngine,
   type BoundingBox2D,
   type SnappingGuide,
   type TransformHandleType,
@@ -311,7 +297,7 @@ export function Preview({
               const visualAsset = studioTextureCache.getVisualAsset(
                 seq.assetId,
                 assetSrc,
-               (assetType as any),
+                (assetType as any),
                 seqLocalTimeSec
               );
 
