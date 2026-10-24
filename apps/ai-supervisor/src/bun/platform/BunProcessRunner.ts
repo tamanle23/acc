@@ -39,19 +39,24 @@ class BunManagedProcess implements ManagedProcess {
 
   async writeStdin(data: string | Uint8Array): Promise<void> {
     if (this.killed) {
-      throw new Error("Cannot write to terminated process");
+      // Process has already terminated or exited; silently ignore stdin writes
+      return;
     }
-    const writer = (this.sub.stdin as any)?.getWriter?.() ?? (this.sub.stdin as any);
-    if (!writer) {
-      throw new Error("Process does not have an open stdin pipe");
-    }
-
-    if (typeof writer.write === "function") {
-      const payload = typeof data === "string" ? new TextEncoder().encode(data) : data;
-      await writer.write(payload);
-      if (typeof writer.flush === "function") {
-        await writer.flush();
+    try {
+      const writer = (this.sub.stdin as any)?.getWriter?.() ?? (this.sub.stdin as any);
+      if (!writer) {
+        return;
       }
+
+      if (typeof writer.write === "function") {
+        const payload = typeof data === "string" ? new TextEncoder().encode(data) : data;
+        await writer.write(payload);
+        if (typeof writer.flush === "function") {
+          await writer.flush();
+        }
+      }
+    } catch {
+      // Stream broken / process closed pipe; ignore on exit
     }
   }
 
