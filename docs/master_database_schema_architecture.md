@@ -601,7 +601,7 @@ flowchart TD
     S6 --> T_OUTBOX
 ```
 
-### Stage 1: Ingestion & Payload Hard-Cap (DoS Guard)
+### 5.1. Stage 1: Ingestion & Payload Hard-Cap (DoS Guard)
 Before deserializing complex object trees, the pipeline inspects raw payload byte size:
 ```java
 if (bytes.length > 1024 * 1024) { // 1MB Hard-Cap
@@ -612,7 +612,7 @@ Composite entity models (`isComposite = true`) are strictly virtual read-only pr
 
 ---
 
-### Stage 2: Strict Atomic Optimistic Concurrency Control (OCC)
+### 5.2. Stage 2: Strict Atomic Optimistic Concurrency Control (OCC)
 In dynamic metadata platforms with polymorphic JSONB storage, PostgreSQL cannot natively enforce typed column-level concurrency checks. To eliminate silent data loss (Last-Write-Wins), race conditions, and uncoordinated partial field overwrites, the pipeline enforces **Strict Atomic Optimistic Concurrency Control (OCC)**:
 
 1. **Version Extraction & Comparison**:
@@ -639,7 +639,7 @@ In dynamic metadata platforms with polymorphic JSONB storage, PostgreSQL cannot 
 
 ---
 
-### Stage 3: Schema Defaults & Finite State Machine (FSM) Binding
+### 5.3. Stage 3: Schema Defaults & Finite State Machine (FSM) Binding
 1. **Server-Side Default Injection**: Before validating against JSON Schema, missing optional attributes with declared `default_value` in `UNIPOST_ATTRIBUTE_DEFINITIONS` are injected into the map.
 2. **FSM State Initialization & Transition**:
    - On `CREATE`: `EntityLifecycleService` evaluates `UNIPOST_ENTITY_TYPES.lifecycle_config` and assigns the defined initial state.
@@ -647,7 +647,7 @@ In dynamic metadata platforms with polymorphic JSONB storage, PostgreSQL cannot 
 
 ---
 
-### Stage 4: Referential Integrity & Strict Tenant Blindness
+### 5.4. Stage 4: Referential Integrity & Strict Tenant Blindness
 Dynamic records reference other records via two distinct patterns:
 - **Pattern B (JSONB Embedded References)**: Attributes with `ui_component = 'relation_picker'` storing a target record ID.
 - **Pattern C (Explicit Graph Edges)**: Rows in `UNIPOST_ENTITY_RELATIONSHIPS`.
@@ -661,7 +661,7 @@ If a rogue user supplies a foreign record ID belonging to another tenant, the en
 
 ---
 
-### Stage 5: Declarative Delete Cascades
+### 5.5. Stage 5: Declarative Delete Cascades
 When a record is deleted (`executeDelete`), the pipeline enforces the target model's `cascade_policy`:
 
 | Policy | Behavior on Pattern B (Inbound JSONB Attribute) | Behavior on Pattern C (Graph Edge `UNIPOST_ENTITY_RELATIONSHIPS`) |
@@ -672,11 +672,13 @@ When a record is deleted (`executeDelete`), the pipeline enforces the target mod
 
 ---
 
-### Stage 6: Partitioned Audit Ledger & Transactional Outbox
+### 5.6. Stage 6: Partitioned Audit Ledger & Transactional Outbox
 1. **Delta Calculation**: Computes exact structured diffs: `{ field: { old: v1, new: v2 } }`.
 2. **Monthly Partitioned Audit Insert**: Writes append-only revision into `UNIPOST_RECORD_AUDIT_LOG`.
 3. **Transactional Outbox Event**: Enqueues event (`RECORD_CREATED`, `RECORD_UPDATED`, `RECORD_DELETED`, `RECORD_RESTORED`) into `UNIPOST_EVENT_OUTBOX` within the same database transaction.
 4. **Spring Application Event**: Dispatches `EntityRecordMutatedEvent` for asynchronous SSE push notifications and workflow triggers.
+
+---
 
 ## 6. Enterprise Resilience & Resource Protection (3-Tier Defense-in-Depth)
 
@@ -787,7 +789,7 @@ To achieve sub-millisecond dynamic record evaluation, schema compilation is cach
 +-------------------------------------------------+-------------------------------------------------+
 ```
 
-### Dual-Layer Versioned Cache Key Structure
+### 8.1. Dual-Layer Versioned Cache Key Structure
 Every cached schema entry incorporates tenant scope and both tenant/system version counters:
 ```
 schema:{tenant_id}:{entity_type_id}:v{tenant_version}_s{system_version}
@@ -861,9 +863,10 @@ graph TD
     C07 -.-> C12
     C12 -.-> C13
     C13 -.-> C14
+    C14 -.-> C15
 ```
 
-### Liquibase Migration Invariants
+### 11.1. Liquibase Migration Invariants
 1. **Zero Raw DDL Outside Migrations**: No database tables or columns may be modified in production without a versioned XML changeset.
 2. **Clean Pruning Policy**: Obsolete legacy structures (e.g. `ADDRESS`, `USERPROFILE`, `USERACTIVITY`) must be eliminated directly at source rather than piling up runtime drop scripts.
 3. **Idempotent RLS Enforcement**: Every table creation or alteration must explicitly declare:
