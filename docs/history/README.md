@@ -202,3 +202,4 @@
 
 - [186](186_workflow_execution_sse_stream_state_machine_and_batching.md) - SSE stream state machine and batching
 | [187](187_canvas_edge_flow_node_fx_follow_live.md) | 2026-10-24 | Visual DAG Studio Canvas Edge Flow, Node FX & Follow-Live Auto-Pan | Implemented multi-state edge flow semantics, live 100ms task timer, Liquid Glass hover telemetry popover card, and Follow-Live auto-pan with parallel FORK_JOIN centroid tracking (84/84 tests passing, 0 TypeScript errors). |
+| [188](188_execution_drawer_console_and_terminal_telemetry.md) | 2026-10-24 | Visual DAG Studio Execution Drawer Console & Terminal Telemetry Viewer | Implemented collapsible bottom dock console, interactive terminal with regex/level filtering, auto-scroll, 1-click log copying, and bi-directional node filter coordination (89/89 tests passing, 0 TypeScript errors). |

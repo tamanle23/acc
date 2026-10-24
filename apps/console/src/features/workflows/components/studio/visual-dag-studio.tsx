@@ -39,6 +39,7 @@ import { WorkflowIrDialog } from './modals/workflow-ir-dialog';
 import { WorkflowDryRunModal } from './modals/workflow-dry-run-modal';
 import { WorkflowVariableWatchDrawer } from './modals/workflow-variable-watch-drawer';
 import { HotMigrationModal } from '@/features/workflows/components/migration/hot-migration-modal';
+import { ExecutionRunDrawer } from '@/features/workflows/components/execution/execution-run-drawer';
 
 import { useDagStudioState } from './hooks/use-dag-studio-state';
 import { useDagExecutionSync } from './hooks/use-dag-execution-sync';
@@ -845,7 +846,31 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* 11. Time-Travel History Scrubber */}
+      {/* 11. Execution Run Drawer Console (Execution Mode) */}
+      {isExecutionMode && executionId && activeViewTab === 'graph' && (
+        <ExecutionRunDrawer
+          executionId={executionId}
+          stream={stream}
+          snapshot={stream.snapshot}
+          currentVariables={variableWatchSnapshot.workflowVariables}
+          currentStepIndex={currentScrubberIndex}
+          selectedTaskRef={selectedNode?.data?.taskReferenceName || null}
+          onSelectTaskRef={(taskRef) => {
+            if (taskRef) {
+              const targetNode = nodes.find((n) => n.data.taskReferenceName === taskRef);
+              if (targetNode) {
+                setSelectedNodeId(targetNode.id);
+              }
+            } else {
+              setSelectedNodeId(null);
+            }
+          }}
+          availableTaskRefs={availableTaskRefs}
+          bottomOffsetClass="bottom-20"
+        />
+      )}
+
+      {/* 12. Time-Travel History Scrubber */}
       {isReadOnly && activeViewTab === 'graph' && (
         <TimeTravelScrubber
           events={timelineEvents}
