@@ -66,6 +66,7 @@ export interface DagHeaderCommandBarProps {
   onValidateDag: () => void;
   validationErrorsCount: number;
   onDryRun: () => void;
+  onSimulate?: () => void;
   onExportJson: () => void;
   onOpenImportDialog: () => void;
   onResetInitial: () => void;
@@ -110,6 +111,7 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onValidateDag,
   validationErrorsCount,
   onDryRun,
+  onSimulate,
   onExportJson,
   onOpenImportDialog,
   onResetInitial,
@@ -463,6 +465,21 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
               <Sparkles className="w-3 h-3 text-amber-500" />
               <span className="hidden lg:inline">Dry Run</span>
             </Button>
+
+            {onSimulate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                onClick={onSimulate}
+                title="Launch Multi-Branch Live Execution Simulator in Unified Sandbox"
+                aria-label="Simulate Execution"
+                data-testid="dag-simulate-btn"
+              >
+                <Activity className="w-3 h-3 text-emerald-500" />
+                <span className="hidden lg:inline">Simulate</span>
+              </Button>
+            )}
 
             {/* Dropdown Menu for Export / Import IR & Blank Reset */}
             <DropdownMenu>

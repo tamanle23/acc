@@ -37,9 +37,14 @@ import { WorkflowExecutionFlamegraph } from './timeline/workflow-execution-flame
 import { DagEdgeConditionModal, type EdgeConditionModalData } from './modals/dag-edge-condition-modal';
 import { WorkflowIrDialog } from './modals/workflow-ir-dialog';
 import { WorkflowDryRunModal } from './modals/workflow-dry-run-modal';
+import { WorkflowSimulationModal } from './modals/workflow-simulation-modal';
 import { WorkflowVariableWatchDrawer } from './modals/workflow-variable-watch-drawer';
 import { HotMigrationModal } from '@/features/workflows/components/migration/hot-migration-modal';
 import { ExecutionRunDrawer } from '@/features/workflows/components/execution/execution-run-drawer';
+import {
+  MULTI_BRANCH_ORDER_NODES,
+  MULTI_BRANCH_ORDER_EDGES,
+} from '@/features/workflows/sandbox/simulation-blueprints';
 
 import { useDagStudioState } from './hooks/use-dag-studio-state';
 import { useDagExecutionSync } from './hooks/use-dag-execution-sync';
@@ -113,7 +118,6 @@ function DagStudioCanvas({
   className,
 }: VisualDagStudioProps) {
   const isReadOnly = mode === 'readonly' || mode === 'execution';
-  const isExecutionMode = Boolean(isReadOnly && executionId);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const headerToolbarRef = useRef<HTMLDivElement>(null);
@@ -193,14 +197,20 @@ function DagStudioCanvas({
   const [irDialogMode, setIrDialogMode] = useState<'export' | 'import'>('export');
   const [irDialogContent, setIrDialogContent] = useState('');
   const [isDryRunOpen, setIsDryRunOpen] = useState(false);
+  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false);
+  const [activeSimulationExecutionId, setActiveSimulationExecutionId] = useState<string | null>(null);
   const [selectedEdgeData, setSelectedEdgeData] = useState<EdgeConditionModalData | null>(null);
   const [isEdgeConditionOpen, setIsEdgeConditionOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isVariableWatchOpen, setIsVariableWatchOpen] = useState(false);
   const [breakpoints, setBreakpoints] = useState<string[]>([]);
 
+  // Effective execution ID (either passed via prop or started by live simulation)
+  const effectiveExecutionId = executionId || activeSimulationExecutionId;
+  const isExecutionMode = Boolean(isReadOnly && effectiveExecutionId);
+
   // Workflow API & Execution stream integrations
-  const stream = useWorkflowExecutionStream(executionId || null);
+  const stream = useWorkflowExecutionStream(effectiveExecutionId || null);
   const versionsQuery = workflowApi.useWorkflowVersions
     ? workflowApi.useWorkflowVersions(workflowKey || null)
     : { data: [] };
@@ -229,8 +239,8 @@ function DagStudioCanvas({
     currentStepTimestamp,
     historicalLogs,
   } = useDagExecutionSync({
-    isReadOnly,
-    executionId,
+    isReadOnly: isReadOnly || Boolean(effectiveExecutionId),
+    executionId: effectiveExecutionId,
     initialEvents,
     stream,
     setNodes,
@@ -604,7 +614,7 @@ function DagStudioCanvas({
         diffTargetVersion={diffTargetVersion}
         onDiffVersionChange={setDiffTargetVersion}
         isExecutionMode={isExecutionMode}
-        executionId={executionId}
+        executionId={effectiveExecutionId}
         connectionState={stream.connectionState}
         retryAttempt={stream.retryAttempt}
         nextRetryDelayMs={stream.nextRetryDelayMs}
@@ -628,6 +638,7 @@ function DagStudioCanvas({
         onValidateDag={handleValidateDag}
         validationErrorsCount={validationErrors.length}
         onDryRun={() => setIsDryRunOpen(true)}
+        onSimulate={() => setIsSimulationModalOpen(true)}
         onExportJson={handleExportJson}
         onOpenImportDialog={handleOpenImportDialog}
         onResetInitial={handleResetInitial}
@@ -956,6 +967,17 @@ function DagStudioCanvas({
             onOpenChange={setIsDryRunOpen}
             workflowIR={exportToWorkflowIR(nodes, edges)}
             onSimulationSuccess={handleSimulationSuccess}
+          />
+          <WorkflowSimulationModal
+            open={isSimulationModalOpen}
+            onOpenChange={setIsSimulationModalOpen}
+            onStartSimulation={(simExecId) => {
+              // Load realistic multi-branch pipeline blueprint with logic fork/join nodes
+              setNodes(MULTI_BRANCH_ORDER_NODES);
+              setEdges(MULTI_BRANCH_ORDER_EDGES);
+              setActiveSimulationExecutionId(simExecId);
+              setIsSimulationModalOpen(false);
+            }}
           />
         </>
       )}

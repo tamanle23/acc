@@ -23,6 +23,8 @@ import { sandboxResetRegistry, dlqSandboxRepository } from '@unipost/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { DLQ_QUERY_KEY } from '@/features/dlq/hooks/use-dlq';
+import { workflowSimulationEngine } from '@/features/workflows/sandbox/workflow-simulation-engine';
+import { SIMULATION_SCENARIOS, type SimulationScenarioId } from '@/features/workflows/sandbox/simulation-scenarios';
 import type { SandboxPersonaId } from '../types';
 
 export function SandboxDock() {
@@ -45,7 +47,7 @@ export function SandboxDock() {
     return localStorage.getItem('unipost_unified_sandbox_minimized') === 'true';
   });
 
-  const [activeTab, setActiveTab] = useState<'persona' | 'network' | 'auth'>('persona');
+  const [activeTab, setActiveTab] = useState<'persona' | 'network' | 'workflows' | 'auth'>('persona');
   const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
 
   // URL Bootstrap: Check for ?sandbox=true & ?persona= & ?tenant=
@@ -228,6 +230,15 @@ export function SandboxDock() {
             }`}
         >
           Network / Chaos
+        </button>
+        <button
+          onClick={() => setActiveTab('workflows')}
+          className={`flex-1 py-1 px-2 rounded-md font-medium transition-all ${activeTab === 'workflows'
+            ? 'bg-background shadow-xs text-foreground'
+            : 'text-muted-foreground hover:text-foreground'
+            }`}
+        >
+          Workflows
         </button>
         {isAuthenticated && isSandbox && (
           <button
@@ -430,6 +441,77 @@ export function SandboxDock() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Workflows Multi-Branch Simulation */}
+      {activeTab === 'workflows' && (
+        <div className="space-y-3 text-xs">
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                <Zap className="size-3.5 text-amber-500" /> Multi-Branch Live Simulator
+              </span>
+              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-amber-500/30 text-amber-600">
+                Loom Virtual SSE
+              </Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">
+              Trigger instant multi-branch order pipeline traces into DAG Studio with fork/join synchronization:
+            </p>
+            <div className="space-y-1.5">
+              {(Object.values(SIMULATION_SCENARIOS) as typeof SIMULATION_SCENARIOS[SimulationScenarioId][]).map(
+                (sc) => (
+                  <div
+                    key={sc.id}
+                    className="flex items-center justify-between p-2 rounded-lg border border-border/60 hover:bg-muted/30 transition-all text-[11px]"
+                  >
+                    <div className="flex flex-col max-w-[200px]">
+                      <span className="font-semibold text-foreground truncate">{sc.name}</span>
+                      <span className="text-[9px] text-muted-foreground truncate">{sc.badge}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] px-2 gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                      onClick={() => {
+                        const execId = workflowSimulationEngine.start(sc.id, '2x');
+                        toast.success(`Started simulation: ${sc.name} (${execId})`);
+                      }}
+                    >
+                      <Play className="size-2.5" />
+                      <span>Trigger</span>
+                    </Button>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-[10px] h-7 gap-1"
+              onClick={() => {
+                workflowSimulationEngine.reset();
+                toast.info('Simulation stream reset');
+              }}
+            >
+              <RotateCcw className="size-3" />
+              <span>Reset Stream</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-[10px] h-7 gap-1"
+              onClick={() => {
+                workflowSimulationEngine.stepNext();
+              }}
+            >
+              <span>Step Event</span>
+            </Button>
           </div>
         </div>
       )}
