@@ -1,163 +1,121 @@
-import { spawn, type Subprocess } from "bun";
-import path from "node:path";
-import fs from "node:fs";
+import { type IProcessRunner, defaultProcessRunner } from "./platform/IProcessRunner";
+import {
+  type ITrayStrategy,
+  type TrayCallbacks,
+  type TrayHandle,
+  type TrayColor,
+  type TrayMenuItem,
+} from "./platform/strategies/tray/ITrayStrategy";
+import { MacNativeTrayStrategy } from "./platform/strategies/tray/MacNativeTrayStrategy";
+import { LinuxAppIndicatorTrayStrategy } from "./platform/strategies/tray/LinuxAppIndicatorTrayStrategy";
+import { WindowsPoshTrayStrategy } from "./platform/strategies/tray/WindowsPoshTrayStrategy";
 
-export interface TrayBridgeOptions {
-  iconDir: string;
-  initialColor?: "green" | "yellow" | "red";
-  onOpenDashboard?: () => void;
-  onPurgeVram?: () => void;
-  onRestartAll?: () => void;
-  onCheckUpdate?: () => void;
-  onExit?: () => void;
+export type { TrayColor, TrayMenuItem, TrayCallbacks, TrayHandle, ITrayStrategy };
+
+export interface NativeTrayBridgeOptions {
+  readonly iconDir?: string;
+  readonly initialColor?: TrayColor;
 }
 
+/**
+ * Composite NativeTrayBridge: facade for starting, updating, and stopping system trays.
+ * Fully decoupled from specific platform subprocess mechanics.
+ */
 export class NativeTrayBridge {
-  private proc: Subprocess | null = null;
-  private isReady = false;
-  private options: TrayBridgeOptions;
+  private activeHandle: TrayHandle | null = null;
+  private readonly strategies: ITrayStrategy[];
+  private currentColor: TrayColor = "green";
+  private currentTooltip = "ACC AI Supervisor";
 
-  constructor(options: TrayBridgeOptions) {
-    this.options = options;
+  constructor(
+    optionsOrStrategies?: NativeTrayBridgeOptions | ITrayStrategy[],
+    private readonly runner: IProcessRunner = defaultProcessRunner
+  ) {
+    if (Array.isArray(optionsOrStrategies)) {
+      this.strategies = optionsOrStrategies;
+    } else {
+      if (optionsOrStrategies?.initialColor) {
+        this.currentColor = optionsOrStrategies.initialColor;
+      }
+      this.strategies = [
+        new MacNativeTrayStrategy(this.runner),
+        new LinuxAppIndicatorTrayStrategy(this.runner),
+        new WindowsPoshTrayStrategy(this.runner),
+      ];
+    }
   }
 
-  public async start(): Promise<boolean> {
-    if (process.platform !== "win32") {
-      console.log("[NativeTrayBridge] System tray notification area is currently implemented for Windows. Non-Windows fallback active.");
-      return false;
+  async isSupported(): Promise<boolean> {
+    for (const strategy of this.strategies) {
+      if (await strategy.isSupported()) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    const scriptPath = path.join(this.options.iconDir, "tray_runner.ps1");
-    if (!fs.existsSync(scriptPath)) {
-      console.warn(`[NativeTrayBridge] Tray runner script not found at ${scriptPath}`);
-      return false;
-    }
-
-    const initialColor = this.options.initialColor || "yellow";
-
-    try {
-      this.proc = spawn(
-        [
-          "powershell",
-          "-NoProfile",
-          "-NonInteractive",
-          "-WindowStyle",
-          "Hidden",
-          "-ExecutionPolicy",
-          "Bypass",
-          "-File",
-          scriptPath,
-          "-IconDir",
-          this.options.iconDir,
-          "-InitialColor",
-          initialColor,
-        ],
-        {
-          stdin: "pipe",
-          stdout: "pipe",
-          stderr: "pipe",
-        }
-      );
-
-      this.listenStdout();
-      this.listenStderr();
-
+  async start(callbacks: TrayCallbacks): Promise<boolean> {
+    if (this.activeHandle) {
       return true;
-    } catch (err) {
-      console.warn("[NativeTrayBridge] Failed to launch native Windows system tray:", err);
-      return false;
     }
-  }
 
-  private listenStdout(): void {
-    if (!this.proc?.stdout) return;
-
-    (async () => {
-      const reader = this.proc!.stdout.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value);
-        const lines = buffer.split(/\r?\n/);
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed === "TRAY_READY") {
-            this.isReady = true;
-            console.log("[NativeTrayBridge] System Tray icon active in Windows Notification Area.");
-          } else if (trimmed === "EVENT:OPEN") {
-            this.options.onOpenDashboard?.();
-          } else if (trimmed === "EVENT:PURGE_VRAM") {
-            this.options.onPurgeVram?.();
-          } else if (trimmed === "EVENT:RESTART_ALL") {
-            this.options.onRestartAll?.();
-          } else if (trimmed === "EVENT:CHECK_UPDATE") {
-            this.options.onCheckUpdate?.();
-          } else if (trimmed === "EVENT:EXIT") {
-            this.options.onExit?.();
-          }
-        }
-      }
-    })().catch(() => {});
-  }
-
-  private listenStderr(): void {
-    if (!this.proc?.stderr) return;
-
-    (async () => {
-      const reader = this.proc!.stderr.getReader();
-      const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const msg = decoder.decode(value).trim();
-        if (msg) {
-          console.warn(`[NativeTrayBridge:stderr] ${msg}`);
-        }
-      }
-    })().catch(() => {});
-  }
-
-  public setIcon(color: "green" | "yellow" | "red"): void {
-    if (this.proc?.stdin) {
+    for (const strategy of this.strategies) {
       try {
-        this.proc.stdin.write(`ICON:${color}\n`);
-        this.proc.stdin.flush();
+        if (await strategy.isSupported()) {
+          this.activeHandle = await strategy.start(callbacks);
+          await this.activeHandle.updateStatus(this.currentColor, this.currentTooltip);
+          return true;
+        }
       } catch {
-        // stream closed
+        // Fallback to next strategy
       }
+    }
+
+    return false;
+  }
+
+  async setIcon(color: TrayColor): Promise<void> {
+    this.currentColor = color;
+    if (this.activeHandle) {
+      await this.activeHandle.updateStatus(this.currentColor, this.currentTooltip);
     }
   }
 
-  public setTooltip(text: string): void {
-    if (this.proc?.stdin) {
+  async setTooltip(tooltip: string): Promise<void> {
+    this.currentTooltip = tooltip;
+    if (this.activeHandle) {
+      await this.activeHandle.updateStatus(this.currentColor, this.currentTooltip);
+    }
+  }
+
+  async updateStatus(color: TrayColor, tooltip: string): Promise<void> {
+    this.currentColor = color;
+    this.currentTooltip = tooltip;
+    if (!this.activeHandle) return;
+    try {
+      await this.activeHandle.updateStatus(color, tooltip);
+    } catch {
+      // ignore
+    }
+  }
+
+  async updateMenu(items: readonly TrayMenuItem[]): Promise<void> {
+    if (!this.activeHandle) return;
+    try {
+      await this.activeHandle.updateMenu(items);
+    } catch {
+      // ignore
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.activeHandle) {
       try {
-        this.proc.stdin.write(`TOOLTIP:${text}\n`);
-        this.proc.stdin.flush();
+        await this.activeHandle.stop();
       } catch {
-        // stream closed
+        // ignore
       }
-    }
-  }
-
-  public stop(): void {
-    if (this.proc) {
-      try {
-        if (this.proc.stdin) {
-          this.proc.stdin.write("EXIT\n");
-          this.proc.stdin.flush();
-        }
-      } catch {}
-      setTimeout(() => {
-        try {
-          this.proc?.kill();
-        } catch {}
-      }, 500);
+      this.activeHandle = null;
     }
   }
 }

@@ -1,6 +1,6 @@
-import { spawn } from "bun";
 import os from "node:os";
 import type { HardwareTierOption } from "./configStore.js";
+import { type IProcessRunner, defaultProcessRunner } from "./platform/IProcessRunner";
 
 export type HardwareTier = "tier1" | "tier2" | "tier3" | "tier4" | "tier5";
 
@@ -24,17 +24,18 @@ export interface HardwareProfile {
 }
 
 export class HardwareProfiler {
-  public static async queryNvidiaSmi(): Promise<{ totalBytes: number; freeBytes: number; name: string } | null> {
+  public static async queryNvidiaSmi(
+    runner: IProcessRunner = defaultProcessRunner
+  ): Promise<{ totalBytes: number; freeBytes: number; name: string } | null> {
     try {
-      const proc = spawn(["nvidia-smi", "--query-gpu=memory.total,memory.free,name", "--format=csv,noheader,nounits"], {
-        stdout: "pipe",
-        stderr: "ignore",
-      });
-      const output = await new Response(proc.stdout).text();
-      const code = await proc.exited;
-      if (code !== 0 || !output.trim()) return null;
+      const res = await runner.execute([
+        "nvidia-smi",
+        "--query-gpu=memory.total,memory.free,name",
+        "--format=csv,noheader,nounits",
+      ]);
+      if (!res.ok || !res.value.stdout.trim()) return null;
 
-      const [totalMbStr, freeMbStr, nameStr] = output.trim().split(",").map((s) => s.trim());
+      const [totalMbStr, freeMbStr, nameStr] = res.value.stdout.trim().split(",").map((s) => s.trim());
       const totalBytes = Number(totalMbStr) * 1024 * 1024;
       const freeBytes = Number(freeMbStr) * 1024 * 1024;
       return { totalBytes, freeBytes, name: nameStr || "NVIDIA GPU" };
@@ -43,22 +44,24 @@ export class HardwareProfiler {
     }
   }
 
-  public static async queryAppleSilicon(): Promise<{ totalBytes: number; freeBytes: number; name: string } | null> {
+  public static async queryAppleSilicon(
+    runner: IProcessRunner = defaultProcessRunner
+  ): Promise<{ totalBytes: number; freeBytes: number; name: string } | null> {
     if (process.platform !== "darwin" || process.arch !== "arm64") {
       return null;
     }
 
     try {
-      const proc = spawn(["sysctl", "-n", "hw.memsize"], { stdout: "pipe", stderr: "ignore" });
-      const text = await new Response(proc.stdout).text();
-      await proc.exited;
-      const totalRam = Number(text.trim());
-      if (Number.isFinite(totalRam) && totalRam > 0) {
-        return {
-          totalBytes: totalRam,
-          freeBytes: Math.floor(totalRam * 0.5), // dynamic heuristic
-          name: "Apple Silicon Unified Memory",
-        };
+      const res = await runner.execute(["sysctl", "-n", "hw.memsize"]);
+      if (res.ok) {
+        const totalRam = Number(res.value.stdout.trim());
+        if (Number.isFinite(totalRam) && totalRam > 0) {
+          return {
+            totalBytes: totalRam,
+            freeBytes: Math.floor(totalRam * 0.5), // dynamic heuristic
+            name: "Apple Silicon Unified Memory",
+          };
+        }
       }
     } catch {
       // fallback

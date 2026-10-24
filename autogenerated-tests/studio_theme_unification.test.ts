@@ -150,7 +150,7 @@ describe('Studio Unified System Theme Manager & Tailwind v4 Integration', () => 
       'apps/studio/src/components/preview/ViewportControlBar.tsx',
       'apps/studio/src/components/preview/ViewportQuickTransport.tsx',
       'apps/studio/src/components/preview/TransformGizmoOverlay.tsx',
-      'apps/studio/src/components/preview/BentoCompanionCard.tsx',
+      'apps/studio/src/components/preview/TelemetryCompanionCard.tsx',
       'apps/studio/src/components/preview/ContextualActionPill.tsx',
       'apps/studio/src/components/preview/ViewportSafeGuides.tsx',
       'apps/studio/src/components/debugger/VisualIRJsonDebuggerModal.tsx',

@@ -8,8 +8,9 @@ import { logManager } from "./LogManager.js";
 import { supervisorEngine } from "./SupervisorEngine.js";
 import { ollamaManager } from "./OllamaManager.js";
 import { updateManager } from "./UpdateManager.js";
-import { setWindowsStartup, getWindowsStartupStatus } from "./windowsStartup.js";
+import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
 import { NativeTrayBridge } from "./NativeTrayBridge.js";
+import { WindowHost } from "./WindowHost.js";
 import { spawn } from "bun";
 
 async function main() {
@@ -67,10 +68,27 @@ async function main() {
   console.log(`[Supervisor] Hardware Tier: ${profile.activeTier.toUpperCase()} (${profile.gpu?.name || "CPU"})`);
   console.log(`[Supervisor] Recommended Python Device: ${profile.recommendedPythonDevice}`);
 
-  // 5. Start Embedded Control Plane Web Server
+  // 5. Ensure Solid UI Build is Ready
+  const distUiDir = path.join(import.meta.dir, "..", "..", "dist", "ui");
   const viewsDir = path.join(import.meta.dir, "..", "views");
-  const htmlFile = path.join(viewsDir, "index.html");
+  const fallbackHtmlFile = path.join(viewsDir, "index.html");
 
+  const isDistUiMissing =
+    !fs.existsSync(distUiDir) ||
+    !fs.existsSync(path.join(distUiDir, "app.js")) ||
+    !fs.existsSync(path.join(distUiDir, "index.html"));
+
+  if (isDistUiMissing) {
+    try {
+      console.log("[Supervisor] dist/ui not found or incomplete. Triggering build-ui...");
+      const { buildUI } = await import("../../scripts/build-ui.ts");
+      await buildUI();
+    } catch (err) {
+      console.warn("[Supervisor] Automated UI build failed, will use fallback UI if available:", err);
+    }
+  }
+
+  // 6. Start Embedded Control Plane Web Server
   const server = Bun.serve({
     port: config.supervisorPort,
     async fetch(req) {
@@ -92,7 +110,7 @@ async function main() {
         const states = supervisorEngine.getAllStates();
         const curProfile = await HardwareProfiler.getProfile(configStore.loadConfig().hardwareTierOverride);
         const updateStatus = updateManager.getStatus();
-        const autostart = await getWindowsStartupStatus();
+        const autostart = await getStartupStatus();
 
         return Response.json(
           {
@@ -171,15 +189,40 @@ async function main() {
         const body = await req.json();
         const updated = configStore.saveConfig(body);
         if (typeof body.autostart === "boolean") {
-          await setWindowsStartup(body.autostart);
+          await setStartupEnabled(body.autostart);
         }
         return Response.json({ config: updated }, { headers: corsHeaders });
       }
 
-      // Serve Frontend Views
+      // Serve Frontend Views (SolidJS + Ark UI + Tailwind bundle from dist/ui, or legacy fallback)
+      const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
+      const distFilePath = path.join(distUiDir, pathname.slice(1));
+
+      if (fs.existsSync(distFilePath) && fs.statSync(distFilePath).isFile()) {
+        const ext = path.extname(distFilePath);
+        const mimeTypes: Record<string, string> = {
+          ".html": "text/html; charset=utf-8",
+          ".js": "application/javascript; charset=utf-8",
+          ".css": "text/css; charset=utf-8",
+          ".ico": "image/x-icon",
+          ".png": "image/png",
+          ".json": "application/json",
+        };
+        const contentType = mimeTypes[ext] || "application/octet-stream";
+        return new Response(Bun.file(distFilePath), {
+          headers: {
+            "Content-Type": contentType,
+            // In dev mode, never cache so updates appear instantly on reload
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+          },
+        });
+      }
+
       if (url.pathname === "/" || url.pathname === "/index.html") {
-        if (fs.existsSync(htmlFile)) {
-          return new Response(fs.readFileSync(htmlFile), {
+        if (fs.existsSync(fallbackHtmlFile)) {
+          return new Response(Bun.file(fallbackHtmlFile), {
             headers: { "Content-Type": "text/html; charset=utf-8" },
           });
         }
@@ -192,18 +235,16 @@ async function main() {
 
   console.log(`[Supervisor] Control Plane Dashboard: http://127.0.0.1:${server.port}`);
 
-  // 6. Launch Native Windows System Tray
+  // 6. Launch Native System Tray & Window Host
   const assetsDir = path.join(import.meta.dir, "..", "assets");
+  const dashboardUrl = `http://127.0.0.1:${server.port}`;
+  const windowHost = new WindowHost({ url: dashboardUrl });
+
   const trayBridge = new NativeTrayBridge({
     iconDir: assetsDir,
     initialColor: supervisorEngine.getTrayColor(),
     onOpenDashboard: () => {
-      const url = `http://127.0.0.1:${server.port}`;
-      if (process.platform === "win32") {
-        spawn(["powershell", "-NoProfile", "-Command", "Start-Process", `"${url}"`]);
-      } else {
-        console.log(`[Supervisor] Dashboard URL: ${url}`);
-      }
+      windowHost.open();
     },
     onPurgeVram: () => supervisorEngine.purgeAllVram(),
     onRestartAll: async () => {
@@ -213,7 +254,14 @@ async function main() {
     onCheckUpdate: () => updateManager.checkForUpdates(),
     onExit: () => shutdown(),
   });
-  await trayBridge.start();
+  const trayStarted = await trayBridge.start();
+
+  // If launching normally (not background autostart with --minimized)
+  // or if the tray failed to initialize, automatically present the application window host
+  const isMinimized = process.argv.includes("--minimized");
+  if (!isMinimized || !trayStarted) {
+    await windowHost.open();
+  }
 
   supervisorEngine.onStatusChange((_states, color) => {
     trayBridge.setIcon(color);
@@ -227,6 +275,7 @@ async function main() {
   const shutdown = async () => {
     console.log("\n[Supervisor] Shutting down all supervised services...");
     trayBridge.stop();
+    windowHost.close();
     await supervisorEngine.stopAll();
     server.stop();
     process.exit(0);

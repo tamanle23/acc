@@ -22,7 +22,7 @@ All newly extracted components reside in `apps/studio/src/components/preview/` a
 7. **`ViewportCanvasLayer.tsx`**:
    - Dual-layer decoupled canvas element container (`#studio-canvas` for WebCodecs/Worker/fallback video frames and `#studio-overlay-canvas` for high-frequency gizmo/HUD drawing).
 8. **`index.ts`**:
-   - Complete barrel file exporting both pre-existing (`ViewportControlBar`, `ViewportSafeGuides`, `ContextualActionPill`, `SubtitlesOverlay`, `BentoCompanionCard`) and newly extracted preview components.
+   - Complete barrel file exporting both pre-existing (`ViewportControlBar`, `ViewportSafeGuides`, `ContextualActionPill`, `SubtitlesOverlay`, `TelemetryCompanionCard`) and newly extracted preview components.
 
 ## Verification & Parity
 - **Build**: `bun run --cwd apps/studio build` succeeded with zero TypeScript or Vite errors (`dist/client` bundle generated cleanly).

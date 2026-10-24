@@ -70,7 +70,7 @@ describe('Task 308: Studio Production Build Parity & Module Resolution', () => {
       expect(files).toContain('ViewportQuickTransport.tsx');
       expect(files).toContain('SubtitlesOverlay.tsx');
       expect(files).toContain('TransformGizmoOverlay.tsx');
-      expect(files).toContain('BentoCompanionCard.tsx');
+      expect(files).toContain('TelemetryCompanionCard.tsx');
       expect(files).toContain('index.ts');
     });
 

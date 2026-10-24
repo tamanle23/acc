@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "bun";
+import { type IProcessRunner, defaultProcessRunner } from "./platform/IProcessRunner";
 
 export type OllamaState = "ADOPTED" | "MANAGED" | "STOPPED" | "NOT_INSTALLED";
 
@@ -22,7 +22,10 @@ export interface OllamaRunningModel {
 export class OllamaManager {
   private basePort: number;
 
-  constructor(basePort = 11434) {
+  constructor(
+    basePort = 11434,
+    private readonly runner: IProcessRunner = defaultProcessRunner
+  ) {
     this.basePort = basePort;
   }
 
@@ -34,7 +37,7 @@ export class OllamaManager {
     this.basePort = port;
   }
 
-  public findBinaryPath(): string | null {
+  public async findBinaryPath(): Promise<string | null> {
     if (process.platform === "win32") {
       const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
       const standardWinPath = path.join(localAppData, "Programs", "Ollama", "ollama.exe");
@@ -43,19 +46,7 @@ export class OllamaManager {
       }
     }
 
-    // Try global PATH
-    try {
-      const whichCmd = process.platform === "win32" ? "where.exe" : "which";
-      const proc = spawn([whichCmd, "ollama"], { stdout: "pipe", stderr: "ignore" });
-      const text = proc.stdout ? new Response(proc.stdout).text() : Promise.resolve("");
-      // synchronous wait on exited
-      const lines = text.then((t) => t.trim().split(/\r?\n/));
-      // fallback
-    } catch {
-      // ignore
-    }
-
-    return null;
+    return await this.runner.which("ollama");
   }
 
   public async isAlive(port = this.basePort): Promise<boolean> {

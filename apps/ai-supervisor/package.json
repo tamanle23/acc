@@ -5,17 +5,29 @@
   "type": "module",
   "main": "src/bun/index.ts",
   "scripts": {
-    "dev": "bun run src/bun/index.ts",
+    "dev": "bun run scripts/dev-runner.ts",
+    "dev:app": "bun run src/bun/index.ts",
+    "dev:ui": "bun run scripts/build-ui.ts --watch",
+    "compile:native": "bun run scripts/compile-native.ts",
+    "build:ui": "bun run scripts/build-ui.ts",
     "dev:electrobun": "electrobun dev",
     "start": "bun run src/bun/index.ts",
-    "build": "bun build src/bun/index.ts --compile --outfile=dist/acc-supervisor.exe",
+    "build": "bun run compile:native && bun run build:ui && bun build src/bun/index.ts --compile --outfile=dist/acc-supervisor.exe",
     "build:electrobun": "electrobun build"
   },
   "dependencies": {
-    "electrobun": "^2.0.2"
+    "@ark-ui/solid": "^5.39.3",
+    "electrobun": "^2.0.2",
+    "lucide-solid": "^1.61.0",
+    "solid-js": "^1.9.17"
   },
   "devDependencies": {
+    "@babel/core": "^8.0.9",
+    "@babel/preset-typescript": "^8.0.7",
+    "@tailwindcss/cli": "^4.3.3",
     "@types/bun": "latest",
-    "@types/node": "^26.6.2"
+    "@types/node": "^26.6.2",
+    "babel-preset-solid": "^1.9.16",
+    "tailwindcss": "^4.3.3"
   }
 }

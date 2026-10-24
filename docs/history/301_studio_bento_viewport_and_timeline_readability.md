@@ -8,7 +8,7 @@
 
 ## 🎯 Executive Summary
 Iteration 24 delivers a high-impact UX enhancement to the Visual Storytelling Studio:
-1. **Dynamic Responsive Bento Viewport**: Refactored [`apps/studio/src/components/Preview.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/Preview.tsx) and its center workspace in [`apps/studio/src/App.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/App.tsx) into a modern, fluid Bento Grid layout with a dedicated companion card (`BentoCompanionCard.tsx`) housing scene telemetry, active track/clip counters, zoom levels, alpha transparency toggles, and safe guides.
+1. **Dynamic Responsive Bento Viewport**: Refactored [`apps/studio/src/components/Preview.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/Preview.tsx) and its center workspace in [`apps/studio/src/App.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/App.tsx) into a modern, fluid Bento Grid layout with a dedicated companion card (`TelemetryCompanionCard.tsx`) housing scene telemetry, active track/clip counters, zoom levels, alpha transparency toggles, and safe guides.
 2. **Multi-Tier Timeline Sequence Readability Engine**: Resolved clip density ambiguity in [`apps/studio/src/components/Timeline.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/Timeline.tsx) and [`apps/studio/src/workers/timeline.worker.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/workers/timeline.worker.ts) using:
    - 4-Tier Adaptive LOD rendering (`LOD 0` Micro <36px, `LOD 1` Compact 36-90px, `LOD 2` Standard 90-220px, `LOD 3` Expanded >220px).
    - High-contrast semantic archetype styling: Video (Indigo glass), Audio (Emerald glass), Text & Captions (Violet glass), Depth & VFX (Amber glass).
@@ -19,8 +19,8 @@ Iteration 24 delivers a high-impact UX enhancement to the Visual Storytelling St
 
 ## 🏗️ Architectural Changes
 
-### 1. Bento Grid Viewport (`Preview.tsx` & `BentoCompanionCard.tsx`)
-- Created [`apps/studio/src/components/preview/BentoCompanionCard.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/preview/BentoCompanionCard.tsx):
+### 1. Bento Grid Viewport (`Preview.tsx` & `TelemetryCompanionCard.tsx`)
+- Created [`apps/studio/src/components/preview/TelemetryCompanionCard.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/preview/TelemetryCompanionCard.tsx):
   - Telemetry card: Resolution (`1920x1080`), global FPS, current vs. total seconds, active tracks, rendering clip count.
   - Viewport Helpers card: Safe guides cycle, alpha checkerboard toggle, and VFX particle HUD toggle.
 - Extended [`apps/studio/src/components/preview/ViewportControlBar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/studio/src/components/preview/ViewportControlBar.tsx) with a one-click `LayoutPanelTop` toggle to expand/collapse the telemetry card.
