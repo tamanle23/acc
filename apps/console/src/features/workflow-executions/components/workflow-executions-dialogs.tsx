@@ -7,41 +7,12 @@ import { WorkflowExecutionDetailDrawer } from './workflow-execution-detail-drawe
 import { useWorkflowExecutions } from './workflow-executions-provider'
 import { useDeleteWorkflowExecutionMutation } from '../api/use-workflow-executions'
 
-import { WorkflowSimulationModal } from '@/features/workflows/components/studio/modals/workflow-simulation-modal'
-import { workflowExecutionsSandboxRepo } from '@/core/sandbox'
-
 export function WorkflowExecutionsDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useWorkflowExecutions()
   const deleteWorkflowExecutionMutation = useDeleteWorkflowExecutionMutation()
 
   return (
     <>
-      <WorkflowSimulationModal
-        open={open === 'simulate'}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setOpen(null)
-        }}
-        onStartSimulation={(simExecId) => {
-          // Register simulated execution so it is immediately inspectable in the table and modal
-          const newExec = {
-            id: simExecId,
-            title: `Multi-Branch Order Simulation (${simExecId})`,
-            status: 'IN_PROGRESS' as const,
-            label: 'workflow',
-            priority: 'high',
-            workflowId: 'order-fulfillment-pipeline',
-            workflowName: 'Order Fulfillment Pipeline',
-            activeStep: 'validateOrder',
-            taskReferenceName: 'validateOrder',
-            taskType: 'SIMPLE',
-            startedAt: new Date().toISOString(),
-          }
-          workflowExecutionsSandboxRepo.create(newExec as any)
-          setCurrentRow(newExec as any)
-          setOpen('live-stream')
-        }}
-      />
-
       <WorkflowExecutionsMutateDrawer
         key='workflow-execution-create'
         open={open === 'create'}
