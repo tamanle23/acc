@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [198](198_master_database_schema_architecture_synchronization.md) | 2026-10-24 | Master Database Schema Architecture Refinement & Synchronization | Synchronized master persistence specification with canonical UNIPOST_IDENTITY_* naming, eliminated dead tables, added UNIPOST_TENANT_BILLING/FEATURES & feature gate pipeline, unified Liquibase topology, and UI/UX WCAG 2.2 AA matrix. |
 | [197](197_dedicated_tenant_master_table_and_identity_migration.md) | 2026-10-24 | Dedicated UNIPOST_TENANTS Master Table & Identity Migration | Introduced dedicated master UNIPOST_TENANTS table with RLS, unified Liquibase master changelog, pruned obsolete identity tables, and folded unipost-ms-identity into unipost-fw and unipost-ms-aio. |
 | [196](196_database_schema_architecture_master_specification.md) | 2026-10-24 | Database Schema & Persistence Architecture Specification | Authored comprehensive master architectural specification for the hybrid relational and metadata-driven persistence engine. |
 | [001](001_mobile_overflow_scroll_bento_box.md) | 2026-10-08 | Mobile Viewport Overflow Scroll & Bento Box Responsive Preservation | Resolved mobile screen scrolling freeze in console while preserving Bento Box layout on medium/large screens. |

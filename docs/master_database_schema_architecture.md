@@ -1,5 +1,5 @@
 # Architecture Reference: Persistence & Metadata-Driven Database Engine
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Status:** Living Master Specification (Single Source of Truth)  
 **System Domain:** Unipost Enterprise Monorepo Data Persistence Layer  
 **Target Audience:** Staff / Principal Architects, Backend & Frontend Engineers, DevOps/DBAs  
@@ -11,14 +11,14 @@
 Unipost utilizes a **Hybrid Polyglot-Relational / Dynamic Metadata Architecture** built on **PostgreSQL 16+**, **Spring Boot 3.x (Spring Modulith)**, and **Liquibase**. 
 
 The system bridges two traditionally divergent database paradigms:
-1. **Fixed Relational Infrastructure (System Core & Control Plane):** Strongly-typed, normalized tables with static referential integrity for Tenants, Identity/RBAC, Workspaces, Billing, Audit, and Event Outbox.
+1. **Fixed Relational Infrastructure (System Core & Control Plane):** Strongly-typed, normalized tables with static referential integrity for Tenants (`UNIPOST_TENANTS`), Identity & RBAC (`UNIPOST_IDENTITY_*`), Workspaces (`UNIPOST_WORKSPACES`), Billing & Entitlements (`UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`), Audit (`UNIPOST_RECORD_AUDIT_LOG`), and Event Outbox (`UNIPOST_EVENT_OUTBOX`).
 2. **Metadata-Driven Dynamic Plane (EAV / JSONB Dynamic Schema):** An in-engine dynamic schema evolution runtime allowing individual tenants and system custodians to declare custom Entities, Dynamic Attributes, Composite Virtual Schemas, Finite State Machine (FSM) Lifecycles, and Typed Edge Graphs **without running DDL migrations or dropping production connections**.
 
 ```mermaid
 flowchart TD
     subgraph ClientLayer ["Client Applications"]
-        Console["Console (React / Vite)"]
-        Mobile["Mobile UI (Expo)"]
+        Console["Console (React 19 / Vite 8)"]
+        Mobile["Mobile UI (Expo SDK 57)"]
         Desktop["Desktop (Electrobun)"]
     end
 
@@ -26,16 +26,18 @@ flowchart TD
         RestAPI["REST & GraphQL Gateways"]
         SchemaValidator["Dynamic JSON Schema Validator (L1 / L2 Cache)"]
         RLSInterceptor["Tenant Context Interceptor (app.current_tenant_id)"]
+        FeatureAspect["Feature Gate Aspect (@RequireFeature)"]
         OutboxRelay["Transactional Outbox Relay"]
     end
 
     subgraph DataPlane ["Persistence Tier (PostgreSQL 16+)"]
         subgraph StaticControlPlane ["Static Control Plane (Relational)"]
-            T_TENANT["UNIPOST_WORKSPACES / TENANTS"]
-            T_BILLING["UNIPOST_TENANT_BILLING"]
-            T_IDENTITY["APP_USER / ROLE / PERMISSION"]
+            T_TENANTS["UNIPOST_TENANTS\n(Master Organization Catalog)"]
+            T_WORKSPACES["UNIPOST_WORKSPACES\n(Environments: tenant_ref_id FK)"]
+            T_BILLING["UNIPOST_TENANT_BILLING & FEATURES\n(payOS VietQR & Dynamic Tokens)"]
+            T_IDENTITY["UNIPOST_IDENTITY_*\n(USER, ROLE, PERMISSION, JOIN TABLES)"]
             T_OUTBOX["UNIPOST_EVENT_OUTBOX"]
-            T_AUDIT["UNIPOST_RECORD_AUDIT_LOG (Partitioned)"]
+            T_AUDIT["UNIPOST_RECORD_AUDIT_LOG\n(Monthly Partitioned Ledger)"]
         end
 
         subgraph DynamicMetadataPlane ["Dynamic Metadata Plane (EAV / JSONB Hybrid)"]
@@ -52,7 +54,8 @@ flowchart TD
     Desktop --> RestAPI
 
     RestAPI --> RLSInterceptor
-    RLSInterceptor --> SchemaValidator
+    RLSInterceptor --> FeatureAspect
+    FeatureAspect --> SchemaValidator
     SchemaValidator --> DynamicMetadataPlane
     RestAPI --> StaticControlPlane
     DynamicMetadataPlane -.-> OutboxRelay
@@ -259,30 +262,79 @@ Append-only chronological history of all dynamic record mutations.
 
 ---
 
+#### 10. `UNIPOST_TENANT_BILLING` (Commercial Subscriptions & payOS VietQR)
+Manages commercial tier subscriptions, payment gateway bindings, and renewal lifecycles.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `tenant_id` | `VARCHAR(255)` | `PK`, `NOT NULL` | Tenant identifier scoped strictly via PostgreSQL RLS. |
+| `payos_customer_id` | `VARCHAR(255)` | Nullable | External payOS customer identifier. |
+| `current_order_code`| `BIGINT` | Nullable | Numeric payOS order transaction code. |
+| `plan_tier` | `VARCHAR(50)` | `NOT NULL`, Default `'BASIC'` | Commercial entitlement tier: `BASIC`, `PRO`, `PRO_MAX`, `ENTERPRISE`. |
+| `billing_cadence` | `VARCHAR(20)` | `NOT NULL`, Default `'MONTHLY'` | Billing period cadence: `MONTHLY`, `YEARLY`. |
+| `status` | `VARCHAR(50)` | `NOT NULL`, Default `'ACTIVE'` | Subscription status: `ACTIVE`, `PAST_DUE`, `CANCELED`, `TRIALING`. |
+| `amount_paid` | `BIGINT` | Default `0` | Cumulative amount paid in VND (Vietnamese Dong). |
+| `expires_at` | `TIMESTAMP` | Nullable | Subscription term expiration timestamp. |
+| `created_date` | `TIMESTAMP` | Standard | Row creation timestamp. |
+| `last_updated_date` | `TIMESTAMP` | Standard | Row modification timestamp. |
+
+*RLS Policy:* `tenant_isolation_billing ON UNIPOST_TENANT_BILLING` enforces `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR tenant_id = current_tenant`.
+
+---
+
+#### 11. `UNIPOST_TENANT_FEATURES` (Dynamic Feature Entitlements)
+Stores fine-grained dynamic feature toggle tokens granted to specific tenants beyond baseline plan tiers.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Unique entitlement token row ID. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Tenant identifier scoped strictly via PostgreSQL RLS. |
+| `feature_key` | `VARCHAR(100)` | `NOT NULL` | Feature token moniker (e.g., `ai_copilot`, `unlimited_exports`, `audit_diff_restore`). |
+| `is_enabled` | `BOOLEAN` | `NOT NULL`, Default `TRUE` | Explicit enablement flag. |
+| `expires_at` | `TIMESTAMP` | Nullable | Optional temporal expiration for time-limited feature trials. |
+| `created_date` | `TIMESTAMP` | Standard | Entitlement provisioned timestamp. |
+| `last_updated_date` | `TIMESTAMP` | Standard | Entitlement updated timestamp. |
+
+*Unique Index:* `uk_tenant_feature_active ON UNIPOST_TENANT_FEATURES (tenant_id, feature_key)`.  
+*RLS Policy:* `tenant_isolation_features ON UNIPOST_TENANT_FEATURES` enforces `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR tenant_id = current_tenant`.
+
+##### Dynamic Feature Gate Evaluation Pipeline
+Dynamic feature validation is executed dual-side across backend boundaries and UI components:
+1. **Backend Method Aspect (`@RequireFeature`)**:
+   - Controller or Service methods are annotated with `@RequireFeature("ai_copilot")`.
+   - `FeatureGateAspect` evaluates `DefaultTenantEntitlementService.hasFeature(tenantId, "ai_copilot")`.
+   - Entitlements check plan tier defaults (e.g., `ENTERPRISE` grants all features) and active unexpired overrides in `UNIPOST_TENANT_FEATURES` with L2 Hazelcast caching (`ttl = 15m`).
+   - If not entitled, throws `FeatureNotEntitledException`, mapped to HTTP 403 `ProblemDetail` (`title = "Feature Entitlement Required"`).
+2. **Frontend Component Guard (`<FeatureGate />`)**:
+   - Client views wrap premium controls in `<FeatureGate feature="ai_copilot" fallback={<PayOsUpgradeCard feature="ai_copilot" />}>`.
+   - Unentitled tenants are seamlessly presented with a Liquid Glass payOS VietQR upgrade card rather than broken views.
+
+---
+
 ### 3.3. Identity, RBAC Matrix & Global Users Control Plane
 
 The identity layer employs a dual-scope architecture: **Global Authentication (Identity Registry)** combined with **Tenant-Scoped Authorization (RBAC Permission Matrix)** and **Sovereign Fleet Governance**.
 
 ```mermaid
 erDiagram
-    APP_USER ||--o{ APP_USERROLE : "assigned"
-    APP_ROLE ||--o{ APP_USERROLE : "belongs to"
-    APP_ROLE ||--o{ APP_ROLEPERMISSION : "contains"
-    APP_PERMISSION ||--o{ APP_ROLEPERMISSION : "mapped to"
-    APP_USER ||--o{ APP_USERACTIVITY : "audited"
+    UNIPOST_IDENTITY_USER ||--o{ UNIPOST_IDENTITY_USERROLE : "assigned"
+    UNIPOST_IDENTITY_ROLE ||--o{ UNIPOST_IDENTITY_USERROLE : "belongs to"
+    UNIPOST_IDENTITY_ROLE ||--o{ UNIPOST_IDENTITY_ROLEPERMISSION : "contains"
+    UNIPOST_IDENTITY_PERMISSION ||--o{ UNIPOST_IDENTITY_ROLEPERMISSION : "mapped to"
+    UNIPOST_TENANTS ||--o{ UNIPOST_IDENTITY_USER : "governs / owns"
 
-    APP_USER {
+    UNIPOST_IDENTITY_USER {
         int id PK
         string uid UK
         string username UK
         string email
         string password
         boolean nonlocked
+        boolean nonexpired
         string type
-        string default_tenant_id
     }
 
-    APP_ROLE {
+    UNIPOST_IDENTITY_ROLE {
         int id PK
         string uid UK
         string code "ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM_CUSTODIAN"
@@ -290,7 +342,7 @@ erDiagram
         string mode "SYSTEM vs TENANT_CUSTOM"
     }
 
-    APP_PERMISSION {
+    UNIPOST_IDENTITY_PERMISSION {
         int id PK
         string uid UK
         string code "platform:fleet:read, METADATA_SCHEMA_WRITE"
@@ -299,7 +351,7 @@ erDiagram
     }
 ```
 
-#### 8. `APP_USER` (Global User Identity Registry)
+#### 12. `UNIPOST_IDENTITY_USER` (Global User Identity Registry)
 Centralized user store supporting cross-tenant membership and universal platform lockout.
 
 | Column | Type | Constraints | Description |
@@ -318,16 +370,16 @@ Centralized user store supporting cross-tenant membership and universal platform
 
 ---
 
-#### 9. `APP_ROLE` & `APP_PERMISSION` (Role-Based Access Control)
+#### 13. `UNIPOST_IDENTITY_ROLE` & `UNIPOST_IDENTITY_PERMISSION` (Role-Based Access Control)
 Normalizes access definitions into coarse-grained roles and fine-grained atom permissions.
 
-- **`APP_ROLE`**:
+- **`UNIPOST_IDENTITY_ROLE`**:
   - `CODE`: Role moniker (e.g., `ROLE_SYSTEM_CUSTODIAN`, `ROLE_TENANT_ADMIN`, `ROLE_OPERATOR`, `ROLE_VIEWER`).
   - `MODE`: Distinguishes immutable system roles (`SYSTEM`) from tenant-defined custom enterprise roles (`TENANT_CUSTOM`).
-- **`APP_PERMISSION`**:
+- **`UNIPOST_IDENTITY_PERMISSION`**:
   - `CODE`: Fine-grained permission atom formatted as `category:domain:action` or upper snake case.
   - `TARGET` & `ACTION`: Architectural boundary categorization (Fleet, Governance, Metadata, Data Plane, Billing).
-- **`APP_ROLEPERMISSION` & `APP_USERROLE`**:
+- **`UNIPOST_IDENTITY_ROLEPERMISSION` & `UNIPOST_IDENTITY_USERROLE`**:
   - Join tables linking `USER <-> ROLE` and `ROLE <-> PERMISSION` with unique pairing constraints (`UID` cross-references).
 
 ---
@@ -476,3 +528,110 @@ sequenceDiagram
      ```
 3. **Outbox Cleanup:**
    - Published outbox events (`status = 'PUBLISHED'`) older than 7 days must be purged by the scheduled background cleaner job.
+
+---
+
+## 8. Unified Liquibase Master Migration Topology
+
+All relational persistence definitions, identity/RBAC baselines, PostgreSQL RLS policies, indexes, and incremental migrations are strictly governed through a unified Liquibase master topology:
+
+```mermaid
+graph TD
+    Master["db/changelog-master.xml\n(Authoritative Root Migration Master)"]
+    UnipostMaster["db/unipost/changelog-master.xml\n(Multi-Tenant Core & Metadata Engine)"]
+
+    subgraph IdentityBaseline ["1. Identity & RBAC Baseline"]
+        ID00["changelog-identity-00.xml\n(USER, ROLE, PERMISSION, JOIN TABLES)"]
+        IDTokens["changelog-identity-tokens.xml\n(Password Reset & Registration Tokens)"]
+        IDMaster["changelog-identity-master_data.xml\n(Default Roles & Permissions)"]
+        IDMock["changelog-identity-mock_data.xml\n(Local/Dev Test Fixtures)"]
+    end
+
+    subgraph CoreIncremental ["2. Dynamic Metadata & Control Plane Changelogs"]
+        C01["changelog-000.000.00001.xml (Base Metadata Types & Attributes)"]
+        C06["changelog-000.000.00006.xml (UNIPOST_TENANT_BILLING & FEATURES)"]
+        C07["changelog-000.000.00007.xml (SYSTEM Sovereign Custodian RLS Policies)"]
+        C12["changelog-000.000.00012.xml (Partitioned UNIPOST_RECORD_AUDIT_LOG)"]
+        C13["changelog-000.000.00013.xml (Outbox DLQ & Retry Schedule Columns)"]
+        C14["changelog-000.000.00014.xml (UNIPOST_TENANTS Master Catalog & FK Backfill)"]
+    end
+
+    Master --> UnipostMaster
+    UnipostMaster --> ID00
+    UnipostMaster --> IDTokens
+    UnipostMaster --> IDMaster
+    UnipostMaster --> IDMock
+    UnipostMaster --> C01
+    C01 -.-> C06
+    C06 -.-> C07
+    C07 -.-> C12
+    C12 -.-> C13
+    C13 -.-> C14
+```
+
+### Liquibase Migration Invariants
+1. **Zero Raw DDL Outside Migrations**: No database tables or columns may be modified in production without a versioned XML changeset.
+2. **Clean Pruning Policy**: Obsolete legacy structures (e.g. `ADDRESS`, `USERPROFILE`, `USERACTIVITY`) must be eliminated directly at source rather than piling up runtime drop scripts.
+3. **Idempotent RLS Enforcement**: Every table creation or alteration must explicitly declare:
+   ```xml
+   <sql dbms="postgresql">
+       ALTER TABLE <TABLE_NAME> ENABLE ROW LEVEL SECURITY;
+       ALTER TABLE <TABLE_NAME> FORCE ROW LEVEL SECURITY;
+       DROP POLICY IF EXISTS tenant_isolation_<table_name> ON <TABLE_NAME>;
+       CREATE POLICY tenant_isolation_<table_name> ON <TABLE_NAME> ...
+   </sql>
+   ```
+
+---
+
+## 9. UI/UX Design System Integration & WCAG 2.2 AA Compliance
+
+The persistence layer bridges to client applications via strict UI design tokens, component state matrices, and universal accessibility guarantees.
+
+### 9.1. Dynamic Form Widget Token Mapping
+Dynamic attributes defined in `UNIPOST_ATTRIBUTE_DEFINITIONS` declare a `ui_component` token that binds directly to `@unipost/ui` component primitives:
+
+| `ui_component` Token | `@unipost/ui` Component Primitive | Input Validation & Behavior |
+| :--- | :--- | :--- |
+| `TEXT_INPUT` | `<Input type="text" />` | String regex pattern, min/max length, trim whitespace. |
+| `NUMERIC_INPUT` | `<Input type="number" />` | Number bounds (min/max), step increments, decimal parsing. |
+| `DATE_PICKER` | `<DatePicker />` | ISO 8601 calendar picker with keyboard arrow navigation. |
+| `DROPDOWN` | `<Select><SelectItem /></Select>` | Single-choice selection backed by `options.enum` array. |
+| `SWITCH` | `<Switch />` | Boolean flag toggle with high-visibility focus ring. |
+| `RICH_TEXT` | `<RichTextEditor />` | Multi-line formatted markdown/HTML editor with character counter. |
+| `RELATION_PICKER` | `<RelationPickerDrawer />` | Searchable modal drawer querying target `UNIPOST_ENTITIES`. |
+
+### 9.2. Liquid Glass Optical Specifications
+All metadata forms, inspectors, and audit history drawers adhere to the monorepo's **Liquid Glass Design System**:
+- **Frosted Scrim**: `backdrop-blur-xl bg-white/65 dark:bg-slate-900/65`.
+- **Specular Border**: `border border-white/30 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]`.
+- **Diffuse Elevation**: `shadow-xl shadow-black/5 dark:shadow-black/30`.
+
+### 9.3. Mandatory 5-State Component Matrix
+Every dynamic metadata form, data table, and audit history drawer must implement all 5 operational states:
+
+```
++---------------------------------------------------------------------------------------------------+
+|                                 5-STATE COMPONENT MATRIX SPECIFICATION                            |
++-------------------+--------------------+--------------------+--------------------+----------------+
+| 1. DEFAULT        | 2. LOADING         | 3. EMPTY           | 4. ERROR           | 5. DISABLED    |
+| Standard resting  | Skeleton shimmer   | Informative canvas | Human-readable     | Visually muted |
+| glass container   | preserving space;  | with single clear  | recovery alert;    | cursor-not-    |
+| with active inputs| zero layout shift  | primary CTA to     | retry button with  | allowed; aria- |
+| and valid values. | (CLS = 0).         | create/seed model. | zero raw traces.   | disabled="true"|
++-------------------+--------------------+--------------------+--------------------+----------------+
+```
+
+### 9.4. WCAG 2.2 AA Universal Accessibility Invariants
+1. **Target Size (SC 2.5.8)**: All interactive controls, dropdown items, and table action buttons must meet a minimum pointer target size of `44x44 CSS px` (or possess >= 24px diameter with sufficient spacing).
+2. **Keyboard Operability**: Full keyboard navigation across all forms:
+   - `Tab` / `Shift+Tab`: Forward and backward navigation through fields.
+   - `Enter` / `Space`: Toggle switches, open dropdowns, submit forms.
+   - `Escape`: Instantly dismiss drawers, modal popovers, and relation pickers.
+3. **Screen Readers & Focus Management**:
+   - Every input has an explicitly associated `<Label htmlFor="field_id">`.
+   - Dynamic schema mutation results and audit version diffs announce status updates through polite live regions (`aria-live="polite"`).
+4. **Contrast Compliance (SC 1.4.3)**:
+   - Minimum `4.5:1` contrast ratio for all normal body text against the frosted glass background scrim.
+   - Minimum `3:1` contrast for graphical objects and active UI component boundaries.
+
