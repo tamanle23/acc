@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 
-export interface BentoCompanionCardProps {
+export interface TelemetryCompanionCardProps {
   width: number;
   height: number;
   fps: number;
@@ -29,7 +29,7 @@ export interface BentoCompanionCardProps {
   onSetZoomLevel: (zoom: 'fit' | 0.5 | 1.0 | 2.0) => void;
 }
 
-export const BentoCompanionCard: React.FC<BentoCompanionCardProps> = ({
+export const TelemetryCompanionCard: React.FC<TelemetryCompanionCardProps> = ({
   width,
   height,
   fps,
@@ -57,7 +57,7 @@ export const BentoCompanionCard: React.FC<BentoCompanionCardProps> = ({
         <div className="flex items-center justify-between text-[11px] text-muted-foreground border-b border-glass-border pb-1.5 font-semibold">
           <span className="flex items-center gap-1.5 text-foreground">
             <Activity className="w-3.5 h-3.5 text-accent-theme" />
-            Bento Telemetry
+            Telemetry
           </span>
           <span className="text-[10px] text-accent-theme bg-accent-theme/10 px-1.5 py-0.5 rounded border border-accent-theme/20">
             {fps} FPS
@@ -105,11 +105,10 @@ export const BentoCompanionCard: React.FC<BentoCompanionCardProps> = ({
             <button
               type="button"
               onClick={onCycleSafeGuides}
-              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${
-                safeGuidesMode !== 'none'
-                  ? 'border-amber-500/50 bg-amber-500/15 text-amber-400 font-semibold'
-                  : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
+              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${safeGuidesMode !== 'none'
+                ? 'border-amber-500/50 bg-amber-500/15 text-amber-400 font-semibold'
+                : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
             >
               {safeGuidesMode === 'none' ? 'Guides Off' : safeGuidesMode}
             </button>
@@ -120,11 +119,10 @@ export const BentoCompanionCard: React.FC<BentoCompanionCardProps> = ({
             <button
               type="button"
               onClick={onToggleCheckerboard}
-              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${
-                showCheckerboard
-                  ? 'border-accent-theme/50 bg-accent-theme/15 text-accent-theme font-semibold'
-                  : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
+              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${showCheckerboard
+                ? 'border-accent-theme/50 bg-accent-theme/15 text-accent-theme font-semibold'
+                : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
             >
               Alpha BG
             </button>
@@ -135,11 +133,10 @@ export const BentoCompanionCard: React.FC<BentoCompanionCardProps> = ({
             <button
               type="button"
               onClick={onToggleVfxAmbiance}
-              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${
-                showVfxAmbiance
-                  ? 'border-accent-theme/50 bg-accent-theme/15 text-accent-theme font-semibold'
-                  : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
+              className={`flex-1 py-1 px-1.5 rounded border text-center transition-all cursor-pointer ${showVfxAmbiance
+                ? 'border-accent-theme/50 bg-accent-theme/15 text-accent-theme font-semibold'
+                : 'border-glass-border text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
             >
               VFX HUD
             </button>

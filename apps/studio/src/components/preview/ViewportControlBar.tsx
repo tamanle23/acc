@@ -36,8 +36,8 @@ export interface ViewportControlBarProps {
   onToggleCheckerboard: () => void;
   showVfxAmbiance: boolean;
   onToggleVfxAmbiance: () => void;
-  isBentoOpen?: boolean;
-  onToggleBento?: () => void;
+  isTelemetryCompanionOpen?: boolean;
+  onToggleTelemetryCompanion?: () => void;
 }
 
 export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
@@ -62,8 +62,8 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   onToggleCheckerboard,
   showVfxAmbiance,
   onToggleVfxAmbiance,
-  isBentoOpen,
-  onToggleBento,
+  isTelemetryCompanionOpen,
+  onToggleTelemetryCompanion,
 }) => {
   return (
     <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
@@ -247,13 +247,13 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           </button>
         </Tooltip>
 
-        {onToggleBento && (
-          <Tooltip content={isBentoOpen ? 'Hide Bento Telemetry' : 'Show Bento Telemetry'}>
+        {onToggleTelemetryCompanion && (
+          <Tooltip content={isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}>
             <button
               type="button"
-              onClick={onToggleBento}
-              aria-label={isBentoOpen ? 'Hide Bento Telemetry' : 'Show Bento Telemetry'}
-              className={`p-1.5 rounded-full border transition-all cursor-pointer ${isBentoOpen
+              onClick={onToggleTelemetryCompanion}
+              aria-label={isTelemetryCompanionOpen ? 'Hide Telemetry' : 'Show Telemetry'}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${isTelemetryCompanionOpen
                 ? 'border-accent-theme bg-accent-theme/20 text-accent-theme shadow-accent-glow'
                 : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
                 }`}

@@ -13,9 +13,6 @@ import { VideoEditPipelineOrchestrator } from './VideoEditPipelineOrchestrator';
 import { createStoryFolderResolutionStage } from './stages/StoryFolderResolutionStage';
 import { createStoryOrchestratedRenderStage } from './stages/StoryOrchestratedRenderStage';
 import { createStoryMetadataPersistenceStage } from './stages/StoryMetadataPersistenceStage';
-import { resolveStoryFolder, type StoryFolderResolutionOptions, type ResolvedStoryFolderResult } from './utils/folderResolver';
-
-export { resolveStoryFolder, type StoryFolderResolutionOptions, type ResolvedStoryFolderResult };
 
 export interface StoryPipelineOptions extends PipelineExecutionOptions {
   outDir?: string;

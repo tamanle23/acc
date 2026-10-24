@@ -16,7 +16,7 @@ import { useTheme } from '../lib/theme/ThemeProvider';
 import {
   ViewportControlBar,
   ViewportSafeGuides,
-  BentoCompanionCard,
+  TelemetryCompanionCard,
   InlineTextEditorModal,
   UniversalCanvasHitOverlay,
   StagingDropTargetOverlay,
@@ -99,7 +99,7 @@ export function Preview({
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
-  const [isBentoCompanionOpen, setIsBentoCompanionOpen] = useState(true);
+  const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [assetTick, setAssetTick] = useState(0);
@@ -617,21 +617,21 @@ export function Preview({
         onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
         showVfxAmbiance={showVfxAmbiance}
         onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
-        isBentoOpen={isBentoCompanionOpen}
-        onToggleBento={() => setIsBentoCompanionOpen(!isBentoCompanionOpen)}
+        isTelemetryCompanionOpen={isTelemetryCompanionOpen}
+        onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen)}
       />
 
       {/* Bento Grid Dynamic Viewport: Canvas Cell + Dockable Telemetry Cell */}
-      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isBentoCompanionOpen ? 'xl:justify-between' : 'justify-center'
+      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
         }`}>
         {/* Cell 1: Main Video Viewport Canvas */}
         <div
           className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-            } ${isBentoCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+            } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
             aspectRatio: '16/9',
             maxHeight: '68vh',
-            maxWidth: isBentoCompanionOpen ? '72vw' : '82vw',
+            maxWidth: isTelemetryCompanionOpen ? '72vw' : '82vw',
             backgroundImage: showCheckerboard
               ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
               : undefined,
@@ -697,10 +697,10 @@ export function Preview({
           />
         </div>
 
-        {/* Cell 2: Dockable Bento Telemetry Companion Card */}
-        {isBentoCompanionOpen && (
+        {/* Cell 2: Dockable Telemetry Companion Card */}
+        {isTelemetryCompanionOpen && (
           <div className="w-full xl:w-64 shrink-0 flex flex-col justify-center animate-in fade-in slide-in-from-right-2 duration-200">
-            <BentoCompanionCard
+            <TelemetryCompanionCard
               width={width}
               height={height}
               fps={fps}
