@@ -762,13 +762,35 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
       return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
     }
 
-    const rerunMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/tasks\/([^/]+)\/rerun$/);
-    if (rerunMatch && method === 'POST') {
-      const execId = rerunMatch[1];
-      const taskRef = decodeURIComponent(rerunMatch[2]);
-      const modifiedInput = ((req.data as any)?.modifiedInput || {}) as Record<string, unknown>;
+    const replayOrRerunMatch = cleanPath.match(/^\/workflow\/executions\/([^/]+)\/tasks\/([^/]+)\/(?:rerun|replay)$/);
+    if (replayOrRerunMatch && method === 'POST') {
+      const execId = replayOrRerunMatch[1];
+      const taskRef = decodeURIComponent(replayOrRerunMatch[2]);
+      const body = (req.data as any) || {};
+      const modifiedInput = (body.modifiedInput || body.overrideInput || body) as Record<string, unknown>;
       const updated = workflowSandboxRepo.rerunTaskFromNode(execId, taskRef, modifiedInput, tenantId);
-      return updated ? { status: 200, data: updated } : { status: 404, data: { error: 'Execution not found' } };
+      if (updated) {
+        return { status: 200, data: updated };
+      }
+      // Fallback for static mock execution item: return synthesized rerun snapshot
+      return {
+        status: 200,
+        data: {
+          workflowId: execId,
+          status: 'RUNNING',
+          currentStep: taskRef,
+          variables: modifiedInput,
+          tasks: [
+            {
+              taskId: taskRef,
+              taskReferenceName: taskRef,
+              status: 'SCHEDULED',
+              inputData: modifiedInput,
+              output: { rerunWithInput: modifiedInput, timestamp: Date.now() },
+            },
+          ],
+        },
+      };
     }
 
     // 3. Terminate Execution: POST /workflow/executions/{id}/terminate

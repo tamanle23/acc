@@ -212,7 +212,7 @@ class MediumFrequencyTaskStrategiesTest {
     }
 
     @Test
-    @DisplayName("LLM_CHAT_COMPLETE: synthesizes AI response structure with tokens and finishReason")
+    @DisplayName("LLM_CHAT_COMPLETE: schedules task to system:llm queue on first pass and completes upon worker completion")
     void testLlmChatCompleteStrategy() {
         TaskDefinition llmTask = TaskDefinition.builder("summarize-ticket")
             .taskType(TaskType.LLM_CHAT_COMPLETE)
@@ -226,19 +226,36 @@ class MediumFrequencyTaskStrategiesTest {
             .tasks(List.of(llmTask))
             .build();
 
+        // 1. Initial pass: decider emits ScheduleTask to system:llm queue with zero network I/O
         WorkflowSnapshot snapshot = new WorkflowSnapshot(
             "wf-llm-1", "tenant-1", "ws-1", "llm-wf", 1,
             WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
             Collections.emptyMap(), null, Collections.emptyMap()
         );
 
-        DecisionResult result = decider.decide(def, snapshot, 1000L);
+        DecisionResult result1 = decider.decide(def, snapshot, 1000L);
 
-        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
-        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().get(0);
-        assertThat(updateCmd.status()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(updateCmd.output()).containsEntry("model", "gemini-1.5-pro");
-        assertThat(updateCmd.output()).containsKey("response");
-        assertThat(updateCmd.output()).containsEntry("finishReason", "stop");
+        assertThat(result1.commands()).hasSize(1);
+        EngineCommand.ScheduleTask scheduleCmd = (EngineCommand.ScheduleTask) result1.commands().get(0);
+        assertThat(scheduleCmd.domain()).isEqualTo("system:llm");
+        assertThat(scheduleCmd.taskType()).isEqualTo("LLM_CHAT_COMPLETE");
+        assertThat(scheduleCmd.input()).containsEntry("model", "gemini-1.5-pro");
+
+        // 2. Second pass: when Loom worker finishes and reports completed snapshot
+        TaskSnapshot completedLlm = new TaskSnapshot(
+            "wf-llm-1_summarize-ticket_att1", "summarize-ticket", TaskType.LLM_CHAT_COMPLETE, "system:llm",
+            TaskStatus.COMPLETED, 1, scheduleCmd.input(), Map.of("response", "Incident summary", "tokensUsed", 15, "finishReason", "stop"),
+            null, 1000L, 0L, null
+        );
+
+        WorkflowSnapshot snap2 = new WorkflowSnapshot(
+            "wf-llm-1", "tenant-1", "ws-1", "llm-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
+            Collections.emptyMap(), null, Map.of("summarize-ticket", completedLlm)
+        );
+
+        DecisionResult result2 = decider.decide(def, snap2, 2000L);
+        assertThat(result2.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(result2.outputPayload()).containsEntry("response", "Incident summary");
     }
 }

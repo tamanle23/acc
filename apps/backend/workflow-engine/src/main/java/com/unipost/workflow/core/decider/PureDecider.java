@@ -94,6 +94,9 @@ public final class PureDecider {
                     if (cmd instanceof EngineCommand.TransitionWorkflow tw && tw.reason() != null) {
                         failureReason = tw.reason();
                         break;
+                    } else if (cmd instanceof EngineCommand.UpdateTaskStatus us && us.error() != null) {
+                        failureReason = us.error();
+                        break;
                     }
                 }
                 return DecisionResult.failed(accumulatedCommands, failureReason);

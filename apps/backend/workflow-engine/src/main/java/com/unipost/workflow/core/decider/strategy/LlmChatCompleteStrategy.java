@@ -36,14 +36,11 @@ import java.util.Map;
  */
 public final class LlmChatCompleteStrategy implements NodeEvaluatorStrategy {
 
-    private final HttpClient httpClient;
-
     public LlmChatCompleteStrategy() {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
     }
 
-    public LlmChatCompleteStrategy(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public LlmChatCompleteStrategy(java.net.http.HttpClient httpClient) {
+        // Preserved for constructor backward compatibility
     }
 
     @Override
@@ -56,82 +53,74 @@ public final class LlmChatCompleteStrategy implements NodeEvaluatorStrategy {
         String refName = taskDef.taskReferenceName();
         TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
-        if (existing != null) {
-            if (existing.status() == TaskStatus.COMPLETED) {
-                return NodeEvaluationResult.completed(existing.outputData());
-            } else if (existing.status() == TaskStatus.SKIPPED) {
-                return NodeEvaluationResult.skipped();
-            } else if (existing.status() == TaskStatus.FAILED) {
-                return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
-            }
-        }
-
-        Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
-        String prompt = (String) resolvedInput.get("prompt");
-        if (prompt == null || prompt.isBlank()) {
-            String error = "LLM_CHAT_COMPLETE requires 'prompt'";
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
-                refName,
-                TaskStatus.FAILED,
-                Collections.emptyMap(),
-                error
-            ));
-            return NodeEvaluationResult.failed(commands, error);
-        }
-
-        String model = (String) resolvedInput.getOrDefault("model", "gemini-1.5-pro");
-        String endpointUrl = (String) resolvedInput.get("endpointUrl");
-
-        Map<String, Object> output = new LinkedHashMap<>();
-        output.put("model", model);
-        output.put("prompt", prompt);
-
-        if (endpointUrl != null && !endpointUrl.isBlank()) {
-            try {
-                HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(endpointUrl))
-                    .timeout(Duration.ofSeconds(15))
-                    .header("Content-Type", "application/json");
-
-                String apiKey = (String) resolvedInput.get("apiKey");
-                if (apiKey != null && !apiKey.isBlank()) {
-                    reqBuilder.header("Authorization", "Bearer " + apiKey);
-                }
-
-                String payload = "{\"model\":\"" + model + "\",\"prompt\":\"" + prompt.replace("\"", "\\\"") + "\"}";
-                reqBuilder.POST(HttpRequest.BodyPublishers.ofString(payload));
-
-                HttpResponse<String> resp = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-                output.put("statusCode", resp.statusCode());
-                output.put("response", resp.body());
-            } catch (Exception e) {
-                String error = "LLM API invocation failed: " + e.getMessage();
+        if (existing == null) {
+            Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+            String prompt = (String) resolvedInput.get("prompt");
+            if (prompt == null || prompt.isBlank()) {
+                String error = "LLM_CHAT_COMPLETE requires 'prompt'";
                 List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
                     snapshot.workflowId() + "_" + refName,
                     refName,
                     TaskStatus.FAILED,
-                    output,
+                    Collections.emptyMap(),
                     error
                 ));
                 return NodeEvaluationResult.failed(commands, error);
             }
-        } else {
-            // Local / synthesized completion
-            output.put("response", "AI completion for: " + prompt);
-            output.put("tokensUsed", prompt.length() / 4 + 10);
-            output.put("finishReason", "stop");
+
+            String taskId = snapshot.workflowId() + "_" + refName + "_att1";
+            long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 20000L;
+            String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                ? taskDef.domain()
+                : "system:llm";
+
+            EngineCommand.ScheduleTask scheduleCmd = new EngineCommand.ScheduleTask(
+                taskId,
+                "LLM_CHAT_COMPLETE",
+                refName,
+                domain,
+                resolvedInput,
+                1,
+                nowEpochMs,
+                timeoutMs
+            );
+            return NodeEvaluationResult.scheduled(List.of(scheduleCmd));
         }
 
-        List<EngineCommand> commands = new ArrayList<>();
-        commands.add(new EngineCommand.UpdateTaskStatus(
-            snapshot.workflowId() + "_" + refName,
-            refName,
-            TaskStatus.COMPLETED,
-            output,
-            null
-        ));
+        TaskStatus status = existing.status();
+        if (status == TaskStatus.COMPLETED) {
+            return NodeEvaluationResult.completed(existing.outputData());
+        } else if (status == TaskStatus.SKIPPED) {
+            return NodeEvaluationResult.skipped();
+        } else if (status == TaskStatus.IN_PROGRESS || status == TaskStatus.SCHEDULED) {
+            return NodeEvaluationResult.inProgress();
+        } else if (status == TaskStatus.FAILED || status == TaskStatus.TIMED_OUT) {
+            if (existing.attempt() < taskDef.retryCount()) {
+                int nextAttempt = existing.attempt() + 1;
+                String nextTaskId = snapshot.workflowId() + "_" + refName + "_att" + nextAttempt;
+                long backoffDelayMs = (long) (taskDef.retryDelaySeconds() * Math.pow(taskDef.backoffRate(), existing.attempt() - 1)) * 1000L;
+                long nextVisibleAtEpochMs = nowEpochMs + backoffDelayMs;
+                long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 20000L;
+                Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+                String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                    ? taskDef.domain()
+                    : "system:llm";
 
-        return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, output, false);
+                EngineCommand.ScheduleTask retryCmd = new EngineCommand.ScheduleTask(
+                    nextTaskId,
+                    "LLM_CHAT_COMPLETE",
+                    refName,
+                    domain,
+                    resolvedInput,
+                    nextAttempt,
+                    nextVisibleAtEpochMs,
+                    timeoutMs
+                );
+                return NodeEvaluationResult.scheduled(List.of(retryCmd));
+            }
+            return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
+        }
+
+        return NodeEvaluationResult.inProgress();
     }
 }

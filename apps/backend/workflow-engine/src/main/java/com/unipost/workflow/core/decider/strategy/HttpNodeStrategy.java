@@ -32,16 +32,11 @@ import java.util.Map;
  */
 public final class HttpNodeStrategy implements NodeEvaluatorStrategy {
 
-    private final HttpClient httpClient;
-
     public HttpNodeStrategy() {
-        this(HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .build());
     }
 
-    public HttpNodeStrategy(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public HttpNodeStrategy(java.net.http.HttpClient httpClient) {
+        // Preserved for constructor backward compatibility
     }
 
     @Override
@@ -54,100 +49,80 @@ public final class HttpNodeStrategy implements NodeEvaluatorStrategy {
         String refName = taskDef.taskReferenceName();
         TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
-        if (existing != null) {
-            if (existing.status() == TaskStatus.COMPLETED) {
-                return NodeEvaluationResult.completed(existing.outputData());
-            } else if (existing.status() == TaskStatus.SKIPPED) {
-                return NodeEvaluationResult.skipped();
-            } else if (existing.status() == TaskStatus.FAILED) {
-                return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
+        if (existing == null) {
+            Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+            String url = (String) resolvedInput.getOrDefault("url", resolvedInput.get("uri"));
+            if (url == null || url.isBlank()) {
+                String errorMsg = "HTTP node requires 'url' or 'uri' input parameter";
+                List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
+                    snapshot.workflowId() + "_" + refName,
+                    refName,
+                    TaskStatus.FAILED,
+                    Collections.emptyMap(),
+                    errorMsg
+                ));
+                return NodeEvaluationResult.failed(commands, errorMsg);
             }
-        }
 
-        Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
-        String url = (String) resolvedInput.getOrDefault("url", resolvedInput.get("uri"));
-        if (url == null || url.isBlank()) {
-            String errorMsg = "HTTP node requires 'url' or 'uri' input parameter";
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
+            String taskId = snapshot.workflowId() + "_" + refName + "_att1";
+            long timeoutMs = 10000L;
+            if (resolvedInput.get("readTimeoutMs") instanceof Number num) {
+                timeoutMs = num.longValue();
+            } else if (taskDef.timeoutSeconds() > 0) {
+                timeoutMs = (long) taskDef.timeoutSeconds() * 1000L;
+            }
+
+            String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                ? taskDef.domain()
+                : "system:http";
+
+            EngineCommand.ScheduleTask scheduleCmd = new EngineCommand.ScheduleTask(
+                taskId,
+                "HTTP",
                 refName,
-                TaskStatus.FAILED,
-                Collections.emptyMap(),
-                errorMsg
-            ));
-            return NodeEvaluationResult.failed(commands, errorMsg);
+                domain,
+                resolvedInput,
+                1,
+                nowEpochMs,
+                timeoutMs
+            );
+            return NodeEvaluationResult.scheduled(List.of(scheduleCmd));
         }
 
-        String method = ((String) resolvedInput.getOrDefault("method", "GET")).toUpperCase();
-        long timeoutMs = 10000L;
-        if (resolvedInput.get("readTimeoutMs") instanceof Number num) {
-            timeoutMs = num.longValue();
+        TaskStatus status = existing.status();
+        if (status == TaskStatus.COMPLETED) {
+            return NodeEvaluationResult.completed(existing.outputData());
+        } else if (status == TaskStatus.SKIPPED) {
+            return NodeEvaluationResult.skipped();
+        } else if (status == TaskStatus.IN_PROGRESS || status == TaskStatus.SCHEDULED) {
+            return NodeEvaluationResult.inProgress();
+        } else if (status == TaskStatus.FAILED || status == TaskStatus.TIMED_OUT) {
+            if (existing.attempt() < taskDef.retryCount()) {
+                int nextAttempt = existing.attempt() + 1;
+                String nextTaskId = snapshot.workflowId() + "_" + refName + "_att" + nextAttempt;
+                long backoffDelayMs = (long) (taskDef.retryDelaySeconds() * Math.pow(taskDef.backoffRate(), existing.attempt() - 1)) * 1000L;
+                long nextVisibleAtEpochMs = nowEpochMs + backoffDelayMs;
+                long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 10000L;
+                Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+                String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                    ? taskDef.domain()
+                    : "system:http";
+
+                EngineCommand.ScheduleTask retryCmd = new EngineCommand.ScheduleTask(
+                    nextTaskId,
+                    "HTTP",
+                    refName,
+                    domain,
+                    resolvedInput,
+                    nextAttempt,
+                    nextVisibleAtEpochMs,
+                    timeoutMs
+                );
+                return NodeEvaluationResult.scheduled(List.of(retryCmd));
+            }
+            return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
         }
 
-        try {
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(Duration.ofMillis(timeoutMs));
-
-            // Set headers if provided
-            Object headersObj = resolvedInput.get("headers");
-            if (headersObj instanceof Map<?, ?> headersMap) {
-                for (Map.Entry<?, ?> entry : headersMap.entrySet()) {
-                    if (entry.getKey() != null && entry.getValue() != null) {
-                        reqBuilder.header(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
-                    }
-                }
-            }
-
-            // Set method & body
-            Object bodyObj = resolvedInput.get("body");
-            HttpRequest.BodyPublisher bodyPublisher = bodyObj != null
-                ? HttpRequest.BodyPublishers.ofString(String.valueOf(bodyObj))
-                : HttpRequest.BodyPublishers.noBody();
-
-            switch (method) {
-                case "POST" -> reqBuilder.POST(bodyPublisher);
-                case "PUT" -> reqBuilder.PUT(bodyPublisher);
-                case "DELETE" -> reqBuilder.DELETE();
-                case "PATCH" -> reqBuilder.method("PATCH", bodyPublisher);
-                default -> reqBuilder.GET();
-            }
-
-            HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-
-            Map<String, Object> output = new LinkedHashMap<>();
-            output.put("statusCode", response.statusCode());
-            output.put("body", response.body());
-
-            boolean isSuccess = response.statusCode() >= 200 && response.statusCode() < 400;
-            TaskStatus finalStatus = isSuccess ? TaskStatus.COMPLETED : TaskStatus.FAILED;
-            String error = isSuccess ? null : "HTTP request failed with status " + response.statusCode();
-
-            List<EngineCommand> commands = new ArrayList<>();
-            commands.add(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
-                refName,
-                finalStatus,
-                output,
-                error
-            ));
-
-            if (isSuccess) {
-                return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, output, false);
-            } else {
-                return NodeEvaluationResult.failed(commands, error);
-            }
-
-        } catch (Exception e) {
-            String errorMsg = "HTTP call execution failed: " + e.getMessage();
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
-                refName,
-                TaskStatus.FAILED,
-                Map.of("error", errorMsg),
-                errorMsg
-            ));
-            return NodeEvaluationResult.failed(commands, errorMsg);
-        }
+        return NodeEvaluationResult.inProgress();
     }
 }

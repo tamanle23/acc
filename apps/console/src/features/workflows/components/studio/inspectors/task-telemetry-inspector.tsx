@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import type { DagNodeData } from '../canvas/dag-node';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
-import { useRerunWorkflowTask } from '@/features/workflows/api/workflow-api';
+import { useRerunWorkflowTask, useReplayWorkflowTask } from '@/features/workflows/api/workflow-api';
 
 export interface TaskTelemetryInspectorProps {
   nodeId: string | null;
@@ -54,6 +54,7 @@ export const TaskTelemetryInspector: React.FC<TaskTelemetryInspectorProps> = ({
     nodeData?.inputParameters || {}
   );
   const rerunMutation = useRerunWorkflowTask();
+  const replayMutation = useReplayWorkflowTask();
 
   useEffect(() => {
     setOverrideInput(nodeData?.inputParameters || {});
@@ -210,10 +211,35 @@ export const TaskTelemetryInspector: React.FC<TaskTelemetryInspectorProps> = ({
 
               {/* Failure Error Banner */}
               {nodeData.error && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Execution Failure</span>
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <AlertCircle className="w-4 h-4 text-rose-500" />
+                      <span>Execution Failure</span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={replayMutation.isPending}
+                      onClick={() => {
+                        if (executionId) {
+                          replayMutation.mutate({
+                            executionId,
+                            taskId: nodeData.taskId || nodeData.taskReferenceName,
+                            overrideInput,
+                          });
+                        }
+                        if (onRerunTask) {
+                          onRerunTask(nodeData.taskReferenceName, overrideInput);
+                        }
+                      }}
+                      className="h-6 text-[10px] gap-1 px-2 shadow-sm"
+                      data-testid="inspector-dlq-replay-btn"
+                    >
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>Repair & Replay (DLQ)</span>
+                    </Button>
                   </div>
                   <pre className="text-[11px] font-mono whitespace-pre-wrap overflow-x-auto bg-black/20 p-2 rounded">
                     {nodeData.error}

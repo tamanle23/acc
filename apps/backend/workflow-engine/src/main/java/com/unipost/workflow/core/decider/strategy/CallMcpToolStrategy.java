@@ -29,14 +29,11 @@ import java.util.Map;
  */
 public final class CallMcpToolStrategy implements NodeEvaluatorStrategy {
 
-    private final HttpClient httpClient;
-
     public CallMcpToolStrategy() {
-        this(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
     }
 
-    public CallMcpToolStrategy(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public CallMcpToolStrategy(java.net.http.HttpClient httpClient) {
+        // Preserved for constructor backward compatibility
     }
 
     @Override
@@ -49,79 +46,75 @@ public final class CallMcpToolStrategy implements NodeEvaluatorStrategy {
         String refName = taskDef.taskReferenceName();
         TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
-        if (existing != null) {
-            if (existing.status() == TaskStatus.COMPLETED) {
-                return NodeEvaluationResult.completed(existing.outputData());
-            } else if (existing.status() == TaskStatus.SKIPPED) {
-                return NodeEvaluationResult.skipped();
-            } else if (existing.status() == TaskStatus.FAILED) {
-                return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
-            }
-        }
+        if (existing == null) {
+            Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+            String toolName = (String) resolvedInput.get("toolName");
 
-        Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
-        String toolName = (String) resolvedInput.get("toolName");
-
-        if (toolName == null || toolName.isBlank()) {
-            String error = "CALL_MCP_TOOL requires 'toolName' parameter";
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
-                refName,
-                TaskStatus.FAILED,
-                Collections.emptyMap(),
-                error
-            ));
-            return NodeEvaluationResult.failed(commands, error);
-        }
-
-        Object arguments = resolvedInput.getOrDefault("arguments", Collections.emptyMap());
-        String mcpServerUrl = (String) resolvedInput.get("mcpServerUrl");
-
-        Map<String, Object> output = new LinkedHashMap<>();
-        output.put("toolName", toolName);
-        output.put("arguments", arguments);
-
-        if (mcpServerUrl != null && !mcpServerUrl.isBlank()) {
-            try {
-                String payload = "{\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",\"params\":{\"name\":\""
-                    + toolName + "\",\"arguments\":" + String.valueOf(arguments) + "},\"id\":1}";
-
-                HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(mcpServerUrl))
-                    .timeout(Duration.ofSeconds(15))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(payload))
-                    .build();
-
-                HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
-                output.put("statusCode", resp.statusCode());
-                output.put("response", resp.body());
-            } catch (Exception e) {
-                String error = "MCP invocation failed: " + e.getMessage();
+            if (toolName == null || toolName.isBlank()) {
+                String error = "CALL_MCP_TOOL requires 'toolName' parameter";
                 List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
                     snapshot.workflowId() + "_" + refName,
                     refName,
                     TaskStatus.FAILED,
-                    output,
+                    Collections.emptyMap(),
                     error
                 ));
                 return NodeEvaluationResult.failed(commands, error);
             }
-        } else {
-            // Local / synthesized MCP execution
-            output.put("status", "SUCCESS");
-            output.put("content", List.of(Map.of("type", "text", "text", "Executed MCP tool: " + toolName)));
+
+            String taskId = snapshot.workflowId() + "_" + refName + "_att1";
+            long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 15000L;
+            String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                ? taskDef.domain()
+                : "system:mcp";
+
+            EngineCommand.ScheduleTask scheduleCmd = new EngineCommand.ScheduleTask(
+                taskId,
+                "CALL_MCP_TOOL",
+                refName,
+                domain,
+                resolvedInput,
+                1,
+                nowEpochMs,
+                timeoutMs
+            );
+            return NodeEvaluationResult.scheduled(List.of(scheduleCmd));
         }
 
-        List<EngineCommand> commands = new ArrayList<>();
-        commands.add(new EngineCommand.UpdateTaskStatus(
-            snapshot.workflowId() + "_" + refName,
-            refName,
-            TaskStatus.COMPLETED,
-            output,
-            null
-        ));
+        TaskStatus status = existing.status();
+        if (status == TaskStatus.COMPLETED) {
+            return NodeEvaluationResult.completed(existing.outputData());
+        } else if (status == TaskStatus.SKIPPED) {
+            return NodeEvaluationResult.skipped();
+        } else if (status == TaskStatus.IN_PROGRESS || status == TaskStatus.SCHEDULED) {
+            return NodeEvaluationResult.inProgress();
+        } else if (status == TaskStatus.FAILED || status == TaskStatus.TIMED_OUT) {
+            if (existing.attempt() < taskDef.retryCount()) {
+                int nextAttempt = existing.attempt() + 1;
+                String nextTaskId = snapshot.workflowId() + "_" + refName + "_att" + nextAttempt;
+                long backoffDelayMs = (long) (taskDef.retryDelaySeconds() * Math.pow(taskDef.backoffRate(), existing.attempt() - 1)) * 1000L;
+                long nextVisibleAtEpochMs = nowEpochMs + backoffDelayMs;
+                long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 15000L;
+                Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+                String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                    ? taskDef.domain()
+                    : "system:mcp";
 
-        return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, output, false);
+                EngineCommand.ScheduleTask retryCmd = new EngineCommand.ScheduleTask(
+                    nextTaskId,
+                    "CALL_MCP_TOOL",
+                    refName,
+                    domain,
+                    resolvedInput,
+                    nextAttempt,
+                    nextVisibleAtEpochMs,
+                    timeoutMs
+                );
+                return NodeEvaluationResult.scheduled(List.of(retryCmd));
+            }
+            return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
+        }
+
+        return NodeEvaluationResult.inProgress();
     }
 }

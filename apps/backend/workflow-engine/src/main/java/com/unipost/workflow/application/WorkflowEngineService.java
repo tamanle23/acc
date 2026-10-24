@@ -526,6 +526,14 @@ public class WorkflowEngineService {
     public Optional<WorkflowSnapshot> updateBreakpoints(
         String workflowId,
         List<String> breakpoints,
+        long nowEpochMs
+    ) {
+        return updateBreakpoints(workflowId, breakpoints, null, nowEpochMs);
+    }
+
+    public Optional<WorkflowSnapshot> updateBreakpoints(
+        String workflowId,
+        List<String> breakpoints,
         WorkflowDefinition definition,
         long nowEpochMs
     ) {

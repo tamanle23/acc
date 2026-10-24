@@ -3,6 +3,7 @@ package com.unipost.workflow.core.decider;
 import com.unipost.workflow.core.model.DecisionResult;
 import com.unipost.workflow.core.model.EngineCommand;
 import com.unipost.workflow.core.model.TaskDefinition;
+import com.unipost.workflow.core.model.TaskSnapshot;
 import com.unipost.workflow.core.model.TaskStatus;
 import com.unipost.workflow.core.model.TaskType;
 import com.unipost.workflow.core.model.WorkflowDefinition;
@@ -54,7 +55,7 @@ class LowFrequencyTaskStrategiesTest {
     }
 
     @Test
-    @DisplayName("JDBC: executes SQL operation directly on engine and returns execution status")
+    @DisplayName("JDBC: schedules SQL operation to system:jdbc queue with zero network I/O")
     void testJdbcStrategy() {
         TaskDefinition jdbcTask = TaskDefinition.builder("update-ledger")
             .taskType(TaskType.JDBC)
@@ -67,23 +68,40 @@ class LowFrequencyTaskStrategiesTest {
             .tasks(List.of(jdbcTask))
             .build();
 
+        // 1. Initial pass schedules task
         WorkflowSnapshot snapshot = new WorkflowSnapshot(
             "wf-jdbc-1", "tenant-1", "ws-1", "jdbc-wf", 1,
             WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
             Collections.emptyMap(), null, Collections.emptyMap()
         );
 
-        DecisionResult result = decider.decide(def, snapshot, 1000L);
+        DecisionResult result1 = decider.decide(def, snapshot, 1000L);
 
-        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
-        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().get(0);
-        assertThat(updateCmd.status()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(updateCmd.output()).containsEntry("status", "SUCCESS");
-        assertThat(updateCmd.output()).containsEntry("rowsAffected", 1);
+        assertThat(result1.commands()).hasSize(1);
+        EngineCommand.ScheduleTask scheduleCmd = (EngineCommand.ScheduleTask) result1.commands().get(0);
+        assertThat(scheduleCmd.domain()).isEqualTo("system:jdbc");
+        assertThat(scheduleCmd.taskType()).isEqualTo("JDBC");
+        assertThat(scheduleCmd.input()).containsEntry("sql", "UPDATE orders SET status = 'PROCESSING' WHERE order_id = 'ORD-123'");
+
+        // 2. Second pass completes workflow
+        TaskSnapshot completedJdbc = new TaskSnapshot(
+            "wf-jdbc-1_update-ledger_att1", "update-ledger", TaskType.JDBC, "system:jdbc",
+            TaskStatus.COMPLETED, 1, scheduleCmd.input(), Map.of("status", "SUCCESS", "rowsAffected", 1),
+            null, 1000L, 0L, null
+        );
+        WorkflowSnapshot snap2 = new WorkflowSnapshot(
+            "wf-jdbc-1", "tenant-1", "ws-1", "jdbc-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
+            Collections.emptyMap(), null, Map.of("update-ledger", completedJdbc)
+        );
+
+        DecisionResult result2 = decider.decide(def, snap2, 2000L);
+        assertThat(result2.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(result2.outputPayload()).containsEntry("rowsAffected", 1);
     }
 
     @Test
-    @DisplayName("KAFKA_PUBLISH: publishes record to target Kafka topic with partition and offset")
+    @DisplayName("KAFKA_PUBLISH: schedules message publish to system:kafka queue")
     void testKafkaPublishStrategy() {
         TaskDefinition kafkaTask = TaskDefinition.builder("publish-kafka-event")
             .taskType(TaskType.KAFKA_PUBLISH)
@@ -104,17 +122,33 @@ class LowFrequencyTaskStrategiesTest {
             Collections.emptyMap(), null, Collections.emptyMap()
         );
 
-        DecisionResult result = decider.decide(def, snapshot, 1000L);
+        DecisionResult result1 = decider.decide(def, snapshot, 1000L);
 
-        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
-        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().get(0);
-        assertThat(updateCmd.status()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(updateCmd.output()).containsEntry("topic", "unipost.events.fulfillment");
-        assertThat(updateCmd.output()).containsEntry("status", "PUBLISHED");
+        assertThat(result1.commands()).hasSize(1);
+        EngineCommand.ScheduleTask scheduleCmd = (EngineCommand.ScheduleTask) result1.commands().get(0);
+        assertThat(scheduleCmd.domain()).isEqualTo("system:kafka");
+        assertThat(scheduleCmd.taskType()).isEqualTo("KAFKA_PUBLISH");
+        assertThat(scheduleCmd.input()).containsEntry("topic", "unipost.events.fulfillment");
+
+        // Complete when worker finishes
+        TaskSnapshot completedKafka = new TaskSnapshot(
+            "wf-kafka-1_publish-kafka-event_att1", "publish-kafka-event", TaskType.KAFKA_PUBLISH, "system:kafka",
+            TaskStatus.COMPLETED, 1, scheduleCmd.input(), Map.of("topic", "unipost.events.fulfillment", "status", "PUBLISHED"),
+            null, 1000L, 0L, null
+        );
+        WorkflowSnapshot snap2 = new WorkflowSnapshot(
+            "wf-kafka-1", "tenant-1", "ws-1", "kafka-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
+            Collections.emptyMap(), null, Map.of("publish-kafka-event", completedKafka)
+        );
+
+        DecisionResult result2 = decider.decide(def, snap2, 2000L);
+        assertThat(result2.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(result2.outputPayload()).containsEntry("status", "PUBLISHED");
     }
 
     @Test
-    @DisplayName("CALL_MCP_TOOL: invokes external Model Context Protocol tool with arguments")
+    @DisplayName("CALL_MCP_TOOL: schedules tool call to system:mcp queue")
     void testCallMcpToolStrategy() {
         TaskDefinition mcpTask = TaskDefinition.builder("query-inventory-mcp")
             .taskType(TaskType.CALL_MCP_TOOL)
@@ -134,12 +168,27 @@ class LowFrequencyTaskStrategiesTest {
             Collections.emptyMap(), null, Collections.emptyMap()
         );
 
-        DecisionResult result = decider.decide(def, snapshot, 1000L);
+        DecisionResult result1 = decider.decide(def, snapshot, 1000L);
 
-        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
-        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().get(0);
-        assertThat(updateCmd.status()).isEqualTo(TaskStatus.COMPLETED);
-        assertThat(updateCmd.output()).containsEntry("toolName", "check_sku_availability");
-        assertThat(updateCmd.output()).containsEntry("status", "SUCCESS");
+        assertThat(result1.commands()).hasSize(1);
+        EngineCommand.ScheduleTask scheduleCmd = (EngineCommand.ScheduleTask) result1.commands().get(0);
+        assertThat(scheduleCmd.domain()).isEqualTo("system:mcp");
+        assertThat(scheduleCmd.taskType()).isEqualTo("CALL_MCP_TOOL");
+        assertThat(scheduleCmd.input()).containsEntry("toolName", "check_sku_availability");
+
+        TaskSnapshot completedMcp = new TaskSnapshot(
+            "wf-mcp-1_query-inventory-mcp_att1", "query-inventory-mcp", TaskType.CALL_MCP_TOOL, "system:mcp",
+            TaskStatus.COMPLETED, 1, scheduleCmd.input(), Map.of("toolName", "check_sku_availability", "status", "SUCCESS"),
+            null, 1000L, 0L, null
+        );
+        WorkflowSnapshot snap2 = new WorkflowSnapshot(
+            "wf-mcp-1", "tenant-1", "ws-1", "mcp-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(),
+            Collections.emptyMap(), null, Map.of("query-inventory-mcp", completedMcp)
+        );
+
+        DecisionResult result2 = decider.decide(def, snap2, 2000L);
+        assertThat(result2.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        assertThat(result2.outputPayload()).containsEntry("status", "SUCCESS");
     }
 }

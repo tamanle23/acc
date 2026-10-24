@@ -25,10 +25,12 @@ import {
   Trash2,
   Server,
   Layers,
+  RotateCcw,
 } from 'lucide-react';
 import type { WorkflowExecutionStreamState, WorkflowStreamLogItem } from '@/features/workflows/hooks/use-workflow-execution-stream';
 import type { WorkflowExecutionSnapshot } from '@/features/workflows/api/workflow-api';
 import { PayloadDiffViewer } from './payload-diff-viewer';
+import { TaskRepairReplayDialog } from '../modals/task-repair-replay-dialog';
 
 export interface ExecutionRunDrawerProps {
   executionId: string;
@@ -73,6 +75,8 @@ export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [copiedLogId, setCopiedLogId] = useState<string | null>(null);
   const [allCopied, setAllCopied] = useState(false);
+  const [isRepairReplayOpen, setIsRepairReplayOpen] = useState(false);
+  const [repairTargetTaskRef, setRepairTargetTaskRef] = useState<string | null>(null);
 
   const terminalScrollRef = useRef<HTMLDivElement>(null);
 
@@ -500,6 +504,37 @@ export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
           {/* TAB: Tasks / Timeline State */}
           {activeTab === 'timeline' && (
             <div className="flex-1 p-3 overflow-y-auto space-y-3">
+              {/* Failed Task DLQ Action Banner */}
+              {selectedTaskRef && stream.nodeStates[selectedTaskRef] === 'FAILED' && (
+                <div
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs animate-in fade-in"
+                  data-testid="timeline-dlq-action-banner"
+                >
+                  <div className="flex items-center gap-2">
+                    <AlertOctagon className="w-4 h-4 text-rose-500 shrink-0" />
+                    <div>
+                      <span className="font-bold">Task [{selectedTaskRef}] Failed</span>
+                      <span className="text-[11px] block text-muted-foreground">
+                        Barrier halted. Ready for in-place DLQ interactive replay.
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs gap-1.5 shadow-sm"
+                    onClick={() => {
+                      setRepairTargetTaskRef(selectedTaskRef);
+                      setIsRepairReplayOpen(true);
+                    }}
+                    data-testid="drawer-repair-replay-btn"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Repair & Replay</span>
+                  </Button>
+                </div>
+              )}
+
               <div className="text-xs font-semibold text-muted-foreground">
                 Task Execution Node Dispatch States:
               </div>
@@ -604,6 +639,17 @@ export const ExecutionRunDrawer: React.FC<ExecutionRunDrawerProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Task DLQ Repair & Replay Dialog */}
+      {isRepairReplayOpen && (
+        <TaskRepairReplayDialog
+          open={isRepairReplayOpen}
+          onOpenChange={setIsRepairReplayOpen}
+          executionId={executionId}
+          taskReferenceName={repairTargetTaskRef || selectedTaskRef || ''}
+          initialInput={snapshot?.input}
+        />
       )}
     </div>
   );

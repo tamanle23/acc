@@ -184,11 +184,117 @@ class NodeStrategiesTest {
 
         DecisionResult result = decider.decide(def, snap, 1000L);
 
-        // 3 dynamic tasks scheduled + 1 update to DYNAMIC_FORK node
+        // 3 dynamic tasks scheduled + 1 update to DYNAMIC_FORK node setting it IN_PROGRESS
         assertThat(result.commands()).hasSize(4);
         long scheduleCommandsCount = result.commands().stream()
             .filter(c -> c instanceof EngineCommand.ScheduleTask)
             .count();
         assertThat(scheduleCommandsCount).isEqualTo(3);
+
+        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().stream()
+            .filter(c -> c instanceof EngineCommand.UpdateTaskStatus)
+            .findFirst()
+            .orElseThrow();
+        assertThat(updateCmd.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(updateCmd.output()).containsEntry("dynamicCount", 3);
+    }
+
+    @Test
+    @DisplayName("DYNAMIC_FORK: completes barrier and aggregates child outputs when all dynamic child tasks complete")
+    void shouldCompleteBarrierAndAggregateChildOutputs() {
+        TaskDefinition dynamicFork = TaskDefinition.builder("process-batches")
+            .taskType(TaskType.DYNAMIC_FORK)
+            .inputParameters(Map.of("dynamicForkTasksInput", List.of(
+                Map.of("batchId", "B1"),
+                Map.of("batchId", "B2")
+            )))
+            .build();
+
+        WorkflowDefinition def = WorkflowDefinition.builder("dyn-wf")
+            .tasks(List.of(dynamicFork))
+            .build();
+
+        // 1. Snapshot with parent IN_PROGRESS and both child tasks COMPLETED
+        TaskSnapshot parentSnap = new TaskSnapshot(
+            "wf-dyn-1_process-batches", "process-batches", TaskType.DYNAMIC_FORK, "default",
+            TaskStatus.IN_PROGRESS, 1, Collections.emptyMap(),
+            Map.of("dynamicCount", 2, "dynamicRefs", List.of("process-batches_0", "process-batches_1")),
+            null, 1000L, 0L, null
+        );
+        TaskSnapshot child1 = new TaskSnapshot(
+            "c1", "process-batches_0", TaskType.SIMPLE, "default",
+            TaskStatus.COMPLETED, 1, Collections.emptyMap(), Map.of("processed", 10),
+            null, 1000L, 0L, null
+        );
+        TaskSnapshot child2 = new TaskSnapshot(
+            "c2", "process-batches_1", TaskType.SIMPLE, "default",
+            TaskStatus.COMPLETED, 1, Collections.emptyMap(), Map.of("processed", 20),
+            null, 1000L, 0L, null
+        );
+
+        WorkflowSnapshot snap = new WorkflowSnapshot(
+            "wf-dyn-1", "tenant-1", "ws-1", "dyn-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(), null,
+            Map.of("process-batches", parentSnap, "process-batches_0", child1, "process-batches_1", child2)
+        );
+
+        DecisionResult result = decider.decide(def, snap, 2000L);
+
+        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.COMPLETED);
+        EngineCommand.UpdateTaskStatus updateCmd = (EngineCommand.UpdateTaskStatus) result.commands().stream()
+            .filter(c -> c instanceof EngineCommand.UpdateTaskStatus)
+            .findFirst()
+            .orElseThrow();
+        assertThat(updateCmd.status()).isEqualTo(TaskStatus.COMPLETED);
+        assertThat(updateCmd.output()).containsEntry("dynamicCount", 2);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> results = (List<Map<String, Object>>) updateCmd.output().get("results");
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0)).containsEntry("processed", 10);
+        assertThat(results.get(1)).containsEntry("processed", 20);
+    }
+
+    @Test
+    @DisplayName("DYNAMIC_FORK: fail-fast halts workflow progression when any dynamic child task fails")
+    void shouldFailFastDynamicForkOnChildFailure() {
+        TaskDefinition dynamicFork = TaskDefinition.builder("process-batches")
+            .taskType(TaskType.DYNAMIC_FORK)
+            .inputParameters(Map.of("dynamicForkTasksInput", List.of(
+                Map.of("batchId", "B1"),
+                Map.of("batchId", "B2")
+            )))
+            .build();
+
+        WorkflowDefinition def = WorkflowDefinition.builder("dyn-wf")
+            .tasks(List.of(dynamicFork))
+            .build();
+
+        TaskSnapshot parentSnap = new TaskSnapshot(
+            "wf-dyn-1_process-batches", "process-batches", TaskType.DYNAMIC_FORK, "default",
+            TaskStatus.IN_PROGRESS, 1, Collections.emptyMap(),
+            Map.of("dynamicCount", 2, "dynamicRefs", List.of("process-batches_0", "process-batches_1")),
+            null, 1000L, 0L, null
+        );
+        TaskSnapshot child1 = new TaskSnapshot(
+            "c1", "process-batches_0", TaskType.SIMPLE, "default",
+            TaskStatus.COMPLETED, 1, Collections.emptyMap(), Map.of("processed", 10),
+            null, 1000L, 0L, null
+        );
+        TaskSnapshot child2 = new TaskSnapshot(
+            "c2", "process-batches_1", TaskType.SIMPLE, "default",
+            TaskStatus.FAILED, 1, Collections.emptyMap(), Collections.emptyMap(),
+            "Out of memory error in batch B2", 1000L, 0L, null
+        );
+
+        WorkflowSnapshot snap = new WorkflowSnapshot(
+            "wf-dyn-1", "tenant-1", "ws-1", "dyn-wf", 1,
+            WorkflowStatus.RUNNING, Collections.emptyMap(), Collections.emptyMap(), null,
+            Map.of("process-batches", parentSnap, "process-batches_0", child1, "process-batches_1", child2)
+        );
+
+        DecisionResult result = decider.decide(def, snap, 2000L);
+
+        assertThat(result.workflowStatus()).isEqualTo(WorkflowStatus.FAILED);
+        assertThat(result.failureReason()).contains("Dynamic fork barrier failed at child 'process-batches_1'");
     }
 }

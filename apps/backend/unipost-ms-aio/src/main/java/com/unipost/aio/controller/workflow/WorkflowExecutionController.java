@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -238,11 +240,11 @@ public class WorkflowExecutionController {
         return ResponseEntity.ok(stepped);
     }
 
-    @PostMapping("/{id}/tasks/{taskRef}/rerun")
+    @PostMapping({ "/{id}/tasks/{taskRef}/rerun", "/{id}/tasks/{taskRef}/replay" })
     public ResponseEntity<?> rerunTaskFromNode(
         @PathVariable("id") String id,
         @PathVariable("taskRef") String taskRef,
-        @RequestBody(required = false) RerunTaskRequest request,
+        @RequestBody(required = false) Map<String, Object> requestBody,
         @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
     ) {
         String tenantId = resolveTenantId(headerTenantId);
@@ -253,15 +255,44 @@ public class WorkflowExecutionController {
         }
         WorkflowDefinition def = registry.get(tenantId, snapshot.workflowKey()).orElse(null);
         if (def == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Definition not found", "key", snapshot.workflowKey()));
+            def = WorkflowDefinition.builder(snapshot.workflowKey()).build();
         }
-        Map<String, Object> modifiedInput = request != null && request.modifiedInput() != null
-            ? request.modifiedInput()
-            : Collections.emptyMap();
-        WorkflowSnapshot updated = engineService.rerunTaskFromNode(id, taskRef, modifiedInput, def, now).orElse(snapshot);
+
+        // Resolve reference name if taskId was passed
+        String targetRef = taskRef;
+        if (!snapshot.tasksByRef().containsKey(targetRef)) {
+            var taskOpt = persistencePort.getTaskExecution(taskRef);
+            if (taskOpt.isPresent()) {
+                targetRef = taskOpt.get().taskReferenceName();
+            }
+        }
+
+        // Extract input overrides
+        Map<String, Object> overrides = new HashMap<>();
+        if (requestBody != null) {
+            if (requestBody.get("modifiedInput") instanceof Map<?, ?> m) {
+                for (var e : m.entrySet()) overrides.put(String.valueOf(e.getKey()), e.getValue());
+            } else if (requestBody.get("payloadOverrides") instanceof Map<?, ?> p) {
+                for (var e : p.entrySet()) overrides.put(String.valueOf(e.getKey()), e.getValue());
+            } else {
+                overrides.putAll(requestBody);
+            }
+        }
+
+        // Clear any associated active DLQ record
+        try {
+            List<com.unipost.workflow.core.model.TaskDlqRecord> dlqTasks = persistencePort.listDlqTasks(tenantId, "ACTIVE", 50);
+            for (var dlq : dlqTasks) {
+                if (id.equals(dlq.workflowId()) && (taskRef.equals(dlq.taskId()) || targetRef.equals(dlq.taskId()) || targetRef.equals(dlq.referenceName()))) {
+                    persistencePort.updateDlqStatus(dlq.id(), "REPLAYED", now);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        WorkflowSnapshot updated = engineService.rerunTaskFromNode(id, targetRef, overrides, def, now).orElse(snapshot);
         broadcaster.broadcast(id, "TASK_RERUN_SCHEDULED", Map.of(
             "workflowId", id,
-            "taskReferenceName", taskRef,
+            "taskReferenceName", targetRef,
             "status", updated.status().name(),
             "timestamp", now
         ));

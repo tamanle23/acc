@@ -25,6 +25,7 @@ import {
   type WorkflowIR,
   type GraphValidationError,
 } from '../utils/workflow-ir-converter';
+import { getLayoutStrategy, type LayoutAlgorithm } from '../utils/layout';
 
 export interface UseDagStudioStateOptions {
   isReadOnly?: boolean;
@@ -61,6 +62,7 @@ export function useDagStudioState({
 
   // Canvas ergonomics
   const [edgeRoutingMode, setEdgeRoutingMode] = useState<'bezier' | 'smoothstep'>('bezier');
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<LayoutAlgorithm>('dagre');
   const [isSnapToGrid, setIsSnapToGrid] = useState<boolean>(true);
   const [isDismissedEmptyState, setIsDismissedEmptyState] = useState(false);
 
@@ -398,65 +400,17 @@ export function useDagStudioState({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isReadOnly, handleUndo, handleRedo, handleDuplicateSelected, handleBulkDelete, selectedNodes.length]);
 
-  // Topological Auto-Layout (LR or TB)
+  // Strategy-driven Auto-Layout (Dagre vs ELK)
   const handleAutoLayout = useCallback(
-    (direction: 'LR' | 'TB' = 'LR') => {
+    (direction: 'LR' | 'TB' = 'LR', algorithm?: LayoutAlgorithm) => {
       pushUndoSnapshot();
-      const inDegree = new Map<string, number>();
-      const adj = new Map<string, string[]>();
-      nodes.forEach((n) => {
-        inDegree.set(n.id, 0);
-        adj.set(n.id, []);
-      });
-      edges.forEach((e) => {
-        if (adj.has(e.source) && inDegree.has(e.target)) {
-          adj.get(e.source)!.push(e.target);
-          inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
-        }
-      });
-
-      const layerMap = new Map<string, number>();
-      const queue: string[] = [];
-      inDegree.forEach((deg, id) => {
-        if (deg === 0) {
-          queue.push(id);
-          layerMap.set(id, 0);
-        }
-      });
-
-      while (queue.length > 0) {
-        const curr = queue.shift()!;
-        const currLayer = layerMap.get(curr) || 0;
-        for (const nxt of adj.get(curr) || []) {
-          layerMap.set(nxt, Math.max(layerMap.get(nxt) || 0, currLayer + 1));
-          inDegree.set(nxt, (inDegree.get(nxt) || 1) - 1);
-          if (inDegree.get(nxt) === 0) {
-            queue.push(nxt);
-          }
-        }
-      }
-
-      const layers = new Map<number, string[]>();
-      nodes.forEach((n) => {
-        const l = layerMap.get(n.id) ?? 0;
-        if (!layers.has(l)) layers.set(l, []);
-        layers.get(l)!.push(n.id);
-      });
-
-      setNodes((nds) =>
-        nds.map((n) => {
-          const l = layerMap.get(n.id) ?? 0;
-          const siblings = layers.get(l) || [n.id];
-          const idx = siblings.indexOf(n.id);
-          const position =
-            direction === 'LR'
-              ? { x: 60 + l * 280, y: 100 + idx * 150 }
-              : { x: 120 + idx * 250, y: 70 + l * 160 };
-          return { ...n, position };
-        })
-      );
+      const activeAlgo = algorithm || layoutAlgorithm;
+      const strategy = getLayoutStrategy(activeAlgo);
+      const result = strategy.layout(nodes, edges, { direction });
+      setNodes(result.nodes);
+      setEdges(result.edges);
     },
-    [nodes, edges, pushUndoSnapshot]
+    [nodes, edges, pushUndoSnapshot, layoutAlgorithm]
   );
 
   const handleValidateDag = useCallback(() => {
@@ -725,6 +679,8 @@ export function useDagStudioState({
     setValidationBannerVisible,
     edgeRoutingMode,
     setEdgeRoutingMode,
+    layoutAlgorithm,
+    setLayoutAlgorithm,
     isSnapToGrid,
     setIsSnapToGrid,
     onDragOver,

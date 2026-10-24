@@ -519,6 +519,32 @@ export const useRerunWorkflowTask = () => {
   });
 };
 
+export const useReplayWorkflowTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      executionId,
+      taskId,
+      overrideInput,
+    }: {
+      executionId: string;
+      taskId: string;
+      overrideInput: Record<string, unknown>;
+    }) => {
+      const res = await springApiClient.post(
+        `/v1/workflow/executions/${encodeURIComponent(executionId)}/tasks/${encodeURIComponent(taskId)}/replay`,
+        overrideInput
+      );
+      return res.data as WorkflowExecutionSnapshot;
+    },
+    onSuccess: (_data, vars) => {
+      toast.success(`Repaired & replayed task "${vars.taskId}" from DLQ`);
+      queryClient.invalidateQueries({ queryKey: ['workflows', 'execution', vars.executionId] });
+      queryClient.invalidateQueries({ queryKey: ['dlq'] });
+    },
+  });
+};
+
 export const useSimulateWorkflowDefinition = () => {
   return useMutation({
     mutationFn: async ({

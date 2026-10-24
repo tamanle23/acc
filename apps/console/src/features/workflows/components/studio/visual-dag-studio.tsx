@@ -165,6 +165,8 @@ function DagStudioCanvas({
     setValidationBannerVisible,
     edgeRoutingMode,
     setEdgeRoutingMode,
+    layoutAlgorithm,
+    setLayoutAlgorithm,
     isSnapToGrid,
     setIsSnapToGrid,
     onDragOver,
@@ -624,6 +626,8 @@ function DagStudioCanvas({
         onUndo={handleUndo}
         onRedo={handleRedo}
         onAutoLayout={handleAutoLayout}
+        layoutAlgorithm={layoutAlgorithm}
+        onSelectLayoutAlgorithm={setLayoutAlgorithm}
         isSnapToGrid={isSnapToGrid}
         onToggleSnapToGrid={() => setIsSnapToGrid((prev) => !prev)}
         edgeRoutingMode={edgeRoutingMode}

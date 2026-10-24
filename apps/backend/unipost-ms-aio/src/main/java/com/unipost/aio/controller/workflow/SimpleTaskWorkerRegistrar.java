@@ -84,7 +84,7 @@ public class SimpleTaskWorkerRegistrar {
             @Override
             public boolean heartbeat(String taskId, String workerId) {
                 long newVisibleAt = System.currentTimeMillis() + responseTimeoutMs;
-                return persistencePort.extendLease(taskId, workerId, newVisibleAt);
+                return persistencePort.renewLease(taskId, workerId, newVisibleAt);
             }
         };
 

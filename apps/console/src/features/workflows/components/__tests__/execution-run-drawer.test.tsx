@@ -1,8 +1,15 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { ExecutionRunDrawer } from '../execution/execution-run-drawer';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ExecutionRunDrawer, type ExecutionRunDrawerProps } from '../execution/execution-run-drawer';
 import type { WorkflowExecutionStreamState } from '@/features/workflows/hooks/use-workflow-execution-stream';
+
+const testQueryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+});
+
+const render = (ui: React.ReactElement) =>
+  rtlRender(<QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>);
 
 describe('ExecutionRunDrawer Component', () => {
   const mockStream: WorkflowExecutionStreamState = {
@@ -184,5 +191,29 @@ describe('ExecutionRunDrawer Component', () => {
     // Switch to Diagnostics tab
     fireEvent.click(screen.getByTestId('execution-tab-diagnostics'));
     expect(screen.getByText('tenant-acme / ws-prod')).toBeDefined();
+  });
+
+  it('renders DLQ Repair & Replay action banner when inspecting a failed task', () => {
+    const failedStream: WorkflowExecutionStreamState = {
+      ...mockStream,
+      nodeStates: {
+        validateOrder: 'COMPLETED',
+        processPayment: 'FAILED',
+      },
+    };
+
+    render(
+      <ExecutionRunDrawer
+        executionId="exec-123"
+        stream={failedStream}
+        selectedTaskRef="processPayment"
+      />
+    );
+
+    // Switch to Timeline tab
+    fireEvent.click(screen.getByTestId('execution-tab-timeline'));
+    expect(screen.getByTestId('timeline-dlq-action-banner')).toBeDefined();
+    expect(screen.getByTestId('drawer-repair-replay-btn')).toBeDefined();
+    expect(screen.getByText('Task [processPayment] Failed')).toBeDefined();
   });
 });

@@ -272,6 +272,21 @@ describe('Workflow & Versioning Sandbox Handlers Test Suite', () => {
         createCtx('/api/v1/workflow/definitions/order-fulfillment-v2', 'DELETE')
       );
       expect(delDef?.status).toBe(200);
+
+      // 4. DLQ Interactive Replay: POST /workflow/executions/:id/tasks/:taskRef/replay
+      const replayRes = await workflowSandboxHandler.handler(
+        {
+          url: '/api/v1/workflow/executions/wf-exec-101/tasks/chargePayment/replay',
+          method: 'POST',
+          headers: {},
+          data: { overrideInput: { amount: 250, currency: 'USD', token: 'tok_repaired_999' } },
+        },
+        createCtx('/api/v1/workflow/executions/wf-exec-101/tasks/chargePayment/replay', 'POST')
+      );
+      expect(replayRes?.status).toBe(200);
+      expect(replayRes?.data?.status).toBe('RUNNING');
+      expect(replayRes?.data?.tasks[0]?.status).toBe('SCHEDULED');
+      expect(replayRes?.data?.tasks[0]?.inputData?.amount).toBe(250);
     });
   });
 });

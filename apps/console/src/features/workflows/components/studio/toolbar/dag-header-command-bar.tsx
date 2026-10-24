@@ -26,6 +26,7 @@ import {
   Save,
   Eye,
   EyeOff,
+  Check,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -54,6 +55,8 @@ export interface DagHeaderCommandBarProps {
   onUndo: () => void;
   onRedo: () => void;
   onAutoLayout: (direction: 'LR' | 'TB') => void;
+  layoutAlgorithm?: 'dagre' | 'elk';
+  onSelectLayoutAlgorithm?: (algo: 'dagre' | 'elk') => void;
   isSnapToGrid: boolean;
   onToggleSnapToGrid: () => void;
   edgeRoutingMode: 'bezier' | 'smoothstep';
@@ -99,6 +102,8 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
   onUndo,
   onRedo,
   onAutoLayout,
+  layoutAlgorithm = 'dagre',
+  onSelectLayoutAlgorithm,
   isSnapToGrid,
   onToggleSnapToGrid,
   edgeRoutingMode,
@@ -269,18 +274,86 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
           data-testid="dag-toolbar-center-cluster"
           className="pointer-events-auto shrink-0 flex items-center gap-1 p-1.5 px-2 rounded-xl backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-white/30 dark:border-white/10 shadow-lg transition-all order-3 xl:order-2 mx-auto xl:mx-0"
         >
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => onAutoLayout('LR')}
-            title="Topological Auto-Layout (Left-to-Right)"
-            aria-label="Topological Auto-Layout"
-            data-testid="dag-auto-layout-btn"
-          >
-            <LayoutGrid className="w-3 h-3 text-indigo-500" />
-            <span className="hidden xl:inline">Auto-Layout</span>
-          </Button>
+          {/* Auto-Layout split button with strategy selection */}
+          <div className="flex items-center">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs gap-1 rounded-r-none border-r-0"
+              onClick={() => onAutoLayout('LR')}
+              title={`Auto-Layout (${layoutAlgorithm === 'dagre' ? 'Dagre Hierarchical' : 'ELK Compact'})`}
+              aria-label="Auto-Layout"
+              data-testid="dag-auto-layout-btn"
+            >
+              <LayoutGrid className="w-3 h-3 text-indigo-500" />
+              <span className="hidden xl:inline">
+                {layoutAlgorithm === 'dagre' ? 'Dagre' : 'ELK'} Layout
+              </span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-1 text-xs rounded-l-none"
+                  title="Select Layout Engine & Direction"
+                  aria-label="Layout Options"
+                  data-testid="dag-layout-options-dropdown"
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                  Layout Strategy
+                </div>
+                <DropdownMenuItem
+                  onClick={() => {
+                    onSelectLayoutAlgorithm?.('dagre');
+                    onAutoLayout('LR');
+                  }}
+                  className="text-xs flex items-center justify-between"
+                  data-testid="dag-layout-strategy-dagre"
+                >
+                  <div>
+                    <div className="font-medium">Dagre Hierarchical</div>
+                    <div className="text-[10px] text-muted-foreground">Sugiyama rank layered</div>
+                  </div>
+                  {layoutAlgorithm === 'dagre' && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    onSelectLayoutAlgorithm?.('elk');
+                    onAutoLayout('LR');
+                  }}
+                  className="text-xs flex items-center justify-between"
+                  data-testid="dag-layout-strategy-elk"
+                >
+                  <div>
+                    <div className="font-medium">ELK Compact</div>
+                    <div className="text-[10px] text-muted-foreground">Spine-aligned orthogonal</div>
+                  </div>
+                  {layoutAlgorithm === 'elk' && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                  Flow Direction
+                </div>
+                <DropdownMenuItem
+                  onClick={() => onAutoLayout('LR')}
+                  className="text-xs"
+                >
+                  Left-to-Right (LR)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onAutoLayout('TB')}
+                  className="text-xs"
+                >
+                  Top-to-Bottom (TB)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Snap to grid toggle */}
           <Button

@@ -35,48 +35,75 @@ public final class KafkaPublishStrategy implements NodeEvaluatorStrategy {
         String refName = taskDef.taskReferenceName();
         TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
-        if (existing != null) {
-            if (existing.status() == TaskStatus.COMPLETED) {
-                return NodeEvaluationResult.completed(existing.outputData());
-            } else if (existing.status() == TaskStatus.SKIPPED) {
-                return NodeEvaluationResult.skipped();
-            } else if (existing.status() == TaskStatus.FAILED) {
-                return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
+        if (existing == null) {
+            Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+            String topic = (String) resolvedInput.get("topic");
+
+            if (topic == null || topic.isBlank()) {
+                String error = "KAFKA_PUBLISH requires 'topic' parameter";
+                List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
+                    snapshot.workflowId() + "_" + refName,
+                    refName,
+                    TaskStatus.FAILED,
+                    Collections.emptyMap(),
+                    error
+                ));
+                return NodeEvaluationResult.failed(commands, error);
             }
-        }
 
-        Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
-        String topic = (String) resolvedInput.get("topic");
+            String taskId = snapshot.workflowId() + "_" + refName + "_att1";
+            long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 15000L;
+            String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                ? taskDef.domain()
+                : "system:kafka";
 
-        if (topic == null || topic.isBlank()) {
-            String error = "KAFKA_PUBLISH requires 'topic' parameter";
-            List<EngineCommand> commands = List.of(new EngineCommand.UpdateTaskStatus(
-                snapshot.workflowId() + "_" + refName,
+            EngineCommand.ScheduleTask scheduleCmd = new EngineCommand.ScheduleTask(
+                taskId,
+                "KAFKA_PUBLISH",
                 refName,
-                TaskStatus.FAILED,
-                Collections.emptyMap(),
-                error
-            ));
-            return NodeEvaluationResult.failed(commands, error);
+                domain,
+                resolvedInput,
+                1,
+                nowEpochMs,
+                timeoutMs
+            );
+            return NodeEvaluationResult.scheduled(List.of(scheduleCmd));
         }
 
-        Map<String, Object> output = new LinkedHashMap<>();
-        output.put("topic", topic);
-        output.put("key", resolvedInput.get("key"));
-        output.put("partition", 0);
-        output.put("offset", nowEpochMs % 100000L);
-        output.put("publishedAtEpochMs", nowEpochMs);
-        output.put("status", "PUBLISHED");
+        TaskStatus status = existing.status();
+        if (status == TaskStatus.COMPLETED) {
+            return NodeEvaluationResult.completed(existing.outputData());
+        } else if (status == TaskStatus.SKIPPED) {
+            return NodeEvaluationResult.skipped();
+        } else if (status == TaskStatus.IN_PROGRESS || status == TaskStatus.SCHEDULED) {
+            return NodeEvaluationResult.inProgress();
+        } else if (status == TaskStatus.FAILED || status == TaskStatus.TIMED_OUT) {
+            if (existing.attempt() < taskDef.retryCount()) {
+                int nextAttempt = existing.attempt() + 1;
+                String nextTaskId = snapshot.workflowId() + "_" + refName + "_att" + nextAttempt;
+                long backoffDelayMs = (long) (taskDef.retryDelaySeconds() * Math.pow(taskDef.backoffRate(), existing.attempt() - 1)) * 1000L;
+                long nextVisibleAtEpochMs = nowEpochMs + backoffDelayMs;
+                long timeoutMs = taskDef.timeoutSeconds() > 0 ? (long) taskDef.timeoutSeconds() * 1000L : 15000L;
+                Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
+                String domain = (taskDef.domain() != null && !taskDef.domain().isBlank() && !"default".equals(taskDef.domain()))
+                    ? taskDef.domain()
+                    : "system:kafka";
 
-        List<EngineCommand> commands = new ArrayList<>();
-        commands.add(new EngineCommand.UpdateTaskStatus(
-            snapshot.workflowId() + "_" + refName,
-            refName,
-            TaskStatus.COMPLETED,
-            output,
-            null
-        ));
+                EngineCommand.ScheduleTask retryCmd = new EngineCommand.ScheduleTask(
+                    nextTaskId,
+                    "KAFKA_PUBLISH",
+                    refName,
+                    domain,
+                    resolvedInput,
+                    nextAttempt,
+                    nextVisibleAtEpochMs,
+                    timeoutMs
+                );
+                return NodeEvaluationResult.scheduled(List.of(retryCmd));
+            }
+            return NodeEvaluationResult.failed(Collections.emptyList(), existing.errorMessage());
+        }
 
-        return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, output, false);
+        return NodeEvaluationResult.inProgress();
     }
 }
