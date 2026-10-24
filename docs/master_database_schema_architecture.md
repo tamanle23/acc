@@ -612,14 +612,20 @@ Composite entity models (`isComposite = true`) are strictly virtual read-only pr
 
 ---
 
-### Stage 2: Dual-Mode OCC & 3-Way Auto-Merge Algorithm
-To prevent lost updates in collaborative, multi-user web environments without locking rows aggressively, the pipeline executes **Dual-Mode Optimistic Concurrency Control (OCC)**:
+### Stage 2: Strict Atomic Optimistic Concurrency Control (OCC)
+In dynamic metadata platforms with polymorphic JSONB storage, PostgreSQL cannot natively enforce typed column-level concurrency checks. To eliminate silent data loss (Last-Write-Wins), race conditions, and uncoordinated partial field overwrites, the pipeline enforces **Strict Atomic Optimistic Concurrency Control (OCC)**:
 
-1. **Dual-Mode Version Extraction**:
+1. **Version Extraction & Comparison**:
    - Primary: HTTP `If-Match: "12"` (or weak `W/"12"`) header.
-   - Fallback: Request body `version: 12`.
-2. **3-Way Auto-Merge on Non-Conflicting Changes**:
-   If `expectedVersion != currentRecord.version` and the client provided its initial snapshot (`baseAttributes`), the pipeline calculates a 3-way delta:
+   - Fallback: Request payload `version: 12`.
+   - The pipeline retrieves the active record version from the database within the current tenant RLS boundary.
+
+2. **Strict Atomic Rejection on Version Mismatch**:
+   - If `incomingVersion != currentRecord.version`, the pipeline immediately aborts and returns **`HTTP 409 Conflict`** (`MetadataConflictException` mapped to RFC 7807 `ProblemDetail`).
+   - Downstream clients catch HTTP 409, fetch the latest entity snapshot from `/api/v1/metadata/records/{id}`, inspect field differences, and re-apply user updates before resubmitting.
+
+3. **Optional Non-Conflicting 3-Way Auto-Merge**:
+   - If the client explicitly includes the base snapshot (`baseAttributes`), the pipeline calculates an attribute-level 3-way delta:
    ```
    Base (Original)        Current (Database)        Incoming (Client)
    { status: "DRAFT",     { status: "REVIEW",       { status: "DRAFT",
@@ -628,8 +634,8 @@ To prevent lost updates in collaborative, multi-user web environments without lo
                                    ▼
                    Merged: { status: "REVIEW", assignee: "Bob" }
    ```
-   - **Disjoint Fields**: If the server changed Field A and the client changed Field B, changes are auto-merged silently, incrementing version to `version + 1`.
-   - **Direct Collision**: If both server and client changed the exact same field to different values, the pipeline immediately aborts and returns HTTP 409 Conflict (`ProblemDetail` detailing colliding keys).
+   - **Disjoint Fields**: If the server modified Field A and the client modified Field B, changes are auto-merged silently, incrementing version to `version + 1`.
+   - **Direct Collision**: If both server and client modified the exact same attribute key to different values, the pipeline immediately aborts with **`HTTP 409 Conflict`**, identifying the colliding keys in the error payload.
 
 ---
 
@@ -841,6 +847,7 @@ graph TD
         C12["changelog-000.000.00012.xml (Partitioned UNIPOST_RECORD_AUDIT_LOG)"]
         C13["changelog-000.000.00013.xml (Outbox DLQ & Retry Schedule Columns)"]
         C14["changelog-000.000.00014.xml (UNIPOST_TENANTS Master Catalog & FK Backfill)"]
+        C15["changelog-000.000.00015.xml (Multi-Gateway Provider-Agnostic Billing Migration)"]
     end
 
     Master --> UnipostMaster
