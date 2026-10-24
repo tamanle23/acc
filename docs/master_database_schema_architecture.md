@@ -1,5 +1,5 @@
 # Architecture Reference: Persistence & Metadata-Driven Database Engine
-**Document Version:** 1.1.0  
+**Document Version:** 1.2.0 (Enterprise Hardened & Resilient Specification)  
 **Status:** Living Master Specification (Single Source of Truth)  
 **System Domain:** Unipost Enterprise Monorepo Data Persistence Layer  
 **Target Audience:** Staff / Principal Architects, Backend & Frontend Engineers, DevOps/DBAs  
@@ -565,56 +565,234 @@ flowchart TD
 
 ---
 
-## 5. Dynamic Metadata Execution Lifecycle
+## 5. Dynamic Metadata Write Plane: The 6-Stage Record Mutation Pipeline
 
-The following sequence illustrates how a dynamic record write is validated and persisted without static database compilation:
+Dynamic record mutations (`CREATE`, `UPDATE`, `PATCH`, `DELETE`, `RESTORE`) bypass static Hibernate entity generation and are orchestrated through the **6-Stage Record Mutation Pipeline** (`RecordMutationPipeline.java`) within atomic `@Transactional` boundaries:
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Client (Console / API)
-    participant App as Spring Backend Service
-    participant Cache as L1 / L2 Cache (Hazelcast)
-    participant DB as PostgreSQL 16+
-
-    User->>App: POST /api/metadata/entities/records\n{ entityTypeId: 10, attributes: { sku: "A-123", qty: 5 } }
-    App->>App: Set Session Context: SET LOCAL app.current_tenant_id = 'tenant-acme'
-    
-    App->>Cache: Fetch Compiled Schema (key: "schema:10:v3")
-    alt Cache Miss
-        Cache-->>App: null
-        App->>DB: Query UNIPOST_ENTITY_TYPES & UNIPOST_ATTRIBUTE_DEFINITIONS
-        DB-->>App: Return Schema Definitions
-        App->>App: Compile JSON Schema (Draft 7 / 2020-12)\nEnforce additionalProperties: false
-        App->>Cache: Store Compiled Schema
-    else Cache Hit
-        Cache-->>App: Return Cached JsonSchema
+flowchart TD
+    subgraph Client ["Client / Gateway"]
+        Req["Mutation Request + If-Match ETag Header"]
     end
 
-    App->>App: Validate Payload against Schema
-    alt Validation Failed
-        App-->>User: 422 Unprocessable Entity (ProblemDetail: violations list)
-    else Validation Succeeded
-        App->>DB: BEGIN Transaction
-        App->>DB: INSERT INTO UNIPOST_ENTITIES (attributes) VALUES ('{...}')
-        App->>DB: INSERT INTO UNIPOST_RECORD_AUDIT_LOG (delta, actor, ...)
-        App->>DB: INSERT INTO UNIPOST_EVENT_OUTBOX (event_type: RECORD_CREATED)
-        App->>DB: COMMIT Transaction
-        DB-->>App: OK (Committed)
-        App-->>User: 201 Created (Entity Record DTO)
+    subgraph Pipeline ["RecordMutationPipeline (Atomic @Transactional)"]
+        S1["Stage 1: Ingestion & Payload Hard-Cap (<= 1MB)"]
+        S2["Stage 2: OCC Evaluation & 3-Way Auto-Merge"]
+        S3["Stage 3: Schema Defaults & FSM State Binding"]
+        S4["Stage 4: Referential Integrity & Tenant Blindness"]
+        S5["Stage 5: Declarative Delete Cascades (RESTRICT/CASCADE/SET_NULL)"]
+        S6["Stage 6: Partitioned Audit Ledger & Outbox Dispatch"]
     end
+
+    subgraph Persistence ["PostgreSQL 16+ Engine"]
+        T_ENTITIES["UNIPOST_ENTITIES"]
+        T_AUDIT["UNIPOST_RECORD_AUDIT_LOG"]
+        T_OUTBOX["UNIPOST_EVENT_OUTBOX"]
+    end
+
+    Req --> S1
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> T_ENTITIES
+    S6 --> T_AUDIT
+    S6 --> T_OUTBOX
 ```
 
-### Schema Evolution & Cache Invalidation Invariants
-1. Whenever an attribute is created, modified, or soft-deleted:
-   - `UNIPOST_ENTITY_TYPES.schema_version` is incremented: `schema_version = schema_version + 1`.
-   - The eviction key `schema:{id}:v{old_version}` expires automatically.
-   - Hazelcast L2 distributes the schema invalidation broadcast across the cluster.
-2. Hard schema enforcement (`additionalProperties: false`) guarantees that legacy or rogue fields cannot be injected into dynamic payloads.
+### Stage 1: Ingestion & Payload Hard-Cap (DoS Guard)
+Before deserializing complex object trees, the pipeline inspects raw payload byte size:
+```java
+if (bytes.length > 1024 * 1024) { // 1MB Hard-Cap
+    throw new MetadataConflictException("Payload size limit exceeded: Maximum 1MB allowed per record payload");
+}
+```
+Composite entity models (`isComposite = true`) are strictly virtual read-only projections and are rejected immediately if targeted for direct mutation.
 
 ---
 
-## 6. Architectural Trade-Off Analysis (ADR)
+### Stage 2: Dual-Mode OCC & 3-Way Auto-Merge Algorithm
+To prevent lost updates in collaborative, multi-user web environments without locking rows aggressively, the pipeline executes **Dual-Mode Optimistic Concurrency Control (OCC)**:
+
+1. **Dual-Mode Version Extraction**:
+   - Primary: HTTP `If-Match: "12"` (or weak `W/"12"`) header.
+   - Fallback: Request body `version: 12`.
+2. **3-Way Auto-Merge on Non-Conflicting Changes**:
+   If `expectedVersion != currentRecord.version` and the client provided its initial snapshot (`baseAttributes`), the pipeline calculates a 3-way delta:
+   ```
+   Base (Original)        Current (Database)        Incoming (Client)
+   { status: "DRAFT",     { status: "REVIEW",       { status: "DRAFT",
+     assignee: "Alice" }    assignee: "Alice" }       assignee: "Bob" }
+                                   │
+                                   ▼
+                   Merged: { status: "REVIEW", assignee: "Bob" }
+   ```
+   - **Disjoint Fields**: If the server changed Field A and the client changed Field B, changes are auto-merged silently, incrementing version to `version + 1`.
+   - **Direct Collision**: If both server and client changed the exact same field to different values, the pipeline immediately aborts and returns HTTP 409 Conflict (`ProblemDetail` detailing colliding keys).
+
+---
+
+### Stage 3: Schema Defaults & Finite State Machine (FSM) Binding
+1. **Server-Side Default Injection**: Before validating against JSON Schema, missing optional attributes with declared `default_value` in `UNIPOST_ATTRIBUTE_DEFINITIONS` are injected into the map.
+2. **FSM State Initialization & Transition**:
+   - On `CREATE`: `EntityLifecycleService` evaluates `UNIPOST_ENTITY_TYPES.lifecycle_config` and assigns the defined initial state.
+   - On `UPDATE`: Verifies whether state transitions comply with allowed roles, required fields, and guard conditions.
+
+---
+
+### Stage 4: Referential Integrity & Strict Tenant Blindness
+Dynamic records reference other records via two distinct patterns:
+- **Pattern B (JSONB Embedded References)**: Attributes with `ui_component = 'relation_picker'` storing a target record ID.
+- **Pattern C (Explicit Graph Edges)**: Rows in `UNIPOST_ENTITY_RELATIONSHIPS`.
+
+**Strict Tenant Blindness**: When checking target record existence (`validateReferentialIntegrity`), the query executes strictly within the caller's RLS session:
+```sql
+SELECT COUNT(*) FROM UNIPOST_ENTITIES 
+WHERE id = ? AND entity_type_id = ? AND "deletedDate" IS NULL;
+```
+If a rogue user supplies a foreign record ID belonging to another tenant, the engine returns `0` records (blind to existence), triggering `MetadataNotFoundException` rather than exposing cross-tenant presence.
+
+---
+
+### Stage 5: Declarative Delete Cascades
+When a record is deleted (`executeDelete`), the pipeline enforces the target model's `cascade_policy`:
+
+| Policy | Behavior on Pattern B (Inbound JSONB Attribute) | Behavior on Pattern C (Graph Edge `UNIPOST_ENTITY_RELATIONSHIPS`) |
+| :--- | :--- | :--- |
+| **`RESTRICT` (Default)** | If active child records reference this ID, abort mutation with HTTP 409 Conflict. | If active edges connect to this record, abort mutation with HTTP 409 Conflict. |
+| **`CASCADE`** | Executes bulk soft-delete on all referencing child records: `UPDATE UNIPOST_ENTITIES SET "deletedDate" = NOW() ...` | Soft-deletes all connecting edge rows. |
+| **`SET_NULL`** | Strips the attribute key from referencing child records via PostgreSQL JSONB subtraction: `attributes = attributes - ?` | Removes relationship edge without deleting target records. |
+
+---
+
+### Stage 6: Partitioned Audit Ledger & Transactional Outbox
+1. **Delta Calculation**: Computes exact structured diffs: `{ field: { old: v1, new: v2 } }`.
+2. **Monthly Partitioned Audit Insert**: Writes append-only revision into `UNIPOST_RECORD_AUDIT_LOG`.
+3. **Transactional Outbox Event**: Enqueues event (`RECORD_CREATED`, `RECORD_UPDATED`, `RECORD_DELETED`, `RECORD_RESTORED`) into `UNIPOST_EVENT_OUTBOX` within the same database transaction.
+4. **Spring Application Event**: Dispatches `EntityRecordMutatedEvent` for asynchronous SSE push notifications and workflow triggers.
+
+## 6. Enterprise Resilience & Resource Protection (3-Tier Defense-in-Depth)
+
+To safeguard the multi-tenant cluster from rogue queries, DoS attacks, and algorithmic complexity exploits, Unipost enforces a **3-Tier Defense-in-Depth Architecture**:
+
+```
++---------------------------------------------------------------------------------------------------+
+|                           3-TIER DEFENSE-IN-DEPTH RESOURCE PROTECTION MATRIX                      |
++------------------------------------+--------------------------------+-----------------------------+
+| TIER 1: NETWORK & CONCURRENCY      | TIER 2: SCHEMA & REDOS DEFENSE | TIER 3: PERSISTENCE GUARDS  |
+| • 60 req/min Token Bucket Limit    | • 1MB Payload Hard-Cap         | • 3000ms Statement Timeout  |
+| • HTTP 429 + Retry-After Header    | • Static ReDoS Regex Inspector | • Connection Pool Isolation |
+| • Tenant-blind quota throttling    | • 50ms Schema Validation Cap   | • GIN Autovacuum Scale 0.05 |
+| • Custodian bypass (is_sovereign)  | • Max 100 attributes per model | • Partition Monthly Rolling |
++------------------------------------+--------------------------------+-----------------------------+
+```
+
+### 6.1. Tier 1: Tenant Token-Bucket Rate Limiting
+- **Mechanism**: Incoming requests pass through `RateLimitingAspect` managing in-memory token buckets per tenant partition.
+- **Enforcement**: Sustained traffic exceeding plan quotas is rejected with HTTP 429 Too Many Requests and an accurate `Retry-After: <seconds>` header.
+- **Sovereign Exemption**: Sovereign Custodians (`ROLE_SYSTEM_CUSTODIAN`) executing migration or support tasks bypass Tier 1 unconditionally.
+
+### 6.2. Tier 2: Schema Complexity & ReDoS Mitigation
+Adversarial regex patterns in dynamic attributes can cause exponential backtracking, locking CPU threads indefinitely (Regular Expression Denial of Service).
+1. **Pre-flight Static Regex Analysis**:
+   When an attribute definition is created or updated, `MetadataService` statically checks the regex pattern against dangerous nested repetition structures:
+   ```java
+   private static final Pattern DANGEROUS_REGEX_PATTERN = 
+       Pattern.compile("(\\(.*[+*]\\)[+*]|\\([a-zA-Z0-9_\\[\\]|-]+[+*]\\)[+*])");
+   ```
+   Patterns such as `^([a-zA-Z0-9]+)*$` or `(a+)+` are rejected at configuration time with HTTP 409 Conflict before saving to the database.
+2. **Computational Validation Budget Ceiling (50ms)**:
+   During record validation, `SchemaValidationService` executes schema evaluation in a dedicated thread pool bounded by a 50ms strict timeout:
+   ```java
+   Future<Set<ValidationMessage>> future = validationExecutor.submit(() -> schema.validate(payloadNode));
+   try {
+       validationResult = future.get(50, TimeUnit.MILLISECONDS);
+   } catch (TimeoutException te) {
+       future.cancel(true);
+       throw new ValidationTimeoutException("Schema validation timed out (>50ms); evaluation aborted to mitigate ReDoS");
+   }
+   ```
+3. **Model Complexity Quota**: Maximum of 100 dynamic attributes allowed per Entity Type.
+
+### 6.3. Tier 3: Database Statement & Persistence Protection
+1. **Session Statement Timeout**: Every tenant transaction configures:
+   ```sql
+   SET LOCAL statement_timeout = '3000ms';
+   ```
+   Runaway JSON queries or unindexed sequential scans are terminated by PostgreSQL before exhausting HikariCP database pool connections.
+2. **Aggressive GIN Index Vacuuming**: PostgreSQL GIN indexes on `UNIPOST_ENTITIES.attributes` accumulate pending lists under heavy writes. The engine tunes autovacuum:
+   ```sql
+   ALTER TABLE UNIPOST_ENTITIES SET (autovacuum_vacuum_scale_factor = 0.05);
+   ```
+
+---
+
+## 7. Composite Virtual Schemas & Hybrid Query Execution Engine
+
+Composite Entity Types allow architects to declare virtual, denormalized view documents aggregating parent records, children, and lookup relationships **without duplicating storage or breaking single-source-of-truth normalization**.
+
+### 7.1. Hybrid Dual-Mode Query Execution Architecture
+Querying composite records operates through a resilient dual-mode strategy:
+
+```mermaid
+flowchart TD
+    Req["Query Composite Record (ID or Root Paginated)"] --> Compiler["DynamicQueryCompiler (SQL Pushdown)"]
+    Compiler --> RunSQL{"Execute Native PostgreSQL Query\n(jsonb_build_object + jsonb_agg)"}
+    
+    RunSQL -->|Success (< 3000ms)| ReturnDoc["Return Aggregated JSON Document"]
+    RunSQL -->|Timeout / SQL Error / Complex Edge| Fallback["Catch Exception & Fallback"]
+    Fallback --> DataLoader["DataLoaderBatchResolver\n(In-Memory Assembly & Batching)"]
+    DataLoader --> ReturnDoc
+```
+
+1. **Primary: Dynamic SQL Pushdown (`DynamicQueryCompiler`)**:
+   - Compiles recursive composite specs directly into a single PostgreSQL native query using `jsonb_build_object`, subqueries, and `jsonb_agg`.
+   - Executes with complete index pushdown in a single network round-trip.
+2. **Resilient Fallback: `DataLoaderBatchResolver`**:
+   - If SQL generation fails, exceeds statement timeouts, or encounters unsupported recursive patterns, `CompositeRecordService` catches the failure and delegates to `DataLoaderBatchResolver`.
+   - The DataLoader batches child record IDs across relations into single `WHERE id IN (...)` queries, resolving N+1 bottlenecks in memory.
+
+### 7.2. Composite Referential Dependency & Cycle Invariants
+1. **Compile-Time Cycle Detection**:
+   `CompositeSpecCompiler` inspects tree hierarchies before saving, detecting and rejecting circular dependencies (`A -> B -> A` or recursive self-joins) with `SchemaValidationException("Cycle detected in composite tree path")`.
+2. **Referential Deletion Protection**:
+   A base Entity Type or Attribute Definition **cannot be deleted or archived** if it is actively referenced in any active Composite Entity Specification:
+   ```java
+   if (isAttributeReferencedInSpec(et.getCompositeSpec(), entityTypeId, attributeSystemName)) {
+       throw new MetadataConflictException("Cannot delete base attribute because it is actively referenced in composite entity specification");
+   }
+   ```
+
+---
+
+## 8. Composite Caching Fabric & Dual-Layer Versioning
+
+To achieve sub-millisecond dynamic record evaluation, schema compilation is cached across a 2-tier caching fabric:
+
+```
++---------------------------------------------------------------------------------------------------+
+|                                DUAL-LAYER SCHEMA CACHING FABRIC                                   |
++-------------------------------------------------+-------------------------------------------------+
+| L1: IN-MEMORY LOCAL CACHE (Caffeine/Concurrent) | L2: DISTRIBUTED SHARED CACHE (Hazelcast IMap)   |
+| • Stores pre-compiled JsonSchema validator      | • Stores serialized compiled JSON Schema spec   |
+| • Sub-microsecond validation throughput         | • Shared across all Spring Boot cluster nodes   |
+| • Local instant invalidation                    | • Global invalidation via ITopic broadcast      |
++-------------------------------------------------+-------------------------------------------------+
+```
+
+### Dual-Layer Versioned Cache Key Structure
+Every cached schema entry incorporates tenant scope and both tenant/system version counters:
+```
+schema:{tenant_id}:{entity_type_id}:v{tenant_version}_s{system_version}
+```
+- Example: `schema:tenant-acme:42:v5_s1`
+- When `UNIPOST_ENTITY_TYPES.schema_version` increments from 5 to 6, the old key automatically becomes a cache miss without waiting for TTL expiration, guaranteeing **zero schema drift**.
+- `MetadataCacheListener` captures Spring domain events and publishes distributed eviction notices across the Hazelcast cluster.
+
+---
+
+## 9. Architectural Trade-Off Analysis (ADR)
 
 | Architectural Dimension | Chosen: Hybrid EAV-JSONB with PostgreSQL RLS | Alternative A: Pure Relational DDL per Tenant | Alternative B: Separate NoSQL Database (MongoDB / DynamoDB) |
 | :--- | :--- | :--- | :--- |
@@ -625,7 +803,7 @@ sequenceDiagram
 
 ---
 
-## 7. Operational & Maintenance Runbook
+## 10. Operational & Maintenance Runbook
 
 1. **Partition Pruning & Maintenance:**
    - Run rolling monthly partition creation jobs on `UNIPOST_RECORD_AUDIT_LOG` before the 25th of each month.
@@ -640,7 +818,7 @@ sequenceDiagram
 
 ---
 
-## 8. Unified Liquibase Master Migration Topology
+## 11. Unified Liquibase Master Migration Topology
 
 All relational persistence definitions, identity/RBAC baselines, PostgreSQL RLS policies, indexes, and incremental migrations are strictly governed through a unified Liquibase master topology:
 
@@ -693,11 +871,11 @@ graph TD
 
 ---
 
-## 9. UI/UX Design System Integration & WCAG 2.2 AA Compliance
+## 12. UI/UX Design System Integration & WCAG 2.2 AA Compliance
 
 The persistence layer bridges to client applications via strict UI design tokens, component state matrices, and universal accessibility guarantees.
 
-### 9.1. Dynamic Form Widget Token Mapping
+### 12.1. Dynamic Form Widget Token Mapping
 Dynamic attributes defined in `UNIPOST_ATTRIBUTE_DEFINITIONS` declare a `ui_component` token that binds directly to `@unipost/ui` component primitives:
 
 | `ui_component` Token | `@unipost/ui` Component Primitive | Input Validation & Behavior |
@@ -710,13 +888,13 @@ Dynamic attributes defined in `UNIPOST_ATTRIBUTE_DEFINITIONS` declare a `ui_comp
 | `RICH_TEXT` | `<RichTextEditor />` | Multi-line formatted markdown/HTML editor with character counter. |
 | `RELATION_PICKER` | `<RelationPickerDrawer />` | Searchable modal drawer querying target `UNIPOST_ENTITIES`. |
 
-### 9.2. Liquid Glass Optical Specifications
+### 12.2. Liquid Glass Optical Specifications
 All metadata forms, inspectors, and audit history drawers adhere to the monorepo's **Liquid Glass Design System**:
 - **Frosted Scrim**: `backdrop-blur-xl bg-white/65 dark:bg-slate-900/65`.
 - **Specular Border**: `border border-white/30 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]`.
 - **Diffuse Elevation**: `shadow-xl shadow-black/5 dark:shadow-black/30`.
 
-### 9.3. Mandatory 5-State Component Matrix
+### 12.3. Mandatory 5-State Component Matrix
 Every dynamic metadata form, data table, and audit history drawer must implement all 5 operational states:
 
 ```
@@ -731,7 +909,7 @@ Every dynamic metadata form, data table, and audit history drawer must implement
 +-------------------+--------------------+--------------------+--------------------+----------------+
 ```
 
-### 9.4. WCAG 2.2 AA Universal Accessibility Invariants
+### 12.4. WCAG 2.2 AA Universal Accessibility Invariants
 1. **Target Size (SC 2.5.8)**: All interactive controls, dropdown items, and table action buttons must meet a minimum pointer target size of `44x44 CSS px` (or possess >= 24px diameter with sufficient spacing).
 2. **Keyboard Operability**: Full keyboard navigation across all forms:
    - `Tab` / `Shift+Tab`: Forward and backward navigation through fields.
