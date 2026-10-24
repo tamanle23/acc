@@ -72,7 +72,7 @@ export function DlqInspectorSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6 liquid-glass"
+        className="w-full sm:max-w-xl overflow-y-auto flex flex-col gap-5 p-6"
       >
         <SheetHeader className="text-left space-y-1">
           <div className="flex items-center justify-between">

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+  <changeSet id="dedicated-tenants-table-and-identity-pruning-14" author="antigravity">
+    <comment>Create UNIPOST_TENANTS master table, backfill from workspaces/billing, link FK, and drop legacy identity tables</comment>
+
+    <!-- 1. Master Tenants Table -->
+    <createTable tableName="UNIPOST_TENANTS">
+      <column name="id" type="BIGINT" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="uid" type="VARCHAR(255)">
+        <constraints unique="true" nullable="false"/>
+      </column>
+      <column name="code" type="VARCHAR(100)">
+        <constraints unique="true" nullable="false"/>
+      </column>
+      <column name="name" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="status" type="VARCHAR(50)" defaultValue="ACTIVE">
+        <constraints nullable="false"/>
+      </column>
+      <column name="plan_tier" type="VARCHAR(50)" defaultValue="BASIC">
+        <constraints nullable="false"/>
+      </column>
+      <column name="owner_user_uid" type="VARCHAR(255)"/>
+      <column name="region" type="VARCHAR(50)" defaultValue="ap-southeast-1"/>
+      <column name="metadata" type="JSONB" defaultValue="{}"/>
+      
+      <column name="createdBy_uid" type="VARCHAR(255)"/>
+      <column name="createdDate" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+      <column name="lastUpdatedBy_uid" type="VARCHAR(255)"/>
+      <column name="lastUpdatedDate" type="TIMESTAMP"/>
+      <column name="version" type="BIGINT" defaultValueNumeric="0"/>
+      <column name="deletedDate" type="TIMESTAMP"/>
+    </createTable>
+
+    <!-- 2. Backfill Existing Tenants & Ensure SYSTEM Root Exists -->
+    <sql dbms="postgresql">
+      -- Seed SYSTEM root custodian tenant if missing
+      INSERT INTO UNIPOST_TENANTS (uid, code, name, status, plan_tier)
+      VALUES ('tenant-root-system', 'SYSTEM', 'Sovereign Root Platform', 'ACTIVE', 'ENTERPRISE')
+      ON CONFLICT (code) DO NOTHING;
+
+      -- Backfill distinct tenants from UNIPOST_WORKSPACES
+      INSERT INTO UNIPOST_TENANTS (uid, code, name, status, plan_tier)
+      SELECT 
+        'tenant-' || substr(md5(random()::text), 1, 16),
+        w.tenant_id,
+        INITCAP(REPLACE(w.tenant_id, '-', ' ')) || ' Org',
+        'ACTIVE',
+        COALESCE(b.plan_tier, 'BASIC')
+      FROM (SELECT DISTINCT tenant_id FROM UNIPOST_WORKSPACES WHERE tenant_id IS NOT NULL) w
+      LEFT JOIN UNIPOST_TENANT_BILLING b ON b.tenant_id = w.tenant_id
+      WHERE w.tenant_id != 'SYSTEM'
+      ON CONFLICT (code) DO NOTHING;
+    </sql>
+
+    <!-- 3. Add tenant_ref_id to UNIPOST_WORKSPACES & backfill FK -->
+    <addColumn tableName="UNIPOST_WORKSPACES">
+      <column name="tenant_ref_id" type="BIGINT">
+        <constraints foreignKeyName="fk_workspaces_tenant" referencedTableName="UNIPOST_TENANTS" referencedColumnNames="id"/>
+      </column>
+    </addColumn>
+
+    <sql dbms="postgresql">
+      UPDATE UNIPOST_WORKSPACES w
+      SET tenant_ref_id = t.id
+      FROM UNIPOST_TENANTS t
+      WHERE w.tenant_id = t.code;
+
+      -- Create partial index on active tenants
+      CREATE INDEX IF NOT EXISTS idx_tenants_code_active 
+      ON UNIPOST_TENANTS (code) 
+      WHERE "deletedDate" IS NULL;
+
+      -- Enable and Force Row-Level Security on UNIPOST_TENANTS
+      ALTER TABLE UNIPOST_TENANTS ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE UNIPOST_TENANTS FORCE ROW LEVEL SECURITY;
+
+      DROP POLICY IF EXISTS tenant_isolation_tenants ON UNIPOST_TENANTS;
+      CREATE POLICY tenant_isolation_tenants ON UNIPOST_TENANTS
+          FOR ALL
+          USING (
+              current_setting('app.current_tenant_id', true) = 'SYSTEM'
+              OR code = NULLIF(current_setting('app.current_tenant_id', true), '')
+          )
+          WITH CHECK (
+              current_setting('app.current_tenant_id', true) = 'SYSTEM'
+              OR (
+                  code = NULLIF(current_setting('app.current_tenant_id', true), '')
+                  AND code != 'SYSTEM'
+              )
+          );
+
+      -- 4. Eliminate obsolete legacy identity tables
+      DROP TABLE IF EXISTS UNIPOST_IDENTITY_ADDRESS CASCADE;
+      DROP TABLE IF EXISTS UNIPOST_IDENTITY_USERPROFILE CASCADE;
+      DROP TABLE IF EXISTS UNIPOST_IDENTITY_USERACTIVITY CASCADE;
+    </sql>
+  </changeSet>
+
+</databaseChangeLog>

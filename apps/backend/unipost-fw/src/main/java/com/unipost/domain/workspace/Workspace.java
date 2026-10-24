@@ -35,4 +35,8 @@ public class Workspace extends BaseModel {
 
     @Column(name = "is_immutable", nullable = false)
     private Boolean isImmutable = false;
+
+    @jakarta.persistence.ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @jakarta.persistence.JoinColumn(name = "tenant_ref_id")
+    private com.unipost.domain.tenant.Tenant tenant;
 }

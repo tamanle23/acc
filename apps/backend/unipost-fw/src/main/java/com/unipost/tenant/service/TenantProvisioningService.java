@@ -33,6 +33,7 @@ public class TenantProvisioningService {
     private final AttributeDefinitionRepository attributeDefinitionRepository;
     private final RelationshipTypeRepository relationshipTypeRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final com.unipost.repository.jpa.TenantRepository tenantRepository;
     private final SchemaValidationService schemaValidationService;
 
     @Transactional
@@ -126,11 +127,23 @@ public class TenantProvisioningService {
                 }
             }
 
-            // 5. Auto-provision Tenant Primary Default Workspace (Immutable)
+            // 5. Ensure Master Tenant exists in UNIPOST_TENANTS
+            com.unipost.domain.tenant.Tenant masterTenant = tenantRepository.findByCodeAndDeletedDateIsNull(targetTenantId)
+                    .orElseGet(() -> {
+                        com.unipost.domain.tenant.Tenant t = new com.unipost.domain.tenant.Tenant();
+                        t.setCode(targetTenantId);
+                        t.setName(request.tenantName());
+                        t.setStatus("ACTIVE");
+                        t.setPlanTier("BASIC");
+                        return tenantRepository.save(t);
+                    });
+
+            // 6. Auto-provision Tenant Primary Default Workspace (Immutable)
             Workspace defaultWorkspace = workspaceRepository.findByTenantIdAndIsDefaultTrueAndDeletedDateIsNull(targetTenantId)
                     .orElseGet(() -> {
                         Workspace ws = new Workspace();
                         ws.setTenantId(targetTenantId);
+                        ws.setTenant(masterTenant);
                         ws.setCode("MAIN");
                         ws.setName(request.tenantName() + " Primary");
                         ws.setDescription("System auto-provisioned default primary workspace for " + request.tenantName());
@@ -139,6 +152,10 @@ public class TenantProvisioningService {
                         ws.setIsImmutable(true);
                         return workspaceRepository.save(ws);
                     });
+            if (defaultWorkspace.getTenant() == null) {
+                defaultWorkspace.setTenant(masterTenant);
+                workspaceRepository.save(defaultWorkspace);
+            }
             log.info("Provisioned default immutable workspace '{}' (uid: '{}') for tenant '{}'",
                     defaultWorkspace.getName(), defaultWorkspace.getUid(), targetTenantId);
 

@@ -181,7 +181,43 @@ Stores actual instance-level directed relationships between entity records.
 
 ### 3.2. Static Control Plane & Resiliency Tables
 
-#### 6. `UNIPOST_EVENT_OUTBOX` (Transactional Outbox Pattern)
+#### 6. `UNIPOST_TENANTS` (Master Tenant Entity)
+The root master catalog governing tenant-level lifecycles, commercial tiers, regions, and sovereign custodial status.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Internal surrogate primary key. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Globally unique immutable tenant UID. |
+| `code` | `VARCHAR(100)` | `NOT NULL`, Unique | Programmatic tenant slug matching RLS context (e.g., `tenant-acme`, `SYSTEM`). |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Organization name. |
+| `status` | `VARCHAR(50)` | Default `'ACTIVE'` | Lifecycle: `ACTIVE`, `SUSPENDED`, `ARCHIVED`. |
+| `plan_tier` | `VARCHAR(50)` | Default `'BASIC'` | Commercial entitlement tier: `BASIC`, `PRO`, `PRO_MAX`, `ENTERPRISE`. |
+| `owner_user_uid`| `VARCHAR(255)`| Nullable | User UID of the primary tenant custodian/owner. |
+| `region` | `VARCHAR(50)` | Default `'ap-southeast-1'` | Data residency deployment region. |
+| `metadata` | `JSONB` | Default `'{}'` | Flexible configuration attributes (white-label theme tokens, domain maps). |
+| *Audit Columns*| `VARCHAR`/`TIMESTAMP`/`BIGINT` | Standard | Authoring and optimistic locking version. |
+
+*Critical RLS Policy:* Enforces `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR code = current_tenant`.
+
+---
+
+#### 7. `UNIPOST_WORKSPACES` (Environments & Workspaces)
+Represents isolated environments (e.g., `MAIN`, `STAGING`, `DEV`) owned by a master Tenant.
+
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PK`, Auto-increment | Workspace ID. |
+| `uid` | `VARCHAR(255)` | `NOT NULL`, Unique | Immutable workspace UID. |
+| `tenant_ref_id` | `BIGINT` | `FK` -> `UNIPOST_TENANTS.id` | Referential foreign key to master tenant. |
+| `tenant_id` | `VARCHAR(255)` | `NOT NULL` | Denormalized tenant slug for high-speed RLS evaluation. |
+| `code` | `VARCHAR(100)` | `NOT NULL` | Workspace code unique per tenant (e.g., `MAIN`). |
+| `name` | `VARCHAR(255)` | `NOT NULL` | Display name. |
+| `is_default` | `BOOLEAN` | Default `FALSE` | Exactly 1 active default workspace per tenant (`uk_tenant_default_workspace`). |
+| `is_immutable` | `BOOLEAN` | Default `FALSE` | Prevents accidental deletion of primary default workspace. |
+
+---
+
+#### 8. `UNIPOST_EVENT_OUTBOX` (Transactional Outbox Pattern)
 Guarantees atomicity between local state changes and event pub/sub.
 
 | Column | Type | Constraints | Description |
@@ -201,7 +237,7 @@ Guarantees atomicity between local state changes and event pub/sub.
 
 ---
 
-#### 7. `UNIPOST_RECORD_AUDIT_LOG` (Range-Partitioned Audit Ledger)
+#### 9. `UNIPOST_RECORD_AUDIT_LOG` (Range-Partitioned Audit Ledger)
 Append-only chronological history of all dynamic record mutations.
 
 - **Partitioning Strategy:** PostgreSQL `PARTITION BY RANGE (created_at)` with automated monthly partitions (`unipost_record_audit_log_YYYY_MM`).

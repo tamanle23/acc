@@ -13,7 +13,6 @@
     <module>./unipost-fw</module>
     <module>./unipost-db</module>
     <module>./unipost-ms-fs</module>
-    <module>./unipost-ms-identity</module>
     <module>./unipost-ms-worker</module>
     <module>./workflow-engine</module>
     <module>./unipost-sandbox</module>

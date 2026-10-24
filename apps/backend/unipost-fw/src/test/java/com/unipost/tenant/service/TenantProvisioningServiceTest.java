@@ -52,6 +52,9 @@ class TenantProvisioningServiceTest {
   @Mock
   private JsonSchema mockJsonSchema;
 
+  @Mock
+  private com.unipost.repository.jpa.TenantRepository tenantRepository;
+
   private BlueprintCatalogService blueprintCatalogService;
   private TenantProvisioningService tenantProvisioningService;
 
@@ -62,12 +65,22 @@ class TenantProvisioningServiceTest {
     blueprintCatalogService = new BlueprintCatalogService(new ObjectMapper());
     blueprintCatalogService.loadBlueprints();
 
+    org.mockito.Mockito.lenient().when(tenantRepository.findByCodeAndDeletedDateIsNull(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(java.util.Optional.empty());
+    org.mockito.Mockito.lenient().when(tenantRepository.save(org.mockito.ArgumentMatchers.any(com.unipost.domain.tenant.Tenant.class)))
+        .thenAnswer(inv -> {
+          com.unipost.domain.tenant.Tenant t = inv.getArgument(0);
+          t.setId(idGenerator.incrementAndGet());
+          return t;
+        });
+
     tenantProvisioningService = new TenantProvisioningService(
         blueprintCatalogService,
         entityTypeRepository,
         attributeDefinitionRepository,
         relationshipTypeRepository,
         workspaceRepository,
+        tenantRepository,
         schemaValidationService);
   }
 
