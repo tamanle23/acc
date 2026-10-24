@@ -71,6 +71,9 @@ export class ChromiumAppModeStrategy implements IWindowStrategy {
       `--app=${options.url}`,
       `--window-size=${width},${height}`,
       "--disable-features=Translate",
+      "--disable-http-cache",
+      "--disk-cache-size=1",
+      "--media-cache-size=1",
       "--no-first-run",
       "--no-default-browser-check",
     ];

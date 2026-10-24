@@ -23,7 +23,10 @@ try:
     window.set_position(Gtk.WindowPosition.CENTER)
     window.connect("destroy", Gtk.main_quit)
 
-    webview = WebKit2.WebView()
+    # Ephemeral context with zero disk caching
+    context = WebKit2.WebContext.new_ephemeral()
+    context.set_cache_model(WebKit2.CacheModel.DOCUMENT_VIEWER)
+    webview = WebKit2.WebView.new_with_context(context)
     webview.load_uri(url)
     window.add(webview)
 

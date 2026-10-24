@@ -212,10 +212,11 @@ async function main() {
         return new Response(Bun.file(distFilePath), {
           headers: {
             "Content-Type": contentType,
-            // In dev mode, never cache so updates appear instantly on reload
-            "Cache-Control": "no-cache, no-store, must-revalidate",
+            // Cross-platform bulletproof anti-caching for desktop control plane
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
             "Pragma": "no-cache",
             "Expires": "0",
+            "Surrogate-Control": "no-store",
           },
         });
       }

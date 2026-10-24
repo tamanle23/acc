@@ -27,8 +27,22 @@ $form.StartPosition = "CenterScreen"
 
 $browser = New-Object Microsoft.Web.WebView2.WinForms.WebView2
 $browser.Dock = [System.Windows.Forms.DockStyle]::Fill
-$browser.Source = New-Object System.Uri("${options.url}")
+
 $form.Controls.Add($browser)
+
+$form.Add_Load({
+    try {
+        $envOptions = New-Object Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions "--disable-http-cache --disable-cache"
+        $envTask = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::CreateAsync($null, $null, $envOptions)
+        $envTask.Wait()
+        $env = $envTask.Result
+        $initTask = $browser.EnsureCoreWebView2Async($env)
+        $initTask.Wait()
+        $browser.Source = New-Object System.Uri("${options.url}")
+    } catch {
+        $browser.Source = New-Object System.Uri("${options.url}")
+    }
+})
 
 [System.Windows.Forms.Application]::Run($form)
 `.trim();

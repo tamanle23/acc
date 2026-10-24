@@ -96,18 +96,22 @@ async function buildUI() {
     process.exit(1);
   }
 
-  // 3. Generate HTML shell embedding compiled bundle
+  // 3. Generate HTML shell embedding compiled bundle with content-hash cache-busting
+  const buildHash = Date.now().toString(36);
   const htmlContent = `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>ACC Control Plane</title>
-  <link rel="stylesheet" href="/index.css" />
+  <link rel="stylesheet" href="/index.css?v=${buildHash}" />
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-cyan-500 selection:text-white">
   <div id="root"></div>
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js?v=${buildHash}"></script>
 </body>
 </html>
 `;

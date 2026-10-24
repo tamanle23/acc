@@ -19,8 +19,8 @@ describe("Supervisor SolidJS + Ark UI + Tailwind CSS Bundle & Static Server", ()
 
     const htmlContent = fs.readFileSync(indexHtml, "utf8");
     expect(htmlContent).toContain('<div id="root"></div>');
-    expect(htmlContent).toContain('<script type="module" src="/app.js"></script>');
-    expect(htmlContent).toContain('<link rel="stylesheet" href="/index.css" />');
+    expect(htmlContent).toContain('<script type="module" src="/app.js');
+    expect(htmlContent).toContain('<link rel="stylesheet" href="/index.css');
 
     const jsSize = fs.statSync(appJs).size;
     expect(jsSize).toBeGreaterThan(10000); // Bundled SolidJS + Ark UI + Lucide
