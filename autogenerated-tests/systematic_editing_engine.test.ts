@@ -25,14 +25,14 @@ import {
   VignetteDecorator,
   AudioDuckingDecorator,
   MoCapVTubeFacade,
-} from '../packages/effect-engines/src/editing';
+} from '../packages/core/src/editing';
 import {
   ColorGradingEngine,
   ParametricMaskEngine,
   LowerThirdFactory
 } from '../packages/effect-engines/src/styles';
 import { SafeZoneManager } from '../packages/effect-engines/src/subtitles/SafeZoneManager';
-import { SoundEffectFactory } from '../packages/effect-engines/src/sound-effects/SoundEffectFactory';
+import { SoundEffectFactory } from '../packages/core/src/effects/sound-effects/SoundEffectFactory';
 import {
   AudioDuckingDSP,
   ToneMappingEngine,

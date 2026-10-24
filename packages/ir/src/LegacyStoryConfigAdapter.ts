@@ -53,6 +53,12 @@ export interface LegacyStoryConfig {
   slides?: LegacySceneConfig[]; // backward compatibility
 }
 
+/**
+ * Legacy StoryConfig adapter that maps `story-config.json` structures into ExtendedPipelineIR AST.
+ *
+ * @deprecated Legacy StoryConfig format is deprecated in favor of `pipeline-ir.json` (Universal Video IR v3.0.0).
+ * Use `PipelineIRToUniversalIRAdapter` or `StoryConfigToUniversalIRAdapter` for direct `VideoIRDocument` translation.
+ */
 export class LegacyStoryConfigAdapter {
   public static adapt(legacyConfig: LegacyStoryConfig, jobId = `job_${Date.now()}`): ExtendedPipelineIR {
     const settings = legacyConfig.settings || {};

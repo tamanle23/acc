@@ -335,6 +335,7 @@ Bảng lưu trữ lịch sử toàn bộ các kế hoạch triển khai (Impleme
 | [`327`](327_update_applications_and_studio_boundaries.md) | 2026-10-24 | Update Applications & Studio Client Export Boundary (Iteration 30 Phase 6) | Removed @acc/core from apps/studio dependencies, updated test assertions to verify MediabunnyClientSink from @acc/core-web, and validated app boundaries |
 | [`328`](328_eliminate_core_logger_and_use_universal_logger.md) | 2026-10-24 | Eliminate packages/core/src/logger.ts and Standardize on UniversalLogger | Deleted redundant packages/core/src/logger.ts, migrated 29 core modules to import UniversalLogger from @acc/core-isomorphic, and re-exported from @acc/core |
 | [`329`](329_phase7_monorepo_qa_and_verification.md) | 2026-10-24 | Monorepo Final QA, Verification & Build Hardening (Iteration 30 Phase 7) | Modernized tsconfig paths, disambiguated SoundRegistryManager in core, verified clean turbo build across all 11 packages, validated 0 native leaks, and ran full test suites green |
+| [`330`](330_isolate_legacy_story_config_pipeline.md) | 2026-10-24 | Isolate Legacy Story-Config Rendering Pipeline | Quarantined legacy disk-based multi-pass story renderer into legacy/ submodule, refactored VideoEditPipelineOrchestrator into a lightweight facade, added formal deprecations in @acc/ir |
 
 
 

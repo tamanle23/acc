@@ -14,6 +14,9 @@ import type { IConfigToIRAdapter, AdapterOptions } from './IConfigToIRAdapter';
  * Bridges existing story_config.json / LegacyStoryConfig formats into
  * canonical V1.0-Stable Video IR documents.
  * Establishes the pioneer end-to-end verification baseline.
+ *
+ * @deprecated Legacy story_config.json is deprecated in favor of pipeline-ir.json.
+ * For modern omnichannel pipelines, use `PipelineIRToUniversalIRAdapter`.
  */
 export class StoryConfigToUniversalIRAdapter implements IConfigToIRAdapter<LegacyStoryConfig> {
   public readonly id = 'story-config-pioneer';
