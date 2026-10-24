@@ -585,6 +585,21 @@ export const DagHeaderCommandBar: React.FC<DagHeaderCommandBarProps> = ({
         {/* Read-Only Exit / Fullscreen Actions */}
         {isReadOnly && (
           <>
+            {onSimulate && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                onClick={onSimulate}
+                title="Launch Multi-Branch Live Execution Simulator in Unified Sandbox"
+                aria-label="Simulate Execution"
+                data-testid="dag-simulate-btn-readonly"
+              >
+                <Activity className="w-3 h-3 text-emerald-500" />
+                <span className="hidden sm:inline">Simulate</span>
+              </Button>
+            )}
+
             <Button
               size="sm"
               variant="outline"

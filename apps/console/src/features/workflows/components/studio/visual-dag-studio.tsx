@@ -968,25 +968,27 @@ function DagStudioCanvas({
             workflowIR={exportToWorkflowIR(nodes, edges)}
             onSimulationSuccess={handleSimulationSuccess}
           />
-          <WorkflowSimulationModal
-            open={isSimulationModalOpen}
-            onOpenChange={setIsSimulationModalOpen}
-            onStartSimulation={(simExecId) => {
-              // Load realistic multi-branch pipeline blueprint with logic fork/join nodes
-              setNodes(MULTI_BRANCH_ORDER_NODES);
-              setEdges(MULTI_BRANCH_ORDER_EDGES);
-              setActiveSimulationExecutionId(simExecId);
-              setIsSimulationModalOpen(false);
-            }}
-          />
         </>
       )}
+
+      {/* Global Simulation Modal (available in both authoring and execution mode) */}
+      <WorkflowSimulationModal
+        open={isSimulationModalOpen}
+        onOpenChange={setIsSimulationModalOpen}
+        onStartSimulation={(simExecId) => {
+          // Load realistic multi-branch pipeline blueprint with logic fork/join nodes
+          setNodes(MULTI_BRANCH_ORDER_NODES);
+          setEdges(MULTI_BRANCH_ORDER_EDGES);
+          setActiveSimulationExecutionId(simExecId);
+          setIsSimulationModalOpen(false);
+        }}
+      />
 
       {isExecutionMode && (
         <WorkflowVariableWatchDrawer
           open={isVariableWatchOpen}
           onOpenChange={setIsVariableWatchOpen}
-          executionId={executionId}
+          executionId={effectiveExecutionId}
           workflowStatus={
             stream.workflowStatus ||
             (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')
