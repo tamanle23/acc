@@ -3,7 +3,6 @@ import { FFmpegManager, Logger } from '@acc/core';
 import type { ResolvedStoryConfig } from '@acc/core/types';
 import type { LegacyStoryConfig, ExtendedPipelineIR } from '@acc/ir';
 import {
-  LegacyDiskStoryRenderer,
   LegacyIRPreparationAdapter,
   type PipelineExecutionOptions,
 } from '@acc/legacy-story-renderer';
@@ -15,8 +14,8 @@ export type { PipelineExecutionOptions };
  * High-level orchestration facade for multi-scene video editing and rendering.
  *
  * Directs incoming requests directly to the Canonical Universal Video IR Engine
- * with zero-copy NVENC/FFI sinks, while isolating deprecated disk-based workflows
- * within the quarantined `legacy/` submodule.
+ * with zero-copy NVENC/FFI sinks. Legacy disk-based rendering is quarantined
+ * strictly to the direct CLI entrypoint in `@acc/legacy-story-renderer`.
  */
 export class VideoEditPipelineOrchestrator {
   /**
@@ -34,8 +33,7 @@ export class VideoEditPipelineOrchestrator {
 
   /**
    * Native Multi-Scene Rendering Engine: Canonical Universal Video IR transition.
-   * Routes seamlessly into IRChunkWorkerPool with zero intermediate disk files.
-   * On unrecoverable IR compilation failure, gracefully delegates to `LegacyDiskStoryRenderer`.
+   * Routes strictly into IRChunkWorkerPool with zero intermediate disk files.
    */
   public static async renderStoryVideo(
     config: ResolvedStoryConfig,
@@ -44,62 +42,53 @@ export class VideoEditPipelineOrchestrator {
   ): Promise<void> {
     await FFmpegManager.prepare();
 
-    try {
-      Logger.info(
-        'VideoEditPipelineOrchestrator',
-        '⚡ Routing via Canonical Universal Video IR Engine & IRChunkWorkerPool...'
-      );
-      const {
-        StoryConfigToUniversalIRAdapter,
-        RelationalDAGCompiler,
-        AssetMetadataProber,
-        IRMasterRenderer,
-      } = await import('@acc/ir');
-      const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
+    Logger.info(
+      'VideoEditPipelineOrchestrator',
+      '⚡ Routing via Canonical Universal Video IR Engine & IRChunkWorkerPool...'
+    );
+    const {
+      StoryConfigToUniversalIRAdapter,
+      RelationalDAGCompiler,
+      AssetMetadataProber,
+      IRMasterRenderer,
+    } = await import('@acc/ir');
+    const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
 
-      const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);
-      const prober = new AssetMetadataProber(baseDir);
-      const compiler = new RelationalDAGCompiler({ prober });
-      const timeline = await compiler.compile(irDoc);
+    const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);
+    const prober = new AssetMetadataProber(baseDir);
+    const compiler = new RelationalDAGCompiler({ prober });
+    const timeline = await compiler.compile(irDoc);
 
-      const cpuCount = os.cpus().length || 4;
-      const requestedConcurrency =
-        typeof config.settings.concurrency === 'number'
-          ? config.settings.concurrency
-          : config.settings.concurrency === 'auto'
-            ? cpuCount
-            : 1;
-      const concurrency = Math.max(1, Math.min(requestedConcurrency, cpuCount));
+    const cpuCount = os.cpus().length || 4;
+    const requestedConcurrency =
+      typeof config.settings.concurrency === 'number'
+        ? config.settings.concurrency
+        : config.settings.concurrency === 'auto'
+          ? cpuCount
+          : 1;
+    const concurrency = Math.max(1, Math.min(requestedConcurrency, cpuCount));
 
-      if (concurrency > 1) {
-        const pool = new IRChunkWorkerPool(timeline, 42);
-        await pool.render({
-          concurrency,
-          outputPath: outputFilePath,
-          baseDir,
-          seed: 42,
-          generateFrameHash: false,
-        });
-      } else {
-        const renderer = new IRMasterRenderer(timeline, 42);
-        const sink = new FFIVideoEncoderSink();
-        await renderer.render({
-          sink,
-          outputPath: outputFilePath,
-          baseDir,
-        });
-      }
-      Logger.info(
-        'VideoEditPipelineOrchestrator',
-        `✅ Canonical IR rendering completed: ${outputFilePath}`
-      );
-      return;
-    } catch (irErr: any) {
-      Logger.warn(
-        'VideoEditPipelineOrchestrator',
-        `Canonical IR render fallback triggered: ${irErr.message}. Executing quarantined legacy engine...`
-      );
-      await LegacyDiskStoryRenderer.render(config, outputFilePath, baseDir);
+    if (concurrency > 1) {
+      const pool = new IRChunkWorkerPool(timeline, 42);
+      await pool.render({
+        concurrency,
+        outputPath: outputFilePath,
+        baseDir,
+        seed: 42,
+        generateFrameHash: false,
+      });
+    } else {
+      const renderer = new IRMasterRenderer(timeline, 42);
+      const sink = new FFIVideoEncoderSink();
+      await renderer.render({
+        sink,
+        outputPath: outputFilePath,
+        baseDir,
+      });
     }
+    Logger.info(
+      'VideoEditPipelineOrchestrator',
+      `✅ Canonical IR rendering completed: ${outputFilePath}`
+    );
   }
 }

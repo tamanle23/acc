@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Quarantined legacy disk-based multi-pass story-config rendering pipeline",
   "main": "src/index.ts",
+  "bin": {
+    "acc-legacy-render": "./src/cli.ts"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
