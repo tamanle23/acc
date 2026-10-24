@@ -217,7 +217,105 @@ Hỗ trợ Smart Routing tự động chọn giữa Procedural UI Synth, AudioLD
 
 ---
 
-## 5. 📋 Bảng Tham Số Toàn Diện (Flags Reference)
+## 5. 🗂️ Legacy Story Renderer CLI (Quarantined Direct Mode)
+
+> [!WARNING]
+> Đây là **chế độ Legacy (đã tách biệt/quarantined)** dùng pipeline disk-render đa bước cũ. Mọi workflow mới nên sử dụng `bun run cli.ts ir-render` thông qua Universal Video IR Engine.
+
+### 5.1 Cú pháp
+
+```bash
+bun run apps/legacy-story-renderer/src/cli.ts <story-directory> [options]
+```
+
+### 5.2 Tùy chọn CLI
+
+| Flag | Tên đầy đủ | Mô tả |
+| :--- | :--- | :--- |
+| `-o` | `--output <path>` | Đường dẫn file MP4 đầu ra tùy chỉnh |
+| `-c` | `--concurrency <number\|auto>` | Số worker song song (hoặc `'auto'` để tự phát hiện theo CPU) |
+| `-e` | `--engine <name>` | MediaEngine sử dụng: `bun-ffi`, `mediabunny`, `fluent-ffmpeg` |
+| `-h` | `--help` | Hiển thị trợ giúp CLI |
+
+### 5.3 Ví dụ sử dụng
+
+```bash
+# Render cơ bản
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story
+
+# Chỉ định engine và số worker
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story -e mediabunny -c 4
+
+# Chỉ định đường dẫn đầu ra tùy chỉnh
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story -o ./dist/output.mp4
+
+# Chế độ tự động phát hiện số lõi CPU
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story -c auto
+```
+
+### 5.4 Cấu hình Engine trong `story-config.json`
+
+CLI đọc cấu hình engine từ trường `settings.mediaEngine` (hoặc alias `settings.engine`) trong file `story-config.json`. Flag `-e` trên dòng lệnh sẽ **ghi đè** giá trị trong file cấu hình.
+
+```json
+{
+  "name": "my-story",
+  "settings": {
+    "mediaEngine": "bun-ffi",
+    "concurrency": "auto",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "scenes": [ "..." ]
+}
+```
+
+**Thứ tự ưu tiên engine** (từ cao đến thấp):
+
+1. Flag `-e` / `--engine` trên dòng lệnh
+2. Biến môi trường `ACC_MEDIA_ENGINE`
+3. `settings.mediaEngine` trong `story-config.json`
+4. `settings.engine` trong `story-config.json`
+5. Mặc định: `bun-ffi`
+
+**Các engine hỗ trợ:**
+
+| Engine | Mô tả | Môi trường lý tưởng |
+| :--- | :--- | :--- |
+| `bun-ffi` | Mã hóa zero-copy qua FFI trực tiếp (mặc định) | Bun / Node native |
+| `mediabunny` | `MediabunnyServerStrategy` — Hardware-accelerated | Bun / Node native |
+| `fluent-ffmpeg` | `fluent-ffmpeg` wrapper | Universal fallback |
+
+> [!TIP]
+> Đặt biến môi trường `ACC_MEDIA_ENGINE=mediabunny` để áp dụng engine cho toàn phiên mà không cần sửa `story-config.json`.
+
+---
+
+## 5a. 🤖 Cấu hình ONNX & Vision Inference (Cross-Platform)
+
+Hệ thống sử dụng **`UniversalOnnxRuntimeProvider`** để tự động chọn backend ONNX phù hợp nhất với nền tảng hiện tại. Không cần cấu hình thủ công — quá trình này hoàn toàn trong suốt.
+
+### Chuỗi Fallback tự động
+
+```
+onnxruntime-node (native binary)
+        ↓  (nếu không khả dụng, ví dụ macOS Intel x64)
+onnxruntime-web (WASM / WebGPU)
+        ↓  (nếu không tải được model)
+Procedural heuristics (GrabCut / depth gradient)
+```
+
+- **`onnxruntime-node`**: Hiệu năng cao nhất trên Linux/Windows với binary native. Tự động được ưu tiên khi khả dụng.
+- **`onnxruntime-web`**: WASM fallback — hoạt động trên mọi nền tảng bao gồm macOS Intel, không cần cài đặt thêm.
+- **Procedural heuristics**: Fallback cuối cùng đảm bảo luồng render không bao giờ bị gián đoạn.
+
+> [!NOTE]
+> Tính năng 3D Depth và Segmentation (SAM 2, Depth Anything v2) sử dụng chuỗi fallback này. Nếu bạn thấy hiệu năng thấp hơn kỳ vọng trên macOS, hãy đảm bảo `onnxruntime-web` đã được cài đặt (`bun add onnxruntime-web`).
+
+---
+
+## 6. 📋 Bảng Tham Số Toàn Diện (Flags Reference)
 
 | Flag | Tên đầy đủ | Phạm vi áp dụng | Mô tả chức năng |
 | :--- | :--- | :--- | :--- |
@@ -236,10 +334,12 @@ Hỗ trợ Smart Routing tự động chọn giữa Procedural UI Synth, AudioLD
 | `-d` | `--duration <sec>` | `stream`, `run` | Giới hạn thời lượng luồng phát hoặc vòng lặp (giây) |
 | `-n` | `--dry-run` | `run`, `auto-config` | Kiểm tra tính hợp lệ của AST & Media mà không mã hóa video |
 | `-h` | `--help` | Toàn cục | Hiển thị hướng dẫn sử dụng CLI |
+| `-c` | `--concurrency <number\|auto>` | `legacy-story-renderer` | Số worker song song cho Legacy disk renderer (hoặc `'auto'`) |
+| `-e` | `--engine <name>` | `legacy-story-renderer` | MediaEngine cho Legacy renderer: `bun-ffi`, `mediabunny`, `fluent-ffmpeg` |
 
 ---
 
-## 6. 💡 Bảng Tổng Hợp Lệnh Nhanh (Cheatsheet)
+## 7. 💡 Bảng Tổng Hợp Lệnh Nhanh (Cheatsheet)
 
 ```bash
 # 1. Khởi tạo & Tự động quét cấu hình dự án với Auto-Config Engine v3.0
@@ -256,7 +356,7 @@ bun run cli.ts ./samples/04-generative-storytelling -n
 bun run cli.ts run rule -c ./samples/05-rule-logic/proof_problem.json -n
 bun run cli.ts run ambient -c ./samples/06-ambient-loops/ambient_config.json -n
 
-# 4. Render Story Video theo chuẩn Legacy Shorthand
+# 4. Render Story Video theo chuẩn Legacy Shorthand (Unified CLI)
 bun run cli.ts ./my-story
 
 # 5. Render trực tiếp qua Canonical Universal Video IR Engine (4 threads song song)
@@ -282,4 +382,18 @@ bun run cli.ts sfx -p "futuristic sci-fi portal open" -d 4.0
 
 # 12. Chạy toàn bộ Test Suite của Monorepo
 bun run test
+
+# --- Legacy Story Renderer (Quarantined Direct Mode) ---
+
+# 13. Render story qua Legacy disk pipeline (mặc định, engine bun-ffi)
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story
+
+# 14. Render với engine mediabunny và 4 worker song song
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story -e mediabunny -c 4
+
+# 15. Render với engine fluent-ffmpeg, đường dẫn đầu ra tùy chỉnh
+bun run apps/legacy-story-renderer/src/cli.ts ./my-story -e fluent-ffmpeg -o ./dist/output.mp4
+
+# 16. Dùng biến môi trường để ép engine (không cần sửa story-config.json)
+ACC_MEDIA_ENGINE=mediabunny bun run apps/legacy-story-renderer/src/cli.ts ./my-story -c auto
 ```
