@@ -1,0 +1,164 @@
+# ACC Performance Tuning & Benchmarking Engineering Guide
+
+## 1. Architectural Strategy & Overview
+
+The **ACC (Automated Content Creator)** systematic video and multimedia production engine requires low latency, zero-copy memory throughput, and high concurrency. To guarantee sub-millisecond hot paths, robust daemon ingestion under load, and snappy CLI execution times, ACC implements a **3-Tier Performance Benchmarking Architecture**:
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       ACC PERFORMANCE BENCHMARK SUITE                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. Microbenchmarking (mitata + bun:ffi)                                    │
+│     ├── In-process Nanosecond / Microsecond Hot Paths                       │
+│     ├── FFmpeg C-FFI Struct Allocations (AVFrame, AVPacket, Rescale)        │
+│     ├── DSP Floating-Point Math & Audio Ducking Gain Scaling                 │
+│     ├── Timeline IR Schema Adaptation (LegacyStoryConfigAdapter)            │
+│     ├── Canvas Overlay Procedural Frame Generation (@napi-rs/canvas)        │
+│     └── ModelHandleRegistry Flyweight Cache Lookup & LRU Eviction           │
+│                                                                             │
+│  2. HTTP Load Testing (oha)                                                 │
+│     ├── Daemon Webhook Endpoint Throughput & Concurrency (`acc serve`)      │
+│     ├── High-Frequency JSON Event Ingestion Scaling                         │
+│     └── RPS & Latency Percentiles (p50, p90, p95, p99) Export               │
+│                                                                             │
+│  3. Macro CLI Command Timing (hyperfine)                                    │
+│     ├── End-to-End CLI Command Options (`list`, `help`, `run`, `overlay`)   │
+│     ├── Dry-Run vs Full Pipeline Evaluation                                │
+│     └── Statistical Warmups & JSON / Markdown Report Generation             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Tier 1: Microbenchmarks (`mitata` + `bun:ffi`)
+
+Microbenchmarking isolates critical in-memory functions to identify performance bottlenecks and memory allocations at the nanosecond and microsecond levels.
+
+### Evaluated Hot Paths
+* **FFmpeg C-FFI Zero-Copy (`benchmarks/micro/ffmpeg-ffi.bench.ts`)**:
+  * `av_frame_alloc` / `av_frame_free`
+  * `av_packet_alloc` / `av_packet_free`
+  * `av_rescale_q` timestamp math via `bun:ffi`
+  * `safeArrayBuffer` zero-copy pointer-to-ArrayBuffer views
+* **Audio DSP Operations (`benchmarks/micro/ffi-dsp.bench.ts`)**:
+  * Sine wave synthesis (1s @ 44.1kHz mono)
+  * Sidechain ducking volume smoothing
+  * Peak normalization & clipping suppression
+* **IR & AST Adaptation (`benchmarks/micro/ir-adaptation.bench.ts`)**:
+  * `LegacyStoryConfigAdapter.adapt()` multi-scene parsing
+  * `ExtendedPipelineIR` serialization / deserialization
+* **Canvas Overlays (`benchmarks/micro/canvas-overlay.bench.ts`)**:
+  * Vignette radial gradient fill (1280x720)
+  * Particle swarm render loop (200 particles)
+  * RGBA frame buffer readout (`toBuffer('raw')`)
+* **Flyweight Registry (`benchmarks/micro/model-registry.bench.ts`)**:
+  * `ModelHandleRegistry.getHandle()` hit lookup
+  * `getTotalMemoryUsageMB()` memory accounting
+  * LRU handle eviction cycle
+
+### Execution Command
+```bash
+# Run all microbenchmarks
+bun run bench:micro
+
+# Run a specific microbenchmark suite
+bun run benchmarks/micro/ffmpeg-ffi.bench.ts
+```
+
+### Baseline SLAs
+| Target Module | SLA Baseline | Target ops/sec |
+| :--- | :--- | :--- |
+| FFmpeg `av_frame_alloc` | < 2.5 µs / iter | ~400,000 / sec |
+| FFmpeg `av_rescale_q` | < 1.2 µs / iter | ~800,000 / sec |
+| Audio DSP Ducking (44.1k) | < 35 µs / iter | ~28,000 / sec |
+| IR Schema Adaptation (20 scenes) | < 80 µs / iter | ~12,500 / sec |
+| ModelHandleRegistry Lookup | < 15 ns / iter | ~65,000,000 / sec |
+
+---
+
+## 3. Tier 2: HTTP Webhook Load Testing (`oha`)
+
+To measure HTTP ingestion performance of background server daemons (`acc serve`), ACC uses `oha`, a high-performance HTTP load generator written in Rust.
+
+### Harness Architecture (`benchmarks/http/load-test-webhook.ts`)
+1. Programmatically spawns `bun run cli.ts serve --port 3009` in a background subprocess.
+2. Polls `http://127.0.0.1:3009/webhook` until active.
+3. Invokes `oha` with parameters:
+   * `-n 500`: 500 total requests
+   * `-c 50`: 50 concurrent connection workers
+   * `-m POST -T application/json`: Valid event scraper payload
+   * `--no-tui --output-format json`: Headless structured metric capture
+4. Extracts metrics (RPS, p50, p90, p95, p99 latency) and exports JSON report to `autogenerated/benchmarks/http-load-test-results.json`.
+5. Gracefully terminates the daemon server process.
+
+### Execution Command
+```bash
+bun run bench:http
+```
+
+### Sample Output & SLAs
+```text
+=====================================================
+📊 OHA LOAD TEST RESULTS SUMMARY
+=====================================================
+Requests Total:       500
+Concurrency:          50
+Requests / Sec (RPS): ~7,000+ req/sec
+Average Latency:      ~5.5 ms
+p50 Latency:          < 1.0 ms
+p90 Latency:          < 26.0 ms
+p99 Latency:          < 60.0 ms
+=====================================================
+```
+
+---
+
+## 4. Tier 3: Macro CLI Benchmarking (`hyperfine`)
+
+End-to-end command timing evaluates total process execution, Bun startup overhead, argument parsing, asset resolution, and headless rendering performance across CLI commands.
+
+### Benchmark Harness (`benchmarks/cli/benchmark-cli.ts`)
+Executes `hyperfine` with statistical warmups (`--warmup 1`) and multiple iterations (`--runs 3`) across key CLI commands:
+1. `bun run cli.ts list` (Dispatcher registry list)
+2. `bun run cli.ts help` (CLI options guide)
+3. `bun run cli.ts run db --dry-run` (Database pipeline AST validation)
+4. `bun run cli.ts run story --dry-run` (Generative story AST validation)
+5. `bun run cli.ts overlay --effect rain --variant storm --duration 1` (Procedural canvas video loop generation)
+6. `bun run cli.ts sfx --effect ui --variant click --sub-variant plastic_pop` (Procedural audio DSP synthesis)
+
+Exports structured benchmark reports to:
+* `autogenerated/benchmarks/cli-benchmark-results.json`
+* `autogenerated/benchmarks/cli-benchmark-results.md`
+
+### Execution Command
+```bash
+bun run bench:cli
+```
+
+---
+
+## 5. Unified Benchmark Runner (`benchmarks/run-all.ts`)
+
+The unified runner orchestrates all 3 benchmark tiers into a single automated pipeline.
+
+### Package Script Shortcuts
+```bash
+# Run full benchmark suite (Micro + HTTP + Macro CLI)
+bun run bench
+
+# Run specific suite flags
+bun run bench --micro
+bun run bench --http
+bun run bench --cli
+```
+
+---
+
+## 6. Performance Regression Prevention in CI/CD
+
+To prevent performance regressions:
+1. Run `bun run bench:micro` as part of PR verification.
+2. Compare exported `autogenerated/benchmarks/*.json` metrics against commit baselines.
+3. Flag any microbenchmark regression exceeding > 15% latency increase.

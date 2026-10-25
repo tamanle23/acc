@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-canvas: #020617;
+    --bg-canvas-image: none;
+    --bg-surface: #0f172a;
+    --bg-surface-elevated: #1e293b;
+    --surface-backdrop: none;
+    --border-subtle: #334155;
+    --border-focus: #06b6d4;
+    --text-primary: #f8fafc;
+    --text-muted: #cbd5e1;
+    --accent-primary: #06b6d4;
+    --accent-hover: #0891b2;
+    --accent-subtle: rgba(6, 182, 212, 0.15);
+    --accent-glow: rgba(6, 182, 212, 0.4);
+    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+
+    /* Semantic Status Tokens (Defaults for Dark Mode) */
+    --status-success-bg: rgba(6, 78, 59, 0.5);
+    --status-success-text: #a7f3d0;
+    --status-success-border: rgba(16, 185, 129, 0.4);
+
+    --status-warning-bg: rgba(69, 26, 3, 0.5);
+    --status-warning-text: #fde68a;
+    --status-warning-border: rgba(245, 158, 11, 0.4);
+
+    --status-error-bg: rgba(76, 5, 25, 0.5);
+    --status-error-text: #fecdd3;
+    --status-error-border: rgba(244, 63, 94, 0.4);
+  }
+
+  html.light {
+    /* Semantic Status Tokens (Tuned for Light Mode AAA) */
+    --status-success-bg: #ecfdf5;
+    --status-success-text: #065f46;
+    --status-success-border: #a7f3d0;
+
+    --status-warning-bg: #fefce8;
+    --status-warning-text: #713f12;
+    --status-warning-border: #fde68a;
+
+    --status-error-bg: #fff1f2;
+    --status-error-text: #9f1239;
+    --status-error-border: #fecdd3;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    background-image: var(--bg-canvas-image);
+    background-attachment: fixed;
+    background-size: cover;
+    color: var(--text-primary);
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+}

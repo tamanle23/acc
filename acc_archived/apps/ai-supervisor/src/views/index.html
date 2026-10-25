@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACC Control Plane</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --success: #16a34a;
+      --warning: #ca8a04;
+      --danger: #dc2626;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body { background-color: var(--bg); color: var(--text); padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .title-group { display: flex; align-items: center; gap: 12px; }
+    .title-group h1 { font-size: 22px; font-weight: 700; }
+    .badge { padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .badge-tier { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-yellow { background: #fef9c3; color: #a16207; }
+    .badge-red { background: #fee2e2; color: #b91c1c; }
+    
+    .actions { display: flex; gap: 8px; }
+    button { padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); }
+    button:hover { background: #f1f5f9; }
+    button.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.btn-primary:hover { background: var(--primary-hover); }
+    button.btn-danger { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+    button.btn-danger:hover { background: #fee2e2; }
+
+    /* Telemetry Bar */
+    .telemetry-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .telemetry-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .telemetry-card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+    .telemetry-card .val { font-size: 18px; font-weight: 700; }
+
+    /* Fleet Grid */
+    .fleet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+    .service-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+    .service-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .service-name { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .service-info { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px; }
+    .service-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+
+    /* Log Console */
+    .console-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .console-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .tab-bar { display: flex; gap: 6px; }
+    .tab-btn { padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+    .tab-btn.active { background: var(--text); color: #fff; }
+    .console-box { background: #0f172a; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.5; padding: 14px; border-radius: 6px; height: 260px; overflow-y: auto; }
+    .log-line { margin-bottom: 2px; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>ACC Desktop Control Plane</h1>
+        <span id="tierBadge" class="badge badge-tier">Detecting...</span>
+        <span id="trayBadge" class="badge badge-yellow">Fleet Initializing</span>
+      </div>
+      <div class="actions">
+        <button onclick="purgeVram()" class="btn-danger">Purge All VRAM</button>
+        <button onclick="restartAll()">Restart All</button>
+        <button onclick="checkUpdates()">Check Updates</button>
+        <button onclick="openStudio()" class="btn-primary">Open Studio</button>
+      </div>
+    </header>
+
+    <div class="telemetry-grid">
+      <div class="telemetry-card">
+        <div class="label">Hardware Profile</div>
+        <div id="gpuName" class="val">Detecting...</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="label">System RAM (Free / Total)</div>
+        <div id="ramUsage" class="val">-- / -- GB</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="label">Python Backend Device</div>
+        <div id="pythonDevice" class="val">--</div>
+      </div>
+      <div class="telemetry-card">
+        <div class="label">Active CPU Cores</div>
+        <div id="cpuCores" class="val">--</div>
+      </div>
+    </div>
+
+    <div class="fleet-grid">
+      <!-- Python Backend -->
+      <div class="service-card">
+        <div>
+          <div class="service-header">
+            <div class="service-name">Python Backend (Kokoro & Vision)</div>
+            <span id="status-python-backend" class="badge badge-yellow">STOPPED</span>
+          </div>
+          <div class="service-info">
+            Port: <strong id="port-python-backend">50051</strong> &bull; PID: <span id="pid-python-backend">--</span> &bull; Uptime: <span id="uptime-python-backend">0s</span>
+          </div>
+        </div>
+        <div class="service-actions">
+          <button onclick="controlService('python-backend', 'start')">Start</button>
+          <button onclick="controlService('python-backend', 'stop')">Stop</button>
+          <button onclick="controlService('python-backend', 'restart')">Restart</button>
+        </div>
+      </div>
+
+      <!-- Worker Daemon -->
+      <div class="service-card">
+        <div>
+          <div class="service-header">
+            <div class="service-name">Worker Daemon (Backend Hypervisor)</div>
+            <span id="status-worker" class="badge badge-yellow">STOPPED</span>
+          </div>
+          <div class="service-info">
+            Target: <strong>Conductor OSS</strong> &bull; PID: <span id="pid-worker">--</span> &bull; Uptime: <span id="uptime-worker">0s</span>
+          </div>
+        </div>
+        <div class="service-actions">
+          <button onclick="controlService('worker', 'start')">Start</button>
+          <button onclick="controlService('worker', 'stop')">Stop</button>
+          <button onclick="controlService('worker', 'restart')">Restart</button>
+        </div>
+      </div>
+
+      <!-- Studio NLE -->
+      <div class="service-card">
+        <div>
+          <div class="service-header">
+            <div class="service-name">Studio NLE Web Server</div>
+            <span id="status-studio" class="badge badge-yellow">STOPPED</span>
+          </div>
+          <div class="service-info">
+            Port: <strong id="port-studio">3300</strong> &bull; PID: <span id="pid-studio">--</span> &bull; Uptime: <span id="uptime-studio">0s</span>
+          </div>
+        </div>
+        <div class="service-actions">
+          <button onclick="controlService('studio', 'start')">Start</button>
+          <button onclick="controlService('studio', 'stop')">Stop</button>
+          <button onclick="controlService('studio', 'restart')">Restart</button>
+          <button onclick="openStudio()" class="btn-primary">View</button>
+        </div>
+      </div>
+
+      <!-- Ollama AI Inference -->
+      <div class="service-card">
+        <div>
+          <div class="service-header">
+            <div class="service-name">Ollama AI Inference</div>
+            <span id="status-ollama" class="badge badge-yellow">STOPPED</span>
+          </div>
+          <div class="service-info">
+            Port: <strong id="port-ollama">11434</strong> &bull; Mode: <span id="mode-ollama">--</span> &bull; Models: <span id="models-ollama">0 loaded</span>
+          </div>
+        </div>
+        <div class="service-actions">
+          <button onclick="controlService('ollama', 'start')">Start</button>
+          <button onclick="controlService('ollama', 'stop')">Stop</button>
+          <button onclick="controlService('ollama', 'restart')">Restart</button>
+          <button onclick="purgeVram()" class="btn-danger">Unload Models</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Log Console -->
+    <div class="console-section">
+      <div class="console-header">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchLogTab('supervisor')">supervisor</button>
+          <button class="tab-btn" onclick="switchLogTab('python-backend')">python-backend</button>
+          <button class="tab-btn" onclick="switchLogTab('worker')">worker</button>
+          <button class="tab-btn" onclick="switchLogTab('studio')">studio</button>
+          <button class="tab-btn" onclick="switchLogTab('ollama')">ollama</button>
+        </div>
+        <div>
+          <input type="text" id="logFilter" placeholder="Filter logs..." oninput="fetchLogs()" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px;">
+        </div>
+      </div>
+      <div id="consoleBox" class="console-box">
+        <div class="log-line">Connecting to supervisor log stream...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeLogService = 'supervisor';
+    let studioPort = 3300;
+
+    async function fetchStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Hardware profile
+        if (data.hardwareProfile) {
+          document.getElementById('tierBadge').textContent = data.hardwareProfile.activeTier.toUpperCase();
+          document.getElementById('gpuName').textContent = data.hardwareProfile.gpu ? data.hardwareProfile.gpu.name : 'CPU Only';
+          const freeGb = (data.hardwareProfile.freeSystemRamBytes / (1024*1024*1024)).toFixed(1);
+          const totalGb = (data.hardwareProfile.totalSystemRamBytes / (1024*1024*1024)).toFixed(1);
+          document.getElementById('ramUsage').textContent = `${freeGb} / ${totalGb} GB`;
+          document.getElementById('pythonDevice').textContent = data.hardwareProfile.recommendedPythonDevice.toUpperCase();
+          document.getElementById('cpuCores').textContent = data.hardwareProfile.cpuCores;
+        }
+
+        // Tray Badge
+        const trayBadge = document.getElementById('trayBadge');
+        trayBadge.className = `badge badge-${data.trayColor}`;
+        trayBadge.textContent = data.trayColor === 'green' ? 'All Systems Healthy' : (data.trayColor === 'yellow' ? 'Fleet Processing' : 'Service Alert');
+
+        // Service Cards
+        if (data.services) {
+          for (const [name, s] of Object.entries(data.services)) {
+            const badge = document.getElementById(`status-${name}`);
+            if (badge) {
+              badge.textContent = s.status;
+              badge.className = `badge badge-${s.status === 'RUNNING' || s.status === 'ADOPTED' ? 'green' : (s.status === 'CRASH_LOOP' ? 'red' : 'yellow')}`;
+            }
+            const pidEl = document.getElementById(`pid-${name}`);
+            if (pidEl) pidEl.textContent = s.pid || '--';
+            const uptimeEl = document.getElementById(`uptime-${name}`);
+            if (uptimeEl) uptimeEl.textContent = `${s.uptimeSeconds}s`;
+            const portEl = document.getElementById(`port-${name}`);
+            if (portEl && s.port) portEl.textContent = s.port;
+
+            if (name === 'studio' && s.port) studioPort = s.port;
+          }
+        }
+      } catch (err) {
+        console.warn('Status poll error:', err);
+      }
+    }
+
+    async function fetchLogs() {
+      try {
+        const filter = document.getElementById('logFilter').value;
+        const res = await fetch(`/api/logs/${activeLogService}?filter=${encodeURIComponent(filter)}&limit=200`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const box = document.getElementById('consoleBox');
+        if (data.logs && data.logs.length > 0) {
+          box.innerHTML = data.logs.map(l => `<div class="log-line">${escapeHtml(l)}</div>`).join('');
+          box.scrollTop = box.scrollHeight;
+        } else {
+          box.innerHTML = `<div class="log-line" style="color: #64748b;">(No logs recorded for ${activeLogService})</div>`;
+        }
+      } catch {}
+    }
+
+    function switchLogTab(service) {
+      activeLogService = service;
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent === service);
+      });
+      fetchLogs();
+    }
+
+    async function controlService(name, action) {
+      await fetch(`/api/service/${name}/${action}`, { method: 'POST' });
+      fetchStatus();
+      fetchLogs();
+    }
+
+    async function purgeVram() {
+      await fetch('/api/vram/purge', { method: 'POST' });
+      alert('VRAM Purge command sent to all AI engines.');
+      fetchLogs();
+    }
+
+    async function restartAll() {
+      await fetch('/api/service/all/restart', { method: 'POST' });
+      fetchStatus();
+    }
+
+    async function checkUpdates() {
+      const res = await fetch('/api/update/check', { method: 'POST' });
+      const data = await res.json();
+      if (data.available) {
+        alert(`Update v${data.status.targetVersion} is available!`);
+      } else {
+        alert('You are running the latest version of ACC.');
+      }
+    }
+
+    function openStudio() {
+      window.open(`http://localhost:${studioPort}`, '_blank');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Periodic polling
+    fetchStatus();
+    fetchLogs();
+    setInterval(fetchStatus, 2000);
+    setInterval(fetchLogs, 3000);
+  </script>
+</body>
+</html>

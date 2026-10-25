@@ -1,0 +1,99 @@
+import React, { useEffect, useRef } from 'react';
+import WaveSurfer from 'wavesurfer.js';
+import { WebAudioEngine } from '../../lib/audio/WebAudioEngine';
+
+import { WaveformLODPyramid } from '../../lib/timeline/WaveformLODPyramid';
+
+export interface WaveSurferWaveformProps {
+  id: string;
+  durationFrames: number;
+  width: number;
+  height: number;
+  color?: string;
+  audioUrl?: string;
+  fps?: number;
+}
+
+// Global pyramid cache to provide multi-resolution LOD decimation
+const pyramidCache = new Map<string, WaveformLODPyramid>();
+
+export function getCachedPeaks(id: string, durationFrames: number, targetBars: number): number[] {
+  let pyramid = pyramidCache.get(id);
+  if (!pyramid) {
+    const rawPeaks = WebAudioEngine.getInstance().getWaveformPeaks(id, durationFrames, Math.max(targetBars * 4, 320));
+    pyramid = new WaveformLODPyramid(rawPeaks);
+    pyramidCache.set(id, pyramid);
+  }
+
+  // Derive pixels per frame for LOD level selection
+  const pxPerFrame = targetBars > 0 && durationFrames > 0 ? (targetBars * 3) / durationFrames : 1.0;
+  const lod = pyramid.selectLOD(pxPerFrame);
+  return Array.from(lod.peaks);
+}
+
+export function clearWaveSurferPeakCache(): void {
+  pyramidCache.clear();
+}
+
+export function WaveSurferWaveform({
+  id,
+  durationFrames,
+  width,
+  height,
+  color = '#a855f7',
+  audioUrl,
+  fps = 30,
+}: WaveSurferWaveformProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const waveSurferRef = useRef<WaveSurfer | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || width <= 0 || height <= 0) return;
+
+    const numBars = Math.max(10, Math.floor(width / 3));
+    const peaks = getCachedPeaks(id, durationFrames, numBars);
+    const durationSec = durationFrames / Math.max(1, fps);
+
+    // Clean up prior instance if width/height changed
+    if (waveSurferRef.current) {
+      waveSurferRef.current.destroy();
+      waveSurferRef.current = null;
+    }
+
+    try {
+      const ws = WaveSurfer.create({
+        container,
+        waveColor: color,
+        progressColor: color,
+        height,
+        width,
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 2,
+        peaks: [peaks],
+        duration: durationSec,
+        interact: false,
+      });
+
+      waveSurferRef.current = ws;
+    } catch (err) {
+      console.warn('WaveSurferWaveform: instantiation fallback:', err);
+    }
+
+    return () => {
+      if (waveSurferRef.current) {
+        waveSurferRef.current.destroy();
+        waveSurferRef.current = null;
+      }
+    };
+  }, [id, durationFrames, width, height, color, fps]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: `${width}px`, height: `${height}px` }}
+      className="absolute inset-0 pointer-events-none opacity-85 overflow-hidden flex items-center"
+    />
+  );
+}

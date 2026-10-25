@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "3.0.0",
+  "pipelineId": "db-templating",
+  "metadata": {
+    "jobId": "job-1791688323911-lu13uc",
+    "title": "02 db templating",
+    "createdAt": "2026-10-11T03:12:03.911Z",
+    "tags": [
+      "auto-config"
+    ],
+    "overlayEffect": "sci_fi_hud",
+    "depth3d": {
+      "enabled": true,
+      "mode": "isometric_podium",
+      "frameStyle": "cinema",
+      "popOutIntensity": 1.3,
+      "shadow": true
+    }
+  },
+  "chunks": [
+    {
+      "id": "chunk-1",
+      "order": 1,
+      "text": "",
+      "durationMs": 20000,
+      "visualAsset": {
+        "type": "image",
+        "sourcePathOrBuffer": "assets/brand_logo.png",
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        }
+      },
+      "metadata": {
+        "sourceVisual": "brand_logo.png"
+      }
+    }
+  ],
+  "audioComposition": {
+    "ducking": {
+      "enabled": true,
+      "attenuationDb": -14,
+      "attackMs": 200,
+      "releaseMs": 350
+    },
+    "sfxMarkers": [
+      {
+        "timeMs": 200,
+        "sfxPath": "assets/sfx_data_blip.wav",
+        "volume": 0.9,
+        "category": "scene_sfx"
+      },
+      {
+        "timeMs": 2000,
+        "sfxPath": "assets/sfx_sub_drop.wav",
+        "volume": 1,
+        "category": "scene_sfx"
+      }
+    ],
+    "backgroundMusic": {
+      "audioPath": "assets/bgm_synth.mp3",
+      "volume": 0.25,
+      "loop": true
+    }
+  },
+  "structuredData": {
+    "sourceFile": "tech_market_adoption.csv",
+    "format": "csv",
+    "rowCount": 16,
+    "headers": [
+      "rank",
+      "framework",
+      "market_share",
+      "growth_rate",
+      "active_repos"
+    ]
+  },
+  "distributionHints": {
+    "supportedExporters": [
+      "video",
+      "social"
+    ],
+    "targetAspectRatios": [
+      "16:9"
+    ]
+  }
+}

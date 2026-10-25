@@ -1,0 +1,81 @@
+{
+  "title": "01 scraper summarizer",
+  "pipelineId": "1",
+  "canonicalPipeline": "scraper-summarizer",
+  "suggestedModalities": [
+    "static-web",
+    "social",
+    "audio",
+    "video"
+  ],
+  "videoConfig": {
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "canvas": {
+      "aspectRatio": "9:16",
+      "fps": 30,
+      "resolution": "1080p",
+      "colorGrading": {
+        "lutPreset": "clean_tech",
+        "contrast": 1.05,
+        "saturation": 1,
+        "vignette": 0.05
+      }
+    },
+    "audioStaging": {
+      "autoDucking": true,
+      "duckingAttenuationDb": -14,
+      "masterBgmVolume": 0.2,
+      "masterSfxVolume": 0.4
+    },
+    "typography": {
+      "preset": "minimal_editorial",
+      "placement": "bottom",
+      "fontSize": 28,
+      "primaryColor": "#FFFFFF"
+    },
+    "roleDirectives": {
+      "hook": {
+        "cameraMotion": {
+          "type": "ken_burns_zoom_in",
+          "intensity": 0.35
+        },
+        "transition": {
+          "type": "crossfade",
+          "durationMs": 400
+        },
+        "captions": {
+          "enabled": true,
+          "style": "minimal_editorial"
+        }
+      },
+      "body": {
+        "cameraMotion": {
+          "type": "ken_burns_zoom_out",
+          "intensity": 0.25
+        },
+        "transition": {
+          "type": "crossfade",
+          "durationMs": 350
+        }
+      }
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "isometric_billboard",
+      "frameStyle": "card",
+      "popOutIntensity": 1.2,
+      "shadow": true
+    },
+    "overlayComposite": "camera_ui",
+    "sfx": [
+      {
+        "source": "assets/sfx_notification.wav",
+        "time": 0.1,
+        "duration": 0.8,
+        "volume": 0.8,
+        "duckBgm": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,340 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+@custom-variant glass-cyber (&:where([data-glass-style="cyber"], [data-glass-style="cyber"] *));
+@custom-variant glass-frosted (&:where([data-glass-style="frosted"], [data-glass-style="frosted"] *));
+@custom-variant glass-specular (&:where([data-glass-style="specular"], [data-glass-style="specular"] *));
+@custom-variant blur-low (&:where([data-blur-intensity="low"], [data-blur-intensity="low"] *));
+@custom-variant blur-medium (&:where([data-blur-intensity="medium"], [data-blur-intensity="medium"] *));
+@custom-variant blur-high (&:where([data-blur-intensity="high"], [data-blur-intensity="high"] *));
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Studio Liquid Glass Design Tokens Bridged to ThemeProvider */
+  --color-accent-theme: var(--accent-primary);
+  --color-accent-theme-foreground: hsl(var(--primary-foreground));
+  --color-accent-glow: var(--accent-glow);
+  --color-glass-surface: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-glass-border-highlight: var(--glass-border-highlight);
+
+  --shadow-glass: var(--glass-specular), var(--glass-shadow);
+  --shadow-accent-glow: 0 0 15px var(--accent-glow);
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 189 94% 43%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 189 94% 43%;
+
+    --radius: 0.5rem;
+
+    /* Default Dynamic Accent Tokens */
+    --accent-primary: #06b6d4;
+    --color-brand-accent: #06b6d4;
+    --accent-glow: rgba(6, 182, 212, 0.4);
+
+    /* Light Frosted Acrylic Tokens */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-border-highlight: rgba(255, 255, 255, 0.9);
+    --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+    --glass-blur: blur(16px);
+    --ambient-mesh: radial-gradient(at 0% 0%, color-mix(in srgb, var(--accent-primary) 8%, transparent) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.06) 0px, transparent 50%);
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 189 94% 43%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 189 94% 43%;
+
+    /* Dark Obsidian Glass Tokens */
+    --glass-bg: rgba(11, 17, 33, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --glass-border-highlight: rgba(255, 255, 255, 0.22);
+    --glass-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+    --glass-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.65);
+    --glass-blur: blur(20px);
+    --ambient-mesh: radial-gradient(at 10% 10%, color-mix(in srgb, var(--accent-primary) 12%, transparent) 0px, transparent 45%),
+      radial-gradient(at 90% 90%, rgba(139, 92, 246, 0.10) 0px, transparent 45%);
+  }
+
+  /* Optical Glass Styles */
+  [data-glass-style="frosted"] {
+    --glass-specular: none;
+    --glass-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
+    --glass-border-highlight: var(--glass-border);
+  }
+
+  [data-glass-style="cyber"] {
+    --glass-specular: inset 0 1px 0 0 color-mix(in srgb, var(--accent-primary) 24%, transparent);
+    --glass-border-highlight: var(--accent-primary);
+    --glass-border: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+    --glass-shadow: 0 0 24px -4px color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  }
+
+  /* Blur Intensities */
+  [data-blur-intensity="low"] {
+    --glass-blur: blur(6px);
+  }
+
+  [data-blur-intensity="medium"] {
+    --glass-blur: blur(18px);
+  }
+
+  [data-blur-intensity="high"] {
+    --glass-blur: blur(40px);
+  }
+
+  /* Dynamic Accent Colors synchronized with shadcn --primary and --ring */
+  [data-accent="cyan"] {
+    --primary: 189 94% 43%;
+    --ring: 189 94% 43%;
+    --accent-primary: #06b6d4;
+    --color-brand-accent: #06b6d4;
+    --accent-glow: rgba(6, 182, 212, 0.4);
+  }
+
+  [data-accent="violet"] {
+    --primary: 258 90% 66%;
+    --ring: 258 90% 66%;
+    --accent-primary: #8b5cf6;
+    --color-brand-accent: #8b5cf6;
+    --accent-glow: rgba(139, 92, 246, 0.4);
+  }
+
+  [data-accent="emerald"] {
+    --primary: 160 84% 39%;
+    --ring: 160 84% 39%;
+    --accent-primary: #10b981;
+    --color-brand-accent: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.4);
+  }
+
+  [data-accent="amber"] {
+    --primary: 38 92% 50%;
+    --ring: 38 92% 50%;
+    --accent-primary: #f59e0b;
+    --color-brand-accent: #f59e0b;
+    --accent-glow: rgba(245, 158, 11, 0.4);
+  }
+
+  [data-accent="rose"] {
+    --primary: 350 89% 60%;
+    --ring: 350 89% 60%;
+    --accent-primary: #f43f5e;
+    --color-brand-accent: #f43f5e;
+    --accent-glow: rgba(244, 63, 94, 0.4);
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Utility Classes */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur) saturate(160%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-highlight);
+  box-shadow: var(--glass-specular), var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur) saturate(140%);
+  -webkit-backdrop-filter: var(--glass-blur) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-highlight);
+  box-shadow: var(--glass-specular), 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--glass-specular), 0 0 16px var(--accent-glow);
+}
+
+.glass-button {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-top-color: var(--glass-border-highlight);
+  box-shadow: var(--glass-specular);
+  transition: all 0.15s ease;
+}
+
+.glass-button:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--glass-specular), 0 0 12px var(--accent-glow);
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+}
+
+.glass-button-primary {
+  background: var(--accent-primary);
+  color: hsl(var(--primary-foreground));
+  border: 1px solid transparent;
+  box-shadow: 0 0 15px var(--accent-glow);
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.glass-button-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.glass-button-primary:active {
+  transform: scale(0.98);
+}
+
+.glass-pill {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: hsl(var(--muted-foreground));
+  transition: all 0.15s ease;
+}
+
+.glass-pill:hover {
+  border-color: var(--glass-border-highlight);
+  color: hsl(var(--foreground));
+  background: color-mix(in srgb, hsl(var(--foreground)) 5%, transparent);
+}
+
+.glass-pill[data-active="true"],
+.glass-pill.active {
+  border-color: var(--accent-primary);
+  background: var(--accent-glow);
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  box-shadow: 0 0 12px var(--accent-glow);
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.glass-badge-accent {
+  background: var(--accent-glow);
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  border: 1px solid var(--accent-primary);
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  color: var(--accent-primary);
+}
+
+.liquid-ambient-mesh {
+  background-image: var(--ambient-mesh);
+}
+
+@keyframes travelCurve {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}

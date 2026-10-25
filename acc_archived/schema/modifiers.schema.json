@@ -1,0 +1,513 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://universal-video-ir.schema.org/modifiers.schema.json",
+  "title": "Universal Video IR Modular Modifiers Schema",
+  "description": "Modular Draft-07 Schema definitions for Video IR Modifier Plugins and parameter schemas",
+  "type": "object",
+  "definitions": {
+    "SequenceType": {
+      "type": "string",
+      "enum": [
+        "video",
+        "image",
+        "audio",
+        "text",
+        "overlay"
+      ],
+      "description": "Canonical sequence media type discriminator"
+    },
+    "ModifierTarget": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/SequenceType"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SequenceType"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      ],
+      "description": "Explicit target domain sequence type(s) that this modifier can be applied to"
+    },
+    "TemporalCurve": {
+      "type": "object",
+      "description": "Polymorphic animation curve supporting intro, steady, and outro lifecycles",
+      "properties": {
+        "intro": {
+          "type": "object",
+          "properties": {
+            "durationSec": { "type": "number", "minimum": 0 },
+            "from": {},
+            "to": {},
+            "ease": { "type": "string" }
+          },
+          "required": ["durationSec", "from", "ease"]
+        },
+        "steady": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["hold", "drift", "pulse"] },
+            "intensity": { "type": "number" }
+          },
+          "required": ["type"]
+        },
+        "outro": {
+          "type": "object",
+          "properties": {
+            "durationSec": { "type": "number", "minimum": 0 },
+            "to": {},
+            "ease": { "type": "string" }
+          },
+          "required": ["durationSec", "to", "ease"]
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "timeSec": { "type": "number", "minimum": 0 },
+              "value": {},
+              "ease": { "type": "string" }
+            },
+            "required": ["timeSec", "value"]
+          }
+        }
+      }
+    },
+    "TransformModifierParams": {
+      "type": "object",
+      "properties": {
+        "x": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "y": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "scale": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "rotation": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "opacity": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "normX": { "type": "number" },
+        "normY": { "type": "number" },
+        "ease": { "type": "string" },
+        "animation": {
+          "type": "object",
+          "properties": {
+            "preset": { "type": "string", "enum": ["pop_in", "slide_left", "overshoot", "bounce", "drift"] },
+            "intro": {
+              "type": "object",
+              "properties": {
+                "durationSec": { "type": "number" },
+                "ease": { "type": "string" },
+                "direction": { "type": "string" }
+              }
+            },
+            "steady": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "enum": ["hold", "drift", "pulse"] },
+                "intensity": { "type": "number" }
+              }
+            },
+            "outro": {
+              "type": "object",
+              "properties": {
+                "durationSec": { "type": "number" },
+                "ease": { "type": "string" },
+                "direction": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "DepthRelightingParams": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "lightPosition": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "diffuse": { "type": "number" },
+        "specular": { "type": "number" },
+        "shininess": { "type": "number" },
+        "ambient": { "type": "number" },
+        "rimIntensity": { "type": "number" },
+        "lightColor": {
+          "oneOf": [
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          ]
+        },
+        "normalStrength": { "type": "number" }
+      }
+    },
+    "Camera3DModifierParams": {
+      "type": "object",
+      "properties": {
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["time", "position"],
+            "properties": {
+              "time": { "type": "number", "minimum": 0, "maximum": 1 },
+              "position": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "target": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "roll": { "type": "number" },
+              "fov": { "type": "number", "minimum": 1 },
+              "focalZ": { "type": "number", "minimum": 0, "maximum": 1 },
+              "focalAperture": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "rackFocus": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "focalZone": { "type": "string", "enum": ["foreground", "midground", "background", "custom"] },
+            "customFocalZ": { "type": "number" },
+            "aperture": { "type": "number" },
+            "blurMaxRadius": { "type": "number" }
+          }
+        },
+        "imagePath": { "type": "string" },
+        "depthImagePath": { "type": "string" },
+        "motionBlur": { "type": "boolean" }
+      }
+    },
+    "Depth3DModifierParams": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string" },
+        "frameStyle": { "type": "string" },
+        "popOutIntensity": { "type": "number" },
+        "autoSegment": { "type": "boolean" },
+        "autoDepth": { "type": "boolean" },
+        "relighting": {
+          "type": "object",
+          "required": ["enabled"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "lightPosition": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "lightColor": {
+              "oneOf": [
+                { "type": "string" },
+                {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "diffuse": { "type": "number" },
+            "specular": { "type": "number" },
+            "shininess": { "type": "number" },
+            "ambient": { "type": "number" },
+            "rimIntensity": { "type": "number" },
+            "normalStrength": { "type": "number" }
+          }
+        },
+        "depthMesh": {
+          "type": "object",
+          "properties": {
+            "motion": { "type": "string" },
+            "displacementScale": { "type": "number" }
+          }
+        },
+        "shadow": { "type": "boolean" },
+        "floatMotion": { "type": "boolean" },
+        "backdropBlur": { "type": "number" }
+      }
+    },
+    "ColorGradingModifierParams": {
+      "type": "object",
+      "properties": {
+        "lut": { "type": "string" },
+        "contrast": { "type": "number" },
+        "saturation": { "type": "number" },
+        "brightness": { "type": "number" },
+        "temperature": { "type": "number" },
+        "tint": { "type": "number" },
+        "vignette": { "type": "number" },
+        "exposure": { "type": "number" }
+      }
+    },
+    "ParticleVfxModifierParams": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "variant": { "type": "string" },
+        "intensity": { "type": "number" },
+        "speed": { "type": "number" },
+        "opacity": { "type": "number" },
+        "particleCount": { "type": "number" },
+        "useSIMD": { "type": "boolean" },
+        "shaders": {
+          "type": "object",
+          "properties": {
+            "chromaticAberration": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "offsetPx": { "type": "number" }
+              }
+            },
+            "bloom": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "threshold": { "type": "number" },
+                "intensity": { "type": "number" }
+              }
+            },
+            "anamorphicFlare": {
+              "type": "object",
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "intensity": { "type": "number" },
+                "tintColor": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "HologramHudModifierParams": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "color": { "type": "string" },
+        "glitchIntensity": { "type": "number" },
+        "scanlines": { "type": "boolean" },
+        "flicker": { "type": "boolean" },
+        "opacity": { "type": "number" },
+        "bracketScale": { "type": "number" },
+        "bracketColor": { "type": "string" },
+        "reticleSpeed": { "type": "number" }
+      }
+    },
+    "BlendModeModifierParams": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["normal", "multiply", "screen", "overlay", "add", "color_dodge", "soft_light"]
+        },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "TextStyleModifierParams": {
+      "type": "object",
+      "properties": {
+        "fontSize": { "type": "number" },
+        "fontFamily": { "type": "string" },
+        "fontWeight": { "oneOf": [{ "type": "string" }, { "type": "number" }] },
+        "color": { "type": "string" },
+        "letterSpacing": { "type": "number" },
+        "lineHeight": { "type": "number" },
+        "textAlign": { "type": "string", "enum": ["left", "center", "right"] },
+        "shadowColor": { "type": "string" },
+        "shadowBlur": { "type": "number" },
+        "shadowOffsetX": { "type": "number" },
+        "shadowOffsetY": { "type": "number" },
+        "strokeColor": { "type": "string" },
+        "strokeWidth": { "type": "number" },
+        "activeWord": {
+          "type": "object",
+          "properties": {
+            "color": { "type": "string" },
+            "glowColor": { "type": "string" },
+            "glowRadius": { "type": "number" },
+            "scale": { "type": "number" }
+          }
+        }
+      }
+    },
+    "VolumeModifierParams": {
+      "type": "object",
+      "properties": {
+        "volume": { "type": "number" },
+        "fadeInSec": { "type": "number" },
+        "fadeOutSec": { "type": "number" },
+        "fadeCurve": { "type": "string", "enum": ["linear", "cosine", "exponential"] },
+        "muted": { "type": "boolean" }
+      }
+    },
+    "PanModifierParams": {
+      "type": "object",
+      "required": ["stereoPan"],
+      "properties": {
+        "stereoPan": { "type": "number", "minimum": -1, "maximum": 1 }
+      }
+    },
+    "FilterModifierParams": {
+      "type": "object",
+      "required": ["filterType", "cutoffHz"],
+      "properties": {
+        "filterType": { "type": "string", "enum": ["lowpass", "highpass", "bandpass"] },
+        "cutoffHz": { "type": "number", "minimum": 20, "maximum": 20000 },
+        "q": { "type": "number" }
+      }
+    },
+    "PitchModifierParams": {
+      "type": "object",
+      "properties": {
+        "playbackRate": { "type": "number" },
+        "detuneCents": { "type": "number" }
+      }
+    },
+    "DynamicDuckingModifierParams": {
+      "type": "object",
+      "required": ["duckingFactor"],
+      "properties": {
+        "duckingFactor": { "oneOf": [{ "type": "number" }, { "$ref": "#/definitions/TemporalCurve" }] },
+        "attackSec": { "type": "number" },
+        "releaseSec": { "type": "number" },
+        "attackEase": { "type": "string" },
+        "releaseEase": { "type": "string" },
+        "threshold": { "type": "number" }
+      }
+    },
+    "ProceduralSfxModifierParams": {
+      "type": "object",
+      "required": ["synthType"],
+      "properties": {
+        "synthType": { "type": "string" },
+        "durationSec": { "type": "number" },
+        "ducking": { "type": "number" },
+        "gain": { "type": "number" }
+      }
+    },
+    "AVLinkModifierParams": {
+      "type": "object",
+      "required": ["linkedSequenceId", "linkedTrackId"],
+      "properties": {
+        "linkedSequenceId": { "type": "string" },
+        "linkedTrackId": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "syncTrim": { "type": "boolean" }
+      }
+    },
+    "SplitEditModifierParams": {
+      "type": "object",
+      "required": ["mode", "splitDurationFrames"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["j_cut", "l_cut"] },
+        "splitDurationFrames": { "type": "integer" },
+        "crossfadeAudio": { "type": "boolean" }
+      }
+    },
+    "TransitionModifierParams": {
+      "type": "object",
+      "properties": {
+        "transitionType": {
+          "type": "string",
+          "enum": [
+            "crossfade",
+            "dip",
+            "wipe",
+            "push",
+            "zoom",
+            "glitch",
+            "light_leak",
+            "radial_wipe",
+            "iris",
+            "slide_left",
+            "slide_right",
+            "whip_zoom",
+            "dip_black"
+          ]
+        },
+        "durationFrames": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "durationSec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "ease": {
+          "type": "string"
+        },
+        "alignment": {
+          "type": "string",
+          "enum": [
+            "center_on_cut",
+            "start_at_cut",
+            "end_at_cut"
+          ]
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ]
+        },
+        "dipColor": {
+          "type": "string"
+        },
+        "outgoingSeqId": {
+          "type": "string"
+        },
+        "overlapTarget": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ModifierNode": {
+      "type": "object",
+      "required": [
+        "type",
+        "target",
+        "params"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Modifier discriminator type identifier (e.g. 'vfx/camera_3d', 'transform', 'audio/volume')"
+        },
+        "target": {
+          "$ref": "#/definitions/ModifierTarget"
+        },
+        "params": {
+          "type": "object",
+          "description": "Arbitrary parameter dictionary passed to modifier execution node",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

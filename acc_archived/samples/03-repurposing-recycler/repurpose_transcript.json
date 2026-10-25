@@ -1,0 +1,70 @@
+{
+  "title": "Mastering Agentic Codebases",
+  "rawTranscript": "Stop doing repetitive software development manually. Automate your engineering pipelines with universal IR architectures.",
+  "activeSpeakerPosition": {
+    "x": 0.5,
+    "y": 0.38
+  },
+  "wordTimestamps": [
+    {
+      "word": "Stop",
+      "startMs": 0,
+      "endMs": 400
+    },
+    {
+      "word": "doing",
+      "startMs": 400,
+      "endMs": 800
+    },
+    {
+      "word": "repetitive",
+      "startMs": 800,
+      "endMs": 1400
+    },
+    {
+      "word": "development",
+      "startMs": 1400,
+      "endMs": 2000
+    },
+    {
+      "word": "manually.",
+      "startMs": 2000,
+      "endMs": 2600
+    },
+    {
+      "word": "Automate",
+      "startMs": 2800,
+      "endMs": 3300
+    },
+    {
+      "word": "your",
+      "startMs": 3300,
+      "endMs": 3600
+    },
+    {
+      "word": "engineering",
+      "startMs": 3600,
+      "endMs": 4200
+    },
+    {
+      "word": "pipelines",
+      "startMs": 4200,
+      "endMs": 4800
+    },
+    {
+      "word": "with",
+      "startMs": 4800,
+      "endMs": 5100
+    },
+    {
+      "word": "universal",
+      "startMs": 5100,
+      "endMs": 5700
+    },
+    {
+      "word": "IR.",
+      "startMs": 5700,
+      "endMs": 6300
+    }
+  ]
+}

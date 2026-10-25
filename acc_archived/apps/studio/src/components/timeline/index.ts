@@ -1,0 +1,29 @@
+export * from './AudioWaveform';
+export * from './FilmstripThumbnail';
+export * from './TimecodeRuler';
+export * from './TransitionBlock';
+export * from './WaveSurferWaveform';
+export * from './TrimHandle';
+export * from './DroppableTrackLane';
+export * from './ClipItem';
+export * from './TrackHeaderCard';
+export * from './Toolbar';
+export * from './OverlayHUD';
+export * from './SnapGuideline';
+export * from './RazorGuideline';
+export * from './TimecodeBadge';
+export * from './ClipHoverHUD';
+export * from './ClipInsightCard';
+export * from './EmptyState';
+
+// Legacy Aliases for backwards compatibility with test harnesses
+export { EmptyState } from './EmptyState';
+export { ClipItem } from './ClipItem';
+export { Toolbar } from './Toolbar';
+export { OverlayHUD } from './OverlayHUD';
+export { TransitionBlock } from './TransitionBlock';
+export { SnapGuideline } from './SnapGuideline';
+export { RazorGuideline } from './RazorGuideline';
+export { TimecodeBadge } from './TimecodeBadge';
+export { ClipHoverHUD } from './ClipHoverHUD';
+export { ClipInsightCard } from './ClipInsightCard';

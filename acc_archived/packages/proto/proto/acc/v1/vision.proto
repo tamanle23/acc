@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package acc.v1;
+
+import "common.proto";
+
+service VisionService {
+  rpc Ping (PingRequest) returns (PingResponse);
+  rpc EstimateDepth (DepthRequest) returns (DepthResponse);
+  rpc SegmentSubject (SegmentationRequest) returns (SegmentationResponse);
+}
+
+message DepthRequest {
+  bytes image_data = 1;         // Input image bytes (PNG or JPEG)
+  string model_size = 2;        // "small" | "base" | "large"
+}
+
+message DepthResponse {
+  bytes depth_map_png = 1;      // 16-bit single channel grayscale PNG
+  float min_depth = 2;
+  float max_depth = 3;
+}
+
+message SegmentationRequest {
+  bytes image_data = 1;
+  repeated float prompt_box = 2;// Normalized [x1, y1, x2, y2] (optional)
+  string mode = 3;              // "foreground" | "face"
+}
+
+message SegmentationResponse {
+  bytes mask_png = 1;           // 8-bit alpha mask PNG
+  BoundingBox bounding_box = 2;
+  float confidence = 3;
+}

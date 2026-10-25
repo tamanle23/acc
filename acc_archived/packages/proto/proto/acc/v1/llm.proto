@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package acc.v1;
+
+import "common.proto";
+
+service LLMService {
+  rpc Ping (PingRequest) returns (PingResponse);
+  rpc GenerateStructuredJson (LLMJsonRequest) returns (LLMJsonResponse);
+}
+
+message LLMJsonRequest {
+  string prompt = 1;
+  string json_schema = 2;       // JSON Schema or GBNF grammar definition
+  string system_instruction = 3;
+  float temperature = 4;
+}
+
+message LLMJsonResponse {
+  string json_output = 1;       // Guarantees strict JSON conforming to schema
+  int32 tokens_used = 2;
+  int64 latency_ms = 3;
+}

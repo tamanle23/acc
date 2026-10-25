@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package acc.v1;
+
+message PurgeVRAMRequest {
+  bool force = 1;
+}
+
+message PurgeVRAMResponse {
+  bool success = 1;
+  int64 freed_bytes = 2;
+  string message = 3;
+}
+
+message VRAMStatusRequest {}
+
+message VRAMModelInfo {
+  string name = 1;
+  int64 vram_mb = 2;
+  int32 access_count = 3;
+}
+
+message VRAMStatusResponse {
+  int64 total_vram_bytes = 1;
+  int64 free_vram_bytes = 2;
+  int32 cached_model_count = 3;
+  repeated VRAMModelInfo active_models = 4;
+}
+
+service AdminService {
+  rpc PurgeVRAM(PurgeVRAMRequest) returns (PurgeVRAMResponse);
+  rpc GetVRAMStatus(VRAMStatusRequest) returns (VRAMStatusResponse);
+}

@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "3.0.0",
+  "pipelineId": "ambient-loops",
+  "metadata": {
+    "jobId": "job-1791688323936-h2ogdw",
+    "title": "06 ambient loops",
+    "createdAt": "2026-10-11T03:12:03.936Z",
+    "tags": [
+      "auto-config"
+    ],
+    "overlayEffect": "rain_on_glass",
+    "depth3d": {
+      "enabled": true,
+      "mode": "macro_bokeh",
+      "popOutIntensity": 1.1,
+      "shadow": false
+    }
+  },
+  "chunks": [
+    {
+      "id": "chunk-1",
+      "order": 1,
+      "text": "",
+      "durationMs": 60000,
+      "visualAsset": {
+        "type": "image",
+        "sourcePathOrBuffer": "assets/ambient_texture.png",
+        "resolution": {
+          "width": 1920,
+          "height": 1080
+        }
+      },
+      "metadata": {
+        "sourceVisual": "ambient_texture.png"
+      }
+    }
+  ],
+  "audioComposition": {
+    "ducking": {
+      "enabled": true,
+      "attenuationDb": -14,
+      "attackMs": 200,
+      "releaseMs": 350
+    },
+    "sfxMarkers": [
+      {
+        "timeMs": 0,
+        "sfxPath": "assets/sfx_rain_sound.wav",
+        "volume": 0.7,
+        "category": "scene_sfx"
+      },
+      {
+        "timeMs": 0,
+        "sfxPath": "assets/sfx_tape_hiss.wav",
+        "volume": 0.3,
+        "category": "scene_sfx"
+      }
+    ],
+    "backgroundMusic": {
+      "audioPath": "assets/lofi_sleep_beat_loop.mp3",
+      "volume": 0.8,
+      "loop": true
+    }
+  },
+  "distributionHints": {
+    "supportedExporters": [
+      "video",
+      "audio"
+    ],
+    "targetAspectRatios": [
+      "16:9"
+    ]
+  }
+}

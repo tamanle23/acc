@@ -1,0 +1,13 @@
+{
+  "name": "@acc/core-isomorphic",
+  "version": "1.0.0",
+  "description": "Pure TypeScript isomorphic media, canvas contracts, deterministic math, and time-space state machines",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "gsap": "^3.12.7",
+    "pts": "^1.0.3"
+  }
+}

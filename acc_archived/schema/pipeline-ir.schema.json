@@ -1,0 +1,701 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://acc.io/schemas/pipeline-ir.schema.json",
+  "title": "Universal Pipeline Intermediate Representation (PipelineIR) Schema",
+  "description": "JSON Schema for PipelineIR AST v3.0.0 and v3.1.0 across Pipelines 1 to 6 in the Automated Content Creator ecosystem.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "pipelineId",
+    "metadata",
+    "chunks",
+    "audioComposition",
+    "distributionHints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": [
+        "3.0.0",
+        "3.1.0"
+      ],
+      "description": "Specification version of the PipelineIR document format"
+    },
+    "pipelineId": {
+      "type": "string",
+      "enum": [
+        "scraper-summarizer",
+        "db-templating",
+        "repurposing-recycler",
+        "generative-storytelling",
+        "rule-logic",
+        "ambient-loops"
+      ],
+      "description": "Canonical identifier of the source or processing archetype pipeline"
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "jobId",
+        "title",
+        "createdAt",
+        "tags"
+      ],
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "description": "Unique identifier for the generation job"
+        },
+        "title": {
+          "type": "string",
+          "description": "Human-readable title of the project or piece of content"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO 8601 creation timestamp"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Classification tags and modalities"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or generator agent tag"
+        },
+        "overlayEffect": {
+          "type": "string",
+          "description": "Global visual overlay preset (e.g. 'camera_ui', 'sci_fi_hud', 'vhs', 'dust', 'confetti', 'rain_on_glass')"
+        },
+        "depth3d": {
+          "type": "object",
+          "description": "Global 3D depth parameters",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "chunks": {
+      "type": "array",
+      "description": "Chronological content chunks forming the narrative or logical sections",
+      "items": {
+        "$ref": "#/definitions/ContentChunk"
+      }
+    },
+    "audioComposition": {
+      "$ref": "#/definitions/AudioComposition"
+    },
+    "structuredData": {
+      "type": "object",
+      "description": "Structured tabular, JSONB, or data payload for SSG, widgets, and charts",
+      "additionalProperties": true
+    },
+    "distributionHints": {
+      "type": "object",
+      "required": [
+        "supportedExporters",
+        "targetAspectRatios"
+      ],
+      "properties": {
+        "supportedExporters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "video",
+              "audio",
+              "social",
+              "static-web",
+              "interactive-web",
+              "live-stream"
+            ]
+          },
+          "description": "Target exporter backends capable of rendering this IR"
+        },
+        "targetAspectRatios": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "9:16",
+              "16:9",
+              "1:1"
+            ]
+          },
+          "description": "Compatible canvas aspect ratios"
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Rendering resolution and platform settings for Extended PipelineIR v3.1.0",
+      "properties": {
+        "resolution": {
+          "type": "object",
+          "required": [
+            "width",
+            "height"
+          ],
+          "properties": {
+            "width": { "type": "integer" },
+            "height": { "type": "integer" }
+          }
+        },
+        "fps": { "type": "number" },
+        "platform": {
+          "type": "string",
+          "enum": [
+            "tiktok",
+            "shorts",
+            "reels",
+            "youtube",
+            "youtube-4k",
+            "facebook",
+            "instagram",
+            "spatial-vr",
+            "custom"
+          ]
+        },
+        "colorSpace": {
+          "type": "string",
+          "enum": [
+            "rec709",
+            "hdr10"
+          ]
+        },
+        "targetLoudnessLufs": { "type": "number" }
+      }
+    },
+    "extendedChunks": {
+      "type": "array",
+      "description": "Advanced multi-layered composited chunks in Extended PipelineIR v3.1.0",
+      "items": {
+        "$ref": "#/definitions/ExtendedContentChunk"
+      }
+    },
+    "audioTracks": {
+      "type": "array",
+      "description": "Discrete multi-track audio specifications",
+      "items": {
+        "$ref": "#/definitions/AudioTrackSpec"
+      }
+    },
+    "interactiveNodes": {
+      "type": "array",
+      "description": "Branching choice nodes for interactive video/web delivery",
+      "items": {
+        "type": "object",
+        "required": [
+          "timestampMs",
+          "options"
+        ],
+        "properties": {
+          "timestampMs": { "type": "number" },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "label",
+                "targetChunkId"
+              ],
+              "properties": {
+                "label": { "type": "string" },
+                "targetChunkId": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SegmentationMaskRef": {
+      "type": "object",
+      "required": [
+        "maskPathOrBuffer",
+        "subjectClass",
+        "boundaryRect"
+      ],
+      "properties": {
+        "maskPathOrBuffer": {
+          "type": "string",
+          "description": "Path to alpha mask image or base64 buffer (SAM 2 / MobileSAM)"
+        },
+        "subjectClass": {
+          "type": "string",
+          "description": "Classification of masked object ('human', 'product', 'foreground')"
+        },
+        "boundaryRect": {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "width": { "type": "number" },
+            "height": { "type": "number" }
+          }
+        }
+      }
+    },
+    "DepthMapRef": {
+      "type": "object",
+      "required": [
+        "depthMapPathOrBuffer"
+      ],
+      "properties": {
+        "depthMapPathOrBuffer": {
+          "type": "string",
+          "description": "Path to 16-bit metric depth map (Depth Anything v2)"
+        },
+        "minDepthMeters": { "type": "number" },
+        "maxDepthMeters": { "type": "number" }
+      }
+    },
+    "VisualAsset": {
+      "type": "object",
+      "required": [
+        "type",
+        "sourcePathOrBuffer",
+        "resolution"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "image",
+            "video",
+            "canvas",
+            "manim",
+            "shader_buffer"
+          ]
+        },
+        "sourcePathOrBuffer": {
+          "type": "string",
+          "description": "File path or buffer reference"
+        },
+        "resolution": {
+          "type": "object",
+          "required": [
+            "width",
+            "height"
+          ],
+          "properties": {
+            "width": { "type": "integer" },
+            "height": { "type": "integer" }
+          }
+        },
+        "subjectMask": {
+          "$ref": "#/definitions/SegmentationMaskRef"
+        },
+        "depthMap": {
+          "$ref": "#/definitions/DepthMapRef"
+        },
+        "appliedEffects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "effectId",
+              "variant",
+              "intensity"
+            ],
+            "properties": {
+              "effectId": { "type": "string" },
+              "variant": { "type": "string" },
+              "intensity": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "ContentChunk": {
+      "type": "object",
+      "required": [
+        "id",
+        "order",
+        "durationMs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique chunk identifier (e.g. 'chunk-1')"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Sequential display order"
+        },
+        "text": {
+          "type": "string",
+          "description": "Script narration text or scene transcript"
+        },
+        "spokenAudioPath": {
+          "type": "string",
+          "description": "Synthesized voiceover audio file path"
+        },
+        "durationMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Scene chunk duration in milliseconds"
+        },
+        "visualAsset": {
+          "$ref": "#/definitions/VisualAsset"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Arbitrary metadata (stock tickers, proof steps, asset tags)",
+          "additionalProperties": true
+        }
+      }
+    },
+    "SpatialTransform": {
+      "type": "object",
+      "required": [
+        "position",
+        "scale",
+        "rotationDeg",
+        "opacity"
+      ],
+      "properties": {
+        "position": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "z": { "type": "number" }
+          }
+        },
+        "scale": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "rotationDeg": { "type": "number" },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "crop": {
+          "type": "object",
+          "properties": {
+            "top": { "type": "number" },
+            "bottom": { "type": "number" },
+            "left": { "type": "number" },
+            "right": { "type": "number" }
+          }
+        }
+      }
+    },
+    "Keyframe": {
+      "type": "object",
+      "required": [
+        "timeMs",
+        "value"
+      ],
+      "properties": {
+        "timeMs": { "type": "number" },
+        "value": {},
+        "easing": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "easeIn",
+            "easeOut",
+            "easeInOut",
+            "cubicBezier"
+          ]
+        }
+      }
+    },
+    "VisualLayer": {
+      "type": "object",
+      "required": [
+        "id",
+        "layerIndex",
+        "type",
+        "sourcePathOrBuffer",
+        "transform"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "layerIndex": {
+          "type": "integer",
+          "description": "0 = Background, 1 = Midground, 2 = Foreground, 3 = Overlay"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "video",
+            "image",
+            "canvas",
+            "text",
+            "broll",
+            "particle"
+          ]
+        },
+        "sourcePathOrBuffer": { "type": "string" },
+        "transform": {
+          "$ref": "#/definitions/SpatialTransform"
+        },
+        "transformKeyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Keyframe"
+          }
+        },
+        "blendMode": {
+          "type": "string",
+          "enum": [
+            "normal",
+            "screen",
+            "multiply",
+            "overlay",
+            "add"
+          ]
+        },
+        "chromaKey": {
+          "type": "object",
+          "required": [
+            "colorHex",
+            "similarity",
+            "blend"
+          ],
+          "properties": {
+            "colorHex": { "type": "string" },
+            "similarity": { "type": "number" },
+            "blend": { "type": "number" }
+          }
+        },
+        "colorGrading": {
+          "type": "object",
+          "required": [
+            "contrast",
+            "saturation",
+            "exposure"
+          ],
+          "properties": {
+            "lutPath": { "type": "string" },
+            "contrast": { "type": "number" },
+            "saturation": { "type": "number" },
+            "exposure": { "type": "number" }
+          }
+        },
+        "subjectMask": {
+          "$ref": "#/definitions/SegmentationMaskRef"
+        },
+        "depthMap": {
+          "$ref": "#/definitions/DepthMapRef"
+        }
+      }
+    },
+    "TypographyOverlay": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "text",
+        "startMs",
+        "durationMs",
+        "stylePreset"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "lower_third",
+            "dynamic_caption",
+            "kinetic_text",
+            "callout_tracking"
+          ]
+        },
+        "text": { "type": "string" },
+        "startMs": { "type": "number" },
+        "durationMs": { "type": "number" },
+        "stylePreset": { "type": "string" },
+        "trackingTargetId": { "type": "string" }
+      }
+    },
+    "TransitionSpec": {
+      "type": "object",
+      "required": [
+        "type",
+        "durationMs",
+        "audioBehavior"
+      ],
+      "properties": {
+        "type": { "type": "string" },
+        "durationMs": { "type": "number" },
+        "audioBehavior": {
+          "type": "string",
+          "enum": [
+            "crossfade",
+            "pad",
+            "cut"
+          ]
+        }
+      }
+    },
+    "ExtendedContentChunk": {
+      "type": "object",
+      "required": [
+        "id",
+        "order",
+        "durationMs",
+        "visualLayers",
+        "typographyOverlays"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "order": { "type": "integer" },
+        "text": { "type": "string" },
+        "spokenAudioPath": { "type": "string" },
+        "durationMs": { "type": "number" },
+        "videoOffsetMs": { "type": "number" },
+        "audioOffsetMs": { "type": "number" },
+        "visualLayers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VisualLayer"
+          }
+        },
+        "typographyOverlays": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypographyOverlay"
+          }
+        },
+        "transitionToNext": {
+          "$ref": "#/definitions/TransitionSpec"
+        },
+        "speedRamp": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Keyframe"
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "AudioTrackSpec": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "sourcePath",
+        "startMs",
+        "durationMs",
+        "volume"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "narration",
+            "bgm",
+            "sfx",
+            "foley"
+          ]
+        },
+        "sourcePath": { "type": "string" },
+        "startMs": { "type": "number" },
+        "durationMs": { "type": "number" },
+        "volume": { "type": "number" },
+        "loudnessLufs": { "type": "number" },
+        "spatialPan": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        }
+      }
+    },
+    "AudioComposition": {
+      "type": "object",
+      "required": [
+        "ducking"
+      ],
+      "properties": {
+        "narrationTrack": {
+          "type": "object",
+          "required": [
+            "sampleRate",
+            "channels",
+            "loudnessLufs"
+          ],
+          "properties": {
+            "sampleRate": { "type": "integer" },
+            "channels": { "type": "integer" },
+            "loudnessLufs": { "type": "number" }
+          }
+        },
+        "backgroundMusic": {
+          "type": "object",
+          "required": [
+            "audioPath",
+            "volume",
+            "loop"
+          ],
+          "properties": {
+            "audioPath": { "type": "string" },
+            "volume": { "type": "number" },
+            "loop": { "type": "boolean" }
+          }
+        },
+        "sfxMarkers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "volume"
+            ],
+            "properties": {
+              "id": { "type": "string" },
+              "offsetMs": { "type": "number" },
+              "timeMs": { "type": "number" },
+              "durationMs": { "type": "number" },
+              "audioPath": { "type": "string" },
+              "sfxPath": { "type": "string" },
+              "volume": { "type": "number" },
+              "category": { "type": "string" }
+            }
+          }
+        },
+        "ducking": {
+          "type": "object",
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "attenuationDb": { "type": "number" },
+            "attackMs": { "type": "number" },
+            "releaseMs": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

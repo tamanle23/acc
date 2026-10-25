@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package acc.v1;
+
+import "common.proto";
+
+service TTSService {
+  rpc Ping (PingRequest) returns (PingResponse);
+  rpc Synthesize (TTSRequest) returns (TTSResponse);
+  rpc SynthesizeStream (TTSRequest) returns (stream AudioChunk);
+}
+
+message TTSRequest {
+  string text = 1;
+  string voice_id = 2;          // e.g. "af_heart", "vi_female_1"
+  float speed = 3;             // default 1.0
+  string model_strategy = 4;    // "kokoro" | "f5" | "vieneu"
+}
+
+message TTSResponse {
+  bytes audio_data = 1;         // WAV or PCM audio bytes
+  int32 sample_rate = 2;        // e.g. 24000
+  int32 channels = 3;           // e.g. 1
+  int64 duration_ms = 4;        // Duration in milliseconds
+}
+
+message AudioChunk {
+  bytes pcm_bytes = 1;
+  int32 sequence_number = 2;
+  bool is_final = 3;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@acc/ir",
+  "version": "1.0.0",
+  "description": "Canonical Intermediate Representation (IR) contracts for ACC pipelines and exporters",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@acc/core-isomorphic": "workspace:*",
+    "@acc/effect-engines": "workspace:*",
+    "mediabunny": "^1.61.5"
+  }
+}

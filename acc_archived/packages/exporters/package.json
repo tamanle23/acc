@@ -1,0 +1,12 @@
+{
+  "name": "@acc/exporters",
+  "version": "1.0.0",
+  "description": "Multi-channel branching distribution suite (Video, Audio, Social Canvas, Static Web)",
+  "main": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/ir": "workspace:*"
+  }
+}

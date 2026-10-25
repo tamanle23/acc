@@ -1,0 +1,24 @@
+export * from './depth3d';
+export * from './depth3d/frame-breaker';
+export * from './depth3d/parallax';
+export * from './depth3d/sandwich';
+export * from './depth3d/depth-mesh';
+export * from './depth3d/wigglegram';
+export * from './overlay-effects';
+export * from './subtitles';
+export * from './vision';
+export * from './types';
+export * from './styles';
+
+// Re-export pure browser-safe client utilities
+export * from './vision/CameraSplineInterpolator';
+export * from './vision/SurfaceNormalGenerator';
+export * from './subtitles/SafeZoneManager';
+export * from './subtitles/BoundedAcousticCaptionStrategy';
+export * from './subtitles/captions-canvas';
+export * from './overlay-effects/simulators/DeterministicParticleField';
+export * from './overlay-effects/simulators/PostProcessingShaders';
+export * from './styles/ColorGradingEngine';
+export * from './depth3d/strategy';
+export * from './depth3d/renderers';
+export * from './depth3d/factory';

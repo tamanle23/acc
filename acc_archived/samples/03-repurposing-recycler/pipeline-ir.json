@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "3.0.0",
+  "pipelineId": "repurposing-recycler",
+  "metadata": {
+    "jobId": "job-1791688323913-bjg83u",
+    "title": "03 repurposing recycler",
+    "createdAt": "2026-10-11T03:12:03.913Z",
+    "tags": [
+      "auto-config"
+    ],
+    "overlayEffect": "vhs",
+    "depth3d": {
+      "enabled": true,
+      "mode": "gyro_focal_tilt",
+      "popOutIntensity": 1.25,
+      "shadow": true
+    }
+  },
+  "chunks": [
+    {
+      "id": "chunk-1",
+      "order": 1,
+      "text": "Stop doing repetitive software development manually. Automate your engineering pipelines with universal IR architectures.",
+      "durationMs": 30000,
+      "visualAsset": {
+        "type": "video",
+        "sourcePathOrBuffer": "assets/podcast_clip.mp4",
+        "resolution": {
+          "width": 1080,
+          "height": 1920
+        }
+      },
+      "metadata": {
+        "sourceVisual": "podcast_clip.mp4"
+      }
+    }
+  ],
+  "audioComposition": {
+    "ducking": {
+      "enabled": true,
+      "attenuationDb": -14,
+      "attackMs": 200,
+      "releaseMs": 350
+    },
+    "sfxMarkers": [
+      {
+        "timeMs": 300,
+        "sfxPath": "assets/sfx_pop.wav",
+        "volume": 0.8,
+        "category": "scene_sfx"
+      },
+      {
+        "timeMs": 1500,
+        "sfxPath": "assets/sfx_whoosh.wav",
+        "volume": 0.7,
+        "category": "scene_sfx"
+      }
+    ],
+    "backgroundMusic": {
+      "audioPath": "assets/bgm_viral.mp3",
+      "volume": 0.25,
+      "loop": true
+    }
+  },
+  "distributionHints": {
+    "supportedExporters": [
+      "video",
+      "social"
+    ],
+    "targetAspectRatios": [
+      "9:16"
+    ]
+  }
+}

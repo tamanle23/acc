@@ -1,0 +1,112 @@
+{
+  "name": "04 generative storytelling",
+  "description": "Adapted from Pipeline [generative-storytelling] via Universal AutoConfigLegacyBridgeAdapter",
+  "settings": {
+    "platform": "tiktok",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "container": "mp4",
+    "videoCodec": "h264",
+    "crf": 20,
+    "preset": "p4",
+    "pixelFormat": "yuv420p",
+    "audioCodec": "aac",
+    "audioBitrate": "192k",
+    "gpuAcceleration": "auto",
+    "concurrency": "auto",
+    "fastIntermediate": true,
+    "fastStart": true,
+    "pauseBetweenScenes": 0.5,
+    "bgm": {
+      "source": "assets/bgm.mp3",
+      "volume": 0.25,
+      "loop": true,
+      "fadeIn": 1.5,
+      "fadeOut": 2,
+      "autoDucking": true
+    },
+    "captions": {
+      "preset": "cinematic",
+      "subtitleMode": "burn",
+      "position": "center",
+      "fontSize": 32,
+      "primaryColor": "#FFFFFF",
+      "highlightColor": "#F59E0B",
+      "activeWordHighlight": false,
+      "autoTranscribe": true
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "volumetric_sandwich",
+      "popOutIntensity": 1.2,
+      "shadow": true,
+      "sandwich": {
+        "textBehindSubject": true,
+        "ambientDust": true,
+        "vignette": true,
+        "textColor": "#F59E0B"
+      }
+    },
+    "transition": {
+      "enabled": true,
+      "type": "fade",
+      "duration": 0.5,
+      "audioBehavior": "pad"
+    },
+    "overlayComposite": "dust",
+    "sfx": [
+      {
+        "source": "assets/sfx_cinematic_hit.wav",
+        "time": 0,
+        "duration": 2.5,
+        "volume": 1,
+        "duckBgm": true
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "duration": 5,
+      "text": "Deep in the forgotten mountains, an ancient dragon awakened from centuries of slumber.",
+      "audio": "assets/voiceover1.mp3",
+      "image": "assets/scene1.png",
+      "transition": {
+        "enabled": true,
+        "type": "fade",
+        "duration": 0.5,
+        "audioBehavior": "pad"
+      },
+      "depth3d": {
+        "enabled": true,
+        "mode": "volumetric_sandwich",
+        "sandwich": {
+          "textBehindSubject": true,
+          "ambientDust": true,
+          "vignette": true
+        }
+      },
+      "sfx": [
+        {
+          "source": "assets/sfx_kaiju_roar.wav",
+          "time": 1,
+          "duration": 2,
+          "volume": 0.9,
+          "duckBgm": true
+        }
+      ]
+    },
+    {
+      "duration": 5,
+      "audio": "assets/voiceover2.mp3",
+      "image": "assets/scene2.png",
+      "depth3d": {
+        "enabled": true,
+        "mode": "frame_breaker",
+        "frameStyle": "comic",
+        "popOutIntensity": 1.25,
+        "shadow": true
+      }
+    }
+  ]
+}

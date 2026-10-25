@@ -1,0 +1,99 @@
+{
+  "title": "04 generative storytelling",
+  "pipelineId": "4",
+  "canonicalPipeline": "generative-storytelling",
+  "suggestedModalities": [
+    "video",
+    "social",
+    "audio"
+  ],
+  "videoConfig": {
+    "aspectRatio": "9:16",
+    "fps": 30,
+    "canvas": {
+      "aspectRatio": "9:16",
+      "fps": 30,
+      "resolution": "1080p",
+      "colorGrading": {
+        "lutPreset": "cinematic_teal_orange",
+        "contrast": 1.15,
+        "saturation": 1.1,
+        "vignette": 0.15
+      }
+    },
+    "audioStaging": {
+      "autoDucking": true,
+      "duckingAttenuationDb": -14,
+      "masterBgmVolume": 0.25,
+      "masterSfxVolume": 0.5
+    },
+    "typography": {
+      "preset": "3d_sandwich",
+      "placement": "center",
+      "fontSize": 32,
+      "primaryColor": "#FFFFFF",
+      "highlightColor": "#F59E0B"
+    },
+    "archetypeDirectives": {
+      "narrativeStory": {
+        "cinematicBars": true,
+        "fogDensity": 0.08,
+        "ambientDustParticles": true
+      }
+    },
+    "roleDirectives": {
+      "hook": {
+        "depth3d": {
+          "mode": "sandwich",
+          "parallaxFactor": 0.6,
+          "enabled": true
+        },
+        "cameraMotion": {
+          "type": "ken_burns_zoom_in",
+          "intensity": 0.5
+        },
+        "transition": {
+          "type": "crossfade",
+          "durationMs": 500
+        }
+      },
+      "body": {
+        "depth3d": {
+          "mode": "parallax_2_5d",
+          "parallaxFactor": 0.4,
+          "enabled": true
+        },
+        "cameraMotion": {
+          "type": "ken_burns_zoom_out",
+          "intensity": 0.45
+        },
+        "transition": {
+          "type": "crossfade",
+          "durationMs": 500
+        }
+      }
+    },
+    "depth3d": {
+      "enabled": true,
+      "mode": "volumetric_sandwich",
+      "popOutIntensity": 1.2,
+      "shadow": true,
+      "sandwich": {
+        "textBehindSubject": true,
+        "ambientDust": true,
+        "vignette": true,
+        "textColor": "#F59E0B"
+      }
+    },
+    "overlayComposite": "dust",
+    "sfx": [
+      {
+        "source": "assets/sfx_cinematic_hit.wav",
+        "time": 0,
+        "duration": 2.5,
+        "volume": 1,
+        "duckBgm": true
+      }
+    ]
+  }
+}

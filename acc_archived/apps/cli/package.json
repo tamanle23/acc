@@ -1,0 +1,22 @@
+{
+  "name": "@acc/cli",
+  "version": "1.0.0",
+  "description": "Unified CLI and Pipeline Orchestrators for ACC",
+  "main": "src/index.ts",
+  "bin": {
+    "acc": "./src/index.ts"
+  },
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --compile --outfile=dist/acc"
+  },
+  "dependencies": {
+    "@acc/core": "workspace:*",
+    "@acc/core-isomorphic": "workspace:*",
+    "@acc/ir": "workspace:*",
+    "@acc/effect-engines": "workspace:*",
+    "@acc/legacy-story-renderer": "workspace:*"
+  }
+}

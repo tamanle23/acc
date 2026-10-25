@@ -1,0 +1,491 @@
+{
+  "pipelines": {
+    "mp4_luma": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "overlay_method": "screen",
+      "blend_mode_recommended": "screen",
+      "background": {
+        "type": "solid",
+        "color": "#000000"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=screen:all_opacity=1:shortest=1"
+    },
+    "webm_alpha": {
+      "format": "webm",
+      "vcodec": "libvpx-vp9",
+      "pix_fmt": "yuva420p",
+      "overlay_method": "alpha",
+      "blend_mode_recommended": "normal",
+      "background": {
+        "type": "transparent",
+        "color": "rgba(0, 0, 0, 0)"
+      },
+      "ffmpeg_filter_snippet": "overlay=shortest=1"
+    },
+    "mp4_multiply": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "overlay_method": "multiply",
+      "blend_mode_recommended": "multiply",
+      "background": {
+        "type": "solid",
+        "color": "#FFFFFF"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=multiply:all_opacity=1:shortest=1"
+    },
+    "mp4_overlay": {
+      "format": "mp4",
+      "vcodec": "libx264",
+      "pix_fmt": "yuv420p",
+      "overlay_method": "overlay",
+      "blend_mode_recommended": "overlay",
+      "background": {
+        "type": "solid",
+        "color": "#808080"
+      },
+      "ffmpeg_filter_snippet": "blend=all_mode=overlay:all_opacity=1:shortest=1"
+    }
+  },
+  "effects": {
+    "rain": {
+      "category": "Weather",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "drizzle",
+        "heavy_rain",
+        "storm"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/rain.ts"
+    },
+    "snow": {
+      "category": "Weather",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "light_snow",
+        "flurries",
+        "blizzard"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/snow.ts"
+    },
+    "dust": {
+      "category": "Atmosphere",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "ambient_dust",
+        "sunshaft_dust"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/dust.ts"
+    },
+    "fog": {
+      "category": "Atmosphere",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "ground_mist",
+        "dense_fog"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/fog.ts"
+    },
+    "light_leak": {
+      "category": "Atmosphere",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "edge_burns",
+        "transition_flash"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/light_leak.ts"
+    },
+    "embers": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "campfire_sparks",
+        "windy_sparks"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/embers.ts"
+    },
+    "smoke": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "rising_steam",
+        "rolling_smoke"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/smoke.ts"
+    },
+    "lightning": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "sheet_lightning",
+        "branching_lightning"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/lightning.ts"
+    },
+    "fire": {
+      "category": "Action & Fire",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "campfire_flames",
+        "wall_of_fire"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/fire.ts"
+    },
+    "film_damage": {
+      "category": "Retro",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "hairline_scratches",
+        "film_dirt"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/film_damage.ts"
+    },
+    "vhs": {
+      "category": "Retro",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "tracking_snow",
+        "tracking_lines"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/vhs.ts"
+    },
+    "bokeh": {
+      "category": "Cinematic & Optical",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "drifting_bokeh",
+        "pulsing_bokeh"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/bokeh.ts"
+    },
+    "lens_flare": {
+      "category": "Cinematic & Optical",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "anamorphic_streak",
+        "sun_burst"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/lens_flare.ts"
+    },
+    "digital_glitch": {
+      "category": "Cyberpunk & Tech",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "block_datamosh",
+        "rgb_shake"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/digital_glitch.ts"
+    },
+    "matrix_rain": {
+      "category": "Cyberpunk & Tech",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "classic_green",
+        "red_alert"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/matrix_rain.ts"
+    },
+    "starfield": {
+      "category": "Cosmic",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "twinkling_night",
+        "warp_speed"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/starfield.ts"
+    },
+    "god_rays": {
+      "category": "Volumetric Lighting",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "heavenly_glow",
+        "underwater_shafts"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/god_rays.ts"
+    },
+    "rain_on_glass": {
+      "category": "Liquid & Grunge",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "static_drops",
+        "sliding_drops"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/rain_on_glass.ts"
+    },
+    "grunge_texture": {
+      "category": "Liquid & Grunge",
+      "pipeline": "mp4_luma",
+      "variants": [
+        "stop_motion_paper",
+        "flickering_halftone"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/grunge_texture.ts"
+    },
+    "leaves": {
+      "category": "Organic Objects",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "autumn_breeze",
+        "sakura_petals"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/leaves.ts"
+    },
+    "bubbles": {
+      "category": "Organic Objects",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "underwater_bubbles",
+        "floating_bubbles"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/bubbles.ts"
+    },
+    "confetti": {
+      "category": "Celebration & Romance",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "party_confetti",
+        "golden_shower"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/confetti.ts"
+    },
+    "floating_hearts": {
+      "category": "Celebration & Romance",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "slow_hearts",
+        "burst_hearts"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/floating_hearts.ts"
+    },
+    "camera_ui": {
+      "category": "Motion Graphics & Camera UI",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "camcorder_rec",
+        "cctv_security",
+        "dslr_viewfinder"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/camera_ui.ts"
+    },
+    "sci_fi_hud": {
+      "category": "Motion Graphics & Camera UI",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "target_lock",
+        "data_processing"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/sci_fi_hud.ts"
+    },
+    "audio_spectrum": {
+      "category": "Motion Graphics & Camera UI",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "classic_bars",
+        "circular_eq"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/audio_spectrum.ts"
+    },
+    "speed_lines": {
+      "category": "Anime & Manga Action",
+      "pipeline": "webm_alpha",
+      "variants": [
+        "radial_burst",
+        "horizontal_rush"
+      ],
+      "module_path": "./packages/effect-engines/src/overlay-effects/generators/speed_lines.ts"
+    }
+  },
+  "composites": {
+    "haunted_forest": {
+      "category": "Horror",
+      "description": "Spooky ground mist with subtle dust and film damage.",
+      "layers": [
+        {
+          "effect": "fog",
+          "variant": "ground_mist",
+          "duration": 7
+        },
+        {
+          "effect": "dust",
+          "variant": "ambient_dust",
+          "duration": 5
+        },
+        {
+          "effect": "film_damage",
+          "variant": "hairline_scratches",
+          "duration": 3
+        }
+      ]
+    },
+    "cyberpunk_alley": {
+      "category": "Sci-Fi",
+      "description": "Heavy rain combined with rolling smoke and digital glitches.",
+      "layers": [
+        {
+          "effect": "rain",
+          "variant": "heavy_rain",
+          "duration": 5
+        },
+        {
+          "effect": "smoke",
+          "variant": "rolling_smoke",
+          "duration": 7
+        },
+        {
+          "effect": "digital_glitch",
+          "variant": "rgb_shake",
+          "duration": 11
+        }
+      ]
+    },
+    "romantic_spring": {
+      "category": "Romance",
+      "description": "Dreamy sakura petals falling with soft drifting bokeh and vintage light leaks.",
+      "layers": [
+        {
+          "effect": "leaves",
+          "variant": "sakura_petals",
+          "duration": 7
+        },
+        {
+          "effect": "bokeh",
+          "variant": "drifting_bokeh",
+          "duration": 5
+        },
+        {
+          "effect": "light_leak",
+          "variant": "edge_burns",
+          "duration": 3
+        }
+      ]
+    },
+    "found_footage": {
+      "category": "Retro",
+      "description": "Creepy analog VHS tracking with camcorder UI and film dirt.",
+      "layers": [
+        {
+          "effect": "vhs",
+          "variant": "tracking_lines",
+          "duration": 3
+        },
+        {
+          "effect": "camera_ui",
+          "variant": "camcorder_rec",
+          "duration": 5
+        },
+        {
+          "effect": "film_damage",
+          "variant": "film_dirt",
+          "duration": 7
+        }
+      ]
+    },
+    "shonen_finisher": {
+      "category": "Anime",
+      "description": "Intense anime radial speed lines with branching lightning and embers.",
+      "layers": [
+        {
+          "effect": "speed_lines",
+          "variant": "radial_burst",
+          "duration": 3
+        },
+        {
+          "effect": "embers",
+          "variant": "windy_sparks",
+          "duration": 5
+        },
+        {
+          "effect": "lightning",
+          "variant": "branching_lightning",
+          "duration": 7
+        }
+      ]
+    },
+    "spaceship_cockpit": {
+      "category": "Sci-Fi",
+      "description": "Warp speed starfield background with sci-fi HUD targeting and anamorphic flares.",
+      "layers": [
+        {
+          "effect": "starfield",
+          "variant": "warp_speed",
+          "duration": 3
+        },
+        {
+          "effect": "sci_fi_hud",
+          "variant": "target_lock",
+          "duration": 7
+        },
+        {
+          "effect": "lens_flare",
+          "variant": "anamorphic_streak",
+          "duration": 5
+        }
+      ]
+    },
+    "neon_noir": {
+      "category": "Atmosphere",
+      "description": "Sliding rain drops on glass with distant drizzle and intermittent sheet lightning.",
+      "layers": [
+        {
+          "effect": "rain_on_glass",
+          "variant": "sliding_drops",
+          "duration": 5
+        },
+        {
+          "effect": "rain",
+          "variant": "drizzle",
+          "duration": 3
+        },
+        {
+          "effect": "lightning",
+          "variant": "sheet_lightning",
+          "duration": 11
+        }
+      ]
+    },
+    "deep_abyss": {
+      "category": "Atmosphere",
+      "description": "Underwater god ray shafts with floating bubbles and murky ground mist.",
+      "layers": [
+        {
+          "effect": "god_rays",
+          "variant": "underwater_shafts",
+          "duration": 7
+        },
+        {
+          "effect": "bubbles",
+          "variant": "underwater_bubbles",
+          "duration": 5
+        },
+        {
+          "effect": "fog",
+          "variant": "ground_mist",
+          "duration": 11
+        }
+      ]
+    },
+    "apocalyptic_wasteland": {
+      "category": "Action & Fire",
+      "description": "Rolling smoke, ambient dust, and a wall of fire for a post-apocalyptic feel.",
+      "layers": [
+        {
+          "effect": "smoke",
+          "variant": "rolling_smoke",
+          "duration": 11
+        },
+        {
+          "effect": "dust",
+          "variant": "sunshaft_dust",
+          "duration": 7
+        },
+        {
+          "effect": "fire",
+          "variant": "wall_of_fire",
+          "duration": 5
+        }
+      ]
+    }
+  }
+}

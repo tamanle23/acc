@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package acc.v1;
+
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  int64 timestamp_ms = 2;
+  string status = 3;
+}
+
+message BoundingBox {
+  float x = 1;
+  float y = 2;
+  float width = 3;
+  float height = 4;
+  float confidence = 5;
+}
+
+message StatusResponse {
+  bool success = 1;
+  string message = 2;
+  string error_code = 3;
+}

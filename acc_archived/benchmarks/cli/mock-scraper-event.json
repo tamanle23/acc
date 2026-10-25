@@ -1,0 +1,6 @@
+{
+  "eventId": "evt_bench_local",
+  "sourceUrl": "http://127.0.0.1",
+  "rawText": "Local mock event payload for sub-second CLI scraper benchmark execution.",
+  "receivedAt": "2026-10-03T00:00:00.000Z"
+}
