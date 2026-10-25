@@ -8,8 +8,12 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-build
+output/
+**/output/
+dist/
+**/dist/
+build/
+**/build/
 dist-ssr
 *.local
 .yarn
@@ -51,3 +55,4 @@ __pycache__/
 *.pyc
 pnpm-lock.yaml
 *.bun-build
+
