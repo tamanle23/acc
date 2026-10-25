@@ -1,26 +1,22 @@
 import { useState, useMemo } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { DataTable } from '@/components/data-table/data-table';
 import {
   Search,
   RotateCcw,
   Sparkles,
   Lock,
-  Info,
   PlusCircle,
   Building2,
   Globe,
-  Layers,
   Check,
   Shield,
   Loader2,
@@ -34,6 +30,7 @@ import {
 import {
   CANONICAL_PERMISSIONS,
   SECURITY_PLANES,
+  type CanonicalPermission,
   type RoleScope,
   type SecurityPlane,
 } from '../types/rbac-matrix-types';
@@ -120,6 +117,106 @@ export function RbacMatrixGrid() {
   };
 
   const stagedCount = Object.keys(activeRoleChanges).length;
+
+  // Build TanStack column definitions dynamically
+  const columns = useMemo<ColumnDef<CanonicalPermission>[]>(() => {
+    const cols: ColumnDef<CanonicalPermission>[] = [
+      {
+        accessorKey: 'code',
+        header: 'Permission Atom & Security Plane',
+        cell: ({ row }) => {
+          const atom = row.original;
+          const planeInfo = SECURITY_PLANES.find((p) => p.id === atom.plane);
+          return (
+            <div className="flex items-start gap-2.5 py-1">
+              <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold ${planeInfo?.color}`}
+              >
+                <Shield className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-xs font-semibold text-foreground">
+                    {atom.code}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] py-0 px-1 border-opacity-40 ${planeInfo?.color}`}
+                  >
+                    {planeInfo?.label}
+                  </Badge>
+                </div>
+                <span className="text-[11px] text-muted-foreground truncate max-w-[260px]">
+                  {atom.label} &mdash; {atom.description}
+                </span>
+              </div>
+            </div>
+          );
+        },
+      },
+    ];
+
+    visibleRoles.forEach((role) => {
+      cols.push({
+        id: role.roleId,
+        header: () => (
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-1 font-semibold text-xs font-mono">
+              <span>{role.roleId}</span>
+              {role.systemRole && <Lock className="h-3 w-3 text-muted-foreground" />}
+            </div>
+            <span className="font-sans text-[11px] text-muted-foreground line-clamp-1">
+              {role.roleName}
+            </span>
+            <div className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className={`text-[9px] font-mono px-1 py-0 ${
+                  role.roleScope === 'SYSTEM'
+                    ? 'border-indigo-500/40 text-indigo-700 dark:text-indigo-400 bg-indigo-500/10'
+                    : 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
+                }`}
+              >
+                {role.roleScope === 'SYSTEM' ? 'SOVEREIGN' : 'TENANT'}
+              </Badge>
+              <Badge variant="secondary" className="text-[9px] font-mono px-1 py-0">
+                {role.userCount || 0} users
+              </Badge>
+            </div>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const atom = row.original;
+          const currentPerms = activeRoleChanges[role.roleId] ?? role.permissions;
+          const isChecked = currentPerms.includes(atom.code);
+          const isInherited =
+            role.inheritedRoles?.some((inherited) =>
+              roleMap.get(inherited)?.permissions.includes(atom.code)
+            ) ?? false;
+
+          return (
+            <div className="flex justify-center items-center py-1">
+              <Checkbox
+                checked={isChecked || isInherited}
+                disabled={isInherited}
+                onCheckedChange={() => handleToggle(role.roleId, atom.code)}
+                className={isInherited ? 'opacity-50 cursor-not-allowed' : ''}
+                aria-label={`Toggle ${atom.code} for ${role.roleId}`}
+              />
+            </div>
+          );
+        },
+      });
+    });
+
+    return cols;
+  }, [visibleRoles, activeRoleChanges, roleMap]);
+
+  const table = useReactTable({
+    data: filteredPerms,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
     <div className="space-y-4">
@@ -229,132 +326,21 @@ export function RbacMatrixGrid() {
         </div>
       </div>
 
-      {/* Main Sticky Glass Matrix Grid */}
-      <div className="rounded-xl border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-xl overflow-x-auto max-h-[650px] relative">
-        <Table className="border-collapse">
-          <TableHeader className="sticky top-0 z-20 bg-background/95 backdrop-blur-md shadow-xs">
-            <TableRow>
-              <TableHead className="sticky left-0 z-30 bg-background/95 backdrop-blur-md w-[320px] min-w-[280px] font-semibold text-xs border-r">
-                Permission Atom & Security Plane
-              </TableHead>
-              {visibleRoles.map((role) => (
-                <TableHead key={role.roleId} className="text-center min-w-[150px] px-3 py-2 border-r last:border-r-0">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="flex items-center gap-1 font-semibold text-xs font-mono">
-                      <span>{role.roleId}</span>
-                      {role.systemRole && <Lock className="h-3 w-3 text-muted-foreground" />}
-                    </div>
-                    <span className="font-sans text-[11px] text-muted-foreground line-clamp-1">
-                      {role.roleName}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant="outline"
-                        className={`text-[9px] font-mono px-1 py-0 ${
-                          role.roleScope === 'SYSTEM'
-                            ? 'border-indigo-500/40 text-indigo-700 dark:text-indigo-400 bg-indigo-500/10'
-                            : 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
-                        }`}
-                      >
-                        {role.roleScope === 'SYSTEM' ? 'SOVEREIGN' : 'TENANT'}
-                      </Badge>
-                      <Badge variant="secondary" className="text-[9px] font-mono px-1 py-0">
-                        {role.userCount || 0} users
-                      </Badge>
-                    </div>
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={1 + visibleRoles.length}
-                  className="h-40 text-center text-muted-foreground"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Loading canonical RBAC matrix and DAG permissions...</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : filteredPerms.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={1 + visibleRoles.length}
-                  className="h-32 text-center text-muted-foreground text-xs"
-                >
-                  No permission atoms match your search or filter.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredPerms.map((atom) => {
-                const planeInfo = SECURITY_PLANES.find((p) => p.id === atom.plane);
-
-                return (
-                  <TableRow key={atom.code} className="hover:bg-muted/30 transition-colors">
-                    {/* Sticky Left Column: Permission Atom */}
-                    <TableCell className="sticky left-0 z-10 bg-background/95 backdrop-blur-md border-r p-3">
-                      <div className="flex items-start gap-2.5">
-                        <div
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold ${planeInfo?.color}`}
-                        >
-                          <Shield className="h-3.5 w-3.5" />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-semibold text-foreground">
-                              {atom.code}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className={`text-[9px] py-0 px-1 border-opacity-40 ${planeInfo?.color}`}
-                            >
-                              {planeInfo?.label}
-                            </Badge>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground truncate max-w-[260px]">
-                            {atom.label} &mdash; {atom.description}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    {/* Role Checkbox Cells */}
-                    {visibleRoles.map((role) => {
-                      const currentPerms = activeRoleChanges[role.roleId] ?? role.permissions;
-                      const isChecked = currentPerms.includes(atom.code);
-                      const isInherited =
-                        role.inheritedRoles?.some((inherited) =>
-                          roleMap.get(inherited)?.permissions.includes(atom.code)
-                        ) ?? false;
-
-                      return (
-                        <TableCell
-                          key={role.roleId}
-                          className="text-center border-r last:border-r-0 py-2"
-                        >
-                          <div className="flex justify-center items-center">
-                            <Checkbox
-                              checked={isChecked || isInherited}
-                              disabled={isInherited}
-                              onCheckedChange={() => handleToggle(role.roleId, atom.code)}
-                              className={isInherited ? 'opacity-50 cursor-not-allowed' : ''}
-                              aria-label={`Toggle ${atom.code} for ${role.roleId}`}
-                            />
-                          </div>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Main Standardized DataTable for RBAC Matrix */}
+      <DataTable
+        showRowIndex
+        table={table}
+        noResultsMessage={
+          isLoading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading canonical RBAC matrix and DAG permissions...</span>
+            </div>
+          ) : (
+            'No permission atoms match your search or filter.'
+          )
+        }
+      />
 
       {/* Floating Staged Commit Strip */}
       {stagedCount > 0 && (
