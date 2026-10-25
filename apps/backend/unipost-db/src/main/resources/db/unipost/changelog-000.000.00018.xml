@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!-- Evolve UNIPOST_RECORD_AUDIT_LOG with Cryptographic Forward-Hash Ledger Columns -->
+    <changeSet id="add-merkle-forward-hash-to-audit-log-18" author="antigravity">
+        <comment>Add prev_hash, current_hash, and signature to UNIPOST_RECORD_AUDIT_LOG for SHA-256 forward-hash chaining</comment>
+        
+        <addColumn tableName="UNIPOST_RECORD_AUDIT_LOG">
+            <column name="prev_hash" type="VARCHAR(64)"/>
+            <column name="current_hash" type="VARCHAR(64)"/>
+            <column name="signature" type="VARCHAR(512)"/>
+        </addColumn>
+
+        <sql dbms="postgresql">
+            CREATE INDEX IF NOT EXISTS idx_record_audit_chain 
+                ON UNIPOST_RECORD_AUDIT_LOG (tenant_id, id ASC);
+        </sql>
+
+        <rollback>
+            <dropColumn tableName="UNIPOST_RECORD_AUDIT_LOG" columnName="prev_hash"/>
+            <dropColumn tableName="UNIPOST_RECORD_AUDIT_LOG" columnName="current_hash"/>
+            <dropColumn tableName="UNIPOST_RECORD_AUDIT_LOG" columnName="signature"/>
+            <sql dbms="postgresql">
+                DROP INDEX IF EXISTS idx_record_audit_chain;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

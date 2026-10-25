@@ -32,5 +32,6 @@
   <include file="db/unipost/changelog-000.000.00015.xml"/>
   <include file="db/unipost/changelog-000.000.00016.xml"/>
   <include file="db/unipost/changelog-000.000.00017.xml"/>
+  <include file="db/unipost/changelog-000.000.00018.xml"/>
 
 </databaseChangeLog>

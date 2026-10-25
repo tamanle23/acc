@@ -39,6 +39,7 @@ import { Route as AuthenticatedSystemWorkersRouteImport } from './routes/_authen
 import { Route as AuthenticatedSystemTenantsRouteImport } from './routes/_authenticated/system.tenants'
 import { Route as AuthenticatedSystemRolesRouteImport } from './routes/_authenticated/system.roles'
 import { Route as AuthenticatedSystemDlqRouteImport } from './routes/_authenticated/system.dlq'
+import { Route as AuthenticatedSystemAuditRouteImport } from './routes/_authenticated/system.audit'
 import { Route as AuthenticatedSettingsWorkspacesRouteImport } from './routes/_authenticated/settings/workspaces'
 import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
 import { Route as AuthenticatedSettingsDataPrivacyRouteImport } from './routes/_authenticated/settings/data-privacy'
@@ -208,6 +209,12 @@ const AuthenticatedSystemDlqRoute = AuthenticatedSystemDlqRouteImport.update({
   path: '/system/dlq',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSystemAuditRoute =
+  AuthenticatedSystemAuditRouteImport.update({
+    id: '/system/audit',
+    path: '/system/audit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsWorkspacesRoute =
   AuthenticatedSettingsWorkspacesRouteImport.update({
     id: '/workspaces',
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/system/audit': typeof AuthenticatedSystemAuditRoute
   '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
@@ -301,6 +309,7 @@ export interface FileRoutesByTo {
   '/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/system/audit': typeof AuthenticatedSystemAuditRoute
   '/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/system/roles': typeof AuthenticatedSystemRolesRoute
   '/system/tenants': typeof AuthenticatedSystemTenantsRoute
@@ -340,6 +349,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/data-privacy': typeof AuthenticatedSettingsDataPrivacyRoute
   '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
   '/_authenticated/settings/workspaces': typeof AuthenticatedSettingsWorkspacesRoute
+  '/_authenticated/system/audit': typeof AuthenticatedSystemAuditRoute
   '/_authenticated/system/dlq': typeof AuthenticatedSystemDlqRoute
   '/_authenticated/system/roles': typeof AuthenticatedSystemRolesRoute
   '/_authenticated/system/tenants': typeof AuthenticatedSystemTenantsRoute
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/settings/data-privacy'
     | '/settings/notifications'
     | '/settings/workspaces'
+    | '/system/audit'
     | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/settings/data-privacy'
     | '/settings/notifications'
     | '/settings/workspaces'
+    | '/system/audit'
     | '/system/dlq'
     | '/system/roles'
     | '/system/tenants'
@@ -453,6 +465,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/data-privacy'
     | '/_authenticated/settings/notifications'
     | '/_authenticated/settings/workspaces'
+    | '/_authenticated/system/audit'
     | '/_authenticated/system/dlq'
     | '/_authenticated/system/roles'
     | '/_authenticated/system/tenants'
@@ -699,6 +712,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSystemDlqRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/system/audit': {
+      id: '/_authenticated/system/audit'
+      path: '/system/audit'
+      fullPath: '/system/audit'
+      preLoaderRoute: typeof AuthenticatedSystemAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings/workspaces': {
       id: '/_authenticated/settings/workspaces'
       path: '/workspaces'
@@ -773,6 +793,7 @@ const AuthenticatedSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
+  AuthenticatedSystemAuditRoute: typeof AuthenticatedSystemAuditRoute
   AuthenticatedSystemDlqRoute: typeof AuthenticatedSystemDlqRoute
   AuthenticatedSystemRolesRoute: typeof AuthenticatedSystemRolesRoute
   AuthenticatedSystemTenantsRoute: typeof AuthenticatedSystemTenantsRoute
@@ -793,6 +814,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
+  AuthenticatedSystemAuditRoute: AuthenticatedSystemAuditRoute,
   AuthenticatedSystemDlqRoute: AuthenticatedSystemDlqRoute,
   AuthenticatedSystemRolesRoute: AuthenticatedSystemRolesRoute,
   AuthenticatedSystemTenantsRoute: AuthenticatedSystemTenantsRoute,

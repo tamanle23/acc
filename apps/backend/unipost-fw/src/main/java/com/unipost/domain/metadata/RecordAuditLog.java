@@ -62,6 +62,15 @@ public class RecordAuditLog implements Serializable {
     @Column(name = "delta", columnDefinition = "jsonb")
     private Map<String, Object> delta;
 
+    @Column(name = "prev_hash", length = 64)
+    private String prevHash;
+
+    @Column(name = "current_hash", length = 64)
+    private String currentHash;
+
+    @Column(name = "signature", length = 512)
+    private String signature;
+
     @PrePersist
     public void prePersist() {
         if (this.createdAt == null) {

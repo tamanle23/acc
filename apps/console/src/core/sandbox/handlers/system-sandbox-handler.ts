@@ -944,6 +944,137 @@ export const systemSandboxHandler: SandboxRouteHandler = {
       };
     }
 
+    // 12. GET /api/v1/system/audit/records
+    if (method === 'GET' && path === '/api/v1/system/audit/records') {
+      const tenantId = url.searchParams.get('tenantId') || 'SYSTEM';
+      const operation = url.searchParams.get('operation') || undefined;
+      const actor = url.searchParams.get('actor') || undefined;
+
+      const mockAuditRecords = [
+        {
+          id: 101,
+          tenantId: 'SYSTEM',
+          recordId: 1,
+          entityTypeId: 10,
+          operation: 'CREATE',
+          actor: 'custodian_root',
+          version: 1,
+          oldAttributes: null,
+          newAttributes: { name: 'Customer Acme', code: 'CUST-001' },
+          delta: { name: { old: null, new: 'Customer Acme' } },
+          prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
+          currentHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          signature: 'sig_ed25519_mock_001',
+          createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+        },
+        {
+          id: 102,
+          tenantId: 'tenant-us-east-1',
+          recordId: 1,
+          entityTypeId: 10,
+          operation: 'UPDATE',
+          actor: 'alice_admin',
+          version: 2,
+          oldAttributes: { name: 'Customer Acme', status: 'DRAFT' },
+          newAttributes: { name: 'Customer Acme Inc', status: 'ACTIVE' },
+          delta: { status: { old: 'DRAFT', new: 'ACTIVE' } },
+          prevHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+          currentHash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+          signature: 'sig_ed25519_mock_002',
+          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+        },
+        {
+          id: 103,
+          tenantId: 'tenant-us-east-1',
+          recordId: 2,
+          entityTypeId: 12,
+          operation: 'CREATE',
+          actor: 'bob_operator',
+          version: 1,
+          oldAttributes: null,
+          newAttributes: { amount: 1500, currency: 'USD' },
+          delta: { amount: { old: null, new: 1500 } },
+          prevHash: '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4',
+          currentHash: 'b5a2c96250612366ea8e479d617f3595ff4c94415b4c418b276f4581b453dd52',
+          signature: 'sig_ed25519_mock_003',
+          createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ];
+
+      const filtered = mockAuditRecords.filter((r) => {
+        if (tenantId !== 'SYSTEM' && r.tenantId !== tenantId) return false;
+        if (operation && r.operation.toUpperCase() !== operation.toUpperCase()) return false;
+        if (actor && !r.actor.toLowerCase().includes(actor.toLowerCase())) return false;
+        return true;
+      });
+
+      return {
+        status: 200,
+        data: {
+          header: { success: true },
+          body: {
+            content: filtered,
+            totalElements: filtered.length,
+            totalPages: 1,
+            page: 0,
+            size: 25,
+          },
+        },
+      };
+    }
+
+    // 13. POST /api/v1/system/audit/verify
+    if (method === 'POST' && path === '/api/v1/system/audit/verify') {
+      const { tenantId = 'SYSTEM' } = req.data || {};
+      return {
+        status: 200,
+        data: {
+          header: { success: true },
+          body: {
+            tenantId,
+            verifiedCount: 3,
+            intact: true,
+            tamperedId: null,
+            latestHash: 'b5a2c96250612366ea8e479d617f3595ff4c94415b4c418b276f4581b453dd52',
+            message: 'Cryptographic forward-hash chain 100% intact across 3 verified blocks in sandbox',
+          },
+        },
+      };
+    }
+
+    // 14. GET /api/v1/system/audit/export
+    if (method === 'GET' && path === '/api/v1/system/audit/export') {
+      const tenantId = url.searchParams.get('tenantId') || 'SYSTEM';
+      return {
+        status: 200,
+        data: {
+          header: { success: true },
+          body: {
+            tenantId,
+            exportedAt: new Date().toISOString(),
+            recordCount: 3,
+            chainIntact: true,
+            rootHash: 'b5a2c96250612366ea8e479d617f3595ff4c94415b4c418b276f4581b453dd52',
+            records: [
+              {
+                id: 101,
+                tenantId: 'SYSTEM',
+                recordId: 1,
+                entityTypeId: 10,
+                operation: 'CREATE',
+                actor: 'custodian_root',
+                version: 1,
+                delta: { name: { old: null, new: 'Customer Acme' } },
+                prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
+                currentHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+                createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+              },
+            ],
+          },
+        },
+      };
+    }
+
     return {
       status: 404,
       data: { header: { success: false, message: `System endpoint not found: ${method} ${path}` } },

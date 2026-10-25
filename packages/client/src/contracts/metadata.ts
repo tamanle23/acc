@@ -364,7 +364,19 @@ export interface RecordAuditLog {
   newAttributes?: Record<string, unknown> | null;
   delta?: Record<string, { old: unknown; new: unknown }> | null;
   changedBy?: string | null;
+  prevHash?: string | null;
+  currentHash?: string | null;
+  signature?: string | null;
   createdAt: string;
+}
+
+export interface AuditVerificationResult {
+  tenantId: string;
+  verifiedCount: number;
+  intact: boolean;
+  tamperedId?: number | null;
+  latestHash: string;
+  message: string;
 }
 
 export interface RestorePreviewResponse {

@@ -21,6 +21,7 @@
     "items": {
       "fleetTenants": "Sổ cái Tổ chức Khách thuê",
       "rbacMatrix": "Ma trận Quyền & Người dùng Toàn cục",
+      "auditStudio": "Kiểm toán & Tuân thủ",
       "canonicalSchemas": "Lược đồ Chuẩn mực (Gốc)",
       "dashboard": "Bảng điều khiển",
       "tasks": "Thực thi Quy trình",

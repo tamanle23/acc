@@ -182,6 +182,12 @@ export const useSidebarData = (): SidebarData => {
                 icon: KeyRound,
               },
               {
+                title: t('sidebar.items.auditStudio', 'Audit & Compliance'),
+                url: '/system/audit',
+                icon: ShieldCheck,
+                badge: 'ROOT',
+              },
+              {
                 title: t('sidebar.items.dlq', 'Dead-Letter Queue'),
                 url: '/system/dlq',
                 icon: AlertOctagon,
