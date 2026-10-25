@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary & Problem Analysis
 
-Following our comprehensive architectural review across the persistence and database layers of the Unipost monorepo and our `/grill-me` alignment, we identified critical synchronization gaps between the active database implementation and [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md):
+Following our comprehensive architectural review across the persistence and database layers of the Acc monorepo and our `/grill-me` alignment, we identified critical synchronization gaps between the active database implementation and [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md):
 
 ```
 +---------------------------------------------------------------------------------------------------+

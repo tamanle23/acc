@@ -7,7 +7,7 @@ A dedicated, enterprise-grade **Billing & Subscriptions** management screen (`/s
 ## 1. Domain Context & Subscription Tier Hierarchy
 
 ### 1.1 Tenant vs. Workspace FinOps Boundary
-In Unipost's architecture:
+In Acc's architecture:
 - **Tenant (Organization or Individual)**: The root billing entity, PostgreSQL RLS domain owner, and subscription holder. All feature entitlements (`FEATURE_*`) and quotas belong to the Tenant.
 - **Workspaces (Environments / Branches)**: Child sub-partitions within a Tenant (e.g. Production, Staging, Kho Bắc). Workspaces inherit the parent Tenant's plan and feature tokens.
 

@@ -1,7 +1,7 @@
 # Implementation Plan 45: Master Database Schema Architecture Refinement & Synchronization
 
 ## Executive Summary
-This plan details the comprehensive synchronization and refinement of [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/master_database_schema_architecture.md) to serve as the single source of truth across the Unipost monorepo. It aligns the architectural specification with the recent `UNIPOST_TENANTS` master entity implementation, Liquibase migration unification (`db/changelog-master.xml`), clean elimination of legacy identity tables (`ADDRESS`, `USERPROFILE`, `USERACTIVITY`), and incorporates missing billing control plane tables (`UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`) alongside UI/UX design tokens and WCAG 2.2 AA accessibility invariants. **File Storage (`UNIPOST_FS_*`) is strictly out of scope and maintained separately.**
+This plan details the comprehensive synchronization and refinement of [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/master_database_schema_architecture.md) to serve as the single source of truth across the Acc monorepo. It aligns the architectural specification with the recent `UNIPOST_TENANTS` master entity implementation, Liquibase migration unification (`db/changelog-master.xml`), clean elimination of legacy identity tables (`ADDRESS`, `USERPROFILE`, `USERACTIVITY`), and incorporates missing billing control plane tables (`UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`) alongside UI/UX design tokens and WCAG 2.2 AA accessibility invariants. **File Storage (`UNIPOST_FS_*`) is strictly out of scope and maintained separately.**
 
 ---
 

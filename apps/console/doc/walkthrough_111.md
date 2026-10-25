@@ -1,7 +1,7 @@
 # Walkthrough 111: Phase 42 - Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger
 
 ## Overview
-Phase 42 delivers the **Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger** across the Unipost monorepo. It establishes a resilient 6-stage lifecycle engine (`RecordMutationPipeline`) for entity record mutations within `@Transactional` boundaries, dual-mode OCC & ETag validation with 3-way auto-merging, declarative delete cascades, strict tenant blindness, rolling monthly range-partitioned audit tables (`UNIPOST_RECORD_AUDIT_LOG`), Sovereign-only version restoration with dry-run diff preview, and an interactive Liquid Glass `RecordAuditHistoryDrawer` on the Console UI.
+Phase 42 delivers the **Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger** across the Acc monorepo. It establishes a resilient 6-stage lifecycle engine (`RecordMutationPipeline`) for entity record mutations within `@Transactional` boundaries, dual-mode OCC & ETag validation with 3-way auto-merging, declarative delete cascades, strict tenant blindness, rolling monthly range-partitioned audit tables (`UNIPOST_RECORD_AUDIT_LOG`), Sovereign-only version restoration with dry-run diff preview, and an interactive Liquid Glass `RecordAuditHistoryDrawer` on the Console UI.
 
 ---
 

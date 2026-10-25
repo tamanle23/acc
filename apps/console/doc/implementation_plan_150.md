@@ -1,6 +1,6 @@
 # Implementation Plan: Workflow Orchestration Engine Architecture (Single Source of Truth)
 
-**Goal Description**: Brainstorm and author a comprehensive, authoritative **Workflow Orchestration Engine Architecture** document as the permanent Single Source of Truth (SSOT) across the Unipost monorepo. This aligns backend (`apps/backend/workflow-engine`, `acc-ms-aio`), frontend (`apps/console`), worker fleets, real-time SSE streaming, and the Unified Sandbox platform.
+**Goal Description**: Brainstorm and author a comprehensive, authoritative **Workflow Orchestration Engine Architecture** document as the permanent Single Source of Truth (SSOT) across the Acc monorepo. This aligns backend (`apps/backend/workflow-engine`, `acc-ms-aio`), frontend (`apps/console`), worker fleets, real-time SSE streaming, and the Unified Sandbox platform.
 
 ---
 

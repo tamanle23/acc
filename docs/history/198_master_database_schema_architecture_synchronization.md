@@ -35,4 +35,4 @@ Ratified via `/grill-me` alignment and documented in [`docs/integration_master_p
 - Specification verification: Verified all Mermaid diagrams render cleanly without syntax errors and all referenced tables match physical PostgreSQL DDL.
 
 ## 5. Walkthrough
-Refer to [`docs/master_database_schema_architecture.md`](../master_database_schema_architecture.md) as the living single source of truth for the Unipost persistence layer.
+Refer to [`docs/master_database_schema_architecture.md`](../master_database_schema_architecture.md) as the living single source of truth for the Acc persistence layer.

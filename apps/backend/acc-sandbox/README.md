@@ -1,4 +1,4 @@
-# Unipost Backend Unified Sandbox Platform
+# Acc Backend Unified Sandbox Platform
 
 > **Authoritative Technical Specification & Developer Operations Guide**  
 > *Module: `apps/backend/acc-sandbox` | Target Monolith: `acc-ms-aio`*
@@ -7,7 +7,7 @@
 
 ## 1. Executive Overview & Guiding Philosophy
 
-The **Backend Unified Sandbox Platform** provides a completely offline, zero-dependency, local execution environment for the Unipost backend platform (`acc-ms-aio`). It allows developers, automated integration suites, and end-to-end browser tests to execute authentic multi-tenant business flows with genuine security checks, SQL queries, and JSONB operators—**without requiring external cloud dependencies, live third-party APIs (PayOS, MinIO/S3), or external database servers**.
+The **Backend Unified Sandbox Platform** provides a completely offline, zero-dependency, local execution environment for the Acc backend platform (`acc-ms-aio`). It allows developers, automated integration suites, and end-to-end browser tests to execute authentic multi-tenant business flows with genuine security checks, SQL queries, and JSONB operators—**without requiring external cloud dependencies, live third-party APIs (PayOS, MinIO/S3), or external database servers**.
 
 ### Core Invariants
 

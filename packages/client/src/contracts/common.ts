@@ -38,7 +38,7 @@ export interface PageResponse<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
-  number: number; // 1-indexed in Unipost PageRequest
+  number: number; // 1-indexed in Acc PageRequest
   size: number;
 }
 

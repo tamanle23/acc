@@ -23,7 +23,7 @@ In **Iteration 1**, we successfully established the foundational multi-tier mono
 - Implemented backend 3-way auto-merge (OCC), Liquibase transactional outbox, declarative 5-gate FSM state machines, and end-to-end W3C distributed tracing.
 - Enforced all 9 Section 13 Architectural Invariants and configured Playwright browser automation with `@axe-core/playwright` WCAG 2.2 AA testing.
 
-In **Iteration 2**, the objective is to elevate Unipost into an **extensible, agent-accessible, regulation-compliant, customizable, and fully automated production ecosystem**:
+In **Iteration 2**, the objective is to elevate Acc into an **extensible, agent-accessible, regulation-compliant, customizable, and fully automated production ecosystem**:
 
 ```mermaid
 flowchart TD
@@ -177,7 +177,7 @@ Iteration 2 Master Execution Map
   - **Stage 5: Cryptographic Certificate of Erasure**: Generate an RFC 3161 compliant cryptographic receipt containing:
     - Purged Tenant ID & Execution Timestamp.
     - SHA-256 digest of deleted record IDs.
-    - Digital signature signed by Unipost Sovereign Authority Private Key.
+    - Digital signature signed by Acc Sovereign Authority Private Key.
   - Expose self-service erasure status verification in `tekgo-ui` and `@acc/console` (`data-privacy-panel.tsx`).
 
 ---

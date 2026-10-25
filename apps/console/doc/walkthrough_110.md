@@ -1,7 +1,7 @@
 # Walkthrough 110: Phase 41 - Composite Entity Type Registry & Specification DSL
 
 ## Overview
-Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** across the full-stack architecture of Unipost. It empowers architects and operators to declare single-table composite views aggregating base entity records across foreign keys (Pattern B) and association matrices (Pattern C) up to depth 4, compile draft-07 JSON schemas, generate lateral SQL projections, enforce strict dependency and read-only invariants, provision partial functional B-tree indexes, and visualize everything in a Liquid Glass Bento Studio.
+Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** across the full-stack architecture of Acc. It empowers architects and operators to declare single-table composite views aggregating base entity records across foreign keys (Pattern B) and association matrices (Pattern C) up to depth 4, compile draft-07 JSON schemas, generate lateral SQL projections, enforce strict dependency and read-only invariants, provision partial functional B-tree indexes, and visualize everything in a Liquid Glass Bento Studio.
 
 ---
 

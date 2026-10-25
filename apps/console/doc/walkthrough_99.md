@@ -16,7 +16,7 @@ We successfully unified all client-backend contract models and DTOs into `@acc/c
   - `workflow-executions.ts`: Execution units, task lifecycle statuses (`WorkflowExecution`, `WorkflowExecutionStatus`, `TaskSnapshot`, `WorkflowSnapshot`).
   - `users.ts`: Tenant users, memberships, invitations, and RBAC matrix.
   - `billing.ts`: Subscription tiers, quotas, checkout, payOS VietQR requests/responses.
-- **Enriched Client**: `UnipostClient` provides domain namespaces (`client.auth`, `client.metadata`, `client.workflows`, `client.workflowExecutions`, `client.users`, `client.billing`) with transparent response unwrapping, `rawResponse: true` bypass option, and SSE execution stream reader (`client.workflowExecutions.streamExecution()`).
+- **Enriched Client**: `AccClient` provides domain namespaces (`client.auth`, `client.metadata`, `client.workflows`, `client.workflowExecutions`, `client.users`, `client.billing`) with transparent response unwrapping, `rawResponse: true` bypass option, and SSE execution stream reader (`client.workflowExecutions.streamExecution()`).
 - **Zero Third-Party Runtime Dependencies**: Pure TypeScript native `fetch` client and DTO definitions.
 
 ### B. `@acc/sandbox` Engine & Platform Centralization

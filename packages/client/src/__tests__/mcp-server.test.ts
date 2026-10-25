@@ -5,12 +5,12 @@ import {
   compileDraft07Schema,
   type McpJsonRpcRequest,
 } from '../mcp';
-import { UnipostClient } from '../client';
+import { AccClient } from '../client';
 import type { EntityType, AttributeDefinition } from '../types';
 
 describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
   let mockFetch: any;
-  let client: UnipostClient;
+  let client: AccClient;
   let mcpServer: McpServer;
 
   const sampleEntityTypes: EntityType[] = [
@@ -75,7 +75,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
 
   beforeEach(() => {
     mockFetch = vi.fn();
-    client = new UnipostClient({
+    client = new AccClient({
       baseURL: 'https://api.acc.io/api',
       tenantId: 'tenant-enterprise',
       fetch: mockFetch,

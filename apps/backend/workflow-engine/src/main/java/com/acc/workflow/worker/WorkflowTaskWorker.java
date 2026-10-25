@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * Declarative annotation for registering a SIMPLE task worker handler method or bean
- * with the Unipost Workflow Engine and WorkerRegistry.
+ * with the Acc Workflow Engine and WorkerRegistry.
  */
 @Documented
 @Target({ElementType.METHOD, ElementType.TYPE})

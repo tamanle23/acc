@@ -24,7 +24,7 @@ In a pure multi-tenant metadata system, the **Security Context** is the primary 
 
 ## 2. JWT Claim Schema Specification
 
-Every access token issued by Unipost's Identity service (`acc-ms-identity`) contains structured standard and custom claims:
+Every access token issued by Acc's Identity service (`acc-ms-identity`) contains structured standard and custom claims:
 
 ```json
 {

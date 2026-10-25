@@ -1,6 +1,6 @@
-# Unipost Infrastructure & GitOps Architecture
+# Acc Infrastructure & GitOps Architecture
 
-This directory (`/infra`) contains the Infrastructure-as-Code (IaC) and Kubernetes manifests for the Unipost ecosystem. 
+This directory (`/infra`) contains the Infrastructure-as-Code (IaC) and Kubernetes manifests for the Acc ecosystem. 
 
 The core philosophy of this setup is **GitOps**: Git is the absolute, single source of truth for your entire physical system. You do not deploy to production manually; you simply update Git, and automated systems reconcile the cloud to match your repository.
 

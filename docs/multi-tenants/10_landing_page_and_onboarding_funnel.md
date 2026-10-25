@@ -1,4 +1,4 @@
-# Part 10: Unipost Landing Page, Onboarding Funnel & payOS Checkout Architecture
+# Part 10: Acc Landing Page, Onboarding Funnel & payOS Checkout Architecture
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 10 of N)  
 **Document Level:** Front-End Architecture, Product Design & Onboarding Funnel Specification  
@@ -10,10 +10,10 @@
 
 ## 1. Executive Summary & Design Rationale
 
-To make the Unipost Multi-Tenant Dynamic Metadata Platform commercially accessible, the platform requires an **integrated, high-converting public landing page and onboarding funnel**. 
+To make the Acc Multi-Tenant Dynamic Metadata Platform commercially accessible, the platform requires an **integrated, high-converting public landing page and onboarding funnel**. 
 
 Currently, navigating to the root URL (`/`) immediately assumes an authenticated dashboard context or forces raw sign-in screens. By establishing a dedicated **Landing Page (`/`)**, unauthenticated visitors can:
-1. **Understand Unipost's Value Proposition**: Visualizing the runtime-extensible dynamic metadata engine, zero-downtime schema evolution, Pattern C graph edges, and AI agent integration.
+1. **Understand Acc's Value Proposition**: Visualizing the runtime-extensible dynamic metadata engine, zero-downtime schema evolution, Pattern C graph edges, and AI agent integration.
 2. **Review Subscription Plans**: Transparently comparing **Basic (Miễn phí)**, **Pro (199,000 VND/tháng)**, and **Pro Max (499,000 VND/tháng)** with monthly/yearly cadence toggles.
 3. **Seamlessly Register & Onboard**: Direct signup with instant workspace provisioning.
 4. **Trigger Instant payOS VietQR Checkout**: When selecting Pro or Pro Max, generating a dynamic VietQR code for 1-click banking transfer and instant entitlement unlock.
@@ -26,7 +26,7 @@ Styled strictly adhering to the **Liquid Glass UI standard** (`backdrop-blur-xl 
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Logo] Unipost        Tính năng    Giải pháp    Bảng giá    Tài liệu    [ Đăng nhập ] │
+│ [Logo] Acc        Tính năng    Giải pháp    Bảng giá    Tài liệu    [ Đăng nhập ] │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                        │
 │                                    HERO SECTION                                        │
@@ -60,7 +60,7 @@ Styled strictly adhering to the **Liquid Glass UI standard** (`backdrop-blur-xl 
 │  └───────────────────────┘  └───────────────────────┘  └────────────────────────────┘  │
 │                                                                                        │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ FOOTER: Bản quyền © 2026 Unipost. Tích hợp thanh toán an toàn qua cổng payOS VietQR.  │
+│ FOOTER: Bản quyền © 2026 Acc. Tích hợp thanh toán an toàn qua cổng payOS VietQR.  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,7 +75,7 @@ User lands on `/` -> Interacts with dynamic preview -> Clicks Plan CTA (e.g. Pro
        ▼
 Step 2: Micro-Registration Modal
 ┌────────────────────────────────────────────────────────┐
-│ Đăng ký tài khoản Unipost                              │
+│ Đăng ký tài khoản Acc                              │
 │ • Họ và tên: [ Alex Nguyen ]                           │
 │ • Email: [ alex@acme.vn ]                              │
 │ • Tên tổ chức / Workspace: [ Acme Global Logistics ]   │

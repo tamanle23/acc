@@ -22,7 +22,7 @@ class InMemoryStorageSimulatorTest {
     @Test
     @DisplayName("Should store, retrieve and delete objects in memory")
     void shouldStoreAndRetrieveObjects() throws Exception {
-        byte[] data = "Hello Unipost Sandbox".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "Hello Acc Sandbox".getBytes(StandardCharsets.UTF_8);
         InMemoryStorageSimulator.StoredObject obj = storage.putObject("test-bucket", "docs/test.txt", data, "text/plain");
 
         assertNotNull(obj);

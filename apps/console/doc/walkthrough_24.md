@@ -66,5 +66,5 @@ pnpm --filter @acc/console lint
 4. Explored **Configuration Dropdown** to confirm live client ID entry.
 5. Click **Try Sandbox Demo Flow** $\rightarrow$ Mock auth code successfully returned.
 6. Click **Exchange for Access & Refresh Tokens** $\rightarrow$ Connected successfully.
-7. Verified active state displaying user avatar, name ("Unipost Studio TikTok"), and active Token Vault.
+7. Verified active state displaying user avatar, name ("Acc Studio TikTok"), and active Token Vault.
 8. Closing the modal updates the gallery card status to `[Manage]` and `[✓ Connected]`, showing the connected profile details.

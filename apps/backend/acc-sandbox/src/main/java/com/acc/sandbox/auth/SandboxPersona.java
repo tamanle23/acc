@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Definition of a pre-configured sandbox persona representing typical Unipost roles.
+ * Definition of a pre-configured sandbox persona representing typical Acc roles.
  */
 public record SandboxPersona(
         String id,

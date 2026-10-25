@@ -16,7 +16,7 @@ When assuming a tenant (e.g. `tenant-acme`), the `ProfileSwitcher` dropdown prev
 
 ### 2. Unit Testing ([`apps/console/src/components/layout/__tests__/profile-switcher.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/__tests__/profile-switcher.test.tsx))
 - Added test: `strictly isolates workspace dropdown to assumed tenant workspaces only, excluding Default Organization`.
-- Verifies that `"Default Organization"` and `"Unipost Main"` are absent from the document when `tenant-acme` is assumed.
+- Verifies that `"Default Organization"` and `"Acc Main"` are absent from the document when `tenant-acme` is assumed.
 
 ---
 

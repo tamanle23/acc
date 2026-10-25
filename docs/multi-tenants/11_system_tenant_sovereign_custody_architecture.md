@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary & Foundational Paradigm
 
-In the Unipost SaaS multi-tenant ecosystem, the **`SYSTEM` Tenant** is fundamentally distinct from commercial tenant organizations. `SYSTEM` represents the **Sovereign Root Custodian**—the platform architect, root operator, and ultimate custodial authority of the entire ecosystem.
+In the Acc SaaS multi-tenant ecosystem, the **`SYSTEM` Tenant** is fundamentally distinct from commercial tenant organizations. `SYSTEM` represents the **Sovereign Root Custodian**—the platform architect, root operator, and ultimate custodial authority of the entire ecosystem.
 
 ```mermaid
 flowchart TD
@@ -453,7 +453,7 @@ In multi-tenant SaaS architecture, a **Tenant** represents an independent legal,
 
 ### 6.2 Users Management Plane (Global Identities vs. Scoped Memberships)
 
-A common pitfall in SaaS architectures is tightly coupling a user's physical account to a single tenant. Unipost adopts a **Global Universal Identity + Scoped Tenant Membership** model:
+A common pitfall in SaaS architectures is tightly coupling a user's physical account to a single tenant. Acc adopts a **Global Universal Identity + Scoped Tenant Membership** model:
 
 1. **Universal User Identity (`UNIPOST_USERS`)**:
    - A User exists once in the platform identity registry (`email`, `password_hash`, `mfa_secret`, `status`).
@@ -472,7 +472,7 @@ A common pitfall in SaaS architectures is tightly coupling a user's physical acc
 
 ### 6.3 Hierarchical RBAC: Roles & Granular Permissions Engine
 
-Authorization in Unipost is partitioned into three distinct administrative tiers:
+Authorization in Acc is partitioned into three distinct administrative tiers:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐

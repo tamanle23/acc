@@ -67,7 +67,7 @@ export class BillingSandboxRepository {
         maxRecords: -1,
       },
       vatInvoice: {
-        companyName: 'Unipost Sovereign Platform Core',
+        companyName: 'Acc Sovereign Platform Core',
         taxCode: '0000000000',
         address: 'Global Root Platform',
         email: 'root@acc.vn',
@@ -93,7 +93,7 @@ export class BillingSandboxRepository {
         maxRecords: -1,
       },
       vatInvoice: {
-        companyName: 'Công ty Cổ phần Unipost Logistics',
+        companyName: 'Công ty Cổ phần Acc Logistics',
         taxCode: '0109876543',
         address: 'Tòa nhà Landmark 72, Phạm Hùng, Nam Từ Liêm, Hà Nội',
         email: 'billing@acc.vn',
@@ -210,7 +210,7 @@ export const billingSandboxHandler: SandboxRouteHandler = {
         status: 200,
         data: {
           success: true,
-          message: 'Cảm ơn bạn! Đội ngũ Unipost Enterprise sẽ liên hệ lại trong vòng 2 giờ làm việc.',
+          message: 'Cảm ơn bạn! Đội ngũ Acc Enterprise sẽ liên hệ lại trong vòng 2 giờ làm việc.',
         },
       };
     }

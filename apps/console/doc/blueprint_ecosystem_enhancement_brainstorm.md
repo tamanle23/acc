@@ -21,7 +21,7 @@ After conducting an exhaustive line-by-line audit across all specifications and 
 
 ### Gap 2: SVG/Canvas Interactive Graph vs. Dependency Footprint
 - **Rule Check**: `apps/console/package.json` does **not** have `@xyflow/react` or `reactflow` installed, and `.agents/rules/00-generic-common.md` strictly enforces **"Zero Unauthorized Installs: DO NOT introduce new external libraries, packages, or frameworks without explicit human authorization."**
-- **Finding**: While the guide conceptually references "React Flow" for graph preview, Unipost's design system already has SVG/Bento graph nodes and Lucide DAG representations in `RelationshipTypesManager`.
+- **Finding**: While the guide conceptually references "React Flow" for graph preview, Acc's design system already has SVG/Bento graph nodes and Lucide DAG representations in `RelationshipTypesManager`.
 - **Enhancement Needed**: Implement a bespoke, zero-dependency **Liquid Glass SVG Graph Canvas** (`blueprint-graph-canvas.tsx`). It visualizes entity nodes, directional spline curves for relationship edges, cardinality tags (`1:N`, `N:N`), and hover tooltips without adding a 200KB bundle dependency!
 
 ### Gap 3: Pre-Login vs. Post-Login Security Permissions for Blueprints
@@ -35,7 +35,7 @@ After conducting an exhaustive line-by-line audit across all specifications and 
 
 ### Gap 4: Seeded Demo Records & Data Explorer Cold Start
 - **Finding**: When a user selects a template (e.g. Headless CMS) and lands in the workspace, having empty tables still feels slightly bare.
-- **Enhancement Needed**: Add an optional `BlueprintManifest.sampleRecords` block to blueprint manifests (e.g., 2 sample articles: *"Welcome to Unipost CMS"*, 2 categories: *"Engineering"*, *"Announcements"*). Provisioning can optionally seed these demo records so the user lands immediately on a fully populated, beautiful Bento Data Grid!
+- **Enhancement Needed**: Add an optional `BlueprintManifest.sampleRecords` block to blueprint manifests (e.g., 2 sample articles: *"Welcome to Acc CMS"*, 2 categories: *"Engineering"*, *"Announcements"*). Provisioning can optionally seed these demo records so the user lands immediately on a fully populated, beautiful Bento Data Grid!
 
 ### Gap 5: Collision Avoidance & Idempotent Multi-Template Importing
 - **Finding**: What if a tenant with existing models imports another blueprint (e.g., already has `Articles` and imports `Fleet Logistics`, or imports a template with a model named `users`)?

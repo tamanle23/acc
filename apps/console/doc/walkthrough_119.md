@@ -1,7 +1,7 @@
 # Walkthrough 119: Universal Monorepo JaCoCo-Style Coverage Generator Script
 
 ## Context & Objectives
-To unify code coverage reporting across the disparate stacks in the Unipost monorepo (Java 21 Spring Modulith JaCoCo reports in `apps/backend` and TypeScript Vitest v8 Istanbul coverage in `apps/console` and `packages/sandbox`), an interactive, JaCoCo-style HTML coverage generator script was implemented.
+To unify code coverage reporting across the disparate stacks in the Acc monorepo (Java 21 Spring Modulith JaCoCo reports in `apps/backend` and TypeScript Vitest v8 Istanbul coverage in `apps/console` and `packages/sandbox`), an interactive, JaCoCo-style HTML coverage generator script was implemented.
 
 ---
 

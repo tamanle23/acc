@@ -1,4 +1,4 @@
-import type { UnipostClient } from '../client';
+import type { AccClient } from '../client';
 import type { EntityType, AttributeDefinition, PageResponse, EntityRecord } from '../types';
 import type {
   McpJsonRpcRequest,
@@ -10,7 +10,7 @@ import type {
 import { synthesizeMcpManifest, compileDraft07Schema } from './synthesizer';
 
 export interface McpServerConfig {
-  client: UnipostClient;
+  client: AccClient;
   tenantId?: string;
 }
 
@@ -26,7 +26,7 @@ export interface McpServerConfig {
  *     - acc_execute_transition
  */
 export class McpServer {
-  private client: UnipostClient;
+  private client: AccClient;
   private tenantId?: string;
 
   // Cached metadata for fast tool manifest synthesis

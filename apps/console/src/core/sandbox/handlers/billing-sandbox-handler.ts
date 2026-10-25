@@ -90,7 +90,7 @@ mockBillingStore.set('SYSTEM', {
     maxRecords: -1,
   },
   vatInvoice: {
-    companyName: 'Unipost Sovereign Platform Core',
+    companyName: 'Acc Sovereign Platform Core',
     taxCode: '0000000000',
     address: 'Global Root Platform',
     email: 'root@acc.vn',
@@ -117,7 +117,7 @@ mockBillingStore.set('tenant-acme', {
     maxRecords: -1,
   },
   vatInvoice: {
-    companyName: 'Công ty Cổ phần Unipost Logistics',
+    companyName: 'Công ty Cổ phần Acc Logistics',
     taxCode: '0109876543',
     address: 'Tòa nhà Landmark 72, Phạm Hùng, Nam Từ Liêm, Hà Nội',
     email: 'billing@acc.vn',
@@ -197,8 +197,8 @@ export const billingSandboxHandler: SandboxRouteHandler = {
               ? 4990000
               : 499000
             : cadence === 'YEARLY'
-            ? 1990000
-            : 199000;
+              ? 1990000
+              : 199000;
 
         const description = `UNIPOST ${planTier} ${cadence}`;
 

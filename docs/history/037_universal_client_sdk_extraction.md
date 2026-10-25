@@ -4,9 +4,9 @@
 In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (Phase 2), domain DTOs, query contracts, and HTTP interaction patterns were trapped inside `@acc/console`, preventing code reuse by upcoming mobile (`mobile-ui`) and headless CMS (`tekgo-ui`) clients.
 
 ## Plan
-1. Create `packages/client` workspace package with standard `fetch` implementation (`UnipostClient`).
+1. Create `packages/client` workspace package with standard `fetch` implementation (`AccClient`).
 2. Migrate all core domain interfaces, blueprint DTOs, billing structures, and RFC 7807 problem details to `packages/client/src/types.ts`.
-3. Equip `UnipostClient` with automated W3C `traceparent` generation, context header resolution (`X-Tenant-Id`, `X-Workspace-Id`), and response unwrapping.
+3. Equip `AccClient` with automated W3C `traceparent` generation, context header resolution (`X-Tenant-Id`, `X-Workspace-Id`), and response unwrapping.
 4. Re-export from `apps/console/src/features/metadata/api/types.ts` for zero regressions.
 5. Run full test suite, type checking, and production web build.
 
@@ -34,7 +34,7 @@ Refer to `apps/console/doc/walkthrough_76.md`.
 
 ## Tasks
 - [x] Create packages/client
-- [x] Migrate types & implement UnipostClient with W3C traceparent
+- [x] Migrate types & implement AccClient with W3C traceparent
 - [x] Re-export in console types.ts
 - [x] 100% test passing and clean production vite build
 

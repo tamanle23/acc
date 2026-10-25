@@ -87,7 +87,7 @@ export const ContactEnterpriseModal: React.FC<Props> = ({
                 Gửi yêu cầu thành công!
               </h4>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Chuyên viên giải pháp Unipost Enterprise sẽ liên hệ lại với bạn qua email <b>{email}</b> trong vòng 2 giờ làm việc.
+                Chuyên viên giải pháp Acc Enterprise sẽ liên hệ lại với bạn qua email <b>{email}</b> trong vòng 2 giờ làm việc.
               </p>
             </div>
             <Button size="sm" onClick={onClose} className="text-xs">

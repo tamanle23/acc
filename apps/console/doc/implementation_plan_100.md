@@ -1,7 +1,7 @@
 # Implementation Plan 100 - Phase 37: Human-in-the-Loop (HITL) Operations: Task Approval Inbox, Decision Modals & SLA Tracking
 
 ## 1. Executive Summary
-Phase 37 establishes first-class Human-in-the-Loop (HITL) governance across the Unipost Workflow Platform.
+Phase 37 establishes first-class Human-in-the-Loop (HITL) governance across the Acc Workflow Platform.
 It equips the platform with:
 1. Dedicated top-level `/approvals` inbox route with real-time SSE & polling updates, SLA urgency countdowns, role/assignee filtering, and quick cross-links.
 2. Interactive Liquid Glass Decision Modal (`human-decision-modal.tsx`) with upstream payload inspection, form data capture, and mandatory rejection rationale comments.

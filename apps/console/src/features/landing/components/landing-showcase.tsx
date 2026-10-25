@@ -21,7 +21,7 @@ export const LandingShowcase: React.FC = () => {
           Trực quan hóa Studio Quản trị Metadata
         </h2>
         <p className="text-xs sm:text-sm text-muted-foreground max-w-xl mx-auto">
-          Khám phá cách Unipost tự động sinh biểu mẫu, kiểm định dữ liệu thời gian thực và kết nối mạng lưới quan hệ đa chiều.
+          Khám phá cách Acc tự động sinh biểu mẫu, kiểm định dữ liệu thời gian thực và kết nối mạng lưới quan hệ đa chiều.
         </p>
 
         {/* Model Switcher Pills */}
@@ -165,7 +165,7 @@ export const LandingShowcase: React.FC = () => {
                       aria-label="Tiêu đề bài viết"
                       type="text"
                       disabled
-                      value="Kiến trúc Multi-Tenant Dynamic Metadata với Unipost"
+                      value="Kiến trúc Multi-Tenant Dynamic Metadata với Acc"
                       className="w-full text-xs p-2 rounded-lg bg-white/60 dark:bg-white/5 border border-white/20 text-foreground cursor-default"
                     />
                   </div>
@@ -254,8 +254,8 @@ export const LandingShowcase: React.FC = () => {
                   {activeModel === 'article'
                     ? 'Article ➔ Category'
                     : activeModel === 'vehicle'
-                    ? 'Consignment ➔ Vehicle'
-                    : 'Invoice ➔ Account'}
+                      ? 'Consignment ➔ Vehicle'
+                      : 'Invoice ➔ Account'}
                 </div>
                 <div className="text-[10px] text-muted-foreground font-mono">
                   Cardinality: MANY_TO_ONE (N:1)

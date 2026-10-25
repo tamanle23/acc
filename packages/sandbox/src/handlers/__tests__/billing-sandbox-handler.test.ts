@@ -106,7 +106,7 @@ describe('Billing Sandbox Handler Test Suite', () => {
       const res = await billingSandboxHandler.handler(req, ctx);
       expect(res?.status).toBe(200);
       expect(res?.data?.success).toBe(true);
-      expect(res?.data?.message).toContain('Unipost Enterprise');
+      expect(res?.data?.message).toContain('Acc Enterprise');
     });
   });
 

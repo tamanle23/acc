@@ -1,7 +1,7 @@
 # History Log 016: Refactor Tenant & Workspace Domain Hierarchy
 
 ## 1. Problem
-In the previous implementation of Phase 3, Workspace and Organization were colloquially conflated as interchangeable terms (e.g. `Workspaces & Organizations`, with single-level profile lists). However, the domain architecture of Unipost dictates:
+In the previous implementation of Phase 3, Workspace and Organization were colloquially conflated as interchangeable terms (e.g. `Workspaces & Organizations`, with single-level profile lists). However, the domain architecture of Acc dictates:
 - The system is **Tenant-based**: One Tenant represents an Organization or an Individual representation.
 - One Tenant can have multiple **Users**.
 - One Tenant can have multiple **Workspaces** (1 Workspace $\ne$ 1 Organization; Workspaces are children of a Tenant).

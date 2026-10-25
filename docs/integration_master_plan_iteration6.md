@@ -5,7 +5,7 @@
 
 ## 1. Executive Summary & Vision
 
-**Iteration 6 (Workstream 9: Phases 41–45)** establishes the foundational, autonomous data substrate of the Unipost platform: the **Dynamic Metadata Architecture & Composite Entities Engine**.
+**Iteration 6 (Workstream 9: Phases 41–45)** establishes the foundational, autonomous data substrate of the Acc platform: the **Dynamic Metadata Architecture & Composite Entities Engine**.
 
 In strict adherence to the canonical architecture defined in `docs/hybrid_metadata_architecture_guide.md`, `docs/metadata_management_user_and_technical_guide.md`, and the core system rules:
 - **No Redundant View Tables**: There is **no separate `UNIPOST_COMPOSITE_VIEWS` table**. A Composite Entity **IS** a first-class entity type in `UNIPOST_ENTITY_TYPES` where `is_composite = true`.
@@ -219,7 +219,7 @@ CREATE INDEX idx_mat_doc_dirty
   - **Asynchronous Execution**: Dispatched on a dedicated background thread via a non-transactional connection with name sanitization and graceful fallback if DDL privileges are restricted.
 
 #### 4.2.6 Unified Record Envelope & Strict Read-Only Invariants
-- **Unified Envelope**: Read operations on composite entities return the standard Unipost entity envelope:
+- **Unified Envelope**: Read operations on composite entities return the standard Acc entity envelope:
   ```json
   {
     "id": "root-uuid",

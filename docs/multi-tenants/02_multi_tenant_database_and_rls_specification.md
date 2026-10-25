@@ -10,7 +10,7 @@
 
 ## 1. Context & Motivation
 
-In Unipost's dynamic metadata architecture, both schemas (`UNIPOST_ENTITY_TYPES`, `UNIPOST_ATTRIBUTE_DEFINITIONS`) and records (`UNIPOST_ENTITIES`, `UNIPOST_ENTITY_RELATIONSHIPS`) are tenant-scoped. 
+In Acc's dynamic metadata architecture, both schemas (`UNIPOST_ENTITY_TYPES`, `UNIPOST_ATTRIBUTE_DEFINITIONS`) and records (`UNIPOST_ENTITIES`, `UNIPOST_ENTITY_RELATIONSHIPS`) are tenant-scoped. 
 
 In initial single-tenant iterations:
 1. `UNIPOST_ENTITY_TYPES.system_name` was enforced via a global partial unique index (`uk_entity_type_sysname_active`). This prevented two distinct tenants from having an entity with the same slug (e.g. `ent_customer`).

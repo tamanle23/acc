@@ -11,7 +11,7 @@
 
 In a high-density, multi-tenant dynamic metadata platform, onboarding a new organization onto a blank workspace ("the empty canvas problem") leads to high friction and slow time-to-value. Conversely, baking domain-specific entities (such as fleet vehicles, commercial invoices, or editorial articles) directly into hardcoded database schemas destroys platform modularity and creates cross-tenant upgrade locks.
 
-To solve this, Unipost introduces **Domain Blueprints**:
+To solve this, Acc introduces **Domain Blueprints**:
 * **Declarative JSON Templates:** Versioned, industry-specific schemas declaring entity models, attributes, UI components, validation constraints, and graph relationship edges.
 * **Atomic Provisioning Pipeline:** Onboarding executes an atomic transactional deep-clone that stamps every newly created model, attribute, and relationship edge with the tenant's cryptographic `tenant_id` and baseline `schema_version = 1L`.
 * **Zero Runtime Linkage ("Decoupled Schema Evolution"):** Once cloned into the tenant's workspace, models sever all linkage to the original blueprint JSON. The tenant possesses 100% autonomy to mutate, extend, or delete schemas without affecting the global template catalog or other tenants.
@@ -347,7 +347,7 @@ A critical architectural flaw in generic dynamic metadata platforms is **first-r
 2. It then constructs a JSON Schema string and compiles it into a `com.networknt.schema.JsonSchema` validator object.
 3. This creates a $> 300\text{ ms}$ latency spike on the first API call.
 
-### The Unipost Solution: Pre-Warming Invariant
+### The Acc Solution: Pre-Warming Invariant
 During Step 5 of the provisioning pipeline:
 * `SchemaValidationService.getOrCompileJsonSchema(tenantId, entityTypeId, 1L)` is called synchronously for every provisioned entity.
 * It resolves the effective attributes, builds the Draft-07 schema JSON, and stores it in Hazelcast's `metadata-schemas` distributed map under the composite key:

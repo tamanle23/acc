@@ -16,7 +16,7 @@ class AppsSandboxRepository {
       pages: [
         {
           id: '102938475610293',
-          name: 'Unipost Official Store',
+          name: 'Acc Official Store',
           category: 'E-commerce & Retail',
           accessToken: 'EAAB_MOCK_PAGE_TOKEN_1',
           isLongLived: true,
@@ -24,7 +24,7 @@ class AppsSandboxRepository {
         },
         {
           id: '584736291029384',
-          name: 'Unipost Community Hub',
+          name: 'Acc Community Hub',
           category: 'Community Organization',
           accessToken: 'EAAB_MOCK_PAGE_TOKEN_2',
           isLongLived: true,
@@ -36,7 +36,7 @@ class AppsSandboxRepository {
       connected: false,
       profile: {
         openId: 'tiktok_open_id_demo_888',
-        displayName: 'Unipost Creators Official',
+        displayName: 'Acc Creators Official',
         avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
         followerCount: 24800,
         followingCount: 142,
@@ -47,7 +47,7 @@ class AppsSandboxRepository {
       connected: false,
       channel: {
         id: 'UC_x123456789demoChannel',
-        title: 'Unipost Tech Broadcasts',
+        title: 'Acc Tech Broadcasts',
         description: 'Official developer tutorials, live streams, and product architecture walkthroughs.',
         customUrl: '@acc_official',
         publishedAt: '2023-01-15T08:00:00Z',

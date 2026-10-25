@@ -27,7 +27,7 @@ export const widgetSandboxHandler: SandboxRouteHandler = {
           format: code.startsWith('VN-EAN13') ? 'EAN_13' : 'QR_CODE',
           valid: true,
           product: {
-            title: 'Unipost Verified Enterprise Package',
+            title: 'Acc Verified Enterprise Package',
             sku: 'SKU-' + code.slice(-6),
             category: 'Logistics Documentation',
           },

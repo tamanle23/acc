@@ -1,14 +1,14 @@
 # Architecture Reference: Persistence & Metadata-Driven Database Engine
 **Document Version:** 1.2.0 (Enterprise Hardened & Resilient Specification)  
 **Status:** Living Master Specification (Single Source of Truth)  
-**System Domain:** Unipost Enterprise Monorepo Data Persistence Layer  
+**System Domain:** Acc Enterprise Monorepo Data Persistence Layer  
 **Target Audience:** Staff / Principal Architects, Backend & Frontend Engineers, DevOps/DBAs  
 
 ---
 
 ## 1. Executive Architecture Summary
 
-Unipost utilizes a **Hybrid Polyglot-Relational / Dynamic Metadata Architecture** built on **PostgreSQL 16+**, **Spring Boot 3.x (Spring Modulith)**, and **Liquibase**. 
+Acc utilizes a **Hybrid Polyglot-Relational / Dynamic Metadata Architecture** built on **PostgreSQL 16+**, **Spring Boot 3.x (Spring Modulith)**, and **Liquibase**. 
 
 The system bridges two traditionally divergent database paradigms:
 1. **Fixed Relational Infrastructure (System Core & Control Plane):** Strongly-typed, normalized tables with static referential integrity for Tenants (`UNIPOST_TENANTS`), Identity & RBAC (`UNIPOST_IDENTITY_*`), Workspaces (`UNIPOST_WORKSPACES`), Billing & Entitlements (`UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`), Audit (`UNIPOST_RECORD_AUDIT_LOG`), and Event Outbox (`UNIPOST_EVENT_OUTBOX`).
@@ -284,7 +284,7 @@ Manages commercial tier subscriptions, billing terms, and decoupled payment prov
 *RLS Policy:* `tenant_isolation_billing ON UNIPOST_TENANT_BILLING` enforces `current_setting('app.current_tenant_id', true) = 'SYSTEM' OR tenant_id = current_tenant`.
 
 ##### Generic Multi-Gateway Payment Architecture
-To decouple business logic from third-party vendor lock-in, Unipost employs the **Strategy & Adapter Pattern** in the persistence and service layers:
+To decouple business logic from third-party vendor lock-in, Acc employs the **Strategy & Adapter Pattern** in the persistence and service layers:
 
 ```mermaid
 classDiagram
@@ -486,7 +486,7 @@ SET LOCAL app.current_tenant_id = 'tenant-acme';
 ### 4.1. The Sovereign Custodian RLS Pattern (PostgreSQL RLS Write Paradox Resolution)
 In multi-tenant PostgreSQL systems, naive RLS policies enforce `WITH CHECK (tenant_id = current_setting('app.current_tenant_id'))`. However, this produces the **RLS Write Paradox**: when a platform administrator (`SYSTEM`) attempts to provision blueprints, seed data into another tenant, or repair corrupted records, the check fails because `SYSTEM != tenant-acme`.
 
-Unipost resolves this across all tables via the **Dual-Scope Sovereign Custodian RLS Pattern**:
+Acc resolves this across all tables via the **Dual-Scope Sovereign Custodian RLS Pattern**:
 1. **Commercial Isolation**: Regular tenants can **only read and write rows matching their assigned `tenant_id`**.
 2. **Global Immutability**: Regular tenants can **never alter, overwrite, or delete `SYSTEM` canonical rows**.
 3. **Sovereign Custody**: Sovereign Custodians (`app.current_tenant_id = 'SYSTEM'`) have unconditional bypass to inspect, repair, seed, or audit across all tenant partitions:
@@ -710,7 +710,7 @@ When a record is deleted (`executeDelete`), the pipeline enforces the target mod
 
 ## 6. Enterprise Resilience & Resource Protection (3-Tier Defense-in-Depth)
 
-To safeguard the multi-tenant cluster from rogue queries, DoS attacks, and algorithmic complexity exploits, Unipost enforces a **3-Tier Defense-in-Depth Architecture**:
+To safeguard the multi-tenant cluster from rogue queries, DoS attacks, and algorithmic complexity exploits, Acc enforces a **3-Tier Defense-in-Depth Architecture**:
 
 ```
 +---------------------------------------------------------------------------------------------------+
@@ -861,7 +861,7 @@ All relational persistence definitions, identity/RBAC baselines, PostgreSQL RLS 
 ```mermaid
 graph TD
     Master["db/changelog-master.xml\n(Authoritative Root Migration Master)"]
-    UnipostMaster["db/acc/changelog-master.xml\n(Multi-Tenant Core & Metadata Engine)"]
+    AccMaster["db/acc/changelog-master.xml\n(Multi-Tenant Core & Metadata Engine)"]
 
     subgraph IdentityBaseline ["1. Identity & RBAC Baseline"]
         ID00["changelog-identity-00.xml\n(USER, ROLE, PERMISSION, JOIN TABLES)"]
@@ -880,12 +880,12 @@ graph TD
         C15["changelog-000.000.00015.xml (Multi-Gateway Provider-Agnostic Billing Migration)"]
     end
 
-    Master --> UnipostMaster
-    UnipostMaster --> ID00
-    UnipostMaster --> IDTokens
-    UnipostMaster --> IDMaster
-    UnipostMaster --> IDMock
-    UnipostMaster --> C01
+    Master --> AccMaster
+    AccMaster --> ID00
+    AccMaster --> IDTokens
+    AccMaster --> IDMaster
+    AccMaster --> IDMock
+    AccMaster --> C01
     C01 -.-> C06
     C06 -.-> C07
     C07 -.-> C12

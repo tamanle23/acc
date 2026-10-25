@@ -1,17 +1,17 @@
-import { UnipostClient, EntityRecord } from '@acc/client'
+import { AccClient, EntityRecord } from '@acc/client'
 import { sandboxRegistry, withSimulationDecorator } from '@acc/sandbox'
 
 /**
  * Configuration options for the Headless CMS Client in tekgo-ui.
  */
-export interface UnipostCmsConfig {
+export interface AccCmsConfig {
   baseUrl: string
   publishableKey: string
   tenantId: string
   revalidateSeconds?: number
 }
 
-const DEFAULT_CONFIG: UnipostCmsConfig = {
+const DEFAULT_CONFIG: AccCmsConfig = {
   baseUrl: process.env.NEXT_PUBLIC_UNIPOST_API_URL || 'http://localhost:8000',
   publishableKey:
     process.env.NEXT_PUBLIC_UNIPOST_PUBLISHABLE_KEY || 'pk_live_default-tenant_pub123key',
@@ -23,11 +23,11 @@ const DEFAULT_CONFIG: UnipostCmsConfig = {
  * Headless CMS Client for tekgo-ui.
  * Wraps @acc/client with Next.js 15 cache tags and publishable key authentication.
  */
-export class UnipostCmsClient {
-  private config: UnipostCmsConfig
-  private client: UnipostClient
+export class AccCmsClient {
+  private config: AccCmsConfig
+  private client: AccClient
 
-  constructor(customConfig?: Partial<UnipostCmsConfig>) {
+  constructor(customConfig?: Partial<AccCmsConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...customConfig }
 
     // Intercept fetch with Unified Sandbox if running in dev simulation mode
@@ -74,7 +74,7 @@ export class UnipostCmsClient {
       })
     }
 
-    this.client = new UnipostClient({
+    this.client = new AccClient({
       baseURL: this.config.baseUrl,
       fetch: customFetch,
       tenantId: this.config.tenantId,
@@ -117,7 +117,7 @@ export class UnipostCmsClient {
       return []
     } catch (error) {
       console.warn(
-        `[UnipostCmsClient] Failed to fetch published records for '${entityType}':`,
+        `[AccCmsClient] Failed to fetch published records for '${entityType}':`,
         error
       )
       return []
@@ -136,10 +136,10 @@ export class UnipostCmsClient {
       }
       return response as EntityRecord
     } catch (error) {
-      console.warn(`[UnipostCmsClient] Failed to fetch record ${recordId}:`, error)
+      console.warn(`[AccCmsClient] Failed to fetch record ${recordId}:`, error)
       return null
     }
   }
 }
 
-export const accCmsClient = new UnipostCmsClient()
+export const accCmsClient = new AccCmsClient()

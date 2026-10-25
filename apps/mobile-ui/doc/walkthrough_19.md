@@ -4,7 +4,7 @@
 Completed Phase 6 of `docs/brainstorming/integration_master_plan_iteration_1.md`:
 - Implemented `useOutboxStore` in `apps/mobile-ui/src/store/useOutboxStore.ts`:
   - Enqueues mutations with idempotency UUID (`Idempotency-Key`), transaction tracker (`Client-Transaction-Id`), entity type, operation (`CREATE`, `UPDATE`, `DELETE`), and payload.
-  - Sequentially dispatches pending jobs through `UnipostClient` with header context injection.
+  - Sequentially dispatches pending jobs through `AccClient` with header context injection.
   - Automatically identifies HTTP 409 concurrency conflicts and flags them as `CONFLICT`, capturing the conflicting remote server state.
   - Provides conflict resolution workflows (`KEEP_LOCAL`, `ACCEPT_SERVER`, `CUSTOM_MERGE`).
 - Implemented `ConflictResolutionModal` in `apps/mobile-ui/src/components/conflict/ConflictResolutionModal.tsx`:

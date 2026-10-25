@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  UnipostClient,
-  UnipostClientError,
-  createUnipostClient,
+  AccClient,
+  AccClientError,
+  createAccClient,
   generateTraceparent,
 } from '../client';
 
-describe('UnipostClient Universal HTTP Client', () => {
+describe('AccClient Universal HTTP Client', () => {
   let mockFetch: any;
 
   beforeEach(() => {
@@ -25,7 +25,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       json: async () => ({ data: { id: 'rec-1', name: 'Sample' } }),
     });
 
-    const client = new UnipostClient({
+    const client = new AccClient({
       baseURL: 'https://api.acc.io/api',
       token: 'jwt-token-123',
       tenantId: 'tenant-acme',
@@ -53,7 +53,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       json: async () => ({ body: { status: 'ok' } }),
     });
 
-    const client = createUnipostClient({
+    const client = createAccClient({
       token: async () => 'dynamic-async-token',
       tenantId: () => 'dynamic-tenant',
       workspaceId: () => 'dynamic-workspace',
@@ -78,7 +78,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       json: async () => ({ body: { count: 42 } }),
     });
 
-    const client = new UnipostClient({ fetch: mockFetch });
+    const client = new AccClient({ fetch: mockFetch });
     const res1 = await client.get('/test-body');
     expect(res1).toEqual({ count: 42 });
 
@@ -105,7 +105,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       }),
     });
 
-    const client = new UnipostClient({ fetch: mockFetch });
+    const client = new AccClient({ fetch: mockFetch });
 
     await expect(client.put('/v1/records/1', { version: 2 })).rejects.toThrow(
       'Record was modified concurrently by another transaction'
@@ -123,7 +123,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       });
       await client.put('/v1/records/1', {});
     } catch (err: any) {
-      expect(err).toBeInstanceOf(UnipostClientError);
+      expect(err).toBeInstanceOf(AccClientError);
       expect(err.status).toBe(409);
       expect(err.problemDetail?.title).toBe('Concurrency error');
     }
@@ -136,7 +136,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       json: async () => ({ items: [] }),
     });
 
-    const client = new UnipostClient({ fetch: mockFetch });
+    const client = new AccClient({ fetch: mockFetch });
     await client.get('/v1/search', {
       params: {
         page: 1,
@@ -161,7 +161,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       }),
     });
 
-    const client = new UnipostClient({ fetch: mockFetch });
+    const client = new AccClient({ fetch: mockFetch });
     const res = await client.get('/v1/entities/1', { rawResponse: true });
     expect(res).toEqual({
       header: { tenantId: 'tenant-acme', version: 1 },
@@ -176,7 +176,7 @@ describe('UnipostClient Universal HTTP Client', () => {
       json: async () => ({ accessToken: 'mock-token', refreshToken: 'mock-refresh' }),
     });
 
-    const client = new UnipostClient({ fetch: mockFetch });
+    const client = new AccClient({ fetch: mockFetch });
     const authRes = await client.auth.login({ username: 'admin', password: 'password' });
     expect(authRes.accessToken).toBe('mock-token');
 

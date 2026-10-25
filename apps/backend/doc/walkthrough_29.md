@@ -1,6 +1,6 @@
 # Walkthrough - Phase 15: Full-Spectrum Multi-Tier Testing Matrix & Automation Framework
 
-Exhaustive multi-tier testing framework guaranteeing zero regressions, multi-tenant isolation, contract compatibility, and automated cross-client E2E verification across the Unipost monorepo.
+Exhaustive multi-tier testing framework guaranteeing zero regressions, multi-tenant isolation, contract compatibility, and automated cross-client E2E verification across the Acc monorepo.
 
 ## Changes Overview
 

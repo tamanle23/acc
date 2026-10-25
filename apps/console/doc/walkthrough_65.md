@@ -16,7 +16,7 @@ This document records the architectural refinement and UI refactoring to enforce
 - **`profile-store.ts` & `layout/types.ts`**:
   - Added `tenantId?: string` and `tenantName?: string` to `Profile` / `Team` types.
 - **`sidebar-data.ts`**:
-  - Annotated demo profiles with explicit parent tenant mappings (`Unipost Main` under `Default Organization`, `Acme Prod` & `Acme Staging` under `Acme International Corp`).
+  - Annotated demo profiles with explicit parent tenant mappings (`Acc Main` under `Default Organization`, `Acme Prod` & `Acme Staging` under `Acme International Corp`).
 
 ### B. UI Components
 - **`ProfileSwitcher` (`src/components/layout/profile-switcher.tsx`)**:

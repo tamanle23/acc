@@ -16,7 +16,7 @@
 
 ## 1. Executive Vision: The Converged Enterprise Platform
 
-The Unipost platform unites high-throughput Java 21 / Spring Modulith backend micro-modules with a heterogeneous multi-client presentation tier (React 19 / Vite 8, Electrobun, Expo SDK 57 / React Native, and Next.js 15). 
+The Acc platform unites high-throughput Java 21 / Spring Modulith backend micro-modules with a heterogeneous multi-client presentation tier (React 19 / Vite 8, Electrobun, Expo SDK 57 / React Native, and Next.js 15). 
 
 To achieve **enterprise-grade reliability, multi-tenant fault isolation, and zero data loss**, the platform elevates **Dynamic Metadata** from an administrative tool into a mission-critical **Application Fabric**:
 
@@ -642,7 +642,7 @@ graph TD
   - Create `packages/client/package.json`, `packages/client/src/index.ts`
   - Migrate DTOs from `apps/console/src/features/metadata/api/types.ts`
 - **Technical Design:**
-  - Universal `UnipostClient` relying on standard `fetch` with W3C `traceparent` generator.
+  - Universal `AccClient` relying on standard `fetch` with W3C `traceparent` generator.
   - Export domain interfaces: `EntityType`, `AttributeDefinition`, `EntityRecord`, `BlueprintManifest`, `TenantBillingSummary`, `CheckoutResponse`, `ProblemDetail`.
 - **Verification Gates:** `pnpm --filter @acc/client test` passes with 100% coverage; Console builds cleanly (`tsc -b`).
 

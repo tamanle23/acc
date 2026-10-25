@@ -20,7 +20,7 @@ export const LandingNavbar: React.FC<Props> = ({ onOpenSignUp, onOpenSignIn }) =
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-foreground text-base tracking-tight leading-none">
-              Unipost
+              Acc
             </span>
             <span className="text-[10px] text-muted-foreground font-mono leading-tight mt-0.5">
               Metadata Platform

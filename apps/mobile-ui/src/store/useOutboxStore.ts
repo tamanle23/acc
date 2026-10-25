@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createUnipostClient } from '@acc/client';
+import { createAccClient } from '@acc/client';
 import { useMobileContextStore } from './useMobileContextStore';
 
 export type OutboxJobStatus = 'PENDING' | 'SYNCING' | 'SYNCED' | 'FAILED' | 'CONFLICT';
@@ -45,7 +45,7 @@ interface OutboxState {
   resetQueue: () => void;
 }
 
-const outboxClient = createUnipostClient({
+const outboxClient = createAccClient({
   baseURL: '/api',
   fetch: (url, init) => globalThis.fetch(url, init),
   tenantId: () => useMobileContextStore.getState().activeTenantId,
@@ -148,12 +148,12 @@ export const useOutboxStore = create<OutboxState>()(
                 queue: state.queue.map((j) =>
                   j.id === job.id
                     ? {
-                        ...j,
-                        retries: j.retries + 1,
-                        status: 'FAILED',
-                        nextRetryAt: Date.now() + computeBackoffMs(j.retries + 1),
-                        errorMessage: err.message || 'Network sync failed',
-                      }
+                      ...j,
+                      retries: j.retries + 1,
+                      status: 'FAILED',
+                      nextRetryAt: Date.now() + computeBackoffMs(j.retries + 1),
+                      errorMessage: err.message || 'Network sync failed',
+                    }
                     : j
                 ),
               }));
@@ -189,11 +189,11 @@ export const useOutboxStore = create<OutboxState>()(
           queue: state.queue.map((j) =>
             j.id === jobId
               ? {
-                  ...j,
-                  payload: resolvedPayload,
-                  status: 'PENDING',
-                  conflictReason: undefined,
-                }
+                ...j,
+                payload: resolvedPayload,
+                status: 'PENDING',
+                conflictReason: undefined,
+              }
               : j
           ),
         }));

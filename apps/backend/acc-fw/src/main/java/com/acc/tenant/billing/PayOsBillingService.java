@@ -188,7 +188,7 @@ public class PayOsBillingService {
      */
     public VatInvoiceDto getVatInvoice(String tenantId) {
         return vatInvoices.computeIfAbsent(tenantId, tid -> VatInvoiceDto.builder()
-                .companyName("Công ty Cổ phần Unipost Logistics")
+                .companyName("Công ty Cổ phần Acc Logistics")
                 .taxCode("0109876543")
                 .address("Tòa nhà Landmark 72, Phạm Hùng, Nam Từ Liêm, Hà Nội")
                 .email("billing@" + tid + ".vn")

@@ -6,7 +6,7 @@ Completed Phase 4 of `docs/brainstorming/integration_master_plan_iteration_1.md`
 - Integrated `@acc/client` and `@acc/sandbox` into `apps/mobile-ui`.
 - Created `useMobileContextStore` in `apps/mobile-ui/src/store/useMobileContextStore.ts` tracking active tenant, active workspace, active persona, and auth tokens synchronized with `defaultSandboxStore`.
 - Implemented `apps/mobile-ui/src/sandbox/mobile-sandbox.ts` providing deterministic in-memory posts partitioned by tenant, registering `mobilePostsSandboxHandler` into `sandboxRegistry`, and attaching global fetch interception.
-- Refactored `usePostStore` in `apps/mobile-ui/src/store/usePostStore.ts` to query `/v1/metadata/records?entityType=post` using `UnipostClient` with stateful `resetPosts` pulling from Sandbox.
+- Refactored `usePostStore` in `apps/mobile-ui/src/store/usePostStore.ts` to query `/v1/metadata/records?entityType=post` using `AccClient` with stateful `resetPosts` pulling from Sandbox.
 - Attached sandbox initialization to `App.tsx`.
 
 ## 2. Changes Summary
@@ -15,7 +15,7 @@ Completed Phase 4 of `docs/brainstorming/integration_master_plan_iteration_1.md`
 - `apps/mobile-ui/src/constants/mockData.ts`: Deleted.
 - `apps/mobile-ui/src/store/useMobileContextStore.ts`: Implemented context store.
 - `apps/mobile-ui/src/sandbox/mobile-sandbox.ts`: Implemented sandbox handler and initializer.
-- `apps/mobile-ui/src/store/usePostStore.ts`: Refactored to use `createUnipostClient` and `useMobileContextStore`.
+- `apps/mobile-ui/src/store/usePostStore.ts`: Refactored to use `createAccClient` and `useMobileContextStore`.
 - `apps/mobile-ui/src/screens/DashboardScreen.tsx`: Added `useEffect` fetch trigger on empty state.
 - `apps/mobile-ui/App.tsx`: Initialized `initMobileSandbox()`.
 - `apps/mobile-ui/vitest.config.ts` & `apps/mobile-ui/src/test/setup.ts`: Configured Vitest and AsyncStorage mocks.

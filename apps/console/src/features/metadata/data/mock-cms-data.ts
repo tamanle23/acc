@@ -208,7 +208,7 @@ export const generateCmsRecordsAndRelationships = (
         status,
         featured_flag: featured,
         published_at: status === 'PUBLISHED' ? new Date(2026, 1, (i % 28) + 1).toISOString() : undefined,
-        meta_title: `${title} | Unipost Media`,
+        meta_title: `${title} | Acc Media`,
         meta_description: `Learn how ${title} enables reliable multi-channel digital publishing at scale.`,
       },
       createdDate: new Date(2026, 0, (i % 60) + 1, 9, i % 60).toISOString(),

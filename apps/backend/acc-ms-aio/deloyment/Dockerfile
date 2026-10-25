@@ -13,7 +13,7 @@ RUN mvn clean package -pl acc-ms-aio -am -DskipTests
 FROM eclipse-temurin:17-jre-alpine AS runner
 
 # Add Maintainer Info
-LABEL maintainer="Unipost Team"
+LABEL maintainer="Acc Team"
 
 ENV APPLICATION_NAME=acc-ms-aio
 ENV APPLICATION_PORT=80

@@ -23,7 +23,7 @@ describe('mobile-ui Sandbox & Context Store Integration', () => {
     expect(match?.handler.id).toBe('mobile-posts-handler');
   });
 
-  it('fetches posts through UnipostClient intercepted by Unified Sandbox', async () => {
+  it('fetches posts through AccClient intercepted by Unified Sandbox', async () => {
     await usePostStore.getState().fetchPosts();
     const posts = usePostStore.getState().posts;
 

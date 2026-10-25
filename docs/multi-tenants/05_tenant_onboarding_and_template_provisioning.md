@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Problem Context
 
-When a new organization or solo operator signs up for the Unipost platform, greeting them with an empty database ("the blank canvas problem") leads to high drop-off and slow time-to-value. Conversely, hardcoding industry-specific schemas directly into application code destroys the extensibility of our dynamic metadata engine.
+When a new organization or solo operator signs up for the Acc platform, greeting them with an empty database ("the blank canvas problem") leads to high drop-off and slow time-to-value. Conversely, hardcoding industry-specific schemas directly into application code destroys the extensibility of our dynamic metadata engine.
 
 To solve this, **Part 5** establishes the **Tenant Provisioning Pipeline & Global Blueprint Catalog**:
 1. **Global Blueprint Catalog**: A versioned, system-level repository of pre-modeled domain templates (e.g., *Logistics & Fleet Dispatch*, *Customer CRM & B2B Billing*, *IT Infrastructure & Assets*).
@@ -217,7 +217,7 @@ During first login or signup, the console presents the **Tenant Blueprint Select
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        Welcome to Unipost! Choose your workspace starter               │
+│                        Welcome to Acc! Choose your workspace starter               │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ Select a domain blueprint to immediately initialize your dynamic schemas & forms:     │
 │                                                                                        │

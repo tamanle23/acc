@@ -6,7 +6,7 @@ description: >-
   microservices, web applications, mobile app, desktop client, and shared packages.
 ---
 
-# Unipost Monorepo Guidelines & Development Runbook
+# Acc Monorepo Guidelines & Development Runbook
 
 This guide establishes the workspace standards, path-scoped architectural rules, tech stack guidelines, and standard build/test/lint commands across all projects in the **acc** monorepo.
 

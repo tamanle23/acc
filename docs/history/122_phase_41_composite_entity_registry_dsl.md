@@ -1,7 +1,7 @@
 # [122] Phase 41: Composite Entity Type Registry & Specification DSL
 
 ## Problem
-In multi-tenant domain modeling, querying relational customer/entity hierarchies (e.g. Customer 360, Order with Line Items & Fulfillment) requires ad-hoc backend joins or multiple client network round-trips. There was no declarative way in Unipost's dynamic metadata engine to define single-table composite views aggregating base entity records across foreign keys (Pattern B) and association matrices (Pattern C), compile validation schemas, generate pushdown SQL projections, protect base attributes from breaking deletions, or design these composite models visually in Console.
+In multi-tenant domain modeling, querying relational customer/entity hierarchies (e.g. Customer 360, Order with Line Items & Fulfillment) requires ad-hoc backend joins or multiple client network round-trips. There was no declarative way in Acc's dynamic metadata engine to define single-table composite views aggregating base entity records across foreign keys (Pattern B) and association matrices (Pattern C), compile validation schemas, generate pushdown SQL projections, protect base attributes from breaking deletions, or design these composite models visually in Console.
 
 ## Plan
 1. **Liquibase Migration**: Extend `UNIPOST_ENTITY_TYPES` with `is_composite` flag and `composite_spec` JSONB column.

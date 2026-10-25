@@ -1,7 +1,7 @@
 # Walkthrough 114: Phase 44 - Composite Computed Rollups, Aggregate Projections & Deep Child Filtering
 
 ## 1. Overview of Delivered Architecture
-Phase 44 enhances the Unipost metadata engine's **Adaptive Read-Time Resolution Engine** with **declarative computed aggregate rollups** and **deep child collection filtering and sorting**, executing entirely live in PostgreSQL without physical data duplication, pre-rendered document stores, or eventual consistency lag.
+Phase 44 enhances the Acc metadata engine's **Adaptive Read-Time Resolution Engine** with **declarative computed aggregate rollups** and **deep child collection filtering and sorting**, executing entirely live in PostgreSQL without physical data duplication, pre-rendered document stores, or eventual consistency lag.
 
 ---
 

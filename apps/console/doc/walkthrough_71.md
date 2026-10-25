@@ -1,7 +1,7 @@
 # Walkthrough 71: ProfileSwitcher & Workspace Synchronization with Assumed Tenant Context
 
 ## Overview
-When a Sovereign Custodian assumes a fleet tenant (e.g. `tenant-acme` or dynamic fleet tenant `tenant-us-east-1`), the workspace switcher (`ProfileSwitcher` in the sidebar header) previously remained static on `"Unipost Main"` under `default-tenant`. This fix introduces centralized state synchronization across `useProfileStore`, `useMetadataUiStore`, `useSandboxStore`, and `ProfileSwitcher`, ensuring immediate, persistent, and visually distinct delegated context representation.
+When a Sovereign Custodian assumes a fleet tenant (e.g. `tenant-acme` or dynamic fleet tenant `tenant-us-east-1`), the workspace switcher (`ProfileSwitcher` in the sidebar header) previously remained static on `"Acc Main"` under `default-tenant`. This fix introduces centralized state synchronization across `useProfileStore`, `useMetadataUiStore`, `useSandboxStore`, and `ProfileSwitcher`, ensuring immediate, persistent, and visually distinct delegated context representation.
 
 ---
 

@@ -11,7 +11,7 @@ export const LandingFooter: React.FC = () => {
           </div>
           <div>
             <span className="font-extrabold text-foreground text-sm tracking-tight">
-              Unipost Platform
+              Acc Platform
             </span>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Hệ thống Quản trị Metadata & Dữ liệu Động Đa Khách Hàng.
@@ -20,7 +20,7 @@ export const LandingFooter: React.FC = () => {
         </div>
 
         <div className="text-xs text-muted-foreground text-center sm:text-right space-y-1">
-          <div>Bản quyền © 2026 Unipost Inc. Bảo lưu mọi quyền.</div>
+          <div>Bản quyền © 2026 Acc Inc. Bảo lưu mọi quyền.</div>
           <div className="text-[11px] text-muted-foreground/80">
             Hỗ trợ thanh toán bảo mật đa kênh qua cổng VietQR Napas247.
           </div>

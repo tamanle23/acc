@@ -1,7 +1,7 @@
 # 019 — Billing & Subscription Tiers: Full-Stack Rollout (Phases 1–6)
 
 ## Problem
-Unipost lacked a subscription billing system. There were no defined pricing tiers, no backend entitlement enforcement, no sandbox mocks, no billing UI, and no settings navigation for billing or workspaces.
+Acc lacked a subscription billing system. There were no defined pricing tiers, no backend entitlement enforcement, no sandbox mocks, no billing UI, and no settings navigation for billing or workspaces.
 
 ## Plan
 Six sequential phases covering the full vertical slice from backend to tests:

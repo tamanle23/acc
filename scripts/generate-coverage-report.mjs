@@ -211,8 +211,8 @@ function parseJacocoBackend() {
     const sourceFileName = className.includes('$')
       ? className.substring(0, className.indexOf('$')) + '.java'
       : className.includes('.')
-      ? className.split('.')[0] + '.java'
-      : className + '.java';
+        ? className.split('.')[0] + '.java'
+        : className + '.java';
 
     const javaSourcePath = path.join(
       ROOT_DIR,
@@ -225,7 +225,7 @@ function parseJacocoBackend() {
     if (fs.existsSync(javaSourcePath)) {
       try {
         sourceLines = fs.readFileSync(javaSourcePath, 'utf8').split('\n');
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const lineCoverageKey = `${pkgName}/${sourceFileName}`;
@@ -329,7 +329,7 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
     if (fs.existsSync(resolvedPath)) {
       try {
         sourceLines = fs.readFileSync(resolvedPath, 'utf8').split('\n');
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Statements
@@ -600,7 +600,7 @@ const htmlContent = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unipost · JaCoCo Monorepo Code Coverage</title>
+  <title>Acc · JaCoCo Monorepo Code Coverage</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M12 2L2 7l10 5 10-5-10-5zm0 8.2L4.5 7 12 3.8 19.5 7 12 10.2zm0 2.8l-8-4v6l8 4 8-4v-6l-8 4z'/></svg>">
   <style>
     :root {
@@ -1123,7 +1123,7 @@ const htmlContent = `<!DOCTYPE html>
       <div class="logo-area">
         <span class="logo-badge">JACOCO</span>
         <div class="header-title">
-          <h1>Unipost Monorepo Code Coverage</h1>
+          <h1>Acc Monorepo Code Coverage</h1>
         </div>
       </div>
       <div class="header-controls">
@@ -1203,7 +1203,7 @@ const htmlContent = `<!DOCTYPE html>
   </div>
 
   <footer>
-    <p>Generated with Universal Monorepo JaCoCo Generator · Enterprise Testing & Coverage Platform · Built for Unipost</p>
+    <p>Generated with Universal Monorepo JaCoCo Generator · Enterprise Testing & Coverage Platform · Built for Acc</p>
   </footer>
 
   <script>

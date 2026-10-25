@@ -59,7 +59,7 @@ A critical design challenge is that **Tenant Administrators frequently need to t
 ### 3.1 Architect Mode (Header & Workspace Canvas)
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Logo] Unipost   🏢 ACME Global (Tenant)      [ 🛠️ Mode: Architect 🔘 ]  [👤 Admin]   │
+│ [Logo] Acc   🏢 ACME Global (Tenant)      [ 🛠️ Mode: Architect 🔘 ]  [👤 Admin]   │
 ├──────────────────┬─────────────────────────────────────────────────────────────────────┤
 │ Entity Models    │ 🏢 Customer Account  (ent_customer_acc)  [System Model + Custom]    │
 │ [+] New Model    │ [ Layers Schema Builder ]  [ ⛁ Data Explorer ]  [ ᛦ Connected Edges ] │
@@ -75,7 +75,7 @@ A critical design challenge is that **Tenant Administrators frequently need to t
 ### 3.2 Operator Mode (Instant Dogfooding & Standard User View)
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Logo] Unipost   🏢 ACME Global (Tenant)      [ 👤 Mode: Operator ⚪ ]  [👤 Admin]    │
+│ [Logo] Acc   🏢 ACME Global (Tenant)      [ 👤 Mode: Operator ⚪ ]  [👤 Admin]    │
 ├──────────────────┬─────────────────────────────────────────────────────────────────────┤
 │ Business Entities│ 🏢 Customer Accounts                                                │
 │ [Search Models]  │ [ ⛁ Data Explorer ]  [ ᛦ Connected Edges ]                         │

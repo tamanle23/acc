@@ -2,7 +2,7 @@
   "name": "@acc/backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Unipost Java Spring Modulith backend with acc-ms-aio wrapper application",
+  "description": "Acc Java Spring Modulith backend with acc-ms-aio wrapper application",
   "scripts": {
     "build": "node mvnw.cjs clean install -DskipTests",
     "dev": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Djava.net.preferIPv4Stack=true",

@@ -15,7 +15,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                        IMPLEMENTATION PHASING (FRONT-DOOR FIRST)                       │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ PHASE 1 [FRONT DOOR]: Unipost Landing Page, Plans & payOS VietQR Onboarding (Part 10)  │
+│ PHASE 1 [FRONT DOOR]: Acc Landing Page, Plans & payOS VietQR Onboarding (Part 10)  │
 │ ↳ [MOVED TO BACKLOG] Documented in `docs/multi-tenants/domain_blueprints_fullstack_guide.md`│
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ PHASE 2 [CRITICAL CORE - COMPLETED]: Database Isolation & RLS (Parts 2, 7)             │
@@ -46,7 +46,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ---
 
-## 2. Phase 1: Unipost Landing Page, Subscriptions & payOS Onboarding Funnel (MOVED TO BACKLOG)
+## 2. Phase 1: Acc Landing Page, Subscriptions & payOS Onboarding Funnel (MOVED TO BACKLOG)
 > **Status:** ⏳ **BACKLOG (To be implemented later)**  
 > **Transferred Location:** Fully documented in [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md#6-part-5-public-landing-page-subscriptions--payos-onboarding-funnel-backlog)  
 > **Reference Documents:** [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md) & [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  

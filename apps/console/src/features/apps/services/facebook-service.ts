@@ -159,7 +159,7 @@ export async function fetchFacebookPages(
     }
     throw new Error(
       errorData.error?.message ||
-        `Failed to fetch Facebook Pages (HTTP ${res.status})`
+      `Failed to fetch Facebook Pages (HTTP ${res.status})`
     )
   }
 
@@ -213,7 +213,7 @@ export async function exchangeForLongLivedPageToken(params: {
     }
     throw new Error(
       err.error?.message ||
-        `Failed to exchange for long-lived user token (HTTP ${userTokenRes.status})`
+      `Failed to exchange for long-lived user token (HTTP ${userTokenRes.status})`
     )
   }
 
@@ -237,7 +237,7 @@ export async function exchangeForLongLivedPageToken(params: {
     }
     throw new Error(
       err.error?.message ||
-        `Failed to acquire long-lived page token (HTTP ${pagesRes.status})`
+      `Failed to acquire long-lived page token (HTTP ${pagesRes.status})`
     )
   }
 
@@ -270,7 +270,7 @@ export function simulateDemoFacebookLogin(): {
   const mockPages: FacebookPage[] = [
     {
       id: '102938475610293',
-      name: 'Unipost Official Store',
+      name: 'Acc Official Store',
       category: 'E-commerce & Retail',
       accessToken:
         'EAAB' +
@@ -281,7 +281,7 @@ export function simulateDemoFacebookLogin(): {
     },
     {
       id: '584736291029384',
-      name: 'Unipost Community Hub',
+      name: 'Acc Community Hub',
       category: 'Community Organization',
       accessToken:
         'EAAB' +

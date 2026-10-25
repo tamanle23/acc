@@ -1,7 +1,7 @@
 # Implementation Plan 111: Phase 42 - Maximum-Care Base Entity CRUD Pipeline & Partitioned Audit Ledger
 
 ## Overview
-Phase 42 establishes the hardened, transactional write plane for base entity records in Unipost. It introduces a dedicated 6-stage `RecordMutationPipeline`, dual-mode HTTP ETag OCC (`If-Match`) with 3-way auto-merge fallback, referential integrity guards with strict tenant blindness, declarative delete cascades (`RESTRICT`, `CASCADE`, `SET_NULL`) across Pattern B JSONB attributes and Pattern C graph edges, monthly range-partitioned `UNIPOST_RECORD_AUDIT_LOG`, and a Liquid Glass `RecordAuditHistoryDrawer` in `@acc/console` featuring visual attribute diffs, dry-run previews, and a Sovereign-only "Restore to this Version" action.
+Phase 42 establishes the hardened, transactional write plane for base entity records in Acc. It introduces a dedicated 6-stage `RecordMutationPipeline`, dual-mode HTTP ETag OCC (`If-Match`) with 3-way auto-merge fallback, referential integrity guards with strict tenant blindness, declarative delete cascades (`RESTRICT`, `CASCADE`, `SET_NULL`) across Pattern B JSONB attributes and Pattern C graph edges, monthly range-partitioned `UNIPOST_RECORD_AUDIT_LOG`, and a Liquid Glass `RecordAuditHistoryDrawer` in `@acc/console` featuring visual attribute diffs, dry-run previews, and a Sovereign-only "Restore to this Version" action.
 
 ---
 

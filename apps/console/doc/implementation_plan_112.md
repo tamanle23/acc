@@ -1,7 +1,7 @@
 # Implementation Plan 112: Phase 43 - Adaptive Read-Time Resolution Engine (Dynamic SQL Pushdown & Pagination)
 
 ## 1. Overview
-Phase 43 delivers the **Adaptive Read-Time Resolution Engine** across the Unipost monorepo. It empowers the metadata platform to dynamically resolve complex hierarchical composite entity documents (up to depth 4) in a **single database roundtrip** using PostgreSQL `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` over Pattern B foreign keys and Pattern C association matrices (`UNIPOST_ENTITY_RELATIONSHIPS`).
+Phase 43 delivers the **Adaptive Read-Time Resolution Engine** across the Acc monorepo. It empowers the metadata platform to dynamically resolve complex hierarchical composite entity documents (up to depth 4) in a **single database roundtrip** using PostgreSQL `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` over Pattern B foreign keys and Pattern C association matrices (`UNIPOST_ENTITY_RELATIONSHIPS`).
 
 The engine introduces native **per-child collection pagination** (`childLimit[alias]` / `childOffset[alias]`), bounded guardrails (1,500ms statement timeout), an automated resilient fallback to **`DataLoaderBatchResolver`** on planner or timeout issues, dedicated REST endpoints, an expandable **Liquid Glass Master-Detail** view in `@acc/console`'s `EntityDataGrid`, and full **Unified Sandbox Platform** simulation.
 

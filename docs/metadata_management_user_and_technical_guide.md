@@ -8,7 +8,7 @@
 
 ## 1. Executive Architecture Overview
 
-The Metadata Management module in Unipost provides a **runtime-extensible, zero-downtime data modeling engine**. It allows system administrators and product teams to define entity types, configure custom attribute definitions, generate JSON Schema (Draft-07) specifications, validate incoming JSON payloads, and manage relationships—without requiring relational database migrations (`ALTER TABLE`) or backend redeployments.
+The Metadata Management module in Acc provides a **runtime-extensible, zero-downtime data modeling engine**. It allows system administrators and product teams to define entity types, configure custom attribute definitions, generate JSON Schema (Draft-07) specifications, validate incoming JSON payloads, and manage relationships—without requiring relational database migrations (`ALTER TABLE`) or backend redeployments.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐

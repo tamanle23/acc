@@ -11,7 +11,7 @@
 ## 1. Executive Summary & Problem Rationale
 
 In enterprise SaaS platforms, entities are rarely 100% bespoke or 100% rigid. A real-world platform requires a **hybrid layered schema model**:
-1. **Common System Schemas (`SYSTEM`)**: Universal business primitives (e.g. `User`, `CustomerAccount`, `AuditLog`, `CoreShipment`) defined and maintained centrally by Unipost engineering.
+1. **Common System Schemas (`SYSTEM`)**: Universal business primitives (e.g. `User`, `CustomerAccount`, `AuditLog`, `CoreShipment`) defined and maintained centrally by Acc engineering.
 2. **Tenant-Based Schemas (`tnt_...`)**: Completely bespoke, domain-specific models created from scratch by a tenant's admin (e.g. `DroneFlightPath`, `CustomLabTest`).
 3. **Tenant-Extended Schemas (Overlay Inheritance)**: Standard system entities that a tenant customizes by attaching custom attributes without forking the base schema.
 
@@ -29,7 +29,7 @@ Without a formal model for **System Schemas vs. Tenant Schemas**, the platform s
 │                        SCHEMA RESOLUTION & INHERITANCE HIERARCHY                       │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ TIER 1: COMMON SYSTEM SCHEMAS (`tenant_id = 'SYSTEM'`)                                 │
-│ • Universal platform baseline entities created by Unipost migrations.                  │
+│ • Universal platform baseline entities created by Acc migrations.                  │
 │ • Examples: `ent_user`, `ent_customer_acc`, `ent_invoice`.                             │
 │ • Read-accessible to ALL tenants; WRITE-RESTRICTED to Platform Super-Admin.            │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
@@ -139,7 +139,7 @@ $$\text{Effective Schema} = \text{BaseAttributes}(\text{tenant} = \text{'SYSTEM'
 ### 4.1 Schema Versioning in Composite Models
 To ensure cache safety when either the System base schema OR the Tenant overlay changes:
 $$\text{Composite Cache Key} = \text{"schema:"} + \text{tenantId} + \text{":"} + \text{systemName} + \text{":v"} + \text{tenantVer} + \text{"\_s"} + \text{systemVer}$$
-* If Unipost rolls out a global platform update incrementing `SYSTEM` version from `s1` $\to$ `s2`, all tenants' composite cache keys seamlessly transition to `s2` without manual cache purging.
+* If Acc rolls out a global platform update incrementing `SYSTEM` version from `s1` $\to$ `s2`, all tenants' composite cache keys seamlessly transition to `s2` without manual cache purging.
 
 ### 4.2 System Immutability & Conflict Rules
 1. **System Field Protection**: A tenant can **never** archive, delete, or rename an attribute where `tenant_id = 'SYSTEM'`.

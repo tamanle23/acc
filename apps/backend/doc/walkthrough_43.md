@@ -3,7 +3,7 @@
 ## 1. Overview
 In Phase 3 of Iteration 8 ("Backend Unified Sandbox Platform"), we implemented zero-endpoint persona authentication and DEV-mode demonstration data pre-warming. This guarantees that:
 - Core sandbox personas (`admin`, `system-custodian`, `creator`, `user`) can authenticate via the standard `/api/auth/token` endpoint and receive genuine, cryptographically-signed JWTs without needing database user records.
-- Standard Unipost filters (`JwtAuthenticationTokenFilter`, `TenantSessionAspect`, `HeaderSanitizerFilter`) operate authentically with proper tenant scope (`tenant-acme`, `SYSTEM`), actor impersonation (`actor_tid`), and roles.
+- Standard Acc filters (`JwtAuthenticationTokenFilter`, `TenantSessionAspect`, `HeaderSanitizerFilter`) operate authentically with proper tenant scope (`tenant-acme`, `SYSTEM`), actor impersonation (`actor_tid`), and roles.
 - Demonstration tenants (`tenant-acme`, `tenant-us-east-1`) and default blueprints (`bp_crm_billing_v1`) are pre-warmed on startup in `DEV` mode while remaining pristine in `TEST` mode.
 
 ## 2. Changes Made

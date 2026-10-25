@@ -2,7 +2,7 @@
 
 ## 1. Problem Statement
 Previously, navigating to the root URL (`/`) immediately assumed an authenticated context or forced raw sign-in screens. Unauthenticated visitors had no interface to:
-- Discover Unipost's dynamic metadata engine value propositions.
+- Discover Acc's dynamic metadata engine value propositions.
 - Inspect transparent subscription pricing tiers (Basic Free, Pro 199k, Pro Max 499k).
 - Browse industry blueprints and test drive interactive studio capabilities before registering.
 - Complete a streamlined, 2-step onboarding funnel that registers an organization, selects a domain template, and initializes an operational workspace.

@@ -9,7 +9,7 @@
 
 ## 1. Executive Vision & Motivation
 
-The Unipost Dynamic Metadata Engine addresses the traditional impedance mismatch between rigid relational database schemas and evolving business entities. By coupling **PostgreSQL JSONB** storage with **Draft-07 JSON Schema compilation**, strict **schema versioning**, and **graph-capable edge relationships**, Unipost guarantees zero-downtime data modeling without physical `ALTER TABLE` DDL migrations.
+The Acc Dynamic Metadata Engine addresses the traditional impedance mismatch between rigid relational database schemas and evolving business entities. By coupling **PostgreSQL JSONB** storage with **Draft-07 JSON Schema compilation**, strict **schema versioning**, and **graph-capable edge relationships**, Acc guarantees zero-downtime data modeling without physical `ALTER TABLE` DDL migrations.
 
 However, treating dynamic metadata solely as an administrative back-office CRUD utility significantly underutilizes the system. When elevated to a first-class **dynamic data fabric**, the metadata engine becomes the central nervous system for:
 1. **Dynamic Client UI Generation**: Zero-code form, data grid, and filter generation compliant with the Liquid Glass design system across Web and Mobile.
@@ -158,7 +158,7 @@ Introduce a lightweight, metadata-driven Finite State Machine (FSM) engine integ
 Modern enterprise applications require autonomous AI agents to query and manipulate domain entities. Hardcoding LLM tools for every entity type is unsustainable as entities evolve dynamically.
 
 ### 4.2 Architectural Design
-Because the Unipost metadata engine already compiles complete Draft-07 JSON Schemas, it can **dynamically synthesize Model Context Protocol (MCP) Tool definitions and OpenAI/Gemini Function Signatures at runtime**.
+Because the Acc metadata engine already compiles complete Draft-07 JSON Schemas, it can **dynamically synthesize Model Context Protocol (MCP) Tool definitions and OpenAI/Gemini Function Signatures at runtime**.
 
 ```
 ┌─────────────────────────────────┐
@@ -283,4 +283,4 @@ Enterprise customers require point-in-time auditing, compliance rollbacks, and f
 
 ## 8. Conclusion
 
-By treating dynamic metadata not merely as an isolated schema configurator, but as the **central foundation for UI rendering, agentic workflows, operational lifecycles, and graph intelligence**, Unipost unlocks true platform-grade composability. This architecture eliminates technical debt, drastically shortens feature delivery cycles, and prepares the platform for enterprise multi-tenant scale and AI-driven automation.
+By treating dynamic metadata not merely as an isolated schema configurator, but as the **central foundation for UI rendering, agentic workflows, operational lifecycles, and graph intelligence**, Acc unlocks true platform-grade composability. This architecture eliminates technical debt, drastically shortens feature delivery cycles, and prepares the platform for enterprise multi-tenant scale and AI-driven automation.

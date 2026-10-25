@@ -8,7 +8,7 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 2. Link `@acc/client` and `@acc/sandbox` workspace packages to `apps/mobile-ui`.
 3. Create `useMobileContextStore` to manage `activeTenantId`, `activeWorkspaceId`, and `activePersonaId`.
 4. Create `apps/mobile-ui/src/sandbox/mobile-sandbox.ts` to register the `mobilePostsSandboxHandler` and attach global fetch interception.
-5. Refactor `apps/mobile-ui/src/store/usePostStore.ts` to fetch and mutate dynamic records through `UnipostClient` (`/v1/metadata/records?entityType=post`).
+5. Refactor `apps/mobile-ui/src/store/usePostStore.ts` to fetch and mutate dynamic records through `AccClient` (`/v1/metadata/records?entityType=post`).
 6. Add unit test suite `apps/mobile-ui/src/__tests__/mobile-sandbox.test.ts`.
 7. Verify all test suites across `mobile-ui`, `@acc/client`, `@acc/sandbox`, and `@acc/console`.
 
@@ -18,7 +18,7 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 - `apps/mobile-ui/src/constants/mockData.ts`: Deleted.
 - `apps/mobile-ui/src/store/useMobileContextStore.ts`: Created context store.
 - `apps/mobile-ui/src/sandbox/mobile-sandbox.ts`: Created sandbox handler with tenant partitioning and reset capability.
-- `apps/mobile-ui/src/store/usePostStore.ts`: Refactored to use `createUnipostClient` and `useMobileContextStore`.
+- `apps/mobile-ui/src/store/usePostStore.ts`: Refactored to use `createAccClient` and `useMobileContextStore`.
 - `apps/mobile-ui/src/screens/DashboardScreen.tsx`: Added automatic fetch on mount when posts are empty.
 - `apps/mobile-ui/App.tsx`: Initialized sandbox on application launch.
 - `apps/mobile-ui/vitest.config.ts` & `apps/mobile-ui/src/test/setup.ts`: Configured Vitest setup and AsyncStorage mocking.
@@ -39,7 +39,7 @@ Refer to `apps/mobile-ui/doc/walkthrough_17.md`.
 - [x] Delete mockData.ts
 - [x] Implement useMobileContextStore
 - [x] Implement mobile-sandbox handler and global fetch interceptor
-- [x] Refactor usePostStore to UnipostClient
+- [x] Refactor usePostStore to AccClient
 - [x] Unit test coverage and workspace verification
 
 ## Enhancement

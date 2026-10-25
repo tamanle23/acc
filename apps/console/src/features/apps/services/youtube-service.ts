@@ -197,8 +197,8 @@ export function simulateDemoTokenExchange(): {
     },
     channel: {
       id: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
-      title: 'Unipost Studio',
-      description: 'Official YouTube Channel for Unipost media publishing and automated releases.',
+      title: 'Acc Studio',
+      description: 'Official YouTube Channel for Acc media publishing and automated releases.',
       customUrl: '@accstudio',
       avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=80',
       subscriberCount: '142,500',

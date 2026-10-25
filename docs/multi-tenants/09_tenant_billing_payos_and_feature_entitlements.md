@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Revenue Architecture
 
-In Unipost's dynamic metadata ecosystem, pricing and monetization are built around **Feature & Capability Entitlements**, rather than penalizing customers for individual record creation rates.
+In Acc's dynamic metadata ecosystem, pricing and monetization are built around **Feature & Capability Entitlements**, rather than penalizing customers for individual record creation rates.
 
 Tenants select a subscription cadence (**Monthly** or **Yearly** with an annual discount) across distinct subscription tiers or modular functional add-ons. Payments are processed seamlessly using **payOS** (supporting automated VietQR, banking transfers, and domestic debit cards). System capabilities—such as the Schema Architect Studio, Pattern C Graph Edges, AI MCP Agent bridges, and Webhook dispatchers—are unlocked dynamically based on the tenant's subscribed feature set.
 
@@ -139,7 +139,7 @@ public class PayOsBillingService {
         long orderCode = System.currentTimeMillis(); // Unique long order code required by payOS
 
         int amount = calculateAmount(planTier, cadence);
-        String description = "Unipost " + planTier + " (" + cadence + ")";
+        String description = "Acc " + planTier + " (" + cadence + ")";
 
         ItemData planItem = ItemData.builder()
                 .name(description)

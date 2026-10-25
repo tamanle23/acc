@@ -243,7 +243,7 @@ public class CmsDataScaffoldingGenerator {
             attrs.put("body_content", generateArticleMarkdown(title, i));
             attrs.put("status", status);
             attrs.put("featured_flag", featured);
-            attrs.put("meta_title", title + " | Unipost Media");
+            attrs.put("meta_title", title + " | Acc Media");
             attrs.put("meta_description", "Learn about " + baseTopic + " with real-world architecture case studies, benchmarks, and production guidelines.");
 
             String jsonPayload;

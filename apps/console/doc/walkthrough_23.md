@@ -77,8 +77,8 @@ pnpm --filter @acc/console lint
    - Acquires simulated Authorization Code.
    - Moves to Stage 2: Code inspection and "Exchange for Access & Refresh Tokens" button.
 5. Click "Exchange for Access & Refresh Tokens":
-   - Securely acquires Tokens and fetches channel metadata (`Unipost Studio`).
+   - Securely acquires Tokens and fetches channel metadata (`Acc Studio`).
    - Moves to Stage 3: Connected channel dashboard with subscriber/video metrics and Token Vault showing Access Token, Refresh Token (permanent), and expiry.
 6. Return to gallery:
    - Card updates to `[Manage]` on the left and `[✓ Connected]` on the right.
-   - Subtitle displays: `Connected to Channel: "Unipost Studio" (Has Refresh Token)`.
+   - Subtitle displays: `Connected to Channel: "Acc Studio" (Has Refresh Token)`.

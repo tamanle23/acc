@@ -114,7 +114,7 @@ export function synthesizeMcpManifest(
   const tools: McpToolDefinition[] = [
     {
       name: 'acc_get_schema',
-      description: 'Returns JSON Schema Draft-07 definition for a specified Unipost entity type.',
+      description: 'Returns JSON Schema Draft-07 definition for a specified Acc entity type.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
         type: 'object',
@@ -131,7 +131,7 @@ export function synthesizeMcpManifest(
     },
     {
       name: 'acc_query_entities',
-      description: 'Performs RLS-scoped search, filtering, and pagination over Unipost entity records.',
+      description: 'Performs RLS-scoped search, filtering, and pagination over Acc entity records.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
         type: 'object',
@@ -223,7 +223,7 @@ export function synthesizeMcpManifest(
   return {
     name: 'acc-mcp-server',
     version: '1.0.0',
-    description: `Dynamic MCP Agent Tools synthesized for Unipost tenant [${tenantId || 'default'}]`,
+    description: `Dynamic MCP Agent Tools synthesized for Acc tenant [${tenantId || 'default'}]`,
     tools,
   };
 }

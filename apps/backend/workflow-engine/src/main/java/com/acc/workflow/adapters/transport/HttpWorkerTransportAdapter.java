@@ -22,7 +22,7 @@ import java.util.Objects;
 
 /**
  * Remote HTTP Transport Adapter for polyglot / external JVM workers connecting to
- * the Unipost Workflow Engine over REST/HTTP.
+ * the Acc Workflow Engine over REST/HTTP.
  */
 public final class HttpWorkerTransportAdapter implements WorkerTransportPort {
 

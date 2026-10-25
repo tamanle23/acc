@@ -33,9 +33,9 @@ import type {
   ContactSalesPayload,
 } from './contracts';
 
-export interface UnipostClientConfig {
+export interface AccClientConfig {
   /**
-   * Base URL for the Unipost API (e.g., 'http://localhost:8080/api' or '/api')
+   * Base URL for the Acc API (e.g., 'http://localhost:8080/api' or '/api')
    */
   baseURL?: string;
 
@@ -80,9 +80,9 @@ export interface RequestOptions extends RequestInit {
 }
 
 /**
- * Standardized Unipost Client Error incorporating RFC 7807 Problem Detail
+ * Standardized Acc Client Error incorporating RFC 7807 Problem Detail
  */
-export class UnipostClientError extends Error {
+export class AccClientError extends Error {
   readonly status: number;
   readonly problemDetail?: ProblemDetail;
   readonly rawResponse?: unknown;
@@ -94,11 +94,11 @@ export class UnipostClientError extends Error {
     rawResponse?: unknown
   ) {
     super(message);
-    this.name = 'UnipostClientError';
+    this.name = 'AccClientError';
     this.status = status;
     this.problemDetail = problemDetail;
     this.rawResponse = rawResponse;
-    Object.setPrototypeOf(this, UnipostClientError.prototype);
+    Object.setPrototypeOf(this, AccClientError.prototype);
   }
 }
 
@@ -122,10 +122,10 @@ export function generateTraceparent(): string {
 }
 
 /**
- * Universal Unipost Client for Browser, React Native, Node.js, and Edge environments.
+ * Universal Acc Client for Browser, React Native, Node.js, and Edge environments.
  */
-export class UnipostClient {
-  private config: UnipostClientConfig;
+export class AccClient {
+  private config: AccClientConfig;
   private fetchFn: typeof fetch;
 
   // Domain Namespaces
@@ -136,7 +136,7 @@ export class UnipostClient {
   public readonly users: UsersNamespace;
   public readonly billing: BillingNamespace;
 
-  constructor(config: UnipostClientConfig = {}) {
+  constructor(config: AccClientConfig = {}) {
     this.config = {
       baseURL: config.baseURL?.replace(/\/$/, '') || '',
       timeoutMs: config.timeoutMs ?? 30000,
@@ -265,7 +265,7 @@ export class UnipostClient {
           problemDetail?.detail ||
           problemDetail?.title ||
           `Request failed with status ${response.status}`;
-        throw new UnipostClientError(errorMessage, response.status, problemDetail, data);
+        throw new AccClientError(errorMessage, response.status, problemDetail, data);
       }
 
       if (rawResponse) {
@@ -280,13 +280,13 @@ export class UnipostClient {
 
       return data as T;
     } catch (err: any) {
-      if (err instanceof UnipostClientError) {
+      if (err instanceof AccClientError) {
         throw err;
       }
       if (err.name === 'AbortError') {
-        throw new UnipostClientError(`Request timeout after ${timeoutMs}ms`, 408);
+        throw new AccClientError(`Request timeout after ${timeoutMs}ms`, 408);
       }
-      throw new UnipostClientError(err.message || 'Network request failed', 0, undefined, err);
+      throw new AccClientError(err.message || 'Network request failed', 0, undefined, err);
     } finally {
       clearTimeout(timeoutId);
     }
@@ -324,7 +324,7 @@ export class UnipostClient {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
 
-  getConfig(): UnipostClientConfig {
+  getConfig(): AccClientConfig {
     return { ...this.config };
   }
 }
@@ -334,7 +334,7 @@ export class UnipostClient {
 // ==========================================
 
 export class AuthNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   login(payload: LoginRequest, options?: RequestOptions): Promise<LoginResponse> {
     return this.client.post<LoginResponse>('/auth/token', payload, options);
@@ -350,7 +350,7 @@ export class AuthNamespace {
 }
 
 export class MetadataNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   getEntityTypes(params?: PageRequestParams, options?: RequestOptions): Promise<PageResponse<EntityType>> {
     return this.client.get<PageResponse<EntityType>>('/metadata/entity-types', { ...options, params });
@@ -398,7 +398,7 @@ export class MetadataNamespace {
 }
 
 export class WorkflowsNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   listDefinitions(options?: RequestOptions): Promise<WorkflowDefinitionSummary[]> {
     return this.client.get<WorkflowDefinitionSummary[]>('/v1/workflow/definitions', options);
@@ -414,7 +414,7 @@ export class WorkflowsNamespace {
 }
 
 export class WorkflowExecutionsNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   startExecution(payload: StartWorkflowRequest, options?: RequestOptions): Promise<WorkflowSnapshot> {
     return this.client.post<WorkflowSnapshot>('/v1/workflow/executions', payload, options);
@@ -466,22 +466,22 @@ export class WorkflowExecutionsNamespace {
       es.addEventListener('WORKFLOW_STARTED', (ev: any) => {
         try {
           onEvent({ event: 'WORKFLOW_STARTED', data: JSON.parse(ev.data) });
-        } catch {}
+        } catch { }
       });
       es.addEventListener('TASK_UPDATED', (ev: any) => {
         try {
           onEvent({ event: 'TASK_UPDATED', data: JSON.parse(ev.data) });
-        } catch {}
+        } catch { }
       });
       es.addEventListener('WORKFLOW_COMPLETED', (ev: any) => {
         try {
           onEvent({ event: 'WORKFLOW_COMPLETED', data: JSON.parse(ev.data) });
-        } catch {}
+        } catch { }
       });
       es.addEventListener('WORKFLOW_TERMINATED', (ev: any) => {
         try {
           onEvent({ event: 'WORKFLOW_TERMINATED', data: JSON.parse(ev.data) });
-        } catch {}
+        } catch { }
       });
       es.onerror = () => {
         if (onError) onError(new Error('SSE Stream Error'));
@@ -510,7 +510,7 @@ export class WorkflowExecutionsNamespace {
               try {
                 const data = JSON.parse(line.replace(/^data:\s*/, ''));
                 onEvent({ event: 'DATA', data });
-              } catch {}
+              } catch { }
             }
           }
         }
@@ -554,7 +554,7 @@ export class WorkflowExecutionsNamespace {
 }
 
 export class UsersNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   searchUsers(params?: UserSearchCondition, options?: RequestOptions): Promise<PageResponse<UserVm>> {
     return this.client.get<PageResponse<UserVm>>('/user/_list', { ...options, params });
@@ -578,7 +578,7 @@ export class UsersNamespace {
 }
 
 export class BillingNamespace {
-  constructor(private client: UnipostClient) {}
+  constructor(private client: AccClient) { }
 
   getSummary(tenantId?: string, options?: RequestOptions): Promise<TenantBillingSummary> {
     return this.client.get<TenantBillingSummary>('/billing/summary', { ...options, tenantId });
@@ -594,8 +594,8 @@ export class BillingNamespace {
 }
 
 /**
- * Factory to create a pre-configured UnipostClient instance
+ * Factory to create a pre-configured AccClient instance
  */
-export function createUnipostClient(config: UnipostClientConfig = {}): UnipostClient {
-  return new UnipostClient(config);
+export function createAccClient(config: AccClientConfig = {}): AccClient {
+  return new AccClient(config);
 }

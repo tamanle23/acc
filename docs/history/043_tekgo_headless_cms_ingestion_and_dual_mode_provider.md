@@ -5,7 +5,7 @@
 
 ## Plan
 1. Add `@acc/client` and `@acc/sandbox` workspace dependencies to `apps/tekgo-ui/package.json`.
-2. Implement `UnipostCmsClient` in `apps/tekgo-ui/lib/cms/acc-cms-client.ts` with publishable key authentication and Next.js 15 ISR tag revalidation (`next: { tags: ['articles'], revalidate: 60 }`).
+2. Implement `AccCmsClient` in `apps/tekgo-ui/lib/cms/acc-cms-client.ts` with publishable key authentication and Next.js 15 ISR tag revalidation (`next: { tags: ['articles'], revalidate: 60 }`).
 3. Build `ContentProvider` in `apps/tekgo-ui/lib/cms/content-provider.ts` to map dynamic `EntityRecord` models to `Blog` instances with dual-mode support (`DATA_SOURCE=cms | local`) and resilient fallbacks.
 4. Refactor `tekgo-ui` routes (`app/page.tsx`, `app/blog/**`, `app/tags/**`) to asynchronously query `contentProvider`.
 5. Verify via Next.js production build (`pnpm --filter tekgo-ui build`).
@@ -29,7 +29,7 @@
 
 ## Tasks
 - [x] Link `@acc/client` and `@acc/sandbox` to `tekgo-ui`
-- [x] Create `UnipostCmsClient` with Next.js 15 cache tags and publishable key protocol
+- [x] Create `AccCmsClient` with Next.js 15 cache tags and publishable key protocol
 - [x] Create `ContentProvider` with `DATA_SOURCE=cms|local` dual-mode support
 - [x] Refactor all blog and tag routes in `tekgo-ui`
 - [x] Verify Next.js production build

@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Anchor Principles
 
-The Unipost platform serves a diverse spectrum of tenants ranging from large multi-department enterprises to single-person professional operators. To support this heterogeneity without software fragmentation or database migration bottlenecks, the platform implements a **Pure Tenant-Based Dynamic Metadata Engine**.
+The Acc platform serves a diverse spectrum of tenants ranging from large multi-department enterprises to single-person professional operators. To support this heterogeneity without software fragmentation or database migration bottlenecks, the platform implements a **Pure Tenant-Based Dynamic Metadata Engine**.
 
 ### Core Anchor Principles
 1. **The Tenant as the Atomic Boundary of Ownership**:
@@ -131,13 +131,13 @@ Users within a tenant are assigned roles that grant permissions across the Metad
 | **Tenant Administrator** | Solutions Architect, IT Lead in an Enterprise Tenant | **Full Access** (`CREATE`, `UPDATE`, `ARCHIVE`) | **Optional / Full Access** | `metadata:schema:*`, `tenant:user:*` |
 | **Operational User** | Business Specialist, Logistics Dispatcher, Account Rep | **No Access** (Read-only schema inspection) | **Create / Read / Update** | `entity:record:create`, `entity:record:update` |
 | **Auditor / Viewer** | External Auditor, Read-only Stakeholder | **Read-Only** | **Read-Only** | `metadata:schema:read`, `entity:record:read` |
-| **Platform Super-Admin**| Unipost Core Platform Support / SRE team | **Cross-Tenant Oversight** (Emergency break-glass only) | **Restricted / Redacted** | Platform-level infrastructure monitoring |
+| **Platform Super-Admin**| Acc Core Platform Support / SRE team | **Cross-Tenant Oversight** (Emergency break-glass only) | **Restricted / Redacted** | Platform-level infrastructure monitoring |
 
 ---
 
 ## 5. Security & Isolation Invariants
 
-Multi-tenant integrity in Unipost is guaranteed through defense-in-depth spanning five discrete barriers:
+Multi-tenant integrity in Acc is guaranteed through defense-in-depth spanning five discrete barriers:
 
 ### Invariant 1: Cryptographic JWT Claims (Zero Client Trust)
 * The client application never supplies `tenant_id` via HTTP request bodies, route query parameters, or mutable headers.
@@ -238,9 +238,9 @@ In `@acc/console`, the user experience gracefully adapts based on the active use
 
 ## 8. Summary & Architectural Validation
 
-This Multi-Tenant Architecture achieves the optimal balance for the Unipost platform:
+This Multi-Tenant Architecture achieves the optimal balance for the Acc platform:
 
-| Requirement | How Unipost Solves It |
+| Requirement | How Acc Solves It |
 | :--- | :--- |
 | **Serving Solo Users to Giant Enterprises** | A unified Tenant model where a tenant can contain 1 user or 10,000 users. |
 | **Unique Schemas per Tenant** | Dynamic Metadata Engine stores schemas as data in `UNIPOST_ENTITY_TYPES`, requiring zero DDL changes. |

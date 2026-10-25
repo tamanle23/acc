@@ -1,6 +1,6 @@
 # Implementation Plan: Iteration 20 - Enterprise Hardening & High-Resilience Workflow Orchestration Engine
 
-**Goal Description**: Implement Iteration 20 to transform the Unipost Workflow Orchestration Engine into an enterprise-grade, highly resilient system. This addresses critical architectural findings: decoupling synchronous I/O from the decider core, dynamic fork barrier synchronization, end-to-end DLQ interactive replay, and studio auto-layout improvements.
+**Goal Description**: Implement Iteration 20 to transform the Acc Workflow Orchestration Engine into an enterprise-grade, highly resilient system. This addresses critical architectural findings: decoupling synchronous I/O from the decider core, dynamic fork barrier synchronization, end-to-end DLQ interactive replay, and studio auto-layout improvements.
 
 ---
 

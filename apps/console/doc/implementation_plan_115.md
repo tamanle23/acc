@@ -1,7 +1,7 @@
 # Implementation Plan 115: Phase 45 - Enterprise Resilience, Performance Benchmarking & Chaos Verification
 
 ## 1. Executive Summary & Architectural Overview
-Phase 45 concludes Iteration 6 of the Unipost metadata engine by conducting rigorous **Enterprise Resilience, Performance Benchmarking & Chaos Verification** across the newly delivered Composite Entity engine (Phases 41–44).
+Phase 45 concludes Iteration 6 of the Acc metadata engine by conducting rigorous **Enterprise Resilience, Performance Benchmarking & Chaos Verification** across the newly delivered Composite Entity engine (Phases 41–44).
 
 In accordance with architectural grilling decisions and the `/automated-testing` skill directives:
 1. **Multi-Threaded Benchmark Harness**:

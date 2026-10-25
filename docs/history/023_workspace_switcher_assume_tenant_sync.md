@@ -1,7 +1,7 @@
 # History Entry 023: Workspace Switcher Synchronization with Assumed Tenant Context
 
 ## Problem Statement
-When a Sovereign Custodian clicked **"Assume Tenant"** in the Fleet Tenants cockpit, the amber `AssumeTenantBar` appeared at the top of the viewport, but the workspace switcher (`ProfileSwitcher` in the sidebar header) continued displaying `"Unipost Main"` under `'default-tenant'`. 
+When a Sovereign Custodian clicked **"Assume Tenant"** in the Fleet Tenants cockpit, the amber `AssumeTenantBar` appeared at the top of the viewport, but the workspace switcher (`ProfileSwitcher` in the sidebar header) continued displaying `"Acc Main"` under `'default-tenant'`. 
 
 Root causes:
 1. `useProfileStore` and `ProfileSwitcher` operated independently of `localStorage.getItem('acc_assumed_tenant')` and `useMetadataUiStore.activeTenantId`.

@@ -5,7 +5,7 @@
 **Scope:** `@acc/backend` (`apps/backend/acc-fw`)
 
 ## 1. Problem Statement
-When new tenant organizations onboard to the Unipost platform, configuring entity schemas, field attributes, UI components, and relationship graphs manually from scratch is high-friction and error-prone. Tenants need pre-modeled, production-ready industry blueprints (such as Logistics & Fleet Management, B2B CRM & Invoicing, or Blank Workspace) that can be seeded atomically in $< 250\text{ ms}$, deep-cloning all metadata stamped with the target tenant ID, pre-warming Hazelcast/L1 schema caches, and ensuring decoupled schema evolution (zero runtime linkage back to template files).
+When new tenant organizations onboard to the Acc platform, configuring entity schemas, field attributes, UI components, and relationship graphs manually from scratch is high-friction and error-prone. Tenants need pre-modeled, production-ready industry blueprints (such as Logistics & Fleet Management, B2B CRM & Invoicing, or Blank Workspace) that can be seeded atomically in $< 250\text{ ms}$, deep-cloning all metadata stamped with the target tenant ID, pre-warming Hazelcast/L1 schema caches, and ensuring decoupled schema evolution (zero runtime linkage back to template files).
 
 ## 2. Plan & Architecture Decisions
 - Create declarative domain blueprint manifests in JSON format within `classpath:metadata/blueprints/`.

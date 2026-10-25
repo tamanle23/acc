@@ -8,7 +8,7 @@
 ---
 
 ## 1. Problem Statement
-Across the Unipost monorepo, both **API contracts** and **sandbox mock implementations** were fragmented:
+Across the Acc monorepo, both **API contracts** and **sandbox mock implementations** were fragmented:
 1. **Contract Fragmentation**: Model definitions, DTOs, and API envelopes were split across `packages/client/src/types.ts`, `apps/console/src/features/spring-auth/types.ts`, `apps/console/src/features/workflows/`, and `apps/console/src/features/workflow-executions/`.
 2. **Sandbox Fragmentation**: Most mock handlers (`auth`, `metadata`, `users`, `billing`, `system`, `workspaces`, `chats`, `apps`) and stateful in-memory repositories resided strictly inside `apps/console/src/core/sandbox/handlers/`, leaving `@acc/sandbox` incomplete and preventing other clients (like `apps/mobile-ui`) from reusing mock infrastructure.
 3. **Reset Inconsistencies**: No centralized reset registry existed across repositories, making deterministic data resetting difficult.
@@ -19,7 +19,7 @@ Across the Unipost monorepo, both **API contracts** and **sandbox mock implement
 1. **Contract Unification (`@acc/client`)**:
    - Establish modular domain submodules under `packages/client/src/contracts/` (`common`, `auth`, `metadata`, `workflows`, `workflow-executions`, `users`, `billing`).
    - Maintain pure TypeScript contracts with zero 3rd-party runtime dependencies.
-   - Expand `UnipostClient` with domain-namespaced APIs and SSE execution stream reader.
+   - Expand `AccClient` with domain-namespaced APIs and SSE execution stream reader.
 2. **Sandbox Unification (`@acc/sandbox`)**:
    - Build `SandboxResetRegistry` (`sandboxResetRegistry`) for stateful repositories.
    - Centralize all mock handlers, repositories, fixtures, and store management in `packages/sandbox`.
@@ -42,7 +42,7 @@ Across the Unipost monorepo, both **API contracts** and **sandbox mock implement
   - `users.ts`: Tenant users, memberships, roles, status, invitations.
   - `billing.ts`: Pricing tiers, quotas, checkout, payOS VietQR models.
   - `index.ts`: Re-export barrel.
-- Updated `UnipostClient` in `packages/client/src/client.ts` to provide typed namespaces (`auth`, `metadata`, `workflows`, `workflowExecutions`, `users`, `billing`).
+- Updated `AccClient` in `packages/client/src/client.ts` to provide typed namespaces (`auth`, `metadata`, `workflows`, `workflowExecutions`, `users`, `billing`).
 
 ### B. `@acc/sandbox`
 - Implemented `SandboxResetRegistry` in `packages/sandbox/src/reset-registry.ts`.

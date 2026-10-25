@@ -1,7 +1,7 @@
 # Implementation Plan 110: Phase 41 - Composite Entity Type Registry & Specification DSL
 
 ## 1. Executive Summary & Architectural Overview
-Phase 41 introduces the **Composite Entity Type Registry & Specification DSL** into the Unipost metadata engine. Composite entities synthesize real-time, unified read projections across heterogeneous base entities without physical data duplication or ETL pipelines. 
+Phase 41 introduces the **Composite Entity Type Registry & Specification DSL** into the Acc metadata engine. Composite entities synthesize real-time, unified read projections across heterogeneous base entities without physical data duplication or ETL pipelines. 
 
 In accordance with architectural grilling decisions and the authoritative Monorepo Directives:
 1. **Single Table Inheritance / Extension**: No separate `UNIPOST_COMPOSITE_VIEWS` table. `UNIPOST_ENTITY_TYPES` is extended with `is_composite = TRUE` and a declarative JSON Tree `composite_spec` column.

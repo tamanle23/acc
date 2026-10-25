@@ -1,6 +1,6 @@
 # Walkthrough - Phase 14: End-to-End Observability & SRE Production Verification
 
-End-to-end distributed tracing using W3C `traceparent` headers and standardized MDC logging (`[trace_id] [tenant_id] [user_id] [workspace_id]`) across all tiers of the Unipost monorepo.
+End-to-end distributed tracing using W3C `traceparent` headers and standardized MDC logging (`[trace_id] [tenant_id] [user_id] [workspace_id]`) across all tiers of the Acc monorepo.
 
 ## Changes Overview
 
@@ -8,7 +8,7 @@ End-to-end distributed tracing using W3C `traceparent` headers and standardized 
 - **Axios HTTP Client (`apps/console`)**:
   - Wired `generateTraceparent` into `springApiClient` request interceptor. Outgoing requests from Console now attach `traceparent: 00-{traceId}-{spanId}-01`.
 - **Universal SDK (`@acc/client`) & Mobile (`apps/mobile-ui`)**:
-  - Validated that `UnipostClient` natively attaches `traceparent` to all network requests.
+  - Validated that `AccClient` natively attaches `traceparent` to all network requests.
 
 ### 2. Backend Gateway & MDC Logging Standard
 - **`ContextHeader.java` & `ContextFilter.java`**:

@@ -11,7 +11,7 @@ When assuming a tenant (e.g. `tenant-acme`), the `ProfileSwitcher` dropdown disp
    - Use the isolated profile subset to compute `groupedByTenant`.
    - Prevent cross-tenant leakage in UI while preserving the "Exit Sub-Session" action for returning to Sovereign Root.
 2. **Comprehensive Verification**:
-   - Add unit test in `src/components/layout/__tests__/profile-switcher.test.tsx` verifying `"Default Organization"` and `"Unipost Main"` are absent when a tenant is assumed.
+   - Add unit test in `src/components/layout/__tests__/profile-switcher.test.tsx` verifying `"Default Organization"` and `"Acc Main"` are absent when a tenant is assumed.
    - Run vitest and TypeScript validation.
 
 ---

@@ -1,4 +1,4 @@
-# Unipost Landing Page & Onboarding Mockup Generation Prompts
+# Acc Landing Page & Onboarding Mockup Generation Prompts
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Design & Generative UI Prompts)  
 **Target Engine:** Gemini (Imagen 3 / Multimodal Image Generation / Generative UI)  
@@ -14,10 +14,10 @@
 > **Recommended Aspect Ratio:** `16:9`
 
 ```text
-High-fidelity modern SaaS landing page UI design for "Unipost" - a next-generation Dynamic Metadata & Multi-Tenant Data Platform.
+High-fidelity modern SaaS landing page UI design for "Acc" - a next-generation Dynamic Metadata & Multi-Tenant Data Platform.
 
 Layout & Structure:
-- Frosted Liquid Glass top navigation bar: Unipost logo on the left, navigation links (Features, Solutions, Pricing, Docs), and on the right a glowing CTA button "[Đăng nhập / Bắt đầu ngay]".
+- Frosted Liquid Glass top navigation bar: Acc logo on the left, navigation links (Features, Solutions, Pricing, Docs), and on the right a glowing CTA button "[Đăng nhập / Bắt đầu ngay]".
 - Hero Section: Centered typography with clean modern sans-serif. Bold headline: "Nền Tảng Quản Trị Dữ Liệu Động & Metadata Đa Khách Hàng". Subheadline: "Tự do xây dựng mô hình dữ liệu, biểu mẫu động và đồ thị liên kết mà không cần code hay migration database."
 - Two CTA buttons: Primary glowing emerald-to-cyan gradient button "[🚀 Bắt đầu miễn phí]" and secondary frosted translucent button "[🎥 Xem demo trực tiếp]".
 - Hero Visual / Interactive Stage: A floating, multi-layered Liquid Glass application dashboard preview showing dynamic schema builder on the left (entity cards, JSON schema tags) and a responsive data explorer grid on the right with specular borders and translucent rows.
@@ -39,7 +39,7 @@ Format: Desktop browser interface mockup, 16:9 aspect ratio, clean front-facing 
 > **Recommended Aspect Ratio:** `16:9` or `4:3`
 
 ```text
-High-fidelity UI component mockup of a SaaS Pricing Section for "Unipost", designed with the Liquid Glass design system.
+High-fidelity UI component mockup of a SaaS Pricing Section for "Acc", designed with the Liquid Glass design system.
 
 Header & Controls:
 - Centered section header: "Bảng giá minh bạch - Linh hoạt theo quy mô của bạn".
@@ -80,7 +80,7 @@ Aesthetic Details:
 > **Recommended Aspect Ratio:** `1:1` or `4:3`
 
 ```text
-High-fidelity UI modal dialog mockup for an instant "payOS VietQR Checkout" on Unipost platform.
+High-fidelity UI modal dialog mockup for an instant "payOS VietQR Checkout" on Acc platform.
 
 Modal Window Elements:
 - Floating Liquid Glass modal dialog box with frosted scrim backdrop blur (modal overlay dimming the background).
@@ -110,11 +110,11 @@ Design Tokens:
 > **Recommended Aspect Ratio:** `4:3` or `1:1`
 
 ```text
-High-fidelity UI modal dialog mockup for "User Sign-up & Workspace Creation" on Unipost platform.
+High-fidelity UI modal dialog mockup for "User Sign-up & Workspace Creation" on Acc platform.
 
 Modal Window Elements:
 - Modern Liquid Glass floating card with multi-layer backdrop blur and subtle glowing border.
-- Header: Unipost logo icon + Title "Tạo Workspace của bạn" + Subtitle "Bắt đầu trải nghiệm nền tảng quản trị metadata động".
+- Header: Acc logo icon + Title "Tạo Workspace của bạn" + Subtitle "Bắt đầu trải nghiệm nền tảng quản trị metadata động".
 - Form Fields (Styled in Liquid Glass inputs with frosted translucency and crisp focus states):
   * "Họ và tên" (e.g. Alex Nguyen)
   * "Email công việc" (e.g. alex@acme.vn)
@@ -127,7 +127,7 @@ Modal Window Elements:
 
 ---
 
-# 5. Google Stitch Living Design Specification: Unipost Landing Page (`DESIGN.md`)
+# 5. Google Stitch Living Design Specification: Acc Landing Page (`DESIGN.md`)
 
 > **Target Tool / Ingestion:** Google Stitch AI Design Canvas & Autonomous UI Agents  
 > **Primary Language:** **Tiếng Việt (Vietnamese First)**  
@@ -140,7 +140,7 @@ Modal Window Elements:
 ## 5.1 System Identity & Tone of Voice
 
 ### Core Identity
-Unipost là **Nền tảng Quản trị Dữ liệu Động & Metadata Đa Khách Hàng (Dynamic Metadata & Multi-Tenant Data Platform)**. Trang chủ (Landing Page) cần truyền tải được 3 thông điệp mấu chốt:
+Acc là **Nền tảng Quản trị Dữ liệu Động & Metadata Đa Khách Hàng (Dynamic Metadata & Multi-Tenant Data Platform)**. Trang chủ (Landing Page) cần truyền tải được 3 thông điệp mấu chốt:
 1. **Linh hoạt tuyệt đối (Zero-DDL Schema Agility):** Người dùng có thể tự định nghĩa thực thể, thêm trường tùy biến, thiết lập quan hệ đồ thị mà không cần can thiệp code hay chạy migration cơ sở dữ liệu.
 2. **Trải nghiệm thị giác đỉnh cao (Liquid Glass Aesthetic):** Giao diện kính mờ hiện đại, khúc xạ ánh sáng đa lớp, độ tương phản sắc nét chuẩn doanh nghiệp.
 3. **Thanh toán nội địa tức thì (payOS VietQR):** Không rào cản thẻ tín dụng quốc tế; người dùng quét mã VietQR là kích hoạt ngay tài khoản trong 5 giây.
@@ -201,7 +201,7 @@ Google Stitch sử dụng bảng token dưới đây làm ràng buộc hệ th�
   <div class="max-w-7xl mx-auto flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-500/20">U</div>
-      <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Unipost</span>
+      <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Acc</span>
     </div>
     
     <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -386,7 +386,7 @@ Google Stitch sử dụng bảng token dưới đây làm ràng buộc hệ th�
 Khi nạp tài liệu này vào Google Stitch hoặc các AI coding assistant để sinh toàn bộ màn hình, bạn có thể sử dụng mẫu câu lệnh (Stitch Prompt) sau:
 
 ```text
-Build a responsive modern SaaS Landing Page in Vietnamese for "Unipost", adhering strictly to the DESIGN.md specifications:
+Build a responsive modern SaaS Landing Page in Vietnamese for "Acc", adhering strictly to the DESIGN.md specifications:
 - Language: Vietnamese (Tiếng Việt) as primary language.
 - Visual Language: Liquid Glass design tokens (frosted glass blur, specular 1px white borders, subtle ambient emerald/cyan mesh glows).
 - Key Sections:
