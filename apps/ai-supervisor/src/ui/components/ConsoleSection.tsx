@@ -42,7 +42,11 @@ export function ConsoleSection(props: ConsoleSectionProps) {
   return (
     <div
       class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] overflow-hidden my-6 transition-all"
-      style={{ "box-shadow": "var(--card-shadow)" }}
+      style={{
+        "box-shadow": "var(--card-shadow)",
+        "backdrop-filter": "var(--surface-backdrop)",
+        "-webkit-backdrop-filter": "var(--surface-backdrop)",
+      }}
     >
       <Tabs.Root
         value={props.activeService}

@@ -3,8 +3,10 @@
 @layer base {
   :root {
     --bg-canvas: #020617;
+    --bg-canvas-image: none;
     --bg-surface: #0f172a;
     --bg-surface-elevated: #1e293b;
+    --surface-backdrop: none;
     --border-subtle: #334155;
     --border-focus: #06b6d4;
     --text-primary: #f8fafc;
@@ -44,31 +46,11 @@
     --status-error-border: #fecdd3;
   }
 
-  /* Liquid Glass Authentic Optical Refraction & Specular Highlights */
-  html.frosted-glass {
-    --glass-blur: 20px;
-    --glass-saturate: 180%;
-    --glass-specular-top: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
-    --glass-specular-bottom: inset 0 -1px 1px 0 rgba(0, 0, 0, 0.05);
-    --glass-diffuse-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
-
-    --card-shadow: var(--glass-specular-top), var(--glass-specular-bottom), var(--glass-diffuse-shadow);
-  }
-
-  /* When Liquid Glass theme is active, elements render with backdrop-filter blur & saturation */
-  html.frosted-glass [style*="--card-shadow"] {
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    background-image: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.6) 0%,
-      rgba(255, 255, 255, 0.2) 40%,
-      rgba(255, 255, 255, 0.05) 100%
-    );
-  }
-
   body {
     background-color: var(--bg-canvas);
+    background-image: var(--bg-canvas-image);
+    background-attachment: fixed;
+    background-size: cover;
     color: var(--text-primary);
     transition: background-color 0.25s ease, color 0.25s ease;
   }
