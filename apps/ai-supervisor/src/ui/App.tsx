@@ -20,7 +20,15 @@ export function App() {
   };
 
   return (
-    <main class="min-h-screen bg-[var(--bg-canvas)] text-[var(--text-primary)] flex flex-col p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+    <main
+      class="min-h-screen text-[var(--text-primary)] flex flex-col p-4 sm:p-6 lg:p-8 transition-colors duration-200"
+      style={{
+        "background-color": "var(--bg-canvas)",
+        "background-image": "var(--bg-canvas-image)",
+        "background-attachment": "fixed",
+        "background-size": "cover",
+      }}
+    >
       <div class="max-w-6xl w-full mx-auto flex-1 flex flex-col">
         {/* Top Notification Toast */}
         <Show when={store.toastMessage()}>

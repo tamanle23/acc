@@ -360,23 +360,23 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     category: "light",
     primaryColor: "#0284c7",
     accentColor: "#38bdf8",
-    canvasBg: "#edf2f7",
-    surfaceBg: "rgba(255, 255, 255, 0.72)",
+    canvasBg: "#e2e8f0",
+    surfaceBg: "rgba(255, 255, 255, 0.45)",
     cssVars: {
-      "--bg-canvas": "#edf2f7",
-      "--bg-canvas-image": "radial-gradient(at 0% 0%, #e0e7ff 0px, transparent 50%), radial-gradient(at 100% 100%, #bae6fd 0px, transparent 50%)",
-      "--bg-surface": "rgba(255, 255, 255, 0.72)",
-      "--bg-surface-elevated": "rgba(241, 245, 249, 0.85)",
-      "--surface-backdrop": "blur(20px) saturate(180%)",
-      "--border-subtle": "rgba(255, 255, 255, 0.85)",
+      "--bg-canvas": "#e2e8f0",
+      "--bg-canvas-image": "radial-gradient(circle at 15% 20%, #c7d2fe 0%, transparent 45%), radial-gradient(circle at 85% 75%, #bae6fd 0%, transparent 50%), radial-gradient(circle at 50% 50%, #fbcfe8 0%, transparent 45%)",
+      "--bg-surface": "rgba(255, 255, 255, 0.45)",
+      "--bg-surface-elevated": "rgba(255, 255, 255, 0.65)",
+      "--surface-backdrop": "blur(24px) saturate(200%)",
+      "--border-subtle": "rgba(255, 255, 255, 0.9)",
       "--border-focus": "#0284c7",
-      "--text-primary": "#020617",      // 19.63:1 effective contrast (AAA)
-      "--text-muted": "#1e293b",        // 14.23:1 effective contrast (AAA)
+      "--text-primary": "#020617",      // 18.25:1 effective contrast (AAA)
+      "--text-muted": "#0f172a",        // 16.32:1 effective contrast (AAA)
       "--accent-primary": "#0284c7",
       "--accent-hover": "#0369a1",
-      "--accent-subtle": "rgba(2, 132, 199, 0.12)",
+      "--accent-subtle": "rgba(2, 132, 199, 0.15)",
       "--accent-glow": "rgba(2, 132, 199, 0.4)",
-      "--card-shadow": "inset 0 1px 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.05), 0 16px 36px -4px rgba(15, 23, 42, 0.10)",
+      "--card-shadow": "inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1.5px 1px 0 rgba(0, 0, 0, 0.05), 0 20px 40px -8px rgba(15, 23, 42, 0.14)",
     },
   },
 ];
