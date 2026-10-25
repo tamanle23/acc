@@ -29,6 +29,6 @@ Following the completion of Phases 1 through 15 and the introduction of Playwrig
 ## Verification
 - `pnpm turbo run check-types`: **4/4 tasks passed**.
 - `pnpm turbo run test`: **6/6 tasks passed** (155 console tests, 13 mobile-ui tests, all client/backend tests).
-- `pnpm --filter @unipost/console test:e2e`: **3/3 passed** (including real `@axe-core/playwright` WCAG 2.2 AA scan with 0 critical violations).
+- `pnpm --filter @acc/console test:e2e`: **3/3 passed** (including real `@axe-core/playwright` WCAG 2.2 AA scan with 0 critical violations).
 - `pnpm --filter tekgo-ui build`: Next.js 15.5.12 SSG/ISR static generation succeeded for all 95 pages.
 - Section 13 Checklist: All 9 invariants checked off in `docs/brainstorming/integration_master_plan_iteration_1.md`.

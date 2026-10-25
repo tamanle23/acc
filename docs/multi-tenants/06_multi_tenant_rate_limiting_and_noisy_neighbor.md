@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 06 of N)  
 **Document Level:** Systems Engineering & Infrastructure Reliability Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / Redis / Hazelcast), PostgreSQL 16+  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / Redis / Hazelcast), PostgreSQL 16+  
 **Scope:** Distributed Token-Bucket Rate Limiting, JSON Schema Protection (ReDoS Guards, Recursion Limits), Storage Quotas, Dynamic Query Guardrails  
 **Status:** Canonical Living Architecture Document  
 
@@ -55,7 +55,7 @@ In a pooled multi-tenant architecture, multiple tenants share the same underlyin
 Rate limiting is enforced at the API boundary using Redis-backed Token Bucket filters partitioned strictly by `tenant_id`.
 
 ```java
-package com.unipost.fw.tenancy.ratelimit;
+package com.acc.fw.tenancy.ratelimit;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -120,7 +120,7 @@ Regular expressions defined in attribute validation rules (e.g. `pattern: "^([a-
 2. **Interruptible Regex Evaluation**: In `SchemaValidationService`, JSON Schema validation is wrapped in an interruptible execution thread with a **5ms CPU timeout**:
 
 ```java
-package com.unipost.domain.metadata.validation;
+package com.acc.domain.metadata.validation;
 
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.ValidationMessage;

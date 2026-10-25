@@ -8,7 +8,7 @@ Phase 42 delivers the **Maximum-Care Base Entity CRUD Pipeline & Partitioned Aud
 ## Changes Implemented
 
 ### 1. Database Migration (Liquibase)
-- Created `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00012.xml`:
+- Created `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`:
   - Added `cascade_policy VARCHAR(20) DEFAULT 'RESTRICT' NOT NULL` to `UNIPOST_RELATIONSHIP_TYPES`.
   - Created table `UNIPOST_RECORD_AUDIT_LOG` range-partitioned by `created_at`:
     - Columns: `id BIGINT`, `tenant_id VARCHAR(64)`, `entity_type_id BIGINT`, `record_id BIGINT`, `version BIGINT`, `operation VARCHAR(30)`, `old_attributes JSONB`, `new_attributes JSONB`, `delta JSONB`, `changed_by VARCHAR(255)`, `created_at TIMESTAMP WITH TIME ZONE NOT NULL`.
@@ -17,7 +17,7 @@ Phase 42 delivers the **Maximum-Care Base Entity CRUD Pipeline & Partitioned Aud
     - Created rolling monthly partitions: `2026_10`, `2026_11`, `2026_12`, and `2027_01`.
     - Added lookup composite index `idx_record_audit_lookup ON UNIPOST_RECORD_AUDIT_LOG (tenant_id, entity_type_id, record_id, version DESC)`.
     - Enabled Row-Level Security (`RLS`) on PostgreSQL with tenant isolation policy.
-- Registered changelog 12 in `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml`.
+- Registered changelog 12 in `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`.
 
 ### 2. Domain & Repositories (Java 21 / Spring Modulith)
 - Updated `RelationshipType.java`: Added `cascadePolicy` column mapping and getter/setter.
@@ -75,7 +75,7 @@ Phase 42 delivers the **Maximum-Care Base Entity CRUD Pipeline & Partitioned Aud
 ### Backend Unit & Integration Tests (100% Pass)
 Command:
 ```powershell
-& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=*Metadata*,RecordMutationPipelineTest,CompositeEntityTypeVerificationTest" -q
+& "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Metadata*,RecordMutationPipelineTest,CompositeEntityTypeVerificationTest" -q
 ```
 - `RecordMutationPipelineTest`: 9/9 passed
   - `testSuccessfulCreateRecordWithAuditLog`

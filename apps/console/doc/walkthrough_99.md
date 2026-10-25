@@ -1,13 +1,13 @@
-# Walkthrough 99 - Unification of Client-Backend Contracts (`@unipost/client`) and Unified Sandbox Platform (`@unipost/sandbox`)
+# Walkthrough 99 - Unification of Client-Backend Contracts (`@acc/client`) and Unified Sandbox Platform (`@acc/sandbox`)
 
 ## 1. Executive Summary
-We successfully unified all client-backend contract models and DTOs into `@unipost/client`, and centralized all mock handlers, in-memory stateful repositories, and reset lifecycle registries into `@unipost/sandbox`. Backward compatibility in `@unipost/console` was 100% maintained via re-export hubs, passing all unit, integration, and sandbox test suites with 0 regressions.
+We successfully unified all client-backend contract models and DTOs into `@acc/client`, and centralized all mock handlers, in-memory stateful repositories, and reset lifecycle registries into `@acc/sandbox`. Backward compatibility in `@acc/console` was 100% maintained via re-export hubs, passing all unit, integration, and sandbox test suites with 0 regressions.
 
 ---
 
 ## 2. Key Changes & Architecture
 
-### A. `@unipost/client` Contract Unification
+### A. `@acc/client` Contract Unification
 - **Modular Contracts**: Centralized all domain DTOs into `packages/client/src/contracts/`:
   - `common.ts`: API envelopes (`ApiResponse<T>`, `PagedResponse<T>`, `BatchResult<T>`), sorting, pagination, error models (`ApiErrorDetails`, `ValidationErrorItem`), and traceparent headers.
   - `auth.ts`: Authentication credentials, JWT session payloads (`AuthTokenPair`, `UserProfile`, `UserRole`, `TenantContext`).
@@ -19,7 +19,7 @@ We successfully unified all client-backend contract models and DTOs into `@unipo
 - **Enriched Client**: `UnipostClient` provides domain namespaces (`client.auth`, `client.metadata`, `client.workflows`, `client.workflowExecutions`, `client.users`, `client.billing`) with transparent response unwrapping, `rawResponse: true` bypass option, and SSE execution stream reader (`client.workflowExecutions.streamExecution()`).
 - **Zero Third-Party Runtime Dependencies**: Pure TypeScript native `fetch` client and DTO definitions.
 
-### B. `@unipost/sandbox` Engine & Platform Centralization
+### B. `@acc/sandbox` Engine & Platform Centralization
 - **Master Reset Registry**: Implemented `SandboxResetRegistry` (`sandboxResetRegistry`) ensuring every in-memory repository automatically registers its reset lifecycle handler.
 - **Domain Handlers & Stateful Repositories**: Centralized all mock implementations into `packages/sandbox`:
   - `auth-sandbox-handler.ts` & Mock JWT Generator
@@ -31,11 +31,11 @@ We successfully unified all client-backend contract models and DTOs into `@unipo
   - `workspace-sandbox-handler.ts` & Tenant Workspace Hierarchy Repository
   - `chats-sandbox-handler.ts` & AI Chat Assistant Simulation
   - `apps-sandbox-handler.ts` & Installed App Integration Engine
-- **State Store & Two-Way Sync**: Framework-agnostic `SandboxStoreManager` / `defaultSandboxStore` synchronized with UI Zustand stores in `@unipost/console`.
+- **State Store & Two-Way Sync**: Framework-agnostic `SandboxStoreManager` / `defaultSandboxStore` synchronized with UI Zustand stores in `@acc/console`.
 
-### C. `@unipost/console` Backward Compatibility & Routing Integration
+### C. `@acc/console` Backward Compatibility & Routing Integration
 - **Transparent Re-Export Hubs**:
-  - `apps/console/src/core/sandbox/index.ts`: Re-exports all handlers, types, stores, and reset registries from `@unipost/sandbox`.
+  - `apps/console/src/core/sandbox/index.ts`: Re-exports all handlers, types, stores, and reset registries from `@acc/sandbox`.
   - `apps/console/src/core/sandbox/manager/sandbox-registry.ts`: Re-exports the unified `sandboxRegistry` singleton instance.
   - `apps/console/src/core/sandbox/ui/sandbox-dock.tsx`: Master reset button delegates to `sandboxResetRegistry.resetAll()`.
   - `apps/console/src/features/spring-auth/api-client.ts`: Respects `useSandboxStore` active tenant for multi-tenant isolation.
@@ -47,13 +47,13 @@ We successfully unified all client-backend contract models and DTOs into `@unipo
 
 | Suite | Package / App | Tests Passed | Status |
 | :--- | :--- | :--- | :--- |
-| **Contracts & Client SDK** | `@unipost/client` | 20 / 20 passed | ✅ 100% Green |
-| **Typecheck** | `@unipost/client` | 0 errors (`tsc --noEmit`) | ✅ 100% Green |
-| **Sandbox Platform Engine** | `@unipost/sandbox` | 9 / 9 passed | ✅ 100% Green |
-| **Typecheck** | `@unipost/sandbox` | 0 errors (`tsc --noEmit`) | ✅ 100% Green |
-| **Console Sandbox Integration** | `@unipost/console` (`src/core/sandbox`) | 65 / 65 passed (10 files) | ✅ 100% Green |
+| **Contracts & Client SDK** | `@acc/client` | 20 / 20 passed | ✅ 100% Green |
+| **Typecheck** | `@acc/client` | 0 errors (`tsc --noEmit`) | ✅ 100% Green |
+| **Sandbox Platform Engine** | `@acc/sandbox` | 9 / 9 passed | ✅ 100% Green |
+| **Typecheck** | `@acc/sandbox` | 0 errors (`tsc --noEmit`) | ✅ 100% Green |
+| **Console Sandbox Integration** | `@acc/console` (`src/core/sandbox`) | 65 / 65 passed (10 files) | ✅ 100% Green |
 
 ---
 
 ## 4. Next Steps
-- Continue standardizing downstream mobile (`@unipost/mobile-ui`) consumption of `@unipost/client` and `@unipost/sandbox`.
+- Continue standardizing downstream mobile (`@acc/mobile-ui`) consumption of `@acc/client` and `@acc/sandbox`.

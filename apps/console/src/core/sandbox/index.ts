@@ -1,10 +1,10 @@
 /**
  * Unified Sandbox Platform - Console Re-export Hub
- * Re-exports everything from @unipost/sandbox so all existing imports, handlers,
- * adapters, and tests in @unipost/console continue working with zero breaking changes.
+ * Re-exports everything from @acc/sandbox so all existing imports, handlers,
+ * adapters, and tests in @acc/console continue working with zero breaking changes.
  */
 
-export * from '@unipost/sandbox';
+export * from '@acc/sandbox';
 
 // Local UI & state extensions
 export * from './ui/sandbox-dock';
@@ -15,7 +15,7 @@ export { attachSandboxFetchInterceptor } from './adapters/fetch-sandbox-adapter'
 export * from './handlers/metadata-sandbox-adapter';
 
 // Auto-register console-specific metadataSandboxAdapter into sandboxRegistry
-import { sandboxRegistry } from '@unipost/sandbox';
+import { sandboxRegistry } from '@acc/sandbox';
 import { metadataSandboxAdapter } from './handlers/metadata-sandbox-adapter';
 import { workerSandboxHandler, workerFleetMockStore } from './handlers/worker-sandbox-handler';
 import { approvalsSandboxHandler, approvalTaskMockStore } from './handlers/approvals-sandbox-handler';

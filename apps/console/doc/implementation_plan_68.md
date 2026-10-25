@@ -1,6 +1,6 @@
 # Implementation Plan 68: Settings Billing & Subscriptions Screen
 
-A dedicated, enterprise-grade **Billing & Subscriptions** management screen (`/settings/billing`) in `@unipost/console` adhering to the **Tenant-Workspace Domain Hierarchy**, **Liquid Glass UI System**, and **Vietnamese Domestic Enterprise Standards (VietQR / Napas247 / E-Invoice)**.
+A dedicated, enterprise-grade **Billing & Subscriptions** management screen (`/settings/billing`) in `@acc/console` adhering to the **Tenant-Workspace Domain Hierarchy**, **Liquid Glass UI System**, and **Vietnamese Domestic Enterprise Standards (VietQR / Napas247 / E-Invoice)**.
 
 ---
 
@@ -162,9 +162,9 @@ In `apps/console/src/core/sandbox/handlers/billing-sandbox-handler.ts`:
 ---
 
 ## 7. Verification & Quality Gates
-- **Type Safety**: `pnpm --filter @unipost/console check-types`
-- **Linting & Style**: `pnpm --filter @unipost/console lint`
-- **Frontend Automated Tests**: `pnpm --filter @unipost/console test`
-- **Backend Automated Tests**: `apps/backend/mvnw.cmd test -pl unipost-fw`
+- **Type Safety**: `pnpm --filter @acc/console check-types`
+- **Linting & Style**: `pnpm --filter @acc/console lint`
+- **Frontend Automated Tests**: `pnpm --filter @acc/console test`
+- **Backend Automated Tests**: `apps/backend/mvnw.cmd test -pl acc-fw`
 - **Accessibility**: WCAG 2.2 AA compliance check on all text and modal dialogs.
 - **Git Archival**: Create `docs/history/019_settings_billing_and_subscriptions_panel.md`, update `docs/history/README.md`, and commit.

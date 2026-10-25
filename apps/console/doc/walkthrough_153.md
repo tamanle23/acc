@@ -4,7 +4,7 @@
 The `/system/roles` screen previously lacked dedicated roles lifecycle management (CRUD, inspection, tenant-level isolation), was confined to a basic 12-item list, and lacked support for Tenant Admins to delegate their own roles and assign ad-hoc permission overrides to users while enforcing the Delegation Ceiling and Sovereign Role Quarantine invariants.
 
 ## 2. Plan Execution & Architectural Upgrades
-Following [`docs/integration_master_plan_iteration24.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/integration_master_plan_iteration24.md):
+Following [`docs/integration_master_plan_iteration24.md`](file:///c:/Users/Admin/workspace/git/acc/docs/integration_master_plan_iteration24.md):
 - **Backend Schema & Invariants**:
   - Liquibase `changelog-000.000.00017.xml`: Evolved `UNIPOST_IDENTITY_USERPERMISSION` table with `tenant_id`, `is_granted`, `delegated_by_uid`, and `reason`; evolved `UNIPOST_IDENTITY_ROLE` with `role_scope`, `min_plan_tier`, and `tenant_id`.
   - Service Layer: Created `TenantRoleDelegationService` & `TenantRoleDelegationServiceImpl` enforcing Cross-Tenant Barriers, Sovereign Role Quarantine (`SYSTEM` scope roles cannot be delegated by tenant admins), Delegation Ceiling (admins cannot delegate roles they do not hold), and Last-Admin Protection.
@@ -23,7 +23,7 @@ Following [`docs/integration_master_plan_iteration24.md`](file:///c:/Users/Admin
   - Playwright spec `12-sovereign-rbac-matrix.spec.ts` passing with 0 WCAG 2.2 AA violations.
 
 ## 3. Verification & Results
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` -> 0 errors.
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` -> 0 errors.
 - **Console Unit Tests**: Vitest unit test suite executed -> 9/9 passed cleanly.
-- **Backend Unit Tests**: `./mvnw.cmd test -pl unipost-fw -Dtest=TenantRoleDelegationServiceTest` -> 5/5 passed cleanly.
-- **Playwright E2E**: `pnpm --filter @unipost/console exec playwright test e2e/12-sovereign-rbac-matrix.spec.ts` -> 1 passed (0 accessibility violations).
+- **Backend Unit Tests**: `./mvnw.cmd test -pl acc-fw -Dtest=TenantRoleDelegationServiceTest` -> 5/5 passed cleanly.
+- **Playwright E2E**: `pnpm --filter @acc/console exec playwright test e2e/12-sovereign-rbac-matrix.spec.ts` -> 1 passed (0 accessibility violations).

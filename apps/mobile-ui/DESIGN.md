@@ -9,7 +9,7 @@
 ## 1. System Identity & Vision
 
 ### 1.1 Product Purpose & Persona
-`mobile-ui` is the mobile companion client for the unipost ecosystem. Designed for on-the-go professionals, community creators, and remote operators who expect high-fidelity visual appeal, fluid gestural navigation, and instantaneous responsiveness.
+`mobile-ui` is the mobile companion client for the acc ecosystem. Designed for on-the-go professionals, community creators, and remote operators who expect high-fidelity visual appeal, fluid gestural navigation, and instantaneous responsiveness.
 
 ### 1.2 Aesthetic Core: Liquid Glass Native
 Mobile Liquid Glass leverages hardware-accelerated blur surfaces and optical depth:

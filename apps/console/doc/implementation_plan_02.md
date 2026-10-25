@@ -1,6 +1,6 @@
 # Implementation Plan - Add Liquid Glass Intensity Slider in Appearance Settings
 
-This plan details adding a customizable **Liquid Glass Intensity** slider to **Settings $\rightarrow$ Appearance** in [`apps/unipost-console`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console), enabling users to dynamically control the frosted glass blur, translucency, and specular refraction across the entire interface.
+This plan details adding a customizable **Liquid Glass Intensity** slider to **Settings $\rightarrow$ Appearance** in [`apps/acc-console`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console), enabling users to dynamically control the frosted glass blur, translucency, and specular refraction across the entire interface.
 
 ## User Review Required
 
@@ -13,7 +13,7 @@ This plan details adding a customizable **Liquid Glass Intensity** slider to **S
 
 ### Component Primitives
 
-#### [NEW] [slider.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/slider.tsx)
+#### [NEW] [slider.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/slider.tsx)
 - Implement a Liquid Glass styled `Slider` component wrapping `@radix-ui/react-slider`:
   - Frosted translucent track with glass border (`bg-white/20 dark:bg-white/10 border border-white/20`).
   - Glossy range fill (`bg-primary`).
@@ -23,7 +23,7 @@ This plan details adding a customizable **Liquid Glass Intensity** slider to **S
 
 ### State & Theme Management
 
-#### [MODIFY] [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/context/theme-provider.tsx)
+#### [MODIFY] [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/context/theme-provider.tsx)
 - Extend `ThemeProviderState` to support:
   - `glassIntensity: number` (0 to 100, default **20**).
   - `setGlassIntensity: (intensity: number) => void`.
@@ -36,14 +36,14 @@ This plan details adding a customizable **Liquid Glass Intensity** slider to **S
 
 ### CSS Variable Binding
 
-#### [MODIFY] [index.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/index.css) & [theme.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/theme.css)
+#### [MODIFY] [index.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/index.css) & [theme.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/theme.css)
 - Bind `@utility liquid-glass` and `@utility liquid-glass-card` to `var(--glass-blur, 20px)` and dynamic specular opacities.
 
 ---
 
 ### Appearance Settings Form
 
-#### [MODIFY] [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/appearance/appearance-form.tsx)
+#### [MODIFY] [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/appearance/appearance-form.tsx)
 - Update `appearanceFormSchema` to include `glassIntensity: z.number().min(0).max(100)`.
 - Connect `useTheme` to read `glassIntensity` and `setGlassIntensity`.
 - Add a new `FormField` for **Liquid Glass Intensity**:
@@ -58,11 +58,11 @@ This plan details adding a customizable **Liquid Glass Intensity** slider to **S
 ### Automated Tests
 - Run project linting:
   ```bash
-  pnpm --filter @unipost/web lint
+  pnpm --filter @acc/web lint
   ```
 - Run production build:
   ```bash
-  pnpm --filter @unipost/web build
+  pnpm --filter @acc/web build
   ```
 
 ### Manual Verification

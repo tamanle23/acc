@@ -2,7 +2,7 @@
 
 ## Summary of Accomplishments
 
-Established the comprehensive, authoritative **Workflow Orchestration Engine Architecture Specification** as the permanent Single Source of Truth (SSOT) across `@unipost/backend`, `@unipost/console`, and `@unipost/ui`.
+Established the comprehensive, authoritative **Workflow Orchestration Engine Architecture Specification** as the permanent Single Source of Truth (SSOT) across `@acc/backend`, `@acc/console`, and `@acc/ui`.
 
 ### 1. Master Architectural Specification (`docs/workflow_orchestration_engine_architecture.md`)
 Authored the complete end-to-end blueprint detailing:
@@ -28,8 +28,8 @@ Authored the complete end-to-end blueprint detailing:
 ## Verification Results
 
 1. **Frontend Type Check**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit` -> Exited 0 with 0 errors.
+   - `pnpm --filter @acc/console exec tsc --noEmit` -> Exited 0 with 0 errors.
 2. **Frontend Unit Tests**:
-   - `pnpm --filter @unipost/console test -- run src/features/workflows src/features/workflow-executions` -> 25 test files passed, 105 tests passed.
+   - `pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions` -> 25 test files passed, 105 tests passed.
 3. **Backend Compilation**:
-   - `mvnw.cmd test-compile -q` in `apps/backend` -> Exited 0 cleanly across all Spring modules (`workflow-engine`, `unipost-ms-aio`, etc.).
+   - `mvnw.cmd test-compile -q` in `apps/backend` -> Exited 0 cleanly across all Spring modules (`workflow-engine`, `acc-ms-aio`, etc.).

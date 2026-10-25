@@ -3,7 +3,7 @@ import type {
   WorkflowExecutionStatus,
   TaskSnapshot,
   WorkflowSnapshot,
-} from '@unipost/client';
+} from '@acc/client';
 
 export type {
   WorkflowExecution,

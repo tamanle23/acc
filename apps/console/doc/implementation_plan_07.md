@@ -13,14 +13,14 @@ Implement the **Facebook Login flow** for the Facebook card in **App Integration
 
 ### Console Application (`apps/console`)
 
-#### [NEW] [facebook-service.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/services/facebook-service.ts)
+#### [NEW] [facebook-service.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/services/facebook-service.ts)
 - Wrapper for Facebook JavaScript SDK and Graph API v21.0:
   - `initFacebookSdk(appId)`: dynamically injects and initializes `connect.facebook.net/en_US/sdk.js`.
   - `loginWithFacebook(appId)`: triggers `FB.login` with scopes: `public_profile`, `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`.
   - `fetchUserPages(userAccessToken)`: calls `GET https://graph.facebook.com/v21.0/me/accounts` to retrieve all Facebook Pages with their short-lived Page Access Tokens.
   - `exchangeForLongLivedToken({ userAccessToken, appId, appSecret })`: exchanges short-lived user token for 60-day token, then retrieves the permanent Page Access Token.
 
-#### [NEW] [facebook-store.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/stores/facebook-store.ts)
+#### [NEW] [facebook-store.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/stores/facebook-store.ts)
 - Zustand store with `localStorage` persistence managing:
   - `isConnected`: connection status.
   - `appId`, `appSecret`: Facebook app credentials.
@@ -29,7 +29,7 @@ Implement the **Facebook Login flow** for the Facebook card in **App Integration
   - `userToken`: acquired Facebook user access token.
   - Actions: `setCredentials`, `setConnectedPage`, `disconnect`, `setAvailablePages`.
 
-#### [NEW] [facebook-connect-modal.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/facebook-connect-modal.tsx)
+#### [NEW] [facebook-connect-modal.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/facebook-connect-modal.tsx)
 - Liquid Glass modal dialog providing a clear multi-step flow:
   1. **Authentication Step**: Enter/verify Facebook App ID, click "Login with Facebook" (or demo connect).
   2. **Page Selection Step**: Displays user's Facebook Pages with Page names, categories, and IDs. User selects which Page to manage.
@@ -39,7 +39,7 @@ Implement the **Facebook Login flow** for the Facebook card in **App Integration
      - Provides action **"Exchange for Long-Lived Token"** using App Secret and Graph API exchange endpoint.
   4. **Connected State**: Allows viewing token details, switching pages, or disconnecting.
 
-#### [MODIFY] [apps/index.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/index.tsx)
+#### [MODIFY] [apps/index.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/index.tsx)
 - Connect the Facebook card in the app grid to `facebook-store.ts`.
 - When connected, display active Page name, green status badge, and "Manage" button.
 - When clicking "Connect" or "Manage", open `FacebookConnectModal`.
@@ -48,14 +48,14 @@ Implement the **Facebook Login flow** for the Facebook card in **App Integration
 
 ### App Documentation & Artifact History
 
-#### [NEW] [apps/console/doc/implementation_plan_07.md](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/implementation_plan_07.md)
+#### [NEW] [apps/console/doc/implementation_plan_07.md](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_07.md)
 - Mirror of this implementation plan per monorepo artifact history rules.
 
 ## Verification Plan
 
 ### Automated Tests
-1. `pnpm --filter @unipost/console build:web` — verify type correctness and bundling.
-2. `pnpm --filter @unipost/console lint` — verify ESLint compliance with 0 errors.
+1. `pnpm --filter @acc/console build:web` — verify type correctness and bundling.
+2. `pnpm --filter @acc/console lint` — verify ESLint compliance with 0 errors.
 
 ### Manual / User Verification
 1. Navigate to **App Integrations** (`/apps`).

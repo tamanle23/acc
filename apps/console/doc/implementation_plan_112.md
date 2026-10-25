@@ -3,7 +3,7 @@
 ## 1. Overview
 Phase 43 delivers the **Adaptive Read-Time Resolution Engine** across the Unipost monorepo. It empowers the metadata platform to dynamically resolve complex hierarchical composite entity documents (up to depth 4) in a **single database roundtrip** using PostgreSQL `jsonb_build_object`, `jsonb_agg`, and `LEFT JOIN LATERAL` over Pattern B foreign keys and Pattern C association matrices (`UNIPOST_ENTITY_RELATIONSHIPS`).
 
-The engine introduces native **per-child collection pagination** (`childLimit[alias]` / `childOffset[alias]`), bounded guardrails (1,500ms statement timeout), an automated resilient fallback to **`DataLoaderBatchResolver`** on planner or timeout issues, dedicated REST endpoints, an expandable **Liquid Glass Master-Detail** view in `@unipost/console`'s `EntityDataGrid`, and full **Unified Sandbox Platform** simulation.
+The engine introduces native **per-child collection pagination** (`childLimit[alias]` / `childOffset[alias]`), bounded guardrails (1,500ms statement timeout), an automated resilient fallback to **`DataLoaderBatchResolver`** on planner or timeout issues, dedicated REST endpoints, an expandable **Liquid Glass Master-Detail** view in `@acc/console`'s `EntityDataGrid`, and full **Unified Sandbox Platform** simulation.
 
 ---
 
@@ -29,7 +29,7 @@ All architectural decisions were grilled and agreed upon:
 
 ## 3. Work Breakdown
 
-### Workstream 1: Backend Dynamic Query Compiler & AST Execution (`unipost-fw`)
+### Workstream 1: Backend Dynamic Query Compiler & AST Execution (`acc-fw`)
 - **`DynamicQueryCompiler.java`**:
   - Compiles `CompositeSpec` AST into executable parameterized PostgreSQL query with:
     - Root projection: `jsonb_build_object` with standard envelope (`id`, `tenantId`, `entityTypeId`, `is_composite: true`) and projected attributes from `spec.fields()`.
@@ -113,13 +113,13 @@ All architectural decisions were grilled and agreed upon:
    - `CompositeRecordServiceTest`: Happy path pushdown, child pagination slicing, and DataLoader fallback on timeout.
    - Run via:
      ```powershell
-     & "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=*Composite*,DynamicQueryCompilerTest" -q
+     & "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest" -q
      ```
 2. **Frontend Tests**:
    - `composite-master-detail-row.test.tsx`: Master-detail expansion, child collection tabs, and micro-pagination interaction.
    - Run via:
      ```powershell
-     pnpm --filter @unipost/console exec vitest run src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx
+     pnpm --filter @acc/console exec vitest run src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx
      ```
 3. **Monorepo Lint & Type Check**:
-   - `pnpm --filter @unipost/console exec tsc -b`
+   - `pnpm --filter @acc/console exec tsc -b`

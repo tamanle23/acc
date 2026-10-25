@@ -1,7 +1,7 @@
 # 011: UI Wiring for Phase 7 (Noisy Neighbor Defense & Quotas) and Phase 8 (GDPR & Data Portability)
 
 ## 1. Problem Statement
-The backend architecture implemented comprehensive tenant quota caps (50 entity types, 100 attributes per type), ReDoS regex protection, HTTP 429 rate limiting with `Retry-After`, streaming ZIP export (`GET /api/v1/metadata/tenants/{id}/export`), and asynchronous GDPR Article 17 hard-purge (`POST /api/v1/metadata/tenants/{id}/purge`). However, the `@unipost/console` frontend lacked:
+The backend architecture implemented comprehensive tenant quota caps (50 entity types, 100 attributes per type), ReDoS regex protection, HTTP 429 rate limiting with `Retry-After`, streaming ZIP export (`GET /api/v1/metadata/tenants/{id}/export`), and asynchronous GDPR Article 17 hard-purge (`POST /api/v1/metadata/tenants/{id}/purge`). However, the `@acc/console` frontend lacked:
 - Visual quota utilization feedback and pre-emptive creation blocking before backend rejection.
 - Client-side static ReDoS pattern detection in schema attribute regex validation.
 - Interception of HTTP 429 errors to surface retry-after durations to users.
@@ -21,8 +21,8 @@ The backend architecture implemented comprehensive tenant quota caps (50 entity 
    - Updated `apps/console/ROUTE.md`.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- `pnpm --filter @unipost/console test` passed (41 tests across 6 suites).
+- `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- `pnpm --filter @acc/console test` passed (41 tests across 6 suites).
 
 ## 4. Key Artifacts
 - Plan: `apps/console/doc/implementation_plan_61.md`

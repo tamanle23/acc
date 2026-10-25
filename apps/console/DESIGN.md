@@ -1,4 +1,4 @@
-# Design Specification: Console (`@unipost/console`)
+# Design Specification: Console (`@acc/console`)
 > **Target Tool / Feed:** Google Stitch AI Design Canvas & Antigravity Agents  
 > **Aesthetic System:** Liquid Glass Enterprise Design Language  
 > **Platform:** Responsive Web (Vite 8 / React 19) & Desktop Companion (Electrobun)  
@@ -9,7 +9,7 @@
 ## 1. System Identity & Vision
 
 ### 1.1 Product Purpose & Persona
-`@unipost/console` is an enterprise-grade administration, operations, and cloud resource management portal. It is used by DevOps leads, system administrators, and engineering managers who need high information density, low latency, and crystal-clear visual hierarchies.
+`@acc/console` is an enterprise-grade administration, operations, and cloud resource management portal. It is used by DevOps leads, system administrators, and engineering managers who need high information density, low latency, and crystal-clear visual hierarchies.
 
 ### 1.2 Aesthetic Core: Liquid Glass Enterprise
 The visual identity departs from flat, opaque enterprise dashboards by implementing **Liquid Glass**:
@@ -155,13 +155,13 @@ Google Stitch ingests these design tokens as prompt-level constraints when rende
 
 ## 4. Google Stitch Prompting Blueprint (Zoom-Out-Zoom-In)
 
-When instructing **Google Stitch** to generate or iterate screens for `@unipost/console`, use this structured formula:
+When instructing **Google Stitch** to generate or iterate screens for `@acc/console`, use this structured formula:
 
 ```markdown
-### STITCH GENERATION TEMPLATE: `@unipost/console`
+### STITCH GENERATION TEMPLATE: `@acc/console`
 
 [1. CONTEXT]
-Design an enterprise administration dashboard screen for "@unipost/console".
+Design an enterprise administration dashboard screen for "@acc/console".
 Audience: DevOps engineers, system admins, engineering leaders.
 Vibe: Ultra-modern, high-density, professional "Liquid Glass" enterprise aesthetics.
 

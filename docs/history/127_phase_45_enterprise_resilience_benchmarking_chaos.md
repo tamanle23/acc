@@ -24,13 +24,13 @@ Following the implementation of Phase 44 (Composite Computed Rollups & Deep Chil
 
 ## 3. Changes Made
 - **Backend Tests**:
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeQueryPerformanceBenchmarkTest.java`: 1,000 queries, 32 threads, persistent markdown report generator.
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeChaosResilienceTest.java`: 4 fault injection test cases covering failover, depth limits, tenant isolation, and SQLi fuzzing.
+  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`: 1,000 queries, 32 threads, persistent markdown report generator.
+  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`: 4 fault injection test cases covering failover, depth limits, tenant isolation, and SQLi fuzzing.
 - **Frontend Tests**:
   - `apps/console/src/features/metadata/components/data-explorer/composite-data-explorer.test.tsx`: 5 integration tests covering full composite data explorer workflow.
   - `apps/console/e2e/composite-entities.spec.ts`: End-to-end browser test with AxeBuilder accessibility audit.
 - **Bug Fixes & Hardening**:
-  - `apps/console/src/core/sandbox/index.ts`: Resolved conflicting star exports between `@unipost/sandbox` and local stores.
+  - `apps/console/src/core/sandbox/index.ts`: Resolved conflicting star exports between `@acc/sandbox` and local stores.
   - `apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`: Added `hasAutoExpandedRef` to prevent manual collapse from being immediately reverted; added `aria-label` to page size selector.
   - `apps/console/src/features/metadata/components/metadata-feature.tsx`: Re-structured Tabs navigation to wrap views in `<TabsContent>` inside `<Tabs>` for WCAG 4.1.2 compliance.
   - `apps/console/src/core/sandbox/ui/sandbox-dock.tsx`: Added `htmlFor`, `id`, and `aria-label` to active scope tenant select.
@@ -45,7 +45,7 @@ Following the implementation of Phase 44 (Composite Computed Rollups & Deep Chil
   - Report: `docs/benchmarks/phase_45_benchmark_report.md`.
 - **Vitest Suites**: 15/15 tests passed across `composite-data-explorer.test.tsx`, `composite-master-detail-row.test.tsx`, and `entity-type-sidebar.test.tsx`.
 - **Playwright Browser E2E**: 5/5 tests passed in 4.1s with 0 critical WCAG 2.2 AA accessibility violations.
-- **TypeScript**: 0 type errors (`pnpm --filter @unipost/console exec tsc --noEmit`).
+- **TypeScript**: 0 type errors (`pnpm --filter @acc/console exec tsc --noEmit`).
 
 ---
 

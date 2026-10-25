@@ -1,6 +1,6 @@
 # Implementation Plan 53 - Metadata Module Alignment in Console & Embedded Hazelcast Cache Migration
 
-Scope: `@unipost/console` (Frontend UI alignment) and `@unipost/backend` (`unipost-fw` embedded Hazelcast cache engine).
+Scope: `@acc/console` (Frontend UI alignment) and `@acc/backend` (`acc-fw` embedded Hazelcast cache engine).
 
 ---
 
@@ -14,7 +14,7 @@ Following the successful completion of the Backend Metadata Engine (Phases 0 to 
 5. Entity Relationship types and edge tables with strict cardinality enforcement (`ONE_TO_ONE`, `ONE_TO_MANY`, `MANY_TO_ONE`, `MANY_TO_MANY`) and `relation_picker` referential integrity validation.
 
 However:
-- **`@unipost/console` Misalignments**:
+- **`@acc/console` Misalignments**:
   - Catches errors silently in `metadata-api.ts` and falls back to mock data, hiding real backend status and errors.
   - Re-implements its own client-side JSON Schema Draft-07 compiler instead of consuming `GET /entity-types/{id}/schema`.
   - Performs local array filtering and sorting instead of passing query parameters to the backend.
@@ -31,7 +31,7 @@ However:
 
 ```
 +------------------------------------------------------------------------------+
-|                           @unipost/console                                  |
+|                           @acc/console                                  |
 |                                                                              |
 |  [ EntityTypeSidebar ] ---> [ SchemaBuilder ] ---> [ SchemaJsonPreview ]     |
 |         |                           |                        |               |
@@ -49,7 +49,7 @@ However:
                                 |
                                 v
 +------------------------------------------------------------------------------+
-|                           @unipost/backend                                  |
+|                           @acc/backend                                  |
 |                                                                              |
 |  [ MetadataController ]                                                      |
 |         |                                                                    |
@@ -82,10 +82,10 @@ However:
 
 ### Phase 1: Backend Embedded Hazelcast Migration
 1. **Dependency Management**:
-   - Add `com.hazelcast:hazelcast-spring` to `apps/backend/unipost-fw/pom.xml`.
+   - Add `com.hazelcast:hazelcast-spring` to `apps/backend/acc-fw/pom.xml`.
 2. **Hazelcast Configuration**:
-   - Create `com.unipost.boot.config.HazelcastConfiguration`:
-     - Configure embedded `HazelcastInstance` with cluster name `unipost-cluster`.
+   - Create `com.acc.boot.config.HazelcastConfiguration`:
+     - Configure embedded `HazelcastInstance` with cluster name `acc-cluster`.
      - Configure `metadata-schemas` `MapConfig` with:
        - Eviction policy `LRU`, max size 1,000 entries.
        - TTL 1 hour.
@@ -98,7 +98,7 @@ However:
    - In `MetadataCacheListener.java`:
      - Evict from Hazelcast `metadata-schemas` `IMap` (e.g. `remove(key)` and versioned prefix cleanup).
 4. **Testing**:
-   - Verify unit tests and slice tests in `unipost-fw` with Mockito/Embedded Hazelcast.
+   - Verify unit tests and slice tests in `acc-fw` with Mockito/Embedded Hazelcast.
 
 ---
 
@@ -174,11 +174,11 @@ However:
 
 ## 4. Verification & Testing Plan
 1. **Backend Verification**:
-   - `node mvnw.cjs test -pl :unipost-fw` (All unit tests passing with Hazelcast).
+   - `node mvnw.cjs test -pl :acc-fw` (All unit tests passing with Hazelcast).
    - `node mvnw.cjs test` (Full 10-module reactor build passing).
 2. **Console Verification**:
-   - `pnpm --filter @unipost/console check-types`
-   - `pnpm --filter @unipost/console build`
+   - `pnpm --filter @acc/console check-types`
+   - `pnpm --filter @acc/console build`
    - Test UI flows:
      - Schema JSON preview loads from backend.
      - Saving records with 409 version conflict triggers conflict UX.

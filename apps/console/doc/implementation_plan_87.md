@@ -1,7 +1,7 @@
 # Technical Design & Implementation Plan: Unified Dynamic Layout Switching Engine for Management Views & High-Dimensional Entity Grids
 
 > **Document Status**: Refined Enterprise-Grade Architecture Specification  
-> **Applies to**: `@unipost/console` (React 19 / Vite 8 / TanStack Suite)  
+> **Applies to**: `@acc/console` (React 19 / Vite 8 / TanStack Suite)  
 > **Aesthetic System**: Liquid Glass Enterprise (`DESIGN.md`)  
 > **Accessibility Standard**: WAI-ARIA & WCAG 2.2 Level AA  
 
@@ -175,7 +175,7 @@ graph TD
 ## 6. Verification & Quality Gates
 
 ### 6.1 Automated Testing Plan
-- Execute: `pnpm --filter @unipost/console test src/features/metadata`
+- Execute: `pnpm --filter @acc/console test src/features/metadata`
 - Unit test assertions:
   1. `LayoutModeSwitcher`: Renders options, toggles active mode on click, fires `onChange`.
   2. `BlueprintTableView`: Correctly renders all blueprints with proper column mapping, triggers `onPreview` and `onSelect`.
@@ -183,7 +183,7 @@ graph TD
   4. `BlueprintGalleryDialog`: Preserves layout mode selection across renders and correctly toggles view modes.
 
 ### 6.2 Manual Verification Steps
-1. Navigate to `@unipost/console` -> Metadata Studio.
+1. Navigate to `@acc/console` -> Metadata Studio.
 2. Click **Templates** to open the Domain Blueprint Catalog.
 3. Switch to **Table Mode**: Verify dense single-line rows with clear model/edge counts and right-aligned action buttons.
 4. Switch to **Split Mode**: Click different blueprints in the left rail; verify the right detail pane immediately updates the live graph canvas and models list without lag.

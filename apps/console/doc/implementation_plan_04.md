@@ -23,7 +23,7 @@ The user reported:
 ## 2. Proposed Changes
 
 ### Component 1: Interactive Live Liquid Glass Preview on Appearance Settings
-#### [MODIFY] [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/appearance/appearance-form.tsx)
+#### [MODIFY] [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/appearance/appearance-form.tsx)
 - Add a **Live Liquid Glass Preview Card** positioned directly below the slider in `appearance-form.tsx`.
 - The preview card features:
   - Real-time animated specular highlight sheen.
@@ -32,20 +32,20 @@ The user reported:
   - Immediate visual feedback on drag without waiting for form submission or page navigation.
 
 ### Component 2: Liquid Glass Container for Settings Layout
-#### [MODIFY] [settings/index.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/index.tsx)
+#### [MODIFY] [settings/index.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/index.tsx)
 - Wrap the Settings content area and navigation in a floating Liquid Glass panel (`liquid-glass-card`).
 - As the user drags the slider, the very container they are interacting with visibly changes frosted blur, translucency, and edge specular highlights in real-time.
 
 ### Component 3: Connect Header & Sidebar to Dynamic Glass Variables
-#### [MODIFY] [header.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/layout/header.tsx)
+#### [MODIFY] [header.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/layout/header.tsx)
 - Bind the header background and backdrop blur directly to `var(--glass-blur)` and `var(--glass-intensity)`.
 - When intensity is adjusted, the sticky top header visibly responds across the entire viewport.
 
-#### [MODIFY] [theme.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/theme.css)
+#### [MODIFY] [theme.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/theme.css)
 - Bind `--sidebar` translucency to `--glass-intensity` so the navigation sidebar also responds dynamically.
 
 ### Component 4: Amplify Visual Contrast Range in Theme Provider
-#### [MODIFY] [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/context/theme-provider.tsx)
+#### [MODIFY] [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/context/theme-provider.tsx)
 - Expand the dynamic range:
   - At **0%**: Crystal-clear liquid glass (0px blur, 10% opacity, minimal specular highlight).
   - At **20% (Default)**: Crisp balanced liquid glass (8px blur, 22% opacity, crisp top-lit specular edge).
@@ -57,8 +57,8 @@ The user reported:
 ## 3. Verification Plan
 
 ### Automated Verification
-- Run `pnpm --filter @unipost/web build:web` to verify zero TypeScript errors.
-- Run `pnpm --filter @unipost/web lint` to verify clean ESLint status.
+- Run `pnpm --filter @acc/web build:web` to verify zero TypeScript errors.
+- Run `pnpm --filter @acc/web lint` to verify clean ESLint status.
 
 ### Manual Verification
 - Open Settings $\rightarrow$ Appearance.

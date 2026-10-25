@@ -2,7 +2,7 @@
 
 ## Changes Made
 1. **Removed `runAlways="true"` & `runOnChange="true"`**:
-   - Updated `apps/backend/unipost-db/src/main/resources/db/identity/changelog-master_data.xml` and `changelog-mock_data.xml` to remove `runAlways="true"` and `runOnChange="true"`.
+   - Updated `apps/backend/acc-db/src/main/resources/db/identity/changelog-master_data.xml` and `changelog-mock_data.xml` to remove `runAlways="true"` and `runOnChange="true"`.
    - Reason: `runAlways="true"` was forcing Liquibase to re-run data insertion SQL scripts on every execution, causing PostgreSQL to throw `duplicate key value violates unique constraint "un_role_uid"` on key `(uid)=(a7d87556-a281-4965-829e-877beb3682d0)`.
 
 2. **Liquibase Migration Standards**:

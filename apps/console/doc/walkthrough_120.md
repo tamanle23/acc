@@ -1,7 +1,7 @@
 # Walkthrough 120: Automated Testing Phase 4 - Golden E2E Browser Journey Matrix & WCAG 2.2 AA Gating
 
 ## Overview
-Phase 4 of the Automated Testing Master Plan establishes a complete 10-spec Golden E2E Browser Journey Matrix in `@unipost/console` using Playwright in Mode 1 (Unified Sandbox Autonomous offline mock engines). Each end-to-end user flow includes automated accessibility auditing via `@axe-core/playwright`, guaranteeing zero critical or serious WCAG 2.2 AA accessibility violations.
+Phase 4 of the Automated Testing Master Plan establishes a complete 10-spec Golden E2E Browser Journey Matrix in `@acc/console` using Playwright in Mode 1 (Unified Sandbox Autonomous offline mock engines). Each end-to-end user flow includes automated accessibility auditing via `@axe-core/playwright`, guaranteeing zero critical or serious WCAG 2.2 AA accessibility violations.
 
 ---
 
@@ -25,7 +25,7 @@ Phase 4 of the Automated Testing Master Plan establishes a complete 10-spec Gold
 ## Accessibility & Test Resilience Improvements
 
 1. **Floating Sandbox Dock Suppression (`auth-helper.ts`)**:
-   - Initialized `unipost_unified_sandbox_minimized: 'true'` in `localStorage` via `page.addInitScript` to prevent floating dock overlays from intercepting click events during automated test runs.
+   - Initialized `acc_unified_sandbox_minimized: 'true'` in `localStorage` via `page.addInitScript` to prevent floating dock overlays from intercepting click events during automated test runs.
 2. **Accessible Comboboxes & Buttons**:
    - Added `aria-label` attributes to dropdown filters, copy action buttons, and scrollable container regions (`dlq-inspector-sheet`, `fleet-tenants-table`, `payos-qr-modal`).
 3. **WCAG 2.2 AA Contrast Compliance**:
@@ -39,7 +39,7 @@ Phase 4 of the Automated Testing Master Plan establishes a complete 10-spec Gold
 All 15 Playwright tests (10 Golden Flows + composite-entities + legacy console-e2e) executed and passed with 0 accessibility violations:
 
 ```bash
-pnpm --filter @unipost/console test:e2e
+pnpm --filter @acc/console test:e2e
 ```
 
 ```text

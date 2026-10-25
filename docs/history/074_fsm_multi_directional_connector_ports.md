@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: feat(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -30,18 +30,18 @@ When a state had multiple incoming and outgoing transitions (such as rejections 
      - **Reverse / Rejection progressions** (`targetIdx < sourceIdx`) route from `source-bottom` &rarr; `target-bottom`, looping under the main flow cleanly.
      - **Self-loops** (`targetIdx === sourceIdx`) route from `source-top` &rarr; `target-top`.
      - **Parallel forward pathways** alternate between right and top handles.
-3. **Verification**: Run Vitest suite across `@unipost/console`.
+3. **Verification**: Run Vitest suite across `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Added 6 multi-directional handle ports (`target-top`, `target-left`, `target-bottom`, `source-top`, `source-right`, `source-bottom`) with distinct positioning and hover glows.
-- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Wired topological direction routing connecting edges to optimal port handles based on state progression order.
+- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Added 6 multi-directional handle ports (`target-top`, `target-left`, `target-bottom`, `source-top`, `source-right`, `source-bottom`) with distinct positioning and hover glows.
+- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Wired topological direction routing connecting edges to optimal port handles based on state progression order.
 
 ---
 
 ## 4. Verification
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - 9 test files passed, 54 tests passed with 0 errors.
 
 ---

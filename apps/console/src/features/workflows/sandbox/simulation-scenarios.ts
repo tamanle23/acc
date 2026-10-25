@@ -69,7 +69,7 @@ export const SIMULATION_SCENARIOS: Record<SimulationScenarioId, SimulationScenar
       // Step 4: Manager Approval
       { eventType: 'TASK_IN_PROGRESS', taskRef: 'managerApproval', status: 'IN_PROGRESS', workerId: 'human-gateway' },
       { eventType: 'TASK_LOG', taskRef: 'managerApproval', level: 'INFO', message: 'Human-in-the-loop: Routing approval request to FINANCE_MANAGER pool' },
-      { eventType: 'TASK_COMPLETED', taskRef: 'managerApproval', status: 'COMPLETED', output: { approved: true, approver: 'alex.chen@unipost.io' } },
+      { eventType: 'TASK_COMPLETED', taskRef: 'managerApproval', status: 'COMPLETED', output: { approved: true, approver: 'alex.chen@acc.io' } },
       // Step 5: Charge Payment
       { eventType: 'TASK_IN_PROGRESS', taskRef: 'chargePayment', status: 'IN_PROGRESS', workerId: 'stripe-billing-gateway' },
       { eventType: 'TASK_LOG', taskRef: 'chargePayment', level: 'INFO', message: 'Authorizing credit card transaction for $2,450.00 via tokenized payment provider...' },

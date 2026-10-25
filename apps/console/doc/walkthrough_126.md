@@ -1,13 +1,13 @@
 # Walkthrough 126: Column View Toggles & Guaranteed Horizontal Overflow for EntityDataGrid
 
 ## 1. Overview
-This update addresses the two requirements for high-density wide tables (such as `telemetry_wide_matrix` with 120 columns) in [`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx):
+This update addresses the two requirements for high-density wide tables (such as `telemetry_wide_matrix` with 120 columns) in [`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx):
 1. **Column Views Toggle (`DataTableViewOptions`)**: Integrated the column visibility toggle menu into `EntityDataGrid`'s action toolbar with full TanStack `columnVisibility` state bindings so users can toggle any of the 120 columns on and off dynamically.
 2. **Guaranteed Horizontal Scrolling & Full 120-Column Hydration**:
    - Resolved the query truncation where `useAttributeDefinitions(entityTypeId)` defaulted to only 50 columns. It now queries with `{ size: 500 }`.
    - Updated `metadataSandboxAdapter` to parse and forward `size` and `number` query parameters to `mockMetadataStore.getAttributeDefinitions`.
    - Updated `table` layout styling with `w-full min-w-max text-left border-collapse text-xs table-auto`, guaranteeing that a table with 120 columns expands beyond the viewport and triggers horizontal scrolling on any screen resolution.
-   - Upgraded [`DataTableViewOptions`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/data-table/view-options.tsx) dropdown menu to be scrollable (`max-h-[360px] overflow-y-auto`) to comfortably browse through 100+ columns.
+   - Upgraded [`DataTableViewOptions`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/data-table/view-options.tsx) dropdown menu to be scrollable (`max-h-[360px] overflow-y-auto`) to comfortably browse through 100+ columns.
 
 ---
 

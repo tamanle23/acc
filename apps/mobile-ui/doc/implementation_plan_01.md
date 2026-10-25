@@ -8,7 +8,7 @@ Please review the proposed tech stack and file structure. Let me know if you wou
 ## Proposed File Structure
 
 ```text
-c:\Users\Admin\workspace\git\unipost\apps\mobile-ui
+c:\Users\Admin\workspace\git\acc\apps\mobile-ui
 ├── package.json
 ├── tsconfig.json
 ├── app.json

@@ -38,4 +38,4 @@ Surface the `TenantRoleDelegationModal` directly as a "Delegate Permissions" act
 ### 7. Verification & Tests
 - Vitest unit tests in `apps/console/src/features/users/components/__tests__/users-table.test.tsx` and `data-table-row-actions.test.tsx`.
 - Playwright E2E verification test covering navigation to `/users`, opening "Delegate Permissions" modal, choosing permissions, and saving.
-- Type check with `pnpm --filter @unipost/console exec tsc --noEmit`.
+- Type check with `pnpm --filter @acc/console exec tsc --noEmit`.

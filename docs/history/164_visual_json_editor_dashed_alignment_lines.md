@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-20  
 **Status:** Completed  
-**Scope:** `@unipost/console`  
+**Scope:** `@acc/console`  
 
 ## Problem
 In `VisualJsonEditor`, while nested structures could be navigated and edited in both Tree and Form modes:
@@ -26,6 +26,6 @@ In `VisualJsonEditor`, while nested structures could be navigated and edited in 
 - `apps/console/src/components/ui/json-editor/json-form-row.tsx`: Added dashed guide lines, connector ticks, and fixed column width grid alignment across nested levels.
 
 ## Verification
-- `pnpm --filter @unipost/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx` -> 5/5 passing.
-- `pnpm --filter @unipost/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx` -> 13/13 passing.
-- `pnpm --filter @unipost/console exec tsc --noEmit` -> 0 errors.
+- `pnpm --filter @acc/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx` -> 5/5 passing.
+- `pnpm --filter @acc/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx` -> 13/13 passing.
+- `pnpm --filter @acc/console exec tsc --noEmit` -> 0 errors.

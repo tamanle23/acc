@@ -1,7 +1,7 @@
 # 125: Composite Entity Sidebar Filter & Sandbox Master-Detail View
 
 ## Problem
-In `@unipost/console`'s `/metadata` screen during local development:
+In `@acc/console`'s `/metadata` screen during local development:
 1. The **Console UI Master-Detail Expandable View** was difficult to locate because composite entities (such as `Customer 360 View`) resided on secondary pages in the entity sidebar rail.
 2. Clicking on a composite entity kept the user in the `'schema'` builder view, where master-detail expandable rows do not exist.
 3. In `mock-metadata.ts`, mock records for child entities lacked foreign keys (`account_id`), and explicit attribute definitions were missing for composite models, causing records to fail rendering in the grid.
@@ -37,7 +37,7 @@ In `@unipost/console`'s `/metadata` screen during local development:
   - `apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.test.tsx` (3 passed)
   - `apps/console/src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx` (4 passed)
 - Executed TypeScript check:
-  - `pnpm --filter @unipost/console exec tsc --noEmit` exited code 0.
+  - `pnpm --filter @acc/console exec tsc --noEmit` exited code 0.
 
 ## Tasks
 - [x] Enrich composite entity sandbox mock data and relational links

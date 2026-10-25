@@ -9,7 +9,7 @@
 > [!IMPORTANT]
 > **Key Architectural Anchors Ratified from `/grill-me` Alignment:**
 > 1. **System Task Execution Topology**:
->    - Embedded Java 21 Loom Virtual Thread workers in `unipost-ms-aio` (`SystemTaskWorkerPool`) polling reserved system queues (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`). Zero external process overhead and zero database pool starvation.
+>    - Embedded Java 21 Loom Virtual Thread workers in `acc-ms-aio` (`SystemTaskWorkerPool`) polling reserved system queues (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`). Zero external process overhead and zero database pool starvation.
 > 2. **Dynamic Fork Barrier Failure Policy**:
 >    - **Fail-Fast & Halt**: If any dynamic child sub-task fails, the parent `DYNAMIC_FORK` task fails immediately, cancels pending in-flight children, and triggers Saga reverse compensation if configured.
 > 3. **DLQ Interactive Replay Execution Model**:
@@ -33,7 +33,7 @@
 - `DynamicForkStrategy.java`: Implement parent task tracking barrier until all dynamic child tasks complete.
 - `WorkflowEngineService.java`: Add `replayDlqTask(String workflowId, String taskId, Map<String, Object> modifiedInput, long nowEpochMs)`.
 
-### Backend: API Gateway & Workers (`apps/backend/unipost-ms-aio`)
+### Backend: API Gateway & Workers (`apps/backend/acc-ms-aio`)
 - `SystemTaskWorkerPool.java`: Implement Loom virtual-thread worker pool polling system-reserved queues (`system:http`, `system:mcp`, etc.).
 - `WorkflowExecutionController.java`: Expose `/api/v1/workflow/executions/{id}/tasks/{taskId}/replay`.
 
@@ -54,8 +54,8 @@
    ```
 2. **Frontend Verification**:
    ```powershell
-   pnpm --filter @unipost/console exec tsc --noEmit
-   pnpm --filter @unipost/console test -- run src/features/workflows src/features/workflow-executions
+   pnpm --filter @acc/console exec tsc --noEmit
+   pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions
    ```
 
 ### Manual Verification

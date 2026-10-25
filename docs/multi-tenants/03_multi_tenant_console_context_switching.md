@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 03 of N)  
 **Document Level:** Front-End Architecture & UI/UX Interaction Specification  
-**Target Systems:** `@unipost/console` (React 19 / Vite 8 / TanStack Router / Zustand / Tailwind v4)  
+**Target Systems:** `@acc/console` (React 19 / Vite 8 / TanStack Router / Zustand / Tailwind v4)  
 **Scope:** Dual-Mode Workspace (`Architect Mode` vs. `Operator Mode`), Permission-Based Route & Tab Guards, Dynamic Liquid Glass Forms, Seamless Dogfooding  
 **Status:** Canonical Living Architecture Document  
 
@@ -16,7 +16,7 @@ In our multi-tenant dynamic metadata architecture, a tenant's authorized users w
 
 A critical design challenge is that **Tenant Administrators frequently need to test ("dogfood") their newly configured schemas** from the perspective of an everyday operator without the friction of logging out, switching credentials, or opening incognito browsers.
 
-`@unipost/console` addresses this by introducing a **Dynamic Workspace Mode Context Switcher**:
+`@acc/console` addresses this by introducing a **Dynamic Workspace Mode Context Switcher**:
 * **`Architect Mode`**: Full metadata modeling studio, schema builders, and edge type managers.
 * **`Operator Mode`**: Clutter-free operational canvas presenting dynamically generated Liquid Glass forms and server data grids.
 
@@ -26,7 +26,7 @@ A critical design challenge is that **Tenant Administrators frequently need to t
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              @unipost/console WORKSPACE MODES                          │
+│                              @acc/console WORKSPACE MODES                          │
 ├────────────────────────────────┬───────────────────────────────────────────────────────┤
 │ 🛠️ Architect Mode (Admin)      │ 👤 Operator Mode (User)                               │
 ├────────────────────────────────┼───────────────────────────────────────────────────────┤

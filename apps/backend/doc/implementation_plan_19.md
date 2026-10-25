@@ -18,7 +18,7 @@ In Phase 4 of the Multi-Tenant Master Plan, we establish multi-tenant cache isol
 
 ## 2. Proposed Changes
 
-### 1. `SchemaValidationService` Updates (`apps/backend/unipost-fw`)
+### 1. `SchemaValidationService` Updates (`apps/backend/acc-fw`)
 - Update `buildCacheKey(String tenantId, Long entityTypeId, Long tenantSchemaVersion, Long systemSchemaVersion)`:
   - Generates format `schema:{tenantId}:{entityTypeId}:v{tenantVer}_s{systemVer}`.
 - Update `getOrCompileJsonSchema`:
@@ -28,7 +28,7 @@ In Phase 4 of the Multi-Tenant Master Plan, we establish multi-tenant cache isol
 - Update `invalidateL1Cache`:
   - Support scoped eviction by `(tenantId, entityTypeId)` or clear all.
 
-### 2. `MetadataService` Immutability & Composition (`apps/backend/unipost-fw`)
+### 2. `MetadataService` Immutability & Composition (`apps/backend/acc-fw`)
 - Guard `updateAttributeDefinition`, `deleteAttributeDefinition`, `archiveAttributeDefinition`:
   - If target attribute has `tenant_id = 'SYSTEM'`, throw `MetadataConflictException("System attributes are immutable and cannot be modified or deleted by tenant admins")`.
 - Guard `createAttributeDefinition`:
@@ -37,7 +37,7 @@ In Phase 4 of the Multi-Tenant Master Plan, we establish multi-tenant cache isol
 - Update `getAttributeDefinitions`:
   - Return composite list of `SYSTEM` base attributes + current tenant's attributes ordered by `displayOrder`.
 
-### 3. `MetadataCacheListener` Eviction (`apps/backend/unipost-fw`)
+### 3. `MetadataCacheListener` Eviction (`apps/backend/acc-fw`)
 - Evict keys matching `schema:{tenantId}:{entityTypeId}:*` in Hazelcast and L1 parsed schema cache.
 
 ### 4. Verification & Testing

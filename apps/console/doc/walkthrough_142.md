@@ -33,7 +33,7 @@ Migrated 27 Visual DAG Studio files using `git mv` from `apps/console/src/featur
 - Cleaned `apps/console/src/features/metadata/components/studio/index.ts` by removing all DAG-related exports so it strictly serves Metadata schema models (`attribute-palette`, `visual-schema-studio`, `dynamic-form-live-preview`, `composite-bento-studio`, etc.).
 
 ### 3. Consumer Import Updates
-Directly re-pointed all consumers across `@unipost/console` to import from `@/features/workflows/components/studio`:
+Directly re-pointed all consumers across `@acc/console` to import from `@/features/workflows/components/studio`:
 - `apps/console/src/features/workflow-executions/components/workflow-execution-detail-drawer.tsx`
 - `apps/console/src/features/workflow-executions/components/workflow-execution-stream-modal.tsx`
 - `apps/console/src/features/workflows/api/workflow-api.ts`
@@ -48,7 +48,7 @@ Directly re-pointed all consumers across `@unipost/console` to import from `@/fe
 
 ### 1. Studio Unit Tests in Workflows Domain
 ```bash
-pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+pnpm --filter @acc/console test -- src/features/workflows/components/studio/
 ```
 Result:
 - **12 test files passed (12/12)**
@@ -56,7 +56,7 @@ Result:
 
 ### 2. Retained Metadata Studio Unit Tests
 ```bash
-pnpm --filter @unipost/console test -- src/features/metadata/components/studio/
+pnpm --filter @acc/console test -- src/features/metadata/components/studio/
 ```
 Result:
 - **3 test files passed (3/3)**
@@ -70,6 +70,6 @@ Result: 0 occurrences found in source code.
 
 ### 4. TypeScript Compilation
 ```bash
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Result: 0 errors.

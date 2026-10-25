@@ -1,7 +1,7 @@
 # Implementation Plan 31: Conductor Node Strategies, Topological Frontiers & Parameter Resolver (Phase 27)
 
 ## 1. Overview
-Execute **Phase 27** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/integration_master_plan_iteration_3.md):
+Execute **Phase 27** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/acc/docs/integration_master_plan_iteration_3.md):
 - Implement `ParameterResolver` supporting JSONPath-style expressions: `${workflow.input.x}` and `${<taskRef>.output.y}` across nested Maps and Lists.
 - Implement Open/Closed `NodeEvaluatorStrategy` interface and `NodeStrategyRegistry`.
 - Implement concrete node strategies:

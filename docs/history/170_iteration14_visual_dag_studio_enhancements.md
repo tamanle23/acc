@@ -26,13 +26,13 @@ Execute `docs/integration_master_plan_iteration14.md`:
 - **`apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`**: Added Graph vs. Timeline view toggle buttons in the execution mode toolbar, rendering either `ReactFlow` or `WorkflowExecutionFlamegraph`.
 
 ### 3. Designer Dry-Run Simulator Harness
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/application/WorkflowEngineService.java`**: Implemented `simulateExecution(WorkflowDefinition definition, Map<String, Object> inputPayload, long nowEpochMs)` evaluating execution logic purely in-memory without persistence calls.
-- **`apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/WorkflowDefinitionController.java`**: Added `POST /api/v1/workflow/definitions/simulate` endpoint.
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`**: Implemented `simulateExecution(WorkflowDefinition definition, Map<String, Object> inputPayload, long nowEpochMs)` evaluating execution logic purely in-memory without persistence calls.
+- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`**: Added `POST /api/v1/workflow/definitions/simulate` endpoint.
 - **`apps/console/src/features/workflows/api/workflow-api.ts`**: Added `useSimulateWorkflowDefinition` TanStack Query mutation hook.
 - **`apps/console/src/features/metadata/components/studio/workflow-dry-run-modal.tsx`**: Created simulation modal with `VisualJsonEditor` for mock input payloads.
 - **`apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`**: Added "Dry Run" button (`data-testid="dag-dry-run-btn"`) in authoring toolbar and wired simulation results to update canvas node states.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` exited `0`.
-- `pnpm --filter @unipost/console test:run` passed 100% (73 test files, 338 tests passing).
-- `node mvnw.cjs test-compile -pl workflow-engine,unipost-ms-aio -q` exited `0`.
+- `pnpm --filter @acc/console exec tsc --noEmit` exited `0`.
+- `pnpm --filter @acc/console test:run` passed 100% (73 test files, 338 tests passing).
+- `node mvnw.cjs test-compile -pl workflow-engine,acc-ms-aio -q` exited `0`.

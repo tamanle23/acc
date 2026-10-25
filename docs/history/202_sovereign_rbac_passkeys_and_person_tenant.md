@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25  
 **Author:** Principal Software Engineer & Lead Systems Architect  
-**Scope:** `apps/backend/unipost-db`, `apps/backend/unipost-fw`, `packages/client`, `apps/console`, `docs/`  
+**Scope:** `apps/backend/acc-db`, `apps/backend/acc-fw`, `packages/client`, `apps/console`, `docs/`  
 **Status:** Complete & Verified  
 
 ---
@@ -19,8 +19,8 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 
 ## 2. Implementation Plan & Execution
 
-### 2.1. Database Migration Layer (`apps/backend/unipost-db`)
-- Created `changelog-000.000.00016.xml` in `db/unipost/` containing:
+### 2.1. Database Migration Layer (`apps/backend/acc-db`)
+- Created `changelog-000.000.00016.xml` in `db/acc/` containing:
   - Fail-fast SQL assertion checking `${SOVEREIGN_*_PASSWORD_HASH}` properties.
   - Adding `role_scope` and `min_plan_tier` columns to `UNIPOST_IDENTITY_ROLE`.
   - Adding `tenant_id` and compound index `idx_userrole_tenant_user` to `UNIPOST_IDENTITY_USERROLE`.
@@ -33,7 +33,7 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 - Registered `changelog-000.000.00016.xml` in `changelog-master.xml`.
 - Configured default fallback test password hashes in `application.yml`.
 
-### 2.2. Backend Controller & Service Layer (`apps/backend/unipost-fw`)
+### 2.2. Backend Controller & Service Layer (`apps/backend/acc-fw`)
 - In `SystemFleetController.java`:
   - Harmonized `@PreAuthorize` annotations on `/tenants`, `/roles`, `/users` to require `hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:fleet:read')` and specific permission atoms, eliminating `ROLE_SYSTEM_CUSTODIAN`.
 - In `SystemFleetService.java`:
@@ -72,14 +72,14 @@ The platform required an enterprise-grade identity, authentication, and authoriz
 
 ## 3. Verification & Quality Gates
 - **Backend Compilation**: `mvn test-compile -q` exited with code `0`.
-- **Backend Unit & Integration Tests**: Executed `mvn test -pl unipost-fw "-Dtest=SystemFleetServiceTest,RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest,MetadataServiceTest" -q` with all tests passing (exit code `0`).
-- **Client Contract Tests**: `pnpm --filter @unipost/client test` ran 3 test files and 20 tests cleanly (exit code `0`).
-- **Console TypeScript Check**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- **Backend Unit & Integration Tests**: Executed `mvn test -pl acc-fw "-Dtest=SystemFleetServiceTest,RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest,MetadataServiceTest" -q` with all tests passing (exit code `0`).
+- **Client Contract Tests**: `pnpm --filter @acc/client test` ran 3 test files and 20 tests cleanly (exit code `0`).
+- **Console TypeScript Check**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
 
 ---
 
 ## 4. Key Artifacts Generated
-- Migration: `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00016.xml`
+- Migration: `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`
 - Walkthrough: `apps/backend/doc/walkthrough_48.md`
 - Walkthrough: `apps/console/doc/walkthrough_100.md`
 - Master Architecture: `docs/master_database_schema_architecture.md`

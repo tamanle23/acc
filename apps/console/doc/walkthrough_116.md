@@ -9,7 +9,7 @@ Successfully implemented and verified **Phase 1** of the Enterprise Automated Te
 - Configured `jacoco-maven-plugin` (0.8.12) in `apps/backend/pom.xml` with `prepare-agent` (setting Surefire argLine) and `report` goals.
 - Fixed 1MB payload hard-cap checking in `RecordMutationPipeline.java` and `SchemaValidationService.java` to prevent security and RedoS vulnerabilities when payloads exceed 1MB.
 - Fixed `tasksSandboxRepo` and `tasksSandboxHandler` backward compatibility aliases in `packages/sandbox/src/handlers/workflow-handler.ts`.
-- Verified all 207 unit and slice tests pass in `apps/backend/unipost-fw` and confirmed JaCoCo binary (`jacoco.exec`) and HTML report (`target/site/jacoco/index.html`) generation.
+- Verified all 207 unit and slice tests pass in `apps/backend/acc-fw` and confirmed JaCoCo binary (`jacoco.exec`) and HTML report (`target/site/jacoco/index.html`) generation.
 
 ### 2. Frontend Vitest Coverage Pipeline
 - Installed `@vitest/coverage-v8` in `apps/console`.
@@ -31,8 +31,8 @@ Successfully implemented and verified **Phase 1** of the Enterprise Automated Te
 ## Verification Results
 | Component | Command | Result |
 | :--- | :--- | :---: |
-| Backend Tests + JaCoCo | `mvn test -f apps/backend/unipost-fw/pom.xml -q` | 207 / 207 Passed ✅ |
-| JaCoCo HTML Report | `mvn jacoco:report -f apps/backend/unipost-fw/pom.xml -q` | Generated ✅ |
+| Backend Tests + JaCoCo | `mvn test -f apps/backend/acc-fw/pom.xml -q` | 207 / 207 Passed ✅ |
+| JaCoCo HTML Report | `mvn jacoco:report -f apps/backend/acc-fw/pom.xml -q` | Generated ✅ |
 | Sandbox Core Suites | `vitest run src/core/sandbox/__tests__/` | 65 / 65 Passed ✅ |
 | Playwright Mode 1 | `playwright test e2e/composite-entities.spec.ts` | Passed (5.5s) ✅ |
 | Playwright Mode 2 Fail-Fast | `E2E_MODE=live playwright test` | Verified Fail-Fast ✅ |

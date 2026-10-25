@@ -24,9 +24,9 @@ The user requested moving the Dead-Letter Queue (DLQ) screen to SYSTEM's root us
    - Regenerate `routeTree.gen.ts`.
 
 ## Changes Made
-- `apps/backend/unipost-ms-aio/.../WorkflowDlqController.java`: Added `@PreAuthorize`, `/api/v1/system/dlq` route, and fleet querying.
-- `apps/backend/unipost-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
-- `apps/backend/unipost-ms-aio/.../WorkflowDlqRestApiTest.java`: Verified security annotation, dual routing, and fleet-wide querying.
+- `apps/backend/acc-ms-aio/.../WorkflowDlqController.java`: Added `@PreAuthorize`, `/api/v1/system/dlq` route, and fleet querying.
+- `apps/backend/acc-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
+- `apps/backend/acc-ms-aio/.../WorkflowDlqRestApiTest.java`: Verified security annotation, dual routing, and fleet-wide querying.
 - `packages/sandbox/src/handlers/dlq-sandbox-handler.ts`: Supported `/api/v1/system/dlq`.
 - `apps/console/src/routes/_authenticated/system.dlq.tsx`: Added new system DLQ route.
 - `apps/console/src/routes/_authenticated/dlq/`: Removed old route folder.
@@ -45,8 +45,8 @@ The user requested moving the Dead-Letter Queue (DLQ) screen to SYSTEM's root us
   - `SystemFleetControllerTest`: 11/11 passed.
   - `workflow-engine`: 45/45 passed.
 - Frontend & Sandbox:
-  - `pnpm --filter @unipost/sandbox check-types`: Passed clean with 0 errors.
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: Passed clean with 0 errors.
+  - `pnpm --filter @acc/sandbox check-types`: Passed clean with 0 errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: Passed clean with 0 errors.
   - `vitest run dlq-feature`: 4/4 passed (including 403 Forbidden validation).
 
 ## Walkthrough

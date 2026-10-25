@@ -1,12 +1,12 @@
 # History Log 104: Phase 34 - Live Console API Client, Dual-Mode Studio & SSE Execution Stream
 
 ## 1. Problem
-While Phase 33 wired the distributed workflow engine into Spring Boot and exposed REST endpoints, `@unipost/console` lacked a live client integration, an enterprise catalog landing page for workflow definitions, real-time telemetry streaming for active execution runs, and visual node state feedback on the React Flow canvas.
+While Phase 33 wired the distributed workflow engine into Spring Boot and exposed REST endpoints, `@acc/console` lacked a live client integration, an enterprise catalog landing page for workflow definitions, real-time telemetry streaming for active execution runs, and visual node state feedback on the React Flow canvas.
 
 ## 2. Plan
-1. Add `ExecutionStreamBroadcaster` in `apps/backend/unipost-ms-aio` and expose `GET /api/v1/workflow/executions/{id}/events` producing `SseEmitter` event streams.
-2. Upgrade `workflowSandboxHandler` in `@unipost/sandbox` to simulate real-time SSE stream events and support execution snapshots and definition CRUD.
-3. Author TanStack Query and SSE hooks in `@unipost/console`:
+1. Add `ExecutionStreamBroadcaster` in `apps/backend/acc-ms-aio` and expose `GET /api/v1/workflow/executions/{id}/events` producing `SseEmitter` event streams.
+2. Upgrade `workflowSandboxHandler` in `@acc/sandbox` to simulate real-time SSE stream events and support execution snapshots and definition CRUD.
+3. Author TanStack Query and SSE hooks in `@acc/console`:
    - `useWorkflowDefinitions()`, `useWorkflowDefinition()`, `useSaveWorkflowDefinition()`, `useToggleWorkflowStatus()`, `useDeleteWorkflowDefinition()`.
    - `useWorkflowExecutionStream()` with automatic fallback to adaptive polling.
 4. Redesign `/workflows` into a Workflow Definitions Catalog landing view with search, status toggles, deletion, and Create dialog.
@@ -17,12 +17,12 @@ While Phase 33 wired the distributed workflow engine into Spring Boot and expose
 7. Author comprehensive unit and integration tests across backend, sandbox, and console.
 
 ## 3. Changes
-- **Spring Boot Backend (`apps/backend/unipost-ms-aio`)**:
+- **Spring Boot Backend (`apps/backend/acc-ms-aio`)**:
   - `ExecutionStreamBroadcaster.java`: Thread-safe multi-client `SseEmitter` registry.
   - `WorkflowExecutionController.java`: Added `/api/v1/workflow/executions/{id}/events` and lifecycle broadcast.
   - `TaskWorkerController.java`: Broadcast `TASK_IN_PROGRESS`, `TASK_COMPLETED`, and `TASK_FAILED`.
   - `WorkflowEngineRestApiTest.java`: Verified SSE emitter subscription and event dispatch.
-- **Unified Sandbox (`packages/sandbox` & `@unipost/console`)**:
+- **Unified Sandbox (`packages/sandbox` & `@acc/console`)**:
   - `workflow-handler.ts`: Implemented `WorkflowSandboxRepository` with multi-tenant partitioning, seeded realistic enterprise workflow definitions (`order-fulfillment-v1`, `checkout-pipeline-v2`, `invoice-billing-v1`), full REST CRUD matching (`/workflow/definitions`, `/workflow/definitions/{key}` with `GET`, `POST`, `PUT`, `DELETE`), execution lifecycle and SSE event stream generator.
   - `sandbox-dock.tsx`: Connected `workflowSandboxRepo.reset()` into `handleResetAllData()`.
   - `sandbox-engine.test.ts`: Added tests for seeded catalog listing, execution lifecycle, SSE stream events, status toggles, and definition deletion.
@@ -40,9 +40,9 @@ While Phase 33 wired the distributed workflow engine into Spring Boot and expose
   - `src/features/tasks/components/tasks-dialogs.tsx`: Mounted stream modal.
 
 ## 4. Verification
-- `pnpm --filter @unipost/console test src/features/workflows`: 2/2 tests passed (SSE stream reception and fallback polling).
-- `pnpm --filter @unipost/sandbox test`: 6/6 tests passed.
-- `.\mvnw.cmd test -pl unipost-ms-aio -Dtest=WorkflowEngineRestApiTest`: 1/1 passed with 0 failures and 0 errors.
+- `pnpm --filter @acc/console test src/features/workflows`: 2/2 tests passed (SSE stream reception and fallback polling).
+- `pnpm --filter @acc/sandbox test`: 6/6 tests passed.
+- `.\mvnw.cmd test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest`: 1/1 passed with 0 failures and 0 errors.
 
 ## 5. Walkthrough
 - Navigating to `/workflows` displays the Workflow Definitions Catalog with search and CRUD options.

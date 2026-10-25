@@ -16,7 +16,7 @@ Resolved the issue where injected Dead-Letter Queue (DLQ) tasks triggered from `
    - Added end-to-end integration test validating priority routing over `systemSandboxHandler`, injection via `/api/system/dlq/inject`, and querying via both `/api/system/dlq` and `/api/v1/system/dlq`.
 
 ## Verification Results
-- `pnpm --filter @unipost/sandbox test`: All 10 tests passed (including DLQ sandbox priority and injection tests).
-- `pnpm --filter @unipost/console test dlq-feature`: All 4 tests passed.
-- `pnpm --filter @unipost/sandbox check-types`: Clean typecheck.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Clean typecheck.
+- `pnpm --filter @acc/sandbox test`: All 10 tests passed (including DLQ sandbox priority and injection tests).
+- `pnpm --filter @acc/console test dlq-feature`: All 4 tests passed.
+- `pnpm --filter @acc/sandbox check-types`: Clean typecheck.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Clean typecheck.

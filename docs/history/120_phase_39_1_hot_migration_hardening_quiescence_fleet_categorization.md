@@ -13,7 +13,7 @@ While Phase 39 enabled single-execution hot migration and SHA-256 audit ledger t
    - Enhance `TopologicalCompatibilityValidator` to categorize executions and generate non-blocking warnings.
    - Add `listWorkflowExecutions` to `PersistencePort`, `InMemoryPersistenceAdapter`, `PostgresJdbcPersistenceAdapter`, and `SqliteJdbcPersistenceAdapter`.
    - Update `WorkflowEngineService.migrateExecutionWithQuiescence` to enforce active leased task draining, reject terminal executions, and record pre-migration snapshots in the audit ledger.
-2. **REST API (`unipost-ms-aio`)**:
+2. **REST API (`acc-ms-aio`)**:
    - Expose `POST /api/v1/workflow/definitions/{key}/migration-preview` and `POST /api/v1/workflow/definitions/{key}/batch-migrate` in `WorkflowDefinitionController`.
 3. **Unified Sandbox (`packages/sandbox`)**:
    - Implement `migration-preview` and `batch-migrate` endpoints in `workflow-versioning-sandbox-handler.ts`.
@@ -22,8 +22,8 @@ While Phase 39 enabled single-execution hot migration and SHA-256 audit ledger t
    - Build `FleetMigrationModal` with 3-tier Bento filter cards, execution list, and inspection drawer.
    - Wire "Fleet Hot Migration" action into the Workflow Catalog table.
 5. **Verification**:
-   - Run Maven test suite for `workflow-engine` and `unipost-ms-aio`.
-   - Run Vitest for `@unipost/sandbox` and `@unipost/console`.
+   - Run Maven test suite for `workflow-engine` and `acc-ms-aio`.
+   - Run Vitest for `@acc/sandbox` and `@acc/console`.
    - Run monorepo TypeScript verification.
 
 ## Changes
@@ -35,7 +35,7 @@ While Phase 39 enabled single-execution hot migration and SHA-256 audit ledger t
 - `WorkflowEngineService.java`: Added `migrateExecutionWithQuiescence` with 30s leased task drain check, terminal state protection, and pre-migration snapshot audit capture.
 - `TopologicalCompatibilityValidatorTest.java`: Added unit tests for 3-tier categorization and terminal rejection.
 
-### 2. `apps/backend/unipost-ms-aio`
+### 2. `apps/backend/acc-ms-aio`
 - `WorkflowEngineConfiguration.java`: Added `persistencePort()` getter on `WorkflowDefinitionRegistry`.
 - `WorkflowDefinitionController.java`: Added `/migration-preview` and `/batch-migrate` REST endpoints.
 
@@ -50,6 +50,6 @@ While Phase 39 enabled single-execution hot migration and SHA-256 audit ledger t
 - `fleet-migration-modal.test.tsx`: Added unit test suite (2/2 passed).
 
 ## Verification
-- Backend: All 60 tests passed across `workflow-engine` and `unipost-ms-aio`.
-- Sandbox: 11/11 tests passed in `@unipost/sandbox`.
+- Backend: All 60 tests passed across `workflow-engine` and `acc-ms-aio`.
+- Sandbox: 11/11 tests passed in `@acc/sandbox`.
 - Console: 4/4 Vitest tests passed, `tsc --noEmit` exited 0 with zero errors.

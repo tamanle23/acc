@@ -1,7 +1,7 @@
 # Implementation Plan: Iteration 11 - WCAG 2.2 AA, Liquid Glass Fine-Tuning & Full-Stack Defect Resolution
 
 ## Goal Description
-Iteration 11 elevates the unipost ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@unipost/console`, `tekgo-ui`, `mobile-ui`, and `@unipost/backend`.
+Iteration 11 elevates the acc ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@acc/console`, `tekgo-ui`, `mobile-ui`, and `@acc/backend`.
 
 ### Key Objectives
 1. **Liquid Glass Optical Fine-Tuning**:
@@ -23,7 +23,7 @@ Iteration 11 elevates the unipost ecosystem to enterprise visual maturity and ac
 
 ## User Review Required
 > [!IMPORTANT]
-> The theme provider in `@unipost/console` will be upgraded to support:
+> The theme provider in `@acc/console` will be upgraded to support:
 > - `theme`: `'light' | 'dark' | 'acrylic' | 'obsidian' | 'system'`
 > - `glassFallback`: `boolean` (when true, disables all translucency and renders opaque high-contrast surfaces)
 > - `accentColor`: `'violet' | 'azure' | 'emerald' | 'rose' | 'amber'`
@@ -64,24 +64,24 @@ flowchart TD
 
 ## Proposed Changes
 
-### Component 1: Liquid Glass & Theme Architecture (`@unipost/console`)
+### Component 1: Liquid Glass & Theme Architecture (`@acc/console`)
 
-#### [MODIFY] [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css)
+#### [MODIFY] [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/theme.css)
 - Add theme classes for `.acrylic` (Light Frosted Acrylic) and `.obsidian` (Dark Obsidian).
 - Define ambient accent color token variants (`[data-accent="violet"]`, `[data-accent="azure"]`, `[data-accent="emerald"]`, `[data-accent="rose"]`, `[data-accent="amber"]`).
 - Define high-contrast solid surface tokens activated when `[data-glass-fallback="true"]`.
 
-#### [MODIFY] [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css)
+#### [MODIFY] [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css)
 - Implement caustic radial gradients for ambient accent colors on `body::before`.
 - Enforce WCAG 2.2 AA high-contrast `:focus-visible` styling globally.
 - Support `data-glass-fallback="true"` by disabling `backdrop-filter` and substituting opaque scrims.
 
-#### [MODIFY] [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/theme-provider.tsx)
+#### [MODIFY] [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/context/theme-provider.tsx)
 - Add `accentColor`, `glassFallback` state and cookie persistence.
 - Provide helper methods `setAccentColor(accent)` and `setGlassFallback(enabled)`.
 - Update `applyGlassVariables` to respect `glassFallback`.
 
-#### [MODIFY] [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/appearance-form.tsx)
+#### [MODIFY] [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/appearance/appearance-form.tsx)
 - Add preset selector: Light Frosted Acrylic vs. Dark Obsidian vs. System.
 - Add Accent Color picker with live color swatch pills.
 - Add High-Contrast / Solid Fallback toggle switch with descriptive WCAG helper label.
@@ -91,11 +91,11 @@ flowchart TD
 
 ### Component 2: WCAG 2.2 AA Compliance & Keyboard Ergonomics
 
-#### [MODIFY] [`apps/console/src/components/ui/sheet.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/ui/sheet.tsx) & Drawers
+#### [MODIFY] [`apps/console/src/components/ui/sheet.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/ui/sheet.tsx) & Drawers
 - Ensure all drawers (`TenantWorkspacesDrawer`, `TenantUsersDrawer`, `DlqInspectorSheet`) have explicit `aria-describedby`, focus trap, and restore focus to trigger element on close.
 - Add `aria-live="polite"` status announcements for async mutations (e.g. workspace creation, user lock/unlock, DLQ task replay).
 
-#### [MODIFY] [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)
+#### [MODIFY] [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)
 - Ensure all action buttons in table rows have unique, screen-reader friendly labels (`aria-label={`Actions for record ${record.id}`}`).
 - Verify table header sorting indicators have proper `aria-sort` attributes (`ascending`, `descending`, `none`).
 
@@ -103,14 +103,14 @@ flowchart TD
 
 ### Component 3: Full-Stack Defect Resolution
 
-#### [MODIFY] [`apps/tekgo-ui/eslint.config.mjs`](file:///c:/Users/Admin/workspace/git/unipost/apps/tekgo-ui/eslint.config.mjs)
+#### [MODIFY] [`apps/tekgo-ui/eslint.config.mjs`](file:///c:/Users/Admin/workspace/git/acc/apps/tekgo-ui/eslint.config.mjs)
 - Fix the `jsx-a11y` duplicate plugin declaration in ESLint flat configuration by eliminating redundant plugin inheritance in `compat.extends`.
 - Validate that `pnpm --filter tekgo-ui lint` exits 0.
 
-#### [MODIFY] [`apps/console/src/features/workflows/components/fleet-migration-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/fleet-migration-modal.tsx)
+#### [MODIFY] [`apps/console/src/features/workflows/components/fleet-migration-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/fleet-migration-modal.tsx)
 - Fix the React Compiler memoization dependency discrepancy (`[previewData?.items, tierFilter]` vs `previewData.items`).
 
-#### [MODIFY] [`apps/backend/unipost-core/src/main/java/com/unipost/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-core/src/main/java/com/unipost/core/exception/GlobalExceptionHandler.java)
+#### [MODIFY] [`apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java)
 - Ensure all uncaught exceptions produce standardized RFC-7807 JSON error responses (`type`, `title`, `status`, `detail`, `instance`, `timestamp`).
 - Prevent internal server stack trace leakage while preserving clear diagnostic message in debug logs.
 
@@ -120,8 +120,8 @@ flowchart TD
 
 ### Automated Tests
 1. **Monorepo Linting**: `pnpm lint` (must pass across backend, console, and tekgo-ui with 0 plugin conflicts).
-2. **Console Vitest Suite**: `pnpm --filter @unipost/console test` (all 298+ unit and component tests passing).
-3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @unipost/backend test:modulith`.
+2. **Console Vitest Suite**: `pnpm --filter @acc/console test` (all 298+ unit and component tests passing).
+3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @acc/backend test:modulith`.
 4. **Playwright Mode 1 E2E**: `pnpm test:e2e` (all 15/15 tests passing, verifying zero regression on appearance and WCAG).
 5. **Playwright Mode 2 Live E2E**: `pnpm test:e2e:live` (all 15/15 tests passing against live Spring Boot backend).
 

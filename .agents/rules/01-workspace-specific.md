@@ -6,12 +6,12 @@ description: Compact monorepo registry, packaging boundaries, i18n sync, and Liq
 # WORKSPACE REGISTRY & ROUTING
 - Specs: `pnpm` workspace + Turborepo pipelines (`build`, `dev`, `lint`, `test`, `check-types`).
 - Registry:
-  - `@unipost/backend`: `apps/backend` (Java 21 / Spring Modulith) | Deps: None
-  - `@unipost/console`: `apps/console` (React 19 / Vite 8) | Deps: `@unipost/ui`, `@unipost/i18n`, `@unipost/typescript-config`
-  - `@unipost/desktop`: `apps/desktop-console` (Electrobun) | Deps: `@unipost/console`, `@unipost/typescript-config`
+  - `@acc/backend`: `apps/backend` (Java 21 / Spring Modulith) | Deps: None
+  - `@acc/console`: `apps/console` (React 19 / Vite 8) | Deps: `@acc/ui`, `@acc/i18n`, `@acc/typescript-config`
+  - `@acc/desktop`: `apps/desktop-console` (Electrobun) | Deps: `@acc/console`, `@acc/typescript-config`
   - `mobile-ui`: `apps/mobile-ui` (Expo SDK 57 / React Native 0.86) | Deps: None
-  - `tekgo-ui`: `apps/tekgo-ui` (Next.js 15 / React 19) | Deps: `@unipost/ui`
-  - Packages: `@unipost/i18n` (`packages/i18n`), `@unipost/typescript-config` (`packages/typescript-config`), `@unipost/ui` (`packages/ui`)
+  - `tekgo-ui`: `apps/tekgo-ui` (Next.js 15 / React 19) | Deps: `@acc/ui`
+  - Packages: `@acc/i18n` (`packages/i18n`), `@acc/typescript-config` (`packages/typescript-config`), `@acc/ui` (`packages/ui`)
 - Directive: Treat registry as authoritative. NEVER perform full-repo tree scans to locate apps. Scope all operations directly inside registered paths.
 
 # MONOREPO & PACKAGING BOUNDARIES

@@ -13,7 +13,7 @@ This plan outlines the architecture and execution steps for introducing internat
 ### Shared i18n Package (`packages/i18n`)
 
 #### [NEW] `packages/i18n/package.json`
-Define the `@unipost/i18n` package, declaring dependencies on `i18next` and `react-i18next`.
+Define the `@acc/i18n` package, declaring dependencies on `i18next` and `react-i18next`.
 
 #### [NEW] `packages/i18n/src/index.ts`
 Export the configured `i18next` base configuration and common dictionaries.
@@ -29,10 +29,10 @@ Extend the workspace TypeScript configuration for the package.
 ### Console App (`apps/console`)
 
 #### [MODIFY] `apps/console/package.json`
-Add a dependency on the internal workspace package `"@unipost/i18n": "workspace:*"`. Also install `i18next` and `react-i18next` in the app to prevent peer dependency issues.
+Add a dependency on the internal workspace package `"@acc/i18n": "workspace:*"`. Also install `i18next` and `react-i18next` in the app to prevent peer dependency issues.
 
 #### [NEW] `apps/console/src/i18n.ts`
-Initialize the `i18next` instance specifically for the console app. Import the shared configurations and dictionaries from `@unipost/i18n` and merge them with console-specific dictionaries.
+Initialize the `i18next` instance specifically for the console app. Import the shared configurations and dictionaries from `@acc/i18n` and merge them with console-specific dictionaries.
 
 #### [NEW] `apps/console/src/locales/en/console.json`
 Create the domain-specific English dictionary for the console app.
@@ -47,5 +47,5 @@ N/A (No automated unit tests for this pure setup step).
 
 ### Manual Verification
 1. Run `pnpm install` from the root to link workspaces.
-2. Verify TypeScript compilation `pnpm turbo run build --filter @unipost/console`.
+2. Verify TypeScript compilation `pnpm turbo run build --filter @acc/console`.
 3. Start the console dev server and verify no runtime errors occur.

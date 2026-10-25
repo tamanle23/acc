@@ -7,7 +7,7 @@ import type {
   BillingTransaction,
   QuotaUsage,
   VatInvoiceInfo,
-} from '@unipost/client';
+} from '@acc/client';
 
 export type SandboxSubscriptionTier = SubscriptionTier;
 export type SandboxQuotaUsage = QuotaUsage;
@@ -70,7 +70,7 @@ export class BillingSandboxRepository {
         companyName: 'Unipost Sovereign Platform Core',
         taxCode: '0000000000',
         address: 'Global Root Platform',
-        email: 'root@unipost.vn',
+        email: 'root@acc.vn',
         isAutoInvoice: true,
       },
       history: [],
@@ -96,7 +96,7 @@ export class BillingSandboxRepository {
         companyName: 'Công ty Cổ phần Unipost Logistics',
         taxCode: '0109876543',
         address: 'Tòa nhà Landmark 72, Phạm Hùng, Nam Từ Liêm, Hà Nội',
-        email: 'billing@unipost.vn',
+        email: 'billing@acc.vn',
         isAutoInvoice: true,
       },
       history: [

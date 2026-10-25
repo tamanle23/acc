@@ -1,7 +1,7 @@
 # Implementation Plan - Phase 7: Noisy Neighbor Defense & Resource Protection
 
 ## Overview
-Implement the **Noisy Neighbor Defense & Resource Protection** framework in `@unipost/backend` (`apps/backend/unipost-fw`) based on specifications in [`docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md):
+Implement the **Noisy Neighbor Defense & Resource Protection** framework in `@acc/backend` (`apps/backend/acc-fw`) based on specifications in [`docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md):
 1. **Tier 1 (API Perimeter):** Distributed Token Bucket rate limiting partitioned by `tenant_id` via Redis with plan tiers (`ENTERPRISE`: 5000 rpm, `PRO`: 1000 rpm, `BASIC`/default: 120 rpm), returning HTTP 429 with `Retry-After`.
 2. **Tier 2 (Schema Complexity & ReDoS Defense):**
    - Entity and Attribute caps per tenant (max 50 entity types, max 100 attributes per entity type).
@@ -9,11 +9,11 @@ Implement the **Noisy Neighbor Defense & Resource Protection** framework in `@un
    - Pre-flight regex static analysis rejecting catastrophic nested quantifiers.
    - Interruptible JSON Schema validation with a strict **50ms computational timeout budget** via dedicated executor, preventing ReDoS attacks.
 3. **Tier 3 (Database Circuit Breakers):**
-   - Configure dynamic transaction statement timeout: `SET LOCAL statement_timeout = '3000ms'` in [`TenantSessionAspect.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/TenantSessionAspect.java).
+   - Configure dynamic transaction statement timeout: `SET LOCAL statement_timeout = '3000ms'` in [`TenantSessionAspect.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/TenantSessionAspect.java).
 
 ## Proposed Changes
 
-### 1. Tier 1: Distributed Token Bucket Rate Limiting (`com.unipost.fw.tenancy.ratelimit`)
+### 1. Tier 1: Distributed Token Bucket Rate Limiting (`com.acc.fw.tenancy.ratelimit`)
 - Create `TenantRateLimitService.java`:
   - Uses Spring Data Redis `StringRedisTemplate` with atomic Lua token bucket script (or standalone in-memory fallback when Redis is absent/mocked).
   - Tiers: `BASIC` (120 rpm), `PRO` (1000 rpm), `ENTERPRISE` (5000 rpm).
@@ -33,7 +33,7 @@ Implement the **Noisy Neighbor Defense & Resource Protection** framework in `@un
   - If timeout triggers, abort execution and throw `ValidationTimeoutException` / return HTTP 422 with descriptive error ("Schema validation exceeded 50ms computational budget; possible catastrophic backtracking").
 
 ### 3. Tier 3: Database Statement Timeout Circuit Breaker
-- Update [`TenantSessionAspect.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/TenantSessionAspect.java):
+- Update [`TenantSessionAspect.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/TenantSessionAspect.java):
   - In addition to `SET LOCAL app.current_tenant_id = :tenantId`, execute:
     `SET LOCAL statement_timeout = '3000ms'` (guarded by PostgreSQL DBMS check / catch so HSQLDB/mocks don't error).
   - Automatically aborts any runaway queries or deadlock scans after 3 seconds.

@@ -10,7 +10,7 @@ Following the successful execution of **Iteration 3 (Zero-I/O Functional Engine,
 ### Core Evolution & Strategic Value
 
 1. **Visual DAG Studio 2.0 (Full 23-Node Palette & Specialized Property Inspectors)**:
-   - Bring the visual authoring experience into 100% parity with the backend `com.unipost.workflow.core.model.TaskType` engine.
+   - Bring the visual authoring experience into 100% parity with the backend `com.acc.workflow.core.model.TaskType` engine.
    - Expand the canvas palette into 5 categorized domains:
      - **Control Flow**: `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`, `EXCLUSIVE_JOIN`, `TERMINATE`, `SUB_WORKFLOW`, `START_WORKFLOW`
      - **Data & Transformation**: `SET_VARIABLE`, `JSON_JQ_TRANSFORM`, `INLINE` (Groovy/MVEL/JavaScript)
@@ -19,7 +19,7 @@ Following the successful execution of **Iteration 3 (Zero-I/O Functional Engine,
      - **AI & Emerging Integrations**: `LLM_CHAT_COMPLETE`, `CALL_MCP_TOOL`, `DYNAMIC`
    - Implement specialized, schema-driven Property Inspector panels for each node type (e.g. HTTP method/headers/body, SQL query builders, JQ syntax highlighters, LLM prompt templates, Kafka topic config).
    - Ensure lossless bidirectional synchronization between visual graphs and Canonical JSON IR.
-   - Enhance the Unified Sandbox Platform (`@unipost/sandbox`) to simulate all 23 node types offline with zero backend dependencies.
+   - Enhance the Unified Sandbox Platform (`@acc/sandbox`) to simulate all 23 node types offline with zero backend dependencies.
    - **Appended Requirement (Implementation Plan 98 - Dual Operational Modes)**:
      - Provide two strictly isolated operational modes:
        - **Full Mode (`full` / `designer`)**: Workflow definition authoring with 23-node categorized accordion palette, specialized Property Inspector forms, Kahn/Tarjan acyclic graph topology validator, and backend definition catalog persistence.
@@ -28,7 +28,7 @@ Following the successful execution of **Iteration 3 (Zero-I/O Functional Engine,
 
 2. **Human-in-the-Loop (HITL) Operations & Task Approval Inbox**:
    - Provide first-class operational tooling for workflows that require human decision-making, verification, or administrative override.
-   - Dedicated **Task Approval Inbox** UI (`/approvals` or `/tasks?tab=approvals`) in `@unipost/console` with SLA urgency countdowns and role-based assignment.
+   - Dedicated **Task Approval Inbox** UI (`/approvals` or `/tasks?tab=approvals`) in `@acc/console` with SLA urgency countdowns and role-based assignment.
    - Interactive Decision Modal allowing reviewers to inspect upstream execution payloads, provide decision rationales, and approve or reject steps.
    - Robust backend lifecycle management: task claiming, decision resolution (`POST /api/v1/workflow/tasks/{id}/resolve`), and timeout escalation policies.
 
@@ -36,7 +36,7 @@ Following the successful execution of **Iteration 3 (Zero-I/O Functional Engine,
    - Harden the distributed single-column lease queue (`visible_at_epoch_ms`) for high-throughput, multi-tenant operations.
    - **Poison Task Dead-Letter Queue (`task_dlq`)**: Automatically isolate tasks that exceed `maxRetries` or experience unrecoverable crashes, preventing head-of-line blocking in worker queues.
    - **Priority Queue Multi-Tenant Tiering**: Prioritize task dispatching based on tenant subscription tiers (`ENTERPRISE` = 100, `PRO` = 50, `STANDARD` = 10) backed by PostgreSQL `FOR UPDATE SKIP LOCKED`.
-   - **Jittered Polling & Anti-Thundering Herd**: Exponential backoff with randomized jitter in both Java Virtual-Thread `WorkerHost` and TypeScript `@unipost/worker` SDKs.
+   - **Jittered Polling & Anti-Thundering Herd**: Exponential backoff with randomized jitter in both Java Virtual-Thread `WorkerHost` and TypeScript `@acc/worker` SDKs.
    - **Distributed Lease Heartbeat Drift & Zombie Worker Reaper**: Virtual-thread background sweeps reclaiming orphaned leases from crashed worker processes.
 
 4. **Workflow Definition Versioning, Hot Migration & Tamper-Evident Audit Ledger**:
@@ -60,7 +60,7 @@ Following the successful execution of **Iteration 3 (Zero-I/O Functional Engine,
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 36** | **Visual DAG Studio 2.0: Full 23-Node Palette, Specialized Property Inspectors & Sandbox Simulation Engine** | Palette grouped into 5 categories with 23 node types; custom Liquid Glass node cards with semantic icons and multi-port handles; schema-driven Property Inspector panels (HTTP, SQL, JQ, Groovy, LLM, Kafka, MCP); bidirectional Canonical JSON IR converter; `@unipost/sandbox` mock decider simulating all 23 node types offline; Dual Modes architecture (Full authoring vs Read-Only live preview & time-travel back-test with scrubber and telemetry inspector). | Vitest tests in `@unipost/console` and `@unipost/sandbox` verifying palette dragging, parameter editing, JSON IR compilation, mode locking, time-travel event progression, and offline execution of all node types. |
+| **Phase 36** | **Visual DAG Studio 2.0: Full 23-Node Palette, Specialized Property Inspectors & Sandbox Simulation Engine** | Palette grouped into 5 categories with 23 node types; custom Liquid Glass node cards with semantic icons and multi-port handles; schema-driven Property Inspector panels (HTTP, SQL, JQ, Groovy, LLM, Kafka, MCP); bidirectional Canonical JSON IR converter; `@acc/sandbox` mock decider simulating all 23 node types offline; Dual Modes architecture (Full authoring vs Read-Only live preview & time-travel back-test with scrubber and telemetry inspector). | Vitest tests in `@acc/console` and `@acc/sandbox` verifying palette dragging, parameter editing, JSON IR compilation, mode locking, time-travel event progression, and offline execution of all node types. |
 | **Phase 37** | **Human-in-the-Loop (HITL) Operations: Task Approval Inbox, Decision Modals & SLA Tracking** | Dedicated Approval Inbox UI with SLA countdowns; Decision Modal with payload inspector and decision comment capture; backend REST endpoints (`/claim`, `/resolve`); timeout escalation handlers; real-time SSE notifications for pending approvals. | Spring MockMvc tests asserting task claiming, decision submission, and DAG resumption; Vitest tests verifying approval inbox UI filtering, optimistic state updates, and countdown timers. |
 | **Phase 38** | **Enterprise Resilient Lease Queue: PostgreSQL SKIP LOCKED, Priority Queuing, Poison DLQ & Distributed Recovery** | Dedicated `task_dlq` table and management REST APIs (`/dlq`, `/replay`, `/discard`); tenant tier priority scheduling (`ENTERPRISE` = 100, `PRO` = 50, `STANDARD` = 10); jittered backoff poller in Java & TypeScript workers; zombie worker lease reaper; Micrometer/Prometheus metrics. | Concurrent stress tests in JUnit 5 asserting zero race conditions under `SKIP LOCKED`, priority preemption, and automated DLQ isolation of poison tasks after max retries. |
 | **Phase 39** | **Workflow Definition Versioning, Hot Migration Policies & Tamper-Evident Audit Ledger** | Semantic definition versioning (`DRAFT`, `ACTIVE`, `DEPRECATED`, `ARCHIVED`); dual migration policies (frozen Memento snapshot vs topological Hot Migration); cryptographic hash-chained audit ledger (`workflow_audit_log` with SHA-256 validation); visual graph diff viewer in Visual DAG Studio between versions. | Unit and integration tests verifying hash-chain validation, tamper detection, and hot migration of in-flight execution checkpoints without data loss. |
@@ -116,7 +116,7 @@ flowchart TD
 ### Phase 36: Visual DAG Studio 2.0: Full 23-Node Palette, Specialized Property Inspectors & Sandbox Simulation Engine
 
 #### 1. Strategic Objective
-Elevate the visual authoring environment in `@unipost/console` to provide native support for all 23 task node types implemented in the Java workflow engine, eliminating gaps between the visual designer and backend runtime capabilities.
+Elevate the visual authoring environment in `@acc/console` to provide native support for all 23 task node types implemented in the Java workflow engine, eliminating gaps between the visual designer and backend runtime capabilities.
 
 #### 2. Visual Palette Expansion (`dag-palette.tsx`)
 Organize all 23 task node types into 5 clean, collapsible category sections:
@@ -179,7 +179,7 @@ Create dedicated inspector panels tailored to each node type:
   - `SUB_WORKFLOW`: Target workflow key, Version selector, Input parameter mappings.
 
 #### 4. Unified Sandbox Offline Simulation Engine (`packages/sandbox`)
-Enhance `workflowSandboxHandler` in `@unipost/sandbox`:
+Enhance `workflowSandboxHandler` in `@acc/sandbox`:
 - Support client-side execution simulation for all 23 node types without requiring a running Java backend.
 - Evaluate `${workflow.variables.*}` and `SET_VARIABLE` mutations in memory.
 - Simulate `HTTP` requests using mocked responses configured in the sandbox dock.
@@ -424,7 +424,7 @@ Deliver unmatched operational transparency and debugging capabilities through an
 
 #### 3. Polyglot Worker Fleet Dashboard (`/system/workers`)
 - **Fleet Registry API (`GET /api/v1/workflow/workers`)**:
-  - Returns registered worker processes across both Java Virtual Threads and `@unipost/worker` Node.js instances.
+  - Returns registered worker processes across both Java Virtual Threads and `@acc/worker` Node.js instances.
   - Telemetry attributes: `workerId`, `hostIp`, `runtime` (`JAVA_VIRTUAL_THREADS` vs `NODE_TYPESCRIPT`), `pollDomains`, `concurrencyLimit`, `activeLeases`, `heartbeatAgeMs`, `status` (`HEALTHY`, `DEGRADED`, `OFFLINE`).
 - **Visual Fleet Monitoring Grid in Console**:
   - Liquid Glass cards displaying worker instances with live heartbeat status indicators.
@@ -463,18 +463,18 @@ Deliver unmatched operational transparency and debugging capabilities through an
    cd apps/backend; ./mvnw.cmd clean test '-Dsurefire.failIfNoSpecifiedTests=false'
    ```
    - `workflow-engine`: 100% unit test coverage over `PureDecider`, `NodeStrategyRegistry`, `ParameterResolver`, `SagaCompensator`, and `AuditLedgerVerifier`.
-   - `unipost-ms-aio`: Spring Boot integration tests verifying definition versioning, human task endpoints, DLQ management, and SSE telemetry.
+   - `acc-ms-aio`: Spring Boot integration tests verifying definition versioning, human task endpoints, DLQ management, and SSE telemetry.
 
 2. **Pure TypeScript Worker SDK Test Suite**:
    ```powershell
-   pnpm --filter @unipost/worker test
+   pnpm --filter @acc/worker test
    ```
    - Assert adaptive polling, concurrency limiters, auto-heartbeat middleware, and reverse Saga execution.
 
 3. **Console UI & Unified Sandbox Test Suite**:
    ```powershell
-   pnpm --filter @unipost/console test
-   pnpm --filter @unipost/sandbox test
+   pnpm --filter @acc/console test
+   pnpm --filter @acc/sandbox test
    ```
    - Assert visual palette rendering for all 23 node types, property inspector form bindings, time-travel scrubber interactions, and offline sandbox decider simulation.
 

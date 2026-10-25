@@ -15,7 +15,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 import { usePermissions } from '@/features/spring-auth/hooks/use-permissions';
 import { useDlqQuery, useReplayDlqMutation, useDiscardDlqMutation } from './hooks/use-dlq';
 import { DlqTable } from './components/dlq-table';

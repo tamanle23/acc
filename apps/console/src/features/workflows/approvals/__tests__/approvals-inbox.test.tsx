@@ -131,12 +131,12 @@ describe('ApprovalsInbox Component', () => {
       sse.emit('APPROVAL_REQUESTED', {
         entityTypeId: 99,
         recordId: 777,
-        requestedBy: 'auditor@unipost.io',
+        requestedBy: 'auditor@acc.io',
       });
     });
 
     expect(screen.getByText('Entity Type #99 Workflow')).toBeDefined();
-    expect(screen.getByText('auditor@unipost.io')).toBeDefined();
+    expect(screen.getByText('auditor@acc.io')).toBeDefined();
   });
 
   it('handles SSE error and attempts reconnect without crashing', () => {

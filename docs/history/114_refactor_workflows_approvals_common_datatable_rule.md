@@ -29,5 +29,5 @@ The user requested refactoring `/workflows` and `/approvals` to use the shared `
 - `apps/console/doc/walkthrough_102.md`: Walkthrough artifact.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` passed clean with 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit` passed clean with 0 errors.
 - Vitest suites for `src/features/workflows/` (2 tests), `src/features/approvals/` (2 tests), and `src/features/spring-auth/` (3 tests) all passed 100% green.

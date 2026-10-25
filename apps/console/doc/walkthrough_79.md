@@ -40,5 +40,5 @@ We implemented dynamic port generation based on each state's incoming and outgoi
 
 ## 3. Verification
 
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - **9 test files passed**, **54 tests passed** (including all FSM Studio designer and visual schema suite tests).

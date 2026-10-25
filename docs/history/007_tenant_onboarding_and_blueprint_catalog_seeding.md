@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-09  
 **Status:** Completed  
-**Scope:** `@unipost/backend` (`apps/backend/unipost-fw`)
+**Scope:** `@acc/backend` (`apps/backend/acc-fw`)
 
 ## 1. Problem Statement
 When new tenant organizations onboard to the Unipost platform, configuring entity schemas, field attributes, UI components, and relationship graphs manually from scratch is high-friction and error-prone. Tenants need pre-modeled, production-ready industry blueprints (such as Logistics & Fleet Management, B2B CRM & Invoicing, or Blank Workspace) that can be seeded atomically in $< 250\text{ ms}$, deep-cloning all metadata stamped with the target tenant ID, pre-warming Hazelcast/L1 schema caches, and ensuring decoupled schema evolution (zero runtime linkage back to template files).
@@ -20,21 +20,21 @@ When new tenant organizations onboard to the Unipost platform, configuring entit
 
 ## 3. Changes
 - **Blueprint JSON Manifests:**
-  - `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/logistics-fleet-blueprint.json`: models Fleet Vehicles, Dispatch Orders, and vehicle assignment edges.
-  - `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/b2b-crm-billing-blueprint.json`: models Customer Accounts, Invoices, and customer billing edges.
-  - `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/blank-workspace-blueprint.json`: clean canvas workspace template.
+  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/logistics-fleet-blueprint.json`: models Fleet Vehicles, Dispatch Orders, and vehicle assignment edges.
+  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/b2b-crm-billing-blueprint.json`: models Customer Accounts, Invoices, and customer billing edges.
+  - `apps/backend/acc-fw/src/main/resources/metadata/blueprints/blank-workspace-blueprint.json`: clean canvas workspace template.
 - **Blueprint DTOs & Catalog Loader:**
-  - `com.unipost.tenant.blueprint.BlueprintManifest`: record mapping blueprint schema.
-  - `com.unipost.tenant.blueprint.BlueprintSummaryDto`: lightweight projection for catalog listing.
-  - `com.unipost.tenant.blueprint.BlueprintCatalogService`: scans `classpath:metadata/blueprints/*.json` and maintains in-memory catalog.
+  - `com.acc.tenant.blueprint.BlueprintManifest`: record mapping blueprint schema.
+  - `com.acc.tenant.blueprint.BlueprintSummaryDto`: lightweight projection for catalog listing.
+  - `com.acc.tenant.blueprint.BlueprintCatalogService`: scans `classpath:metadata/blueprints/*.json` and maintains in-memory catalog.
 - **Tenant Provisioning DTOs & Service:**
-  - `com.unipost.tenant.dto.TenantProvisioningRequest`: validation annotations for `tenantId`, `tenantName`, `blueprintId`.
-  - `com.unipost.tenant.dto.TenantProvisioningResult`: execution statistics and created entity names.
-  - `com.unipost.tenant.service.TenantProvisioningService`: deep-cloning pipeline, tenant context stamping, relationship wiring, and cache pre-warming.
+  - `com.acc.tenant.dto.TenantProvisioningRequest`: validation annotations for `tenantId`, `tenantName`, `blueprintId`.
+  - `com.acc.tenant.dto.TenantProvisioningResult`: execution statistics and created entity names.
+  - `com.acc.tenant.service.TenantProvisioningService`: deep-cloning pipeline, tenant context stamping, relationship wiring, and cache pre-warming.
 - **REST Presentation:**
-  - `com.unipost.presentation.TenantProvisioningController`: exposed `/api/v1/metadata/blueprints` and `/api/v1/metadata/tenants/provision`.
+  - `com.acc.presentation.TenantProvisioningController`: exposed `/api/v1/metadata/blueprints` and `/api/v1/metadata/tenants/provision`.
 - **Testing:**
-  - `com.unipost.tenant.service.TenantProvisioningServiceTest`: verified blueprint onboarding, empty template, collision rejection, and schema pre-warming.
+  - `com.acc.tenant.service.TenantProvisioningServiceTest`: verified blueprint onboarding, empty template, collision rejection, and schema pre-warming.
 
 ## 4. Verification
 - `TenantProvisioningServiceTest`: 4/4 tests passed.

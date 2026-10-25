@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 08 of N)  
 **Document Level:** Enterprise Compliance, Data Portability & Lifecycle Management Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / S3/MinIO), `@unipost/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / S3/MinIO), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Tenant-Isolated Portable Data Bundles, Chunked Streaming Export (JSON/Parquet/NDJSON), Cryptographic Erasure & Cascading Hard-Purge, Audit & Compliance Guarantees (GDPR Art. 17 / Art. 20, SOC 2 Type II)  
 **Status:** Canonical Living Architecture Document  
 
@@ -61,10 +61,10 @@ tenant_export_tnt_acme_20261008.zip
 To prevent OutOfMemory (OOM) errors during export, records are processed using JDBC `FetchSize` streaming and written directly to an encrypted S3 multipart upload stream:
 
 ```java
-package com.unipost.tenant.export;
+package com.acc.tenant.export;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.unipost.domain.metadata.EntityRecord;
+import com.acc.domain.metadata.EntityRecord;
 import jakarta.persistence.EntityManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -82,7 +82,7 @@ public class TenantExportService {
     private final ObjectMapper objectMapper;
     private final S3StorageService storageService;
 
-    @Async("unipostAsyncTaskExecutor")
+    @Async("accAsyncTaskExecutor")
     @Transactional(readOnly = true)
     public void executeStreamingExport(String tenantId, String jobId) {
         String s3Key = "exports/" + tenantId + "/" + jobId + ".zip";
@@ -194,7 +194,7 @@ Once database rows are removed:
 1. **Hazelcast Cluster Eviction**:
    A cluster-wide broadcast invalidates all keys matching `schema:{targetTenant}:*` and `data:{targetTenant}:*`.
 2. **S3 / Blob Shredding**:
-   Issue an S3 batch delete job for the bucket prefix: `s3://unipost-storage/tenants/{targetTenant}/*`.
+   Issue an S3 batch delete job for the bucket prefix: `s3://acc-storage/tenants/{targetTenant}/*`.
 3. **Immutable Certificate of Erasure**:
    An immutable, anonymized audit log is preserved in compliance with regulatory oversight:
    ```json

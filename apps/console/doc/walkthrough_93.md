@@ -9,16 +9,16 @@ Following the addition of the resizable dialog handles and maximize capability t
 3. **Implicit Margin Reset**: Standard dialog styles can inherit browser user-agent margins or conflicting flex/grid offsets. Explicitly setting `margin: 0` ensures perfect centering calculations.
 
 ## 2. Changes Made
-- [`useResizableDialog`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/hooks/use-resizable-dialog.ts):
+- [`useResizableDialog`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/hooks/use-resizable-dialog.ts):
   - Added dynamic `getResponsiveDefault()` helper computing initial size bounded by `Math.min(defaultWidth, Math.round(window.innerWidth * 0.92))` and `Math.min(defaultHeight, Math.round(window.innerHeight * 0.82))`.
   - Added `margin: 0` to `dialogStyle` (both maximized and windowed states).
   - Adjusted default `maxHeightRatio` to `0.88` (from `0.96`) so un-maximized dialogs always retain balanced vertical margins above and below.
   - Updated `resetToDefault()` to dynamically use responsive default sizing.
-- [`BlueprintGalleryDialog`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx):
+- [`BlueprintGalleryDialog`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx):
   - Updated `DialogContent` className with `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-none` to guarantee strict viewport centering regardless of screen aspect ratio or resize state.
-- [`blueprint-gallery.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx):
+- [`blueprint-gallery.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx):
   - Added unit test verifying `useResizableDialog` computes centered `dialogStyle` with `margin: 0`, responsive dimensions, and proper maximize/reset states.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`: 7/7 tests passed.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Clean type check with zero errors.
+- `pnpm --filter @acc/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`: 7/7 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Clean type check with zero errors.

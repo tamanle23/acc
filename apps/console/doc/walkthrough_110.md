@@ -8,14 +8,14 @@ Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** acr
 ## Changes Implemented
 
 ### 1. Database Migration (Liquibase)
-- Added `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00011.xml`:
+- Added `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`:
   - Extended `UNIPOST_ENTITY_TYPES` with:
     - `is_composite BOOLEAN DEFAULT FALSE NOT NULL`
     - `composite_spec JSONB`
-- Registered changelog in `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml`.
+- Registered changelog in `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`.
 
 ### 2. Domain & Specification AST (Java 21)
-- Created AST records in `com.unipost.domain.metadata`:
+- Created AST records in `com.acc.domain.metadata`:
   - `CompositeJoinPattern.java`: `PATTERN_B_FOREIGN_KEY`, `PATTERN_C_ASSOCIATION`.
   - `CompositeField.java`: Source attribute mapping with target projection alias.
   - `CompositeNode.java`: Child join node containing target entity, pattern, cardinality, foreign key attribute, fields, and recursive children.
@@ -64,7 +64,7 @@ Phase 41 delivers the **Composite Entity Type Registry & Specification DSL** acr
 ### 1. Backend Verification Test Suite
 Command:
 ```bash
-mvn test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=CompositeEntityTypeVerificationTest" -q
+mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q
 ```
 Results:
 - `testCompositeValidation_Success`: Passed.
@@ -78,8 +78,8 @@ Results:
 ### 2. Frontend Vitest Test Suites
 Command:
 ```bash
-pnpm --filter @unipost/console test src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx
-pnpm --filter @unipost/console test src/features/metadata/components/studio/visual-schema-studio.test.tsx
+pnpm --filter @acc/console test src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx
+pnpm --filter @acc/console test src/features/metadata/components/studio/visual-schema-studio.test.tsx
 ```
 Results:
 - `composite-bento-studio.test.tsx`: 3 passed.
@@ -88,8 +88,8 @@ Results:
 ### 3. Linting and TypeScript Type Check
 Commands:
 ```bash
-pnpm --filter @unipost/console exec eslint src/features/metadata/components/studio/composite
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec eslint src/features/metadata/components/studio/composite
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Results:
 - `eslint`: 0 problems (0 errors, 0 warnings).

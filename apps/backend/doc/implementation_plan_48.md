@@ -1,6 +1,6 @@
 # Implementation Plan 48: Sovereign RBAC Matrix, Fail-Fast Credential Injection & System Custody
 
-- **Target App**: `@unipost/backend`
+- **Target App**: `@acc/backend`
 - **Related Spec**: `docs/master_database_schema_architecture.md`
 - **History Tracking**: `docs/history/202_seed_sovereign_rbac_and_custody.md`
 
@@ -24,7 +24,7 @@ Following enterprise security standards and feedback on credential management:
 
 ## 2. Proposed Changes
 
-### `apps/backend/unipost-db`
+### `apps/backend/acc-db`
 - Create `changelog-000.000.00016.xml`:
   - Fail-fast SQL precondition enforcing presence of password hashes.
   - Insert permissions, sovereign roles, role permissions, users, and user roles.
@@ -38,4 +38,4 @@ Following enterprise security standards and feedback on credential management:
 ## 3. Verification Plan
 - `mvnw.cmd test-compile -q`
 - Unit and slice tests with test-scoped credentials.
-- `pnpm --filter @unipost/console exec tsc --noEmit`
+- `pnpm --filter @acc/console exec tsc --noEmit`

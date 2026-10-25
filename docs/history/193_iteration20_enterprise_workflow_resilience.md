@@ -40,8 +40,8 @@ Execute all 5 workstreams of `docs/integration_master_plan_iteration20.md`:
 - Backend tests: `PureDeciderTest,NodeStrategiesTest,MediumFrequencyTaskStrategiesTest,LowFrequencyTaskStrategiesTest,SystemTaskWorkerPoolTest` -> Exited 0 (All passed).
 - Frontend tests: `dag-layout-strategy.test.ts` (7/7 passed), `execution-run-drawer.test.tsx` (6/6 passed).
 - Sandbox tests: `workflow-sandbox-handler.test.ts` (94/94 passed).
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` -> 0 errors.
-- Sandbox TypeScript: `pnpm --filter @unipost/sandbox exec tsc --noEmit` -> 0 errors.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` -> 0 errors.
+- Sandbox TypeScript: `pnpm --filter @acc/sandbox exec tsc --noEmit` -> 0 errors.
 
 ## Walkthrough
 Refer to `apps/console/doc/walkthrough_151.md` for full implementation walkthrough and screenshots/behavioral blueprints.

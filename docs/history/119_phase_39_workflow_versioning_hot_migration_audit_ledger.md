@@ -15,7 +15,7 @@ In complex multi-tenant workflow architectures, long-running workflow executions
    - Extend `PersistencePort`, `InMemoryPersistenceAdapter`, `PostgresJdbcPersistenceAdapter`, and `SqliteJdbcPersistenceAdapter`.
    - Update SQL DDL (`schema-postgres.sql`, `schema-sqlite.sql`) with `workflow_definitions` and `workflow_audit_log` tables.
    - Wire audit emission and hot migration into `WorkflowEngineService`.
-2. **REST API (`unipost-ms-aio`)**:
+2. **REST API (`acc-ms-aio`)**:
    - Expose endpoints in `WorkflowDefinitionController` for definition versions, hot migration dry-run and apply, and audit ledger listing and verification.
 3. **Unified Sandbox (`packages/sandbox`)**:
    - Implement `workflow-versioning-sandbox-handler.ts` with in-memory hash chain validation and tamper injection.
@@ -26,8 +26,8 @@ In complex multi-tenant workflow architectures, long-running workflow executions
    - Build `HotMigrationModal` operator dialog with live dry-run validation and audit badge.
    - Wire version diff selection and modal into `visual-dag-studio.tsx`.
 5. **Verification & Tests**:
-   - Run Maven tests for `workflow-engine` and `unipost-ms-aio`.
-   - Run Vitest and TypeScript checks for `@unipost/sandbox` and `@unipost/console`.
+   - Run Maven tests for `workflow-engine` and `acc-ms-aio`.
+   - Run Vitest and TypeScript checks for `@acc/sandbox` and `@acc/console`.
 
 ## Changes
 
@@ -42,7 +42,7 @@ In complex multi-tenant workflow architectures, long-running workflow executions
 - `WorkflowEngineService.java`: Emits audit logs on start, task completion, and migration; exposes dry-run validation and verification methods.
 - Tests: `AuditLedgerServiceTest.java`, `TopologicalCompatibilityValidatorTest.java`.
 
-### 2. `apps/backend/unipost-ms-aio`
+### 2. `apps/backend/acc-ms-aio`
 - `WorkflowEngineConfiguration.java`: Added persistence fallback to `WorkflowDefinitionRegistry`.
 - `WorkflowDefinitionController.java`: Added endpoints for version inspection, dry-run hot migration, execution hot migration, and audit ledger verification.
 
@@ -59,6 +59,6 @@ In complex multi-tenant workflow architectures, long-running workflow executions
 
 ## Verification
 - `workflow-engine`: 50/50 tests passed (`./mvnw test -q -pl workflow-engine`).
-- `unipost-ms-aio`: 8/8 tests passed (`./mvnw test -q -pl unipost-ms-aio`).
-- `@unipost/sandbox`: 11/11 tests passed (`pnpm --filter @unipost/sandbox test`).
-- `@unipost/console`: Tests and TypeScript check passed (`tsc --noEmit`).
+- `acc-ms-aio`: 8/8 tests passed (`./mvnw test -q -pl acc-ms-aio`).
+- `@acc/sandbox`: 11/11 tests passed (`pnpm --filter @acc/sandbox test`).
+- `@acc/console`: Tests and TypeScript check passed (`tsc --noEmit`).

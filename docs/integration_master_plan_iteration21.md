@@ -1,8 +1,8 @@
 # Integration Master Plan: Iteration 21 - Persistence & Metadata-Driven Database Architecture Synchronization
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/unipost-db`, `apps/backend/unipost-fw`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
+- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** PostgreSQL 16+ RLS, Liquibase Unified Master, Spring Modulith, React 19, WCAG 2.2 AA, Liquid Glass Design Tokens  
 **Reference SSOT:** [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md)  
@@ -34,7 +34,7 @@ Following our comprehensive architectural review across the persistence and data
 > 2. **Identity & RBAC Naming**: Canonical physical naming convention: strictly use `UNIPOST_IDENTITY_USER`, `UNIPOST_IDENTITY_ROLE`, `UNIPOST_IDENTITY_PERMISSION`, `UNIPOST_IDENTITY_USERROLE`, `UNIPOST_IDENTITY_ROLEPERMISSION` across all text, ER diagrams, and DDL tables.
 > 3. **Clean Elimination of Dead Tables**: `ADDRESS`, `USERPROFILE`, and `USERACTIVITY` are permanently removed from all ER diagrams and documentation.
 > 4. **Billing & Dynamic Feature Gate Pipeline**: Fully document `UNIPOST_TENANT_BILLING` and `UNIPOST_TENANT_FEATURES` with RLS, payOS VietQR flow, the `@RequireFeature` AOP evaluation aspect, and the `<FeatureGate />` UI token contract.
-> 5. **UI/UX Design System & WCAG 2.2 AA**: Fully document the dynamic Form UI Widget token mapping to `@unipost/ui` primitives, Liquid Glass styling metrics, the 5-state component matrix (Default, Loading, Empty, Error, Disabled), and WCAG 2.2 AA accessibility requirements.
+> 5. **UI/UX Design System & WCAG 2.2 AA**: Fully document the dynamic Form UI Widget token mapping to `@acc/ui` primitives, Liquid Glass styling metrics, the 5-state component matrix (Default, Loading, Empty, Error, Disabled), and WCAG 2.2 AA accessibility requirements.
 
 ---
 
@@ -46,7 +46,7 @@ Following our comprehensive architectural review across the persistence and data
 | 2 | ER Diagram contains `APP_USER ||--o{ APP_USERACTIVITY : "audited"`. | `USERACTIVITY`, `USERPROFILE`, and `ADDRESS` have been cleanly eliminated. Audit logging is exclusively handled by `UNIPOST_RECORD_AUDIT_LOG` and MDC telemetry. | Remove `APP_USERACTIVITY`, `ADDRESS`, and `USERPROFILE` completely from ER diagram and prose. |
 | 3 | Static Control Plane omits `UNIPOST_TENANT_BILLING` and `UNIPOST_TENANT_FEATURES` table schemas and feature gating pipeline. | Active tables in `changelog-000.000.00006.xml` manage commercial subscription status, payOS VietQR checkouts, and dynamic feature entitlement tokens with RLS. | Add comprehensive table schema definitions for `UNIPOST_TENANT_BILLING` and `UNIPOST_TENANT_FEATURES`, plus `@RequireFeature` & `<FeatureGate />` pipeline. |
 | 4 | File Storage (`UNIPOST_FS_OBJECT`, `UNIPOST_FS_OBJECTRELATION`) was partially referenced. | Maintained separately; must not clutter the database schema master SSOT. | Strictly omit all FS tables from the persistence architecture document. |
-| 5 | Master Migration Topology describes split identity and unipost Liquibase scripts. | Migrations are consolidated: `db/unipost/changelog-master.xml` houses identity baseline + incremental changelogs, linked by root `db/changelog-master.xml`. | Add Section 8 detailing the Unified Liquibase Migration Graph and changelog execution sequence. |
+| 5 | Master Migration Topology describes split identity and acc Liquibase scripts. | Migrations are consolidated: `db/acc/changelog-master.xml` houses identity baseline + incremental changelogs, linked by root `db/changelog-master.xml`. | Add Section 8 detailing the Unified Liquibase Migration Graph and changelog execution sequence. |
 | 6 | Missing UI/UX Design System & 5-State Component Invariants for Metadata and Audit components. | Rule `01-workspace-specific.md` and `ui-ux-design-principles` mandate Liquid Glass tokens, the 5-state matrix (Default, Loading, Empty, Error, Disabled), and WCAG 2.2 AA accessibility for dynamic forms and audit drawers. | Add Section 9 covering UI/UX Design System Integration, Liquid Glass specifications, dynamic form widget mappings, and WCAG 2.2 AA compliance. |
 
 ---
@@ -81,11 +81,11 @@ Following our comprehensive architectural review across the persistence and data
 ### 4.4. Unified Liquibase Master Migration Topology
 - Add Section 8 detailing the single source of truth for database migrations:
   - Root: `db/changelog-master.xml`
-    - Core migration graph: `db/unipost/changelog-master.xml` (Identity baseline `changelog-identity-00.xml`, tokens, master_data, mock_data followed by sequential incremental changelogs `000.000.00001.xml` through `000.000.00014.xml`).
+    - Core migration graph: `db/acc/changelog-master.xml` (Identity baseline `changelog-identity-00.xml`, tokens, master_data, mock_data followed by sequential incremental changelogs `000.000.00001.xml` through `000.000.00014.xml`).
 
 ### 4.5. UI/UX Design System Integration & WCAG 2.2 AA Compliance
 - Add Section 9 detailing front-end binding for dynamic metadata:
-  - **Dynamic Form Widgets**: Map `ui_component` tokens (`TEXT_INPUT`, `NUMERIC_INPUT`, `DATE_PICKER`, `DROPDOWN`, `RICH_TEXT`, `SWITCH`, `RELATION_PICKER`) to `@unipost/ui` primitives.
+  - **Dynamic Form Widgets**: Map `ui_component` tokens (`TEXT_INPUT`, `NUMERIC_INPUT`, `DATE_PICKER`, `DROPDOWN`, `RICH_TEXT`, `SWITCH`, `RELATION_PICKER`) to `@acc/ui` primitives.
   - **Liquid Glass Aesthetics**: Enforce frosted translucent scrims (`bg-white/65`, `backdrop-blur-xl`, `border-white/30 dark:border-white/10`) on dynamic forms and `RecordAuditHistoryDrawer`.
   - **5-State Component Matrix**: Explicit specs for Default, Loading (skeletons), Empty (CTA), Error (recovery message), and Disabled/Read-only states.
   - **WCAG 2.2 AA Accessibility**: Strict label associations (`htmlFor`), keyboard operability, polite live region announcements (`aria-live="polite"`), and 4.5:1 text contrast.
@@ -96,9 +96,9 @@ Following our comprehensive architectural review across the persistence and data
 
 1. **Backend Verification**:
    - Run `./mvnw test-compile -q` to guarantee backend compilation integrity.
-   - Run targeted test suites: `./mvnw test -pl unipost-fw "-Dtest=TenantProvisioningServiceTest,SovereignCustodyAndRlsTest,TenantContextAndAspectTest" -q`.
+   - Run targeted test suites: `./mvnw test -pl acc-fw "-Dtest=TenantProvisioningServiceTest,SovereignCustodyAndRlsTest,TenantContextAndAspectTest" -q`.
 2. **Frontend Type Verification**:
-   - Run `pnpm --filter @unipost/console exec tsc --noEmit` to verify type safety.
+   - Run `pnpm --filter @acc/console exec tsc --noEmit` to verify type safety.
 3. **Specification Quality Verification**:
    - Validate Mermaid diagrams for zero syntax warnings.
    - Cross-check 100% of table and column names against actual SQL DDL scripts.

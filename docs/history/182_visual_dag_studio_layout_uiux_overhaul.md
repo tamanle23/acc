@@ -30,5 +30,5 @@ Implement all specifications agreed upon in `docs/integration_master_plan_iterat
 - **`apps/console/doc/walkthrough_144.md`**: Created walkthrough documentation.
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/features/workflows/components/studio/`: 13 test files passed, 62/62 tests passing.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Clean compilation, 0 TypeScript errors.
+- `pnpm --filter @acc/console test -- src/features/workflows/components/studio/`: 13 test files passed, 62/62 tests passing.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Clean compilation, 0 TypeScript errors.

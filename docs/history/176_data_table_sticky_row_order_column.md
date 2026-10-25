@@ -1,7 +1,7 @@
 # 176 - DataTable Row Order Increment Sticky Column
 
 ## Problem
-In `@unipost/console`, the primary `EntityDataGrid` component featured a sticky `#` row order increment column with Liquid Glass frosted backdrop and pagination index calculations. However, the shared `DataTable` primitive lacked this capability, leading to visual inconsistency and making it harder for operators to reference row numbers across operational views like `/workflow-executions` and `/system/dlq`.
+In `@acc/console`, the primary `EntityDataGrid` component featured a sticky `#` row order increment column with Liquid Glass frosted backdrop and pagination index calculations. However, the shared `DataTable` primitive lacked this capability, leading to visual inconsistency and making it harder for operators to reference row numbers across operational views like `/workflow-executions` and `/system/dlq`.
 
 ## Plan
 1. **Extend `DataTableProps` & Column Factory**:
@@ -26,6 +26,6 @@ In `@unipost/console`, the primary `EntityDataGrid` component featured a sticky 
 - `apps/console/doc/walkthrough_140.md`: Feature walkthrough.
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/components/data-table/__tests__/data-table-row-index.test.tsx`: 6/6 tests passed (67ms).
-- `pnpm --filter @unipost/console test:run`: 80/80 test files passed (372 tests green).
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test -- src/components/data-table/__tests__/data-table-row-index.test.tsx`: 6/6 tests passed (67ms).
+- `pnpm --filter @acc/console test:run`: 80/80 test files passed (372 tests green).
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

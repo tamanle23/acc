@@ -2,16 +2,16 @@
 
 ## Problem
 In Phase 3 of the testing master plan ([`docs/integration_master_plan_iteration7.md`](../integration_master_plan_iteration7.md)), the client and simulation layers required comprehensive unit and component integration testing:
-1. `@unipost/sandbox` lacked formal test suites covering all mock domain handlers, interceptor adapters, store manager, and reset registry, and had no automated coverage threshold enforcement.
-2. `@unipost/console` lacked unit tests for core store layers (`useMetadataUiStore`, `useSpringAuthStore`) and component integration tests for critical workflow and schema views (`record-editor-dialog`, `composite-rollup-builder`, `schema-builder`, `entity-data-grid`).
+1. `@acc/sandbox` lacked formal test suites covering all mock domain handlers, interceptor adapters, store manager, and reset registry, and had no automated coverage threshold enforcement.
+2. `@acc/console` lacked unit tests for core store layers (`useMetadataUiStore`, `useSpringAuthStore`) and component integration tests for critical workflow and schema views (`record-editor-dialog`, `composite-rollup-builder`, `schema-builder`, `entity-data-grid`).
 3. Running test suites surfaced a subtle infinite re-render loop in `visual-dag-studio.tsx` due to unmemoized workflow version calculations.
 
 ## Plan
 1. **Fix Production Bug**: Memoize `workflowVersions` in `visual-dag-studio.tsx` and guard `setNodes` inside the diff status `useEffect`.
-2. **`@unipost/sandbox` Unit Suites & Threshold Gates**:
+2. **`@acc/sandbox` Unit Suites & Threshold Gates**:
    - Write comprehensive unit tests for all domain handlers, repositories, interceptor adapters, and store manager.
    - Configure `@vitest/coverage-v8` in `packages/sandbox/vitest.config.ts` with hard thresholds: lines 90%, statements 90%, functions 90%, branches 70%.
-3. **`@unipost/console` Unit & Integration Suites**:
+3. **`@acc/console` Unit & Integration Suites**:
    - Write unit tests for `use-metadata-ui-store.ts` and `use-spring-auth-store.ts`.
    - Write integration tests for `record-editor-dialog.tsx`, `composite-rollup-builder.tsx`, `schema-builder.tsx`, and `entity-data-grid.tsx`.
    - Verify all 62 test files in `apps/console` pass cleanly.
@@ -32,21 +32,21 @@ In Phase 3 of the testing master plan ([`docs/integration_master_plan_iteration7
 - **`apps/console/src/features/metadata/components/data-explorer/__tests__/entity-data-grid.test.tsx`**: Added 4 integration tests for record cells, search input, "New Record" dialog trigger, and schema drift warnings.
 
 ## Verification
-1. `pnpm --filter @unipost/sandbox test:coverage`:
+1. `pnpm --filter @acc/sandbox test:coverage`:
    - Statements: 91.65% ($\ge 90\%$)
    - Functions: 93.60% ($\ge 90\%$)
    - Lines: 91.65% ($\ge 90\%$)
    - Branches: 72.78% ($\ge 70\%$)
    - 94 tests in 9 files, 100% passed with hard gate satisfied.
-2. `pnpm --filter @unipost/console test`:
+2. `pnpm --filter @acc/console test`:
    - 296 tests across 62 test files, 100% passed in under 12s.
-3. `pnpm --filter @unipost/console test:coverage`:
+3. `pnpm --filter @acc/console test:coverage`:
    - Configured coverage threshold gates in `apps/console/vitest.config.ts` (90% lines, functions, statements on core stores).
-4. `pnpm --filter @unipost/console check-types` & `pnpm --filter @unipost/sandbox check-types`: Clean typechecks.
+4. `pnpm --filter @acc/console check-types` & `pnpm --filter @acc/sandbox check-types`: Clean typechecks.
 
 ## Tasks
 - [x] Fix visual DAG studio infinite re-render loop
-- [x] Build comprehensive test suites across all `@unipost/sandbox` domain handlers
+- [x] Build comprehensive test suites across all `@acc/sandbox` domain handlers
 - [x] Configure Vitest v8 90% hard gate in `packages/sandbox/vitest.config.ts`
 - [x] Build store unit tests for `useMetadataUiStore` and `useSpringAuthStore`
 - [x] Build component integration tests for `record-editor-dialog`, `composite-rollup-builder`, `schema-builder`, and `entity-data-grid`

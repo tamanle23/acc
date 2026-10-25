@@ -36,19 +36,19 @@ Use this workflow to test the entire microservice ecosystem locally on your mach
 ### Step 1: Build Local Images
 Run these commands from the **root** of the monorepo to build the optimized Turborepo multi-stage images:
 ```bash
-docker build -t unipost/tekgo-ui:latest -f apps/tekgo-ui/Dockerfile .
-docker build -t unipost/console:latest -f apps/console/Dockerfile .
-docker build -t unipost/backend:latest -f apps/backend/unipost-ms-aio/deloyment/Dockerfile .
+docker build -t acc/tekgo-ui:latest -f apps/tekgo-ui/Dockerfile .
+docker build -t acc/console:latest -f apps/console/Dockerfile .
+docker build -t acc/backend:latest -f apps/backend/acc-ms-aio/deloyment/Dockerfile .
 ```
 
 ### Step 2: Spin Up Cluster & Load Images
 ```bash
-kind create cluster --name unipost-local
+kind create cluster --name acc-local
 
 # Load your locally built images into the cluster
-kind load docker-image unipost/tekgo-ui:latest --name unipost-local
-kind load docker-image unipost/console:latest --name unipost-local
-kind load docker-image unipost/backend:latest --name unipost-local
+kind load docker-image acc/tekgo-ui:latest --name acc-local
+kind load docker-image acc/console:latest --name acc-local
+kind load docker-image acc/backend:latest --name acc-local
 ```
 
 ### Step 3: Install Local Ingress Controller

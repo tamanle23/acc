@@ -1,6 +1,6 @@
 # Add Cloud Storage Integration Screen
 
-This plan details the implementation of a new Screen in `@unipost/console` to manage different Cloud Storage services (Google Drive, GCS, Cloudflare R2, Storj, Amazon S3).
+This plan details the implementation of a new Screen in `@acc/console` to manage different Cloud Storage services (Google Drive, GCS, Cloudflare R2, Storj, Amazon S3).
 
 ## Proposed Changes
 

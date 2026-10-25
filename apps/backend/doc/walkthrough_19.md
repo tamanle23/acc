@@ -5,26 +5,26 @@ Implemented dual-layer schema versioning, composite cache keys (`schema:{tenant_
 ## Changes
 
 ### 1. Events & Tenancy Context Propagation
-- [`AttributeDefinitionUpdatedEvent.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/AttributeDefinitionUpdatedEvent.java): Added `tenantId` field and backward-compatible constructors to convey tenant identity across application events.
+- [`AttributeDefinitionUpdatedEvent.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/AttributeDefinitionUpdatedEvent.java): Added `tenantId` field and backward-compatible constructors to convey tenant identity across application events.
 
 ### 2. Composite Cache Fabric & Schema Compilation
-- [`SchemaValidationService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java):
+- [`SchemaValidationService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java):
   - Formatted composite cache key as `schema:{tenant_id}:{entity_type_id}:v{tenantVer}_s1`.
   - Implemented `resolveEffectiveAttributes(tenantId, entityTypeId)`: fetches entity attributes and filters for either base `SYSTEM` attributes or tenant-specific custom attributes, guaranteeing no cross-tenant leakage.
   - Implemented `compileEffectiveSchema(tenantId, entityTypeId)`: compiles unified JSON Schema containing base platform attributes plus tenant overlay attributes.
   - Implemented tenant-aware `invalidateL1Cache(entityTypeId, tenantId)` preventing cross-tenant cache purges.
 
 ### 3. Distributed Cache Eviction
-- [`MetadataCacheListener.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataCacheListener.java):
+- [`MetadataCacheListener.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/MetadataCacheListener.java):
   - Listens for `AttributeDefinitionUpdatedEvent` and evicts L1 in-memory cache and L2 Hazelcast distributed map entries scoped strictly to the target tenant prefix (`schema:{tenantId}:`).
 
 ### 4. SYSTEM Schema Immutability & Collision Guards
-- [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java):
+- [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java):
   - Guarded `updateAttributeDefinition`, `deleteAttributeDefinition`, and `archiveAttributeDefinition` with immutability checks throwing `MetadataConflictException` if `tenant_id = 'SYSTEM'`.
   - Stamped active `TenantContextHolder.getTenantId()` on newly created attribute definitions.
   - Guarded `createAttributeDefinition` against system name collisions with existing attributes (both base `SYSTEM` and tenant-scoped).
   - Emits `AttributeDefinitionUpdatedEvent` carrying active tenant ID.
-- [`MetadataConflictException.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/exception/MetadataConflictException.java): Ensured `super(message)` is called so `getMessage()` returns the descriptive error message.
+- [`MetadataConflictException.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/exception/MetadataConflictException.java): Ensured `super(message)` is called so `getMessage()` returns the descriptive error message.
 
 ## Verification Results
 

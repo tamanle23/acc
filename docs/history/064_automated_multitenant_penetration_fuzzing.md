@@ -5,9 +5,9 @@ In a multi-tenant enterprise architecture, ensuring absolute zero data leakage a
 
 ## Proposed Plan
 1. **Implement Real Backend Security Penetration Suite (`SecurityPenetrationFuzzingTest.java`)**:
-   - Class location: `apps/backend/unipost-fw/src/test/java/com/unipost/fw/security/SecurityPenetrationFuzzingTest.java`.
+   - Class location: `apps/backend/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`.
    - **Cross-Tenant Horizontal Infiltration (100 Randomized Attacks)**:
-     - Generate randomized adversarial HTTP requests injecting spoofed `X-Tenant-Id`, `x-tenant`, and `x-unipost-tenant` headers aiming to access victim tenant resources (`tenant_victim_corporate`).
+     - Generate randomized adversarial HTTP requests injecting spoofed `X-Tenant-Id`, `x-tenant`, and `x-acc-tenant` headers aiming to access victim tenant resources (`tenant_victim_corporate`).
      - Route requests through the production `HeaderSanitizerFilter` and `JwtTokenHelper`.
      - Assert that 100% of injected headers are stripped and the tenant context is derived strictly and immutably from the cryptographic signature of the authenticated JWT token.
    - **Adversarial Pathological ReDoS Fuzzing Engine**:
@@ -22,16 +22,16 @@ In a multi-tenant enterprise architecture, ensuring absolute zero data leakage a
 3. **CI/CD Integration**:
    - Updated `.github/workflows/ci.yml` to execute `./mvnw test -Dtest="*ModularityTests,TenantExportServiceTest,SecurityPenetrationFuzzingTest"`.
 4. **Verification**:
-   - Run `.\mvnw.cmd test -pl unipost-fw -Dtest=SecurityPenetrationFuzzingTest` in `apps/backend`.
+   - Run `.\mvnw.cmd test -pl acc-fw -Dtest=SecurityPenetrationFuzzingTest` in `apps/backend`.
    - Verify 3/3 tests pass in sub-second execution.
 
 ## Changes Made
-- `apps/backend/unipost-fw/src/test/java/com/unipost/fw/security/SecurityPenetrationFuzzingTest.java`: Implemented real Spring Boot security penetration test suite.
+- `apps/backend/acc-fw/src/test/java/com/acc/fw/security/SecurityPenetrationFuzzingTest.java`: Implemented real Spring Boot security penetration test suite.
 - `.github/workflows/ci.yml`: Updated backend test step to run `SecurityPenetrationFuzzingTest`.
 - Removed synthetic TypeScript stub test and restored console configuration.
 
 ## Verification
-- `.\mvnw.cmd test -pl unipost-fw -Dtest=SecurityPenetrationFuzzingTest`: Passed (3/3 tests run, 0 failures, 0 errors, time elapsed: 0.983s).
+- `.\mvnw.cmd test -pl acc-fw -Dtest=SecurityPenetrationFuzzingTest`: Passed (3/3 tests run, 0 failures, 0 errors, time elapsed: 0.983s).
 
 ## Tasks Completed
 - [x] Implemented real 100-attack cross-tenant horizontal infiltration test against `HeaderSanitizerFilter` and `JwtTokenHelper`.

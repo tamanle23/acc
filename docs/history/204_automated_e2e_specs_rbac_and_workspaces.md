@@ -28,5 +28,5 @@ To reach full end-to-end automation coverage across all core operational workflo
 ---
 
 ## 3. Verification & Quality Gates
-- **TypeScript Static Analysis**: `pnpm --filter @unipost/console exec tsc --noEmit` exited with code `0`.
+- **TypeScript Static Analysis**: `pnpm --filter @acc/console exec tsc --noEmit` exited with code `0`.
 - **E2E Specs Registration**: Registered Flows 11, 12, and 13 within `apps/console/e2e/`.

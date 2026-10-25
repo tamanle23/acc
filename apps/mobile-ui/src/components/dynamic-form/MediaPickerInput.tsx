@@ -22,7 +22,7 @@ export interface MediaPickerInputProps {
 
 /**
  * MediaPickerInput with Liquid Glass styling.
- * Supports image preview, upload simulation to unipost-ms-fs, and removal.
+ * Supports image preview, upload simulation to acc-ms-fs, and removal.
  */
 export const MediaPickerInput: React.FC<MediaPickerInputProps> = ({
   label = 'Media Asset',
@@ -41,7 +41,7 @@ export const MediaPickerInput: React.FC<MediaPickerInputProps> = ({
     setIsUploading(true);
 
     try {
-      // Simulate client-side compression & streaming upload to unipost-ms-fs
+      // Simulate client-side compression & streaming upload to acc-ms-fs
       await new Promise((resolve) => setTimeout(resolve, 300));
       const simulatedObjectId = `obj_${Date.now()}`;
       const contentUri = `https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80#${simulatedObjectId}`;

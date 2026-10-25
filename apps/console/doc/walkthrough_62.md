@@ -32,8 +32,8 @@ This document records the full-stack implementation of **Phase 1 of the Domain B
 
 ## Verification & Quality Assurance
 1. **Backend Maven Tests**:
-   - `.\mvnw.cmd test -Dtest=TenantProvisioningServiceTest -pl unipost-fw`: 5 tests run, 0 failures, 0 errors.
+   - `.\mvnw.cmd test -Dtest=TenantProvisioningServiceTest -pl acc-fw`: 5 tests run, 0 failures, 0 errors.
 2. **Frontend Typecheck**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+   - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 3. **Frontend Vitest Unit Tests**:
-   - `pnpm --filter @unipost/console test`: 13 test suites, 76 unit tests passed cleanly.
+   - `pnpm --filter @acc/console test`: 13 test suites, 76 unit tests passed cleanly.

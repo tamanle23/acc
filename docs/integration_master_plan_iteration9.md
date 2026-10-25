@@ -1,7 +1,7 @@
 # Master Plan: Comprehensive Backend Unified Sandbox Guide (Iteration 9)
 
 ## 1. Goal & Architecture Overview
-Author an authoritative, comprehensive 360° technical and developer guide in `apps/backend/unipost-sandbox/README.md` explaining how to configure, run, and develop against the **Backend Unified Sandbox Platform**, covering both zero-database persona JWT authentication and database-seeded user credentials.
+Author an authoritative, comprehensive 360° technical and developer guide in `apps/backend/acc-sandbox/README.md` explaining how to configure, run, and develop against the **Backend Unified Sandbox Platform**, covering both zero-database persona JWT authentication and database-seeded user credentials.
 
 ---
 
@@ -14,13 +14,13 @@ Author an authoritative, comprehensive 360° technical and developer guide in `a
    - **Mode 1: Test Mode**: Ephemeral in-memory database (`jdbc:pglite:memory://`), instantaneous mock execution, zero latency jitter, clean test rollback per slice.
    - **Mode 2: Dev Mode**: Persistent local scratch database (`tmp/db/pglite-sandbox`), realistic payment jitter (2000ms), pre-warmed demonstration datasets (Acme Corp CRM + CMS Publishing with 1,000+ records).
 3. **Decoupled Packaging**:
-   - Completely packaged within `unipost-sandbox` module. When `application.sandbox.enabled=false`, zero sandbox beans or interceptors are registered in Spring's `ApplicationContext`.
+   - Completely packaged within `acc-sandbox` module. When `application.sandbox.enabled=false`, zero sandbox beans or interceptors are registered in Spring's `ApplicationContext`.
 4. **Zero-Endpoint Persona Authentication**:
    - `SandboxTokenAspect` issues cryptographically valid JWTs matching production security invariants without touching database user tables.
 
 ---
 
-## 3. Outline of the Comprehensive Guide (`apps/backend/unipost-sandbox/README.md`)
+## 3. Outline of the Comprehensive Guide (`apps/backend/acc-sandbox/README.md`)
 
 1. **Executive Overview & Philosophy**:
    - Zero-stub mandate: Why fake mocks and synthetic pass-throughs are prohibited.
@@ -29,7 +29,7 @@ Author an authoritative, comprehensive 360° technical and developer guide in `a
    - Non-invasive decoupling (`application.sandbox.enabled=false` guarantees zero production footprint).
 
 2. **System Architecture & Design Patterns**:
-   - Mermaid sequence & component diagrams showing the interaction between `unipost-ms-aio`, `unipost-sandbox`, embedded PGlite, and client applications.
+   - Mermaid sequence & component diagrams showing the interaction between `acc-ms-aio`, `acc-sandbox`, embedded PGlite, and client applications.
    - Pattern breakdown:
      - **Strategy Pattern**: `ExternalServiceSimulator<T>` SPI.
      - **Registry Pattern**: `BackendSandboxRegistry`.
@@ -44,7 +44,7 @@ Author an authoritative, comprehensive 360° technical and developer guide in `a
 
 4. **Developer Run Commands & CLI Recipes**:
    - Monorepo root shortcuts: `pnpm dev:sandbox`, `pnpm dev:backend:sandbox`, `pnpm dev:console:sandbox`, `pnpm test:e2e:live`.
-   - Backend package scripts: `pnpm --filter @unipost/backend dev:sandbox`, `dev:sandbox:persistent`, `dev:sandbox:pristine`, `dev:sandbox:test`, `test:sandbox`.
+   - Backend package scripts: `pnpm --filter @acc/backend dev:sandbox`, `dev:sandbox:persistent`, `dev:sandbox:pristine`, `dev:sandbox:test`, `test:sandbox`.
    - Maven CLI direct invocation commands with JVM arguments (`-Djava.net.preferIPv4Stack=true`).
 
 5. **Boundary Simulators Reference**:

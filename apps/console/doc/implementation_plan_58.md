@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-When implementing the Bento Box layout for the Metadata Management module and related workspace features in `@unipost/console` (`apps/console`), fixed viewport constraints (`has-data-[layout=fixed]:h-svh` and `<Main fixed>` with `overflow-hidden`) were introduced to achieve an IDE-style desktop workspace with independent internal pane scrolling.
+When implementing the Bento Box layout for the Metadata Management module and related workspace features in `@acc/console` (`apps/console`), fixed viewport constraints (`has-data-[layout=fixed]:h-svh` and `<Main fixed>` with `overflow-hidden`) were introduced to achieve an IDE-style desktop workspace with independent internal pane scrolling.
 
 On small screens (mobile viewports), this causes a complete lock of vertical scrolling because stacked layout items exceed `100svh`, yet the outer containers forcefully prevent scrolling. This document outlines the architectural root cause, system invariants, brainstormed approaches, and the concrete implementation plan to unlock fluid mobile scrolling without breaking the desktop Bento Box experience on medium and large screens.
 
@@ -12,7 +12,7 @@ On small screens (mobile viewports), this causes a complete lock of vertical scr
 
 ### 1.1 Root Cause Breakdown
 1. **Unconditional `100svh` Height Clamping**:
-   - In [`AuthenticatedLayout`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/authenticated-layout.tsx#L27-L35):
+   - In [`AuthenticatedLayout`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/authenticated-layout.tsx#L27-L35):
      ```tsx
      <SidebarInset
        className={cn(
@@ -24,13 +24,13 @@ On small screens (mobile viewports), this causes a complete lock of vertical scr
      ```
    - Clamps the container height on all viewports, including mobile devices, whenever `<Main fixed>` is present.
 2. **Rigid `overflow-hidden` on Main Container**:
-   - In [`Main`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/main.tsx#L16-L18):
+   - In [`Main`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/main.tsx#L16-L18):
      ```tsx
      fixed && 'flex grow flex-col overflow-hidden'
      ```
    - Prevents the `<main>` container from overflowing or scrolling vertically.
 3. **Vertical Stacking of Bento Box Panes on Mobile**:
-   - In [`MetadataFeature`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/metadata-feature.tsx#L111):
+   - In [`MetadataFeature`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/metadata-feature.tsx#L111):
      ```tsx
      <div className="flex flex-col lg:flex-row gap-6 items-stretch flex-1 w-full min-w-0 min-h-0">
      ```
@@ -68,7 +68,7 @@ On small screens (mobile viewports), this causes a complete lock of vertical scr
 
 ### Phase 1: Core Layout Primitives (Zero Desktop Regression)
 
-1. **Update [`AuthenticatedLayout`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/authenticated-layout.tsx)**:
+1. **Update [`AuthenticatedLayout`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/authenticated-layout.tsx)**:
    - Scope the fixed height rule to desktop (`lg:` breakpoint):
    ```tsx
    <SidebarInset
@@ -81,7 +81,7 @@ On small screens (mobile viewports), this causes a complete lock of vertical scr
    >
    ```
 
-2. **Update [`Main`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/main.tsx)**:
+2. **Update [`Main`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/main.tsx)**:
    - Allow natural vertical overflow on mobile while preserving `overflow-hidden` on desktop:
    ```tsx
    export function Main({ fixed, className, fluid, ...props }: MainProps) {
@@ -103,13 +103,13 @@ On small screens (mobile viewports), this causes a complete lock of vertical scr
 
 ### Phase 2: Metadata Feature Bento Adaptation
 
-1. **[`MetadataFeature`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/metadata-feature.tsx)**:
+1. **[`MetadataFeature`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/metadata-feature.tsx)**:
    - Ensure the outer flex container (`flex flex-col lg:flex-row gap-6 items-stretch flex-1 w-full min-w-0 min-h-0`) allows flex children to expand naturally on `< lg` without vertical collapse.
    - Adjust `min-h-0` to `max-lg:min-h-fit lg:min-h-0` so child cards do not collapse their content on small screens.
-2. **[`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)**:
+2. **[`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)**:
    - Give the table container a resilient minimum height on mobile (`min-h-[400px] md:min-h-[500px] lg:min-h-0`) so touch scrolling on rows functions cleanly.
    - Keep horizontal overflow (`overflow-x-auto`) for wide data columns with the sticky action column intact.
-3. **[`Settings`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/index.tsx)**:
+3. **[`Settings`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/index.tsx)**:
    - Relax `overflow-hidden` and `overflow-y-hidden` on mobile to `lg:overflow-hidden` so settings sub-forms can be scrolled and saved.
 
 ---
@@ -150,4 +150,4 @@ flowchart TD
    - Verify table scrolls horizontally without expanding the entire page body.
    - Verify Settings form inputs and buttons can be scrolled into view and clicked.
 3. **Automated Build & Lint Check**:
-   - Run `pnpm --filter @unipost/console check-types` and `pnpm --filter @unipost/console build`.
+   - Run `pnpm --filter @acc/console check-types` and `pnpm --filter @acc/console build`.

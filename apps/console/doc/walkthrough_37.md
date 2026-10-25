@@ -9,6 +9,6 @@
 - **Localization**: Added translation strings for the new dialog titles, actions, toast messages, and button labels to both `en` and `vi` JSON files.
 
 ## Verification
-- Code successfully passes the `@unipost/console` ESLint and type checks (warnings unrelated to these components).
+- Code successfully passes the `@acc/console` ESLint and type checks (warnings unrelated to these components).
 - Dialog structures, glass effects, blurs, and border opacities adhere closely to the project's Liquid Glass UI requirements.
 - The separation of Manage and Assignments workflows ensures clarity and safety, especially with the immutability of an assignment (once assigned, the workspace can only be toggled enabled/disabled).

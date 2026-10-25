@@ -1,0 +1,18 @@
+spring:
+  datasource:
+#    url: jdbc:mysql://localhost:3306/${target-schema:${schema}}
+#    driver-class-name: org.mariadb.jdbc.Driver
+#    username: lamca
+#    password: lamca
+    url: jdbc:postgresql://localhost:5432/acc?charSet=UTF-8
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres
+logging:
+  level:
+    liquibase: DEBUG
+#   url: jdbc:hsqldb:hsql://localhost/acc
+#    url: jdbc:hsqldb:file:../../tmp/db/acc
+#    driver-class-name: org.hsqldb.jdbcDriver
+#    username: root
+#    password: 0af3b424

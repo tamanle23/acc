@@ -19,7 +19,7 @@ When inspecting the rendered layout hierarchy, the Card component was obscured b
 ## 2. Changes Made
 
 ### A. Card Component Redesign
-- **File**: [card.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/card.tsx)
+- **File**: [card.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/card.tsx)
   - **Translucent Optical Body**: `bg-white/40 dark:bg-slate-900/40` so the vibrant liquid wallpaper colors and caustic ribbons clearly refract through.
   - **Dynamic Blur Binding**: `backdrop-blur-[var(--glass-blur,20px)]` directly binds to the Liquid Glass intensity slider.
   - **Specular Edge Highlight**: Top-edge refraction highlight via `shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.9)]` (light) and `shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]` (dark).
@@ -28,18 +28,18 @@ When inspecting the rendered layout hierarchy, the Card component was obscured b
   - **Interaction**: Added smooth scale and highlight brightening on hover (`hover:border-white/70 dark:hover:border-white/25 hover:shadow-xl hover:scale-[1.004]`).
 
 ### B. Transparent Canvas Inset
-- **File**: [sidebar.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/sidebar.tsx)
+- **File**: [sidebar.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/sidebar.tsx)
   - Removed `bg-background/50` from `SidebarInset`.
   - Configured `bg-transparent` with a delicate frosted frame (`md:peer-data-[variant=inset]:bg-white/15 dark:md:peer-data-[variant=inset]:bg-slate-950/20`), allowing the vibrant wallpaper to shine directly into the cards.
 
 ### C. Body Scrim Calibration
-- **File**: [index.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/index.css)
+- **File**: [index.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/index.css)
   - Calibrated the body linear gradient scrims to let the chromatic caustics punch through:
     - Light: `linear-gradient(to bottom, rgba(255, 255, 255, 0.18), rgba(248, 250, 252, 0.32))`
     - Dark: `linear-gradient(to bottom, rgba(11, 15, 25, 0.25), rgba(11, 15, 25, 0.45))`
 
 ### D. Translucent Theme Tokens
-- **File**: [theme.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/theme.css)
+- **File**: [theme.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/theme.css)
   - Updated `--card` and `--glass-bg` from 72%/65% down to `45%` in light and dark modes.
 
 ---
@@ -48,16 +48,16 @@ When inspecting the rendered layout hierarchy, the Card component was obscured b
 
 - **Linter**:
   ```bash
-  pnpm --filter @unipost/web lint
+  pnpm --filter @acc/web lint
   ```
   *Result*: Exited with code 0 (clean).
 - **Production Bundle**:
   ```bash
-  pnpm --filter @unipost/web build
+  pnpm --filter @acc/web build
   ```
   *Result*: Succeeded. Generated `.backdrop-blur-\\[var\\(--glass-blur\\,20px\\)\\]` and verified translucent optical styling in `dist/web/assets/card-Fdcp3OuZ.js`.
 
 ---
 
 ## 4. Artifact History Tracking
-- Local App History: [walkthrough_04.md](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/doc/walkthrough_04.md)
+- Local App History: [walkthrough_04.md](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/doc/walkthrough_04.md)

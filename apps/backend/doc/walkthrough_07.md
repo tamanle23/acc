@@ -1,7 +1,7 @@
 # UserGraphqlController — Fix & Debug Walkthrough
 
 **Date:** 2026-09-22
-**Scope:** `unipost-ms-aio`, `unipost-ms-identity`, root `pom.xml`
+**Scope:** `acc-ms-aio`, `acc-ms-identity`, root `pom.xml`
 
 ---
 
@@ -20,13 +20,13 @@ Accessing `http://localhost:8000/graphiql` returned `No endpoint GET /graphiql`.
 
 ### Root Cause
 The `spring.graphql` configuration block was written as a **second `spring:` root key**
-in `unipost-ms-identity/src/main/resources/application.yml`:
+in `acc-ms-identity/src/main/resources/application.yml`:
 
 ```yaml
 # Line 36 – existing block
 spring:
   application:
-    name: unipost-ms-account
+    name: acc-ms-account
   ...
 
 # Line 118 – NEW block (silently ignored by YAML parsers)
@@ -41,17 +41,17 @@ YAML does not allow duplicate root keys. Parsers silently discard the second
 occurrence, so `spring.graphql` was never read and the GraphQL servlet was never
 registered.
 
-Additionally, the AIO service (`unipost-ms-aio`) has its own `application.yml`
+Additionally, the AIO service (`acc-ms-aio`) has its own `application.yml`
 with `spring.graphql` already configured — the identity module config is only
 relevant when running the identity service standalone.
 
 ### Fix
-**`unipost-ms-aio/src/main/resources/application.yml`** — `spring.graphql` was
+**`acc-ms-aio/src/main/resources/application.yml`** — `spring.graphql` was
 already present; only `/graphql` and `/graphiql` were missing from
 `application.security.permitAlls` in **`application-local.yml`**:
 
 ```yaml
-# unipost-ms-aio/src/main/resources/application-local.yml
+# acc-ms-aio/src/main/resources/application-local.yml
 application:
   security:
     permitAlls:
@@ -61,7 +61,7 @@ application:
       - /graphiql/**    # ← added
 ```
 
-**`unipost-ms-identity/src/main/resources/application.yml`** — merged
+**`acc-ms-identity/src/main/resources/application.yml`** — merged
 `spring.graphql` as a nested key inside the existing `spring:` block instead of
 a separate root key.
 
@@ -94,7 +94,7 @@ the location path resolves to zero resources — schema building silently fails 
 no GraphQL servlet (including GraphiQL) is registered.
 
 ### Fix
-**`unipost-ms-aio/src/main/resources/application.yml`**:
+**`acc-ms-aio/src/main/resources/application.yml`**:
 
 ```yaml
 spring:
@@ -106,8 +106,8 @@ spring:
 ```
 
 `classpath*:` (with wildcard) scans all classpath roots including every
-dependency JAR on the classpath (`unipost-fw.jar` → `base.graphqls`,
-`unipost-ms-identity.jar` → `users.graphqls`). `classpath:` (without wildcard)
+dependency JAR on the classpath (`acc-fw.jar` → `base.graphqls`,
+`acc-ms-identity.jar` → `users.graphqls`). `classpath:` (without wildcard)
 only finds the first matching root and is therefore redundant.
 
 ### Lesson
@@ -182,10 +182,10 @@ reflective parameter name resolution fails at runtime. The explicit
 
 | File | Change |
 |---|---|
-| `unipost-ms-aio/src/main/resources/application.yml` | Fixed `schema.locations` to directory path format; added `file-extensions` |
-| `unipost-ms-aio/src/main/resources/application-local.yml` | Added `/graphql`, `/graphiql`, `/graphiql/**` to `permitAlls` |
-| `unipost-ms-identity/src/main/resources/application.yml` | Merged `spring.graphql` inside existing `spring:` block |
-| `unipost-ms-identity/.../UserGraphqlController.java` | Added explicit names to all `@Argument` annotations |
+| `acc-ms-aio/src/main/resources/application.yml` | Fixed `schema.locations` to directory path format; added `file-extensions` |
+| `acc-ms-aio/src/main/resources/application-local.yml` | Added `/graphql`, `/graphiql`, `/graphiql/**` to `permitAlls` |
+| `acc-ms-identity/src/main/resources/application.yml` | Merged `spring.graphql` inside existing `spring:` block |
+| `acc-ms-identity/.../UserGraphqlController.java` | Added explicit names to all `@Argument` annotations |
 | `pom.xml` (root) | Added `-parameters` to `maven-compiler-plugin` `compilerArgs` |
 
 ## Commit References

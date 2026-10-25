@@ -1,5 +1,5 @@
 export {
   SandboxRegistry,
   sandboxRegistry,
-} from '@unipost/sandbox';
+} from '@acc/sandbox';
 

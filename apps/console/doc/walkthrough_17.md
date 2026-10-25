@@ -35,11 +35,11 @@ We have implemented environment variable support for Meta/Facebook App credentia
 ### Automated Tests & Linting
 - **TypeScript & Web Build**:
   ```bash
-  pnpm --filter @unipost/console build:web
+  pnpm --filter @acc/console build:web
   ```
   Result: **Exit code 0**. `tsc -b` and client bundling completed cleanly in 549ms.
 - **ESLint**:
   ```bash
-  pnpm --filter @unipost/console lint
+  pnpm --filter @acc/console lint
   ```
   Result: **Exit code 0**. Clean code pass with 0 errors and 0 warnings.

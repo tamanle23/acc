@@ -1,4 +1,4 @@
-import type { JwtPayload } from '@unipost/client';
+import type { JwtPayload } from '@acc/client';
 
 export function decodeJwt(token: string): JwtPayload | null {
   try {

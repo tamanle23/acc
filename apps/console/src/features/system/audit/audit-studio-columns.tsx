@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import type { RecordAuditLog } from '@unipost/client';
+import type { RecordAuditLog } from '@acc/client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Hash, User, Clock, FileText, CheckCircle2 } from 'lucide-react';

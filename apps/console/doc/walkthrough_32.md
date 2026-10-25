@@ -1,27 +1,27 @@
 # Walkthrough: Hide Auth Sandbox Engine Unless Logged In Via Sandbox Bypass
 
 ## Overview
-Configured the `@unipost/console` authentication system and developer tools so that the **"Auth Sandbox Engine"** panel (`<SandboxPanel />`) is hidden at all times by default, appearing exclusively when a user authenticates using the **"Bypass with sandbox"** action.
+Configured the `@acc/console` authentication system and developer tools so that the **"Auth Sandbox Engine"** panel (`<SandboxPanel />`) is hidden at all times by default, appearing exclusively when a user authenticates using the **"Bypass with sandbox"** action.
 
 ---
 
 ## Key Changes
 
 ### 1. Spring Security Auth Store & Types
-* **[`types.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/types.ts)**:
+* **[`types.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/types.ts)**:
   - Extended `JwtPayload` to include optional `isSandbox?: boolean`.
   - Extended `AuthState` to include `isSandbox: boolean`.
-* **[`store.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/store.ts)**:
+* **[`store.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/store.ts)**:
   - Initialized `isSandbox: false`.
   - In `setTokens(access, refresh)`, set `isSandbox` to `true` if any indicator signals sandbox bypass (`user?.isSandbox`, mock signature suffix `.mock_signature`, or `mock_refresh_token_` prefix).
   - In `clearTokens()`, cleanly reset `isSandbox: false`.
 
 ### 2. Sandbox Mock Engine
-* **[`mock-engine.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/sandbox/mock-engine.ts)**:
+* **[`mock-engine.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/sandbox/mock-engine.ts)**:
   - Included `isSandbox: true` in the minted mock JWT payload on both sandbox bypass login (`/api/auth/token`) and silent refresh (`/api/auth/refresh`).
 
 ### 3. Sandbox Panel Conditional Rendering
-* **[`SandboxPanel.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/components/SandboxPanel.tsx)**:
+* **[`SandboxPanel.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/components/SandboxPanel.tsx)**:
   - Added visibility guard:
     ```tsx
     if (!isAuthenticated || !isSandbox) {
@@ -31,9 +31,9 @@ Configured the `@unipost/console` authentication system and developer tools so t
   - Removed unauthenticated placeholder text, keeping the interface completely clean and invisible for standard users and visitors.
 
 ### 4. Fixes & TypeScript Validation
-* **[`user-auth-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/auth/sign-in/components/user-auth-form.tsx)**:
+* **[`user-auth-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/auth/sign-in/components/user-auth-form.tsx)**:
   - Corrected `handleSandboxBypass` role parameter type from `'administrator' | 'creator' | 'user'` to `'admin' | 'creator' | 'user'`.
-* **[`vite.config.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/vite.config.ts)**:
+* **[`vite.config.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/vite.config.ts)**:
   - Fixed proxy target to safely read `process.env.VITE_API_BASE_URL || 'http://localhost:8080'`.
 
 ---
@@ -42,9 +42,9 @@ Configured the `@unipost/console` authentication system and developer tools so t
 
 ### Automated Verification
 * **TypeScript Compilation**:
-  `pnpm --filter @unipost/console exec tsc -b` exited with code `0`.
+  `pnpm --filter @acc/console exec tsc -b` exited with code `0`.
 * **Application Bundling**:
-  `pnpm --filter @unipost/console build` successfully built both web (`dist/web`) and electron-web (`dist/electron-web`) bundles without errors.
+  `pnpm --filter @acc/console build` successfully built both web (`dist/web`) and electron-web (`dist/electron-web`) bundles without errors.
 
 ### Behavioral Verification
 1. **Unauthenticated visitor**: `<SandboxPanel />` returns `null`, no floating card is rendered.

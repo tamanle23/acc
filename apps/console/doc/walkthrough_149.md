@@ -1,7 +1,7 @@
 # Walkthrough 149 - Refine UI/UX of Workflows & Workflow Executions Screens
 
 ## Summary of Changes
-Refined and elevated the UI/UX, accessibility (WCAG 2.2 AA), and telemetry of both the **Workflow Executions** (`/workflow-executions`) and **Workflows Catalog** (`/workflows`) screens in `@unipost/console`.
+Refined and elevated the UI/UX, accessibility (WCAG 2.2 AA), and telemetry of both the **Workflow Executions** (`/workflow-executions`) and **Workflows Catalog** (`/workflows`) screens in `@acc/console`.
 
 ### 1. High-Level Telemetry KPI Strips (Liquid Glass Optical System)
 - **Workflow Executions Screen** (`WorkflowExecutionsKpiBar`):
@@ -26,5 +26,5 @@ Refined and elevated the UI/UX, accessibility (WCAG 2.2 AA), and telemetry of bo
 
 ### 3. Verification & Compliance
 - **Zero Simulation Leakage**: Confirmed that execution simulation controls remain quarantined to the Unified Sandbox Dock / studio testing drawers and do not leak into the production list view.
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` exited cleanly with 0 errors.
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` exited cleanly with 0 errors.
 - **Vitest Unit Tests**: All 24 test suites / 105 tests across workflows and workflow-executions passed green.

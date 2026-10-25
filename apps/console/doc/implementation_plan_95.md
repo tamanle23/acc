@@ -1,7 +1,7 @@
 # Implementation Plan 95: Refactor /tasks into Workflow Executions Ledger & Visual DAG Studio Alignment
 
 ## 1. Goal & Architectural Overview
-Refactor the existing `/tasks` screen, data schema, and routes in `@unipost/console` so that **a Task is fundamentally modeled and presented as an Execution Unit of a Workflow Execution Instance**, establishing complete consistency with the **Visual DAG Studio** (`/workflows`).
+Refactor the existing `/tasks` screen, data schema, and routes in `@acc/console` so that **a Task is fundamentally modeled and presented as an Execution Unit of a Workflow Execution Instance**, establishing complete consistency with the **Visual DAG Studio** (`/workflows`).
 
 ### Architectural Taxonomy
 1. **Workflow Definition**: The authored DAG blueprint designed in the **Visual DAG Studio** (`/workflows`).

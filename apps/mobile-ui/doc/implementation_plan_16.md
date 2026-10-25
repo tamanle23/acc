@@ -8,11 +8,11 @@ In `LiquidGlassView`, when `StyleSheet.absoluteFill` is passed (as in `headerBac
 ## Proposed Changes
 
 ### Component Fix
-#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/LiquidGlassView.tsx)
+#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/LiquidGlassView.tsx)
 - Automatically expand inner `BlurView` and fallback `<View>` to `width: '100%'` and `height: '100%'` whenever `position === 'absolute'` (or when `top`/`bottom` bounds are present).
 
 ### Navigation Header Configuration
-#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/navigation/RootNavigator.tsx)
+#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/navigation/RootNavigator.tsx)
 - Apply `backgroundColor: liquidGlass ? themeColors.glassBackground : themeColors.solidFallback` to the header's `LiquidGlassView`.
 - Ensure the header blur intensity and border match the bottom tab bar aesthetic.
 

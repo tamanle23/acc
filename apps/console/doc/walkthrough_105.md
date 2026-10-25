@@ -28,6 +28,6 @@ Completed full Unified Sandbox parity for the Dead-Letter Queue (DLQ) screens an
 ---
 
 ## Verification Results
-- `pnpm --filter @unipost/sandbox check-types`: Passed clean with 0 errors.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Passed clean with 0 errors.
-- `pnpm --filter @unipost/console test dlq-feature`: Passed all 4 unit and integration tests.
+- `pnpm --filter @acc/sandbox check-types`: Passed clean with 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Passed clean with 0 errors.
+- `pnpm --filter @acc/console test dlq-feature`: Passed all 4 unit and integration tests.

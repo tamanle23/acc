@@ -16,7 +16,7 @@ Clicking "Assume Tenant" on a tenant in `fleet-tenants-table.tsx` caused the pag
 
 ## Changes
 - `apps/console/src/core/sandbox/handlers/system-sandbox-handler.ts`: Replaced mock string with `createMockJwt` containing full claims.
-- `apps/console/src/components/layout/assume-tenant-bar.tsx`: Reliably checks `localStorage.getItem('unipost_assumed_tenant')`, renders banner, and restores `SYSTEM` on exit.
+- `apps/console/src/components/layout/assume-tenant-bar.tsx`: Reliably checks `localStorage.getItem('acc_assumed_tenant')`, renders banner, and restores `SYSTEM` on exit.
 - `apps/console/src/features/system/tenants/fleet-tenants-table.tsx`: Updated stores on assume and navigates to `/metadata`.
 - `apps/console/src/components/layout/data/sidebar-data.ts`: Dynamic adaptation for assumed tenant state.
 - `apps/console/src/locales/en/console.json` & `vi/console.json`: Added `sovereignDelegated` translation.
@@ -24,9 +24,9 @@ Clicking "Assume Tenant" on a tenant in `fleet-tenants-table.tsx` caused the pag
 - `apps/console/src/features/system/__tests__/sovereign-cockpit-ui.test.tsx`: Added tests for `AssumeTenantBar`.
 
 ## Verification
-- `pnpm --filter @unipost/console exec vitest run src/features/system src/core/sandbox`: 56/56 PASS.
+- `pnpm --filter @acc/console exec vitest run src/features/system src/core/sandbox`: 56/56 PASS.
 - Total console vitest suite: 93/93 PASS.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 
 ## Walkthrough
 Detailed walkthrough documented in [`apps/console/doc/walkthrough_70.md`](../../apps/console/doc/walkthrough_70.md).

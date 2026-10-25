@@ -29,20 +29,20 @@ export default defineConfig({
   webServer: isLiveMode
     ? [
         {
-          command: 'java "-Dspring.profiles.active=local" "-Dapplication.sandbox.enabled=true" "-Dapplication.sandbox.mode=DEV" "-Dapplication.sandbox.dev.pristine=true" "-Djava.net.preferIPv4Stack=true" -jar apps/backend/dist/unipost-ms-aio/unipost-ms-aio-1.0.0-SNAPSHOT.jar',
+          command: 'java "-Dspring.profiles.active=local" "-Dapplication.sandbox.enabled=true" "-Dapplication.sandbox.mode=DEV" "-Dapplication.sandbox.dev.pristine=true" "-Djava.net.preferIPv4Stack=true" -jar apps/backend/dist/acc-ms-aio/acc-ms-aio-1.0.0-SNAPSHOT.jar',
           url: 'http://localhost:8000/actuator/health',
           reuseExistingServer: true,
           timeout: 120000,
         },
         {
-          command: 'pnpm --filter @unipost/console dev:no-sandbox --port 5173',
+          command: 'pnpm --filter @acc/console dev:no-sandbox --port 5173',
           url: 'http://localhost:5173',
           reuseExistingServer: !process.env.CI,
           timeout: 60000,
         },
       ]
     : {
-        command: 'pnpm --filter @unipost/console dev:sandbox --port 5173',
+        command: 'pnpm --filter @acc/console dev:sandbox --port 5173',
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 60000,

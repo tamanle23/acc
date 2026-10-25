@@ -4,9 +4,9 @@
 **Status:** Authoritative Single Source of Truth (SSOT)  
 **Lead Systems Architect:** Principal Polyglot Architect & Full-Stack Systems Engineer  
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/workflow-engine`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
-- `@unipost/ui` (`packages/ui`)  
+- `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
+- `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
+- `@acc/ui` (`packages/ui`)  
 **Compliance Standards:** Java 21 LTS, Spring Modulith, React 19, `@xyflow/react`, WCAG 2.2 AA, Liquid Glass Optical Tokens, Zero-Stub Sandbox Parity  
 
 ---
@@ -46,14 +46,14 @@ The **Unipost Workflow Orchestration Engine** is an enterprise-grade, distribute
 
 ```mermaid
 flowchart TD
-    subgraph UIClient["Frontend Client: @unipost/console"]
+    subgraph UIClient["Frontend Client: @acc/console"]
         Catalog["Workflow Catalog & Management\n(/workflows)"]
         Studio["Visual DAG Studio 2.0\n(Designer / Execution Modes)"]
         ExecMonitor["Runtime Execution Monitor\n(/workflow-executions)"]
         SSEHook["useWorkflowExecutionStream\n(Adaptive SSE + Backoff Polling)"]
     end
 
-    subgraph BackendGateway["Spring Boot API Gateway: unipost-ms-aio"]
+    subgraph BackendGateway["Spring Boot API Gateway: acc-ms-aio"]
         DefCtrl["WorkflowDefinitionController"]
         ExecCtrl["WorkflowExecutionController"]
         FleetCtrl["WorkerFleetController & TaskWorkerController"]
@@ -223,7 +223,7 @@ Each worker processes tasks through an extensible middleware pipeline:
 
 ---
 
-## 6. Frontend Visual DAG Studio Architecture (`@unipost/console`)
+## 6. Frontend Visual DAG Studio Architecture (`@acc/console`)
 
 ```
 apps/console/src/features/workflows/

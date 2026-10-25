@@ -4,7 +4,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApprovalTable } from '../components/approval-table';
 import { HumanDecisionModal } from '../components/human-decision-modal';
-import type { ApprovalTask } from '@unipost/client';
+import type { ApprovalTask } from '@acc/client';
 
 const mockTask: ApprovalTask = {
   id: 'appr_01',

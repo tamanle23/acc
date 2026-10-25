@@ -11,15 +11,15 @@ Implement Milestones 1–4 from `apps/console/doc/implementation_plan_87.md`:
 4. Integrate into `BlueprintGalleryDialog` with `localStorage` layout persistence.
 
 ## Changes
-- Created [`apps/console/src/components/layout-switcher/layout-mode-switcher.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout-switcher/layout-mode-switcher.tsx).
-- Created [`apps/console/src/components/layout-switcher/index.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout-switcher/index.ts).
-- Created [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-table-view.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-table-view.tsx).
-- Created [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-split-view.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-split-view.tsx).
-- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx).
-- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/index.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/index.ts).
-- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx).
-- Created [`apps/console/doc/walkthrough_87.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_87.md).
+- Created [`apps/console/src/components/layout-switcher/layout-mode-switcher.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout-switcher/layout-mode-switcher.tsx).
+- Created [`apps/console/src/components/layout-switcher/index.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout-switcher/index.ts).
+- Created [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-table-view.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-table-view.tsx).
+- Created [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-split-view.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-split-view.tsx).
+- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery-dialog.tsx).
+- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/index.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/index.ts).
+- Updated [`apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx).
+- Created [`apps/console/doc/walkthrough_87.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_87.md).
 
 ## Verification
 - `tsc --noEmit --project tsconfig.json`: 0 errors.
-- `pnpm --filter @unipost/console test src/features/metadata`: 9 test files passed, 56 tests passed.
+- `pnpm --filter @acc/console test src/features/metadata`: 9 test files passed, 56 tests passed.

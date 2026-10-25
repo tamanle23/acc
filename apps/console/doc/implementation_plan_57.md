@@ -1,6 +1,6 @@
 # Implementation Plan 57 - Enterprise Enhancements for Three-Tier Metadata Architecture
 
-Comprehensive implementation roadmap detailing the 5 most impactful architectural enhancements and practical improvements for the Three-Tier Metadata Management Module across Frontend (`@unipost/console`), Backend (`@unipost/backend`), and Database (`unipost-db`).
+Comprehensive implementation roadmap detailing the 5 most impactful architectural enhancements and practical improvements for the Three-Tier Metadata Management Module across Frontend (`@acc/console`), Backend (`@acc/backend`), and Database (`acc-db`).
 
 ---
 
@@ -18,7 +18,7 @@ To transform this foundation into a resilient, enterprise-grade engine capable o
 ## 1. Enhancement 1: Native PostgreSQL JSONB Containment (`@>`) Query Optimization (Tier 3)
 
 ### Problem & Motivation
-Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/EntityRecordSpecifications.java#L57-L68) constructs SQL predicates using `jsonb_extract_path_text(attributes, :attrName) = :val`. While functional, this prevents PostgreSQL from leveraging the `GIN (attributes jsonb_path_ops)` index for exact-match equality and multi-attribute filters. The index only accelerates the native JSON containment operator (`@>`).
+Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/EntityRecordSpecifications.java#L57-L68) constructs SQL predicates using `jsonb_extract_path_text(attributes, :attrName) = :val`. While functional, this prevents PostgreSQL from leveraging the `GIN (attributes jsonb_path_ops)` index for exact-match equality and multi-attribute filters. The index only accelerates the native JSON containment operator (`@>`).
 
 ### Proposed Solution
 1. **Add Custom SQL Function / Operator to Hibernate / Criteria**:
@@ -42,7 +42,7 @@ Currently, [`EntityRecordSpecifications.java`](file:///C:/Users/Admin/workspace/
 ## 2. Enhancement 2: Cache Stampede Mitigation & Lock-Free L1 Compilation (Tier 2)
 
 ### Problem & Motivation
-In [`SchemaValidationService.java`](file:///C:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java#L67-L105), if the Hazelcast cache key expires or is invalidated during a burst of concurrent traffic, multiple threads simultaneously query the database and re-compile the JSON schema.
+In [`SchemaValidationService.java`](file:///C:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java#L67-L105), if the Hazelcast cache key expires or is invalidated during a burst of concurrent traffic, multiple threads simultaneously query the database and re-compile the JSON schema.
 
 ### Proposed Solution
 1. **Per-Model Atomic In-Process Locking**:
@@ -70,7 +70,7 @@ The frontend validates inputs using dynamic Zod schemas (`buildZodSchema()`) whi
    - Executes validation against `SchemaValidationService` without writing to the database.
    - Returns `{ "valid": true }` or `{ "valid": false, "errors": [{ "field": "...", "message": "..." }] }`.
 2. **Frontend Integration**:
-   - In [`record-editor-dialog.tsx`](file:///C:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/record-editor-dialog.tsx), connect an optional debounced validation hook before form submission to highlight exact backend-enforced constraints in real time.
+   - In [`record-editor-dialog.tsx`](file:///C:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/record-editor-dialog.tsx), connect an optional debounced validation hook before form submission to highlight exact backend-enforced constraints in real time.
 
 ### Verification & Value
 - Complete parity between frontend warning messages and backend schema errors; zero surprise rejections on form submit.
@@ -112,7 +112,7 @@ The Data Explorer currently features a single search input that queries the firs
 
 ### Proposed Solution
 1. **Advanced Filter Popover & Rule Builder**:
-   - Add a "Filter" button with active filter counter badge on the [`EntityDataGrid`](file:///C:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx) toolbar.
+   - Add a "Filter" button with active filter counter badge on the [`EntityDataGrid`](file:///C:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx) toolbar.
    - Interactive rule builder component (`FilterRuleBuilder` / `AdvancedFilterPopover`):
      - Field selector (populates from active model `AttributeDefinition` list with data type indicators).
      - Operator selector adapted to attribute type:
@@ -144,7 +144,7 @@ The Data Explorer currently features a single search input that queries the firs
 ### Verification & Value
 - Empowers non-technical users to filter through complex JSONB record datasets without writing code or raw queries.
 - Future-proofed for instant integration with dedicated entity data explorers and faceted search bars.
-- **Status**: [COMPLETED] Implemented `AdvancedFilterPopover` with type-adapted operators, unified `AttributeFilterClause` state model in `useMetadataUiStore`, compound query serialization in `entity-data-grid.tsx`, active filter chip dismissals, and verified clean `@unipost/console` build.
+- **Status**: [COMPLETED] Implemented `AdvancedFilterPopover` with type-adapted operators, unified `AttributeFilterClause` state model in `useMetadataUiStore`, compound query serialization in `entity-data-grid.tsx`, active filter chip dismissals, and verified clean `@acc/console` build.
 
 ---
 

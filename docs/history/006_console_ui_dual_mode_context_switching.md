@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-09  
 **Status:** Completed  
-**Scope:** `@unipost/console` (`apps/console`)
+**Scope:** `@acc/console` (`apps/console`)
 
 ## 1. Problem Statement
 In a multi-tenant dynamic metadata system, tenant administrators need to design schemas and relationships ("Architect Mode"), but also need to test and verify the operational experience ("Operator Mode") without logging out or opening separate sessions. Operators, conversely, must never see schema builder controls, raw data types, or model mutation actions. Furthermore, base platform `SYSTEM` attributes must be visibly distinct and protected against mutation.

@@ -11,13 +11,13 @@ Phase 3 of the Master Implementation Plan establishes cryptographic tenant bindi
 
 ## 2. Proposed Changes
 
-### 1. Header Sanitization (`apps/backend/unipost-fw`)
-- Create `com.unipost.fw.tenancy.HeaderSanitizerFilter`:
+### 1. Header Sanitization (`apps/backend/acc-fw`)
+- Create `com.acc.fw.tenancy.HeaderSanitizerFilter`:
   - Extends `OncePerRequestFilter`.
   - Wraps `HttpServletRequest` using `HttpServletRequestWrapper` to strip or neutralize `X-Tenant-Id` header (and variants `x-tenant-id`).
   - Registered as highest precedence or before JWT filters in Spring Security chain.
 
-### 2. Token Claims & Authentication Principal (`apps/backend/unipost-fw`)
+### 2. Token Claims & Authentication Principal (`apps/backend/acc-fw`)
 - Update `JwtAuthenticationToken.java`:
   - Add `tenantId` field and getter.
 - Update `JwtTokenHelper.java`:
@@ -31,17 +31,17 @@ Phase 3 of the Master Implementation Plan establishes cryptographic tenant bindi
   - Bind `tenantId` into `TenantContextHolder.setTenantId(tenantId)` and `MDC.put("tenantId", tenantId)`.
   - Guarantee `TenantContextHolder.clear()` and `MDC.remove("tenantId")` in `finally` block.
 
-### 3. TenantContextHolder Enhancement (`apps/backend/unipost-fw`)
-- Update `com.unipost.fw.tenancy.TenantContextHolder`:
+### 3. TenantContextHolder Enhancement (`apps/backend/acc-fw`)
+- Update `com.acc.fw.tenancy.TenantContextHolder`:
   - Add `getRequiredTenantId()` which throws `IllegalStateException` when tenant context is empty or null.
 
-### 4. Asynchronous Task Propagation (`apps/backend/unipost-fw`)
+### 4. Asynchronous Task Propagation (`apps/backend/acc-fw`)
 - Update `AsyncContextTaskDecorator.java`:
   - Capture parent thread's `TenantContextHolder.getTenantId()`, `SecurityContextHolder.getContext()`, and `MDC.getCopyOfContextMap()`.
   - In worker thread `Runnable`, restore `TenantContextHolder`, `SecurityContextHolder`, and `MDC`.
   - In `finally`, clean up `TenantContextHolder.clear()`, `SecurityContextHolder.clearContext()`, and `MDC.clear()`.
 
-### 5. Controller & Service Stamping (`apps/backend/unipost-fw`)
+### 5. Controller & Service Stamping (`apps/backend/acc-fw`)
 - In `MetadataService.java`:
   - In `createEntityRecord`: If `request.tenantId()` is supplied, override or validate against `TenantContextHolder.getRequiredTenantId()` (stamping strictly with authenticated tenant).
   - In `getEntityRecords`: Default query `tenantId` parameter to `TenantContextHolder.getTenantId()` if present.

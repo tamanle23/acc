@@ -10,7 +10,7 @@ The console's data-privacy panel still called the buffered `/export` endpoint an
 
 ## Verification
 - 3/3 new tests pass when run in isolation with a temporary vitest config (since removed).
-- `tsc --noEmit` for `@unipost/console` passes.
+- `tsc --noEmit` for `@acc/console` passes.
 
 ## Known issues (not caused by this change)
 - The console's regular vitest setup (`src/test/setup.ts`) currently fails: `vitest-axe` is declared but not linked in `apps/console/node_modules`. `pnpm install --frozen-lockfile` is blocked by an uncommitted `packages/ui/package.json` change from another session (lockfile out of date). Full console test/e2e suites were therefore not re-run.

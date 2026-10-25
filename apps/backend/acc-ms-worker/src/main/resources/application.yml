@@ -1,0 +1,84 @@
+################### Spring boot Configuration ##########################
+spring:
+  application:
+    name: acc-ms-aio
+  profiles:
+    active: ${project.buid.profile}
+  redis:
+    host : localhost
+    #host : 192.168.50.253
+    port : 6379
+  main:
+    web-application-type: servlet
+    allow-bean-definition-overriding: true
+  data:
+    redis:
+      repositories:
+        enabled: false
+  mvc:
+    favicon:
+      enabled: false
+    static-path-pattern: /resources/**
+  servlet:
+    multipart:
+      max-file-size: 2000MB
+      max-request-size: 2000MB
+      enabled: false
+  resources:
+    static-locations: classpath:/META-INF/resources/,classpath*:resources/,classpath:/static/,classpath:/public/
+  thymeleaf:
+    mode: LEGACYHTML5
+    cache: false
+  datasource:
+#    url: jdbc:hsqldb:hsql://localhost/acc
+    url: jdbc:hsqldb:file:../../tmp/db/acc
+    driver-class-name: org.hsqldb.jdbcDriver
+#    url: jdbc:mysql://192.168.1.78:3306/acc
+#    driver-class-name: org.mariadb.jdbc.Driver
+    username: root
+    password: 0af3b424
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      idleTimeout: 10000
+      maximumPoolSize: 96
+      minimumIdle: 10
+      connectionTimeout: 60000
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+        hibernate:
+          enable_lazy_load_no_trans: true
+          dialect: org.hibernate.dialect.MariaDBDialect
+#          dialect: org.hibernate.dialect.HSQLDialect
+#            dialect: org.hibernate.dialect.MySQL5Dialect
+          generate_statistics: true
+          search:
+            default:
+              directory_provider: filesystem
+              indexBase: ../../tmp/indexes/
+    open-in-view: true
+  jackson:
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+    date-format: yyyy-MM-dd'T'HH:mm:sssZ
+  security:
+    filter:
+      order: 5
+    enable-csrf: true
+
+mybatis:
+  type-aliases-package: com.acc.repository.domain
+  mapper-locations: classpath*:mappers/*.xml
+  config-location: classpath:mybatis-config.xml
+#  configuration:
+#    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
+#    map-underscore-to-camel-case: true
+#    default-fetch-size: 100
+#    default-statement-timeout: 30

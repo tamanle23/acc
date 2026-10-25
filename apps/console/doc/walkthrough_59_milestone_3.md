@@ -1,6 +1,6 @@
 # Walkthrough - WCAG 2.2 AA Compliance: Milestone 3 (Dynamic Features, Data Tables & Schema Builder)
 
-This walkthrough documents the engineering changes executed to achieve **WCAG 2.2 Level AA compliance** for Milestone 3 across `@unipost/console`.
+This walkthrough documents the engineering changes executed to achieve **WCAG 2.2 Level AA compliance** for Milestone 3 across `@acc/console`.
 
 ---
 
@@ -37,12 +37,12 @@ All automated checks passed with **0 errors**:
 
 1. **Unit & Integration Test Suite**:
    ```bash
-   pnpm --filter @unipost/console test
+   pnpm --filter @acc/console test
    # Result: Passed 22/22 test files, 104/104 tests
    ```
 
 2. **Production Web Build**:
    ```bash
-   pnpm --filter @unipost/console exec vite build --mode web
+   pnpm --filter @acc/console exec vite build --mode web
    # Result: Built web bundle in 2.07s
    ```

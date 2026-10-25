@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="iteration12-performance-outbox-dlq-13" author="antigravity">
+        <comment>Add GIN and Keyset Seek indexing, Spring Modulith Persistent Outbox, and DLQ Triage tables</comment>
+
+        <!-- 1. PostgreSQL High-Performance Indexes for UNIPOST_ENTITIES -->
+        <sql dbms="postgresql">
+            CREATE INDEX IF NOT EXISTS idx_acc_entities_gin 
+                ON UNIPOST_ENTITIES USING gin (attributes jsonb_path_ops);
+
+            CREATE INDEX IF NOT EXISTS idx_acc_entities_seek 
+                ON UNIPOST_ENTITIES (entity_type_id, id ASC) 
+                WHERE "deletedDate" IS NULL;
+        </sql>
+
+        <!-- 2. Spring Modulith Persistent Outbox Table -->
+        <sql dbms="postgresql">
+            CREATE TABLE IF NOT EXISTS UNIPOST_EVENT_PUBLICATIONS (
+                id UUID NOT NULL PRIMARY KEY,
+                event_type VARCHAR(512) NOT NULL,
+                listener_id VARCHAR(512) NOT NULL,
+                serialized_event TEXT NOT NULL,
+                publication_date TIMESTAMPTZ NOT NULL,
+                completion_date TIMESTAMPTZ NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_event_publications_uncompleted 
+                ON UNIPOST_EVENT_PUBLICATIONS (completion_date) 
+                WHERE completion_date IS NULL;
+        </sql>
+
+        <!-- 3. Dead-Letter Queue (DLQ) Operational Table -->
+        <sql dbms="postgresql">
+            CREATE TABLE IF NOT EXISTS UNIPOST_DLQ_MESSAGES (
+                id BIGSERIAL PRIMARY KEY,
+                execution_id VARCHAR(64) NOT NULL,
+                step_id VARCHAR(64) NOT NULL,
+                tenant_id VARCHAR(64) NOT NULL,
+                error_reason TEXT NOT NULL,
+                payload JSONB NOT NULL,
+                retry_count INT DEFAULT 0,
+                status VARCHAR(32) DEFAULT 'PENDING',
+                created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_dlq_tenant_status 
+                ON UNIPOST_DLQ_MESSAGES (tenant_id, status);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

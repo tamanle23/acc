@@ -267,7 +267,7 @@ describe('Metadata Management Full E2E & Flow Test Suite', () => {
         entityTypeId: '1',
         attributes: {
           legal_name: 'Valid Enterprise Corp',
-          contact_email: 'test@unipost.io',
+          contact_email: 'test@acc.io',
           subscription_tier: 'Enterprise',
         },
       });

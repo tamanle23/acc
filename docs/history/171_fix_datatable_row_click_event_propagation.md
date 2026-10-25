@@ -11,5 +11,5 @@ When clicking the record action dropdown button (`...` / `MoreHorizontal`) or in
    - Added explicit `onClick={(e) => e.stopPropagation()}` on the action trigger button to prevent click bubbling.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` exited `0`.
-- `pnpm --filter @unipost/console test:run` passed 100% across all 73 test suites (338 tests passing).
+- `pnpm --filter @acc/console exec tsc --noEmit` exited `0`.
+- `pnpm --filter @acc/console test:run` passed 100% across all 73 test suites (338 tests passing).

@@ -74,8 +74,8 @@ flowchart TD
 ### Phase 3: Designer Dry-Run Simulation Harness
 - **Objective:** Enable workflow designers in `/workflows` to simulate their DAG locally with custom mock JSON inputs before publishing.
 - **Components to Modify/Create:**
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/application/WorkflowEngineService.java`: Add `simulateExecution(WorkflowDefinition def, Map<String, Object> input)` returning simulated execution events without database writes.
-  - `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/WorkflowDefinitionController.java`: Expose `POST /api/v1/workflow/definitions/simulate`.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`: Add `simulateExecution(WorkflowDefinition def, Map<String, Object> input)` returning simulated execution events without database writes.
+  - `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDefinitionController.java`: Expose `POST /api/v1/workflow/definitions/simulate`.
   - `apps/console/src/features/metadata/components/studio/workflow-dry-run-modal.tsx`: Modal with `VisualJsonEditor` for input parameters and "Run Simulation" button.
   - Update `VisualDagStudio` authoring toolbar to add "Dry Run" action button.
 - **Verification:** Sliced `@WebMvcTest` for `/simulate`; Vitest tests for modal submission and canvas simulation preview.

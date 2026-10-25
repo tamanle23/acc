@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: fix(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -21,19 +21,19 @@ Root causes identified:
 1. **Wrap `DropdownMenuSubContent` in `<DropdownMenuPrimitive.Portal>`**: Update `apps/console/src/components/ui/dropdown-menu.tsx` to render submenus in a top-level document body portal so they are never clipped by the parent's `overflow-x-hidden` container.
 2. **Enhance `EntityDataGrid` Submenu UX**: In `apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`, render the FSM Transition sub-menu whenever `lifecycle` is present on the entity type, showing available transitions or a clear informative message (`No transitions from '{currentState}'`) when no transitions are eligible.
 3. **Seed Lifecycle Configs**: In `apps/console/src/features/metadata/data/mock-metadata.ts`, provide complete `lifecycleConfig` definitions with valid states and transitions for entity types `2` and `3`.
-4. **Verification**: Run Vitest test suite in `@unipost/console`.
+4. **Verification**: Run Vitest test suite in `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`apps/console/src/components/ui/dropdown-menu.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/ui/dropdown-menu.tsx): Wrapped `<DropdownMenuPrimitive.SubContent>` in `<DropdownMenuPrimitive.Portal>`.
-- [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx): Ensured FSM Transition submenu renders when `lifecycle` is defined, with fallback text if no transitions exist from `currentState`.
-- [`apps/console/src/features/metadata/data/mock-metadata.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/data/mock-metadata.ts): Added lifecycle definitions (`PROVISION`, `DECOMMISSION`, `REINSTATE`, `STAGE`, `ENFORCE`, `RETIRE`) for entity types 2 and 3.
+- [`apps/console/src/components/ui/dropdown-menu.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/ui/dropdown-menu.tsx): Wrapped `<DropdownMenuPrimitive.SubContent>` in `<DropdownMenuPrimitive.Portal>`.
+- [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx): Ensured FSM Transition submenu renders when `lifecycle` is defined, with fallback text if no transitions exist from `currentState`.
+- [`apps/console/src/features/metadata/data/mock-metadata.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/data/mock-metadata.ts): Added lifecycle definitions (`PROVISION`, `DECOMMISSION`, `REINSTATE`, `STAGE`, `ENFORCE`, `RETIRE`) for entity types 2 and 3.
 
 ---
 
 ## 4. Verification
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - 9 test files passed, 54 tests passed cleanly with 0 failures.
 
 ---

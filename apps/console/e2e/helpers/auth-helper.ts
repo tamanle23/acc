@@ -3,7 +3,7 @@ import { Page, expect } from '@playwright/test';
 export async function authenticateWithSandbox(page: Page, persona: 'admin' | 'system' | 'creator' | 'user' = 'admin') {
   // Ensure sandbox dock is minimized by default so it does not intercept clicks
   await page.addInitScript(() => {
-    localStorage.setItem('unipost_unified_sandbox_minimized', 'true');
+    localStorage.setItem('acc_unified_sandbox_minimized', 'true');
   });
 
   await page.goto('/sign-in');

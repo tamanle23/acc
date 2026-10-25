@@ -20,9 +20,9 @@ To unify code coverage reporting across the disparate stacks in the Unipost mono
   - Generates a standalone, self-contained, responsive single-page HTML report at `coverage/index.html`.
   - Includes:
     - Classic JaCoCo horizontal Red/Green meters for all metrics.
-    - Breadcrumbs navigation (`unipost > @unipost/backend > com.unipost.service > DynamicQueryCompiler`).
+    - Breadcrumbs navigation (`acc > @acc/backend > com.acc.service > DynamicQueryCompiler`).
     - Top KPI summary dashboard cards with color-coded badges ($\ge 90\%$ Pass, 70-89% Warning, $< 70\%$ Critical).
-    - Module selector tabs: `[All Monorepo]`, `[@unipost/backend]`, `[@unipost/console]`, `[@unipost/sandbox]`.
+    - Module selector tabs: `[All Monorepo]`, `[@acc/backend]`, `[@acc/console]`, `[@acc/sandbox]`.
     - Real-time search filter input across all packages and files.
     - Click-to-sort columns (Element, Instructions, Branches, Lines, Methods, Classes).
     - Drill-down navigation: Root -> Module -> Package -> File.

@@ -16,8 +16,8 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 - `apps/console/doc/implementation_plan_75.md` & `apps/console/doc/walkthrough_75.md`: Documented paired plan and walkthrough.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Exited 0 with 0 errors.
-- `pnpm --filter @unipost/console test`: 29 test files passed, 146/146 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Exited 0 with 0 errors.
+- `pnpm --filter @acc/console test`: 29 test files passed, 146/146 tests passed.
 - Grep verified 0 occurrences of `from 'axios'` in `apps/console/src/features/metadata/api/`.
 
 ## Walkthrough

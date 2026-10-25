@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-19  
 **Status:** Complete  
-**Scope:** `@unipost/console`, `@unipost/backend` (`unipost-fw`)  
+**Scope:** `@acc/console`, `@acc/backend` (`acc-fw`)  
 
 ---
 
@@ -28,7 +28,7 @@ During rigorous skeptical review of commit `eff4683` (Iteration 12), multiple cr
 
 ## 3. Changes Made
 
-### Frontend (`@unipost/console`)
+### Frontend (`@acc/console`)
 - `apps/console/src/components/command-palette/command-palette.tsx`: Added `QueryClientContext` check, moved entity queries into `CommandPaletteEntitySection`, cleaned unused imports, removed any types.
 - `apps/console/src/components/__tests__/a11y.test.tsx`: Added `CommandPalette` mock alongside `CommandMenu`.
 - `apps/console/src/features/metadata/components/data-explorer/master-detail-row-inspector.tsx`: Hoisted React hooks above early return, replaced `any` types with strict types, removed unused icon imports.
@@ -38,15 +38,15 @@ During rigorous skeptical review of commit `eff4683` (Iteration 12), multiple cr
 - `apps/console/src/features/workflows/approvals/approvals-inbox.tsx`: Removed `console.warn` and synchronous `setSseConnected` call in catch block.
 - `apps/console/src/features/workflows/approvals/__tests__/approvals-inbox.test.tsx`: Removed unused `vi` import.
 
-### Backend (`@unipost/backend`)
-- `apps/backend/unipost-fw/src/main/java/com/unipost/cache/jest/JestRepository.java`: Replaced all 6 swallowed `IOException` catch blocks with `ElasticsearchOperationException`.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/RecordMutationPipeline.java`: Implemented `ApplicationEventPublisherAware` and annotated `setApplicationEventPublisher` with `@Autowired(required = false)`.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/service/RecordMutationPipelineTest.java`: Added unit test `testApplicationEventPublisher_FiresMutationEventOnCreate` asserting event publication on entity mutation.
+### Backend (`@acc/backend`)
+- `apps/backend/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`: Replaced all 6 swallowed `IOException` catch blocks with `ElasticsearchOperationException`.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`: Implemented `ApplicationEventPublisherAware` and annotated `setApplicationEventPublisher` with `@Autowired(required = false)`.
+- `apps/backend/acc-fw/src/test/java/com/acc/service/RecordMutationPipelineTest.java`: Added unit test `testApplicationEventPublisher_FiresMutationEventOnCreate` asserting event publication on entity mutation.
 
 ---
 
 ## 4. Verification Record
-- **Console Unit Suites**: `pnpm --filter @unipost/console test:run` -> **70 files passed, 324 tests passed (100% pass)**.
+- **Console Unit Suites**: `pnpm --filter @acc/console test:run` -> **70 files passed, 324 tests passed (100% pass)**.
 - **Console ESLint**: `npx eslint ...` on all touched files -> **0 errors**.
-- **Backend Test Suite**: `node mvnw.cjs -pl unipost-fw test` -> **326 tests run, 0 failures, 0 errors**.
+- **Backend Test Suite**: `node mvnw.cjs -pl acc-fw test` -> **326 tests run, 0 failures, 0 errors**.
 - **RecordMutationPipeline Tests**: `RecordMutationPipelineTest` -> **19 tests run, 0 failures, 0 errors**.

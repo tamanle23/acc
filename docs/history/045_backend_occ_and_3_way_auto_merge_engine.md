@@ -11,17 +11,17 @@ In concurrent editing environments (multiple users on Console or mobile outbox b
 5. Verify with automated tests in `MetadataServiceOccAutoMergeTest`.
 
 ## Changes
-- `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/UpdateRecordRequest.java`: Added `baseAttributes` with backwards-compatible constructors.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/PatchRecordRequest.java`: Added `baseAttributes` with backwards-compatible constructors.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`: Added `autoMergeAttributes` and wired 3-way auto-merging into `updateEntityRecord` and `patchEntityRecord`.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/service/MetadataServiceOccAutoMergeTest.java`: New comprehensive test suite covering 3-way auto-merging, disjoint edits, collision detection, and version mismatch fallback.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/presentation/MetadataControllerTest.java`: Updated constructor calls.
+- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/UpdateRecordRequest.java`: Added `baseAttributes` with backwards-compatible constructors.
+- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/PatchRecordRequest.java`: Added `baseAttributes` with backwards-compatible constructors.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Added `autoMergeAttributes` and wired 3-way auto-merging into `updateEntityRecord` and `patchEntityRecord`.
+- `apps/backend/acc-fw/src/test/java/com/acc/service/MetadataServiceOccAutoMergeTest.java`: New comprehensive test suite covering 3-way auto-merging, disjoint edits, collision detection, and version mismatch fallback.
+- `apps/backend/acc-fw/src/test/java/com/acc/presentation/MetadataControllerTest.java`: Updated constructor calls.
 
 ## Verification
-- `.\mvnw.cmd test -pl unipost-fw -Dtest="MetadataServiceOccAutoMergeTest,MetadataServiceTest,MetadataControllerTest"`: 62/62 tests passed.
+- `.\mvnw.cmd test -pl acc-fw -Dtest="MetadataServiceOccAutoMergeTest,MetadataServiceTest,MetadataControllerTest"`: 62/62 tests passed.
 - `pnpm --filter tekgo-ui build`: Succeeded.
-- `pnpm --filter @unipost/client test`: Passed.
-- `pnpm --filter @unipost/sandbox test`: Passed.
+- `pnpm --filter @acc/client test`: Passed.
+- `pnpm --filter @acc/sandbox test`: Passed.
 
 ## Tasks
 - [x] Extend UpdateRecordRequest and PatchRecordRequest DTOs
@@ -31,4 +31,4 @@ In concurrent editing environments (multiple users on Console or mobile outbox b
 - [x] Verify monorepo builds and tests
 
 ## Enhancement
-Phase 11 will introduce the Transactional Outbox Pattern and event publishing in PostgreSQL (`UNIPOST_EVENT_OUTBOX`) with polling jobs in `unipost-ms-worker` for at-least-once distributed delivery without two-phase commit overhead.
+Phase 11 will introduce the Transactional Outbox Pattern and event publishing in PostgreSQL (`UNIPOST_EVENT_OUTBOX`) with polling jobs in `acc-ms-worker` for at-least-once distributed delivery without two-phase commit overhead.

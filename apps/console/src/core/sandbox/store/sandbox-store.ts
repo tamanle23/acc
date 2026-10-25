@@ -121,14 +121,14 @@ export const useSandboxStore = create<SandboxStore>()(
       resetToDefaults: () => set(initialDefaultState),
     }),
     {
-      name: 'unipost-sandbox-config',
+      name: 'acc-sandbox-config',
       storage: createJSONStorage(() => sessionStorage),
     }
   )
 );
 
-// Two-way synchronization with @unipost/sandbox defaultSandboxStore
-import { defaultSandboxStore } from '@unipost/sandbox';
+// Two-way synchronization with @acc/sandbox defaultSandboxStore
+import { defaultSandboxStore } from '@acc/sandbox';
 useSandboxStore.subscribe((state) => {
   defaultSandboxStore.setState({
     enabled: state.enabled,

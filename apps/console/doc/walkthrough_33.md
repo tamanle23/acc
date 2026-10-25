@@ -7,7 +7,7 @@
 - **Sidebar Integration (`apps/console/src/components/layout/data/sidebar-data.ts`)**: Appended a new "Storage" navigation item to the main sidebar menu using the `Database` icon.
 
 ## What Was Tested
-- Executed `pnpm --filter @unipost/console run build` to verify the codebase compiles successfully.
+- Executed `pnpm --filter @acc/console run build` to verify the codebase compiles successfully.
 - Verified that Vite builds without any type errors and that TanStack Router correctly identified and added the new `_authenticated/storage` route into `routeTree.gen.ts`.
 - Ensured Liquid Glass design classes (`bg-white/65`, `backdrop-blur-xl`, `border-white/30`) were successfully applied to the UI components.
 

@@ -10,6 +10,6 @@ In this task, we relocated `/workflow-executions`, `/workflows`, and `/approvals
 - Validated TanStack router tree generation (`routeTree.gen.ts`).
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Clean pass with 0 errors.
-- `pnpm --filter @unipost/console test src/components/layout/`: Passed (7/7 tests).
-- `pnpm --filter @unipost/console test src/features/approvals/`: Passed (2/2 tests).
+- `pnpm --filter @acc/console exec tsc --noEmit`: Clean pass with 0 errors.
+- `pnpm --filter @acc/console test src/components/layout/`: Passed (7/7 tests).
+- `pnpm --filter @acc/console test src/features/approvals/`: Passed (2/2 tests).

@@ -32,8 +32,8 @@ The dynamic metadata persistence engine and multi-tenant schema architecture req
 
 ## Verification
 - Java compilation verified via `./mvnw test-compile -q` exiting 0.
-- Unit and integration tests in `unipost-fw` covering `RecordMutationPipelineTest`, `SchemaValidationServiceTest`, and `CompositeRecordServiceTest` executed and verified green.
-- TypeScript compilation across `@unipost/console` verified via `npx tsc --noEmit` exiting 0.
+- Unit and integration tests in `acc-fw` covering `RecordMutationPipelineTest`, `SchemaValidationServiceTest`, and `CompositeRecordServiceTest` executed and verified green.
+- TypeScript compilation across `@acc/console` verified via `npx tsc --noEmit` exiting 0.
 - All Mermaid diagrams and Markdown tables validated for syntax and rendering compliance.
 
 ## Walkthrough & Invariants

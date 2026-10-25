@@ -1,7 +1,7 @@
 # 177 - DataTable Sticky Bulk Row Selection Column
 
 ## Problem
-In `@unipost/console`, the bulk row selection capability was either manually assembled with bespoke column definitions in each view or lacked sticky left alignment and proper Liquid Glass elevation layering. Furthermore, when both the sticky row order increment column (`#`) and a bulk selection column were present, fixed `left: 0` pinning resulted in overlapping columns rather than proper dynamic multi-column left offsets.
+In `@acc/console`, the bulk row selection capability was either manually assembled with bespoke column definitions in each view or lacked sticky left alignment and proper Liquid Glass elevation layering. Furthermore, when both the sticky row order increment column (`#`) and a bulk selection column were present, fixed `left: 0` pinning resulted in overlapping columns rather than proper dynamic multi-column left offsets.
 
 ## Plan
 1. **Extend `DataTableProps` & Column Factory**:
@@ -16,7 +16,7 @@ In `@unipost/console`, the bulk row selection capability was either manually ass
    - Implement frosted Liquid Glass backdrops matching `EntityDataGrid`.
 4. **Verification**:
    - Add comprehensive unit test suite covering standalone pinning, dual sticky column offsets, row and bulk toggle, row click isolation, explicit column deduplication, and empty-state colSpan.
-   - Run typecheck and unit tests across `@unipost/console`.
+   - Run typecheck and unit tests across `@acc/console`.
 
 ## Changes
 - `apps/console/src/components/data-table/data-table.tsx`: Added `createRowSelectColumn`, `showRowSelection` / `showRowSelect` props, multi-column offset calculation (`start-0` vs `start-12`), sticky header/cell checkbox rendering, and row click isolation.
@@ -25,5 +25,5 @@ In `@unipost/console`, the bulk row selection capability was either manually ass
 - `apps/console/doc/walkthrough_141.md`: Feature walkthrough documentation.
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/components/data-table/__tests__/`: 14/14 tests passed across 2 test files (both row-index and row-select).
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test -- src/components/data-table/__tests__/`: 14/14 tests passed across 2 test files (both row-index and row-select).
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

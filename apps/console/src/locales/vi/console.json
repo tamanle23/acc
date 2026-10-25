@@ -69,7 +69,7 @@
   },
   "storage": {
     "title": "Nhà cung cấp lưu trữ",
-    "description": "Quản lý các dịch vụ lưu trữ đám mây cho tính năng tải lên tệp của @unipost/backend!",
+    "description": "Quản lý các dịch vụ lưu trữ đám mây cho tính năng tải lên tệp của @acc/backend!",
     "filterPlaceholder": "Lọc nhà cung cấp lưu trữ...",
     "types": {
       "system": "Hệ thống cung cấp",

@@ -1,6 +1,6 @@
 # Walkthrough - Visual JSON Editor Across Metadata-Driven Tables
 
-**Task:** Implement a multi-mode visual editor for JSON/JSONB attributes across Dynamic Metadata-Driven Tables in `@unipost/console`.
+**Task:** Implement a multi-mode visual editor for JSON/JSONB attributes across Dynamic Metadata-Driven Tables in `@acc/console`.
 
 ---
 

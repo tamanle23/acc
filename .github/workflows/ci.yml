@@ -101,20 +101,20 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Client Packages Tests (@unipost/tokens, @unipost/client, @unipost/sandbox)
+      - name: Run Client Packages Tests (@acc/tokens, @acc/client, @acc/sandbox)
         run: |
-          pnpm --filter @unipost/tokens test
-          pnpm --filter @unipost/client test
-          pnpm --filter @unipost/sandbox test
+          pnpm --filter @acc/tokens test
+          pnpm --filter @acc/client test
+          pnpm --filter @acc/sandbox test
 
-      - name: Run Frontend Tests (@unipost/console)
+      - name: Run Frontend Tests (@acc/console)
         run: |
-          pnpm --filter @unipost/console test
+          pnpm --filter @acc/console test
 
       - name: Run Mobile & Desktop Tests (mobile-ui Outbox Chaos, Desktop Bridge)
         run: |
           pnpm --filter mobile-ui test
-          pnpm --filter @unipost/desktop test
+          pnpm --filter @acc/desktop test
 
   # ---------------------------------------------------------------------------
   # Job 4: Headless Playwright Browser E2E & WCAG 2.2 AA Audit
@@ -142,11 +142,11 @@ jobs:
 
       - name: Install Playwright Browsers with Dependencies
         run: |
-          pnpm --filter @unipost/console exec playwright install --with-deps chromium
+          pnpm --filter @acc/console exec playwright install --with-deps chromium
 
       - name: Run Playwright E2E & Axe WCAG 2.2 AA Scan
         run: |
-          pnpm --filter @unipost/console test:e2e
+          pnpm --filter @acc/console test:e2e
         env:
           CI: true
 
@@ -182,8 +182,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Web Console (@unipost/console)
-        run: pnpm --filter @unipost/console build:web
+      - name: Build Web Console (@acc/console)
+        run: pnpm --filter @acc/console build:web
 
       - name: Build Tekgo Portal (tekgo-ui Next.js 15)
         run: pnpm --filter tekgo-ui build

@@ -6,7 +6,7 @@ Redesign the Facebook Page Integration modal to eliminate visual clutter for end
 
 ### 1. App Integrations Card Header Actions
 
-#### [MODIFY] [apps/console/src/features/apps/index.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/index.tsx)
+#### [MODIFY] [apps/console/src/features/apps/index.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/index.tsx)
 - In the App card action section:
   - When `app.connected` is **false**: Render the single `"Connect"` button.
   - When `app.connected` is **true**: Render:
@@ -17,7 +17,7 @@ Redesign the Facebook Page Integration modal to eliminate visual clutter for end
 
 ### 2. Facebook Connect Modal Redesign
 
-#### [MODIFY] [apps/console/src/features/apps/components/facebook-connect-modal.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/facebook-connect-modal.tsx)
+#### [MODIFY] [apps/console/src/features/apps/components/facebook-connect-modal.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/facebook-connect-modal.tsx)
 - **Primary 1-Click User Flow (`!isConnected`)**:
   - Remove the prominent credentials box from the default view.
   - Display a clean Liquid Glass card with Facebook icon, explanation of features (posts, insights, inbox sync), and requested permissions badges.
@@ -37,11 +37,11 @@ Redesign the Facebook Page Integration modal to eliminate visual clutter for end
 ### Automated Verification
 1. Web Build:
    ```bash
-   pnpm --filter @unipost/console build:web
+   pnpm --filter @acc/console build:web
    ```
 2. Lint check:
    ```bash
-   pnpm --filter @unipost/console lint
+   pnpm --filter @acc/console lint
    ```
 
 ### Manual Verification

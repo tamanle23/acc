@@ -1,7 +1,7 @@
 # Walkthrough 97: Phase 34 - Live Console API Client, Dual-Mode Studio & SSE Execution Stream
 
 ## 1. Overview
-In Phase 34, we delivered the complete live interaction layer for the distributed workflow engine across the frontend (`@unipost/console`), mock infrastructure (`@unipost/sandbox`), and backend runtime (`unipost-ms-aio`).
+In Phase 34, we delivered the complete live interaction layer for the distributed workflow engine across the frontend (`@acc/console`), mock infrastructure (`@acc/sandbox`), and backend runtime (`acc-ms-aio`).
 
 ## 2. Key Accomplishments
 
@@ -55,6 +55,6 @@ In Phase 34, we delivered the complete live interaction layer for the distribute
 - Created `TaskExecutionStreamModal` allowing users to click "Live Execution Stream" on any task execution row in `/tasks` to watch its DAG progress in real-time.
 
 ## 3. Verification & Testing
-- Vitest suite in `@unipost/console`: `src/features/workflows/__tests__/workflow-execution-stream.test.tsx` passed with 2/2 tests asserting SSE event reception, canvas node state updates, and graceful fallback polling.
-- Vitest suite in `@unipost/sandbox`: `src/__tests__/sandbox-engine.test.ts` passed 6/6 tests covering execution start, query, terminate, and SSE events.
-- Maven test in `unipost-ms-aio`: `WorkflowEngineRestApiTest` passed with 0 errors and 0 failures.
+- Vitest suite in `@acc/console`: `src/features/workflows/__tests__/workflow-execution-stream.test.tsx` passed with 2/2 tests asserting SSE event reception, canvas node state updates, and graceful fallback polling.
+- Vitest suite in `@acc/sandbox`: `src/__tests__/sandbox-engine.test.ts` passed 6/6 tests covering execution start, query, terminate, and SSE events.
+- Maven test in `acc-ms-aio`: `WorkflowEngineRestApiTest` passed with 0 errors and 0 failures.

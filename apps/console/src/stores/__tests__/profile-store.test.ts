@@ -39,7 +39,7 @@ describe('profile-store and tenant resolution', () => {
     });
 
     it('resolves user personal default workspace if set in localStorage', () => {
-      localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
+      localStorage.setItem('acc_user_default_ws_tenant-acme', 'ws-acme-staging');
       const { profile } = resolveTenantProfile('tenant-acme', 'Acme Corp');
       expect(profile.id).toBe('ws-acme-staging');
       expect(profile.name).toBe('Acme Staging');

@@ -17,9 +17,9 @@ Users moving nodes manually or viewing complex multi-action FSM state graphs nee
    - Run Vitest suite across metadata feature.
 
 ## Changes Made
-- [`fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Added `reactFlowInstanceRef`, `layoutMode` state, `computeLayoutCoordinates` layout engine, `handleForceAutoLayout` handler, and floating top-right Glass panel with mode selector and Auto Layout refresh button.
-- [`visual-schema-studio.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-schema-studio.test.tsx): Added test covering auto layout mode buttons and force refresh click.
-- [`walkthrough_80.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_80.md): Created walkthrough documentation.
+- [`fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Added `reactFlowInstanceRef`, `layoutMode` state, `computeLayoutCoordinates` layout engine, `handleForceAutoLayout` handler, and floating top-right Glass panel with mode selector and Auto Layout refresh button.
+- [`visual-schema-studio.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/visual-schema-studio.test.tsx): Added test covering auto layout mode buttons and force refresh click.
+- [`walkthrough_80.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_80.md): Created walkthrough documentation.
 
 ## Verification
-- `pnpm --filter @unipost/console test src/features/metadata`: 9 test files passed, 55/55 tests passed.
+- `pnpm --filter @acc/console test src/features/metadata`: 9 test files passed, 55/55 tests passed.

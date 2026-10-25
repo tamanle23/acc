@@ -14,8 +14,8 @@ The Visual Debugger control bar (`Debugger (Pause / Step Over / Resume / Watch)`
    - Add test case to `iteration13-studio.test.tsx` verifying that debugger buttons (`debugger-pause-btn`, `debugger-step-btn`, `debugger-resume-btn`, `debugger-variable-watch-btn`) are hidden in authoring mode and visible when `executionId` is provided.
    - Update mocks and providers in `visual-dag-studio-modes.test.tsx` and `dag-property-inspector.test.tsx` for query client coverage.
 4. **Verification**:
-   - `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio/` passes 9/9 test files (39/39 tests).
-   - `pnpm --filter @unipost/console exec tsc --noEmit` passes with 0 errors.
+   - `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/` passes 9/9 test files (39/39 tests).
+   - `pnpm --filter @acc/console exec tsc --noEmit` passes with 0 errors.
 
 ## Changes Made
 - `apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`: Wrapped debugger control bar, variable watch drawer, and breakpoint decorator in `isExecutionMode` checks.

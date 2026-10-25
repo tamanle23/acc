@@ -6,23 +6,23 @@ Workflows involving human review, compliance validation, and financial authoriza
 2. Endpoints and mechanisms to claim, unclaim, and resolve human tasks with approval/rejection decisions and form payload capture.
 3. A dedicated Task Approval Inbox UI with SLA urgency countdowns and role-based assignment.
 4. An interactive Decision Modal with upstream context preview, verification checklists, and mandatory rejection rationales.
-5. Offline simulation in `@unipost/sandbox` with stateful approval seeding.
+5. Offline simulation in `@acc/sandbox` with stateful approval seeding.
 
 ## Implementation Plan
 1. Add `TaskStatus.WAITING_FOR_APPROVAL` to backend enum and update `HumanNodeStrategy.java` to halt DAG progression until review.
 2. Implement `/claim`, `/unclaim`, and `/resolve` endpoints in `TaskWorkerController.java` with SSE broadcasting.
-3. Update `@unipost/client` with `ApprovalTask`, `ApprovalDecisionRequest`, and client methods.
-4. Enhance `workflowSandboxHandler` in `@unipost/sandbox` with stateful approval storage and mock endpoints.
-5. Create `use-approvals.ts` query and mutation hooks in `@unipost/console`.
+3. Update `@acc/client` with `ApprovalTask`, `ApprovalDecisionRequest`, and client methods.
+4. Enhance `workflowSandboxHandler` in `@acc/sandbox` with stateful approval storage and mock endpoints.
+5. Create `use-approvals.ts` query and mutation hooks in `@acc/console`.
 6. Build `HumanDecisionModal` and `ApprovalTable` components with Liquid Glass tokens and SLA countdowns.
 7. Construct `ApprovalsFeature` layout with search and filter tabs (**My Review**, **Unassigned Pool**, **History**).
 8. Register `/_authenticated/approvals` route and update `sidebar-data.ts` and i18n locales (`en`, `vi`).
 9. Verify with Vitest and backend compilation.
 
 ## Changes Made
-- `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskStatus.java`: Added `WAITING_FOR_APPROVAL`.
-- `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/strategy/HumanNodeStrategy.java`: Transition initial evaluation to `WAITING_FOR_APPROVAL`.
-- `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/TaskWorkerController.java`: Added `POST /{id}/claim`, `POST /{id}/unclaim`, `POST /{id}/resolve`.
+- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskStatus.java`: Added `WAITING_FOR_APPROVAL`.
+- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/HumanNodeStrategy.java`: Transition initial evaluation to `WAITING_FOR_APPROVAL`.
+- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/TaskWorkerController.java`: Added `POST /{id}/claim`, `POST /{id}/unclaim`, `POST /{id}/resolve`.
 - `packages/client/src/contracts/workflow-executions.ts`: Added `ApprovalTask`, `ApprovalDecisionRequest`, and updated `TaskSnapshot`.
 - `packages/client/src/client.ts`: Added `getApprovals`, `claimApproval`, `unclaimApproval`, `resolveApproval`.
 - `packages/sandbox/src/handlers/workflow-handler.ts`: Added `tenantApprovals` state, seeded records, and mock routes.
@@ -38,9 +38,9 @@ Workflows involving human review, compliance validation, and financial authoriza
 - `apps/console/src/features/approvals/__tests__/approvals-feature.test.tsx`: Vitest suite covering table and decision modal.
 
 ## Verification
-- Vitest `@unipost/console`: `src/features/approvals/` passed **1/1 file, 2/2 tests**.
-- Vitest `@unipost/console`: `src/features/metadata/components/studio/` passed **6/6 files, 28/28 tests**.
-- Vitest `@unipost/client`: passed **3/3 files, 20/20 tests**.
-- Vitest `@unipost/sandbox`: passed **2/2 files, 9/9 tests**.
-- Maven Backend: `unipost-ms-aio` and `workflow-engine` compiled with 0 errors.
+- Vitest `@acc/console`: `src/features/approvals/` passed **1/1 file, 2/2 tests**.
+- Vitest `@acc/console`: `src/features/metadata/components/studio/` passed **6/6 files, 28/28 tests**.
+- Vitest `@acc/client`: passed **3/3 files, 20/20 tests**.
+- Vitest `@acc/sandbox`: passed **2/2 files, 9/9 tests**.
+- Maven Backend: `acc-ms-aio` and `workflow-engine` compiled with 0 errors.
 - TypeScript Typecheck: `tsc --noEmit` clean across all affected packages and apps.

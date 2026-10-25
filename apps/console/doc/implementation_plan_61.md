@@ -1,6 +1,6 @@
 # Implementation Plan - UI Wiring for Phase 7 (Quotas & ReDoS Defense) & Phase 8 (Data Lifecycle & GDPR Purge)
 
-Integrate backend Phase 7 (Rate Limiting, Schema/Attribute Quotas, ReDoS validation) and Phase 8 (Streaming Export & GDPR Hard-Purge) directly into `@unipost/console`.
+Integrate backend Phase 7 (Rate Limiting, Schema/Attribute Quotas, ReDoS validation) and Phase 8 (Streaming Export & GDPR Hard-Purge) directly into `@acc/console`.
 
 ## User Review Required
 
@@ -50,6 +50,6 @@ Integrate backend Phase 7 (Rate Limiting, Schema/Attribute Quotas, ReDoS validat
 ## Verification Plan
 
 ### Automated & Build Verification
-1. Run TypeScript check & build: `pnpm --filter @unipost/console check-types` and `pnpm --filter @unipost/console build`.
+1. Run TypeScript check & build: `pnpm --filter @acc/console check-types` and `pnpm --filter @acc/console build`.
 2. Unit tests for ReDoS static analysis and quota checks.
-3. Test Settings navigation and render in `@unipost/console`.
+3. Test Settings navigation and render in `@acc/console`.

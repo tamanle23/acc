@@ -12,17 +12,17 @@ This directory permanently archives the planning and verification history for th
 
 ---
 
-## 2. Global Project Rename to `unipost`
-- **Plan**: [02_rename_to_unipost_plan.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/02_rename_to_unipost_plan.md)
-  - Complete refactoring plan for renaming `prjz` to `unipost` across directories, packages, POMs, and configurations.
-- **Walkthrough**: [02_rename_to_unipost_walkthrough.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/02_rename_to_unipost_walkthrough.md)
+## 2. Global Project Rename to `acc`
+- **Plan**: [02_rename_to_acc_plan.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/02_rename_to_acc_plan.md)
+  - Complete refactoring plan for renaming `prjz` to `acc` across directories, packages, POMs, and configurations.
+- **Walkthrough**: [02_rename_to_acc_walkthrough.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/02_rename_to_acc_walkthrough.md)
   - Execution summary and full build and architecture verification outputs.
 
 ---
 
 ## 3. Removal of Legacy Orika Mapping Library
 - **Plan**: [03_remove_orika_plan.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/03_remove_orika_plan.md)
-  - Plan for completely removing Orika from `unipost-fw` and standardizing on MapStruct.
+  - Plan for completely removing Orika from `acc-fw` and standardizing on MapStruct.
 - **Walkthrough**: [03_remove_orika_walkthrough.md](file:///c:/Users/Admin/workspace/git/prjz/doc/history/03_remove_orika_walkthrough.md)
   - Execution summary, file deletions, and verification across all modules.
 

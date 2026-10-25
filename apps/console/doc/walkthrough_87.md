@@ -1,13 +1,13 @@
 # Walkthrough 87: Unified Dynamic Layout Switching Engine for Domain Blueprint Catalog
 
 ## 1. Problem
-In `@unipost/console`, the **Domain Blueprint Catalog** modal was locked to a rigid two-column card grid (`grid-cols-1 md:grid-cols-2`). While aesthetically suited for consumer landing pages, for operational management:
+In `@acc/console`, the **Domain Blueprint Catalog** modal was locked to a rigid two-column card grid (`grid-cols-1 md:grid-cols-2`). While aesthetically suited for consumer landing pages, for operational management:
 - Cards consumed excessive vertical space, causing scrolling fatigue.
 - Comparative auditing across models, edges, and categories was difficult.
 - Inspecting a blueprint required opening a separate preview modal, creating stacked modal context fatigue.
 
 ## 2. Changes Made
-We executed **Milestones 1–4** of [Implementation Plan 87](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/implementation_plan_87.md):
+We executed **Milestones 1–4** of [Implementation Plan 87](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_87.md):
 
 1. **Reusable Segmented Layout Switcher (`LayoutModeSwitcher`)**:
    - Created `apps/console/src/components/layout-switcher/layout-mode-switcher.tsx`.
@@ -32,5 +32,5 @@ We executed **Milestones 1–4** of [Implementation Plan 87](file:///c:/Users/Ad
 
 ## 3. Verification
 - TypeScript compilation check passed: `tsc --noEmit --project tsconfig.json` (0 errors).
-- Vitest metadata test suite passed: `pnpm --filter @unipost/console test src/features/metadata` (9 test files passed, 56 passed).
+- Vitest metadata test suite passed: `pnpm --filter @acc/console test src/features/metadata` (9 test files passed, 56 passed).
 - Confirmed smooth switching between Grid, Table, and Split Inspector.

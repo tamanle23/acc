@@ -82,7 +82,7 @@ export function ProtectedRoute({
               variant="outline"
               className="flex-1 border-white/10 hover:bg-white/5"
               onClick={() => {
-                window.location.href = 'mailto:custodian@unipost.io?subject=Request%20Tenant%20Membership%20Assignment';
+                window.location.href = 'mailto:custodian@acc.io?subject=Request%20Tenant%20Membership%20Assignment';
               }}
             >
               <Mail className="h-4 w-4 mr-2 text-primary" />

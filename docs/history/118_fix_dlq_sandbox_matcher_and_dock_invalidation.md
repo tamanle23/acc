@@ -15,7 +15,7 @@ Root cause analysis identified two defects:
 1. Elevate `dlqSandboxHandler` priority to `99` (above `systemSandboxHandler`'s `98`).
 2. Update `dlqSandboxHandler.matcher` and handler parsing to normalize paths across `/api/system/dlq`, `/api/v1/system/dlq`, `/system/dlq`, and `/workflow/dlq`.
 3. Update `SandboxDock` to issue a `POST /system/dlq/inject` call and immediately invalidate `DLQ_QUERY_KEY` queries via `useQueryClient()`.
-4. Add automated test coverage in `@unipost/sandbox` to verify priority ordering and endpoint dispatch.
+4. Add automated test coverage in `@acc/sandbox` to verify priority ordering and endpoint dispatch.
 
 ## Changes
 
@@ -34,14 +34,14 @@ Root cause analysis identified two defects:
   - Added global query cache invalidation on master reset (`handleResetAllData`).
 
 ## Verification
-- Ran `pnpm --filter @unipost/sandbox test`: 10/10 tests passed.
-- Ran `pnpm --filter @unipost/console test dlq-feature`: 4/4 tests passed.
-- Ran `pnpm --filter @unipost/sandbox check-types`: Clean typecheck.
-- Ran `pnpm --filter @unipost/console exec tsc --noEmit`: Clean typecheck.
+- Ran `pnpm --filter @acc/sandbox test`: 10/10 tests passed.
+- Ran `pnpm --filter @acc/console test dlq-feature`: 4/4 tests passed.
+- Ran `pnpm --filter @acc/sandbox check-types`: Clean typecheck.
+- Ran `pnpm --filter @acc/console exec tsc --noEmit`: Clean typecheck.
 
 ## Tasks
 - [x] Analyze routing and query synchronization between `SandboxDock` and `useDlqQuery`.
 - [x] Elevate priority and normalize paths in `dlqSandboxHandler`.
 - [x] Wire API injection and TanStack Query cache invalidation in `SandboxDock`.
-- [x] Add automated test coverage in `@unipost/sandbox`.
+- [x] Add automated test coverage in `@acc/sandbox`.
 - [x] Verify builds, lints, and test suites across affected packages.

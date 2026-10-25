@@ -25,4 +25,4 @@ The `/system/roles` screen was restricted to a simple list and lacked deep role 
 - `apps/console/src/features/system/roles/__tests__/rbac-matrix-grid.test.tsx`: 3/3 passed.
 - `apps/console/src/features/system/__tests__/sovereign-cockpit-ui.test.tsx`: 6/6 passed.
 - Playwright spec `12-sovereign-rbac-matrix.spec.ts`: Passed cleanly with 0 WCAG 2.2 AA violations.
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.

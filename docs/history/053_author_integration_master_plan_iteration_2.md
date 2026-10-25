@@ -19,8 +19,8 @@ Synthesize the 4 strategic directions into a unified specification:
    - Phase 23: Automated Multi-Tenant Penetration Fuzzing & Chaos Hardening.
 
 ## Changes
-- Created [`docs/brainstorming/integration_master_plan_iteration_2.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/brainstorming/integration_master_plan_iteration_2.md) defining the complete architecture, milestone matrix, and non-negotiable invariants for Iteration 2.
-- Updated [`docs/history/README.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/history/README.md) with log 053.
+- Created [`docs/brainstorming/integration_master_plan_iteration_2.md`](file:///c:/Users/Admin/workspace/git/acc/docs/brainstorming/integration_master_plan_iteration_2.md) defining the complete architecture, milestone matrix, and non-negotiable invariants for Iteration 2.
+- Updated [`docs/history/README.md`](file:///c:/Users/Admin/workspace/git/acc/docs/history/README.md) with log 053.
 
 ## Verification
 - Verified document structure, mermaid architecture diagrams, and milestone tables against repository standards.

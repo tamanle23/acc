@@ -49,7 +49,7 @@ Iteration 17 elevates the authoring UX of **Visual DAG Studio** to professional 
 
 ### Unit Tests
 ```bash
-pnpm --filter @unipost/console test -- src/features/metadata/components/studio/
+pnpm --filter @acc/console test -- src/features/metadata/components/studio/
 ```
 Output:
 ```
@@ -61,6 +61,6 @@ Output:
 
 ### TypeScript Compilation
 ```bash
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Output: Clean compilation, 0 type errors.

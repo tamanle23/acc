@@ -47,7 +47,7 @@ In mission-critical enterprise environments, workflow definitions evolve continu
    - `WorkflowEngineService.migrateExecution(workflowId, targetVersion, dryRun)`:
      - If `dryRun == true`: returns validation report `{ compatible: boolean, issues: string[], remappedNodes: string[] }`.
      - If `dryRun == false`: rewires execution definition snapshot to `v2`, updates version, appends `HOT_MIGRATION` audit log, and preserves atomic state.
-4. **REST Controllers (`apps/backend/unipost-ms-aio`)**:
+4. **REST Controllers (`apps/backend/acc-ms-aio`)**:
    - Versioning endpoints:
      - `GET /api/v1/workflow/definitions/{key}/versions`
      - `GET /api/v1/workflow/definitions/{key}/versions/{version}`
@@ -84,6 +84,6 @@ In mission-critical enterprise environments, workflow definitions evolve continu
 - **Unit & Integration Tests**:
   - `AuditLedgerVerifierTest.java`: verifies sequential chaining, genesis hash, and catches single-character tamper.
   - `TopologicalCompatibilityValidatorTest.java`: tests compatible schema evolution and rejects broken frontier migrations.
-  - `pnpm --filter @unipost/sandbox test`: validates mock versioning and audit chaining.
-  - `pnpm --filter @unipost/console test`: UI component tests for diff viewer and migration modal.
+  - `pnpm --filter @acc/sandbox test`: validates mock versioning and audit chaining.
+  - `pnpm --filter @acc/console test`: UI component tests for diff viewer and migration modal.
   - Typecheck verification across monorepo (`check-types`).

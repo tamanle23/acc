@@ -28,13 +28,13 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
    - Implement `WorkflowDefinitionController`, `WorkflowExecutionController`, and `TaskWorkerController` exposing REST APIs.
    - Wire Spring Data DataSource / TransactionManager into the PostgreSQL/SQLite `PersistencePort` and launch background lease sweeping as managed Spring lifecycle beans.
 4. **Live React Query Client Integration**:
-   - Wire `@unipost/console` Visual DAG Studio to live backend endpoints via React Query hooks.
+   - Wire `@acc/console` Visual DAG Studio to live backend endpoints via React Query hooks.
    - Real-time workflow triggering, execution status polling, and dynamic node progress coloring.
 5. **WebSocket & SSE Live Execution Telemetry**:
    - Stream real-time task progress and state transitions from the engine to the console canvas via Server-Sent Events (SSE) or WebSockets.
 6. **End-to-End Polyglot Distributed Execution Verification**:
-   - Live end-to-end multi-tenant validation where visual authoring triggers distributed tasks executed cooperatively by Java 21 Virtual-Thread workers and pure TypeScript (`@unipost/worker`) workers, with automatic Saga rollback upon failure.
-7. **Unified Sandbox Orchestration & Cross-Domain Synchronizer (`@unipost/sandbox`)**:
+   - Live end-to-end multi-tenant validation where visual authoring triggers distributed tasks executed cooperatively by Java 21 Virtual-Thread workers and pure TypeScript (`@acc/worker`) workers, with automatic Saga rollback upon failure.
+7. **Unified Sandbox Orchestration & Cross-Domain Synchronizer (`@acc/sandbox`)**:
    - Update and elevate the Unified Sandbox Platform to natively simulate the entire distributed engine lifecycle in browser/local dev without a live backend:
      - In-memory workflow definitions catalog (`POST /api/v1/workflow/definitions`, `GET /api/v1/workflow/definitions`).
      - State-machine decider simulation with Kahn/Tarjan validation, parameter resolution, and branching.
@@ -48,7 +48,7 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Workflow Executions Ledger** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Executions Ledger (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; lifecycle status tabs (**All**, **In Progress**, **Completed**, **Failed**); **Synchronize `@unipost/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@unipost/console` and `@unipost/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution ledger rendering with workflow links. |
+| **Phase 31** | **Visual DAG Studio: Drag-and-Drop Canvas & Workflow Executions Ledger** | Draggable Task Palette (`SIMPLE`, `SWITCH`, `FORK_JOIN`, `DYNAMIC_FORK`, `WAIT`, `DO_WHILE`); drag-and-drop drop handler with viewport coordinate projection; **Refactor `/tasks` screen & schema** into Workflow Executions Ledger (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry) with direct bidirectional cross-navigation to Visual DAG Studio; lifecycle status tabs (**All**, **In Progress**, **Completed**, **Failed**); **Synchronize `@acc/sandbox`** tasks repository with mock workflow executions. | Vitest tests in `@acc/console` and `@acc/sandbox` verifying palette drag-drop, node creation, and `/tasks` execution ledger rendering with workflow links. |
 | **Phase 32** | **Visual DAG Studio: Task Property Inspector, Payload Drawer & Bidirectional IR Synchronizer** | Slide-over Property Inspector drawer for selected nodes; input parameter editor with auto-completion for `${workflow.input.*}` and `${taskRef.output.*}`; bidirectional JSON IR import/export with schema validation; Workflow Execution Instance Details dialog in `/tasks`; **Unified Sandbox mock workflow definitions catalog** (`/api/v1/workflow/definitions`). | Vitest tests verifying node attribute mutations, JSON IR compilation, sandbox definition storage, and round-trip fidelity without coordinate loss. |
 | **Phase 33** | **Spring Boot REST Engine Bridge & Enterprise Persistence Wiring** | Spring Boot Controllers (`WorkflowDefinitionController`, `WorkflowExecutionController`, `TaskWorkerController`) in `apps/backend`; Spring Bean configuration wiring `PersistencePort`, `WorkflowEngineService`, and lease sweeper scheduler into active app graph. | MockMvc integration tests verifying workflow registration, execution start, worker task polling, and heartbeat reporting under active Spring security context. |
 | **Phase 34** | **Live Console API Client, Server-Sent Events (SSE) & Sandbox Mock Stream** | `@tanstack/react-query` hooks (`useWorkflows`, `useWorkflowExecution`, `useStartWorkflow`) in console; SSE/WebSocket execution stream adapter; **Unified Sandbox mock SSE event stream** simulating real-time task progress; live canvas node pulsing during execution (`PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`). | Integration tests with Unified Sandbox & live API client verifying execution stream message handling and node badge updates. |
@@ -66,7 +66,7 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - **Branching & Logic**: `SWITCH` (Condition Router), `DO_WHILE` (Loop Container)
     - **Concurrency**: `FORK_JOIN` (Parallel Fan-out), `DYNAMIC_FORK` (Array-driven Parallelism)
     - **Timing & Callbacks**: `WAIT` (Timestamp / External Webhook Resume)
-  - Native HTML5 Drag and Drop (`onDragStart` setting `dataTransfer.setData('application/unipost-node-type', type)`).
+  - Native HTML5 Drag and Drop (`onDragStart` setting `dataTransfer.setData('application/acc-node-type', type)`).
   - Clean Liquid Glass card styling with specular highlights matching the existing design system.
 - **Canvas Drop Target & Dynamic Node Creation (`visual-dag-studio.tsx`)**:
   - Implement `onDragOver` and `onDrop` on the `ReactFlow` wrapper.
@@ -93,14 +93,14 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - Low-level internal `TaskType` implementations (`SIMPLE`, `SWITCH`, `FORK_JOIN`, etc.) are encapsulated from the primary execution ledger and visible only in debug telemetry modals.
   - **Execution Lifecycle Filtering**:
     - Segmented tabs: **All Executions**, **In Progress**, **Completed**, **Failed / Action Required** (eliminating synthetic demo backlog tasks).
-- **Unified Sandbox Platform Synchronization (`@unipost/sandbox` & `tasks-sandbox-handler.ts`)**:
+- **Unified Sandbox Platform Synchronization (`@acc/sandbox` & `tasks-sandbox-handler.ts`)**:
   - Connect `TasksSandboxRepository` with `mockExecutions` from `packages/sandbox/src/handlers/workflow-handler.ts`.
   - When a workflow is started or stepped in Visual DAG Studio, matching `Task` execution units automatically populate the sandbox tasks store with consistent `workflowId`, `taskType`, and statuses.
   - Wire state reset to `SandboxDock` `handleResetAllData()`.
 - **Verification Gate 31**:
   - Vitest test suite in `apps/console/src/features/metadata/components/studio/` verifying node dragging, drop coordinate translation, node creation, and deletion.
   - Vitest test suite in `apps/console/src/features/tasks/` verifying workflow executions table rendering, lifecycle tab filtering, and cross-navigation action.
-  - Vitest test suite in `@unipost/sandbox` asserting synchronized task creation on workflow execution.
+  - Vitest test suite in `@acc/sandbox` asserting synchronized task creation on workflow execution.
 
 ---
 
@@ -134,7 +134,7 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - `PersistencePort` (autowiring `PostgresJdbcPersistenceAdapter` when Postgres is active or `SqliteJdbcPersistenceAdapter` when SQLite is active).
     - `WorkflowEngineService` singleton.
     - `ScheduledLeaseSweeper` running periodic background sweeps (`sweepExpiredTasks`) every 5 seconds.
-- **REST API Layer (`com.unipost.workflow.adapter.rest`)**:
+- **REST API Layer (`com.acc.workflow.adapter.rest`)**:
   - `WorkflowDefinitionController`:
     - `POST /api/v1/workflow/definitions` - Register / update workflow definition.
     - `GET /api/v1/workflow/definitions/{key}` - Retrieve definition and canvas layout metadata.
@@ -192,8 +192,8 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
     - Allows offline development and deterministic UI test automation without backend network infrastructure.
 - **Verification Gate 34**:
   - Spring Boot MockMvc / Controller test verifying `SseEmitter` event emission on task lifecycle transitions.
-  - Vitest component tests in `@unipost/console` mocking SSE events and asserting that canvas node badges dynamically update from `PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`.
-  - Vitest test in `@unipost/sandbox` verifying mock SSE event generator and fallback polling.
+  - Vitest component tests in `@acc/console` mocking SSE events and asserting that canvas node badges dynamically update from `PENDING` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`.
+  - Vitest test in `@acc/sandbox` verifying mock SSE event generator and fallback polling.
 
 
 ---
@@ -263,14 +263,14 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
       4. `SWITCH` (Evaluate tier branching).
       5. `SIMPLE` (Java Virtual-Thread worker for inventory reservation with compensation).
       6. `FORK_JOIN` (Parallel fan-out).
-      7. `SIMPLE` (TypeScript `@unipost/worker` for dispatch packaging).
+      7. `SIMPLE` (TypeScript `@acc/worker` for dispatch packaging).
       8. `HTTP` / `SIMPLE` (Fault-injected node triggering unrecoverable error).
       9. `TERMINATE` or automatic Saga reverse compensation rollbacks.
   - **Reverse Topological Saga Compensation Execution**:
     - Validate that unrecoverable failures trigger `SagaCompensator` to unwind completed nodes in strict reverse topological sequence (`cancel-packing` $\to$ `release-inventory`).
   - **Verification Gate 35**:
-    - Complete suite of automated JUnit 5 / Spring Boot integration tests in `unipost-ms-aio` testing all new task strategies without mocks.
-    - Contract test in `@unipost/worker` verifying TypeScript worker execution and compensation integration.
+    - Complete suite of automated JUnit 5 / Spring Boot integration tests in `acc-ms-aio` testing all new task strategies without mocks.
+    - Contract test in `@acc/worker` verifying TypeScript worker execution and compensation integration.
     - Console UI & Unified Sandbox updates showcasing all new node types in the catalog and canvas.
 
 ---
@@ -283,6 +283,6 @@ Building directly upon the battle-tested, zero-I/O distributed workflow engine e
 | **2** | **Bidirectional Canvas Fidelity** | Visual modifications (drag-drop, coordinate moves, parameter edits) must round-trip to Canonical JSON IR with zero data loss. |
 | **3** | **Task as Workflow Execution Unit** | Tasks are first-class executions of Workflow Plans (`workflowId`, `taskReferenceName`, `taskType`, worker lease telemetry). |
 | **4** | **Single-Column Lease Reliability** | Task distribution relies on `visible_at_epoch_ms` across both PostgreSQL and SQLite adapters; zero external broker requirements. |
-| **5** | **Symmetric Polyglot Contracts** | Java Virtual-Thread workers and TypeScript (`@unipost/worker`) workers share identical JSON payloads, middleware behavior, and heartbeat mechanics. |
+| **5** | **Symmetric Polyglot Contracts** | Java Virtual-Thread workers and TypeScript (`@acc/worker`) workers share identical JSON payloads, middleware behavior, and heartbeat mechanics. |
 | **6** | **Multi-Tenant Context Propagation** | Every workflow definition, execution, task outbox event, and telemetry stream preserves `tenant_id` and `workspace_id`. |
 | **7** | **Zero Synthetic Mocks in Verification** | All integration tests execute against real production classes, real database schemas, and actual network/SSE protocol handlers. |

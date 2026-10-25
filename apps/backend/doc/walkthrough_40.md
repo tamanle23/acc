@@ -11,11 +11,11 @@ Secured Dead-Letter Queue management endpoints with strict authorization and ali
 
 ## Changes
 - **Controller**:
-  - `apps/backend/unipost-ms-aio/.../WorkflowDlqController.java`: Added dual route mapping, `@PreAuthorize`, and `queryTenantId` parameter in `listDlqTasks`.
+  - `apps/backend/acc-ms-aio/.../WorkflowDlqController.java`: Added dual route mapping, `@PreAuthorize`, and `queryTenantId` parameter in `listDlqTasks`.
 - **System Fleet Service**:
-  - `apps/backend/unipost-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
+  - `apps/backend/acc-fw/.../SystemFleetService.java`: Added `"platform:dlq:manage"` to `ROLE_SYSTEM_CUSTODIAN` permissions and ephemeral token generation.
 - **Tests**:
-  - `apps/backend/unipost-ms-aio/.../WorkflowDlqRestApiTest.java`: Added tests for security annotations, `/api/v1/system/dlq` mapping, and fleet-wide querying.
+  - `apps/backend/acc-ms-aio/.../WorkflowDlqRestApiTest.java`: Added tests for security annotations, `/api/v1/system/dlq` mapping, and fleet-wide querying.
   - `SystemFleetControllerTest.java`: 11/11 tests green.
 
 ---

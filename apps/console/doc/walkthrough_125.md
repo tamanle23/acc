@@ -1,7 +1,7 @@
 # Walkthrough 125: High-Density Table Ergonomics & 120-Column Sandbox Telemetry Matrix
 
 ## 1. Overview
-To facilitate direct UI/UX verification and testing of high-density wide table layouts (100+ columns) in `@unipost/console`, this work introduces:
+To facilitate direct UI/UX verification and testing of high-density wide table layouts (100+ columns) in `@acc/console`, this work introduces:
 - **120-Column Sandbox Entity Model (`telemetry-wide-matrix`)**: Created an IoT edge sensory telemetry matrix featuring 120 strongly-typed attribute definitions (10 device identifiers, 25 thermal sensor cores, 25 electrical power rails, 25 radio frequency channels, 25 vibration frequency nodes, and 10 diagnostic status codes) and 60 realistic seeded records.
 - **Dynamic Horizontal Overflow Cues & Keyboard Region in `EntityDataGrid`**: Upgraded `EntityDataGrid` to match `@/components/data-table`'s horizontal scroll region ergonomics (`role="region"`, `aria-label`, `tabIndex={0}`, thin scrollbar, and dynamic left/right gradient shadow cues driven by `ResizeObserver`).
 - **Sandbox Catalog Integration**: Registered the 120-column model in `mock-metadata.ts` with updated page size defaults (up to 500 attributes per entity type) and integrated with `sandboxResetRegistry`.
@@ -36,6 +36,6 @@ To facilitate direct UI/UX verification and testing of high-density wide table l
 1. **Vitest Unit & Component Suite**:
    - `npx vitest run src/features/metadata/__tests__/wide-telemetry-entity.test.ts`: 3/3 tests passing.
    - `npx vitest run src/features/metadata/components/data-explorer/__tests__/entity-data-grid.test.tsx`: 4/4 tests passing.
-   - `pnpm --filter @unipost/console test`: 66 test files passed, 312/312 tests passing.
+   - `pnpm --filter @acc/console test`: 66 test files passed, 312/312 tests passing.
 2. **TypeScript Integrity**:
    - `npx tsc --noEmit --project tsconfig.json`: 0 errors.

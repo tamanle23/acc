@@ -16,10 +16,10 @@ The "New" (Add Entity Model) and "Templates" (Domain Blueprint Catalog) buttons 
    - Run Vitest suite across metadata features.
 
 ## Changes Made
-- [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx): Switched hardcoded limit 50 to dynamic `maxSchemas` from `useTenantBilling()`, enabled infinity badge display, and unlocked "New" and "Templates" buttons.
-- [`use-metadata-ui-store.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/store/use-metadata-ui-store.ts): Granted SYSTEM root unconditional permission in `canManageSchema()` and `canMutateRecords()`.
-- [`schema-builder.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx): Added dynamic attribute quota check supporting unlimited fields for SYSTEM root.
-- [`walkthrough_82.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_82.md): Created walkthrough documentation.
+- [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx): Switched hardcoded limit 50 to dynamic `maxSchemas` from `useTenantBilling()`, enabled infinity badge display, and unlocked "New" and "Templates" buttons.
+- [`use-metadata-ui-store.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/store/use-metadata-ui-store.ts): Granted SYSTEM root unconditional permission in `canManageSchema()` and `canMutateRecords()`.
+- [`schema-builder.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx): Added dynamic attribute quota check supporting unlimited fields for SYSTEM root.
+- [`walkthrough_82.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_82.md): Created walkthrough documentation.
 
 ## Verification
-- `pnpm --filter @unipost/console test src/features/metadata`: 9 test files passed, 55/55 tests passed.
+- `pnpm --filter @acc/console test src/features/metadata`: 9 test files passed, 55/55 tests passed.

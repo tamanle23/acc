@@ -1,15 +1,15 @@
 # Walkthrough: Automated Testing Phase 2 - Backend >=90% Coverage Sprint & Hard-Gated JaCoCo Verification
 
 ## Overview
-Phase 2 of the enterprise automated testing master plan has been completed. The backend (`apps/backend/unipost-fw`) test suite was dramatically expanded to 297 unit and integration tests (0 failures, 0 errors), reaching **90.25% instruction coverage** across all core business services, repositories, controllers, and domain lifecycle handlers. A hard-gated JaCoCo threshold of `>=0.90` (90%) instruction coverage has been configured and verified in the Maven build.
+Phase 2 of the enterprise automated testing master plan has been completed. The backend (`apps/backend/acc-fw`) test suite was dramatically expanded to 297 unit and integration tests (0 failures, 0 errors), reaching **90.25% instruction coverage** across all core business services, repositories, controllers, and domain lifecycle handlers. A hard-gated JaCoCo threshold of `>=0.90` (90%) instruction coverage has been configured and verified in the Maven build.
 
 ## Key Changes & Coverage Expansion
 
 ### 1. New Test Suites & Slices Created
-- **`UserDetailsImplTest`** ([`UserDetailsImplTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/service/authentication/UserDetailsImplTest.java)): Comprehensive tests for Spring Security `UserDetailsImpl` getters, authority mapping, account flags, and `ValidationTimeoutException` constructors.
-- **`BlueprintCatalogServiceTest`** ([`BlueprintCatalogServiceTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/tenant/blueprint/BlueprintCatalogServiceTest.java)): Tests for domain blueprint catalog discovery, manifest parsing, YAML template extraction, and summary DTO conversion.
-- **`DynamicIndexProvisionerTest`** ([`DynamicIndexProvisionerTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/service/DynamicIndexProvisionerTest.java)): Tests verifying root projected attribute index DDL generation, Pattern B foreign key index generation across child/grandchild nodes, and asynchronous execution error handling.
-- **`SpelGuardEvaluatorTest`** ([`SpelGuardEvaluatorTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/service/workflow/SpelGuardEvaluatorTest.java)): Evaluation of SpEL transition guard expressions, variable bindings (`record`, `user`, `targetState`), and syntax parsing error boundaries.
+- **`UserDetailsImplTest`** ([`UserDetailsImplTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/authentication/UserDetailsImplTest.java)): Comprehensive tests for Spring Security `UserDetailsImpl` getters, authority mapping, account flags, and `ValidationTimeoutException` constructors.
+- **`BlueprintCatalogServiceTest`** ([`BlueprintCatalogServiceTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/tenant/blueprint/BlueprintCatalogServiceTest.java)): Tests for domain blueprint catalog discovery, manifest parsing, YAML template extraction, and summary DTO conversion.
+- **`DynamicIndexProvisionerTest`** ([`DynamicIndexProvisionerTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/DynamicIndexProvisionerTest.java)): Tests verifying root projected attribute index DDL generation, Pattern B foreign key index generation across child/grandchild nodes, and asynchronous execution error handling.
+- **`SpelGuardEvaluatorTest`** ([`SpelGuardEvaluatorTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/workflow/SpelGuardEvaluatorTest.java)): Evaluation of SpEL transition guard expressions, variable bindings (`record`, `user`, `targetState`), and syntax parsing error boundaries.
 - **`TenantProvisioningControllerTest`**: Full REST controller testing for domain blueprint provisioning endpoints and atomic schema initialization.
 - **`TenantDataLifecycleControllerTest`**: REST controller testing for tenant data purge, soft-delete, and lockdown lifecycle operations.
 - **`WorkspaceControllerTest`**: REST controller testing for workspace CRUD, tenant filtering, and switching default workspaces.
@@ -36,7 +36,7 @@ Phase 2 of the enterprise automated testing master plan has been completed. The 
   - Tested tenant mismatch guards, not-found exceptions, and early return when workspace is already default.
 
 ### 3. Hard-Gated JaCoCo Verification
-- Added JaCoCo `check` execution to [`apps/backend/unipost-fw/pom.xml`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/pom.xml) bound to the `verify` lifecycle phase:
+- Added JaCoCo `check` execution to [`apps/backend/acc-fw/pom.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/pom.xml) bound to the `verify` lifecycle phase:
   ```xml
   <execution>
     <id>check</id>
@@ -68,6 +68,6 @@ Phase 2 of the enterprise automated testing master plan has been completed. The 
 - **Branch Coverage**: **1,363 / 2,088 branches (65.28%)**.
 - **Maven Verification Command**:
   ```bash
-  mvn verify -f apps/backend/unipost-fw/pom.xml -q
+  mvn verify -f apps/backend/acc-fw/pom.xml -q
   ```
   Result: Exit code 0 (Build Success). JaCoCo hard-gate verified successfully.

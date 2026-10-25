@@ -16,5 +16,5 @@ The Domain Blueprint Catalog modal was positioned too far from the top of the vi
 - `apps/console/doc/walkthrough_94.md`: Documented changes.
 
 ## Verification
-- `pnpm --filter @unipost/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx` passed (7/7 tests).
-- `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- `pnpm --filter @acc/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx` passed (7/7 tests).
+- `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.

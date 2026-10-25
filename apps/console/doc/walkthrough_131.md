@@ -6,7 +6,7 @@
 
 ## 1. Summary of Changes
 
-### Phase 1: Professional UI/UX Refinements in `@unipost/console`
+### Phase 1: Professional UI/UX Refinements in `@acc/console`
 - **Global Command Palette (`Cmd+K`)**:
   - Implemented `apps/console/src/components/command-palette/command-palette.tsx` with fuzzy search across entities, workflows, schemas, settings, personas, and navigation actions.
   - Bound hotkey `Cmd+K` / `Ctrl+K` and updated `search-provider.tsx` and `command-menu.tsx`.
@@ -19,13 +19,13 @@
 - **Master-Detail Row Inspector Drawer**:
   - Created `apps/console/src/features/metadata/components/data-explorer/master-detail-row-inspector.tsx` with `j`/`k` row traversal keyboard navigation, Enter to open, Escape to close.
 
-### Phase 2: Complete Zero-Stub Hardening & Backend Integrity in `@unipost/backend`
+### Phase 2: Complete Zero-Stub Hardening & Backend Integrity in `@acc/backend`
 - **Springdoc Reflection Hardening**:
-  - Configured `unipost-ms-aio/src/main/resources/application.yml` and `application-local.yml` (`show-spring-data-pageable: false`, `show-spring-data-rest: false`) and permanently purged stub `apps/backend/unipost-fw/src/main/java/org/springframework/data/util/TypeInformation.java`.
+  - Configured `acc-ms-aio/src/main/resources/application.yml` and `application-local.yml` (`show-spring-data-pageable: false`, `show-spring-data-rest: false`) and permanently purged stub `apps/backend/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`.
 - **BaseModelService Completion**:
   - Fully implemented `findAll(PageRequest pageable)` with real persistence, audit population, and tenant isolation; removed `// TODO Auto-generated method stub`.
 - **JestRepository Swallowed Exceptions**:
-  - Created `com.unipost.cache.jest.ElasticsearchOperationException` and replaced swallowed exceptions in `JestRepository.java`.
+  - Created `com.acc.cache.jest.ElasticsearchOperationException` and replaced swallowed exceptions in `JestRepository.java`.
 - **WebLoginAttemptService & WebContext**:
   - Scheduled active Guava cache eviction via `.cleanUp()`.
   - Migrated `WebContext.java` to `InheritableThreadLocal` for virtual thread safety and fixed String literal comparison with `.equalsIgnoreCase()`.
@@ -33,8 +33,8 @@
 ### Phase 3: Backend Performance Tuning & Indexing
 - **Liquibase Changelog**:
   - Registered `changelog-000.000.00013.xml` in `changelog-master.xml` with:
-    - Global GIN index: `idx_unipost_entities_gin ON UNIPOST_ENTITIES USING gin (attributes jsonb_path_ops);`
-    - Keyset seek index: `idx_unipost_entities_seek ON UNIPOST_ENTITIES (entity_type_id, id ASC) WHERE "deletedDate" IS NULL;`
+    - Global GIN index: `idx_acc_entities_gin ON UNIPOST_ENTITIES USING gin (attributes jsonb_path_ops);`
+    - Keyset seek index: `idx_acc_entities_seek ON UNIPOST_ENTITIES (entity_type_id, id ASC) WHERE "deletedDate" IS NULL;`
     - Spring Modulith persistent outbox table: `UNIPOST_EVENT_PUBLICATIONS`.
     - DLQ operational table: `UNIPOST_DLQ_MESSAGES`.
 - **Keyset / Cursor-Based Pagination (`Seek Method`)**:
@@ -71,7 +71,7 @@
 
 | Layer | Command | Status |
 |---|---|---|
-| Console Unit Tests | `pnpm --filter @unipost/console test:run` | **100% PASS** (17 tests passing across phase1, approvals, grid, dlq) |
-| Console TypeScript | `pnpm --filter @unipost/console exec tsc --noEmit` | **100% PASS** (0 errors) |
-| Backend Compilation | `node mvnw.cjs -pl unipost-fw test-compile` | **100% PASS** (0 errors) |
-| Backend Unit Tests | `node mvnw.cjs -pl unipost-fw test` | **100% PASS** (325/325 tests passing) |
+| Console Unit Tests | `pnpm --filter @acc/console test:run` | **100% PASS** (17 tests passing across phase1, approvals, grid, dlq) |
+| Console TypeScript | `pnpm --filter @acc/console exec tsc --noEmit` | **100% PASS** (0 errors) |
+| Backend Compilation | `node mvnw.cjs -pl acc-fw test-compile` | **100% PASS** (0 errors) |
+| Backend Unit Tests | `node mvnw.cjs -pl acc-fw test` | **100% PASS** (325/325 tests passing) |

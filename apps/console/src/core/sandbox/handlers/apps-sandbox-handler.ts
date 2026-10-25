@@ -47,7 +47,7 @@ class AppsSandboxRepository {
         id: 'UC_x123456789demoChannel',
         title: 'Unipost Tech Broadcasts',
         description: 'Official developer tutorials, live streams, and product architecture walkthroughs.',
-        customUrl: '@unipost_official',
+        customUrl: '@acc_official',
         publishedAt: '2023-01-15T08:00:00Z',
         thumbnails: {
           default: { url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150' },

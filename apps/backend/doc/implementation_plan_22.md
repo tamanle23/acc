@@ -1,6 +1,6 @@
 # Implementation Plan - Phase 8: Streaming Export & GDPR Hard-Purge Pipeline
 
-Implement enterprise compliance capabilities for Data Portability (GDPR Art. 20) and Right to Be Forgotten / Cryptographic Hard-Purge (GDPR Art. 17 / SOC 2 Type II) across `@unipost/backend`.
+Implement enterprise compliance capabilities for Data Portability (GDPR Art. 20) and Right to Be Forgotten / Cryptographic Hard-Purge (GDPR Art. 17 / SOC 2 Type II) across `@acc/backend`.
 
 ## User Review Required
 
@@ -13,7 +13,7 @@ Implement enterprise compliance capabilities for Data Portability (GDPR Art. 20)
 
 ## Proposed Changes
 
-### 1. DTOs & Domain Models (`com.unipost.tenant.export` & `com.unipost.tenant.purge`)
+### 1. DTOs & Domain Models (`com.acc.tenant.export` & `com.acc.tenant.purge`)
 - `TenantExportManifest`: Export manifest metadata (version, export timestamp, tenant ID, entity counts, record counts).
 - `TenantPurgeResult` & `CertificateOfErasure`: Non-PII audit record documenting purged row counts, purged schema counts, cryptographic hash, timestamp, and operator identifier.
 - `TenantExportRequest`: Optional scope filtering (`SCHEMAS`, `DATA`, `RELATIONSHIPS`).

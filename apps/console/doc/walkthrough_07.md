@@ -52,10 +52,10 @@ We investigated the user report that the UI still feels slow and responsive late
 
 ## 3. Validation Results
 
-1. **Production & Web Build (`pnpm --filter @unipost/web build`)**:
+1. **Production & Web Build (`pnpm --filter @acc/web build`)**:
    - `tsc -b` and Vite builds passed with exit code 0.
    - Electron and Web builds both succeeded.
-2. **Lint Verification (`pnpm --filter @unipost/web lint`)**:
+2. **Lint Verification (`pnpm --filter @acc/web lint`)**:
    - Passed with 0 errors and 0 warnings.
 3. **Pnpm Lockfile (`pnpm install`)**:
    - Lockfile synchronized successfully from monorepo root.

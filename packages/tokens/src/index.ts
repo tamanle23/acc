@@ -1,5 +1,5 @@
 /**
- * Liquid Glass Cross-Platform Design Tokens (@unipost/tokens)
+ * Liquid Glass Cross-Platform Design Tokens (@acc/tokens)
  * Authoritative unified tokens enforcing WCAG 2.2 AA (>= 4.5:1 text contrast)
  * and seamless visual alignment across Web (Console, Tekgo) and Native Mobile.
  */

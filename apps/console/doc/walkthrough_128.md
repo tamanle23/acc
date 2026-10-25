@@ -1,7 +1,7 @@
 # Walkthrough 128: SchemaBuilder Dedicated Vertical Scrolling & Sticky Header Ergonomics
 
 ## Problem & Motivation
-In `@unipost/console`'s Schema Architect Studio (`/metadata`), when viewing entity types with dozens or hundreds of attribute definitions (such as `telemetry_wide_matrix` with 120 attributes), the columns list did not scroll independently. Instead:
+In `@acc/console`'s Schema Architect Studio (`/metadata`), when viewing entity types with dozens or hundreds of attribute definitions (such as `telemetry_wide_matrix` with 120 attributes), the columns list did not scroll independently. Instead:
 1. The entire container scroll shifted the top Schema Header, Search bar, and "Add Field" action button out of view.
 2. The attributes list had no dedicated scroll container, bounded viewport, or WCAG keyboard region semantics.
 3. The custom Liquid Glass scrollbar thumb remained muted unless hovered directly over its 8px track.

@@ -102,13 +102,13 @@ flowchart TD
 ### Automated Unit & Integration Tests
 ```bash
 # 1. Studio test suite (layout, empty state, palette)
-pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+pnpm --filter @acc/console test -- src/features/workflows/components/studio/
 
 # 2. TypeScript compilation
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 
 # 3. Full console test suite
-pnpm --filter @unipost/console test:run
+pnpm --filter @acc/console test:run
 ```
 
 ### Manual Verification

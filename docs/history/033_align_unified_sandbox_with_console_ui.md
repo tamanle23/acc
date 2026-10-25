@@ -4,7 +4,7 @@
 Following major multi-tenant architectural changes (Sovereign Root Custody, tenant immutable default workspaces, user-selected personal defaults, and sovereign slide-over drawers), the Unified Sandbox Platform had minor misalignments:
 1. `SandboxDock`'s tenant scope selector lacked `tenant-acme` and displayed raw strings instead of human-readable organization names.
 2. Switching persona or tenant in `sandboxManager` did not propagate to UI context stores (`useMetadataUiStore` and `useProfileStore`), occasionally leaving TopNav, Sidebar, and ProfileSwitcher out of sync until a manual page refresh.
-3. Resetting mock data (`handleResetAllData`) left old user default workspace keys (`unipost_user_default_ws_*`) and stale assumed tenant sessions (`unipost_assumed_*`) in `localStorage`.
+3. Resetting mock data (`handleResetAllData`) left old user default workspace keys (`acc_user_default_ws_*`) and stale assumed tenant sessions (`acc_assumed_*`) in `localStorage`.
 4. Devs and QAs lacked instant 1-click diagnostic triggers in the dock for testing edge cases like the Unassigned User Intervention Screen or Orphaned Tenant State (0 workspaces).
 5. A circular module reference occurred between `sidebar-data.ts` and `core/sandbox/index.ts`.
 
@@ -17,7 +17,7 @@ Following major multi-tenant architectural changes (Sovereign Root Custody, tena
    - In `apps/console/src/core/sandbox/ui/sandbox-dock.tsx`:
      - Update `tenants` list to include `SYSTEM`, `tenant-acme`, `tenant-us-east-1`, `tenant-eu-central-1`, and `tenant-us-west-2` with human-readable labels.
      - Delegate tenant switching to `sandboxManager.switchTenant`.
-     - In `handleResetAllData()`, purge all `unipost_user_default_ws_*` and `unipost_assumed_*` keys from `localStorage`.
+     - In `handleResetAllData()`, purge all `acc_user_default_ws_*` and `acc_assumed_*` keys from `localStorage`.
      - Add 2 quick simulation shortcut buttons under `Persona & Scope`: "Unassigned User" and "Orphaned Tenant".
 4. **Automated Unit Tests**:
    - Update `sandbox-dock.test.tsx` to verify tenant switching to `tenant-acme`, unassigned user simulation, and localStorage cleanup on reset.
@@ -37,7 +37,7 @@ Following major multi-tenant architectural changes (Sovereign Root Custody, tena
 
 ## Verification
 - Vitest sandbox tests: 8/8 test files passed (56/56 tests green).
-- Full `@unipost/console` Vitest suite: 27/27 test files passed (139/139 tests green).
+- Full `@acc/console` Vitest suite: 27/27 test files passed (139/139 tests green).
 - Production Vite build: built successfully in 686ms with zero errors.
 
 ## History Log Reference

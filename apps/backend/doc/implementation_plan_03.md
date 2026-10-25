@@ -4,11 +4,11 @@ Mirror every public query operation from `UserQueryController` into `UserGraphql
 
 ## Background
 
-The `unipost-ms-identity` module already has:
-- `spring-boot-starter-graphql` inherited from `unipost-fw` (line 142 of `unipost-fw/pom.xml`)
+The `acc-ms-identity` module already has:
+- `spring-boot-starter-graphql` inherited from `acc-fw` (line 142 of `acc-fw/pom.xml`)
 - A placeholder `graphql/users.graphqls` schema (empty)
 - A stub `UserGraphqlController` (no handler methods)
-- `base.graphqls` in `unipost-fw` defining root `Query` and `Mutation` types with `_empty` anchors
+- `base.graphqls` in `acc-fw` defining root `Query` and `Mutation` types with `_empty` anchors
 
 ## Proposed Changes
 

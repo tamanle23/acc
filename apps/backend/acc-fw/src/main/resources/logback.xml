@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/base.xml"/>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{trace_id:-}] [%X{tenant_id:-}] [%X{user_id:-}] [%X{workspace_id:-}] - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="COUNTER_FILE"
+    class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <File>./logs/app.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>./logs/app-%d{yyyy-MM-dd-HH}.log</fileNamePattern>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger [%X{trace_id:-}] [%X{tenant_id:-}] [%X{user_id:-}] [%X{workspace_id:-}] - %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="ASYNC_COUNTER_FILE" class="ch.qos.logback.classic.AsyncAppender">
+    <discardingThreshold>0</discardingThreshold>
+    <queueSize>10000</queueSize>
+    <appender-ref ref="COUNTER_FILE" />
+  </appender>
+<!--   <appender name="LOGSTASH" -->
+<!--     class="net.logstash.logback.appender.LogstashTcpSocketAppender"> -->
+<!--     <destination>logstashhost:5666</destination> -->
+<!--     <encoder -->
+<!--       class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder"> -->
+<!--       <providers> -->
+<!--         <mdc /> MDC variables on the Thread will be written as JSON fields -->
+<!--         <context /> Outputs entries from logback's context -->
+<!--         <logLevel /> -->
+<!--         <loggerName /> -->
+<!--         <threadName /> -->
+<!--         <message /> -->
+<!--         <logstashMarkers /> Useful so we can add extra information for specific log lines as Markers -->
+<!--         <arguments /> or through StructuredArguments -->
+<!--       </providers> -->
+<!--     </encoder> -->
+<!--   </appender> -->
+<!--   <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender"> -->
+<!--     <discardingThreshold>0</discardingThreshold> -->
+<!--     <queueSize>10000</queueSize> -->
+<!--     <appender-ref ref="LOGSTASH" /> -->
+<!--   </appender> -->
+  <logger name="com.acc" level="DEBUG" />
+  <logger name="com.acc.fw.presentation.tracking" level="TRACE" />
+  <logger name="org.springframework" level="INFO" />=
+  <logger name="org.hibernate.hql" level="INFO" />
+  <logger name="org.hibernate.SQL" level="INFO" />
+  <logger name="org.hibernate.type" level="INFO" />
+  <logger name="liquibase" level="DEBUG" />
+  <root level="WARN">
+    <appender-ref ref="ASYNC_COUNTER_FILE" />
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

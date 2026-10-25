@@ -1,5 +1,5 @@
 /**
- * Re-export all domain types from the shared @unipost/client package
- * to preserve 100% backward compatibility for all existing imports in @unipost/console.
+ * Re-export all domain types from the shared @acc/client package
+ * to preserve 100% backward compatibility for all existing imports in @acc/console.
  */
-export * from '@unipost/client';
+export * from '@acc/client';

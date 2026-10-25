@@ -1,7 +1,7 @@
 # Walkthrough 135 — Iteration 14: Visual DAG Studio & Execution Inspector Enhancements
 
 ## Overview
-Executed all workstreams of `docs/integration_master_plan_iteration14.md` end-to-end with zero stubs, strict zero-regression guarantees, and WCAG 2.2 AA compliant Liquid Glass styling across `@unipost/console` and `@unipost/backend`.
+Executed all workstreams of `docs/integration_master_plan_iteration14.md` end-to-end with zero stubs, strict zero-regression guarantees, and WCAG 2.2 AA compliant Liquid Glass styling across `@acc/console` and `@acc/backend`.
 
 ---
 
@@ -37,6 +37,6 @@ Executed all workstreams of `docs/integration_master_plan_iteration14.md` end-to
 ---
 
 ## Verification Results
-- **TypeScript Integrity**: `pnpm --filter @unipost/console exec tsc --noEmit` exited `0` with zero type errors.
-- **Console Unit & Component Tests**: `pnpm --filter @unipost/console test:run` passed 100% across all 73 test suites (338 tests passing).
-- **Backend Compilation**: `node mvnw.cjs test-compile -pl workflow-engine,unipost-ms-aio -q` exited `0` with zero compile errors.
+- **TypeScript Integrity**: `pnpm --filter @acc/console exec tsc --noEmit` exited `0` with zero type errors.
+- **Console Unit & Component Tests**: `pnpm --filter @acc/console test:run` passed 100% across all 73 test suites (338 tests passing).
+- **Backend Compilation**: `node mvnw.cjs test-compile -pl workflow-engine,acc-ms-aio -q` exited `0` with zero compile errors.

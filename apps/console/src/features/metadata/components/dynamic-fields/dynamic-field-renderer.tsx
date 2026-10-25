@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useEntityRecords } from '../../api/metadata-api';
 import { useMetadataUiStore } from '../../store/use-metadata-ui-store';
-import { WidgetRegistry, registerStandardWidgets } from '@unipost/ui';
+import { WidgetRegistry, registerStandardWidgets } from '@acc/ui';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 
 // Initialize standard pluggable widgets once

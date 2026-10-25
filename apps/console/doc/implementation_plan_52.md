@@ -2,12 +2,12 @@
 
 ## 1. Executive Summary & Investigation Findings
 
-An in-depth architectural audit of the Metadata Management module in `@unipost/console` revealed that the current implementation is an early-stage prototype with critical feature gaps, architectural violations, and incomplete backend integration:
+An in-depth architectural audit of the Metadata Management module in `@acc/console` revealed that the current implementation is an early-stage prototype with critical feature gaps, architectural violations, and incomplete backend integration:
 
 ### 1.1 Key Deficiencies Identified
 1. **Architectural & Folder Structure Violations:**
    - Metadata code is scattered across `src/components/SchemaBuilder.tsx`, `EntityDataGrid.tsx`, `DynamicEntityEditor.tsx`, `DynamicFieldRenderer.tsx`, and `src/hooks/useMetadataApi.ts`, `useDynamicSchema.ts`, `useDynamicEntity.ts`.
-   - Lacks a unified domain feature folder (`src/features/metadata/`) adhering to `@unipost/console`'s feature architecture (`api/`, `components/`, `data/`, `store/`, `index.tsx`).
+   - Lacks a unified domain feature folder (`src/features/metadata/`) adhering to `@acc/console`'s feature architecture (`api/`, `components/`, `data/`, `store/`, `index.tsx`).
    - Route `src/routes/_authenticated/metadata/index.tsx` contains inline monolithic UI without `<Header>`, `<Main>`, breadcrumbs, search, or state isolation.
 2. **SchemaBuilder Prototype Gaps (`SchemaBuilder.tsx`):**
    - Only 50 lines of static presentation.
@@ -159,16 +159,16 @@ apps/console/src/features/metadata/
      - Synchronize `sidebar.items.metadata` key in both locales.
   3. Update `apps/console/ROUTE.md` (add `/metadata` blueprint and route registry row).
   4. Update `apps/console/DESIGN.md` (document SchemaBuilder and Data Explorer Liquid Glass specs).
-  5. Run linting and typecheck (`pnpm --filter @unipost/console check-types` and `pnpm --filter @unipost/console lint`).
+  5. Run linting and typecheck (`pnpm --filter @acc/console check-types` and `pnpm --filter @acc/console lint`).
 
 ---
 
 ## 4. Verification Plan
 
 ### Automated Checks
-- `pnpm --filter @unipost/console check-types`
-- `pnpm --filter @unipost/console lint`
-- `pnpm --filter @unipost/console build`
+- `pnpm --filter @acc/console check-types`
+- `pnpm --filter @acc/console lint`
+- `pnpm --filter @acc/console build`
 
 ### Manual & Interactive Test Scenarios
 1. **Entity Type Management:**

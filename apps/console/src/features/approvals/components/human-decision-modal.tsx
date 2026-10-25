@@ -22,7 +22,7 @@ import {
   ShieldAlert,
   Loader2,
 } from 'lucide-react';
-import type { ApprovalTask } from '@unipost/client';
+import type { ApprovalTask } from '@acc/client';
 import { useResolveApprovalMutation } from '../hooks/use-approvals';
 
 interface HumanDecisionModalProps {

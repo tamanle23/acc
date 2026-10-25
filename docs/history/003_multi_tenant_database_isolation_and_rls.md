@@ -17,19 +17,19 @@ In the dynamic metadata engine, entity types and attribute definitions lacked te
 7. Add automated tests and verify build.
 
 ## Changes
-- **Database (`apps/backend/unipost-db`)**:
-  - `src/main/resources/db/unipost/changelog-000.000.00005.xml`: Added DDL for tenant columns, soft-delete composite partial indexes, and PostgreSQL RLS policies (`FORCE ROW LEVEL SECURITY`).
-  - `src/main/resources/db/unipost/changelog-master.xml`: Included changelog 00005.
-- **Entities (`apps/backend/unipost-fw`)**:
-  - `com.unipost.domain.metadata.EntityType`: Added `tenantId` mapping.
-  - `com.unipost.domain.metadata.AttributeDefinition`: Added `tenantId` mapping.
-  - `com.unipost.domain.metadata.RelationshipType`: Added `tenantId` mapping.
-  - `com.unipost.domain.metadata.EntityRelationship`: Added `tenantId` mapping.
-  - `com.unipost.domain.metadata.EntityRecord`: Added non-null default for `tenantId`.
-- **Tenancy Framework (`apps/backend/unipost-fw`)**:
-  - `com.unipost.fw.tenancy.TenantContextHolder`: Thread-local context manager.
-  - `com.unipost.fw.tenancy.TenantSessionAspect`: Spring AOP Aspect executing `SET LOCAL app.current_tenant_id`.
-  - `com.unipost.fw.tenancy.TenantContextAndAspectTest`: Unit tests for tenant context and aspect.
+- **Database (`apps/backend/acc-db`)**:
+  - `src/main/resources/db/acc/changelog-000.000.00005.xml`: Added DDL for tenant columns, soft-delete composite partial indexes, and PostgreSQL RLS policies (`FORCE ROW LEVEL SECURITY`).
+  - `src/main/resources/db/acc/changelog-master.xml`: Included changelog 00005.
+- **Entities (`apps/backend/acc-fw`)**:
+  - `com.acc.domain.metadata.EntityType`: Added `tenantId` mapping.
+  - `com.acc.domain.metadata.AttributeDefinition`: Added `tenantId` mapping.
+  - `com.acc.domain.metadata.RelationshipType`: Added `tenantId` mapping.
+  - `com.acc.domain.metadata.EntityRelationship`: Added `tenantId` mapping.
+  - `com.acc.domain.metadata.EntityRecord`: Added non-null default for `tenantId`.
+- **Tenancy Framework (`apps/backend/acc-fw`)**:
+  - `com.acc.fw.tenancy.TenantContextHolder`: Thread-local context manager.
+  - `com.acc.fw.tenancy.TenantSessionAspect`: Spring AOP Aspect executing `SET LOCAL app.current_tenant_id`.
+  - `com.acc.fw.tenancy.TenantContextAndAspectTest`: Unit tests for tenant context and aspect.
 
 ## Verification
 - `.\mvnw test-compile` across all 10 modules: **BUILD SUCCESS**.

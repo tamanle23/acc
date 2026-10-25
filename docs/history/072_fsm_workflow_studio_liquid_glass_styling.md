@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: style(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -27,20 +27,20 @@ The initial React Flow rendering in the FSM Workflow Studio lacked proper alignm
    - Expand canvas height to `520px` with frosted glass scrim (`bg-white/40 dark:bg-slate-950/60 backdrop-blur-2xl`).
    - Custom CSS overrides in `apps/console/src/styles/index.css` for `.react-flow__controls` and `.react-flow__minimap` with glass blur, specular borders, and hover effects.
    - Transition Rule Inspector transformed into a structured Liquid Glass card with event selector pills.
-4. **Verification**: Run Vitest suite across `@unipost/console`.
+4. **Verification**: Run Vitest suite across `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css): Added `.fsm-workflow-flow` Liquid Glass theme overrides for controls, minimap, and edge colors.
-- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Redesigned state nodes with specular inset highlights, status accents, and adaptive light/dark scrims.
-- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Styled transition edge labels with glass pills, hover scaling, and guard indicators.
-- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Upgraded canvas container, toolbar badge, and transition inspector card to full Liquid Glass standards.
+- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css): Added `.fsm-workflow-flow` Liquid Glass theme overrides for controls, minimap, and edge colors.
+- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Redesigned state nodes with specular inset highlights, status accents, and adaptive light/dark scrims.
+- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Styled transition edge labels with glass pills, hover scaling, and guard indicators.
+- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Upgraded canvas container, toolbar badge, and transition inspector card to full Liquid Glass standards.
 
 ---
 
 ## 4. Verification
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - 9 test files passed, 54 tests passed cleanly with 0 errors.
 
 ---

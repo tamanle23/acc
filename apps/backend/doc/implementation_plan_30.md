@@ -1,7 +1,7 @@
 # Implementation Plan 30: Submodule Setup, Canonical Workflow IR & Zero-I/O PureDecider (Phase 26)
 
 ## 1. Overview
-Implement Phase 26 of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/integration_master_plan_iteration_3.md):
+Implement Phase 26 of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/acc/docs/integration_master_plan_iteration_3.md):
 - Set up `apps/backend/workflow-engine/` as a dedicated Maven submodule under `apps/backend/`.
 - Define Canonical Workflow Intermediate Representation (IR) schema and Jackson mappings.
 - Implement immutable domain models (`WorkflowDefinition`, `WorkflowSnapshot`, `TaskSnapshot`, `TaskStatus`, `WorkflowStatus`, `DecisionResult`).
@@ -16,10 +16,10 @@ Implement Phase 26 of [`docs/integration_master_plan_iteration_3.md`](file:///c:
 ## 3. Proposed Changes
 
 ### 3.1 Maven Submodule Configuration
-- Update [`apps/backend/pom.xml`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/pom.xml):
+- Update [`apps/backend/pom.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/pom.xml):
   - Add `<module>./workflow-engine</module>` to `<modules>`.
   - Add `workflow-engine` to `<dependencyManagement>`.
-- Create `apps/backend/workflow-engine/pom.xml` inheriting `com.unipost:unipost:1.0.0-SNAPSHOT` with dependencies:
+- Create `apps/backend/workflow-engine/pom.xml` inheriting `com.acc:acc:1.0.0-SNAPSHOT` with dependencies:
   - `com.fasterxml.jackson.core:jackson-databind`
   - `org.slf4j:slf4j-api`
   - `org.junit.jupiter:junit-jupiter` (test)

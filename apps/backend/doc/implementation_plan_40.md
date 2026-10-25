@@ -14,4 +14,4 @@ The Dead-Letter Queue (DLQ) is an infrastructure-level capability that isolates 
    - Update `WorkflowDlqRestApiTest.java` to verify new `/system/dlq` path, fleet-wide querying, and security annotations.
 
 ## Verification
-- Run `mvn test -pl unipost-ms-aio -Dtest=WorkflowDlqRestApiTest` and `mvn test -pl workflow-engine`.
+- Run `mvn test -pl acc-ms-aio -Dtest=WorkflowDlqRestApiTest` and `mvn test -pl workflow-engine`.

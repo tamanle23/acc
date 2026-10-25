@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { GlassCard } from '@unipost/ui'
+import { GlassCard } from '@acc/ui'
 import { useRegisterUserFacade } from '../api/useRegisterUserFacade'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

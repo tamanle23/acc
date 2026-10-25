@@ -6,7 +6,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn, ShieldAlert, Fingerprint } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { IconFacebook, IconGithub } from '@unipost/ui/icons'
+import { IconFacebook, IconGithub } from '@acc/ui/icons'
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth'
 import { PasswordRotationModal } from '@/features/auth/components/password-rotation-modal'
 import {

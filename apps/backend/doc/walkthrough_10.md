@@ -1,7 +1,7 @@
 # Facade Pattern Implementation Walkthrough
 
 ## What was Accomplished
-We implemented a Facade pattern in `@unipost/backend` to remove ViewModel (Vm) mapping logic and direct repository orchestration from the Service layer, specifically focusing on `UserService` and `RoleService`.
+We implemented a Facade pattern in `@acc/backend` to remove ViewModel (Vm) mapping logic and direct repository orchestration from the Service layer, specifically focusing on `UserService` and `RoleService`.
 
 1.  **Repository Layer Updates**:
     *   Updated `UserRepository.xml` and `RoleRepository.xml` `resultMap` definitions to map directly to `CompositeUserPermission`, `CompositeUserRole`, and `CompositeRolePermission` instead of `Vm` models.
@@ -17,7 +17,7 @@ We implemented a Facade pattern in `@unipost/backend` to remove ViewModel (Vm) m
     *   Updated `UserQueryController`, `UserGraphqlController`, `RoleQueryController`, and `RoleCommandController` to inject and use the new `UserFacade` and `RoleFacade` for fetching and updating nested data.
 
 ## Verification
-*   **Compilation**: The `@unipost/backend` application was compiled successfully using `pnpm --filter @unipost/backend build`.
+*   **Compilation**: The `@acc/backend` application was compiled successfully using `pnpm --filter @acc/backend build`.
 *   All tests and build phases completed without errors, ensuring the new Facade pattern integrations are structurally sound.
 
 ## Summary

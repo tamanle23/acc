@@ -33,5 +33,5 @@ The UI and state stores required adjustment to accurately reflect this hierarchy
 - **`apps/console/doc/walkthrough_65.md`**: Created walkthrough documentation.
 
 ## 4. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` $\rightarrow$ 0 errors.
-- `pnpm --filter @unipost/console test` $\rightarrow$ 15 test files passed, 81 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit` $\rightarrow$ 0 errors.
+- `pnpm --filter @acc/console test` $\rightarrow$ 15 test files passed, 81 tests passed.

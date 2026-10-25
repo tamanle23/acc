@@ -15,23 +15,23 @@ We diagnosed and resolved why adjusting the Liquid Glass intensity slider on the
 ## 2. Key Changes & Enhancements
 
 ### 1. Interactive Live Liquid Glass Preview Card
-- Integrated a live-updating **Liquid Glass Preview Card** positioned directly below the slider in [`appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/appearance/appearance-form.tsx).
+- Integrated a live-updating **Liquid Glass Preview Card** positioned directly below the slider in [`appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/appearance/appearance-form.tsx).
 - Features:
   - **Live Dynamic Metrics**: Real-time gauges for **Blur (0px to 36px)**, **Opacity (15% to 65%)**, and **Refraction (15% to 95%)** that update continuously at 60 FPS as the slider is dragged.
   - **Real-Time Visual Sheen**: Specular highlight borders and ambient caustics reflecting through the glass card surface.
   - **Interactive Child Elements**: Embedded glass badge and interactive test button with hover and sheen micro-interactions.
 
 ### 2. Elevated Settings Layout to Liquid Glass
-- Wrapped the entire Settings container in [`settings/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/index.tsx) with `.liquid-glass-card`.
+- Wrapped the entire Settings container in [`settings/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/index.tsx) with `.liquid-glass-card`.
 - The active settings page itself now floats as a frosted glass plane, allowing the ambient wallpaper underneath to be seen directly through the settings panel.
 
 ### 3. Header & Sidebar Dynamic Variable Binding
-- Updated [`header.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/layout/header.tsx) to bind backdrop blur to `backdrop-blur-[var(--glass-blur,16px)]` and background tinting to `--glass-intensity`.
-- Updated [`sidebar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/sidebar.tsx) to bind blur to `backdrop-blur-[var(--glass-blur,20px)]`.
-- Updated [`theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/theme.css) to dynamically scale `--sidebar` opacity with `--glass-intensity` in both light and dark modes.
+- Updated [`header.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/layout/header.tsx) to bind backdrop blur to `backdrop-blur-[var(--glass-blur,16px)]` and background tinting to `--glass-intensity`.
+- Updated [`sidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/sidebar.tsx) to bind blur to `backdrop-blur-[var(--glass-blur,20px)]`.
+- Updated [`theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/theme.css) to dynamically scale `--sidebar` opacity with `--glass-intensity` in both light and dark modes.
 
 ### 4. Amplified Dynamic Range in Theme Provider
-- Calibrated [`theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/context/theme-provider.tsx):
+- Calibrated [`theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/context/theme-provider.tsx):
   - **0%**: Sheer crystal liquid glass (`0px` blur, `15%` base opacity, minimal edge highlight).
   - **20% (Default)**: Crisp balanced liquid glass (`8px` blur, `25%` opacity, distinct top-lit specular edge).
   - **100%**: Dense frosted ice glass (`36px` blur, `65%` opacity, strong refractive edge highlight).
@@ -40,8 +40,8 @@ We diagnosed and resolved why adjusting the Liquid Glass intensity slider on the
 
 ## 3. Verification & Validation
 
-- **Build**: `pnpm --filter @unipost/web build:web` compiled successfully with exit code 0.
-- **Lint**: `pnpm --filter @unipost/web lint` passed with 0 errors and 0 warnings.
+- **Build**: `pnpm --filter @acc/web build:web` compiled successfully with exit code 0.
+- **Lint**: `pnpm --filter @acc/web lint` passed with 0 errors and 0 warnings.
 - **Interactive Verification**: Moving the slider in `Settings -> Appearance` instantly and visibly transforms:
   1. The Live Preview Card directly beneath the slider (blur, opacity, refraction gauges).
   2. The entire Settings floating glass plane.

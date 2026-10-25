@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 07 of N)  
 **Document Level:** Core Data Modeling & Schema Resolution Architecture  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@unipost/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Universal Core Entities (`tenant_id = 'SYSTEM'`), Tenant Overlay Attributes, RLS Read-Inheritance Policies, Dual-Layer Draft-07 JSON Schema Compilation, Immutability Guards  
 **Status:** Canonical Living Architecture Document  
 
@@ -148,9 +148,9 @@ $$\text{Composite Cache Key} = \text{"schema:"} + \text{tenantId} + \text{":"} +
 
 ---
 
-## 5. Console UI Experience (`@unipost/console`)
+## 5. Console UI Experience (`@acc/console`)
 
-In `@unipost/console`'s **Schema Builder**, system-defined attributes and tenant-custom attributes are visually distinct:
+In `@acc/console`'s **Schema Builder**, system-defined attributes and tenant-custom attributes are visually distinct:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐

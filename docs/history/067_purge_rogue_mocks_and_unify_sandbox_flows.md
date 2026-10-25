@@ -1,7 +1,7 @@
 # 067: Purge Rogue Mocks, Wire End-to-End Flows & Unify Sandbox Platform
 
 ## 1. Problem Statement
-An audit of `@unipost/console` revealed violations of **Rule 00 (`ZERO-STUB-PROHIBITION` & `NO-ORPHANED-CODE`)** and **Rule 02 (`UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE`)**:
+An audit of `@acc/console` revealed violations of **Rule 00 (`ZERO-STUB-PROHIBITION` & `NO-ORPHANED-CODE`)** and **Rule 02 (`UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE`)**:
 1. Rogue in-component mock datasets and fake timeout promises were hardcoded directly in `features/tasks`, `features/users`, `features/chats`, and `features/apps`.
 2. Existing sandbox handlers (`tasksSandboxHandler`, `usersSandboxHandler`) were partially implemented, lacked REST handler logic for mutations, and were completely disconnected from active UI flows.
 3. Mutations in drawers and dialogs (e.g., `tasks-mutate-drawer.tsx`, `users-action-dialog.tsx`, `facebook-connect-modal.tsx`) invoked mock helper `showSubmittedData` or synthetic delays instead of real API calls through `springApiClient`.
@@ -24,42 +24,42 @@ An audit of `@unipost/console` revealed violations of **Rule 00 (`ZERO-STUB-PROH
 
 ## 3. Changes
 - **Tasks Feature**:
-  - [`apps/console/src/features/tasks/api/use-tasks.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/api/use-tasks.ts): TanStack Query facade for tasks CRUD and bulk mutations.
-  - [`apps/console/src/features/tasks/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/index.tsx): Replaced static mock import with `useTasksQuery()`.
-  - [`apps/console/src/features/tasks/components/tasks-mutate-drawer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-mutate-drawer.tsx): Wired to real create and update task mutations.
-  - [`apps/console/src/features/tasks/components/tasks-dialogs.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-dialogs.tsx): Wired to `useDeleteTaskMutation`.
-  - [`apps/console/src/features/tasks/components/tasks-multi-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/tasks-multi-delete-dialog.tsx): Wired to `useBulkDeleteTasksMutation`.
-  - [`apps/console/src/features/tasks/components/data-table-bulk-actions.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/tasks/components/data-table-bulk-actions.tsx): Wired to bulk status and priority mutations.
+  - [`apps/console/src/features/tasks/api/use-tasks.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/api/use-tasks.ts): TanStack Query facade for tasks CRUD and bulk mutations.
+  - [`apps/console/src/features/tasks/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/index.tsx): Replaced static mock import with `useTasksQuery()`.
+  - [`apps/console/src/features/tasks/components/tasks-mutate-drawer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/components/tasks-mutate-drawer.tsx): Wired to real create and update task mutations.
+  - [`apps/console/src/features/tasks/components/tasks-dialogs.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/components/tasks-dialogs.tsx): Wired to `useDeleteTaskMutation`.
+  - [`apps/console/src/features/tasks/components/tasks-multi-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/components/tasks-multi-delete-dialog.tsx): Wired to `useBulkDeleteTasksMutation`.
+  - [`apps/console/src/features/tasks/components/data-table-bulk-actions.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/tasks/components/data-table-bulk-actions.tsx): Wired to bulk status and priority mutations.
 - **Users Feature**:
-  - [`apps/console/src/features/users/api/use-users.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/api/use-users.ts): TanStack Query facade for users CRUD, bulk status, and invite mutations.
-  - [`apps/console/src/features/users/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/index.tsx): Replaced static user dataset with `useUsersQuery()`.
-  - [`apps/console/src/features/users/components/users-action-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/components/users-action-dialog.tsx): Wired to `useCreateUserMutation` and `useUpdateUserMutation`.
-  - [`apps/console/src/features/users/components/users-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/components/users-delete-dialog.tsx): Wired to `useDeleteUserMutation`.
-  - [`apps/console/src/features/users/components/users-invite-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/components/users-invite-dialog.tsx): Wired to `useInviteUserMutation`.
-  - [`apps/console/src/features/users/components/users-multi-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/components/users-multi-delete-dialog.tsx): Wired to `useBulkDeleteUsersMutation`.
+  - [`apps/console/src/features/users/api/use-users.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/api/use-users.ts): TanStack Query facade for users CRUD, bulk status, and invite mutations.
+  - [`apps/console/src/features/users/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/index.tsx): Replaced static user dataset with `useUsersQuery()`.
+  - [`apps/console/src/features/users/components/users-action-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/components/users-action-dialog.tsx): Wired to `useCreateUserMutation` and `useUpdateUserMutation`.
+  - [`apps/console/src/features/users/components/users-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/components/users-delete-dialog.tsx): Wired to `useDeleteUserMutation`.
+  - [`apps/console/src/features/users/components/users-invite-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/components/users-invite-dialog.tsx): Wired to `useInviteUserMutation`.
+  - [`apps/console/src/features/users/components/users-multi-delete-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/components/users-multi-delete-dialog.tsx): Wired to `useBulkDeleteUsersMutation`.
 - **Chats Feature**:
-  - [`apps/console/src/features/chats/api/use-chats.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/chats/api/use-chats.ts): TanStack Query hooks for conversations and messages.
-  - [`apps/console/src/features/chats/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/chats/index.tsx): Replaced static JSON import with `useChatsQuery()` and `useSendMessageMutation`.
-  - [`apps/console/src/features/chats/components/new-chat.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/chats/components/new-chat.tsx): Wired to `useCreateConversationMutation`.
+  - [`apps/console/src/features/chats/api/use-chats.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/chats/api/use-chats.ts): TanStack Query hooks for conversations and messages.
+  - [`apps/console/src/features/chats/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/chats/index.tsx): Replaced static JSON import with `useChatsQuery()` and `useSendMessageMutation`.
+  - [`apps/console/src/features/chats/components/new-chat.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/chats/components/new-chat.tsx): Wired to `useCreateConversationMutation`.
 - **Apps Integration**:
-  - [`apps/console/src/features/apps/components/facebook-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/facebook-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/facebook/exchange')`.
-  - [`apps/console/src/features/apps/components/tiktok-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/tiktok-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/tiktok/exchange')`.
-  - [`apps/console/src/features/apps/components/youtube-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/youtube-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/youtube/exchange')`.
+  - [`apps/console/src/features/apps/components/facebook-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/facebook-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/facebook/exchange')`.
+  - [`apps/console/src/features/apps/components/tiktok-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/tiktok-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/tiktok/exchange')`.
+  - [`apps/console/src/features/apps/components/youtube-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/youtube-connect-modal.tsx): Wired token exchange through `springApiClient.post('/api/integrations/youtube/exchange')`.
 - **Unified Sandbox Platform**:
-  - [`apps/console/src/core/sandbox/handlers/tasks-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/handlers/tasks-sandbox-handler.ts): Multi-tenant in-memory task repository and REST handler.
-  - [`apps/console/src/core/sandbox/handlers/users-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/handlers/users-sandbox-handler.ts): Multi-tenant in-memory user repository and REST handler.
-  - [`apps/console/src/core/sandbox/handlers/chats-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/handlers/chats-sandbox-handler.ts): Stateful conversation repository and REST handler.
-  - [`apps/console/src/core/sandbox/handlers/apps-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/handlers/apps-sandbox-handler.ts): Social app token exchange and channel simulations.
-  - [`apps/console/src/core/sandbox/adapters/axios-sandbox-adapter.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/adapters/axios-sandbox-adapter.ts): Idempotent interceptor guard and URL prefix deduplication.
-  - [`apps/console/src/core/sandbox/index.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/index.ts): Registered new handlers.
-  - [`apps/console/src/core/sandbox/ui/sandbox-dock.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/ui/sandbox-dock.tsx): Wired repos to global reset.
+  - [`apps/console/src/core/sandbox/handlers/tasks-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/handlers/tasks-sandbox-handler.ts): Multi-tenant in-memory task repository and REST handler.
+  - [`apps/console/src/core/sandbox/handlers/users-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/handlers/users-sandbox-handler.ts): Multi-tenant in-memory user repository and REST handler.
+  - [`apps/console/src/core/sandbox/handlers/chats-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/handlers/chats-sandbox-handler.ts): Stateful conversation repository and REST handler.
+  - [`apps/console/src/core/sandbox/handlers/apps-sandbox-handler.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/handlers/apps-sandbox-handler.ts): Social app token exchange and channel simulations.
+  - [`apps/console/src/core/sandbox/adapters/axios-sandbox-adapter.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/adapters/axios-sandbox-adapter.ts): Idempotent interceptor guard and URL prefix deduplication.
+  - [`apps/console/src/core/sandbox/index.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/index.ts): Registered new handlers.
+  - [`apps/console/src/core/sandbox/ui/sandbox-dock.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/ui/sandbox-dock.tsx): Wired repos to global reset.
 
 ## 4. Verification
 1. **Vitest Tests**:
    - `src/core/sandbox/__tests__/phase-a-b-flow.test.ts`: 4/4 passed.
    - All console tests: 37 test files, 182/182 tests passed.
 2. **Type Checking**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+   - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 3. **Builds**:
    - Vite web build (`vite build`): passed cleanly.
    - Vite electron build (`vite build --config vite.electron.config.ts --mode electron`): passed cleanly.

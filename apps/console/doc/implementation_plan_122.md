@@ -1,7 +1,7 @@
 # Implementation Plan: Unified DataTable Architecture, Overflow UX & Monorepo Migration (Plan 122)
 
 ## Goal Description
-Unify the UI/UX style, layout, and scrolling behavior of all data tables across `@unipost/console` using `/workflow-executions` as the canonical reference layout. Standardize toolbar controls, faceted filters, search, bulk action slots, and pagination while drastically upgrading the shared `DataTable` primitive to handle large datasets with high row/column density cleanly and intuitively.
+Unify the UI/UX style, layout, and scrolling behavior of all data tables across `@acc/console` using `/workflow-executions` as the canonical reference layout. Standardize toolbar controls, faceted filters, search, bulk action slots, and pagination while drastically upgrading the shared `DataTable` primitive to handle large datasets with high row/column density cleanly and intuitively.
 
 > [!NOTE]
 > Complex hierarchical domain grids with nested entity-attribute models and master-detail relationship builders (specifically `entity-data-grid.tsx` and `composite-master-detail-row.tsx`) maintain their specialized canvas architecture, but benefit from the underlying table styling and accessibility refinements.
@@ -69,7 +69,7 @@ flowchart TD
 
 ### Component 1: Core DataTable Primitive Enhancements (`@/components/data-table`)
 
-#### [MODIFY] [`apps/console/src/components/data-table/data-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/data-table/data-table.tsx)
+#### [MODIFY] [`apps/console/src/components/data-table/data-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/data-table/data-table.tsx)
 - Add scroll state detection (`hasScrollLeft`, `hasScrollRight`) via `useRef` and `onScroll` handler on the container.
 - Render dynamic specular edge shadow indicators on the left and right edges of the table viewport:
   - Left indicator: `bg-gradient-to-r from-black/15 to-transparent` (or white in light mode).
@@ -78,33 +78,33 @@ flowchart TD
 - Add prop `stickyActions?: boolean` or support `column.columnDef.meta?.sticky === 'right'` for pinning the actions column.
 - Integrate WCAG AA compliant keyboard arrow scrolling accessibility cues.
 
-#### [MODIFY] [`apps/console/src/components/data-table/toolbar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/data-table/toolbar.tsx)
+#### [MODIFY] [`apps/console/src/components/data-table/toolbar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/data-table/toolbar.tsx)
 - Add `actions?: React.ReactNode` slot to `DataTableToolbarProps`.
 - Align search input, faceted filter popovers, view options toggle, and custom action buttons (e.g. `Create Tenant`, `Invite User`, `Refresh`) with consistent flex spacing (`flex flex-wrap items-center justify-between gap-2`).
 
-#### [MODIFY] [`apps/console/src/components/ui/table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/ui/table.tsx)
+#### [MODIFY] [`apps/console/src/components/ui/table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/ui/table.tsx)
 - Ensure base table classes support seamless sticky positioning without clipping artifacts (`relative overflow-x-auto scrollbar-thin`).
 
 ---
 
 ### Component 2: Screen Migrations to Unified DataTable
 
-#### [MODIFY] [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/system/tenants/fleet-tenants-table.tsx)
+#### [MODIFY] [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/system/tenants/fleet-tenants-table.tsx)
 - Extract column definitions into a dedicated `fleet-tenants-columns.tsx`.
 - Refactor the component to use `useReactTable` with `getCoreRowModel`, `getSortedRowModel`, `getFilteredRowModel`, and `getPaginationRowModel`.
 - Replace bespoke raw table markup with `<DataTableToolbar>`, `<DataTable>`, and `<DataTablePagination>`.
 - Pass primary actions (`Create Tenant`, `Refresh`) directly into the standardized toolbar `actions` slot.
 
-#### [MODIFY] [`apps/console/src/features/settings/billing/billing-history-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/billing/billing-history-table.tsx)
+#### [MODIFY] [`apps/console/src/features/settings/billing/billing-history-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/billing/billing-history-table.tsx)
 - Implement `billing-history-columns.tsx` using `@tanstack/react-table`.
 - Wrap transactions with `useReactTable` and render via `<DataTable table={table} />` and `<DataTablePagination table={table} />`.
 - Clean up table padding and align with Liquid Glass surface tokens.
 
-#### [MODIFY] [`apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx)
+#### [MODIFY] [`apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx)
 - Verify sticky header and horizontal overflow indicator behavior on large execution catalogs.
 - Pin the right-side actions column (`data-table-row-actions`) with `sticky end-0 z-10`.
 
-#### [MODIFY] [`apps/console/src/features/dlq/components/dlq-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/dlq/components/dlq-table.tsx) & [`apps/console/src/features/users/components/users-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/users/components/users-table.tsx)
+#### [MODIFY] [`apps/console/src/features/dlq/components/dlq-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/dlq/components/dlq-table.tsx) & [`apps/console/src/features/users/components/users-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/users/components/users-table.tsx)
 - Align with the upgraded `DataTable` overflow indicators and sticky headers.
 
 ---
@@ -113,7 +113,7 @@ flowchart TD
 
 ### Automated Tests
 1. **Console Unit & Component Tests**:
-   - `pnpm --filter @unipost/console test` (must verify all 298+ unit/component tests pass, including `fleet-tenants-table`, `billing-history-table`, `dlq-table`, and `users-table`).
+   - `pnpm --filter @acc/console test` (must verify all 298+ unit/component tests pass, including `fleet-tenants-table`, `billing-history-table`, `dlq-table`, and `users-table`).
 2. **Playwright Mode 1 E2E**:
    - `pnpm test:e2e` (all 15/15 tests passing, including Golden Flow 2 multi-tenant explorer and Golden Flow 3 billing invariants).
 3. **Playwright Mode 2 Live E2E**:

@@ -1,7 +1,7 @@
 # Walkthrough 155: RbacMatrixGrid DataTable Component Reuse
 
 ## 1. Problem Statement
-The user requested that [`rbac-matrix-grid.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/system/roles/rbac-matrix-grid.tsx) also reuse the standardized `@/components/data-table` component rather than rendering raw `<Table>`, `<TableHeader>`, and `<TableBody>` primitives directly.
+The user requested that [`rbac-matrix-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/system/roles/rbac-matrix-grid.tsx) also reuse the standardized `@/components/data-table` component rather than rendering raw `<Table>`, `<TableHeader>`, and `<TableBody>` primitives directly.
 
 ## 2. Refactoring & Implementation
 - **Dynamic TanStack Column Definition**:
@@ -13,7 +13,7 @@ The user requested that [`rbac-matrix-grid.tsx`](file:///c:/Users/Admin/workspac
   - Preserved the dual-scope segmented switcher ("All Scopes", "Tenant Matrix", "Sovereign Matrix"), plane filter pills, search input, and floating commit bar.
 
 ## 3. Verification & Compliance
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` &rarr; 0 errors.
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` &rarr; 0 errors.
 - **Unit Testing**: `rbac-matrix-grid.test.tsx` + `sovereign-cockpit-ui.test.tsx` &rarr; 9/9 passed cleanly.
 - **Playwright E2E**: `12-sovereign-rbac-matrix.spec.ts` &rarr; 1 passed (0 WCAG AA accessibility violations).
 - **Import Audit**: Verified that raw `@/components/ui/table` is now ONLY imported inside `@/components/data-table/data-table.tsx`.

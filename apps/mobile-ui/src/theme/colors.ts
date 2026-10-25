@@ -1,4 +1,4 @@
-import { liquidGlassTokens } from '@unipost/tokens';
+import { liquidGlassTokens } from '@acc/tokens';
 
 export const colors = {
   light: liquidGlassTokens.light.native,

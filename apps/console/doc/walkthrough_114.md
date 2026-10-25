@@ -7,7 +7,7 @@ Phase 44 enhances the Unipost metadata engine's **Adaptive Read-Time Resolution 
 
 ## 2. Key Components Delivered
 
-### A. Backend Domain & SQL Pushdown Compiler (`apps/backend/unipost-fw`)
+### A. Backend Domain & SQL Pushdown Compiler (`apps/backend/acc-fw`)
 - **Domain Records**:
   - `CompositeRollup.java`: Immutable record defining `alias`, `targetNodeAlias`, `aggregateFunction` (`SUM`, `COUNT`, `AVG`, `MIN`, `MAX`), `targetField`, and `filterPredicate`.
   - `CompositeSpec.java` & `CompositeNode.java`: Extended with `@JsonProperty("rollups") List<CompositeRollup> rollups`.
@@ -48,4 +48,4 @@ Phase 44 enhances the Unipost metadata engine's **Adaptive Read-Time Resolution 
   - `composite-bento-studio.test.tsx`: 4/4 tests passed.
   - `visual-schema-studio.test.tsx`: 8/8 tests passed.
 - **TypeScript & Typecheck**:
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

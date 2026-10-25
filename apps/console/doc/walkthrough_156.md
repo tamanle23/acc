@@ -1,7 +1,7 @@
 # Walkthrough 156: Cryptographic Merkle Tamper-Evident Audit Trail & Dynamic Entity Access Control Engine
 
 ## Overview
-Iteration 25 completes the enterprise cryptographic audit trail and dynamic entity permissions gating across `@unipost/backend`, `@unipost/client`, and `@unipost/console`.
+Iteration 25 completes the enterprise cryptographic audit trail and dynamic entity permissions gating across `@acc/backend`, `@acc/client`, and `@acc/console`.
 
 ## Key Capabilities Delivered
 
@@ -13,7 +13,7 @@ Iteration 25 completes the enterprise cryptographic audit trail and dynamic enti
 - **Backend Tests**: Verified via `AuditMerkleServiceTest` (deterministic hash generation, chain integrity verification, and broken-chain detection).
 
 ### 2. Dynamic Entity Permission Gating
-- Implemented `useHasPermission` and `useActivePermissions` hooks in `@unipost/console` (`src/features/system/hooks/use-has-permission.ts`).
+- Implemented `useHasPermission` and `useActivePermissions` hooks in `@acc/console` (`src/features/system/hooks/use-has-permission.ts`).
 - Enforced fine-grained permissions (`entity:record:create`, `entity:record:update`, `entity:record:delete`) directly inside `entity-data-grid.tsx` with accessible tooltips and disabled button states.
 
 ### 3. Sovereign Audit & Compliance Studio (`/system/audit`)
@@ -27,7 +27,7 @@ Iteration 25 completes the enterprise cryptographic audit trail and dynamic enti
 
 ## Verification Results
 - **TypeScript**: `tsc --noEmit` exited 0 (clean compilation).
-- **Backend Tests**: `./mvnw test -pl unipost-fw -Dtest="AuditMerkleServiceTest,TenantRoleDelegationServiceTest"` passed cleanly (8/8 tests passed).
+- **Backend Tests**: `./mvnw test -pl acc-fw -Dtest="AuditMerkleServiceTest,TenantRoleDelegationServiceTest"` passed cleanly (8/8 tests passed).
 - **Frontend Unit Tests**: `vitest` passed 6/6 tests (`use-has-permission.test.ts`, `audit-studio.test.tsx`).
 - **Playwright E2E & WCAG 2.2 AA**:
   - `e2e/12-sovereign-rbac-matrix.spec.ts`: Passed (0 WCAG violations).

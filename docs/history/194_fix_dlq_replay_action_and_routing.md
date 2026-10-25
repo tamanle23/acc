@@ -1,10 +1,10 @@
 # 194. Fix DLQ Replay Action, Cross-Tenant Routing, and Module Resolution
 
 ## Problem
-When clicking the "Replay" action button on a Dead-Letter Queue (DLQ) task in `@unipost/console` (`/system/dlq` or inside workflow execution detail), nothing visibly occurred. Several root causes contributed to the failure:
+When clicking the "Replay" action button on a Dead-Letter Queue (DLQ) task in `@acc/console` (`/system/dlq` or inside workflow execution detail), nothing visibly occurred. Several root causes contributed to the failure:
 1. **Broken Module Import in `dlq-inspector-sheet.tsx`:** Imported `VisualJsonEditor` from `@/components/ui/json-editor/visual-json-editor` which collided with Vite's module resolution, causing silent bundle failures during sheet rendering.
 2. **Strict Tenant Partition Filtering in `DlqSandboxRepository`:** In mock/sandbox mode, `replay()`, `getById()`, and `discard()` filtered strictly against the active session tenant (e.g. `tenant-us-east-1`), rejecting records seeded under `tenant-acme` with a 404 Not Found error.
-3. **Backend API Route Mapping Gap:** `WorkflowDlqController` was mapped solely to `/api/v1/system/dlq` and `/api/v1/workflow/dlq`, while `@unipost/client` configured `baseURL: '/api'` calling `/api/system/dlq/${dlqId}/replay`, leading to 404 route mismatches in live mode.
+3. **Backend API Route Mapping Gap:** `WorkflowDlqController` was mapped solely to `/api/v1/system/dlq` and `/api/v1/workflow/dlq`, while `@acc/client` configured `baseURL: '/api'` calling `/api/system/dlq/${dlqId}/replay`, leading to 404 route mismatches in live mode.
 4. **Missing Replay Loading State:** Row-level action buttons in `dlq-columns.tsx` lacked pending spinner feedback and event propagation containment (`e.stopPropagation()`).
 5. **Backend Compilation Invariant:** In `WorkflowExecutionController.java`, non-existent accessor methods on `TaskDlqRecord` (`referenceName()`, `id()`) caused compilation errors when clearing associated DLQ entries.
 
@@ -24,17 +24,17 @@ When clicking the "Replay" action button on a Dead-Letter Queue (DLQ) task in `@
 - **`apps/console/src/features/dlq/components/dlq-table.tsx`**: Added `replayingDlqId` to table props and forwarded to column builder.
 - **`apps/console/src/features/dlq/index.tsx`**: Fed `replayMutation.isPending` and target `dlqId` into both table and inspector sheet.
 - **`packages/sandbox/src/handlers/dlq-sandbox-handler.ts`**: Updated `DlqSandboxRepository.getById()`, `replay()`, and `discard()` to fallback across all tenant maps if not found under active session tenant.
-- **`apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/WorkflowDlqController.java`**: Added `/api/system/dlq` and `/api/workflow/dlq` paths to `@RequestMapping`.
-- **`apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/WorkflowExecutionController.java`**: Corrected `dlq.dlqId()` method call.
+- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowDlqController.java`**: Added `/api/system/dlq` and `/api/workflow/dlq` paths to `@RequestMapping`.
+- **`apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`**: Corrected `dlq.dlqId()` method call.
 - **`apps/console/src/features/workflows/components/studio/toolbar/dag-header-command-bar.tsx`**: Enhanced aria-label to `Topological Auto-Layout` for WCAG 2.2 AA compliance.
 - **`apps/console/src/features/workflows/components/studio/iteration18-studio.test.tsx`** & **`visual-dag-studio-modes.test.tsx`**: Added `useReplayWorkflowTask` mock definition.
 
 ## Verification
-- Vitest DLQ Suite: `pnpm --filter @unipost/console test:run src/features/dlq/__tests__/dlq-feature.test.tsx` (4/4 passed).
-- Vitest DAG Studio Suites: `pnpm --filter @unipost/console test:run src/features/workflows/components/studio/iteration18-studio.test.tsx src/features/workflows/components/studio/visual-dag-studio-modes.test.tsx` (18/18 passed).
-- TypeScript Typecheck: `pnpm --filter @unipost/console exec tsc --noEmit` (0 errors).
+- Vitest DLQ Suite: `pnpm --filter @acc/console test:run src/features/dlq/__tests__/dlq-feature.test.tsx` (4/4 passed).
+- Vitest DAG Studio Suites: `pnpm --filter @acc/console test:run src/features/workflows/components/studio/iteration18-studio.test.tsx src/features/workflows/components/studio/visual-dag-studio-modes.test.tsx` (18/18 passed).
+- TypeScript Typecheck: `pnpm --filter @acc/console exec tsc --noEmit` (0 errors).
 - Backend Compilation: `mvnw.cmd test-compile -q` (Build Success).
-- Backend DLQ API Tests: `mvnw.cmd test -pl unipost-ms-aio -Dtest=WorkflowDlqRestApiTest -q` (Tests passed, 0 failures).
+- Backend DLQ API Tests: `mvnw.cmd test -pl acc-ms-aio -Dtest=WorkflowDlqRestApiTest -q` (Tests passed, 0 failures).
 
 ## Walkthrough
 1. Navigate to `/system/dlq`.

@@ -13,7 +13,7 @@ Harden the backend single-column lease queue into a resilient, high-throughput, 
   - Add `created_at_ms` to `task_queue` and create `task_dlq` table.
 
 ### 2. Core Models & Persistence Port
-- `TaskDlqRecord.java` in `com.unipost.workflow.core.model`:
+- `TaskDlqRecord.java` in `com.acc.workflow.core.model`:
   - Immutable record for dead-lettered tasks.
 - `PersistencePort.java`:
   - Add `quarantineTaskToDlq(TaskDlqRecord record)`
@@ -58,7 +58,7 @@ Harden the backend single-column lease queue into a resilient, high-throughput, 
     - Updates DLQ status to `DISCARDED` or removes record.
 
 ### 4. REST Controller & Metrics
-- `WorkflowDlqController.java` in `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow`:
+- `WorkflowDlqController.java` in `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow`:
   - `GET /api/v1/workflow/dlq`: list quarantined tasks.
   - `GET /api/v1/workflow/dlq/{id}`: get DLQ record.
   - `POST /api/v1/workflow/dlq/{id}/replay`: replay with optional payload overrides.
@@ -72,5 +72,5 @@ Harden the backend single-column lease queue into a resilient, high-throughput, 
 - Unit & Contract tests in `workflow-engine`:
   - `PersistenceContractTest`: assert DLQ CRUD and dynamic aged priority ordering.
   - `WorkflowEngineServiceTest`: assert DLQ quarantine on max retries, zombie reaper lease recovery, and DLQ replay mechanics.
-- Integration tests in `unipost-ms-aio`:
+- Integration tests in `acc-ms-aio`:
   - `WorkflowDlqRestApiTest`: MockMvc tests verifying `/dlq`, `/replay`, `/discard` endpoints.

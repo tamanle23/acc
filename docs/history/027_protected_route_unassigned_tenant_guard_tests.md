@@ -17,6 +17,6 @@ In Phase 2 of the Tenant Default Workspace & Sovereign Drawers blueprint (`docs/
 - `apps/console/src/features/spring-auth/components/__tests__/protected-route.test.tsx`: Added 5 unit tests covering Phase 2 authentication guard lifecycle and UI elements.
 
 ## Verification
-- `pnpm --filter @unipost/console exec vitest run src/features/spring-auth/components/__tests__/protected-route.test.tsx`: 5/5 tests green.
-- `pnpm --filter @unipost/console exec vitest run`: 25/25 test suites passed (124/124 tests green).
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec vitest run src/features/spring-auth/components/__tests__/protected-route.test.tsx`: 5/5 tests green.
+- `pnpm --filter @acc/console exec vitest run`: 25/25 test suites passed (124/124 tests green).
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

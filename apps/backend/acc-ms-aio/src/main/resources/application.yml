@@ -1,0 +1,142 @@
+################### Spring boot Configuration ##########################
+server:
+  port : 8000
+  jetty:
+    threads:
+      min: 10
+      max: 128
+      acceptors: 2
+      selectors: 4
+  servlet:
+    session:
+      persistent: true
+  shutdown: GRACEFUL
+management:
+  server:
+    servlet:
+      context-path: /admin
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    jmx:
+      enabled: true
+      domain: com.acc
+      exposure:
+        include: health
+    jolokia:
+      config:
+        debug: true
+    web:
+      exposure:
+        include: health,hawtio,jolokia,prometheus,metrics,beans
+spring:
+  application:
+    name: acc-ms-aio
+  profiles:
+    active: ${project.build.profile:none}
+  main:
+    web-application-type: servlet
+    allow-bean-definition-overriding: true
+  threads:
+    virtual:
+      enabled: true
+  data:
+    redis:
+      repositories:
+        enabled: false
+  graphql:
+    schema:
+      # classpath*: scans ALL classpath roots (app + every dependency JAR)
+      locations: classpath*:graphql/
+      file-extensions: .graphqls
+    graphiql:
+      enabled: true
+      path: /graphiql
+  batch:
+    initialize-schema: NEVER
+    job:
+      enabled: false
+    table-prefix: UNIPOST_BATCH_
+  mvc:
+    favicon:
+      enabled: false
+    static-path-pattern: /resources/**
+  servlet:
+    multipart:
+      max-file-size: 2000MB
+      max-request-size: 2000MB
+      enabled: false
+  resources:
+    static-locations: classpath:/META-INF/resources/,classpath*:resources/,classpath:/static/,classpath:/public/
+  thymeleaf:
+    mode: LEGACYHTML5
+    cache: false
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+      naming:
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+        hibernate:
+          enable_lazy_load_no_trans: true
+          dialect: org.hibernate.dialect.PostgreSQLDialect
+#          dialect: org.hibernate.dialect.MariaDBDialect
+#          dialect: org.hibernate.dialect.HSQLDialect
+#            dialect: org.hibernate.dialect.MySQL5Dialect
+          jdbc:
+            lob:
+              non_contextual_creation: true
+          temp:
+            use_jdbc_metadata_defaults: false
+          generate_statistics: true
+          search:
+            default:
+              directory_provider: filesystem
+              indexBase: ../../tmp/indexes/
+    open-in-view: true
+  jackson:
+    deserialization:
+      FAIL_ON_UNKNOWN_PROPERTIES: false
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+    date-format: yyyy-MM-dd'T'HH:mm:sssZ
+  security:
+    filter:
+      order: 5
+    enable-csrf: true
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    loadbalancer:
+      ribbon:
+        enabled: false
+    consul:
+      enabled: false
+      host: localhost
+      port: 8500
+      binder:
+        enabled: false
+      config:
+        enabled: false
+        fail-fast: true
+    config:
+      enabled: false
+      fail-fast: true
+
+mybatis:
+  type-aliases-package: com.acc.*.model, com.acc.*.repository.**.model
+  mapper-locations: classpath*:mappers/*.xml
+  config-location: classpath:mybatis-config.xml
+
+springdoc:
+  show-spring-data-pageable: false
+  show-spring-data-rest: false
+  enable-spring-data-rest: false

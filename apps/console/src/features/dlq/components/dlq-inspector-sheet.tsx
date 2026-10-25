@@ -20,7 +20,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
 import { VisualJsonEditor } from '@/components/ui/json-editor';
 

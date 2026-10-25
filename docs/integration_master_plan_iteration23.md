@@ -1,9 +1,9 @@
 # Integration Master Plan: Iteration 23 - Sovereign Identity, System-Wide RBAC Delegation, Person-Tenant Onboarding, Passkeys (WebAuthn) & Full-Stack UI Wirings
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/unipost-db`, `apps/backend/unipost-fw`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/client` (`packages/client/src/contracts/users.ts`, `packages/client/src/contracts/auth.ts`)  
-- `@unipost/console` (`apps/console/src/features/auth`, `apps/console/src/features/spring-auth`, `apps/console/src/core/sandbox`)  
+- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/client` (`packages/client/src/contracts/users.ts`, `packages/client/src/contracts/auth.ts`)  
+- `@acc/console` (`apps/console/src/features/auth`, `apps/console/src/features/spring-auth`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist, TypeScript Frontend Architect & UI/UX Systems Specialist  
 **Standards:** W3C WebAuthn Level 3 / FIDO2, NIST SP 800-63B AAL2/AAL3, RFC 6238 TOTP, PostgreSQL 16+ RLS, WCAG 2.2 AA, Liquid Glass Design Tokens  
 **Reference SSOT:** [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) (v1.5.0)  
@@ -32,7 +32,7 @@ Iteration 23 formalizes the **System-Wide RBAC Catalog with Tenant Entitlement D
 | [Forgot/Reset Flow]  ──► POST /api/v1/auth/forgot-password    │ - 15m single-use cryptographically bound token hash     |
 | [Password Rotation]  ──► POST /api/v1/auth/rotate-password    │ - Clears credentialsNonExpired on mandatory first-boot  |
 +---------------------------------------------------------------+---------------------------------------------------------+
-| UNIFIED SANDBOX PLATFORM (auth-sandbox-handler.ts)            | CLIENT SDK CONTRACTS (@unipost/client)                  |
+| UNIFIED SANDBOX PLATFORM (auth-sandbox-handler.ts)            | CLIENT SDK CONTRACTS (@acc/client)                  |
 +---------------------------------------------------------------+---------------------------------------------------------+
 | - Mock Persona Support: root, ops, verifier, approver, owner  | - Type-safe Request / Response DTO contracts            |
 | - Seamless Offline Parity: zero blank screens in offline dev  | - Modern erasable types (as const, no legacy enum)      |
@@ -41,7 +41,7 @@ Iteration 23 formalizes the **System-Wide RBAC Catalog with Tenant Entitlement D
 
 ---
 
-## 2. Complete Frontend UI Wirings & Component Architecture (`@unipost/console`)
+## 2. Complete Frontend UI Wirings & Component Architecture (`@acc/console`)
 
 All authentication components reside in `apps/console/src/features/auth` and wire directly to `springApiClient` (falling back seamlessly to `authSandboxHandler` in offline sandbox mode).
 
@@ -172,7 +172,7 @@ Adhering strictly to `.agents/rules/01-workspace-specific.md` (Liquid Glass) and
 
 ## 5. System-Wide RBAC Catalog & Tenant Entitlement Delegation
 
-### 5.1 Global Schema Architecture (`apps/backend/unipost-db`)
+### 5.1 Global Schema Architecture (`apps/backend/acc-db`)
 In Liquibase `changelog-000.000.00016.xml`:
 1. **`${table_prefix}ROLE` Schema Evolution**:
    - Add `role_scope VARCHAR(20) NOT NULL DEFAULT 'TENANT'` (Values: `'SYSTEM'`, `'TENANT'`).
@@ -242,7 +242,7 @@ In Liquibase `changelog-000.000.00016.xml`:
 ## 7. Migration & Implementation Strategy
 
 ### Step 1: Liquibase Migration (`changelog-000.000.00016.xml`)
-- Author `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00016.xml`:
+- Author `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`:
   1. Pre-flight PL/pgSQL assertion for `${SOVEREIGN_*_PASSWORD_HASH}`.
   2. Evolve `${table_prefix}ROLE` (`role_scope`, `min_plan_tier`).
   3. Evolve `${table_prefix}USERROLE` (`tenant_id`, index).
@@ -255,7 +255,7 @@ In Liquibase `changelog-000.000.00016.xml`:
   10. Add `is_verified` and `phone_number_verified` columns to `${table_prefix}USER`.
 - Register in `changelog-master.xml`.
 
-### Step 2: Backend Controller & Service Alignment (`apps/backend/unipost-fw`)
+### Step 2: Backend Controller & Service Alignment (`apps/backend/acc-fw`)
 - Update `SystemFleetController.java` `@PreAuthorize` annotations.
 - Update `SystemFleetService.java` in-memory seeds to match new roles.
 
@@ -273,7 +273,7 @@ In Liquibase `changelog-000.000.00016.xml`:
 ### Step 5: Verification & Quality Gates
 - Execute `cmd.exe /c "mvnw.cmd test-compile -q"`.
 - Execute targeted backend tests:
-  `cmd.exe /c "mvnw.cmd test -pl unipost-fw -Dtest=SystemFleetServiceTest,RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest,MetadataServiceTest -q"`.
+  `cmd.exe /c "mvnw.cmd test -pl acc-fw -Dtest=SystemFleetServiceTest,RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest,MetadataServiceTest -q"`.
 - Execute frontend type checking:
-  `pnpm --filter @unipost/console exec tsc --noEmit`.
+  `pnpm --filter @acc/console exec tsc --noEmit`.
 - Run Playwright / Vitest test suites.

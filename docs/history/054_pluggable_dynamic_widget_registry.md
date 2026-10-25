@@ -1,7 +1,7 @@
 # History Log 054: Pluggable Dynamic Widget Registry & Custom Input Extensibility (Phase 16)
 
 ## Problem
-In Iteration 1, dynamic forms in `@unipost/console` and `mobile-ui` rendered fields using monolithic hardcoded switch/conditional statements. Introducing custom vertical widgets (such as digital signature pads, GPS coordinates, or optical barcode readers) required modifying internal component renderers, violating the Open/Closed Principle (OCP) and blocking external domain customization.
+In Iteration 1, dynamic forms in `@acc/console` and `mobile-ui` rendered fields using monolithic hardcoded switch/conditional statements. Introducing custom vertical widgets (such as digital signature pads, GPS coordinates, or optical barcode readers) required modifying internal component renderers, violating the Open/Closed Principle (OCP) and blocking external domain customization.
 
 ## Plan
 1. **Core Extensibility Architecture (`packages/ui`)**:
@@ -24,7 +24,7 @@ In Iteration 1, dynamic forms in `@unipost/console` and `mobile-ui` rendered fie
 6. **Testing & Verification**:
    - Unit tests in `dynamic-field-renderer.test.tsx` verifying SignaturePad, GeoLocation, and BarcodeScanner widgets.
    - Unit tests in `mobile-ui/src/__tests__/dynamic-form.test.ts` verifying `MobileWidgetRegistry` delegation.
-   - Execute full verification: `pnpm turbo run check-types`, `pnpm turbo run test`, and `pnpm --filter @unipost/console test:e2e`.
+   - Execute full verification: `pnpm turbo run check-types`, `pnpm turbo run test`, and `pnpm --filter @acc/console test:e2e`.
 
 ## Changes
 - **`packages/ui/src/widgets/widget-registry.ts`**: Created core `WidgetRegistry` class.
@@ -43,4 +43,4 @@ In Iteration 1, dynamic forms in `@unipost/console` and `mobile-ui` rendered fie
 ## Verification
 - `pnpm turbo run check-types`: **4/4 passed** (0 errors).
 - `pnpm turbo run test`: **6/6 passed** (158 console tests, 14 mobile tests, all green).
-- `pnpm --filter @unipost/console test:e2e`: **3/3 passed** (Chromium headless with Axe WCAG 2.2 AA audit).
+- `pnpm --filter @acc/console test:e2e`: **3/3 passed** (Chromium headless with Axe WCAG 2.2 AA audit).

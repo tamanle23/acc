@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: refactor(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -18,7 +18,7 @@ Issues identified:
 
 ## 2. Plan
 1. **Adopt React Flow (`@xyflow/react`)**:
-   - Install `@xyflow/react` in `@unipost/console`.
+   - Install `@xyflow/react` in `@acc/console`.
    - Import `@xyflow/react/dist/style.css` in `apps/console/src/styles/index.css`.
 2. **Custom FSM Node & Edge Components**:
    - Create `FsmStateNodeComponent`: Liquid Glass state cards with status accents, left/right connection handles (`<Handle type="target" />`, `<Handle type="source" />`), and initial/terminal state indicators.
@@ -29,23 +29,23 @@ Issues identified:
    - Provide quick transition selector pills in the inspector to easily review guard expressions and transactional outbox actions.
 4. **Verification**:
    - Update Vitest setup with `ResizeObserver` polyfill for jsdom.
-   - Run Vitest suite across `@unipost/console`.
+   - Run Vitest suite across `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`package.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/package.json): Added `@xyflow/react`.
-- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css): Imported `@xyflow/react/dist/style.css`.
-- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Custom React Flow node for FSM states with handles and Liquid Glass styling.
-- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Custom React Flow edge for FSM transitions.
-- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Replaced custom SVG renderer with `ReactFlow`, `MiniMap`, `Controls`, and interactive transition inspection.
-- [`apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx): Connected model's real `lifecycleConfig` to `FsmWorkflowDesigner`.
-- [`apps/console/src/test/setup.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/test/setup.ts): Added `ResizeObserver` polyfill for jsdom testing.
+- [`package.json`](file:///c:/Users/Admin/workspace/git/acc/apps/console/package.json): Added `@xyflow/react`.
+- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css): Imported `@xyflow/react/dist/style.css`.
+- [`apps/console/src/features/metadata/components/studio/fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Custom React Flow node for FSM states with handles and Liquid Glass styling.
+- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Custom React Flow edge for FSM transitions.
+- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Replaced custom SVG renderer with `ReactFlow`, `MiniMap`, `Controls`, and interactive transition inspection.
+- [`apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx): Connected model's real `lifecycleConfig` to `FsmWorkflowDesigner`.
+- [`apps/console/src/test/setup.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/test/setup.ts): Added `ResizeObserver` polyfill for jsdom testing.
 
 ---
 
 ## 4. Verification
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - 9 test files passed, 54 tests passed with 0 errors.
 
 ---

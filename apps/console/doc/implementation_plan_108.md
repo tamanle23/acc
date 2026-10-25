@@ -94,7 +94,7 @@ sequenceDiagram
 
 ---
 
-### 2. REST Layer (`apps/backend/unipost-ms-aio`)
+### 2. REST Layer (`apps/backend/acc-ms-aio`)
 
 #### [MODIFY] `WorkflowDefinitionController.java`
 - Add `POST /api/v1/workflow/definitions/{key}/migration-preview`:
@@ -146,7 +146,7 @@ sequenceDiagram
    - Test `migration-preview` and `batch-migrate` sandbox handlers.
 3. **Console Vitest & Typecheck**:
    - Unit test `fleet-migration-modal.test.tsx`.
-   - Run `pnpm --filter @unipost/console exec tsc --noEmit`.
+   - Run `pnpm --filter @acc/console exec tsc --noEmit`.
 
 ### Manual Verification
 1. Open Workflow Catalog in Console.

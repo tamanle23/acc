@@ -16,10 +16,10 @@ The FSM workflow studio previously relied on fixed connector handle counts per n
    - Run Vitest suite across `apps/console/src/features/metadata` to verify all 54 tests pass.
 
 ## Changes Made
-- [`fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Replaced static handle arrays with dynamic mapping of `incomingHandles` and `outgoingHandles` using per-transition handle IDs and percentage perimeter positioning.
-- [`fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Enhanced curvature calculation based on node Euclidean distance; added staggered badge positioning, Lucide icons, and stack counters.
-- [`fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Updated `initialNodes` to derive dynamic ports from transition counts per perimeter direction, and `initialEdges` to bind `sourceHandle` / `targetHandle` to dedicated transition IDs.
-- [`walkthrough_79.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_79.md): Created walkthrough documentation.
+- [`fsm-state-node.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-state-node.tsx): Replaced static handle arrays with dynamic mapping of `incomingHandles` and `outgoingHandles` using per-transition handle IDs and percentage perimeter positioning.
+- [`fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx): Enhanced curvature calculation based on node Euclidean distance; added staggered badge positioning, Lucide icons, and stack counters.
+- [`fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx): Updated `initialNodes` to derive dynamic ports from transition counts per perimeter direction, and `initialEdges` to bind `sourceHandle` / `targetHandle` to dedicated transition IDs.
+- [`walkthrough_79.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_79.md): Created walkthrough documentation.
 
 ## Verification
-- `pnpm --filter @unipost/console test src/features/metadata`: 9 test files passed, 54/54 tests passed.
+- `pnpm --filter @acc/console test src/features/metadata`: 9 test files passed, 54/54 tests passed.

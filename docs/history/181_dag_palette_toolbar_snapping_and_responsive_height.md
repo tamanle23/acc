@@ -16,8 +16,8 @@ In `VisualDagStudio` (`apps/console/src/features/workflows/components/studio/vis
 - `apps/console/src/features/workflows/components/studio/iteration17-studio.test.tsx`: Added test verifying `DagPalette` snaps under toolbar with dynamic `maxHeight`.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test -- src/features/workflows/components/studio/`: 12 test files passed, 55 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test -- src/features/workflows/components/studio/`: 12 test files passed, 55 tests passed.
 
 ## Walkthrough
-Refer to [`walkthrough_143.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_143.md).
+Refer to [`walkthrough_143.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_143.md).

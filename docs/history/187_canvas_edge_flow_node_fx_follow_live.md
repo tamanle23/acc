@@ -36,6 +36,6 @@ Implemented **Workstream 3: Canvas Edge Flow, Node FX & Auto-Pan** with Liquid G
    - **Command Bar Integration**: Follow-Live toggle button (`Eye`/`EyeOff`) in `DagHeaderCommandBar` center cluster.
 
 ## Verification
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- **Workflow Unit Tests**: All 19 test files (84 tests) passed green (`pnpm --filter @unipost/console test -- src/features/workflows`).
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- **Workflow Unit Tests**: All 19 test files (84 tests) passed green (`pnpm --filter @acc/console test -- src/features/workflows`).
 - **Regression Checks**: Verified `iteration18-studio.test.tsx` (9 tests) and `dag-node.test.tsx` (4 tests) passing.

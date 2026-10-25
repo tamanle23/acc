@@ -1,7 +1,7 @@
 # Walkthrough: Phase 7 - Noisy Neighbor Defense & Resource Protection
 
 ## Overview
-Phase 7 implements multi-tiered noisy neighbor defense mechanisms and resource quota guardrails across `@unipost/backend`, ensuring tenant isolation under adversarial or heavy load conditions as specified in `docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`.
+Phase 7 implements multi-tiered noisy neighbor defense mechanisms and resource quota guardrails across `@acc/backend`, ensuring tenant isolation under adversarial or heavy load conditions as specified in `docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`.
 
 ---
 

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { generateTraceparent } from '@unipost/client';
+import { generateTraceparent } from '@acc/client';
 import { useSpringAuthStore } from './store';
 import { enableSandboxMockEngine } from './sandbox/mock-engine';
 import { useMetadataUiStore } from '../metadata/store/use-metadata-ui-store';
@@ -37,14 +37,14 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 springApiClient.interceptors.request.use(
   (config) => {
     const { accessToken } = useSpringAuthStore.getState();
-    const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_token') : null;
+    const assumedToken = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_token') : null;
     const effectiveToken = assumedToken || accessToken;
 
     if (effectiveToken && config.headers) {
       config.headers['Authorization'] = `Bearer ${effectiveToken}`;
     }
 
-    const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+    const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null;
     if (assumedTenant && config.headers) {
       config.headers['X-Assumed-Tenant'] = assumedTenant;
       config.headers['X-Tenant-Id'] = assumedTenant;

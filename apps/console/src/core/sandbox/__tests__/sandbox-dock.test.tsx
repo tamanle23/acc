@@ -86,15 +86,15 @@ describe('SandboxDock UI Component', () => {
   });
 
   it('should clear localStorage user defaults and assumed session on reset all data', () => {
-    localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
+    localStorage.setItem('acc_user_default_ws_tenant-acme', 'ws-acme-staging');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-acme');
 
     renderWithQueryClient(<SandboxDock />);
 
     const resetBtn = screen.getByTitle('Reset all mock data across all features');
     fireEvent.click(resetBtn);
 
-    expect(localStorage.getItem('unipost_user_default_ws_tenant-acme')).toBeNull();
-    expect(localStorage.getItem('unipost_assumed_tenant')).toBeNull();
+    expect(localStorage.getItem('acc_user_default_ws_tenant-acme')).toBeNull();
+    expect(localStorage.getItem('acc_assumed_tenant')).toBeNull();
   });
 });

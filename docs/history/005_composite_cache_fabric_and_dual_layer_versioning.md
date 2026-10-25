@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-09  
 **Status:** Completed  
-**Scope:** `@unipost/backend` (`apps/backend/unipost-fw`)
+**Scope:** `@acc/backend` (`apps/backend/acc-fw`)
 
 ## 1. Problem Statement
 In a multi-tenant dynamic metadata architecture, tenants share base system entity definitions (e.g., standard customer, order, or invoice attributes) while defining proprietary custom fields. Without tenant-isolated composite caching and dual-layer schema versioning:

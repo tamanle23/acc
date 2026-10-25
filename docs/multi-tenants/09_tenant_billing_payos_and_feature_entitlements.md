@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 09 of N)  
 **Document Level:** FinOps, Subscription Architecture & Feature Gate Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK/API), `@unipost/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK/API), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Simple Cadence Subscriptions (Monthly / Yearly), payOS Checkout Integration (VietQR / Napas / Banking), Webhook Signature Verification, Dynamic Feature Entitlements Engine, In-App Capability Gating  
 **Status:** Canonical Living Architecture Document  
 
@@ -28,7 +28,7 @@ Tenants select a subscription cadence (**Monthly** or **Yearly** with an annual 
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                        FEATURE-BASED SUBSCRIPTION WITH payOS                           │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. Subscription Selection -> Monthly or Yearly plan selected in @unipost/console       │
+│ 1. Subscription Selection -> Monthly or Yearly plan selected in @acc/console       │
 │ 2. payOS Payment Link     -> Backend calls payOS API (orderCode, amount, returnUrl)    │
 │ 3. Instant VietQR Scan    -> User scans dynamic VietQR code on banking app             │
 │ 4. Webhook Verification   -> payOS webhook hits backend; validates HMAC_SHA256 sig    │
@@ -89,7 +89,7 @@ To ensure the billing system can dynamically accommodate new features without da
 ### 3.1 The Dynamic Feature Keys (To be Dynamically Implemented & Extended)
 Features and functionalities are fully decoupled into extensible string tokens that can be dynamically defined, registered, and granted over time:
 * *Ví dụ tính năng (Examples of dynamic feature tokens):*
-  * `FEATURE_SCHEMA_STUDIO`: Quyền truy cập vào tab Schema Builder trong `@unipost/console`.
+  * `FEATURE_SCHEMA_STUDIO`: Quyền truy cập vào tab Schema Builder trong `@acc/console`.
   * `FEATURE_PATTERN_C_GRAPH`: Quyền tạo và khai thác mô hình liên kết đồ thị đa chiều (Pattern C Edges).
   * `FEATURE_STATE_MACHINE`: Quyền thiết lập vòng đời thực thể và điều kiện chuyển trạng thái.
   * `FEATURE_AI_AGENT_MCP`: Quyền tổng hợp công cụ động cho AI Agents qua chuẩn MCP Server.
@@ -104,13 +104,13 @@ Features and functionalities are fully decoupled into extensible string tokens t
 When a tenant admin chooses a plan or renews, the backend requests a payment link from payOS:
 
 ```java
-package com.unipost.tenant.billing.payos;
+package com.acc.tenant.billing.payos;
 
 import vn.payos.PayOS;
 import vn.payos.type.ItemData;
 import vn.payos.type.PaymentData;
 import vn.payos.type.CheckoutResponseData;
-import com.unipost.fw.tenancy.TenantContextHolder;
+import com.acc.fw.tenancy.TenantContextHolder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -186,7 +186,7 @@ payOS notifies the backend via webhook when a QR transfer is confirmed. To preve
 
 ```
 ┌─────────────────┐                                      ┌───────────────────────┐
-│ payOS Gateway   │                                      │   @unipost/backend    │
+│ payOS Gateway   │                                      │   @acc/backend    │
 └────────┬────────┘                                      └───────────┬───────────┘
          │                                                           │
          │ POST /api/v1/billing/payos/webhook                        │
@@ -212,7 +212,7 @@ payOS notifies the backend via webhook when a QR transfer is confirmed. To preve
 
 ### 5.1 Webhook Controller Implementation
 ```java
-package com.unipost.tenant.billing.payos;
+package com.acc.tenant.billing.payos;
 
 import vn.payos.PayOS;
 import vn.payos.type.Webhook;
@@ -253,9 +253,9 @@ public class PayOsWebhookController {
 
 ---
 
-## 6. Console UI In-App Feature Gating & VietQR Dialog (`@unipost/console`)
+## 6. Console UI In-App Feature Gating & VietQR Dialog (`@acc/console`)
 
-When an unentitled feature is clicked or accessed in `@unipost/console`:
+When an unentitled feature is clicked or accessed in `@acc/console`:
 1. The `<FeatureGate />` component renders a Liquid Glass card.
 2. Clicking **"Nâng cấp gói (Upgrade)"** triggers the payOS checkout dialog displaying the dynamic **VietQR Code**:
 

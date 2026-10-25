@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/sandbox",
+  "name": "@acc/sandbox",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -15,10 +15,10 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@unipost/client": "workspace:*"
+    "@acc/client": "workspace:*"
   },
   "devDependencies": {
-    "@unipost/typescript-config": "workspace:*",
+    "@acc/typescript-config": "workspace:*",
     "@vitest/coverage-v8": "3.2.7",
     "axios": "^1.13.6",
     "typescript": "^5.8.2",

@@ -45,7 +45,7 @@ import {
   generateWideAttributes,
   generateWideRecords,
 } from './mock-wide-telemetry';
-import { sandboxResetRegistry } from '@unipost/sandbox';
+import { sandboxResetRegistry } from '@acc/sandbox';
 
 export const initialMockEntityTypes: EntityType[] = [
   {
@@ -1633,7 +1633,7 @@ export class MockMetadataService implements MetadataDataSource {
       oldAttributes: null,
       newAttributes: record.attributes || {},
       delta: null,
-      changedBy: 'admin@unipost.io',
+      changedBy: 'admin@acc.io',
       createdAt: record.createdDate || new Date().toISOString(),
     };
     this.auditLogs.push(initialLog);

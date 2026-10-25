@@ -1,7 +1,7 @@
 # History Log: 140 - Console Client Offline Data Parity (CMS Schema & Records)
 
 ## Problem Statement
-The backend Unified Sandbox was equipped in Iteration 9 with a high-volume Headless CMS data generator (`CmsDataScaffoldingGenerator`) providing 1,000 Articles with rich Markdown bodies, 50 Categories, 200 Media Assets, and 2,000 relational graph edges under tenant-scoped RLS. However, `@unipost/console` in offline client mode (Mode 1 - Unified Sandbox Autonomous) only contained the baseline Customer 360 catalog dataset. To enable full dual-mode E2E parity without requiring a running live backend server for frontend validation, `@unipost/console` needed identical CMS schemas, attributes, relationship types, and high-volume seed records, wired with the master reset event in `sandboxResetRegistry`.
+The backend Unified Sandbox was equipped in Iteration 9 with a high-volume Headless CMS data generator (`CmsDataScaffoldingGenerator`) providing 1,000 Articles with rich Markdown bodies, 50 Categories, 200 Media Assets, and 2,000 relational graph edges under tenant-scoped RLS. However, `@acc/console` in offline client mode (Mode 1 - Unified Sandbox Autonomous) only contained the baseline Customer 360 catalog dataset. To enable full dual-mode E2E parity without requiring a running live backend server for frontend validation, `@acc/console` needed identical CMS schemas, attributes, relationship types, and high-volume seed records, wired with the master reset event in `sandboxResetRegistry`.
 
 ## Plan
 1. Author high-volume CMS mock generator (`mock-cms-data.ts`) producing:
@@ -16,8 +16,8 @@ The backend Unified Sandbox was equipped in Iteration 9 with a high-volume Headl
    - Merge generated records and graph edges into `initialMockRecords` and `initialMockEntityRelationships`.
    - Register `mockMetadataStore.resetToInitialState()` with `sandboxResetRegistry`.
 3. Verify test suites and coverage:
-   - Run Vitest suite (`pnpm --filter @unipost/console run test -- --run`) ensuring all 298 tests pass.
-   - Run Vitest coverage (`pnpm --filter @unipost/console run test:coverage`) ensuring zero regression on the $\ge 90\%$ statements/branch coverage gate.
+   - Run Vitest suite (`pnpm --filter @acc/console run test -- --run`) ensuring all 298 tests pass.
+   - Run Vitest coverage (`pnpm --filter @acc/console run test:coverage`) ensuring zero regression on the $\ge 90\%$ statements/branch coverage gate.
 4. Record history entry and commit via Conventional Commits.
 
 ## Changes Made

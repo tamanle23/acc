@@ -3,7 +3,7 @@
 ## Date: 2026-10-09
 
 ## Description
-Executed **Milestone 2** of the WCAG 2.2 AA compliance initiative across `@unipost/console`. This milestone focuses on wiring the skip link bypass block, standardizing ARIA landmark regions, and enforcing strict heading hierarchy.
+Executed **Milestone 2** of the WCAG 2.2 AA compliance initiative across `@acc/console`. This milestone focuses on wiring the skip link bypass block, standardizing ARIA landmark regions, and enforcing strict heading hierarchy.
 
 ## Changes Implemented
 
@@ -23,9 +23,9 @@ Executed **Milestone 2** of the WCAG 2.2 AA compliance initiative across `@unipo
    - Standardized secondary section headers in `EntityTypeSidebar`, `SchemaBuilder`, and `RelationshipTypesManager` to `<h2>` and empty states to `<h3>`.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc -b`: 0 errors
-- `pnpm --filter @unipost/console test`: Passed (12/12 test files, 73/73 tests)
-- `pnpm --filter @unipost/console build:web`: Success
+- `pnpm --filter @acc/console exec tsc -b`: 0 errors
+- `pnpm --filter @acc/console test`: Passed (12/12 test files, 73/73 tests)
+- `pnpm --filter @acc/console build:web`: Success
 
 ## Next Steps for Milestone 3
 - Data Explorer Table Accessibility in `EntityDataGrid`: `scope="col"`, `aria-sort`, descriptive `aria-label`s on icon buttons.

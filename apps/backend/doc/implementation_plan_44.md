@@ -31,20 +31,20 @@ Phase 4 of the Unified Sandbox Platform requires rigorous verification, decoupli
      - Clear the directory `tmp/db/pglite-sandbox` prior to initializing the database connection.
    - In `InMemoryStorageSimulator`, support clearing memory/disk files when pristine flag is set.
 3. **`PgLiteRlsIntegrationTest`**:
-   - Located in `com.unipost.sandbox.db`.
+   - Located in `com.acc.sandbox.db`.
    - Validates that `PgLiteDatasourceConfiguration` configures the correct JDBC URL for both `TEST` (`jdbc:pglite:memory://`) and `DEV` (`jdbc:pglite:file:...`) modes.
    - Verifies `dev.pristine=true` properly flushes persistent scratch paths.
    - Asserts that `TenantSessionAspect` SQL commands execute properly against DataSource connections.
 4. **Verification & Hard Gates**:
-   - Execute `mvn clean test -f apps/backend/unipost-sandbox/pom.xml -q`.
+   - Execute `mvn clean test -f apps/backend/acc-sandbox/pom.xml -q`.
    - Execute `mvn test -f apps/backend/pom.xml -q` with JaCoCo verification.
    - Execute Playwright E2E suites.
 
 ## 3. Tasks
 - [ ] Add `dev.pristine` property to `SandboxProperties`
 - [ ] Implement directory cleanup logic in `PgLiteDatasourceConfiguration`
-- [ ] Create `PgLiteRlsIntegrationTest` in `unipost-sandbox`
-- [ ] Verify test and dev mode switches in `unipost-sandbox`
+- [ ] Create `PgLiteRlsIntegrationTest` in `acc-sandbox`
+- [ ] Verify test and dev mode switches in `acc-sandbox`
 - [ ] Run full backend test suite with JaCoCo $\ge 90\%$ gate
 - [ ] Run Playwright E2E browser tests
 - [ ] Create `walkthrough_44.md`, `docs/history/136_*.md`, update index, and commit

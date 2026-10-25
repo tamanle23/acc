@@ -6,9 +6,9 @@ Added support for disabling TanStack Router and React Query devtools during deve
 
 | File | Change |
 | :--- | :--- |
-| [`apps/unipost-console/vite.config.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/vite.config.ts) | Inspects CLI arguments (`--no-devtools`, `--disable-devtools`), Vite mode (`--mode no-devtools`), and environment variable (`VITE_DISABLE_DEVTOOLS=true`). Injects compile-time define for `import.meta.env.VITE_DISABLE_DEVTOOLS`. |
-| [`apps/unipost-console/src/routes/__root.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/routes/__root.tsx) | Checks `isDevtoolsDisabled = import.meta.env.MODE === 'production' || import.meta.env.VITE_DISABLE_DEVTOOLS === 'true'`. Devtools are always disabled in production, and disabled in dev when `VITE_DISABLE_DEVTOOLS=true` is present. Avoids dynamic imports for `@tanstack/react-query-devtools` and `@tanstack/react-router-devtools` entirely. |
-| [`apps/unipost-console/package.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/package.json) | Added `"dev:no-devtools": "vite --mode no-devtools"` script. |
+| [`apps/acc-console/vite.config.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/vite.config.ts) | Inspects CLI arguments (`--no-devtools`, `--disable-devtools`), Vite mode (`--mode no-devtools`), and environment variable (`VITE_DISABLE_DEVTOOLS=true`). Injects compile-time define for `import.meta.env.VITE_DISABLE_DEVTOOLS`. |
+| [`apps/acc-console/src/routes/__root.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/routes/__root.tsx) | Checks `isDevtoolsDisabled = import.meta.env.MODE === 'production' || import.meta.env.VITE_DISABLE_DEVTOOLS === 'true'`. Devtools are always disabled in production, and disabled in dev when `VITE_DISABLE_DEVTOOLS=true` is present. Avoids dynamic imports for `@tanstack/react-query-devtools` and `@tanstack/react-router-devtools` entirely. |
+| [`apps/acc-console/package.json`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/package.json) | Added `"dev:no-devtools": "vite --mode no-devtools"` script. |
 
 ---
 
@@ -18,17 +18,17 @@ You can disable TanStack devtools when starting the dev server in any of the fol
 
 ### Option A: Dedicated npm script (Recommended)
 ```bash
-pnpm --filter @unipost/console dev:no-devtools
+pnpm --filter @acc/console dev:no-devtools
 ```
 
 ### Option B: Vite `--mode` flag
 ```bash
-pnpm --filter @unipost/console dev --mode no-devtools
+pnpm --filter @acc/console dev --mode no-devtools
 ```
 
 ### Option C: Passthrough CLI flag
 ```bash
-pnpm --filter @unipost/console dev -- --no-devtools
+pnpm --filter @acc/console dev -- --no-devtools
 ```
 
 ### Option D: Environment variable
@@ -41,6 +41,6 @@ VITE_DISABLE_DEVTOOLS=true
 
 ## 3. Verification
 
-- **Dev server**: Tested `pnpm --filter @unipost/console dev:no-devtools`, server booted in 538 ms with `no-devtools` mode.
-- **Build**: `pnpm --filter @unipost/console build:web` succeeded in 568 ms with exit code 0.
-- **Lint**: `pnpm --filter @unipost/console lint` passed with 0 errors and 0 warnings.
+- **Dev server**: Tested `pnpm --filter @acc/console dev:no-devtools`, server booted in 538 ms with `no-devtools` mode.
+- **Build**: `pnpm --filter @acc/console build:web` succeeded in 568 ms with exit code 0.
+- **Lint**: `pnpm --filter @acc/console lint` passed with 0 errors and 0 warnings.

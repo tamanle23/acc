@@ -5,7 +5,7 @@ Implement Streamline Ultimate Colors icons for the bottom navigation bar using `
 ## Proposed Changes
 
 ### Icon Components
-#### [NEW] [src/components/icons/StreamlineColorIcon.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/icons/StreamlineColorIcon.tsx)
+#### [NEW] [src/components/icons/StreamlineColorIcon.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/icons/StreamlineColorIcon.tsx)
 - Create a high-fidelity SVG icon component rendering Streamline Ultimate style vector graphics:
   - **Home (Dashboard)**:
     - Inactive: Streamline outline house.
@@ -19,7 +19,7 @@ Implement Streamline Ultimate Colors icons for the bottom navigation bar using `
 - Props: `name: 'home' | 'create' | 'profile'`, `focused: boolean`, `size?: number`.
 
 ### Navigation Bar
-#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/navigation/RootNavigator.tsx)
+#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/navigation/RootNavigator.tsx)
 - Replace `Feather` with `<StreamlineColorIcon />`.
 - Pass `focused={isFocused}` and `name`.
 

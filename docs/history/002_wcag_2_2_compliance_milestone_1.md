@@ -3,7 +3,7 @@
 ## Date: 2026-10-08
 
 ## Description
-Executed **Milestone 1** of the WCAG 2.2 AA compliance initiative across `@unipost/console` and `@unipost/ui`. This milestone focuses on color contrast calibration, focus obscuration prevention, and minimum target size enforcement.
+Executed **Milestone 1** of the WCAG 2.2 AA compliance initiative across `@acc/console` and `@acc/ui`. This milestone focuses on color contrast calibration, focus obscuration prevention, and minimum target size enforcement.
 
 ## Changes Implemented
 
@@ -25,9 +25,9 @@ Executed **Milestone 1** of the WCAG 2.2 AA compliance initiative across `@unipo
      - `faceted-search-sidebar.tsx`
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc -b`: 0 errors
-- `pnpm --filter @unipost/console test`: Passed (7/7 tests)
-- `pnpm --filter @unipost/console build:web`: Success
+- `pnpm --filter @acc/console exec tsc -b`: 0 errors
+- `pnpm --filter @acc/console test`: Passed (7/7 tests)
+- `pnpm --filter @acc/console build:web`: Success
 - Visual Frontend Verification: Confirmed via Playwright screenshot. Liquid Glass aesthetics and Bento Box layout remain intact.
 
 ## Next Steps for Milestone 2

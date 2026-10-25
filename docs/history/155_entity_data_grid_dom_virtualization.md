@@ -10,7 +10,7 @@
 When operating on massive datasets (such as IoT telemetry matrices or enterprise asset records with 120 dynamic attribute columns and up to 10,000+ records), unvirtualized DOM tables mount thousands of table rows and tens of thousands of table cells at once. This leads to high memory overhead, frame drops, and severe scrolling latency.
 
 ## 2. Plan & Objectives
-1. Integrate `@tanstack/react-virtual` into `@unipost/console`.
+1. Integrate `@tanstack/react-virtual` into `@acc/console`.
 2. Connect `useVirtualizer` with `EntityDataGrid`'s existing `scrollContainerRef`.
 3. Support dynamic row height measurement with `rowVirtualizer.measureElement` (enabling seamless compatibility with expandable composite master-detail rows).
 4. Implement dynamic virtual padding spacers (`paddingTop`, `paddingBottom`) in `<tbody>`.
@@ -28,8 +28,8 @@ When operating on massive datasets (such as IoT telemetry matrices or enterprise
 - **Testing**: Added `apps/console/src/features/metadata/components/data-explorer/__tests__/entity-data-grid-virtualization.test.tsx` simulating 120 columns across 500 rows and 10,000 total records.
 
 ## 4. Verification & Results
-- **Vitest**: `pnpm --filter @unipost/console run test` passed with 68/68 test files (315/315 tests passing).
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- **Vitest**: `pnpm --filter @acc/console run test` passed with 68/68 test files (315/315 tests passing).
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
 
 ## 5. Walkthrough & Documentation
 - Implementation Plan: `apps/console/doc/implementation_plan_130.md`

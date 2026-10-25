@@ -10,24 +10,24 @@ In Phase 4 of Iteration 8 ("Backend Unified Sandbox Platform"), we needed to ens
 ## Plan
 1. Add `application.sandbox.dev.pristine` configuration property in `SandboxProperties`.
 2. Implement directory wiping logic in `PgLiteDatasourceConfiguration` when `isDevMode() && isPristine()`.
-3. Create `PgLiteRlsIntegrationTest` in `unipost-sandbox` verifying ephemeral test datasource, persistent vs pristine dev datasource, and `TenantSessionAspect` SQL commands.
+3. Create `PgLiteRlsIntegrationTest` in `acc-sandbox` verifying ephemeral test datasource, persistent vs pristine dev datasource, and `TenantSessionAspect` SQL commands.
 4. Execute full multi-module backend test suite (`mvn test -f apps/backend/pom.xml -q`) and Playwright E2E suites.
 
 ## Changes
 
-### `apps/backend/unipost-sandbox`
-- **`com.unipost.sandbox.config.SandboxProperties`**:
+### `apps/backend/acc-sandbox`
+- **`com.acc.sandbox.config.SandboxProperties`**:
   - Added `DevSimulationProperties` with `boolean pristine = false;`.
   - Added `isDevMode()` and `isTestMode()` convenience methods.
-- **`com.unipost.sandbox.db.PgLiteDatasourceConfiguration`**:
+- **`com.acc.sandbox.db.PgLiteDatasourceConfiguration`**:
   - Added automated recursive scratch directory purging when `properties.isDevMode() && properties.getDev().isPristine()`.
   - Added `deleteRecursively` helper.
-- **`com.unipost.sandbox.db.PgLiteRlsIntegrationTest`**:
+- **`com.acc.sandbox.db.PgLiteRlsIntegrationTest`**:
   - Implemented 5 test cases verifying ephemeral memory URL in test mode, sentinel file preservation in persistent dev mode, sentinel file wiping in pristine dev mode, and `TenantSessionAspect` session variable execution for standard and sovereign custodian contexts.
 
 ## Verification
-- **`unipost-sandbox` Suite**:
-  - `mvn clean test -f apps/backend/unipost-sandbox/pom.xml -q`: 31/31 tests passing in 8s.
+- **`acc-sandbox` Suite**:
+  - `mvn clean test -f apps/backend/acc-sandbox/pom.xml -q`: 31/31 tests passing in 8s.
 - **Full Backend Regression Suite**:
   - `mvn test -f apps/backend/pom.xml -q`: 300+ tests passing across all 7 modules with JaCoCo $\ge 90\%$ test coverage.
 - **Playwright E2E Suite**:
@@ -44,4 +44,4 @@ Refer to [`apps/backend/doc/walkthrough_44.md`](../../apps/backend/doc/walkthrou
 - [x] Multi-module backend test suite green with JaCoCo >= 90%
 
 ## Enhancement
-- With all 4 phases of Iteration 8 completed, both frontend (`@unipost/console`) and backend (`unipost-ms-aio`) now share complete architectural parity, supporting 100% offline development and automated CI testing without live cloud services.
+- With all 4 phases of Iteration 8 completed, both frontend (`@acc/console`) and backend (`acc-ms-aio`) now share complete architectural parity, supporting 100% offline development and automated CI testing without live cloud services.

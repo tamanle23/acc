@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/desktop",
+  "name": "@acc/desktop",
   "version": "1.0.0",
   "description": "My Electrobun application",
   "private": true,
@@ -16,8 +16,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@unipost/typescript-config": "workspace:*",
-    "@unipost/console": "workspace:*",
+    "@acc/typescript-config": "workspace:*",
+    "@acc/console": "workspace:*",
     "@types/bun": "latest",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",

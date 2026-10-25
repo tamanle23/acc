@@ -84,7 +84,7 @@ describe('UserAuthForm Component - Passkeys & Password Rotation Triggers', () =>
     render(<UserAuthForm />);
 
     fireEvent.change(screen.getByLabelText(/Email or Username/i), {
-      target: { value: 'custodian@unipost.io' },
+      target: { value: 'custodian@acc.io' },
     });
 
     const passkeyBtn = screen.getByRole('button', {

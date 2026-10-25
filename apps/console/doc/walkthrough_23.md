@@ -17,16 +17,16 @@ This delivers:
 ## 2. Key Changes & File Manifest
 
 ### Brand Icon & App Card
-- [NEW] [`apps/console/src/assets/brand-icons/icon-youtube.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/assets/brand-icons/icon-youtube.tsx): Crisp SVG component featuring the official YouTube play button logo.
-- [MODIFY] [`apps/console/src/assets/brand-icons/index.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/assets/brand-icons/index.ts): Exported `IconYoutube`.
-- [MODIFY] [`apps/console/src/features/apps/data/apps.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/data/apps.tsx): Wired `IconYoutube` with YouTube brand red accents (`text-red-600`) and updated description detailing OAuth2 code flow and refresh tokens.
+- [NEW] [`apps/console/src/assets/brand-icons/icon-youtube.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/assets/brand-icons/icon-youtube.tsx): Crisp SVG component featuring the official YouTube play button logo.
+- [MODIFY] [`apps/console/src/assets/brand-icons/index.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/assets/brand-icons/index.ts): Exported `IconYoutube`.
+- [MODIFY] [`apps/console/src/features/apps/data/apps.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/data/apps.tsx): Wired `IconYoutube` with YouTube brand red accents (`text-red-600`) and updated description detailing OAuth2 code flow and refresh tokens.
 
 ### Configuration & Typings
-- [MODIFY] [`apps/console/.env.example`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/.env.example): Added `VITE_YOUTUBE_CLIENT_ID` and `VITE_YOUTUBE_CLIENT_SECRET`.
-- [MODIFY] [`apps/console/src/vite-env.d.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/vite-env.d.ts): Added strong typings for YouTube environment variables in `ImportMetaEnv`.
+- [MODIFY] [`apps/console/.env.example`](file:///c:/Users/Admin/workspace/git/acc/apps/console/.env.example): Added `VITE_YOUTUBE_CLIENT_ID` and `VITE_YOUTUBE_CLIENT_SECRET`.
+- [MODIFY] [`apps/console/src/vite-env.d.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/vite-env.d.ts): Added strong typings for YouTube environment variables in `ImportMetaEnv`.
 
 ### YouTube API & OAuth Service
-- [NEW] [`apps/console/src/features/apps/services/youtube-service.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/services/youtube-service.ts):
+- [NEW] [`apps/console/src/features/apps/services/youtube-service.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/services/youtube-service.ts):
   - `buildGoogleOAuthUrl`: Generates Google OAuth consent screen URL with scopes `youtube.readonly`, `youtube.upload`, `youtube.force-ssl`, `access_type=offline`, and `prompt=consent`.
   - `exchangeAuthCodeForTokens`: Posts to `https://oauth2.googleapis.com/token` with `grant_type=authorization_code`.
   - `refreshAccessToken`: Posts to `https://oauth2.googleapis.com/token` with `grant_type=refresh_token`.
@@ -34,17 +34,17 @@ This delivers:
   - `simulateDemoYouTubeAuthCode` & `simulateDemoTokenExchange`: Full mock simulator for instant sandbox verification.
 
 ### State Management
-- [NEW] [`apps/console/src/features/apps/stores/youtube-store.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/stores/youtube-store.ts):
+- [NEW] [`apps/console/src/features/apps/stores/youtube-store.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/stores/youtube-store.ts):
   - Zustand persistent store (`youtube_app_integration` in `localStorage`).
   - Tracks `isConnected`, `authCode`, `accessToken`, `refreshToken`, `expiresAt`, `connectedChannel`, `clientId`, `clientSecret`, and `isDemoMode`.
   - Actions for connecting, disconnecting, saving custom credentials, and token refreshing.
 
 ### Liquid Glass Modal & UI Integration
-- [NEW] [`apps/console/src/features/apps/components/youtube-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/youtube-connect-modal.tsx):
+- [NEW] [`apps/console/src/features/apps/components/youtube-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/youtube-connect-modal.tsx):
   - Step 1: Authorization Code acquisition (Launch Google Login popup or One-Click Sandbox Demo).
   - Step 2: Code verification & Token exchange trigger.
   - Step 3: Active connection dashboard showing channel stats (Subscribers, Videos, Total Views) and Token Vault with copy/reveal toggles for Access Token and Refresh Token, plus on-demand token refresh button.
-- [MODIFY] [`apps/console/src/features/apps/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/index.tsx):
+- [MODIFY] [`apps/console/src/features/apps/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/index.tsx):
   - Hooked `useYouTubeStore` to dynamically update card status to `Connected` with channel title subtitle.
   - Bound `onClick` handlers for `Manage` and `Connect` buttons to open `YouTubeConnectModal`.
 
@@ -55,11 +55,11 @@ This delivers:
 ### Automated Checks
 ```powershell
 # 1. Type check & Web build
-pnpm --filter @unipost/console build:web
+pnpm --filter @acc/console build:web
 # Exit Code: 0 (Built cleanly in 654ms)
 
 # 2. Linter
-pnpm --filter @unipost/console lint
+pnpm --filter @acc/console lint
 # Exit Code: 0 (0 errors, 0 warnings)
 ```
 

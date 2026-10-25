@@ -14,7 +14,7 @@ import {
   DataTablePagination,
   DataTableToolbar,
 } from '@/components/data-table';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 import { createDlqColumns } from './dlq-columns';
 
 interface DlqTableProps {

@@ -18,10 +18,10 @@ When a Sovereign Custodian clicked "Assume Tenant" in `fleet-tenants-table.tsx`:
 
 ### 2. Reliable Assume-Tenant Viewport Banner
 - **Component (`assume-tenant-bar.tsx`)**:
-  - Simplified condition: `isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')` reading `localStorage.getItem('unipost_assumed_tenant')`.
+  - Simplified condition: `isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')` reading `localStorage.getItem('acc_assumed_tenant')`.
   - When active, prominently renders the amber frosted bar across the top of all views.
   - On "Exit Sub-Session":
-    - Clears `unipost_assumed_tenant` and `unipost_assumed_token`.
+    - Clears `acc_assumed_tenant` and `acc_assumed_token`.
     - Restores `activeTenantId: 'SYSTEM'` in both `useSandboxStore` and `useMetadataUiStore`.
     - Restores the Sovereign Custodian token in `useSpringAuthStore`.
     - Redirects cleanly to `/system/tenants`.

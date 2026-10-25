@@ -97,10 +97,10 @@ export function FleetTenantsTable() {
       { tenantId: tenant.tenantId, durationMinutes: 60 },
       {
         onSuccess: (res) => {
-          localStorage.setItem('unipost_assumed_tenant', res.effectiveTenantId);
-          localStorage.setItem('unipost_assumed_tenant_name', tenant.name);
+          localStorage.setItem('acc_assumed_tenant', res.effectiveTenantId);
+          localStorage.setItem('acc_assumed_tenant_name', tenant.name);
           if (res.ephemeralToken) {
-            localStorage.setItem('unipost_assumed_token', res.ephemeralToken);
+            localStorage.setItem('acc_assumed_token', res.ephemeralToken);
             useSpringAuthStore.getState().setTokens(res.ephemeralToken, 'mock_refresh_token_custodian');
           }
           setActiveTenant(res.effectiveTenantId);

@@ -57,6 +57,6 @@ Enhance the Adaptive Tab Layout in the Metadata Management Module with an intuit
 - Verify responsiveness from mobile viewport (320px) to desktop (1920px).
 
 ### Step 4: Verification & Acceptance Criteria
-- Run Vitest suite: `pnpm --filter @unipost/console test`.
-- Run production build: `pnpm --filter @unipost/console build`.
+- Run Vitest suite: `pnpm --filter @acc/console test`.
+- Run production build: `pnpm --filter @acc/console build`.
 - Check git diff and commit changes.

@@ -1,4 +1,4 @@
-# History 092: Polyglot Worker SDKs (Java & Pure TypeScript @unipost/worker) & Distributed Saga (Phase 29)
+# History 092: Polyglot Worker SDKs (Java & Pure TypeScript @acc/worker) & Distributed Saga (Phase 29)
 
 ## Problem
 In distributed workflow orchestration, workers must execute tasks reliably across polyglot microservice environments (Java backend and TypeScript/Node services) while preserving strict concurrency bounds, transparent heartbeat lease extensions, and reversible side-effect management via Saga compensation without blocking JVM or Node event loops.
@@ -9,7 +9,7 @@ In distributed workflow orchestration, workers must execute tasks reliably acros
    - Composable middleware chain (`AutoHeartbeatMiddleware`, `SchemaValidationMiddleware`, `ErrorClassificationMiddleware`).
    - `WorkerHost` leveraging virtual-thread per task execution, Semaphore concurrency backpressure, adaptive exponential backoff polling, and burst draining.
    - `SagaCompensator` computing reverse topological execution sequences and emitting compensation `ScheduleTask` commands.
-2. Implement standalone pure TypeScript Worker SDK in `packages/worker/` (`@unipost/worker`):
+2. Implement standalone pure TypeScript Worker SDK in `packages/worker/` (`@acc/worker`):
    - TypeScript `TaskOutcome` discriminated union and `TaskContext`.
    - `ConcurrencyLimiter` and adaptive `TaskPoller`.
    - `WorkflowWorkerHost` supporting `register()`, `registerSimple()`, and middleware chaining.
@@ -22,17 +22,17 @@ In distributed workflow orchestration, workers must execute tasks reliably acros
 
 ## Changes
 - **Java**:
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/TaskContext.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/TaskOutcome.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/TaskHandler.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/WorkerConfig.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/WorkerHost.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/middleware/AutoHeartbeatMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/middleware/SchemaValidationMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/worker/middleware/ErrorClassificationMiddleware.java`
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/application/SagaCompensator.java`
-  - `apps/backend/workflow-engine/src/test/java/com/unipost/workflow/worker/WorkerHostTest.java`
-  - `apps/backend/workflow-engine/src/test/java/com/unipost/workflow/application/SagaCompensatorTest.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskContext.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskOutcome.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/TaskHandler.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerConfig.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/WorkerHost.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/AutoHeartbeatMiddleware.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/SchemaValidationMiddleware.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/worker/middleware/ErrorClassificationMiddleware.java`
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/SagaCompensator.java`
+  - `apps/backend/workflow-engine/src/test/java/com/acc/workflow/worker/WorkerHostTest.java`
+  - `apps/backend/workflow-engine/src/test/java/com/acc/workflow/application/SagaCompensatorTest.java`
 - **TypeScript**:
   - `packages/worker/package.json`
   - `packages/worker/tsconfig.json`
@@ -50,5 +50,5 @@ In distributed workflow orchestration, workers must execute tasks reliably acros
 
 ## Verification
 - `mvn test -pl workflow-engine`: 25/25 passing tests.
-- `pnpm --filter @unipost/worker test`: 5/5 passing Vitest tests.
-- `pnpm --filter @unipost/worker check-types`: 0 type errors.
+- `pnpm --filter @acc/worker test`: 5/5 passing Vitest tests.
+- `pnpm --filter @acc/worker check-types`: 0 type errors.

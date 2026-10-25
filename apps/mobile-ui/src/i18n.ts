@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { sharedResources, defaultNS } from '@unipost/i18n';
+import { sharedResources, defaultNS } from '@acc/i18n';
 
 i18n
   .use(initReactI18next)

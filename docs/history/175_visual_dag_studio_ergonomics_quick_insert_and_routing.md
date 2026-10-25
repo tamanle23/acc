@@ -4,7 +4,7 @@
 In complex workflow authoring, dragging every node from the left palette onto the canvas and manually re-wiring edges creates high friction. Additionally, edges were fixed to Bezier curves without an option for orthogonal routing, node alignment had to be adjusted manually one-by-one without distribution tools, and nodes did not snap magnetically to grid intervals.
 
 ## Plan
-Implement modern authoring ergonomics into `@unipost/console`'s `VisualDagStudio`:
+Implement modern authoring ergonomics into `@acc/console`'s `VisualDagStudio`:
 1. **Edge Quick-Insert Floating Popover (`DagQuickInsertPopover`)**:
    - Opens at the screen coordinates of the edge `+` split button.
    - Offers real-time search across all 23 task types, 5 category tabs, and arrow-key selection.
@@ -29,8 +29,8 @@ Implement modern authoring ergonomics into `@unipost/console`'s `VisualDagStudio
 - `apps/console/src/features/metadata/components/studio/iteration17-studio.test.tsx`: Created studio unit tests for toolbar toggles and selection toolbar mounting.
 
 ## Verification
-- **Unit Tests**: Ran `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/` - 15 test files passed, 67 tests green.
-- **Typecheck**: Ran `pnpm --filter @unipost/console exec tsc --noEmit` - 0 errors.
+- **Unit Tests**: Ran `pnpm --filter @acc/console test -- src/features/metadata/components/studio/` - 15 test files passed, 67 tests green.
+- **Typecheck**: Ran `pnpm --filter @acc/console exec tsc --noEmit` - 0 errors.
 
 ## Walkthrough & Artifacts
 - `apps/console/doc/walkthrough_139.md`

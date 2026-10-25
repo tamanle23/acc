@@ -19,11 +19,11 @@ A similar issue existed in `useBlueprintDetails`.
 3. Validate with unit tests.
 
 ## Changes
-- Modified [`apps/console/src/features/metadata/api/use-blueprints.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/api/use-blueprints.ts):
+- Modified [`apps/console/src/features/metadata/api/use-blueprints.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/api/use-blueprints.ts):
   - Added imports for `mockBlueprintManifests` and `mockBlueprintSummaries`.
   - Updated `useBlueprintCatalog` and `useBlueprintDetails` with multi-tier response unwrapping and local fallbacks.
 
 ## Verification
-- Executed `pnpm --filter @unipost/console test src/features/metadata`:
+- Executed `pnpm --filter @acc/console test src/features/metadata`:
   - 9 test files passed (55 tests passed).
 - Confirmed blueprint catalog returns all 6 standard domain blueprints (Headless CMS, E-Commerce, Healthcare, Logistics, Real Estate, Blank Canvas).

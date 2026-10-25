@@ -5,7 +5,7 @@ import {
   isWcagAaCompliant,
   getContrastRatio,
   getLuminance,
-} from '@unipost/tokens';
+} from '@acc/tokens';
 
 /**
  * L5 Automated Non-Functional SRE & WCAG 2.2 AA Contrast Audit

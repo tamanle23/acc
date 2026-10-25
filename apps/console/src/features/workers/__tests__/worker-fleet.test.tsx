@@ -71,7 +71,7 @@ describe('Worker Fleet Dashboard Components', () => {
     const handleDrain = vi.fn();
     render(<WorkerCard worker={mockWorkerNode} onDrain={handleDrain} />);
 
-    expect(screen.getByText(/Node.js @unipost\/worker/i)).toBeDefined();
+    expect(screen.getByText(/Node.js @acc\/worker/i)).toBeDefined();
 
     // Click drain button
     const drainButton = screen.getByRole('button', { name: /drain/i });

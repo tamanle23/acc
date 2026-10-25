@@ -1,6 +1,6 @@
 # Walkthrough - Workstream 6: Unified Sandbox Multi-Branch Execution Simulator
 
-Interactive multi-branch workflow execution simulation engine, high-fidelity browser `EventSource` stream interceptor, and Liquid Glass simulation modal dialog for `@unipost/console` and `@unipost/sandbox`.
+Interactive multi-branch workflow execution simulation engine, high-fidelity browser `EventSource` stream interceptor, and Liquid Glass simulation modal dialog for `@acc/console` and `@acc/sandbox`.
 
 ## Changes Summary
 
@@ -48,5 +48,5 @@ Interactive multi-branch workflow execution simulation engine, high-fidelity bro
 ### Automated Tests
 - `workflow-simulation-engine.test.ts` (5 tests passed): Topology validation, logic node degree checks, SSE stream emission, pause/resume, and reset.
 - `workflow-simulation-modal.test.tsx` (3 tests passed): Rendering scenarios, launching simulation, and manual stepping.
-- Full suite `pnpm --filter @unipost/console test -- src/features/workflows src/core/sandbox`: **33 test files, 165 tests passed (100% green)**.
-- Typecheck `pnpm --filter @unipost/console exec tsc --noEmit`: **0 errors**.
+- Full suite `pnpm --filter @acc/console test -- src/features/workflows src/core/sandbox`: **33 test files, 165 tests passed (100% green)**.
+- Typecheck `pnpm --filter @acc/console exec tsc --noEmit`: **0 errors**.

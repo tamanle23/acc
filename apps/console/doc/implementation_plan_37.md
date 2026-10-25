@@ -6,13 +6,13 @@ This plan addresses the missing requirements: implementing the configuration pop
 
 ---
 
-### `@unipost/console` (Data Model)
+### `@acc/console` (Data Model)
 
-#### [MODIFY] [storages.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/storage/data/storages.tsx)
+#### [MODIFY] [storages.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/storage/data/storages.tsx)
 - Refactor `assignedWorkspaces` from `string[]` to an array of objects: `Array<{ workspaceId: string, enabled: boolean }>`.
 - For 'System Internal' providers, it will remain `'all'`, representing an immutable global assignment.
 
-### `@unipost/console` (UI Components)
+### `@acc/console` (UI Components)
 
 #### [NEW] `storage-assignments-dialog.tsx` (in `apps/console/src/features/storage/`)
 - A new component utilizing `Dialog` from `@/components/ui/dialog`.
@@ -31,14 +31,14 @@ This plan addresses the missing requirements: implementing the configuration pop
   - Displays a configuration form for the provider (mocked with fields like API Key, Secret Key, Bucket Name, etc., depending on the provider).
   - A "Save Changes" button.
 
-#### [MODIFY] [index.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/storage/index.tsx)
+#### [MODIFY] [index.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/storage/index.tsx)
 - Integrate `<StorageAssignmentsDialog />` and `<StorageManageDialog />`.
 - Update the Storage card UI to render *both* "Manage" and "Assignments" buttons side-by-side for 'User Provided' storage items.
 
-### `@unipost/console` (Localization)
+### `@acc/console` (Localization)
 
-#### [MODIFY] [en/console.json](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/en/console.json)
-#### [MODIFY] [vi/console.json](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/vi/console.json)
+#### [MODIFY] [en/console.json](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/locales/en/console.json)
+#### [MODIFY] [vi/console.json](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/locales/vi/console.json)
 - Add translation keys for the dialogs (e.g., `storage.actions.assignments`, `storage.assignments.title`, `storage.assignments.assign`, `storage.manage.title`).
 
 ## Verification Plan

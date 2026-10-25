@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: feat(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -24,17 +24,17 @@ When a state node in the FSM Workflow Studio has multiple outgoing transitions o
    - Offset label `Y` position proportionally to keep event badges from colliding (`(multiIndex - (multiTotal - 1) / 2) * 32`).
    - Add contextual action icons (e.g. `Send`, `ShieldCheck`, `Rocket`, `Zap`, `Ban`) inside edge label pills.
    - Display a clean multi-action stack indicator (`1/2`, `2/2`, etc.) when multiple edges share a pathway.
-4. **Verification**: Run Vitest suite across `@unipost/console`.
+4. **Verification**: Run Vitest suite across `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx):
+- [`apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-transition-edge.tsx):
   - Dynamic curvature fan-out algorithm.
   - Staggered label positioning along perpendicular axis.
   - Action icons (`Send`, `ShieldCheck`, `Rocket`, `Zap`, `Ban`, `Archive`) mapped dynamically.
   - Added stack badge indicator (`<Layers className="h-2 w-2" /> index/total`).
-- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx):
+- [`apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/fsm-workflow-designer.tsx):
   - Grouped transitions by source-target pair and indexed parallel edges.
   - Enriched `DEFAULT_FSM_TRANSITIONS` with multi-path actions (`REJECT`, `FAST_TRACK`).
 

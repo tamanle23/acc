@@ -1,7 +1,7 @@
 # 183. Visual DAG Studio Responsive Layout & Compact Ergonomics
 
 ## Problem Statement
-On smaller displays (< 1280px desktop, 768px-1024px tablet, and mobile devices), the floating toolbar clusters in [Visual DAG Studio 2.0](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) collided horizontally with each other, obscured the central canvas, and broke layout boundaries. Furthermore, the 256px expanded palette and fixed-position debugger sub-pill covered canvas nodes and controls.
+On smaller displays (< 1280px desktop, 768px-1024px tablet, and mobile devices), the floating toolbar clusters in [Visual DAG Studio 2.0](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) collided horizontally with each other, obscured the central canvas, and broke layout boundaries. Furthermore, the 256px expanded palette and fixed-position debugger sub-pill covered canvas nodes and controls.
 
 ## Plan & Architecture
 1. **Container Dimension Tracking**: Track `containerWidth` in addition to `containerHeight` using `ResizeObserver` on `reactFlowWrapper`, making layout adaptability container-aware rather than purely window-dependent.
@@ -30,9 +30,9 @@ On smaller displays (< 1280px desktop, 768px-1024px tablet, and mobile devices),
   - Added unit test coverage for `defaultCollapsed` prop and responsive toolbar elements.
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/features/workflows/components/studio/`: 13 test files passed, 64 tests passed.
-- `pnpm --filter @unipost/console test`: 82 test suites passed, 392 tests passed.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: zero type errors.
+- `pnpm --filter @acc/console test -- src/features/workflows/components/studio/`: 13 test files passed, 64 tests passed.
+- `pnpm --filter @acc/console test`: 82 test suites passed, 392 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: zero type errors.
 
 ## Walkthrough & Artifacts
 - Walkthrough: `apps/console/doc/walkthrough_145.md`

@@ -1,7 +1,7 @@
 # Walkthrough 34: Phase 33 - Spring Boot REST Engine Bridge & Enterprise Persistence Wiring
 
 ## 1. Overview
-In Phase 33, we promoted `workflow-engine` from a standalone Java module into the primary runtime environment of `apps/backend/unipost-ms-aio`. We created the Spring Boot autowiring configuration, REST API endpoints for workflow definitions, execution orchestration, and worker polling, and verified the complete end-to-end lifecycle.
+In Phase 33, we promoted `workflow-engine` from a standalone Java module into the primary runtime environment of `apps/backend/acc-ms-aio`. We created the Spring Boot autowiring configuration, REST API endpoints for workflow definitions, execution orchestration, and worker polling, and verified the complete end-to-end lifecycle.
 
 ## 2. Key Components Implemented
 
@@ -12,7 +12,7 @@ In Phase 33, we promoted `workflow-engine` from a standalone Java module into th
 - Declared bean `WorkflowEngineService`: application service handling scheduling, dispatching, state transitions, and cancellation.
 - Declared bean `ScheduledLeaseSweeper`: background task sweeper running `@Scheduled(fixedDelay = 5000)` invoking `service.sweepExpiredTasks()`.
 
-### 2.2 REST API Controllers (`com.unipost.aio.controller.workflow`)
+### 2.2 REST API Controllers (`com.acc.aio.controller.workflow`)
 - **`WorkflowDefinitionController`**:
   - `POST /api/v1/workflow/definitions`: registers a new DAG definition, validating uniqueness and acyclicity.
   - `GET /api/v1/workflow/definitions/{key}`: fetches a registered workflow definition.
@@ -30,7 +30,7 @@ In Phase 33, we promoted `workflow-engine` from a standalone Java module into th
 - In `WorkflowEngineService.java`, resolved an issue where `definition.name()` was being passed into `saveWorkflowExecution` instead of `definition.workflowKey()`. This fix ensures `WorkflowSnapshot.workflowKey()` faithfully preserves the registry key so subsequent task completions properly resolve the parent definition and trigger child tasks.
 
 ## 3. Verification & Testing
-- Executed `WorkflowEngineRestApiTest` via `.\mvnw.cmd test -pl unipost-ms-aio -Dtest=WorkflowEngineRestApiTest`.
+- Executed `WorkflowEngineRestApiTest` via `.\mvnw.cmd test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest`.
 - All steps passed:
   1. Workflow definition registration.
   2. Workflow execution start.

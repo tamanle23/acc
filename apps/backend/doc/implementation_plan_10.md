@@ -12,16 +12,16 @@ We will introduce a Facade layer (`UserFacade` and `RoleFacade`) to handle View 
 We will create DTOs to replace the View Models currently returned by MyBatis.
 
 #### [NEW] UserPermissionDto.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/dto/UserPermissionDto.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/dto/UserPermissionDto.java`
 
 #### [NEW] UserRoleDto.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/dto/UserRoleDto.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/dto/UserRoleDto.java`
 
 #### [NEW] RolePermissionDto.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/dto/RolePermissionDto.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/dto/RolePermissionDto.java`
 
 #### [NEW] RoleUserDto.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/dto/RoleUserDto.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/dto/RoleUserDto.java`
 
 ---
 
@@ -61,12 +61,12 @@ Remove Mapper dependencies from Services and update them to return DTOs.
 Introduce Facades to orchestrate service calls and map the results to View Models.
 
 #### [NEW] UserFacade.java & UserFacadeImpl.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/facade/UserFacade.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/facade/UserFacade.java`
 - Inject `UserService` and `UserMapper`.
 - Implement `findUserWithPermissions(String uid)` which calls `UserService` for the user, roles, and permissions (as DTOs), maps them, and returns `UserVm`.
 
 #### [NEW] RoleFacade.java & RoleFacadeImpl.java
-`apps/backend/unipost-ms-identity/src/main/java/com/unipost/user/facade/RoleFacade.java`
+`apps/backend/acc-ms-identity/src/main/java/com/acc/user/facade/RoleFacade.java`
 - Inject `RoleService` and `RoleMapper`.
 - Implement `getRoleDetail(String uid)` which orchestrates service calls and returns `RoleVm`.
 

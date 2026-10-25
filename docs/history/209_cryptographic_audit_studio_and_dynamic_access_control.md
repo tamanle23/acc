@@ -7,13 +7,13 @@ In compliance environments and sovereign custody operations, records mutated wit
 1. **Liquibase & Persistence**: Evolve partitioned table `UNIPOST_RECORD_AUDIT_LOG` with SHA-256 forward-hash chaining (`prev_hash`, `current_hash`, `signature`) and an index `idx_record_audit_chain` in `changelog-000.000.00018.xml`.
 2. **Backend Merkle Service**: Create `AuditMerkleService` & `AuditMerkleServiceImpl` providing deterministic SHA-256 hash chaining and automated tenant-level forward integrity checks (`verifyTenantChain`).
 3. **Audit REST Controller**: Expose `/api/v1/system/audit/records`, `/verify`, and `/export` under Sovereign Custody.
-4. **Dynamic Permission Gating**: Implement `useHasPermission` hook in `@unipost/console` and wire permissions into `entity-data-grid.tsx`.
+4. **Dynamic Permission Gating**: Implement `useHasPermission` hook in `@acc/console` and wire permissions into `entity-data-grid.tsx`.
 5. **Sovereign Audit Studio**: Build `/system/audit` using standardized `@/components/data-table`, with filtering, live verification badge, and diff inspection modal.
 6. **Unified Sandbox Sync & Tests**: Update `system-sandbox-handler.ts`, add Playwright Flow 13 (`13-sovereign-audit-studio.spec.ts`) with Axe Core WCAG 2.2 AA audit, and backend JUnit tests.
 
 ## Changes
 - **Database**:
-  - Created `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00018.xml`.
+  - Created `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00018.xml`.
   - Registered migration in `changelog-master.xml`.
 - **Backend**:
   - Updated `RecordAuditLog.java` and `RecordAuditLogRepository.java`.

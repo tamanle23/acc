@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
-import type { ApprovalTask, ApprovalDecisionRequest } from '@unipost/client';
+import type { ApprovalTask, ApprovalDecisionRequest } from '@acc/client';
 
 export const APPROVALS_QUERY_KEY = ['workflow-approvals'] as const;
 

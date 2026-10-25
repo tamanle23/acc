@@ -16,7 +16,7 @@ In Iteration 5, the visual orchestration tier required an enterprise-grade Visua
 5. Create slide-over `TaskTelemetryInspector` displaying runtime metrics, resolved payloads, errors, and task logs.
 6. Wire dual modes into `VisualDagStudio`, enforcing topology lockdown (`nodesConnectable={false}`, `nodesDraggable={false}`, `elementsSelectable={true}`) in read-only mode while guarding against re-render infinite loops.
 7. Update `workflow-ir-converter.ts` for bidirectional conversion of all 23 node types and their specialized parameters.
-8. Align `@unipost/sandbox` simulation handler to generate domain-realistic outputs for all 23 task node types.
+8. Align `@acc/sandbox` simulation handler to generate domain-realistic outputs for all 23 task node types.
 
 ## Changes Made
 - `apps/console/src/features/metadata/components/studio/dag-node.tsx`:
@@ -44,6 +44,6 @@ In Iteration 5, the visual orchestration tier required an enterprise-grade Visua
   - Documented implementation plan and walkthrough according to rule SOP.
 
 ## Verification
-- Vitest `@unipost/console`: `src/features/metadata/components/studio/` passed **6/6 test files, 28/28 tests**.
-- Vitest `@unipost/sandbox`: `src/__tests__/sandbox-engine.test.ts` & `src/handlers/data/schema.test.ts` passed **2/2 files, 9/9 tests**.
-- TypeScript type check: `pnpm --filter @unipost/console exec tsc --noEmit` passed clean with 0 errors.
+- Vitest `@acc/console`: `src/features/metadata/components/studio/` passed **6/6 test files, 28/28 tests**.
+- Vitest `@acc/sandbox`: `src/__tests__/sandbox-engine.test.ts` & `src/handlers/data/schema.test.ts` passed **2/2 files, 9/9 tests**.
+- TypeScript type check: `pnpm --filter @acc/console exec tsc --noEmit` passed clean with 0 errors.

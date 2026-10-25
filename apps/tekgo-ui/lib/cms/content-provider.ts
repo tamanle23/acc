@@ -5,8 +5,8 @@ import {
   Authors,
   sortPosts,
 } from '@/lib/content'
-import { unipostCmsClient } from './unipost-cms-client'
-import { EntityRecord } from '@unipost/client'
+import { accCmsClient } from './acc-cms-client'
+import { EntityRecord } from '@acc/client'
 import readingTime from 'reading-time'
 import GithubSlugger from 'github-slugger'
 
@@ -119,7 +119,7 @@ export class ContentProvider {
   async getAllBlogs(): Promise<Blog[]> {
     if (this.dataSource === 'cms') {
       try {
-        const records = await unipostCmsClient.getPublishedRecords('article')
+        const records = await accCmsClient.getPublishedRecords('article')
         if (records && records.length > 0) {
           const cmsBlogs = records.map(mapRecordToBlog)
           return sortPosts(cmsBlogs)

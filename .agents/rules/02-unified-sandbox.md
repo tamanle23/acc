@@ -5,7 +5,7 @@ description: Mandatory rule requiring all mock engines and test data to integrat
 
 # UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE
 
-All mock engines, simulated data stores, stub endpoints, and authentication bypasses across `@unipost/console` and monorepo client applications **MUST strictly incorporate with the Unified Sandbox Platform** (`apps/console/src/core/sandbox/`).
+All mock engines, simulated data stores, stub endpoints, and authentication bypasses across `@acc/console` and monorepo client applications **MUST strictly incorporate with the Unified Sandbox Platform** (`apps/console/src/core/sandbox/`).
 
 ### 1. Prohibition of Isolated / Ad-Hoc Mocks
 - **No Rogue In-Component Mocks**: Developers and AI agents MUST NOT embed hardcoded mock data directly inside UI components, views, or modals.

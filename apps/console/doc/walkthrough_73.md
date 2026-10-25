@@ -46,5 +46,5 @@ This update enforces strict multi-tenant domain rules:
   - Added delete workspace button and `ConfirmDialog` allowing tenant admins to delete workspaces and test orphaned states.
 
 ## 3. Verification Results
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- **Vitest Suite**: `pnpm --filter @unipost/console exec vitest run` passed (24 test files, 116 tests passed).
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- **Vitest Suite**: `pnpm --filter @acc/console exec vitest run` passed (24 test files, 116 tests passed).

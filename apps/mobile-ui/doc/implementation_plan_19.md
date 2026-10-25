@@ -25,4 +25,4 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## 3. Verification Plan
 - Unit tests pass with 100% green status.
-- All workspace tests pass (`mobile-ui`, `@unipost/client`, `@unipost/sandbox`, `@unipost/console`).
+- All workspace tests pass (`mobile-ui`, `@acc/client`, `@acc/sandbox`, `@acc/console`).

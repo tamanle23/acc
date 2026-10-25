@@ -19,7 +19,7 @@ import {
   Unplug,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { IconFacebook } from '@unipost/ui/icons'
+import { IconFacebook } from '@acc/ui/icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

@@ -47,7 +47,7 @@ jobs:
         with:
           name: backend-jacoco-report
           path: |
-            apps/backend/unipost-fw/target/site/jacoco
+            apps/backend/acc-fw/target/site/jacoco
             apps/backend/**/target/site/jacoco
           retention-days: 14
 
@@ -85,8 +85,8 @@ jobs:
 
       - name: Run Console & Sandbox Coverage Suite
         run: |
-          pnpm --filter @unipost/sandbox test
-          pnpm --filter @unipost/console test:coverage
+          pnpm --filter @acc/sandbox test
+          pnpm --filter @acc/console test:coverage
 
       - name: Archive Vitest Coverage HTML Reports
         if: always()
@@ -130,7 +130,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium & System Dependencies
-        run: pnpm --filter @unipost/console exec playwright install chromium --with-deps
+        run: pnpm --filter @acc/console exec playwright install chromium --with-deps
 
       - name: Setup Java 21 (for Live Mode Backend)
         if: ${{ github.event.inputs.e2e_mode == 'live' }}

@@ -2,15 +2,15 @@
 
 ## Executive Summary
 
-This comprehensive implementation plan outlines the engineering roadmap to achieve full **WCAG 2.2 Level AA compliance** across `@unipost/console` and shared `@unipost/ui`. The strategy enforces accessibility across four core milestones—covering design tokens, contrast hardening, navigation landmarks, custom data tables, keyboard alternatives for dragging operations, minimum target sizes, and automated CI/CD accessibility testing—while preserving the signature **Liquid Glass** aesthetic and **Bento Box** multi-pane architecture.
+This comprehensive implementation plan outlines the engineering roadmap to achieve full **WCAG 2.2 Level AA compliance** across `@acc/console` and shared `@acc/ui`. The strategy enforces accessibility across four core milestones—covering design tokens, contrast hardening, navigation landmarks, custom data tables, keyboard alternatives for dragging operations, minimum target sizes, and automated CI/CD accessibility testing—while preserving the signature **Liquid Glass** aesthetic and **Bento Box** multi-pane architecture.
 
 ---
 
 ## 1. Compliance Baseline & Scope
 
 ### 1.1 In-Scope Applications & Packages
-- `@unipost/console` (`apps/console`)
-- `@unipost/ui` (`packages/ui`)
+- `@acc/console` (`apps/console`)
+- `@acc/ui` (`packages/ui`)
 
 ### 1.2 Core WCAG 2.2 AA Success Criteria Mapping
 | WCAG 2.2 SC | Success Criterion Name | Level | Core Monorepo Focus Area |
@@ -37,12 +37,12 @@ Guarantee that all text and interactive UI elements pass contrast thresholds (�
 
 ### Detailed Engineering Tasks
 
-1. **Tokens Calibration in [`theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css)**:
+1. **Tokens Calibration in [`theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/theme.css)**:
    - Adjust `--muted-foreground` in light mode from `oklch(0.554 0.046 257.417)` (~55% lightness) to `oklch(0.42 0.045 257.4)` (~42% lightness) to guarantee ≥ 4.8:1 contrast over frosted glass (`--card` / `bg-white/65`).
    - In dark mode, ensure `--muted-foreground` maintains `oklch(0.75 0.035 256.8)` with minimum card scrim lightness ensuring ≥ 5.1:1 contrast.
    - Adjust `--border` and `--input` tokens to guarantee ≥ 3:1 contrast against adjacent background colors for form fields and control boundaries.
 
-2. **Global Focus Indicator & Scroll Padding in [`index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css)**:
+2. **Global Focus Indicator & Scroll Padding in [`index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css)**:
    - Add global `scroll-padding-top` to `html` and `main` to address **SC 2.4.11 (Focus Not Obscured)**:
      ```css
      html,
@@ -60,7 +60,7 @@ Guarantee that all text and interactive UI elements pass contrast thresholds (�
 
 3. **Pointer Target Sizing (SC 2.5.8)**:
    - Audit icon-only buttons across pagination, filters, and tables:
-     - Upgrade `h-6 w-6` in [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) to `h-7 w-7` (28×28px) with `p-1`.
+     - Upgrade `h-6 w-6` in [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) to `h-7 w-7` (28×28px) with `p-1`.
      - In table row action triggers, ensure the hit area has `min-h-[28px] min-w-[28px]`.
 
 ---
@@ -73,7 +73,7 @@ Ensure screen readers and keyboard-only users can navigate, bypass repetitive bl
 ### Detailed Engineering Tasks
 
 1. **Fix Disconnected Skip Link (SC 2.4.1)**:
-   - Update [`Main`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/main.tsx):
+   - Update [`Main`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/main.tsx):
      ```tsx
      export function Main({ fixed, className, fluid, id = 'content', ...props }: MainProps) {
        return (
@@ -87,12 +87,12 @@ Ensure screen readers and keyboard-only users can navigate, bypass repetitive bl
        );
      }
      ```
-   - Test [`SkipToMain`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/skip-to-main.tsx) to ensure pressing Tab on page load focuses the skip link, and pressing Enter jumps focus directly into the `<main>` element past the navigation bars.
+   - Test [`SkipToMain`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/skip-to-main.tsx) to ensure pressing Tab on page load focuses the skip link, and pressing Enter jumps focus directly into the `<main>` element past the navigation bars.
 
 2. **ARIA Landmarks & Labels**:
-   - Ensure [`Header`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/header.tsx) renders `<header role="banner">`.
-   - Ensure [`AppSidebar`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/app-sidebar.tsx) renders `<nav aria-label="Main Navigation">`.
-   - In [`MetadataFeature`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/metadata-feature.tsx), ensure [`EntityTypeSidebar`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) has `<aside aria-label="Entity Models Rail">`.
+   - Ensure [`Header`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/header.tsx) renders `<header role="banner">`.
+   - Ensure [`AppSidebar`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/app-sidebar.tsx) renders `<nav aria-label="Main Navigation">`.
+   - In [`MetadataFeature`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/metadata-feature.tsx), ensure [`EntityTypeSidebar`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) has `<aside aria-label="Entity Models Rail">`.
 
 3. **Heading Hierarchy (SC 1.3.1)**:
    - Standardize page titles to start with `<h1>` followed by `<h2>` for major sections and `<h3>` for cards/sub-sections.
@@ -107,13 +107,13 @@ Address complex WAI-ARIA states for interactive widgets, custom tables, drag-and
 
 ### Detailed Engineering Tasks
 
-1. **Data Explorer Table Accessibility in [`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)**:
+1. **Data Explorer Table Accessibility in [`EntityDataGrid`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)**:
    - **Header Semantics**: Add `scope="col"` to all `<th>` elements.
    - **Sort State Announcements**: Add `aria-sort="ascending" | "descending" | "none"` to sortable column headers based on `table.getState().sorting`.
    - **Action Buttons**: Ensure icon-only buttons (Edit, Delete, Inspect JSON) have descriptive `aria-label` attributes (e.g. `aria-label="Edit record ${row.id}"`, `aria-label="Delete record ${row.id}"`).
 
 2. **Accessible Reordering for Schema Builder (SC 2.5.7)**:
-   - In [`SchemaBuilder`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx):
+   - In [`SchemaBuilder`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx):
      - In addition to pointer drag handles, provide single-pointer keyboard action buttons for each attribute card:
        - `Move attribute up` (Button with `ArrowUp` icon, disabled on first item).
        - `Move attribute down` (Button with `ArrowDown` icon, disabled on last item).
@@ -137,7 +137,7 @@ Embed accessibility verification into the standard build and pull request pipeli
 ### Detailed Engineering Tasks
 
 1. **Static Analysis with `eslint-plugin-jsx-a11y`**:
-   - Install `eslint-plugin-jsx-a11y` as a devDependency in `@unipost/console`.
+   - Install `eslint-plugin-jsx-a11y` as a devDependency in `@acc/console`.
    - Configure in `eslint.config.js`:
      - Enforce `jsx-a11y/alt-text`.
      - Enforce `jsx-a11y/anchor-is-valid`.
@@ -146,7 +146,7 @@ Embed accessibility verification into the standard build and pull request pipeli
      - Enforce `jsx-a11y/no-noninteractive-element-interactions`.
 
 2. **Component-Level Automated A11y Testing with `axe-core`**:
-   - Install `vitest-axe` and `axe-core` in `@unipost/console`.
+   - Install `vitest-axe` and `axe-core` in `@acc/console`.
    - Create reusable test suite `apps/console/src/__tests__/a11y.test.tsx` testing core design system components:
      ```tsx
      import { render } from '@testing-library/react';
@@ -162,7 +162,7 @@ Embed accessibility verification into the standard build and pull request pipeli
 
 3. **CI Pipeline Integration**:
    - Add accessibility assertion step to Turborepo pipeline:
-     `turbo run test lint --filter=@unipost/console`.
+     `turbo run test lint --filter=@acc/console`.
 
 ---
 
@@ -176,4 +176,4 @@ Embed accessibility verification into the standard build and pull request pipeli
 | **Focus Not Obscured** | Keyboard navigation down long table / form | Focused element is completely visible below sticky header with `scroll-padding-top`. |
 | **Target Sizing** | DevTools layout inspector | All pointer targets ≥ 24×24px bounding box. |
 | **Dragging Alternative** | Keyboard navigation in Schema Builder | Reordering can be completed via Move Up / Move Down buttons without dragging. |
-| **Automated A11y Tests** | `pnpm --filter @unipost/console test` | Vitest-axe test suites pass with 0 violations. |
+| **Automated A11y Tests** | `pnpm --filter @acc/console test` | Vitest-axe test suites pass with 0 violations. |

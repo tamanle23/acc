@@ -145,7 +145,7 @@ export const INITIAL_NODES: Node<DagNodeData>[] = [
       httpMethod: 'POST',
       httpEndpoint: 'https://api.notifications.tekgo.io/v1/dispatch',
       inputParameters: {
-        recipient: 'customer@unipost.io',
+        recipient: 'customer@acc.io',
         template: 'SHIPMENT_DISPATCHED',
       },
     },

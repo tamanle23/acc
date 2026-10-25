@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@unipost/tokens': path.resolve(__dirname, '../../packages/tokens/src/index.ts'),
+      '@acc/tokens': path.resolve(__dirname, '../../packages/tokens/src/index.ts'),
     },
   },
   test: {

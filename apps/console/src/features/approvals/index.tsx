@@ -14,7 +14,7 @@ import { UserCheck } from 'lucide-react';
 import { useApprovalsQuery } from './hooks/use-approvals';
 import { ApprovalTable } from './components/approval-table';
 import { HumanDecisionModal } from './components/human-decision-modal';
-import type { ApprovalTask } from '@unipost/client';
+import type { ApprovalTask } from '@acc/client';
 
 export const ApprovalsFeature: React.FC = () => {
   const { t } = useTranslation('console');

@@ -1,7 +1,7 @@
 # Hide Auth Sandbox Engine Unless Logged In Via Sandbox Bypass
 
 ## Problem & Background
-In `@unipost/console`, the `<SandboxPanel />` component ("Auth Sandbox Engine") currently renders in the root layout (`__root.tsx`) at all times. When unauthenticated, it displays a helper note prompting the user to bypass authentication. When authenticated normally, it displays developer controls and the JWT payload.
+In `@acc/console`, the `<SandboxPanel />` component ("Auth Sandbox Engine") currently renders in the root layout (`__root.tsx`) at all times. When unauthenticated, it displays a helper note prompting the user to bypass authentication. When authenticated normally, it displays developer controls and the JWT payload.
 
 The requirement is: **"Auth Sandbox Engine" should be hidden always, unless the user logs in with "Bypass with sandbox"**.
 - If the user is unauthenticated: hidden.
@@ -13,11 +13,11 @@ The requirement is: **"Auth Sandbox Engine" should be hidden always, unless the 
 ## Proposed Changes
 
 ### 1. Spring Auth Types & Store
-#### [MODIFY] [types.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/types.ts)
+#### [MODIFY] [types.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/types.ts)
 - Add `isSandbox?: boolean` to `JwtPayload`.
 - Add `isSandbox: boolean` to `AuthState`.
 
-#### [MODIFY] [store.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/store.ts)
+#### [MODIFY] [store.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/store.ts)
 - Initialize `isSandbox: false`.
 - In `setTokens(access, refresh)`, determine `isSandbox`:
   ```ts
@@ -30,28 +30,28 @@ The requirement is: **"Auth Sandbox Engine" should be hidden always, unless the 
 - In `clearTokens()`, reset `isSandbox: false`.
 
 ### 2. Sandbox Mock Engine
-#### [MODIFY] [mock-engine.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/sandbox/mock-engine.ts)
+#### [MODIFY] [mock-engine.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/sandbox/mock-engine.ts)
 - Include `isSandbox: true` in the mock JWT payload generated for login and refresh endpoints.
 
 ### 3. Sandbox Panel Component
-#### [MODIFY] [SandboxPanel.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/components/SandboxPanel.tsx)
+#### [MODIFY] [SandboxPanel.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/components/SandboxPanel.tsx)
 - Check `isAuthenticated` and `isSandbox` from `useSpringAuthStore()`.
 - Return `null` immediately if `!isAuthenticated || !isSandbox`.
 - Clean up the unauthenticated placeholder state since the panel will never be rendered when unauthenticated.
 
 ### 4. Fix Sign-In Bypass Typing & Vite Config
-#### [MODIFY] [user-auth-form.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/auth/sign-in/components/user-auth-form.tsx)
+#### [MODIFY] [user-auth-form.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/auth/sign-in/components/user-auth-form.tsx)
 - Update `handleSandboxBypass` role parameter type from `'administrator' | 'creator' | 'user'` to `'admin' | 'creator' | 'user'` matching the callers and mock engine.
 
-#### [MODIFY] [vite.config.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/vite.config.ts)
+#### [MODIFY] [vite.config.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/vite.config.ts)
 - Fix TypeScript error in proxy configuration by replacing `import.meta.env.VITE_API_BASE_URL` with `process.env.VITE_API_BASE_URL || 'http://localhost:8080'`.
 
 ## Verification Plan
 
 ### Automated Verification
-- Run `pnpm --filter @unipost/console exec tsc -b` to ensure all TypeScript checks pass cleanly.
-- Run `pnpm --filter @unipost/console build:web` to ensure clean build bundling.
-- Run `pnpm --filter @unipost/console lint` to ensure ESLint passes with zero warnings/errors.
+- Run `pnpm --filter @acc/console exec tsc -b` to ensure all TypeScript checks pass cleanly.
+- Run `pnpm --filter @acc/console build:web` to ensure clean build bundling.
+- Run `pnpm --filter @acc/console lint` to ensure ESLint passes with zero warnings/errors.
 
 ### Manual / Behavioral Verification
 - Verify initial unauthenticated state: `SandboxPanel` returns `null` (not visible on screen).

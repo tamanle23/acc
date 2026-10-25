@@ -21,7 +21,7 @@ Fleet Tenants Ledger previously displayed user rosters within a cramped modal di
 - Mocked `navigator.clipboard.writeText` to test ID copying.
 
 ## Verification
-- Executed `pnpm --filter @unipost/console exec vitest run src/features/system/tenants/__tests__/tenant-users-drawer.test.tsx`:
+- Executed `pnpm --filter @acc/console exec vitest run src/features/system/tenants/__tests__/tenant-users-drawer.test.tsx`:
   - 6/6 tests passed.
 - Executed full test suite:
   - 27/27 test files passed, 135/135 tests passed.

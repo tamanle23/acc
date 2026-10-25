@@ -1,7 +1,7 @@
 # Walkthrough 96: Phase 32 - Visual DAG Property Inspector, Bidirectional IR Synchronizer & Graph Validation
 
 ## 1. Executive Summary
-Phase 32 has been implemented and verified across `@unipost/console` and `@unipost/sandbox`:
+Phase 32 has been implemented and verified across `@acc/console` and `@acc/sandbox`:
 1. **Slide-Over Property Inspector Drawer (`dag-property-inspector.tsx`)**:
    - Opens when any node is selected or clicked in the Visual DAG Studio.
    - Four specialized configuration sections:
@@ -22,27 +22,27 @@ Phase 32 has been implemented and verified across `@unipost/console` and `@unipo
 
 ## 2. Key Changes Summary
 
-### `@unipost/console` Visual DAG Studio
-- [`dag-node.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-node.tsx): Extended `DagNodeData` to support `domain`, `retryDelaySeconds`, `backoffRate`, `compensateHandlerRef`, `decisionCases`, and `validationError`. Added visual error banner and ring highlighting for invalid nodes.
-- [`dag-property-inspector.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-property-inspector.tsx): Slide-over sheet with General, Bindings, Policies, and Routing tabs.
-- [`workflow-ir-converter.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/workflow-ir-converter.ts): Core engine for exporting/importing JSON IR and validating graph acyclicity and parameter bindings.
-- [`workflow-ir-dialog.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/workflow-ir-dialog.tsx): Dialog for viewing, downloading, and applying Workflow IR JSON.
-- [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx): Wired node selection click, Validate DAG toolbar button, Export/Import IR modal triggers, and validation error notification banner.
-- [`dag-property-inspector.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/dag-property-inspector.test.tsx): Unit tests covering node selection and property changes.
-- [`workflow-ir-converter.test.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/studio/workflow-ir-converter.test.ts): Unit tests covering export, import, cycle detection, and parameter expression validation.
+### `@acc/console` Visual DAG Studio
+- [`dag-node.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/dag-node.tsx): Extended `DagNodeData` to support `domain`, `retryDelaySeconds`, `backoffRate`, `compensateHandlerRef`, `decisionCases`, and `validationError`. Added visual error banner and ring highlighting for invalid nodes.
+- [`dag-property-inspector.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/dag-property-inspector.tsx): Slide-over sheet with General, Bindings, Policies, and Routing tabs.
+- [`workflow-ir-converter.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/workflow-ir-converter.ts): Core engine for exporting/importing JSON IR and validating graph acyclicity and parameter bindings.
+- [`workflow-ir-dialog.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/workflow-ir-dialog.tsx): Dialog for viewing, downloading, and applying Workflow IR JSON.
+- [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx): Wired node selection click, Validate DAG toolbar button, Export/Import IR modal triggers, and validation error notification banner.
+- [`dag-property-inspector.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/dag-property-inspector.test.tsx): Unit tests covering node selection and property changes.
+- [`workflow-ir-converter.test.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/studio/workflow-ir-converter.test.ts): Unit tests covering export, import, cycle detection, and parameter expression validation.
 
-### `@unipost/sandbox` Platform
-- [`workflow-handler.ts`](file:///c:/Users/Admin/workspace/git/unipost/packages/sandbox/src/handlers/workflow-handler.ts): Added in-memory definitions catalog with GET and POST handlers, plus state reset.
-- [`sandbox-engine.test.ts`](file:///c:/Users/Admin/workspace/git/unipost/packages/sandbox/src/__tests__/sandbox-engine.test.ts): Added tests for definitions catalog API.
+### `@acc/sandbox` Platform
+- [`workflow-handler.ts`](file:///c:/Users/Admin/workspace/git/acc/packages/sandbox/src/handlers/workflow-handler.ts): Added in-memory definitions catalog with GET and POST handlers, plus state reset.
+- [`sandbox-engine.test.ts`](file:///c:/Users/Admin/workspace/git/acc/packages/sandbox/src/__tests__/sandbox-engine.test.ts): Added tests for definitions catalog API.
 
 ---
 
 ## 3. Verification Results
 - **Console Vitest Suite**: 42 test files passed, 204 tests passed cleanly:
   ```bash
-  pnpm --filter @unipost/console exec vitest run
+  pnpm --filter @acc/console exec vitest run
   ```
 - **Unified Sandbox Test Suite**: 6 tests passed cleanly:
   ```bash
-  pnpm --filter @unipost/sandbox test
+  pnpm --filter @acc/sandbox test
   ```

@@ -7,7 +7,7 @@
 ---
 
 ## 1. Problem Statement
-The unipost platform's distributed workflow capabilities have grown across multiple domains: a pure state machine (`PureDecider`), 23 task strategy implementations, an asynchronous worker lease protocol, Java 21 Loom SSE broadcasting, a dual-mode Visual DAG Studio 2.0 with follow-live auto-pan and time-travel replay, and an offline Unified Sandbox simulation engine.
+The acc platform's distributed workflow capabilities have grown across multiple domains: a pure state machine (`PureDecider`), 23 task strategy implementations, an asynchronous worker lease protocol, Java 21 Loom SSE broadcasting, a dual-mode Visual DAG Studio 2.0 with follow-live auto-pan and time-travel replay, and an offline Unified Sandbox simulation engine.
 
 To ensure long-term architectural stability, seamless developer onboarding, and zero regression during future iterations, a comprehensive, repository-wide Single Source of Truth (SSOT) was needed to anchor the system's designs, invariants, protocols, and contracts.
 
@@ -16,7 +16,7 @@ To ensure long-term architectural stability, seamless developer onboarding, and 
 ## 2. Plan
 1. Author [`docs/workflow_orchestration_engine_architecture.md`](../docs/workflow_orchestration_engine_architecture.md) detailing:
    - The Three Sacred Invariants (Zero-I/O Decider, Strict Topological DAGs, Zero-Stub Sandbox Parity).
-   - High-Level Topology & Flowchart across `@unipost/console`, API Gateway, `workflow-engine`, Persistence, and Worker Fleet.
+   - High-Level Topology & Flowchart across `@acc/console`, API Gateway, `workflow-engine`, Persistence, and Worker Fleet.
    - Strategy Matrix for all 23 task node types.
    - Parameter Resolution & Scoping Hierarchy (`${workflow.input.*}`, `${node.output.*}`, `${system.*}`).
    - Distributed Worker Lease Protocol & Auto-Heartbeat Sequence.
@@ -46,8 +46,8 @@ To ensure long-term architectural stability, seamless developer onboarding, and 
 ---
 
 ## 4. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` (Exited 0, clean frontend type check).
-- `pnpm --filter @unipost/console test -- run src/features/workflows src/features/workflow-executions` (25 test files, 105 tests passing).
+- `pnpm --filter @acc/console exec tsc --noEmit` (Exited 0, clean frontend type check).
+- `pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions` (25 test files, 105 tests passing).
 - `./mvnw.cmd test-compile -q` in `apps/backend` (Exited 0, clean Java 21 / Spring compilation).
 
 ---

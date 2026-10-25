@@ -52,11 +52,11 @@ We have implemented the Facebook Login flow for the Facebook integration card in
 ### Automated Builds & Linting
 - **TypeScript & Vite Build**:
   ```bash
-  pnpm --filter @unipost/console build:web
+  pnpm --filter @acc/console build:web
   ```
   Result: **Exit code 0**. `tsc -b` and client bundling completed with no errors.
 - **ESLint**:
   ```bash
-  pnpm --filter @unipost/console lint
+  pnpm --filter @acc/console lint
   ```
   Result: **Exit code 0**. All checks passed cleanly with 0 errors and 0 warnings.

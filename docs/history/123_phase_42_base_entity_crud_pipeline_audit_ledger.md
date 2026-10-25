@@ -8,20 +8,20 @@ Prior to Phase 42, base entity record mutations lacked a standardized, atomic mu
    - Add `cascade_policy VARCHAR(20) DEFAULT 'RESTRICT' NOT NULL` to `UNIPOST_RELATIONSHIP_TYPES` via Liquibase.
    - Provision `UNIPOST_RECORD_AUDIT_LOG` table with PostgreSQL range partitioning on `created_at`, default catch-all partition, rolling monthly partitions, composite index, and Row-Level Security (`RLS`).
 2. **Modular Mutation Pipeline Engine**:
-   - Develop `RecordMutationPipeline` in `apps/backend/unipost-fw` orchestrating the 6-stage lifecycle within `@Transactional` boundaries.
+   - Develop `RecordMutationPipeline` in `apps/backend/acc-fw` orchestrating the 6-stage lifecycle within `@Transactional` boundaries.
    - Dual-mode OCC & ETag: HTTP `If-Match` request header & `ETag: "\"{version}\""` response header with fallback to body `version`; 3-way auto-merge on version mismatch if `baseAttributes` supplied, else `409 Conflict`.
    - Declarative Delete Cascades: Pattern B (`UNIPOST_ATTRIBUTE_DEFINITIONS.options->>'cascadePolicy'`) & Pattern C (`UNIPOST_RELATIONSHIP_TYPES.cascade_policy`). Child cascade deletes execute via set-based bulk SQL (`UPDATE UNIPOST_ENTITIES ...`) for high throughput with a single root audit log entry.
    - Strict Tenant Blindness: Foreign references to records of other tenants treated as non-existent (`404 Not Found`).
    - Audit Ledger: Store structured delta before/after map: `{"field": {"old": v1, "new": v2}}`.
    - Sovereign-Only Restore: Dry-run preview (`GET .../restore-preview/{auditId}`) computing diff with schema defaults; restore execution (`POST .../restore/{auditId}`) performing monotonic version bump (`operation = "RESTORE"`), unlocked only for Platform Root Custodians (`ROLE_SYSTEM_CUSTODIAN`).
 3. **Frontend & Unified Sandbox Parity**:
-   - Liquid Glass `RecordAuditHistoryDrawer` on `EntityDataGrid` in `@unipost/console`.
+   - Liquid Glass `RecordAuditHistoryDrawer` on `EntityDataGrid` in `@acc/console`.
    - Unified Sandbox routes and in-memory audit store in `metadata-sandbox-adapter.ts` and `mock-metadata.ts`.
 
 ## Changes Made
 - **Database Migrations**:
-  - `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00012.xml`: Defined partitioned audit table and relationship cascade column.
-  - `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml`: Registered changelog 12.
+  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00012.xml`: Defined partitioned audit table and relationship cascade column.
+  - `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog 12.
 - **Backend Domain, Repositories & Engine**:
   - `RelationshipType.java`: Added `cascadePolicy` column.
   - `RecordAuditLog.java`, `RecordAuditLogId.java`: Partitioned composite entity and key.

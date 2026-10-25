@@ -1,6 +1,6 @@
 # Dropdown Responsiveness & Instant Open Optimization
 
-Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownMenu`, `Select`, `ProfileSwitcher`, `ProfileDropdown`, `ThemeSwitch`, and table actions) in `apps/unipost-console`.
+Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownMenu`, `Select`, `ProfileSwitcher`, `ProfileDropdown`, `ThemeSwitch`, and table actions) in `apps/acc-console`.
 
 ## 1. Problem & Root Causes
 
@@ -22,9 +22,9 @@ Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownM
 
 ## 2. Proposed Changes
 
-### `apps/unipost-console`
+### `apps/acc-console`
 
-#### [MODIFY] [dropdown-menu.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/dropdown-menu.tsx)
+#### [MODIFY] [dropdown-menu.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/dropdown-menu.tsx)
 - Set default `modal = false` in `DropdownMenu`:
   ```tsx
   function DropdownMenu({
@@ -38,13 +38,13 @@ Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownM
 - Add `duration-100` and `will-change-[transform,opacity]` to `DropdownMenuContent` and `DropdownMenuSubContent`.
 - Subtly reduce slide distance (`data-[side=bottom]:slide-in-from-top-1` / 4px) to ensure silky 60/120fps entry without GPU convolution thrashing.
 
-#### [MODIFY] [profile-dropdown.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/profile-dropdown.tsx)
+#### [MODIFY] [profile-dropdown.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/profile-dropdown.tsx)
 - Remove `forceMount` on `<DropdownMenuContent>` so it only mounts and activates router links when opened.
 
-#### [MODIFY] [select.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/select.tsx)
+#### [MODIFY] [select.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/select.tsx)
 - Add `duration-100 will-change-[transform,opacity]` to `SelectContent` for instant response on click.
 
-#### [MODIFY] [popover.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/popover.tsx)
+#### [MODIFY] [popover.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/popover.tsx)
 - Optimize `PopoverContent` with `backdrop-blur-md duration-100 will-change-[transform,opacity]`.
 
 ---
@@ -52,8 +52,8 @@ Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownM
 ## 3. Verification Plan
 
 ### Automated Tests & Typecheck
-- Run `pnpm --filter @unipost/console build:web` to ensure no compile errors.
-- Run `pnpm --filter @unipost/console lint` to verify code quality.
+- Run `pnpm --filter @acc/console build:web` to ensure no compile errors.
+- Run `pnpm --filter @acc/console lint` to verify code quality.
 
 ### Manual Verification
 - Click on `ProfileDropdown` (avatar in top navbar) $\rightarrow$ opens instantly.
@@ -62,5 +62,5 @@ Eliminate noticeable opening latency when clicking dropdown triggers (`DropdownM
 - Click on view options / table action dropdowns $\rightarrow$ snappy, instantaneous response.
 
 ### Concluding Steps
-- Create `apps/unipost-console/doc/walkthrough_10.md` and conversation `walkthrough.md`.
+- Create `apps/acc-console/doc/walkthrough_10.md` and conversation `walkthrough.md`.
 - Commit changes cleanly via Git per `.agents/rules/commit-on-execution.md`.

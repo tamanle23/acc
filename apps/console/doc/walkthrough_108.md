@@ -35,15 +35,15 @@ In Phase 39.1, we built directly upon Phase 39 to harden in-flight hot migration
 
 ### Backend Tests:
 - `TopologicalCompatibilityValidatorTest`: 4/4 passed (including terminal rejection and conditional parameter review).
-- Reactor suite (`./mvnw test -q -pl workflow-engine,unipost-ms-aio`):
+- Reactor suite (`./mvnw test -q -pl workflow-engine,acc-ms-aio`):
   - `workflow-engine`: 52/52 tests passed.
-  - `unipost-ms-aio`: 8/8 tests passed (all Modulith boundaries clean).
+  - `acc-ms-aio`: 8/8 tests passed (all Modulith boundaries clean).
 
 ### Sandbox Tests:
-- `@unipost/sandbox`: 11/11 tests passed in `vitest run`.
+- `@acc/sandbox`: 11/11 tests passed in `vitest run`.
 
 ### Frontend Tests:
-- `@unipost/console`:
+- `@acc/console`:
   - `fleet-migration-modal.test.tsx`: 2/2 passed.
   - `hot-migration-modal.test.tsx`: 2/2 passed.
   - TypeScript typecheck (`tsc --noEmit`): clean exit 0.

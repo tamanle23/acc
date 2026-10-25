@@ -1,5 +1,5 @@
 # Transforming Functioning Applications into an Enterprise-Grade Quality System
-**Architectural Blueprint & Transformation Strategy for `@unipost` Monorepo**
+**Architectural Blueprint & Transformation Strategy for `@acc` Monorepo**
 
 ---
 
@@ -7,7 +7,7 @@
 
 Moving from a **working prototype or functioning software** to an **enterprise-grade quality system** requires shifting focus from feature delivery to operational excellence, multi-tenant database isolation, zero-downtime resilience, deterministic security, high observability, and strict architectural governance.
 
-In the context of the **`@unipost` monorepo**—comprising Java 21 / Spring Modulith backends (`@unipost/backend`), React 19 / Vite web apps (`@unipost/console`), Next.js portals (`tekgo-ui`), Expo mobile apps (`mobile-ui`), Electrobun desktop apps (`@unipost/desktop`), and shared Liquid Glass UI packages (`@unipost/ui`)—the design strategy rests on six core pillars:
+In the context of the **`@acc` monorepo**—comprising Java 21 / Spring Modulith backends (`@acc/backend`), React 19 / Vite web apps (`@acc/console`), Next.js portals (`tekgo-ui`), Expo mobile apps (`mobile-ui`), Electrobun desktop apps (`@acc/desktop`), and shared Liquid Glass UI packages (`@acc/ui`)—the design strategy rests on six core pillars:
 
 ### Pillar I: Zero-Trust & Defensive System Boundaries
 * **Strict Decoupling via Facades & Mediators**: Frontends must never directly tie UI components to network APIs or raw state stores. All data access must pass through typed Facades (custom TanStack Query hooks) and Zustand Mediators.
@@ -20,7 +20,7 @@ In the context of the **`@unipost` monorepo**—comprising Java 21 / Spring Modu
 * **System Immutability Guards**: Guard common system-level schemas (`tenant_id IS NULL` or `SYSTEM` scope) with read-only badges and modification protection across API endpoints and UI controllers.
 
 ### Pillar III: Resilient Modulith & Dynamic Metadata Engine
-* **Spring Modulith Boundaries**: Enforce strict package boundaries in `@unipost/backend` (`ApplicationModules.verify()`) to eliminate cyclic cross-module dependencies.
+* **Spring Modulith Boundaries**: Enforce strict package boundaries in `@acc/backend` (`ApplicationModules.verify()`) to eliminate cyclic cross-module dependencies.
 * **Dual-Layer Composite Cache Fabric**: Maintain dual-layered schema caching with composite version keys (`schema:{tid}:{type}:v{tVer}_s{sVer}`) combining L1 in-memory `ConcurrentHashMap` with L2 Redis caching and Spring Modulith event invalidation.
 * **Hybrid Dynamic Metadata Invariants**: Partial unique indexes conditioned on `WHERE "deletedDate" IS NULL` ensure sub-millisecond dynamic attribute lookups without soft-delete collisions.
 
@@ -51,12 +51,12 @@ The target enterprise architecture organizes the system into multi-layered, high
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                     ENTERPRISE CLIENT LAYER                                      │
 ├──────────────────────────┬─────────────────────────┬───────────────────┬─────────────────────────┤
-│    @unipost/console      │        tekgo-ui         │     mobile-ui     │    @unipost/desktop     │
+│    @acc/console      │        tekgo-ui         │     mobile-ui     │    @acc/desktop     │
 │ (React 19 / Vite 8 Web)  │  (Next.js 15 App Router)│  (Expo SDK 57)    │  (Electrobun Desktop)   │
 ├──────────────────────────┴─────────────────────────┴───────────────────┴─────────────────────────┤
 │                                  SHARED DESIGN & I18N FABRIC                                    │
 │   ┌──────────────────────────────────────────────┐ ┌─────────────────────────────────────────┐   │
-│   │  @unipost/ui (Liquid Glass & WCAG 2.2 AA)    │ │  @unipost/i18n (Sync Locales: EN / VI)  │   │
+│   │  @acc/ui (Liquid Glass & WCAG 2.2 AA)    │ │  @acc/i18n (Sync Locales: EN / VI)  │   │
 │   └──────────────────────────────────────────────┘ └─────────────────────────────────────────┘   │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 │                                UNIFIED CLIENT MEDIATOR & SANDBOX                                 │
@@ -97,7 +97,7 @@ The target enterprise architecture organizes the system into multi-layered, high
 
 1. **Multi-Tenant Row-Level Security (RLS)**:
    - Every tenant transaction sets `SET LOCAL app.current_tenant_id = '<tenant_uuid>'` via Spring `@Transactional` aspect (`TenantSecurityAspect`).
-   - PostgreSQL RLS policies enforce isolation transparently: `CREATE POLICY tenant_isolation_policy ON unipost_entities USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);`.
+   - PostgreSQL RLS policies enforce isolation transparently: `CREATE POLICY tenant_isolation_policy ON acc_entities USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);`.
 2. **Facade & Mediator Pattern (Frontend)**:
    - React components interact with typed query/mutation hooks (`useEntityQuery`, `useEntityMutation`) and Zustand stores using granular selectors to prevent unnecessary re-renders.
 3. **Spring Modulith & ResolvableType Dynamic Dispatch**:
@@ -156,7 +156,7 @@ The enterprise transformation strategy is structured into nine completed and evo
 * **Status**: Completed
 * **Objectives**: Deliver distinct operational perspectives for platform administrators and business operators.
 * **Key Deliverables**:
-  1. Dual-Mode UI toggle in `@unipost/console`: **Architect Studio** (schema modeling) vs. **Operator View** (data execution).
+  1. Dual-Mode UI toggle in `@acc/console`: **Architect Studio** (schema modeling) vs. **Operator View** (data execution).
   2. Permission-based UI element visibility (`SYSTEM_ADMIN`, `TENANT_ADMIN`, `OPERATOR`).
   3. `SYSTEM` immutability badges on common platform schemas.
   4. Real-time form schema inspection and Draft-07 JSON Schema validation debugging tools.
@@ -201,7 +201,7 @@ The enterprise transformation strategy is structured into nine completed and evo
 To ensure the system is **open for extension but closed for modification**, the architecture incorporates explicit open-extension points across all layers:
 
 ### 1. Domain Blueprint Catalog Extension
-* **Extension Mechanism**: Introducing new industry domain blueprints requires only adding a JSON manifest file under `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/`.
+* **Extension Mechanism**: Introducing new industry domain blueprints requires only adding a JSON manifest file under `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`.
 * **OCP Compliance**: The `BlueprintCatalogService` automatically discovers, validates, and registers new blueprints at startup without altering core provisioning or backend logic.
 
 ### 2. Dynamic Attribute & Widget Registry Engine
@@ -230,7 +230,7 @@ To ensure the system is **open for extension but closed for modification**, the 
 
 ## 5. Summary & Enterprise Quality Metrics
 
-Transforming `@unipost` into an enterprise-grade quality platform equips the system to deliver sub-second multi-tenant dynamic queries, zero cross-tenant data leakage, strict WCAG 2.2 AA accessibility, automated GDPR compliance, and resilient multi-tier protection.
+Transforming `@acc` into an enterprise-grade quality platform equips the system to deliver sub-second multi-tenant dynamic queries, zero cross-tenant data leakage, strict WCAG 2.2 AA accessibility, automated GDPR compliance, and resilient multi-tier protection.
 
 ### Target Enterprise Quality KPIs
 * **Tenant Isolation Leakage**: `0` cross-tenant data access breaches (verified by PostgreSQL RLS integration tests).

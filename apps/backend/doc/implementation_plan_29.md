@@ -12,12 +12,12 @@ Execute Phase 15 deliverables: exhaustive multi-tier testing framework guarantee
   - Liquid Glass WCAG 2.2 AA contrast algorithms (`packages/tokens/src/index.test.ts`)
 
 ### 2. L2 Spring Modulith & Database Boundary Slices
-- Verify Spring Modulith boundaries (`ModularityTests.java` in `unipost-ms-aio`).
+- Verify Spring Modulith boundaries (`ModularityTests.java` in `acc-ms-aio`).
 - Verify multi-tenant RLS context, tenant isolation, and atomic provisioning (`TenantProvisioningServiceTest.java`, `SovereignCustodyAndRlsIsolationTest.java`).
 - Fix and maintain cache stampede concurrency under multi-threaded loads in `SchemaValidationServiceTest.java`.
 
 ### 3. L3 Contract Tests
-- Add `packages/client/src/__tests__/contract-schema.test.ts` verifying bidirectional compatibility between `@unipost/client` TypeScript models (`EntityType`, `AttributeDefinition`, `EntityRecord`, `ProblemDetail`) and Spring Jackson REST payloads.
+- Add `packages/client/src/__tests__/contract-schema.test.ts` verifying bidirectional compatibility between `@acc/client` TypeScript models (`EntityType`, `AttributeDefinition`, `EntityRecord`, `ProblemDetail`) and Spring Jackson REST payloads.
 
 ### 4. L4 The 4 Golden Cross-Tier E2E Workflows
 - Extend `apps/console/src/features/metadata/__tests__/domain-blueprints-e2e.test.ts` to implement:

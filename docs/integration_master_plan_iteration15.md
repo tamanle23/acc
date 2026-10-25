@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 15
 ## DAG Graph Topology Invariants (Conventional Single-Start & Single-End), Canvas Authoring & Existing Visual Debugger Alignment
 
-> **Monorepo Target:** `@unipost/console` (`apps/console`) & `@unipost/backend` (`apps/backend/workflow-engine`, `apps/backend/unipost-ms-aio`)  
+> **Monorepo Target:** `@acc/console` (`apps/console`) & `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
 > **Status:** Final Aligned Specification  
 > **Author:** Lead Systems Architect & Full-Stack Engineer  
 
@@ -151,9 +151,9 @@ The existing debugger in `VisualDagStudio` is polished to be 100% reactive to ba
 ## 5. Verification & Test Plan
 
 1. **Automated Unit & Integration Tests**:
-   - Vitest: `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio/`
-   - TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit`
-   - Backend Maven: `node mvnw.cjs test -pl workflow-engine,unipost-ms-aio -Dtest=AcyclicityGuardTest,WorkflowIteration13ControllersTest -q`
+   - Vitest: `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/`
+   - TypeScript: `pnpm --filter @acc/console exec tsc --noEmit`
+   - Backend Maven: `node mvnw.cjs test -pl workflow-engine,acc-ms-aio -Dtest=AcyclicityGuardTest,WorkflowIteration13ControllersTest -q`
 2. **Manual Verification**:
    - Verify attempt to delete Start or End node is blocked and visually disabled.
    - Verify adding multiple start or end nodes shows validation error and disables Save.

@@ -1,7 +1,7 @@
 # Domain Blueprints Architecture: Declarative Catalog, Atomic Provisioning & Decoupled Schema Evolution
 
 **System Level:** Core Architecture & Platform Engineering Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@unipost/console` (React 19 / Vite 8 / TanStack Router)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
 **Authoritative Location:** `docs/multi-tenants/domain_blueprints_reference.md`  
 **Status:** Canonical Reference Document  
 
@@ -66,7 +66,7 @@ The provisioning service must enforce strict tenant boundaries:
 
 ## 3. Blueprint Manifest Specification
 
-Domain blueprints are defined as JSON files stored in `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/`.
+Domain blueprints are defined as JSON files stored in `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`.
 
 ### 3.1 JSON Schema Structure
 
@@ -449,7 +449,7 @@ Provisions a new or existing tenant with the selected blueprint template.
 To add a new blueprint to the platform (e.g. *Healthcare Clinic Records* or *Warehouse Inventory*), follow this standard procedure:
 
 1. **Create the Manifest File:**
-   * Create `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/<domain>-blueprint.json`.
+   * Create `apps/backend/acc-fw/src/main/resources/metadata/blueprints/<domain>-blueprint.json`.
    * Ensure `id` starts with `bp_` and ends with version (e.g., `bp_clinic_v1`).
    * Select a Lucide icon string (e.g., `Stethoscope`, `Package`, `Box`).
 2. **Define Entity Types & System Names:**
@@ -472,8 +472,8 @@ To add a new blueprint to the platform (e.g. *Healthcare Clinic Records* or *War
 
 | Concept | File Location | Key Responsibility |
 | :--- | :--- | :--- |
-| **Blueprint Manifests** | `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/*.json` | Declarative templates for domain entities and edges. |
-| **Catalog Service** | [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/tenant/blueprint/BlueprintCatalogService.java) | Classpath scanning and memory caching of blueprints. |
-| **Provisioning Service**| [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/tenant/service/TenantProvisioningService.java) | Atomic deep-cloning, tenant stamping, and cache pre-warming. |
-| **REST Controller** | [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/presentation/TenantProvisioningController.java) | Public API endpoints for catalog discovery and provisioning. |
-| **Verification Suite** | [`TenantProvisioningServiceTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/tenant/service/TenantProvisioningServiceTest.java) | Automated unit tests covering all blueprints and edge cases. |
+| **Blueprint Manifests** | `apps/backend/acc-fw/src/main/resources/metadata/blueprints/*.json` | Declarative templates for domain entities and edges. |
+| **Catalog Service** | [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/blueprint/BlueprintCatalogService.java) | Classpath scanning and memory caching of blueprints. |
+| **Provisioning Service**| [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java) | Atomic deep-cloning, tenant stamping, and cache pre-warming. |
+| **REST Controller** | [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java) | Public API endpoints for catalog discovery and provisioning. |
+| **Verification Suite** | [`TenantProvisioningServiceTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/tenant/service/TenantProvisioningServiceTest.java) | Automated unit tests covering all blueprints and edge cases. |

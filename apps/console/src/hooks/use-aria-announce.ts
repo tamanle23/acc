@@ -23,7 +23,7 @@ export function announceToScreenReader(message: string, priority: AnnouncementPr
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
-      new CustomEvent('unipost-aria-announce', {
+      new CustomEvent('acc-aria-announce', {
         detail: { message, priority },
       })
     );

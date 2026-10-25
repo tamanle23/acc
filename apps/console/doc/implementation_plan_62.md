@@ -1,20 +1,20 @@
 # Comprehensive Phased Implementation Plan 62: Domain Blueprints Full-Stack Ecosystem
 
 **Document Path:** `apps/console/doc/implementation_plan_62.md`  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK / PostgreSQL), `@unipost/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System)  
-**Reference Document:** [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / payOS Vietnam SDK / PostgreSQL), `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System)  
+**Reference Document:** [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md)  
 **Supporting Specifications:**
-- Part 5: [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
-- Part 9: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)
-- Part 10: [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
-- Sandbox Standard: [`.agents/rules/02-unified-sandbox.md`](file:///c:/Users/Admin/workspace/git/unipost/.agents/rules/02-unified-sandbox.md)
-- Enhancements & Brainstorm: [`apps/console/doc/blueprint_ecosystem_enhancement_brainstorm.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/blueprint_ecosystem_enhancement_brainstorm.md)
+- Part 5: [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
+- Part 9: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)
+- Part 10: [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
+- Sandbox Standard: [`.agents/rules/02-unified-sandbox.md`](file:///c:/Users/Admin/workspace/git/acc/.agents/rules/02-unified-sandbox.md)
+- Enhancements & Brainstorm: [`apps/console/doc/blueprint_ecosystem_enhancement_brainstorm.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/blueprint_ecosystem_enhancement_brainstorm.md)
 
 ---
 
 ## 1. Architectural Strategy & Phased Breakdown
 
-The **Domain Blueprints Full-Stack Ecosystem** connects the backend provisioning engine (`@unipost/backend`) with the client experience (`@unipost/console`) across all touchpoints:
+The **Domain Blueprints Full-Stack Ecosystem** connects the backend provisioning engine (`@acc/backend`) with the client experience (`@acc/console`) across all touchpoints:
 - **Internal Architect & Operator Flow:** Discovering, previewing, and importing blueprints directly from inside the `/metadata` workspace.
 - **Public Self-Service Acquisition Flow:** Public landing page (`/`), pricing tiers, blueprint carousel selection, registration, and 1-click workspace initialization.
 - **Multi-Workspace Switcher Flow:** Provisioning isolated sub-workspaces/subsidiaries from Settings.
@@ -61,9 +61,9 @@ To guarantee zero regressions, strict compliance with the **Unified Sandbox Plat
 
 ## 2. Phase 1: In-App Blueprint Gallery, Template Preview Modal & Console Seeding
 
-### 2.1 Backend Deliverables (`@unipost/backend`)
+### 2.1 Backend Deliverables (`@acc/backend`)
 - [ ] **Task 1.1: Blueprint Manifest Detail Endpoint (`GET /api/v1/metadata/blueprints/{id}`)**
-  - **Class:** [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/presentation/TenantProvisioningController.java)
+  - **Class:** [`TenantProvisioningController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java)
   - Method: `getBlueprintDetails(@PathVariable String blueprintId)` returning `ResponseWrapper<ContextHeader, BlueprintManifest>`.
   - Calls `blueprintCatalogService.getBlueprint(blueprintId)`.
   - Returns HTTP 404 if blueprint ID does not exist in catalog.
@@ -75,7 +75,7 @@ To guarantee zero regressions, strict compliance with the **Unified Sandbox Plat
     - If collision exists, safely suffix `_imported` or skip duplicate attributes, preventing transaction abort.
     - Optionally seed `sampleRecords` if specified in manifest.
 
-### 2.2 Frontend Deliverables (`@unipost/console`)
+### 2.2 Frontend Deliverables (`@acc/console`)
 - [ ] **Task 1.4: Unified Sandbox Platform Integration (`metadata-sandbox-adapter.ts`)**
   - Adhere strictly to `.agents/rules/02-unified-sandbox.md`.
   - Add matcher & handler for:
@@ -107,14 +107,14 @@ To guarantee zero regressions, strict compliance with the **Unified Sandbox Plat
   - Search filter input + Category pills (*All*, *Publishing*, *Logistics & Fleet*, *Commerce & CRM*).
   - Bento Grid of `BlueprintCard` components featuring animated specular borders, Lucide icon maps, and dual actions: `[ Preview Template ]` and `[ 1-Click Import ]`.
 - [ ] **Task 1.9: Workspace Integration & Zero-Model Empty State**
-  - **Sidebar Action**: Add `<BookTemplate size={15} /> Import Blueprint` in [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) header.
-  - **Zero-Model Empty State**: In [`metadata-feature.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/metadata-feature.tsx), when `entityTypes.length === 0`, render an interactive glass callout:
+  - **Sidebar Action**: Add `<BookTemplate size={15} /> Import Blueprint` in [`entity-type-sidebar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/entity-type/entity-type-sidebar.tsx) header.
+  - **Zero-Model Empty State**: In [`metadata-feature.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/metadata-feature.tsx), when `entityTypes.length === 0`, render an interactive glass callout:
     - *"Your workspace has no models yet. Start from scratch or jump-start with a Domain Blueprint."*
     - Actions: `[ ➕ Create Custom Model ]` and `[ 📚 Browse Blueprint Catalog ]`.
 
 ### 2.3 Phase 1 Verification Criteria
 - `mvn clean compile` passes on backend with new endpoints and tests.
-- `pnpm --filter @unipost/console exec tsc --noEmit` passes with 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit` passes with 0 errors.
 - Vitest unit tests for `use-blueprints.ts`, `blueprint-gallery-dialog.tsx`, and `blueprint-graph-canvas.tsx`.
 - In Console `/metadata`: Click "Import Blueprint" -> Open "Headless CMS" preview -> Inspect SVG graph, attributes, and form -> Click "Import" -> Models populate in $< 250\text{ ms}$.
 
@@ -123,13 +123,13 @@ To guarantee zero regressions, strict compliance with the **Unified Sandbox Plat
 ## 3. Phase 2: Public Landing Page & Self-Service Onboarding Funnel
 
 ### 3.1 Architecture & Flow Specifications
-Reference: [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md).
+Reference: [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md).
 
 ```
 Step 1: Public Discovery (/) -> Step 2: Plan Selection -> Step 3: Register Modal & Blueprint Carousel -> Step 4: 1-Click Workspace Setup (<250ms) -> Step 5: Redirect to /_authenticated/data
 ```
 
-### 3.2 Frontend Deliverables (`@unipost/console`)
+### 3.2 Frontend Deliverables (`@acc/console`)
 - [ ] **Task 2.1: Public Landing Route Setup (`apps/console/src/routes/index.tsx`)**
   - Implement public index route (`/`) using TanStack Router.
   - Auth Session Check: If user already has an active access token and tenant ID in local storage/cookies, auto-redirect to `/_authenticated/data`. If unauthenticated, render the public `LandingPage`.
@@ -169,7 +169,7 @@ Step 1: Public Discovery (/) -> Step 2: Plan Selection -> Step 3: Register Modal
 ## 4. Phase 3: Multi-Workspace Switcher & Organization Provisioning
 
 ### 4.1 Architecture Specifications
-Reference: `Touchpoint B: Multi-Workspace / Organization Switcher` from [`domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md).
+Reference: `Touchpoint B: Multi-Workspace / Organization Switcher` from [`domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md).
 
 ### 4.2 Backend & Frontend Deliverables
 - [ ] **Task 3.1: Backend Multi-Tenant Provisioning Scope**
@@ -190,9 +190,9 @@ Reference: `Touchpoint B: Multi-Workspace / Organization Switcher` from [`domain
 ## 5. Phase 4: payOS VietQR Integration & Dynamic Feature Entitlements Engine
 
 ### 5.1 Architecture Specifications
-Reference: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md).
+Reference: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md).
 
-### 5.2 Backend Deliverables (`@unipost/backend`)
+### 5.2 Backend Deliverables (`@acc/backend`)
 - [ ] **Task 4.1: Liquibase Migration & Entity Models**
   - Create `UNIPOST_TENANT_BILLING`:
     - Columns: `tenant_id` (PK, UUID), `payos_customer_id`, `current_order_code` (BIGINT), `plan_tier` (VARCHAR), `billing_cadence` (VARCHAR), `expires_at` (TIMESTAMP), `status` (VARCHAR).
@@ -212,7 +212,7 @@ Reference: [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements
     - Intercepts annotated methods, checks active tenant's entitlement set.
     - If unentitled, throws `FeatureNotEntitledException` -> returns HTTP 403 Forbidden with payload `{ "error": "FEATURE_LOCKED", "feature": "FEATURE_AI_AGENT_MCP" }`.
 
-### 5.3 Frontend Deliverables (`@unipost/console`)
+### 5.3 Frontend Deliverables (`@acc/console`)
 - [ ] **Task 4.4: In-App Feature Gate Component (`<FeatureGate />`)**
   - Path: `apps/console/src/core/auth/feature-gate.tsx`
   - Renders children when entitled.

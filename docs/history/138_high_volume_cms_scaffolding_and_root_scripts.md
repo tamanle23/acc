@@ -16,17 +16,17 @@
 
 ## Changes
 - **`package.json`**: Added root shortcuts for sandbox dev and E2E testing.
-- **`apps/backend/unipost-sandbox/.../SandboxProperties.java`**: Added nested `SeedProperties`.
-- **`apps/backend/unipost-sandbox/.../CmsDataScaffoldingGenerator.java`**: Created high-performance JDBC batch insert generator for 1,000+ Articles, 50 Categories, 200 Media Assets, and graph relationships.
-- **`apps/backend/unipost-sandbox/.../SandboxDataPreWarmer.java`**: Added dual-blueprint provisioning (`bp_crm_billing_v1` + `bp_cms_publishing_v1`) and CMS record scaffolding trigger.
-- **`apps/backend/unipost-sandbox/.../CmsDataScaffoldingGeneratorTest.java`**: Unit test asserting batch inserts and RLS session setting.
-- **`apps/backend/unipost-sandbox/.../SandboxDataPreWarmerTest.java`**: Updated mock expectations for dual blueprints and CMS generator.
+- **`apps/backend/acc-sandbox/.../SandboxProperties.java`**: Added nested `SeedProperties`.
+- **`apps/backend/acc-sandbox/.../CmsDataScaffoldingGenerator.java`**: Created high-performance JDBC batch insert generator for 1,000+ Articles, 50 Categories, 200 Media Assets, and graph relationships.
+- **`apps/backend/acc-sandbox/.../SandboxDataPreWarmer.java`**: Added dual-blueprint provisioning (`bp_crm_billing_v1` + `bp_cms_publishing_v1`) and CMS record scaffolding trigger.
+- **`apps/backend/acc-sandbox/.../CmsDataScaffoldingGeneratorTest.java`**: Unit test asserting batch inserts and RLS session setting.
+- **`apps/backend/acc-sandbox/.../SandboxDataPreWarmerTest.java`**: Updated mock expectations for dual blueprints and CMS generator.
 - **`apps/console/.../fleet-tenants-table.tsx`**: Added `aria-label` to table row action button.
 
 ## Verification
-- `pnpm --filter @unipost/backend test:sandbox`: 33/33 tests passing (0 failures, 0 errors).
-- `pnpm --filter @unipost/backend test:modulith`: All 9 reactor modules built successfully, ModularityTests passed.
-- `pnpm --filter @unipost/console test:e2e`: All 15 Golden E2E browser journeys passing (100% WCAG 2.2 AA compliant).
+- `pnpm --filter @acc/backend test:sandbox`: 33/33 tests passing (0 failures, 0 errors).
+- `pnpm --filter @acc/backend test:modulith`: All 9 reactor modules built successfully, ModularityTests passed.
+- `pnpm --filter @acc/console test:e2e`: All 15 Golden E2E browser journeys passing (100% WCAG 2.2 AA compliant).
 
 ## Tasks
 - [x] Configure root package.json sandbox scripts

@@ -4,7 +4,7 @@
 In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (Phase 5), mobile operators lacked dynamic schema-driven form rendering, binary media asset capture/upload capabilities, and relational record pickers inside `apps/mobile-ui`.
 
 ## Plan
-1. Create `MediaPickerInput.tsx` with Liquid Glass styling and streaming upload to `unipost-ms-fs`.
+1. Create `MediaPickerInput.tsx` with Liquid Glass styling and streaming upload to `acc-ms-fs`.
 2. Create `RelationPickerBottomSheet.tsx` for searchable foreign key record picking.
 3. Create `DynamicFieldRenderer.tsx` mapping `AttributeDefinition` data types (`STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `RELATIONSHIP`) and UI components (`text`, `textarea`, `number`, `switch`, `relation_picker`, `media_picker`).
 4. Add unit test suite in `apps/mobile-ui/src/__tests__/dynamic-form.test.ts`.
@@ -20,9 +20,9 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## Verification
 - `pnpm --filter mobile-ui test`: Passed (9/9 tests).
-- `pnpm --filter @unipost/client test`: Passed (6/6 tests).
-- `pnpm --filter @unipost/sandbox test`: Passed (5/5 tests).
-- `pnpm --filter @unipost/console test`: Passed (146/146 tests).
+- `pnpm --filter @acc/client test`: Passed (6/6 tests).
+- `pnpm --filter @acc/sandbox test`: Passed (5/5 tests).
+- `pnpm --filter @acc/console test`: Passed (146/146 tests).
 
 ## Walkthrough
 Refer to `apps/mobile-ui/doc/walkthrough_18.md`.

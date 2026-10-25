@@ -15,40 +15,40 @@ This document outlines the plan to establish a Kubernetes-native reverse proxy s
 
 We will create a new workspace dedicated to infrastructure, containing the Kubernetes manifests, Crossplane blueprints, and runbook.
 
-#### [NEW] [apps/infra/package.json](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/package.json)
+#### [NEW] [apps/infra/package.json](file:///c:/Users/Admin/workspace/git/acc/apps/infra/package.json)
 Initialize a basic `package.json` for the new `infra` app, exposing scripts like `validate:infra`.
 
-#### [NEW] [apps/infra/README.md](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/README.md)
+#### [NEW] [apps/infra/README.md](file:///c:/Users/Admin/workspace/git/acc/apps/infra/README.md)
 A local validation runbook detailing how to spin up Kind, install NGINX Ingress, apply these manifests, and query the reverse proxy.
 
 ---
 
 ### Local Reverse Proxy Manifests (Kind)
 
-#### [NEW] [apps/infra/k8s/frontend.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/frontend.yaml)
+#### [NEW] [apps/infra/k8s/frontend.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/frontend.yaml)
 Kubernetes Deployment and Service for the frontend app (exposing port 80).
 
-#### [NEW] [apps/infra/k8s/backend.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/backend.yaml)
+#### [NEW] [apps/infra/k8s/backend.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/backend.yaml)
 Kubernetes Deployment and Service for the backend app (exposing port 80).
 
-#### [NEW] [apps/infra/k8s/ingress.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/ingress.yaml)
+#### [NEW] [apps/infra/k8s/ingress.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/ingress.yaml)
 Standard Ingress resource using `networking.k8s.io/v1`. It will have `ingressClassName: nginx` and route `/` to the frontend service and `/api` (Prefix) to the backend service.
 
 ---
 
 ### Crossplane IaC System Blueprints
 
-#### [NEW] [apps/infra/crossplane/xrd.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/crossplane/xrd.yaml)
+#### [NEW] [apps/infra/crossplane/xrd.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/crossplane/xrd.yaml)
 CompositeResourceDefinition (`v1beta1`) for `XAppLoadBalancer`, defining the schema for our custom cloud load balancer resource.
 
-#### [NEW] [apps/infra/crossplane/composition-aws.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/crossplane/composition-aws.yaml)
+#### [NEW] [apps/infra/crossplane/composition-aws.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/crossplane/composition-aws.yaml)
 Composition (`v1beta1`) mapping `XAppLoadBalancer` to AWS provider resources (e.g., ALB Listener Rules, Target Groups) to mirror the exact `/` and `/api` routing logic.
 
 ---
 
 ### Monorepo Tooling Integration
 
-#### [MODIFY] [turbo.json](file:///c:/Users/Admin/workspace/git/unipost/turbo.json)
+#### [MODIFY] [turbo.json](file:///c:/Users/Admin/workspace/git/acc/turbo.json)
 Add `validate:infra` to the Turborepo pipeline, enabling `pnpm turbo validate:infra` to dry-run/lint the K8s and Crossplane YAMLs.
 
 ## Verification Plan

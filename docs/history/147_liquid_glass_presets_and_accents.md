@@ -22,17 +22,17 @@ In Iteration 11 Workstream 1, initial implementation of theme presets and ambien
 ## Changes
 
 ### 1. Style & Optical Token Architecture
-- [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css):
+- [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/theme.css):
   - Defined high-contrast default `:root` and solid `.dark` tokens alongside translucent `.acrylic` and crystalline `.obsidian` tokens.
   - Defined full token palettes for all 5 ambient accents across both light and dark modes (`--primary`, `--accent`, `--ring`, `--sidebar-primary`, `--accent-glow`, `--glass-accent-border`).
-- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css):
+- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css):
   - Configured `body::before` to display vibrant liquid caustics exclusively in `.acrylic` and `.obsidian` presets, keeping `.light` and `.dark` clean and solid.
   - Configured `html` and `body` backgrounds to allow optical wallpaper refraction.
 
 ### 2. State & Context Hydration Engine
-- [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/theme-provider.tsx):
+- [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/context/theme-provider.tsx):
   - Set both CSS classes and `data-theme` attribute on the root element.
-- [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/appearance-form.tsx):
+- [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/appearance/appearance-form.tsx):
   - Converted radio groups to controlled components with immediate `setTheme` and `setAccentColor` triggers.
 
 ---
@@ -43,12 +43,12 @@ In Iteration 11 Workstream 1, initial implementation of theme presets and ambien
   - `src/features/settings/appearance/__tests__/appearance-form.test.tsx`: 4/4 passed.
   - Full console test suite: 64 test files, 307 tests passed (0 failures).
 - **Playwright E2E Mode 1**:
-  - `pnpm --filter @unipost/console test:e2e`: 15/15 tests passed in 31.8s with 0 WCAG 2.2 AA violations.
+  - `pnpm --filter @acc/console test:e2e`: 15/15 tests passed in 31.8s with 0 WCAG 2.2 AA violations.
 
 ---
 
 ## Walkthrough
-- Documented in [`apps/console/doc/walkthrough_121.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_121.md).
+- Documented in [`apps/console/doc/walkthrough_121.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_121.md).
 
 ---
 

@@ -17,7 +17,7 @@ Multi-tenant isolation required cryptographic authentication binding to eliminat
 7. Add automated tests and verify build.
 
 ## Changes
-- **Security & Tenancy (`apps/backend/unipost-fw`)**:
+- **Security & Tenancy (`apps/backend/acc-fw`)**:
   - `HeaderSanitizerFilter.java`: Perimeter filter stripping client-supplied `X-Tenant-Id` headers.
   - `JwtAuthenticationToken.java`: Added `tenantId` principal property.
   - `JwtTokenHelper.java`: Added `CLAIM_KEY_TENANT_ID`, `CLAIM_KEY_PERMISSIONS`, `getTenantId()`, and permissions-to-authorities mapping.
@@ -25,7 +25,7 @@ Multi-tenant isolation required cryptographic authentication binding to eliminat
   - `TenantContextHolder.java`: Added `getRequiredTenantId()`.
   - `AsyncContextTaskDecorator.java`: Propagates tenant context, security context, and MDC to async worker threads.
   - `MetadataService.java`: Enforces stamping records strictly with active tenant context.
-- **Tests (`apps/backend/unipost-fw`)**:
+- **Tests (`apps/backend/acc-fw`)**:
   - `HeaderSanitizerFilterTest.java`: Validates header stripping.
   - `TenantSecurityLifecycleTest.java`: Validates JWT claims parsing, required tenant validation, and async context propagation.
 

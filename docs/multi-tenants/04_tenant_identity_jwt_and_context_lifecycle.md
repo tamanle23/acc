@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 04 of N)  
 **Document Level:** Security Architecture & Technical Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Spring Security 6 / Java 21), `@unipost/console` (React 19 / Axios)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Spring Security 6 / Java 21), `@acc/console` (React 19 / Axios)  
 **Scope:** Cryptographic Token Claims, Security Filter Chains, `TenantContextHolder`, Async / Reactive Context Propagation, Anti-Spoofing Guarantees  
 **Status:** Canonical Living Architecture Document  
 
@@ -24,13 +24,13 @@ In a pure multi-tenant metadata system, the **Security Context** is the primary 
 
 ## 2. JWT Claim Schema Specification
 
-Every access token issued by Unipost's Identity service (`unipost-ms-identity`) contains structured standard and custom claims:
+Every access token issued by Unipost's Identity service (`acc-ms-identity`) contains structured standard and custom claims:
 
 ```json
 {
-  "iss": "https://auth.unipost.io",
+  "iss": "https://auth.acc.io",
   "sub": "usr_991823a1-002",
-  "aud": "unipost-platform",
+  "aud": "acc-platform",
   "exp": 1791480000,
   "nbf": 1791476400,
   "iat": 1791476400,
@@ -113,7 +113,7 @@ Incoming HTTP Request (Authorization: Bearer <JWT>)
 Provides type-safe, thread-scoped access to the active tenant without coupling domain classes to Spring Security internals:
 
 ```java
-package com.unipost.fw.tenancy;
+package com.acc.fw.tenancy;
 
 import java.util.Objects;
 
@@ -149,7 +149,7 @@ public final class TenantContextHolder {
 Integrated directly into the Spring Security filter chain:
 
 ```java
-package com.unipost.fw.tenancy;
+package com.acc.fw.tenancy;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -193,7 +193,7 @@ A standard vulnerability in multi-tenant Spring applications is context loss whe
 Every `ThreadPoolTaskExecutor` bean in the application must be equipped with a context-propagating decorator:
 
 ```java
-package com.unipost.fw.tenancy;
+package com.acc.fw.tenancy;
 
 import org.slf4j.MDC;
 import org.springframework.core.task.TaskDecorator;
@@ -240,7 +240,7 @@ public class TenantAwareTaskDecorator implements TaskDecorator {
 @EnableAsync
 public class AsyncConfig {
 
-    @Bean(name = "unipostAsyncTaskExecutor")
+    @Bean(name = "accAsyncTaskExecutor")
     public ThreadPoolTaskExecutor asyncTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);
@@ -295,7 +295,7 @@ When a user belongs to multiple organizations (e.g. an external consultant or IT
 
 ```
 ┌─────────────────┐                                  ┌───────────────────────┐
-│ @unipost/console│                                  │  unipost-ms-identity  │
+│ @acc/console│                                  │  acc-ms-identity  │
 └────────┬────────┘                                  └───────────┬───────────┘
          │                                                       │
          │ 1. POST /api/v1/auth/switch-tenant                    │

@@ -1,7 +1,7 @@
-# Implementation Plan 75: Phase 1 - @unipost/console HTTP Hardening & Context Injection
+# Implementation Plan 75: Phase 1 - @acc/console HTTP Hardening & Context Injection
 
 ## 1. Overview
-In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (Phase 1), `@unipost/console` requires HTTP client hardening and context header injection:
+In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (Phase 1), `@acc/console` requires HTTP client hardening and context header injection:
 1. Eliminate raw global `axios` calls in `features/metadata/api/use-blueprints.ts`.
 2. Standardize all API calls to route through `springApiClient` (which already has authorization interceptors, silent refresh queues, and sandbox interceptors).
 3. Enhance `springApiClient` request interceptor to dynamically inject:
@@ -16,5 +16,5 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## 3. Verification Plan
 - Zero occurrences of `import axios from 'axios'` in `apps/console/src/features/metadata/api/`.
-- `pnpm --filter @unipost/console exec tsc --noEmit` exits with 0.
-- `pnpm --filter @unipost/console test` passes 100%.
+- `pnpm --filter @acc/console exec tsc --noEmit` exits with 0.
+- `pnpm --filter @acc/console test` passes 100%.

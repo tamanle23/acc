@@ -151,7 +151,7 @@ export const generateCmsRecordsAndRelationships = (
     const mime = formats[i % formats.length];
     const ext = mime === 'image/webp' ? 'webp' : mime === 'image/jpeg' ? 'jpg' : mime === 'image/png' ? 'png' : mime === 'video/mp4' ? 'mp4' : 'pdf';
     const fileName = `asset-${String(i).padStart(4, '0')}.${ext}`;
-    const url = `https://cdn.sandbox.unipost.io/assets/${tenantId}/${fileName}`;
+    const url = `https://cdn.sandbox.acc.io/assets/${tenantId}/${fileName}`;
 
     mediaAssets.push({
       id,

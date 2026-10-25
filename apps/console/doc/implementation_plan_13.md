@@ -8,7 +8,7 @@ We will create a new shared workspace package in `packages/ui` to house common e
 
 ### 1. `packages/ui`
 
-We will initialize a new `packages/ui` package with its own `package.json` (`@unipost/ui`).
+We will initialize a new `packages/ui` package with its own `package.json` (`@acc/ui`).
 
 #### [NEW] `packages/ui/package.json`
 - Set up as a Turborepo internal package.
@@ -25,30 +25,30 @@ We will initialize a new `packages/ui` package with its own `package.json` (`@un
 ### 2. `apps/console`
 
 #### [MODIFY] `apps/console/package.json`
-- Add `"@unipost/ui": "workspace:*"` to dependencies.
+- Add `"@acc/ui": "workspace:*"` to dependencies.
 
 #### [MODIFY] `apps/console/src/lib/utils.ts`
-- Refactor to re-export or completely replace with imports from `@unipost/ui/utils`.
+- Refactor to re-export or completely replace with imports from `@acc/ui/utils`.
 
 #### [DELETE] `apps/console/src/assets/brand-icons/index.ts`
-- Delete local brand icons. Components will now import them from `@unipost/ui/icons`.
+- Delete local brand icons. Components will now import them from `@acc/ui/icons`.
 
 ### 3. `apps/tekgo-ui`
 
 #### [MODIFY] `apps/tekgo-ui/package.json`
-- Add `"@unipost/ui": "workspace:*"` to dependencies.
+- Add `"@acc/ui": "workspace:*"` to dependencies.
 
 #### [DELETE] `apps/tekgo-ui/components/social-icons/*`
 - Delete local SVG icons.
 
 #### [MODIFY] `apps/tekgo-ui/components/Footer.tsx` (and others)
-- Refactor to import icons from `@unipost/ui/icons`.
+- Refactor to import icons from `@acc/ui/icons`.
 
 ## Verification Plan
 
 ### Automated Tests
 - Run `pnpm install` at the root to link the new workspace package.
-- Run `turbo run build --filter=console --filter=tekgo-ui` to verify that both applications compile successfully with the new `@unipost/ui` dependency.
+- Run `turbo run build --filter=console --filter=tekgo-ui` to verify that both applications compile successfully with the new `@acc/ui` dependency.
 
 ### Manual Verification
 - Ensure the dev server starts for both apps and the icons render correctly without missing export errors.

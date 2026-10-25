@@ -4,7 +4,7 @@
 Following the migration of the Dead-Letter Queue (DLQ) feature to the Sovereign Root Custodian (`/system/dlq`), the Unified Sandbox lacked fleet-wide cross-tenant poison task visibility and on-demand poison task injection for offline diagnosis. Furthermore, to prevent future regressions where new screens or features are implemented without corresponding Unified Sandbox simulation, an authoritative agent rule was required.
 
 ## Plan
-1. Enhance `DlqSandboxRepository` and `DlqSandboxHandler` in `@unipost/sandbox` to support multi-tenant fleet aggregation when on Sovereign System scope and provide an on-demand poison injection API.
+1. Enhance `DlqSandboxRepository` and `DlqSandboxHandler` in `@acc/sandbox` to support multi-tenant fleet aggregation when on Sovereign System scope and provide an on-demand poison injection API.
 2. Add a quick diagnostic button ("Inject Poison Task (DLQ)") in `apps/console/src/core/sandbox/ui/sandbox-dock.tsx` under Edge-Case Diagnostics.
 3. Codify the Sandbox Parity rule following the mandatory Rule Management SOP:
    - Exhaustive explanation and rationale in `docs/master_rules_reference.md` (Section 12).
@@ -29,9 +29,9 @@ Following the migration of the Dead-Letter Queue (DLQ) feature to the Sovereign 
   - Documented walkthrough and verification steps.
 
 ## Verification
-- `pnpm --filter @unipost/sandbox check-types`: Passed with 0 errors.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Passed with 0 errors.
-- `pnpm --filter @unipost/console test dlq-feature`: Passed 4/4 Vitest tests.
+- `pnpm --filter @acc/sandbox check-types`: Passed with 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Passed with 0 errors.
+- `pnpm --filter @acc/console test dlq-feature`: Passed 4/4 Vitest tests.
 
 ## Walkthrough
 Refer to [walkthrough_105.md](../../apps/console/doc/walkthrough_105.md).

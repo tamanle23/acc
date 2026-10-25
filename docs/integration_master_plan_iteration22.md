@@ -1,8 +1,8 @@
 # Integration Master Plan: Iteration 22 - Enterprise Hardening & Resilience Architecture for Master Database Schema & Metadata Engine
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/unipost-fw`, `apps/backend/unipost-ms-aio`, `apps/backend/unipost-db`)  
-- `@unipost/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
+- `@acc/backend` (`apps/backend/acc-fw`, `apps/backend/acc-ms-aio`, `apps/backend/acc-db`)  
+- `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** PostgreSQL 16+ RLS, Liquibase Unified Master, Spring Modulith, React 19, WCAG 2.2 AA, Liquid Glass Design Tokens  
 **Reference SSOT:** [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) (v1.2.0)  
@@ -12,7 +12,7 @@
 ## 1. Executive Summary & Problem Statement
 
 This master plan elevates [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) from a static schema reference to an **Enterprise-Grade, Resilient, and Regression-Free Architectural Master Specification (v1.2.0)**. 
-It captures the active, production-grade resilience mechanisms implemented across `apps/backend/unipost-fw` and `@unipost/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
+It captures the active, production-grade resilience mechanisms implemented across `apps/backend/acc-fw` and `@acc/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
 
 ```
 +---------------------------------------------------------------------------------------------------+
@@ -130,7 +130,7 @@ sequenceDiagram
 | Verification Step | Command / Target | Success Criteria |
 | :--- | :--- | :--- |
 | **Backend Compilation** | `mvnw.cmd test-compile -q` | Clean compilation exit code 0 |
-| **Metadata Resilience Tests** | `mvnw.cmd test -pl unipost-fw -Dtest=RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest -q` | All test assertions pass exit code 0 |
-| **Console Type Safety** | `pnpm --filter @unipost/console exec tsc --noEmit` | Zero type errors |
-| **Console Metadata Tests** | `pnpm --filter @unipost/console test src/features/metadata/` | All unit tests pass |
+| **Metadata Resilience Tests** | `mvnw.cmd test -pl acc-fw -Dtest=RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest -q` | All test assertions pass exit code 0 |
+| **Console Type Safety** | `pnpm --filter @acc/console exec tsc --noEmit` | Zero type errors |
+| **Console Metadata Tests** | `pnpm --filter @acc/console test src/features/metadata/` | All unit tests pass |
 | **Living Documentation** | [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) | Synchronized to v1.2.0 |

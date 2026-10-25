@@ -12,7 +12,7 @@ export function AssumeTenantBar() {
   const { currentTenantId } = useSpringAuthStore();
   const { activeTenantId } = useSandboxStore();
 
-  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null;
   const effectiveTenant = assumedTenant || currentTenantId || activeTenantId;
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
 

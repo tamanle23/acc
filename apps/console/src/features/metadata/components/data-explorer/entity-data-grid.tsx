@@ -330,7 +330,7 @@ export const EntityDataGrid: React.FC<Props> = ({
   // Grid Density (compact: 36px, comfortable: 48px, spacious: 60px)
   const [density, setDensity] = useState<GridDensity>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('unipost_density_profile');
+      const saved = localStorage.getItem('acc_density_profile');
       if (saved === 'compact' || saved === 'comfortable' || saved === 'spacious') {
         return saved as GridDensity;
       }
@@ -341,7 +341,7 @@ export const EntityDataGrid: React.FC<Props> = ({
   const handleDensityChange = (newDensity: GridDensity) => {
     setDensity(newDensity);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('unipost_density_profile', newDensity);
+      localStorage.setItem('acc_density_profile', newDensity);
     }
   };
 

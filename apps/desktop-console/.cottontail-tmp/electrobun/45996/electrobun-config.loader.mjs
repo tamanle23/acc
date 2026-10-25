@@ -1,4 +1,4 @@
-import * as loadedConfigModule from "C:\\Users\\Admin\\workspace\\git\\unipost\\apps\\desktop-console\\electrobun.config.ts";
+import * as loadedConfigModule from "C:\\Users\\Admin\\workspace\\git\\acc\\apps\\desktop-console\\electrobun.config.ts";
 
 const loadedConfig = loadedConfigModule.default ?? loadedConfigModule ?? {};
 

@@ -16,10 +16,10 @@ The distributed workflow task queue required production-grade resilience against
 3. **REST Management APIs**:
    - Create `WorkflowDlqController.java` exposing `/api/v1/workflow/dlq` endpoints.
 4. **Worker SDK Jitter**:
-   - Implement exponential backoff with 20% randomized jitter in `@unipost/worker` (`TaskPoller.ts`).
+   - Implement exponential backoff with 20% randomized jitter in `@acc/worker` (`TaskPoller.ts`).
 5. **Unified Sandbox & UI Console**:
    - Implement `dlq-sandbox-handler.ts` in `packages/sandbox` with tenant isolation and reset support.
-   - Create `@unipost/console` feature (`apps/console/src/features/dlq/`) adhering strictly to `COMMON-COMPONENT-PRIORITY` (`DataTable`, `DataTableToolbar`, `DataTablePagination`), Liquid Glass styling, and slide-over `DlqInspectorSheet`.
+   - Create `@acc/console` feature (`apps/console/src/features/dlq/`) adhering strictly to `COMMON-COMPONENT-PRIORITY` (`DataTable`, `DataTableToolbar`, `DataTablePagination`), Liquid Glass styling, and slide-over `DlqInspectorSheet`.
    - Wire route `/_authenticated/dlq/`, sidebar navigation under Admin group, and i18n locales (`en`, `vi`).
 6. **Verification & Artifacts**:
    - Automated tests across backend persistence, engine service, REST API, worker poller, and console UI.
@@ -28,13 +28,13 @@ The distributed workflow task queue required production-grade resilience against
 ## Changes Made
 - **Backend Core**:
   - `apps/backend/workflow-engine/src/main/resources/db/schema-postgres.sql` & `schema-sqlite.sql`: Added `created_at_ms` and `task_dlq` schema.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskDlqRecord.java`: Domain record.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/ports/PersistencePort.java`: DLQ port definitions.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Dynamic priority sorting & DLQ memory map.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: SQLite SQL priority age formula and DLQ CRUD.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: PostgreSQL `FOR UPDATE SKIP LOCKED` priority aging & DLQ CRUD.
-  - `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/application/WorkflowEngineService.java`: DLQ isolation, zombie worker lease reclamation, replay, and discard.
-  - `apps/backend/unipost-ms-aio/.../WorkflowDlqController.java`: REST controller for `/api/v1/workflow/dlq`.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskDlqRecord.java`: Domain record.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/ports/PersistencePort.java`: DLQ port definitions.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/InMemoryPersistenceAdapter.java`: Dynamic priority sorting & DLQ memory map.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/SqliteJdbcPersistenceAdapter.java`: SQLite SQL priority age formula and DLQ CRUD.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/adapters/storage/PostgresJdbcPersistenceAdapter.java`: PostgreSQL `FOR UPDATE SKIP LOCKED` priority aging & DLQ CRUD.
+  - `apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java`: DLQ isolation, zombie worker lease reclamation, replay, and discard.
+  - `apps/backend/acc-ms-aio/.../WorkflowDlqController.java`: REST controller for `/api/v1/workflow/dlq`.
 - **Worker SDK**:
   - `packages/worker/src/host/TaskPoller.ts`: Exponential backoff with 20% randomized jitter.
   - `packages/worker/src/__tests__/jittered-poller.test.ts`: Jitter unit test.
@@ -62,12 +62,12 @@ The distributed workflow task queue required production-grade resilience against
   - Total `workflow-engine` tests: 45 passed, 0 failures.
   - `WorkflowDlqRestApiTest`: 2 tests passed (list, filter, discard, end-to-end task isolation and replay).
 - **Worker**:
-  - `@unipost/worker`: 4 test suites passed, 7/7 tests passed.
+  - `@acc/worker`: 4 test suites passed, 7/7 tests passed.
 - **Sandbox**:
-  - `@unipost/sandbox`: Type check passed clean (`check-types`).
+  - `@acc/sandbox`: Type check passed clean (`check-types`).
 - **Console UI**:
   - `vitest run dlq-feature`: 3/3 tests passed.
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: Passed clean with 0 errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: Passed clean with 0 errors.
 
 ## Walkthrough
 - Backend: `apps/backend/doc/walkthrough_39.md`

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
-import type { RecordAuditLog, AuditVerificationResult } from '@unipost/client';
+import type { RecordAuditLog, AuditVerificationResult } from '@acc/client';
 import { toast } from 'sonner';
 
 export interface AuditQueryResponse {

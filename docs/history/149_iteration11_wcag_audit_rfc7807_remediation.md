@@ -24,15 +24,15 @@ Following the initial delivery of Iteration 11 remaining phases, a skeptical rev
 - `apps/console/src/features/users/components/data-table-row-actions.tsx`
 - `apps/console/src/features/dlq/components/dlq-columns.tsx`
 - `apps/console/src/features/system/roles/user-membership-drawer.tsx`
-- `apps/backend/unipost-fw/src/main/java/com/unipost/fw/exceptionhandling/GlobalExceptionHandler.java`
-- `apps/backend/unipost-fw/src/test/java/com/unipost/fw/exceptionhandling/GlobalExceptionHandlerTest.java`
+- `apps/backend/acc-fw/src/main/java/com/acc/fw/exceptionhandling/GlobalExceptionHandler.java`
+- `apps/backend/acc-fw/src/test/java/com/acc/fw/exceptionhandling/GlobalExceptionHandlerTest.java`
 - `apps/console/doc/walkthrough_124.md`
 
 ## Verification
-- `pnpm --filter @unipost/console test`: 65/65 test files passed (309/309 tests passing), 0 warnings.
-- `node mvnw.cjs -pl unipost-fw test -Dtest=GlobalExceptionHandlerTest`: 6/6 tests passing (BUILD SUCCESS).
-- `pnpm --filter @unipost/backend test:sandbox`: 33/33 tests passing (BUILD SUCCESS).
-- `pnpm --filter @unipost/backend test:modulith`: 1/1 architectural tests passing (BUILD SUCCESS).
+- `pnpm --filter @acc/console test`: 65/65 test files passed (309/309 tests passing), 0 warnings.
+- `node mvnw.cjs -pl acc-fw test -Dtest=GlobalExceptionHandlerTest`: 6/6 tests passing (BUILD SUCCESS).
+- `pnpm --filter @acc/backend test:sandbox`: 33/33 tests passing (BUILD SUCCESS).
+- `pnpm --filter @acc/backend test:modulith`: 1/1 architectural tests passing (BUILD SUCCESS).
 - `pnpm test:e2e`: 15/15 Playwright E2E tests passing.
 - `pnpm --filter tekgo-ui lint`: 0 warnings, 0 errors.
 

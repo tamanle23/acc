@@ -1,7 +1,7 @@
 # Walkthrough: Phase 8 - Streaming Export & GDPR Hard-Purge Pipeline
 
 ## Overview
-Phase 8 delivers enterprise compliance infrastructure for **Data Portability (GDPR Article 20)** and **Right to Be Forgotten / Cryptographic Hard-Purge (GDPR Article 17 / SOC 2 Type II)** within `@unipost/backend`, as specified in `docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md`.
+Phase 8 delivers enterprise compliance infrastructure for **Data Portability (GDPR Article 20)** and **Right to Be Forgotten / Cryptographic Hard-Purge (GDPR Article 17 / SOC 2 Type II)** within `@acc/backend`, as specified in `docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md`.
 
 ---
 

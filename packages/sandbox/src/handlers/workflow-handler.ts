@@ -2,7 +2,7 @@ import type { SandboxRouteHandler, SandboxResponse, SandboxRequest } from '../ty
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
 import { workflowExecutions } from './data/workflow-executions';
-import type { WorkflowExecution as ClientWorkflowExecution } from '@unipost/client';
+import type { WorkflowExecution as ClientWorkflowExecution } from '@acc/client';
 
 export class WorkflowExecutionsSandboxRepository {
   private tenantWorkflowExecutions: Map<string, ClientWorkflowExecution[]> = new Map();

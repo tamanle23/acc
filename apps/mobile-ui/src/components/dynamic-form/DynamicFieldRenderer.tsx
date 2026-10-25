@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTheme } from '@react-navigation/native';
-import { AttributeDefinition } from '@unipost/client';
+import { AttributeDefinition } from '@acc/client';
 import { LiquidGlassView } from '../LiquidGlassView';
 import { MediaPickerInput } from './MediaPickerInput';
 import {

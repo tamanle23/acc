@@ -20,21 +20,21 @@ In a multi-tenant dynamic schema architecture, compliance regulations mandate tw
 
 ## Changes Made
 - **Domain Records:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/tenant/export/TenantExportManifest.java`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/tenant/purge/CertificateOfErasure.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/export/TenantExportManifest.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/purge/CertificateOfErasure.java`
 - **Repositories Updated:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/EntityRecordRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/EntityRelationshipRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/EntityTypeRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/AttributeDefinitionRepository.java`: added tenant finder/counter methods.
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/RelationshipTypeRepository.java`: added tenant finder/counter methods.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityRecordRepository.java`: added tenant finder/counter methods.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityRelationshipRepository.java`: added tenant finder/counter methods.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added tenant finder/counter methods.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/AttributeDefinitionRepository.java`: added tenant finder/counter methods.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/RelationshipTypeRepository.java`: added tenant finder/counter methods.
 - **Services & Controller:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/tenant/export/TenantExportService.java`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/tenant/purge/TenantPurgeService.java`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/TenantDataLifecycleController.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/export/TenantExportService.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/tenant/purge/TenantPurgeService.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantDataLifecycleController.java`
 - **Unit Tests:**
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/tenant/export/TenantExportServiceTest.java`
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/tenant/purge/TenantPurgeServiceTest.java`
+  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/export/TenantExportServiceTest.java`
+  - `apps/backend/acc-fw/src/test/java/com/acc/tenant/purge/TenantPurgeServiceTest.java`
 
 ## Verification
 - Unit & regression tests executed:

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <properties>
+    <property name="table_prefix" value="acc_"/>
+    <property name="table_prefix_cms" value="acc_cms_"/>
+    <property name="table_prefix_identity" value="acc_identity_"/>
+    <property name="table_prefix_worker" value="acc_worker_"/>
+  </properties>
+  <settings>
+    <setting name="mapUnderscoreToCamelCase" value="true" />
+    <setting name="defaultFetchSize" value="100" />
+    <setting name="defaultStatementTimeout" value="30" />
+    <setting name="defaultEnumTypeHandler" value="org.apache.ibatis.type.EnumOrdinalTypeHandler"/>
+  </settings>
+  <typeHandlers>
+    <typeHandler handler="org.apache.ibatis.type.EnumTypeHandler" javaType="com.acc.user.model.enums.UserType" />
+
+  </typeHandlers>
+</configuration>

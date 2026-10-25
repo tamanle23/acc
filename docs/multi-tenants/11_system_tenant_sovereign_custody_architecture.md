@@ -3,7 +3,7 @@
 **Document Reference:** `docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md`  
 **Series:** Multi-Tenant Architecture & Data Sovereignty Specification  
 **Classification:** Canonical Architecture & System Blueprint  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@unipost/console` (React 19 / Vite 8 / TanStack Router)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
 **Author:** Lead Systems Architect & Sovereign Custodian  
 **Status:** Living Design Specification & Implementation Blueprint  
 
@@ -60,7 +60,7 @@ flowchart TD
 
 ## 2. Codebase Audit: Current State & Critical Friction Points
 
-An in-depth code audit across `unipost-fw`, `unipost-db`, and `@unipost/console` reveals existing foundations alongside several critical friction points and architectural paradoxes:
+An in-depth code audit across `acc-fw`, `acc-db`, and `@acc/console` reveals existing foundations alongside several critical friction points and architectural paradoxes:
 
 | Architectural Plane | Current Codebase Implementation | Critical Friction Point & Paradox |
 |---|---|---|
@@ -129,7 +129,7 @@ To diagnose edge-case bugs, inspect data anomalies, or provide white-glove enter
    ```json
    {
      "event": "RECORD_UPDATE",
-     "actor": "system_root@unipost.io",
+     "actor": "system_root@acc.io",
      "actorTenant": "SYSTEM",
      "impersonatedTenant": "tenant-acme-corp",
      "timestamp": "2026-10-10T21:45:00Z",
@@ -162,7 +162,7 @@ As the final custodian of legal compliance and data sanitization:
 
 ### Pillar VI: Crown Mode UI Experience for the Custodian
 
-When authenticating as `SYSTEM`, `@unipost/console` transitions to **Crown Mode**:
+When authenticating as `SYSTEM`, `@acc/console` transitions to **Crown Mode**:
 1. **Visual Demarcation**:
    - Navigation header displays the **Sovereign Custodian Badge** rendered with Liquid Glass Amber tokens (`amber-500/15`, specular highlight `shadow-[inset_0_1px_1px_rgba(245,158,11,0.4)]`).
    - Distinctive UI treatment guarantees immediate visual awareness of elevated privileges.
@@ -185,7 +185,7 @@ When authenticating as `SYSTEM`, `@unipost/console` transitions to **Crown Mode*
 ├───────────────────────┬──────────────────────────────────┬─────────────────────────────┤
 │ Architectural Layer   │ Target File / Module             │ Architectural Modification  │
 ├───────────────────────┼──────────────────────────────────┼─────────────────────────────┤
-│ Database RLS Engine   │ `unipost-db/changelog-00005.xml` │ Fix RLS WITH CHECK paradox; │
+│ Database RLS Engine   │ `acc-db/changelog-00005.xml` │ Fix RLS WITH CHECK paradox; │
 │                       │                                  │ Grant SYSTEM bypass on both │
 │                       │                                  │ metadata and data planes.   │
 ├───────────────────────┼──────────────────────────────────┼─────────────────────────────┤
@@ -264,7 +264,7 @@ CREATE POLICY tenant_isolation_entities ON UNIPOST_ENTITIES
 
 ### 4.2 Backend Layer: Metadata Guard Refactoring
 
-In `apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`, the immutability guards must differentiate between an unauthorized commercial tenant attempting to alter base schemas versus the Sovereign Custodian managing core platform infrastructure:
+In `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`, the immutability guards must differentiate between an unauthorized commercial tenant attempting to alter base schemas versus the Sovereign Custodian managing core platform infrastructure:
 
 ```java
 // BEFORE: Unconditional block preventing all callers from modifying SYSTEM attributes
@@ -536,7 +536,7 @@ GET    /api/v1/system/audit-logs           -> Universal tamper-evident audit led
 
 ## 7. Console UI/UX Architecture: Sovereign Crown Mode & Custodial Views
 
-While the backend establishes the multi-tenant security boundary and cryptographic control plane, the frontend (`@unipost/console`) is the physical cockpit through which the Sovereign Custodian commands the platform.
+While the backend establishes the multi-tenant security boundary and cryptographic control plane, the frontend (`@acc/console`) is the physical cockpit through which the Sovereign Custodian commands the platform.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -700,11 +700,11 @@ To translate custodial authority into a seamless operational toolchain, this sec
 sequenceDiagram
     autonumber
     actor Custodian as Sovereign Custodian (SYSTEM UI)
-    participant ConsoleUI as @unipost/console (React 19)
-    participant SpringAPI as @unipost/backend (Spring Modulith)
+    participant ConsoleUI as @acc/console (React 19)
+    participant SpringAPI as @acc/backend (Spring Modulith)
     participant Cache as Redis / Hazelcast / L1 Cache
     participant RLS as PostgreSQL (RLS Enforced)
-    participant TenantApp as Tenant Client (@unipost/console)
+    participant TenantApp as Tenant Client (@acc/console)
 
     Note over Custodian, TenantApp: Flow 1: Sovereign Subscription Promotion & Quota Lift
     Custodian->>ConsoleUI: Lift Acme to ENTERPRISE + maxRecords=1,000,000
@@ -848,7 +848,7 @@ When `SYSTEM` mutates fleet configurations, states must propagate instantly acro
      2. `TenantEntitlementService.invalidateCache(tenantId)` clears the L1 `ConcurrentHashMap`.
      3. A Redis/Hazelcast pub/sub event (`topic:tenant:invalidated`, payload: `{ tenantId, event: 'ENTITLEMENTS_UPDATED' }`) broadcasts across all backend cluster nodes, evicting local L1 caches simultaneously.
 2. **Dynamic UI Query Invalidation (TanStack Query)**:
-   - Upon successful mutation in `@unipost/console`, the mutation hook triggers multi-key invalidations:
+   - Upon successful mutation in `@acc/console`, the mutation hook triggers multi-key invalidations:
      ```typescript
      queryClient.invalidateQueries({ queryKey: ['system', 'tenants'] });
      queryClient.invalidateQueries({ queryKey: ['system', 'tenant', tenantId] });

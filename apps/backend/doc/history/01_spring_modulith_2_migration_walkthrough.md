@@ -71,6 +71,6 @@ All 10 modules in the Maven reactor compile, package, and install with **`BUILD 
 
 ### 8. All-in-One & Spring Modulith (`ms-aio`)
 - Added Spring Modulith starters (`spring-modulith-starter-core`, `spring-modulith-starter-jpa`, `spring-modulith-starter-test`).
-- Configured `@Modulithic(systemName = "unipost", useFullyQualifiedModuleNames = true)` on `AppConfig`.
+- Configured `@Modulithic(systemName = "acc", useFullyQualifiedModuleNames = true)` on `AppConfig`.
 - Added Spring Modulith verification test `ModularityTests.java` (`ApplicationModules.of(AppConfig.class).verify();`).
 - Packaged executable Fat JAR with `spring-boot-maven-plugin:4.1.1`.

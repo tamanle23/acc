@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { defaultSandboxStore } from '@unipost/sandbox';
-import type { SandboxPersonaId } from '@unipost/sandbox';
+import { defaultSandboxStore } from '@acc/sandbox';
+import type { SandboxPersonaId } from '@acc/sandbox';
 
 export interface MobileContextState {
   activeTenantId: string;

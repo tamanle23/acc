@@ -20,7 +20,7 @@ We will add the PostgreSQL container directly into the common base so it spins u
   - A `volumeClaimTemplates` block requesting a PersistentVolume to ensure data is retained across pod restarts.
   - A `Service` exposing port `5432` internally to the cluster.
 - **[MODIFY] `apps/infra/k8s/base/backend.yaml`**: 
-  - Inject the `SPRING_DATASOURCE_URL` (`jdbc:postgresql://postgres:5432/unipost`), `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` environment variables directly into the backend deployment.
+  - Inject the `SPRING_DATASOURCE_URL` (`jdbc:postgresql://postgres:5432/acc`), `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` environment variables directly into the backend deployment.
 - **[MODIFY] `apps/infra/k8s/base/kustomization.yaml`**: Include `postgres.yaml`.
 
 *(Note: We are no longer creating Crossplane PostgreSQL blueprints, keeping the database entirely self-hosted in Kubernetes).*

@@ -7,7 +7,7 @@ import type {
   CompiledSchema,
 } from '../types';
 
-describe('L3 Contract Tests: @unipost/client and Spring Jackson Model Compatibility', () => {
+describe('L3 Contract Tests: @acc/client and Spring Jackson Model Compatibility', () => {
   it('deserializes Spring Jackson EntityRecordResponse into client EntityRecord contract', () => {
     // Exact JSON serialization from Spring Jackson EntityRecordResponse
     const springRecordJson = {

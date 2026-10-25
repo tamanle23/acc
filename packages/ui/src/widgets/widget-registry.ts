@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AttributeDefinition } from '@unipost/client';
+import type { AttributeDefinition } from '@acc/client';
 
 export interface DynamicWidgetProps<T = unknown> {
   value: T;

@@ -1,7 +1,7 @@
 # Walkthrough: Workflow Components Subgroup Reorganization & Studio Monolith Decomposition
 
 ## 1. Overview
-Decomposed the 2,367-line monolithic [visual-dag-studio.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) into high-cohesion, reusable subcomponents and hooks, reducing file size by **over 61%** (from 2,367 lines down to 909 lines). In addition, reorganized all flat workflow components in [apps/console/src/features/workflows/components](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components) into dedicated, maintainable domain subgroups with backward-compatible barrel exports.
+Decomposed the 2,367-line monolithic [visual-dag-studio.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) into high-cohesion, reusable subcomponents and hooks, reducing file size by **over 61%** (from 2,367 lines down to 909 lines). In addition, reorganized all flat workflow components in [apps/console/src/features/workflows/components](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components) into dedicated, maintainable domain subgroups with backward-compatible barrel exports.
 
 ---
 
@@ -73,17 +73,17 @@ apps/console/src/features/workflows/components/
 
 ## 3. Key Components Extracted & Refactored
 
-1. **`DagHeaderCommandBar`** ([dag-header-command-bar.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/toolbar/dag-header-command-bar.tsx)):
+1. **`DagHeaderCommandBar`** ([dag-header-command-bar.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/toolbar/dag-header-command-bar.tsx)):
    - Encapsulates the responsive top dock, left identity cluster, center canvas ergonomics cluster, and right action cluster.
-2. **`DagDebuggerSubpill`** ([dag-debugger-subpill.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/toolbar/dag-debugger-subpill.tsx)):
+2. **`DagDebuggerSubpill`** ([dag-debugger-subpill.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/toolbar/dag-debugger-subpill.tsx)):
    - Floating amber execution debugger controls with pause, step-over, resume, and variable watch trigger.
-3. **`DagValidationBanner`** ([dag-validation-banner.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/toolbar/dag-validation-banner.tsx)):
+3. **`DagValidationBanner`** ([dag-validation-banner.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/toolbar/dag-validation-banner.tsx)):
    - Acyclic Kahn/Tarjan topological issue reporter and dismissible success toast.
-4. **`useDagStudioState`** ([use-dag-studio-state.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/hooks/use-dag-studio-state.ts)):
+4. **`useDagStudioState`** ([use-dag-studio-state.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/hooks/use-dag-studio-state.ts)):
    - Encapsulates nodes/edges manipulation, 24-step undo/redo snapshots, auto-layout, multi-node alignment, bulk deletion, edge-splitting, and keyboard shortcuts (`Cmd+Z`, `Cmd+Y`, `Cmd+D`, `Delete`).
-5. **`useDagExecutionSync`** ([use-dag-execution-sync.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/hooks/use-dag-execution-sync.ts)):
+5. **`useDagExecutionSync`** ([use-dag-execution-sync.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/hooks/use-dag-execution-sync.ts)):
    - Encapsulates SSE execution sync, timeline event hydration, time-travel playback intervals, and version diff graph tagging.
-6. **`dag-sample-data.ts`** ([dag-sample-data.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/utils/dag-sample-data.ts)):
+6. **`dag-sample-data.ts`** ([dag-sample-data.ts](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/utils/dag-sample-data.ts)):
    - Centralized initial sample datasets (`BLANK_WORKFLOW_NODES`, `BLANK_WORKFLOW_EDGES`, `INITIAL_NODES`, `INITIAL_EDGES`).
 
 ---
@@ -92,11 +92,11 @@ apps/console/src/features/workflows/components/
 
 - **Workflows Test Suite**:
   ```bash
-  pnpm --filter @unipost/console test -- src/features/workflows/
+  pnpm --filter @acc/console test -- src/features/workflows/
   ```
   Result: 19 test files passed, 83/83 tests green.
 - **TypeScript Typecheck**:
   ```bash
-  pnpm --filter @unipost/console exec tsc --noEmit
+  pnpm --filter @acc/console exec tsc --noEmit
   ```
   Result: Exited 0 with zero type errors.

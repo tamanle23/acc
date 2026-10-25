@@ -1,4 +1,4 @@
-import type { BlueprintManifest, BlueprintSummaryDto } from '@unipost/client';
+import type { BlueprintManifest, BlueprintSummaryDto } from '@acc/client';
 
 export const mockBlueprintManifests: BlueprintManifest[] = [
   {

@@ -3,7 +3,7 @@
 **Date**: 2026-10-14  
 **Author**: Lead Systems Architect  
 **Category**: feat(console)  
-**Scope**: `@unipost/console`  
+**Scope**: `@acc/console`  
 
 ---
 
@@ -26,12 +26,12 @@ The FSM Transition sub-menu items previously used a single generic checkmark (`C
 2. **Liquid Glass Item Layout**:
    - Modern row layout with an icon badge (`p-1 rounded-md bg-muted/60`), bold action label, arrow-prefixed target state sub-label (`ArrowRight`), and a clean monospace state pill badge.
    - Smooth hover micro-interaction (`group-hover:scale-105 transition-transform`).
-3. **Verification**: Run Vitest suite across `@unipost/console`.
+3. **Verification**: Run Vitest suite across `@acc/console`.
 
 ---
 
 ## 3. Changes Made
-- [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx):
+- [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx):
   - Imported semantic Lucide icons (`Send`, `ShieldCheck`, `Rocket`, `Zap`, `PauseCircle`, `RotateCcw`, `Archive`, `Ban`, `ArrowRight`).
   - Added `getTransitionActionVisual` helper.
   - Revamped `DropdownMenuItem` rendering in `DropdownMenuSubContent` with contextual icons, arrow connectors, and styled target state badges.

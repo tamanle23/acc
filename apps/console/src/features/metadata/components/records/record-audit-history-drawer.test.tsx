@@ -112,7 +112,7 @@ describe('RecordAuditHistoryDrawer', () => {
   it('renders audit ledger timeline and version history correctly', () => {
     useAuthStore.setState({
       auth: {
-        user: { accountNo: '1', email: 'user@unipost.io', role: ['ROLE_USER'], exp: 0 },
+        user: { accountNo: '1', email: 'user@acc.io', role: ['ROLE_USER'], exp: 0 },
         accessToken: 'token',
         setUser: vi.fn(),
         setAccessToken: vi.fn(),
@@ -143,7 +143,7 @@ describe('RecordAuditHistoryDrawer', () => {
   it('keeps restore button locked and disabled for non-sovereign standard users', () => {
     useAuthStore.setState({
       auth: {
-        user: { accountNo: '1', email: 'user@unipost.io', role: ['ROLE_USER'], exp: 0 },
+        user: { accountNo: '1', email: 'user@acc.io', role: ['ROLE_USER'], exp: 0 },
         accessToken: 'token',
         setUser: vi.fn(),
         setAccessToken: vi.fn(),
@@ -172,7 +172,7 @@ describe('RecordAuditHistoryDrawer', () => {
       auth: {
         user: {
           accountNo: '1',
-          email: 'custodian@unipost.io',
+          email: 'custodian@acc.io',
           role: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SYSTEM_CUSTODIAN'],
           exp: 0,
         },

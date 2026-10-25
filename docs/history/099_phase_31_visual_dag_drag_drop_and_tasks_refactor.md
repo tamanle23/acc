@@ -17,7 +17,7 @@ In Workstream 7 (Phase 31), the workflow orchestration system needed two critica
    - Add **"View in Visual DAG"** cross-navigation linking directly to the visual workflow canvas.
 3. **Verification**:
    - Unit tests for `DagPalette` and `workflowTaskExecutionSchema`.
-   - Full Vitest test suite execution across `@unipost/console` and `@unipost/sandbox`.
+   - Full Vitest test suite execution across `@acc/console` and `@acc/sandbox`.
 
 ## Changes Made
 - `apps/console/src/features/metadata/components/studio/dag-palette.tsx`: Draggable palette with all DAG node types.
@@ -38,8 +38,8 @@ In Workstream 7 (Phase 31), the workflow orchestration system needed two critica
 - `apps/console/doc/walkthrough_95.md`: Documentation of changes and verification.
 
 ## Verification
-- Vitest suite in `@unipost/console`: 40/40 test files passed, 197/197 tests passed.
-- Vitest suite in `@unipost/sandbox`: 5/5 tests passed.
+- Vitest suite in `@acc/console`: 40/40 test files passed, 197/197 tests passed.
+- Vitest suite in `@acc/sandbox`: 5/5 tests passed.
 
 ## Tasks Completed
 - [x] Create draggable `DagPalette` in Visual DAG Studio.

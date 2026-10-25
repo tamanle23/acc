@@ -1,13 +1,13 @@
 # Implementation Plan 92: Visual React Flow Studio, Unified Sandbox Simulator & Chaos Replay Suite (Phase 30)
 
 ## 1. Overview
-Execute **Phase 30** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/integration_master_plan_iteration_3.md):
-- **Part 1: Visual Workflow Studio in `@unipost/console`**:
+Execute **Phase 30** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/acc/docs/integration_master_plan_iteration_3.md):
+- **Part 1: Visual Workflow Studio in `@acc/console`**:
   - Implement Conductor node types: `SIMPLE`, `SWITCH`, `FORK_JOIN`, `WAIT`, `DO_WHILE` with multi-directional ports and Liquid Glass visual aesthetics.
   - Interactive property inspectors for input bindings, retry backoffs, and condition expressions.
   - Live execution monitoring overlay: nodes dynamically color-coded by execution state (`PENDING`, `IN_PROGRESS`, `COMPLETED`, `FAILED`, `TIMED_OUT`) with real-time log drawer.
   - Dagre / algorithmic auto-layout with animated layout transitions.
-- **Part 2: Unified Sandbox Simulator (`@unipost/sandbox` & `@unipost/console`)**:
+- **Part 2: Unified Sandbox Simulator (`@acc/sandbox` & `@acc/console`)**:
   - Implement `workflowSandboxHandler` registered in `sandboxRegistry`.
   - In-memory simulation of decider cycles, task leases, and mock worker polling.
   - Full integration with `SandboxDock` state resets and active tenant switching.
@@ -15,7 +15,7 @@ Execute **Phase 30** of [`docs/integration_master_plan_iteration_3.md`](file:///
   - `GoldenTraceReplayTest.java`: Replays historical execution traces against `PureDecider` verifying deterministic outputs.
   - `ChaosWorkflowIntegrationTest.java`: 100 concurrent workflow executions with simulated random worker terminations and lease expiration recoveries.
 - **Part 4: Verification Gate 30**:
-  - Vitest component tests in `@unipost/console`.
+  - Vitest component tests in `@acc/console`.
   - Maven tests in `apps/backend/workflow-engine` (100% pass).
   - Clean production typecheck & lint.
 

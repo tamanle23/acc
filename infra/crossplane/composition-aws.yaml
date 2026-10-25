@@ -1,12 +1,12 @@
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:
-  name: xapploadbalancers.aws.infra.unipost.io
+  name: xapploadbalancers.aws.infra.acc.io
   labels:
     provider: aws
 spec:
   compositeTypeRef:
-    apiVersion: infra.unipost.io/v1alpha1
+    apiVersion: infra.acc.io/v1alpha1
     kind: XAppLoadBalancer
   resources:
     # 1. Application Load Balancer

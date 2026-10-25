@@ -43,7 +43,7 @@ const mockRecord: EntityRecord = {
     created_date: '2026-10-19',
   },
   createdDate: '2026-10-19T10:00:00Z',
-  createdBy: 'admin@unipost.com',
+  createdBy: 'admin@acc.com',
 };
 
 const mockEntityType: EntityType = {

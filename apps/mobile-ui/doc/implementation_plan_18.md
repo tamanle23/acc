@@ -5,7 +5,7 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 1. `MediaPickerInput.tsx`:
    - Liquid Glass card/input allowing mobile operators to pick or snap photos.
    - Client-side size & aspect ratio validation.
-   - Mock/live streaming binary upload simulation returning immutable content URIs (e.g. `unipost-ms-fs:///objects/{id}`).
+   - Mock/live streaming binary upload simulation returning immutable content URIs (e.g. `acc-ms-fs:///objects/{id}`).
 2. `RelationPickerBottomSheet.tsx`:
    - Bottom sheet / modal dialog for foreign key relationship selection.
    - Searches and lists available entity records conforming to target entity type.
@@ -26,4 +26,4 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## 3. Verification Plan
 - `pnpm --filter mobile-ui test` verifies 100% pass on dynamic form tests.
-- Monorepo full verification: `@unipost/client`, `@unipost/sandbox`, `@unipost/console`, and `mobile-ui`.
+- Monorepo full verification: `@acc/client`, `@acc/sandbox`, `@acc/console`, and `mobile-ui`.

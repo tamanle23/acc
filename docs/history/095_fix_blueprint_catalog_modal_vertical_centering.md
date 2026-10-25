@@ -19,5 +19,5 @@ When opening the Domain Blueprint Catalog modal after introducing the resizable 
    - Added unit test checking `dialogStyle.margin === 0`, dynamic width/height definitions, and maximize/reset behavior.
 
 ## 4. Verification
-- `pnpm --filter @unipost/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`: 7/7 tests passed.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Typecheck clean.
+- `pnpm --filter @acc/console test src/features/metadata/components/blueprint-gallery/blueprint-gallery.test.tsx`: 7/7 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Typecheck clean.

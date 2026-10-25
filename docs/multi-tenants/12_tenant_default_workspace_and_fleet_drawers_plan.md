@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Core Invariants
 
-This plan establishes the definitive architectural model for multi-tenant identity, workspace lifecycle immutability, personal user defaults, and sovereign fleet UI/UX drawer symmetry across `@unipost/console` and `@unipost/backend`.
+This plan establishes the definitive architectural model for multi-tenant identity, workspace lifecycle immutability, personal user defaults, and sovereign fleet UI/UX drawer symmetry across `@acc/console` and `@acc/backend`.
 
 ### Core Invariants:
 1. **User-to-Tenant Topology (1..N Membership, 1 Active Session)**:
@@ -67,16 +67,16 @@ This plan establishes the definitive architectural model for multi-tenant identi
 ## 3. Phased Execution Tasks
 
 ### Phase 1: Backend Security & Purge of `default-tenant` Fallbacks
-* **File**: `apps/backend/unipost-fw/src/main/java/com/unipost/fw/core/jwt/JwtAuthenticationTokenFilter.java`
+* **File**: `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`
   - Remove `.orElse("default-tenant")`.
   - If `jwtTokenHelper.getTenantId(c)` is empty, do **not** authenticate the user; return `401 Unauthorized` with structured body: `"UNASSIGNED_TENANT: User account does not belong to any tenant."`
-* **File**: `apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`
+* **File**: `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`
   - Remove fallback `: "default-tenant"` in `createEntityRecord`. Require non-null `activeTenantId` from `TenantContextHolder`.
-* **File**: `apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java`
+* **File**: `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
   - Remove `"default-tenant"` in cache key generation. Throw `TenancySecurityException` if tenant is absent.
-* **File**: `apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/ratelimit/TenantRateLimitFilter.java` & `TenantRateLimitService.java`
+* **File**: `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java` & `TenantRateLimitService.java`
   - Remove fallback to `"default-tenant"`.
-* **File**: `apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/*.java`
+* **File**: `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/*.java`
   - Remove default initialization `private String tenantId = "default-tenant"`.
 * **Tests**: Update `SchemaValidationServiceTest.java` to test explicitly with `"tenant-acme"`.
 
@@ -108,7 +108,7 @@ This plan establishes the definitive architectural model for multi-tenant identi
 
 ### Phase 4: User Personal Default Workspace Selection
 * **Storage Contract**:
-  - Key: `unipost_user_default_ws_${tenantId}` (or stored in `user.preferences.defaultWorkspace`).
+  - Key: `acc_user_default_ws_${tenantId}` (or stored in `user.preferences.defaultWorkspace`).
 * **UI Controls**:
   - In `WorkspacesPanel.tsx`:
     - Add a button / star action on each workspace card: `"Đặt làm Workspace Mặc định của tôi"` (Set as my default workspace).
@@ -118,7 +118,7 @@ This plan establishes the definitive architectural model for multi-tenant identi
 * **Auto-Resolution on Startup**:
   - In `useProfileStore` and `useMetadataUiStore`:
     - When switching or bootstrapping a tenant, resolve the workspace in order:
-      1. User's saved personal default workspace for this tenant (`unipost_user_default_ws_${tenantId}`).
+      1. User's saved personal default workspace for this tenant (`acc_user_default_ws_${tenantId}`).
       2. Tenant's immutable default workspace (`ws.isDefault === true`).
       3. First available workspace for this tenant.
 
@@ -157,7 +157,7 @@ This plan establishes the definitive architectural model for multi-tenant identi
    - Update `profile-store.test.ts` to assert resolution of tenant default workspace and user preference.
    - Test `TenantUsersDrawer` rendering inside `sovereign-cockpit-ui.test.tsx`.
 3. **TypeScript Compliance**:
-   - Run `pnpm --filter @unipost/console exec tsc --noEmit`.
+   - Run `pnpm --filter @acc/console exec tsc --noEmit`.
 4. **Git Archival**:
    - Create `apps/console/doc/walkthrough_74.md`.
    - Create `docs/history/026_purge_default_tenant_and_standardize_fleet_drawers.md`.

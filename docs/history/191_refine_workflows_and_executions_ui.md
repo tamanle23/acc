@@ -47,9 +47,9 @@ The `/workflows` and `/workflow-executions` screens required ergonomic UI/UX and
 ---
 
 ## 4. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` (Exited 0, clean type check).
-- `pnpm --filter @unipost/console test -- run src/features/workflow-executions/components/__tests__/workflow-ui-kpi-bars.test.tsx` (Passed).
-- `pnpm --filter @unipost/console test -- run src/features/workflow-executions src/features/workflows` (24 test suites, 105 tests passing).
+- `pnpm --filter @acc/console exec tsc --noEmit` (Exited 0, clean type check).
+- `pnpm --filter @acc/console test -- run src/features/workflow-executions/components/__tests__/workflow-ui-kpi-bars.test.tsx` (Passed).
+- `pnpm --filter @acc/console test -- run src/features/workflow-executions src/features/workflows` (24 test suites, 105 tests passing).
 
 ---
 

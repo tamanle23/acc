@@ -6,15 +6,15 @@ WORKDIR /workspace
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
-COPY unipost-core/pom.xml unipost-core/
-COPY unipost-resources/pom.xml unipost-resources/
-COPY unipost-fw/pom.xml unipost-fw/
-COPY unipost-db/pom.xml unipost-db/
-COPY unipost-ms-fs/pom.xml unipost-ms-fs/
-COPY unipost-ms-identity/pom.xml unipost-ms-identity/
-COPY unipost-report-engine/pom.xml unipost-report-engine/
-COPY unipost-ms-worker/pom.xml unipost-ms-worker/
-COPY unipost-ms-aio/pom.xml unipost-ms-aio/
+COPY acc-core/pom.xml acc-core/
+COPY acc-resources/pom.xml acc-resources/
+COPY acc-fw/pom.xml acc-fw/
+COPY acc-db/pom.xml acc-db/
+COPY acc-ms-fs/pom.xml acc-ms-fs/
+COPY acc-ms-identity/pom.xml acc-ms-identity/
+COPY acc-report-engine/pom.xml acc-report-engine/
+COPY acc-ms-worker/pom.xml acc-ms-worker/
+COPY acc-ms-aio/pom.xml acc-ms-aio/
 
 # Download dependencies
 RUN ./mvnw dependency:go-offline -B
@@ -23,11 +23,11 @@ RUN ./mvnw dependency:go-offline -B
 COPY . .
 
 # Build native image
-RUN ./mvnw -pl unipost-ms-aio -am clean package -Pnative -DskipTests
+RUN ./mvnw -pl acc-ms-aio -am clean package -Pnative -DskipTests
 
 FROM oraclelinux:9-micro
 WORKDIR /app
-COPY --from=builder /workspace/unipost-ms-aio/target/unipost-ms-aio /app/application
+COPY --from=builder /workspace/acc-ms-aio/target/acc-ms-aio /app/application
 
 EXPOSE 8080
 ENTRYPOINT ["/app/application"]

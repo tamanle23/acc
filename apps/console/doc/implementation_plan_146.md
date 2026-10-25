@@ -112,8 +112,8 @@ apps/console/src/features/workflows/components/
 ### Step 4: Backward Compatibility & Test Verification
 - Keep `studio/index.ts` and `components/index.ts` fully backward compatible, re-exporting all components, types, and constants.
 - Update test imports if needed, and run full test suites:
-  - `pnpm --filter @unipost/console test -- src/features/workflows/`
-  - `pnpm --filter @unipost/console exec tsc --noEmit`
+  - `pnpm --filter @acc/console test -- src/features/workflows/`
+  - `pnpm --filter @acc/console exec tsc --noEmit`
 - Verify zero regressions and passing tests.
 
 ### Step 5: History Log & Walkthrough Documentation

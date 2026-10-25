@@ -16,7 +16,7 @@ In offline/sandbox development mode, the mock datasets across the three interrel
 6. Enhance console UI navigation:
    - Clickable `WF: <id>` links in DLQ table and inspector sheet to jump directly to `/workflow-executions`.
    - Distinctive DLQ badges (`DLQ: dlq-101 (ISOLATED/REPLAYED/DISCARDED)`) in workflow execution titles and row action dropdowns linking to `/system/dlq`.
-7. Author comprehensive automated cross-store test suite in `@unipost/sandbox`.
+7. Author comprehensive automated cross-store test suite in `@acc/sandbox`.
 
 ## Changes
 - **`packages/sandbox/src/handlers/data/workflow-executions.ts`**: Updated and expanded 8 consistent workflow executions with exact definition keys, active steps, task IDs, and DLQ reference links (`dlqId`, `dlqStatus`).
@@ -36,10 +36,10 @@ In offline/sandbox development mode, the mock datasets across the three interrel
 - **`packages/sandbox/src/handlers/__tests__/workflow-dlq-consistency.test.ts`**: Added 4 automated integration tests verifying cross-store referential integrity and bi-directional replay synchronization.
 
 ## Verification
-- Sandbox Unit & Integration Suites: `pnpm --filter @unipost/sandbox test` (10/10 test files passed, 98/98 tests green).
-- Sandbox Typecheck: `pnpm --filter @unipost/sandbox check-types` (0 errors).
-- Console Unit Tests: `pnpm --filter @unipost/console test:run src/features/dlq/__tests__/dlq-feature.test.tsx src/features/workflow-executions/schema.test.ts src/features/workflows/__tests__/workflow-simulation-engine.test.ts src/features/workflows/__tests__/workflow-execution-stream.test.tsx src/features/workflow-executions/components/__tests__/workflow-ui-kpi-bars.test.tsx` (17/17 tests green).
-- Console Typecheck: `pnpm --filter @unipost/console exec tsc --noEmit` (0 errors).
+- Sandbox Unit & Integration Suites: `pnpm --filter @acc/sandbox test` (10/10 test files passed, 98/98 tests green).
+- Sandbox Typecheck: `pnpm --filter @acc/sandbox check-types` (0 errors).
+- Console Unit Tests: `pnpm --filter @acc/console test:run src/features/dlq/__tests__/dlq-feature.test.tsx src/features/workflow-executions/schema.test.ts src/features/workflows/__tests__/workflow-simulation-engine.test.ts src/features/workflows/__tests__/workflow-execution-stream.test.tsx src/features/workflow-executions/components/__tests__/workflow-ui-kpi-bars.test.tsx` (17/17 tests green).
+- Console Typecheck: `pnpm --filter @acc/console exec tsc --noEmit` (0 errors).
 
 ## Walkthrough
 1. Navigate to `/system/dlq`:

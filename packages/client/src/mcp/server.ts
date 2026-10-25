@@ -20,10 +20,10 @@ export interface McpServerConfig {
  * Implements JSON-RPC 2.0 protocol handling:
  * - "tools/list": Returns dynamic tool manifests synthesized from active tenant metadata.
  * - "tools/call": Dispatches tool invocations:
- *     - unipost_get_schema
- *     - unipost_query_entities
- *     - unipost_create_entity
- *     - unipost_execute_transition
+ *     - acc_get_schema
+ *     - acc_query_entities
+ *     - acc_create_entity
+ *     - acc_execute_transition
  */
 export class McpServer {
   private client: UnipostClient;
@@ -165,7 +165,7 @@ export class McpServer {
    */
   private async executeTool(name: string, args: Record<string, unknown>): Promise<McpToolCallResult> {
     switch (name) {
-      case 'unipost_get_schema': {
+      case 'acc_get_schema': {
         const entityTypeName = String(args.entityType || '');
         const entityType = this.findEntityType(entityTypeName);
         if (!entityType) {
@@ -183,7 +183,7 @@ export class McpServer {
         };
       }
 
-      case 'unipost_query_entities': {
+      case 'acc_query_entities': {
         const entityTypeName = String(args.entityType || '');
         const entityType = this.findEntityType(entityTypeName);
         if (!entityType) {
@@ -216,7 +216,7 @@ export class McpServer {
         };
       }
 
-      case 'unipost_create_entity': {
+      case 'acc_create_entity': {
         const entityTypeName = String(args.entityType || '');
         const entityType = this.findEntityType(entityTypeName);
         if (!entityType) {
@@ -238,7 +238,7 @@ export class McpServer {
         };
       }
 
-      case 'unipost_execute_transition': {
+      case 'acc_execute_transition': {
         const entityTypeName = String(args.entityType || '');
         const recordId = String(args.recordId || '');
         const action = String(args.action || '');

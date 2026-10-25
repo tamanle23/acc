@@ -12,8 +12,8 @@ This plan implements:
 
 ## 2. Proposed Changes
 
-### Database Layer (`apps/backend/unipost-db`)
-- Create `src/main/resources/db/unipost/changelog-000.000.00005.xml`:
+### Database Layer (`apps/backend/acc-db`)
+- Create `src/main/resources/db/acc/changelog-000.000.00005.xml`:
   - Add `tenant_id VARCHAR(255) NOT NULL DEFAULT 'default-tenant'` to:
     - `UNIPOST_ENTITY_TYPES`
     - `UNIPOST_ATTRIBUTE_DEFINITIONS`
@@ -37,20 +37,20 @@ This plan implements:
       `USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '') OR tenant_id = 'SYSTEM') WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '') AND tenant_id != 'SYSTEM')`
     - Policies on record/edge tables (`ENTITIES`, `ENTITY_RELATIONSHIPS`):
       `USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')) WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), ''))`
-- Update `src/main/resources/db/unipost/changelog-master.xml` to include `changelog-000.000.00005.xml`.
+- Update `src/main/resources/db/acc/changelog-master.xml` to include `changelog-000.000.00005.xml`.
 
-### Domain Model Layer (`apps/backend/unipost-fw`)
+### Domain Model Layer (`apps/backend/acc-fw`)
 - Update `EntityType.java`: add `tenantId` field (`@Column(name = "tenant_id", nullable = false)`).
 - Update `AttributeDefinition.java`: add `tenantId` field (`@Column(name = "tenant_id", nullable = false)`).
 - Update `RelationshipType.java`: add `tenantId` field (`@Column(name = "tenant_id", nullable = false)`).
 - Update `EntityRelationship.java`: add `tenantId` field (`@Column(name = "tenant_id", nullable = false)`).
 - Ensure `EntityRecord.java` has standard defaults for `tenantId`.
 
-### Tenancy Framework Layer (`apps/backend/unipost-fw`)
-- Create `com.unipost.fw.tenancy.TenantContextHolder`:
+### Tenancy Framework Layer (`apps/backend/acc-fw`)
+- Create `com.acc.fw.tenancy.TenantContextHolder`:
   - `ThreadLocal<String>` store for current tenant.
   - Safe methods: `setTenantId(String)`, `getTenantId()`, `clear()`.
-- Create `com.unipost.fw.tenancy.TenantSessionAspect`:
+- Create `com.acc.fw.tenancy.TenantSessionAspect`:
   - Intercept `@Transactional` methods to set PostgreSQL session setting `SET LOCAL app.current_tenant_id = :tenantId`.
   - Defensive SQL escaping to prevent SQL injection in session setting.
 

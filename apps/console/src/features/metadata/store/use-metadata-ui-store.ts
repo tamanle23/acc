@@ -5,7 +5,7 @@ import type {
   EntityType,
   RelationshipType,
 } from '../api/types';
-import { applyTenantThemeOverrides, defaultTenantThemes } from '@unipost/tokens';
+import { applyTenantThemeOverrides, defaultTenantThemes } from '@acc/tokens';
 import { useSpringAuthStore } from '@/features/spring-auth';
 
 export interface AttributeFilterClause {
@@ -128,8 +128,8 @@ const DEFAULT_TENANT_NAME = 'Acme International Corp';
 const DEFAULT_WS_ID = 'ws-acme-prod';
 const DEFAULT_WS_NAME = 'Acme Prod';
 
-const initialAssumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
-const initialAssumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null;
+const initialAssumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null;
+const initialAssumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant_name') : null;
 const hasAssumedTenant = Boolean(initialAssumedTenant && initialAssumedTenant !== 'SYSTEM');
 
 const initialTenantId = hasAssumedTenant ? (initialAssumedTenant as string) : DEFAULT_TENANT_ID;
@@ -139,7 +139,7 @@ let initialWorkspaceId = hasAssumedTenant ? `ws-${initialAssumedTenant}` : DEFAU
 let initialWorkspaceName = hasAssumedTenant ? `${initialTenantName} Workspace` : DEFAULT_WS_NAME;
 
 if (typeof window !== 'undefined') {
-  const userPref = localStorage.getItem(`unipost_user_default_ws_${initialTenantId}`);
+  const userPref = localStorage.getItem(`acc_user_default_ws_${initialTenantId}`);
   if (userPref) {
     initialWorkspaceId = userPref;
   }

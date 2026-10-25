@@ -9,7 +9,7 @@ RUN apk update
 WORKDIR /app
 RUN pnpm add -g turbo
 COPY . .
-RUN turbo prune @unipost/console --docker
+RUN turbo prune @acc/console --docker
 
 FROM base AS installer
 RUN apk add --no-cache libc6-compat
@@ -23,7 +23,7 @@ COPY --from=builder /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/out/full/ .
-RUN pnpm turbo build --filter=@unipost/console
+RUN pnpm turbo build --filter=@acc/console
 
 FROM nginx:alpine AS runner
 # Copy built static files to NGINX web root

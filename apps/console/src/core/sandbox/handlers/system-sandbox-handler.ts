@@ -65,7 +65,7 @@ const DEFAULT_FLEET_TENANTS: SandboxFleetTenant[] = [
     slug: 'system',
     tier: 'ENTERPRISE',
     status: 'ACTIVE',
-    ownerEmail: 'custodian@unipost.io',
+    ownerEmail: 'custodian@acc.io',
     workspacesCount: 1,
     maxWorkspaces: -1,
     schemasCount: 18,
@@ -366,7 +366,7 @@ const DEFAULT_GLOBAL_USERS: SandboxGlobalUser[] = [
   {
     userId: 'usr-custodian-root',
     username: 'custodian',
-    email: 'custodian@unipost.io',
+    email: 'custodian@acc.io',
     displayName: 'Sovereign Custodian (Me)',
     tenantId: 'SYSTEM',
     roles: ['ROLE_SYSTEM_CUSTODIAN', 'ROLE_ADMIN', 'ROLE_USER'],

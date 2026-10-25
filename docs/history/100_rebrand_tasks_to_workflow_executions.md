@@ -26,6 +26,6 @@ A Task in the UI ledger is an execution unit of a runtime Workflow Execution ins
 
 ## Verification
 - Unit tests:
-  - `pnpm --filter @unipost/console exec vitest run src/features/tasks` (3/3 tests passed).
-  - `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio` (12/12 tests passed).
-- Integration test suite: 40/40 test files passed across `@unipost/console`.
+  - `pnpm --filter @acc/console exec vitest run src/features/tasks` (3/3 tests passed).
+  - `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio` (12/12 tests passed).
+- Integration test suite: 40/40 test files passed across `@acc/console`.

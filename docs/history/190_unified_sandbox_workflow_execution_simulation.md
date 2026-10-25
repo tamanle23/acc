@@ -34,8 +34,8 @@ In offline sandbox mode or local developer environments without an active Spring
 - `apps/console/src/features/workflows/__tests__/workflow-simulation-modal.test.tsx`: Added tests for scenario options and simulation launch.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test -- src/features/workflows src/core/sandbox`: 33 test files, 165 tests passed (100% green).
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test -- src/features/workflows src/core/sandbox`: 33 test files, 165 tests passed (100% green).
 
 ## Walkthrough
 - Documented in `apps/console/doc/walkthrough_148.md`.

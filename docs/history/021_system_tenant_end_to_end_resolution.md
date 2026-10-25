@@ -19,7 +19,7 @@ Following the initial rollout of the Sovereign SYSTEM Tenant Cockpit (History Lo
 
 ## Changes
 - **Backend**:
-  - Created `apps/backend/unipost-fw/src/main/java/com/unipost/system/dto/CreateRoleRequest.java`.
+  - Created `apps/backend/acc-fw/src/main/java/com/acc/system/dto/CreateRoleRequest.java`.
   - Added `createRole` method to `SystemFleetService.java`.
   - Added `@PostMapping("/roles")` endpoint to `SystemFleetController.java`.
   - Added dual-context detection (`actor_tid`) to `JwtAuthenticationTokenFilter.java`.
@@ -29,7 +29,7 @@ Following the initial rollout of the Sovereign SYSTEM Tenant Cockpit (History Lo
   - `role-definition-modal.tsx`: Connected `useCreateSystemRole` with loading state and validation.
   - `rbac-matrix-grid.tsx`: Added "Create Custom Role" button and rendered `RoleDefinitionModal`.
   - `user-membership-drawer.tsx`: Added slide-over `Sheet` inspector with identity telemetry and session revocation.
-  - `api-client.ts`: Attached `unipost_assumed_token` and `X-Assumed-Tenant` header.
+  - `api-client.ts`: Attached `acc_assumed_token` and `X-Assumed-Tenant` header.
   - `fleet-tenants-table.tsx` & `assume-tenant-bar.tsx`: Stored and cleared ephemeral assumed tokens.
   - `types.ts` & `store.ts`: Added `currentTenantId` to `AuthState` and synced from decoded JWT.
   - `auth-sandbox-handler.ts` & `sandbox-manager.ts`: Stamped `tenantId` into mock JWT tokens.

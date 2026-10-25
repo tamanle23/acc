@@ -58,7 +58,7 @@ if (shouldRun) {
   console.log('🚀 [Coverage Generator] --run specified: Executing monorepo test coverage suites...');
   try {
     console.log('📦 Running backend JaCoCo coverage (mvn test jacoco:report)...');
-    execSync('mvn test jacoco:report -f apps/backend/unipost-fw/pom.xml -q', {
+    execSync('mvn test jacoco:report -f apps/backend/acc-fw/pom.xml -q', {
       cwd: ROOT_DIR,
       stdio: 'inherit',
     });
@@ -68,7 +68,7 @@ if (shouldRun) {
 
   try {
     console.log('⚡ Running sandbox Vitest coverage...');
-    execSync('pnpm --filter @unipost/sandbox test:coverage', {
+    execSync('pnpm --filter @acc/sandbox test:coverage', {
       cwd: ROOT_DIR,
       stdio: 'inherit',
     });
@@ -78,7 +78,7 @@ if (shouldRun) {
 
   try {
     console.log('💻 Running console Vitest coverage...');
-    execSync('pnpm --filter @unipost/console test:coverage', {
+    execSync('pnpm --filter @acc/console test:coverage', {
       cwd: ROOT_DIR,
       stdio: 'inherit',
     });
@@ -94,11 +94,11 @@ console.log('🔍 [Coverage Generator] Discovering coverage artifacts across rep
 // ==========================================
 function parseJacocoBackend() {
   const possibleCsvPaths = [
-    path.join(ROOT_DIR, 'apps/backend/unipost-fw/target/site/jacoco/jacoco.csv'),
+    path.join(ROOT_DIR, 'apps/backend/acc-fw/target/site/jacoco/jacoco.csv'),
     path.join(ROOT_DIR, 'apps/backend/target/site/jacoco/jacoco.csv'),
   ];
   const possibleXmlPaths = [
-    path.join(ROOT_DIR, 'apps/backend/unipost-fw/target/site/jacoco/jacoco.xml'),
+    path.join(ROOT_DIR, 'apps/backend/acc-fw/target/site/jacoco/jacoco.xml'),
     path.join(ROOT_DIR, 'apps/backend/target/site/jacoco/jacoco.xml'),
   ];
 
@@ -216,7 +216,7 @@ function parseJacocoBackend() {
 
     const javaSourcePath = path.join(
       ROOT_DIR,
-      'apps/backend/unipost-fw/src/main/java',
+      'apps/backend/acc-fw/src/main/java',
       pkgName.replace(/\./g, '/'),
       sourceFileName
     );
@@ -235,7 +235,7 @@ function parseJacocoBackend() {
       name: className,
       sourceFileName,
       packageName: pkgName,
-      moduleName: '@unipost/backend',
+      moduleName: '@acc/backend',
       javaSourcePath: fs.existsSync(javaSourcePath) ? path.relative(ROOT_DIR, javaSourcePath) : null,
       instructionCovered: ic,
       instructionMissed: im,
@@ -273,7 +273,7 @@ function parseJacocoBackend() {
 
   return {
     id: 'backend',
-    name: '@unipost/backend',
+    name: '@acc/backend',
     type: 'java',
     engine: 'JaCoCo 0.8.12',
     instructionCovered: totalIc,
@@ -473,17 +473,17 @@ function parseVitestModule(moduleId, moduleName, coverageJsonRelative) {
 
 // Run parsers
 const backendModule = parseJacocoBackend();
-const consoleModule = parseVitestModule('console', '@unipost/console', 'apps/console/coverage/coverage-final.json');
-const sandboxModule = parseVitestModule('sandbox', '@unipost/sandbox', 'packages/sandbox/coverage/coverage-final.json');
+const consoleModule = parseVitestModule('console', '@acc/console', 'apps/console/coverage/coverage-final.json');
+const sandboxModule = parseVitestModule('sandbox', '@acc/sandbox', 'packages/sandbox/coverage/coverage-final.json');
 
 const modules = [backendModule, consoleModule, sandboxModule].filter(Boolean);
 
 if (modules.length === 0) {
   console.error('❌ [Coverage Generator Error] No coverage reports found in repository!');
   console.error('Please run test coverage first:');
-  console.error('  1. mvn test jacoco:report -f apps/backend/unipost-fw/pom.xml');
-  console.error('  2. pnpm --filter @unipost/sandbox test:coverage');
-  console.error('  3. pnpm --filter @unipost/console test:coverage');
+  console.error('  1. mvn test jacoco:report -f apps/backend/acc-fw/pom.xml');
+  console.error('  2. pnpm --filter @acc/sandbox test:coverage');
+  console.error('  3. pnpm --filter @acc/console test:coverage');
   process.exit(1);
 }
 
@@ -1258,7 +1258,7 @@ const htmlContent = `<!DOCTYPE html>
       const container = document.getElementById('breadcrumb-links');
       const parts = [];
 
-      parts.push(\`<span class="breadcrumb-item" onclick="navigateRoot()">unipost (monorepo)</span>\`);
+      parts.push(\`<span class="breadcrumb-item" onclick="navigateRoot()">acc (monorepo)</span>\`);
 
       if (state.viewMode === 'flat') {
         parts.push(\`<span class="breadcrumb-separator">›</span>\`);

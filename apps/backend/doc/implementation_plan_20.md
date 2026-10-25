@@ -1,7 +1,7 @@
 # Implementation Plan - Phase 6: Tenant Onboarding & Blueprint Catalog Seeding
 
 ## Overview
-Implement the Tenant Onboarding & Blueprint Catalog Seeding framework in `@unipost/backend` (`apps/backend/unipost-fw`), allowing new tenant workspaces to be instantly initialized from pre-modeled domain blueprints (Logistics Fleet, B2B CRM, Blank Workspace) in $< 250\text{ ms}$, deep-cloning entity types, attributes, and relationships stamped with the new `tenant_id` and pre-warming Hazelcast/L1 schema caches with zero blueprint coupling.
+Implement the Tenant Onboarding & Blueprint Catalog Seeding framework in `@acc/backend` (`apps/backend/acc-fw`), allowing new tenant workspaces to be instantly initialized from pre-modeled domain blueprints (Logistics Fleet, B2B CRM, Blank Workspace) in $< 250\text{ ms}$, deep-cloning entity types, attributes, and relationships stamped with the new `tenant_id` and pre-warming Hazelcast/L1 schema caches with zero blueprint coupling.
 
 ## User Review Required
 
@@ -13,7 +13,7 @@ Implement the Tenant Onboarding & Blueprint Catalog Seeding framework in `@unipo
 
 ## Proposed Changes
 
-### 1. Blueprint Manifest JSONs (`apps/backend/unipost-fw/src/main/resources/metadata/blueprints/`)
+### 1. Blueprint Manifest JSONs (`apps/backend/acc-fw/src/main/resources/metadata/blueprints/`)
 - `logistics-fleet-blueprint.json`:
   - `ent_vehicle` (Vehicle): license_plate, vehicle_type, max_payload_kg, status.
   - `ent_dispatch_order` (Dispatch Order): tracking_number, delivery_status, destination_address.
@@ -25,13 +25,13 @@ Implement the Tenant Onboarding & Blueprint Catalog Seeding framework in `@unipo
 - `blank-workspace-blueprint.json`:
   - Minimal/empty canvas template.
 
-### 2. Blueprint DTOs & Loader (`apps/backend/unipost-fw/src/main/java/com/unipost/tenant/blueprint/`)
+### 2. Blueprint DTOs & Loader (`apps/backend/acc-fw/src/main/java/com/acc/tenant/blueprint/`)
 - `BlueprintManifest.java`, `BlueprintEntityType.java`, `BlueprintAttribute.java`, `BlueprintRelationship.java`.
 - `BlueprintCatalogService.java`:
   - Scans and caches blueprint templates from `classpath:metadata/blueprints/*.json`.
   - Exposes `List<BlueprintSummaryDto> getAvailableBlueprints()` and `BlueprintManifest getBlueprint(String blueprintId)`.
 
-### 3. Tenant Provisioning Service & Controller (`com.unipost.tenant.service`, `com.unipost.presentation`)
+### 3. Tenant Provisioning Service & Controller (`com.acc.tenant.service`, `com.acc.presentation`)
 - `TenantProvisioningRequest.java`:
   - `tenantId`: slug / identifier (e.g. `tnt_fleet_express`).
   - `tenantName`: organization display name.

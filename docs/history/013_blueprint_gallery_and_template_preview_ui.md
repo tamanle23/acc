@@ -4,13 +4,13 @@
 While the backend had transactional deep-cloning logic (`TenantProvisioningService`) and classpath scanning (`BlueprintCatalogService`), the system lacked:
 - An endpoint to query full manifest details (`GET /api/v1/metadata/blueprints/{id}`) for frontend previewing.
 - Public read access in Spring Security for blueprint discovery prior to login.
-- Integration with `@unipost/console`'s Unified Sandbox Platform (`.agents/rules/02-unified-sandbox.md`).
-- Client UI in `@unipost/console` to browse, search, and preview blueprint schemas (entity models, attribute tables, relationship graphs, and dynamic forms) before committing to provisioning.
+- Integration with `@acc/console`'s Unified Sandbox Platform (`.agents/rules/02-unified-sandbox.md`).
+- Client UI in `@acc/console` to browse, search, and preview blueprint schemas (entity models, attribute tables, relationship graphs, and dynamic forms) before committing to provisioning.
 
 ## 2. Changes Made
-1. **Backend (`@unipost/backend`)**:
-   - Updated `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/TenantProvisioningController.java` to expose `GET /api/v1/metadata/blueprints/{blueprintId}`.
-   - Updated `apps/backend/unipost-ms-aio/src/main/resources/application-local.yml` permitAlls list for `/api/v1/metadata/blueprints` and `/api/v1/metadata/blueprints/**`.
+1. **Backend (`@acc/backend`)**:
+   - Updated `apps/backend/acc-fw/src/main/java/com/acc/presentation/TenantProvisioningController.java` to expose `GET /api/v1/metadata/blueprints/{blueprintId}`.
+   - Updated `apps/backend/acc-ms-aio/src/main/resources/application-local.yml` permitAlls list for `/api/v1/metadata/blueprints` and `/api/v1/metadata/blueprints/**`.
 2. **Unified Sandbox Platform**:
    - Created `apps/console/src/features/metadata/data/mock-blueprints.ts` containing manifests for Headless CMS, Fleet Logistics, B2B CRM, and Blank Canvas.
    - Updated `apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts` to mock `/blueprints`, `/blueprints/:id`, and `/tenants/provision`.
@@ -25,9 +25,9 @@ While the backend had transactional deep-cloning logic (`TenantProvisioningServi
    - Mounted dialog in `MetadataDialogs`, added `Templates` button to `EntityTypeSidebar`, and enhanced empty state callout in `MetadataFeature`.
 
 ## 3. Verification
-- `.\mvnw.cmd test -Dtest=TenantProvisioningServiceTest -pl unipost-fw`: 5 tests passed.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test`: 13 suites, 76 tests passed.
+- `.\mvnw.cmd test -Dtest=TenantProvisioningServiceTest -pl acc-fw`: 5 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test`: 13 suites, 76 tests passed.
 
 ## 4. Key Artifacts
 - Plan: `apps/console/doc/implementation_plan_62.md`

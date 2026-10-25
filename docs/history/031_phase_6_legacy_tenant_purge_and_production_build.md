@@ -12,14 +12,14 @@ In Phase 6 of the Multi-Tenant Recalibration initiative, a rigorous scrub of all
 
 ## Implementation Details
 - Confirmed `apps/console/src` has 0 occurrences of `default-tenant`, `Default Organization`, and `ws-main`.
-- Added missing `toast` import from `sonner` in [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/system/tenants/fleet-tenants-table.tsx).
-- Updated mock tenant in [`tenant-users-drawer.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/system/tenants/__tests__/tenant-users-drawer.test.tsx) to match `FleetTenantSummary` type signature and removed unused imports.
+- Added missing `toast` import from `sonner` in [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/system/tenants/fleet-tenants-table.tsx).
+- Updated mock tenant in [`tenant-users-drawer.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/system/tenants/__tests__/tenant-users-drawer.test.tsx) to match `FleetTenantSummary` type signature and removed unused imports.
 
 ## Verification
 - Executed `git grep -n "default-tenant" apps/console/src`: 0 occurrences.
 - Executed `git grep -n "Default Organization" apps/console/src`: 0 occurrences.
 - Executed `git grep -n "ws-main" apps/console/src`: 0 occurrences.
-- Executed `pnpm --filter @unipost/console exec vite build --config vite.config.ts`: Built successfully in 5.94s with zero errors.
+- Executed `pnpm --filter @acc/console exec vite build --config vite.config.ts`: Built successfully in 5.94s with zero errors.
 - Executed full Vitest suite: 27/27 test suites passed, 135/135 tests green.
 
 ## History Log Reference

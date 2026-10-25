@@ -16,6 +16,6 @@ The user requested moving `/workflow-executions`, `/workflows`, and `/approvals`
 - `apps/console/doc/walkthrough_101.md`: Walkthrough artifact.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` passed clean with 0 errors.
-- `pnpm --filter @unipost/console test src/components/layout/` passed 7/7 tests.
-- `pnpm --filter @unipost/console test src/features/approvals/` passed 2/2 tests.
+- `pnpm --filter @acc/console exec tsc --noEmit` passed clean with 0 errors.
+- `pnpm --filter @acc/console test src/components/layout/` passed 7/7 tests.
+- `pnpm --filter @acc/console test src/features/approvals/` passed 2/2 tests.

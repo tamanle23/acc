@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 02 of N)  
 **Document Level:** Low-Level Technical Specification (LLTS) & Database DDL Blueprint  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / Liquibase / PostgreSQL 16+)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / Liquibase / PostgreSQL 16+)  
 **Scope:** Tenant-Scoped Indexing, Row-Level Security (RLS) Policies, Spring Modulith Connection Hooks, Zero Cross-Tenant Leakage  
 **Status:** Canonical Living Architecture Document  
 
@@ -213,7 +213,7 @@ Incoming Request (Bearer JWT)
 
 ### 3.1 Backend Interceptor Implementation Details
 ```java
-package com.unipost.fw.tenancy;
+package com.acc.fw.tenancy;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -248,7 +248,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
 ```
 
 ```java
-package com.unipost.fw.tenancy;
+package com.acc.fw.tenancy;
 
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;

@@ -19,27 +19,27 @@ This document records the complete implementation of **Phase 4 of the Domain Blu
 
 ## 2. Changes Made Across Modules
 
-### A. Backend (`@unipost/backend`)
-1. **Liquibase Migration (`apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00006.xml`)**:
+### A. Backend (`@acc/backend`)
+1. **Liquibase Migration (`apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00006.xml`)**:
    - `UNIPOST_TENANT_BILLING`: columns `tenant_id`, `payos_customer_id`, `current_order_code`, `plan_tier`, `billing_cadence`, `status`, `amount_paid`, `expires_at`, `created_date`, `last_updated_date`.
    - `UNIPOST_TENANT_FEATURES`: columns `id`, `tenant_id`, `feature_key`, `is_enabled`, `expires_at`, `created_date`, `last_updated_date`.
    - Row-Level Security policies `tenant_isolation_billing` and `tenant_isolation_features` matching `app.current_tenant_id`.
    - Partial unique index on `(tenant_id, feature_key)`.
-2. **Domain & Repositories (`unipost-fw`)**:
+2. **Domain & Repositories (`acc-fw`)**:
    - `TenantBilling.java` and `TenantFeature.java`.
    - `TenantBillingRepository.java` and `TenantFeatureRepository.java`.
-3. **Dynamic Entitlements Engine (`unipost-fw`)**:
+3. **Dynamic Entitlements Engine (`acc-fw`)**:
    - `@RequireFeature` annotation.
    - `FeatureNotEntitledException.java`.
    - `TenantEntitlementService.java` & `DefaultTenantEntitlementService.java` with L1 cache fabric and tier mappings (`BASIC`, `PRO`, `PRO_MAX`).
    - `FeatureEntitlementAspect.java` intercepting protected methods.
-4. **payOS Client & Controllers (`unipost-fw`)**:
+4. **payOS Client & Controllers (`acc-fw`)**:
    - `PayOsBillingService.java` with HMAC-SHA256 signature verification and VietQR payload generation.
    - `TenantBillingController.java` with Spring Security configuration.
-5. **Unit Tests (`unipost-fw`)**:
+5. **Unit Tests (`acc-fw`)**:
    - `PayOsBillingAndEntitlementsTest.java` verifying default entitlements, Pro/Pro Max unlocks, VietQR link generation, valid HMAC webhook activation, and forged webhook signature rejection.
 
-### B. Frontend (`@unipost/console`)
+### B. Frontend (`@acc/console`)
 1. **API Hooks (`src/features/metadata/api/use-billing.ts`)**:
    - `useTenantBilling()`: queries `/api/v1/billing/summary`.
    - `useCreatePaymentLink()`: posts to `/api/v1/billing/checkout`.
@@ -57,7 +57,7 @@ This document records the complete implementation of **Phase 4 of the Domain Blu
 ---
 
 ## 3. Verification & Quality Assurance
-- **Backend Test Suite:** `mvnw.cmd test -pl unipost-fw -Dtest=PayOsBillingAndEntitlementsTest` passed 5/5 tests.
+- **Backend Test Suite:** `mvnw.cmd test -pl acc-fw -Dtest=PayOsBillingAndEntitlementsTest` passed 5/5 tests.
 - **Backend Build:** `mvnw.cmd test-compile -DskipTests` passed on all 10 reactor modules.
-- **Frontend Typecheck:** `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- **Frontend Test Suite:** `pnpm --filter @unipost/console test` passed all 16 test files (83 tests).
+- **Frontend Typecheck:** `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- **Frontend Test Suite:** `pnpm --filter @acc/console test` passed all 16 test files (83 tests).

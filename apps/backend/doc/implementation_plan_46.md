@@ -1,8 +1,8 @@
 # Implementation Plan 46: Enterprise Hardening & Resilience Architecture for Master Database Schema & Metadata Engine
 
 ## Executive Summary
-This implementation plan elevates [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/master_database_schema_architecture.md) from a static schema reference to an **Enterprise-Grade, Resilient, and Regression-Free Architectural Master Specification (v1.2.0)**. 
-It captures the active, production-grade resilience mechanisms implemented across `apps/backend/unipost-fw` and `@unipost/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
+This implementation plan elevates [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/master_database_schema_architecture.md) from a static schema reference to an **Enterprise-Grade, Resilient, and Regression-Free Architectural Master Specification (v1.2.0)**. 
+It captures the active, production-grade resilience mechanisms implemented across `apps/backend/acc-fw` and `@acc/console` that prevent catastrophic regressions, security exploits, and performance bottlenecks in dynamic metadata execution.
 
 ---
 
@@ -31,7 +31,7 @@ It captures the active, production-grade resilience mechanisms implemented acros
 
 ### Documentation Layer
 
-#### [MODIFY] [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/master_database_schema_architecture.md)
+#### [MODIFY] [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/master_database_schema_architecture.md)
 
 1. **Header & Document Version**:
    - Bump version to **`1.2.0`**.
@@ -74,13 +74,13 @@ It captures the active, production-grade resilience mechanisms implemented acros
 
 ### Monorepo History & Verification Layer
 
-#### [NEW] [`apps/backend/doc/implementation_plan_46.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/doc/implementation_plan_46.md)
+#### [NEW] [`apps/backend/doc/implementation_plan_46.md`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/doc/implementation_plan_46.md)
 - App-scoped implementation plan tracking this architectural refinement.
 
-#### [NEW] [`docs/history/200_enterprise_metadata_resilience_and_pipeline_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/history/200_enterprise_metadata_resilience_and_pipeline_architecture.md)
+#### [NEW] [`docs/history/200_enterprise_metadata_resilience_and_pipeline_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/history/200_enterprise_metadata_resilience_and_pipeline_architecture.md)
 - Milestoned sequential 3-digit history log entry.
 
-#### [MODIFY] [`docs/history/README.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/history/README.md)
+#### [MODIFY] [`docs/history/README.md`](file:///c:/Users/Admin/workspace/git/acc/docs/history/README.md)
 - Register Entry 200 in the history index.
 
 ---
@@ -93,13 +93,13 @@ It captures the active, production-grade resilience mechanisms implemented acros
 ./mvnw test-compile -q
 
 # 2. Run backend metadata & resilience tests
-./mvnw test -pl unipost-fw "-Dtest=RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest" -q
+./mvnw test -pl acc-fw "-Dtest=RecordMutationPipelineTest,SchemaValidationServiceTest,CompositeRecordServiceTest" -q
 
 # 3. Verify console frontend type safety
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 
 # 4. Verify console metadata unit test suite
-pnpm --filter @unipost/console test src/features/metadata/
+pnpm --filter @acc/console test src/features/metadata/
 ```
 
 ### Manual Inspection

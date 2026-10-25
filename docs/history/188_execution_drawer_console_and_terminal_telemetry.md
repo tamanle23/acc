@@ -35,7 +35,7 @@ Implemented **Workstream 4: Execution Drawer Console & Terminal Telemetry Viewer
    - `Diagnostics`: Channel status (Live SSE vs. Polling Fallback), connection lifecycle state, retry attempts, and active stream warnings.
 
 ## Verification
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
 - **Unit & Integration Tests**:
   - `execution-run-drawer.test.tsx` (5/5 passed).
-  - Full workflow test suite: 20 test files, 89 passed (`pnpm --filter @unipost/console test -- src/features/workflows`).
+  - Full workflow test suite: 20 test files, 89 passed (`pnpm --filter @acc/console test -- src/features/workflows`).

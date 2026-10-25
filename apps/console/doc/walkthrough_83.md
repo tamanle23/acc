@@ -44,5 +44,5 @@ We upgraded the sovereign root custodian checks across the metadata domain to dy
 
 ## 3. Verification
 
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - **9 test files passed**, **55 tests passed** (100% pass rate).

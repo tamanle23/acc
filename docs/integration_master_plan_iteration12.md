@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Vision
 
-Iteration 12 transforms the **unipost** enterprise platform from a robust, accessible foundation into a battle-tested, high-performance, and consumer-grade operational suite. Following collaborative alignment, this iteration executes with a **User-Experience First** delivery staging: delivering immediate tangible visual ergonomics (Global Command Palette, Dynamic Multi-Condition Query Builder, Grid Density profiles, Drag-and-drop column customization, and Shared Team Views), followed by systematic Zero-Stub elimination, backend performance tuning (PostgreSQL functional expression indexing + GIN, keyset pagination, Java 21 Loom Virtual Threads), and event-driven dynamic entity business workflows with Spring Modulith persistent outbox and real-time Server-Sent Events (SSE).
+Iteration 12 transforms the **acc** enterprise platform from a robust, accessible foundation into a battle-tested, high-performance, and consumer-grade operational suite. Following collaborative alignment, this iteration executes with a **User-Experience First** delivery staging: delivering immediate tangible visual ergonomics (Global Command Palette, Dynamic Multi-Condition Query Builder, Grid Density profiles, Drag-and-drop column customization, and Shared Team Views), followed by systematic Zero-Stub elimination, backend performance tuning (PostgreSQL functional expression indexing + GIN, keyset pagination, Java 21 Loom Virtual Threads), and event-driven dynamic entity business workflows with Spring Modulith persistent outbox and real-time Server-Sent Events (SSE).
 
 ---
 
@@ -10,7 +10,7 @@ Iteration 12 transforms the **unipost** enterprise platform from a robust, acces
 
 Based on deep technical alignment, the following design decisions govern Iteration 12:
 
-1. **UX-First Staging**: Phase 1 immediately equips `@unipost/console` with professional-grade interactive ergonomics, providing rapid feedback before deeper backend and data migration phases.
+1. **UX-First Staging**: Phase 1 immediately equips `@acc/console` with professional-grade interactive ergonomics, providing rapid feedback before deeper backend and data migration phases.
 2. **Dynamic Metadata Indexing**: PostgreSQL Functional Expression Indexes (`CREATE INDEX CONCURRENTLY idx_... ON UNIPOST_ENTITY_RECORDS ((data->>'field')) WHERE "deletedDate" IS NULL`) combined with a global GIN index (`jsonb_path_ops`). This eliminates disruptive table-locking DDL migrations while guaranteeing sub-millisecond query performance at 100,000+ records.
 3. **Event-Driven Workflow Triggers**: Transactional Persistent Outbox powered by Spring Modulith (`UNIPOST_EVENT_PUBLICATIONS`). Entity mutations commit an event in the same DB transaction; asynchronous listeners dispatch workflow executions with guaranteed at-least-once delivery and auto-recovery on server crash.
 4. **Real-Time Notification Pipeline**: Server-Sent Events (SSE) stream (`/api/v1/notifications/stream`) combined with TanStack Query optimistic invalidation. Clean, HTTP/2 multiplexed, firewall-friendly, automatic browser reconnection, minimal server overhead.

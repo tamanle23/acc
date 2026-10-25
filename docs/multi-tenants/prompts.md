@@ -3,7 +3,7 @@
 **Series:** Multi-Tenant Architecture Blueprint Series (Design & Generative UI Prompts)  
 **Target Engine:** Gemini (Imagen 3 / Multimodal Image Generation / Generative UI)  
 **Design Standard:** Liquid Glass Mandatory Aesthetic (`backdrop-blur-xl bg-white/65 dark:bg-slate-900/65 border-white/30`, specular highlights, diffuse elevation)  
-**Associated Architecture Docs:** [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md) & [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
+**Associated Architecture Docs:** [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md) & [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
 **Status:** Living Design Prompt Catalog  
 
 ---

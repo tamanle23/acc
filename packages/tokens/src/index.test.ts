@@ -7,7 +7,7 @@ import {
   isWcagAaCompliant,
 } from './index';
 
-describe('@unipost/tokens', () => {
+describe('@acc/tokens', () => {
   it('should expose standard blur metrics (8, 16, 24, 32, 40)', () => {
     expect(blurMetrics.subtle).toBe(8);
     expect(blurMetrics.standard).toBe(16);

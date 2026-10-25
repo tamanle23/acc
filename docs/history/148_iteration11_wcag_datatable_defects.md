@@ -20,7 +20,7 @@ Following completion of Workstream 1 in Git commit [147], Workstreams 2, 3, and 
 
 ## Changes
 - **Backend:**
-  - `apps/backend/unipost-sandbox/src/main/java/com/unipost/sandbox/config/SandboxAutoConfiguration.java`: Added `@EnableConfigurationProperties(SandboxProperties.class)`.
+  - `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java`: Added `@EnableConfigurationProperties(SandboxProperties.class)`.
 - **Console Core & Theming:**
   - `apps/console/src/styles/theme.css`: Calibrated `--destructive` and `--destructive-foreground` for acrylic and obsidian.
   - `apps/console/src/styles/index.css`: Added `.scrollbar-thin` and thin glass scrollbar classes.
@@ -47,9 +47,9 @@ Following completion of Workstream 1 in Git commit [147], Workstreams 2, 3, and 
 ## Verification Record
 - `pnpm --filter tekgo-ui lint`: Clean exit 0.
 - `pnpm --filter tekgo-ui build`: Clean exit 0.
-- `pnpm --filter @unipost/console test`: 65/65 test suites passed, 309/309 tests passed.
+- `pnpm --filter @acc/console test`: 65/65 test suites passed, 309/309 tests passed.
 - `pnpm test:backend:sandbox`: 33/33 tests passed.
-- `pnpm --filter @unipost/backend test:modulith`: 1/1 modularity tests passed.
+- `pnpm --filter @acc/backend test:modulith`: 1/1 modularity tests passed.
 - `pnpm test:e2e`: 15/15 Playwright E2E tests passed.
 
 ## Tasks

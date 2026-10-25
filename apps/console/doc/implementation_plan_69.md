@@ -1,8 +1,8 @@
 # Implementation Plan 69: SYSTEM Sovereign Custodian — Multi-Tenant Fleet, RBAC & Custodial UI
 
-Comprehensive full-stack implementation plan for the **`SYSTEM` Tenant (Sovereign Root Custodian)** across `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@unipost/console` (React 19 / Vite 8 / TanStack Router), and the **Unified Sandbox Platform**.
+Comprehensive full-stack implementation plan for the **`SYSTEM` Tenant (Sovereign Root Custodian)** across `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+), `@acc/console` (React 19 / Vite 8 / TanStack Router), and the **Unified Sandbox Platform**.
 
-> **Direct Alignment Reference:** Strictly paired without discrepancy with [`docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md).
+> **Direct Alignment Reference:** Strictly paired without discrepancy with [`docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/11_system_tenant_sovereign_custody_architecture.md).
 
 ---
 
@@ -79,12 +79,12 @@ flowchart TD
 ## 3. Detailed Phase Breakdown
 
 ### Phase 1: Database RLS Paradox Resolution & Backend Tenancy Core
-1. **Database Migration (`apps/backend/unipost-db`)**:
+1. **Database Migration (`apps/backend/acc-db`)**:
    - Create Liquibase `changelog-000.000.00006.xml` and include in `changelog-master.xml`.
    - Update `tenant_isolation_entity_types`, `tenant_isolation_attribute_defs`, and `tenant_isolation_entities`:
      - Fix `WITH CHECK` to allow `SYSTEM` to write system schemas (`tenant_id = 'SYSTEM'`).
      - Grant `SYSTEM` read/audit access across the entire data plane.
-2. **Metadata Engine Guard (`apps/backend/unipost-fw`)**:
+2. **Metadata Engine Guard (`apps/backend/acc-fw`)**:
    - Refactor `MetadataService.java`: Differentiate between commercial tenants and `SYSTEM`.
    - Allow callers with `tenant_id = 'SYSTEM'` to create, update, or delete system-level attributes and entity types.
 3. **Dual-Context Principal (`TenantContextHolder.java`)**:
@@ -172,7 +172,7 @@ flowchart TD
 
 | Checkpoint | Command | Target Criteria |
 |---|---|---|
-| **Backend Unit & Security** | `.\mvnw.cmd test -pl unipost-fw "-Dtest=*Fleet*,*Sovereign*,*Billing*"` | 100% Pass, 0 failures |
-| **Frontend Test Suite** | `pnpm --filter @unipost/console test` | All tests pass, 0 regressions |
-| **TypeScript Compilation** | `pnpm --filter @unipost/console exec tsc --noEmit` | Clean compilation, 0 errors |
+| **Backend Unit & Security** | `.\mvnw.cmd test -pl acc-fw "-Dtest=*Fleet*,*Sovereign*,*Billing*"` | 100% Pass, 0 failures |
+| **Frontend Test Suite** | `pnpm --filter @acc/console test` | All tests pass, 0 regressions |
+| **TypeScript Compilation** | `pnpm --filter @acc/console exec tsc --noEmit` | Clean compilation, 0 errors |
 | **Unified Sandbox Parity** | Toggle persona to `Sovereign Custodian (SYSTEM)` | Crown Mode renders; Fleet table loads mock tenants |

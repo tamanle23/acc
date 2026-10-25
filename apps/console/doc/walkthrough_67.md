@@ -1,15 +1,15 @@
 # Walkthrough 67: Comprehensive Unit, Integration, and E2E Test Suite for Multi-Tenant Ecosystem
 
 ## 1. Executive Summary
-This document records the creation, execution, and verification of comprehensive end-to-end (E2E), integration, and unit tests covering all multi-tenant and domain blueprint lifecycles across `@unipost/backend` and `@unipost/console`.
+This document records the creation, execution, and verification of comprehensive end-to-end (E2E), integration, and unit tests covering all multi-tenant and domain blueprint lifecycles across `@acc/backend` and `@acc/console`.
 
 ---
 
 ## 2. Test Suites Added & Enhanced
 
-### A. Backend (`@unipost/backend`)
+### A. Backend (`@acc/backend`)
 1. **`TenantBillingControllerTest.java`**:
-   - Location: `apps/backend/unipost-fw/src/test/java/com/unipost/presentation/TenantBillingControllerTest.java`
+   - Location: `apps/backend/acc-fw/src/test/java/com/acc/presentation/TenantBillingControllerTest.java`
    - Scope: Presentation controller endpoints for billing and payOS checkout.
    - Test cases:
      - `testGetBillingSummary_ReturnsActiveTenantEntitlements`: Verifies retrieval of active tenant subscription and granted `FEATURE_*` tokens.
@@ -17,13 +17,13 @@ This document records the creation, execution, and verification of comprehensive
      - `testHandlePayOsWebhook_SuccessReturns200`: Verifies successful processing of verified payOS webhooks with HTTP 200.
      - `testHandlePayOsWebhook_RejectedSignatureReturns400`: Verifies rejection of tampered/forged HMAC signatures with HTTP 400.
 2. **`PayOsBillingAndEntitlementsTest.java`**:
-   - Location: `apps/backend/unipost-fw/src/test/java/com/unipost/tenant/billing/PayOsBillingAndEntitlementsTest.java`
+   - Location: `apps/backend/acc-fw/src/test/java/com/acc/tenant/billing/PayOsBillingAndEntitlementsTest.java`
    - Scope: Cryptographic HMAC-SHA256 signature verification, billing repository state machine, and dynamic feature entitlement grants.
 3. **`MetadataCacheListenerTest.java`**:
-   - Location: `apps/backend/unipost-fw/src/test/java/com/unipost/service/MetadataCacheListenerTest.java`
+   - Location: `apps/backend/acc-fw/src/test/java/com/acc/service/MetadataCacheListenerTest.java`
    - Refined verification for dual-parameter cache invalidation `invalidateL1Cache(entityTypeId, tenantId)`.
 
-### B. Frontend (`@unipost/console`)
+### B. Frontend (`@acc/console`)
 1. **`domain-blueprints-e2e.test.ts`**:
    - Location: `apps/console/src/features/metadata/__tests__/domain-blueprints-e2e.test.ts`
    - Scope: Complete end-to-end flows spanning acquisition, blueprint provisioning, workspace hierarchy, and billing lifecycles:
@@ -41,7 +41,7 @@ This document records the creation, execution, and verification of comprehensive
 
 ## 3. Verification Results
 
-### Backend (`mvnw.cmd test -pl unipost-fw`)
+### Backend (`mvnw.cmd test -pl acc-fw`)
 - Executed 28 test cases across all multi-tenant domains:
   - `TenantBillingControllerTest` (4 tests passed)
   - `PayOsBillingAndEntitlementsTest` (5 tests passed)
@@ -53,7 +53,7 @@ This document records the creation, execution, and verification of comprehensive
   - `TenantContextAndAspectTest` & `TenantSecurityLifecycleTest` (3 tests passed)
 - **Result:** **28/28 tests passed (100% BUILD SUCCESS)**.
 
-### Frontend (`pnpm --filter @unipost/console test`)
+### Frontend (`pnpm --filter @acc/console test`)
 - Executed 18 test files across all console modules:
   - `domain-blueprints-e2e.test.ts` (6 tests passed)
   - `payos-qr-modal.test.tsx` (2 tests passed)

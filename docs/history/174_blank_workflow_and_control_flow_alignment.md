@@ -15,9 +15,9 @@
 7. Verify with backend JUnit 5 suites, console Vitest suites, and `tsc --noEmit`.
 
 ## Changes
-- `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/graph/AcyclicityGuard.java`:
+- `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java`:
   - Added validation requiring matching `JOIN` task barrier when `FORK_JOIN` is present.
-- `apps/backend/workflow-engine/src/test/java/com/unipost/workflow/core/graph/AcyclicityGuardTest.java`:
+- `apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java`:
   - Added unit test cases for fork-without-join rejection and valid fork-join pair acceptance.
 - `apps/console/src/features/metadata/components/studio/dag-palette.tsx`:
   - Added `JOIN` and `EXCLUSIVE_JOIN` node definitions under Control Flow category.
@@ -39,7 +39,7 @@
 
 ## Verification
 - Vitest: 54/54 tests passing across 12 test suites in `src/features/metadata/components/studio/`.
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` exited 0.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` exited 0.
 - Maven: `cmd.exe /c "mvnw.cmd test -pl workflow-engine -q"` exited 0.
 
 ## Walkthrough

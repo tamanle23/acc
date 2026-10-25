@@ -20,26 +20,26 @@ This document outlines the plan to establish a Kubernetes-native reverse proxy s
 
 We will create a new workspace dedicated to infrastructure, containing the Kubernetes manifests, Crossplane blueprints, and runbook.
 
-#### [NEW] [apps/infra/package.json](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/package.json)
+#### [NEW] [apps/infra/package.json](file:///c:/Users/Admin/workspace/git/acc/apps/infra/package.json)
 Initialize a basic `package.json` for the new `infra` app, exposing scripts like `validate:infra`.
 
-#### [NEW] [apps/infra/README.md](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/README.md)
+#### [NEW] [apps/infra/README.md](file:///c:/Users/Admin/workspace/git/acc/apps/infra/README.md)
 A local validation runbook detailing how to spin up Kind, install NGINX Ingress, apply these manifests, and query the reverse proxy.
 
 ---
 
 ### Local Reverse Proxy Manifests (Kind)
 
-#### [NEW] [apps/infra/k8s/tekgo-ui.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/tekgo-ui.yaml)
+#### [NEW] [apps/infra/k8s/tekgo-ui.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/tekgo-ui.yaml)
 Kubernetes Deployment and Service for the `tekgo-ui` app (exposing port 80).
 
-#### [NEW] [apps/infra/k8s/console.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/console.yaml)
+#### [NEW] [apps/infra/k8s/console.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/console.yaml)
 Kubernetes Deployment and Service for the `console` app (exposing port 80).
 
-#### [NEW] [apps/infra/k8s/backend.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/backend.yaml)
+#### [NEW] [apps/infra/k8s/backend.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/backend.yaml)
 Kubernetes Deployment and Service for the `backend` app (exposing port 80).
 
-#### [NEW] [apps/infra/k8s/ingress.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/k8s/ingress.yaml)
+#### [NEW] [apps/infra/k8s/ingress.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/k8s/ingress.yaml)
 Standard Ingress resource using `networking.k8s.io/v1`. It will have `ingressClassName: nginx` and the following routing rules:
 - Host: `app.local` (or configured domain), Path: `/` (Prefix) -> `tekgo-ui` service.
 - Host: none (wildcard/all domains), Path: `/admin` (Prefix) -> `console` service.
@@ -49,17 +49,17 @@ Standard Ingress resource using `networking.k8s.io/v1`. It will have `ingressCla
 
 ### Crossplane IaC System Blueprints
 
-#### [NEW] [apps/infra/crossplane/xrd.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/crossplane/xrd.yaml)
+#### [NEW] [apps/infra/crossplane/xrd.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/crossplane/xrd.yaml)
 CompositeResourceDefinition (`v1beta1`) for `XAppLoadBalancer`, defining the schema for our custom cloud load balancer resource.
 
-#### [NEW] [apps/infra/crossplane/composition-aws.yaml](file:///c:/Users/Admin/workspace/git/unipost/apps/infra/crossplane/composition-aws.yaml)
+#### [NEW] [apps/infra/crossplane/composition-aws.yaml](file:///c:/Users/Admin/workspace/git/acc/apps/infra/crossplane/composition-aws.yaml)
 Composition (`v1beta1`) mapping `XAppLoadBalancer` to AWS provider resources (e.g., ALB Listener Rules, Target Groups) to mirror the exact `/`, `/admin`, and `/api` routing logic with host-based conditions.
 
 ---
 
 ### Monorepo Tooling Integration
 
-#### [MODIFY] [turbo.json](file:///c:/Users/Admin/workspace/git/unipost/turbo.json)
+#### [MODIFY] [turbo.json](file:///c:/Users/Admin/workspace/git/acc/turbo.json)
 Add `validate:infra` to the Turborepo pipeline, enabling `pnpm turbo validate:infra` to dry-run/lint the K8s and Crossplane YAMLs.
 
 ## Verification Plan

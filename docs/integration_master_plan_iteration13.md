@@ -1,8 +1,8 @@
-# Integration Master Plan: Iteration 13 — Workstream 4 & 5 Full-Stack Alignment, Advanced Visual JSON Editor, Autonomous Workflow Orchestration, `@unipost/worker` & Java Worker SDK Registration Protocol, Refined DAG Studio, Deterministic Schema Synthesis & Engine-Level Workflow Visual Debugger
+# Integration Master Plan: Iteration 13 — Workstream 4 & 5 Full-Stack Alignment, Advanced Visual JSON Editor, Autonomous Workflow Orchestration, `@acc/worker` & Java Worker SDK Registration Protocol, Refined DAG Studio, Deterministic Schema Synthesis & Engine-Level Workflow Visual Debugger
 
 ## 1. Executive Summary & Vision
 
-Iteration 13 elevates the **unipost** enterprise platform by closing all backend-frontend contract gaps from Iteration 12 Workstreams 4 & 5, equipping `VisualJsonEditor` with schema-aware linting and deep search/reordering ergonomics, establishing a production-grade 4-layer **SIMPLE Task Worker Registration & Polyglot SDK Architecture** (`@unipost/worker`, `@unipost/sandbox`, `@unipost/backend`, and `@unipost/console`), refining the **Visual DAG Workflow Designer**, introducing **Deterministic AI-Assisted Schema Generation**, and delivering an interactive **Engine-Level Workflow Visual Debugger** with breakpoints, step-over execution, and live node replay.
+Iteration 13 elevates the **acc** enterprise platform by closing all backend-frontend contract gaps from Iteration 12 Workstreams 4 & 5, equipping `VisualJsonEditor` with schema-aware linting and deep search/reordering ergonomics, establishing a production-grade 4-layer **SIMPLE Task Worker Registration & Polyglot SDK Architecture** (`@acc/worker`, `@acc/sandbox`, `@acc/backend`, and `@acc/console`), refining the **Visual DAG Workflow Designer**, introducing **Deterministic AI-Assisted Schema Generation**, and delivering an interactive **Engine-Level Workflow Visual Debugger** with breakpoints, step-over execution, and live node replay.
 
 ---
 
@@ -10,10 +10,10 @@ Iteration 13 elevates the **unipost** enterprise platform by closing all backend
 
 | Decision Area | Agreed Architecture & Invariants |
 | :--- | :--- |
-| **1. Workstream 4 & 5 Full-Stack Alignment** | 1. **Human Approvals REST API**: Expose `WorkflowApprovalsController` (`/api/v1/workflows/approvals` and `/api/v1/workflow/approvals`) in `unipost-ms-aio` matching the exact `ApprovalTask` contract used by `@unipost/console`.<br/>2. **System/Human Task Upsert**: Fix `WorkflowEngineService.applyCommands` so `EngineCommand.UpdateTaskStatus` upserts new task executions via `saveTaskExecution` when a task does not yet exist in `PersistencePort`.<br/>3. **Recursive JSONB FLS Masking**: Upgrade `FieldLevelSecuritySerializer` to recursively mask PII fields inside nested `Map` and `List` (`jsonb`) structures and honor schema-level sensitivity flags (`isSensitive` / `validationRules.pii`).<br/>4. **DLQ & CDC Diff Ergonomics**: Embed `VisualJsonEditor` in `dlq-inspector-sheet.tsx` for interactive override editing and wire `usePreviewRestoreRecord` diff confirmation into `master-detail-row-inspector.tsx`. |
+| **1. Workstream 4 & 5 Full-Stack Alignment** | 1. **Human Approvals REST API**: Expose `WorkflowApprovalsController` (`/api/v1/workflows/approvals` and `/api/v1/workflow/approvals`) in `acc-ms-aio` matching the exact `ApprovalTask` contract used by `@acc/console`.<br/>2. **System/Human Task Upsert**: Fix `WorkflowEngineService.applyCommands` so `EngineCommand.UpdateTaskStatus` upserts new task executions via `saveTaskExecution` when a task does not yet exist in `PersistencePort`.<br/>3. **Recursive JSONB FLS Masking**: Upgrade `FieldLevelSecuritySerializer` to recursively mask PII fields inside nested `Map` and `List` (`jsonb`) structures and honor schema-level sensitivity flags (`isSensitive` / `validationRules.pii`).<br/>4. **DLQ & CDC Diff Ergonomics**: Embed `VisualJsonEditor` in `dlq-inspector-sheet.tsx` for interactive override editing and wire `usePreviewRestoreRecord` diff confirmation into `master-detail-row-inspector.tsx`. |
 | **2. Visual JSON Editor Schema Linting & Ergonomics** | **Non-Blocking Inline Linting + `onValidationChange`**: `VisualJsonEditor` emits `onChange` whenever JSON syntax is valid while evaluating `jsonSchema` constraints (`type`, `required`, `enum`, `minLength`, `maxLength`, `minimum`, `maximum`, `pattern`) to surface inline error badges on offending `JsonTreeNode` / `JsonFormRow` items and a toolbar validation summary. Includes real-time key/value search with automatic ancestor expansion and array element Move Up / Move Down reordering. |
 | **3. `SIMPLE` Task Routing Identity** | `TaskDefinition` and `DagNodeData` support `taskDefName` (defaulting to `taskReferenceName`). `SimpleTaskStrategy` enqueues tasks with `effectiveTaskName = taskDefName \|\| taskReferenceName`. Workers polling for a specific task name (e.g., `checkInventory`) match that task name, while generic domain workers polling `"SIMPLE"` act as fallback handlers. `TaskSnapshot` and `TaskSnapshotDto` explicitly carry `workflowId` so workers never rely on `taskId.split("_")[0]`. |
-| **4. `@unipost/worker` (`packages/worker`) 4-Layer Separation of Concerns** | 1. **`@unipost/console` (`apps/console`)**: Strictly Control Plane UI. Never imports `@unipost/worker`; queries `GET /api/v1/workflow/workers` (Fleet) and `GET /api/v1/workflow/workers/catalog` (Registered `SIMPLE` Task Definitions + Input/Output JSON Schemas).<br/>2. **`@unipost/worker` (`packages/worker`)**: Pure TypeScript Worker SDK (`WorkflowWorkerHost`, `TaskPoller`, `HttpWorkerTransportClient`, Middlewares) upgraded with `/register` capability handshake, periodic `/heartbeat` telemetry, fixed `workflowId` resolution, and a runnable CLI worker entrypoint (`packages/worker/src/runner.ts`).<br/>3. **`@unipost/sandbox` (`packages/sandbox`)**: Wires `@unipost/worker` with `InMemorySandboxWorkerTransport` so offline dev mode runs real `WorkflowWorkerHost` pipelines in-memory.<br/>4. **`@unipost/backend` (`workflow-engine` & `unipost-ms-aio`)**: Java `WorkerHost` + `@WorkflowTaskWorker` annotation + `SimpleTaskWorkerRegistrar` + `RegistryAwareInProcessTransportAdapter` + `HttpWorkerTransportAdapter`. |
+| **4. `@acc/worker` (`packages/worker`) 4-Layer Separation of Concerns** | 1. **`@acc/console` (`apps/console`)**: Strictly Control Plane UI. Never imports `@acc/worker`; queries `GET /api/v1/workflow/workers` (Fleet) and `GET /api/v1/workflow/workers/catalog` (Registered `SIMPLE` Task Definitions + Input/Output JSON Schemas).<br/>2. **`@acc/worker` (`packages/worker`)**: Pure TypeScript Worker SDK (`WorkflowWorkerHost`, `TaskPoller`, `HttpWorkerTransportClient`, Middlewares) upgraded with `/register` capability handshake, periodic `/heartbeat` telemetry, fixed `workflowId` resolution, and a runnable CLI worker entrypoint (`packages/worker/src/runner.ts`).<br/>3. **`@acc/sandbox` (`packages/sandbox`)**: Wires `@acc/worker` with `InMemorySandboxWorkerTransport` so offline dev mode runs real `WorkflowWorkerHost` pipelines in-memory.<br/>4. **`@acc/backend` (`workflow-engine` & `acc-ms-aio`)**: Java `WorkerHost` + `@WorkflowTaskWorker` annotation + `SimpleTaskWorkerRegistrar` + `RegistryAwareInProcessTransportAdapter` + `HttpWorkerTransportAdapter`. |
 | **5. Deterministic Schema Generation Engine** | **100% Local Deterministic JSON AST & Domain Heuristics Only**: Zero external LLM HTTP calls. Combines a deterministic domain keyword parser (E-Commerce, FinTech, Healthcare, Logistics, HR, CMS) with a recursive JSON sample AST inference engine (`TEXT`, `NUMBER`, `BOOLEAN`, `DATETIME`, `ENUM`, `JSON`, `RELATION`, `uiComponent`, `validationRules`, FLS PII flags, and recommended FSM `LifecycleConfig`). |
 | **6. Workflow Visual Debugger Breakpoints** | **Server-Side & Sandbox Engine Breakpoints**: Active breakpoints (`Set<String> breakpoints`) are stored on the execution; `PureDecider` halts before scheduling a breakpointed `taskReferenceName` and transitions execution to `PAUSED_AT_BREAKPOINT` until `POST /api/v1/workflow/executions/{id}/step` (Step Over) or `/resume` is invoked. Includes **"Edit Input & Re-Run From Node"** (`POST .../tasks/{taskRef}/rerun`) and a **Time-Travel Variable Watch & State Diff** drawer. |
 
@@ -44,9 +44,9 @@ flowchart TD
     end
 
     subgraph P4["Phase 4: SIMPLE Task Worker Registration & 4-Layer SDK"]
-        S1["@unipost/worker: /register Handshake, /heartbeat & Runner"]
-        S2["@unipost/sandbox: InMemorySandboxWorkerTransport Bridge"]
-        S3["@unipost/backend: @WorkflowTaskWorker & SimpleTaskWorkerRegistrar"]
+        S1["@acc/worker: /register Handshake, /heartbeat & Runner"]
+        S2["@acc/sandbox: InMemorySandboxWorkerTransport Bridge"]
+        S3["@acc/backend: @WorkflowTaskWorker & SimpleTaskWorkerRegistrar"]
         S4["WorkerFleetController: POST /register & GET /catalog"]
     end
 
@@ -80,13 +80,13 @@ flowchart TD
 1. **`WorkflowEngineService.java` (`apps/backend/workflow-engine`)**:
    - In `applyCommands(...)`: When handling `EngineCommand.UpdateTaskStatus`, check if `persistencePort.getTaskExecution(ut.taskId())` is empty; if empty, insert via `persistencePort.saveTaskExecution(...)` so `HUMAN` (`WAITING_FOR_APPROVAL`), `HTTP`, `SET_VARIABLE`, `INLINE`, and `SWITCH` tasks are durably persisted in both `InMemoryPersistenceAdapter` and `PostgresJdbcPersistenceAdapter`.
    - Add `resolveHumanApprovalTask(String workflowId, String taskIdOrRef, String action, String actor, String rationale, WorkflowDefinition definition, long nowEpochMs)` to complete/fail a `WAITING_FOR_APPROVAL` task, append `HUMAN_APPROVAL_RESOLVED` to the cryptographic audit ledger, and advance `PureDecider`.
-2. **`WorkflowApprovalsController.java` (`apps/backend/unipost-ms-aio`)**:
+2. **`WorkflowApprovalsController.java` (`apps/backend/acc-ms-aio`)**:
    - Expose `@RequestMapping({"/api/v1/workflows/approvals", "/api/v1/workflow/approvals"})`:
      - `GET /`: Returns pending and resolved `ApprovalTask` items for the active tenant.
      - `POST /{taskId}/resolve`: Resolves an approval task (`APPROVED`, `REJECTED`, `CHANGES_REQUESTED`), advances the workflow execution if linked, and broadcasts `APPROVAL_RESOLVED` via `NotificationSseController`.
-3. **`EntityWorkflowTriggerDispatcher.java` (`apps/backend/unipost-fw`)**:
+3. **`EntityWorkflowTriggerDispatcher.java` (`apps/backend/acc-fw`)**:
    - Enrich `APPROVAL_REQUESTED` SSE broadcasts with complete `ApprovalTask` fields (`id`, `title`, `entityType`, `entityName`, `recordId`, `beforeContext`, `afterContext`, `status: "PENDING"`) so `ApprovalsInbox` renders live tasks immediately.
-4. **`FieldLevelSecuritySerializer.java` (`apps/backend/unipost-fw`)**:
+4. **`FieldLevelSecuritySerializer.java` (`apps/backend/acc-fw`)**:
    - Recursively traverse nested `Map<String, Object>` and `List<Object>` values (`jsonb` attributes) to mask PII keys at any nesting depth, and support explicit schema-level `isSensitive` / `validationRules.pii` flags.
 5. **`dlq-inspector-sheet.tsx` & `master-detail-row-inspector.tsx` (`apps/console`)**:
    - Replace the raw `<Textarea>` in `dlq-inspector-sheet.tsx` with `VisualJsonEditor` for interactive override payload editing before DLQ replay.
@@ -94,7 +94,7 @@ flowchart TD
 
 ---
 
-### Phase 2: Visual JSON Editor Advanced Capabilities (`@unipost/console`)
+### Phase 2: Visual JSON Editor Advanced Capabilities (`@acc/console`)
 
 1. **Real-Time Search & Filter Bar (`visual-json-editor.tsx`)**:
    - Add a compact search input in the `VisualJsonEditor` toolbar (`Search keys or values...`) with a live match count badge (`N matches`), clear button, substring highlighting, and automatic ancestor path expansion in both `Tree` and `Form` views.
@@ -107,7 +107,7 @@ flowchart TD
 
 ---
 
-### Phase 3: Core Workflow Engine Orchestration (`@unipost/backend`)
+### Phase 3: Core Workflow Engine Orchestration (`@acc/backend`)
 
 1. **Explicit `workflowId` Propagation (`TaskSnapshot.java` & Storage Adapters)**:
    - Add `workflowId` to `TaskSnapshot` (retaining a backward-compatible constructor overload) and populate it across `InMemoryPersistenceAdapter`, `PostgresJdbcPersistenceAdapter`, and `SqliteJdbcPersistenceAdapter` so workers and engine services never rely on `taskId.split("_")[0]`.
@@ -119,13 +119,13 @@ flowchart TD
 
 ---
 
-### Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@unipost/worker`, `@unipost/sandbox`, `@unipost/backend`)
+### Phase 4: `SIMPLE` Task Worker Registration Protocol & 4-Layer SDK (`@acc/worker`, `@acc/sandbox`, `@acc/backend`)
 
 ```mermaid
 sequenceDiagram
-    participant SDK as @unipost/worker or Java WorkerHost
+    participant SDK as @acc/worker or Java WorkerHost
     participant Reg as WorkerFleetController & WorkerRegistry
-    participant Designer as VisualDagStudio (@unipost/console)
+    participant Designer as VisualDagStudio (@acc/console)
     participant Engine as WorkflowEngineService & PureDecider
     participant Queue as PersistencePort Task Queue
 
@@ -139,21 +139,21 @@ sequenceDiagram
     SDK->>Engine: POST /api/v1/workflow/tasks/{taskId}/result
 ```
 
-1. **Layer 1 — `@unipost/worker` (`packages/worker`) TypeScript SDK**:
+1. **Layer 1 — `@acc/worker` (`packages/worker`) TypeScript SDK**:
    - Add `workflowId?: string` to `TaskSnapshotDto` and update `TaskPoller.ts` to resolve `workflowId` safely (`task.workflowId ?? extractWorkflowId(task.taskId, task.taskReferenceName)`).
    - Add `TaskWorkerDescriptor` (`taskName`, `domain`, `description`, `inputSchema`, `outputSchema`, `maxConcurrency`, `timeoutSeconds`) and extend `WorkerConfig`.
    - Add `registerWorker(...)` (`POST /api/v1/workflow/workers/register`) and `sendFleetHeartbeat(...)` (`POST /api/v1/workflow/workers/heartbeat`) to `WorkerTransportClient` and `HttpWorkerTransportClient`.
    - Update `WorkflowWorkerHost.start()` to perform capability registration handshake on startup and emit periodic fleet heartbeats until `shutdown()`.
    - Add a runnable reference worker entrypoint (`packages/worker/src/runner.ts`) registering standard domain workers (`checkInventory`, `expressCourier`, `groundPostal`, `cancelCourierBooking`, `validateOrder`, `chargePayment`, `publishCmsArticle`).
-2. **Layer 2 — `@unipost/sandbox` (`packages/sandbox`) Offline Simulation Bridge**:
-   - Create `InMemorySandboxWorkerTransport` implementing `WorkerTransportClient` from `@unipost/worker` so offline Sandbox mode executes real `WorkflowWorkerHost` task handlers and middlewares in-memory.
+2. **Layer 2 — `@acc/sandbox` (`packages/sandbox`) Offline Simulation Bridge**:
+   - Create `InMemorySandboxWorkerTransport` implementing `WorkerTransportClient` from `@acc/worker` so offline Sandbox mode executes real `WorkflowWorkerHost` task handlers and middlewares in-memory.
    - Expose `POST /api/v1/workflow/workers/register` and `GET /api/v1/workflow/workers/catalog` in `worker-sandbox-handler.ts` / `workflow-handler.ts`.
-3. **Layer 3 — `@unipost/backend` (`workflow-engine` & `unipost-ms-aio`) Java SDK & Auto-Registrar**:
+3. **Layer 3 — `@acc/backend` (`workflow-engine` & `acc-ms-aio`) Java SDK & Auto-Registrar**:
    - Create `@WorkflowTaskWorker` annotation, `TaskWorkerDescriptor` record, `HttpWorkerTransportAdapter`, and `RegistryAwareInProcessTransportAdapter`.
-   - Implement `SimpleTaskWorkerRegistrar` in `unipost-ms-aio` to auto-discover `@WorkflowTaskWorker` Spring beans/methods, register their descriptors in `WorkerRegistry`, and mount them into the embedded virtual-thread `WorkerHost`.
+   - Implement `SimpleTaskWorkerRegistrar` in `acc-ms-aio` to auto-discover `@WorkflowTaskWorker` Spring beans/methods, register their descriptors in `WorkerRegistry`, and mount them into the embedded virtual-thread `WorkerHost`.
    - Expose `POST /api/v1/workflow/workers/register` and `GET /api/v1/workflow/workers/catalog` in `WorkerFleetController.java`.
-4. **Layer 4 — `@unipost/console` (`apps/console`) Control Plane UI**:
-   - Remains strictly a UI client with zero direct dependency on `@unipost/worker`, consuming `/api/v1/workflow/workers` and `/api/v1/workflow/workers/catalog`.
+4. **Layer 4 — `@acc/console` (`apps/console`) Control Plane UI**:
+   - Remains strictly a UI client with zero direct dependency on `@acc/worker`, consuming `/api/v1/workflow/workers` and `/api/v1/workflow/workers/catalog`.
 
 ---
 
@@ -202,10 +202,10 @@ sequenceDiagram
 ## 5. Verification & Quality Gates
 
 1. **Worker & Sandbox Suites**:
-   - `pnpm --filter @unipost/worker test:run`
-   - `pnpm --filter @unipost/sandbox test:run`
+   - `pnpm --filter @acc/worker test:run`
+   - `pnpm --filter @acc/sandbox test:run`
 2. **Backend JUnit 5 Suites**:
-   - `node mvnw.cjs test -pl workflow-engine,unipost-fw,unipost-ms-aio -q`
+   - `node mvnw.cjs test -pl workflow-engine,acc-fw,acc-ms-aio -q`
 3. **Console Vitest & TypeScript Check**:
-   - `pnpm --filter @unipost/console test:run`
-   - `pnpm --filter @unipost/console exec tsc --noEmit`
+   - `pnpm --filter @acc/console test:run`
+   - `pnpm --filter @acc/console exec tsc --noEmit`

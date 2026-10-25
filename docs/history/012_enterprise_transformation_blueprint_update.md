@@ -6,7 +6,7 @@
 ---
 
 ## Problem
-The `docs/enterprise_transformation_blueprint.md` architectural blueprint required an end-to-end update and enhancement to accurately align with the actual current implementation state of the `@unipost` monorepo. Specifically, recent architectural innovations—including PostgreSQL Row-Level Security (RLS) isolation, `TenantContextHolder` lifecycle propagation, dual-layer composite cache keys (`schema:{tid}:{type}:v{tVer}_s{sVer}`), 3-tier Noisy Neighbor & ReDoS defenses, 5-stage GDPR Art. 17/20 pipelines, Domain Blueprint catalog provisioning, and WCAG 2.2 AA accessibility standards—were omitted or partially described in the previous draft.
+The `docs/enterprise_transformation_blueprint.md` architectural blueprint required an end-to-end update and enhancement to accurately align with the actual current implementation state of the `@acc` monorepo. Specifically, recent architectural innovations—including PostgreSQL Row-Level Security (RLS) isolation, `TenantContextHolder` lifecycle propagation, dual-layer composite cache keys (`schema:{tid}:{type}:v{tVer}_s{sVer}`), 3-tier Noisy Neighbor & ReDoS defenses, 5-stage GDPR Art. 17/20 pipelines, Domain Blueprint catalog provisioning, and WCAG 2.2 AA accessibility standards—were omitted or partially described in the previous draft.
 
 ---
 

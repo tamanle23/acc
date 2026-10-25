@@ -1,10 +1,10 @@
 # Implementation Plan - Phase 35.2: Medium-Frequency Task Node Types Engine
 
-Prioritize and implement native medium-frequency task node types in `@unipost/backend` based on `docs/brainstorming/workflow_task_types.md` and `docs/integration_master_plan_iteration_4.md`.
+Prioritize and implement native medium-frequency task node types in `@acc/backend` based on `docs/brainstorming/workflow_task_types.md` and `docs/integration_master_plan_iteration_4.md`.
 
 ## Proposed Changes
 
-### 1. `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskType.java`
+### 1. `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`
 - Added:
   - `TERMINATE`
   - `SUB_WORKFLOW`
@@ -28,4 +28,4 @@ Implement dedicated strategies implementing `NodeEvaluatorStrategy`:
 
 ### 4. Verification
 - `MediumFrequencyTaskStrategiesTest.java` in `workflow-engine`.
-- Full `workflow-engine` and `unipost-ms-aio` test execution.
+- Full `workflow-engine` and `acc-ms-aio` test execution.

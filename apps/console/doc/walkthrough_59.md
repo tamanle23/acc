@@ -1,6 +1,6 @@
 # Walkthrough - WCAG 2.2 AA Compliance: Milestone 1 (Design Tokens & Contrast Hardening)
 
-This walkthrough documents the changes made to achieve **WCAG 2.2 Level AA compliance** for Milestone 1 across `@unipost/console` and `@unipost/ui`.
+This walkthrough documents the changes made to achieve **WCAG 2.2 Level AA compliance** for Milestone 1 across `@acc/console` and `@acc/ui`.
 
 ---
 
@@ -65,19 +65,19 @@ All automated checks passed with **0 errors**:
 
 1. **TypeScript Compilation:**
    ```bash
-   pnpm --filter @unipost/console exec tsc -b
+   pnpm --filter @acc/console exec tsc -b
    # Result: Passed cleanly (0 errors)
    ```
 
 2. **Unit Tests:**
    ```bash
-   pnpm --filter @unipost/console test
+   pnpm --filter @acc/console test
    # Result: Passed 7/7 tests across 2 test suites
    ```
 
 3. **Production Web Build:**
    ```bash
-   pnpm --filter @unipost/console build:web
+   pnpm --filter @acc/console build:web
    # Result: Built successfully in 7.91s
    ```
 

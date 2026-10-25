@@ -19,8 +19,8 @@ In enterprise accounts, an organization admin manages multiple isolated workspac
    - Updated `src/components/layout/profile-switcher.tsx` to sync active tenant context to `useMetadataUiStore` on selection, and open `CreateWorkspaceModal` when clicking `Add workspace profile`.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test`: 15 suites, 81 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test`: 15 suites, 81 tests passed.
 
 ## 4. Key Artifacts
 - Plan: `apps/console/doc/implementation_plan_62.md`

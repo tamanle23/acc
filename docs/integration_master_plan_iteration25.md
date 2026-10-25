@@ -1,9 +1,9 @@
 # Integration Master Plan: Iteration 25 - Cryptographic Merkle Audit Studio, Dynamic Entity Access Control & Full-Stack Verification
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/unipost-db`, `apps/backend/unipost-fw`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/client` (`packages/client/src/contracts/metadata.ts`, `packages/client/src/contracts/system.ts`)  
-- `@unipost/console` (`apps/console/src/features/metadata`, `apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
+- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/client` (`packages/client/src/contracts/metadata.ts`, `packages/client/src/contracts/system.ts`)  
+- `@acc/console` (`apps/console/src/features/metadata`, `apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Database Architect & Operations Specialist, TypeScript Architect & UI/UX Systems Specialist  
 **Design & Usability Standards:** Nielsen-Norman Usability Heuristics, WCAG 2.2 AA, Liquid Glass Design Tokens, 5-State Component Matrix  
 **Architectural Framework:** Clean Architecture, Domain-Driven Design (DDD), Modular Monolith with Outbox & Cryptographic Merkle Auditing  
@@ -27,7 +27,7 @@ Following our comprehensive design grilling, Iteration 25 executes the sequentia
    - Gated via a dedicated client hook `useHasPermission(code: string)` aggregating assigned roles and ad-hoc overrides.
    - Prohibited actions in `entity-data-grid.tsx` (e.g., `+ New Record`, `Delete Record`) are rendered in a **disabled state with clear contextual tooltips** (e.g., `"Requires entity:record:create permission"`), accompanied by strict HTTP 403 enforcement at the backend API layer.
 5. **Audit Studio Custody & Placement**:
-   - Dedicated full-page route `/system/audit` in `@unipost/console` built using the standardized `@/components/data-table` component.
+   - Dedicated full-page route `/system/audit` in `@acc/console` built using the standardized `@/components/data-table` component.
    - **Custody Barrier**: Placed exclusively under **Sovereign Custody (`ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`)** in `sidebar-data.ts`. Sovereign Custodians can inspect audit logs fleet-wide across all tenants with a tenant filter, run mathematical integrity verification, and export signed compliance packages (`platform:compliance:export`). Tenant Admins continue using the contextual row-level `RecordAuditHistoryDrawer` inside the Data Explorer.
 
 ```
@@ -141,7 +141,7 @@ export interface AuditVerificationResult {
 }
 ```
 
-#### 1.4 Frontend Permission Engine & Dynamic Grid Integration (`@unipost/console`)
+#### 1.4 Frontend Permission Engine & Dynamic Grid Integration (`@acc/console`)
 1. **`useHasPermission(permissionCode: string)` Hook**:
    - Located in `apps/console/src/features/system/hooks/use-has-permission.ts`.
    - Checks active user permissions from `useAuthStore` and Unified Sandbox persona (`useSandboxStore`).
@@ -194,10 +194,10 @@ export interface AuditVerificationResult {
 
 ```
 apps/backend/
-├── unipost-db/src/main/resources/db/unipost/
+├── acc-db/src/main/resources/db/acc/
 │   ├── changelog-master.xml                           # [MODIFY] Include changelog 18
 │   └── changelog-000.000.00018.xml                   # [NEW] Add prev_hash, current_hash, signature to AUDIT_LOG
-├── unipost-fw/src/main/java/com/unipost/
+├── acc-fw/src/main/java/com/acc/
 │   ├── domain/metadata/
 │   │   └── RecordAuditLog.java                       # [MODIFY] Add prevHash, currentHash, signature fields
 │   ├── service/
@@ -243,15 +243,15 @@ apps/console/
 
 ```bash
 # 1. Frontend Compilation & Linting
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 
 # 2. Frontend Unit & Integration Tests
-pnpm --filter @unipost/console exec vitest run src/features/system/hooks/__tests__/use-has-permission.test.ts src/features/system/audit/__tests__/audit-studio.test.tsx
+pnpm --filter @acc/console exec vitest run src/features/system/hooks/__tests__/use-has-permission.test.ts src/features/system/audit/__tests__/audit-studio.test.tsx
 
 # 3. Playwright E2E Specs (Flow 12 & Flow 13)
-pnpm --filter @unipost/console exec playwright test e2e/12-sovereign-rbac-matrix.spec.ts e2e/13-sovereign-audit-studio.spec.ts
+pnpm --filter @acc/console exec playwright test e2e/12-sovereign-rbac-matrix.spec.ts e2e/13-sovereign-audit-studio.spec.ts
 
 # 4. Backend JVM Compilation & Sliced Testcontainers Suite
-mvn test-compile -pl unipost-fw
-mvn test -pl unipost-fw -Dtest=AuditMerkleServiceTest,TenantRoleDelegationServiceTest -q
+mvn test-compile -pl acc-fw
+mvn test -pl acc-fw -Dtest=AuditMerkleServiceTest,TenantRoleDelegationServiceTest -q
 ```

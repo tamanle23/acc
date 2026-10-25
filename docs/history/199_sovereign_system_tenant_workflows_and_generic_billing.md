@@ -32,7 +32,7 @@
 
 ## 4. Verification
 - Backend compile: `./mvnw test-compile -q` PASSED.
-- Console typecheck: `pnpm --filter @unipost/console exec tsc --noEmit` exited with code 0 (zero errors).
+- Console typecheck: `pnpm --filter @acc/console exec tsc --noEmit` exited with code 0 (zero errors).
 - Validated all Mermaid diagrams for syntax and rendering correctness.
 
 ## 5. Walkthrough

@@ -7,7 +7,7 @@ End-to-end distributed tracing using W3C `traceparent` headers and standardized 
 ### 1. Universal W3C Trace Injection
 - **Axios HTTP Client (`apps/console`)**:
   - Wired `generateTraceparent` into `springApiClient` request interceptor. Outgoing requests from Console now attach `traceparent: 00-{traceId}-{spanId}-01`.
-- **Universal SDK (`@unipost/client`) & Mobile (`apps/mobile-ui`)**:
+- **Universal SDK (`@acc/client`) & Mobile (`apps/mobile-ui`)**:
   - Validated that `UnipostClient` natively attaches `traceparent` to all network requests.
 
 ### 2. Backend Gateway & MDC Logging Standard
@@ -46,8 +46,8 @@ End-to-end distributed tracing using W3C `traceparent` headers and standardized 
 
 ### 3. Mobile UI & Package Tests
 - `mobile-ui`: 13/13 tests passed.
-- `@unipost/client`: 6/6 tests passed.
-- `@unipost/sandbox`: 5/5 tests passed.
+- `@acc/client`: 6/6 tests passed.
+- `@acc/sandbox`: 5/5 tests passed.
 
 ### 4. Edge Webhook & Production Build
 - `tekgo-ui`: Next.js 15 production build completed successfully (95/95 static/dynamic pages compiled, `/api/revalidate` route active).

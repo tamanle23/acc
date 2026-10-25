@@ -188,7 +188,7 @@ export function simulateDemoTokenExchange(): {
 
   return {
     tokens: {
-      accessToken: 'ya29.a0AfH6SMB_demo_access_token_unipost_youtube_api_v3',
+      accessToken: 'ya29.a0AfH6SMB_demo_access_token_acc_youtube_api_v3',
       refreshToken: '1//04eY6fA8b7c6d5e4f3a2b1_demo_refresh_token_never_expires',
       expiresIn,
       expiresAt,
@@ -199,7 +199,7 @@ export function simulateDemoTokenExchange(): {
       id: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
       title: 'Unipost Studio',
       description: 'Official YouTube Channel for Unipost media publishing and automated releases.',
-      customUrl: '@unipoststudio',
+      customUrl: '@accstudio',
       avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=128&auto=format&fit=crop&q=80',
       subscriberCount: '142,500',
       videoCount: '86',

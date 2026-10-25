@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 05 of N)  
 **Document Level:** Platform Engineering & System Integration Specification  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21), `@unipost/console` (React 19 / Vite 8)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8)  
 **Scope:** Automated Tenant Creation, Global Blueprint Catalog, Schema Cloning & Seeding, Isolated Tenant Workspaces  
 **Status:** Canonical Living Architecture Document  
 
@@ -39,7 +39,7 @@ It is critical to distinguish between **Common System Schemas** and **Onboarding
 * **Domain Starter Blueprints (`bp_...`)**: Optional, vertical-specific starter packages (e.g. *Fleet Logistics*, *Hazardous Waste Tracking*). These are **deep-cloned** into the tenant's scope (`tenant_id = newTenantId`), giving the tenant 100% ownership to evolve them as pure bespoke models.
 
 ```
-apps/backend/unipost-fw/src/main/resources/metadata/blueprints/
+apps/backend/acc-fw/src/main/resources/metadata/blueprints/
 ├── logistics-fleet-blueprint.json
 ├── b2b-crm-billing-blueprint.json
 ├── it-asset-management-blueprint.json
@@ -135,11 +135,11 @@ apps/backend/unipost-fw/src/main/resources/metadata/blueprints/
 The provisioning process runs inside a single `@Transactional` boundary. If any step fails, the entire tenant registration rolls back cleanly:
 
 ```java
-package com.unipost.tenant.service;
+package com.acc.tenant.service;
 
-import com.unipost.domain.metadata.*;
-import com.unipost.tenant.dto.CreateTenantRequest;
-import com.unipost.tenant.dto.TenantSummaryDto;
+import com.acc.domain.metadata.*;
+import com.acc.tenant.dto.CreateTenantRequest;
+import com.acc.tenant.dto.TenantSummaryDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -211,7 +211,7 @@ public class TenantProvisioningService {
 
 ---
 
-## 4. UI Onboarding Wizard Experience (`@unipost/console`)
+## 4. UI Onboarding Wizard Experience (`@acc/console`)
 
 During first login or signup, the console presents the **Tenant Blueprint Selector**:
 

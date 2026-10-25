@@ -1,10 +1,10 @@
 # Implementation Plan: Backend Unified Sandbox Platform (Spring Boot / Modulith)
 
 ## Goal Description
-Establish a decoupled, production-immune **Backend Unified Sandbox Platform** packaged as a **separate Maven module** (`apps/backend/unipost-sandbox`) that seamlessly supports **both Test Mode and Dev Mode**.
+Establish a decoupled, production-immune **Backend Unified Sandbox Platform** packaged as a **separate Maven module** (`apps/backend/acc-sandbox`) that seamlessly supports **both Test Mode and Dev Mode**.
 
 ### Key Decisions Aligned
-1. **Separate Maven Module (`unipost-sandbox`)**: Placed in `apps/backend/unipost-sandbox`, keeping core production modules (`unipost-fw`, `unipost-ms-aio`) completely free of test/mock harness code.
+1. **Separate Maven Module (`acc-sandbox`)**: Placed in `apps/backend/acc-sandbox`, keeping core production modules (`acc-fw`, `acc-ms-aio`) completely free of test/mock harness code.
 2. **Dual-Mode Profiles (`dev` & `test`)**:
    - **Test Mode (`application-test-sandbox.yml`)**:
      - Fast, deterministic in-memory execution.
@@ -28,7 +28,7 @@ Establish a decoupled, production-immune **Backend Unified Sandbox Platform** pa
 ```mermaid
 graph TD
     subgraph Client / Apps
-        UI[Console / Mobile / E2E Runner] -->|Standard APIs /api/auth/token, /api/v1/billing/*| Core[unipost-fw Presentation Layer]
+        UI[Console / Mobile / E2E Runner] -->|Standard APIs /api/auth/token, /api/v1/billing/*| Core[acc-fw Presentation Layer]
     end
 
     subgraph Security & Tenancy
@@ -49,7 +49,7 @@ graph TD
         PGLiteDev --> Liquibase
     end
 
-    subgraph unipost-sandbox Boundary Simulators
+    subgraph acc-sandbox Boundary Simulators
         Billing -.->|@Primary / Transparent Proxy| SimPayOS[PayOsSimulator]
         Storage -.->|@Primary / Transparent Proxy| SimS3[InMemoryStorageSimulator]
         Outbox -.->|@Primary / Transparent Proxy| SimWebhook[MockWebhookDispatcher]
@@ -66,18 +66,18 @@ graph TD
 
 ### Module 1: Parent Configuration
 #### [MODIFY] `apps/backend/pom.xml`
-- Register `<module>./unipost-sandbox</module>`.
-- Add dependency management for `unipost-sandbox` and `io.github.jakvbs:pglite-spring-boot-test:0.4.0`.
+- Register `<module>./acc-sandbox</module>`.
+- Add dependency management for `acc-sandbox` and `io.github.jakvbs:pglite-spring-boot-test:0.4.0`.
 
 ---
 
-### Module 2: `apps/backend/unipost-sandbox` (New Maven Module)
+### Module 2: `apps/backend/acc-sandbox` (New Maven Module)
 
-#### [NEW] `apps/backend/unipost-sandbox/pom.xml`
+#### [NEW] `apps/backend/acc-sandbox/pom.xml`
 - Standard Spring Boot starter dependency inheriting from parent.
-- Dependencies: `unipost-fw`, `io.github.jakvbs:pglite-spring-boot-test`, Spring Boot starter web, test starter.
+- Dependencies: `acc-fw`, `io.github.jakvbs:pglite-spring-boot-test`, Spring Boot starter web, test starter.
 
-#### [NEW] `com.unipost.sandbox.config.SandboxAutoConfiguration`
+#### [NEW] `com.acc.sandbox.config.SandboxAutoConfiguration`
 - Conditional auto-configuration class:
   ```java
   @AutoConfiguration
@@ -86,7 +86,7 @@ graph TD
   public class SandboxAutoConfiguration { ... }
   ```
 
-#### [NEW] `com.unipost.sandbox.config.SandboxProperties`
+#### [NEW] `com.acc.sandbox.config.SandboxProperties`
 - Properties:
   - `enabled` (boolean, default: false)
   - `mode` (`TEST` | `DEV`, default: `DEV`)
@@ -95,23 +95,23 @@ graph TD
   - `payos.auto-confirm-delay-ms` (default: 2000 for DEV, 0 for TEST)
   - `payos.auto-confirm-enabled` (default: true)
 
-#### [NEW] `com.unipost.sandbox.db.PgLiteDatasourceConfiguration`
+#### [NEW] `com.acc.sandbox.db.PgLiteDatasourceConfiguration`
 - Auto-configures embedded PGlite datasource based on active mode (`TEST` in-memory vs `DEV` file-backed).
 - Triggers Liquibase changelogs automatically on the embedded instance.
 
-#### [NEW] `com.unipost.sandbox.spi.ExternalServiceSimulator`
+#### [NEW] `com.acc.sandbox.spi.ExternalServiceSimulator`
 - Strategy interface (`getId()`, `getName()`, `reset()`).
 
-#### [NEW] `com.unipost.sandbox.registry.BackendSandboxRegistry`
+#### [NEW] `com.acc.sandbox.registry.BackendSandboxRegistry`
 - Thread-safe registry holding all active simulator beans.
 
-#### [NEW] `com.unipost.sandbox.simulators.PayOsSimulator`
+#### [NEW] `com.acc.sandbox.simulators.PayOsSimulator`
 - Simulates PayOS checkout and fires asynchronous callbacks to the standard webhook handler with authentic HMAC-SHA256 checksums (instant in TEST, 2000ms delay in DEV).
 
-#### [NEW] `com.unipost.sandbox.simulators.InMemoryStorageSimulator`
+#### [NEW] `com.acc.sandbox.simulators.InMemoryStorageSimulator`
 - Implements S3/MinIO operations using an in-memory byte map (or dev file cache).
 
-#### [NEW] `com.unipost.sandbox.simulators.MockWebhookDispatcher`
+#### [NEW] `com.acc.sandbox.simulators.MockWebhookDispatcher`
 - Consumes outbox events and records payloads in memory without failing network connections.
 
 ---

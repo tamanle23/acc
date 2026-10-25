@@ -50,7 +50,7 @@ describe('WorkspacesPanel Component', () => {
 
     fireEvent.click(setMyDefaultBtns[0]);
 
-    const stored = localStorage.getItem('unipost_user_default_ws_tenant-acme');
+    const stored = localStorage.getItem('acc_user_default_ws_tenant-acme');
     expect(stored).toBeDefined();
 
     unmount();

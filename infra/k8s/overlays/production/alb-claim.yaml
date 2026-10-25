@@ -1,4 +1,4 @@
-apiVersion: infra.unipost.io/v1alpha1
+apiVersion: infra.acc.io/v1alpha1
 kind: AppLoadBalancer
 metadata:
   name: prod-ingress

@@ -1,4 +1,4 @@
-import type { JwtPayload, LoginResponse, TokenRefreshResponse as RefreshResponse } from '@unipost/client';
+import type { JwtPayload, LoginResponse, TokenRefreshResponse as RefreshResponse } from '@acc/client';
 
 export type { JwtPayload, LoginResponse, RefreshResponse };
 

@@ -39,7 +39,7 @@ In previous iterations, the workflow START and END boundary nodes were overloade
 
 ## Verification
 - **Frontend Vitest**: 11 test suites passed, 50/50 tests passing (100% green).
-- **TypeScript Check**: `pnpm --filter @unipost/console exec tsc --noEmit` exited `0` with 0 errors.
+- **TypeScript Check**: `pnpm --filter @acc/console exec tsc --noEmit` exited `0` with 0 errors.
 - **Backend Tests**: `mvnw.cmd test -pl workflow-engine -q` passed with code 0.
 
 ## Walkthrough

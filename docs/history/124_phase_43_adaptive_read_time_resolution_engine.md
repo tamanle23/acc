@@ -26,16 +26,16 @@ While Phase 41 delivered the declarative `CompositeSpec` AST DSL and Phase 42 im
 
 ## Changes
 
-### Backend (`apps/backend/unipost-fw`)
-- `com.unipost.presentation.dto.metadata`:
+### Backend (`apps/backend/acc-fw`)
+- `com.acc.presentation.dto.metadata`:
   - `ChildPaginationParam.java`: Request parameter for child collection pagination.
   - `ChildPaginationMetadata.java`: Response DTO for child collection counts and pagination state.
   - `CompositeRecordResponse.java`: Full composite document response envelope with child pagination map and `engineUsed`.
-- `com.unipost.service`:
+- `com.acc.service`:
   - `DynamicQueryCompiler.java`: Compiles `CompositeSpec` into single-pass PostgreSQL SQL with `LEFT JOIN LATERAL` and windowed pagination.
   - `DataLoaderBatchResolver.java`: In-memory fallback batch resolver for Pattern B and Pattern C.
   - `CompositeRecordService.java`: Orchestration service enforcing `1500ms` statement timeout and fallback.
-- `com.unipost.presentation`:
+- `com.acc.presentation`:
   - `CompositeEntityController.java`: Endpoints `GET /{id}/records` and `GET /{id}/records/{recordId}` with bracket notation parameter parsing and `X-Composite-Engine` header.
 - Unit Tests:
   - `DynamicQueryCompilerTest.java`: Validates SQL syntax, parameters, and ceiling guards.
@@ -57,12 +57,12 @@ While Phase 41 delivered the declarative `CompositeSpec` AST DSL and Phase 42 im
 
 ## Verification
 - **Backend Tests**:
-  - `mvn test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q`
+  - `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=*Composite*,DynamicQueryCompilerTest,CompositeRecordServiceTest" -q`
   - All 5 unit tests passed with 0 failures and 0 errors.
 - **Frontend Tests**:
-  - `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`
+  - `pnpm --filter @acc/console exec vitest run src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`
   - All 7 tests passed with 0 failures.
 
 ## Walkthrough & Artifacts
-- Plan: [`apps/console/doc/implementation_plan_112.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/implementation_plan_112.md)
-- Walkthrough: [`apps/console/doc/walkthrough_112.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_112.md)
+- Plan: [`apps/console/doc/implementation_plan_112.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_112.md)
+- Walkthrough: [`apps/console/doc/walkthrough_112.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_112.md)

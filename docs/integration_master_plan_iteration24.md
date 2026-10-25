@@ -1,9 +1,9 @@
 # Integration Master Plan: Iteration 24 - Tenant-Sole Role Assignment, Subordinate RBAC Delegation, Ad-Hoc Permission Overrides & Enterprise Security Studio Upgrade
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/unipost-db`, `apps/backend/unipost-fw`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/client` (`packages/client/src/contracts/system.ts`)  
-- `@unipost/console` (`apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
+- `@acc/backend` (`apps/backend/acc-db`, `apps/backend/acc-fw`, `apps/backend/acc-ms-aio`)  
+- `@acc/client` (`packages/client/src/contracts/system.ts`)  
+- `@acc/console` (`apps/console/src/features/system`, `apps/console/src/core/sandbox`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist, TypeScript Frontend Architect & UI/UX Systems Specialist  
 **Standards:** W3C WebAuthn Level 3 / FIDO2, NIST SP 800-63B, PostgreSQL 16+ RLS, WCAG 2.2 AA, Liquid Glass Design Tokens  
 **Reference SSOT:** [`docs/master_database_schema_architecture.md`](master_database_schema_architecture.md) (v1.5.0)  
@@ -182,9 +182,9 @@ The view is structured into three dedicated tabs under Liquid Glass styling:
 ### 5.2 Deliverables File Tree
 ```
 apps/backend/
-├── unipost-db/src/main/resources/db/unipost/
+├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] Liquibase migration: UNIPOST_IDENTITY_USERPERMISSION + role tenant_id
-├── unipost-fw/src/main/java/com/unipost/
+├── acc-fw/src/main/java/com/acc/
 │   └── user/
 │       ├── controller/
 │       │   └── TenantRoleDelegationController.java # [NEW] REST controller for tenant delegation & overrides
@@ -236,7 +236,7 @@ apps/console/
      - Test: Sovereign Root can assign any role within `SYSTEM` -> SUCCESS.
    - Command:
      ```bash
-     mvn test -pl unipost-fw -Dtest=TenantRoleDelegationServiceTest -q
+     mvn test -pl acc-fw -Dtest=TenantRoleDelegationServiceTest -q
      ```
 2. **Frontend Unit & Component Integration Tests (`apps/console`)**:
    - `rbac-matrix-grid.test.tsx`:
@@ -247,10 +247,10 @@ apps/console/
      - Test: Submitting delegation mutation invalidates user query cache.
    - Command:
      ```bash
-     pnpm --filter @unipost/console test:run
+     pnpm --filter @acc/console test:run
      ```
 3. **Playwright E2E Suite**:
    - Run updated Flow 12 E2E test verifying tenant-scoped delegation and WCAG 2.2 AA accessibility:
      ```bash
-     pnpm --filter @unipost/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
+     pnpm --filter @acc/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
      ```

@@ -3,20 +3,20 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.unipost</groupId>
-  <artifactId>unipost</artifactId>
+  <groupId>com.acc</groupId>
+  <artifactId>acc</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
-    <module>./unipost-core</module>
-    <module>./unipost-fw</module>
-    <module>./unipost-db</module>
-    <module>./unipost-ms-fs</module>
-    <module>./unipost-ms-worker</module>
+    <module>./acc-core</module>
+    <module>./acc-fw</module>
+    <module>./acc-db</module>
+    <module>./acc-ms-fs</module>
+    <module>./acc-ms-worker</module>
     <module>./workflow-engine</module>
-    <module>./unipost-sandbox</module>
-    <module>./unipost-ms-aio</module>
+    <module>./acc-sandbox</module>
+    <module>./acc-ms-aio</module>
   </modules>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -67,62 +67,62 @@
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-core</artifactId>
+        <artifactId>acc-core</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-resources</artifactId>
+        <artifactId>acc-resources</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-fw</artifactId>
+        <artifactId>acc-fw</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-db</artifactId>
+        <artifactId>acc-db</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-fs</artifactId>
+        <artifactId>acc-ms-fs</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-identity</artifactId>
+        <artifactId>acc-ms-identity</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-pos</artifactId>
+        <artifactId>acc-ms-pos</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-cms</artifactId>
+        <artifactId>acc-ms-cms</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-report-engine</artifactId>
+        <artifactId>acc-report-engine</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-sandbox</artifactId>
+        <artifactId>acc-sandbox</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-worker</artifactId>
+        <artifactId>acc-ms-worker</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>unipost-ms-aio</artifactId>
+        <artifactId>acc-ms-aio</artifactId>
         <version>1.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

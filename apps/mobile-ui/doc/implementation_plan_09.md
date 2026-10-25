@@ -6,10 +6,10 @@ Update the setting in `ProfileScreen` so that the switch explicitly controls whe
 
 ### State & Types
 
-#### [MODIFY] [src/types/index.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/types/index.ts)
+#### [MODIFY] [src/types/index.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/types/index.ts)
 - Rename `reduceTransparency: boolean` to `liquidGlass: boolean` in `Settings`.
 
-#### [MODIFY] [src/store/useSettingsStore.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/store/useSettingsStore.ts)
+#### [MODIFY] [src/store/useSettingsStore.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/store/useSettingsStore.ts)
 - Update initial state: `liquidGlass: true`.
 - Rename `toggleReduceTransparency` to `toggleLiquidGlass`.
 
@@ -17,12 +17,12 @@ Update the setting in `ProfileScreen` so that the switch explicitly controls whe
 
 ### UI Components
 
-#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/LiquidGlassView.tsx)
+#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/LiquidGlassView.tsx)
 - Check `liquidGlass` from `useSettingsStore`.
 - If `!liquidGlass` (or unsupported Android version), activate fallback view.
 - Ensure `fallbackColor` overrides any translucent background passed in `style`.
 
-#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/ProfileScreen.tsx)
+#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/ProfileScreen.tsx)
 - Change setting item label to "Liquid Glass Effect" with an explanatory subtitle or clean label.
 - Bind the switch value directly to `liquidGlass` and `toggleLiquidGlass`.
 

@@ -23,28 +23,28 @@ In multi-tenant domain modeling, querying relational customer/entity hierarchies
    - Unit tests covering compiler invariants, dependency guards, read-only behavior, and dynamic index DDL generation.
 
 ## Changes
-- `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00011.xml`: Liquibase migration.
-- `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml`: Registered changelog.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/`: Created `CompositeJoinPattern`, `CompositeField`, `CompositeNode`, `CompositeSpec`, and updated `EntityType`.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/CompositeSpecCompiler.java`: Validation, JSON Schema compilation, SQL preview generation.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/DynamicIndexProvisioner.java`: Asynchronous non-transactional DDL executor.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java`: Hazelcast caching and composite delegation.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`: Strict Dependency Guard & Read-Only Invariant enforcement.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/`: DTO mapping for composite fields.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeEntityTypeVerificationTest.java`: Comprehensive JUnit 5 tests.
+- `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00011.xml`: Liquibase migration.
+- `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`: Registered changelog.
+- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/`: Created `CompositeJoinPattern`, `CompositeField`, `CompositeNode`, `CompositeSpec`, and updated `EntityType`.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/CompositeSpecCompiler.java`: Validation, JSON Schema compilation, SQL preview generation.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/DynamicIndexProvisioner.java`: Asynchronous non-transactional DDL executor.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`: Hazelcast caching and composite delegation.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: Strict Dependency Guard & Read-Only Invariant enforcement.
+- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/`: DTO mapping for composite fields.
+- `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeEntityTypeVerificationTest.java`: Comprehensive JUnit 5 tests.
 - `packages/client/src/contracts/metadata.ts`: TypeScript contracts for composite specifications.
 - `apps/console/src/features/metadata/components/studio/composite/`: Created `CompositeCatalogRail`, `CompositeProjectionCanvas`, `CompositePreviewHub`, `CompositeBentoStudio`, and Vitest tests.
 - `apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`: Added Composite Studio tab.
 - `apps/console/src/features/metadata/data/mock-metadata.ts`: Added Customer 360 View seed and 405 mutation guards.
 
 ## Verification
-- **Backend Unit Tests**: `mvn test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=CompositeEntityTypeVerificationTest" -q` passed 6/6 tests with 0 failures.
+- **Backend Unit Tests**: `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeEntityTypeVerificationTest" -q` passed 6/6 tests with 0 failures.
 - **Frontend Vitest**:
   - `composite-bento-studio.test.tsx`: 3 tests passed.
   - `visual-schema-studio.test.tsx`: 8 tests passed.
 - **Frontend Linting & Typecheck**:
-  - `pnpm --filter @unipost/console exec eslint src/features/metadata/components/studio/composite`: 0 errors.
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+  - `pnpm --filter @acc/console exec eslint src/features/metadata/components/studio/composite`: 0 errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 
 ## Walkthrough
 See `apps/console/doc/walkthrough_110.md` for a complete architectural walkthrough and screenshot blueprint.

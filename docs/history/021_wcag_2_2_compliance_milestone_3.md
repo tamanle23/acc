@@ -3,7 +3,7 @@
 ## Date: 2026-10-10
 
 ## Description
-Executed **Milestone 3** of the WCAG 2.2 AA compliance initiative across `@unipost/console`. This milestone focuses on data table accessibility (`EntityDataGrid`), single-pointer / keyboard drag alternatives for schema field reordering (`SchemaBuilder`), and autocomplete/paste accessibility on auth and OTP forms.
+Executed **Milestone 3** of the WCAG 2.2 AA compliance initiative across `@acc/console`. This milestone focuses on data table accessibility (`EntityDataGrid`), single-pointer / keyboard drag alternatives for schema field reordering (`SchemaBuilder`), and autocomplete/paste accessibility on auth and OTP forms.
 
 ## Changes Implemented
 
@@ -21,10 +21,10 @@ Executed **Milestone 3** of the WCAG 2.2 AA compliance initiative across `@unipo
    - Confirmed copy/paste functionality remains uninhibited across all credential and passcode input fields.
 
 ## Verification
-- `pnpm --filter @unipost/console test`: Passed (22/22 test files, 104/104 tests)
-- `pnpm --filter @unipost/console exec vite build --mode web`: Built web bundle successfully
+- `pnpm --filter @acc/console test`: Passed (22/22 test files, 104/104 tests)
+- `pnpm --filter @acc/console exec vite build --mode web`: Built web bundle successfully
 
 ## Next Steps for Milestone 4
-- Configure `eslint-plugin-jsx-a11y` in `@unipost/console`.
+- Configure `eslint-plugin-jsx-a11y` in `@acc/console`.
 - Add `vitest-axe` component accessibility assertions to test suites.
 - Ensure `pnpm test` runs axe checks with zero violations.

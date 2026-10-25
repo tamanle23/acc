@@ -4,7 +4,7 @@
 > **Iteration:** 2 (Enterprise Advanced Capabilities & Production Industrialization)  
 > **Classification:** Master Systems Architecture Specification & Multi-Tier Production Plan  
 > **Authors:** Lead Systems Architect & Full-Stack Engineering Team  
-> **Target Scope:** `@unipost/backend`, `@unipost/console`, `@unipost/desktop`, `mobile-ui`, `tekgo-ui`, `packages/*`, `.github/workflows`  
+> **Target Scope:** `@acc/backend`, `@acc/console`, `@acc/desktop`, `mobile-ui`, `tekgo-ui`, `packages/*`, `.github/workflows`  
 > **Preceding Baseline:** Completed Iteration 1 (Phases 1–15 & Section 13 Architectural Invariants Verified in History Logs `036`–`052`)  
 > **Synthesized Strategic Pillars:**
 > 1. **Track 1:** Advanced Dynamic Metadata Extensions, Pluggable Widgets, Model Context Protocol (MCP) Synthesis & Spring Modulith Dynamic Dispatch.
@@ -18,7 +18,7 @@
 ## 1. Executive Vision: From Converged Monorepo to Autonomous Production Platform
 
 In **Iteration 1**, we successfully established the foundational multi-tier monorepo architecture:
-- Extracted `@unipost/client`, `@unipost/sandbox`, and `@unipost/tokens`.
+- Extracted `@acc/client`, `@acc/sandbox`, and `@acc/tokens`.
 - Integrated `mobile-ui` (offline-first outbox, dynamic forms) and `tekgo-ui` (Next.js 15 ISR revalidation with HMAC edge webhooks).
 - Implemented backend 3-way auto-merge (OCC), Liquibase transactional outbox, declarative 5-gate FSM state machines, and end-to-end W3C distributed tracing.
 - Enforced all 9 Section 13 Architectural Invariants and configured Playwright browser automation with `@axe-core/playwright` WCAG 2.2 AA testing.
@@ -28,8 +28,8 @@ In **Iteration 2**, the objective is to elevate Unipost into an **extensible, ag
 ```mermaid
 flowchart TD
     subgraph MultiClient["Heterogeneous Multi-Client Tier"]
-        Console["@unipost/console (React 19 / Vite 8)<br/>Enterprise Architect Studio & Blueprint Designer"]
-        Desktop["@unipost/desktop (Electrobun Native)<br/>Vibrancy Window + Local File System Bridge"]
+        Console["@acc/console (React 19 / Vite 8)<br/>Enterprise Architect Studio & Blueprint Designer"]
+        Desktop["@acc/desktop (Electrobun Native)<br/>Vibrancy Window + Local File System Bridge"]
         Mobile["mobile-ui (Expo SDK 57)<br/>Hardened Offline Outbox + SQLite Cache"]
         Tekgo["tekgo-ui (Next.js 15 App Router)<br/>Self-Service Privacy Ingestion Portal"]
     end
@@ -40,7 +40,7 @@ flowchart TD
         DomainStudio["Domain Blueprint Customization Studio<br/>Visual Schema & FSM Workflow Designer"]
     end
 
-    subgraph BackendCore["@unipost/backend (Java 21 / Spring Modulith)"]
+    subgraph BackendCore["@acc/backend (Java 21 / Spring Modulith)"]
         Dispatch["ResolvableType Dynamic Command Dispatcher"]
         FSM["5-Gate Entity Lifecycle Service (FSM)"]
         GDPR_Export["GDPR Art. 20 Non-Blocking Streaming ZIP"]
@@ -51,7 +51,7 @@ flowchart TD
 
     subgraph Persistence["High-Assurance Persistence Tier"]
         Postgres[(PostgreSQL 16 + RLS Sessions)]
-        S3[(unipost-ms-fs Object Storage)]
+        S3[(acc-ms-fs Object Storage)]
     end
 
     subgraph IndustrialCI["CI/CD Quality & Security Gatekeeper"]
@@ -128,19 +128,19 @@ Iteration 2 Master Execution Map
     1. **`SignaturePad`**: Canvas-based vector bezier curve drawing component outputting SVG/base64.
     2. **`GeoLocationPicker`**: Map marker coordinate selector (`latitude`, `longitude`, `zoom`, `address`).
     3. **`BarcodeScanner`**: Optical code reader supporting QR, EAN-13, Code128.
-  - Wire custom widgets into both `@unipost/console` (`DynamicFieldRenderer`) and `mobile-ui` (`DynamicFieldRenderer`).
+  - Wire custom widgets into both `@acc/console` (`DynamicFieldRenderer`) and `mobile-ui` (`DynamicFieldRenderer`).
   - Add Unified Sandbox simulation handlers so test suites can exercise signature inputs and geo-spatial payloads seamlessly without live camera/GPS hardware.
 
 ### Phase 17: Runtime Model Context Protocol (MCP) Tool Synthesis & Spring Modulith `ResolvableType`
 - **Objective:** Allow external LLM agents to interact dynamically with tenant metadata schemas and dispatch CQRS commands through safe Java typing.
 - **MCP Server Synthesis (`packages/mcp-server` or backend endpoint):**
   - Synthesize dynamic Model Context Protocol manifests directly from active tenant `UNIPOST_ENTITY_TYPES`:
-    - `unipost_get_schema`: Returns JSON Schema Draft-07 for specified entity type.
-    - `unipost_query_entities`: RLS-scoped search with pagination and filtering.
-    - `unipost_execute_transition`: Executes FSM lifecycle state machine transitions with parameter validation.
-    - `unipost_create_entity`: Validates attributes against server schema and creates records.
+    - `acc_get_schema`: Returns JSON Schema Draft-07 for specified entity type.
+    - `acc_query_entities`: RLS-scoped search with pagination and filtering.
+    - `acc_execute_transition`: Executes FSM lifecycle state machine transitions with parameter validation.
+    - `acc_create_entity`: Validates attributes against server schema and creates records.
 - **Backend `ResolvableType` Dynamic Dispatch:**
-  - In `unipost-core` / `unipost-fw`: Refactor generic CQRS command execution using Spring Framework's `org.springframework.core.ResolvableType`.
+  - In `acc-core` / `acc-fw`: Refactor generic CQRS command execution using Spring Framework's `org.springframework.core.ResolvableType`.
   - Avoid raw reflection which fails on CGLIB proxies created by Spring `@Transactional` or `@PreAuthorize` aspects.
   - Ensure type safety when deserializing heterogeneous JSONB attributes into strongly typed domain events.
 
@@ -150,7 +150,7 @@ Iteration 2 Master Execution Map
 
 ### Phase 18: GDPR Article 20 Streaming ZIP Archive Pipeline (Zero JVM Heap OOM)
 - **Objective:** Implement non-blocking streaming data portability for multi-gigabyte tenant datasets without JVM memory exhaustion.
-- **Backend Architecture (`unipost-report-engine` & `unipost-ms-fs`):**
+- **Backend Architecture (`acc-report-engine` & `acc-ms-fs`):**
   - Implement `StreamingZipExportService` returning `ResponseEntity<StreamingResponseBody>`.
   - Process records using JDBC cursor streaming (`ResultSet.TYPE_FORWARD_ONLY` with fetch size 1000) or Spring Data chunked streams.
   - Pipe records directly through `java.util.zip.ZipOutputStream` to the client HTTP `OutputStream`.
@@ -163,7 +163,7 @@ Iteration 2 Master Execution Map
     ├── records/
     │   ├── {entity_type}.jsonl       # JSON Lines streaming records
     │   └── {entity_type}.csv         # Tabular data export
-    └── media/                        # Exported file assets streamed from unipost-ms-fs
+    └── media/                        # Exported file assets streamed from acc-ms-fs
     ```
   - Verify memory bounds via JMH/integration tests capping JVM heap to 256MB while streaming 50,000+ records.
 
@@ -173,12 +173,12 @@ Iteration 2 Master Execution Map
   - **Stage 1: Soft-Delete Ingress Lockdown**: Instantly revoke active JWT tokens, invalidate user sessions, set tenant status to `PURGING`, and reject all incoming API mutations with `HTTP 423 Locked`.
   - **Stage 2: Dependency Graph Traversal**: Analyze relationship metadata (`UNIPOST_ENTITY_RELATIONSHIPS`) to discover all child entities, comments, media attachments, and history records.
   - **Stage 3: PostgreSQL RLS Hard Purge**: Execute batch deletion cascades with statement timeouts (`statement_timeout = 5000`) and vacuum trigger.
-  - **Stage 4: Distributed Cache & Storage Shredding**: Issue cluster-wide Pub/Sub cache eviction commands; permanently delete file blobs from `unipost-ms-fs` object storage.
+  - **Stage 4: Distributed Cache & Storage Shredding**: Issue cluster-wide Pub/Sub cache eviction commands; permanently delete file blobs from `acc-ms-fs` object storage.
   - **Stage 5: Cryptographic Certificate of Erasure**: Generate an RFC 3161 compliant cryptographic receipt containing:
     - Purged Tenant ID & Execution Timestamp.
     - SHA-256 digest of deleted record IDs.
     - Digital signature signed by Unipost Sovereign Authority Private Key.
-  - Expose self-service erasure status verification in `tekgo-ui` and `@unipost/console` (`data-privacy-panel.tsx`).
+  - Expose self-service erasure status verification in `tekgo-ui` and `@acc/console` (`data-privacy-panel.tsx`).
 
 ---
 
@@ -206,7 +206,7 @@ Iteration 2 Master Execution Map
 - **Implementation & Verification:**
   - **Window Vibrancy & Theming**:
     - Configure window vibrancy matching macOS `NSVisualEffectView` and Windows 11 Mica/Acrylic styling.
-    - Synchronize dark/light theme switching with `@unipost/tokens` glass blur tokens.
+    - Synchronize dark/light theme switching with `@acc/tokens` glass blur tokens.
   - **Electrobun RPC Native Bridge**:
     - Implement type-safe RPC bridge connecting Electrobun main process with the webview UI:
       - Native OS file picker dialog for bulk schema JSON export and import.
@@ -214,7 +214,7 @@ Iteration 2 Master Execution Map
       - System tray integration with quick-access tenant status and offline synchronization state.
   - **Desktop Build & Packaging Pipeline**:
     - Add `"test"` and `"build"` scripts in `apps/desktop-console/package.json` integrated with Turborepo.
-    - Test packaging pipeline (`electrobun build`) and verify seamless bundle resolution of `@unipost/console` static assets.
+    - Test packaging pipeline (`electrobun build`) and verify seamless bundle resolution of `@acc/console` static assets.
 
 ---
 
@@ -234,11 +234,11 @@ Iteration 2 Master Execution Map
 
 ### Phase 23: Tenant Custom Theming, White-Labeling & Dynamic Domain Blueprint Seeding
 - **Objective:** Support multi-tenant white-labeling and extensible domain blueprint packages for diverse industry verticals.
-- **White-Labeling & Theming (`@unipost/tokens` & `@unipost/console`):**
+- **White-Labeling & Theming (`@acc/tokens` & `@acc/console`):**
   - Tenant dynamic theme overrides: Brand color palettes (Primary, Accent, Glass Tint Scrims), custom logos, and typography tokens stored in tenant configuration JSONB.
   - CSS variable injection on tenant switch: Seamlessly updates Liquid Glass tokens across Web and Desktop without page reload.
 - **Dynamic Domain Blueprint Seeding Engine:**
-  - Pluggable blueprint catalog loader in `@unipost/backend` (`classpath:metadata/blueprints/*.json`):
+  - Pluggable blueprint catalog loader in `@acc/backend` (`classpath:metadata/blueprints/*.json`):
     - Real Estate MLS (`Property`, `ListingAgent`, `TourSchedule`).
     - Healthcare Records (`PatientRecord`, `ClinicalNote`, `Prescription`).
     - Logistics Fleet Management (`DispatchOrder`, `DriverProfile`, `TelemetryPoint`).
@@ -258,7 +258,7 @@ Iteration 2 Master Execution Map
     - Runs Maven build using Java 21 and Testcontainers PostgreSQL 16.
     - Validates Liquibase migration scripts, RLS policies, and Spring Modulith module boundaries (`ModularityTests`).
   - **Job 3: Vitest Multi-Client Test Suites**:
-    - Runs unit and integration suites across `@unipost/console`, `mobile-ui`, `tekgo-ui`, `@unipost/client`, and `@unipost/sandbox`.
+    - Runs unit and integration suites across `@acc/console`, `mobile-ui`, `tekgo-ui`, `@acc/client`, and `@acc/sandbox`.
   - **Job 4: Headless Playwright Browser E2E & WCAG 2.2 AA Audit**:
     - Runs Playwright in headless Chromium/Firefox/WebKit container.
     - Asserts that all 4 Golden Workflows pass and `@axe-core/playwright` verifies **0 critical accessibility violations**.
@@ -278,7 +278,7 @@ Iteration 2 Master Execution Map
 
 | Phase | Milestone Title | Target Deliverables | Verification Mechanism |
 | :---: | :--- | :--- | :--- |
-| **Phase 16** | Pluggable Dynamic Widget Registry | `WidgetRegistry` in `@unipost/ui`, `SignaturePad`, `GeoLocationPicker`, `BarcodeScanner` | Vitest widget rendering tests & Unified Sandbox registration |
+| **Phase 16** | Pluggable Dynamic Widget Registry | `WidgetRegistry` in `@acc/ui`, `SignaturePad`, `GeoLocationPicker`, `BarcodeScanner` | Vitest widget rendering tests & Unified Sandbox registration |
 | **Phase 17** | MCP Dynamic Tool Synthesis & ResolvableType | Runtime MCP tool manifests, Spring Modulith `ResolvableType` dynamic dispatcher | MCP JSON-RPC protocol assertions & Spring Modulith command test |
 | **Phase 18** | GDPR Art. 20 Streaming ZIP Archive | Streaming JDBC cursor export, `ZipOutputStream` pipeline, manifest generator | Low-memory export integration test (50,000 records < 256MB heap) |
 | **Phase 19** | GDPR Art. 17 5-Stage Erasure Cascade | 5-stage purge service, RLS table wipe, SHA-256 certificate of erasure | Integration test verifying zero records remain and receipt signature passes |
@@ -299,6 +299,6 @@ In addition to the 9 invariants verified in Iteration 1, all Iteration 2 PRs mus
 2. **Streaming Invariant**: Data exports exceeding 1,000 records must never buffer entire collections into JVM heap or Node.js memory; streaming response bodies are mandatory.
 3. **Cryptographic Erasure Invariant**: Any GDPR hard-purge must produce a tamper-evident Certificate of Erasure containing SHA-256 digests of destroyed entities.
 4. **Offline Durability Invariant**: Mobile outbox mutations must persist to durable disk storage immediately upon creation to survive mobile OS termination.
-5. **Theme Scrim Isolation Invariant**: Tenant custom branding colors must dynamically compute WCAG 2.2 AA compliant glass text contrast scrims ($\ge 4.5:1$) via `@unipost/tokens`.
+5. **Theme Scrim Isolation Invariant**: Tenant custom branding colors must dynamically compute WCAG 2.2 AA compliant glass text contrast scrims ($\ge 4.5:1$) via `@acc/tokens`.
 6. **Zero-Flake CI Invariant**: All automated Playwright and integration test suites in CI must achieve 100% deterministic reproducibility without race-condition flakes.
 

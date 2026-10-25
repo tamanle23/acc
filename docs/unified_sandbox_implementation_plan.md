@@ -2,7 +2,7 @@
 
 > **Version:** 1.0.0  
 > **Author:** Antigravity Architect  
-> **Target Package:** `@unipost/console` (`apps/console`)  
+> **Target Package:** `@acc/console` (`apps/console`)  
 > **Scope:** Full-Application Unified Mock Data & Authentication Sandbox  
 > **Status:** Proposed / Ready for Implementation  
 
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Problem Statement
 
-Currently, mock and sandbox capabilities across `@unipost/console` are fragmented across isolated implementations:
+Currently, mock and sandbox capabilities across `@acc/console` are fragmented across isolated implementations:
 1. **Authentication Sandbox (`features/spring-auth`)**: Intercepts `/auth/token`, `/auth/refresh`, `/auth/logout`, and `/admin/dashboard` using custom Axios request interceptors and token inspection.
 2. **Metadata Platform Mock Engine (`features/metadata`)**: An in-memory store (`mockMetadataStore`) backing PostgreSQL JSONB containment, two-tier cache simulations, schema drift analysis, and backfill. Switched via `VITE_METADATA_MOCK` and the Strategy pattern.
 3. **Task & User Fixtures (`features/tasks`, `features/users`)**: Static in-memory arrays in `data/tasks.ts` and `data/users.ts` with no unified lifecycle, mutation persistence, or reset mechanism.
@@ -32,7 +32,7 @@ Currently, mock and sandbox capabilities across `@unipost/console` are fragmente
 > Any new sandbox handler, repository, adapter, or interceptor introduced **must NOT break existing code paths, singletons, or test suites**.
 > 1. All existing mock singletons (`mockMetadataStore`, `enableSandboxMockEngine`) remain fully accessible with their existing signatures.
 > 2. Existing test suites (such as `metadata-workflows.test.ts` and auth unit tests) will pass without modification.
-> 3. Production builds (`pnpm --filter @unipost/console build`) must produce clean, tree-shakable artifacts without leaking dev sandbox logic into production bundles unless explicitly enabled.
+> 3. Production builds (`pnpm --filter @acc/console build`) must produce clean, tree-shakable artifacts without leaking dev sandbox logic into production bundles unless explicitly enabled.
 
 ---
 
@@ -182,12 +182,12 @@ flowchart TD
 
 ### Phase 4: Quality Assurance & Zero-Regression Verification
 - [ ] **Vitest Workflow Tests**: Execute all existing test suites to confirm 100% pass rate:
-  - `pnpm --filter @unipost/console test run metadata-workflows` (14/14 must pass).
+  - `pnpm --filter @acc/console test run metadata-workflows` (14/14 must pass).
 - [ ] **Sandbox Integration Tests**: Add `sandbox-manager.test.ts` verifying:
   - Handler registration & fall-through behavior.
   - Persona switching and synchronized tenant propagation.
   - Decorator latency and fault injection fidelity.
-- [ ] **Production Build Check**: Execute `pnpm --filter @unipost/console build` to ensure clean type checking and asset bundling.
+- [ ] **Production Build Check**: Execute `pnpm --filter @acc/console build` to ensure clean type checking and asset bundling.
 
 ---
 

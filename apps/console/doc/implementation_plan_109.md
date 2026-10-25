@@ -16,19 +16,19 @@ Deliver full operational transparency and high-concurrency resilience for Unipos
 
 ## 2. Proposed Changes & Architecture
 
-### Backend (`apps/backend/unipost-ms-aio` & `workflow-engine`)
+### Backend (`apps/backend/acc-ms-aio` & `workflow-engine`)
 
 #### Worker Registry & Telemetry Service
-- **`com.unipost.aio.worker.WorkerRegistry`**:
+- **`com.acc.aio.worker.WorkerRegistry`**:
   - In-memory thread-safe registry tracking active worker nodes (with automatic transition if heartbeat age > 15s `DEGRADED`, > 30s `OFFLINE`).
   - Worker entity: `workerId`, `hostIp`, `runtime` (`JAVA_VIRTUAL_THREADS`, `NODEJS_WORKER`), `pollDomains`, `concurrencyLimit`, `activeLeases`, `tasksCompletedCount`, `errorCount`, `uptimeSeconds`, `lastHeartbeatEpochMs`, `status` (`HEALTHY`, `DEGRADED`, `OFFLINE`, `DRAINING`).
-- **`com.unipost.aio.controller.workflow.WorkerFleetController`**:
+- **`com.acc.aio.controller.workflow.WorkerFleetController`**:
   - `GET /api/v1/workflow/workers`: Query registered workers with status and runtime filtering.
   - `POST /api/v1/workflow/workers/heartbeat`: Register or refresh worker heartbeat telemetry.
   - `POST /api/v1/workflow/workers/{workerId}/drain`: Request graceful worker drain (stop polling new tasks, allow active leases up to 30s grace).
 
 #### Chaos & Stress Verification Test Suite
-- **`com.unipost.workflow.chaos.WorkflowChaosStressVerificationTest`**:
+- **`com.acc.workflow.chaos.WorkflowChaosStressVerificationTest`**:
   - Uses Java 21 Virtual Threads (`Executors.newVirtualThreadPerTaskExecutor()`).
   - Runs 1,000 concurrent workflow executions through the PureDecider and task queue.
   - Injects simulated worker crash mid-lease: asserts lease sweeper reclaims tasks without state corruption.
@@ -79,11 +79,11 @@ Deliver full operational transparency and high-concurrency resilience for Unipos
 
 ### Automated Tests
 1. **Frontend Vitest Suite**:
-   - `pnpm --filter @unipost/console test -- run src/features/workflows/components/__tests__/execution-time-travel-scrubber.test.tsx`
-   - `pnpm --filter @unipost/console test -- run src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx`
-   - `pnpm --filter @unipost/console test -- run src/features/workers/__tests__/worker-fleet.test.tsx`
+   - `pnpm --filter @acc/console test -- run src/features/workflows/components/__tests__/execution-time-travel-scrubber.test.tsx`
+   - `pnpm --filter @acc/console test -- run src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx`
+   - `pnpm --filter @acc/console test -- run src/features/workers/__tests__/worker-fleet.test.tsx`
 2. **Backend JUnit / Maven Suite**:
-   - `mvn test -pl apps/backend/unipost-ms-aio -Dtest=WorkerFleetControllerTest,WorkflowChaosStressVerificationTest -q`
+   - `mvn test -pl apps/backend/acc-ms-aio -Dtest=WorkerFleetControllerTest,WorkflowChaosStressVerificationTest -q`
 3. **End-to-End Build & Lint Integrity**:
-   - `pnpm --filter @unipost/console check-types`
-   - `pnpm --filter @unipost/console build`
+   - `pnpm --filter @acc/console check-types`
+   - `pnpm --filter @acc/console build`

@@ -1,7 +1,7 @@
 # Walkthrough 144 - Visual DAG Studio Layout & UI/UX Overhaul (Iteration 18)
 
 ## Overview
-Executed the end-to-end plan defined in `docs/integration_master_plan_iteration18.md` (and mirrored in `apps/console/doc/implementation_plan_144.md`), upgrading `VisualDagStudio` in `@unipost/console` to enterprise-grade layout and UX standards.
+Executed the end-to-end plan defined in `docs/integration_master_plan_iteration18.md` (and mirrored in `apps/console/doc/implementation_plan_144.md`), upgrading `VisualDagStudio` in `@acc/console` to enterprise-grade layout and UX standards.
 
 ---
 
@@ -47,7 +47,7 @@ Executed the end-to-end plan defined in `docs/integration_master_plan_iteration1
 
 ### 1. Studio Unit & Integration Tests
 ```bash
-pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+pnpm --filter @acc/console test -- src/features/workflows/components/studio/
 ```
 Output:
 - **13 test files passed (13 passed)**
@@ -68,6 +68,6 @@ Output:
 
 ### 2. TypeScript Compiler Check
 ```bash
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Output: Clean compilation, 0 errors.

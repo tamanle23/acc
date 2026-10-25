@@ -5,12 +5,12 @@ In Phase 3 of the Multi-Tenant Master Plan, we implemented cryptographic tenant 
 
 ## 2. Key Changes Implemented
 
-### Header Sanitization & Anti-Spoofing (`unipost-fw`)
-- Created `com.unipost.fw.tenancy.HeaderSanitizerFilter`:
-  - Enforces Zero Client Trust by stripping incoming `X-Tenant-Id`, `x-tenant`, and `x-unipost-tenant` headers.
+### Header Sanitization & Anti-Spoofing (`acc-fw`)
+- Created `com.acc.fw.tenancy.HeaderSanitizerFilter`:
+  - Enforces Zero Client Trust by stripping incoming `X-Tenant-Id`, `x-tenant`, and `x-acc-tenant` headers.
   - Guarantees the application layer never relies on unverified or client-supplied tenant HTTP headers.
 
-### JWT Cryptographic Claims & Tenant Context Binding (`unipost-fw`)
+### JWT Cryptographic Claims & Tenant Context Binding (`acc-fw`)
 - Updated `JwtAuthenticationToken.java`:
   - Added `tenantId` field and accessor `getTenantId()`.
 - Updated `JwtTokenHelper.java`:
@@ -23,17 +23,17 @@ In Phase 3 of the Multi-Tenant Master Plan, we implemented cryptographic tenant 
   - Binds active tenant to `TenantContextHolder.setTenantId(tenantId)` and `MDC.put("tenantId", tenantId)`.
   - Wrapped request processing in strict `try / finally` to guarantee cleanup via `TenantContextHolder.clear()` and `MDC.remove("tenantId")`, preventing thread-pool contamination.
 
-### Tenant Context Holder (`unipost-fw`)
+### Tenant Context Holder (`acc-fw`)
 - Enhanced `TenantContextHolder.java`:
   - Added `getRequiredTenantId()` which raises `IllegalStateException` on missing or blank context.
 
-### Asynchronous & Task Propagation (`unipost-fw`)
+### Asynchronous & Task Propagation (`acc-fw`)
 - Enhanced `AsyncContextTaskDecorator.java`:
   - Snapshots parent thread's `TenantContextHolder`, `SecurityContextHolder`, and SLF4J `MDC`.
   - Re-establishes these contexts upon execution on worker threads (`@Async`, thread pools).
   - Guarantees clean teardown on thread exit.
 
-### Service & Controller Stamping (`unipost-fw`)
+### Service & Controller Stamping (`acc-fw`)
 - Updated `MetadataService.java`:
   - In `createEntityRecord`: Stamped record strictly with `TenantContextHolder.getTenantId()`, overriding client payload attempts.
   - In `getEntityRecords`: Defaulted query `tenantId` to active thread tenant context.

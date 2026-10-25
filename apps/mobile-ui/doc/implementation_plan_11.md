@@ -13,17 +13,17 @@ Add a slider control to the Settings screen (within Profile) that appears when t
 - Add `@react-native-community/slider` to provide a native slider component.
 
 ### State & Settings
-#### [MODIFY] [src/types/index.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/types/index.ts)
+#### [MODIFY] [src/types/index.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/types/index.ts)
 - Add `glassIntensity: number` to the `Settings` interface.
 
-#### [MODIFY] [src/store/useSettingsStore.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/store/useSettingsStore.ts)
+#### [MODIFY] [src/store/useSettingsStore.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/store/useSettingsStore.ts)
 - Add `glassIntensity` (default: 60) and `setGlassIntensity(val: number)` to `useSettingsStore`.
 
 ### UI & Components
-#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/LiquidGlassView.tsx)
+#### [MODIFY] [src/components/LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/LiquidGlassView.tsx)
 - Use the user-configured `glassIntensity` from `useSettingsStore` (as base or multiplier) if `intensity` is not specifically overridden.
 
-#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/ProfileScreen.tsx)
+#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/ProfileScreen.tsx)
 - Under the "Liquid Glass Effect" switch, conditionally render a slider with a percentage indicator (e.g., 10% - 100%) and description when the effect is enabled.
 
 ## Verification Plan

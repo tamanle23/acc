@@ -27,6 +27,6 @@ Relocated Dead-Letter Queue screen to the SYSTEM Sovereign Root Custodian worksp
 ---
 
 ## Verification Results
-- `pnpm --filter @unipost/sandbox check-types`: Passed clean with 0 errors.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Passed clean with 0 errors.
+- `pnpm --filter @acc/sandbox check-types`: Passed clean with 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Passed clean with 0 errors.
 - `vitest run dlq-feature`: 4/4 tests green.

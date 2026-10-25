@@ -10,9 +10,9 @@ Previous E2E runs were executed under Mode 1 (Autonomous Unified Sandbox mock en
 ## Implementation Details
 
 ### 1. Backend Auto-Configuration & Constructor Injection Fixes
-- Added `@org.springframework.beans.factory.annotation.Autowired` to the primary 9-argument constructor of `com.unipost.service.RecordMutationPipeline`.
+- Added `@org.springframework.beans.factory.annotation.Autowired` to the primary 9-argument constructor of `com.acc.service.RecordMutationPipeline`.
 - Replaced ambiguous reflection auto-detection so that Spring Boot's dependency injection container correctly resolves all JPA repositories, audit logs, and `SchemaValidationService`.
-- Executed clean multi-module Maven compilation and packaging of `unipost-fw` and `unipost-ms-aio`.
+- Executed clean multi-module Maven compilation and packaging of `acc-fw` and `acc-ms-aio`.
 
 ### 2. Playwright Mode 2 Configuration & Global Setup
 - Updated `apps/console/playwright.config.ts`:

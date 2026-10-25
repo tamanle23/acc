@@ -27,5 +27,5 @@ Polish and elevate both `/workflows` and `/workflow-executions` screens followin
 - Update tests for both screens to ensure 100% test pass rate.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`
-- `pnpm --filter @unipost/console test -- src/features/workflow-executions src/features/workflows`
+- `pnpm --filter @acc/console exec tsc --noEmit`
+- `pnpm --filter @acc/console test -- src/features/workflow-executions src/features/workflows`

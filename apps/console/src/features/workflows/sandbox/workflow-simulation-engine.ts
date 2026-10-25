@@ -3,7 +3,7 @@ import {
   type SimulationScenarioId,
   type SimulationStepEvent,
 } from './simulation-scenarios';
-import { sandboxResetRegistry } from '@unipost/sandbox';
+import { sandboxResetRegistry } from '@acc/sandbox';
 
 export type SimulationSpeed = '1x' | '2x' | '5x' | 'step';
 

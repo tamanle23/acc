@@ -28,13 +28,13 @@ In composite entity aggregates, child sub-collections are paginated (e.g., 10 or
    - Vitest tests covering Master-Detail row rollup chips, search filtering, and column sorting.
 
 ## Changes
-- `apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/CompositeRollup.java`: Domain record for computed rollups.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/CompositeSpec.java` & `CompositeNode.java`: Extended with `rollups`.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/ChildFilterCriteria.java` & `ChildQueryOptions.java`: Query parameter DTOs.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/DynamicQueryCompiler.java`: Companion lateral queries, dynamic filters, and custom child sorting.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/service/CompositeRecordService.java`: Overloaded with `ChildQueryOptions`.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/CompositeEntityController.java`: `childQueries` parameter parser.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/service/DynamicQueryCompilerTest.java`: Rollup and child filtering/sorting tests.
+- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/CompositeRollup.java`: Domain record for computed rollups.
+- `apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/CompositeSpec.java` & `CompositeNode.java`: Extended with `rollups`.
+- `apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/ChildFilterCriteria.java` & `ChildQueryOptions.java`: Query parameter DTOs.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/DynamicQueryCompiler.java`: Companion lateral queries, dynamic filters, and custom child sorting.
+- `apps/backend/acc-fw/src/main/java/com/acc/service/CompositeRecordService.java`: Overloaded with `ChildQueryOptions`.
+- `apps/backend/acc-fw/src/main/java/com/acc/presentation/CompositeEntityController.java`: `childQueries` parameter parser.
+- `apps/backend/acc-fw/src/test/java/com/acc/service/DynamicQueryCompilerTest.java`: Rollup and child filtering/sorting tests.
 - `packages/client/src/contracts/metadata.ts`: Added rollup and query types.
 - `apps/console/src/features/metadata/components/studio/composite/composite-rollup-builder.tsx`: Rollup configuration UI.
 - `apps/console/src/features/metadata/components/studio/composite/composite-projection-canvas.tsx`: Embedded rollup builder.
@@ -53,7 +53,7 @@ In composite entity aggregates, child sub-collections are paginated (e.g., 10 or
   - `composite-master-detail-row.test.tsx`: 7/7 tests passed.
   - `composite-bento-studio.test.tsx`: 4/4 tests passed.
   - `visual-schema-studio.test.tsx`: 8/8 tests passed.
-- **Frontend Typecheck**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- **Frontend Typecheck**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
 
 ## Walkthrough
 Detailed blueprint and verification logs available in `apps/console/doc/walkthrough_114.md`.

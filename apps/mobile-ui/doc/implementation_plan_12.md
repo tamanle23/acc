@@ -12,7 +12,7 @@ Modify the bottom navigation bar so that it is positioned directly at the bottom
 ## Proposed Changes
 
 ### Navigation Component
-#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/navigation/RootNavigator.tsx)
+#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/navigation/RootNavigator.tsx)
 - Remove floating styling (`left: 20`, `right: 20`, floating `bottom`).
 - Position docked to bottom (`bottom: 0`, `left: 0`, `right: 0`, `width: '100%'`).
 - Increase total height and include safe area bottom inset (`paddingBottom: insets.bottom`, base height ~70px).
@@ -20,13 +20,13 @@ Modify the bottom navigation bar so that it is positioned directly at the bottom
 - Adjust border styling: top border highlight, flat bottom.
 
 ### Screens Content Padding
-#### [MODIFY] [src/screens/DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/DashboardScreen.tsx)
+#### [MODIFY] [src/screens/DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/DashboardScreen.tsx)
 - Adjust `paddingBottom` to `insets.bottom + 95` so the last list items aren't covered by the taller bottom bar.
 
-#### [MODIFY] [src/screens/CreatePostScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/CreatePostScreen.tsx)
+#### [MODIFY] [src/screens/CreatePostScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/CreatePostScreen.tsx)
 - Adjust scroll content `paddingBottom` to `insets.bottom + 95`.
 
-#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/ProfileScreen.tsx)
+#### [MODIFY] [src/screens/ProfileScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/ProfileScreen.tsx)
 - Adjust scroll content `paddingBottom` to `insets.bottom + 95`.
 
 ## Verification Plan

@@ -31,7 +31,7 @@ describe('Unified Sandbox Engine Package', () => {
     });
 
     const res = await engine.handleRequest({
-      url: 'https://unipost.io/api/v1/articles?limit=10',
+      url: 'https://acc.io/api/v1/articles?limit=10',
       method: 'GET',
     });
 

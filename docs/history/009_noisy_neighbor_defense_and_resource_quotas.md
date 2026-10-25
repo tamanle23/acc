@@ -18,20 +18,20 @@ In a multi-tenant dynamic schema architecture, shared computing resources (API w
 
 ## Changes Made
 - **Rate Limiting:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/ratelimit/TenantRateLimitService.java`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/ratelimit/TenantRateLimitFilter.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitService.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitFilter.java`
 - **ReDoS & Schema Timeout Defense:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/service/exception/ValidationTimeoutException.java`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/service/exception/ValidationTimeoutException.java`
+  - `apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`
 - **Resource Quotas & Payload Guard:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/repository/jpa/EntityTypeRepository.java`: added `countByDeletedDateIsNull()`
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`: wired 50-model cap, 100-attribute cap, 1MB payload check, and `isDangerousRegex` detector.
+  - `apps/backend/acc-fw/src/main/java/com/acc/repository/jpa/EntityTypeRepository.java`: added `countByDeletedDateIsNull()`
+  - `apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`: wired 50-model cap, 100-attribute cap, 1MB payload check, and `isDangerousRegex` detector.
 - **Database Statement Timeout:**
-  - `apps/backend/unipost-fw/src/main/java/com/unipost/fw/tenancy/TenantSessionAspect.java`: added `SET LOCAL statement_timeout = '3000ms'`.
+  - `apps/backend/acc-fw/src/main/java/com/acc/fw/tenancy/TenantSessionAspect.java`: added `SET LOCAL statement_timeout = '3000ms'`.
 - **Unit & Regression Tests:**
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/fw/tenancy/ratelimit/TenantRateLimitServiceTest.java`
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/service/SafeSchemaValidationTest.java`
-  - `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeCacheFabricTest.java`
+  - `apps/backend/acc-fw/src/test/java/com/acc/fw/tenancy/ratelimit/TenantRateLimitServiceTest.java`
+  - `apps/backend/acc-fw/src/test/java/com/acc/service/SafeSchemaValidationTest.java`
+  - `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeCacheFabricTest.java`
 
 ## Verification
 - Maven test-compile and test executions:

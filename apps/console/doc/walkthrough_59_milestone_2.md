@@ -1,7 +1,7 @@
 # WCAG 2.2 AA Compliance - Milestone 2 Walkthrough
 
 ## Overview
-This walkthrough documents the successful execution of **Milestone 2 (Navigation, Landmarks & Bypass Blocks)** for WCAG 2.2 Level AA compliance across `@unipost/console`.
+This walkthrough documents the successful execution of **Milestone 2 (Navigation, Landmarks & Bypass Blocks)** for WCAG 2.2 Level AA compliance across `@acc/console`.
 
 ## Key Changes Implemented
 
@@ -24,7 +24,7 @@ Normalized heading order across major views to guarantee sequential `h1` -> `h2`
 - **Sub-headings & Empty States**: Converted nested section titles and empty states to `<h3>`.
 
 ## Verification Results
-- **Typecheck**: `pnpm --filter @unipost/console exec tsc -b` passed with 0 errors.
-- **Unit Tests**: `pnpm --filter @unipost/console test` (12 test suites, 73 tests passed).
-- **Web Build**: `pnpm --filter @unipost/console run build:web` built successfully.
+- **Typecheck**: `pnpm --filter @acc/console exec tsc -b` passed with 0 errors.
+- **Unit Tests**: `pnpm --filter @acc/console test` (12 test suites, 73 tests passed).
+- **Web Build**: `pnpm --filter @acc/console run build:web` built successfully.
 - **Visual & Playwright Inspection**: Captured screenshot verifying intact Liquid Glass aesthetics and Bento Box layout under standard and high-contrast focus states.

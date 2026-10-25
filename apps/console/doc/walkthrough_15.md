@@ -6,7 +6,7 @@ Removed the **"New Team"** menu item from the user profile dropdown in `apps/con
 
 ### Console Application (`apps/console`)
 
-#### Header User Profile Dropdown ([`profile-dropdown.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/profile-dropdown.tsx))
+#### Header User Profile Dropdown ([`profile-dropdown.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/profile-dropdown.tsx))
 - Removed `<DropdownMenuItem>New Team</DropdownMenuItem>`.
 - Preserved clean navigation options: `Profile`, `Settings`, and `Sign out`.
 
@@ -15,13 +15,13 @@ Removed the **"New Team"** menu item from the user profile dropdown in `apps/con
 ### 1. TypeScript & Web Build
 Command:
 ```bash
-pnpm --filter @unipost/console build:web
+pnpm --filter @acc/console build:web
 ```
 Result: **Passed** (exit code 0, 0 type errors).
 
 ### 2. ESLint Code Quality
 Command:
 ```bash
-pnpm --filter @unipost/console lint
+pnpm --filter @acc/console lint
 ```
 Result: **Passed** (exit code 0, 0 warnings, 0 errors).

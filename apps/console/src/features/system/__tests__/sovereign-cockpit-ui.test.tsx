@@ -54,7 +54,7 @@ describe('Sovereign Cockpit UI Components', () => {
   });
 
   it('renders AssumeTenantBar when assumed tenant session is active in localStorage', () => {
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-acme');
     renderWithClient(<AssumeTenantBar />);
     expect(screen.getByText(/assume-tenant active:/i)).toBeTruthy();
     expect(screen.getByText('tenant-acme')).toBeTruthy();

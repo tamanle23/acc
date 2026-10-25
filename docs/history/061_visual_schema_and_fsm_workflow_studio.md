@@ -25,7 +25,7 @@ Tenant administrators and domain operators required a zero-code authoring enviro
 2. **Build Studio Components**:
    - `attribute-palette.tsx`: Categorized palette items with click & HTML5 drag-and-drop triggers.
    - `attribute-property-inspector.tsx`: Constraints editor for JSON Schema validation.
-   - `dynamic-form-live-preview.tsx`: Real-time reactive preview using standard `@unipost/ui` widgets.
+   - `dynamic-form-live-preview.tsx`: Real-time reactive preview using standard `@acc/ui` widgets.
    - `fsm-workflow-designer.tsx`: SVG state machine canvas with transition selection, SpEL guard editor, and outbox action inspector.
    - `visual-schema-studio.tsx`: Master coordinator with tab switcher between Schema Canvas & FSM Workflow Studio.
 3. **Integrate into SchemaBuilder (`schema-builder.tsx`)**:

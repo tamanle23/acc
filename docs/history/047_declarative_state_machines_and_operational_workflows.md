@@ -14,23 +14,23 @@ Enterprise entities (e.g. orders, compliance cases, incident tickets) have dynam
 
 ## Changes
 - **Database Migrations**:
-  - [`changelog-000.000.00010.xml`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00010.xml).
-  - [`changelog-master.xml`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml).
-- **Core Models & Workflow (`unipost-fw`)**:
-  - [`LifecycleConfig.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/LifecycleConfig.java).
-  - [`TransitionConfig.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/TransitionConfig.java).
-  - [`EntityStateChangedEvent.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/EntityStateChangedEvent.java).
-  - [`EntityType.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/domain/metadata/EntityType.java).
-  - [`EntityTypeResponse.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/EntityTypeResponse.java).
-  - [`MetadataDtoMapper.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/presentation/dto/metadata/MetadataDtoMapper.java).
-  - [`GuardEvaluatorStrategy.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/workflow/GuardEvaluatorStrategy.java).
-  - [`SpelGuardEvaluator.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/workflow/SpelGuardEvaluator.java).
-  - [`EntityLifecycleService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/workflow/EntityLifecycleService.java).
-  - [`WorkflowAuditEventListener.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/workflow/WorkflowAuditEventListener.java).
-  - [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java).
-  - [`MetadataController.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/presentation/MetadataController.java).
+  - [`changelog-000.000.00010.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00010.xml).
+  - [`changelog-master.xml`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml).
+- **Core Models & Workflow (`acc-fw`)**:
+  - [`LifecycleConfig.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/LifecycleConfig.java).
+  - [`TransitionConfig.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/TransitionConfig.java).
+  - [`EntityStateChangedEvent.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/EntityStateChangedEvent.java).
+  - [`EntityType.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/domain/metadata/EntityType.java).
+  - [`EntityTypeResponse.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/EntityTypeResponse.java).
+  - [`MetadataDtoMapper.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/dto/metadata/MetadataDtoMapper.java).
+  - [`GuardEvaluatorStrategy.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/workflow/GuardEvaluatorStrategy.java).
+  - [`SpelGuardEvaluator.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/workflow/SpelGuardEvaluator.java).
+  - [`EntityLifecycleService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/workflow/EntityLifecycleService.java).
+  - [`WorkflowAuditEventListener.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/workflow/WorkflowAuditEventListener.java).
+  - [`MetadataService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java).
+  - [`MetadataController.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/presentation/MetadataController.java).
 - **Tests**:
-  - [`EntityLifecycleServiceTest.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/test/java/com/unipost/service/workflow/EntityLifecycleServiceTest.java).
+  - [`EntityLifecycleServiceTest.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/test/java/com/acc/service/workflow/EntityLifecycleServiceTest.java).
   - Updated `MetadataServiceTest.java` and `MetadataControllerTest.java`.
 
 ## Verification

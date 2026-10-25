@@ -34,3 +34,7 @@ coverage
 playwright-report
 test-results
 *.exec
+
+
+# Contentlayer
+.contentlayer

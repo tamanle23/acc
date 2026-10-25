@@ -31,11 +31,11 @@ We have updated all occurrences of the application name from **"Shadcn Admin"** 
 ### Automated Verification
 - **Web Build**:
   ```bash
-  pnpm --filter @unipost/console build:web
+  pnpm --filter @acc/console build:web
   ```
   Result: **Exit code 0** (completed in 533ms).
 - **ESLint**:
   ```bash
-  pnpm --filter @unipost/console lint
+  pnpm --filter @acc/console lint
   ```
   Result: **Exit code 0** (0 errors, 0 warnings).

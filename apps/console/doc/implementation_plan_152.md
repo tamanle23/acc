@@ -71,9 +71,9 @@ Upgrade the **"RBAC Matrix & Global Users"** screen (`apps/console/src/routes/_a
 
 ```
 apps/backend/
-├── unipost-db/src/main/resources/db/unipost/
+├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] Liquibase migration
-├── unipost-fw/src/main/java/com/unipost/
+├── acc-fw/src/main/java/com/acc/
 │   └── user/
 │       ├── controller/
 │       │   └── TenantRoleDelegationController.java # [NEW] REST controller for tenant delegation & overrides
@@ -121,7 +121,7 @@ apps/console/
      - Test: Sovereign Root can assign any role within `SYSTEM` -> SUCCESS.
    - Command:
      ```bash
-     mvn test -pl unipost-fw -Dtest=TenantRoleDelegationServiceTest -q
+     mvn test -pl acc-fw -Dtest=TenantRoleDelegationServiceTest -q
      ```
 2. **Frontend Unit & Component Integration Tests (`apps/console`)**:
    - `rbac-matrix-grid.test.tsx`:
@@ -132,10 +132,10 @@ apps/console/
      - Test: Submitting delegation mutation invalidates user query cache.
    - Command:
      ```bash
-     pnpm --filter @unipost/console test:run
+     pnpm --filter @acc/console test:run
      ```
 3. **Playwright E2E Suite**:
    - Run updated Flow 12 E2E test verifying tenant-scoped delegation and WCAG 2.2 AA accessibility:
      ```bash
-     pnpm --filter @unipost/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
+     pnpm --filter @acc/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
      ```

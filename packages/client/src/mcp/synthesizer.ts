@@ -99,10 +99,10 @@ export function compileDraft07Schema(
  * Synthesizes dynamic Model Context Protocol (MCP) tool manifests directly from active tenant UNIPOST_ENTITY_TYPES.
  *
  * Implements the 4 core agent tools:
- * 1. unipost_get_schema: Returns JSON Schema Draft-07 for specified entity type.
- * 2. unipost_query_entities: RLS-scoped search with pagination and filtering.
- * 3. unipost_execute_transition: Executes FSM lifecycle state machine transitions with parameter validation.
- * 4. unipost_create_entity: Validates attributes against server schema and creates records.
+ * 1. acc_get_schema: Returns JSON Schema Draft-07 for specified entity type.
+ * 2. acc_query_entities: RLS-scoped search with pagination and filtering.
+ * 3. acc_execute_transition: Executes FSM lifecycle state machine transitions with parameter validation.
+ * 4. acc_create_entity: Validates attributes against server schema and creates records.
  */
 export function synthesizeMcpManifest(
   entityTypes: EntityType[],
@@ -113,7 +113,7 @@ export function synthesizeMcpManifest(
 
   const tools: McpToolDefinition[] = [
     {
-      name: 'unipost_get_schema',
+      name: 'acc_get_schema',
       description: 'Returns JSON Schema Draft-07 definition for a specified Unipost entity type.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -130,7 +130,7 @@ export function synthesizeMcpManifest(
       },
     },
     {
-      name: 'unipost_query_entities',
+      name: 'acc_query_entities',
       description: 'Performs RLS-scoped search, filtering, and pagination over Unipost entity records.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -167,7 +167,7 @@ export function synthesizeMcpManifest(
       },
     },
     {
-      name: 'unipost_create_entity',
+      name: 'acc_create_entity',
       description: 'Validates attributes against server schema and creates an entity record.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -189,7 +189,7 @@ export function synthesizeMcpManifest(
       },
     },
     {
-      name: 'unipost_execute_transition',
+      name: 'acc_execute_transition',
       description: 'Executes an FSM lifecycle state machine transition on an entity record with 5-gate validation.',
       inputSchema: {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -221,7 +221,7 @@ export function synthesizeMcpManifest(
   ];
 
   return {
-    name: 'unipost-mcp-server',
+    name: 'acc-mcp-server',
     version: '1.0.0',
     description: `Dynamic MCP Agent Tools synthesized for Unipost tenant [${tenantId || 'default'}]`,
     tools,

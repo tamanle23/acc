@@ -45,7 +45,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
     activePersonaId === 'system'
   )
 
-  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM')
 
   const availableProfiles = contextProfiles && contextProfiles.length > 0 ? contextProfiles : (propProfiles ?? [])
@@ -120,9 +120,9 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
 
     if (isAssumed && tenantId !== assumedTenant) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('unipost_assumed_tenant')
-        localStorage.removeItem('unipost_assumed_token')
-        localStorage.removeItem('unipost_assumed_tenant_name')
+        localStorage.removeItem('acc_assumed_tenant')
+        localStorage.removeItem('acc_assumed_token')
+        localStorage.removeItem('acc_assumed_tenant_name')
       }
       toast.info(`Exited delegated sub-session. Switched to workspace "${profile.name}".`)
     } else {
@@ -177,7 +177,7 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                     {isSovereign && !isAssumed
                       ? '👑 Sovereign Platform'
                       : activeProfile?.name ||
-                        (isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) ||
+                        (isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant_name') : null) || assumedTenant : null) ||
                         useMetadataUiStore.getState().activeTenantName ||
                         'Orphaned Tenant'}
                   </span>
@@ -199,9 +199,9 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                   {isSovereign && !isAssumed
                     ? 'SYSTEM Tenant (Fleet Root)'
                     : isOrphanedTenant
-                    ? `Tenant: ${(isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant : null) || useMetadataUiStore.getState().activeTenantName || effectiveTenantId}`
+                    ? `Tenant: ${(isAssumed ? (typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant_name') : null) || assumedTenant : null) || useMetadataUiStore.getState().activeTenantName || effectiveTenantId}`
                     : isAssumed
-                    ? `Delegated: ${(activeProfile?.tenantName as string) || (typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null) || assumedTenant}`
+                    ? `Delegated: ${(activeProfile?.tenantName as string) || (typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant_name') : null) || assumedTenant}`
                     : ((activeProfile?.tenantName as string) || activeProfile?.plan || 'Workspace')}
                 </span>
               </div>

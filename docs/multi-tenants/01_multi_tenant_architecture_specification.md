@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 01 of N)  
 **Document Level:** High-Level Architecture (HLA) & System Blueprint  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21), `@unipost/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
 **Foundational Paradigm:** Pure Tenant-Isolated Dynamic Metadata & Data Engine  
 **Status:** Canonical Living Architecture Document  
 
@@ -32,14 +32,14 @@ The Unipost platform serves a diverse spectrum of tenants ranging from large mul
 │                                          UNIPOST CLIENT PLATFORM                                       │
 │                                                                                                        │
 │   ┌────────────────────────────────────────┐         ┌────────────────────────────────────────┐        │
-│   │           @unipost/console             │         │       mobile-ui / tekgo-ui             │        │
+│   │           @acc/console             │         │       mobile-ui / tekgo-ui             │        │
 │   │   Tenant Context & Active Persona      │         │     Tenant-Bound Operational Apps      │        │
 │   └───────────────────┬────────────────────┘         └───────────────────┬────────────────────┘        │
 └───────────────────────┼──────────────────────────────────────────────────┼─────────────────────────────┘
                         │ HTTPS (Bearer JWT with tenant_id, user_id, roles)│
                         ▼                                                  ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                       @unipost/backend GATEWAY                                         │
+│                                       @acc/backend GATEWAY                                         │
 │                                                                                                        │
 │   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐   │
 │   │ TenantSecurityFilter: Cryptographic JWT Verification -> Extract Claims -> Bind TenantContext   │   │
@@ -221,9 +221,9 @@ To scale efficiently when thousands of tenants share the storage layer:
 
 ---
 
-## 7. Client & UI Integration (`@unipost/console`)
+## 7. Client & UI Integration (`@acc/console`)
 
-In `@unipost/console`, the user experience gracefully adapts based on the active user’s permissions within their tenant:
+In `@acc/console`, the user experience gracefully adapts based on the active user’s permissions within their tenant:
 
 1. **Adaptive Workspace Navigation**:
    * **Tenant Administrators / Solo Operators**: See the complete **Metadata Studio** (Entity Model Tree, Schema Builder, JSON Schema Preview, Connected Edge Type Manager).

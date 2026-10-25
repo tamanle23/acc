@@ -2,7 +2,7 @@
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 10 of N)  
 **Document Level:** Front-End Architecture, Product Design & Onboarding Funnel Specification  
-**Target Systems:** `@unipost/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System), `@unipost/backend` (Spring Modulith / payOS)  
+**Target Systems:** `@acc/console` (React 19 / Vite 8 / TanStack Router / Liquid Glass Design System), `@acc/backend` (Spring Modulith / payOS)  
 **Scope:** Public Marketing Landing Page, Dynamic Product Showcase, Tiered Subscription Cards (Basic/Pro/Pro Max), Integrated Register/Login Modal & Flow, Instant payOS VietQR Checkout  
 **Status:** Canonical Living Architecture Document  
 
@@ -110,7 +110,7 @@ User lands on `/_authenticated/` with instant Pro feature entitlements active!
 
 ## 4. Front-End Routing Architecture (`apps/console`)
 
-In `@unipost/console`, route definitions use **TanStack Router**:
+In `@acc/console`, route definitions use **TanStack Router**:
 
 ```
 apps/console/src/routes/

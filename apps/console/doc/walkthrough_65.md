@@ -7,7 +7,7 @@ This document records the architectural refinement and UI refactoring to enforce
 
 ---
 
-## 2. Changes Made Across `@unipost/console`
+## 2. Changes Made Across `@acc/console`
 
 ### A. State Management & Types
 - **`use-metadata-ui-store.ts`**:
@@ -38,5 +38,5 @@ This document records the architectural refinement and UI refactoring to enforce
 ---
 
 ## 3. Verification & Quality Assurance
-- **TypeScript Typecheck:** `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- **Vitest Suite:** `pnpm --filter @unipost/console test` passed all 15 test files and 81 tests.
+- **TypeScript Typecheck:** `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- **Vitest Suite:** `pnpm --filter @acc/console test` passed all 15 test files and 81 tests.

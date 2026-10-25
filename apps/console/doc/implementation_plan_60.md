@@ -1,7 +1,7 @@
 # Implementation Plan - Phase 5: Console UI Dual-Mode Context Switching
 
 ## Overview
-Implement seamless dual-mode context switching between "Architect Studio" (schema modeling) and "Operator View" (business data entry) in `@unipost/console`, providing tenant administrators instant dogfooding capability while strictly enforcing role-based tab access and visual differentiation for base `SYSTEM` vs. custom attributes.
+Implement seamless dual-mode context switching between "Architect Studio" (schema modeling) and "Operator View" (business data entry) in `@acc/console`, providing tenant administrators instant dogfooding capability while strictly enforcing role-based tab access and visual differentiation for base `SYSTEM` vs. custom attributes.
 
 ## Proposed Changes
 
@@ -49,9 +49,9 @@ Implement seamless dual-mode context switching between "Architect Studio" (schem
 
 ## Verification Plan
 1. **Automated Testing:**
-   - Run type checks: `pnpm --filter @unipost/console check-types`
-   - Run linter: `pnpm --filter @unipost/console lint`
-   - Run console tests: `pnpm --filter @unipost/console test`
+   - Run type checks: `pnpm --filter @acc/console check-types`
+   - Run linter: `pnpm --filter @acc/console lint`
+   - Run console tests: `pnpm --filter @acc/console test`
 2. **Behavioral Checks:**
    - Verify store tests for mode switching, tab fallback, and permission checks.
    - Verify non-admin role restrictions.

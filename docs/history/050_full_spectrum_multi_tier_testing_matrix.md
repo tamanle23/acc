@@ -7,10 +7,10 @@ Guaranteeing zero regressions, cross-client contract integrity, multi-tenant iso
 1. **L1 Unit Slice (`< 20ms`)**:
    - High-velocity algorithm verification covering 3-way OCC auto-merge, SpEL lifecycle guard evaluators, token-bucket rate limiters, and WCAG contrast math.
 2. **L2 Spring Modulith & Database Slices**:
-   - Validated Spring Modulith module boundaries in `unipost-ms-aio`.
+   - Validated Spring Modulith module boundaries in `acc-ms-aio`.
    - Hardened `SchemaValidationServiceTest` by properly propagating `TenantContextHolder` into concurrent worker thread pools to resolve stampede compilation.
 3. **L3 Contract Tests**:
-   - Created `packages/client/src/__tests__/contract-schema.test.ts` to verify serialization and schema compatibility between `@unipost/client` TypeScript interfaces and Spring Jackson models (`EntityRecordResponse`, `EntityTypeResponse`, `AttributeDefinitionResponse`, and RFC 7807 `ProblemDetail`).
+   - Created `packages/client/src/__tests__/contract-schema.test.ts` to verify serialization and schema compatibility between `@acc/client` TypeScript interfaces and Spring Jackson models (`EntityRecordResponse`, `EntityTypeResponse`, `AttributeDefinitionResponse`, and RFC 7807 `ProblemDetail`).
 4. **L4 The 4 Golden Cross-Tier E2E Workflows**:
    - Implemented and validated in `apps/console/src/features/metadata/__tests__/domain-blueprints-e2e.test.ts`:
      - *Golden Flow 1*: Headless CMS End-to-End Closed-Loop Publishing Pipeline.
@@ -23,5 +23,5 @@ Guaranteeing zero regressions, cross-client contract integrity, multi-tenant iso
 ## Verification
 - Monorepo Turborepo pipeline (`pnpm turbo run test`): 6/6 tasks passed (32.871s).
 - Backend Maven build (`mvnw test`): All 10 modules compiled and passed with 0 failures across 176+ tests.
-- Vitest suites across `@unipost/console`, `mobile-ui`, `@unipost/client`, `@unipost/sandbox`, `@unipost/tokens`: All green.
+- Vitest suites across `@acc/console`, `mobile-ui`, `@acc/client`, `@acc/sandbox`, `@acc/tokens`: All green.
 - `apps/tekgo-ui`: Next.js 15 production build compiled successfully.

@@ -17,4 +17,4 @@ In zoomed displays (125%–150% scaling) or narrower viewports, the Domain Bluep
 
 ## Verification
 - Vitest: 7/7 tests passed in `blueprint-gallery.test.tsx`.
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` exited with code 0.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` exited with code 0.

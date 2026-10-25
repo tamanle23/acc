@@ -26,7 +26,7 @@ Six sequential phases covering the full vertical slice from backend to tests:
 
 ## Changes
 
-### Phase 1 — Backend (`apps/backend/unipost-fw`)
+### Phase 1 — Backend (`apps/backend/acc-fw`)
 - **New DTOs**: `QuotaUsageDto`, `VatInvoiceDto`, `BillingTransactionDto`, `ContactSalesRequest`
 - **`TenantBillingSummaryDto`**: Added `quotas`, `vatInvoice`, `history` fields
 - **`DefaultTenantEntitlementService`**: Added `ENTERPRISE_FEATURES` set (`FEATURE_DEDICATED_REPLICA`, `FEATURE_ENTERPRISE_SLA`, `FEATURE_SSO_SAML`), ENTERPRISE tier handling in fallback and activation paths

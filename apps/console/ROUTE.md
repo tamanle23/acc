@@ -1,4 +1,4 @@
-# Route & Screen Architecture: Console (`@unipost/console`)
+# Route & Screen Architecture: Console (`@acc/console`)
 > **Routing Engine:** TanStack Router (`@tanstack/react-router` v1)  
 > **Layout Shell:** Authenticated Frosted Rail Shell (`_authenticated`)  
 > **Status:** Living Document & Foundation Specification
@@ -8,7 +8,7 @@
 ## 1. Routing Engine & Navigation Architecture
 
 ### 1.1 Overview
-The `@unipost/console` web and desktop application utilizes **TanStack Router** with file-based route tree generation in `src/routes/`. The application is architected around two primary route layout structures:
+The `@acc/console` web and desktop application utilizes **TanStack Router** with file-based route tree generation in `src/routes/`. The application is architected around two primary route layout structures:
 1. **Unauthenticated Boundary (`(auth)`)**: Focused authentication flows centered on clean glass card forms over an ambient mesh canvas.
 2. **Authenticated Operational Shell (`_authenticated`)**: Persistent frosted navigation rail (`AppSidebar`), sticky frosted top header (`Header`), breadcrumb trail, command search dialog (`SearchCommand`), and dynamic main content view.
 3. **Error Boundaries (`(errors)` and `_authenticated/errors`)**: Fallback screens for 401, 403, 404, 500, and 503 exceptions.
@@ -207,7 +207,7 @@ flowchart TD
 
 ## 5. Adding New Routes (Developer & Agent Playbook)
 
-When adding a new feature screen to `@unipost/console`:
+When adding a new feature screen to `@acc/console`:
 1. **Create Route File:** Add `src/routes/_authenticated/<feature>/index.tsx`.
 2. **Define TanStack Route:** Export `Route = createFileRoute('/_authenticated/<feature>/')({ component: FeaturePage })`.
 3. **Register Navigation:** Add the nav item in `src/components/layout/data/sidebar-data.ts`.

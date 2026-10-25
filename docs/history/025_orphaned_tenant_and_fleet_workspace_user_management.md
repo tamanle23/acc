@@ -30,8 +30,8 @@
 - `apps/console/src/features/settings/workspaces/workspaces-panel.tsx`: Added workspace deletion with confirmation.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` -> Passed with 0 errors.
-- `pnpm --filter @unipost/console exec vitest run` -> 24 test files passed, 116 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit` -> Passed with 0 errors.
+- `pnpm --filter @acc/console exec vitest run` -> 24 test files passed, 116 tests passed.
 
 ## Walkthrough
 See `apps/console/doc/walkthrough_73.md`.

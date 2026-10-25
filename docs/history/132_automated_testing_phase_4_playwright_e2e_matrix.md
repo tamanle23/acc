@@ -1,7 +1,7 @@
 # 132. Automated Testing Phase 4: 10-Spec Golden Playwright E2E Browser Journey Matrix & WCAG 2.2 AA Gating
 
 ## Problem
-In accordance with `docs/integration_master_plan_iteration7.md`, Phase 4 of automated testing required implementing and validating the complete 10-spec Golden E2E Browser Journey Matrix across `@unipost/console`. The tests needed to run deterministically offline in Mode 1 (Unified Sandbox Autonomous) and pass strict `@axe-core/playwright` accessibility audits verifying 0 critical or serious WCAG 2.2 AA violations.
+In accordance with `docs/integration_master_plan_iteration7.md`, Phase 4 of automated testing required implementing and validating the complete 10-spec Golden E2E Browser Journey Matrix across `@acc/console`. The tests needed to run deterministically offline in Mode 1 (Unified Sandbox Autonomous) and pass strict `@axe-core/playwright` accessibility audits verifying 0 critical or serious WCAG 2.2 AA violations.
 
 ## Plan
 1. Create 10 end-to-end test specs covering the golden user journeys:
@@ -23,7 +23,7 @@ In accordance with `docs/integration_master_plan_iteration7.md`, Phase 4 of auto
 ## Changes
 - **E2E Test Specs**: Created `01-auth-and-personas.spec.ts` through `10-faceted-search-and-export.spec.ts` in `apps/console/e2e/`.
 - **E2E Helpers**:
-  - `apps/console/e2e/helpers/auth-helper.ts`: Automatically sets `unipost_unified_sandbox_minimized: 'true'` so the floating dock stays minimized during browser clicks.
+  - `apps/console/e2e/helpers/auth-helper.ts`: Automatically sets `acc_unified_sandbox_minimized: 'true'` so the floating dock stays minimized during browser clicks.
   - `apps/console/e2e/helpers/axe-helper.ts`: Excludes `[data-sonner-toaster]` from accessibility scans so animated toast scrims do not cause contrast false positives.
 - **Unified Sandbox & API Routing**:
   - `apps/console/src/core/sandbox/handlers/worker-sandbox-handler.ts`: Added support for `/v1/workflow/workers` and boosted priority.
@@ -40,7 +40,7 @@ In accordance with `docs/integration_master_plan_iteration7.md`, Phase 4 of auto
   - `payos-qr-modal.tsx`: Added accessible label to copy button and adjusted badge contrast.
 
 ## Verification
-Executed `pnpm --filter @unipost/console test:e2e`:
+Executed `pnpm --filter @acc/console test:e2e`:
 - 15 passed out of 15 tests (10 Golden Flows + composite-entities + legacy console-e2e) in 26.4s with 0 accessibility violations.
 
 ## Walkthrough

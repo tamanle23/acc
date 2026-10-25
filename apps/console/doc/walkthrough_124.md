@@ -6,7 +6,7 @@ This remediation round systematically audited the prior attempt of Iteration 11 
 - **WAI-ARIA Table Header `aria-sort`**: Upgraded TanStack `@/components/data-table` to supply compliant WAI-ARIA `aria-sort="none"` for sortable unsorted columns, alongside `"ascending"` and `"descending"`, matching W3C specifications.
 - **Unique Descriptive Row Action `aria-label`s**: Resolved generic "Open menu" labels by introducing unique identifiers in `users/components/data-table-row-actions.tsx`, `dlq-columns.tsx`, and `user-membership-drawer.tsx`.
 - **DataTableToolbar ARIA Semantics**: Added `role="toolbar"` and `aria-label="Table toolbar"` to `DataTableToolbar` ensuring `has-[div[role="toolbar"]]` selectors properly match on mobile viewports.
-- **Backend RFC-7807 Standardization**: Hardened `apps/backend/unipost-fw/src/main/java/com/unipost/fw/exceptionhandling/GlobalExceptionHandler.java` to return HTTP 403 Forbidden on access denials, HTTP 500 Internal Server Error with sanitized fallback messages on uncaught exceptions, and HTTP 400 Bad Request on message conversion errors, backed by formal unit tests in `GlobalExceptionHandlerTest.java`.
+- **Backend RFC-7807 Standardization**: Hardened `apps/backend/acc-fw/src/main/java/com/acc/fw/exceptionhandling/GlobalExceptionHandler.java` to return HTTP 403 Forbidden on access denials, HTTP 500 Internal Server Error with sanitized fallback messages on uncaught exceptions, and HTTP 400 Bad Request on message conversion errors, backed by formal unit tests in `GlobalExceptionHandlerTest.java`.
 
 ---
 
@@ -31,12 +31,12 @@ This remediation round systematically audited the prior attempt of Iteration 11 
   - Added unique `aria-label={`Inspect user ${u.username}`}` and `aria-label={u.locked ? ... : ...}`.
 
 ### Backend Error Handling (`apps/backend`)
-- `apps/backend/unipost-fw/src/main/java/com/unipost/fw/exceptionhandling/GlobalExceptionHandler.java`:
+- `apps/backend/acc-fw/src/main/java/com/acc/fw/exceptionhandling/GlobalExceptionHandler.java`:
   - Standardized `handleAccessDeniedException` to return `HttpStatus.FORBIDDEN` (403).
   - Standardized `handleRuntimeException` and `handleThrowable` to return `HttpStatus.INTERNAL_SERVER_ERROR` (500) and safe non-null fallback messages.
   - Standardized `handleHttpMessageConversionException` to return `HttpStatus.BAD_REQUEST` (400).
   - Standardized `handleBusinessException` default server-side status to 500 and client-side status to 400.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/fw/exceptionhandling/GlobalExceptionHandlerTest.java`:
+- `apps/backend/acc-fw/src/test/java/com/acc/fw/exceptionhandling/GlobalExceptionHandlerTest.java`:
   - Created 6 unit tests verifying all status codes and error structures.
 
 ---
@@ -44,11 +44,11 @@ This remediation round systematically audited the prior attempt of Iteration 11 
 ## 3. Verification Record
 
 1. **Vitest Unit & Component Suite**:
-   - `pnpm --filter @unipost/console test`: 65 test files passed (309/309 tests passing), with 0 Radix dialog warnings.
+   - `pnpm --filter @acc/console test`: 65 test files passed (309/309 tests passing), with 0 Radix dialog warnings.
 2. **Backend Modulith & Unit Suite**:
-   - `node mvnw.cjs -pl unipost-fw test -Dtest=GlobalExceptionHandlerTest`: 6/6 tests passing (BUILD SUCCESS).
-   - `pnpm --filter @unipost/backend test:sandbox`: 33/33 tests passing (BUILD SUCCESS).
-   - `pnpm --filter @unipost/backend test:modulith`: 1/1 architectural tests passing (BUILD SUCCESS).
+   - `node mvnw.cjs -pl acc-fw test -Dtest=GlobalExceptionHandlerTest`: 6/6 tests passing (BUILD SUCCESS).
+   - `pnpm --filter @acc/backend test:sandbox`: 33/33 tests passing (BUILD SUCCESS).
+   - `pnpm --filter @acc/backend test:modulith`: 1/1 architectural tests passing (BUILD SUCCESS).
 3. **Playwright Mode 1 Autonomous E2E**:
    - `pnpm test:e2e`: 15/15 tests passing in 41.2s.
 4. **`tekgo-ui` Lint**:

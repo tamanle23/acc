@@ -19,15 +19,15 @@ This implementation delivers:
 ## 2. Key Changes & File Manifest
 
 ### Brand Icon & App Card
-- [MODIFY] [`apps/console/src/assets/brand-icons/index.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/assets/brand-icons/index.ts): Exported existing `IconTiktok`.
-- [MODIFY] [`apps/console/src/features/apps/data/apps.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/data/apps.tsx): Fixed the TikTok card config to use the proper icon and updated the copy to reflect video management capabilities.
+- [MODIFY] [`apps/console/src/assets/brand-icons/index.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/assets/brand-icons/index.ts): Exported existing `IconTiktok`.
+- [MODIFY] [`apps/console/src/features/apps/data/apps.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/data/apps.tsx): Fixed the TikTok card config to use the proper icon and updated the copy to reflect video management capabilities.
 
 ### Configuration & Typings
-- [MODIFY] [`apps/console/.env.example`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/.env.example): Appended `VITE_TIKTOK_CLIENT_KEY` and `VITE_TIKTOK_CLIENT_SECRET`.
-- [MODIFY] [`apps/console/src/vite-env.d.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/vite-env.d.ts): Registered `VITE_TIKTOK_CLIENT_KEY` and `VITE_TIKTOK_CLIENT_SECRET` in `ImportMetaEnv`.
+- [MODIFY] [`apps/console/.env.example`](file:///c:/Users/Admin/workspace/git/acc/apps/console/.env.example): Appended `VITE_TIKTOK_CLIENT_KEY` and `VITE_TIKTOK_CLIENT_SECRET`.
+- [MODIFY] [`apps/console/src/vite-env.d.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/vite-env.d.ts): Registered `VITE_TIKTOK_CLIENT_KEY` and `VITE_TIKTOK_CLIENT_SECRET` in `ImportMetaEnv`.
 
 ### TikTok API & OAuth Service
-- [NEW] [`apps/console/src/features/apps/services/tiktok-service.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/services/tiktok-service.ts):
+- [NEW] [`apps/console/src/features/apps/services/tiktok-service.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/services/tiktok-service.ts):
   - `buildTikTokOAuthUrl`: Targets `v2/auth/authorize/` endpoint.
   - `exchangeAuthCodeForTokens`: Targets `v2/oauth/token/`.
   - `refreshAccessToken`: Standard OAuth refresh logic handling TikTok's token payload.
@@ -35,14 +35,14 @@ This implementation delivers:
   - Full demo mode mock generators (`simulateDemoTikTokAuthCode`, `simulateDemoTokenExchange`).
 
 ### State Management
-- [NEW] [`apps/console/src/features/apps/stores/tiktok-store.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/stores/tiktok-store.ts):
+- [NEW] [`apps/console/src/features/apps/stores/tiktok-store.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/stores/tiktok-store.ts):
   - Zustand persistence under `tiktok_app_integration` tracking state for tokens, `connectedProfile`, and runtime credentials.
 
 ### Liquid Glass Modal & UI Integration
-- [NEW] [`apps/console/src/features/apps/components/tiktok-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/components/tiktok-connect-modal.tsx):
+- [NEW] [`apps/console/src/features/apps/components/tiktok-connect-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/components/tiktok-connect-modal.tsx):
   - Three-stage flow matching Liquid Glass aesthetics (Launch, Validate Code, Token Vault & Profile Card).
   - Handles client credential overrides on the fly.
-- [MODIFY] [`apps/console/src/features/apps/index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/apps/index.tsx):
+- [MODIFY] [`apps/console/src/features/apps/index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/apps/index.tsx):
   - Connected `useTikTokStore` to dynamically display connection state and user profile name.
   - Rendered `TikTokConnectModal`.
 
@@ -52,10 +52,10 @@ This implementation delivers:
 
 ### Automated Checks
 ```powershell
-pnpm --filter @unipost/console build:web
+pnpm --filter @acc/console build:web
 # Clean build (0 errors)
 
-pnpm --filter @unipost/console lint
+pnpm --filter @acc/console lint
 # 0 errors, 0 warnings
 ```
 

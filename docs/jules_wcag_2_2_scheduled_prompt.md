@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides the complete configuration and structured prompt to run **Google Jules** on a recurring daily schedule. It allows the agent to autonomously and iteratively implement the four milestones of the **WCAG 2.2 Level AA Compliance Roadmap** ([`apps/console/doc/implementation_plan_59.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/implementation_plan_59.md)) with automated verification, pull request creation, and zero regression.
+This guide provides the complete configuration and structured prompt to run **Google Jules** on a recurring daily schedule. It allows the agent to autonomously and iteratively implement the four milestones of the **WCAG 2.2 Level AA Compliance Roadmap** ([`apps/console/doc/implementation_plan_59.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/implementation_plan_59.md)) with automated verification, pull request creation, and zero regression.
 
 ---
 
@@ -22,8 +22,8 @@ This guide provides the complete configuration and structured prompt to run **Go
 ```markdown
 # Autonomous Task: Iterative WCAG 2.2 AA Compliance Engine
 
-You are an expert Frontend Systems Architect & Accessibility Engineer working on the `unipost` monorepo.
-Your objective for this scheduled daily run is to make incremental, fully verified progress on achieving **WCAG 2.2 Level AA compliance** across `@unipost/console` and `@unipost/ui`.
+You are an expert Frontend Systems Architect & Accessibility Engineer working on the `acc` monorepo.
+Your objective for this scheduled daily run is to make incremental, fully verified progress on achieving **WCAG 2.2 Level AA compliance** across `@acc/console` and `@acc/ui`.
 
 ---
 
@@ -31,8 +31,8 @@ Your objective for this scheduled daily run is to make incremental, fully verifi
 - **Plan File**: Read `apps/console/doc/implementation_plan_59.md` before taking any action.
 - **Rules Reference**: Adhere strictly to `.agents/rules/00-generic-common.md` and `.agents/rules/01-workspace-specific.md`.
 - **Target Applications**:
-  - `@unipost/console` (`apps/console`)
-  - `@unipost/ui` (`packages/ui`)
+  - `@acc/console` (`apps/console`)
+  - `@acc/ui` (`packages/ui`)
 - **Key Invariants**:
   1. **Do not break the Liquid Glass aesthetic** (frosted scrims, specular borders, backdrop blurs).
   2. **Do not break the Bento Box layout** on medium/large screens (pinned `100svh` desktop viewports with internal pane scrolling must remain functional).
@@ -59,7 +59,7 @@ Do NOT try to complete all milestones in a single run. Instead, determine curren
   - Verify auth and OTP forms allow paste events and standard autocomplete hints (SC 3.3.8).
 
 - **Milestone 4 (Automated Testing & Governance Pipeline)**:
-  - Configure `eslint-plugin-jsx-a11y` in `@unipost/console`.
+  - Configure `eslint-plugin-jsx-a11y` in `@acc/console`.
   - Add `vitest-axe` component accessibility assertions to test suites.
   - Ensure `pnpm test` runs axe checks with zero violations.
 
@@ -67,9 +67,9 @@ Do NOT try to complete all milestones in a single run. Instead, determine curren
 
 ### 3. Verification Protocol (MANDATORY Before Committing)
 You must run the following checks and ensure they pass with 0 errors:
-1. `pnpm --filter @unipost/console exec tsc -b`
-2. `pnpm --filter @unipost/console test`
-3. `pnpm --filter @unipost/console build:web`
+1. `pnpm --filter @acc/console exec tsc -b`
+2. `pnpm --filter @acc/console test`
+3. `pnpm --filter @acc/console build:web`
 
 ---
 

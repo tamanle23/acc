@@ -74,7 +74,7 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({
     return (
       <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 flex items-center gap-1">
         <Code className="w-3 h-3 text-emerald-600" />
-        Node.js @unipost/worker
+        Node.js @acc/worker
       </Badge>
     );
   };

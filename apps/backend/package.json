@@ -1,21 +1,21 @@
 {
-  "name": "@unipost/backend",
+  "name": "@acc/backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Unipost Java Spring Modulith backend with unipost-ms-aio wrapper application",
+  "description": "Unipost Java Spring Modulith backend with acc-ms-aio wrapper application",
   "scripts": {
     "build": "node mvnw.cjs clean install -DskipTests",
-    "dev": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Djava.net.preferIPv4Stack=true",
-    "dev:sandbox": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",
-    "dev:sandbox:persistent": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",
-    "dev:sandbox:pristine": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=true -Djava.net.preferIPv4Stack=true",
-    "dev:sandbox:test": "node mvnw.cjs -pl unipost-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=TEST -Djava.net.preferIPv4Stack=true",
+    "dev": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Djava.net.preferIPv4Stack=true",
+    "dev:sandbox": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",
+    "dev:sandbox:persistent": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=false -Djava.net.preferIPv4Stack=true",
+    "dev:sandbox:pristine": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=DEV -Dapplication.sandbox.dev.pristine=true -Djava.net.preferIPv4Stack=true",
+    "dev:sandbox:test": "node mvnw.cjs -pl acc-ms-aio spring-boot:run -Dspring-boot.run.profiles=local -Dapplication.sandbox.enabled=true -Dapplication.sandbox.mode=TEST -Djava.net.preferIPv4Stack=true",
     "test": "node mvnw.cjs test",
-    "test:sandbox": "node mvnw.cjs -pl unipost-sandbox test",
-    "test:modulith": "node mvnw.cjs -am -pl unipost-ms-aio test -Dtest=ModularityTests -Dsurefire.failIfNoSpecifiedTests=false",
+    "test:sandbox": "node mvnw.cjs -pl acc-sandbox test",
+    "test:modulith": "node mvnw.cjs -am -pl acc-ms-aio test -Dtest=ModularityTests -Dsurefire.failIfNoSpecifiedTests=false",
     "lint": "node mvnw.cjs test-compile -DskipTests",
     "check-types": "node mvnw.cjs test-compile -DskipTests",
     "clean": "node mvnw.cjs clean",
-    "db-migrate-local": "node mvnw.cjs -pl unipost-db spring-boot:run -Dspring-boot.run.profiles=local \"-Dspring-boot.run.jvmArguments=-Dschema=identity -DLIQUIBASE_CONTEXTS=dev\""
+    "db-migrate-local": "node mvnw.cjs -pl acc-db spring-boot:run -Dspring-boot.run.profiles=local \"-Dspring-boot.run.jvmArguments=-Dschema=identity -DLIQUIBASE_CONTEXTS=dev\""
   }
 }

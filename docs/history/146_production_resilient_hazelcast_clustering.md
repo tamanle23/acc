@@ -11,31 +11,31 @@ In change `145`, Hazelcast clustering was configured in standalone loopback mode
      - If `hazelcast.k8s.service-name` is configured, enable Kubernetes DNS Discovery plugin.
      - If `hazelcast.members` is configured, enable static TCP-IP discovery with member host list.
      - Fallback to safe container/cloud auto-detection with `hazelcast.socket.bind.any=true` and multicast disabled.
-2. Update `apps/backend/unipost-ms-aio/src/main/resources/application-prod.yml` with production clustering template and properties.
+2. Update `apps/backend/acc-ms-aio/src/main/resources/application-prod.yml` with production clustering template and properties.
 3. Keep `SandboxProperties` registered as `@Component` + `@Primary` so that both component scanning and explicit autowiring cleanly resolve without duplicate or missing bean errors.
 4. Verify backend sandbox tests (`pnpm test:backend:sandbox`), Modulith tests (`pnpm test:modulith`), and full live backend launch (`pnpm dev:backend:sandbox`).
 
 ## Changes
 
-### 1. `apps/backend/unipost-fw/src/main/java/com/unipost/boot/config/HazelcastConfiguration.java`
+### 1. `apps/backend/acc-fw/src/main/java/com/acc/boot/config/HazelcastConfiguration.java`
 - Injected Spring `Environment` to detect active profiles and configuration properties.
 - Added `configureClusteredNetworking(Config config)` and `configureLocalStandaloneNetworking(Config config)`.
 - Clustered networking enables Kubernetes Discovery (`service-name`, `namespace`) or static TCP-IP member lists, with `hazelcast.socket.bind.any=true`.
 - Local standalone networking safely isolates to loopback `127.0.0.1` with `setsockopt` multicast disabled.
 
-### 2. `apps/backend/unipost-ms-aio/src/main/resources/application-prod.yml`
+### 2. `apps/backend/acc-ms-aio/src/main/resources/application-prod.yml`
 - Added production `hazelcast` cluster configuration section:
   - `hazelcast.cluster.enabled: true`
-  - `hazelcast.cluster-name: unipost-prod-cluster`
+  - `hazelcast.cluster-name: acc-prod-cluster`
   - Documented Kubernetes and TCP-IP discovery options for DevOps/Helm/K8s manifests.
 
-### 3. `apps/backend/unipost-sandbox/src/main/java/com/unipost/sandbox/config/SandboxProperties.java` & `SandboxAutoConfiguration.java`
+### 3. `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxProperties.java` & `SandboxAutoConfiguration.java`
 - Scoped `SandboxProperties` with `@Component` and `@Primary` to ensure deterministic single bean injection across all simulator and registry constructors.
 
 ## Verification
-1. `node apps/backend/mvnw.cjs -pl unipost-fw,unipost-sandbox,unipost-ms-aio compile -q`: Exit 0.
+1. `node apps/backend/mvnw.cjs -pl acc-fw,acc-sandbox,acc-ms-aio compile -q`: Exit 0.
 2. `pnpm test:backend:sandbox`: 33/33 tests passed (BUILD SUCCESS).
-3. `pnpm --filter @unipost/backend test:modulith`: `ModularityTests` passed (BUILD SUCCESS).
+3. `pnpm --filter @acc/backend test:modulith`: `ModularityTests` passed (BUILD SUCCESS).
 4. `pnpm dev:backend:sandbox`:
    - Booted Jetty on port 8000 in 14.8 seconds.
    - Hazelcast successfully bound to `[127.0.0.1]:5701` in standalone mode with 0 `SocketException` errors.

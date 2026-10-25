@@ -16,7 +16,7 @@ In accordance with architectural grilling decisions and the `/automated-testing`
 3. **Full-Spectrum Frontend Verification**:
    - Comprehensive Vitest suite `composite-data-explorer.test.tsx` verifying end-to-end user interactions: sidebar rail filter toggle $\to$ auto-select $\to$ tab auto-transition $\to$ row auto-expand $\to$ rollup KPI chips $\to$ child tab search/sort/paginate.
 4. **Playwright E2E Browser Automation**:
-   - `apps/console/e2e/composite-entities.spec.ts` executing headless browser interactions against `@unipost/console` to verify visual rendering and accessibility in real DOM.
+   - `apps/console/e2e/composite-entities.spec.ts` executing headless browser interactions against `@acc/console` to verify visual rendering and accessibility in real DOM.
 5. **Monorepo Integrity & Quality Gate**:
    - Turborepo typechecks (`pnpm check-types`), full test suites, and production build verification.
 
@@ -24,12 +24,12 @@ In accordance with architectural grilling decisions and the `/automated-testing`
 
 ## 2. Proposed Changes
 
-### A. Backend Benchmark & Chaos Test Suites (`apps/backend/unipost-fw`)
-- Create `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeQueryPerformanceBenchmarkTest.java`:
+### A. Backend Benchmark & Chaos Test Suites (`apps/backend/acc-fw`)
+- Create `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeQueryPerformanceBenchmarkTest.java`:
   - 1,000 concurrent queries over single-record lookups, root pagination, child slice pagination, dynamic child filters, and companion lateral rollups.
   - Generates `docs/benchmarks/phase_45_benchmark_report.md`.
   - Asserts p95 latency ceiling and 100% request success rate.
-- Create `apps/backend/unipost-fw/src/test/java/com/unipost/service/CompositeChaosResilienceTest.java`:
+- Create `apps/backend/acc-fw/src/test/java/com/acc/service/CompositeChaosResilienceTest.java`:
   - Quad-chaos test methods: `testStatementTimeoutFallback()`, `testAdversarialRecursionAndCycleRejection()`, `testCrossTenantIsolationStorm()`, `testChildQueryFuzzingAndSqlInjectionSafety()`.
 
 ### B. Frontend Vitest Integration Suite (`apps/console`)
@@ -54,13 +54,13 @@ In accordance with architectural grilling decisions and the `/automated-testing`
 
 1. **Backend Maven Execution**:
    - Run benchmark and chaos test suites:
-     `mvn test -f apps/backend/pom.xml -pl unipost-fw "-Dtest=CompositeQueryPerformanceBenchmarkTest,CompositeChaosResilienceTest,DynamicQueryCompilerTest,CompositeRecordServiceTest,CompositeEntityTypeVerificationTest,RecordMutationPipelineTest" -q`
+     `mvn test -f apps/backend/pom.xml -pl acc-fw "-Dtest=CompositeQueryPerformanceBenchmarkTest,CompositeChaosResilienceTest,DynamicQueryCompilerTest,CompositeRecordServiceTest,CompositeEntityTypeVerificationTest,RecordMutationPipelineTest" -q`
 2. **Frontend Vitest Suites**:
    - Run all console metadata test suites:
-     `pnpm --filter @unipost/console test run`
+     `pnpm --filter @acc/console test run`
 3. **Playwright E2E Test**:
    - Run Playwright browser test:
-     `pnpm --filter @unipost/console exec playwright test e2e/composite-entities.spec.ts`
+     `pnpm --filter @acc/console exec playwright test e2e/composite-entities.spec.ts`
 4. **Typecheck & Monorepo Build**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`
+   - `pnpm --filter @acc/console exec tsc --noEmit`
    - `pnpm check-types`

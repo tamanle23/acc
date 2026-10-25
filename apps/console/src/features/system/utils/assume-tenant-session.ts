@@ -15,9 +15,9 @@ import { createMockJwt } from '@/core/sandbox/handlers/auth-sandbox-handler';
  */
 export function exitAssumeTenantSubSession(redirectPath: string = '/system/tenants') {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('unipost_assumed_tenant');
-    localStorage.removeItem('unipost_assumed_token');
-    localStorage.removeItem('unipost_assumed_tenant_name');
+    localStorage.removeItem('acc_assumed_tenant');
+    localStorage.removeItem('acc_assumed_token');
+    localStorage.removeItem('acc_assumed_tenant_name');
   }
 
   useSandboxStore.getState().setActiveTenant('SYSTEM');

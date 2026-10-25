@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { AttributeDefinition } from '@unipost/client';
+import { AttributeDefinition } from '@acc/client';
 import { DynamicFieldRenderer } from '../components/dynamic-form/DynamicFieldRenderer';
 import { MediaPickerInput } from '../components/dynamic-form/MediaPickerInput';
 import { RelationPickerBottomSheet } from '../components/dynamic-form/RelationPickerBottomSheet';

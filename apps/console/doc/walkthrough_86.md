@@ -1,7 +1,7 @@
 # Walkthrough 86: Fix Domain Blueprint Catalog Response Unwrapping & Defensive Fallback
 
 ## 1. Problem
-When users opened the **Domain Blueprint Catalog** modal in `@unipost/console`, the modal displayed the empty state:
+When users opened the **Domain Blueprint Catalog** modal in `@acc/console`, the modal displayed the empty state:
 > `No blueprints match your search`
 even though no search filter had been entered and the blueprints data existed.
 
@@ -30,6 +30,6 @@ If the backend or sandbox returns the manifest object directly without a `.body`
    - Updated `useBlueprintDetails` queryFn to defensively inspect `res.data?.body ?? res.data?.data ?? res.data`. If it contains a valid manifest object with `id`, it returns it; otherwise, it looks up the manifest in `mockBlueprintManifests`.
 
 ## 4. Verification
-- Ran vitest suite: `pnpm --filter @unipost/console test src/features/metadata`
+- Ran vitest suite: `pnpm --filter @acc/console test src/features/metadata`
 - 9 test files passed, 55 tests passed cleanly.
 - Verified that both wrapped (`res.data.body`), nested (`res.data.data`), direct (`res.data`), and offline/error conditions produce the complete domain blueprint catalog (Headless CMS, E-Commerce & Retail, Healthcare, Logistics, Real Estate, Blank Canvas).

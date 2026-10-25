@@ -4,7 +4,7 @@
 Dynamic enterprise records (such as orders, compliance verifications, support tickets) need deterministic lifecycle workflows with strictly governed state transitions, role authorization gates, mandatory attribute checks, and dynamic guard expressions without hardcoded procedural logic.
 
 ## Architectural Design
-Following [`docs/brainstorming/track_2_declarative_state_machines_design.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/brainstorming/track_2_declarative_state_machines_design.md):
+Following [`docs/brainstorming/track_2_declarative_state_machines_design.md`](file:///c:/Users/Admin/workspace/git/acc/docs/brainstorming/track_2_declarative_state_machines_design.md):
 1. **Liquibase Schema Migration**:
    - `changelog-000.000.00010.xml`: Added `lifecycle_config` JSONB column to `UNIPOST_ENTITY_TYPES` and registered in `changelog-master.xml`.
 2. **Domain Model & DTOs**:

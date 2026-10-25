@@ -26,7 +26,7 @@ describe('UnipostClient Universal HTTP Client', () => {
     });
 
     const client = new UnipostClient({
-      baseURL: 'https://api.unipost.io/api',
+      baseURL: 'https://api.acc.io/api',
       token: 'jwt-token-123',
       tenantId: 'tenant-acme',
       workspaceId: 'ws-prod',
@@ -39,7 +39,7 @@ describe('UnipostClient Universal HTTP Client', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [callUrl, callInit] = mockFetch.mock.calls[0];
 
-    expect(callUrl).toBe('https://api.unipost.io/api/v1/records/1');
+    expect(callUrl).toBe('https://api.acc.io/api/v1/records/1');
     expect(callInit.headers['Authorization']).toBe('Bearer jwt-token-123');
     expect(callInit.headers['X-Tenant-Id']).toBe('tenant-acme');
     expect(callInit.headers['X-Workspace-Id']).toBe('ws-prod');

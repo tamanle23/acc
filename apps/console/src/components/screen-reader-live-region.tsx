@@ -20,9 +20,9 @@ export const ScreenReaderLiveRegion: React.FC = () => {
       }
     };
 
-    window.addEventListener('unipost-aria-announce' as any, handleCustomAnnounce as any);
+    window.addEventListener('acc-aria-announce' as any, handleCustomAnnounce as any);
     return () => {
-      window.removeEventListener('unipost-aria-announce' as any, handleCustomAnnounce as any);
+      window.removeEventListener('acc-aria-announce' as any, handleCustomAnnounce as any);
     };
   }, []);
 

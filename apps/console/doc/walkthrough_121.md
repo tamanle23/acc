@@ -1,7 +1,7 @@
 # Walkthrough 121: Workstream 1 - Liquid Glass Flagship Presets, Ambient Accents & Solid Fallback Engine
 
 ## Summary
-Workstream 1 of Iteration 11 implements the enterprise visual maturity, optical distinctness, and accessibility baseline for `@unipost/console`:
+Workstream 1 of Iteration 11 implements the enterprise visual maturity, optical distinctness, and accessibility baseline for `@acc/console`:
 1. **Flagship Theme Distinction**:
    - **Classic Light (`light`)**: Clean, crisp, solid enterprise SaaS dashboard with solid white cards, neutral borders, and no distracting background caustics.
    - **Light Frosted Acrylic (`acrylic`)**: Translucent frosted glass panels (`backdrop-blur-xl bg-white/65 border-white/45 shadow-lg`) over vibrant dynamic liquid caustic wallpaper (`/images/liquid-glass-bg-light.jpg`).
@@ -21,17 +21,17 @@ Workstream 1 of Iteration 11 implements the enterprise visual maturity, optical 
 ## Changes
 
 ### 1. Optical CSS Tokens & Caustics
-- [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css):
+- [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/theme.css):
   - Defined high-contrast default `:root` and solid `.dark` tokens alongside translucent `.acrylic` and crystalline `.obsidian` tokens.
   - Defined full token palettes for all 5 ambient accents across both light and dark modes (`--primary`, `--accent`, `--ring`, `--sidebar-primary`, `--accent-glow`, `--glass-accent-border`).
-- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css):
+- [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css):
   - Configured `body::before` to display vibrant liquid caustics exclusively in `.acrylic` and `.obsidian` presets, keeping `.light` and `.dark` clean and solid.
   - Configured `html` and `body` backgrounds to allow optical wallpaper refraction.
 
 ### 2. React Context & Form Controls
-- [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/theme-provider.tsx):
+- [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/context/theme-provider.tsx):
   - Injected both CSS classes (`acrylic`, `obsidian`, `dark`) and data attributes (`data-theme`, `data-accent`, `data-glass-fallback`) to the root element.
-- [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/appearance-form.tsx):
+- [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/appearance/appearance-form.tsx):
   - Converted radio groups to controlled components with immediate `setTheme` and `setAccentColor` triggers.
 
 ---
@@ -41,7 +41,7 @@ Workstream 1 of Iteration 11 implements the enterprise visual maturity, optical 
 ### Unit & Component Tests
 - `apps/console/src/context/__tests__/theme-provider.test.tsx`: 5/5 passed.
 - `apps/console/src/features/settings/appearance/__tests__/appearance-form.test.tsx`: 4/4 passed.
-- `@unipost/console` Vitest Suite: 64 test files, 307/307 tests passed (0 failures).
+- `@acc/console` Vitest Suite: 64 test files, 307/307 tests passed (0 failures).
 
 ### E2E Automation
 - Playwright E2E Mode 1 Suite (`pnpm test:e2e`):

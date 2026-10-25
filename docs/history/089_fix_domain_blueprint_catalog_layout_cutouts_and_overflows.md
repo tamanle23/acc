@@ -1,7 +1,7 @@
 # 089: Fix Domain Blueprint Catalog Layout Cutouts, Table Blowout & Card Item Breakouts
 
 ## Context & Problem
-In `@unipost/console`, the Domain Blueprint Catalog modal exhibited layout defects across all 3 view modes:
+In `@acc/console`, the Domain Blueprint Catalog modal exhibited layout defects across all 3 view modes:
 - **Grid Mode**: Cards suffered item breakout and overflow when long titles or multiple tags caused containers to wrap awkwardly.
 - **Table Mode**: Table blew out past modal boundaries horizontally without fixed proportional column scaling.
 - **Split Mode**: In compact screen bounds, the SVG topology cut off node badges and cards, and rigid container heights induced double scrollbars.
@@ -20,5 +20,5 @@ In `@unipost/console`, the Domain Blueprint Catalog modal exhibited layout defec
    - Updated `BlueprintGalleryDialog` container to remove redundant outer scrollbars in split mode.
 
 ## Verification
-- TypeScript check: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
-- Vitest suite: `pnpm --filter @unipost/console test src/features/metadata` passed 9 test files, 56/56 tests passing.
+- TypeScript check: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
+- Vitest suite: `pnpm --filter @acc/console test src/features/metadata` passed 9 test files, 56/56 tests passing.

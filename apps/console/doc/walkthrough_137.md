@@ -42,5 +42,5 @@ Refactored START and END nodes into pure conventional boundary nodes strictly de
 
 ## Verification
 - Vitest: 11 test files passed, 50/50 tests passing (100% green).
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` exited `0` with 0 errors.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` exited `0` with 0 errors.
 - Backend: `mvnw.cmd test -pl workflow-engine -q` passed 100%.

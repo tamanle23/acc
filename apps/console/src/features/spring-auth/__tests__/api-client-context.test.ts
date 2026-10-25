@@ -44,7 +44,7 @@ describe('springApiClient Context Header Injection', () => {
   });
 
   it('prioritizes assumed tenant from localStorage over activeTenantId in store', async () => {
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-assumed-xyz');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-assumed-xyz');
 
     let capturedConfig: any = null;
     const originalAdapter = springApiClient.defaults.adapter;

@@ -18,4 +18,4 @@ When assuming a tenant (e.g. `tenant-acme`), the `ProfileSwitcher` dropdown disp
 
 ## Verification
 - Vitest: 24 test files, 115 tests passing.
-- TypeScript: `pnpm --filter @unipost/console exec tsc --noEmit` clean.
+- TypeScript: `pnpm --filter @acc/console exec tsc --noEmit` clean.

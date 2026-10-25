@@ -4,7 +4,7 @@ import {
   attachGlobalSandboxFetch,
   createSandboxFetch,
   SandboxRouteHandler,
-} from '@unipost/sandbox';
+} from '@acc/sandbox';
 import { Post } from '../types';
 
 /**

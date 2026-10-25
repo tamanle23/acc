@@ -1,7 +1,7 @@
 # Multi-Tenant Dynamic Metadata Architecture: Phased Implementation Plan
 
 **Series:** Multi-Tenant Architecture Blueprint Series (Document 00 / Master Implementation Plan)  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / payOS), `@unipost/console` (React 19 / Vite 8 / TanStack Router)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21 / PostgreSQL 16+ / payOS), `@acc/console` (React 19 / Vite 8 / TanStack Router)  
 **Based On:** Technical Specifications Parts 1 through 10 (`docs/multi-tenants/01-10`)  
 **Status:** Canonical Implementation Roadmap & Execution Plan  
 
@@ -48,17 +48,17 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 2. Phase 1: Unipost Landing Page, Subscriptions & payOS Onboarding Funnel (MOVED TO BACKLOG)
 > **Status:** ⏳ **BACKLOG (To be implemented later)**  
-> **Transferred Location:** Fully documented in [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md#6-part-5-public-landing-page-subscriptions--payos-onboarding-funnel-backlog)  
-> **Reference Documents:** [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md) & [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
+> **Transferred Location:** Fully documented in [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md#6-part-5-public-landing-page-subscriptions--payos-onboarding-funnel-backlog)  
+> **Reference Documents:** [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md) & [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
 > **Goal:** Build the public marketing landing page (`/`), showcase the 3 subscription tiers, integrate the Blueprint Template Carousel into the registration flow, and provide instant payOS VietQR checkout.
 
-*See [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md) for full task specifications, mockups, and verification criteria.*
+*See [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md) for full task specifications, mockups, and verification criteria.*
 
 ---
 
 ## 3. Phase 2: Database Isolation, System vs. Tenant Schemas & Row-Level Security
 > **Priority:** 🔴 P0 (Critical Core Backend)  
-> **Reference Documents:** [`docs/multi-tenants/02_multi_tenant_database_and_rls_specification.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/02_multi_tenant_database_and_rls_specification.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
+> **Reference Documents:** [`docs/multi-tenants/02_multi_tenant_database_and_rls_specification.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/02_multi_tenant_database_and_rls_specification.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
 > **Goal:** Guarantee that data records and metadata schemas are physically and logically quarantined at the PostgreSQL engine level, while allowing global read inheritance of Common System Schemas (`SYSTEM`).
 
 ### Tasks & Deliverables:
@@ -91,7 +91,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 4. Phase 3: Cryptographic JWT Claims & TenantContext Lifecycle
 > **Priority:** 🔴 P0 (Critical Security)  
-> **Reference Document:** [`docs/multi-tenants/04_tenant_identity_jwt_and_context_lifecycle.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/04_tenant_identity_jwt_and_context_lifecycle.md)  
+> **Reference Document:** [`docs/multi-tenants/04_tenant_identity_jwt_and_context_lifecycle.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/04_tenant_identity_jwt_and_context_lifecycle.md)  
 > **Goal:** Eliminate client parameter trust (IDOR prevention) and bind authenticated tenant identity to execution threads.
 
 ### Tasks & Deliverables:
@@ -115,7 +115,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 5. Phase 4: Composite Cache Fabric & Dual-Layer Versioning
 > **Priority:** 🟠 P1 (High Integrity)  
-> **Reference Documents:** [`docs/multi-tenants/01_multi_tenant_architecture_specification.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/01_multi_tenant_architecture_specification.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
+> **Reference Documents:** [`docs/multi-tenants/01_multi_tenant_architecture_specification.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/01_multi_tenant_architecture_specification.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
 > **Goal:** Isolate compiled Draft-07 JSON Schema caches so that tenant schema mutations never cause cross-tenant cache stampedes or thrashing.
 
 ### Tasks & Deliverables:
@@ -134,8 +134,8 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 6. Phase 5: Console UI Dual-Mode Context Switching
 > **Priority:** 🟠 P1 (Front-End & Ergonomics)  
-> **Reference Documents:** [`docs/multi-tenants/03_multi_tenant_console_context_switching.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/03_multi_tenant_console_context_switching.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
-> **Goal:** Provide seamless context switching between "Architect Studio" (schema modeling) and "Operator View" (business data entry) in `@unipost/console`.
+> **Reference Documents:** [`docs/multi-tenants/03_multi_tenant_console_context_switching.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/03_multi_tenant_console_context_switching.md) & [`docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/07_common_system_schemas_vs_tenant_custom_schemas.md)  
+> **Goal:** Provide seamless context switching between "Architect Studio" (schema modeling) and "Operator View" (business data entry) in `@acc/console`.
 
 ### Tasks & Deliverables:
 - [ ] **Task 5.1: Store State Expansion (`use-metadata-ui-store.ts`)**:
@@ -155,12 +155,12 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 7. Phase 6: Tenant Onboarding & Blueprint Catalog Seeding
 > **Priority:** 🟡 P2 (Operational Scale)  
-> **Reference Document:** [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)  
+> **Reference Document:** [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)  
 > **Goal:** Eliminate the "blank canvas" problem by providing pre-packaged domain blueprints that seed into new tenant workspaces in $< 250\text{ ms}$.
 
 ### Tasks & Deliverables:
 - [ ] **Task 6.1: Blueprint Manifest Definitions**:
-  - Create declarative JSON templates in `apps/backend/unipost-fw/src/main/resources/metadata/blueprints/`:
+  - Create declarative JSON templates in `apps/backend/acc-fw/src/main/resources/metadata/blueprints/`:
     - `logistics-fleet-blueprint.json` (Fleet Vehicle, Dispatch Order, Assigned Vehicle edge).
     - `b2b-crm-billing-blueprint.json` (Customer Account, Invoice, Line Items).
     - `blank-workspace-blueprint.json` (Empty canvas).
@@ -176,7 +176,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 8. Phase 7: Noisy Neighbor Defense & Resource Protection
 > **Priority:** 🟡 P2 (Platform Reliability)  
-> **Reference Document:** [`docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md)  
+> **Reference Document:** [`docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/06_multi_tenant_rate_limiting_and_noisy_neighbor.md)  
 > **Goal:** Safeguard shared database connections, CPU cycles, and memory buffers against runaway scripts, ReDoS attacks, or abusive queries.
 
 ### Tasks & Deliverables:
@@ -197,7 +197,7 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 9. Phase 8: Streaming Export & GDPR Hard-Purge Pipeline
 > **Priority:** 🟢 P3 (Compliance & Governance)  
-> **Reference Document:** [`docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md)  
+> **Reference Document:** [`docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/08_tenant_data_backup_export_and_gdpr_purge.md)  
 > **Goal:** Support GDPR Art. 20 data portability and execute complete, deadlock-free cryptographic data erasures (GDPR Art. 17).
 
 ### Tasks & Deliverables:
@@ -218,8 +218,8 @@ In accordance with user directives, the implementation plan prioritizes the **Pu
 
 ## 10. Phase 9: payOS Webhook Synchronization & Dynamic Feature Entitlements (Backlog)
 > **Priority:** 🟢 P3 (Commercial Monetization) — ⏳ **MOVED TO BACKLOG**  
-> **Consolidated Location:** [`docs/multi-tenants/domain_blueprints_fullstack_guide.md` (Part 5)](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md#6-part-5-public-landing-page-subscriptions--payos-onboarding-funnel-backlog)  
-> **Reference Document:** [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
+> **Consolidated Location:** [`docs/multi-tenants/domain_blueprints_fullstack_guide.md` (Part 5)](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md#6-part-5-public-landing-page-subscriptions--payos-onboarding-funnel-backlog)  
+> **Reference Document:** [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
 > **Goal:** Wire real-time payOS payment confirmations to unlock dynamic feature keys.
 
 ### Tasks & Deliverables:

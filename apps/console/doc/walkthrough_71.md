@@ -16,18 +16,18 @@ When a Sovereign Custodian assumes a fleet tenant (e.g. `tenant-acme` or dynamic
 - Added `syncAssumedTenant(tenantId, tenantName)` action:
   - Dynamically activates target tenant workspace and updates cookie storage.
   - Cleanly reverts back to the default workspace (`ws-main`) when exiting (`null` or `'SYSTEM'`).
-- Initialized store with checks for `localStorage.getItem('unipost_assumed_tenant')` to preserve context across direct page navigations and reloads.
+- Initialized store with checks for `localStorage.getItem('acc_assumed_tenant')` to preserve context across direct page navigations and reloads.
 
 ### 2. Profile Provider Context (`apps/console/src/context/profile-provider.tsx`)
 - Exported and wired `syncAssumedTenant` into `ProfileContextType` and `useProfile()` hook.
 
 ### 3. Metadata UI Store Pre-Initialization (`apps/console/src/features/metadata/store/use-metadata-ui-store.ts`)
-- Pre-initialized `activeTenantId`, `activeTenantName`, `activeWorkspaceId`, and `activeWorkspaceName` directly from `localStorage.getItem('unipost_assumed_tenant')`.
+- Pre-initialized `activeTenantId`, `activeTenantName`, `activeWorkspaceId`, and `activeWorkspaceName` directly from `localStorage.getItem('acc_assumed_tenant')`.
 - Prevents flash of `'default-tenant'` on hard page refresh.
 
 ### 4. Shared Exit Utility (`apps/console/src/features/system/utils/assume-tenant-session.ts`)
 - Encapsulated `exitAssumeTenantSubSession(redirectPath = '/system/tenants')`:
-  - Removes `unipost_assumed_tenant`, `unipost_assumed_token`, and `unipost_assumed_tenant_name`.
+  - Removes `acc_assumed_tenant`, `acc_assumed_token`, and `acc_assumed_tenant_name`.
   - Restores sandbox and metadata stores to `'SYSTEM'`.
   - Reverts `useProfileStore` to default.
   - Regulates mock root custodian JWT in development.
@@ -35,7 +35,7 @@ When a Sovereign Custodian assumes a fleet tenant (e.g. `tenant-acme` or dynamic
 
 ### 5. ProfileSwitcher Visual & Reactive Upgrade (`apps/console/src/components/layout/profile-switcher.tsx`)
 - Reads reactive `contextProfiles` from `useProfile()`.
-- Detects `isAssumed` from `localStorage.getItem('unipost_assumed_tenant')`.
+- Detects `isAssumed` from `localStorage.getItem('acc_assumed_tenant')`.
 - Displays amber delegated styling on trigger button:
   - Amber border and background accent (`bg-amber-500/10 border-amber-500/30`).
   - `ShieldAlert` icon.
@@ -48,7 +48,7 @@ When a Sovereign Custodian assumes a fleet tenant (e.g. `tenant-acme` or dynamic
   - Selecting an alternative tenant workspace automatically cleans up assumed sub-session.
 
 ### 6. Fleet Tenants Table Action (`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`)
-- Updated `handleAssumeTenant` to persist `unipost_assumed_tenant_name`.
+- Updated `handleAssumeTenant` to persist `acc_assumed_tenant_name`.
 - Calls `useProfileStore.getState().syncAssumedTenant(res.effectiveTenantId, tenant.name)` before redirecting to `/metadata`.
 
 ### 7. AssumeTenantBar Refactor (`apps/console/src/components/layout/assume-tenant-bar.tsx`)

@@ -53,7 +53,7 @@ Key capabilities:
 
 ### Unit Tests
 ```bash
-pnpm --filter @unipost/console test -- src/components/data-table/__tests__/
+pnpm --filter @acc/console test -- src/components/data-table/__tests__/
 ```
 ```
  ✓ src/components/data-table/__tests__/data-table-row-index.test.tsx (6 tests) 54ms
@@ -65,6 +65,6 @@ pnpm --filter @unipost/console test -- src/components/data-table/__tests__/
 
 ### TypeScript Compilation
 ```bash
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Output: Clean compilation, 0 errors.

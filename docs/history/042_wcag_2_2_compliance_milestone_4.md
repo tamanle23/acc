@@ -3,7 +3,7 @@
 ## Date: 2026-10-11
 
 ## Description
-Executed **Milestone 4** of the WCAG 2.2 AA compliance initiative across `@unipost/console`. This milestone establishes automated accessibility governance through static JSX linting (`eslint-plugin-jsx-a11y`) and automated component-level accessibility testing (`vitest-axe` + `axe-core`).
+Executed **Milestone 4** of the WCAG 2.2 AA compliance initiative across `@acc/console`. This milestone establishes automated accessibility governance through static JSX linting (`eslint-plugin-jsx-a11y`) and automated component-level accessibility testing (`vitest-axe` + `axe-core`).
 
 ## Changes Implemented
 
@@ -16,9 +16,9 @@ Executed **Milestone 4** of the WCAG 2.2 AA compliance initiative across `@unipo
    - Created component accessibility test suite `apps/console/src/components/__tests__/a11y.test.tsx` verifying core UI components (`SkipToMain`, `Main`, `PasswordInput`, `ConfirmDialog`) against `axe` rules.
 
 ## Verification
-- `pnpm --filter @unipost/console exec tsc -b`: Passed (0 errors)
-- `pnpm --filter @unipost/console test`: Passed (31 test files, 151 tests)
-- `pnpm --filter @unipost/console build:web`: Built web bundle successfully
+- `pnpm --filter @acc/console exec tsc -b`: Passed (0 errors)
+- `pnpm --filter @acc/console test`: Passed (31 test files, 151 tests)
+- `pnpm --filter @acc/console build:web`: Built web bundle successfully
 
 ## WCAG 2.2 AA Initiative Status
 All 4 Milestones specified in `apps/console/doc/implementation_plan_59.md` are now fully implemented and verified:

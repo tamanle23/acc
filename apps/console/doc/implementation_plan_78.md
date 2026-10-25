@@ -1,7 +1,7 @@
 # Implementation Plan 78: Phase A & Phase B — Purge Rogue Mocks, Wire End-to-End Flows & Unify Sandbox Platform
 
 ## 1. Goal Description
-To bring `@unipost/console` into full compliance with **Rule 00 (`ZERO-STUB-PROHIBITION` & `NO-ORPHANED-CODE`)** and **Rule 02 (`UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE`)**:
+To bring `@acc/console` into full compliance with **Rule 00 (`ZERO-STUB-PROHIBITION` & `NO-ORPHANED-CODE`)** and **Rule 02 (`UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE`)**:
 1. **Eliminate rogue in-component mocks** across `features/tasks`, `features/users`, `features/chats`, and `features/apps`.
 2. **Wire all UI views and mutation dialogs/drawers to real network APIs** (`/api/tasks`, `/api/users`, `/api/chats`, `/api/integrations`) through `springApiClient` / TanStack Query hooks.
 3. **Connect orphaned sandbox handlers** (`tasksSandboxHandler`, `usersSandboxHandler`) into active runtime flows, supporting dynamic tenant partitioning (`activeTenantId`).
@@ -156,12 +156,12 @@ flowchart TD
 
 ### Automated Tests
 1. **Console Vitest Suites**:
-   - `pnpm --filter @unipost/console test`
-   - Run dedicated sandbox integration test: `pnpm --filter @unipost/console test src/core/sandbox/__tests__/users-tasks-sandbox.test.ts`
+   - `pnpm --filter @acc/console test`
+   - Run dedicated sandbox integration test: `pnpm --filter @acc/console test src/core/sandbox/__tests__/users-tasks-sandbox.test.ts`
    - Add new test suite `apps/console/src/features/tasks/__tests__/tasks-flow.test.tsx` verifying create/update/delete live query updates.
 2. **Type Checking & Production Build**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`
-   - `pnpm --filter @unipost/console build`
+   - `pnpm --filter @acc/console exec tsc --noEmit`
+   - `pnpm --filter @acc/console build`
 
 ### Manual Verification
 1. Open http://localhost:5173/tasks:

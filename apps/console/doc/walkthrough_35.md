@@ -5,9 +5,9 @@
 All user-facing text introduced for the Storage Providers feature and the authentication sandbox bypass elements has been completely synchronized and localized for both supported languages (`en` and `vi`).
 
 ### 1. Storage Providers Screen & Data (`apps/console/src/features/storage/`)
-- [`storages.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/storage/data/storages.tsx):
+- [`storages.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/storage/data/storages.tsx):
   - Added unique `id`, `descKey`, and `defaultDesc` properties to each storage provider (`google-drive`, `google-cloud-storage`, `cloudflare-r2`, `storj`, `amazon-s3`).
-- [`index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/storage/index.tsx):
+- [`index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/storage/index.tsx):
   - Integrated `useTranslation('console')`.
   - Localized page title (`storage.title`) and description (`storage.description`).
   - Localized filter placeholder (`storage.filterPlaceholder`).
@@ -24,9 +24,9 @@ All user-facing text introduced for the Storage Providers feature and the authen
 - Localized sandbox success and error notifications (`auth.sandbox.successToast`, `auth.sandbox.failedToast`).
 
 ### 3. Translation Dictionaries (`apps/console/src/locales/`)
-- [`en/console.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/en/console.json):
+- [`en/console.json`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/locales/en/console.json):
   - Added full `auth.sandbox` and `storage` translation hierarchies in English.
-- [`vi/console.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/locales/vi/console.json):
+- [`vi/console.json`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/locales/vi/console.json):
   - Added full `auth.sandbox` and `storage` translation hierarchies in Vietnamese.
   - Verified 100% key parity (57 keys in English $\leftrightarrow$ 57 keys in Vietnamese, 0 missing keys).
 
@@ -35,4 +35,4 @@ All user-facing text introduced for the Storage Providers feature and the authen
 ## Verification
 - **Key Parity Check**: Verified with Node.js script that zero translation keys are missing between `en` and `vi`.
 - **JSON Syntax**: Verified valid JSON formatting for both locale files.
-- **TypeScript & Bundle Build**: Ran `pnpm --filter @unipost/console run build`. Both web and electron bundles compiled cleanly with zero errors.
+- **TypeScript & Bundle Build**: Ran `pnpm --filter @acc/console run build`. Both web and electron bundles compiled cleanly with zero errors.

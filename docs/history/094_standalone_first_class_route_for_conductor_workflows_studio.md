@@ -9,7 +9,7 @@ In Phase 30, the `ConductorWorkflowStudio` component was initially embedded into
 3. Register the `/workflows` route in `apps/console/src/components/layout/data/sidebar-data.ts` under the **Workspace** navigation group with the `Workflow` Lucide icon.
 4. Synchronize i18n locales (`en` and `vi`) with `sidebar.items.workflows` and descriptive keys in `console.json`.
 5. Update `apps/console/ROUTE.md` route registry table.
-6. Correct the TypeScript signature of `workflowSandboxHandler` in `@unipost/sandbox` to conform to `SandboxRouteHandler` and `SandboxRouteMatcherContext`.
+6. Correct the TypeScript signature of `workflowSandboxHandler` in `@acc/sandbox` to conform to `SandboxRouteHandler` and `SandboxRouteMatcherContext`.
 
 ## 3. Changes Made
 - `apps/console/src/features/workflows/index.tsx`: Authored `WorkflowsFeature` with sticky header, operational telemetry header, and full-bleed `ConductorWorkflowStudio`.
@@ -20,6 +20,6 @@ In Phase 30, the `ConductorWorkflowStudio` component was initially embedded into
 - `packages/sandbox/src/handlers/workflow-handler.ts`: Aligned matcher and handler types with core sandbox contracts.
 
 ## 4. Verification
-- `pnpm --filter @unipost/sandbox test`: All 5 tests passed.
-- `pnpm --filter @unipost/console test src/features/metadata/components/studio`: 10/10 tests passed.
+- `pnpm --filter @acc/sandbox test`: All 5 tests passed.
+- `pnpm --filter @acc/console test src/features/metadata/components/studio`: 10/10 tests passed.
 - All locales and route registries verified.

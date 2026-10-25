@@ -1,0 +1,94 @@
+application:
+  security:
+    maxSession: 1
+    sessionExpiredUrl: /api/auth/expire
+    permitAlls:
+      - /login
+      - /register
+      - /resources/**
+      - /jsMsgSource*
+      - /api/auth/token
+#      - /**/*
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+    jwtTokenHeader: Authorization
+    jwtTokenSecret: VEdiOCM5e1soNSFKZV1eVw==
+    jwtTokenExpiration: 604800
+  storage:
+    location: ../../tmp/upload-files
+  c:
+    user: http://localhost:8000
+    fs: http://localhost:8000
+##### Spring configuration properties #####
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        loggerLevel: full
+        decode404: false
+        requestInterceptors:
+          - com.acc.fw.client.interceptor.FeignContextInterceptor
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8888/eureka/
+    enabled: false
+ribbon:
+  eager-load:
+    enabled: false
+server:
+  port : 8000
+  jetty:
+    threads:
+      min: 10
+      max: 128
+      acceptors: 2
+      selectors: 4
+  servlet:
+    session:
+      persistent: true
+logging:
+  config: classpath:logback-local.xml
+spring:
+  session:
+    store-type: none
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+  datasource:
+#    url: jdbc:hsqldb:hsql://localhost/acc
+#    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:hsqldb:file:../../tmp/db/acc
+    driver-class-name: org.hsqldb.jdbcDriver
+    username: root
+    password: 0af3b424
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      idleTimeout: 10000
+      maximumPoolSize: 96
+      minimumIdle: 10
+      connectionTimeout: 60000
+  mail:
+    host: smtp.gmail.com
+    port: 465
+    protocol: smtps
+    username: jokkionle@gmail.com
+    password: 0af3b424
+    properties:
+      mail:
+        transport.protocol: smtps
+        smtps:
+          auth: true
+          starttls:
+            enable: true
+          timeout: 8000
+
+
+springdoc:
+  show-spring-data-pageable: false
+  show-spring-data-rest: false
+

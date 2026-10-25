@@ -1,6 +1,6 @@
 # Implementation Plan 103: Worker SDK Jitter, Unified Sandbox & DLQ Management UI (Phase 38 Frontend & Worker)
 
-Implement exponential jittered backoff in `@unipost/worker`, register DLQ domain contracts and mock handlers in `@unipost/client` and `@unipost/sandbox`, and deliver the dedicated `/dlq` management console interface in `@unipost/console`.
+Implement exponential jittered backoff in `@acc/worker`, register DLQ domain contracts and mock handlers in `@acc/client` and `@acc/sandbox`, and deliver the dedicated `/dlq` management console interface in `@acc/console`.
 
 ## Proposed Changes
 
@@ -45,6 +45,6 @@ Implement exponential jittered backoff in `@unipost/worker`, register DLQ domain
 - Console feature tests:
   - `apps/console/src/features/dlq/__tests__/dlq-feature.test.tsx`: test rendering, column sorting, filtering, inspector trigger, and replay mutation.
 - Typecheck & Build:
-  - `pnpm --filter @unipost/worker test`
-  - `pnpm --filter @unipost/console exec tsc --noEmit`
-  - `pnpm --filter @unipost/console test`
+  - `pnpm --filter @acc/worker test`
+  - `pnpm --filter @acc/console exec tsc --noEmit`
+  - `pnpm --filter @acc/console test`

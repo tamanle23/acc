@@ -1,12 +1,12 @@
 # Architectural Brainstorm & Enhancement Analysis: Domain Blueprints Full-Stack Ecosystem
 
 **Target Documents:**
-- [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/domain_blueprints_fullstack_guide.md)
-- [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
-- [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)
-- [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
-- [`.agents/rules/02-unified-sandbox.md`](file:///c:/Users/Admin/workspace/git/unipost/.agents/rules/02-unified-sandbox.md)
-- [`.agents/rules/01-workspace-specific.md`](file:///c:/Users/Admin/workspace/git/unipost/.agents/rules/01-workspace-specific.md)
+- [`docs/multi-tenants/domain_blueprints_fullstack_guide.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/domain_blueprints_fullstack_guide.md)
+- [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
+- [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)
+- [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
+- [`.agents/rules/02-unified-sandbox.md`](file:///c:/Users/Admin/workspace/git/acc/.agents/rules/02-unified-sandbox.md)
+- [`.agents/rules/01-workspace-specific.md`](file:///c:/Users/Admin/workspace/git/acc/.agents/rules/01-workspace-specific.md)
 
 ---
 

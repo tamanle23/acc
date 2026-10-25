@@ -1,7 +1,7 @@
 # 153: SchemaBuilder Vertical Scrolling & Sticky Header Ergonomics
 
 ## Problem Statement
-In `@unipost/console`'s Schema Architect Studio (`/metadata`), models with high attribute density (such as the 120-attribute `telemetry_wide_matrix` or enterprise ERP tables) caused display issues:
+In `@acc/console`'s Schema Architect Studio (`/metadata`), models with high attribute density (such as the 120-attribute `telemetry_wide_matrix` or enterprise ERP tables) caused display issues:
 1. The columns list did not scroll in an independent, bounded vertical region.
 2. The Schema Header & Action Bar ("Add Field", search filter, "Draft-07 JSON", and Visual Studio toggles) scrolled out of view when scrolling down through fields.
 3. The scroll thumb was invisible until hovered directly over the narrow scroll track.
@@ -21,6 +21,6 @@ In `@unipost/console`'s Schema Architect Studio (`/metadata`), models with high 
 - Created `apps/console/doc/walkthrough_128.md`.
 
 ## Verification
-- `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/schema-builder/__tests__/`: 6/6 tests passing.
-- `pnpm --filter @unipost/console exec vitest run src/features/metadata/`: 135/135 tests passing.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec vitest run src/features/metadata/components/schema-builder/__tests__/`: 6/6 tests passing.
+- `pnpm --filter @acc/console exec vitest run src/features/metadata/`: 135/135 tests passing.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

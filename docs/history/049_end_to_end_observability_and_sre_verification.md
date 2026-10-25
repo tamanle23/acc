@@ -5,7 +5,7 @@ Distributed operations in modern multi-tenant environments (e.g., entity mutatio
 
 ## Solution Architecture
 1. **W3C TraceContext Propagation (`traceparent`)**:
-   - Implemented standard `00-{traceId}-{spanId}-01` generation and propagation in `apps/console` Axios client, complementing `@unipost/client` universal client.
+   - Implemented standard `00-{traceId}-{spanId}-01` generation and propagation in `apps/console` Axios client, complementing `@acc/client` universal client.
    - Enforced extraction and fallback generation in Spring Modulith gateway filter (`ContextFilter.java`).
    - Propagated trace context through transactional outbox events (`UNIPOST_EVENT_OUTBOX`) via `OutboxEventPublisher`.
    - Forwarded `traceparent` via HTTP headers in `WebhookDeliveryService` to edge CDN invalidation in `tekgo-ui`.
@@ -17,20 +17,20 @@ Distributed operations in modern multi-tenant environments (e.g., entity mutatio
 ## Changes Summary
 - `apps/console/src/features/spring-auth/api-client.ts`: Added W3C `traceparent` injection in request interceptor.
 - `apps/console/src/features/spring-auth/__tests__/api-client-context.test.ts`: Added test for traceparent generation.
-- `apps/backend/unipost-core/src/main/java/com/unipost/core/io/ContextHeader.java`: Added `traceparent` and `traceId`.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/fw/tracking/ContextFilter.java`: W3C traceparent extraction, MDC population, and response header echo.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Populated `tenant_id` and `user_id` MDC keys.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/fw/security/PublishableKeyFilter.java`: Populated `tenant_id` MDC key.
-- `apps/backend/unipost-fw/src/main/resources/logback.xml` & worker `logback-local.xml`: Standardized log pattern.
-- `apps/backend/unipost-fw/src/main/java/com/unipost/outbox/OutboxEventPublisher.java`: Injected `traceparent` into outbox payload metadata.
-- `apps/backend/unipost-ms-worker/src/main/java/com/unipost/worker/outbox/OutboxPollingJob.java`: Handled MDC context per event and forwarded traceparent.
-- `apps/backend/unipost-ms-worker/src/main/java/com/unipost/worker/service/WebhookDeliveryService.java`: Supported traceparent header delivery.
+- `apps/backend/acc-core/src/main/java/com/acc/core/io/ContextHeader.java`: Added `traceparent` and `traceId`.
+- `apps/backend/acc-fw/src/main/java/com/acc/fw/tracking/ContextFilter.java`: W3C traceparent extraction, MDC population, and response header echo.
+- `apps/backend/acc-fw/src/main/java/com/acc/fw/core/jwt/JwtAuthenticationTokenFilter.java`: Populated `tenant_id` and `user_id` MDC keys.
+- `apps/backend/acc-fw/src/main/java/com/acc/fw/security/PublishableKeyFilter.java`: Populated `tenant_id` MDC key.
+- `apps/backend/acc-fw/src/main/resources/logback.xml` & worker `logback-local.xml`: Standardized log pattern.
+- `apps/backend/acc-fw/src/main/java/com/acc/outbox/OutboxEventPublisher.java`: Injected `traceparent` into outbox payload metadata.
+- `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/outbox/OutboxPollingJob.java`: Handled MDC context per event and forwarded traceparent.
+- `apps/backend/acc-ms-worker/src/main/java/com/acc/worker/service/WebhookDeliveryService.java`: Supported traceparent header delivery.
 - `apps/tekgo-ui/app/api/revalidate/route.ts`: Echoed traceparent in response headers and JSON body.
-- `apps/backend/unipost-fw/src/test/java/com/unipost/fw/tracking/DistributedTracingMdcTest.java`: Added tests for traceparent and MDC.
+- `apps/backend/acc-fw/src/test/java/com/acc/fw/tracking/DistributedTracingMdcTest.java`: Added tests for traceparent and MDC.
 
 ## Verification
-- Maven test runs in `unipost-fw` and `unipost-ms-worker`: All tests green.
+- Maven test runs in `acc-fw` and `acc-ms-worker`: All tests green.
 - Vitest run in `apps/console`: 30 files passed, 147 tests passed.
 - Vitest run in `apps/mobile-ui`: 3 files passed, 13 tests passed.
-- Vitest run in `@unipost/client` and `@unipost/sandbox`: All tests passed.
+- Vitest run in `@acc/client` and `@acc/sandbox`: All tests passed.
 - Next.js 15 production build in `tekgo-ui`: Passed.

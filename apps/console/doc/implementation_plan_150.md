@@ -1,6 +1,6 @@
 # Implementation Plan: Workflow Orchestration Engine Architecture (Single Source of Truth)
 
-**Goal Description**: Brainstorm and author a comprehensive, authoritative **Workflow Orchestration Engine Architecture** document as the permanent Single Source of Truth (SSOT) across the Unipost monorepo. This aligns backend (`apps/backend/workflow-engine`, `unipost-ms-aio`), frontend (`apps/console`), worker fleets, real-time SSE streaming, and the Unified Sandbox platform.
+**Goal Description**: Brainstorm and author a comprehensive, authoritative **Workflow Orchestration Engine Architecture** document as the permanent Single Source of Truth (SSOT) across the Unipost monorepo. This aligns backend (`apps/backend/workflow-engine`, `acc-ms-aio`), frontend (`apps/console`), worker fleets, real-time SSE streaming, and the Unified Sandbox platform.
 
 ---
 
@@ -8,7 +8,7 @@
 
 > [!IMPORTANT]
 > **Key Architectural Anchors to Ratify:**
-> 1. **Master Architecture Placement**: We will persist the master reference document to [`docs/workflow_orchestration_engine_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/workflow_orchestration_engine_architecture.md) and mirror the app-specific plan to `apps/console/doc/implementation_plan_150.md` per repo rules.
+> 1. **Master Architecture Placement**: We will persist the master reference document to [`docs/workflow_orchestration_engine_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/workflow_orchestration_engine_architecture.md) and mirror the app-specific plan to `apps/console/doc/implementation_plan_150.md` per repo rules.
 > 2. **Contract Boundaries**:
 >    - **Pure Decider Core**: Zero I/O, deterministic `(Definition, Snapshot, Epoch) -> DecisionResult`.
 >    - **Worker Fleet Lease Protocol**: `SELECT ... FOR UPDATE SKIP LOCKED` with 30s heartbeat renewal and exponential backoff retry.
@@ -24,14 +24,14 @@
 
 ```mermaid
 flowchart TD
-    subgraph UIClient["Frontend Client: @unipost/console"]
+    subgraph UIClient["Frontend Client: @acc/console"]
         Catalog["Workflow Catalog & Management\n(/workflows)"]
         Studio["Visual DAG Studio 2.0\n(Designer / Execution Modes)"]
         ExecMonitor["Runtime Execution Monitor\n(/workflow-executions)"]
         SSEHook["useWorkflowExecutionStream\n(Adaptive SSE + Backoff Polling)"]
     end
 
-    subgraph BackendGateway["Spring Boot API Gateway: unipost-ms-aio"]
+    subgraph BackendGateway["Spring Boot API Gateway: acc-ms-aio"]
         DefCtrl["WorkflowDefinitionController"]
         ExecCtrl["WorkflowExecutionController"]
         FleetCtrl["WorkerFleetController & TaskWorkerController"]
@@ -139,11 +139,11 @@ flowchart TD
 ### Automated Tests
 1. Verify console type safety:
    ```powershell
-   pnpm --filter @unipost/console exec tsc --noEmit
+   pnpm --filter @acc/console exec tsc --noEmit
    ```
 2. Verify all workflow tests in console:
    ```powershell
-   pnpm --filter @unipost/console test -- run src/features/workflows src/features/workflow-executions
+   pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions
    ```
 3. Verify backend compile:
    ```powershell
@@ -151,5 +151,5 @@ flowchart TD
    ```
 
 ### Manual Verification
-1. Review [`docs/workflow_orchestration_engine_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/workflow_orchestration_engine_architecture.md) for clarity, structural completeness, and accuracy against existing implementations.
+1. Review [`docs/workflow_orchestration_engine_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/workflow_orchestration_engine_architecture.md) for clarity, structural completeness, and accuracy against existing implementations.
 2. Confirm that all 23 task types, decider invariants, worker lifecycle protocols, and frontend studio components are represented accurately.

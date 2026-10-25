@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/ui",
+  "name": "@acc/ui",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -10,14 +10,14 @@
     "./icons": "./src/index.ts"
   },
   "dependencies": {
-    "@unipost/client": "workspace:*",
+    "@acc/client": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^3.5.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@unipost/typescript-config": "workspace:*",
+    "@acc/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
     "typescript": "^6.0.3"
   }

@@ -39,8 +39,8 @@
   - Updated subgroup imports.
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/features/workflows/`: 19 test files passed, 83/83 tests green.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 type errors.
+- `pnpm --filter @acc/console test -- src/features/workflows/`: 19 test files passed, 83/83 tests green.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 type errors.
 
 ## Walkthrough & Artifacts
 - Plan: `apps/console/doc/implementation_plan_146.md`

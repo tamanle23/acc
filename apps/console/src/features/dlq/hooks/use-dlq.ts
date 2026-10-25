@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { springApiClient } from '@/features/spring-auth/api-client';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 
 export const DLQ_QUERY_KEY = ['system-dlq'] as const;
 

@@ -8,13 +8,13 @@ In this task, we:
 ## 2. Key Changes Made
 
 ### 2.1 Workflow Catalog Refactoring (`apps/console/src/features/workflows`)
-- Extracted column definitions into [`workflow-catalog-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/workflow-catalog-columns.tsx) using TanStack `ColumnDef<WorkflowDefinitionSummary>[]` and `DataTableColumnHeader`.
-- Refactored [`workflow-catalog-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/workflow-catalog-table.tsx) to leverage `useReactTable`, `DataTableToolbar` with faceted status filtering, and `DataTablePagination`.
+- Extracted column definitions into [`workflow-catalog-columns.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/workflow-catalog-columns.tsx) using TanStack `ColumnDef<WorkflowDefinitionSummary>[]` and `DataTableColumnHeader`.
+- Refactored [`workflow-catalog-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/workflow-catalog-table.tsx) to leverage `useReactTable`, `DataTableToolbar` with faceted status filtering, and `DataTablePagination`.
 
 ### 2.2 Approvals Inbox Refactoring (`apps/console/src/features/approvals`)
-- Extracted column definitions into [`approval-columns.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/approvals/components/approval-columns.tsx) with dynamic SLA countdown badges, claim/unclaim toggles, and review triggers.
-- Refactored [`approval-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/approvals/components/approval-table.tsx) to use `DataTable`, `DataTableToolbar` with role filtering, and `DataTablePagination`.
-- Cleaned up redundant search input and unused state in [`index.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/approvals/index.tsx).
+- Extracted column definitions into [`approval-columns.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/approvals/components/approval-columns.tsx) with dynamic SLA countdown badges, claim/unclaim toggles, and review triggers.
+- Refactored [`approval-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/approvals/components/approval-table.tsx) to use `DataTable`, `DataTableToolbar` with role filtering, and `DataTablePagination`.
+- Cleaned up redundant search input and unused state in [`index.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/approvals/index.tsx).
 
 ### 2.3 Agent Rule Management SOP Compliance
 - **Master Reference (`docs/master_rules_reference.md`)**:
@@ -23,7 +23,7 @@ In this task, we:
   - Appended **`COMMON-COMPONENT-PRIORITY`** constraint instructing agents to inspect and prioritize shared components before writing bespoke table, search, or pagination boilerplate.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test src/features/workflows/`: 2/2 tests passed.
-- `pnpm --filter @unipost/console test src/features/approvals/`: 2/2 tests passed.
-- `pnpm --filter @unipost/console test src/features/spring-auth/__tests__/api-client-context.test.ts`: 3/3 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test src/features/workflows/`: 2/2 tests passed.
+- `pnpm --filter @acc/console test src/features/approvals/`: 2/2 tests passed.
+- `pnpm --filter @acc/console test src/features/spring-auth/__tests__/api-client-context.test.ts`: 3/3 tests passed.

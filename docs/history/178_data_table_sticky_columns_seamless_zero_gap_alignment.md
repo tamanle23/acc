@@ -28,8 +28,8 @@ When Column 2 (`select`) was assigned `sticky start-12` (`inset-inline-start: 48
   - Removed unused `Checkbox` import.
 
 ## Verification
-- Unit Tests: `pnpm --filter @unipost/console test -- src/components/data-table/__tests__/` (14/14 tests green).
-- Type Check: `pnpm --filter @unipost/console exec tsc --noEmit` (0 errors).
+- Unit Tests: `pnpm --filter @acc/console test -- src/components/data-table/__tests__/` (14/14 tests green).
+- Type Check: `pnpm --filter @acc/console exec tsc --noEmit` (0 errors).
 - Live Browser Verification: Inspected bounding client rects on live `/workflow-executions` table under Chromium:
   - Column 1 (`#`): `left: 274, right: 322, width: 48px`.
   - Column 2 (`select`): `left: 322, right: 370, width: 48px`.

@@ -1,7 +1,7 @@
 # Integration Master Plan: Iteration 11 - WCAG 2.2 AA, Liquid Glass Fine-Tuning, DataTable Unification & Full-Stack Defect Resolution
 
 ## Goal Description
-Iteration 11 elevates the unipost ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@unipost/console`, `tekgo-ui`, `mobile-ui`, and `@unipost/backend`.
+Iteration 11 elevates the acc ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@acc/console`, `tekgo-ui`, `mobile-ui`, and `@acc/backend`.
 
 It consolidates four core workstreams:
 1. **Workstream 1: Liquid Glass Optical Presets & Ambient Accents**
@@ -97,25 +97,25 @@ flowchart TD
 
 ## Proposed Changes
 
-### Workstream 1: Liquid Glass & Theme Architecture (`@unipost/console`)
+### Workstream 1: Liquid Glass & Theme Architecture (`@acc/console`)
 
-#### [MODIFY] [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/theme.css)
+#### [MODIFY] [`apps/console/src/styles/theme.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/theme.css)
 - Add theme classes for `.acrylic` (Light Frosted Acrylic) and `.obsidian` (Dark Obsidian).
 - Define ambient accent color token variants (`[data-accent="violet"]`, `[data-accent="azure"]`, `[data-accent="emerald"]`, `[data-accent="rose"]`, `[data-accent="amber"]`).
 - Define high-contrast solid surface tokens activated when `[data-glass-fallback="true"]`.
 
-#### [MODIFY] [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/styles/index.css)
+#### [MODIFY] [`apps/console/src/styles/index.css`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/styles/index.css)
 - Implement caustic radial gradients for ambient accent colors on `body::before`.
 - Enforce WCAG 2.2 AA high-contrast `:focus-visible` styling globally.
 - Support `data-glass-fallback="true"` and `@media (prefers-reduced-transparency: reduce)` by disabling `backdrop-filter` and substituting opaque scrims.
 
-#### [MODIFY] [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/theme-provider.tsx)
+#### [MODIFY] [`apps/console/src/context/theme-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/context/theme-provider.tsx)
 - Add `Theme` variants `'acrylic' | 'obsidian'`.
 - Add `accentColor`, `glassFallback` state with cookie synchronization.
 - Provide helper methods `setAccentColor(accent)` and `setGlassFallback(enabled)`.
 - Listen to `window.matchMedia('(prefers-reduced-transparency: reduce)')` to automatically engage solid fallback.
 
-#### [MODIFY] [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/appearance/appearance-form.tsx)
+#### [MODIFY] [`apps/console/src/features/settings/appearance/appearance-form.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/appearance/appearance-form.tsx)
 - Add preset selector: Light Frosted Acrylic vs. Dark Obsidian vs. Light vs. Dark vs. System.
 - Add Accent Color picker with live color swatch pills.
 - Add High-Contrast / Solid Fallback toggle switch with descriptive WCAG helper label.
@@ -125,11 +125,11 @@ flowchart TD
 
 ### Workstream 2: WCAG 2.2 AA Compliance & Keyboard Ergonomics
 
-#### [MODIFY] [`apps/console/src/components/ui/sheet.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/ui/sheet.tsx) & Drawers
+#### [MODIFY] [`apps/console/src/components/ui/sheet.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/ui/sheet.tsx) & Drawers
 - Ensure all drawers (`TenantWorkspacesDrawer`, `TenantUsersDrawer`, `DlqInspectorSheet`) have explicit `aria-describedby`, focus trap, and restore focus to trigger element on close.
 - Add `aria-live="polite"` status announcements for async mutations (e.g. workspace creation, user lock/unlock, DLQ task replay).
 
-#### [MODIFY] [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)
+#### [MODIFY] [`apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/data-explorer/entity-data-grid.tsx)
 - Ensure all action buttons in table rows have unique, screen-reader friendly labels (`aria-label={`Actions for record ${record.id}`}`).
 - Verify table header sorting indicators have proper `aria-sort` attributes (`ascending`, `descending`, `none`).
 
@@ -137,40 +137,40 @@ flowchart TD
 
 ### Workstream 3: DataTable Unification, Overflow Scrolling UX & Screen Migrations
 
-#### [MODIFY] [`apps/console/src/components/data-table/data-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/data-table/data-table.tsx)
+#### [MODIFY] [`apps/console/src/components/data-table/data-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/data-table/data-table.tsx)
 - Add scroll state detection (`hasScrollLeft`, `hasScrollRight`) via `useRef` and `onScroll` handler on the container.
 - Render dynamic specular edge shadow indicators on the left and right edges of the table viewport.
 - Wrap `TableHeader` in `sticky top-0 z-20 bg-card/85 backdrop-blur-xl shadow-xs`.
 - Add sticky actions column support pinned to `sticky end-0 z-10`.
 - Integrate WCAG AA compliant keyboard arrow scrolling accessibility cues.
 
-#### [MODIFY] [`apps/console/src/components/data-table/toolbar.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/data-table/toolbar.tsx)
+#### [MODIFY] [`apps/console/src/components/data-table/toolbar.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/data-table/toolbar.tsx)
 - Add `actions?: React.ReactNode` slot to `DataTableToolbarProps`.
 - Standardize layout with flex wrap and spacing.
 
-#### [MODIFY] [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/system/tenants/fleet-tenants-table.tsx)
+#### [MODIFY] [`apps/console/src/features/system/tenants/fleet-tenants-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/system/tenants/fleet-tenants-table.tsx)
 - Extract column definitions into `fleet-tenants-columns.tsx`.
 - Migrate to TanStack `useReactTable` + `<DataTableToolbar actions={...}>` + `<DataTable>` + `<DataTablePagination>`.
 
-#### [MODIFY] [`apps/console/src/features/settings/billing/billing-history-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/settings/billing/billing-history-table.tsx)
+#### [MODIFY] [`apps/console/src/features/settings/billing/billing-history-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/settings/billing/billing-history-table.tsx)
 - Implement `billing-history-columns.tsx` using `@tanstack/react-table`.
 - Wrap transactions with `useReactTable` and render via `<DataTable table={table} />` and `<DataTablePagination table={table} />`.
 
-#### [MODIFY] [`apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx)
+#### [MODIFY] [`apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflow-executions/components/workflow-executions-table.tsx)
 - Pin the right-side actions column (`data-table-row-actions`) with `sticky end-0 z-10`.
 
 ---
 
 ### Workstream 4: Full-Stack Defect Resolution
 
-#### [MODIFY] [`apps/tekgo-ui/eslint.config.mjs`](file:///c:/Users/Admin/workspace/git/unipost/apps/tekgo-ui/eslint.config.mjs)
+#### [MODIFY] [`apps/tekgo-ui/eslint.config.mjs`](file:///c:/Users/Admin/workspace/git/acc/apps/tekgo-ui/eslint.config.mjs)
 - Fix the `jsx-a11y` duplicate plugin declaration in ESLint flat configuration.
 - Validate that `pnpm --filter tekgo-ui lint` exits 0.
 
-#### [MODIFY] [`apps/console/src/features/workflows/components/fleet-migration-modal.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/fleet-migration-modal.tsx)
+#### [MODIFY] [`apps/console/src/features/workflows/components/fleet-migration-modal.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/fleet-migration-modal.tsx)
 - Fix the React Compiler memoization dependency discrepancy.
 
-#### [MODIFY] [`apps/backend/unipost-core/src/main/java/com/unipost/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-core/src/main/java/com/unipost/core/exception/GlobalExceptionHandler.java)
+#### [MODIFY] [`apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-core/src/main/java/com/acc/core/exception/GlobalExceptionHandler.java)
 - Ensure all uncaught exceptions produce standardized RFC-7807 JSON error responses.
 
 ---
@@ -179,8 +179,8 @@ flowchart TD
 
 ### Automated Tests
 1. **Monorepo Linting**: `pnpm lint` (must pass across backend, console, and tekgo-ui with 0 plugin conflicts).
-2. **Console Vitest Suite**: `pnpm --filter @unipost/console test` (all 298+ unit and component tests passing, including migrated tables).
-3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @unipost/backend test:modulith`.
+2. **Console Vitest Suite**: `pnpm --filter @acc/console test` (all 298+ unit and component tests passing, including migrated tables).
+3. **Backend Sandbox & Modulith**: `pnpm test:backend:sandbox` and `pnpm --filter @acc/backend test:modulith`.
 4. **Playwright Mode 1 E2E**: `pnpm test:e2e` (all 15/15 tests passing, verifying zero regression on appearance and WCAG).
 5. **Playwright Mode 2 Live E2E**: `pnpm test:e2e:live` (all 15/15 tests passing against live Spring Boot backend).
 

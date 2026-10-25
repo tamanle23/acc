@@ -8,15 +8,15 @@ Phase 3 of the Unified Sandbox Platform requires seamless persona authentication
 
 ## 2. Proposed Architecture & Design
 
-### Components in `unipost-sandbox`
+### Components in `acc-sandbox`
 1. **`SandboxPersona` & `SandboxPersonaRegistry`**:
    - Maps persona identities to standard claims:
-     - `ADMIN`: `admin@unipost.io`, `admin_bypass`, `admin`, `tenant-admin` -> tenant: `tenant-acme`, roles: `ROLE_ADMIN`, `ROLE_USER`, full metadata CRUD authorities.
-     - `SYSTEM_CUSTODIAN`: `custodian@system`, `custodian_root`, `system`, `sovereign-custodian@unipost.io`, `system-custodian` -> tenant: `SYSTEM`, actor_tid: `SYSTEM`, roles: `ROLE_SYSTEM_CUSTODIAN`, `ROLE_ADMIN`, `ROLE_USER`.
-     - `CREATOR`: `creator@unipost.io`, `creator_bypass`, `creator`, `tenant-creator` -> tenant: `tenant-acme`, roles: `ROLE_CREATOR`, `ROLE_USER`.
-     - `USER`: `user@unipost.io`, `user_bypass`, `user`, `tenant-user` -> tenant: `tenant-acme`, roles: `ROLE_USER`.
+     - `ADMIN`: `admin@acc.io`, `admin_bypass`, `admin`, `tenant-admin` -> tenant: `tenant-acme`, roles: `ROLE_ADMIN`, `ROLE_USER`, full metadata CRUD authorities.
+     - `SYSTEM_CUSTODIAN`: `custodian@system`, `custodian_root`, `system`, `sovereign-custodian@acc.io`, `system-custodian` -> tenant: `SYSTEM`, actor_tid: `SYSTEM`, roles: `ROLE_SYSTEM_CUSTODIAN`, `ROLE_ADMIN`, `ROLE_USER`.
+     - `CREATOR`: `creator@acc.io`, `creator_bypass`, `creator`, `tenant-creator` -> tenant: `tenant-acme`, roles: `ROLE_CREATOR`, `ROLE_USER`.
+     - `USER`: `user@acc.io`, `user_bypass`, `user`, `tenant-user` -> tenant: `tenant-acme`, roles: `ROLE_USER`.
 2. **`SandboxTokenAspect`**:
-   - AOP `@Around` interceptor on `com.unipost.user.service.TokenService.getToken(..)` and `refreshToken(..)`.
+   - AOP `@Around` interceptor on `com.acc.user.service.TokenService.getToken(..)` and `refreshToken(..)`.
    - If `request.getBody().getUserName()` matches a sandbox persona or password is `"bypass"`:
      - Generates cryptographically-signed JWT via `JwtTokenHelper.getAuthenticationToken(...)` with exact claims.
      - Wraps in standard `ResponseWrapper.success(token)`.
@@ -31,7 +31,7 @@ Phase 3 of the Unified Sandbox Platform requires seamless persona authentication
    - Ensure `@JsonAlias({"username", "user_name"})` on `userName` in `AuthenticationRequestBody` to support both camelCase and lowercase formats seamlessly.
 
 ## 3. Verification Plan
-- Unit test suite for `SandboxPersonaRegistry`, `SandboxTokenAspect`, and `SandboxDataPreWarmer` in `unipost-sandbox`.
+- Unit test suite for `SandboxPersonaRegistry`, `SandboxTokenAspect`, and `SandboxDataPreWarmer` in `acc-sandbox`.
 - Slice integration test verifying `/api/auth/token` standard authentication for all 4 personas without synthetic endpoints.
 - Full backend build and test suite: `mvn test -f apps/backend/pom.xml -q`.
 - Decoupling verification: `SandboxDecouplingIntegrationTest`.

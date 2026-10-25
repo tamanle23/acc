@@ -107,17 +107,17 @@ flowchart TD
 ### Automated Tests
 ```bash
 # 1. Unit tests for VisualJsonEditor and JsonTreeNode
-pnpm --filter @unipost/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx
+pnpm --filter @acc/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx
 
 # 2. DynamicFieldRenderer and EntityDataGrid integration tests
-pnpm --filter @unipost/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx
-pnpm --filter @unipost/console test:run src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx
+pnpm --filter @acc/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx
+pnpm --filter @acc/console test:run src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx
 
 # 3. TypeScript validation
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 
 # 4. ESLint compliance
-pnpm --filter @unipost/console lint
+pnpm --filter @acc/console lint
 ```
 
 ### Manual Verification

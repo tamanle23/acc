@@ -2,7 +2,7 @@
 
 ## 1. Design Strategy
 
-The objective is to implement a robust Hybrid Metadata Architecture that allows for dynamic schema definition and entity management without requiring database schema changes for every new attribute, while ensuring seamless integration with the existing `@unipost/backend` (Spring Modulith) and frontend ecosystem (React 19/Next.js/Expo, Zustand, TanStack Query).
+The objective is to implement a robust Hybrid Metadata Architecture that allows for dynamic schema definition and entity management without requiring database schema changes for every new attribute, while ensuring seamless integration with the existing `@acc/backend` (Spring Modulith) and frontend ecosystem (React 19/Next.js/Expo, Zustand, TanStack Query).
 
 The strategy divides the system into two distinct zones:
 *   **The Rules (Metadata):** Strictly relational tables (`entity_types`, `attribute_definitions`) defining the schema.
@@ -14,38 +14,38 @@ This approach balances flexibility with strict referential integrity, performanc
 
 The architecture spans the entire full-stack ecosystem:
 
-### Backend (`@unipost/backend`)
-*   **Database (PostgreSQL via Liquibase in `unipost-db`):**
+### Backend (`@acc/backend`)
+*   **Database (PostgreSQL via Liquibase in `acc-db`):**
     *   Leverages `JSONB` for dynamic attributes.
     *   Implements the "Edge Table" (Pattern C) for complex dynamic relationships while maintaining referential integrity.
-*   **Domain Models (`unipost-fw`):**
-    *   JPA Entities extend `com.unipost.domain.BaseModel` utilizing `Long` IDs to conform to enterprise standards.
+*   **Domain Models (`acc-fw`):**
+    *   JPA Entities extend `com.acc.domain.BaseModel` utilizing `Long` IDs to conform to enterprise standards.
     *   A custom `JsonConverter` (backed by Jackson) natively maps Postgres `JSONB` columns to Java `Map<String, Object>`.
-*   **Schema Validation & Caching (`unipost-fw`):**
+*   **Schema Validation & Caching (`acc-fw`):**
     *   A `SchemaValidationService` acts as a Facade to compile and validate schemas.
     *   Validation rules are serialized and cached in Redis (`schema:{entity_type_id}`).
-*   **CQRS & Event-Driven Invalidation (`unipost-fw`):**
+*   **CQRS & Event-Driven Invalidation (`acc-fw`):**
     *   Schema mutations dispatch cross-module Spring Events (e.g., `AttributeDefinitionUpdatedEvent`).
     *   A Mediator/Saga listener processes these events using `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` combined with `@Async` to invalidate Redis caches cleanly.
     *   Generic type resolution within mediators strictly utilizes `org.springframework.core.ResolvableType` for proxy safety.
 
-### Frontend (`@unipost/console`, `@unipost/tekgo-ui`)
+### Frontend (`@acc/console`, `@acc/tekgo-ui`)
 *   **State Decoupling (Zustand):**
     *   Centralized UI stores manage the state of dynamically generated forms and schemas, minimizing prop-drilling.
 *   **Network & Caching (TanStack Query):**
     *   Custom hooks wrap TanStack Query (Mediator pattern) to fetch dynamic schemas (`useSchema(entityTypeId)`) and entity data (`useEntity(entityId)`), decoupling components from raw fetch logic.
-*   **Dynamic UI (`@unipost/ui`):**
+*   **Dynamic UI (`@acc/ui`):**
     *   A generic `DynamicForm` component renders input fields based on the `ui_component` metadata (e.g., dropdowns, number inputs).
     *   Styling strictly adheres to the 'Liquid Glass' design system (e.g., wrapping forms in `GlassCard` components).
 
 ## 3. Implementation Steps
 
 ### Phase 1: Backend Database & Domain
-1.  **Liquibase Migrations (`unipost-db`):**
+1.  **Liquibase Migrations (`acc-db`):**
     *   Create a changeset to define `UNIPOST_ENTITY_TYPES`, `UNIPOST_ATTRIBUTE_DEFINITIONS`, `UNIPOST_ENTITIES`, `UNIPOST_RELATIONSHIP_TYPES`, and `UNIPOST_ENTITY_RELATIONSHIPS`.
     *   Ensure all primary tables include standard audit columns defined in `BaseModel`.
     *   Apply `JSONB` data types and `GIN` indexing on the `attributes` and `options` columns.
-2.  **JPA Domain Models (`unipost-fw`):**
+2.  **JPA Domain Models (`acc-fw`):**
     *   Implement entities (`EntityType`, `AttributeDefinition`, `EntityRecord`, `EntityRelationship`) in the `domain/metadata` package.
     *   Implement `MapJsonConverter` extending the base `JsonConverter` to handle JSON mapping.
 

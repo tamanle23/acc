@@ -1,12 +1,12 @@
 # Implementation Plan 55 - Metadata Workspace Tabs Architecture, URL Synchronization & State Preservation
 
-Scope: `@unipost/console` (Metadata Feature, Router, Zustand Store, EntityDataGrid).
+Scope: `@acc/console` (Metadata Feature, Router, Zustand Store, EntityDataGrid).
 
 ---
 
 ## 1. Executive Summary & Problem Analysis
 
-In `@unipost/console`, the active entity model workspace contains three core tabs:
+In `@acc/console`, the active entity model workspace contains three core tabs:
 1. **Schema Builder** (`schema`)
 2. **Data Explorer** (`data`)
 3. **Connected Edges** (`relationships`)
@@ -26,7 +26,7 @@ While functional, the current tab implementation faces three critical usability 
 - **Issue**: The current route search schema in `routes/_authenticated/metadata/index.tsx` only defines `tab: z.enum(['schema', 'data']).optional()`, missing `'relationships'`. Furthermore, the active tab and selected model ID in `useMetadataUiStore` are stored purely in memory and do not synchronize with the URL.
 - **Impact**:
   - Refreshing the browser resets the view back to the default tab and model.
-  - Users cannot bookmark or share links to specific views (e.g. `https://app.unipost.io/metadata?model=ent_deployment_policy&tab=relationships`).
+  - Users cannot bookmark or share links to specific views (e.g. `https://app.acc.io/metadata?model=ent_deployment_policy&tab=relationships`).
   - Browser Back/Forward buttons do not navigate through previously viewed tabs or models.
 - **Target Resolution**:
   - Update `metadataSearchSchema` in TanStack Router to accept `tab: z.enum(['schema', 'data', 'relationships'])` and `model: z.string()`.
@@ -115,9 +115,9 @@ While functional, the current tab implementation faces three critical usability 
 ## 4. Verification & Acceptance Criteria
 
 1. **Type & Build Verification**:
-   - `pnpm --filter @unipost/console build` compiles cleanly with zero TypeScript or Vite bundle errors.
+   - `pnpm --filter @acc/console build` compiles cleanly with zero TypeScript or Vite bundle errors.
 2. **Automated Unit & Flow Tests**:
-   - `pnpm --filter @unipost/console test` passes all tests with new test cases covering:
+   - `pnpm --filter @acc/console test` passes all tests with new test cases covering:
      - URL search param serialization and tab switching.
      - Grid state preservation across tab switches.
 3. **Mobile & Desktop Responsiveness**:

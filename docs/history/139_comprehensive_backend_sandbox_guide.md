@@ -1,11 +1,11 @@
 # 139. Comprehensive Backend Unified Sandbox Platform Guide
 
 ## Problem
-Developers, automated test engineers, and AI agents needed a clear, authoritative, and end-to-end 360° guide explaining how to operate, configure, test, and extend the newly implemented **Backend Unified Sandbox Platform** (`unipost-sandbox`), including authentication persona cheatsheets, embedded PostgreSQL RLS mechanics, boundary simulator references, and interactive API recipes.
+Developers, automated test engineers, and AI agents needed a clear, authoritative, and end-to-end 360° guide explaining how to operate, configure, test, and extend the newly implemented **Backend Unified Sandbox Platform** (`acc-sandbox`), including authentication persona cheatsheets, embedded PostgreSQL RLS mechanics, boundary simulator references, and interactive API recipes.
 
 ## Plan
 1. Capture detailed requirements and architecture in `docs/integration_master_plan_iteration9.md`.
-2. Author the comprehensive operational guide directly inside the sandbox module at `apps/backend/unipost-sandbox/README.md`.
+2. Author the comprehensive operational guide directly inside the sandbox module at `apps/backend/acc-sandbox/README.md`.
 3. Document:
    - Zero-stub mandate and PostgreSQL embedded engine (`pglite-spring-boot-test`).
    - Dual operating modes (`DEV` vs `TEST`).
@@ -22,7 +22,7 @@ Developers, automated test engineers, and AI agents needed a clear, authoritativ
 
 ## Changes
 - **`docs/integration_master_plan_iteration9.md`**: Master integration plan and architecture specification for Iteration 9.
-- **`apps/backend/unipost-sandbox/README.md`**: The authoritative 360° developer and architecture guide for the Backend Unified Sandbox Platform.
+- **`apps/backend/acc-sandbox/README.md`**: The authoritative 360° developer and architecture guide for the Backend Unified Sandbox Platform.
 
 ## Verification
 - Verified all property keys match `SandboxProperties.java`.
@@ -32,5 +32,5 @@ Developers, automated test engineers, and AI agents needed a clear, authoritativ
 
 ## Tasks
 - [x] Author `docs/integration_master_plan_iteration9.md`
-- [x] Author comprehensive 360° guide at `apps/backend/unipost-sandbox/README.md`
+- [x] Author comprehensive 360° guide at `apps/backend/acc-sandbox/README.md`
 - [x] Create history record and git commit

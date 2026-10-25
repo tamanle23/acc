@@ -243,7 +243,7 @@ Guarantees atomicity between local state changes and event pub/sub.
 #### 9. `UNIPOST_RECORD_AUDIT_LOG` (Range-Partitioned Audit Ledger)
 Append-only chronological history of all dynamic record mutations.
 
-- **Partitioning Strategy:** PostgreSQL `PARTITION BY RANGE (created_at)` with automated monthly partitions (`unipost_record_audit_log_YYYY_MM`).
+- **Partitioning Strategy:** PostgreSQL `PARTITION BY RANGE (created_at)` with automated monthly partitions (`acc_record_audit_log_YYYY_MM`).
 - **Primary Key:** Composite `(id, created_at)` to satisfy PostgreSQL partition indexing prerequisites.
 
 | Column | Type | Constraints | Description |
@@ -861,7 +861,7 @@ All relational persistence definitions, identity/RBAC baselines, PostgreSQL RLS 
 ```mermaid
 graph TD
     Master["db/changelog-master.xml\n(Authoritative Root Migration Master)"]
-    UnipostMaster["db/unipost/changelog-master.xml\n(Multi-Tenant Core & Metadata Engine)"]
+    UnipostMaster["db/acc/changelog-master.xml\n(Multi-Tenant Core & Metadata Engine)"]
 
     subgraph IdentityBaseline ["1. Identity & RBAC Baseline"]
         ID00["changelog-identity-00.xml\n(USER, ROLE, PERMISSION, JOIN TABLES)"]
@@ -914,9 +914,9 @@ graph TD
 The persistence layer bridges to client applications via strict UI design tokens, component state matrices, and universal accessibility guarantees.
 
 ### 12.1. Dynamic Form Widget Token Mapping
-Dynamic attributes defined in `UNIPOST_ATTRIBUTE_DEFINITIONS` declare a `ui_component` token that binds directly to `@unipost/ui` component primitives:
+Dynamic attributes defined in `UNIPOST_ATTRIBUTE_DEFINITIONS` declare a `ui_component` token that binds directly to `@acc/ui` component primitives:
 
-| `ui_component` Token | `@unipost/ui` Component Primitive | Input Validation & Behavior |
+| `ui_component` Token | `@acc/ui` Component Primitive | Input Validation & Behavior |
 | :--- | :--- | :--- |
 | `TEXT_INPUT` | `<Input type="text" />` | String regex pattern, min/max length, trim whitespace. |
 | `NUMERIC_INPUT` | `<Input type="number" />` | Number bounds (min/max), step increments, decimal parsing. |

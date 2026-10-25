@@ -26,11 +26,11 @@ We have added a default, always-connected application card named **"Internal Blo
 ### Automated Verification
 - **Web Build**:
   ```bash
-  pnpm --filter @unipost/console build:web
+  pnpm --filter @acc/console build:web
   ```
   Result: **Exit code 0** (completed cleanly in 553ms).
 - **ESLint**:
   ```bash
-  pnpm --filter @unipost/console lint
+  pnpm --filter @acc/console lint
   ```
   Result: **Exit code 0** (0 errors, 0 warnings).

@@ -58,8 +58,8 @@ describe('ProfileSwitcher Component', () => {
   });
 
   it('renders delegated indicator and badge when an assumed tenant session is active', () => {
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
-    localStorage.setItem('unipost_assumed_tenant_name', 'Acme International Corp');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-acme');
+    localStorage.setItem('acc_assumed_tenant_name', 'Acme International Corp');
     useProfileStore.getState().syncAssumedTenant('tenant-acme', 'Acme International Corp');
 
     renderSwitcher();
@@ -70,8 +70,8 @@ describe('ProfileSwitcher Component', () => {
   });
 
   it('strictly isolates workspace dropdown to assumed tenant workspaces only, excluding unrelated organizations', () => {
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-acme');
-    localStorage.setItem('unipost_assumed_tenant_name', 'Acme International Corp');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-acme');
+    localStorage.setItem('acc_assumed_tenant_name', 'Acme International Corp');
     useProfileStore.getState().syncAssumedTenant('tenant-acme', 'Acme International Corp');
 
     renderSwitcher();
@@ -84,7 +84,7 @@ describe('ProfileSwitcher Component', () => {
   });
 
   it('respects user personal default workspace preference within active tenant', () => {
-    localStorage.setItem('unipost_user_default_ws_tenant-acme', 'ws-acme-staging');
+    localStorage.setItem('acc_user_default_ws_tenant-acme', 'ws-acme-staging');
     useProfileStore.getState().syncAssumedTenant(null);
 
     renderSwitcher();
@@ -96,7 +96,7 @@ describe('ProfileSwitcher Component', () => {
     localStorage.clear();
     useProfileStore.getState().setUserDefault('tenant-acme', 'ws-acme-staging');
 
-    expect(localStorage.getItem('unipost_user_default_ws_tenant-acme')).toBe('ws-acme-staging');
+    expect(localStorage.getItem('acc_user_default_ws_tenant-acme')).toBe('ws-acme-staging');
     expect(useProfileStore.getState().currentProfile.id).toBe('ws-acme-staging');
 
     renderSwitcher();
@@ -106,8 +106,8 @@ describe('ProfileSwitcher Component', () => {
   it('renders orphaned tenant state with NO WORKSPACE badge when a tenant has 0 workspaces', () => {
     // Empty out all profiles
     useProfileStore.getState().setProfiles([]);
-    localStorage.setItem('unipost_assumed_tenant', 'tenant-empty');
-    localStorage.setItem('unipost_assumed_tenant_name', 'Empty Org');
+    localStorage.setItem('acc_assumed_tenant', 'tenant-empty');
+    localStorage.setItem('acc_assumed_tenant_name', 'Empty Org');
 
     renderSwitcher();
 

@@ -8,7 +8,7 @@
 ---
 
 ## 1. Problem Statement
-In `@unipost/sandbox`, two separate route handlers competed for `/workflow` paths:
+In `@acc/sandbox`, two separate route handlers competed for `/workflow` paths:
 1. `workflow-handler.ts`: Matched `cleanPath.startsWith('/workflow')` with priority 95.
 2. `workflow-executions-sandbox-handler.ts`: Matched `cleanPath.startsWith('/workflow/executions') || cleanPath.startsWith('/workflow-executions')` with priority 80.
 
@@ -20,7 +20,7 @@ Furthermore, having two handlers managing execution data created architectural d
 
 ## 2. Proposed Architecture & Solution Plan
 1. **Migrate Execution Operations into `workflow-handler.ts`**:
-   - Move `WorkflowExecutionsSandboxRepository` into `packages/sandbox/src/handlers/workflow-handler.ts` (using `workflowExecutions` from `./data/workflow-executions` and `WorkflowExecution` contract from `@unipost/client`).
+   - Move `WorkflowExecutionsSandboxRepository` into `packages/sandbox/src/handlers/workflow-handler.ts` (using `workflowExecutions` from `./data/workflow-executions` and `WorkflowExecution` contract from `@acc/client`).
    - Re-export `WorkflowExecutionsSandboxRepository` and `workflowExecutionsSandboxRepo`.
    - Update `workflowSandboxHandler`:
      - Expand its matcher to support both `/workflow` and `/workflow-executions`.
@@ -34,8 +34,8 @@ Furthermore, having two handlers managing execution data created architectural d
    - In `packages/sandbox/src/index.ts`, remove the import, export, and redundant registration of the deleted file.
    - In `apps/console/tsconfig.app.json`, remove the deleted file path from `"include"`.
 4. **Verification**:
-   - Run `@unipost/sandbox` tests (`pnpm --filter @unipost/sandbox test`).
-   - Run `@unipost/console` sandbox unit and integration tests (`pnpm --filter @unipost/console test src/core/sandbox`).
+   - Run `@acc/sandbox` tests (`pnpm --filter @acc/sandbox test`).
+   - Run `@acc/console` sandbox unit and integration tests (`pnpm --filter @acc/console test src/core/sandbox`).
    - Verify workflow executions schema tests (`src/features/workflow-executions/schema.test.ts`).
 
 ---
@@ -43,7 +43,7 @@ Furthermore, having two handlers managing execution data created architectural d
 ## 3. Implementation Details
 
 ### A. `packages/sandbox/src/handlers/workflow-handler.ts`
-- Imported `workflowExecutions` from `./data/workflow-executions` and `ClientWorkflowExecution` from `@unipost/client`.
+- Imported `workflowExecutions` from `./data/workflow-executions` and `ClientWorkflowExecution` from `@acc/client`.
 - Implemented `WorkflowExecutionsSandboxRepository` with multi-tenant partitioning (`SYSTEM`, `tenant-acme`, `tenant-us-east-1`) and automatic registration in `sandboxResetRegistry`.
 - Updated `workflowSandboxHandler`:
   - Matcher: `cleanPath.startsWith('/workflow') || cleanPath.startsWith('/workflow-executions')`.
@@ -65,10 +65,10 @@ Furthermore, having two handlers managing execution data created architectural d
 ---
 
 ## 4. Verification
-1. **`@unipost/sandbox` test suite**:
+1. **`@acc/sandbox` test suite**:
    - Added assertions to `packages/sandbox/src/__tests__/sandbox-engine.test.ts` verifying both `GET /api/v1/workflow/executions` and `GET /api/workflow-executions` return status 200 with arrays of executions.
-   - Executed `pnpm --filter @unipost/sandbox test` -> 2 test files, 9 tests passed (100%).
+   - Executed `pnpm --filter @acc/sandbox test` -> 2 test files, 9 tests passed (100%).
    - Ran `npx tsc --noEmit -p packages/sandbox/tsconfig.json` -> 0 type errors.
-2. **`@unipost/console` sandbox tests**:
-   - Executed `pnpm --filter @unipost/console test src/core/sandbox` -> 10 test files, 65 tests passed (100%).
-   - Executed `pnpm --filter @unipost/console test src/features/workflow-executions` -> 1 test file, 3 tests passed (100%).
+2. **`@acc/console` sandbox tests**:
+   - Executed `pnpm --filter @acc/console test src/core/sandbox` -> 10 test files, 65 tests passed (100%).
+   - Executed `pnpm --filter @acc/console test src/features/workflow-executions` -> 1 test file, 3 tests passed (100%).

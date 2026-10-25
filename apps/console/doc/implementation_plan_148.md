@@ -1,6 +1,6 @@
 # Implementation Plan - Workstream 6: Unified Sandbox Multi-Branch Execution Simulation
 
-Interactive multi-branch workflow execution simulation for `@unipost/console` and `@unipost/sandbox`. Generates realistic order pipeline execution traces with step-by-step playback, failure injection scenarios (Happy Path, Fraud Rejection, Payment Gateway Timeout, Human Approval Escalation), and live SSE telemetry streaming through browser `EventSource` simulation.
+Interactive multi-branch workflow execution simulation for `@acc/console` and `@acc/sandbox`. Generates realistic order pipeline execution traces with step-by-step playback, failure injection scenarios (Happy Path, Fraud Rejection, Payment Gateway Timeout, Human Approval Escalation), and live SSE telemetry streaming through browser `EventSource` simulation.
 
 ## User-Aligned Architectural Decisions
 1. **Trigger & UI Modal**: Dedicated "Simulate Execution" button in `DagHeaderCommandBar` opening `WorkflowSimulationModal` with scenario selection, execution speed controls (1x, 2x, 5x, manual step), and live playback controls.
@@ -49,6 +49,6 @@ Interactive multi-branch workflow execution simulation for `@unipost/console` an
 - Run typecheck and full workflow test suite.
 
 ## Verification Plan
-- `pnpm --filter @unipost/console exec tsc --noEmit`
-- `pnpm --filter @unipost/console test -- src/features/workflows`
+- `pnpm --filter @acc/console exec tsc --noEmit`
+- `pnpm --filter @acc/console test -- src/features/workflows`
 - Commit with Conventional Commit: `feat(workflows): [190] unified sandbox multi-branch live execution generator`.

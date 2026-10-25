@@ -18,7 +18,7 @@ Standardized native implementation of low-frequency workflow task node types bas
 - **`workflow-engine` Unit Tests**:
   - `LowFrequencyTaskStrategiesTest.java`: 4/4 tests passed (`NOOP`, `JDBC`, `KAFKA_PUBLISH`, `CALL_MCP_TOOL`).
   - Total `workflow-engine` suite: 42/42 tests passed (0 failures, 0 errors).
-- **`unipost-ms-aio` Integration Tests**:
+- **`acc-ms-aio` Integration Tests**:
   - 4/4 test suites passed.
-- **`@unipost/worker` SDK**:
+- **`@acc/worker` SDK**:
   - 5/5 tests passed.

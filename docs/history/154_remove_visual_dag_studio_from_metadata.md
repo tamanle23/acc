@@ -17,5 +17,5 @@ The user requested to remove "Visual DAG Studio" from the Metadata feature scree
 - Created `apps/console/doc/walkthrough_129.md`.
 
 ## Verification
-- `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio/visual-schema-studio.test.tsx`: 8/8 tests pass.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/visual-schema-studio.test.tsx`: 8/8 tests pass.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

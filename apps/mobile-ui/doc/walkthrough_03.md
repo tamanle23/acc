@@ -13,7 +13,7 @@ Added an automatic LAN IP resolver directly inside `metro.config.js`:
 ## Verification Results
 - Tested by running `pnpm expo start`:
   ```
-  Starting project at C:\Users\Admin\workspace\git\unipost\apps\mobile-ui
+  Starting project at C:\Users\Admin\workspace\git\acc\apps\mobile-ui
   [Metro] Automatically detected LAN IP: 192.168.1.148
   Starting Metro Bundler
   ```

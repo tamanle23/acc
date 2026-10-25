@@ -1,7 +1,7 @@
 # Implementation Plan 144 - Visual DAG Studio Professional-Grade Layout & UI/UX Overhaul
 
 ## Goal Description
-Enhance [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) and its surrounding components into an enterprise, professional-grade visual workflow orchestration IDE following the design alignment concluded in our `/grill-me` session.
+Enhance [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) and its surrounding components into an enterprise, professional-grade visual workflow orchestration IDE following the design alignment concluded in our `/grill-me` session.
 
 ---
 
@@ -51,13 +51,13 @@ Enhance [`visual-dag-studio.tsx`](file:///c:/Users/Admin/workspace/git/unipost/a
 ### Automated Tests
 ```bash
 # 1. Studio test suite (including new layout and empty state tests)
-pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+pnpm --filter @acc/console test -- src/features/workflows/components/studio/
 
 # 2. Type check
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 
 # 3. Full console test suite
-pnpm --filter @unipost/console test:run
+pnpm --filter @acc/console test:run
 ```
 
 ### Manual Verification

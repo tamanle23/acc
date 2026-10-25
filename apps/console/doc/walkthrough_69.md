@@ -10,10 +10,10 @@ Comprehensive audit and end-to-end resolution of all remaining gaps and wiring d
   - Extracted `actor_tid` claim from authenticated JWT credentials (`Claims`).
   - Stamped `TenantContextHolder.setDualContext(tenantId, actorTenantId)` and MDC attributes so the backend correctly identifies that the sovereign custodian is impersonating a commercial tenant.
 - **Frontend Interceptor (`api-client.ts`)**:
-  - Propagated `unipost_assumed_token` (as `Authorization: Bearer <token>`) and `X-Assumed-Tenant: <tenant>` header in request interceptor.
+  - Propagated `acc_assumed_token` (as `Authorization: Bearer <token>`) and `X-Assumed-Tenant: <tenant>` header in request interceptor.
 - **Session Lifecycle (`fleet-tenants-table.tsx` & `assume-tenant-bar.tsx`)**:
   - Saved ephemeral tokens upon entering Assume-Tenant sessions.
-  - Cleared `unipost_assumed_tenant` and `unipost_assumed_token` upon exiting, cleanly returning to `SYSTEM` root.
+  - Cleared `acc_assumed_tenant` and `acc_assumed_token` upon exiting, cleanly returning to `SYSTEM` root.
 
 ### 2. Sovereign Custodian Editing Canonical Schemas
 - **Component (`attribute-card.tsx`)**:

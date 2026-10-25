@@ -1,7 +1,7 @@
 # 001: Mobile Viewport Overflow Scroll & Bento Box Responsive Preservation
 
 ## Problem
-In `@unipost/console`, when screens use the fixed layout mode (introduced for multi-pane Bento Box layouts like Metadata Management), small screens (mobile viewports) were completely frozen from vertical scrolling. Because `SidebarInset` clamped the container to `h-svh` and `Main` applied `overflow-hidden` unconditionally, vertically stacked elements on small screens exceeded the viewport and became permanently clipped.
+In `@acc/console`, when screens use the fixed layout mode (introduced for multi-pane Bento Box layouts like Metadata Management), small screens (mobile viewports) were completely frozen from vertical scrolling. Because `SidebarInset` clamped the container to `h-svh` and `Main` applied `overflow-hidden` unconditionally, vertically stacked elements on small screens exceeded the viewport and became permanently clipped.
 
 ## Plan
 Implement Approach C across two phases:
@@ -18,9 +18,9 @@ Implement Approach C across two phases:
 - Artifacts created: `apps/console/doc/implementation_plan_58.md` and `apps/console/doc/walkthrough_58.md`.
 
 ## Verification
-- TypeScript compilation: `pnpm --filter @unipost/console exec tsc -b` passed with 0 errors.
+- TypeScript compilation: `pnpm --filter @acc/console exec tsc -b` passed with 0 errors.
 - Vitest unit tests: 34 passed across 4 test suites.
-- Production build: `pnpm --filter @unipost/console build:web` succeeded in 679ms.
+- Production build: `pnpm --filter @acc/console build:web` succeeded in 679ms.
 - ESLint: Verified all modified files with 0 errors.
 
 ## Walkthrough

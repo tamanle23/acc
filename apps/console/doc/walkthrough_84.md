@@ -6,7 +6,7 @@ We resolved the React error `Error: Rendered more hooks than during the previous
 
 ## 1. Problem & Root Cause
 
-- In [`schema-builder.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx), `useTenantBilling()`, `useSpringAuthStore()`, and `useSandboxStore()` were placed below the conditional early return:
+- In [`schema-builder.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/components/schema-builder/schema-builder.tsx), `useTenantBilling()`, `useSpringAuthStore()`, and `useSandboxStore()` were placed below the conditional early return:
   ```tsx
   if (isLoading) {
     return <LoadingIndicator />;
@@ -45,5 +45,5 @@ We resolved the React error `Error: Rendered more hooks than during the previous
 
 ## 3. Verification
 
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - **9 test files passed**, **55 tests passed** (100% pass rate).

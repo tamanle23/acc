@@ -37,15 +37,15 @@ In Phase 39, we implemented comprehensive semantic workflow definition versionin
   - `AuditLedgerServiceTest`: 3/3 passed (genesis hash calculation, chain verification, tamper detection).
   - `TopologicalCompatibilityValidatorTest`: 2/2 passed (compatible additive evolution, incompatible node removal rejection).
   - All 50 tests passed (`./mvnw test -q -pl workflow-engine`).
-- `unipost-ms-aio`:
+- `acc-ms-aio`:
   - Modulith boundaries clean.
-  - All 8 tests passed (`./mvnw test -q -pl unipost-ms-aio`).
+  - All 8 tests passed (`./mvnw test -q -pl acc-ms-aio`).
 
 ### Sandbox & Frontend Tests:
-- `@unipost/sandbox`:
+- `@acc/sandbox`:
   - 11/11 tests passed in `vitest run`.
-  - Typecheck passed cleanly (`pnpm --filter @unipost/sandbox check-types`).
-- `@unipost/console`:
+  - Typecheck passed cleanly (`pnpm --filter @acc/sandbox check-types`).
+- `@acc/console`:
   - `hot-migration-modal.test.tsx`: 2/2 passed.
   - `dag-node.test.tsx`: 3/3 passed (including diff status styling).
   - Clean TypeScript compilation (`tsc --noEmit`).

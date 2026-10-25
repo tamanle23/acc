@@ -2,7 +2,7 @@
 # Workflow Execution & Live Streaming Experience (Full-Stack)
 
 ## 1. Executive Summary & Objective
-The objective of **Iteration 19** is to transform the **Workflow Execution & Live Streaming Experience** across `@unipost/backend` and `@unipost/console` into an enterprise-grade, real-time observability platform.
+The objective of **Iteration 19** is to transform the **Workflow Execution & Live Streaming Experience** across `@acc/backend` and `@acc/console` into an enterprise-grade, real-time observability platform.
 
 Based on our interactive design review (`/grill-me`), both frontend and backend architectural decisions have been resolved and aligned:
 - **Backend Non-Blocking Dispatch (Java 21 Loom Virtual Threads)** [COMPLETED]: `ExecutionStreamBroadcaster` dispatches SSE events asynchronously via `Executors.newVirtualThreadPerTaskExecutor()`, preventing slow SSE HTTP connections from blocking worker execution and API controllers.
@@ -33,17 +33,17 @@ Based on our interactive design review (`/grill-me`), both frontend and backend 
 ## 3. Verification & Quality Gates
 - **Backend Sliced & Unit Tests**:
   ```bash
-  node ./apps/backend/mvnw.cjs test -pl unipost-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
+  node ./apps/backend/mvnw.cjs test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
   ```
   Target: 100% green tests (3/3 passed).
 - **Console Unit/Component Test Suites**:
   ```bash
-  pnpm --filter @unipost/console test -- src/features/workflows/ src/features/workflow-executions/
+  pnpm --filter @acc/console test -- src/features/workflows/ src/features/workflow-executions/
   ```
   Target: 100% green tests covering SSE lifecycle, auto-pan tracking, time-travel rollback, and canvas styling.
 - **TypeScript Strict Compilation**:
   ```bash
-  pnpm --filter @unipost/console exec tsc --noEmit
+  pnpm --filter @acc/console exec tsc --noEmit
   ```
   Target: 0 errors.
 - **Monorepo Lint & Format Checks**: Clean formatting with zero ESLint/Biome violations.

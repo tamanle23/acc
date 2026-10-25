@@ -1,7 +1,7 @@
 # Unlocking the Full Potential of Dynamic Metadata: Architectural Blueprint & Implementation Design
 
 **Target Domain:** Enterprise Dynamic Data Fabric & Low-Code Ecosystem  
-**Target Systems:** `@unipost/backend` (Spring Modulith / Java 21), `@unipost/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
+**Target Systems:** `@acc/backend` (Spring Modulith / Java 21), `@acc/console` (React 19 / Vite 8), `mobile-ui` (Expo SDK 57), `tekgo-ui` (Next.js 15)  
 **Foundational Invariants:** Hybrid Relational + JSONB, Draft-07 JSON Schema, Distributed Hazelcast/Redis Caching (`schema:{id}:v{version}`), 3-Tier Edge Relationships (Patterns A, B, C)  
 **Status:** Living Architectural Specification & Implementation Roadmap
 
@@ -22,7 +22,7 @@ However, treating dynamic metadata solely as an administrative back-office CRUD 
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                 UNIPOST ENTERPRISE PLATFORM                                 │
 ├───────────────────────────────┬──────────────────────────────┬──────────────────────────────┤
-│      @unipost/console         │          mobile-ui           │          tekgo-ui            │
+│      @acc/console         │          mobile-ui           │          tekgo-ui            │
 │  (Dynamic Liquid Glass Studio)│   (Expo Dynamic Renderer)    │    (Customer Portal B2B)     │
 ├───────────────────────────────┴──────────────────────────────┴──────────────────────────────┤
 │                         METADATA-DRIVEN APPLICATION FABRIC LAYER                            │
@@ -49,7 +49,7 @@ However, treating dynamic metadata solely as an administrative back-office CRUD 
 Developers currently spend hours manually assembling form inputs, tables, comboboxes, and validation hooks (`react-hook-form` + `zod`) for every newly defined entity model.
 
 ### 2.2 Architectural Design
-Create a headless renderer package in `@unipost/ui` that transforms a retrieved `JsonSchema` and layout metadata into high-fidelity UI components styled with the **Liquid Glass** design tokens.
+Create a headless renderer package in `@acc/ui` that transforms a retrieved `JsonSchema` and layout metadata into high-fidelity UI components styled with the **Liquid Glass** design tokens.
 
 ```
 ┌──────────────────────────┐
@@ -57,7 +57,7 @@ Create a headless renderer package in `@unipost/ui` that transforms a retrieved 
 └──────────────────────────┘                                              │
                                                                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│ @unipost/ui: <DynamicEntityForm />                                              │
+│ @acc/ui: <DynamicEntityForm />                                              │
 │                                                                                 │
 │  ┌───────────────────────┐  ┌────────────────────────┐  ┌────────────────────┐ │
 │  │ Text / String Field   │  │ Enum Select / Radio    │  │ Pattern B Picker   │ │
@@ -85,7 +85,7 @@ Extend attribute definitions with a `ui_schema` JSON column to provide rendering
 }
 ```
 
-#### Step 2: Component Architecture (`@unipost/ui`)
+#### Step 2: Component Architecture (`@acc/ui`)
 Implement the universal renderer:
 ```tsx
 // packages/ui/src/dynamic-form/dynamic-entity-form.tsx
@@ -108,7 +108,7 @@ export interface DynamicEntityFormProps {
 Dynamic records are often not merely static data records; they represent lifecycles (e.g., `JobOrder`, `ReturnTicket`, `PolicyDocument`) that require controlled state transitions, permission gates, and side effects.
 
 ### 3.2 Architectural Design
-Introduce a lightweight, metadata-driven Finite State Machine (FSM) engine integrated into the `@unipost/backend` write pipeline:
+Introduce a lightweight, metadata-driven Finite State Machine (FSM) engine integrated into the `@acc/backend` write pipeline:
 
 ```
 [Record Draft] ──(Event: SUBMIT)──> [Validation Gate] ──(Pass)──> [Pending Review]
@@ -173,11 +173,11 @@ Because the Unipost metadata engine already compiles complete Draft-07 JSON Sche
                  ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ MCP Server / Tool API:                                                 │
-│ 1. `unipost_get_schema(entity_type)`                                   │
-│ 2. `unipost_query_entities(entity_type, filter_criteria, limit)`       │
-│ 3. `unipost_create_entity(entity_type, attributes)`                    │
+│ 1. `acc_get_schema(entity_type)`                                   │
+│ 2. `acc_query_entities(entity_type, filter_criteria, limit)`       │
+│ 3. `acc_create_entity(entity_type, attributes)`                    │
 │    └─ Parameters strictly validated against entity's JSON Schema       │
-│ 4. `unipost_link_entities(source_id, target_id, relation_system_name)` │
+│ 4. `acc_link_entities(source_id, target_id, relation_system_name)` │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -236,7 +236,7 @@ Leverage `UNIPOST_ENTITY_RELATIONSHIPS` with recursive graph queries and visual 
    SELECT * FROM entity_graph;
    ```
 2. **React Flow Graph Inspector Component**:
-   In `@unipost/console`, create an interactive visualization canvas (`RecordLineageCanvas.tsx`) showing live nodes, edge labels, and metadata badges.
+   In `@acc/console`, create an interactive visualization canvas (`RecordLineageCanvas.tsx`) showing live nodes, edge labels, and metadata badges.
 3. **Attributed Edge Properties**:
    Store contextual business data directly on `edge_metadata` (e.g., `effective_date`, `sla_priority`, `weight`) without denormalizing the related entities.
 
@@ -273,11 +273,11 @@ Enterprise customers require point-in-time auditing, compliance rollbacks, and f
 
 | Phase | Milestone | Deliverables | Monorepo Scope |
 | :--- | :--- | :--- | :--- |
-| **Phase 1** | **Headless UI Renderer & Studio** | `<DynamicEntityForm />`, `<DynamicDataGrid />`, Filter Builder, Liquid Glass Tokens | `@unipost/ui`, `@unipost/console`, `mobile-ui` |
-| **Phase 2** | **AI Agent MCP & OpenAPI Bridge** | Runtime MCP Tool registry, JSON Schema $\to$ MCP schema converter, Semantic Search | `@unipost/backend`, AI sidecar |
-| **Phase 3** | **FSM Operational State Engine** | Lifecycle config in `UNIPOST_ENTITY_TYPES`, CEL/SpEL validation, transition events | `@unipost/backend` |
-| **Phase 4** | **Pattern C Graph Studio & Lineage** | Recursive traversal SQL, React Flow visualizer, edge metadata editor | `@unipost/backend`, `@unipost/console` |
-| **Phase 5** | **Data Governance & Virtual Marts** | RFC 6902 patch auditing, virtual SQL view generator, bulk CSV ingestion | `@unipost/backend`, database layer |
+| **Phase 1** | **Headless UI Renderer & Studio** | `<DynamicEntityForm />`, `<DynamicDataGrid />`, Filter Builder, Liquid Glass Tokens | `@acc/ui`, `@acc/console`, `mobile-ui` |
+| **Phase 2** | **AI Agent MCP & OpenAPI Bridge** | Runtime MCP Tool registry, JSON Schema $\to$ MCP schema converter, Semantic Search | `@acc/backend`, AI sidecar |
+| **Phase 3** | **FSM Operational State Engine** | Lifecycle config in `UNIPOST_ENTITY_TYPES`, CEL/SpEL validation, transition events | `@acc/backend` |
+| **Phase 4** | **Pattern C Graph Studio & Lineage** | Recursive traversal SQL, React Flow visualizer, edge metadata editor | `@acc/backend`, `@acc/console` |
+| **Phase 5** | **Data Governance & Virtual Marts** | RFC 6902 patch auditing, virtual SQL view generator, bulk CSV ingestion | `@acc/backend`, database layer |
 
 ---
 

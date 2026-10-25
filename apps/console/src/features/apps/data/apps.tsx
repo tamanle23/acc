@@ -3,7 +3,7 @@ import {
   IconFacebook,
   IconTiktok,
   IconYoutube,
-} from '@unipost/ui/icons';
+} from '@acc/ui/icons';
 
 export const apps = [
   {

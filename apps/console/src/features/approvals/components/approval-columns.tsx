@@ -12,7 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
-import type { ApprovalTask } from '@unipost/client';
+import type { ApprovalTask } from '@acc/client';
 
 interface CreateColumnsProps {
   onReviewTask: (task: ApprovalTask) => void;

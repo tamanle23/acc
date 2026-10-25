@@ -1,6 +1,6 @@
 # Walkthrough 100: Person Tenant Registration, OTP Verification, Passkeys, and Password Rotation
 
-**App:** `@unipost/console`  
+**App:** `@acc/console`  
 **Date:** 2026-10-25  
 **Version:** Iteration 23  
 
@@ -34,5 +34,5 @@ Implemented frontend authentication workflows for person tenant auto-provisionin
    - Exposed reactive role and authority flags: `isSovereignRoot`, `isSovereignSupport`, `isSovereignVerifier`, `isSovereignApprover`, `isWorkspaceOwner`, `isOperationsManager`, `isStandardMember`, `isAuditor`, `canVerifyTasks`, `canApproveQuorum`.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit` exited with code 0 (zero type errors).
+- `pnpm --filter @acc/console exec tsc --noEmit` exited with code 0 (zero type errors).
 - Client tests passed cleanly.

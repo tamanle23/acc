@@ -19,7 +19,7 @@ I have successfully scaffolded the React Native project with Expo SDK, React Nav
 ## Next Steps
 You can navigate into the project and install dependencies:
 ```bash
-cd c:\Users\Admin\workspace\git\unipost\apps\mobile-ui
+cd c:\Users\Admin\workspace\git\acc\apps\mobile-ui
 npm install
 npx expo start
 ```

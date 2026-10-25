@@ -1,6 +1,6 @@
 # Implementation Plan 54 - Metadata Relationship UX & Integrity Enhancements
 
-Scope: `@unipost/console` (Schema Builder, Dynamic Field Renderer, Data Explorer) & Metadata System Behavior.
+Scope: `@acc/console` (Schema Builder, Dynamic Field Renderer, Data Explorer) & Metadata System Behavior.
 
 ---
 
@@ -74,7 +74,7 @@ Following the rollout of Phase 6 (Entity Relationship Types and Edge Inspector),
 ---
 
 ## 3. Verification & Acceptance Criteria
-1. `pnpm --filter @unipost/console build` compiles cleanly with zero type errors.
+1. `pnpm --filter @acc/console build` compiles cleanly with zero type errors.
 2. Opening `AttributeDialog` and choosing `Relation Picker` shows the Target Entity Model selector directly on the first tab and blocks saving if empty.
 3. Editing a record with a `relation_picker` presents a searchable ComboBox that allows typing to filter records and clicking to select or clear.
 4. `EntityDataGrid` presents relation attributes as styled reference badges (`🔗 #ID`).

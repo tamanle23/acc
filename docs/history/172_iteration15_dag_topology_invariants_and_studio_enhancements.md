@@ -25,12 +25,12 @@ In workflow definition and DAG visualization:
 ## Changes
 
 ### apps/backend/workflow-engine
-- [`WorkflowTopologyException.java`](file:///apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/graph/WorkflowTopologyException.java): Custom runtime exception for DAG graph topology invariant violations.
-- [`AcyclicityGuard.java`](file:///apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/graph/AcyclicityGuard.java):
+- [`WorkflowTopologyException.java`](file:///apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/WorkflowTopologyException.java): Custom runtime exception for DAG graph topology invariant violations.
+- [`AcyclicityGuard.java`](file:///apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/graph/AcyclicityGuard.java):
   - Added in-degree and out-degree validation post-Kahn topological sorting.
   - Enforces exactly one source node (in-degree 0) and one sink node (out-degree 0) for workflows with more than 1 task.
-- [`AcyclicityGuardTest.java`](file:///apps/backend/workflow-engine/src/test/java/com/unipost/workflow/core/graph/AcyclicityGuardTest.java): Added unit tests for multiple start nodes, multiple end nodes, cycle priority, and single-node valid graphs.
-- [`WorkflowEngineService.java`](file:///apps/backend/workflow-engine/src/main/java/com/unipost/workflow/application/WorkflowEngineService.java): Imported `TaskType` for designer simulation harness.
+- [`AcyclicityGuardTest.java`](file:///apps/backend/workflow-engine/src/test/java/com/acc/workflow/core/graph/AcyclicityGuardTest.java): Added unit tests for multiple start nodes, multiple end nodes, cycle priority, and single-node valid graphs.
+- [`WorkflowEngineService.java`](file:///apps/backend/workflow-engine/src/main/java/com/acc/workflow/application/WorkflowEngineService.java): Imported `TaskType` for designer simulation harness.
 
 ### apps/console
 - [`workflow-ir-converter.ts`](file:///apps/console/src/features/metadata/components/studio/workflow-ir-converter.ts):
@@ -63,7 +63,7 @@ In workflow definition and DAG visualization:
   - `workflow-studio-debugger.test.ts`: 5 passed
   - `visual-json-editor.test.tsx`: 7 passed
   - Other workflow studio suites: 16 passed
-- **Frontend Typecheck**: `pnpm --filter @unipost/console exec tsc --noEmit` exited `0` with 0 errors.
+- **Frontend Typecheck**: `pnpm --filter @acc/console exec tsc --noEmit` exited `0` with 0 errors.
 - **Backend Unit Tests**: `mvn test -Dtest=AcyclicityGuardTest,WorkflowIteration13ControllersTest,TopologicalCompatibilityValidatorTest -q` passed 100%.
 
 ## Walkthrough

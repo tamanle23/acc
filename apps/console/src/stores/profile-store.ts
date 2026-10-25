@@ -28,12 +28,12 @@ const PROFILE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 export function getUserDefaultWorkspace(tenantId: string): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem(`unipost_user_default_ws_${tenantId}`)
+  return localStorage.getItem(`acc_user_default_ws_${tenantId}`)
 }
 
 export function setUserDefaultWorkspace(tenantId: string, workspaceId: string): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(`unipost_user_default_ws_${tenantId}`, workspaceId)
+    localStorage.setItem(`acc_user_default_ws_${tenantId}`, workspaceId)
   }
 }
 
@@ -96,8 +96,8 @@ export const useProfileStore = create<ProfileState>()((set, get) => {
   let defaultProfiles = (sidebarTeams || []) as Profile[]
   let initialProfile = defaultProfiles[0] || SOVEREIGN_PROFILE
 
-  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null
-  const assumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant_name') : null
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null
+  const assumedTenantName = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant_name') : null
 
   if (assumedTenant && assumedTenant !== 'SYSTEM') {
     const { profile, allProfiles } = resolveTenantProfile(assumedTenant, assumedTenantName, defaultProfiles)

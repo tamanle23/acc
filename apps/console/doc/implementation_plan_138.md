@@ -174,9 +174,9 @@ flowchart TD
      - `SWITCH` -> cases -> `EXCLUSIVE_JOIN` -> `END` passes validation.
      - `DO_WHILE` with loopback + exit branch passes validation.
      - Bidirectional `joinOn` synchronization in export and import.
-   - Run: `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/`
+   - Run: `pnpm --filter @acc/console test -- src/features/metadata/components/studio/`
 2. **TypeScript Compilation**:
-   - Run: `pnpm --filter @unipost/console exec tsc --noEmit`
+   - Run: `pnpm --filter @acc/console exec tsc --noEmit`
 3. **Backend Maven Unit Tests**:
    - `AcyclicityGuardTest.java`: Verify strict single start/end, fork-join pair validation, and cycle detection.
    - `PureDeciderTest.java`: Verify `ForkJoinStrategy`, `ExclusiveJoinStrategy`, `TerminateNodeStrategy`, and `DoWhileStrategy`.

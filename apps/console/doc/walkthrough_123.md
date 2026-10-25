@@ -1,7 +1,7 @@
 # Walkthrough 123: Iteration 11 Remaining Phases - WCAG 2.2 AA, DataTable Unification & Defect Resolution
 
 ## 1. Overview
-Iteration 11 elevated the unipost ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@unipost/console`, `tekgo-ui`, `mobile-ui`, and `@unipost/backend`.
+Iteration 11 elevated the acc ecosystem to enterprise visual maturity and accessibility compliance while executing production bug fixing across `@acc/console`, `tekgo-ui`, `mobile-ui`, and `@acc/backend`.
 
 All 4 workstreams of `docs/integration_master_plan_iteration11.md` are now fully implemented and verified:
 - **Workstream 1:** Liquid Glass Optical Presets & Ambient Accents (Previously completed in commit [147]).
@@ -51,7 +51,7 @@ All 4 workstreams of `docs/integration_master_plan_iteration11.md` are now fully
   - `apps/console/src/features/workflows/components/fleet-migration-modal.tsx`: Fixed inferred memoization dependency in `filteredItems` to strictly reference `previewItems`.
   - `apps/console/src/features/workflows/index.tsx`: Cleaned duplicate `./api/workflow-api` imports.
 - **Backend Sandbox Auto-Configuration**:
-  - `apps/backend/unipost-sandbox/src/main/java/com/unipost/sandbox/config/SandboxAutoConfiguration.java`: Added `@EnableConfigurationProperties(SandboxProperties.class)` to prevent `NoSuchBeanDefinitionException`.
+  - `apps/backend/acc-sandbox/src/main/java/com/acc/sandbox/config/SandboxAutoConfiguration.java`: Added `@EnableConfigurationProperties(SandboxProperties.class)` to prevent `NoSuchBeanDefinitionException`.
 
 ---
 
@@ -61,9 +61,9 @@ All 4 workstreams of `docs/integration_master_plan_iteration11.md` are now fully
    - `pnpm --filter tekgo-ui lint`: Clean exit 0 (`✔ No ESLint warnings or errors`).
    - `pnpm --filter tekgo-ui build`: Clean exit 0 (Static pages generated, local search index built).
 2. **Console Vitest Suite**:
-   - `pnpm --filter @unipost/console test`: **65/65 test suites passed, 309/309 tests passed** (including migrated tables, drawers, and accessibility).
+   - `pnpm --filter @acc/console test`: **65/65 test suites passed, 309/309 tests passed** (including migrated tables, drawers, and accessibility).
 3. **Backend Modulith & Sandbox Tests**:
    - `pnpm test:backend:sandbox`: **33/33 tests passed** with zero failures.
-   - `pnpm --filter @unipost/backend test:modulith`: **1/1 modularity test passed** across all architectural boundaries.
+   - `pnpm --filter @acc/backend test:modulith`: **1/1 modularity test passed** across all architectural boundaries.
 4. **Playwright E2E Verification**:
    - `pnpm test:e2e`: **15/15 tests passed** across all golden workflows in autonomous sandbox mode.

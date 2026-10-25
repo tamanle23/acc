@@ -1,7 +1,7 @@
 # History Entry 198: Master Database Schema Architecture Refinement & Synchronization
 
 ## 1. Problem
-Following the introduction of the dedicated master `UNIPOST_TENANTS` table, Liquibase unification into `db/unipost/`, and the clean eradication of obsolete tables (`ADDRESS`, `USERPROFILE`, `USERACTIVITY`), the primary persistence reference document (`docs/master_database_schema_architecture.md`) had several key synchronization gaps:
+Following the introduction of the dedicated master `UNIPOST_TENANTS` table, Liquibase unification into `db/acc/`, and the clean eradication of obsolete tables (`ADDRESS`, `USERPROFILE`, `USERACTIVITY`), the primary persistence reference document (`docs/master_database_schema_architecture.md`) had several key synchronization gaps:
 1. It listed generic table names (`APP_USER`, `APP_ROLE`, etc.) rather than physical schema names (`UNIPOST_IDENTITY_*`).
 2. Obsolete identity tables remained in the Mermaid ER diagram.
 3. Static control plane tables (`UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`) and the dynamic feature gate pipeline (`@RequireFeature` and `<FeatureGate />`) were omitted.
@@ -13,7 +13,7 @@ Ratified via `/grill-me` alignment and documented in [`docs/integration_master_p
 1. Exclude all File Storage (`UNIPOST_FS_*`) tables and maintain them separately.
 2. Canonicalize identity table references to `UNIPOST_IDENTITY_*` and purge `ADDRESS`, `USERPROFILE`, and `USERACTIVITY`.
 3. Document `UNIPOST_TENANT_BILLING`, `UNIPOST_TENANT_FEATURES`, and the dual-sided Dynamic Feature Gate evaluation pipeline.
-4. Add Section 8 detailing the Unified Liquibase Master Topology (`db/changelog-master.xml` -> `db/unipost/changelog-master.xml`).
+4. Add Section 8 detailing the Unified Liquibase Master Topology (`db/changelog-master.xml` -> `db/acc/changelog-master.xml`).
 5. Add Section 9 detailing UI/UX Design System integration, Liquid Glass optical specifications, the 5-state component matrix, and WCAG 2.2 AA accessibility invariants.
 
 ## 3. Changes
@@ -30,8 +30,8 @@ Ratified via `/grill-me` alignment and documented in [`docs/integration_master_p
 
 ## 4. Verification
 - Backend compilation: `./mvnw test-compile -q` PASSED.
-- Multi-tenant backend test suite: `./mvnw test -pl unipost-fw "-Dtest=TenantProvisioningServiceTest,SovereignCustodyAndRlsTest,TenantContextAndAspectTest" -q` ran 15/15 tests PASSED (0 failures, 0 errors).
-- Console frontend typescript: `pnpm --filter @unipost/console exec tsc --noEmit` exited with code 0 (zero errors).
+- Multi-tenant backend test suite: `./mvnw test -pl acc-fw "-Dtest=TenantProvisioningServiceTest,SovereignCustodyAndRlsTest,TenantContextAndAspectTest" -q` ran 15/15 tests PASSED (0 failures, 0 errors).
+- Console frontend typescript: `pnpm --filter @acc/console exec tsc --noEmit` exited with code 0 (zero errors).
 - Specification verification: Verified all Mermaid diagrams render cleanly without syntax errors and all referenced tables match physical PostgreSQL DDL.
 
 ## 5. Walkthrough

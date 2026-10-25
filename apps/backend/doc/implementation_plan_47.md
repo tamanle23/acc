@@ -6,7 +6,7 @@ Implement comprehensive, idempotent, production-grade seed data for:
 2. **Zero-Plaintext Credential Management**: Protecting administrative credentials from being committed to version control using Liquibase dynamic property injection (`${SOVEREIGN_CUSTODIAN_PASSWORD_HASH}`) and first-boot password expiration (`CREDENTIALSNONEXPIRED = false`).
 3. **Global Users Registry**: Seeding the Sovereign Platform Custodian root user (`custodian`, UID `usr-custodian-root`), Org Admins, and standard operators into `UNIPOST_IDENTITY_USER` and binding them via `UNIPOST_IDENTITY_USERROLE`.
 4. **SYSTEM Tenant Canonical Custody Seeding**: Seeding the root `SYSTEM` organization in `UNIPOST_TENANTS`, its default immutable workspace in `UNIPOST_WORKSPACES`, its billing entitlement in `UNIPOST_TENANT_BILLING`, and publishing canonical ecosystem blueprint schemas (`UNIPOST_ENTITY_TYPES` with `tenant_id = 'SYSTEM'`).
-5. **Master Architectural Specification Synchronization**: Updating [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/master_database_schema_architecture.md) to document the complete seed catalog, topological sequence, credential management model, and verification matrix.
+5. **Master Architectural Specification Synchronization**: Updating [`docs/master_database_schema_architecture.md`](file:///c:/Users/Admin/workspace/git/acc/docs/master_database_schema_architecture.md) to document the complete seed catalog, topological sequence, credential management model, and verification matrix.
 
 ---
 
@@ -21,9 +21,9 @@ Implement comprehensive, idempotent, production-grade seed data for:
 
 ## Proposed Changes
 
-### Database Layer (`apps/backend/unipost-db`)
+### Database Layer (`apps/backend/acc-db`)
 
-#### [NEW] `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-000.000.00016.xml`
+#### [NEW] `apps/backend/acc-db/src/main/resources/db/acc/changelog-000.000.00016.xml`
 - Implements:
   1. `<property name="custodian_password_hash" value="${SOVEREIGN_CUSTODIAN_PASSWORD_HASH:...}"/>`
   2. Canonical roles, 13 permission atoms, and role-permission mappings.
@@ -32,14 +32,14 @@ Implement comprehensive, idempotent, production-grade seed data for:
   5. SYSTEM tenant master catalog, root workspace, and enterprise billing entitlement.
   6. Canonical blueprint models for `SYSTEM` tenant.
 
-#### [MODIFY] `apps/backend/unipost-db/src/main/resources/db/unipost/changelog-master.xml`
+#### [MODIFY] `apps/backend/acc-db/src/main/resources/db/acc/changelog-master.xml`
 - Links `changelog-000.000.00016.xml`.
 
 ---
 
-### Backend Service Alignment Layer (`apps/backend/unipost-fw`)
+### Backend Service Alignment Layer (`apps/backend/acc-fw`)
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/system/service/SystemFleetService.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/system/service/SystemFleetService.java`
 - Harmonizes in-memory stores with the exact database seed UIDs, roles, and permission atoms.
 
 ---
@@ -57,7 +57,7 @@ Implement comprehensive, idempotent, production-grade seed data for:
 ### Automated Tests
 ```bash
 cmd.exe /c "mvnw.cmd test-compile -q"
-cmd.exe /c "mvnw.cmd test -pl unipost-fw -Dtest=SystemFleetServiceTest,TenantProvisioningServiceTest,PayOsBillingAndEntitlementsTest -q"
-pnpm --filter @unipost/console exec tsc --noEmit
-pnpm --filter @unipost/console test src/core/sandbox/__tests__/system-sandbox.test.ts
+cmd.exe /c "mvnw.cmd test -pl acc-fw -Dtest=SystemFleetServiceTest,TenantProvisioningServiceTest,PayOsBillingAndEntitlementsTest -q"
+pnpm --filter @acc/console exec tsc --noEmit
+pnpm --filter @acc/console test src/core/sandbox/__tests__/system-sandbox.test.ts
 ```

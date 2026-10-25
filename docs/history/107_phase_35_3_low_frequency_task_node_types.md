@@ -1,7 +1,7 @@
 # 107. Phase 35.3: Low-Frequency Task Node Types Engine
 
 **Date:** 2026-10-15  
-**Scope:** `apps/backend/workflow-engine`, `apps/backend/unipost-ms-aio`  
+**Scope:** `apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`  
 **Status:** Completed  
 
 ---
@@ -16,11 +16,11 @@ Workflows occasionally require specialized or infrastructure-level integrations 
 4. Verify via unit tests in `workflow-engine` and full module regression.
 
 ## 3. Changes
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskType.java`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
   - Added low-frequency task types.
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/strategy/`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/`**:
   - Created `NoopNodeStrategy.java`, `JdbcNodeStrategy.java`, `KafkaPublishStrategy.java`, `CallMcpToolStrategy.java`.
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/NodeStrategyRegistry.java`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
   - Registered all 4 strategies.
 - **Tests & Artifacts**:
   - Created `LowFrequencyTaskStrategiesTest.java` in `workflow-engine`.
@@ -28,8 +28,8 @@ Workflows occasionally require specialized or infrastructure-level integrations 
 
 ## 4. Verification
 - `cd apps/backend; ./mvnw.cmd test -pl workflow-engine`: 42/42 tests passed.
-- `cd apps/backend; ./mvnw.cmd test -pl unipost-ms-aio`: 4/4 test suites passed.
-- `pnpm --filter @unipost/worker test`: 5/5 tests passed.
+- `cd apps/backend; ./mvnw.cmd test -pl acc-ms-aio`: 4/4 test suites passed.
+- `pnpm --filter @acc/worker test`: 5/5 tests passed.
 
 ## 5. Walkthrough
 - `NOOP`: cleanly passed through resolved parameters and completed immediately without side-effects.

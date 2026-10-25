@@ -1,7 +1,7 @@
 # 068: Unified Sandbox FSM Engine Simulation & Active UI Execution
 
 ## 1. Problem Statement
-With the backend FSM Transition Engine implemented and wired into `@unipost/console`'s `EntityDataGrid`, running the application in **Unified Sandbox Mode** (`VITE_ENABLE_SANDBOX=true` / `pnpm dev:sandbox`) resulted in unhandled 404/400 errors when attempting state transitions on mock records.
+With the backend FSM Transition Engine implemented and wired into `@acc/console`'s `EntityDataGrid`, running the application in **Unified Sandbox Mode** (`VITE_ENABLE_SANDBOX=true` / `pnpm dev:sandbox`) resulted in unhandled 404/400 errors when attempting state transitions on mock records.
 Specifically:
 1. `metadataSandboxAdapter` lacked a route handler for `POST /entity-types/{id}/records/{recordId}/transition`.
 2. `mockMetadataStore` had no `transitionRecordState` method to evaluate lifecycle state transitions.
@@ -30,17 +30,17 @@ Specifically:
 
 ## 3. Changes
 - **Mock Metadata Store**:
-   - [`apps/console/src/features/metadata/data/mock-metadata.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/data/mock-metadata.ts):
+   - [`apps/console/src/features/metadata/data/mock-metadata.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/data/mock-metadata.ts):
      - Added `lifecycleConfig` to `Customer Account`.
      - Added `status` attribute definition and initialized initial customer records with state.
      - Implemented `transitionRecordState` with full 5-Gate validation and persona awareness.
 - **Sandbox Adapter**:
-   - [`apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts):
+   - [`apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/core/sandbox/handlers/metadata-sandbox-adapter.ts):
      - Routed `/entity-types/:typeId/records/:recordId/transition` to `mockMetadataStore.transitionRecordState`.
 - **E2E Workflow Testing**:
-   - [`apps/console/src/features/metadata/__tests__/metadata-workflows.test.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/metadata/__tests__/metadata-workflows.test.ts):
+   - [`apps/console/src/features/metadata/__tests__/metadata-workflows.test.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/metadata/__tests__/metadata-workflows.test.ts):
      - Added `Workflow 6: Unified Sandbox FSM State Machine Transition Engine` suite.
 
 ## 4. Verification
-- `pnpm --filter @unipost/console test src/features/metadata`: **9/9 test files passed, 54/54 tests passed** (including the 3 new FSM transition and persona authority tests).
+- `pnpm --filter @acc/console test src/features/metadata`: **9/9 test files passed, 54/54 tests passed** (including the 3 new FSM transition and persona authority tests).
 - Verified that switching personas from `user` to `admin` in `useSandboxStore` dynamically gates transition execution.

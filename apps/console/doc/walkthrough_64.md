@@ -24,6 +24,6 @@ This document records the full-stack implementation of **Phase 3 of the Domain B
 
 ## Verification & Quality Assurance
 1. **Frontend Typecheck**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+   - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 2. **Frontend Vitest Unit Tests**:
-   - `pnpm --filter @unipost/console test`: 15 test suites, 81 unit tests passed cleanly (including `workspaces.test.tsx`).
+   - `pnpm --filter @acc/console test`: 15 test suites, 81 unit tests passed cleanly (including `workspaces.test.tsx`).

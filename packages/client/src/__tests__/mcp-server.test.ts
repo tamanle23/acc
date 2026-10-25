@@ -76,7 +76,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
   beforeEach(() => {
     mockFetch = vi.fn();
     client = new UnipostClient({
-      baseURL: 'https://api.unipost.io/api',
+      baseURL: 'https://api.acc.io/api',
       tenantId: 'tenant-enterprise',
       fetch: mockFetch,
     });
@@ -111,17 +111,17 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
     it('synthesizes dynamic MCP tool manifest containing all 4 core tools', () => {
       const manifest = synthesizeMcpManifest(sampleEntityTypes, sampleAttributes, 'tenant-enterprise');
 
-      expect(manifest.name).toBe('unipost-mcp-server');
+      expect(manifest.name).toBe('acc-mcp-server');
       expect(manifest.tools).toHaveLength(4);
 
       const toolNames = manifest.tools.map((t) => t.name);
-      expect(toolNames).toContain('unipost_get_schema');
-      expect(toolNames).toContain('unipost_query_entities');
-      expect(toolNames).toContain('unipost_create_entity');
-      expect(toolNames).toContain('unipost_execute_transition');
+      expect(toolNames).toContain('acc_get_schema');
+      expect(toolNames).toContain('acc_query_entities');
+      expect(toolNames).toContain('acc_create_entity');
+      expect(toolNames).toContain('acc_execute_transition');
 
       // Check enum constraint in tool schema
-      const getSchemaTool = manifest.tools.find((t) => t.name === 'unipost_get_schema');
+      const getSchemaTool = manifest.tools.find((t) => t.name === 'acc_get_schema');
       expect(getSchemaTool?.inputSchema.properties.entityType).toEqual({
         type: 'string',
         description: 'System name or ID of the entity type',
@@ -144,13 +144,13 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
       expect((response.result as any).tools).toHaveLength(4);
     });
 
-    it('executes unipost_get_schema tool call', async () => {
+    it('executes acc_get_schema tool call', async () => {
       const request: McpJsonRpcRequest = {
         jsonrpc: '2.0',
         id: 'req-2',
         method: 'tools/call',
         params: {
-          name: 'unipost_get_schema',
+          name: 'acc_get_schema',
           arguments: { entityType: 'article' },
         },
       };
@@ -164,7 +164,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
       expect(parsedSchema.properties.title).toBeDefined();
     });
 
-    it('executes unipost_query_entities tool call with RLS tenant context', async () => {
+    it('executes acc_query_entities tool call with RLS tenant context', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -184,7 +184,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
         id: 'req-3',
         method: 'tools/call',
         params: {
-          name: 'unipost_query_entities',
+          name: 'acc_query_entities',
           arguments: {
             entityType: 'article',
             page: 1,
@@ -209,7 +209,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
       expect(init.headers['X-Tenant-Id']).toBe('tenant-enterprise');
     });
 
-    it('executes unipost_create_entity tool call', async () => {
+    it('executes acc_create_entity tool call', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -227,7 +227,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
         id: 'req-4',
         method: 'tools/call',
         params: {
-          name: 'unipost_create_entity',
+          name: 'acc_create_entity',
           arguments: {
             entityType: 'article',
             attributes: { title: 'New Story' },
@@ -249,7 +249,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
       expect(JSON.parse(init.body)).toEqual({ attributes: { title: 'New Story' } });
     });
 
-    it('executes unipost_execute_transition tool call', async () => {
+    it('executes acc_execute_transition tool call', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
@@ -266,7 +266,7 @@ describe('MCP Dynamic Tool Synthesis & Server (Phase 17)', () => {
         id: 'req-5',
         method: 'tools/call',
         params: {
-          name: 'unipost_execute_transition',
+          name: 'acc_execute_transition',
           arguments: {
             entityType: 'article',
             recordId: 'rec-100',

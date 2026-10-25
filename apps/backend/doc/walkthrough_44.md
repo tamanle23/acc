@@ -9,7 +9,7 @@ In Phase 4 of Iteration 8 ("Backend Unified Sandbox Platform"), we completed the
 
 ## 2. Changes Made
 
-### `apps/backend/unipost-sandbox`
+### `apps/backend/acc-sandbox`
 - **`SandboxProperties`**:
   - Added `DevSimulationProperties` with `boolean pristine = false;`.
   - Added helper methods `isDevMode()` and `isTestMode()`.
@@ -25,8 +25,8 @@ In Phase 4 of Iteration 8 ("Backend Unified Sandbox Platform"), we completed the
 ## 3. Verification & Results
 
 ### Automated Commands Executed
-1. **`unipost-sandbox` Module Test Suite**:
-   - `mvn clean test -f apps/backend/unipost-sandbox/pom.xml -q` (31 tests, 0 failures, 100% passing).
+1. **`acc-sandbox` Module Test Suite**:
+   - `mvn clean test -f apps/backend/acc-sandbox/pom.xml -q` (31 tests, 0 failures, 100% passing).
 2. **Full Multi-Module Backend Test Suite**:
    - `mvn test -f apps/backend/pom.xml -q` (300+ tests, 0 failures, JaCoCo $\ge 90\%$ coverage passing).
 3. **Decoupling Assertion Test**:

@@ -1,8 +1,8 @@
 # Integration Master Plan: Iteration 20 - Enterprise Hardening & High-Resilience Workflow Orchestration Engine
 
 **Target Systems:**  
-- `@unipost/backend` (`apps/backend/workflow-engine`, `apps/backend/unipost-ms-aio`)  
-- `@unipost/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
+- `@acc/backend` (`apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`)  
+- `@acc/console` (`apps/console/src/features/workflows`, `apps/console/src/features/workflow-executions`)  
 **Lead Systems Architect:** Principal Polyglot Architect, Spring Boot Backend Specialist & UI/UX Systems Specialist  
 **Standards:** Java 21 LTS Virtual Threads (Loom), Spring Modulith, React 19, `@xyflow/react`, WCAG 2.2 AA, Liquid Glass Optical Tokens  
 **Reference SSOT:** [`docs/workflow_orchestration_engine_architecture.md`](workflow_orchestration_engine_architecture.md)  
@@ -32,7 +32,7 @@ Following our architectural audit of the Workflow Orchestration Engine across Ja
 > [!IMPORTANT]
 > **Key Architectural Anchors Ratified for Iteration 20:**
 > 1. **System Task Execution Topology**:
->    - Embedded Java 21 Loom Virtual Thread workers in `@unipost/ms-aio` (`SystemTaskWorkerPool`) polling reserved system queues (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`). Zero external process overhead and zero blocking of the database connection pool.
+>    - Embedded Java 21 Loom Virtual Thread workers in `@acc/ms-aio` (`SystemTaskWorkerPool`) polling reserved system queues (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`). Zero external process overhead and zero blocking of the database connection pool.
 > 2. **Dynamic Fork Barrier Failure Policy**:
 >    - **Fail-Fast & Halt**: If any dynamic child sub-task fails, the parent `DYNAMIC_FORK` task fails immediately, cancels pending in-flight children, and triggers distributed Saga reverse compensation if configured.
 > 3. **DLQ Interactive Replay Execution Model**:
@@ -97,9 +97,9 @@ flowchart TD
 ### Workstream 1: Pure Zero-I/O Decider & Loom System Task Worker Fleet
 - **Backend Refactoring (`apps/backend/workflow-engine`)**:
   - Refactor `HttpNodeStrategy`, `CallMcpToolStrategy`, `LlmChatCompleteStrategy`, `JdbcNodeStrategy`, and `KafkaPublishStrategy`.
-  - Remove all embedded `HttpClient`, `DataSource`, or thread operations from `com.unipost.workflow.core.decider.strategy.*`.
+  - Remove all embedded `HttpClient`, `DataSource`, or thread operations from `com.acc.workflow.core.decider.strategy.*`.
   - In `evaluate(...)`, if the task has not started, emit `EngineCommand.ScheduleTask` targeting reserved system domains (`system:http`, `system:mcp`, `system:llm`, `system:jdbc`, `system:kafka`).
-- **System Task Workers (`apps/backend/unipost-ms-aio`)**:
+- **System Task Workers (`apps/backend/acc-ms-aio`)**:
   - Implement `SystemTaskWorkerPool` managed by Spring Boot using Java 21 Loom virtual threads (`Executors.newVirtualThreadPerTaskExecutor()`).
   - Workers poll reserved system task queues, execute I/O outside database transactions, and call `reportTaskResult`.
 
@@ -114,7 +114,7 @@ flowchart TD
   - Endpoint: `POST /api/v1/workflow/executions/{id}/tasks/{taskId}/replay`
   - Accepts modified `inputParameters` JSON payload.
   - Validates caller permissions, updates task input, removes DLQ record, resets status to `SCHEDULED`, and triggers `decider.decide()`.
-- **Frontend Console (`@unipost/console`)**:
+- **Frontend Console (`@acc/console`)**:
   - In `ExecutionRunDrawer` and `DagPropertyInspector`, when a node is in `FAILED` status, display a prominent **"Repair & Replay Task"** action.
   - Opens `VisualJsonEditor` with inline schema validation.
   - Re-triggers execution stream and live updates the DAG canvas.
@@ -142,10 +142,10 @@ flowchart TD
 
 1. **Compilation**:
    - `mvnw.cmd test-compile -q` exits 0 with zero warnings.
-   - `pnpm --filter @unipost/console exec tsc --noEmit` exits 0.
+   - `pnpm --filter @acc/console exec tsc --noEmit` exits 0.
 2. **Test Suites**:
-   - Backend: `./mvnw test -Dtest=com.unipost.workflow.** -q` exits 0.
-   - Frontend: `pnpm --filter @unipost/console test -- run src/features/workflows src/features/workflow-executions` exits 0.
+   - Backend: `./mvnw test -Dtest=com.acc.workflow.** -q` exits 0.
+   - Frontend: `pnpm --filter @acc/console test -- run src/features/workflows src/features/workflow-executions` exits 0.
 3. **Artifacts & Documentation**:
    - Walkthrough artifact in `apps/console/doc/walkthrough_151.md`.
    - History log in `docs/history/193_*.md`.

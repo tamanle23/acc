@@ -28,7 +28,7 @@ Ensured `DagPalette` in `VisualDagStudio` (`apps/console/src/features/workflows/
 
 ### Unit Tests
 ```bash
-pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+pnpm --filter @acc/console test -- src/features/workflows/components/studio/
 ```
 Output:
 - **12 passed (12 test files)**
@@ -36,6 +36,6 @@ Output:
 
 ### TypeScript Compiler Check
 ```bash
-pnpm --filter @unipost/console exec tsc --noEmit
+pnpm --filter @acc/console exec tsc --noEmit
 ```
 Output: Clean compilation, 0 errors.

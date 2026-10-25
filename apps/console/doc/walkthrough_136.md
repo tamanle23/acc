@@ -53,16 +53,16 @@ Iteration 15 implements strict workflow DAG graph topology invariants (conventio
 ### Automated Tests
 1. **Frontend Studio Vitest Suite**:
    ```bash
-   pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio/
+   pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/
    ```
    **Result:** 11 test files passed, 47 tests passed (100% green).
 2. **Frontend Typecheck**:
    ```bash
-   pnpm --filter @unipost/console exec tsc --noEmit
+   pnpm --filter @acc/console exec tsc --noEmit
    ```
    **Result:** Clean exit code `0`.
 3. **Backend Maven Tests**:
    ```bash
-   node mvnw.cjs test -pl "workflow-engine,unipost-ms-aio" '-Dtest=AcyclicityGuardTest,WorkflowIteration13ControllersTest,TopologicalCompatibilityValidatorTest' -q
+   node mvnw.cjs test -pl "workflow-engine,acc-ms-aio" '-Dtest=AcyclicityGuardTest,WorkflowIteration13ControllersTest,TopologicalCompatibilityValidatorTest' -q
    ```
    **Result:** Clean exit code `0`.

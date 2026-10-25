@@ -17,6 +17,6 @@ In Phase 3 of the Tenant Default Workspace & Sovereign Drawers blueprint (`docs/
 - `apps/console/src/features/system/tenants/__tests__/tenant-workspaces-drawer.test.tsx`: Added test suite for `TenantWorkspacesDrawer` verifying immutable default workspace rendering and deletion protections.
 
 ## Verification
-- `pnpm --filter @unipost/console exec vitest run src/features/system/tenants/__tests__/tenant-workspaces-drawer.test.tsx src/features/settings/workspaces/workspaces.test.tsx`: 5/5 tests green.
-- `pnpm --filter @unipost/console exec vitest run`: 26/26 test suites passed (127/127 tests green).
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec vitest run src/features/system/tenants/__tests__/tenant-workspaces-drawer.test.tsx src/features/settings/workspaces/workspaces.test.tsx`: 5/5 tests green.
+- `pnpm --filter @acc/console exec vitest run`: 26/26 test suites passed (127/127 tests green).
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.

@@ -1,7 +1,7 @@
 # 106. Phase 35.2: Medium-Frequency Task Node Types Engine
 
 **Date:** 2026-10-15  
-**Scope:** `apps/backend/workflow-engine`, `apps/backend/unipost-ms-aio`  
+**Scope:** `apps/backend/workflow-engine`, `apps/backend/acc-ms-aio`  
 **Status:** Completed  
 
 ---
@@ -17,13 +17,13 @@ Workflows required standard orchestration patterns for workflow lifecycle termin
 5. Verify via unit tests in `workflow-engine` and full module test passes.
 
 ## 3. Changes
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskType.java`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`**:
   - Added medium-frequency task types.
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/PureDecider.java`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/PureDecider.java`**:
   - Honored immediate `TransitionWorkflow` commands from strategies.
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/strategy/`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/strategy/`**:
   - Created `TerminateNodeStrategy.java`, `SubWorkflowStrategy.java`, `StartWorkflowStrategy.java`, `EventNodeStrategy.java`, `DynamicTaskStrategy.java`, `LlmChatCompleteStrategy.java`.
-- **`apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/decider/NodeStrategyRegistry.java`**:
+- **`apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/decider/NodeStrategyRegistry.java`**:
   - Registered all 6 strategies.
 - **Tests & Artifacts**:
   - Created `MediumFrequencyTaskStrategiesTest.java` in `workflow-engine`.
@@ -31,8 +31,8 @@ Workflows required standard orchestration patterns for workflow lifecycle termin
 
 ## 4. Verification
 - `cd apps/backend; ./mvnw.cmd test -pl workflow-engine`: 38/38 tests passed (including all 6 new medium-frequency tests).
-- `cd apps/backend; ./mvnw.cmd test -pl unipost-ms-aio`: 4/4 test suites passed.
-- `pnpm --filter @unipost/worker test`: 5/5 tests passed.
+- `cd apps/backend; ./mvnw.cmd test -pl acc-ms-aio`: 4/4 test suites passed.
+- `pnpm --filter @acc/worker test`: 5/5 tests passed.
 
 ## 5. Walkthrough
 - `TERMINATE`: halted workflow progression and immediately failed/completed execution with specified reason without executing downstream tasks.

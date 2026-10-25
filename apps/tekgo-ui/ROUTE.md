@@ -94,7 +94,7 @@ tekgo-ui/app/
 ### 3.6 About Author (`/about`)
 - **Route:** `app/about/page.tsx`
 - **Data Source:** `data/authors/default.json` and `data/authors/sparrowhawk.json`.
-- **Components:** `AuthorLayout`, avatar image with specular glass ring, bio text, social icons (`@unipost/ui`).
+- **Components:** `AuthorLayout`, avatar image with specular glass ring, bio text, social icons (`@acc/ui`).
 
 ---
 

@@ -15,8 +15,8 @@ Following Iteration 17's initial implementation, several integration bugs and UX
    - Configure `selectionOnDrag={!isReadOnly}`, `selectionMode={SelectionMode?.Partial || ('partial' as SelectionMode)}`, and `panOnDrag={[1, 2]}`.
    - Add `SelectionMode` mock to `visual-dag-studio-modes.test.tsx`.
 3. **Verify Full Studio Suite**:
-   - Run vitest studio test suite (`pnpm --filter @unipost/console test -- src/features/metadata/components/studio/`).
-   - Run `pnpm --filter @unipost/console exec tsc --noEmit`.
+   - Run vitest studio test suite (`pnpm --filter @acc/console test -- src/features/metadata/components/studio/`).
+   - Run `pnpm --filter @acc/console exec tsc --noEmit`.
 
 ## Changes
 - `apps/console/src/features/metadata/components/studio/dag-quick-insert-popover.tsx`: Added dual prop support for `onSelectNodeType` and `onSelect` via `handleSelectType` callback.
@@ -25,8 +25,8 @@ Following Iteration 17's initial implementation, several integration bugs and UX
 - `apps/console/src/features/metadata/components/studio/visual-dag-studio-modes.test.tsx`: Added `SelectionMode` mock export.
 
 ## Verification
-- **Unit Tests**: Ran `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/` - 15 test files passed, 68 tests green.
-- **Typecheck**: Ran `pnpm --filter @unipost/console exec tsc --noEmit` - 0 errors.
+- **Unit Tests**: Ran `pnpm --filter @acc/console test -- src/features/metadata/components/studio/` - 15 test files passed, 68 tests green.
+- **Typecheck**: Ran `pnpm --filter @acc/console exec tsc --noEmit` - 0 errors.
 
 ## Walkthrough & Artifacts
 - `apps/console/doc/walkthrough_139.md`

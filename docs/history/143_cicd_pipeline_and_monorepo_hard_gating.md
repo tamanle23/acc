@@ -6,7 +6,7 @@ With Dual-Mode E2E testing (Mode 1 Autonomous Sandbox and Mode 2 Live Backend) e
 1. `.github/workflows/nightly-test-suite.yml` needed to support testing against either Mode 1 or Mode 2 live backend via workflow dispatch or nightly schedule, building the backend AIO artifact and executing `pnpm test:e2e:live`.
 2. All 5 core verification gates across the monorepo had to pass cleanly with exit code 0:
    - Console Vitest tests & offline parity
-   - Backend Sandbox Suite (`unipost-sandbox`)
+   - Backend Sandbox Suite (`acc-sandbox`)
    - Spring Modulith Architecture (`ModularityTests`)
    - Mode 1 Playwright E2E Suite (`pnpm test:e2e`)
    - Sibling client builds (`tekgo-ui` Next.js 15 SSR & `mobile-ui` Vitest)
@@ -24,11 +24,11 @@ With Dual-Mode E2E testing (Mode 1 Autonomous Sandbox and Mode 2 Live Backend) e
 ### 2. Comprehensive Monorepo Verification
 - Executed and validated all verification commands:
   - `pnpm test:backend:sandbox`: 33/33 tests passed in 44.3s.
-  - `pnpm --filter @unipost/backend test:modulith`: `ModularityTests` passed cleanly in 24.3s.
+  - `pnpm --filter @acc/backend test:modulith`: `ModularityTests` passed cleanly in 24.3s.
   - `pnpm test:e2e`: 15/15 Golden Journey specs passed in 44.5s.
   - `pnpm --filter tekgo-ui build`: 95/95 static pages generated with 0 SSR hook errors.
   - `pnpm --filter mobile-ui test`: 23/23 tests green in 803ms.
-  - `pnpm --filter @unipost/console test`: 298/298 tests green in 10s.
+  - `pnpm --filter @acc/console test`: 298/298 tests green in 10s.
 
 ## Verification & Gating Results
 
@@ -40,4 +40,4 @@ With Dual-Mode E2E testing (Mode 1 Autonomous Sandbox and Mode 2 Live Backend) e
 | **Console E2E (Mode 2)** | `pnpm test:e2e:live` | **15/15 Passed** | 34.4s | Live Spring Boot + PGlite RLS + 0 WCAG violations |
 | **Portal Build** | `pnpm --filter tekgo-ui build` | **Passed (Exit 0)** | 1.3s | 95/95 static pages generated |
 | **Mobile Tests** | `pnpm --filter mobile-ui test` | **23/23 Passed** | 803ms | Dynamic form, outbox, and sandbox tests |
-| **Console Tests** | `pnpm --filter @unipost/console test` | **298/298 Passed** | 10.0s | 62 test files green |
+| **Console Tests** | `pnpm --filter @acc/console test` | **298/298 Passed** | 10.0s | 62 test files green |

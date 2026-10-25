@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { useOutboxStore, computeBackoffMs, BACKOFF_BASE_MS, BACKOFF_CAP_MS } from '../store/useOutboxStore';
 import { initMobileSandbox, resetMobileSandboxPosts } from '../sandbox/mobile-sandbox';
-import { sandboxRegistry } from '@unipost/sandbox';
+import { sandboxRegistry } from '@acc/sandbox';
 import { mockAsyncStorage } from '../test/setup';
 
 describe('mobile-ui Outbox Chaos, Stress Hardening & Sequential Replay', () => {

@@ -26,7 +26,7 @@ Implemented **Workstream 5: Time-Travel Historical Replay & Flamegraph Sync** ad
    - Shows a "Scrubbed: Step N" badge in the flamegraph header when viewing historical steps.
 
 ## Verification
-- **TypeScript**: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- **TypeScript**: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.
 - **Unit & Integration Tests**:
   - `workflow-execution-flamegraph.test.tsx` (3/3 passed).
-  - Full workflow test suite: 21 test files, 92 passed (`pnpm --filter @unipost/console test -- src/features/workflows`).
+  - Full workflow test suite: 21 test files, 92 passed (`pnpm --filter @acc/console test -- src/features/workflows`).

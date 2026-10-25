@@ -16,15 +16,15 @@ The user requested the complete elimination of "Deterministic AI-Assisted Schema
    - Remove `/ai/synthesize-schema` route handler from `metadata-sandbox-adapter.ts`.
    - Remove modal test case from `iteration13-studio.test.tsx`.
 4. Verify full-stack compilation and unit tests:
-   - Backend `mvn test-compile -pl unipost-fw -q` exits 0.
+   - Backend `mvn test-compile -pl acc-fw -q` exits 0.
    - Frontend `tsc --noEmit` and `vitest` pass with zero errors.
 
 ## Changes Made
 - **Backend**:
-  - Deleted `apps/backend/unipost-fw/src/main/java/com/unipost/service/metadata/AiSchemaSynthesizerService.java`
-  - Deleted `apps/backend/unipost-fw/src/main/java/com/unipost/presentation/AiSchemaSynthesizerController.java`
-  - Deleted `apps/backend/unipost-fw/src/test/java/com/unipost/service/metadata/AiSchemaSynthesizerServiceTest.java`
-- **Frontend (`@unipost/console`)**:
+  - Deleted `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/AiSchemaSynthesizerService.java`
+  - Deleted `apps/backend/acc-fw/src/main/java/com/acc/presentation/AiSchemaSynthesizerController.java`
+  - Deleted `apps/backend/acc-fw/src/test/java/com/acc/service/metadata/AiSchemaSynthesizerServiceTest.java`
+- **Frontend (`@acc/console`)**:
   - Deleted `apps/console/src/features/metadata/components/studio/ai-schema-generator-modal.tsx`
   - Cleaned `apps/console/src/features/metadata/components/studio/visual-schema-studio.tsx`
   - Cleaned `apps/console/src/features/metadata/api/metadata-api.ts`
@@ -32,6 +32,6 @@ The user requested the complete elimination of "Deterministic AI-Assisted Schema
   - Cleaned `apps/console/src/features/metadata/components/studio/iteration13-studio.test.tsx`
 
 ## Verification
-- Backend compile: `node mvnw.cjs test-compile -pl unipost-fw -q` -> Exit 0.
-- Frontend typecheck: `pnpm --filter @unipost/console exec tsc --noEmit` -> Exit 0.
-- Vitest suite: `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio/iteration13-studio.test.tsx` -> 2/2 tests passed.
+- Backend compile: `node mvnw.cjs test-compile -pl acc-fw -q` -> Exit 0.
+- Frontend typecheck: `pnpm --filter @acc/console exec tsc --noEmit` -> Exit 0.
+- Vitest suite: `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio/iteration13-studio.test.tsx` -> 2/2 tests passed.

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Post } from '../types';
-import { createUnipostClient } from '@unipost/client';
+import { createUnipostClient } from '@acc/client';
 import { useMobileContextStore } from './useMobileContextStore';
 import { resetMobileSandboxPosts } from '../sandbox/mobile-sandbox';
 

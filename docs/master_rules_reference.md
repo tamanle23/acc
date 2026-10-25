@@ -1,6 +1,6 @@
 # Master Rules & Architecture Reference (Source of Truth)
 
-This document is the authoritative, comprehensive repository of all architectural standards, development workflows, design systems, and operational constraints for the **unipost** monorepo.
+This document is the authoritative, comprehensive repository of all architectural standards, development workflows, design systems, and operational constraints for the **acc** monorepo.
 
 ---
 
@@ -32,25 +32,25 @@ Whenever a rule needs to be introduced, updated, or modified:
 ### Workspace Registry Matrix
 | Identifier | Path | Framework / Runtime | Internal Dependencies |
 | :--- | :--- | :--- | :--- |
-| `@unipost/backend` | `apps/backend` | Java 21, Spring Boot, Spring Modulith, Spring Cloud, Maven | None |
-| `@unipost/console` | `apps/console` | React 19, Vite 8, Tailwind CSS v4, TanStack Router/Query | `@unipost/ui`, `@unipost/i18n`, `@unipost/typescript-config` |
-| `@unipost/desktop` | `apps/desktop-console` | Electrobun 2.0 (Bun runtime + Cottontail window manager) | `@unipost/console`, `@unipost/typescript-config` |
+| `@acc/backend` | `apps/backend` | Java 21, Spring Boot, Spring Modulith, Spring Cloud, Maven | None |
+| `@acc/console` | `apps/console` | React 19, Vite 8, Tailwind CSS v4, TanStack Router/Query | `@acc/ui`, `@acc/i18n`, `@acc/typescript-config` |
+| `@acc/desktop` | `apps/desktop-console` | Electrobun 2.0 (Bun runtime + Cottontail window manager) | `@acc/console`, `@acc/typescript-config` |
 | `mobile-ui` | `apps/mobile-ui` | Expo SDK 57, React Native 0.86, React 19, Zustand | None |
-| `tekgo-ui` | `apps/tekgo-ui` | Next.js 15 (App Router), React 19, MDX, Pliny | `@unipost/ui` |
-| `@unipost/i18n` | `packages/i18n` | Shared i18next dictionaries and translation utilities | None |
-| `@unipost/typescript-config` | `packages/typescript-config` | Shared TypeScript tsconfig base configurations | None |
-| `@unipost/ui` | `packages/ui` | Shared React components and Liquid Glass design utilities | None |
+| `tekgo-ui` | `apps/tekgo-ui` | Next.js 15 (App Router), React 19, MDX, Pliny | `@acc/ui` |
+| `@acc/i18n` | `packages/i18n` | Shared i18next dictionaries and translation utilities | None |
+| `@acc/typescript-config` | `packages/typescript-config` | Shared TypeScript tsconfig base configurations | None |
+| `@acc/ui` | `packages/ui` | Shared React components and Liquid Glass design utilities | None |
 
 ### Operational Directives & Boundaries
 1. **Persistent Mapping**: Treat the registry above as the definitive workspace index. Never perform full-repository directory scans to discover apps or packages.
 2. **Direct Scoping**: When working on an application or package, scope all searches, edits, and file reads directly to its registered directory.
 3. **Monorepo Command Execution**:
    - Always run commands from the repository root using `--filter` or Turborepo pipelines.
-   - Example: `pnpm --filter tekgo-ui dev` or `turbo run build --filter=@unipost/console`.
+   - Example: `pnpm --filter tekgo-ui dev` or `turbo run build --filter=@acc/console`.
    - Never change directories (`cd`) inside agent commands.
 4. **Package Manager Discipline**:
    - Strictly use `pnpm`. Never invoke `npm` or `yarn`.
-   - Local workspace dependencies must always use the `workspace:*` protocol (e.g., `"@unipost/ui": "workspace:*"`).
+   - Local workspace dependencies must always use the `workspace:*` protocol (e.g., `"@acc/ui": "workspace:*"`).
    - Sync root `pnpm-lock.yaml` with `pnpm install` whenever dependencies change.
 5. **Architectural Isolation**:
    - Deployable applications reside in `apps/`; reusable shared code resides in `packages/`.
@@ -218,7 +218,7 @@ When executing implementation plans, tasks, or user requests, writing synthetic 
 
 ### Non-Negotiable Directives
 1. **NO FAKE / SYNTHETIC TEST TARGETS**:
-   - Tests asserting system properties (security, multi-tenancy, RLS, schemas, crypto, idempotency) MUST exercise actual production classes, filters, and engines (e.g. real Spring Security filter chains, real Jackson compilers, real DB/RLS sessions), NEVER in-memory mock adapters or standalone synthetic stub engines like `@unipost/sandbox` when testing backend or core system invariants.
+   - Tests asserting system properties (security, multi-tenancy, RLS, schemas, crypto, idempotency) MUST exercise actual production classes, filters, and engines (e.g. real Spring Security filter chains, real Jackson compilers, real DB/RLS sessions), NEVER in-memory mock adapters or standalone synthetic stub engines like `@acc/sandbox` when testing backend or core system invariants.
    - Vitest and JUnit tests must assert against the real domain contracts.
 2. **NO ORPHANED / "PUT ASIDE" IMPLEMENTATIONS**:
    - NEVER write features, utilities, components, or handlers that are left disconnected from the active application graph.
@@ -251,7 +251,7 @@ Re-inventing existing design patterns by implementing raw HTML/JSX tables, dupli
 ## 12. Unified Sandbox Parity & Screen Synchronization Mandate
 
 ### Core Rationale
-The Unified Sandbox Platform (`@unipost/sandbox` and `apps/console/src/core/sandbox/`) is the central offline execution engine enabling client applications (`@unipost/console`, mobile, desktop) to run, demonstrate, and be automated without a live backend connection. When developers or AI agents create new routes, feature screens, modals, or mutation workflows without adding or updating corresponding sandbox route handlers, the screen renders blank or crashes with unhandled 404/500 errors in development mode (`import.meta.env.DEV`), breaking local-first workflows and automated UI test harnesses.
+The Unified Sandbox Platform (`@acc/sandbox` and `apps/console/src/core/sandbox/`) is the central offline execution engine enabling client applications (`@acc/console`, mobile, desktop) to run, demonstrate, and be automated without a live backend connection. When developers or AI agents create new routes, feature screens, modals, or mutation workflows without adding or updating corresponding sandbox route handlers, the screen renders blank or crashes with unhandled 404/500 errors in development mode (`import.meta.env.DEV`), breaking local-first workflows and automated UI test harnesses.
 
 ### Non-Negotiable Directives
 1. **MANDATORY SANDBOX PARITY FOR NEW SCREENS & FEATURES**:

@@ -28,8 +28,8 @@ Previously, navigating to the root URL (`/`) immediately assumed an authenticate
    - Created `src/features/landing/landing.test.tsx` verifying hero rendering, pricing cadence toggle, and plan selection callbacks.
 
 ## 3. Verification
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
-- `pnpm --filter @unipost/console test`: 14 suites, 79 tests passed.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console test`: 14 suites, 79 tests passed.
 
 ## 4. Key Artifacts
 - Plan: `apps/console/doc/implementation_plan_62.md`

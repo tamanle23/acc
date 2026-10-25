@@ -5,15 +5,15 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## Plan
 1. Delete `apps/mobile-ui/src/constants/mockData.ts`.
-2. Link `@unipost/client` and `@unipost/sandbox` workspace packages to `apps/mobile-ui`.
+2. Link `@acc/client` and `@acc/sandbox` workspace packages to `apps/mobile-ui`.
 3. Create `useMobileContextStore` to manage `activeTenantId`, `activeWorkspaceId`, and `activePersonaId`.
 4. Create `apps/mobile-ui/src/sandbox/mobile-sandbox.ts` to register the `mobilePostsSandboxHandler` and attach global fetch interception.
 5. Refactor `apps/mobile-ui/src/store/usePostStore.ts` to fetch and mutate dynamic records through `UnipostClient` (`/v1/metadata/records?entityType=post`).
 6. Add unit test suite `apps/mobile-ui/src/__tests__/mobile-sandbox.test.ts`.
-7. Verify all test suites across `mobile-ui`, `@unipost/client`, `@unipost/sandbox`, and `@unipost/console`.
+7. Verify all test suites across `mobile-ui`, `@acc/client`, `@acc/sandbox`, and `@acc/console`.
 
 ## Changes
-- `apps/mobile-ui/package.json`: Added `@unipost/client`, `@unipost/sandbox`, vitest, and test script.
+- `apps/mobile-ui/package.json`: Added `@acc/client`, `@acc/sandbox`, vitest, and test script.
 - `apps/mobile-ui/tsconfig.json`: Added workspace path aliases.
 - `apps/mobile-ui/src/constants/mockData.ts`: Deleted.
 - `apps/mobile-ui/src/store/useMobileContextStore.ts`: Created context store.
@@ -27,9 +27,9 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## Verification
 - `pnpm --filter mobile-ui test`: Passed (5/5 tests).
-- `pnpm --filter @unipost/client test`: Passed (6/6 tests).
-- `pnpm --filter @unipost/sandbox test`: Passed (5/5 tests).
-- `pnpm --filter @unipost/console test`: Passed (146/146 tests across 29 test files).
+- `pnpm --filter @acc/client test`: Passed (6/6 tests).
+- `pnpm --filter @acc/sandbox test`: Passed (5/5 tests).
+- `pnpm --filter @acc/console test`: Passed (146/146 tests across 29 test files).
 - Grep verified 0 occurrences of `mockData.ts` across `apps/mobile-ui`.
 
 ## Walkthrough

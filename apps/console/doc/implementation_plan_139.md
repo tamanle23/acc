@@ -46,8 +46,8 @@ While Visual DAG Studio provides full authoring, time-travel debugging, and stri
 
 ## Verification Plan
 ### Automated Tests
-- `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/dag-quick-insert-popover.test.tsx`
-- `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/dag-selection-toolbar.test.tsx`
-- `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/dag-condition-edge.test.tsx`
-- `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/visual-dag-studio-modes.test.tsx`
-- `pnpm --filter @unipost/console exec tsc --noEmit`
+- `pnpm --filter @acc/console test -- src/features/metadata/components/studio/dag-quick-insert-popover.test.tsx`
+- `pnpm --filter @acc/console test -- src/features/metadata/components/studio/dag-selection-toolbar.test.tsx`
+- `pnpm --filter @acc/console test -- src/features/metadata/components/studio/dag-condition-edge.test.tsx`
+- `pnpm --filter @acc/console test -- src/features/metadata/components/studio/visual-dag-studio-modes.test.tsx`
+- `pnpm --filter @acc/console exec tsc --noEmit`

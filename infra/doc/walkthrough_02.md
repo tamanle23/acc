@@ -10,7 +10,7 @@ I have updated the GitOps architecture to natively host a PostgreSQL container u
     - A `volumeClaimTemplates` block requesting a 1Gi `PersistentVolumeClaim` (PVC) for `postgres-data` (this persists database files across pod restarts).
     - An internal `Service` exposing port `5432`.
     - A `Secret` storing the default connection credentials.
-  - `backend.yaml`: Injected Spring Boot environment variables (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) that read from the Postgres secret and connect via `jdbc:postgresql://postgres:5432/unipost`.
+  - `backend.yaml`: Injected Spring Boot environment variables (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) that read from the Postgres secret and connect via `jdbc:postgresql://postgres:5432/acc`.
   - `kustomization.yaml`: Bound `postgres.yaml` into the core compilation base.
 
 ## Impact

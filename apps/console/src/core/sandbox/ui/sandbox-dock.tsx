@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { useSandboxStore, DEFAULT_SANDBOX_PERSONAS } from '../store/sandbox-store';
 import { sandboxManager } from '../manager/sandbox-manager';
 import { mockMetadataStore } from '@/features/metadata/data/mock-metadata';
-import { sandboxResetRegistry, dlqSandboxRepository } from '@unipost/sandbox';
+import { sandboxResetRegistry, dlqSandboxRepository } from '@acc/sandbox';
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { DLQ_QUERY_KEY } from '@/features/dlq/hooks/use-dlq';
@@ -45,7 +45,7 @@ export function SandboxDock() {
     useSpringAuthStore();
 
   const [isMinimized, setIsMinimized] = useState(() => {
-    return localStorage.getItem('unipost_unified_sandbox_minimized') === 'true';
+    return localStorage.getItem('acc_unified_sandbox_minimized') === 'true';
   });
 
   const [activeTab, setActiveTab] = useState<'persona' | 'network' | 'workflows' | 'auth'>('persona');
@@ -76,7 +76,7 @@ export function SandboxDock() {
   const toggleMinimized = () => {
     setIsMinimized((prev) => {
       const next = !prev;
-      localStorage.setItem('unipost_unified_sandbox_minimized', String(next));
+      localStorage.setItem('acc_unified_sandbox_minimized', String(next));
       return next;
     });
   };
@@ -90,7 +90,7 @@ export function SandboxDock() {
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('unipost_user_default_ws_') || key.startsWith('unipost_assumed_'))) {
+        if (key && (key.startsWith('acc_user_default_ws_') || key.startsWith('acc_assumed_'))) {
           keysToRemove.push(key);
         }
       }

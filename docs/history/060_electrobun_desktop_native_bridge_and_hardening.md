@@ -17,7 +17,7 @@ The desktop application (`apps/desktop-console`) powered by Electrobun needed:
    - Host diagnostics and vibrancy styling synchronization.
 3. **Packaging & Verification Pipeline**:
    - Adding a runnable `"test"` script in `apps/desktop-console/package.json`.
-   - Configuring `electrobun.config.ts` to bundle `@unipost/console` static assets (`electron-web`) seamlessly.
+   - Configuring `electrobun.config.ts` to bundle `@acc/console` static assets (`electron-web`) seamlessly.
    - Testing build output with `electrobun build`.
 
 ---
@@ -30,7 +30,7 @@ The desktop application (`apps/desktop-console`) powered by Electrobun needed:
    - Implement `buildTrayMenu()` to render dynamic tray status.
    - Export `desktopRPCHandlers` with error guards and file system utilities.
 3. **Packaging Configuration (`electrobun.config.ts`, `tsconfig.json`)**:
-   - Map `views` and `copy` configuration to bundle `@unipost/console` assets into `views/electron-web`.
+   - Map `views` and `copy` configuration to bundle `@acc/console` assets into `views/electron-web`.
    - Configure TypeScript paths to resolve devkit APIs.
 4. **Test Suite (`src/bun/index.test.ts`)**:
    - Test tray menu construction across all sync states (`ONLINE`, `SYNCING`, `OFFLINE`).
@@ -40,8 +40,8 @@ The desktop application (`apps/desktop-console`) powered by Electrobun needed:
    - Test system notification dispatching.
    - Test host platform diagnostics.
 5. **Verification**:
-   - Run `pnpm --filter @unipost/desktop test`.
-   - Run `pnpm --filter @unipost/desktop build`.
+   - Run `pnpm --filter @acc/desktop test`.
+   - Run `pnpm --filter @acc/desktop build`.
 
 ---
 
@@ -74,8 +74,8 @@ The desktop application (`apps/desktop-console`) powered by Electrobun needed:
 ---
 
 ## 4. Verification
-- `pnpm --filter @unipost/desktop test`: 9 passed in 335ms.
-- `pnpm --filter @unipost/desktop build`: Built successfully to `build/dev-win-x64` with `views/electron-web/index.html` bundled.
+- `pnpm --filter @acc/desktop test`: 9 passed in 335ms.
+- `pnpm --filter @acc/desktop build`: Built successfully to `build/dev-win-x64` with `views/electron-web/index.html` bundled.
 - `pnpm --filter mobile-ui test`: All 23 tests remain green.
 
 ---

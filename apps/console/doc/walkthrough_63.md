@@ -32,6 +32,6 @@ This document records the full-stack implementation of **Phase 2 of the Domain B
 
 ## Verification & Quality Assurance
 1. **Frontend Typecheck**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+   - `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 2. **Frontend Vitest Unit Tests**:
-   - `pnpm --filter @unipost/console test`: 14 test suites, 79 unit tests passed cleanly.
+   - `pnpm --filter @acc/console test`: 14 test suites, 79 unit tests passed cleanly.

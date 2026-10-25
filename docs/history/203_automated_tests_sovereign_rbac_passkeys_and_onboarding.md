@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25  
 **Author:** Lead Systems Architect & Full-Stack Engineer  
-**Scope:** `apps/backend/unipost-fw`, `apps/console`, `docs/history/`  
+**Scope:** `apps/backend/acc-fw`, `apps/console`, `docs/history/`  
 **Status:** Complete & Verified  
 
 ---
@@ -14,7 +14,7 @@ Following the implementation of Sovereign RBAC, passkey biometric authentication
 
 ## 2. Implementation & Test Suite Architecture
 
-### 2.1. Backend Unit Tests (`apps/backend/unipost-fw`)
+### 2.1. Backend Unit Tests (`apps/backend/acc-fw`)
 - **`SystemFleetServiceTest`**:
   - Validated `assumeTenant` issuance stamping canonical `ROLE_SYSTEM_ROOT` and `ROLE_SYSTEM_SUPPORT` authorities.
   - Verified sovereign role matrix store initialization, custom role creation, duplicate role conflict detection (`MetadataConflictException`), permission updating, and error handling for missing roles (`MetadataNotFoundException`).
@@ -43,6 +43,6 @@ Following the implementation of Sovereign RBAC, passkey biometric authentication
 ---
 
 ## 3. Verification & Quality Gates
-- **Backend Test Suite**: `mvn test -pl unipost-fw "-Dtest=SystemFleetControllerTest,SystemFleetServiceTest" -q` -> **All Green (Exit Code 0)**.
-- **Frontend Typecheck**: `pnpm --filter @unipost/console exec tsc --noEmit` -> **Zero Type Errors**.
-- **Frontend Test Suite**: `pnpm --filter @unipost/console test:run` -> **93 Test Files Passed, 432 Tests Passed, 0 Failures**.
+- **Backend Test Suite**: `mvn test -pl acc-fw "-Dtest=SystemFleetControllerTest,SystemFleetServiceTest" -q` -> **All Green (Exit Code 0)**.
+- **Frontend Typecheck**: `pnpm --filter @acc/console exec tsc --noEmit` -> **Zero Type Errors**.
+- **Frontend Test Suite**: `pnpm --filter @acc/console test:run` -> **93 Test Files Passed, 432 Tests Passed, 0 Failures**.

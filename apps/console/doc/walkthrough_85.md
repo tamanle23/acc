@@ -15,7 +15,7 @@ We eliminated leaky direct references to `useSandboxStore` across the metadata U
 ## 2. Changes Made
 
 ### A. Centralized Permissions Facade (`use-permissions.ts`)
-- Created [`usePermissions()`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/spring-auth/hooks/use-permissions.ts) inside `@/features/spring-auth`:
+- Created [`usePermissions()`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/spring-auth/hooks/use-permissions.ts) inside `@/features/spring-auth`:
   ```ts
   export function usePermissions() {
     const user = useSpringAuthStore((state) => state.user);
@@ -57,6 +57,6 @@ We eliminated leaky direct references to `useSandboxStore` across the metadata U
 
 ## 3. Verification
 
-- Ran `pnpm --filter @unipost/console test src/features/metadata`:
+- Ran `pnpm --filter @acc/console test src/features/metadata`:
   - **9 test files passed**, **55 tests passed** (100% pass rate).
 - Verified with `git grep -n "useSandboxStore" apps/console/src/features/metadata`: 0 production UI component imports remaining.

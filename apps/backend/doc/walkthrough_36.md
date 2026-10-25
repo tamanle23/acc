@@ -21,7 +21,7 @@ Standardized native implementation of medium-frequency workflow task node types 
 - **`workflow-engine` Unit Tests**:
   - `MediumFrequencyTaskStrategiesTest.java`: 6/6 tests passed (`TERMINATE`, `SUB_WORKFLOW`, `START_WORKFLOW`, `EVENT`, `DYNAMIC`, `LLM_CHAT_COMPLETE`).
   - Total `workflow-engine` suite: 38/38 tests passed (0 failures, 0 errors).
-- **`unipost-ms-aio` Integration Tests**:
+- **`acc-ms-aio` Integration Tests**:
   - 4/4 test classes passed (including `HighFrequencyTaskIntegrationTest`, `WorkflowEngineRestApiTest`, `ModularityTests`, `YamlValidationTest`).
-- **`@unipost/worker` SDK**:
+- **`@acc/worker` SDK**:
   - 5/5 tests passed.

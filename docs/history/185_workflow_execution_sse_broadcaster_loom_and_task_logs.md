@@ -4,7 +4,7 @@
 During active workflow executions, real-time telemetry streaming via Server-Sent Events (`/api/v1/workflow/executions/{id}/events`) in `ExecutionStreamBroadcaster` was executed synchronously on the calling thread. If connected SSE client sockets encountered network latency or closed abruptly, worker REST controllers and task completion threads could suffer blocking delays. In addition, there was no server-side heartbeat ping to prevent TCP/proxy timeouts, and task workers had no endpoint to stream incremental stdout/stderr logs (`TASK_LOG`) during task execution.
 
 ## Plan
-1. Upgrade `ExecutionStreamBroadcaster` in `apps/backend/unipost-ms-aio` to dispatch SSE events asynchronously using Java 21 Loom virtual threads (`Executors.newVirtualThreadPerTaskExecutor()`) with seamless cached thread pool fallback for JVMs < 21.
+1. Upgrade `ExecutionStreamBroadcaster` in `apps/backend/acc-ms-aio` to dispatch SSE events asynchronously using Java 21 Loom virtual threads (`Executors.newVirtualThreadPerTaskExecutor()`) with seamless cached thread pool fallback for JVMs < 21.
 2. Implement an automated `@Scheduled(fixedRate = 15000)` periodic heartbeat loop (`HEARTBEAT`) to keep browser EventSource connections and proxies alive.
 3. Expose `POST /api/v1/workflow/tasks/{id}/log` in `TaskWorkerController` allowing workers to stream chunked task execution logs.
 4. Add verification assertions in `WorkflowEngineRestApiTest.java`.
@@ -25,6 +25,6 @@ During active workflow executions, real-time telemetry streaming via Server-Sent
 ## Verification
 - Ran Maven test suite:
   ```bash
-  node ./apps/backend/mvnw.cjs test -pl unipost-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
+  node ./apps/backend/mvnw.cjs test -pl acc-ms-aio -Dtest=WorkflowEngineRestApiTest,WorkflowIteration13ControllersTest
   ```
 - Result: 3/3 tests passed with **BUILD SUCCESS**.

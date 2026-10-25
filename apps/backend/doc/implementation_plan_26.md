@@ -9,16 +9,16 @@ Microservices and external edge consumers (such as `tekgo-ui` edge cache invalid
    - Includes partial indexes (`idx_outbox_pending_polling`, `idx_outbox_aggregate`) and PostgreSQL Row-Level Security policies.
 2. **Transactional Event Publishing**:
    - `OutboxEvent` JPA entity mapping and `OutboxEventRepository` with pessimistic concurrency (`SKIP LOCKED`).
-   - `OutboxEventPublisher` in `unipost-fw` providing mandatory transaction semantics (`@Transactional(propagation = Propagation.MANDATORY)`).
+   - `OutboxEventPublisher` in `acc-fw` providing mandatory transaction semantics (`@Transactional(propagation = Propagation.MANDATORY)`).
    - Hooked into `MetadataService` record mutations (`createEntityRecord`, `updateEntityRecord`, `deleteEntityRecord`).
 3. **Outbox Polling Worker Job**:
-   - `OutboxPollingJob` in `unipost-ms-worker` running periodically.
+   - `OutboxPollingJob` in `acc-ms-worker` running periodically.
    - Reads pending events in batches with `findPendingEventsForProcessing(batchSize)`.
    - Dispatches edge cache invalidation webhooks to `WebhookDeliveryService` for article publications and mutations.
    - Manages state machine: `PENDING` -> `PUBLISHED` or exponential backoff (`2^retryCount` seconds) -> `DEAD_LETTER` once `retryCount >= maxRetries`.
 
 ## Verification Plan
-1. Run `OutboxEventPublisherTest` in `unipost-fw`.
-2. Run `OutboxPollingJobTest` in `unipost-ms-worker`.
+1. Run `OutboxEventPublisherTest` in `acc-fw`.
+2. Run `OutboxPollingJobTest` in `acc-ms-worker`.
 3. Verify `MetadataServiceTest` with outbox publishing compatibility.
 4. Verify full build integrity across backend and edge consumers.

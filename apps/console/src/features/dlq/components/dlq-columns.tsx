@@ -23,7 +23,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 
 interface CreateDlqColumnsProps {
   onInspect: (record: TaskDlqRecordDto) => void;

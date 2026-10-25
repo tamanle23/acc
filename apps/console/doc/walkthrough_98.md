@@ -66,12 +66,12 @@ In Phase 36, we delivered the complete **Visual DAG Studio 2.0** architecture su
 - Kahn / Tarjan acyclic DAG cycle validation.
 
 ## 3. Verification & Testing
-- Vitest suite `@unipost/console`: `src/features/metadata/components/studio/` passed **6/6 test files, 28/28 tests**.
+- Vitest suite `@acc/console`: `src/features/metadata/components/studio/` passed **6/6 test files, 28/28 tests**.
   - `workflow-ir-converter.test.ts` (6 tests)
   - `dag-palette.test.tsx` (2 tests)
   - `dag-node.test.tsx` (2 tests)
   - `dag-property-inspector.test.tsx` (2 tests)
   - `visual-schema-studio.test.tsx` (8 tests)
   - `visual-dag-studio-modes.test.tsx` (8 tests)
-- Vitest suite `@unipost/sandbox`: `src/__tests__/sandbox-engine.test.ts` & `src/handlers/data/schema.test.ts` passed **2/2 files, 9/9 tests**.
-- TypeScript type checking: `pnpm --filter @unipost/console exec tsc --noEmit` exited clean with code 0.
+- Vitest suite `@acc/sandbox`: `src/__tests__/sandbox-engine.test.ts` & `src/handlers/data/schema.test.ts` passed **2/2 files, 9/9 tests**.
+- TypeScript type checking: `pnpm --filter @acc/console exec tsc --noEmit` exited clean with code 0.

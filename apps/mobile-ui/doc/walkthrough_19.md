@@ -23,6 +23,6 @@ Completed Phase 6 of `docs/brainstorming/integration_master_plan_iteration_1.md`
 
 ## 3. Verification Results
 - `pnpm --filter mobile-ui test`: 3 test files passed, 13/13 tests green.
-- `pnpm --filter @unipost/client test`: 6/6 tests green.
-- `pnpm --filter @unipost/sandbox test`: 5/5 tests green.
-- `pnpm --filter @unipost/console test`: 29 test files passed, 146/146 tests green.
+- `pnpm --filter @acc/client test`: 6/6 tests green.
+- `pnpm --filter @acc/sandbox test`: 5/5 tests green.
+- `pnpm --filter @acc/console test`: 29 test files passed, 146/146 tests green.

@@ -16,10 +16,10 @@ Migrate the project's vector icons from `@expo/vector-icons` to `@react-native-v
 - Remove `@expo/vector-icons`.
 
 ### Screens & Components
-#### [MODIFY] [src/screens/DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/DashboardScreen.tsx)
+#### [MODIFY] [src/screens/DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/DashboardScreen.tsx)
 - Replace `import { Feather } from '@expo/vector-icons'` with `import Feather from '@react-native-vector-icons/feather'`.
 
-#### [MODIFY] [package.json](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/package.json)
+#### [MODIFY] [package.json](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/package.json)
 - Remove `@expo/vector-icons` dependency.
 
 ## Verification Plan

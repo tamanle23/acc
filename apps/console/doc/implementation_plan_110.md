@@ -25,13 +25,13 @@ In accordance with architectural grilling decisions and the authoritative Monore
 
 ## 2. Proposed Changes
 
-### A. Database Layer (`apps/backend/unipost-db`)
+### A. Database Layer (`apps/backend/acc-db`)
 - Create Liquibase migration `changelog-000.000.00011.xml`:
   - Add `is_composite BOOLEAN NOT NULL DEFAULT FALSE` to `UNIPOST_ENTITY_TYPES`.
   - Add `composite_spec JSONB NULL` to `UNIPOST_ENTITY_TYPES`.
   - Register `changelog-000.000.00011.xml` in `changelog-master.xml`.
 
-### B. Domain & Service Layer (`apps/backend/unipost-fw`)
+### B. Domain & Service Layer (`apps/backend/acc-fw`)
 - **Domain Models**:
   - Update `EntityType.java` with `isComposite` and `compositeSpec`.
   - Create `CompositeSpec.java`, `CompositeNode.java`, `CompositeField.java`, `CompositeJoinPattern.java`.
@@ -50,7 +50,7 @@ In accordance with architectural grilling decisions and the authoritative Monore
 - **Hazelcast Distributed Cache Invariant**:
   - Integrate composite JSON Schema compilation into `SchemaValidationService` using `schema:{tenantId}:{entityTypeId}:v{version}` key pattern.
 
-### C. Backend API & Testing (`apps/backend/unipost-ms-aio`)
+### C. Backend API & Testing (`apps/backend/acc-ms-aio`)
 - Expose composite entity creation and retrieval in metadata endpoints.
 - Provide comprehensive JUnit 5 test suite `CompositeEntityTypeVerificationTest.java`:
   - Verifies AST compilation to JSON Schema.
@@ -84,11 +84,11 @@ In accordance with architectural grilling decisions and the authoritative Monore
 
 ## 3. Verification Plan
 1. **Automated Backend Tests**:
-   - Execute Maven quiet tests: `mvn test -pl apps/backend/unipost-ms-aio -Dtest=CompositeEntityTypeVerificationTest -q`.
+   - Execute Maven quiet tests: `mvn test -pl apps/backend/acc-ms-aio -Dtest=CompositeEntityTypeVerificationTest -q`.
 2. **Automated Frontend Tests**:
-   - Run Vitest: `pnpm --filter @unipost/console test run src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`.
+   - Run Vitest: `pnpm --filter @acc/console test run src/features/metadata/components/studio/composite/composite-bento-studio.test.tsx`.
 3. **Type & Lint Checking**:
-   - Run `pnpm --filter @unipost/console check-types`.
-   - Run `pnpm --filter @unipost/console lint`.
+   - Run `pnpm --filter @acc/console check-types`.
+   - Run `pnpm --filter @acc/console lint`.
 4. **Unified Sandbox Validation**:
    - Verify offline rendering of composite entity in sandbox mode with zero live backend dependency.

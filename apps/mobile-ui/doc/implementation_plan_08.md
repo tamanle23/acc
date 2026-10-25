@@ -15,7 +15,7 @@ Create a rich set of realistic mock posts in the Dashboard to test and showcase 
 - Create a collection of diverse mock posts with avatars, timestamps, varied text content, tags, like/comment metrics, and optional image attachments (via Unsplash / Unsplash Source or royalty-free placeholders).
 - Provide authors with names, handles, and avatars.
 
-#### [MODIFY] [usePostStore.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/store/usePostStore.ts)
+#### [MODIFY] [usePostStore.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/store/usePostStore.ts)
 - Initialize the store with mock posts if no posts are present.
 - Provide a `resetFeed()` or `seedPosts()` method to easily restore/reload demo data if needed.
 
@@ -23,10 +23,10 @@ Create a rich set of realistic mock posts in the Dashboard to test and showcase 
 
 ### Dashboard & Glass Enhancement
 
-#### [MODIFY] [GlassCard.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/GlassCard.tsx)
+#### [MODIFY] [GlassCard.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/GlassCard.tsx)
 - Check styling to ensure adequate padding, margin, and border radius.
 
-#### [MODIFY] [DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/screens/DashboardScreen.tsx)
+#### [MODIFY] [DashboardScreen.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/screens/DashboardScreen.tsx)
 - Enhance the post card UI inside `DashboardScreen`:
   - Author Avatar with initials or placeholder image.
   - Formatted relative timestamp or date.

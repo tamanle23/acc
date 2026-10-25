@@ -1,4 +1,4 @@
-# Walkthrough 75: Phase 1 - @unipost/console HTTP Hardening & Context Injection
+# Walkthrough 75: Phase 1 - @acc/console HTTP Hardening & Context Injection
 
 ## 1. Overview
 Completed Phase 1 of `docs/brainstorming/integration_master_plan_iteration_1.md`:
@@ -20,6 +20,6 @@ Completed Phase 1 of `docs/brainstorming/integration_master_plan_iteration_1.md`
   - Added unit tests verifying active tenant and workspace header injection, plus assumed tenant priority.
 
 ## 3. Verification Results
-- `pnpm --filter @unipost/console exec tsc --noEmit`: Exited with code 0.
-- `pnpm --filter @unipost/console test`: 29 test files passed, 146/146 tests green.
+- `pnpm --filter @acc/console exec tsc --noEmit`: Exited with code 0.
+- `pnpm --filter @acc/console test`: 29 test files passed, 146/146 tests green.
 - Grep check for `from 'axios'` in `apps/console/src/features/metadata/api`: 0 occurrences.

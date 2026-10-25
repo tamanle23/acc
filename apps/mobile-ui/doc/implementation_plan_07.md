@@ -21,15 +21,15 @@ Currently, our `LiquidGlassView` uses `expo-blur` with a solid background overla
 
 ### UI Components
 
-#### [MODIFY] [package.json](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/package.json)
+#### [MODIFY] [package.json](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/package.json)
 - Add `expo-linear-gradient`.
 
-#### [MODIFY] [LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/LiquidGlassView.tsx)
+#### [MODIFY] [LiquidGlassView.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/LiquidGlassView.tsx)
 - Add an `Image` overlay using a tiny base64 noise tile with `resizeMode="repeat"` and low opacity (e.g., ~3-5%). This breaks up the perfect smoothness of the digital blur.
 - Add an absolute `LinearGradient` border/highlight layer over the `BlurView` to give the glass a 3D bevel and specular shine (diagonal from top-left to bottom-right).
 - Combine the standard `glassBackground` and `glassBorder` with these new visual layers.
 
-#### [MODIFY] [colors.ts](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/theme/colors.ts)
+#### [MODIFY] [colors.ts](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/theme/colors.ts)
 - Introduce a `glassShine` gradient configuration to standardise the highlight across the app.
 
 ## Verification Plan

@@ -24,7 +24,7 @@ In Workstream 3, standard tables were migrated to the unified `DataTable` layout
 
 ## Verification
 - `npx vitest run src/features/metadata/__tests__/wide-telemetry-entity.test.ts`: 3/3 tests passing.
-- `pnpm --filter @unipost/console test`: 66 test files passed, 312/312 tests passing.
+- `pnpm --filter @acc/console test`: 66 test files passed, 312/312 tests passing.
 - `npx tsc --noEmit --project tsconfig.json`: 0 errors.
 
 ## Walkthrough

@@ -6,7 +6,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { DlqTable } from '../components/dlq-table';
 import { DlqInspectorSheet } from '../components/dlq-inspector-sheet';
 import { DlqFeature } from '../index';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 import * as dlqHooks from '../hooks/use-dlq';
 import * as permissionsHook from '@/features/spring-auth/hooks/use-permissions';
 
@@ -30,7 +30,7 @@ const mockDlqRecord: TaskDlqRecordDto = {
   domain: 'finance',
   status: 'ISOLATED',
   errorMessage: 'HTTP 504 Gateway Timeout from stripe-connect endpoint',
-  errorStacktrace: 'java.net.SocketTimeoutException: Read timed out\n  at com.unipost.worker.PaymentWorker.charge()',
+  errorStacktrace: 'java.net.SocketTimeoutException: Read timed out\n  at com.acc.worker.PaymentWorker.charge()',
   payloadSnapshot: {
     amount: 150000,
     currency: 'VND',

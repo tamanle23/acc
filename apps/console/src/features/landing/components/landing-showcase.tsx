@@ -77,7 +77,7 @@ export const LandingShowcase: React.FC = () => {
             <div className="w-3 h-3 rounded-full bg-amber-500/70" />
             <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
             <span className="ms-2 text-xs font-mono text-muted-foreground">
-              unipost.workspace.studio // {activeModel.toUpperCase()}_SCHEMA_V1
+              acc.workspace.studio // {activeModel.toUpperCase()}_SCHEMA_V1
             </span>
           </div>
           <Badge variant="secondary" className="text-[10px] font-mono bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">

@@ -23,8 +23,8 @@ Standardized native implementation of high-frequency workflow task node types ba
 - **`workflow-engine` Unit Tests**:
   - `HighFrequencyTaskStrategiesTest.java`: 5/5 tests passed (covering `SET_VARIABLE`, `JSON_JQ_TRANSFORM`, `INLINE`, `HUMAN`, `EXCLUSIVE_JOIN`).
   - Total `workflow-engine` suite: 32/32 tests passed (0 failures, 0 errors).
-- **`unipost-ms-aio` Integration Test**:
+- **`acc-ms-aio` Integration Test**:
   - `HighFrequencyTaskIntegrationTest.java`: Full pipeline test combining `SET_VARIABLE` $\to$ `INLINE` $\to$ `JSON_JQ_TRANSFORM` $\to$ worker task passed in 0.35s.
   - Existing `WorkflowEngineRestApiTest.java`: 1/1 passed.
 - **TypeScript Worker Suite**:
-  - `pnpm --filter @unipost/worker test`: 5/5 passed.
+  - `pnpm --filter @acc/worker test`: 5/5 passed.

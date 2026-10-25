@@ -20,9 +20,9 @@ In accordance with `docs/brainstorming/integration_master_plan_iteration_1.md` (
 
 ## Verification
 - `pnpm --filter mobile-ui test`: Passed (13/13 tests across 3 test files).
-- `pnpm --filter @unipost/client test`: Passed (6/6 tests).
-- `pnpm --filter @unipost/sandbox test`: Passed (5/5 tests).
-- `pnpm --filter @unipost/console test`: Passed (146/146 tests).
+- `pnpm --filter @acc/client test`: Passed (6/6 tests).
+- `pnpm --filter @acc/sandbox test`: Passed (5/5 tests).
+- `pnpm --filter @acc/console test`: Passed (146/146 tests).
 
 ## Walkthrough
 Refer to `apps/mobile-ui/doc/walkthrough_19.md`.

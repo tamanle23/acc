@@ -1,7 +1,7 @@
 # Track 2: Declarative State Machines & Operational Workflows
 ## Enterprise Architectural Blueprint & Backend Implementation Guide
 
-**Target Backend System:** `@unipost/backend` (`apps/backend/unipost-fw`, Java 21 / Spring Boot 3.3 / Spring Modulith)
+**Target Backend System:** `@acc/backend` (`apps/backend/acc-fw`, Java 21 / Spring Boot 3.3 / Spring Modulith)
 **Target Domain:** Enterprise Multi-Tenant Dynamic Data Fabric & Low-Code Workflow Engine
 **Referenced Context:** `docs/brainstorming/unlocking_full_potential_of_dynamic_metadata.md` (Section 3)
 **Authoritative Architectural Specification Version:** 2.0-ENTERPRISE
@@ -19,7 +19,7 @@ Without a centralized, metadata-driven Finite State Machine (FSM) engine, enterp
 - **Missing Permission & Attribute Gates**: Operations are permitted when mandatory supporting attributes (e.g., `approver_id`, `reject_reason`, `budget_code`) are missing from the attributes payload.
 - **Tightly Coupled Side Effects**: Sending email notifications, triggering webhooks, or updating downstream inventory systems are hardcoded inside database transaction boundaries, leading to dirty reads and performance degradation.
 
-This specification introduces a **Declarative, Metadata-Driven State Machine & Workflow Engine** seamlessly embedded into the `@unipost/backend` write pipeline.
+This specification introduces a **Declarative, Metadata-Driven State Machine & Workflow Engine** seamlessly embedded into the `@acc/backend` write pipeline.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -196,7 +196,7 @@ When a record write or state transition is requested, the engine executes five s
 
 #### 1. `LifecycleConfig.java`
 ```java
-package com.unipost.domain.metadata;
+package com.acc.domain.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
@@ -228,7 +228,7 @@ public record LifecycleConfig(
 
 #### 2. `TransitionConfig.java`
 ```java
-package com.unipost.domain.metadata;
+package com.acc.domain.metadata;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
@@ -257,7 +257,7 @@ public record TransitionConfig(
 
 #### 3. `EntityStateChangedEvent.java`
 ```java
-package com.unipost.domain.metadata;
+package com.acc.domain.metadata;
 
 import java.time.Instant;
 import java.util.Map;
@@ -277,9 +277,9 @@ public record EntityStateChangedEvent(
 
 #### 4. Entity Class Updates (`EntityType.java`)
 ```java
-package com.unipost.domain.metadata;
+package com.acc.domain.metadata;
 
-import com.unipost.domain.BaseModel;
+import com.acc.domain.BaseModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -320,7 +320,7 @@ public class EntityType extends BaseModel {
 ### 3.2 SpEL Guard Expression Evaluator Component
 
 ```java
-package com.unipost.service.workflow;
+package com.acc.service.workflow;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.expression.Expression;
@@ -375,11 +375,11 @@ public class SpelGuardEvaluator {
 ### 3.3 Core FSM Engine Service Implementation
 
 ```java
-package com.unipost.service.workflow;
+package com.acc.service.workflow;
 
-import com.unipost.domain.metadata.*;
-import com.unipost.fw.tenancy.TenantContextHolder;
-import com.unipost.service.exception.MetadataConflictException;
+import com.acc.domain.metadata.*;
+import com.acc.fw.tenancy.TenantContextHolder;
+import com.acc.service.exception.MetadataConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

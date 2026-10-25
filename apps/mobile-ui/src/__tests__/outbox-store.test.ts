@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useOutboxStore } from '../store/useOutboxStore';
 import { usePostStore } from '../store/usePostStore';
 import { initMobileSandbox, resetMobileSandboxPosts } from '../sandbox/mobile-sandbox';
-import { sandboxRegistry } from '@unipost/sandbox';
+import { sandboxRegistry } from '@acc/sandbox';
 
 describe('mobile-ui Zero-Data-Loss Outbox & Conflict Resolution', () => {
   beforeEach(() => {

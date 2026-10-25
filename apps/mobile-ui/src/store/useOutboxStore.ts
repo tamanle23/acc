@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createUnipostClient } from '@unipost/client';
+import { createUnipostClient } from '@acc/client';
 import { useMobileContextStore } from './useMobileContextStore';
 
 export type OutboxJobStatus = 'PENDING' | 'SYNCING' | 'SYNCED' | 'FAILED' | 'CONFLICT';

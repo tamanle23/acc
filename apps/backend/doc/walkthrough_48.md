@@ -1,6 +1,6 @@
 # Walkthrough 48: Sovereign RBAC, Fail-Fast Liquibase, and Passkey Credentials
 
-**App:** `@unipost/backend`  
+**App:** `@acc/backend`  
 **Date:** 2026-10-25  
 **Version:** Iteration 23  
 

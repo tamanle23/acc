@@ -1,7 +1,7 @@
 # Implementation Plan 97: Phase 34 - Live Console API Client, Dual-Mode Studio & SSE Execution Stream
 
 ## 1. Goal & Architectural Overview
-Phase 34 implements the end-to-end bridge connecting the `@unipost/console` frontend and the Spring Boot backend (`unipost-ms-aio`) / Unified Sandbox Platform via resilient Server-Sent Events (SSE) telemetry and interactive DAG execution visualization:
+Phase 34 implements the end-to-end bridge connecting the `@acc/console` frontend and the Spring Boot backend (`acc-ms-aio`) / Unified Sandbox Platform via resilient Server-Sent Events (SSE) telemetry and interactive DAG execution visualization:
 
 1. **Spring Boot SSE Real-Time Execution Stream (`WorkflowExecutionController.java`)**:
    - Add endpoint `GET /api/v1/workflow/executions/{id}/events` producing `MediaType.TEXT_EVENT_STREAM_VALUE`.
@@ -37,13 +37,13 @@ Phase 34 implements the end-to-end bridge connecting the `@unipost/console` fron
 7. **Verification**:
    - Spring Boot controller tests for `SseEmitter` event streaming.
    - Vitest tests for TanStack hooks and SSE stream fallback.
-   - Vitest tests in `@unipost/sandbox`.
+   - Vitest tests in `@acc/sandbox`.
 
 ---
 
 ## 2. Target Files & Changes
-- `apps/backend/unipost-ms-aio/src/main/java/com/unipost/aio/controller/workflow/WorkflowExecutionController.java`
-- `apps/backend/unipost-ms-aio/src/test/java/com/unipost/aio/controller/workflow/WorkflowEngineRestApiTest.java`
+- `apps/backend/acc-ms-aio/src/main/java/com/acc/aio/controller/workflow/WorkflowExecutionController.java`
+- `apps/backend/acc-ms-aio/src/test/java/com/acc/aio/controller/workflow/WorkflowEngineRestApiTest.java`
 - `packages/sandbox/src/handlers/workflow-handler.ts`
 - `packages/sandbox/src/__tests__/workflow-sandbox.test.ts`
 - `apps/console/src/features/workflows/api/workflow-api.ts`

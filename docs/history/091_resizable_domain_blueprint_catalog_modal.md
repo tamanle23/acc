@@ -1,7 +1,7 @@
 # 091: Resizable Domain Blueprint Catalog Modal with Freeform Drag Handles & Maximize Toggle
 
 ## Context & Problem
-In `@unipost/console`, the Domain Blueprint Catalog modal was restricted to static viewport ratios (`h-[88vh]`, `max-w-6xl`). When inspecting complex domain blueprints in Split View or viewing dense catalogs on ultra-wide / compact displays, users had no capability to expand or freely adjust dialog dimensions.
+In `@acc/console`, the Domain Blueprint Catalog modal was restricted to static viewport ratios (`h-[88vh]`, `max-w-6xl`). When inspecting complex domain blueprints in Split View or viewing dense catalogs on ultra-wide / compact displays, users had no capability to expand or freely adjust dialog dimensions.
 
 ## Implementation Details
 1. **`useResizableDialog` Hook**:
@@ -22,5 +22,5 @@ In `@unipost/console`, the Domain Blueprint Catalog modal was restricted to stat
    - Applied dynamic `style={dialogStyle}` to `DialogContent`.
 
 ## Verification
-- Unit Tests: `pnpm --filter @unipost/console test src/features/metadata` passed 58/58 tests.
-- Type Safety: `pnpm --filter @unipost/console exec tsc --noEmit` passed with 0 errors.
+- Unit Tests: `pnpm --filter @acc/console test src/features/metadata` passed 58/58 tests.
+- Type Safety: `pnpm --filter @acc/console exec tsc --noEmit` passed with 0 errors.

@@ -1,7 +1,7 @@
 # [128] Automated Testing Phase 1 Tooling, Instrumentation & Dual-Mode E2E
 
 ## Problem
-To achieve >=90% test coverage across the core monorepo production stack (`@unipost/backend`, `@unipost/console`, and `packages/sandbox`), the project lacked unified coverage instrumentation (JaCoCo in Maven, `@vitest/coverage-v8` in Vite/Vitest), dual-mode Playwright execution (offline Sandbox autonomous mode vs pre-warmed Live Spring Boot mode), automated WCAG 2.2 AA accessibility gating, and a scheduled nightly CI testing workflow.
+To achieve >=90% test coverage across the core monorepo production stack (`@acc/backend`, `@acc/console`, and `packages/sandbox`), the project lacked unified coverage instrumentation (JaCoCo in Maven, `@vitest/coverage-v8` in Vite/Vitest), dual-mode Playwright execution (offline Sandbox autonomous mode vs pre-warmed Live Spring Boot mode), automated WCAG 2.2 AA accessibility gating, and a scheduled nightly CI testing workflow.
 
 ## Plan
 1. Configure `jacoco-maven-plugin` (0.8.12) in backend with `prepare-agent` and `report` goals.
@@ -13,9 +13,9 @@ To achieve >=90% test coverage across the core monorepo production stack (`@unip
 ## Changes
 - **Backend Build & Instrumentation**:
   - [`apps/backend/pom.xml`](apps/backend/pom.xml): Added `jacoco-maven-plugin` (version 0.8.12) with agent preparation and report lifecycle execution.
-  - [`apps/backend/unipost-fw/src/main/java/com/unipost/service/RecordMutationPipeline.java`](apps/backend/unipost-fw/src/main/java/com/unipost/service/RecordMutationPipeline.java): Injected `ObjectMapper` and implemented 1MB payload size hard-cap enforcement throwing `MetadataConflictException`.
-  - [`apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java`](apps/backend/unipost-fw/src/main/java/com/unipost/service/SchemaValidationService.java): Overloaded `validatePayload` and `validatePayloadDryRun` to accept explicit `tenantId`.
-  - [`apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java`](apps/backend/unipost-fw/src/main/java/com/unipost/service/MetadataService.java): Added `ObjectMapper` import and wired into pipeline initialization.
+  - [`apps/backend/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java`](apps/backend/acc-fw/src/main/java/com/acc/service/RecordMutationPipeline.java): Injected `ObjectMapper` and implemented 1MB payload size hard-cap enforcement throwing `MetadataConflictException`.
+  - [`apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java`](apps/backend/acc-fw/src/main/java/com/acc/service/SchemaValidationService.java): Overloaded `validatePayload` and `validatePayloadDryRun` to accept explicit `tenantId`.
+  - [`apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java`](apps/backend/acc-fw/src/main/java/com/acc/service/MetadataService.java): Added `ObjectMapper` import and wired into pipeline initialization.
 - **Frontend Coverage & Testing**:
   - [`apps/console/package.json`](apps/console/package.json): Added `@vitest/coverage-v8` devDependency, `"test:coverage"` and `"test:e2e:live"` scripts.
   - [`apps/console/vitest.config.ts`](apps/console/vitest.config.ts): Added `coverage` block with `v8` provider and HTML/JSON/lcov reporters.
@@ -30,8 +30,8 @@ To achieve >=90% test coverage across the core monorepo production stack (`@unip
   - [`.gitignore`](.gitignore): Added test and coverage output artifacts (`coverage`, `playwright-report`, `test-results`, `*.exec`).
 
 ## Verification
-- `mvn test -f apps/backend/unipost-fw/pom.xml -q`: 207 / 207 tests passed (0 failures).
-- `mvn jacoco:report -f apps/backend/unipost-fw/pom.xml -q`: HTML coverage report generated in `target/site/jacoco/index.html`.
+- `mvn test -f apps/backend/acc-fw/pom.xml -q`: 207 / 207 tests passed (0 failures).
+- `mvn jacoco:report -f apps/backend/acc-fw/pom.xml -q`: HTML coverage report generated in `target/site/jacoco/index.html`.
 - `vitest run src/core/sandbox/__tests__/`: 10 test files, 65 tests passed.
 - `vitest run` on `packages/sandbox`: 11 tests passed.
 - `playwright test apps/console/e2e/composite-entities.spec.ts`: Passed in 5.5s (Mode 1 Sandbox Autonomous).

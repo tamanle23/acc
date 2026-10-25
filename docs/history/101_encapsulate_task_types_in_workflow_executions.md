@@ -23,6 +23,6 @@ In workflow orchestration, a **Task is an internal execution implementation of a
 
 ## Verification
 - Unit tests:
-  - `pnpm --filter @unipost/console exec vitest run src/features/tasks` (3/3 tests passed).
-  - `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio` (12/12 tests passed).
+  - `pnpm --filter @acc/console exec vitest run src/features/tasks` (3/3 tests passed).
+  - `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio` (12/12 tests passed).
 - All 40 console test files passing.

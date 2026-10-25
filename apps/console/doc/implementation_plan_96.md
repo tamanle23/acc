@@ -42,6 +42,6 @@ Implement **Phase 32** of the Integration Master Plan:
 ---
 
 ## 3. Verification Plan
-- `pnpm --filter @unipost/console exec vitest run src/features/metadata/components/studio`
-- `pnpm --filter @unipost/sandbox test`
-- `pnpm --filter @unipost/console test`
+- `pnpm --filter @acc/console exec vitest run src/features/metadata/components/studio`
+- `pnpm --filter @acc/sandbox test`
+- `pnpm --filter @acc/console test`

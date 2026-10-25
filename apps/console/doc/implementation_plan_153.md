@@ -45,9 +45,9 @@ Upgrade the **"RBAC Matrix & Global Users"** screen (`apps/console/src/routes/_a
 
 ```
 apps/backend/
-├── unipost-db/src/main/resources/db/unipost/
+├── acc-db/src/main/resources/db/acc/
 │   └── changelog-000.000.00017.xml                 # [NEW] UNIPOST_IDENTITY_USERPERMISSION table + role tenant_id
-├── unipost-fw/src/main/java/com/unipost/
+├── acc-fw/src/main/java/com/acc/
 │   └── user/
 │       ├── controller/
 │       │   └── TenantRoleDelegationController.java # [NEW] Endpoints for delegation, user permissions & tenant roles
@@ -139,7 +139,7 @@ apps/console/
    - Verify `TenantRoleDelegationController` and `TenantRoleDelegationService`.
    - Command:
      ```bash
-     mvn test -pl unipost-fw -Dtest=TenantRoleDelegationServiceTest -q
+     mvn test -pl acc-fw -Dtest=TenantRoleDelegationServiceTest -q
      ```
 2. **Frontend Unit & Component Integration Tests**:
    - Verify all 3 tabs in `rbac-matrix-grid.test.tsx`:
@@ -148,17 +148,17 @@ apps/console/
      - Users directory delegation modal and ad-hoc overrides.
    - Command:
      ```bash
-     pnpm --filter @unipost/console test:run
+     pnpm --filter @acc/console test:run
      ```
 3. **TypeScript Compilation**:
    - Command:
      ```bash
-     pnpm --filter @unipost/console check-types
+     pnpm --filter @acc/console check-types
      ```
 4. **Playwright E2E Suite**:
    - Verify all 3 tabs and WCAG 2.2 AA accessibility audit:
      ```bash
-     pnpm --filter @unipost/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
+     pnpm --filter @acc/console test:e2e e2e/12-sovereign-rbac-matrix.spec.ts
      ```
 
 ### Manual Verification

@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/worker",
+  "name": "@acc/worker",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "@unipost/typescript-config": "workspace:*",
+    "@acc/typescript-config": "workspace:*",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
   }

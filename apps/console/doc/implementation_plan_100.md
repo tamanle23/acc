@@ -6,14 +6,14 @@ It equips the platform with:
 1. Dedicated top-level `/approvals` inbox route with real-time SSE & polling updates, SLA urgency countdowns, role/assignee filtering, and quick cross-links.
 2. Interactive Liquid Glass Decision Modal (`human-decision-modal.tsx`) with upstream payload inspection, form data capture, and mandatory rejection rationale comments.
 3. Backend & Client contracts for `WAITING_FOR_APPROVAL` task status, task claiming/unclaiming (`/claim`, `/unclaim`), and task resolution (`/resolve`).
-4. Unified Sandbox Platform (`@unipost/sandbox`) simulation with stateful approval task pool, seed records, and automatic SSE event emission.
+4. Unified Sandbox Platform (`@acc/sandbox`) simulation with stateful approval task pool, seed records, and automatic SSE event emission.
 5. Full i18n (`en`, `vi`) and WCAG 2.2 AA accessibility compliance.
 
 ---
 
 ## 2. Architecture & Contracts
 
-### 2.1 Backend Engine (`apps/backend/workflow-engine` & `unipost-ms-aio`)
+### 2.1 Backend Engine (`apps/backend/workflow-engine` & `acc-ms-aio`)
 - **TaskStatus Enum**: Add `WAITING_FOR_APPROVAL` (non-terminal).
 - **HumanNodeStrategy**: Transitions `TaskStatus` to `WAITING_FOR_APPROVAL` on first evaluation. When resolved with `COMPLETED`, merges `formData` into `outputData`. When resolved with `FAILED`, triggers Saga compensation.
 - **REST Endpoints (`TaskWorkerController`)**:
@@ -23,7 +23,7 @@ It equips the platform with:
   - `POST /api/v1/workflow/tasks/{id}/resolve`: Resolves approval with `{ action: 'APPROVE' | 'REJECT', comment?: string, formData?: Record<string, unknown> }`.
 
 ### 2.2 Client Contracts (`packages/client`)
-- Extend `@unipost/client` contracts with:
+- Extend `@acc/client` contracts with:
   - `ApprovalTask`: id, workflowId, workflowKey, taskReferenceName, status, assignee, role, instructions, slaMinutes, createdAt, claimedBy, claimedAt, slaBreached, inputData, outputData.
   - `ApprovalDecisionRequest`: `action: 'APPROVE' | 'REJECT'`, `comment?: string`, `formData?: Record<string, unknown>`.
   - Add `client.workflowExecutions.getApprovals()`, `claimApproval()`, `unclaimApproval()`, `resolveApproval()`.
@@ -53,7 +53,7 @@ It equips the platform with:
    - Update `TaskStatus.java` with `WAITING_FOR_APPROVAL`.
    - Update `HumanNodeStrategy.java` to set status to `WAITING_FOR_APPROVAL`.
    - Add approval endpoints in `TaskWorkerController.java`.
-   - Update `@unipost/client` types and client methods.
+   - Update `@acc/client` types and client methods.
 2. **Step 2: Unified Sandbox Platform Support**
    - Add approval repository state and endpoints in `packages/sandbox/src/handlers/workflow-handler.ts`.
 3. **Step 3: Console Hooks & Decision Modal**

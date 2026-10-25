@@ -9,7 +9,7 @@
 ## 1. System Identity & Vision
 
 ### 1.1 Product Purpose & Persona
-`tekgo-ui` is the technical publication, knowledge hub, and engineering blog platform for unipost. Its audience includes software engineers, researchers, and systems architects reading long-form technical content, reviewing code architectures, and discovering open-source releases.
+`tekgo-ui` is the technical publication, knowledge hub, and engineering blog platform for acc. Its audience includes software engineers, researchers, and systems architects reading long-form technical content, reviewing code architectures, and discovering open-source releases.
 
 ### 1.2 Aesthetic Core: Liquid Glass Editorial
 The visual design combines high-readability typography with **Liquid Glass Editorial** accents:

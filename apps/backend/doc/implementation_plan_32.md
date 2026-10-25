@@ -1,19 +1,19 @@
 # Implementation Plan 32: Hexagonal Engine, Single-Column Lease Queue & Storage Adapters (Phase 28)
 
 ## 1. Overview
-Execute **Phase 28** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/integration_master_plan_iteration_3.md):
-- Define Hexagonal Ports in `com.unipost.workflow.ports`:
+Execute **Phase 28** of [`docs/integration_master_plan_iteration_3.md`](file:///c:/Users/Admin/workspace/git/acc/docs/integration_master_plan_iteration_3.md):
+- Define Hexagonal Ports in `com.acc.workflow.ports`:
   - `PersistencePort.java`
   - `UnitOfWork.java`
   - `WorkerTransportPort.java`
 - Author SQL DDL schemas for hybrid relational execution and single-column lease queue:
   - `schema-sqlite.sql`
   - `schema-postgres.sql`
-- Implement storage adapters in `com.unipost.workflow.adapters.storage`:
+- Implement storage adapters in `com.acc.workflow.adapters.storage`:
   - `InMemoryPersistenceAdapter.java` (Thread-safe concurrent data structures)
   - `SqliteJdbcPersistenceAdapter.java` (Pure JDBC with SQLite WAL mode)
   - `PostgresJdbcPersistenceAdapter.java` (Pure JDBC with multi-tenant partitioning & `FOR UPDATE SKIP LOCKED`)
-- Implement transport adapter in `com.unipost.workflow.adapters.transport`:
+- Implement transport adapter in `com.acc.workflow.adapters.transport`:
   - `InProcessTransportAdapter.java`
 - Implement the Imperative Shell:
   - `WorkflowEngineService.java`: `startWorkflow`, `reportTaskResult`, `sweepExpiredTasks`

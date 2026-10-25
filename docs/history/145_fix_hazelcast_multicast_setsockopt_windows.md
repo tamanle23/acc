@@ -3,7 +3,7 @@
 ## Problem Statement
 During backend initialization on Windows environments (either via `pnpm dev:sandbox` or running `spring-boot:run`), Hazelcast logged the following warning and socket exception:
 ```
-WARN [com.hazelcast.instance.impl.Node] : [192.168.1.226]:5701 [unipost-cluster] [5.5.0] Invalid argument: setsockopt
+WARN [com.hazelcast.instance.impl.Node] : [192.168.1.226]:5701 [acc-cluster] [5.5.0] Invalid argument: setsockopt
 java.net.SocketException: Invalid argument: setsockopt
 	at java.base/sun.nio.ch.Net.setInterface6(Native Method)
 	at java.base/sun.nio.ch.DatagramChannelImpl.setOption(DatagramChannelImpl.java:364)
@@ -17,7 +17,7 @@ java.net.SocketException: Invalid argument: setsockopt
 - In dev and sandbox mode, clustering across remote machines is not needed; Hazelcast is used for in-process L2 metadata schema caching and near-cache invalidation on the local machine.
 
 ## Solution Applied
-In `apps/backend/unipost-fw/src/main/java/com/unipost/boot/config/HazelcastConfiguration.java`:
+In `apps/backend/acc-fw/src/main/java/com/acc/boot/config/HazelcastConfiguration.java`:
 1. Explicitly disabled auto-detection: `config.getNetworkConfig().getJoin().getAutoDetectionConfig().setEnabled(false)`.
 2. Disabled multicast and TCP/IP cluster join:
    ```java
@@ -31,11 +31,11 @@ In `apps/backend/unipost-fw/src/main/java/com/unipost/boot/config/HazelcastConfi
    ```
 
 ## Verification
-- Recompiled and repackaged `unipost-fw` and `unipost-ms-aio`.
+- Recompiled and repackaged `acc-fw` and `acc-ms-aio`.
 - Started backend via `mvnw spring-boot:run`.
 - Hazelcast started standalone cleanly without `setsockopt` warning or `SocketException`:
   ```
-  WARN [com.hazelcast.instance.impl.Node] : [127.0.0.1]:5701 [unipost-cluster] [5.5.0] No join method is enabled! Starting standalone.
+  WARN [com.hazelcast.instance.impl.Node] : [127.0.0.1]:5701 [acc-cluster] [5.5.0] No join method is enabled! Starting standalone.
   Started Application in 8.691 seconds
   ```
 - Endpoint `http://localhost:8000/actuator/health` responded HTTP 200 OK `{"status":"UP"}`.

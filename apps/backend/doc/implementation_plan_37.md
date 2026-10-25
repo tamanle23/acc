@@ -1,10 +1,10 @@
 # Implementation Plan - Phase 35.3: Low-Frequency Task Node Types Engine
 
-Prioritize and implement low-frequency task node types in `@unipost/backend` based on `docs/brainstorming/workflow_task_types.md` and `docs/integration_master_plan_iteration_4.md`.
+Prioritize and implement low-frequency task node types in `@acc/backend` based on `docs/brainstorming/workflow_task_types.md` and `docs/integration_master_plan_iteration_4.md`.
 
 ## Proposed Changes
 
-### 1. `apps/backend/workflow-engine/src/main/java/com/unipost/workflow/core/model/TaskType.java`
+### 1. `apps/backend/workflow-engine/src/main/java/com/acc/workflow/core/model/TaskType.java`
 - Added:
   - `NOOP`
   - `JDBC`
@@ -23,4 +23,4 @@ Implement dedicated strategies implementing `NodeEvaluatorStrategy`:
 
 ### 4. Verification
 - `LowFrequencyTaskStrategiesTest.java` in `workflow-engine`.
-- Full regression test run across `workflow-engine`, `unipost-ms-aio`, and `@unipost/worker`.
+- Full regression test run across `workflow-engine`, `acc-ms-aio`, and `@acc/worker`.

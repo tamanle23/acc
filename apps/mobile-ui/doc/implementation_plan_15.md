@@ -13,7 +13,7 @@ Adjust the tab bar icons to use the **Streamline Ultimate Light** variant (ultra
 ## Proposed Changes
 
 ### Icon Component
-#### [MODIFY] [src/components/icons/StreamlineColorIcon.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/components/icons/StreamlineColorIcon.tsx)
+#### [MODIFY] [src/components/icons/StreamlineColorIcon.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/components/icons/StreamlineColorIcon.tsx)
 - Implement **Streamline Ultimate Light** for unfocused states:
   - `home`: Fine 1.2px stroke house silhouette with roof, chimney, and doorway.
   - `create`: Fine 1.2px stroke circle with centered plus cross.
@@ -25,7 +25,7 @@ Adjust the tab bar icons to use the **Streamline Ultimate Light** variant (ultra
 - Props: `activeColor?: string`, `inactiveColor?: string`.
 
 ### Navigation Bar
-#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/mobile-ui/src/navigation/RootNavigator.tsx)
+#### [MODIFY] [src/navigation/RootNavigator.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/mobile-ui/src/navigation/RootNavigator.tsx)
 - Pass `activeColor={themeColors.tint}` and `inactiveColor={themeColors.textSecondary}` to `<StreamlineColorIcon />`.
 
 ## Verification Plan

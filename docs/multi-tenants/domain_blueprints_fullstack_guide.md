@@ -40,7 +40,7 @@ Domain Blueprints solve the "blank canvas problem" in multi-tenant metadata plat
 
 ---
 
-## 2. Part 1: How Frontend Uses Domain Blueprints (`@unipost/console`)
+## 2. Part 1: How Frontend Uses Domain Blueprints (`@acc/console`)
 
 There are **three primary frontend touchpoints** where domain blueprints provide high-value experiences:
 
@@ -95,19 +95,19 @@ Once a blueprint is provisioned, the frontend requires **zero manual configurati
 
 ---
 
-## 3. Part 2: How Backend Uses Domain Blueprints (`@unipost/backend`)
+## 3. Part 2: How Backend Uses Domain Blueprints (`@acc/backend`)
 
 The backend acts as the authoritative engine enforcing isolation, pre-warming, and immutability.
 
 ### 1. Dynamic Catalog Discovery (Classpath Scanning)
-- **Service:** [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/tenant/blueprint/BlueprintCatalogService.java)
+- **Service:** [`BlueprintCatalogService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/blueprint/BlueprintCatalogService.java)
 - **Behavior:**
   - On Spring Boot startup, `PathMatchingResourcePatternResolver` scans `classpath:metadata/blueprints/*.json`.
   - JSON manifests are parsed into memory records (`BlueprintManifest`).
   - **Why this matters:** Adding a new industry blueprint (e.g., *Hospital Clinic*, *E-Commerce Store*) requires **only dropping a JSON file into resources**. No database migrations, no Java code changes, and zero schema locks.
 
 ### 2. Transactional Deep-Cloning Pipeline
-- **Service:** [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/unipost/apps/backend/unipost-fw/src/main/java/com/unipost/tenant/service/TenantProvisioningService.java)
+- **Service:** [`TenantProvisioningService.java`](file:///c:/Users/Admin/workspace/git/acc/apps/backend/acc-fw/src/main/java/com/acc/tenant/service/TenantProvisioningService.java)
 - **Pipeline Execution:**
   ```java
   // Step 1: Bind Security Context
@@ -268,9 +268,9 @@ export function BlueprintCard({ blueprint, isSelected, onSelect }: BlueprintCard
 > **Status:** ⏳ **BACKLOG (To be implemented later)**  
 > **Source:** Phase 1 (Landing & Funnel), Phase 6 UI Wiring (Blueprint Gallery in Console), and Phase 9 (payOS & Feature Entitlements) from Master Multi-Tenant Implementation Plan  
 > **Reference Documents:**
-> - [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
-> - [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
-> - [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/unipost/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
+> - [`docs/multi-tenants/10_landing_page_and_onboarding_funnel.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/10_landing_page_and_onboarding_funnel.md)
+> - [`docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/05_tenant_onboarding_and_template_provisioning.md)
+> - [`docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md`](file:///c:/Users/Admin/workspace/git/acc/docs/multi-tenants/09_tenant_billing_payos_and_feature_entitlements.md)  
 > **Goal:** Complete the full-stack commercialization and UI wiring: public marketing landing page (`/`), 3 subscription tiers, integrated payOS VietQR checkout, in-app `<FeatureGate />` component, and Console UI Blueprint Catalog Gallery Dialog.
 
 ---
@@ -278,7 +278,7 @@ export function BlueprintCard({ blueprint, isSelected, onSelect }: BlueprintCard
 ### Backlog Component 1: Public Landing Page & payOS Checkout Funnel (Phase 1)
 - [ ] **Task B1.1: Public Landing Route Setup (`apps/console/src/routes/index.tsx`)**:
   - Implement public index route (`/`) using TanStack Router with auth guard redirection (authenticated users auto-redirected to `/_authenticated`).
-- [ ] **Task B1.2: Liquid Glass Hero & Interactive Showcase (`@unipost/console`)**:
+- [ ] **Task B1.2: Liquid Glass Hero & Interactive Showcase (`@acc/console`)**:
   - Build `HeroSection` with dynamic animated value propositions ("Nền tảng Quản trị Dữ liệu Động & Metadata Đa Khách Hàng").
   - Create interactive preview mockup showcasing dynamic form generation, blueprint templates, and graph edge connections.
 - [ ] **Task B1.3: Subscription & Pricing Section**:

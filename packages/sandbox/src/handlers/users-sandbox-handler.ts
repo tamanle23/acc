@@ -1,7 +1,7 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
-import type { User } from '@unipost/client';
+import type { User } from '@acc/client';
 import usersData from './data/users-mock.json';
 
 const initialUsers: User[] = usersData.map((user: any) => ({

@@ -1,7 +1,7 @@
 # Integration Master Plan - Iteration 17: Visual DAG Studio Canvas Ergonomics, Quick-Insert & Edge Routing
 
 ## 1. Executive Summary & Objectives
-Iteration 17 elevates the user experience and authoring ergonomics of **Visual DAG Studio 2.0** in `@unipost/console`. Following the successful completion of Iteration 16 (strictly single `START` -> `END` blank workflows, edge quick-split, Control Flow pairing, and `joinOn` contract alignment), Iteration 17 focuses on precision editing workflows, friction-free node insertion, and visual clarity:
+Iteration 17 elevates the user experience and authoring ergonomics of **Visual DAG Studio 2.0** in `@acc/console`. Following the successful completion of Iteration 16 (strictly single `START` -> `END` blank workflows, edge quick-split, Control Flow pairing, and `joinOn` contract alignment), Iteration 17 focuses on precision editing workflows, friction-free node insertion, and visual clarity:
 
 1. **Edge Quick-Insert Type Picker Popover**:
    - Replaces the default `SIMPLE` task insertion on edge `+` split with a floating, keyboard-navigable type picker anchored at the click coordinates.
@@ -128,5 +128,5 @@ flowchart TD
 4. **Studio Integration Tests (`visual-dag-studio-modes.test.tsx`)**:
    - Verify Edge Routing toggle, Snap-to-Grid toggle, and multi-node selection toolbar rendering.
 5. **Monorepo Compiler Verification**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit` exits with 0 errors.
-   - `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/` passes 100%.
+   - `pnpm --filter @acc/console exec tsc --noEmit` exits with 0 errors.
+   - `pnpm --filter @acc/console test -- src/features/metadata/components/studio/` passes 100%.

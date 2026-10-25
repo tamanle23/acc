@@ -45,15 +45,15 @@
 ## 2. Verification Record
 
 - **Console Test Suite**:
-  - `pnpm --filter @unipost/console test:run`:
+  - `pnpm --filter @acc/console test:run`:
     - **70 test files passed (100%)**
     - **327 tests passed (100%)**
 - **Console TypeScript Check**:
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: **0 errors**.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: **0 errors**.
 - **Console ESLint**:
   - `npx eslint ...`: **0 errors**.
 - **Backend Targeted Domain Tests**:
-  - `node mvnw.cjs test "-Dtest=MetadataServiceTest,RecordMutationPipelineTest,FieldLevelSecuritySerializerTest,NotificationSseControllerTest,EntityWorkflowTriggerDispatcherTest" -pl unipost-fw`:
+  - `node mvnw.cjs test "-Dtest=MetadataServiceTest,RecordMutationPipelineTest,FieldLevelSecuritySerializerTest,NotificationSseControllerTest,EntityWorkflowTriggerDispatcherTest" -pl acc-fw`:
     - **90/90 tests passed (100% pass, 0 failures, 0 errors)**.
 - **Backend Full Clean Suite**:
   - `node mvnw.cjs clean test -q`:

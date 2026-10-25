@@ -10,6 +10,6 @@
 - **Localization**: Added translation strings across `en/console.json` and `vi/console.json` covering "Add Provider", "Test Connection", "Live", "Draft", and bulk actions.
 
 ## Verification
-- Code successfully passes the `@unipost/console` ESLint and type checks.
+- Code successfully passes the `@acc/console` ESLint and type checks.
 - Dialog structures, glass effects, blurs, and border opacities adhere closely to the project's Liquid Glass UI requirements.
 - Validated new component rendering and transitions, ensuring that test connection actions effectively mutate status from Draft to Live.

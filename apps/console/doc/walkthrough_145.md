@@ -1,7 +1,7 @@
 # Walkthrough: Responsive Mobile, Tablet & Compact Studio Layout
 
 ## 1. Overview
-Implemented comprehensive responsive layout ergonomics across [Visual DAG Studio 2.0](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) to prevent horizontal collision, layout breakage, and canvas occlusion when viewed on smaller screens (< 1280px desktop, 768px-1024px tablet, and < 768px mobile).
+Implemented comprehensive responsive layout ergonomics across [Visual DAG Studio 2.0](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/visual-dag-studio.tsx) to prevent horizontal collision, layout breakage, and canvas occlusion when viewed on smaller screens (< 1280px desktop, 768px-1024px tablet, and < 768px mobile).
 
 ## 2. Key Architecture & Layout Changes
 
@@ -26,7 +26,7 @@ Implemented comprehensive responsive layout ergonomics across [Visual DAG Studio
   - Save button text switches from "Save DAG" to "Save" on narrow screens.
 
 ### 2.3 Auto-Collapsing Node Palette & Dynamic Snapping
-- Added `defaultCollapsed` and controlled `isCollapsed` / `onCollapsedChange` props to [DagPalette](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/features/workflows/components/studio/dag-palette.tsx).
+- Added `defaultCollapsed` and controlled `isCollapsed` / `onCollapsedChange` props to [DagPalette](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/features/workflows/components/studio/dag-palette.tsx).
 - When `containerWidth < 900`, `VisualDagStudio` initializes `DagPalette` in slim rail mode (`w-14` / 48px) so the canvas editing canvas remains open and unobstructed.
 - Snaps directly beneath the outer command bar dock (`top: 12 + headerToolbarHeight + 8`), dynamically bound to prevent covering React Flow's bottom panel controls (`react-flow__panel`).
 
@@ -38,6 +38,6 @@ Implemented comprehensive responsive layout ergonomics across [Visual DAG Studio
 ## 3. Verification
 - **Unit & Studio Tests**: 64 passing tests across the studio suite:
   ```bash
-  pnpm --filter @unipost/console test -- src/features/workflows/components/studio/
+  pnpm --filter @acc/console test -- src/features/workflows/components/studio/
   ```
-- **TypeScript Check**: `pnpm --filter @unipost/console exec tsc --noEmit` exited 0 with zero errors.
+- **TypeScript Check**: `pnpm --filter @acc/console exec tsc --noEmit` exited 0 with zero errors.

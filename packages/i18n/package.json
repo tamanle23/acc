@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/i18n",
+  "name": "@acc/i18n",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.ts",
@@ -8,6 +8,6 @@
     "react-i18next": "^14.1.0"
   },
   "devDependencies": {
-    "@unipost/typescript-config": "workspace:*"
+    "@acc/typescript-config": "workspace:*"
   }
 }

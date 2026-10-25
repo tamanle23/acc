@@ -7,14 +7,14 @@ When assuming a tenant (e.g. `tenant-acme`), the `ProfileSwitcher` dropdown prev
 
 ## Changes
 
-### 1. Multi-Tenant Workspace Isolation ([`apps/console/src/components/layout/profile-switcher.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/profile-switcher.tsx))
+### 1. Multi-Tenant Workspace Isolation ([`apps/console/src/components/layout/profile-switcher.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/profile-switcher.tsx))
 - Introduced `displayProfiles` memo:
   - If `isAssumed && assumedTenant` is true: filters `availableProfiles` down to only those matching `p.tenantId === assumedTenant`.
   - In normal/unassumed sessions: preserves full workspace selection.
 - All subsequent dropdown rendering (including `groupedByTenant`) operates exclusively on `displayProfiles`.
 - Result: `"Default Organization"` and any other unrelated commercial organizations are completely removed from view while impersonating a tenant.
 
-### 2. Unit Testing ([`apps/console/src/components/layout/__tests__/profile-switcher.test.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/__tests__/profile-switcher.test.tsx))
+### 2. Unit Testing ([`apps/console/src/components/layout/__tests__/profile-switcher.test.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/__tests__/profile-switcher.test.tsx))
 - Added test: `strictly isolates workspace dropdown to assumed tenant workspaces only, excluding Default Organization`.
 - Verifies that `"Default Organization"` and `"Unipost Main"` are absent from the document when `tenant-acme` is assumed.
 

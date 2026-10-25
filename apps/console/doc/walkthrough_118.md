@@ -1,13 +1,13 @@
 # Walkthrough 118: Phase 3 Console & Sandbox >=90% Coverage Sprint
 
 ## Executive Overview
-Under the `/goal` directive for **Phase 3** of the testing master plan ([`docs/integration_master_plan_iteration7.md`](../../../docs/integration_master_plan_iteration7.md)), we implemented comprehensive unit and component integration test suites across `@unipost/sandbox` (`packages/sandbox`) and `@unipost/console` (`apps/console`), enforced automated coverage verification gates, and resolved production infinite-loop and contract regressions discovered during test execution.
+Under the `/goal` directive for **Phase 3** of the testing master plan ([`docs/integration_master_plan_iteration7.md`](../../../docs/integration_master_plan_iteration7.md)), we implemented comprehensive unit and component integration test suites across `@acc/sandbox` (`packages/sandbox`) and `@acc/console` (`apps/console`), enforced automated coverage verification gates, and resolved production infinite-loop and contract regressions discovered during test execution.
 
 ---
 
 ## 1. Key Accomplishments
 
-### A. `@unipost/sandbox` (100% Domain Handlers & Hard 90% Gate)
+### A. `@acc/sandbox` (100% Domain Handlers & Hard 90% Gate)
 1. **Configured Vitest V8 Coverage & Hard Gate**:
    - Integrated `@vitest/coverage-v8` in `packages/sandbox/vitest.config.ts`.
    - Set hard failure thresholds:
@@ -37,7 +37,7 @@ Under the `/goal` directive for **Phase 3** of the testing master plan ([`docs/i
 
 ---
 
-### B. `@unipost/console` (Store & Component Integration Testing)
+### B. `@acc/console` (Store & Component Integration Testing)
 1. **Critical Infinite Loop Bug Discovered & Fixed**:
    - Location: `apps/console/src/features/metadata/components/studio/visual-dag-studio.tsx`.
    - Cause: Unmemoized `workflowVersions` calculation combined with un-guarded `setNodes` inside the version diff overlay `useEffect`.
@@ -58,10 +58,10 @@ Under the `/goal` directive for **Phase 3** of the testing master plan ([`docs/i
 
 ## 2. Verification Command Summary
 ```bash
-# Verify @unipost/sandbox with 90% hard gate
-pnpm --filter @unipost/sandbox test:coverage
+# Verify @acc/sandbox with 90% hard gate
+pnpm --filter @acc/sandbox test:coverage
 
-# Verify @unipost/console test suite
-pnpm --filter @unipost/console test
+# Verify @acc/console test suite
+pnpm --filter @acc/console test
 ```
 All suites pass with 0 failures.

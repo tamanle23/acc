@@ -33,7 +33,7 @@ The codebase MUST be regression-free, deterministic, and strictly organized usin
 Integrate the engine as a new submodule named `workflow-engine` under the existing root `pom.xml`.
 - Inspect the existing root `pom.xml` first to inherit the project's `<parent>` groupId/version and `<dependencyManagement>` conventions.
 - Register `<module>workflow-engine</module>` in the existing root `pom.xml` `<modules>` block without breaking any existing modules.
-- Replace `<base.package>` below with the root project's base Java package (e.g., `com.unipost.workflow`).
+- Replace `<base.package>` below with the root project's base Java package (e.g., `com.acc.workflow`).
 
 ```text
 <project-root>/
@@ -42,7 +42,7 @@ Integrate the engine as a new submodule named `workflow-engine` under the existi
     ├── pom.xml                                          # Submodule POM (Jackson, SQLite-JDBC, SLF4J, JUnit 5, AssertJ)
     └── src/
         ├── main/
-        │   ├── java/com/unipost/workflow/
+        │   ├── java/com/acc/workflow/
         │   │   ├── core/                                # PURE DOMAIN CORE (Zero I/O, Zero JDBC/Framework imports)
         │   │   │   ├── model/
         │   │   │   │   ├── WorkflowDefinition.java      # Immutable Java records for DAG nodes & workflow def
@@ -92,7 +92,7 @@ Integrate the engine as a new submodule named `workflow-engine` under the existi
         │       └── db/
         │           └── schema-sqlite.sql                # DDL for workflow_executions, task_executions, task_queue
         └── test/
-            └── java/com/unipost/workflow/
+            └── java/com/acc/workflow/
                 ├── core/
                 │   ├── PureDeciderTest.java             # Pure record-in / command-out unit tests (<1ms per test)
                 │   └── GoldenTraceReplayTest.java       # Golden trace replay regression suite
@@ -111,7 +111,7 @@ Integrate the engine as a new submodule named `workflow-engine` under the existi
 ### 4.1 Sealed Interface Commands (`EngineCommand.java`)
 Use Java 21 `sealed interface` and `record` types to model side-effect requests emitted by `PureDecider`:
 ```java
-package com.unipost.workflow.core.model;
+package com.acc.workflow.core.model;
 
 import java.util.Map;
 
@@ -215,7 +215,7 @@ Model the worker API after Netflix Conductor's `Worker` abstraction, supporting 
 
 1. **`TaskContext.java` (Passed to every worker invocation):**
 ```java
-package com.unipost.workflow.worker;
+package com.acc.workflow.worker;
 
 import java.util.List;
 import java.util.Map;
@@ -237,7 +237,7 @@ public interface TaskContext {
 
 2. **`TaskOutcome.java` (Sealed return type for full Conductor-style control):**
 ```java
-package com.unipost.workflow.worker;
+package com.acc.workflow.worker;
 
 import java.util.Map;
 
@@ -271,7 +271,7 @@ public sealed interface TaskOutcome permits
 
 3. **`TaskHandler.java`, `WorkerConfig.java` & Ergonomic Registration on `WorkerHost.java`:**
 ```java
-package com.unipost.workflow.worker;
+package com.acc.workflow.worker;
 
 @FunctionalInterface
 public interface TaskHandler {

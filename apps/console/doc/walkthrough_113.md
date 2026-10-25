@@ -1,7 +1,7 @@
 # Walkthrough 113: Console UI Master-Detail Expandable View & Composite Entity Sidebar Filtering
 
 ## 1. Overview & Problem Addressed
-When accessing the `/metadata` route in `@unipost/console` under offline development / Unified Sandbox mode:
+When accessing the `/metadata` route in `@acc/console` under offline development / Unified Sandbox mode:
 1. The **"Console UI Master-Detail Expandable View"** was not readily discoverable because composite entities (such as `Customer 360 View`) were located on secondary pagination pages of the model rail.
 2. Selecting a composite entity defaulted to the `'schema'` view (Schema Builder) rather than the `'data'` tab (Entity Data Grid) where record expansions live.
 3. In `initialMockRecords`, child records in `resourceRecords` lacked foreign key values (`account_id`), and `initialMockAttributes` had no attribute definitions mapped for composite entities, resulting in empty grids and empty child collections.
@@ -32,4 +32,4 @@ When accessing the `/metadata` route in `@unipost/console` under offline develop
   - `src/features/metadata/components/entity-type/entity-type-sidebar.test.tsx`: 3 tests passing (renders models, shows composite count, filters on toggle).
   - `src/features/metadata/components/data-explorer/composite-master-detail-row.test.tsx`: 4 tests passing (Pattern B foreign key rendering, Pattern C association rendering, tab switching, empty state handling).
 - **Type Checking**:
-  - `pnpm --filter @unipost/console exec tsc --noEmit` exited 0 with no errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit` exited 0 with no errors.

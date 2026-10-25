@@ -6,7 +6,7 @@ import {
 } from '../sandbox/mobile-sandbox';
 import { usePostStore } from '../store/usePostStore';
 import { useMobileContextStore } from '../store/useMobileContextStore';
-import { defaultSandboxEngine, sandboxRegistry } from '@unipost/sandbox';
+import { defaultSandboxEngine, sandboxRegistry } from '@acc/sandbox';
 
 describe('mobile-ui Sandbox & Context Store Integration', () => {
   beforeEach(() => {

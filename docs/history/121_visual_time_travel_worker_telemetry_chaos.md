@@ -11,7 +11,7 @@
 Distributed DAG workflows running in production are notoriously difficult to debug after terminal failure:
 - Inspecting thousands of lines of execution logs obscures the exact point of failure and variable mutations.
 - Prior to Phase 40, operators had no visual slider mechanism to step backward in time to inspect earlier node states and memory snapshots without re-executing non-idempotent tasks.
-- The platform lacked a centralized, real-time telemetry dashboard to monitor polyglot worker instances (Java 21 Virtual Threads and Node.js `@unipost/worker` hosts), their active lease loads, and health states.
+- The platform lacked a centralized, real-time telemetry dashboard to monitor polyglot worker instances (Java 21 Virtual Threads and Node.js `@acc/worker` hosts), their active lease loads, and health states.
 - High-concurrency resilience under worker crashes and cascading Saga rollbacks had not been empirically validated under extreme load (1,000 parallel executions).
 
 ---
@@ -48,25 +48,25 @@ Distributed DAG workflows running in production are notoriously difficult to deb
 - `apps/console/src/locales/en/console.json` & `vi/console.json`: Added `workerFleet` translation keys.
 - `apps/console/src/core/sandbox/handlers/worker-sandbox-handler.ts`: Unified Sandbox route handler.
 - `apps/console/src/core/sandbox/index.ts`: Registered handler in `sandboxRegistry`.
-- `apps/backend/unipost-ms-aio/.../workflow/WorkerRegistry.java`: Thread-safe worker registry with heartbeat aging.
-- `apps/backend/unipost-ms-aio/.../workflow/WorkerFleetController.java`: REST API for worker fleet querying, heartbeats, and drain.
+- `apps/backend/acc-ms-aio/.../workflow/WorkerRegistry.java`: Thread-safe worker registry with heartbeat aging.
+- `apps/backend/acc-ms-aio/.../workflow/WorkerFleetController.java`: REST API for worker fleet querying, heartbeats, and drain.
 - `apps/console/src/features/workflows/components/__tests__/execution-time-travel-scrubber.test.tsx`: Vitest suite for scrubber.
 - `apps/console/src/features/workflows/components/__tests__/payload-diff-viewer.test.tsx`: Vitest suite for diff viewer.
 - `apps/console/src/features/workers/__tests__/worker-fleet.test.tsx`: Vitest suite for worker fleet dashboard and sandbox.
-- `apps/backend/unipost-ms-aio/.../workflow/WorkerFleetControllerTest.java`: Backend JUnit 5 test for worker endpoints.
-- `apps/backend/unipost-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java`: 1,000-concurrent stress test suite.
+- `apps/backend/acc-ms-aio/.../workflow/WorkerFleetControllerTest.java`: Backend JUnit 5 test for worker endpoints.
+- `apps/backend/acc-ms-aio/.../workflow/WorkflowChaosStressVerificationTest.java`: 1,000-concurrent stress test suite.
 
 ---
 
 ## 4. Verification
 - **Vitest Suite**: 11/11 tests passing across scrubber, diff viewer, and worker fleet components.
-- **TypeScript Typecheck**: `pnpm --filter @unipost/console exec tsc --noEmit` exited 0 with zero errors.
-- **Backend Test Suite**: 5/5 JUnit 5 tests passing in `unipost-ms-aio` (including 1,000 concurrent executions with worker crash lease reclamation and 200 cascading Saga rollbacks).
+- **TypeScript Typecheck**: `pnpm --filter @acc/console exec tsc --noEmit` exited 0 with zero errors.
+- **Backend Test Suite**: 5/5 JUnit 5 tests passing in `acc-ms-aio` (including 1,000 concurrent executions with worker crash lease reclamation and 200 cascading Saga rollbacks).
 
 ---
 
 ## 5. Walkthrough
-- [apps/console/doc/walkthrough_109.md](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_109.md)
+- [apps/console/doc/walkthrough_109.md](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_109.md)
 
 ---
 

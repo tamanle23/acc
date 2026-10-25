@@ -1,6 +1,6 @@
 # Metadata Management Module - Complete User & Technical Guide
 
-**Module**: `@unipost/console` & `@unipost/backend`  
+**Module**: `@acc/console` & `@acc/backend`  
 **Architecture**: Hybrid Relational + JSONB Schema Engine with Distributed Hazelcast Cache  
 **Scope**: End-to-End User Workflows, Data Modeling Patterns, Dynamic UI Components, and Integration Points.
 
@@ -12,7 +12,7 @@ The Metadata Management module in Unipost provides a **runtime-extensible, zero-
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   @unipost/console                                     │
+│                                   @acc/console                                     │
 │                                                                                        │
 │  ┌───────────────────────┐   ┌────────────────────────┐   ┌─────────────────────────┐  │
 │  │    Schema Builder     │   │     Data Explorer      │   │     Connected Edges     │  │
@@ -31,7 +31,7 @@ The Metadata Management module in Unipost provides a **runtime-extensible, zero-
                                            │ REST API (JSON Schema, JWT, GIN Indexes)
                                            ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                  @unipost/backend                                      │
+│                                  @acc/backend                                      │
 │  ┌─────────────────────────────────┐       ┌────────────────────────────────────────┐  │
 │  │ SchemaValidationService         │       │ Embedded Hazelcast Distributed Cache   │  │
 │  │ (Draft-07 JSON Schema / Cache)  │ <===> │ (Cluster-wide L1/L2 Invalidation)      │  │
@@ -339,14 +339,14 @@ metadata/
 
 ## 5. Backend Architecture & Integration Points
 
-### 1. Database Schema (`unipost-db`)
+### 1. Database Schema (`acc-db`)
 - **`UNIPOST_ENTITY_TYPES`**: Table defining entity models (`id`, `name`, `system_name`, `version`, `audit columns`).
 - **`UNIPOST_ATTRIBUTE_DEFINITIONS`**: Relational column rules (`dataType`, `uiComponent`, `isRequired`, `isArchived`, `displayOrder`, `options` JSONB).
 - **`UNIPOST_ENTITIES`**: Hybrid data table storing core relational audit columns plus dynamic values in an `attributes` `JSONB` column indexed via PostgreSQL `GIN` (`idx_entities_attributes_gin`).
 - **`UNIPOST_RELATIONSHIP_TYPES`**: Edge definitions (`source_entity_type_id`, `target_entity_type_id`, `cardinality`).
 - **`UNIPOST_ENTITY_RELATIONSHIPS`**: Edge junction table linking source and target records with `ON DELETE CASCADE` and `edge_metadata` JSONB.
 
-### 2. Embedded Hazelcast Caching Engine & Lock-Free Atomic L1 (`unipost-fw`)
+### 2. Embedded Hazelcast Caching Engine & Lock-Free Atomic L1 (`acc-fw`)
 - **Two-Tier Cache Hierarchy (L1 In-Memory + L2 Hazelcast IMap)**:
   - **L1 In-Memory Cache**: Stores parsed, immutable `JsonSchema` instances (`ConcurrentHashMap<String, JsonSchema>`) for sub-millisecond payload validations.
   - **L2 Hazelcast Distributed Map**: `metadata_schemas` distributes compiled JSON Schema strings across the cluster with a 1-hour TTL.

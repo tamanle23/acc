@@ -76,7 +76,7 @@ export const useSidebarData = (): SidebarData => {
   const activeWorkspaceId = useMetadataUiStore((state) => state.activeWorkspaceId);
   const activeTenantId = useMetadataUiStore((state) => state.activeTenantId);
 
-  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('unipost_assumed_tenant') : null;
+  const assumedTenant = typeof window !== 'undefined' ? localStorage.getItem('acc_assumed_tenant') : null;
   const isAssumed = Boolean(assumedTenant && assumedTenant !== 'SYSTEM');
   const isSovereign = Boolean(
     user?.roles?.includes('ROLE_SYSTEM_CUSTODIAN') ||

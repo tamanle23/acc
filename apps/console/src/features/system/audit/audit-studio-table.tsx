@@ -40,7 +40,7 @@ import {
   useExportCompliancePackage,
 } from '../api/use-system-audit';
 import { getAuditStudioColumns } from './audit-studio-columns';
-import type { RecordAuditLog } from '@unipost/client';
+import type { RecordAuditLog } from '@acc/client';
 
 export function AuditStudioTable() {
   const [tenantFilter, setTenantFilter] = useState('SYSTEM');

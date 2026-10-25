@@ -1,15 +1,15 @@
 # Walkthrough: Dropdown Opening Responsiveness Optimization
 
-Eliminated the noticeable latency and input lag when opening dropdown menus across `apps/unipost-console`.
+Eliminated the noticeable latency and input lag when opening dropdown menus across `apps/acc-console`.
 
 ## 1. Summary of Changes
 
 | Component / File | Optimization Applied |
 | :--- | :--- |
-| [`src/components/ui/dropdown-menu.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/dropdown-menu.tsx) | Set default `modal = false` to eliminate Radix DOM lock, scroll lock, and whole-tree `aria-hidden` traversal. Upgraded `DropdownMenuContent` and `DropdownMenuSubContent` with `backdrop-blur-md`, `duration-100`, `will-change-[transform,opacity]`, and subtle 4px slide (`slide-in-from-top-1`). |
-| [`src/components/profile-dropdown.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/profile-dropdown.tsx) | Removed `forceMount` from `DropdownMenuContent` to prevent persistent hidden DOM nodes and unwanted router link preloading when closed. |
-| [`src/components/ui/select.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/select.tsx) | Accelerated `SelectContent` animation with `duration-100 will-change-[transform,opacity]` and 4px slide. |
-| [`src/components/ui/popover.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/popover.tsx) | Lightened GPU backdrop blur to `backdrop-blur-md` and accelerated animation to `duration-100 will-change-[transform,opacity]`. |
+| [`src/components/ui/dropdown-menu.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/dropdown-menu.tsx) | Set default `modal = false` to eliminate Radix DOM lock, scroll lock, and whole-tree `aria-hidden` traversal. Upgraded `DropdownMenuContent` and `DropdownMenuSubContent` with `backdrop-blur-md`, `duration-100`, `will-change-[transform,opacity]`, and subtle 4px slide (`slide-in-from-top-1`). |
+| [`src/components/profile-dropdown.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/profile-dropdown.tsx) | Removed `forceMount` from `DropdownMenuContent` to prevent persistent hidden DOM nodes and unwanted router link preloading when closed. |
+| [`src/components/ui/select.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/select.tsx) | Accelerated `SelectContent` animation with `duration-100 will-change-[transform,opacity]` and 4px slide. |
+| [`src/components/ui/popover.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/popover.tsx) | Lightened GPU backdrop blur to `backdrop-blur-md` and accelerated animation to `duration-100 will-change-[transform,opacity]`. |
 
 ---
 
@@ -26,5 +26,5 @@ Eliminated the noticeable latency and input lag when opening dropdown menus acro
 
 ## 3. Validation & Build Results
 
-- **Build**: `pnpm --filter @unipost/console build:web` completed with exit code 0 in 682ms.
-- **Lint**: `pnpm --filter @unipost/console lint` passed with 0 errors and 0 warnings.
+- **Build**: `pnpm --filter @acc/console build:web` completed with exit code 0 in 682ms.
+- **Lint**: `pnpm --filter @acc/console lint` passed with 0 errors and 0 warnings.

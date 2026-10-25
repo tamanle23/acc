@@ -1,11 +1,11 @@
 # Walkthrough 103 - Phase 38: Dead-Letter Queue (DLQ) Management UI, Worker Jitter & Unified Sandbox
 
 ## Summary
-Phase 38 delivers complete front-to-back resilience across the polyglot worker layer, unified sandbox mock platform, and `@unipost/console` web application:
+Phase 38 delivers complete front-to-back resilience across the polyglot worker layer, unified sandbox mock platform, and `@acc/console` web application:
 1. **Worker SDK Jitter & Anti-Thundering Herd**: Enhanced `packages/worker/src/host/TaskPoller.ts` with exponential backoff and randomized 20% jitter.
 2. **Unified Sandbox Simulation**: Created `packages/sandbox/src/handlers/dlq-sandbox-handler.ts` with stateful in-memory repository, realistic seed failure tasks, tenant isolation, and reset capability.
 3. **Dead-Letter Queue Management Console**:
-   - Built dedicated `/dlq` interface in `@unipost/console/src/features/dlq/`.
+   - Built dedicated `/dlq` interface in `@acc/console/src/features/dlq/`.
    - Reused common primitives (`DataTable`, `DataTableToolbar`, `DataTablePagination`) adhering strictly to `COMMON-COMPONENT-PRIORITY`.
    - Designed 3 Liquid Glass KPI metric cards (Isolated Tasks, Replayed Recoveries, Discarded Tasks).
    - Implemented `DlqInspectorSheet` slide-over drawer displaying stack traces, formatted JSON payload snapshots, and JSON override inputs.
@@ -39,7 +39,7 @@ Phase 38 delivers complete front-to-back resilience across the polyglot worker l
 - **Worker Tests**:
   - `packages/worker`: 4 test suites passed, 7/7 tests passed.
 - **Sandbox Checks**:
-  - `pnpm --filter @unipost/sandbox check-types`: Passed clean with 0 TypeScript errors.
+  - `pnpm --filter @acc/sandbox check-types`: Passed clean with 0 TypeScript errors.
 - **Console UI Tests & Types**:
   - `vitest run dlq-feature`: 3/3 tests passed (table render, inspector sheet replay with overrides, dashboard metrics).
-  - `pnpm --filter @unipost/console exec tsc --noEmit`: Passed with 0 TypeScript errors.
+  - `pnpm --filter @acc/console exec tsc --noEmit`: Passed with 0 TypeScript errors.

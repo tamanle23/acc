@@ -1,7 +1,7 @@
 import type { SandboxRouteHandler, SandboxResponse, SandboxRequest } from '../types';
 import { defaultSandboxStore } from '../store';
 import { sandboxResetRegistry } from '../reset-registry';
-import type { TaskDlqRecordDto } from '@unipost/client';
+import type { TaskDlqRecordDto } from '@acc/client';
 import { workflowExecutionsSandboxRepo, workflowSandboxRepo } from './workflow-handler';
 
 const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
@@ -14,7 +14,7 @@ const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
     taskType: 'SIMPLE',
     domain: 'payment',
     errorMessage: 'Connection timed out after 30000ms connecting to https://payment.acme.corp/charge',
-    errorStacktrace: 'java.net.http.HttpTimeoutException: request timed out\n  at com.unipost.workflow.adapters.transport.HttpWorkerTransport.poll(HttpWorkerTransport.java:142)',
+    errorStacktrace: 'java.net.http.HttpTimeoutException: request timed out\n  at com.acc.workflow.adapters.transport.HttpWorkerTransport.poll(HttpWorkerTransport.java:142)',
     payloadSnapshot: { amount: 249.99, currency: 'USD', cardToken: 'tok_visa_4242', customerId: 'cust_8829' },
     retryCount: 3,
     isolatedAtMs: Date.now() - 3600000,
@@ -30,7 +30,7 @@ const INITIAL_DLQ_SEED: TaskDlqRecordDto[] = [
     taskType: 'SIMPLE',
     domain: 'ai-enrichment',
     errorMessage: 'OpenAI API 429: Rate limit exceeded or token quota reached',
-    errorStacktrace: 'com.unipost.workflow.llm.RateLimitException: 429 Too Many Requests\n  at com.unipost.workflow.llm.OpenAiClient.complete(OpenAiClient.java:88)',
+    errorStacktrace: 'com.acc.workflow.llm.RateLimitException: 429 Too Many Requests\n  at com.acc.workflow.llm.OpenAiClient.complete(OpenAiClient.java:88)',
     payloadSnapshot: { model: 'gpt-4o', prompt: 'Summarize quarterly financial disclosures...', maxTokens: 4096 },
     retryCount: 3,
     isolatedAtMs: Date.now() - 7200000,
@@ -284,7 +284,7 @@ export class DlqSandboxRepository {
       taskType: 'HTTP',
       domain: 'payment',
       errorMessage: 'Simulated 504 Gateway Timeout: Gateway connection lost during transaction processing',
-      errorStacktrace: 'java.net.http.HttpTimeoutException: Simulated fault injected from Unified Sandbox\n  at com.unipost.sandbox.FaultInjector.trigger(FaultInjector.java:42)',
+      errorStacktrace: 'java.net.http.HttpTimeoutException: Simulated fault injected from Unified Sandbox\n  at com.acc.sandbox.FaultInjector.trigger(FaultInjector.java:42)',
       payloadSnapshot: { simulated: true, amount: 990000, currency: 'VND', triggeredAt: new Date().toISOString() },
       retryCount: 3,
       isolatedAtMs: Date.now(),

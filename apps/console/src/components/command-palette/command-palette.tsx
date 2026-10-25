@@ -92,8 +92,8 @@ export function CommandPalette() {
       try {
         if (typeof window !== 'undefined') {
           // Clear any local caches / simulated state keys
-          localStorage.removeItem('unipost_view_presets')
-          localStorage.removeItem('unipost_density_profile')
+          localStorage.removeItem('acc_view_presets')
+          localStorage.removeItem('acc_density_profile')
         }
         toast.success('Sandbox state & view presets reset to factory defaults')
       } catch {
@@ -114,7 +114,7 @@ export function CommandPalette() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `unipost-export-${Date.now()}.json`
+        a.download = `acc-export-${Date.now()}.json`
         a.click()
         URL.revokeObjectURL(url)
         toast.success('Tenant configuration exported successfully')

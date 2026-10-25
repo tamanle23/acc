@@ -21,7 +21,7 @@ Profiling the page identified four major performance bottlenecks:
 ## 2. Optimizations Implemented
 
 ### A. Hardware-Accelerated Wallpaper Layer
-- **File**: [index.css](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/styles/index.css)
+- **File**: [index.css](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/styles/index.css)
   - Replaced `background-attachment: fixed` on `body` with a dedicated GPU-composited pseudo-element:
     ```css
     body::before {
@@ -41,7 +41,7 @@ Profiling the page identified four major performance bottlenecks:
   - Promoted the wallpaper to its own compositing layer, enabling 60–120 FPS scrolling with zero viewport repaints.
 
 ### B. Throttled Header Scroll Handler
-- **File**: [header.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/layout/header.tsx)
+- **File**: [header.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/layout/header.tsx)
   - Replaced pixel-by-pixel `offset: number` state with an rAF-throttled boolean `isScrolled: boolean`:
     ```tsx
     const [isScrolled, setIsScrolled] = useState(false)
@@ -65,13 +65,13 @@ Profiling the page identified four major performance bottlenecks:
   - React now only updates when crossing the 10px scroll boundary, eliminating hundreds of re-renders per second.
 
 ### C. Zero-Latency Slider Dragging (`previewGlassIntensity` & `onValueCommit`)
-- **Files**: [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/context/theme-provider.tsx) & [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/features/settings/appearance/appearance-form.tsx)
+- **Files**: [theme-provider.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/context/theme-provider.tsx) & [appearance-form.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/features/settings/appearance/appearance-form.tsx)
   - Added `previewGlassIntensity` which modifies `--glass-blur`, `--glass-intensity`, and `--glass-specular-alpha` directly on `document.documentElement` during live drag.
   - Moved `setGlassIntensity` (cookie write & React state update) to Radix Slider's `onValueCommit`, firing only when the user releases the thumb.
   - Result: Butter-smooth 120 FPS slider dragging with 0ms visual feedback and zero React thrashing.
 
 ### D. GPU Layer Promotion & Targeted Transitions on Cards
-- **File**: [card.tsx](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/src/components/ui/card.tsx)
+- **File**: [card.tsx](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/src/components/ui/card.tsx)
   - Added `transform-gpu will-change-transform` to isolate each card onto its own GPU compositing texture.
   - Replaced `transition-all` with targeted `transition-[transform,box-shadow] duration-150` so hover effects do not trigger filter or color re-rasterization.
 
@@ -81,16 +81,16 @@ Profiling the page identified four major performance bottlenecks:
 
 - **Linter**:
   ```bash
-  pnpm --filter @unipost/web lint
+  pnpm --filter @acc/web lint
   ```
   *Result*: Clean (0 errors).
 - **Production Build**:
   ```bash
-  pnpm --filter @unipost/web build
+  pnpm --filter @acc/web build
   ```
   *Result*: Succeeded with optimized bundle sizes and GPU layers.
 
 ---
 
 ## 4. Artifact History Tracking
-- Local App History: [walkthrough_06.md](file:///c:/Users/Admin/workspace/git/unipost/apps/unipost-console/doc/walkthrough_06.md)
+- Local App History: [walkthrough_06.md](file:///c:/Users/Admin/workspace/git/acc/apps/acc-console/doc/walkthrough_06.md)

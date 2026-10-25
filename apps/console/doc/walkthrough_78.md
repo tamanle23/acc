@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 In adherence to Monorepo Architecture Directives, **Rule 00 (`ZERO-STUB-PROHIBITION` & `NO-ORPHANED-CODE`)**, and **Rule 02 (`UNIFIED SANDBOX PLATFORM INTEGRATION MANDATE`)**, we executed Phase A and Phase B to:
-1. Purge all rogue in-component static data structures and ad-hoc mutations across `@unipost/console` (`features/tasks`, `features/users`, `features/chats`, and `features/apps`).
+1. Purge all rogue in-component static data structures and ad-hoc mutations across `@acc/console` (`features/tasks`, `features/users`, `features/chats`, and `features/apps`).
 2. Implement typed TanStack Query hook facades and wire all UI views, drawers, and modal dialogs directly to real HTTP network routes (`/api/tasks`, `/api/users`, `/api/chats`, `/api/integrations`) via `springApiClient`.
 3. Re-architect orphaned sandbox handlers (`tasks-sandbox-handler`, `users-sandbox-handler`) with dynamic multi-tenant partitioning (`activeTenantId`).
 4. Centralize conversations and third-party social integrations into `chats-sandbox-handler` and `apps-sandbox-handler`, registered in `sandboxRegistry` with master state reset support in `SandboxDock`.
@@ -62,7 +62,7 @@ In adherence to Monorepo Architecture Directives, **Rule 00 (`ZERO-STUB-PROHIBIT
    - `src/core/sandbox/__tests__/phase-a-b-flow.test.ts`: 4/4 tests passed (covering Tasks CRUD & tenant isolation, Users CRUD & status mutations, Chats message appending, and Social Apps OAuth token exchanges).
    - Entire Console test suite: **37 test files, 182 tests passing (100% green)**.
 2. **TypeScript Compilation**:
-   - `pnpm --filter @unipost/console exec tsc --noEmit` exited cleanly with code 0.
+   - `pnpm --filter @acc/console exec tsc --noEmit` exited cleanly with code 0.
 3. **Production & Electron Builds**:
    - `vite build` completed cleanly generating web bundle artifacts in `dist/web/`.
    - `vite build --config vite.electron.config.ts --mode electron` completed cleanly generating desktop assets in `dist/electron-web/`.

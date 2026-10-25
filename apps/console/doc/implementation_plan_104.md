@@ -24,6 +24,6 @@ The Dead-Letter Queue screen currently resides under `/dlq` and is visible in th
    - Regenerate `routeTree.gen.ts`.
 
 ## Verification
-- `pnpm --filter @unipost/sandbox check-types`
-- `pnpm --filter @unipost/console exec tsc --noEmit`
+- `pnpm --filter @acc/sandbox check-types`
+- `pnpm --filter @acc/console exec tsc --noEmit`
 - `vitest run dlq-feature`

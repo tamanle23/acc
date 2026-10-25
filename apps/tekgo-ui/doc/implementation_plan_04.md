@@ -1,13 +1,13 @@
 # Implementation Plan - tekgo-ui Headless CMS Ingestion & Dual-Mode Provider (Phase 8)
 
 ## Problem Statement
-`tekgo-ui` (Next.js 15) previously relied strictly on static filesystem JSON files for blog posts, preventing it from consuming live articles authored dynamically in `@unipost/console` or `mobile-ui` via the Backend Public Ingestion Gateway.
+`tekgo-ui` (Next.js 15) previously relied strictly on static filesystem JSON files for blog posts, preventing it from consuming live articles authored dynamically in `@acc/console` or `mobile-ui` via the Backend Public Ingestion Gateway.
 
 ## Architecture & Implementation Overview
-1. **Unipost CMS Client (`apps/tekgo-ui/lib/cms/unipost-cms-client.ts`)**:
-   - Integrates `@unipost/client` (`UnipostClient`) with Next.js 15 ISR revalidation tags (`next: { tags: ['articles'], revalidate: 60 }`).
+1. **Unipost CMS Client (`apps/tekgo-ui/lib/cms/acc-cms-client.ts`)**:
+   - Integrates `@acc/client` (`UnipostClient`) with Next.js 15 ISR revalidation tags (`next: { tags: ['articles'], revalidate: 60 }`).
    - Authenticates using scoped publishable key via header `X-Publishable-Key: pk_live_{tenantId}_{token}`.
-   - Intercepts requests in development through `@unipost/sandbox` (`sandboxRegistry`) for offline/simulation workflows.
+   - Intercepts requests in development through `@acc/sandbox` (`sandboxRegistry`) for offline/simulation workflows.
 2. **Dual-Mode Content Provider (`apps/tekgo-ui/lib/cms/content-provider.ts`)**:
    - Supports `DATA_SOURCE=cms | local` toggle.
    - `mapRecordToBlog`: Maps dynamic `EntityRecord` attributes (title, summary, tags, portableTextBody, slug, updatedDate) into the Next.js `Blog` interface.
@@ -18,4 +18,4 @@
 
 ## Verification
 - `pnpm --filter tekgo-ui build`: Next.js 15 SSG production build succeeded with 94 static pages generated and zero type errors.
-- Package tests (`@unipost/client`, `@unipost/sandbox`) and backend tests remain green.
+- Package tests (`@acc/client`, `@acc/sandbox`) and backend tests remain green.

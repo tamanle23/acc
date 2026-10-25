@@ -14,7 +14,7 @@ import {
   DataTablePagination,
   DataTableToolbar,
 } from '@/components/data-table';
-import type { ApprovalTask } from '@unipost/client';
+import type { ApprovalTask } from '@acc/client';
 import { useClaimApprovalMutation, useUnclaimApprovalMutation } from '../hooks/use-approvals';
 import { createApprovalColumns } from './approval-columns';
 

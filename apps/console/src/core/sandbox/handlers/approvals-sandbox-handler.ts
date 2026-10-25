@@ -1,5 +1,5 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
-import { sandboxResetRegistry } from '@unipost/sandbox';
+import { sandboxResetRegistry } from '@acc/sandbox';
 import { useSandboxStore } from '../store/sandbox-store';
 
 export interface ApprovalTask {
@@ -28,7 +28,7 @@ const INITIAL_APPROVAL_TASKS: ApprovalTask[] = [
     entityTypeName: 'Vendor Profile',
     recordId: 4021,
     stepName: 'Security Tier Authorization',
-    requestedBy: 'operator-alice@unipost.io',
+    requestedBy: 'operator-alice@acc.io',
     requestedAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
     status: 'PENDING',
     currentAttributes: {
@@ -53,7 +53,7 @@ const INITIAL_APPROVAL_TASKS: ApprovalTask[] = [
     entityTypeName: 'Zone Tariff',
     recordId: 8812,
     stepName: 'Finance Controller Sign-Off',
-    requestedBy: 'tariffs-bot@unipost.io',
+    requestedBy: 'tariffs-bot@acc.io',
     requestedAt: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
     status: 'PENDING',
     currentAttributes: {

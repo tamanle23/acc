@@ -6,7 +6,7 @@ Disabled the **Theme Settings** sidebar/drawer (`ConfigDrawer`) by default so th
 
 ### Console Application (`apps/console`)
 
-#### 1. Flag-Controlled Theme Settings Drawer ([`config-drawer.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/config-drawer.tsx))
+#### 1. Flag-Controlled Theme Settings Drawer ([`config-drawer.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/config-drawer.tsx))
 - Added flag detection inside `ConfigDrawer`:
   ```tsx
   const isEnabled =
@@ -20,24 +20,24 @@ Disabled the **Theme Settings** sidebar/drawer (`ConfigDrawer`) by default so th
 - If no flag is present, `ConfigDrawer` returns `null`, hiding the Settings cog icon button in headers across all pages.
 - Can be activated via:
   1. CLI/Env: `VITE_ENABLE_THEME_SETTINGS=true`
-  2. npm script: `pnpm --filter @unipost/console dev:theme-settings`
+  2. npm script: `pnpm --filter @acc/console dev:theme-settings`
   3. URL query param: `?themeSettings=true`
   4. LocalStorage: `localStorage.setItem('theme_settings_enabled', 'true')`
   5. Component prop: `<ConfigDrawer forceShow />`
 
-#### 2. Vite Build & Dev Configurations ([`vite.config.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/vite.config.ts) & [`vite.electron.config.ts`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/vite.electron.config.ts))
+#### 2. Vite Build & Dev Configurations ([`vite.config.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/vite.config.ts) & [`vite.electron.config.ts`](file:///c:/Users/Admin/workspace/git/acc/apps/console/vite.electron.config.ts))
 - Injected define for `import.meta.env.VITE_ENABLE_THEME_SETTINGS` detecting:
   - `--theme-settings` / `--enable-theme-settings` CLI flags
   - `VITE_ENABLE_THEME_SETTINGS=true` environment variable
   - `mode === 'theme-settings'`
 
-#### 3. Package Script ([`package.json`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/package.json))
+#### 3. Package Script ([`package.json`](file:///c:/Users/Admin/workspace/git/acc/apps/console/package.json))
 - Added convenience script:
   ```json
   "dev:theme-settings": "vite --theme-settings"
   ```
 
-#### 4. Sidebar & Layout Defaults ([`layout-provider.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/context/layout-provider.tsx) & [`authenticated-layout.tsx`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/src/components/layout/authenticated-layout.tsx))
+#### 4. Sidebar & Layout Defaults ([`layout-provider.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/context/layout-provider.tsx) & [`authenticated-layout.tsx`](file:///c:/Users/Admin/workspace/git/acc/apps/console/src/components/layout/authenticated-layout.tsx))
 - Verified that `DEFAULT_VARIANT` is `'inset'`.
 - Verified that `defaultOpen` defaults to `true` (layout option `"default"`, expanded sidebar).
 
@@ -46,13 +46,13 @@ Disabled the **Theme Settings** sidebar/drawer (`ConfigDrawer`) by default so th
 ### 1. TypeScript & Full Build (Web + Electron)
 Command:
 ```bash
-pnpm --filter @unipost/console build
+pnpm --filter @acc/console build
 ```
 Result: **Passed** (exit code 0, 0 type errors).
 
 ### 2. ESLint Code Quality
 Command:
 ```bash
-pnpm --filter @unipost/console lint
+pnpm --filter @acc/console lint
 ```
 Result: **Passed** (exit code 0, 0 warnings, 0 errors).

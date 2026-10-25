@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-20  
 **Status:** Completed  
-**Scope:** `@unipost/console`  
+**Scope:** `@acc/console`  
 
 ## Problem
 In Dynamic Metadata-Driven Tables (`EntityDataGrid`, `DynamicFieldRenderer`, `RecordEditorDialog`, and `MasterDetailRowInspector`), attributes of type `JSON` / `json_editor` were rendered and edited as raw, unformatted `<Textarea rows={4}>` strings or truncated `<code>{JSON.stringify(val)}</code>` text. This caused frequent syntax errors from missing quotes/brackets, prevented visual inspection of deep nested hierarchies, and cluttered table grid rows.
@@ -25,7 +25,7 @@ In Dynamic Metadata-Driven Tables (`EntityDataGrid`, `DynamicFieldRenderer`, `Re
 - `apps/console/src/features/metadata/components/data-explorer/master-detail-row-inspector.tsx`: Upgraded JSON display to `VisualJsonEditor`.
 
 ## Verification
-- `pnpm --filter @unipost/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx` -> 4/4 passing.
-- `pnpm --filter @unipost/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx` -> 7/7 passing.
-- `pnpm --filter @unipost/console test:run src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx` -> 6/6 passing.
-- `pnpm --filter @unipost/console exec tsc --noEmit` -> 0 errors.
+- `pnpm --filter @acc/console test:run src/components/ui/json-editor/__tests__/visual-json-editor.test.tsx` -> 4/4 passing.
+- `pnpm --filter @acc/console test:run src/features/metadata/components/dynamic-fields/__tests__/dynamic-field-renderer.test.tsx` -> 7/7 passing.
+- `pnpm --filter @acc/console test:run src/features/metadata/components/data-explorer/__tests__/phase1-ergonomics.test.tsx` -> 6/6 passing.
+- `pnpm --filter @acc/console exec tsc --noEmit` -> 0 errors.

@@ -7,7 +7,7 @@ Visual DAG Studio components (`visual-dag-studio.tsx`, `dag-node.tsx`, `dag-pale
 1. Move all 27 Visual DAG Studio files from `apps/console/src/features/metadata/components/studio/` to `apps/console/src/features/workflows/components/studio/` via `git mv`.
 2. Create `apps/console/src/features/workflows/components/studio/index.ts` consolidating exports for all DAG components.
 3. Clean `apps/console/src/features/metadata/components/studio/index.ts` of all DAG exports with zero re-export aliases.
-4. Update all consumers across `@unipost/console` to import directly from `@/features/workflows/components/studio`.
+4. Update all consumers across `@acc/console` to import directly from `@/features/workflows/components/studio`.
 5. Run full TypeScript compilation and test suites to verify 0 regressions.
 
 ## Changes
@@ -25,10 +25,10 @@ Visual DAG Studio components (`visual-dag-studio.tsx`, `dag-node.tsx`, `dag-pale
   - `apps/console/src/features/workflows/index.tsx`
 
 ## Verification
-- `pnpm --filter @unipost/console test -- src/features/workflows/components/studio/`: 12 test files passed, 53 tests passed.
-- `pnpm --filter @unipost/console test -- src/features/metadata/components/studio/`: 3 test files passed, 15 tests passed.
+- `pnpm --filter @acc/console test -- src/features/workflows/components/studio/`: 12 test files passed, 53 tests passed.
+- `pnpm --filter @acc/console test -- src/features/metadata/components/studio/`: 3 test files passed, 15 tests passed.
 - `git grep -n "features/metadata/components/studio" apps/console/src/`: 0 references found in source code.
-- `pnpm --filter @unipost/console exec tsc --noEmit`: 0 errors.
+- `pnpm --filter @acc/console exec tsc --noEmit`: 0 errors.
 
 ## Walkthrough
-Refer to [`walkthrough_142.md`](file:///c:/Users/Admin/workspace/git/unipost/apps/console/doc/walkthrough_142.md) for details.
+Refer to [`walkthrough_142.md`](file:///c:/Users/Admin/workspace/git/acc/apps/console/doc/walkthrough_142.md) for details.

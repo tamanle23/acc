@@ -11,7 +11,7 @@ test.describe('Flow 11: Person Tenant Onboarding, OTP Verification, and Passkeys
     await auditAccessibility(page, 'Person Sign Up Screen');
 
     // 3. Fill in registration form
-    await page.getByLabel(/Email/i).fill('individual-dev@unipost.io');
+    await page.getByLabel(/Email/i).fill('individual-dev@acc.io');
     await page.getByLabel(/^Password/i).fill('SecureP@ssw0rd2026!');
     await page.getByLabel(/Confirm Password/i).fill('SecureP@ssw0rd2026!');
 

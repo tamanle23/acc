@@ -1,7 +1,7 @@
 # Master Plan: Enterprise Full-Stack Automated Testing & >=90% Coverage Pipeline (Iteration 7)
 
 ## 1. Goal & Architecture Overview
-Establish an enterprise-grade automated testing ecosystem that achieves **>=90% line and branch test coverage** across the core monorepo production stack (`@unipost/backend`, `@unipost/console`, and `packages/sandbox`), enforced by hard-gated CI checks, progressive coverage ratcheting, and comprehensive browser automation.
+Establish an enterprise-grade automated testing ecosystem that achieves **>=90% line and branch test coverage** across the core monorepo production stack (`@acc/backend`, `@acc/console`, and `packages/sandbox`), enforced by hard-gated CI checks, progressive coverage ratcheting, and comprehensive browser automation.
 
 ### Test Pyramid Distribution (Balanced Pragmatic Model)
 - **40% Unit Tests**: Fast, deterministic unit tests for AST dynamic query compilers, state machines, zustand stores, pure utility functions, validation decorators, and algorithmic models.
@@ -32,7 +32,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 > [!IMPORTANT]
 > **Decision 1: Progressive Ratchet Coverage Enforcement**
 > - **Phase 1**: Enable coverage tooling (JaCoCo and `@vitest/coverage-v8`) with HTML/lcov reporting without failing builds immediately.
-> - **Phase 2**: Activate strict 90% hard gate in JaCoCo (`check` goal with `0.90` instruction & branch coverage ratio on `apps/backend/unipost-fw`) once backend test sprints land.
+> - **Phase 2**: Activate strict 90% hard gate in JaCoCo (`check` goal with `0.90` instruction & branch coverage ratio on `apps/backend/acc-fw`) once backend test sprints land.
 > - **Phase 3**: Activate strict 90% hard gate in Vitest (`90%` thresholds across lines, branches, functions, and statements on `apps/console` and `packages/sandbox`) once frontend test sprints land.
 > - Any subsequent PR or build dropping below 90% fails fast with a non-zero exit code.
 
@@ -62,7 +62,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 
 ### Phase 1: Tooling, Coverage Instrumentation & Dual-Mode Playwright Configuration
 1. **Backend JaCoCo Configuration**:
-   - Add `jacoco-maven-plugin` (version 0.8.12) to `apps/backend/pom.xml` and `apps/backend/unipost-fw/pom.xml`.
+   - Add `jacoco-maven-plugin` (version 0.8.12) to `apps/backend/pom.xml` and `apps/backend/acc-fw/pom.xml`.
    - Configure execution goals `prepare-agent` (for test argLine) and `report` in the `verify` lifecycle phase (reporting active; threshold check staged for Phase 2).
    - Configure exclusions for auto-generated DTOs, JPA metamodels, and configuration classes without business logic.
 2. **Frontend `@vitest/coverage-v8` Setup**:
@@ -72,7 +72,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 3. **Dual-Mode Playwright Configuration**:
    - Update `apps/console/playwright.config.ts` to support `E2E_MODE=live` vs `E2E_MODE=sandbox` (default).
    - Implement health-check verification in `globalSetup` when `E2E_MODE=live`.
-   - In Sandbox mode: webServer runs `pnpm --filter @unipost/console dev:sandbox --port 5173`.
+   - In Sandbox mode: webServer runs `pnpm --filter @acc/console dev:sandbox --port 5173`.
    - In Live mode: webServer verifies Spring Boot backend at `http://localhost:8000/api` and Vite console at `http://localhost:5173`.
    - Add scripts `"test:e2e"` (sandbox) and `"test:e2e:live"` to `apps/console/package.json`.
 4. **CI-First Scheduled Automation**:
@@ -81,7 +81,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
 ---
 
 ### Phase 2: Backend >=90% Coverage Sprint (Unit + Spring Modulith Integration)
-1. **Unit Testing Expansion (`apps/backend/unipost-fw/src/test/java/`)**:
+1. **Unit Testing Expansion (`apps/backend/acc-fw/src/test/java/`)**:
    - `DynamicQueryCompilerTest`: 100% branch coverage across all join patterns (Pattern A Embedded, Pattern B FK, Pattern C Association), companion rollups (SUM, COUNT, AVG, MIN, MAX), child slice pagination, parameterized sorting, and fuzzing vectors.
    - `RecordMutationPipelineTest`: OCC validation, ETag generation, optimistic locking conflicts, 3-way auto-merging, and delete cascades.
    - `CompositeRecordServiceTest`: Cache miss/hit resolution, Hazelcast serialization, and fallback to DataLoaderBatchResolver.
@@ -93,13 +93,13 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
    - `TenantOnboardingControllerIntegrationTest`: Atomic provisioning, domain blueprint cloning, and schema pre-warming.
    - `BillingPayOsControllerIntegrationTest`: Webhook HMAC-SHA256 signature verification, idempotent transaction processing, and feature entitlement activation.
 3. **JaCoCo 90% Hard Gate Activation**:
-   - Activate JaCoCo `check` execution with `<minimum>0.90</minimum>` in `apps/backend/unipost-fw/pom.xml`.
+   - Activate JaCoCo `check` execution with `<minimum>0.90</minimum>` in `apps/backend/acc-fw/pom.xml`.
    - Run `mvn verify` and verify that the build passes with instruction and branch coverage >= 90%.
 
 ---
 
 ### Phase 3: Console & Sandbox >=90% Coverage Sprint (Unit + React Integration)
-1. **`@unipost/sandbox` 100% Handler & Store Coverage**:
+1. **`@acc/sandbox` 100% Handler & Store Coverage**:
    - Unit tests for all domain handlers in `packages/sandbox/src/handlers/`:
      - `auth-sandbox-handler.test.ts`: Login, token refresh, logout, persona decoding.
      - `metadata-sandbox-adapter.test.ts`: Schema CRUD, composite record resolution, rollups calculation, child filtering.
@@ -107,11 +107,11 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
      - `billing-sandbox-handler.test.ts`: QR generation, subscription upgrades.
      - `dlq-sandbox-handler.test.ts`: Poison task injection, re-drive, discard.
    - State tests for `SandboxStoreManager` and simulation decorators.
-2. **`@unipost/console` Unit & Store Coverage**:
+2. **`@acc/console` Unit & Store Coverage**:
    - `use-metadata-ui-store.test.ts`: Model selection, grid pagination state, filter clauses, tab sync.
    - `use-spring-auth-store.test.ts`: Token decoding, session persistence, token expiration.
    - `workflow-ir-converter.test.ts`: Canvas nodes to execution units conversion.
-3. **`@unipost/console` Component Integration Testing**:
+3. **`@acc/console` Component Integration Testing**:
    - `entity-data-grid.test.tsx`: Search filtering, sorting, column visibility, pagination, backfill dialog.
    - `schema-builder.test.tsx`: Attribute creation, type selection, validation constraints, display reordering.
    - `record-editor-dialog.test.tsx`: Dynamic form fields, schema validation, save mutations.
@@ -120,7 +120,7 @@ Establish an enterprise-grade automated testing ecosystem that achieves **>=90% 
    - `dlq-management-table.test.tsx`: Poison task list, error inspection drawer, bulk re-drive.
 4. **Vitest V8 90% Hard Gate Activation**:
    - Configure `thresholds: { lines: 90, branches: 90, functions: 90, statements: 90 }` in `vitest.config.ts`.
-   - Run `pnpm --filter @unipost/console test:coverage` and assert >= 90% across all metrics.
+   - Run `pnpm --filter @acc/console test:coverage` and assert >= 90% across all metrics.
 
 ---
 
@@ -150,16 +150,16 @@ Implement the complete 10-spec suite of Golden E2E Browser Journeys (`apps/conso
 & "C:\Users\Admin\.m2\wrapper\dists\apache-maven-3.9.9-bin\6gbr3tfuiv8aocduf5pro8ephc\apache-maven-3.9.9\bin\mvn.cmd" clean verify -f apps/backend/pom.xml -q
 
 # 2. Console & Sandbox Vitest Coverage Verification
-pnpm --filter @unipost/sandbox test:coverage
-pnpm --filter @unipost/console test:coverage
+pnpm --filter @acc/sandbox test:coverage
+pnpm --filter @acc/console test:coverage
 
 # 3. Playwright E2E Matrix (Mode 1: Unified Sandbox Autonomous)
-pnpm --filter @unipost/console exec playwright test
+pnpm --filter @acc/console exec playwright test
 
 # 4. Playwright E2E Matrix (Mode 2: Live Backend)
-$env:E2E_MODE="live"; pnpm --filter @unipost/console exec playwright test
+$env:E2E_MODE="live"; pnpm --filter @acc/console exec playwright test
 
 # 5. Full Monorepo Typecheck & Build
 pnpm check-types
-pnpm --filter @unipost/console build
+pnpm --filter @acc/console build
 ```

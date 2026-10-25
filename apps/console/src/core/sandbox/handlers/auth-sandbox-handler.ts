@@ -215,7 +215,7 @@ export const authSandboxHandler: SandboxRouteHandler = {
 
     // 5. Mock Sign-up Person (/auth/signup/person or /auth/signup)
     if ((cleanPath === '/auth/signup/person' || cleanPath === '/auth/signup') && ctx.method === 'POST') {
-      const email = body.email || 'newuser@unipost.io';
+      const email = body.email || 'newuser@acc.io';
       return {
         status: 201,
         statusText: 'Created',

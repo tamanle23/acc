@@ -1,5 +1,5 @@
 {
-  "name": "@unipost/tokens",
+  "name": "@acc/tokens",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@unipost/typescript-config": "workspace:*",
+    "@acc/typescript-config": "workspace:*",
     "typescript": "^5.8.2",
     "vitest": "^3.0.7"
   }

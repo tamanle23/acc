@@ -37,11 +37,11 @@ This plan details the full architectural and technical transition of the applica
      - `javax.validation.*` &rarr; `jakarta.validation.*`
      - `javax.jms.*` &rarr; `jakarta.jms.*`
 4. **Step 4: Module Modernization**
-   - **`unipost-core`**: Commons FileUpload 2 (`commons-fileupload2-jakarta-servlet6:2.0.0-M2`).
-   - **`unipost-fw`**: Spring Boot 4 modular packages, Spring Security 7 `SecurityFilterChain`, SpringDoc OpenAPI 3, Spring 7 `Assert.notNull` signatures.
-   - **`unipost-report-engine`**: Replace Undertow `LocaleUtils` with Spring 7 `StringUtils.parseLocaleString`.
-   - **`unipost-ms-worker`**: Replace dead Spring Batch Admin with Spring Batch 6 (`JobBuilder`, `StepBuilder`, `Chunk<T>`, `TaskExecutorJobLauncher`).
-5. **Step 5: Spring Modulith Setup in `unipost-ms-aio`**
+   - **`acc-core`**: Commons FileUpload 2 (`commons-fileupload2-jakarta-servlet6:2.0.0-M2`).
+   - **`acc-fw`**: Spring Boot 4 modular packages, Spring Security 7 `SecurityFilterChain`, SpringDoc OpenAPI 3, Spring 7 `Assert.notNull` signatures.
+   - **`acc-report-engine`**: Replace Undertow `LocaleUtils` with Spring 7 `StringUtils.parseLocaleString`.
+   - **`acc-ms-worker`**: Replace dead Spring Batch Admin with Spring Batch 6 (`JobBuilder`, `StepBuilder`, `Chunk<T>`, `TaskExecutorJobLauncher`).
+5. **Step 5: Spring Modulith Setup in `acc-ms-aio`**
    - Add Spring Modulith starters (`core`, `jpa`, `test`).
-   - Configure `@Modulithic(systemName = "unipost", useFullyQualifiedModuleNames = true)` on `AppConfig`.
+   - Configure `@Modulithic(systemName = "acc", useFullyQualifiedModuleNames = true)` on `AppConfig`.
    - Add `ModularityTests.java` with `ApplicationModules.of(AppConfig.class).verify();`.

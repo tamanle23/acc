@@ -1,6 +1,6 @@
 # Implementation Plan: Iteration 12 - Enterprise Production Readiness & High-Performance Dynamic Metadata Engine
 
-Iteration 12 transforms the **unipost** enterprise platform into an autonomous, high-performance operational suite by fusing consumer-grade UI/UX ergonomics with resilient backend optimizations, event-driven dynamic entity business workflows, complete zero-stub implementations, and field-level security.
+Iteration 12 transforms the **acc** enterprise platform into an autonomous, high-performance operational suite by fusing consumer-grade UI/UX ergonomics with resilient backend optimizations, event-driven dynamic entity business workflows, complete zero-stub implementations, and field-level security.
 
 ---
 
@@ -64,7 +64,7 @@ flowchart TD
 
 ---
 
-### Phase 1: Professional UI/UX Refinements (`@unipost/console`)
+### Phase 1: Professional UI/UX Refinements (`@acc/console`)
 
 #### [NEW] `apps/console/src/components/command-palette/command-palette.tsx`
 - Implements global `Cmd+K` / `Ctrl+K` command search using `cmdk`.
@@ -83,33 +83,33 @@ flowchart TD
 
 ---
 
-### Phase 2: Complete Zero-Stub Hardening (`@unipost/backend`)
+### Phase 2: Complete Zero-Stub Hardening (`@acc/backend`)
 
-#### [DELETE] `apps/backend/unipost-fw/src/main/java/org/springframework/data/util/TypeInformation.java`
+#### [DELETE] `apps/backend/acc-fw/src/main/java/org/springframework/data/util/TypeInformation.java`
 - Remove stub class; configure Springdoc OpenAPI 3.1 to skip Spring Data introspection cleanly.
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/service/BaseModelService.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/BaseModelService.java`
 - Fully implement base model persistence, audit timestamps, and tenant security; eliminate `// TODO Auto-generated method stub`.
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/cache/jest/JestRepository.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/cache/jest/JestRepository.java`
 - Replace swallowed exceptions with typed `ElasticsearchOperationException` and contextual logging.
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/fw/context/WebContext.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/fw/context/WebContext.java`
 - Refactor single-instance thread-local state to support multi-instance cluster deployments and virtual thread hand-offs.
 
 ---
 
-### Phase 3: Backend Performance Tuning & Indexing (`@unipost/backend`)
+### Phase 3: Backend Performance Tuning & Indexing (`@acc/backend`)
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/resources/db/migration/V12__dynamic_indexing_and_audit.sql`
+#### [MODIFY] `apps/backend/acc-fw/src/main/resources/db/migration/V12__dynamic_indexing_and_audit.sql`
 - Add global GIN indexing: `CREATE INDEX idx_entity_records_gin ON UNIPOST_ENTITY_RECORDS USING gin (data jsonb_path_ops);`.
 - Add programmatic creation of PostgreSQL functional expression indexes for attributes flagged as `indexed: true`.
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/service/metadata/MetadataRecordService.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
 - Implement keyset/cursor-based pagination (`seek` method) for sub-millisecond query performance on tables exceeding 100,000 records.
 - Implement selective projection queries (`jsonb_build_object`).
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/config/HazelcastConfig.java` & `AsyncExecutionConfig.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/config/HazelcastConfig.java` & `AsyncExecutionConfig.java`
 - Configure Near-Cache with `in-memory-format: OBJECT` and local invalidation listeners.
 - Enable Java 21 Project Loom virtual thread per-task executors for workflow step dispatches.
 
@@ -117,13 +117,13 @@ flowchart TD
 
 ### Phase 4: Dynamic Workflows & Real-Life E2E Workflows
 
-#### [NEW] `apps/backend/unipost-fw/src/main/java/com/unipost/service/metadata/workflow/EntityWorkflowTriggerDispatcher.java`
+#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/workflow/EntityWorkflowTriggerDispatcher.java`
 - Spring Modulith persistent outbox listener on `EntityRecordMutatedEvent`; dispatches automated DAG `WorkflowExecution`.
 
 #### [NEW] `apps/console/src/features/workflows/approvals/approvals-inbox.tsx`
 - Human-in-the-loop approval inbox listing pending workflow review tasks with dynamic entity context diffs.
 
-#### [NEW] `apps/backend/unipost-fw/src/main/java/com/unipost/controller/NotificationSseController.java`
+#### [NEW] `apps/backend/acc-fw/src/main/java/com/acc/controller/NotificationSseController.java`
 - Server-Sent Events (SSE) notification stream (`/api/v1/notifications/stream`) pushing approval events and execution progress.
 
 #### [MODIFY] `apps/console/src/features/system/dlq/dlq-inspector-sheet.tsx`
@@ -133,10 +133,10 @@ flowchart TD
 
 ### Phase 5: Security, CDC & Dual-Mode E2E Verification
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/service/metadata/serialization/FieldLevelSecuritySerializer.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/serialization/FieldLevelSecuritySerializer.java`
 - Server-side dynamic serialization redaction based on user tenant roles.
 
-#### [MODIFY] `apps/backend/unipost-fw/src/main/java/com/unipost/service/metadata/MetadataRecordService.java`
+#### [MODIFY] `apps/backend/acc-fw/src/main/java/com/acc/service/metadata/MetadataRecordService.java`
 - Record RFC-6902 JSON Patch on mutations in `UNIPOST_RECORD_AUDIT_LOGS`; implement rollback endpoint.
 
 #### [NEW] `apps/console/src/features/metadata/components/data-explorer/record-history-drawer.tsx`
@@ -150,13 +150,13 @@ flowchart TD
 ```bash
 # 1. Monorepo Quality Gates (Lint & Typecheck)
 pnpm lint
-pnpm --filter @unipost/console check-types
+pnpm --filter @acc/console check-types
 
 # 2. Console & UI Unit Tests
-pnpm --filter @unipost/console test:run
+pnpm --filter @acc/console test:run
 
 # 3. Backend Unit & Modulith Contract Tests
-pnpm --filter @unipost/backend test
+pnpm --filter @acc/backend test
 
 # 4. Playwright Dual-Mode E2E Workflows (Mode 1 Sandbox & Mode 2 Live Backend)
 pnpm test:e2e

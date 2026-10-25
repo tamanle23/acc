@@ -11,9 +11,9 @@ import crypto from 'crypto'
  * 2. Cryptographic HMAC validation: signature matches HMAC-SHA256(secret, timestamp + "." + body).
  */
 export async function POST(req: NextRequest) {
-  const signature = req.headers.get('x-unipost-signature')
-  const timestamp = req.headers.get('x-unipost-timestamp')
-  const secret = process.env.UNIPOST_WEBHOOK_SECRET || 'unipost-webhook-secret-token'
+  const signature = req.headers.get('x-acc-signature')
+  const timestamp = req.headers.get('x-acc-timestamp')
+  const secret = process.env.UNIPOST_WEBHOOK_SECRET || 'acc-webhook-secret-token'
 
   // 1. Prevent Replay Attacks (Reject requests older than 300 seconds)
   const currentTime = Math.floor(Date.now() / 1000)

@@ -59,7 +59,7 @@ export const TableViewsPopover: React.FC<TableViewsPopoverProps> = ({
   const [newPresetName, setNewPresetName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const storageKey = `unipost_view_presets_${entityTypeId}`;
+  const storageKey = `acc_view_presets_${entityTypeId}`;
 
   const defaultPresets: ViewPreset[] = [
     {
