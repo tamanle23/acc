@@ -24,7 +24,7 @@ class SandboxPersonaRegistryTest {
         assertTrue(byEmail.isPresent());
         assertEquals("admin", byEmail.get().id());
         assertEquals("tenant-acme", byEmail.get().defaultTenantId());
-        assertTrue(byEmail.get().roles().contains("ROLE_ADMIN"));
+        assertTrue(byEmail.get().roles().contains("ROLE_WORKSPACE_OWNER"));
 
         Optional<SandboxPersona> byAlias = registry.resolve("admin_bypass", null);
         assertTrue(byAlias.isPresent());
@@ -43,7 +43,7 @@ class SandboxPersonaRegistryTest {
         assertEquals("system", custodian.get().id());
         assertEquals("SYSTEM", custodian.get().defaultTenantId());
         assertEquals("SYSTEM", custodian.get().actorTenantId());
-        assertTrue(custodian.get().roles().contains("ROLE_SYSTEM_CUSTODIAN"));
+        assertTrue(custodian.get().roles().contains("ROLE_SYSTEM_ROOT"));
 
         Optional<SandboxPersona> byAlias = registry.resolve("custodian_root", null);
         assertTrue(byAlias.isPresent());
@@ -56,12 +56,12 @@ class SandboxPersonaRegistryTest {
         Optional<SandboxPersona> creator = registry.resolve("creator@unipost.io", null);
         assertTrue(creator.isPresent());
         assertEquals("creator", creator.get().id());
-        assertTrue(creator.get().roles().contains("ROLE_CREATOR"));
+        assertTrue(creator.get().roles().contains("ROLE_OPERATIONS_MANAGER"));
 
         Optional<SandboxPersona> user = registry.resolve("user@unipost.io", null);
         assertTrue(user.isPresent());
         assertEquals("user", user.get().id());
-        assertTrue(user.get().roles().contains("ROLE_USER"));
+        assertTrue(user.get().roles().contains("ROLE_STANDARD_MEMBER"));
     }
 
     @Test

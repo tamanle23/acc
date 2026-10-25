@@ -52,7 +52,7 @@ describe('Unified Sandbox Full Platform Integration (Phases 2-4)', () => {
       expect(authState.isAuthenticated).toBe(true);
       expect(authState.isSandbox).toBe(true);
       expect(authState.user?.sub).toBe('creator');
-      expect(authState.user?.roles).toContain('ROLE_CREATOR');
+      expect(authState.user?.roles).toContain('ROLE_OPERATIONS_MANAGER');
       expect(useSandboxStore.getState().activeTenantId).toBe('tenant-eu-central-1');
     });
   });

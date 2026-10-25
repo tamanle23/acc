@@ -15,56 +15,58 @@ public class SandboxPersonaRegistry {
     private final Map<String, SandboxPersona> personasByAlias = new ConcurrentHashMap<>();
 
     public SandboxPersonaRegistry() {
-        // 1. Admin Persona
+        // 1. Workspace Owner (Admin) Persona
         SandboxPersona admin = new SandboxPersona(
                 "admin",
-                "Administrator",
+                "Workspace Owner",
                 "admin@unipost.io",
                 "tenant-acme",
                 null,
-                List.of("ROLE_ADMIN", "ROLE_USER"),
-                List.of("ROLE_ADMIN", "ROLE_USER", "METADATA_SCHEMA_READ", "METADATA_SCHEMA_WRITE", 
-                        "METADATA_RECORD_READ", "METADATA_RECORD_WRITE", "USER_MANAGEMENT", "WORKSPACE_MANAGEMENT"),
+                List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER", "ROLE_ADMIN"),
+                List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER", "ROLE_ADMIN", "metadata:schema:read", "metadata:schema:write", 
+                        "metadata:record:read", "metadata:record:write", "metadata:record:delete", "workspace:settings:manage", "workspace:members:manage"),
                 "usr_sandbox_admin_001"
         );
         registerPersona(admin, List.of("admin@unipost.io", "admin_bypass", "admin", "tenant-admin"));
 
-        // 2. Sovereign Custodian Persona
+        // 2. Sovereign Root Custodian Persona
         SandboxPersona custodian = new SandboxPersona(
                 "system",
-                "Sovereign Custodian (Me)",
+                "Sovereign Root Custodian (Me)",
                 "custodian@system",
                 "SYSTEM",
                 "SYSTEM",
-                List.of("ROLE_SYSTEM_CUSTODIAN", "ROLE_ADMIN", "ROLE_USER"),
-                List.of("ROLE_SYSTEM_CUSTODIAN", "ROLE_ADMIN", "ROLE_USER", "platform:dlq:manage", 
-                        "METADATA_SCHEMA_READ", "METADATA_SCHEMA_WRITE", "METADATA_RECORD_READ", "METADATA_RECORD_WRITE"),
+                List.of("ROLE_SYSTEM_ROOT", "ROLE_SYSTEM_SUPPORT", "ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER"),
+                List.of("ROLE_SYSTEM_ROOT", "ROLE_SYSTEM_SUPPORT", "platform:fleet:read", "platform:fleet:mutate", "platform:tenant:assume", 
+                        "platform:quotas:override", "platform:roles:manage", "platform:users:lock", "platform:dlq:manage", "platform:audit:export", 
+                        "metadata:schema:read", "metadata:schema:write", "metadata:record:read", "metadata:record:write"),
                 "usr_sandbox_custodian_001"
         );
         registerPersona(custodian, List.of("custodian@system", "custodian_root", "system", "sovereign-custodian@unipost.io", "system-custodian"));
 
-        // 3. Creator Persona
+        // 3. Operations Manager (Creator) Persona
         SandboxPersona creator = new SandboxPersona(
                 "creator",
-                "Content Creator",
+                "Operations Manager",
                 "creator@unipost.io",
                 "tenant-acme",
                 null,
-                List.of("ROLE_CREATOR", "ROLE_USER"),
-                List.of("ROLE_CREATOR", "ROLE_USER", "METADATA_SCHEMA_READ", "METADATA_RECORD_READ", "METADATA_RECORD_WRITE"),
+                List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER"),
+                List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER", "metadata:schema:read", "metadata:schema:write", 
+                        "metadata:record:read", "metadata:record:write", "metadata:record:delete", "workspace:integrations:manage", "workspace:export:data"),
                 "usr_sandbox_creator_001"
         );
         registerPersona(creator, List.of("creator@unipost.io", "creator_bypass", "creator", "tenant-creator"));
 
-        // 4. Standard User Persona
+        // 4. Standard Member (User) Persona
         SandboxPersona user = new SandboxPersona(
                 "user",
-                "Standard User",
+                "Standard Member",
                 "user@unipost.io",
                 "tenant-acme",
                 null,
-                List.of("ROLE_USER"),
-                List.of("ROLE_USER", "METADATA_RECORD_READ"),
+                List.of("ROLE_STANDARD_MEMBER"),
+                List.of("ROLE_STANDARD_MEMBER", "metadata:schema:read", "metadata:record:read", "metadata:record:write"),
                 "usr_sandbox_user_001"
         );
         registerPersona(user, List.of("user@unipost.io", "user_bypass", "user", "tenant-user"));

@@ -118,7 +118,7 @@ describe('Unified Sandbox Core Platform (Phase 1)', () => {
 
       sandboxManager.switchPersona('creator');
       expect(sandboxManager.getActivePersona().id).toBe('creator');
-      expect(sandboxManager.getActivePersona().roles).toContain('ROLE_CREATOR');
+      expect(sandboxManager.getActivePersona().roles).toContain('ROLE_OPERATIONS_MANAGER');
       expect(useSandboxStore.getState().activeTenantId).toBe('tenant-eu-central-1');
 
       sandboxManager.switchPersona('user');

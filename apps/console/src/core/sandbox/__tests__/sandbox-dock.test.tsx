@@ -44,7 +44,7 @@ describe('SandboxDock UI Component', () => {
   it('should switch active persona when clicking persona buttons', () => {
     renderWithQueryClient(<SandboxDock />);
 
-    const creatorBtn = screen.getByText('Content');
+    const creatorBtn = screen.getByText('Operations');
     fireEvent.click(creatorBtn);
 
     expect(useSandboxStore.getState().activePersonaId).toBe('creator');
