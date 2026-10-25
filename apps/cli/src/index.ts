@@ -5,11 +5,31 @@ import {
   AmbientStreamPipeline,
   ScraperEngine,
 } from './pipelines';
-import { DefaultPipelineRegistry, Logger, PipelineExecutionOptions, fileExists } from '@acc/core';
+import { DefaultPipelineRegistry, Logger, fileExists } from '@acc/core';
 import { bootstrapServer } from './bootstrap';
+import {
+  intro,
+  outro,
+  promptSelect,
+  promptPath,
+  spinner,
+  log,
+} from './prompts';
+
+export type CliCommand =
+  | 'run'
+  | 'stream'
+  | 'serve'
+  | 'list'
+  | 'overlay'
+  | 'sfx'
+  | 'help'
+  | 'worker'
+  | 'ir-render'
+  | 'studio';
 
 export interface CliOptions {
-  command?: 'run' | 'stream' | 'serve' | 'list' | 'overlay' | 'sfx' | 'help' | 'worker' | 'ir-render' | 'studio';
+  command?: CliCommand;
   pipelineId?: string;
   configPath?: string;
   outDir?: string;
@@ -28,18 +48,6 @@ export interface CliOptions {
   mediaEngine?: 'bun-ffi' | 'fluent-ffmpeg' | 'mediabunny-server' | 'mediabunny-client';
 }
 
-import { cancel, intro, isCancel, outro, select, spinner, text } from '@clack/prompts';
-
-const spin = spinner({
-
-  onCancel: () => {
-    Logger.info('ACC-CLI', 'Cleaning up resources...');
-  },
-  cancelMessage: 'Task was cancelled by user',
-  errorMessage: 'Task failed unexpectedly',
-  styleFrame: (frame) => `\x1b[35m${frame}\x1b[0m`,
-});
-
 export function parseCliArgs(args: string[]): CliOptions {
   const options: CliOptions = {};
   if (!args || args.length === 0) {
@@ -50,16 +58,37 @@ export function parseCliArgs(args: string[]): CliOptions {
   const firstArg = args[0].toLowerCase();
   let startIndex = 0;
 
-  if (['run', 'stream', 'serve', 'list', 'overlay', 'sfx', 'worker', 'ir-render', 'studio', 'help', '--help', '-h'].includes(firstArg)) {
+  if (
+    [
+      'run',
+      'stream',
+      'serve',
+      'list',
+      'overlay',
+      'sfx',
+      'worker',
+      'ir-render',
+      'studio',
+      'help',
+      '--help',
+      '-h',
+    ].includes(firstArg)
+  ) {
     if (firstArg === '--help' || firstArg === '-h') {
       options.command = 'help';
     } else {
-      options.command = firstArg as any;
+      options.command = firstArg as CliCommand;
     }
     startIndex = 1;
   } else {
     // If first argument is not a known command, check if it's a directory or config path
-    if (fs.existsSync(args[0]) || args[0].startsWith('./') || args[0].startsWith('../') || args[0].includes('/') || args[0].includes('\\')) {
+    if (
+      fs.existsSync(args[0]) ||
+      args[0].startsWith('./') ||
+      args[0].startsWith('../') ||
+      args[0].includes('/') ||
+      args[0].includes('\\')
+    ) {
       options.command = 'run';
       options.pipelineId = 'story';
       options.configPath = args[0];
@@ -136,7 +165,6 @@ export function parseCliArgs(args: string[]): CliOptions {
       continue;
     }
     if (arg === '-h' || arg === '--help') {
-
       options.command = 'help';
       break;
     }
@@ -149,7 +177,9 @@ export function parseCliArgs(args: string[]): CliOptions {
 }
 
 export function printHelp(): void {
-  Logger.info('ACC-CLI', `
+  Logger.info(
+    'ACC-CLI',
+    `
 ACC (Automated Content Creator) - Multi-Pipeline Engine CLI v3.0
 
 USAGE:
@@ -184,13 +214,14 @@ OPTIONS:
   --chunk-end <frame>        End frame index for distributed temporal chunk rendering
   --traceparent <header>     W3C traceparent distributed tracing header (00-{traceId}-{spanId}-{flags})
   -h, --help                 Display this CLI guide
-`);
-
-
+`
+  );
 }
 
 export function listPipelines(): void {
-  Logger.info('ACC-CLI', `
+  Logger.info(
+    'ACC-CLI',
+    `
 === ACC Multi-Pipeline Engine Registry ===
 1. [scraper]     Event-Driven Scraper & Summarizer
    Supported Exporters: video (alert card), audio (Kokoro TTS), social (breaking alert), web (markdown)
@@ -204,7 +235,8 @@ export function listPipelines(): void {
    Supported Exporters: video (Manim chalkboard step-by-step), social, web
 6. [ambient]     Procedural Ambient Stream
    Supported Exporters: video, audio, live-stream (YouTube Live 2.0s GOP RTMP)
-`);
+`
+  );
 }
 
 async function probeCanonicalConfig(dirPath: string): Promise<any | null> {
@@ -223,7 +255,6 @@ async function probeCanonicalConfig(dirPath: string): Promise<any | null> {
 export async function resolvePipelineInput(pipelineId: string, options: CliOptions): Promise<any> {
   const normId = pipelineId.toLowerCase();
 
-  // If a config path is specified, check if it's a directory
   let isDirectory = false;
   let parsedFromDir: any = null;
   if (options.configPath && fs.existsSync(options.configPath)) {
@@ -366,7 +397,6 @@ export async function run(customArgs?: string[]): Promise<any> {
   const rawArgs = customArgs !== undefined ? customArgs : process.argv.slice(2);
   const options = parseCliArgs(rawArgs);
 
-
   if (rawArgs.length > 0) {
     if (options.command === 'help') {
       printHelp();
@@ -399,7 +429,6 @@ export async function run(customArgs?: string[]): Promise<any> {
         traceparent: options.traceparent,
       });
       return { success: true, command: 'ir-render' };
-
     }
     if (options.command === 'studio') {
       const { handleStudioCommand } = await import('./commands/studio');
@@ -444,7 +473,10 @@ export async function run(customArgs?: string[]): Promise<any> {
     }
   }
 
-  const commandSelection = await select({
+  // Interactive Clack Menu when invoked with zero arguments
+  intro('ACC — Automated Content Creator');
+
+  const commandSelection = await promptSelect<CliCommand>({
     message: 'ACC CLI command:',
     options: [
       { label: 'Run', value: 'run', hint: 'Execute a canonical pipeline (scraper, db, repurposing, story, rule, ambient)' },
@@ -456,22 +488,14 @@ export async function run(customArgs?: string[]): Promise<any> {
       { label: 'Worker', value: 'worker', hint: 'Start Conductor OSS stateless task worker daemon' },
     ],
   });
-  if (isCancel(commandSelection)) {
-    cancel('Operation cancelled.');
-    process.exit(0);
-  }
 
   switch (commandSelection) {
     case 'studio': {
-      const configLocation = await text({
-        message: 'Please enter the path to your Video IR document or story folder:',
+      const configLocation = await promptPath({
+        message: 'Path to Video IR document or story folder:',
         placeholder: './sample-story',
-        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ''),
+        defaultPath: './sample-story',
       });
-      if (isCancel(configLocation)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
       const { handleStudioCommand } = await import('./commands/studio');
       const studio = await handleStudioCommand({
         input: configLocation,
@@ -481,15 +505,11 @@ export async function run(customArgs?: string[]): Promise<any> {
       return { success: true, command: 'studio', serverUrl: studio.getUrl() };
     }
     case 'ir-render': {
-      const configLocation = await text({
-        message: 'Please enter the path to your Video IR document or story folder:',
+      const configLocation = await promptPath({
+        message: 'Path to Video IR document or story folder:',
         placeholder: './sample-story',
-        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ''),
+        defaultPath: './sample-story',
       });
-      if (isCancel(configLocation)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
       const { handleIrRenderCommand } = await import('./commands/ir-render');
       await handleIrRenderCommand({
         input: configLocation,
@@ -498,52 +518,50 @@ export async function run(customArgs?: string[]): Promise<any> {
     }
     case 'overlay': {
       const { runOverlayCommand } = await import('./commands/overlay');
-      await runOverlayCommand(process.argv.slice(1));
+      await runOverlayCommand([]);
       return { success: true, command: 'overlay' };
     }
-
     case 'sfx': {
       const { runSFXCommand } = await import('./commands/sfx');
-      await runSFXCommand(process.argv.slice(1));
+      await runSFXCommand([]);
       return { success: true, command: 'sfx' };
     }
-
     case 'worker': {
       if (!options.conductorUrl && !options.conductorSandbox) {
-        Logger.error('ACC-CLI', 'Error: --conductor-url <url> or --sandbox is required for the worker daemon command.');
+        log.error('Error: --conductor-url <url> or --sandbox is required for the worker daemon command.');
         return { success: false, error: 'Missing configuration for worker' };
       }
+      const { runWorkerDaemon } = await import('./worker');
       await runWorkerDaemon({
         conductorUrl: options.conductorUrl || 'http://localhost:8080',
-        sandboxMode: options.conductorSandbox
+        sandboxMode: options.conductorSandbox,
       });
       return { success: true, command: 'worker' };
     }
-
     case 'stream': {
       if (!options.rtmpUrl) {
-        Logger.error('ACC-CLI', 'Error: --rtmp <url> is required for stream command.');
+        log.error('Error: --rtmp <url> is required for stream command.');
         return { success: false, error: 'Missing --rtmp flag' };
       }
       const pipelineId = options.pipelineId || 'ambient';
-      Logger.info('ACC-CLI', `Initializing RTMP Live Stream for pipeline '${pipelineId}' -> ${options.rtmpUrl}`);
+      log.info(`Initializing RTMP Live Stream for pipeline '${pipelineId}' -> ${options.rtmpUrl}`);
 
       if (pipelineId === '6' || pipelineId === 'ambient') {
         const ambientPipeline = new AmbientStreamPipeline();
         const duration = options.duration || 10;
         const maxFrames = Math.round(duration * 30);
         const res = await ambientPipeline.streamToRtmp(options.rtmpUrl, undefined, maxFrames);
-        Logger.info('ACC-CLI', `Stream finished successfully. Pushed ${res.framesSent} frames.`);
+        log.success(`Stream finished successfully. Pushed ${res.framesSent} frames.`);
         return { success: true, framesSent: res.framesSent };
       } else {
         throw new Error(`Pipeline '${pipelineId}' does not support live RTMP streaming.`);
       }
     }
-
     case 'run': {
-      const pipelineId = await select({
-        message: 'Pipeline:',
-        options: DefaultPipelineRegistry.getSummaries().map((p) => {
+      const summaries = DefaultPipelineRegistry.getSummaries();
+      const pipelineId = await promptSelect({
+        message: 'Select Pipeline:',
+        options: summaries.map((p) => {
           const aliasHint = p.aliases.length > 0 ? `Aliases: ${p.aliases.join(', ')}` : p.description || p.id;
           return {
             label: `${p.name} (${p.id})`,
@@ -551,23 +569,15 @@ export async function run(customArgs?: string[]): Promise<any> {
             hint: aliasHint,
           };
         }),
-
       });
-      if (isCancel(pipelineId)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-      const configLocation = await text({
-        message: 'Please enter the path to your story-config folder:',
+
+      const configLocation = await promptPath({
+        message: 'Path to story-config folder or input file:',
         placeholder: './sample-story',
-        validate: async (val) => ((!val || val.trim() === '' || !(await fileExists(val))) ? 'Path cannot be empty or invalid.' : ""),
+        defaultPath: './sample-story',
       });
-      if (isCancel(configLocation)) {
-        cancel('Operation cancelled.');
-        process.exit(0);
-      }
-      const { executionResult, outputPaths } = await runPipeline(pipelineId, configLocation);
 
+      const { executionResult, outputPaths } = await runPipeline(pipelineId, configLocation);
       return {
         ...executionResult,
         success: true,
@@ -580,24 +590,26 @@ export async function run(customArgs?: string[]): Promise<any> {
 
 if (import.meta.main) {
   await bootstrapServer();
-  intro('--- ACC - Automated Content Creator ---');
-  run().then(async (result) => {
-    if (result?.success === false) {
-      Logger.error('ACC-CLI', `❌ Render failed: ${result.error || 'Unknown error'}`);
-      outro('--- Finished ---');
+  run()
+    .then(async (result) => {
+      if (result?.success === false) {
+        Logger.error('ACC-CLI', `❌ Render failed: ${result.error || 'Unknown error'}`);
+        process.exit(1);
+      } else {
+        Logger.info('ACC-CLI', '✅ Pipeline execution completed successfully!');
+      }
+    })
+    .catch((error: any) => {
+      Logger.error('ACC-CLI', `❌ Execution failed: ${error}`);
       process.exit(1);
-    } else {
-      Logger.info('ACC-CLI', '✅ Story generation completed successfully!');
-      outro('--- Finished ---');
-    }
-  }).catch((error: any) => {
-    Logger.error('ACC-CLI', `❌ Render failed: ${error}`);
-    outro('--- Finished ---');
-    process.exit(1);
-  });
+    });
 }
 
-async function runPipeline(pipelineSelection: string, configLocation?: string, cliOptions: CliOptions = {}) {
+async function runPipeline(
+  pipelineSelection: string,
+  configLocation?: string,
+  cliOptions: CliOptions = {}
+) {
   const pipelineId = (pipelineSelection || 'story').toLowerCase();
   Logger.info('ACC-CLI', `Executing Pipeline [${pipelineId}] via Orchestrator...`);
 
@@ -624,6 +636,3 @@ async function runPipeline(pipelineSelection: string, configLocation?: string, c
     success: true,
   };
 }
-
-
-

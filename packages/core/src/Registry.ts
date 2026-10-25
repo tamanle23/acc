@@ -59,6 +59,18 @@ export class RegistryManager {
     return new RegistryManager(registry);
   }
 
+  public getAvailableEffects(): string[] {
+    return Object.keys(this.registry.effects);
+  }
+
+  public getAvailableVariants(effectName: string): string[] {
+    return this.registry.effects[effectName]?.variants || [];
+  }
+
+  public getAvailableComposites(): string[] {
+    return Object.keys(this.registry.composites);
+  }
+
   public getEffectConfig(effectName: string): EffectConfig {
     const config = this.registry.effects[effectName];
     if (!config) {

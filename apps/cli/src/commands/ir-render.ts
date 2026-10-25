@@ -17,6 +17,7 @@ import {
   type VideoIRDocument,
 } from '@acc/ir';
 import type { MediaEngineType } from '@acc/core';
+import { log } from '../prompts';
 
 export interface IrRenderCliOptions {
   input: string;
@@ -56,46 +57,43 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
 
         if (!matched) {
           if (fs.existsSync(path.join(inputPath, 'story-config.json'))) {
-            Logger.error(
-              'IRRenderCommand',
-              `❌ 'story-config.json' detected in ${inputPath}.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${inputPath}`
-            );
+            const msg = `'story-config.json' detected in ${inputPath}.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${inputPath}`;
+            if (process.stdout.isTTY) log.error(msg);
+            Logger.error('IRRenderCommand', msg);
             process.exit(1);
           }
           if (fs.existsSync(path.join(inputPath, 'pipeline-ir.json'))) {
-            Logger.error(
-              'IRRenderCommand',
-              `❌ 'pipeline-ir.json' detected in ${inputPath}.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${inputPath}`
-            );
+            const msg = `'pipeline-ir.json' detected in ${inputPath}.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${inputPath}`;
+            if (process.stdout.isTTY) log.error(msg);
+            Logger.error('IRRenderCommand', msg);
             process.exit(1);
           }
-          Logger.error(
-            'IRRenderCommand',
-            `❌ No canonical 'video-ir.json' found in directory ${inputPath}.\n'ir-render' strictly consumes pre-compiled Video IR documents.`
-          );
+          const msg = `No canonical 'video-ir.json' found in directory ${inputPath}.\n'ir-render' strictly consumes pre-compiled Video IR documents.`;
+          if (process.stdout.isTTY) log.error(msg);
+          Logger.error('IRRenderCommand', msg);
           process.exit(1);
         }
         inputPath = matched;
       } else {
         const baseName = path.basename(inputPath);
         if (baseName === 'story-config.json') {
-          Logger.error(
-            'IRRenderCommand',
-            `❌ 'story-config.json' detected.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${path.dirname(inputPath)}`
-          );
+          const msg = `'story-config.json' detected.\n'ir-render' is a headless debug stage that only consumes canonical 'video-ir.json'.\n👉 To synthesize assets and run the generative story pipeline, use: acc run story ${path.dirname(inputPath)}`;
+          if (process.stdout.isTTY) log.error(msg);
+          Logger.error('IRRenderCommand', msg);
           process.exit(1);
         }
         if (baseName === 'pipeline-ir.json') {
-          Logger.error(
-            'IRRenderCommand',
-            `❌ 'pipeline-ir.json' detected.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${path.dirname(inputPath)}`
-          );
+          const msg = `'pipeline-ir.json' detected.\n'ir-render' only consumes canonical 'video-ir.json'.\n👉 To execute the omnichannel pipeline, use: acc run <pipeline_id> ${path.dirname(inputPath)}`;
+          if (process.stdout.isTTY) log.error(msg);
+          Logger.error('IRRenderCommand', msg);
           process.exit(1);
         }
       }
 
       if (!fs.existsSync(inputPath)) {
-        Logger.error('IRRenderCommand', `Input file does not exist: ${inputPath}`);
+        const msg = `Input file does not exist: ${inputPath}`;
+        if (process.stdout.isTTY) log.error(msg);
+        Logger.error('IRRenderCommand', msg);
         process.exit(1);
       }
 
@@ -109,7 +107,9 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
         const registry = IRConfigAdapterRegistry.getInstance();
         transformedDoc = registry.transform(parsed, { baseDir: dir });
       } catch (err: any) {
-        Logger.error('IRRenderCommand', `Failed to parse or transform input document: ${err.message}`);
+        const msg = `Failed to parse or transform input document: ${err.message}`;
+        if (process.stdout.isTTY) log.error(msg);
+        Logger.error('IRRenderCommand', msg);
         process.exit(1);
       }
 
@@ -229,4 +229,3 @@ export async function handleIrRenderCommand(options: IrRenderCliOptions): Promis
     );
   });
 }
-

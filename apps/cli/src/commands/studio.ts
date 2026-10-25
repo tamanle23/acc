@@ -6,6 +6,7 @@ import {
   type VideoIRDocument,
 } from '@acc/ir';
 import { StudioServer } from '../studio/StudioServer';
+import { note, log } from '../prompts';
 
 export interface StudioCliOptions {
   input?: string;
@@ -49,6 +50,17 @@ export async function handleStudioCommand(options: StudioCliOptions): Promise<St
 
   Logger.info('StudioCommand', `✨ Dual-Engine Studio Preview live at: ${serverUrl}`);
 
+  if (process.stdout.isTTY) {
+    note(
+      `Local Server: ${serverUrl}\n` +
+      `Active Project: ${irDoc.meta.contentId}\n` +
+      `Canvas: ${irDoc.meta.canvasSize.w}x${irDoc.meta.canvasSize.h} @ ${irDoc.meta.globalFps}fps\n` +
+      `Tracks: ${irDoc.tracks.length}\n\n` +
+      `Interactive Preview active. Press Ctrl+C to terminate server.`,
+      '✨ ACC Studio Live Preview'
+    );
+  }
+
   if (options.keepAlive) {
     Logger.info('StudioCommand', 'Studio server is running. Press Ctrl+C to stop.');
     await new Promise<void>((resolve) => {
@@ -56,7 +68,11 @@ export async function handleStudioCommand(options: StudioCliOptions): Promise<St
       const shutdown = () => {
         if (isShuttingDown) return;
         isShuttingDown = true;
-        Logger.info('StudioCommand', 'Shutting down Studio server gracefully...');
+        if (process.stdout.isTTY) {
+          log.info('Shutting down Studio server gracefully...');
+        } else {
+          Logger.info('StudioCommand', 'Shutting down Studio server gracefully...');
+        }
         studio.stop();
         resolve();
       };

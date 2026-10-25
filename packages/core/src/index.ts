@@ -36,7 +36,6 @@ export * from './FFmpegFilterGraph';
 export * from './FreesoundClient';
 export * from './IPlugin';
 export * from './Registry';
-export * from './interactive';
 export * from './utils';
 export * from './ipc/IPCFacade';
 export * from './types';
