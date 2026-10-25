@@ -2,16 +2,21 @@ import { UniversalCanvasProvider, MediaEngineRegistry, ContentCacheRegistry } fr
 import { WebCanvasAdapter } from './canvas/WebCanvasAdapter';
 import { MediabunnyClientStrategy } from './media-engine/MediabunnyClientStrategy';
 import { IndexedDbCacheStrategy } from './cache/IndexedDbCacheStrategy';
+import { WebCacheStrategy } from './cache/WebCacheStrategy';
 
 export * from './canvas/WebCanvasAdapter';
 export * from './media-engine/MediabunnyClientSink';
 export * from './media-engine/MediabunnyClientStrategy';
 export * from './cache/IndexedDbCacheStrategy';
+export * from './cache/WebCacheStrategy';
 
 export function bootstrapClient(): void {
   UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
   if (!MediaEngineRegistry.has('mediabunny-client')) {
     MediaEngineRegistry.register(new MediabunnyClientStrategy());
+  }
+  if (!ContentCacheRegistry.has('web-cache')) {
+    ContentCacheRegistry.register(new WebCacheStrategy());
   }
   if (!ContentCacheRegistry.has('indexeddb')) {
     ContentCacheRegistry.register(new IndexedDbCacheStrategy(), true);
