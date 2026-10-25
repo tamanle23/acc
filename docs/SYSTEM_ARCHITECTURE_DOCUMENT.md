@@ -15,11 +15,28 @@ The core philosophy revolves around **stateless processing**, orchestrated via *
 ## 2. Top-Level Architecture
 The project is structured as a Turborepo monorepo divided into applications (`apps/`) and internal domain packages (`packages/`).
 
-### 2.1 Core Technologies
+### 2.1 Workspace Structure
+*   **Applications (`apps/`)**:
+    *   `apps/ai-supervisor`: Desktop Control Plane and multi-daemon supervisor with SolidJS + Ark UI + Tailwind CSS embedded dashboard and Electrobun native tray.
+    *   `apps/ai-supervisor/python-backend`: High-throughput Python gRPC subsystem managed by `uv` for local neural TTS (Kokoro & VieNeu v3 Turbo strategies) and LLM inference.
+    *   `apps/studio`: Dedicated React 19 Non-Linear Editor (NLE) with WebCodecs export, range streaming, and Web Worker timeline/preview rendering.
+    *   `apps/worker`: Standalone long-running task worker daemon with pluggable workflow poller and VRAM hypervisor.
+    *   `apps/cli`: Unified developer CLI orchestrator for pipeline execution and automation.
+    *   `apps/legacy-story-renderer`: Quarantined standalone package and CLI (`acc-legacy-render`) for classical disk-based multi-pass story rendering.
+*   **Packages (`packages/`)**:
+    *   `packages/core-isomorphic`: Pure TypeScript isomorphic foundation with zero Node/Bun dependencies (UniversalLogger, RationalTime, ContentCacheRegistry, OnnxModelManager).
+    *   `packages/core`: Native media processing foundation (`FFmpegManager`, pure `bun:ffi` zero-copy pointers, `NativeBufferPool`, `NapiCanvasAdapter`, `GPUEncoderResolver`, MediaEngineRegistry).
+    *   `packages/core-web`: Browser client and worker adapters (OffscreenCanvas, HTML5 Canvas, WebCodecs, MediabunnyClientSink, IndexedDbCacheStrategy).
+    *   `packages/effect-engines`: Isomorphic visual effect engines (3D depth shaders, normal mapping, particle simulation, `UniversalOnnxRuntimeProvider`).
+    *   `packages/ir`: Canonical Intermediate Representation (IR) compiler, schema validation, audio mixer, and deterministic `IRMasterRenderer`.
+    *   `packages/exporters`: Multi-channel branching distribution suite (Video, Audio, Social Canvas, Static Web).
+    *   `packages/proto`: Protocol Buffers contracts and TypeScript stubs for ACC AI Services.
+
+### 2.2 Core Technologies
 *   **Package Managers & Runtimes:** Bun (TypeScript workspaces, test runner), `uv` (Python dependencies, pytest).
-*   **Workflow Orchestration:** Netflix Conductor OSS (Stateless Task Workers).
-*   **Media Processing:** System FFmpeg Native via Bun FFI (`@acc/core/src/ffmpeg-ffi`), `@napi-rs/canvas` for zero-disk RGBA overlays.
-*   **AI/ML:** Python gRPC Subsystem (Kokoro, Depth Anything v2, SAM 2, llama.cpp).
+*   **Workflow Orchestration:** Netflix Conductor OSS & Sandbox Task Poller (`ITaskPoller`).
+*   **Media Processing:** System FFmpeg Native via Bun FFI (`@acc/core/src/ffmpeg-ffi`), `@napi-rs/canvas` for zero-disk RGBA overlays, and Mediabunny for client-side WebCodecs encoding.
+*   **AI/ML:** Python gRPC Subsystem (Kokoro, VieNeu v3 Turbo, llama.cpp) and `@acc/effect-engines` Isomorphic ONNX Runtime (`UniversalOnnxRuntimeProvider` with WebAssembly fallback).
 *   **Design Patterns:** Extensive use of Gang of Four (GoF) patterns (Strategy, Factory, Command, Composite, Decorator, Flyweight, Middleware, Template Method, Observer, State Machine).
 
 ---
@@ -84,22 +101,36 @@ All pipelines utilize the following foundational design patterns:
 
 ---
 
-## 4. Subsystem Breakdown (Workspace Packages)
+## 4. Subsystem Breakdown (Workspace Packages & Apps)
 
-### 4.1 `@acc/core` (The Foundation)
-The foundational backbone containing primitives and hardware-accelerated bindings.
+### 4.1 `@acc/core-isomorphic` (Pure Isomorphic Primitives)
+The zero-dependency universal foundation shared across Node, Bun, browser workers, and web clients.
+*   **UniversalLogger**: Universal, zero-overhead logging contract with pluggable sinks (`ConsoleLoggerSink`, custom UI sinks), eliminating arbitrary `console.log` invocations.
+*   **RationalTime**: BigInt-backed 10MHz rational time arithmetic (`10_000_000` timescale) for sub-sample accuracy across all framerates (23.976 to 120 fps).
+*   **ContentCacheRegistry**: Extensible cache registry with Strategy Pattern (`MemoryCacheStrategy`, `NativeFileCacheStrategy`, `IndexedDbCacheStrategy`).
+*   **OnnxModelManager**: Model lifecycle manager for ONNX weights with SHA-256 integrity verification.
+
+### 4.2 `@acc/core` (Native Media Processing Foundation)
+The foundational desktop and server backend containing hardware-accelerated bindings and media engine implementations.
 *   **FFmpeg FFI (`packages/core/src/ffmpeg-ffi`)**: Uses Bun FFI bindings with `FFIType.u64` raw pointers to prevent C-string truncation or type conversion panics. Achieves extreme performance by bypassing disk I/O.
+*   **MediaEngineRegistry**: Pluggable Strategy Pattern routing media execution through `bun-ffi`, `fluent-ffmpeg`, and `mediabunny-server`.
 *   **Flyweight Model Registry (`ModelHandleRegistry`)**: Manages AI handles (e.g., loading, evicting lowest priority, tracking memory usage in MB) to ensure the GPU/CPU isn't overwhelmed.
-*   **Asset Context & BoundedQueue**: Tracks media assets through the pipeline stages, ensuring backpressure limits.
+*   **Asset Context & BoundedQueue**: Tracks media assets through pipeline stages with strict backpressure.
 
-### 4.2 `@acc/effect-engines` (Media Manipulation)
+### 4.3 `@acc/core-web` (Browser Client & Worker Adapters)
+Client-side web adapters for `apps/studio` and offscreen workers.
+*   **MediabunnyClientSink**: Pure client-side video export sink utilizing browser WebCodecs (`VideoEncoder`) and in-memory MP4 Blob muxing with zero backend dependencies.
+*   **IndexedDbCacheStrategy**: Browser-native persistent binary cache for downloaded models, audio chunks, and video frames.
+
+### 4.4 `@acc/effect-engines` (Isomorphic Media Manipulation)
 The visual and auditory powerhouse containing 13 Systematic Video Editing Groups.
-*   **Overlay Effects (`overlay-effects`)**: Uses `VFXCompositeLayerStack` (Composite Pattern) and `CanvasAdapterFactory`. Renders frames via `@napi-rs/canvas` directly into FFmpeg `stdin` PassThrough streams.
+*   **UniversalOnnxRuntimeProvider**: Cross-platform ONNX inference engine with automatic native/WASM fallback for Depth Anything v2, BiRefNet subject segmentation, and facial feature tracking.
+*   **Overlay Effects (`overlay-effects`)**: Uses `VFXCompositeLayerStack` (Composite Pattern) and `CanvasAdapterFactory`. Renders frames via `@napi-rs/canvas` or HTML5 Canvas directly into FFmpeg `stdin` PassThrough streams.
 *   **3D Depth Effects (`src/depth3d`)**: Handled by `Depth3DFactory` and `IDepth3DRenderer` strategies for 2.5D/3D visual illusions.
 *   **Sound Effects (`sound-effects`)**: Uses `SmartRouter`, `BaseSoundGenerator`, and `BaseFFmpegGenerator` for procedural DSP synthesis, sidechain ducking (`AudioDuckingDSP`), and Foley marking.
 *   **Systematic Video Editing (`src/editing`)**: Features facades like `EditingEngineFacade` and capabilities like `MontageBeatSync`, `SpeedRampStrategy`, `SmashCutStrategy`, `ChromaKeyCompositorStrategy`, and `KineticTypography` spring-physics motion graphics.
 
-### 4.3 `@acc/ir` (Universal Video Intermediate Representation)
+### 4.5 `@acc/ir` (Universal Video Intermediate Representation)
 The deterministic timeline compiler and declarative data plane connecting high-level story configs to low-level media engines.
 *   **Canonical IR Schema (`VideoIR.ts`, `modifiers.ts`, `schema/video-ir.schema.json`, `schema/modifiers.schema.json`)**: Versioned declarative schema adhering to the Open-Closed Principle (OCP) with strictly required sequence types (`video`, `image`, `audio`, `text`, `overlay`), track-containment compatibility validation, explicit modifier targets (`target: SequenceType | SequenceType[]`), global document-level post-composition modifier passes (`doc.modifiers`), and dual-level blend modes (`seq.blendMode` cascading over `track.blendMode`).
 *   **Relational DAG Compiler (`RelationalDAGCompiler.ts`)**: Resolves non-destructive relative dependencies (`after`, `syncWith`, `matchLengthOf: target | 'timeline'`) into absolute discrete frame intervals via three-pass Kahn's topological sort, cycle detection, and terminal timeline duration propagation, assigning sequence types and blend modes to `ResolvedSequence` and root modifiers to `ResolvedTimeline`.
@@ -107,18 +138,23 @@ The deterministic timeline compiler and declarative data plane connecting high-l
 *   **Pioneer Adapter Flywheel (`StoryConfigToUniversalIRAdapter.ts`, `PipelineIRToUniversalIRAdapter.ts`)**: Bi-directional bridge auto-transpiling legacy story-config and pipeline-ir structures directly into modernized universal IR timelines with strictly typed sequences and modifier targets.
 *   **Modifier Plugin Registry (`ModifierPluginRegistry.ts`)**: Extensible Strategy/Plugin architecture executing audio ducking, 3D depth pop-out, blend modes, transitions, and split edits dynamically with registered `defaultTarget` specifications.
 *   **Deterministic Headless Rasterizer & Interactive Preview Engine (`IRMasterRenderer.ts`, `IRPreviewEngine.ts`)**: Frame-locked synchronous rasterizer driven by deterministic PRNG seeded noise with bit-identical rendering parity between headless batch exports and interactive video editor scrubbers, supporting dual blend modes and global document-level post-composite passes.
+*   **UniversalAudioMixer**: Single source of truth for rational multi-channel audio mixing, loudness normalization, and Web Audio API playback synchronization.
 
-### 4.4 `@acc/exporters` (Publishing Fan-Out)
+### 4.6 `@acc/exporters` (Publishing Fan-Out)
 Responsible for platform-compliant rendering.
 *   Features `WidgetExporter` for interactive video branching.
 *   Features `SpatialVideoExporter` for specialized AR/VR delivery formats.
-*   Executes parallel multi-format outputs as defined by the Conductor `FORK_JOIN` nodes.
+*   Executes parallel multi-format outputs as defined by Conductor / Task Worker pipelines.
 
-### 4.5 `apps/ai-supervisor/python-backend` (gRPC AI Subsystem)
+### 4.7 `apps/ai-supervisor/python-backend` (Unified Python AI Subsystem)
 A high-throughput backend managed by `uv` (`pyproject.toml`) wrapping heavy AI models behind a strict gRPC interface. Located directly inside `apps/ai-supervisor/python-backend` to unify desktop control plane lifecycle and AI inference engine.
-*   **Computer Vision**: Depth Anything v2, SAM 2 (Segment Anything).
-*   **Audio/Voice**: Kokoro.
-*   **LLMs**: `llama.cpp` wrapper for local/efficient inference.
+*   **Audio/TTS Engine (`tts_engine.py`)**: Strategy Pattern (`ITTSSynthesisStrategy`) supporting multilingual **Kokoro** TTS, high-speed Vietnamese tonal synthesis via **VieNeu-v3-Turbo**, and deterministic cadence tone fallback.
+*   **LLM Service**: Local structured prompt and script generation powered by `llama.cpp` and quantizations.
+*   **Admin Service (`AdminService.GetVRAMStatus`, `AdminService.PurgeVRAM`)**: Real-time VRAM telemetry reporting and hardware memory cache purging (`torch.cuda.empty_cache()`, `torch.cuda.ipc_collect()`).
+*   *Note: Computer vision (BiRefNet segmentation, depth estimation) has been stripped off from Python and relocated to the monorepo's isomorphic ONNX runtime.*
+
+### 4.8 `apps/legacy-story-renderer` (Quarantined Legacy Pipeline)
+An isolated workspace application and CLI (`acc-legacy-render`) containing the classical disk-based multi-pass story rendering pipeline. Quarantined to guarantee zero legacy regression in core while allowing isolated testing and legacy execution.
 
 ---
 
@@ -304,34 +340,43 @@ The **Desktop Control Plane** (`apps/ai-supervisor`) serves as the host orchestr
     ┌───────────────────────────────┼───────────────────────────────┐
     ▼                               ▼                               ▼
 ┌────────────────────────┐  ┌────────────────────────┐  ┌────────────────────────┐
-│   SupervisorEngine     │  │   HardwareProfiler     │  │     UpdateManager      │
-│(Crash Backoff & Drain) │  │  (5-Tier VRAM Matrix)  │  │(SHA-256 Auto-Rollback) │
+│   SupervisorEngine     │  │   HardwareProfiler     │  │ TelemetryEventBroker   │
+│(Crash Backoff & Drain) │  │  (5-Tier VRAM Matrix)  │  │(SSE & OSProcessSampler)│
 └───────────┬────────────┘  └───────────┬────────────┘  └───────────┬────────────┘
             │                           │                           │
     ┌───────┴───────────────┬───────────┴───────────┬───────────────┴────────┐
     ▼                       ▼                       ▼                        ▼
 ┌───────────────┐   ┌───────────────┐       ┌───────────────┐        ┌───────────────┐
-│ Python Daemon │   │ Worker Daemon │       │ Studio Server │        │ Ollama Daemon │
-│(:50051 gRPC)  │   │(Task Poller)  │       │(:3300 HTTP/WS)│        │(:11434 REST)  │
+│ Python Daemon │   │ Worker Daemon │       │ Studio Server │        │ Desktop UI    │
+│(:50051 gRPC)  │   │(Task Poller)  │       │(:3300 HTTP/WS)│        │(SolidJS / Web)│
 └───────────────┘   └───────────────┘       └───────────────┘        └───────────────┘
 ```
 
-1. **Hybrid Process Lifecycle Supervision**:
-   - Manages four independent services: Python backend (gRPC `:50051`), Worker daemon, React Studio client (`:5173` via Vite dev), and Ollama LLM inference (REST `:11434`).
-   - Exponential crash backoff (1s, 2s, 4s delay); isolates persistent failures in `CRASH_LOOP` with native tray alerts.
-   - Dynamic port collision resolver prevents startup failures when ports are occupied.
-2. **Hermetic Runtime Isolation (`RuntimeManager`)**:
+1. **Unified 3-Tier Sidecar Lifecycle Supervision**:
+   - Manages three core domain services: **Python AI backend** (gRPC `:50051`), **Worker daemon** (render task engine), and **Studio NLE server** (`:3300` Vite UI/HTTP). External Ollama sidecar is decommissioned; all LLM and neural TTS inference are unified into the Python backend.
+   - Dual-stack socket probing (`127.0.0.1` and `::1`/`localhost`) detects existing instances (`ADOPTED`) or validates spawned child processes (`RUNNING`).
+   - Exponential crash backoff ($t = \min(1000 \times 2^{\text{crashCount}}, 30000)\text{ ms}$); isolates persistent failures in `CRASH_LOOP` with native tray alerts.
+   - Dynamic port collision resolver automatically migrates occupied ports to available alternatives.
+2. **Real-Time Telemetry & Metric Sampling Architecture**:
+   - **`TelemetryEventBroker`**: Publishes low-latency snapshots (`/api/telemetry/snapshot`) and real-time Server-Sent Events (`/api/telemetry/stream` text/event-stream) with keep-alive pings and 60-entry ring buffer history.
+   - **`OSProcessSampler`**: Samples accurate process CPU% and resident set size (RSS in MB) across all child PIDs using non-intrusive OS tools (`ps` on macOS/Linux, PowerShell `Get-Process` on Windows) via `IProcessRunner`.
+   - **`DomainTelemetryPoller`**: Polls the Python AI backend's gRPC `AdminService.GetVRAMStatus` for active models and VRAM footprint, merging domain metrics into the fleet telemetry stream.
+   - **`Worker Domain Ingestion`**: Ingests high-frequency render progress heartbeats via `POST /api/worker/heartbeat` (`activeJobId`, `currentFrame`, `totalFrames`, `renderFps`, `vramUsedMb`).
+3. **Hardware Acceleration, VRAM Topology & 5-Tier Classification**:
+   - **Dedicated GPU VRAM Probing**: Direct query via `nvidia-smi --query-gpu=memory.total,memory.free,name` and in-process `torch.cuda.mem_get_info()`, isolating physical GDDR memory from system RAM. Supports hardware cache purge via `torch.cuda.empty_cache()` and `torch.cuda.ipc_collect()`.
+   - **Apple Silicon Unified Memory Architecture (UMA)**: On macOS `arm64`, queries `sysctl -n hw.memsize` where host RAM acts as a unified pool shared dynamically between CPU, Neural Engine, and Metal Performance Shaders (`mps`).
+   - **Granular 5-Tier Classification Matrix**:
+     - **Tier 1 (Ultra >= 24GB Dedicated VRAM / Mac UMA >= 36GB)**: Zero proactive eviction. `bfloat16`/`fp16` full weights.
+     - **Tier 2 (Pro 12GB–20GB Dedicated VRAM / Mac UMA 16–32GB)**: Selective co-residence with dynamic headroom threshold.
+     - **Tier 3 (Budget 6GB–8GB Dedicated VRAM / Mac UMA 8GB)**: Sequential model eviction (purges/unloads prior weights before executing voiceover synthesis or render).
+     - **Tier 4 (Ultra-Constrained < 6GB Dedicated VRAM)**: CPU/GPU role splitting (Python AI pinned to CPU, GPU reserved for rendering/video shaders).
+     - **Tier 5 (CPU-Only / Integrated Fallback)**: Disables GPU eviction; prioritizes thread scheduling and ONNX runtime CPU execution.
+4. **Hermetic Runtime Isolation (`RuntimeManager`)**:
    - Isolates `uv` in `~/.acc/bin/` and a dedicated CPython 3.12 installation in `~/.acc/python-env/`.
    - Prevents version pollution or runtime mismatch from system Python installations (e.g. Python 3.10 or 3.14).
    - Non-blocking background provisioning: Service enters `PROVISIONING` status (yellow tray icon) during first-time initialization and transitions to `RUNNING` (green tray icon) once port `:50051` is operational.
    - Environment injection enforces `UV_PYTHON_INSTALL_DIR=~/.acc/python-env` and `UV_PYTHON=3.12`.
-3. **5-Tier Granular Hardware Classification**:
-   - **Tier 1 (Ultra >= 24GB VRAM / Mac UMA >= 36GB)**: Zero proactive eviction.
-   - **Tier 2 (Pro 12GB–20GB VRAM / Mac UMA 16–32GB)**: Selective co-residence with dynamic headroom threshold.
-   - **Tier 3 (Budget 6GB–8GB VRAM / Mac UMA 8GB)**: Active mutual eviction (unloads Ollama models before video rendering / TTS synthesis).
-   - **Tier 4 (Ultra-Constrained < 6GB VRAM)**: CPU/GPU role splitting (Python pinned to CPU, VRAM dedicated to Ollama).
-   - **Tier 5 (CPU-Only / Integrated)**: Disables GPU eviction; manages CPU thread pool priorities.
-4. **Seamless Auto-Update with Boot Watchdog & Auto-Rollback**:
+5. **Seamless Auto-Update with Boot Watchdog & Auto-Rollback**:
    - Periodic checks against GitHub Releases API; staged downloads with SHA-256 verification.
    - 10-second boot watchdog detects startup crash-loops and automatically rolls back from `~/.acc/updates/backup/`.
 
@@ -377,11 +422,11 @@ Decoupled as a standalone long-running workspace daemon (`apps/worker`), orchest
    - Ships with **`SandboxTaskPoller`**: Zero-dependency local event generator producing simulated pipeline tasks for standalone desktop operation, ready for drop-in integration with custom workflow engines.
 2. **Pluggable Backend Hypervisor & VRAM Arbitrator (`BackendHypervisor`)**:
    - Role division: `apps/worker` acts as the Inference Dispatcher & Hypervisor routing tasks (`tts`, `llm`, `ir-compose`) and orchestrating VRAM pre-flight checks and eviction handshakes (`purgeVRAM()`).
-   - `OllamaBackendAdapter`: REST client monitoring `/api/ps` and triggering VRAM purge via `keep_alive: 0`.
-   - `PythonBackendAdapter`: gRPC / IPC client with `ACC_AI_OFFLINE` detection and deterministic fallback synthesis.
+   - `PythonBackendAdapter`: Primary gRPC client connecting to Python AI backend on port `50051` with `ACC_AI_OFFLINE` detection and deterministic fallback synthesis.
+   - `OllamaBackendAdapter`: Legacy REST adapter maintaining backward compatibility where external Ollama endpoints are explicitly configured.
 3. **Production Core Task Commands**:
-   - `acc.story.generate_script`: Story script generation via LLM / fallback.
-   - `acc.tts.synthesize_speech`: Audio synthesis via Python Kokoro / fallback.
+   - `acc.story.generate_script`: Story script generation via Python LLM / deterministic fallback.
+   - `acc.tts.synthesize_speech`: Audio synthesis via Python TTS strategy (Kokoro / VieNeu v3 Turbo) / fallback.
    - `acc.ir.compose_video`: Video IR AST generation and compilation via `@acc/ir`.
 
 ---
@@ -392,13 +437,14 @@ Decoupled as a 100% pure client-side React 19 workspace application (`apps/studi
 
 1. **Pure Client-Side Architecture (Zero Server Backend)**:
    - Eliminates backend server processes; `apps/studio/src/server/` is completely removed.
-   - In development: Served directly by Vite development server (`vite dev`) on port 5173.
+   - In development: Served directly by Vite development server (`vite dev`) on port 3300 (or auto-assigned fallback).
    - In production: Built into static distribution assets (`dist/client`) via `vite build`.
 2. **Event-Driven Viewport Engine & Modular Layout**:
    - Modular hierarchy: `<Titlebar />`, `<Sidebar />` (Asset Vault & Modifier Inspector), `<Preview />`, and `<Timeline />` multi-track scrubber.
+   - Live Telemetry Companion Card: Connects to AI-Supervisor's SSE stream (`/api/telemetry/stream`) displaying live GPU/VRAM load, system tier, and worker rendering velocity.
    - Zero-waste state-driven rendering: Viewport monitor operates at 0 FPS during idle state and repaints only when the playhead moves, clips are trimmed, or modifiers change.
 3. **Client-Side WebCodecs Video Export (`MediabunnyClientSink`)**:
-   - Direct browser video export using `MediabunnyClientSink` from `@acc/ir/client` powered by Mediabunny and browser-native `VideoEncoder` (WebCodecs).
+   - Direct browser video export using `MediabunnyClientSink` from `@acc/core-web` powered by Mediabunny and browser-native `VideoEncoder` (WebCodecs).
    - Renders frames offscreen via HTML5 `<canvas>`, encodes in real-time, and muxes to an in-memory MP4 Blob target with direct browser file download.
    - Interactive progress bar with immediate client-side export cancellation without process or memory leaks.
 4. **Local Asset Ingestion**:

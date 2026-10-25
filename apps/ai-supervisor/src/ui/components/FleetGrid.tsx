@@ -22,20 +22,24 @@ export function FleetGrid(props: FleetGridProps) {
   };
 
   return (
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
-      {/* 1. Python Backend */}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+      {/* 1. Python Backend (Unified TTS & LLM) */}
       <ServiceCard
-        displayName="Python Backend"
-        description="Kokoro TTS & Segment Anything (SAM) Vision service"
+        displayName="Python AI Backend"
+        description="Unified TTS (Kokoro & VieNeu v3 Turbo) & LLM generation"
         service={getService("python-backend")}
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("python-backend", action)}
+        customAction={{
+          label: "Purge VRAM",
+          onClick: props.onPurgeVram,
+        }}
       />
 
       {/* 2. Worker Hypervisor */}
       <ServiceCard
         displayName="Worker Daemon"
-        description="Workflow worker host"
+        description="Multiple purposes worker host"
         service={getService("worker")}
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("worker", action)}
@@ -51,19 +55,6 @@ export function FleetGrid(props: FleetGridProps) {
         customAction={{
           label: "View Studio",
           onClick: props.onOpenStudio,
-        }}
-      />
-
-      {/* 4. Ollama AI Inference */}
-      <ServiceCard
-        displayName="Ollama Inference"
-        description="Local LLM story script synthesis & reasoning engine"
-        service={getService("ollama")}
-        isActionPending={props.isActionPending}
-        onControl={(action) => props.onControlService("ollama", action)}
-        customAction={{
-          label: "Unload Models",
-          onClick: props.onPurgeVram,
         }}
       />
     </div>

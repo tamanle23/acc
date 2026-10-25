@@ -18,7 +18,6 @@ export function ConsoleSection(props: ConsoleSectionProps) {
     { id: "python-backend", label: "python-backend" },
     { id: "worker", label: "worker" },
     { id: "studio", label: "studio" },
-    { id: "ollama", label: "ollama" },
   ];
 
   const filteredLogs = () => {

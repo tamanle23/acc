@@ -2,52 +2,27 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export type HardwareTierOption = "auto" | "tier1" | "tier2" | "tier3" | "tier4" | "tier5";
-
 export interface ControlPlaneConfig {
-  pythonPort: number;
   studioPort: number;
-  ollamaPort: number;
   supervisorPort: number;
-  conductorUrl: string;
+  pythonPort: number;
   autostart: boolean;
-  hardwareTierOverride: HardwareTierOption;
-  ollamaModel: string;
-  ollamaAutoUnload: boolean;
-  updateChannel: "stable" | "beta";
+  hardwareTierOverride?: string;
 }
 
-export const DEFAULT_CONFIG: Readonly<ControlPlaneConfig> = {
-  pythonPort: 50051,
+const DEFAULT_CONFIG: ControlPlaneConfig = {
   studioPort: 3300,
-  ollamaPort: 11434,
   supervisorPort: 3333,
-  conductorUrl: "http://localhost:8080",
+  pythonPort: 50051,
   autostart: false,
-  hardwareTierOverride: "auto",
-  ollamaModel: "llama3.2:latest",
-  ollamaAutoUnload: true,
-  updateChannel: "stable",
 };
 
 export class ConfigStore {
   private configPath: string;
-  private cachedConfig: ControlPlaneConfig | null = null;
 
-  constructor(customPath?: string) {
-    if (customPath) {
-      this.configPath = customPath;
-    } else {
-      const accDir = path.join(os.homedir(), ".acc");
-      if (!fs.existsSync(accDir)) {
-        fs.mkdirSync(accDir, { recursive: true });
-      }
-      this.configPath = path.join(accDir, "control-plane.json");
-    }
-  }
-
-  public getConfigPath(): string {
-    return this.configPath;
+  constructor() {
+    const accDir = path.join(os.homedir(), ".acc");
+    this.configPath = path.join(accDir, "supervisor-config.json");
   }
 
   public loadConfig(): ControlPlaneConfig {
@@ -55,30 +30,29 @@ export class ConfigStore {
       if (fs.existsSync(this.configPath)) {
         const raw = fs.readFileSync(this.configPath, "utf-8");
         const parsed = JSON.parse(raw);
-        this.cachedConfig = { ...DEFAULT_CONFIG, ...parsed };
-        return { ...this.cachedConfig };
+        return { ...DEFAULT_CONFIG, ...parsed };
       }
     } catch (err) {
-      console.warn(`[ConfigStore] Failed to parse ${this.configPath}, falling back to defaults:`, err);
+      console.warn("[ConfigStore] Failed to parse config, falling back to defaults:", err);
     }
-
-    this.cachedConfig = { ...DEFAULT_CONFIG };
-    this.saveConfig(this.cachedConfig);
-    return { ...this.cachedConfig };
+    return { ...DEFAULT_CONFIG };
   }
 
-  public saveConfig(partial: Partial<ControlPlaneConfig>): ControlPlaneConfig {
-    const current = this.cachedConfig || this.loadConfig();
-    const updated: ControlPlaneConfig = { ...current, ...partial };
+  public saveConfig(config: Partial<ControlPlaneConfig>): ControlPlaneConfig {
+    const current = this.loadConfig();
+    const updated: ControlPlaneConfig = { ...current, ...config };
 
-    const dir = path.dirname(this.configPath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      const dir = path.dirname(this.configPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), "utf-8");
+    } catch (err) {
+      console.error("[ConfigStore] Failed to write config:", err);
     }
 
-    fs.writeFileSync(this.configPath, JSON.stringify(updated, null, 2), "utf-8");
-    this.cachedConfig = updated;
-    return { ...updated };
+    return updated;
   }
 }
 

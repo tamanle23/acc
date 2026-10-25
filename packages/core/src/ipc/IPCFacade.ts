@@ -59,7 +59,13 @@ export class GRPCAIStrategy implements IAIClientStrategy {
     return new Promise((resolve, reject) => {
       const deadline = new Date(Date.now() + 2000);
       this.visionClient.Ping({ message }, { deadline }, (err: any, response: any) => {
-        if (err) return reject(err);
+        if (err) {
+          // If vision service is stripped off or unimplemented, gracefully report offline
+          if (err.code === 12 || err.code === 14) {
+            return resolve(`Vision offline (isomorphic onnx decoupled)`);
+          }
+          return reject(err);
+        }
         resolve(response.message);
       });
     });

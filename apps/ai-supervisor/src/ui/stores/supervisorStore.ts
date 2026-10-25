@@ -2,10 +2,12 @@ import { createSignal, onCleanup, onMount } from "solid-js";
 import type {
   SupervisorStatusResponse,
   SupervisorConfig,
+  FleetTelemetrySnapshot,
 } from "../types";
 
 export function createSupervisorStore() {
   const [status, setStatus] = createSignal<SupervisorStatusResponse | null>(null);
+  const [telemetry, setTelemetry] = createSignal<FleetTelemetrySnapshot | null>(null);
   const [isLoading, setIsLoading] = createSignal<boolean>(true);
   const [error, setError] = createSignal<string | null>(null);
   const [activeLogService, setActiveLogService] = createSignal<string>("supervisor");
@@ -32,6 +34,17 @@ export function createSupervisorStore() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTelemetry = async () => {
+    try {
+      const res = await fetch("/api/telemetry/snapshot");
+      if (!res.ok) return;
+      const data: FleetTelemetrySnapshot = await res.json();
+      setTelemetry(data);
+    } catch {
+      // transient telemetry network error
     }
   };
 
@@ -129,12 +142,15 @@ export function createSupervisorStore() {
 
   onMount(() => {
     fetchStatus();
+    fetchTelemetry();
     fetchLogs();
     const statusInterval = setInterval(fetchStatus, 2000);
+    const telemetryInterval = setInterval(fetchTelemetry, 1500);
     const logsInterval = setInterval(fetchLogs, 3000);
 
     onCleanup(() => {
       clearInterval(statusInterval);
+      clearInterval(telemetryInterval);
       clearInterval(logsInterval);
       if (toastTimer) clearTimeout(toastTimer);
     });
@@ -142,6 +158,7 @@ export function createSupervisorStore() {
 
   return {
     status,
+    telemetry,
     isLoading,
     error,
     activeLogService,
@@ -163,6 +180,7 @@ export function createSupervisorStore() {
     checkUpdates,
     saveConfig,
     refreshStatus: fetchStatus,
+    refreshTelemetry: fetchTelemetry,
     refreshLogs: fetchLogs,
   };
 }

@@ -44,7 +44,6 @@ export async function bootstrapWorker(options: WorkerCliOptions): Promise<{ poll
 
   // 1. Initialize Backend Hypervisor & register adapters
   const hypervisor = new BackendHypervisor();
-  hypervisor.registerAdapter(new OllamaBackendAdapter(options.ollamaPort));
   hypervisor.registerAdapter(new PythonBackendAdapter(options.pythonPort));
 
   // 2. Register production Task Commands

@@ -6,12 +6,11 @@ import { findAvailablePort } from "./portScanner.js";
 import { HardwareProfiler } from "./HardwareProfiler.js";
 import { logManager } from "./LogManager.js";
 import { supervisorEngine } from "./SupervisorEngine.js";
-import { ollamaManager } from "./OllamaManager.js";
 import { updateManager } from "./UpdateManager.js";
 import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
 import { NativeTrayBridge } from "./NativeTrayBridge.js";
 import { WindowHost } from "./WindowHost.js";
-import { spawn } from "bun";
+import { telemetryBroker } from "./telemetry/TelemetryEventBroker.js";
 
 async function main() {
   console.log("====================================================");
@@ -68,6 +67,13 @@ async function main() {
   console.log(`[Supervisor] Hardware Tier: ${profile.activeTier.toUpperCase()} (${profile.gpu?.name || "CPU"})`);
   console.log(`[Supervisor] Recommended Python Device: ${profile.recommendedPythonDevice}`);
 
+  telemetryBroker.updateSystemMetrics({
+    hardwareTier: profile.activeTier,
+    cpuCount: profile.cpu?.cores || os.cpus().length || 8,
+    totalMemoryMb: Math.round(os.totalmem() / (1024 * 1024)),
+    freeMemoryMb: Math.round(os.freemem() / (1024 * 1024)),
+  });
+
   // 5. Ensure Solid UI Build is Ready
   const distUiDir = path.join(import.meta.dir, "..", "..", "dist", "ui");
   const viewsDir = path.join(import.meta.dir, "..", "views");
@@ -79,22 +85,30 @@ async function main() {
     !fs.existsSync(path.join(distUiDir, "index.html"));
 
   if (isDistUiMissing) {
+    console.log("[Supervisor] SolidJS UI bundle not found in dist/ui. Auto-building via scripts/build-ui.ts...");
     try {
-      console.log("[Supervisor] dist/ui not found or incomplete. Triggering build-ui...");
-      const { buildUI } = await import("../../scripts/build-ui.ts");
-      await buildUI();
-    } catch (err) {
-      console.warn("[Supervisor] Automated UI build failed, will use fallback UI if available:", err);
+      const buildScriptPath = path.join(import.meta.dir, "..", "..", "scripts", "build-ui.ts");
+      if (fs.existsSync(buildScriptPath)) {
+        const buildProc = Bun.spawnSync(["bun", "run", buildScriptPath], {
+          cwd: path.join(import.meta.dir, "..", ".."),
+        });
+        if (buildProc.exitCode === 0) {
+          console.log("[Supervisor] SolidJS UI successfully built into dist/ui.");
+        } else {
+          console.warn("[Supervisor] Failed to auto-build SolidJS UI, falling back to legacy views/index.html");
+        }
+      }
+    } catch (buildErr) {
+      console.warn("[Supervisor] Auto-build attempt encountered error:", buildErr);
     }
   }
 
-  // 6. Start Embedded Control Plane Web Server
+  // 6. Launch Embedded HTTP Server (REST + Server-Sent Events SSE)
   const server = Bun.serve({
     port: config.supervisorPort,
     async fetch(req) {
       const url = new URL(req.url);
 
-      // CORS headers
       const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -105,51 +119,78 @@ async function main() {
         return new Response(null, { headers: corsHeaders });
       }
 
-      // API Endpoints
+      // ── REST API Endpoints ───────────────────────────────────────────────
+
+      // 1. Unified Real-Time SSE Telemetry Stream
+      if (url.pathname === "/api/telemetry/stream" && req.method === "GET") {
+        return new Response(telemetryBroker.createEventStream(req.signal), {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            ...corsHeaders,
+          },
+        });
+      }
+
+      // 2. Telemetry Point-in-Time Snapshot
+      if (url.pathname === "/api/telemetry/snapshot" && req.method === "GET") {
+        return Response.json(telemetryBroker.getSnapshot(), { headers: corsHeaders });
+      }
+
+      // 3. Worker Heartbeat Ingestion Endpoint
+      if (url.pathname === "/api/worker/heartbeat" && req.method === "POST") {
+        try {
+          const body = await req.json();
+          telemetryBroker.recordWorkerHeartbeat(body);
+          return Response.json({ success: true }, { headers: corsHeaders });
+        } catch (err: any) {
+          return Response.json({ success: false, error: err.message }, { status: 400, headers: corsHeaders });
+        }
+      }
+
+      // 4. Supervisor Status & System Profile
       if (url.pathname === "/api/status") {
         const states = supervisorEngine.getAllStates();
-        const curProfile = await HardwareProfiler.getProfile(configStore.loadConfig().hardwareTierOverride);
-        const updateStatus = updateManager.getStatus();
         const autostart = await getStartupStatus();
-
         return Response.json(
           {
+            profile,
+            hardwareProfile: profile,
             services: states,
-            hardwareProfile: curProfile,
-            update: updateStatus,
-            config: configStore.loadConfig(),
-            autostart,
             trayColor: supervisorEngine.getTrayColor(),
+            autostart,
+            update: updateManager.getStatus(),
+            config: configStore.loadConfig(),
           },
           { headers: corsHeaders }
         );
       }
 
+      // 5. Purge VRAM
       if (url.pathname === "/api/vram/purge" && req.method === "POST") {
         await supervisorEngine.purgeAllVram();
         return Response.json({ success: true, message: "VRAM purged" }, { headers: corsHeaders });
       }
 
+      // 6. Service Lifecycle Control
       if (url.pathname.startsWith("/api/service/") && req.method === "POST") {
         const parts = url.pathname.split("/");
         const serviceName = parts[3];
-        const action = parts[4]; // start | stop | restart
+        const action = parts[4]; // start, stop, restart
+        const cfg = configStore.loadConfig();
 
         if (action === "stop") {
           await supervisorEngine.stopService(serviceName);
         } else if (action === "start") {
-          const cfg = configStore.loadConfig();
           if (serviceName === "python-backend") await supervisorEngine.startPythonBackend(cfg);
           else if (serviceName === "worker") await supervisorEngine.startWorker(cfg);
           else if (serviceName === "studio") await supervisorEngine.startStudio(cfg);
-          else if (serviceName === "ollama") await supervisorEngine.startOllama(cfg);
         } else if (action === "restart") {
           await supervisorEngine.stopService(serviceName);
-          const cfg = configStore.loadConfig();
           if (serviceName === "python-backend") await supervisorEngine.startPythonBackend(cfg);
           else if (serviceName === "worker") await supervisorEngine.startWorker(cfg);
           else if (serviceName === "studio") await supervisorEngine.startStudio(cfg);
-          else if (serviceName === "ollama") await supervisorEngine.startOllama(cfg);
         }
 
         return Response.json({ success: true, service: serviceName, action }, { headers: corsHeaders });
@@ -167,12 +208,6 @@ async function main() {
         const filter = url.searchParams.get("filter") || "";
         const limit = Number(url.searchParams.get("limit") || 500);
         return Response.json({ logs: buf.getLines(filter, limit) }, { headers: corsHeaders });
-      }
-
-      if (url.pathname === "/api/ollama/models") {
-        const models = await ollamaManager.listModels();
-        const active = await ollamaManager.getActiveModels();
-        return Response.json({ models, active }, { headers: corsHeaders });
       }
 
       if (url.pathname === "/api/update/check" && req.method === "POST") {
@@ -194,7 +229,7 @@ async function main() {
         return Response.json({ config: updated }, { headers: corsHeaders });
       }
 
-      // Serve Frontend Views (SolidJS + Ark UI + Tailwind bundle from dist/ui, or legacy fallback)
+      // Serve Frontend Views (SolidJS + Ark UI + Tailwind bundle from dist/ui)
       const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
       const distFilePath = path.join(distUiDir, pathname.slice(1));
 
@@ -212,11 +247,7 @@ async function main() {
         return new Response(Bun.file(distFilePath), {
           headers: {
             "Content-Type": contentType,
-            // Cross-platform bulletproof anti-caching for desktop control plane
-            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
-            "Pragma": "no-cache",
-            "Expires": "0",
-            "Surrogate-Control": "no-store",
+            "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000",
           },
         });
       }
@@ -236,34 +267,27 @@ async function main() {
 
   console.log(`[Supervisor] Control Plane Dashboard: http://127.0.0.1:${server.port}`);
 
-  // 6. Launch Native System Tray & Window Host
+  // 7. Launch Native System Tray & Window Host
   const assetsDir = path.join(import.meta.dir, "..", "assets");
   const dashboardUrl = `http://127.0.0.1:${server.port}`;
   const windowHost = new WindowHost({ url: dashboardUrl });
 
-  const trayCallbacks = {
-    onOpenDashboard: () => {
-      windowHost.open();
-    },
-    onMenuItemClick: (itemId: string) => {
-      if (itemId === "open_dashboard") windowHost.open();
-      else if (itemId === "purge_vram") supervisorEngine.purgeAllVram();
-      else if (itemId === "restart_all") {
-        supervisorEngine.stopAll().then(() => supervisorEngine.startAll());
-      } else if (itemId === "check_update") updateManager.checkForUpdates();
-      else if (itemId === "quit") shutdown();
-    },
-    onQuit: () => shutdown(),
-  };
-
   const trayBridge = new NativeTrayBridge({
     iconDir: assetsDir,
     initialColor: supervisorEngine.getTrayColor(),
+    onOpenDashboard: () => {
+      windowHost.open();
+    },
+    onPurgeVram: () => supervisorEngine.purgeAllVram(),
+    onRestartAll: async () => {
+      await supervisorEngine.stopAll();
+      await supervisorEngine.startAll();
+    },
+    onCheckUpdate: () => updateManager.checkForUpdates(),
+    onExit: () => shutdown(),
   });
-  const trayStarted = await trayBridge.start(trayCallbacks);
+  const trayStarted = await trayBridge.start();
 
-  // If launching normally (not background autostart with --minimized)
-  // or if the tray failed to initialize, automatically present the application window host
   const isMinimized = process.argv.includes("--minimized");
   if (!isMinimized || !trayStarted) {
     await windowHost.open();
@@ -274,10 +298,10 @@ async function main() {
     trayBridge.setTooltip(`ACC Control Plane - ${color === "green" ? "Healthy" : color === "yellow" ? "Processing" : "Alert"}`);
   });
 
-  // 7. Start Fleet
+  // 8. Start Fleet
   await supervisorEngine.startAll();
 
-  // 8. Graceful Process Teardown
+  // 9. Graceful Process Teardown
   const shutdown = async () => {
     console.log("\n[Supervisor] Shutting down all supervised services...");
     trayBridge.stop();
@@ -291,7 +315,6 @@ async function main() {
   process.on("SIGTERM", shutdown);
 }
 
-// Auto-run if main module
 if (import.meta.main) {
   main().catch((err) => {
     console.error("[Supervisor] Fatal error:", err);

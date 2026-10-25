@@ -67,7 +67,8 @@ export function App() {
 
         {/* 2. Telemetry Grid */}
         <TelemetryGrid
-          profile={store.status()?.hardwareProfile}
+          profile={store.status()?.hardwareProfile || (store.status() as any)?.profile}
+          telemetry={store.telemetry()}
           isLoading={store.isLoading()}
         />
 

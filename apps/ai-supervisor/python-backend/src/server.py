@@ -18,8 +18,6 @@ import common_pb2
 import common_pb2_grpc
 import tts_pb2
 import tts_pb2_grpc
-import vision_pb2
-import vision_pb2_grpc
 import llm_pb2
 import llm_pb2_grpc
 import admin_pb2
@@ -60,49 +58,6 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return tts_pb2.TTSResponse()
-
-
-class VisionService(vision_pb2_grpc.VisionServiceServicer):
-    def __init__(self):
-        super().__init__()
-        from services.vision_engine import VisionEngine
-        self.engine = VisionEngine.get_instance()
-
-    def Ping(self, request, context):
-        current_time = int(time.time() * 1000)
-        return common_pb2.PingResponse(
-            message=f"Vision pong: {request.message}",
-            timestamp_ms=current_time,
-            status="READY",
-        )
-
-    def EstimateDepth(self, request, context):
-        try:
-            depth_bytes, min_d, max_d = self.engine.estimate_depth(request.image_data, request.model_size)
-            return vision_pb2.DepthResponse(
-                depth_map_png=depth_bytes,
-                min_depth=min_d,
-                max_depth=max_d,
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return vision_pb2.DepthResponse()
-
-    def SegmentSubject(self, request, context):
-        try:
-            mask_bytes, bbox, conf = self.engine.segment_subject(request.image_data, request.mode)
-            return vision_pb2.SegmentationResponse(
-                mask_png=mask_bytes,
-                bounding_box=common_pb2.BoundingBox(
-                    x=bbox["x"], y=bbox["y"], width=bbox["width"], height=bbox["height"], confidence=conf
-                ),
-                confidence=conf,
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return vision_pb2.SegmentationResponse()
 
 
 class LLMService(llm_pb2_grpc.LLMServiceServicer):
@@ -189,9 +144,9 @@ def serve(host="127.0.0.1", port=50051, parent_pid=None):
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
-    # 2. Register ACC AI services
+    # 2. Register Consolidated ACC AI services (TTS + LLM + Admin)
+    # Vision & Depth have been stripped off to decouple from supervisor
     tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
-    vision_pb2_grpc.add_VisionServiceServicer_to_server(VisionService(), server)
     llm_pb2_grpc.add_LLMServiceServicer_to_server(LLMService(), server)
     admin_pb2_grpc.add_AdminServiceServicer_to_server(AdminService(), server)
 
@@ -199,7 +154,6 @@ def serve(host="127.0.0.1", port=50051, parent_pid=None):
     health_servicer = health.HealthServicer()
     health_servicer.set("", health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set("acc.v1.TTSService", health_pb2.HealthCheckResponse.SERVING)
-    health_servicer.set("acc.v1.VisionService", health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set("acc.v1.LLMService", health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set("acc.v1.AdminService", health_pb2.HealthCheckResponse.SERVING)
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
