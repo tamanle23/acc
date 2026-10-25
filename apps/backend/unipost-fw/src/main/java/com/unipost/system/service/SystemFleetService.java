@@ -283,14 +283,17 @@ public class SystemFleetService {
         claims.put(JwtTokenHelper.CLAIM_KEY_CREATED, new Date());
 
         List<String> authorities = List.of(
-                "ROLE_SYSTEM_CUSTODIAN",
-                "ROLE_ADMIN",
-                "ROLE_USER",
+                "ROLE_SYSTEM_ROOT",
+                "ROLE_SYSTEM_SUPPORT",
+                "ROLE_WORKSPACE_OWNER",
+                "ROLE_STANDARD_MEMBER",
+                "platform:fleet:read",
+                "platform:tenant:assume",
                 "platform:dlq:manage",
-                "METADATA_SCHEMA_READ",
-                "METADATA_SCHEMA_WRITE",
-                "METADATA_RECORD_READ",
-                "METADATA_RECORD_WRITE"
+                "metadata:schema:read",
+                "metadata:schema:write",
+                "metadata:record:read",
+                "metadata:record:write"
         );
         claims.put(JwtTokenHelper.CLAIM_KEY_AUTHORITIES, authorities);
 

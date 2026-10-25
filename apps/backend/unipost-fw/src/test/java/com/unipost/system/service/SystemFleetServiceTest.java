@@ -277,7 +277,7 @@ class SystemFleetServiceTest {
         assertThat(response.getEphemeralToken()).isEqualTo("sample-jwt-token");
         assertThat(response.getEffectiveTenantId()).isEqualTo("tenant-cust");
         assertThat(response.getActorTenantId()).isEqualTo("SYSTEM");
-        assertThat(response.getAuthorities()).contains("ROLE_SYSTEM_CUSTODIAN");
+        assertThat(response.getAuthorities()).contains("ROLE_SYSTEM_ROOT", "ROLE_SYSTEM_SUPPORT");
     }
 
     @Test
