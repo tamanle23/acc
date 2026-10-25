@@ -34,7 +34,7 @@ public class SystemFleetController {
      * Paginated fleet listing with search, tier, status filters.
      */
     @GetMapping("/tenants")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:fleet:read') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, Page<FleetTenantSummaryDto>>> listTenants(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String tier,
@@ -48,7 +48,7 @@ public class SystemFleetController {
      * Provisions a new organization under sovereign custody with blueprint seeding.
      */
     @PostMapping("/tenants")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:mutate') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:fleet:mutate') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> createTenant(
             @Valid @RequestBody CreateTenantRequest request) {
         FleetTenantSummaryDto created = fleetService.createTenant(request);
@@ -59,7 +59,7 @@ public class SystemFleetController {
      * Detailed fleet diagnostics for a specific tenant (telemetry, storage, quota dials).
      */
     @GetMapping("/tenants/{id}")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:fleet:read') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> getTenantDiagnostics(
             @PathVariable("id") String tenantId) {
         FleetTenantSummaryDto diagnostics = fleetService.getFleetTenantDiagnostics(tenantId);
@@ -70,7 +70,7 @@ public class SystemFleetController {
      * Soft kill-switch toggle (ACTIVE <-> SUSPENDED <-> ARCHIVED).
      */
     @PutMapping("/tenants/{id}/status")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:mutate') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:fleet:mutate') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> updateTenantStatus(
             @PathVariable("id") String tenantId,
             @Valid @RequestBody UpdateTenantStatusRequest request) {
@@ -82,7 +82,7 @@ public class SystemFleetController {
      * Manual commercial tier promotion/downscale with feature flag cherry-picking.
      */
     @PutMapping("/tenants/{id}/subscription")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:mutate') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:fleet:mutate') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> overrideSubscription(
             @PathVariable("id") String tenantId,
             @Valid @RequestBody OverrideSubscriptionRequest request) {
@@ -94,7 +94,7 @@ public class SystemFleetController {
      * Sovereign data volume & workspace quota override injection.
      */
     @PutMapping("/tenants/{id}/quotas")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:quotas:override') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:quotas:override') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, FleetTenantSummaryDto>> updateTenantQuotas(
             @PathVariable("id") String tenantId,
             @Valid @RequestBody UpdateTenantQuotasRequest request) {
@@ -106,7 +106,7 @@ public class SystemFleetController {
      * Generates ephemeral Assume-Tenant delegated session token for instant impersonation.
      */
     @PostMapping("/tenants/{id}/assume")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:tenant:assume') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:tenant:assume') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, AssumeTenantTokenResponse>> assumeTenant(
             @PathVariable("id") String tenantId,
             @Valid @RequestBody AssumeTenantRequest request) {
@@ -118,7 +118,7 @@ public class SystemFleetController {
      * List RBAC roles with mapped permission atoms and user counts.
      */
     @GetMapping("/roles")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:roles:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:roles:manage') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, List<RoleWithPermissionsDto>>> listRoles() {
         List<RoleWithPermissionsDto> roles = fleetService.listRoles();
         return responseBuilder.success(roles);
@@ -128,7 +128,7 @@ public class SystemFleetController {
      * Provisions a new custom RBAC role with DAG inheritance.
      */
     @PostMapping("/roles")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:roles:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:roles:manage') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, RoleWithPermissionsDto>> createRole(
             @Valid @RequestBody CreateRoleRequest request) {
         RoleWithPermissionsDto created = fleetService.createRole(request);
@@ -139,7 +139,7 @@ public class SystemFleetController {
      * Update role permission bindings in RBAC matrix studio.
      */
     @PutMapping("/roles/{id}/permissions")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:roles:manage') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:roles:manage') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, RoleWithPermissionsDto>> updateRolePermissions(
             @PathVariable("id") String roleId,
             @Valid @RequestBody UpdateRolePermissionsRequest request) {
@@ -151,7 +151,7 @@ public class SystemFleetController {
      * Universal cross-tenant user lookup.
      */
     @GetMapping("/users")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:fleet:read') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'ROLE_SYSTEM_SUPPORT', 'platform:fleet:read') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, Page<GlobalUserListItemDto>>> listGlobalUsers(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String tenantId,
@@ -164,7 +164,7 @@ public class SystemFleetController {
      * Emergency credential lockdown (lock/unlock user).
      */
     @PutMapping("/users/{id}/lock")
-    @PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:users:lock') or hasRole('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SYSTEM_ROOT', 'platform:users:lock') or hasRole('ADMIN')")
     public ResponseEntity<ResponseWrapper<ContextHeader, GlobalUserListItemDto>> lockUser(
             @PathVariable("id") String userId,
             @Valid @RequestBody LockUserRequest request) {

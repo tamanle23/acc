@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { IconFacebook, IconGithub } from '@unipost/ui/icons'
+import { springApiClient } from '@/features/spring-auth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,14 +22,11 @@ import { PasswordInput } from '@/components/password-input'
 
 const formSchema = z
   .object({
-    email: z.email({
-      error: (iss) =>
-        iss.input === '' ? 'Please enter your email' : undefined,
-    }),
+    email: z.string().email('Please enter a valid email address'),
     password: z
       .string()
       .min(1, 'Please enter your password')
-      .min(7, 'Password must be at least 7 characters long'),
+      .min(8, 'Password must be at least 8 characters long'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -38,6 +39,7 @@ export function SignUpForm({
   ...props
 }: React.HTMLAttributes<HTMLFormElement>) {
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -48,14 +50,21 @@ export function SignUpForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    // eslint-disable-next-line no-console
-    console.log(data)
-
-    setTimeout(() => {
+    try {
+      await springApiClient.post('/auth/signup/person', {
+        email: data.email,
+        password: data.password,
+      })
+      toast.success('Registration successful! Please check your email for the verification code.')
+      navigate({ to: '/otp', search: { email: data.email } as any })
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to register account. Please try again.'
+      toast.error(msg)
+    } finally {
       setIsLoading(false)
-    }, 3000)
+    }
   }
 
   return (
@@ -105,6 +114,7 @@ export function SignUpForm({
           )}
         />
         <Button className='mt-2' disabled={isLoading}>
+          {isLoading ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : null}
           Create Account
         </Button>
 

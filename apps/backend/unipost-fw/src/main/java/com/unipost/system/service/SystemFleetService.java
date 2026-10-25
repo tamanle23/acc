@@ -500,59 +500,118 @@ public class SystemFleetService {
     }
 
     private void seedDefaultRbacRoles() {
-        roleMatrixStore.put("ROLE_SYSTEM_CUSTODIAN", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_SYSTEM_CUSTODIAN")
-                .roleName("Sovereign Custodian")
+        // Sovereign Roles
+        roleMatrixStore.put("ROLE_SYSTEM_ROOT", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_SYSTEM_ROOT")
+                .roleName("Sovereign Root Custodian")
                 .description("Ultimate sovereign authority across all tenants and infrastructure.")
                 .systemRole(true)
                 .permissions(List.of(
                         "platform:fleet:read", "platform:fleet:mutate",
                         "platform:tenant:assume", "platform:quotas:override",
                         "platform:roles:manage", "platform:users:lock",
-                        "platform:dlq:manage",
-                        "METADATA_SCHEMA_READ", "METADATA_SCHEMA_WRITE",
-                        "METADATA_RECORD_READ", "METADATA_RECORD_WRITE"
+                        "platform:dlq:manage", "platform:audit:export",
+                        "metadata:schema:read", "metadata:schema:write",
+                        "metadata:record:read", "metadata:record:write"
                 ))
-                .inheritedRoles(List.of("ROLE_ADMIN", "ROLE_USER"))
+                .inheritedRoles(List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER"))
                 .userCount(1)
                 .createdDate(LocalDateTime.now())
                 .build());
 
-        roleMatrixStore.put("ROLE_ADMIN", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_ADMIN")
-                .roleName("Organization Admin")
-                .description("Tenant administrator with workspace, schema, and billing authority.")
+        roleMatrixStore.put("ROLE_SYSTEM_SUPPORT", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_SYSTEM_SUPPORT")
+                .roleName("Sovereign Support Specialist")
+                .description("Support specialist for fleet read, impersonation, and read-only schema/record diagnostics.")
                 .systemRole(true)
                 .permissions(List.of(
-                        "METADATA_SCHEMA_READ", "METADATA_SCHEMA_WRITE",
-                        "METADATA_RECORD_READ", "METADATA_RECORD_WRITE",
-                        "TENANT_SETTINGS_MANAGE", "BILLING_MANAGE"
+                        "platform:fleet:read", "platform:tenant:assume",
+                        "metadata:schema:read", "metadata:record:read"
                 ))
-                .inheritedRoles(List.of("ROLE_USER"))
+                .inheritedRoles(Collections.emptyList())
+                .userCount(1)
+                .createdDate(LocalDateTime.now())
+                .build());
+
+        roleMatrixStore.put("ROLE_SYSTEM_VERIFIER", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_SYSTEM_VERIFIER")
+                .roleName("Sovereign Verifier")
+                .description("Two-person quorum task verification and compliance auditor.")
+                .systemRole(true)
+                .permissions(List.of(
+                        "platform:fleet:read", "platform:audit:export"
+                ))
+                .inheritedRoles(Collections.emptyList())
+                .userCount(1)
+                .createdDate(LocalDateTime.now())
+                .build());
+
+        roleMatrixStore.put("ROLE_SYSTEM_APPROVER", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_SYSTEM_APPROVER")
+                .roleName("Sovereign Approver")
+                .description("Two-person quorum action approver and fleet reader.")
+                .systemRole(true)
+                .permissions(List.of(
+                        "platform:fleet:read", "platform:audit:export"
+                ))
+                .inheritedRoles(Collections.emptyList())
+                .userCount(1)
+                .createdDate(LocalDateTime.now())
+                .build());
+
+        // Inside-Tenant Roles
+        roleMatrixStore.put("ROLE_WORKSPACE_OWNER", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_WORKSPACE_OWNER")
+                .roleName("Workspace Owner")
+                .description("Tenant administrator with workspace, schema, security, and billing authority.")
+                .systemRole(false)
+                .permissions(List.of(
+                        "metadata:schema:read", "metadata:schema:write",
+                        "metadata:record:read", "metadata:record:write", "metadata:record:delete",
+                        "workspace:settings:manage", "workspace:members:manage",
+                        "workspace:billing:manage", "workspace:integrations:manage",
+                        "workspace:export:data", "workspace:audit:read"
+                ))
+                .inheritedRoles(List.of("ROLE_OPERATIONS_MANAGER", "ROLE_STANDARD_MEMBER"))
                 .userCount(12)
                 .createdDate(LocalDateTime.now())
                 .build());
 
-        roleMatrixStore.put("ROLE_USER", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_USER")
-                .roleName("Standard Member")
-                .description("Standard member with data record read/write access.")
-                .systemRole(true)
+        roleMatrixStore.put("ROLE_OPERATIONS_MANAGER", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_OPERATIONS_MANAGER")
+                .roleName("Operations Manager")
+                .description("Operations manager with schema write, record mutation, and export permissions.")
+                .systemRole(false)
                 .permissions(List.of(
-                        "METADATA_SCHEMA_READ", "METADATA_RECORD_READ", "METADATA_RECORD_WRITE"
+                        "metadata:schema:read", "metadata:schema:write",
+                        "metadata:record:read", "metadata:record:write", "metadata:record:delete",
+                        "workspace:integrations:manage", "workspace:export:data"
+                ))
+                .inheritedRoles(List.of("ROLE_STANDARD_MEMBER"))
+                .userCount(25)
+                .createdDate(LocalDateTime.now())
+                .build());
+
+        roleMatrixStore.put("ROLE_STANDARD_MEMBER", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_STANDARD_MEMBER")
+                .roleName("Standard Member")
+                .description("Standard member with data record read and write access.")
+                .systemRole(false)
+                .permissions(List.of(
+                        "metadata:schema:read", "metadata:record:read", "metadata:record:write"
                 ))
                 .inheritedRoles(Collections.emptyList())
                 .userCount(148)
                 .createdDate(LocalDateTime.now())
                 .build());
 
-        roleMatrixStore.put("ROLE_READONLY", RoleWithPermissionsDto.builder()
-                .roleId("ROLE_READONLY")
-                .roleName("Auditor / Read-Only")
-                .description("Restricted view-only role for compliance and audits.")
+        roleMatrixStore.put("ROLE_AUDITOR", RoleWithPermissionsDto.builder()
+                .roleId("ROLE_AUDITOR")
+                .roleName("Compliance Auditor")
+                .description("Restricted view-only role for compliance and audit logging.")
                 .systemRole(false)
                 .permissions(List.of(
-                        "METADATA_SCHEMA_READ", "METADATA_RECORD_READ"
+                        "metadata:schema:read", "metadata:record:read", "workspace:audit:read"
                 ))
                 .inheritedRoles(Collections.emptyList())
                 .userCount(5)
@@ -565,13 +624,52 @@ public class SystemFleetService {
                 .userId("usr-custodian-root")
                 .username("custodian")
                 .email("custodian@unipost.io")
-                .displayName("Sovereign Custodian (Me)")
+                .displayName("Sovereign Root Custodian (Me)")
                 .tenantId("SYSTEM")
-                .roles(List.of("ROLE_SYSTEM_CUSTODIAN", "ROLE_ADMIN", "ROLE_USER"))
+                .roles(List.of("ROLE_SYSTEM_ROOT"))
                 .locked(false)
                 .active(true)
                 .lastLoginDate(LocalDateTime.now())
                 .createdDate(LocalDateTime.now().minusMonths(6))
+                .build());
+
+        globalUsersStore.put("usr-support-ops", GlobalUserListItemDto.builder()
+                .userId("usr-support-ops")
+                .username("support")
+                .email("support@unipost.io")
+                .displayName("Sovereign Support Specialist")
+                .tenantId("SYSTEM")
+                .roles(List.of("ROLE_SYSTEM_SUPPORT"))
+                .locked(false)
+                .active(true)
+                .lastLoginDate(LocalDateTime.now().minusDays(1))
+                .createdDate(LocalDateTime.now().minusMonths(4))
+                .build());
+
+        globalUsersStore.put("usr-system-verifier", GlobalUserListItemDto.builder()
+                .userId("usr-system-verifier")
+                .username("verifier")
+                .email("verifier@unipost.io")
+                .displayName("Sovereign Verifier")
+                .tenantId("SYSTEM")
+                .roles(List.of("ROLE_SYSTEM_VERIFIER"))
+                .locked(false)
+                .active(true)
+                .lastLoginDate(LocalDateTime.now().minusDays(2))
+                .createdDate(LocalDateTime.now().minusMonths(4))
+                .build());
+
+        globalUsersStore.put("usr-system-approver", GlobalUserListItemDto.builder()
+                .userId("usr-system-approver")
+                .username("approver")
+                .email("approver@unipost.io")
+                .displayName("Sovereign Approver")
+                .tenantId("SYSTEM")
+                .roles(List.of("ROLE_SYSTEM_APPROVER"))
+                .locked(false)
+                .active(true)
+                .lastLoginDate(LocalDateTime.now().minusDays(3))
+                .createdDate(LocalDateTime.now().minusMonths(4))
                 .build());
 
         globalUsersStore.put("usr-acme-admin", GlobalUserListItemDto.builder()
@@ -580,7 +678,7 @@ public class SystemFleetService {
                 .email("alice@acme.com")
                 .displayName("Alice Henderson")
                 .tenantId("tenant-acme")
-                .roles(List.of("ROLE_ADMIN", "ROLE_USER"))
+                .roles(List.of("ROLE_WORKSPACE_OWNER", "ROLE_STANDARD_MEMBER"))
                 .locked(false)
                 .active(true)
                 .lastLoginDate(LocalDateTime.now().minusHours(2))
@@ -593,7 +691,7 @@ public class SystemFleetService {
                 .email("bob@logistics.vn")
                 .displayName("Bob Nguyen")
                 .tenantId("tenant-logistics")
-                .roles(List.of("ROLE_USER"))
+                .roles(List.of("ROLE_STANDARD_MEMBER"))
                 .locked(false)
                 .active(true)
                 .lastLoginDate(LocalDateTime.now().minusDays(1))

@@ -1,59 +1,38 @@
-# Walkthrough 100: Phase 37 - Human-in-the-Loop (HITL) Operations: Task Approval Inbox, Decision Modals & SLA Tracking
+# Walkthrough 100: Person Tenant Registration, OTP Verification, Passkeys, and Password Rotation
+
+**App:** `@unipost/console`  
+**Date:** 2026-10-25  
+**Version:** Iteration 23  
+
+---
 
 ## 1. Overview
-In Phase 37, we delivered the complete Human-in-the-Loop (HITL) governance and review subsystem across the backend (`workflow-engine`, `unipost-ms-aio`), client contracts (`@unipost/client`), offline simulator (`@unipost/sandbox`), and frontend (`@unipost/console`).
+Implemented frontend authentication workflows for person tenant auto-provisioning, 6-digit OTP verification with timer and error shake animation, FIDO2/WebAuthn passkey authentication, mandatory password rotation modal for expired credentials, and synchronized Unified Sandbox handlers.
 
-## 2. Key Accomplishments
+## 2. Changes Made
+1. **Person Registration Form (`sign-up-form.tsx`)**:
+   - Wired form submission to `POST /api/v1/auth/signup/person`.
+   - Added loading spinner and error toast handling via `sonner`.
+   - On success, redirects to `/otp` passing registered email in query parameters.
+2. **OTP Verification Form (`otp-form.tsx`)**:
+   - Wired code verification to `POST /api/v1/auth/verify-otp`.
+   - Implemented auto-submit when all 6 digits are entered.
+   - Added `animate-shake` on invalid code submission.
+   - Added 60-second cooldown timer for resend request (`POST /api/v1/auth/resend-otp`).
+   - Stored returned `accessToken` and `refreshToken` in `useSpringAuthStore`.
+3. **Passkeys & Sign-In Form (`user-auth-form.tsx`)**:
+   - Added "Sign in with Passkey / Security Key" button.
+   - Triggered `POST /auth/passkey/login/options` and `navigator.credentials.get()`.
+   - Intercepted `PASSWORD_ROTATION_REQUIRED` / `CREDENTIALS_EXPIRED` to trigger `PasswordRotationModal`.
+4. **Mandatory Password Rotation Modal (`password-rotation-modal.tsx`)**:
+   - Created modal requiring current password and new password meeting enterprise complexity rules.
+   - Posts to `POST /api/v1/auth/password/rotate`.
+5. **Unified Sandbox Parity (`auth-sandbox-handler.ts`)**:
+   - Registered sandbox endpoints for `/auth/signup/person`, `/auth/verify-otp`, `/auth/resend-otp`, `/auth/passkey/login/options`, `/auth/passkey/login/verify`, and `/auth/password/rotate`.
+   - Synchronized sandbox users with canonical roles (`ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_WORKSPACE_OWNER`, `ROLE_STANDARD_MEMBER`).
+6. **Permissions Hook (`use-permissions.ts`)**:
+   - Exposed reactive role and authority flags: `isSovereignRoot`, `isSovereignSupport`, `isSovereignVerifier`, `isSovereignApprover`, `isWorkspaceOwner`, `isOperationsManager`, `isStandardMember`, `isAuditor`, `canVerifyTasks`, `canApproveQuorum`.
 
-### 2.1 Backend Engine & REST Endpoints
-- **Task Status Lifecycle (`TaskStatus.java`)**:
-  - Added `TaskStatus.WAITING_FOR_APPROVAL` (non-terminal).
-- **HumanNodeStrategy (`HumanNodeStrategy.java`)**:
-  - On first evaluation, schedules task in `WAITING_FOR_APPROVAL` state, halting downstream DAG progression until explicit human resolution.
-  - When resolved with `COMPLETED`, unblocks downstream execution nodes.
-  - When resolved with `FAILED`, halts execution and triggers Saga compensation.
-- **TaskWorkerController Endpoints (`TaskWorkerController.java`)**:
-  - `POST /api/v1/workflow/tasks/{id}/claim`: Locks task to authenticated user and broadcasts `TASK_CLAIMED`.
-  - `POST /api/v1/workflow/tasks/{id}/unclaim`: Releases task lock back to role pool and broadcasts `TASK_UNCLAIMED`.
-  - `POST /api/v1/workflow/tasks/{id}/resolve`: Resolves review gate with `{ action: 'APPROVE' | 'REJECT', comment?: string, formData?: Record<string, unknown> }`, updates task output data, triggers decider, and broadcasts real-time SSE execution events.
-
-### 2.2 Client Contracts (`@unipost/client`)
-- Added `ApprovalTask` and `ApprovalDecisionRequest` models in `packages/client/src/contracts/workflow-executions.ts`.
-- Added domain methods to `UnipostClient`:
-  - `client.workflowExecutions.getApprovals()`
-  - `client.workflowExecutions.claimApproval()`
-  - `client.workflowExecutions.unclaimApproval()`
-  - `client.workflowExecutions.resolveApproval()`
-
-### 2.3 Unified Sandbox Platform Simulation (`@unipost/sandbox`)
-- Added in-memory multi-tenant approval repository state and seeded default pending approvals in `WorkflowSandboxRepository`:
-  - `appr_01`: Compliance Review (`ROLE_COMPLIANCE_OFFICER`, Order Fulfillment Pipeline).
-  - `appr_02`: Finance Signoff (`ROLE_FINANCE_DIRECTOR`, Monthly Billing & Tax Reconciliation, SLA Breached).
-- Handled mock routes:
-  - `GET /workflow/tasks/approvals`
-  - `POST /workflow/tasks/:id/claim`
-  - `POST /workflow/tasks/:id/unclaim`
-  - `POST /workflow/tasks/:id/resolve`
-- Wired state reset into `sandboxResetRegistry.resetAll()`.
-
-### 2.4 Console UI & Interactive Decision Modal (`apps/console`)
-- **Dedicated Route**: `/_authenticated/approvals` registered in `apps/console/src/routes/_authenticated/approvals/index.tsx`.
-- **Approval Inbox Feature (`apps/console/src/features/approvals`)**:
-  - Filter tabs: **My Review**, **Unassigned Pool**, **History**.
-  - SLA countdown badges with urgency colors (Normal, Urgent < 30m pulsing amber, Breached red).
-  - Real-time search query filtering by workflow name, step reference, role, or instructions.
-- **Interactive Human Decision Modal (`human-decision-modal.tsx`)**:
-  - Left column: Upstream execution JSON payload, reviewer instructions, and required role.
-  - Right column: Verification checklist, decision rationale textarea (mandatory on rejection), and Approve / Reject buttons.
-- **Sidebar & i18n Synchronization**:
-  - Registered `/approvals` in `sidebar-data.ts` under Workspace group.
-  - Synchronized `en/console.json` and `vi/console.json` locales.
-
-## 3. Verification Results
-- **Vitest `@unipost/console`**:
-  - `src/features/approvals/`: **1 passed (2 tests)**.
-  - `src/features/metadata/components/studio/`: **6 passed (28 tests)**.
-- **Vitest `@unipost/client`**: **3 passed (20 tests)**.
-- **Vitest `@unipost/sandbox`**: **2 passed (9 tests)**.
-- **Maven Backend Compile**: `workflow-engine` & `unipost-ms-aio` compiled clean with 0 errors.
-- **TypeScript Typecheck**: `tsc --noEmit` clean across `@unipost/console`, `@unipost/client`, and `@unipost/sandbox`.
+## 3. Verification
+- `pnpm --filter @unipost/console exec tsc --noEmit` exited with code 0 (zero type errors).
+- Client tests passed cleanly.

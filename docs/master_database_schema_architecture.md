@@ -377,19 +377,33 @@ erDiagram
     }
 
     UNIPOST_IDENTITY_ROLE {
+    UNIPOST_IDENTITY_ROLE {
         int id PK
         string uid UK
-        string code "ROLE_ADMIN, ROLE_USER, ROLE_SYSTEM_CUSTODIAN"
+        string code "ROLE_SYSTEM_ROOT, ROLE_WORKSPACE_OWNER"
         string description
         string mode "SYSTEM vs TENANT_CUSTOM"
+        string role_scope "SYSTEM vs TENANT"
+        string min_plan_tier "BASIC, PRO, PRO_MAX, ENTERPRISE"
     }
 
     UNIPOST_IDENTITY_PERMISSION {
         int id PK
         string uid UK
-        string code "platform:fleet:read, METADATA_SCHEMA_WRITE"
+        string code "platform:fleet:read, metadata:schema:write"
         string target "Fleet, Governance, Metadata, Data Plane"
         string action "read, mutate, assume, override"
+    }
+
+    UNIPOST_WEBAUTHN_CREDENTIALS {
+        bigint id PK
+        string credential_id UK
+        string user_uid FK
+        string public_key_cose
+        bigint sign_count
+        string transports
+        string aaguid
+        string friendly_name
     }
 ```
 
@@ -405,7 +419,7 @@ Centralized user store supporting cross-tenant membership and universal platform
 | `PASSWORD` | `VARCHAR(128)` | `NOT NULL` | Cryptographic password hash (BCrypt / Argon2id). |
 | `NONLOCKED` | `BOOLEAN` | Default `TRUE` | **Universal User Lockout**: When set to `FALSE` by a Sovereign Custodian, denies authentication across *all* tenants instantly. |
 | `NONEXPIRED` | `BOOLEAN` | Default `TRUE` | Account expiration flag. |
-| `CREDENTIALSNONEXPIRED` | `BOOLEAN` | Default `TRUE` | Password expiration / rotation flag. |
+| `CREDENTIALSNONEXPIRED` | `BOOLEAN` | Default `TRUE` | Password expiration / rotation flag (seeded `FALSE` for initial sovereign users to force immediate rotation). |
 | `STATUS` | `TINYINT` | Default `1` | Account lifecycle state (`1 = Active`, `0 = Inactive`, `2 = Suspended`). |
 | `FIRSTNAME` / `LASTNAME` | `VARCHAR(125)` | Nullable | Legal identity profile names. |
 | *Audit Columns* | `TIMESTAMP`/`INT`/`VARCHAR` | Standard | Standard created/updated timestamps and soft-delete dates. |
@@ -416,34 +430,48 @@ Centralized user store supporting cross-tenant membership and universal platform
 Normalizes access definitions into coarse-grained roles and fine-grained atom permissions.
 
 - **`UNIPOST_IDENTITY_ROLE`**:
-  - `CODE`: Role moniker (e.g., `ROLE_SYSTEM_CUSTODIAN`, `ROLE_TENANT_ADMIN`, `ROLE_OPERATOR`, `ROLE_VIEWER`).
-  - `MODE`: Distinguishes immutable system roles (`SYSTEM`) from tenant-defined custom enterprise roles (`TENANT_CUSTOM`).
+  - `CODE`: Role moniker (`ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_SYSTEM_VERIFIER`, `ROLE_SYSTEM_APPROVER`, `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, `ROLE_STANDARD_MEMBER`, `ROLE_AUDITOR`).
+  - `ROLE_SCOPE`: Enforces partition scope (`'SYSTEM'` for platform operators vs `'TENANT'` for organization members).
+  - `MIN_PLAN_TIER`: Minimum subscription tier required (`'BASIC'`, `'PRO'`, `'PRO_MAX'`, `'ENTERPRISE'`).
 - **`UNIPOST_IDENTITY_PERMISSION`**:
-  - `CODE`: Fine-grained permission atom formatted as `category:domain:action` or upper snake case.
-  - `TARGET` & `ACTION`: Architectural boundary categorization (Fleet, Governance, Metadata, Data Plane, Billing).
-- **`UNIPOST_IDENTITY_ROLEPERMISSION` & `UNIPOST_IDENTITY_USERROLE`**:
-  - Join tables linking `USER <-> ROLE` and `ROLE <-> PERMISSION` with unique pairing constraints (`UID` cross-references).
+  - `CODE`: Fine-grained permission atom formatted as `domain:resource:action` (e.g., `platform:fleet:read`, `metadata:schema:write`).
+- **`UNIPOST_IDENTITY_USERROLE`**:
+  - Stamped with `tenant_id` to enforce tenant-scoped authority assignments.
+- **`UNIPOST_WEBAUTHN_CREDENTIALS`**:
+  - Stores FIDO2 / WebAuthn passkey public keys (`public_key_cose`), signature counter (`sign_count`), and authenticator GUIDs (`aaguid`).
 
 ---
 
-#### 14. Sovereign RBAC Permission Matrix Specification
+#### 14. Sovereign & Tenant RBAC Permission Matrix Specification
 
-The system governs operational boundaries via the following authoritative permission atoms:
+The system governs operational boundaries via authoritative permission atoms:
 
+##### Sovereign Platform Permissions (`role_scope = 'SYSTEM'`)
 | Domain | Permission Atom (`key`) | Description | Default Roles Granted |
 | :--- | :--- | :--- | :--- |
-| **Fleet Ops** | `platform:fleet:read` | View fleet diagnostics, cross-tenant telemetry & health metrics. | `ROLE_SYSTEM_CUSTODIAN` |
-| **Fleet Ops** | `platform:fleet:mutate` | Provision new tenants, suspend delinquent tenants, edit fleet. | `ROLE_SYSTEM_CUSTODIAN` |
-| **Fleet Ops** | `platform:tenant:assume` | Generate ephemeral dual-context `Assume-Tenant` JWTs. | `ROLE_SYSTEM_CUSTODIAN` |
-| **Fleet Ops** | `platform:quotas:override` | Override resource quotas to unconstrained infinity ($\infty$). | `ROLE_SYSTEM_CUSTODIAN` |
-| **Governance**| `platform:roles:manage` | Mutate the global RBAC Matrix & dynamically bind permissions. | `ROLE_SYSTEM_CUSTODIAN` |
-| **Governance**| `platform:users:lock` | Execute universal account lockout across the global user registry. | `ROLE_SYSTEM_CUSTODIAN` |
-| **Metadata**  | `METADATA_SCHEMA_READ` | Inspect entity types, attributes, validation rules, and FSMs. | Custodian, Admin, Operator, Viewer |
-| **Metadata**  | `METADATA_SCHEMA_WRITE`| Create/modify models, attribute definitions, and relationship edges. | `ROLE_SYSTEM_CUSTODIAN`, `ROLE_TENANT_ADMIN` (Architect Mode) |
-| **Data Plane**| `METADATA_RECORD_READ` | Query and inspect dynamic entity record payloads and edges. | Custodian, Admin, Operator, Viewer |
-| **Data Plane**| `METADATA_RECORD_WRITE`| Create, edit, and soft-delete dynamic records and graph links. | Custodian, Admin, Operator |
-| **Tenancy**   | `TENANT_SETTINGS_MANAGE`| Configure workspaces, custom branding themes, and team users. | Custodian, Admin |
-| **Tenancy**   | `BILLING_MANAGE` | Initiate payOS VietQR upgrades, view invoices, change plans. | Custodian, Admin |
+| **Fleet Ops** | `platform:fleet:read` | View fleet diagnostics, cross-tenant telemetry & health metrics. | `ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT`, `ROLE_SYSTEM_VERIFIER`, `ROLE_SYSTEM_APPROVER` |
+| **Fleet Ops** | `platform:fleet:mutate` | Provision new tenants, suspend delinquent tenants, edit fleet. | `ROLE_SYSTEM_ROOT` |
+| **Fleet Ops** | `platform:tenant:assume` | Generate ephemeral dual-context `Assume-Tenant` JWTs. | `ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_SUPPORT` |
+| **Fleet Ops** | `platform:quotas:override` | Override resource quotas to unconstrained infinity ($\infty$). | `ROLE_SYSTEM_ROOT` |
+| **Fleet Ops** | `platform:dlq:manage` | Manage Dead Letter Queue messages and failed event retries. | `ROLE_SYSTEM_ROOT` |
+| **Governance**| `platform:roles:manage` | Mutate global RBAC Matrix & dynamically bind permissions. | `ROLE_SYSTEM_ROOT` |
+| **Governance**| `platform:users:lock` | Execute universal account lockout across the global user registry. | `ROLE_SYSTEM_ROOT` |
+| **Audit**     | `platform:audit:export` | Export compliance and tamper-evident sovereign audit logs. | `ROLE_SYSTEM_ROOT`, `ROLE_SYSTEM_VERIFIER`, `ROLE_SYSTEM_APPROVER` |
+
+##### Tenant-Level Permissions (`role_scope = 'TENANT'`)
+| Domain | Permission Atom (`key`) | Description | Default Roles Granted |
+| :--- | :--- | :--- | :--- |
+| **Metadata**  | `metadata:schema:read` | Inspect entity types, attributes, validation rules, and FSMs. | All Roles |
+| **Metadata**  | `metadata:schema:write`| Create/modify models, attribute definitions, and relationship edges. | `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, `ROLE_SYSTEM_ROOT` |
+| **Data Plane**| `metadata:record:read` | Query and inspect dynamic entity record payloads and edges. | All Roles |
+| **Data Plane**| `metadata:record:write`| Create and edit dynamic records and graph links. | `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER`, `ROLE_STANDARD_MEMBER`, `ROLE_SYSTEM_ROOT` |
+| **Data Plane**| `metadata:record:delete`| Soft-delete and purge dynamic records. | `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER` |
+| **Workspace** | `workspace:settings:manage`| Manage workspace settings, environment parameters, branding. | `ROLE_WORKSPACE_OWNER` |
+| **Workspace** | `workspace:members:manage` | Invite, remove, and assign roles to tenant workspace members. | `ROLE_WORKSPACE_OWNER` |
+| **Workspace** | `workspace:billing:manage` | Initiate payOS VietQR upgrades, view invoices, change plans. | `ROLE_WORKSPACE_OWNER` |
+| **Workspace** | `workspace:integrations:manage`| Configure webhooks, third-party connectors, and API keys. | `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER` |
+| **Workspace** | `workspace:export:data` | Export workspace records to CSV, JSON, or Parquet archives. | `ROLE_WORKSPACE_OWNER`, `ROLE_OPERATIONS_MANAGER` |
+| **Workspace** | `workspace:audit:read` | Inspect chronological tenant record mutation ledger. | `ROLE_WORKSPACE_OWNER`, `ROLE_AUDITOR` |
 
 ---
 

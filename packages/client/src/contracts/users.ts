@@ -4,14 +4,33 @@
 
 export type UserStatus = 'active' | 'inactive' | 'invited' | 'suspended';
 
+export const SovereignRole = {
+  SystemRoot: 'ROLE_SYSTEM_ROOT',
+  SystemSupport: 'ROLE_SYSTEM_SUPPORT',
+  SystemVerifier: 'ROLE_SYSTEM_VERIFIER',
+  SystemApprover: 'ROLE_SYSTEM_APPROVER',
+} as const;
+
+export type SovereignRole = typeof SovereignRole[keyof typeof SovereignRole];
+
+export const TenantRole = {
+  WorkspaceOwner: 'ROLE_WORKSPACE_OWNER',
+  OperationsManager: 'ROLE_OPERATIONS_MANAGER',
+  StandardMember: 'ROLE_STANDARD_MEMBER',
+  Auditor: 'ROLE_AUDITOR',
+} as const;
+
+export type TenantRole = typeof TenantRole[keyof typeof TenantRole];
+
 export type UserRole =
+  | SovereignRole
+  | TenantRole
   | 'superadmin'
   | 'admin'
   | 'cashier'
   | 'manager'
   | 'ROLE_USER'
   | 'ROLE_ADMIN'
-  | 'ROLE_SYSTEM_CUSTODIAN'
   | 'ROLE_CREATOR'
   | (string & {});
 

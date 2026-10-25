@@ -3,11 +3,12 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Loader2, LogIn, ShieldAlert } from 'lucide-react'
+import { Loader2, LogIn, ShieldAlert, Fingerprint } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { IconFacebook, IconGithub } from '@unipost/ui/icons'
 import { useSpringAuthStore, springApiClient } from '@/features/spring-auth'
+import { PasswordRotationModal } from '@/features/auth/components/password-rotation-modal'
 import {
   useSandboxStore,
   DEFAULT_SANDBOX_PERSONAS,
@@ -54,6 +55,10 @@ export function UserAuthForm({
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
+  const [showRotationModal, setShowRotationModal] = useState(false)
+  const [rotationUsername, setRotationUsername] = useState('')
+  const [isPasskeyLoading, setIsPasskeyLoading] = useState(false)
+
   // Use the new Spring Security dual-token store
   const { setTokens } = useSpringAuthStore()
 
@@ -80,10 +85,63 @@ export function UserAuthForm({
 
       const targetPath = redirectTo || '/'
       navigate({ to: targetPath, replace: true })
-    } catch (_error) {
-      toast.error('Invalid credentials or network error');
+    } catch (error: any) {
+      const errData = error.response?.data
+      if (errData?.error === 'PASSWORD_ROTATION_REQUIRED' || errData?.code === 'CREDENTIALS_EXPIRED') {
+        toast.info('Initial password rotation required for this account.')
+        setRotationUsername(data.email)
+        setShowRotationModal(true)
+        return
+      }
+      toast.error(errData?.message || 'Invalid credentials or network error');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handlePasskeySignIn() {
+    setIsPasskeyLoading(true)
+    try {
+      const email = form.getValues('email')
+      const optionsRes = await springApiClient.post('/auth/passkey/login/options', { email })
+      const options = optionsRes.data?.body || optionsRes.data
+
+      if (window.PublicKeyCredential && options?.challenge) {
+        // Native WebAuthn assertion
+        const assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0)),
+            rpId: options.rpId || window.location.hostname,
+            timeout: options.timeout || 60000,
+            userVerification: options.userVerification || 'preferred',
+          }
+        })
+        const verifyRes = await springApiClient.post('/auth/passkey/login/verify', {
+          email,
+          assertion: assertion ? JSON.stringify(assertion) : 'passkey_assertion_payload',
+        })
+        const accessToken = verifyRes.data?.body?.accessToken || verifyRes.data?.accessToken
+        const refreshToken = verifyRes.data?.body?.refreshToken || verifyRes.data?.refreshToken
+        if (accessToken) {
+          setTokens(accessToken, refreshToken)
+          toast.success('Passkey verification successful!')
+          navigate({ to: redirectTo || '/', replace: true })
+        }
+      } else {
+        // Sandbox fallback
+        const verifyRes = await springApiClient.post('/auth/passkey/login/verify', { email })
+        const accessToken = verifyRes.data?.body?.accessToken || verifyRes.data?.accessToken
+        const refreshToken = verifyRes.data?.body?.refreshToken || verifyRes.data?.refreshToken
+        if (accessToken) {
+          setTokens(accessToken, refreshToken)
+          toast.success('Passkey verification successful!')
+          navigate({ to: redirectTo || '/', replace: true })
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Passkey authentication failed or was cancelled.')
+    } finally {
+      setIsPasskeyLoading(false)
     }
   }
 
@@ -234,7 +292,32 @@ export function UserAuthForm({
             <IconFacebook className='h-4 w-4' /> Facebook
           </Button>
         </div>
+
+        <Button
+          variant='ghost'
+          type='button'
+          disabled={isLoading || isPasskeyLoading}
+          onClick={handlePasskeySignIn}
+          className='w-full border border-dashed border-border/80 hover:border-primary hover:bg-primary/5 text-xs text-muted-foreground hover:text-foreground mt-1'
+        >
+          {isPasskeyLoading ? (
+            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+          ) : (
+            <Fingerprint className='mr-2 h-4 w-4 text-primary' />
+          )}
+          Sign in with Passkey / Security Key
+        </Button>
       </form>
+
+      <PasswordRotationModal
+        open={showRotationModal}
+        username={rotationUsername}
+        onSuccess={() => {
+          setShowRotationModal(false)
+          navigate({ to: redirectTo || '/', replace: true })
+        }}
+        onCancel={() => setShowRotationModal(false)}
+      />
     </Form>
   )
 }
