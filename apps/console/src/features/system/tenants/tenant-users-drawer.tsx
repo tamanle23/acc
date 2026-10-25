@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -34,8 +34,6 @@ import {
   Mail,
   Copy,
   LogOut,
-  UserCheck,
-  ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
 import {
@@ -47,6 +45,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { announceToScreenReader } from '@/hooks/use-aria-announce';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export interface TenantUsersDrawerProps {
   tenant: FleetTenantSummary | null;
@@ -62,23 +61,29 @@ export function TenantUsersDrawer({
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
 
+  // ⚡ Bolt Optimization: Debounce search query input to prevent redundant API re-fetches on every keystroke
+  const debouncedSearch = useDebounce(search, 300);
+
   // Lock Confirmation Dialog state
   const [userToLock, setUserToLock] = useState<GlobalUserListItem | null>(null);
   const [lockReason, setLockReason] = useState('');
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
 
   const { data: users = [], isLoading, refetch } = useGlobalUsers(
-    search,
+    debouncedSearch,
     tenant?.tenantId
   );
   const lockMutation = useLockUser();
 
-  if (!tenant) return null;
+  // ⚡ Bolt Optimization: Memoize user role filtering to preserve referential integrity and prevent O(N) array scans on unrelated re-renders
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter === 'ALL') return true;
+      return u.roles.some((r) => r.toUpperCase().includes(roleFilter.toUpperCase()));
+    });
+  }, [users, roleFilter]);
 
-  const filteredUsers = users.filter((u) => {
-    if (roleFilter === 'ALL') return true;
-    return u.roles.some((r) => r.toUpperCase().includes(roleFilter.toUpperCase()));
-  });
+  if (!tenant) return null;
 
   const handleOpenLockDialog = (user: GlobalUserListItem) => {
     setUserToLock(user);
@@ -106,8 +111,9 @@ export function TenantUsersDrawer({
           setUserToLock(null);
           refetch();
         },
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.message || 'Thao tác khóa/mở khóa thất bại.');
+        onError: (err: unknown) => {
+          const apiErr = err as { response?: { data?: { message?: string } } };
+          toast.error(apiErr?.response?.data?.message || 'Thao tác khóa/mở khóa thất bại.');
         },
       }
     );
@@ -330,10 +336,11 @@ export function TenantUsersDrawer({
           </DialogHeader>
 
           <div className="space-y-3 py-2">
-            <label className="text-xs font-semibold text-foreground">
+            <label htmlFor="lock-reason-input" className="text-xs font-semibold text-foreground">
               Lý do thực hiện <span className="text-rose-500">*</span>
             </label>
             <Input
+              id="lock-reason-input"
               placeholder="VD: Tuân thủ chính sách bảo mật, yêu cầu từ quản trị viên..."
               value={lockReason}
               onChange={(e) => setLockReason(e.target.value)}
