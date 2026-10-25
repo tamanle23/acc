@@ -86,6 +86,28 @@ export function createSupervisorStore() {
       try {
         const snapshot: FleetTelemetrySnapshot = JSON.parse(e.data);
         setTelemetry(snapshot);
+
+        // Synchronize service statuses from real-time telemetry snapshot into status store
+        if (snapshot.services) {
+          setStatus((prev) => {
+            if (!prev) return prev;
+            const updatedServices = { ...prev.services };
+            for (const [name, sidecar] of Object.entries(snapshot.services)) {
+              if (updatedServices[name]) {
+                updatedServices[name] = {
+                  ...updatedServices[name],
+                  status: sidecar.status,
+                  uptimeSeconds: sidecar.uptimeSeconds ?? updatedServices[name].uptimeSeconds,
+                  pid: sidecar.pid ?? updatedServices[name].pid,
+                };
+              }
+            }
+            return {
+              ...prev,
+              services: updatedServices,
+            };
+          });
+        }
       } catch {}
     });
 

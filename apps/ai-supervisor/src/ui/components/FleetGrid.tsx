@@ -13,14 +13,22 @@ interface FleetGridProps {
 
 export function FleetGrid(props: FleetGridProps) {
   const getService = (name: string) => {
-    return (
-      props.services?.[name] ?? {
-        name,
-        status: "STOPPED",
-        uptimeSeconds: 0,
-        restartCount: 0,
-      }
-    );
+    const baseService = props.services?.[name] ?? {
+      name,
+      status: "STOPPED",
+      uptimeSeconds: 0,
+      restartCount: 0,
+    };
+    const telemetryService = props.telemetry?.services?.[name];
+    if (telemetryService) {
+      return {
+        ...baseService,
+        status: telemetryService.status || baseService.status,
+        uptimeSeconds: telemetryService.uptimeSeconds ?? baseService.uptimeSeconds,
+        pid: (telemetryService.pid ?? baseService.pid) as number | undefined,
+      };
+    }
+    return baseService;
   };
 
   const getServiceTelemetry = (name: string) => {
