@@ -1,5 +1,17 @@
 import { UniversalCanvasProvider } from './UniversalCanvasProvider';
 import type { ICanvasInstance } from './types';
+import type { IAssetBlob } from '../assets/IAssetBlob';
+
+/**
+ * Supported source types for CanvasAssetLoader image ingestion.
+ */
+export type CanvasImageSource =
+  | string
+  | Buffer
+  | Uint8Array
+  | Blob
+  | File
+  | IAssetBlob;
 
 /**
  * CanvasAssetLoader:
@@ -9,13 +21,25 @@ import type { ICanvasInstance } from './types';
  */
 export class CanvasAssetLoader {
   /**
-   * Loads an image from a file path, URL, Base64 data URL, Buffer, or Blob.
+   * Type guard to check if an object satisfies the IAssetBlob interface.
+   */
+  public static isAssetBlob(source: unknown): source is IAssetBlob {
+    return (
+      source != null &&
+      typeof source === 'object' &&
+      typeof (source as IAssetBlob).arrayBuffer === 'function' &&
+      typeof (source as IAssetBlob).uri === 'string'
+    );
+  }
+
+  /**
+   * Loads an image from a file path, URL, Base64 data URL, Buffer, Blob, or IAssetBlob.
    */
   public static async loadImage(
-    source: string | Buffer | Uint8Array | Blob | File | any
+    source: CanvasImageSource
   ): Promise<any> {
-    // 0. IAssetBlob unwrap
-    if (source && typeof source === 'object' && typeof source.arrayBuffer === 'function' && 'uri' in source) {
+    // 0. Transparent IAssetBlob unwrap
+    if (this.isAssetBlob(source)) {
       const nativePath = typeof source.getNativePath === 'function' ? source.getNativePath() : null;
       if (nativePath) {
         return this.loadImage(nativePath);
