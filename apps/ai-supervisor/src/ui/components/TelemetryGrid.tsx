@@ -1,30 +1,33 @@
 import { Show } from "solid-js";
-import { Cpu, HardDrive, Microchip, Layers, Activity, Zap } from "lucide-solid";
-import type { HardwareProfile, FleetTelemetrySnapshot } from "../types";
+import { Progress, Tooltip } from "@ark-ui/solid";
+import { Cpu, HardDrive, Layers, Microchip, Activity } from "lucide-solid";
+import type { HardwareProfile, ServiceTelemetryStream } from "../types";
 
 interface TelemetryGridProps {
   profile: HardwareProfile | undefined;
-  telemetry?: FleetTelemetrySnapshot | null;
+  telemetry: ServiceTelemetryStream | undefined;
   isLoading: boolean;
 }
 
 export function TelemetryGrid(props: TelemetryGridProps) {
   const ramMetrics = () => {
-    // Prefer real-time snapshot telemetry if available, fallback to hardwareProfile
-    const totalMb = props.telemetry?.system?.totalMemoryMb ?? (props.profile ? props.profile.totalSystemRamBytes / (1024 * 1024) : 0);
-    const freeMb = props.telemetry?.system?.freeMemoryMb ?? (props.profile ? props.profile.freeSystemRamBytes / (1024 * 1024) : 0);
-
-    const totalGb = totalMb / 1024;
-    const freeGb = freeMb / 1024;
-    const usedGb = Math.max(0, totalGb - freeGb);
-    const pctUsed = totalGb > 0 ? Math.min(100, Math.round((usedGb / totalGb) * 100)) : 0;
-
-    return {
-      freeGb: freeGb.toFixed(1),
-      totalGb: totalGb.toFixed(1),
-      usedGb: usedGb.toFixed(1),
-      pctUsed,
-    };
+    const sys = props.telemetry?.system;
+    if (sys && sys.totalMemoryBytes > 0) {
+      const totalGb = (sys.totalMemoryBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGb = (sys.freeMemoryBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const usedGb = ((sys.totalMemoryBytes - sys.freeMemoryBytes) / (1024 * 1024 * 1024)).toFixed(1);
+      const pctUsed = Math.min(100, Math.round(((sys.totalMemoryBytes - sys.freeMemoryBytes) / sys.totalMemoryBytes) * 100));
+      return { totalGb, freeGb, usedGb, pctUsed };
+    }
+    const prof = props.profile?.memory;
+    if (prof) {
+      const totalGb = (prof.totalBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGb = (prof.availableBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const usedGb = ((prof.totalBytes - prof.availableBytes) / (1024 * 1024 * 1024)).toFixed(1);
+      const pctUsed = Math.min(100, Math.round(((prof.totalBytes - prof.availableBytes) / prof.totalBytes) * 100));
+      return { totalGb, freeGb, usedGb, pctUsed };
+    }
+    return { totalGb: "0.0", freeGb: "0.0", usedGb: "0.0", pctUsed: 0 };
   };
 
   const vramMetrics = () => {
@@ -76,7 +79,7 @@ export function TelemetryGrid(props: TelemetryGridProps) {
     }
     return {
       totalSidecarRssMb: Math.round(totalSidecarRssMb),
-      totalCpuPercent: Math.round(totalCpuPercent),
+      totalCpuPercent: Math.min(100, Math.round(totalCpuPercent)),
     };
   };
 
@@ -100,9 +103,9 @@ export function TelemetryGrid(props: TelemetryGridProps) {
             when={!props.isLoading && props.profile}
             fallback={<div class="h-6 w-3/4 bg-[var(--border-subtle)] rounded animate-pulse" />}
           >
-            <div class="flex items-center justify-between gap-1">
-              <span class="text-base font-bold text-[var(--text-primary)] truncate" title={props.profile?.gpu?.name || "CPU (Software Fallback)"}>
-                {props.profile?.gpu?.name || "CPU (Software Fallback)"}
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-sm text-[var(--text-primary)] truncate" title={props.profile?.gpu?.model || "Compute Host"}>
+                {props.profile?.gpu?.model || "Compute Host"}
               </span>
               <Show when={props.profile?.gpu?.totalVramBytes && props.profile.gpu.totalVramBytes > 0}>
                 <span class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent-primary)] border border-[var(--border-focus)]/30 shrink-0">
@@ -130,7 +133,7 @@ export function TelemetryGrid(props: TelemetryGridProps) {
         </div>
       </div>
 
-      {/* 2. System RAM & Sidecar RSS Footprint */}
+      {/* 2. System RAM & Sidecar RSS Footprint (with Ark UI Progress) */}
       <div
         class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
         style={{
@@ -157,14 +160,16 @@ export function TelemetryGrid(props: TelemetryGridProps) {
               </span>
             </div>
 
-            <div class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 mt-2 overflow-hidden">
-              <div
-                class={`h-1.5 rounded-full transition-all duration-500 ${
-                  ramMetrics().pctUsed > 85 ? "bg-rose-500" : ramMetrics().pctUsed > 65 ? "bg-amber-500" : "bg-emerald-500"
-                }`}
-                style={{ width: `${ramMetrics().pctUsed}%` }}
-              />
-            </div>
+            {/* Ark UI Progress Primitive */}
+            <Progress.Root value={ramMetrics().pctUsed} class="w-full mt-2">
+              <Progress.Track class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 overflow-hidden">
+                <Progress.Range
+                  class={`h-full rounded-full transition-all duration-500 block ${
+                    ramMetrics().pctUsed > 85 ? "bg-rose-500" : ramMetrics().pctUsed > 65 ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                />
+              </Progress.Track>
+            </Progress.Root>
 
             <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] mt-1.5">
               <span>Free: {ramMetrics().freeGb} GB</span>
@@ -176,7 +181,7 @@ export function TelemetryGrid(props: TelemetryGridProps) {
         </div>
       </div>
 
-      {/* 3. Neural VRAM & Model Cache */}
+      {/* 3. Neural VRAM & Model Cache (with Ark UI Progress) */}
       <div
         class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
         style={{
@@ -203,14 +208,16 @@ export function TelemetryGrid(props: TelemetryGridProps) {
               </span>
             </div>
 
-            <div class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 mt-2 overflow-hidden">
-              <div
-                class={`h-1.5 rounded-full transition-all duration-500 ${
-                  vramMetrics().pct > 85 ? "bg-rose-500" : vramMetrics().pct > 60 ? "bg-amber-500" : "bg-[var(--accent-primary)]"
-                }`}
-                style={{ width: `${Math.max(4, vramMetrics().pct)}%` }}
-              />
-            </div>
+            {/* Ark UI Progress Primitive */}
+            <Progress.Root value={vramMetrics().pct} class="w-full mt-2">
+              <Progress.Track class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 overflow-hidden">
+                <Progress.Range
+                  class={`h-full rounded-full transition-all duration-500 block ${
+                    vramMetrics().pct > 85 ? "bg-rose-500" : vramMetrics().pct > 60 ? "bg-amber-500" : "bg-[var(--accent-primary)]"
+                  }`}
+                />
+              </Progress.Track>
+            </Progress.Root>
 
             <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] mt-1.5">
               <span>Cached Models: <span class="font-medium text-[var(--text-primary)]">{vramMetrics().cachedModels}</span></span>
@@ -222,7 +229,7 @@ export function TelemetryGrid(props: TelemetryGridProps) {
         </div>
       </div>
 
-      {/* 4. CPU Activity & Active Rendering Pipeline */}
+      {/* 4. CPU Activity & Active Rendering Pipeline (with Ark UI Progress) */}
       <div
         class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
         style={{
@@ -242,37 +249,35 @@ export function TelemetryGrid(props: TelemetryGridProps) {
           >
             <div class="flex items-baseline justify-between">
               <div class="text-base font-bold text-[var(--text-primary)]">
-                {props.profile?.cpuCores || props.telemetry?.system?.cpuCount || "--"} <span class="text-xs text-[var(--text-muted)] font-normal">Cores</span>
+                {aggregateCpuAndMemory().totalCpuPercent}% <span class="text-xs text-[var(--text-muted)] font-normal">Active</span>
               </div>
-              <span class="inline-flex items-center gap-1 text-xs font-mono font-medium text-amber-400">
-                <Activity class="w-3 h-3 animate-pulse" />
-                {aggregateCpuAndMemory().totalCpuPercent}% Fleet
+              <span class="text-xs font-mono font-medium text-[var(--text-muted)] truncate max-w-[100px]">
+                {props.profile?.cpu?.model ? props.profile.cpu.model.split(" ")[0] : `${props.profile?.cpu?.cores ?? 4} Cores`}
               </span>
             </div>
 
-            <div class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 mt-2 overflow-hidden">
-              <div
-                class="h-1.5 rounded-full bg-amber-400 transition-all duration-500"
-                style={{ width: `${Math.min(100, aggregateCpuAndMemory().totalCpuPercent)}%` }}
-              />
-            </div>
+            {/* Ark UI Progress Primitive */}
+            <Progress.Root value={aggregateCpuAndMemory().totalCpuPercent} class="w-full mt-2">
+              <Progress.Track class="w-full bg-[var(--border-subtle)]/60 rounded-full h-1.5 overflow-hidden">
+                <Progress.Range
+                  class={`h-full rounded-full transition-all duration-500 block ${
+                    aggregateCpuAndMemory().totalCpuPercent > 80 ? "bg-rose-500" : aggregateCpuAndMemory().totalCpuPercent > 50 ? "bg-amber-500" : "bg-sky-500"
+                  }`}
+                />
+              </Progress.Track>
+            </Progress.Root>
 
             <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] mt-1.5">
               <Show
-                when={workerMetrics()?.activeJobId}
-                fallback={
-                  <>
-                    <span class="truncate max-w-[140px]" title={props.profile?.cpu?.model || "Standard x86/ARM Processor"}>
-                      {props.profile?.cpu?.model ? props.profile.cpu.model.split("@")[0].replace("Intel(R) Core(TM) ", "").trim() : "Worker Host"}
-                    </span>
-                    <span class="text-emerald-400 font-medium">Idle / Ready</span>
-                  </>
-                }
+                when={workerMetrics()}
+                fallback={<span>Pipeline: <span class="text-[var(--text-primary)]">Standby</span></span>}
               >
-                <span class="truncate max-w-[140px] text-[var(--accent-primary)] font-mono">
-                  Job {workerMetrics()?.activeJobId?.slice(0, 8)}: {workerMetrics()?.currentFrame}/{workerMetrics()?.totalFrames}f
-                </span>
-                <span class="font-mono text-emerald-400">{workerMetrics()?.renderFps ?? 0} fps</span>
+                {(wm) => (
+                  <>
+                    <span class="truncate max-w-[130px]" title={wm().activeJobId}>Job: {wm().activeJobId.slice(0, 8)}...</span>
+                    <span class="font-mono text-[var(--text-primary)]">{wm().renderFps} FPS</span>
+                  </>
+                )}
               </Show>
             </div>
           </Show>

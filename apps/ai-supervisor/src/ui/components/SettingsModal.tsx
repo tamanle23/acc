@@ -1,5 +1,5 @@
 import { createSignal, createEffect } from "solid-js";
-import { Dialog } from "@ark-ui/solid";
+import { Dialog, Switch } from "@ark-ui/solid";
 import { X, Sliders, PlayCircle } from "lucide-solid";
 import type { SupervisorConfig } from "../types";
 
@@ -50,24 +50,35 @@ export function SettingsModal(props: SettingsModalProps) {
   };
 
   return (
-    <Dialog.Root open={props.isOpen} onOpenChange={(details) => !details.open && props.onClose()}>
-      <Dialog.Backdrop class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 animate-in fade-in" />
-      <Dialog.Positioner class="fixed inset-0 flex items-center justify-center p-4 z-50">
-        <Dialog.Content class="w-full max-w-md rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-6 shadow-2xl animate-in zoom-in-95 text-[var(--text-primary)] transition-colors">
+    <Dialog.Root
+      open={props.isOpen}
+      onOpenChange={(details) => {
+        if (!details.open) props.onClose();
+      }}
+    >
+      <Dialog.Backdrop class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 animate-in fade-in duration-200" />
+      <Dialog.Positioner class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <Dialog.Content
+          class="w-full max-w-md rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] p-6 shadow-2xl animate-in zoom-in-95 text-[var(--text-primary)] transition-all outline-none"
+          style={{
+            "box-shadow": "var(--card-shadow)",
+            "backdrop-filter": "var(--surface-backdrop)",
+            "-webkit-backdrop-filter": "var(--surface-backdrop)",
+          }}
+        >
           <div class="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)]">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
               <Sliders class="w-5 h-5 text-[var(--accent-primary)]" />
               <Dialog.Title class="text-base font-bold text-[var(--text-primary)]">Control Plane Settings</Dialog.Title>
             </div>
             <Dialog.CloseTrigger
-              onClick={props.onClose}
-              class="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] cursor-pointer"
+              class="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] cursor-pointer transition-colors"
             >
               <X class="w-4 h-4" />
             </Dialog.CloseTrigger>
           </div>
 
-          <form onSubmit={handleSubmit} class="space-y-4 pt-4">
+          <form onSubmit={handleSubmit} class="mt-4 space-y-4">
             <div>
               <label class="block text-xs font-semibold text-[var(--text-muted)] mb-1">Studio Web Port</label>
               <input
@@ -104,18 +115,23 @@ export function SettingsModal(props: SettingsModalProps) {
               </select>
             </div>
 
-            <div class="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
+            {/* Ark UI Switch Primitive for Auto-boot */}
+            <Switch.Root
+              checked={autostart()}
+              onCheckedChange={(details) => setAutostart(details.checked)}
+              class="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] cursor-pointer"
+            >
               <div>
-                <div class="text-xs font-semibold text-[var(--text-primary)]">Start on System Boot</div>
+                <Switch.Label class="text-xs font-semibold text-[var(--text-primary)] cursor-pointer">
+                  Start on System Boot
+                </Switch.Label>
                 <div class="text-[11px] text-[var(--text-muted)]">Launch supervisor minimized in background</div>
               </div>
-              <input
-                type="checkbox"
-                checked={autostart()}
-                onChange={(e) => setAutostart(e.currentTarget.checked)}
-                class="w-4 h-4 rounded text-[var(--accent-primary)] bg-[var(--bg-surface)] border-[var(--border-subtle)] focus:ring-[var(--accent-primary)] cursor-pointer"
-              />
-            </div>
+              <Switch.Control class="w-9 h-5 inline-flex items-center rounded-full transition-colors bg-[var(--border-subtle)] data-[state=checked]:bg-[var(--accent-primary)] p-0.5">
+                <Switch.Thumb class="w-4 h-4 rounded-full bg-white transition-transform data-[state=checked]:translate-x-4 shadow-xs" />
+              </Switch.Control>
+              <Switch.HiddenInput />
+            </Switch.Root>
 
             <div class="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
               <button
@@ -140,7 +156,7 @@ export function SettingsModal(props: SettingsModalProps) {
                   disabled={isSaving()}
                   class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white cursor-pointer disabled:opacity-50 transition-colors"
                 >
-                  {isSaving() ? "Saving..." : "Save Changes"}
+                  {isSaving() ? "Saving..." : "Save Settings"}
                 </button>
               </div>
             </div>

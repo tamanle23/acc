@@ -1,4 +1,5 @@
-import { For, Show, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show } from "solid-js";
+import { Menu } from "@ark-ui/solid";
 import { Palette, Check, Sun, Moon } from "lucide-solid";
 import type { createThemeStore, ThemePreset } from "../stores/themeStore";
 
@@ -7,30 +8,21 @@ interface ThemeSwitcherProps {
 }
 
 export function ThemeSwitcher(props: ThemeSwitcherProps) {
-  const [isOpen, setIsOpen] = createSignal(false);
-  let containerRef: HTMLDivElement | undefined;
-
   const current = () => props.themeStore.currentTheme();
 
-  const handleClickOutside = (e: MouseEvent) => {
-    if (containerRef && !containerRef.contains(e.target as Node)) {
-      setIsOpen(false);
-    }
-  };
-
-  onMount(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    onCleanup(() => document.removeEventListener("mousedown", handleClickOutside));
-  });
-
   return (
-    <div class="relative" ref={containerRef} data-testid="theme-switcher">
-      <button
-        onClick={() => setIsOpen(!isOpen())}
+    <Menu.Root
+      positioning={{ placement: "bottom-end", gutter: 8 }}
+      onSelect={(details) => {
+        if (details.value) {
+          props.themeStore.setTheme(details.value as any);
+        }
+      }}
+    >
+      <Menu.Trigger
         title={`Current Theme: ${current().name}`}
-        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--border-focus)] transition-all cursor-pointer shadow-xs"
+        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--border-focus)] transition-all cursor-pointer shadow-xs focus-visible:outline-none focus-visible:border-[var(--border-focus)]"
         aria-label="Open Theme Presets"
-        aria-expanded={isOpen()}
         data-testid="theme-switcher-button"
       >
         <span
@@ -41,11 +33,16 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
           {current().name}
         </span>
         <Palette class="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
-      </button>
+      </Menu.Trigger>
 
-      <Show when={isOpen()}>
-        <div
-          class="absolute right-0 mt-2 w-64 rounded-2xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95 backdrop-blur-md"
+      <Menu.Positioner class="z-50">
+        <Menu.Content
+          class="w-64 rounded-2xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] p-2 shadow-2xl animate-in fade-in zoom-in-95 backdrop-blur-md outline-none"
+          style={{
+            "box-shadow": "var(--card-shadow)",
+            "backdrop-filter": "var(--surface-backdrop)",
+            "-webkit-backdrop-filter": "var(--surface-backdrop)",
+          }}
           data-testid="theme-dropdown"
         >
           <div class="px-2.5 py-1.5 text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider flex items-center justify-between border-b border-[var(--border-subtle)] mb-1">
@@ -53,20 +50,17 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
             <span class="text-[10px] font-normal">{props.themeStore.presets.length} options</span>
           </div>
 
-          <div class="space-y-1 max-h-72 overflow-y-auto py-1">
+          <Menu.ItemGroup class="space-y-1 max-h-72 overflow-y-auto py-1">
             <For each={props.themeStore.presets}>
               {(preset: ThemePreset) => {
                 const isSelected = () => props.themeStore.activeThemeId() === preset.id;
                 return (
-                  <button
-                    onClick={() => {
-                      props.themeStore.setTheme(preset.id);
-                      setIsOpen(false);
-                    }}
-                    class={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+                  <Menu.Item
+                    value={preset.id}
+                    class={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer outline-none ${
                       isSelected()
                         ? "bg-[var(--accent-subtle)] text-[var(--text-primary)] font-semibold border border-[var(--accent-primary)]/40 shadow-xs"
-                        : "text-[var(--text-primary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]"
+                        : "text-[var(--text-primary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)] focus:bg-[var(--bg-surface)]"
                     }`}
                   >
                     <div class="flex items-center gap-2.5">
@@ -93,13 +87,13 @@ export function ThemeSwitcher(props: ThemeSwitcherProps) {
                         <Check class="w-3.5 h-3.5 text-[var(--accent-primary)] font-bold" />
                       </Show>
                     </div>
-                  </button>
+                  </Menu.Item>
                 );
               }}
             </For>
-          </div>
-        </div>
-      </Show>
-    </div>
+          </Menu.ItemGroup>
+        </Menu.Content>
+      </Menu.Positioner>
+    </Menu.Root>
   );
 }
