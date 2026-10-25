@@ -26,6 +26,7 @@ export function ServiceCard(props: ServiceCardProps) {
       case "ADOPTED":
         return "bg-[var(--status-success-bg)] text-[var(--status-success-text)] border-[var(--status-success-border)]";
       case "STARTING":
+      case "PROVISIONING":
       case "BUSY":
         return "bg-[var(--status-warning-bg)] text-[var(--status-warning-text)] border-[var(--status-warning-border)]";
       case "CRASH_LOOP":

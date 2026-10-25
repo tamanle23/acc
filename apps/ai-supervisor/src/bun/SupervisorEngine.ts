@@ -298,6 +298,10 @@ export class SupervisorEngine {
 
       this.processes.set("worker", proc);
       state.pid = proc.pid;
+      if (proc.pid && proc.pid > 0) {
+        state.status = "RUNNING";
+        this.emitChange();
+      }
     } catch (err: any) {
       logManager.log("worker", `Failed to spawn Worker: ${err.message}`);
       state.status = "CRASH_LOOP";
@@ -373,7 +377,7 @@ export class SupervisorEngine {
         this.emitChange();
       } else if (
         serviceName === "worker" &&
-        (text.includes("Daemon ready") || text.includes("Listening for jobs"))
+        (text.includes("Daemon ready") || text.includes("Listening for jobs") || text.includes("Worker SSE telemetry server listening") || text.includes("Started simulated sandbox poller") || text.includes("Registered TaskWorkerFactory"))
       ) {
         state.status = "RUNNING";
         state.crashCount = 0;

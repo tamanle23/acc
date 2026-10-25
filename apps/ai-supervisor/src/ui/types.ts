@@ -1,5 +1,6 @@
 export type ServiceStatus =
   | "STOPPED"
+  | "PROVISIONING"
   | "STARTING"
   | "RUNNING"
   | "BUSY"
