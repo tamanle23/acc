@@ -1,5 +1,5 @@
 import { type Row } from '@tanstack/react-table'
-import { MoreHorizontal, Trash2, UserPen } from 'lucide-react'
+import { MoreHorizontal, Trash2, UserPen, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -31,16 +31,27 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <span className='sr-only'>Actions for user {row.original.username}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-[160px]'>
+        <DropdownMenuContent align='end' className='w-[190px]'>
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(row.original)
               setOpen('edit')
             }}
           >
-            Edit
+            Edit Profile
             <DropdownMenuShortcut>
               <UserPen size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(row.original)
+              setOpen('delegate')
+            }}
+          >
+            Delegate Permissions
+            <DropdownMenuShortcut>
+              <KeyRound size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

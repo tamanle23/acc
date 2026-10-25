@@ -13,6 +13,13 @@ const userRoleSchema = z.union([
   z.literal('admin'),
   z.literal('cashier'),
   z.literal('manager'),
+  z.literal('ROLE_WORKSPACE_OWNER'),
+  z.literal('ROLE_STANDARD_MEMBER'),
+  z.literal('ROLE_COMPLIANCE_OFFICER'),
+  z.literal('ROLE_INTEGRATION_SVC'),
+  z.literal('ROLE_SYSTEM_ROOT'),
+  z.literal('ROLE_SYSTEM_SUPPORT'),
+  z.string(),
 ])
 
 const _userSchema = z.object({
@@ -24,6 +31,8 @@ const _userSchema = z.object({
   phoneNumber: z.string(),
   status: userStatusSchema,
   role: userRoleSchema,
+  tenantId: z.string().optional(),
+  roles: z.array(z.string()).optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 })

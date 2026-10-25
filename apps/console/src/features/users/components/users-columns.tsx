@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { LongText } from '@/components/long-text'
+import { Shield } from 'lucide-react'
 import { callTypes, roles } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -81,19 +82,22 @@ export const usersColumns: ColumnDef<User>[] = [
       <DataTableColumnHeader column={column} title='Role' />
     ),
     cell: ({ row }) => {
-      const { role } = row.original
-      const userType = roles.find(({ value }) => value === role)
+      const { role, roles: userRoles } = row.original
+      const displayRole = (userRoles && userRoles.length > 0) ? userRoles[0] : role
+      const userType = roles.find(({ value }) => value === displayRole || value.toLowerCase() === displayRole?.toLowerCase())
 
-      if (!userType) {
-        return null
-      }
+      const IconComponent = userType?.icon || Shield
+      const label = userType?.label || displayRole?.replace(/^ROLE_/, '').replace(/_/g, ' ') || 'Member'
 
       return (
         <div className='flex items-center gap-x-2'>
-          {userType.icon && (
-            <userType.icon size={16} className='text-muted-foreground' />
+          <IconComponent size={16} className='text-muted-foreground shrink-0' />
+          <span className='text-sm capitalize'>{label}</span>
+          {userRoles && userRoles.length > 1 && (
+            <Badge variant="outline" className="text-[10px] font-mono px-1 py-0 h-4">
+              +{userRoles.length - 1}
+            </Badge>
           )}
-          <span className='text-sm capitalize'>{row.getValue('role')}</span>
         </div>
       )
     },

@@ -17,10 +17,13 @@ import {
   DataTablePagination,
   DataTableToolbar,
 } from '@/components/data-table'
+import { Button } from '@/components/ui/button'
+import { UserPlus, Users as UsersIcon } from 'lucide-react'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
+import { useUsers } from './users-provider'
 
 type DataTableProps = {
   data: User[]
@@ -29,6 +32,7 @@ type DataTableProps = {
 }
 
 export function UsersTable({ data, search, navigate }: DataTableProps) {
+  const { setOpen } = useUsers()
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -112,8 +116,33 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
           },
         ]}
       />
-      <DataTable table={table} showRowIndex showRowSelection/>
-      <DataTablePagination table={table} className='mt-auto' />
+      <div className="rounded-2xl overflow-hidden border border-white/20 dark:border-white/10 shadow-sm bg-white/50 dark:bg-slate-950/50 backdrop-blur-md">
+        <DataTable
+          table={table}
+          showRowIndex
+          showRowSelection
+          emptyState={
+            <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+              <UsersIcon className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-base font-semibold text-foreground">No tenant users found</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                No team members match your current filter criteria or none have been invited yet.
+              </p>
+              <Button
+                size="sm"
+                onClick={() => setOpen('add')}
+                className="mt-4 gap-1.5"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>Add Member</span>
+              </Button>
+            </div>
+          }
+        />
+        <div className="p-3 border-t border-white/10">
+          <DataTablePagination table={table} />
+        </div>
+      </div>
       <DataTableBulkActions table={table} />
     </div>
   )

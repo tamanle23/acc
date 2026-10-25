@@ -1,6 +1,7 @@
 import type { SandboxRouteHandler, SandboxRequest } from '../types';
 import { useSandboxStore } from '../store/sandbox-store';
 import { createMockJwt } from './auth-sandbox-handler';
+import { usersSandboxRepo } from './users-sandbox-handler';
 
 export interface SandboxFleetTenant {
   tenantId: string;
@@ -589,9 +590,33 @@ class MockFleetRepository {
     reason: string
   ): { userId: string; tenantId: string; assignedRoles: string[]; activeOverrides: any[]; delegatedBy: string; reason: string } {
     const user = this.users.find((u) => u.userId === userId || u.username === userId);
-    if (!user) throw new Error(`User '${userId}' not found`);
+    if (!user) {
+      // Check if user exists in tenant users sandbox repository
+      const tenantUser = usersSandboxRepo.getById(userId, tenantId);
+      if (tenantUser) {
+        usersSandboxRepo.update(userId, {
+          role: roles[0] || tenantUser.role,
+          roles: roles,
+        }, tenantId);
+        return {
+          userId,
+          tenantId,
+          assignedRoles: roles,
+          activeOverrides: permissionOverrides || [],
+          delegatedBy: 'admin',
+          reason,
+        };
+      }
+      throw new Error(`User '${userId}' not found`);
+    }
 
     user.roles = roles;
+    // Also sync to usersSandboxRepo
+    usersSandboxRepo.update(user.userId, {
+      role: roles[0] || (user.roles && user.roles[0]) || 'manager',
+      roles: roles,
+    }, tenantId);
+
     return {
       userId: user.userId,
       tenantId,
