@@ -1,8 +1,9 @@
 import { ServiceCard } from "./ServiceCard";
-import type { ServiceMap } from "../types";
+import type { ServiceMap, FleetTelemetrySnapshot } from "../types";
 
 interface FleetGridProps {
   services: ServiceMap | undefined;
+  telemetry: FleetTelemetrySnapshot | null;
   isActionPending: boolean;
   onControlService: (name: string, action: "start" | "stop" | "restart") => void;
   onPurgeVram: () => void;
@@ -22,6 +23,10 @@ export function FleetGrid(props: FleetGridProps) {
     );
   };
 
+  const getServiceTelemetry = (name: string) => {
+    return props.telemetry?.services?.[name];
+  };
+
   return (
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
       {/* 1. Python Backend (Unified TTS & LLM) */}
@@ -29,6 +34,7 @@ export function FleetGrid(props: FleetGridProps) {
         displayName="Python AI Backend"
         description="Unified TTS (Kokoro & VieNeu v3 Turbo) & LLM generation"
         service={getService("python-backend")}
+        telemetry={getServiceTelemetry("python-backend")}
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("python-backend", action)}
         customAction={{
@@ -42,6 +48,7 @@ export function FleetGrid(props: FleetGridProps) {
         displayName="Worker Daemon"
         description="Multiple purposes worker host"
         service={getService("worker")}
+        telemetry={getServiceTelemetry("worker")}
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("worker", action)}
       />
@@ -51,6 +58,7 @@ export function FleetGrid(props: FleetGridProps) {
         displayName="Studio NLE"
         description="Non-linear video editor web client interface"
         service={getService("studio")}
+        telemetry={getServiceTelemetry("studio")}
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("studio", action)}
         customAction={{

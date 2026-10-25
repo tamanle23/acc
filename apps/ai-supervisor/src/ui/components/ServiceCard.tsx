@@ -6,6 +6,11 @@ interface ServiceCardProps {
   displayName: string;
   description: string;
   isActionPending: boolean;
+  telemetry?: {
+    cpuPercent?: number;
+    memoryRssMb?: number;
+    domain?: any;
+  };
   onControl: (action: "start" | "stop" | "restart") => void;
   onViewLogs?: () => void;
   customAction?: {
@@ -69,12 +74,16 @@ export function ServiceCard(props: ServiceCardProps) {
 
         <div class="grid grid-cols-3 gap-2 py-3 my-2 text-xs border-y border-[var(--border-subtle)] text-[var(--text-muted)]">
           <div>
-            <span class="text-[var(--text-muted)] block text-[11px]">Port</span>
-            <span class="font-mono font-medium text-[var(--text-primary)]">{props.service.port ?? "--"}</span>
+            <span class="text-[var(--text-muted)] block text-[11px]">Port / PID</span>
+            <span class="font-mono font-medium text-[var(--text-primary)]">
+              {props.service.port ? `:${props.service.port}` : "--"}{props.service.pid ? ` (${props.service.pid})` : ""}
+            </span>
           </div>
           <div>
-            <span class="text-[var(--text-muted)] block text-[11px]">PID</span>
-            <span class="font-mono font-medium text-[var(--text-primary)]">{props.service.pid ?? "--"}</span>
+            <span class="text-[var(--text-muted)] block text-[11px]">CPU / RSS</span>
+            <span class="font-mono font-medium text-[var(--text-primary)]">
+              {props.telemetry?.cpuPercent !== undefined ? `${props.telemetry.cpuPercent.toFixed(1)}%` : "0%"} / {props.telemetry?.memoryRssMb ?? 0}MB
+            </span>
           </div>
           <div>
             <span class="text-[var(--text-muted)] block text-[11px]">Uptime</span>

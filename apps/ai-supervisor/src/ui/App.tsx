@@ -85,6 +85,7 @@ export function App() {
         {/* 3. Supervised Fleet Grid */}
         <FleetGrid
           services={store.status()?.services}
+          telemetry={store.telemetry()}
           isActionPending={store.isActionPending()}
           onControlService={(name, action) => store.controlService(name, action)}
           onPurgeVram={() => store.purgeVram()}

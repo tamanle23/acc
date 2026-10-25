@@ -1,30 +1,36 @@
 import { Show } from "solid-js";
 import { Progress, Tooltip } from "@ark-ui/solid";
 import { Cpu, HardDrive, Layers, Microchip, Activity } from "lucide-solid";
-import type { HardwareProfile, ServiceTelemetryStream } from "../types";
+import type { HardwareProfile, FleetTelemetrySnapshot } from "../types";
 
 interface TelemetryGridProps {
   profile: HardwareProfile | undefined;
-  telemetry: ServiceTelemetryStream | undefined;
+  telemetry: FleetTelemetrySnapshot | null;
   isLoading: boolean;
 }
 
 export function TelemetryGrid(props: TelemetryGridProps) {
   const ramMetrics = () => {
     const sys = props.telemetry?.system;
-    if (sys && sys.totalMemoryBytes > 0) {
-      const totalGb = (sys.totalMemoryBytes / (1024 * 1024 * 1024)).toFixed(1);
-      const freeGb = (sys.freeMemoryBytes / (1024 * 1024 * 1024)).toFixed(1);
-      const usedGb = ((sys.totalMemoryBytes - sys.freeMemoryBytes) / (1024 * 1024 * 1024)).toFixed(1);
-      const pctUsed = Math.min(100, Math.round(((sys.totalMemoryBytes - sys.freeMemoryBytes) / sys.totalMemoryBytes) * 100));
+    if (sys && sys.totalMemoryMb > 0) {
+      const totalGb = (sys.totalMemoryMb / 1024).toFixed(1);
+      const freeGb = (sys.freeMemoryMb / 1024).toFixed(1);
+      const usedGb = ((sys.totalMemoryMb - sys.freeMemoryMb) / 1024).toFixed(1);
+      const pctUsed = Math.min(
+        100,
+        Math.round(((sys.totalMemoryMb - sys.freeMemoryMb) / sys.totalMemoryMb) * 100)
+      );
       return { totalGb, freeGb, usedGb, pctUsed };
     }
-    const prof = props.profile?.memory;
-    if (prof) {
-      const totalGb = (prof.totalBytes / (1024 * 1024 * 1024)).toFixed(1);
-      const freeGb = (prof.availableBytes / (1024 * 1024 * 1024)).toFixed(1);
-      const usedGb = ((prof.totalBytes - prof.availableBytes) / (1024 * 1024 * 1024)).toFixed(1);
-      const pctUsed = Math.min(100, Math.round(((prof.totalBytes - prof.availableBytes) / prof.totalBytes) * 100));
+    const prof = props.profile;
+    if (prof && prof.totalSystemRamBytes > 0) {
+      const totalGb = (prof.totalSystemRamBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const freeGb = (prof.freeSystemRamBytes / (1024 * 1024 * 1024)).toFixed(1);
+      const usedGb = ((prof.totalSystemRamBytes - prof.freeSystemRamBytes) / (1024 * 1024 * 1024)).toFixed(1);
+      const pctUsed = Math.min(
+        100,
+        Math.round(((prof.totalSystemRamBytes - prof.freeSystemRamBytes) / prof.totalSystemRamBytes) * 100)
+      );
       return { totalGb, freeGb, usedGb, pctUsed };
     }
     return { totalGb: "0.0", freeGb: "0.0", usedGb: "0.0", pctUsed: 0 };
@@ -104,8 +110,8 @@ export function TelemetryGrid(props: TelemetryGridProps) {
             fallback={<div class="h-6 w-3/4 bg-[var(--border-subtle)] rounded animate-pulse" />}
           >
             <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-sm text-[var(--text-primary)] truncate" title={props.profile?.gpu?.model || "Compute Host"}>
-                {props.profile?.gpu?.model || "Compute Host"}
+              <span class="font-bold text-sm text-[var(--text-primary)] truncate" title={props.profile?.gpu?.name || "Compute Host"}>
+                {props.profile?.gpu?.name || "Compute Host"}
               </span>
               <Show when={props.profile?.gpu?.totalVramBytes && props.profile.gpu.totalVramBytes > 0}>
                 <span class="text-[11px] font-mono font-medium px-1.5 py-0.5 rounded bg-[var(--accent-subtle)] text-[var(--accent-primary)] border border-[var(--border-focus)]/30 shrink-0">
