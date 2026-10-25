@@ -1,17 +1,80 @@
 {
-  "files": [],
-  "references": [
-    {
-      "path": "./apps/desktop-console"
-    },
-    {
-      "path": "./apps/backend"
-    },
-    {
-      "path": "./apps/console"
-    },
-    {
-      "path": "./packages/typescript-config"
+  "compilerOptions": {
+    "lib": [
+      "ESNext"
+    ],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "types": [
+      "bun",
+      "node"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "paths": {
+      "@acc/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@acc/core/*": [
+        "./packages/core/src/*"
+      ],
+      "@acc/core/isomorphic": [
+        "./packages/core/src/isomorphic/index.ts"
+      ],
+      "@acc/core/native": [
+        "./packages/core/src/native/index.ts"
+      ],
+      "@acc/core-isomorphic": [
+        "./packages/core-isomorphic/src/index.ts"
+      ],
+      "@acc/core-isomorphic/*": [
+        "./packages/core-isomorphic/src/*"
+      ],
+      "@acc/core-web": [
+        "./packages/core-web/src/index.ts"
+      ],
+      "@acc/core-web/*": [
+        "./packages/core-web/src/*"
+      ],
+      "@acc/ir": [
+        "./packages/ir/src/index.ts"
+      ],
+      "@acc/ir/*": [
+        "./packages/ir/src/*"
+      ],
+      "@acc/proto": [
+        "./packages/proto/src/index.ts"
+      ],
+      "@acc/proto/*": [
+        "./packages/proto/src/*"
+      ],
+      "@acc/exporters": [
+        "./packages/exporters/src/index.ts"
+      ],
+      "@acc/exporters/*": [
+        "./packages/exporters/src/*"
+      ],
+      "@acc/effect-engines": [
+        "./packages/effect-engines/src/index.ts"
+      ],
+      "@acc/effect-engines/*": [
+        "./packages/effect-engines/src/*"
+      ],
+      "@acc/cli": [
+        "./apps/cli/src/index.ts"
+      ],
+      "@acc/cli/*": [
+        "./apps/cli/src/*"
+      ],
+      "@acc/legacy-story-renderer": [
+        "./apps/legacy-story-renderer/src/index.ts"
+      ],
+      "@acc/legacy-story-renderer/*": [
+        "./apps/legacy-story-renderer/src/*"
+      ]
     }
-  ]
+  }
 }
