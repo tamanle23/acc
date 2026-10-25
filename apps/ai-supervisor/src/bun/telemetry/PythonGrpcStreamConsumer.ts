@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
+import { findRepoRoot } from "../SupervisorEngine.js";
 import { telemetryBroker, type PythonBackendDomainTelemetry, type SidecarTelemetry } from "./TelemetryEventBroker.js";
 
 /**
@@ -26,8 +27,9 @@ export class PythonGrpcStreamConsumer {
     private readonly host: string = "127.0.0.1",
     private readonly port: number = 50051
   ) {
+    const root = findRepoRoot(import.meta.dir);
     this.protoPath = path.resolve(
-      process.cwd(),
+      root,
       "packages/proto/proto/acc/v1/telemetry.proto"
     );
   }

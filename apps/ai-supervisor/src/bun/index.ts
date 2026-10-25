@@ -5,7 +5,7 @@ import { configStore } from "./configStore.js";
 import { findAvailablePort } from "./portScanner.js";
 import { HardwareProfiler } from "./HardwareProfiler.js";
 import { logManager } from "./LogManager.js";
-import { supervisorEngine } from "./SupervisorEngine.js";
+import { supervisorEngine, findRepoRoot } from "./SupervisorEngine.js";
 import { updateManager } from "./UpdateManager.js";
 import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
 import { NativeTrayBridge } from "./NativeTrayBridge.js";
@@ -177,7 +177,8 @@ async function main() {
       if (url.pathname === "/api/tts/test" && req.method === "POST") {
         try {
           const body = await req.json();
-          const protoPath = path.resolve(process.cwd(), "packages/proto/proto/acc/v1/tts.proto");
+          const repoRoot = findRepoRoot(import.meta.dir);
+          const protoPath = path.resolve(repoRoot, "packages/proto/proto/acc/v1/tts.proto");
           const protoLoader = await import("@grpc/proto-loader");
           const grpc = await import("@grpc/grpc-js");
 
@@ -187,7 +188,7 @@ async function main() {
             enums: String,
             defaults: true,
             oneofs: true,
-            includeDirs: [path.resolve(process.cwd(), "packages/proto/proto/acc/v1")],
+            includeDirs: [path.resolve(repoRoot, "packages/proto/proto/acc/v1")],
           });
           const proto = grpc.loadPackageDefinition(packageDefinition) as any;
           const TTSService = proto.acc?.v1?.TTSService;
