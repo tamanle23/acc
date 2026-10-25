@@ -48,7 +48,8 @@ async function buildUI() {
   // 1. Bundle JavaScript in-memory via Bun.build with local Solid plugin
   const buildResult = await Bun.build({
     entrypoints: [path.join(srcUiDir, "index.tsx")],
-    minify: true,
+    minify: false,
+    sourcemap: "inline",
     target: "browser",
     plugins: [solidPlugin],
     define: {

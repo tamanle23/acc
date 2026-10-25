@@ -42,7 +42,13 @@ class WebWindowController: NSObject, NSWindowDelegate {
         // Disable disk caching for local dev/supervisor webview to guarantee immediate updates
         config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
 
+        // Enable Safari Web Inspector / DevTools for debugging
+        config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+
         webView = WKWebView(frame: rect, configuration: config)
+        if #available(macOS 13.3, *) {
+            webView.isInspectable = true
+        }
         webView.autoresizingMask = [.width, .height]
         window.contentView = webView
 

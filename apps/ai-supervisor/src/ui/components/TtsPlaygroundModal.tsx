@@ -243,9 +243,10 @@ export function TtsPlaygroundModal(props: TtsPlaygroundModalProps) {
                     <Slider.Track class="bg-[var(--border-subtle)] relative grow rounded-full h-2">
                       <Slider.Range class="absolute bg-[var(--accent-primary)] rounded-full h-full" />
                     </Slider.Track>
-                    <Slider.Thumb index={0} class="block w-4 h-4 bg-white border-2 border-[var(--accent-primary)] rounded-full shadow-md focus:outline-none" />
+                    <Slider.Thumb index={0} class="block w-4 h-4 bg-white border-2 border-[var(--accent-primary)] rounded-full shadow-md focus:outline-none">
+                      <Slider.HiddenInput />
+                    </Slider.Thumb>
                   </Slider.Control>
-                  <Slider.HiddenInput />
                 </Slider.Root>
               </div>
             </div>
