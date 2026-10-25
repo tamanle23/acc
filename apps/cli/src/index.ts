@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import fs from 'fs';
 import path from 'path';
+import { parseArgs } from 'node:util';
 import {
   AmbientStreamPipeline,
   ScraperEngine,
@@ -48,132 +49,127 @@ export interface CliOptions {
   mediaEngine?: 'bun-ffi' | 'fluent-ffmpeg' | 'mediabunny-server' | 'mediabunny-client';
 }
 
+const KNOWN_COMMANDS = new Set<CliCommand>([
+  'run',
+  'stream',
+  'serve',
+  'list',
+  'overlay',
+  'sfx',
+  'worker',
+  'ir-render',
+  'studio',
+  'help',
+]);
+
 export function parseCliArgs(args: string[]): CliOptions {
-  const options: CliOptions = {};
   if (!args || args.length === 0) {
-    options.command = 'help';
-    return options;
+    return { command: 'help' };
   }
 
   const firstArg = args[0].toLowerCase();
-  let startIndex = 0;
+  if (firstArg === '-h' || firstArg === '--help' || firstArg === 'help') {
+    return { command: 'help' };
+  }
 
-  if (
-    [
-      'run',
-      'stream',
-      'serve',
-      'list',
-      'overlay',
-      'sfx',
-      'worker',
-      'ir-render',
-      'studio',
-      'help',
-      '--help',
-      '-h',
-    ].includes(firstArg)
+  let command: CliCommand | undefined;
+  let rawArgs = args;
+  let defaultPipelineId: string | undefined;
+
+  if (KNOWN_COMMANDS.has(firstArg as CliCommand)) {
+    command = firstArg as CliCommand;
+    rawArgs = args.slice(1);
+  } else if (
+    fs.existsSync(args[0]) ||
+    args[0].startsWith('./') ||
+    args[0].startsWith('../') ||
+    args[0].includes('/') ||
+    args[0].includes('\\')
   ) {
-    if (firstArg === '--help' || firstArg === '-h') {
-      options.command = 'help';
-    } else {
-      options.command = firstArg as CliCommand;
-    }
-    startIndex = 1;
+    command = 'run';
+    defaultPipelineId = 'story';
+    rawArgs = ['-c', args[0], ...args.slice(1)];
   } else {
-    // If first argument is not a known command, check if it's a directory or config path
-    if (
-      fs.existsSync(args[0]) ||
-      args[0].startsWith('./') ||
-      args[0].startsWith('../') ||
-      args[0].includes('/') ||
-      args[0].includes('\\')
-    ) {
-      options.command = 'run';
-      options.pipelineId = 'story';
-      options.configPath = args[0];
-      startIndex = 1;
-    } else {
-      // Default to help if unrecognized
-      options.command = 'help';
-      return options;
-    }
+    return { command: 'help' };
   }
 
-  // Parse remaining arguments
-  for (let i = startIndex; i < args.length; i++) {
-    const arg = args[i];
+  try {
+    const { values, positionals } = parseArgs({
+      args: rawArgs,
+      options: {
+        config: { type: 'string', short: 'c' },
+        input: { type: 'string', short: 'i' },
+        out: { type: 'string', short: 'o' },
+        output: { type: 'string' },
+        format: { type: 'string', short: 'f' },
+        container: { type: 'string' },
+        exporters: { type: 'string', short: 'e' },
+        rtmp: { type: 'string', short: 'r' },
+        port: { type: 'string', short: 'p' },
+        duration: { type: 'string', short: 'd' },
+        'dry-run': { type: 'boolean', short: 'n' },
+        'chunk-start': { type: 'string' },
+        'chunk-end': { type: 'string' },
+        concurrency: { type: 'string', short: 'j' },
+        threads: { type: 'string' },
+        'conductor-url': { type: 'string', short: 'w' },
+        sandbox: { type: 'boolean', short: 's' },
+        traceparent: { type: 'string' },
+        'trace-parent': { type: 'string' },
+        engine: { type: 'string' },
+        'media-engine': { type: 'string' },
+        effect: { type: 'string' },
+        variant: { type: 'string', short: 'v' },
+        'sub-variant': { type: 'string' },
+        composite: { type: 'string' },
+        'custom-prompt': { type: 'string' },
+        'ai-model': { type: 'string' },
+        fps: { type: 'string' },
+        width: { type: 'string' },
+        height: { type: 'string' },
+        help: { type: 'boolean', short: 'h' },
+      },
+      allowPositionals: true,
+      strict: true,
+    });
 
-    if (arg === '-w' || arg === '--conductor-url') {
-      options.conductorUrl = args[++i];
-      continue;
+    if (values.help) {
+      return { command: 'help' };
     }
-    if (arg === '-s' || arg === '--sandbox') {
-      options.conductorSandbox = true;
-      continue;
-    }
-    if (arg === '-c' || arg === '--config' || arg === '-i' || arg === '--input') {
-      options.configPath = args[++i];
-      continue;
-    }
-    if (arg === '-e' || arg === '--exporters') {
-      options.exporters = (args[++i] || '').split(',').map((s) => s.trim().toLowerCase());
-      continue;
-    }
-    if (arg === '-o' || arg === '--out' || arg === '--output') {
-      options.outDir = args[++i];
-      continue;
-    }
-    if (arg === '-f' || arg === '--format' || arg === '--container') {
-      options.format = (args[++i] || '').trim().toLowerCase();
-      continue;
-    }
-    if (arg === '-r' || arg === '--rtmp') {
-      options.rtmpUrl = args[++i];
-      continue;
-    }
-    if (arg === '-p' || arg === '--port') {
-      options.port = parseInt(args[++i] || '3000', 10);
-      continue;
-    }
-    if (arg === '-d' || arg === '--duration') {
-      options.duration = parseInt(args[++i] || '0', 10);
-      continue;
-    }
-    if (arg === '-n' || arg === '--dry-run') {
-      options.dryRun = true;
-      continue;
-    }
-    if (arg === '--chunk-start') {
-      options.chunkStart = parseInt(args[++i] || '0', 10);
-      continue;
-    }
-    if (arg === '--chunk-end') {
-      options.chunkEnd = parseInt(args[++i] || '0', 10);
-      continue;
-    }
-    if (arg === '-j' || arg === '--concurrency' || arg === '--threads') {
-      options.concurrency = parseInt(args[++i] || '1', 10);
-      continue;
-    }
-    if (arg === '--traceparent' || arg === '--trace-parent') {
-      options.traceparent = args[++i];
-      continue;
-    }
-    if (arg === '--engine' || arg === '--media-engine') {
-      options.mediaEngine = args[++i] as any;
-      continue;
-    }
-    if (arg === '-h' || arg === '--help') {
-      options.command = 'help';
-      break;
-    }
-    if (!options.pipelineId && (options.command === 'run' || options.command === 'stream')) {
-      options.pipelineId = arg.trim().toLowerCase();
-    }
+
+    const pipelineId = positionals[0]?.toLowerCase() || defaultPipelineId;
+    const configPath = (values.config || values.input) as string | undefined;
+    const outDir = (values.out || values.output) as string | undefined;
+    const format = ((values.format || values.container) as string | undefined)?.toLowerCase();
+    const mediaEngine = ((values.engine || values['media-engine']) as any) || undefined;
+    const traceparent = (values.traceparent || values['trace-parent']) as string | undefined;
+    const concurrencyStr = (values.concurrency || values.threads) as string | undefined;
+
+    return {
+      command,
+      pipelineId,
+      configPath,
+      outDir,
+      format,
+      exporters: values.exporters
+        ? (values.exporters as string).split(',').map((s) => s.trim().toLowerCase())
+        : undefined,
+      rtmpUrl: values.rtmp as string | undefined,
+      port: values.port ? parseInt(values.port as string, 10) : undefined,
+      duration: values.duration ? parseInt(values.duration as string, 10) : undefined,
+      dryRun: Boolean(values['dry-run']),
+      chunkStart: values['chunk-start'] ? parseInt(values['chunk-start'] as string, 10) : undefined,
+      chunkEnd: values['chunk-end'] ? parseInt(values['chunk-end'] as string, 10) : undefined,
+      concurrency: concurrencyStr ? parseInt(concurrencyStr, 10) : undefined,
+      conductorUrl: values['conductor-url'] as string | undefined,
+      conductorSandbox: Boolean(values.sandbox),
+      traceparent,
+      mediaEngine,
+    };
+  } catch (error: any) {
+    Logger.error('ACC-CLI', `Invalid CLI argument: ${error.message}`);
+    return { command: 'help' };
   }
-
-  return options;
 }
 
 export function printHelp(): void {
