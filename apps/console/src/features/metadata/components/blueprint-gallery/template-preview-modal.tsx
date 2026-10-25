@@ -25,11 +25,83 @@ import {
   Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { ColumnDef } from '@tanstack/react-table';
+import {
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { AttributeDefinitionDto } from '../../api/types';
 
 interface Props {
   blueprintId: string | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+function BlueprintAttributesDataTable({ attributes }: { attributes: AttributeDefinitionDto[] }) {
+  const columns = React.useMemo<ColumnDef<AttributeDefinitionDto>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Attribute Name',
+        cell: ({ row }) => (
+          <span className="font-medium text-foreground text-xs">{row.original.name}</span>
+        ),
+      },
+      {
+        accessorKey: 'systemName',
+        header: 'System Name',
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-muted-foreground">{row.original.systemName}</span>
+        ),
+      },
+      {
+        accessorKey: 'dataType',
+        header: 'Data Type',
+        cell: ({ row }) => (
+          <Badge variant="secondary" className="text-[10px] font-mono">
+            {row.original.dataType}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: 'uiComponent',
+        header: 'UI Widget',
+        cell: ({ row }) => (
+          <span className="text-muted-foreground text-xs">{row.original.uiComponent}</span>
+        ),
+      },
+      {
+        accessorKey: 'isRequired',
+        header: () => <div className="text-center">Required</div>,
+        cell: ({ row }) => (
+          <div className="text-center text-xs">
+            {row.original.isRequired ? (
+              <span className="text-amber-500 font-bold">Yes</span>
+            ) : (
+              <span className="text-muted-foreground">Optional</span>
+            )}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: attributes,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <DataTable
+      showRowIndex
+      table={table}
+      noResultsMessage="No attributes defined for this model."
+    />
+  );
 }
 
 export const TemplatePreviewModal: React.FC<Props> = ({
@@ -149,42 +221,7 @@ export const TemplatePreviewModal: React.FC<Props> = ({
                       </code>
                     </div>
 
-                    <div className="rounded-xl border border-white/20 overflow-hidden text-xs">
-                      <table className="w-full text-left">
-                        <thead className="bg-muted/50 font-semibold border-b border-white/20 text-muted-foreground">
-                          <tr>
-                            <th className="p-2.5">Attribute Name</th>
-                            <th className="p-2.5">System Name</th>
-                            <th className="p-2.5">Data Type</th>
-                            <th className="p-2.5">UI Widget</th>
-                            <th className="p-2.5 text-center">Required</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10">
-                          {activeEntity.attributes.map((attr) => (
-                            <tr key={attr.systemName} className="hover:bg-white/30 dark:hover:bg-white/5">
-                              <td className="p-2.5 font-medium text-foreground">{attr.name}</td>
-                              <td className="p-2.5 font-mono text-[11px] text-muted-foreground">
-                                {attr.systemName}
-                              </td>
-                              <td className="p-2.5">
-                                <Badge variant="secondary" className="text-[10px] font-mono">
-                                  {attr.dataType}
-                                </Badge>
-                              </td>
-                              <td className="p-2.5 text-muted-foreground">{attr.uiComponent}</td>
-                              <td className="p-2.5 text-center">
-                                {attr.isRequired ? (
-                                  <span className="text-amber-500 font-bold">Yes</span>
-                                ) : (
-                                  <span className="text-muted-foreground">Optional</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <BlueprintAttributesDataTable attributes={activeEntity.attributes} />
                   </div>
                 ) : (
                   <div className="p-8 text-center text-xs text-muted-foreground">

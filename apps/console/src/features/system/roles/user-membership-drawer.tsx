@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  type SortingState,
+} from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +33,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import {
-  Users,
   Search,
   Lock,
   Unlock,
@@ -42,24 +41,21 @@ import {
   RefreshCw,
   Mail,
   Building,
-  Eye,
   KeyRound,
   ShieldCheck,
   Calendar,
   Clock,
   Copy,
   LogOut,
-  UserCheck,
-  Fingerprint,
-  CheckCircle2,
-  Globe,
-  Building2,
 } from 'lucide-react';
 import {
   useGlobalUsers,
   useLockUser,
   type GlobalUserListItem,
 } from '../api/use-system-fleet';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTablePagination } from '@/components/data-table/pagination';
+import { getUserMembershipColumns } from './user-membership-columns';
 import { TenantRoleDelegationModal } from './tenant-role-delegation-modal';
 import { toast } from 'sonner';
 
@@ -70,6 +66,7 @@ export interface UserMembershipDrawerProps {
 export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerProps = {}) {
   const [search, setSearch] = useState('');
   const [tenantFilter, setTenantFilter] = useState(initialTenantId || 'ALL');
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Inspector Sheet state
   const [inspectedUser, setInspectedUser] = useState<GlobalUserListItem | null>(null);
@@ -134,6 +131,29 @@ export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerPr
     toast.info(`${label} copied to clipboard!`);
   };
 
+  const columns = useMemo(
+    () =>
+      getUserMembershipColumns({
+        onInspect: handleInspect,
+        onDelegate: handleOpenDelegation,
+        onOpenLockDialog: handleOpenLockDialog,
+      }),
+    []
+  );
+
+  const table = useReactTable({
+    data: users,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
   return (
     <div className="space-y-4">
       {/* Search & Filter Header */}
@@ -177,166 +197,20 @@ export function UserMembershipDrawer({ initialTenantId }: UserMembershipDrawerPr
         </Button>
       </div>
 
-      {/* Glass Users Table */}
-      <div className="rounded-xl border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-xl overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow>
-              <TableHead>User Account & Credentials</TableHead>
-              <TableHead>Assigned Tenant</TableHead>
-              <TableHead>RBAC Roles</TableHead>
-              <TableHead>Status & Telemetry</TableHead>
-              <TableHead className="text-end">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                  Searching cross-tenant global user directory...
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                  No users found matching query.
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((u) => {
-                const isCustodian = u.tenantId === 'SYSTEM';
-                return (
-                  <TableRow key={u.userId} className={isCustodian ? 'bg-primary/5' : 'hover:bg-muted/30'}>
-                    <TableCell>
-                      <div className="grid gap-0.5">
-                        <span className="font-semibold text-sm flex items-center gap-1.5">
-                          {u.displayName}
-                          {isCustodian && (
-                            <Badge variant="default" className="text-[10px] px-1 py-0 h-4">
-                              ROOT
-                            </Badge>
-                          )}
-                        </span>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="font-mono">{u.username}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                            {u.email}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
+      {/* Main Standardized DataTable */}
+      <DataTable
+        showRowIndex
+        table={table}
+        onRowClick={(user) => handleInspect(user)}
+        noResultsMessage={
+          isLoading
+            ? 'Searching cross-tenant global user directory...'
+            : 'No users found matching query.'
+        }
+      />
 
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 font-mono text-xs">
-                        <Badge
-                          variant="outline"
-                          className={
-                            isCustodian
-                              ? 'border-indigo-500/40 text-indigo-700 dark:text-indigo-400 bg-indigo-500/10'
-                              : 'border-emerald-500/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
-                          }
-                        >
-                          {isCustodian ? (
-                            <>
-                              <Globe className="h-2.5 w-2.5 mr-1" /> SYSTEM
-                            </>
-                          ) : (
-                            <>
-                              <Building2 className="h-2.5 w-2.5 mr-1" /> {u.tenantId}
-                            </>
-                          )}
-                        </Badge>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {u.roles.map((r) => (
-                          <Badge key={r} variant="outline" className="text-[10px] font-mono">
-                            {r.replace('ROLE_', '')}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={u.locked ? 'destructive' : 'secondary'}
-                          className="text-[10px] uppercase font-mono"
-                        >
-                          {u.locked ? 'LOCKED' : 'ACTIVE'}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] gap-1 text-sky-700 dark:text-sky-400 border-sky-500/30 bg-sky-500/10"
-                        >
-                          <Fingerprint className="h-2.5 w-2.5" /> FIDO2 Passkey
-                        </Badge>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-end">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleInspect(u)}
-                          className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                          title="Inspect user details and security telemetry"
-                          aria-label={`Inspect user ${u.username}`}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          <span>Inspect</span>
-                        </Button>
-
-                        {!isCustodian && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenDelegation(u)}
-                            className="h-7 text-xs gap-1 text-primary border-primary/30 hover:bg-primary/10"
-                            aria-label={`Delegate roles to user ${u.username}`}
-                          >
-                            <UserCheck className="h-3.5 w-3.5" />
-                            <span>Delegate</span>
-                          </Button>
-                        )}
-
-                        {!isCustodian ? (
-                          <Button
-                            size="sm"
-                            variant={u.locked ? 'outline' : 'destructive'}
-                            onClick={() => handleOpenLockDialog(u)}
-                            className="h-7 text-xs gap-1.5"
-                            aria-label={u.locked ? `Unlock account for user ${u.username}` : `Lockout user ${u.username}`}
-                          >
-                            {u.locked ? (
-                              <>
-                                <Unlock className="h-3.5 w-3.5" />
-                                Unlock
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="h-3.5 w-3.5" />
-                                Lockout
-                              </>
-                            )}
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic font-mono px-2">Sovereign Root</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Standardized DataTablePagination */}
+      <DataTablePagination table={table} />
 
       {/* Cross-Tenant User Inspector Drawer (Sheet) */}
       <Sheet open={inspectorOpen} onOpenChange={setInspectorOpen}>
