@@ -83,7 +83,10 @@ export function TelemetryGrid(props: TelemetryGridProps) {
   return (
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
       {/* 1. Hardware Accelerator & Tier */}
-      <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs flex flex-col justify-between transition-colors">
+      <div
+        class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
+        style={{ "box-shadow": "var(--card-shadow)" }}
+      >
         <div class="flex items-center justify-between text-[var(--text-muted)] mb-2">
           <span class="text-xs font-semibold uppercase tracking-wider">Hardware Accelerator</span>
           <Microchip class="w-4 h-4 text-[var(--accent-primary)]" />
@@ -124,7 +127,10 @@ export function TelemetryGrid(props: TelemetryGridProps) {
       </div>
 
       {/* 2. System RAM & Sidecar RSS Footprint */}
-      <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs flex flex-col justify-between transition-colors">
+      <div
+        class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
+        style={{ "box-shadow": "var(--card-shadow)" }}
+      >
         <div class="flex items-center justify-between text-[var(--text-muted)] mb-2">
           <span class="text-xs font-semibold uppercase tracking-wider">System RAM</span>
           <HardDrive class="w-4 h-4 text-emerald-400" />
@@ -163,7 +169,10 @@ export function TelemetryGrid(props: TelemetryGridProps) {
       </div>
 
       {/* 3. Neural VRAM & Model Cache */}
-      <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs flex flex-col justify-between transition-colors">
+      <div
+        class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
+        style={{ "box-shadow": "var(--card-shadow)" }}
+      >
         <div class="flex items-center justify-between text-[var(--text-muted)] mb-2">
           <span class="text-xs font-semibold uppercase tracking-wider">Neural VRAM & Models</span>
           <Layers class="w-4 h-4 text-[var(--accent-primary)]" />
@@ -202,7 +211,10 @@ export function TelemetryGrid(props: TelemetryGridProps) {
       </div>
 
       {/* 4. CPU Activity & Active Rendering Pipeline */}
-      <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs flex flex-col justify-between transition-colors">
+      <div
+        class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between transition-all"
+        style={{ "box-shadow": "var(--card-shadow)" }}
+      >
         <div class="flex items-center justify-between text-[var(--text-muted)] mb-2">
           <span class="text-xs font-semibold uppercase tracking-wider">CPU & Render Pipeline</span>
           <Cpu class="w-4 h-4 text-amber-400" />

@@ -48,7 +48,10 @@ export function ServiceCard(props: ServiceCardProps) {
   };
 
   return (
-    <div class="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs flex flex-col justify-between hover:border-[var(--border-focus)]/50 transition-colors">
+    <div
+      class="p-5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between hover:border-[var(--border-focus)]/60 transition-all"
+      style={{ "box-shadow": "var(--card-shadow)" }}
+    >
       <div>
         <div class="flex items-start justify-between gap-3 mb-2">
           <div>

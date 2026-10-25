@@ -40,7 +40,10 @@ export function ConsoleSection(props: ConsoleSectionProps) {
   };
 
   return (
-    <div class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-xs overflow-hidden my-6 transition-colors">
+    <div
+      class="rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] overflow-hidden my-6 transition-all"
+      style={{ "box-shadow": "var(--card-shadow)" }}
+    >
       <Tabs.Root
         value={props.activeService}
         onValueChange={(details) => {
