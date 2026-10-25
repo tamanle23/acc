@@ -15,17 +15,17 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard(props: ServiceCardProps) {
-  const statusColor = (status: ServiceStatus) => {
+  const statusClasses = (status: ServiceStatus) => {
     switch (status) {
       case "RUNNING":
       case "ADOPTED":
-        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+        return "bg-[var(--status-success-bg)] text-[var(--status-success-text)] border-[var(--status-success-border)]";
       case "STARTING":
       case "BUSY":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+        return "bg-[var(--status-warning-bg)] text-[var(--status-warning-text)] border-[var(--status-warning-border)]";
       case "CRASH_LOOP":
       case "UNHEALTHY":
-        return "bg-rose-500/20 text-rose-400 border-rose-500/30";
+        return "bg-[var(--status-error-bg)] text-[var(--status-error-text)] border-[var(--status-error-border)]";
       case "STOPPED":
       default:
         return "bg-[var(--bg-surface-elevated)] text-[var(--text-muted)] border-[var(--border-subtle)]";
@@ -58,7 +58,7 @@ export function ServiceCard(props: ServiceCardProps) {
             <h3 class="font-semibold text-[var(--text-primary)] text-base">{props.displayName}</h3>
             <p class="text-xs text-[var(--text-muted)] mt-0.5">{props.description}</p>
           </div>
-          <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${statusColor(props.service.status)}`}>
+          <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${statusClasses(props.service.status)}`}>
             {props.service.status}
           </span>
         </div>
@@ -79,7 +79,7 @@ export function ServiceCard(props: ServiceCardProps) {
         </div>
 
         {props.service.lastError && (
-          <div class="text-xs text-rose-400 bg-rose-950/30 p-2 rounded border border-rose-900/50 mb-3 truncate">
+          <div class="text-xs text-[var(--status-error-text)] bg-[var(--status-error-bg)] p-2 rounded border border-[var(--status-error-border)] mb-3 truncate">
             {props.service.lastError}
           </div>
         )}
@@ -89,18 +89,18 @@ export function ServiceCard(props: ServiceCardProps) {
         <button
           onClick={() => props.onControl("start")}
           disabled={isRunning() || props.isActionPending}
-          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-800/60 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--status-success-bg)] hover:brightness-110 text-[var(--status-success-text)] border border-[var(--status-success-border)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
         >
-          <Play class="w-3 h-3 text-emerald-400" />
+          <Play class="w-3 h-3 text-[var(--status-success-text)]" />
           Start
         </button>
 
         <button
           onClick={() => props.onControl("stop")}
           disabled={!isRunning() || props.isActionPending}
-          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--status-error-bg)] hover:brightness-110 text-[var(--status-error-text)] border border-[var(--status-error-border)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
         >
-          <Square class="w-3 h-3 text-rose-400" />
+          <Square class="w-3 h-3 text-[var(--status-error-text)]" />
           Stop
         </button>
 

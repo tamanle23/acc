@@ -29,10 +29,10 @@ export function HeaderBar(props: HeaderBarProps) {
 
   const trayBadgeStyle = () => {
     const s = status();
-    if (!s) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-    if (s.trayColor === "green") return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-    if (s.trayColor === "yellow") return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-    return "bg-rose-500/20 text-rose-400 border-rose-500/30";
+    if (!s) return "bg-[var(--status-warning-bg)] text-[var(--status-warning-text)] border-[var(--status-warning-border)]";
+    if (s.trayColor === "green") return "bg-[var(--status-success-bg)] text-[var(--status-success-text)] border-[var(--status-success-border)]";
+    if (s.trayColor === "yellow") return "bg-[var(--status-warning-bg)] text-[var(--status-warning-text)] border-[var(--status-warning-border)]";
+    return "bg-[var(--status-error-bg)] text-[var(--status-error-text)] border-[var(--status-error-border)]";
   };
 
   const trayLabel = () => {
@@ -50,67 +50,68 @@ export function HeaderBar(props: HeaderBarProps) {
   };
 
   return (
-    <header class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-[var(--border-subtle)] gap-4 transition-colors">
+    <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[var(--border-subtle)] gap-4 transition-colors">
       <div class="flex items-center gap-3">
-        <div class="p-2.5 rounded-xl bg-[var(--accent-subtle)] border border-[var(--border-focus)]/30 text-[var(--accent-primary)] shadow-inner transition-colors">
-          <Activity class="w-6 h-6 animate-pulse" />
+        <div class="p-2.5 rounded-xl bg-[var(--accent-subtle)] border border-[var(--border-focus)]/30 text-[var(--accent-primary)] shadow-xs">
+          <Activity class="w-6 h-6" />
         </div>
         <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-xl font-bold tracking-tight text-[var(--text-primary)]">ACC Control Plane</h1>
-            <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full border bg-[var(--accent-subtle)] text-[var(--accent-primary)] border-[var(--border-focus)]/30">
-              {tierBadgeText()}
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+              ACC AI-Supervisor
+            </h1>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-muted)]">
+              v1.0.0
             </span>
           </div>
-          <div class="flex items-center gap-2 mt-1">
-            <span class={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border ${trayBadgeStyle()}`}>
-              <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-current animate-ping" />
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="text-xs text-[var(--text-muted)]">
+              Hybrid Multi-Daemon Control Plane
+            </span>
+            <span class="text-[10px] text-[var(--text-muted)]">•</span>
+            <span class={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${trayBadgeStyle()}`}>
               {trayLabel()}
             </span>
-            <Show when={status()?.update?.state === "READY"}>
-              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                Update Ready (v{status()?.update?.targetVersion})
-              </span>
-            </Show>
           </div>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        {/* Preset Theme Switcher */}
+      <div class="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+        <Show when={status()?.hardwareProfile || (status() as any)?.profile}>
+          <div
+            class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-muted)]"
+            title="Active Hardware Acceleration Tier"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
+            <span class="font-mono text-[11px] font-semibold text-[var(--text-primary)]">{tierBadgeText()}</span>
+          </div>
+        </Show>
+
         <ThemeSwitcher themeStore={props.themeStore} />
 
         <button
           onClick={() => props.store.purgeVram()}
+          title="Force release inactive models & VRAM from GPU memory"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--status-error-bg)] hover:brightness-110 text-[var(--status-error-text)] border border-[var(--status-error-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           disabled={props.store.isActionPending()}
-          title="Evict loaded models and clear VRAM across fleet"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-800/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          <Flame class="w-3.5 h-3.5 text-rose-400" />
+          <Flame class="w-3.5 h-3.5 text-[var(--status-error-text)]" />
           Purge VRAM
         </button>
 
         <button
-          onClick={() => props.store.restartAll()}
-          disabled={props.store.isActionPending()}
+          onClick={() => props.store.refreshStatus()}
+          title="Refresh fleet telemetry & status"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          disabled={props.store.isLoading()}
         >
-          <RotateCw class="w-3.5 h-3.5" />
-          Restart Fleet
-        </button>
-
-        <button
-          onClick={() => props.store.checkUpdates()}
-          disabled={props.store.isActionPending()}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <Sparkles class="w-3.5 h-3.5 text-amber-400" />
-          Check Updates
+          <RotateCw class={`w-3.5 h-3.5 text-[var(--text-muted)] ${props.store.isLoading() ? "animate-spin" : ""}`} />
+          Refresh
         </button>
 
         <button
           onClick={props.onOpenSettings}
-          title="Control Plane Settings"
+          title="Supervisor & fleet settings"
           class="p-2 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors cursor-pointer"
         >
           <SettingsIcon class="w-4 h-4 text-[var(--text-muted)]" />
@@ -118,10 +119,11 @@ export function HeaderBar(props: HeaderBarProps) {
 
         <button
           onClick={handleOpenStudio}
-          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white shadow-sm transition-all cursor-pointer"
+          title="Launch Studio NLE in default browser"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white shadow-xs transition-all cursor-pointer"
         >
+          <span>Open Studio</span>
           <ExternalLink class="w-3.5 h-3.5" />
-          Open Studio
         </button>
       </div>
     </header>

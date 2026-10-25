@@ -28,14 +28,14 @@ export function App() {
             <div
               class={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border text-xs font-medium animate-in slide-in-from-top-2 duration-200 ${
                 toast().type === "error"
-                  ? "bg-rose-950/90 text-rose-200 border-rose-800"
+                  ? "bg-[var(--status-error-bg)] text-[var(--status-error-text)] border-[var(--status-error-border)]"
                   : toast().type === "success"
-                  ? "bg-emerald-950/90 text-emerald-200 border-emerald-800"
+                  ? "bg-[var(--status-success-bg)] text-[var(--status-success-text)] border-[var(--status-success-border)]"
                   : "bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border-[var(--border-subtle)]"
               }`}
             >
-              {toast().type === "error" && <AlertCircle class="w-4 h-4 text-rose-400" />}
-              {toast().type === "success" && <CheckCircle class="w-4 h-4 text-emerald-400" />}
+              {toast().type === "error" && <AlertCircle class="w-4 h-4 text-[var(--status-error-text)]" />}
+              {toast().type === "success" && <CheckCircle class="w-4 h-4 text-[var(--status-success-text)]" />}
               {toast().type === "info" && <Info class="w-4 h-4 text-[var(--accent-primary)]" />}
               <span>{toast().text}</span>
             </div>
@@ -44,14 +44,14 @@ export function App() {
 
         {/* Global Connection / Status Error Banner */}
         <Show when={store.error()}>
-          <div class="mb-4 p-3 rounded-xl bg-rose-950/40 border border-rose-800/80 flex items-center justify-between text-xs text-rose-300">
+          <div class="mb-4 p-3 rounded-xl bg-[var(--status-error-bg)] border border-[var(--status-error-border)] flex items-center justify-between text-xs text-[var(--status-error-text)]">
             <div class="flex items-center gap-2">
-              <AlertCircle class="w-4 h-4 text-rose-400" />
+              <AlertCircle class="w-4 h-4 text-[var(--status-error-text)]" />
               <span>Failed to sync with supervisor engine: {store.error()}</span>
             </div>
             <button
               onClick={() => store.refreshStatus()}
-              class="px-2.5 py-1 rounded bg-rose-900/60 hover:bg-rose-900 text-rose-100 cursor-pointer font-medium"
+              class="px-2.5 py-1 rounded bg-[var(--status-error-border)] hover:brightness-110 text-[var(--status-error-text)] font-semibold cursor-pointer"
             >
               Retry Sync
             </button>
