@@ -42,6 +42,15 @@ public class Role extends NamedModel {
                 })
   private Set<Permission> permissions;
 
+  @jakarta.persistence.Column(name = "role_scope", nullable = false)
+  private String roleScope;
+
+  @jakarta.persistence.Column(name = "min_plan_tier", nullable = false)
+  private String minPlanTier;
+
+  @jakarta.persistence.Column(name = "tenant_id", nullable = false)
+  private String tenantId;
+
   @JsonIgnore
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(name = Constants.TABLE_PREFIX + "userRole",

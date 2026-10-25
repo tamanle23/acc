@@ -42,15 +42,15 @@ describe('Sovereign Cockpit UI Components', () => {
 
   it('renders RbacMatrixGrid with permission matrix table and create role button', () => {
     renderWithClient(<RbacMatrixGrid />);
-    expect(screen.getByPlaceholderText(/search permissions/i)).toBeTruthy();
-    expect(screen.getByText(/permission atom/i)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /create custom role/i })).toBeTruthy();
+    expect(screen.getByPlaceholderText(/search 35 permission atoms/i)).toBeTruthy();
+    expect(screen.getByText(/permission atom & security plane/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /create role/i })).toBeTruthy();
   });
 
   it('renders UserMembershipDrawer with universal user directory and inspect action', () => {
     renderWithClient(<UserMembershipDrawer />);
     expect(screen.getByPlaceholderText(/search users by name/i)).toBeTruthy();
-    expect(screen.getByText(/emergency custody/i)).toBeTruthy();
+    expect(screen.getByText(/user account & credentials/i)).toBeTruthy();
   });
 
   it('renders AssumeTenantBar when assumed tenant session is active in localStorage', () => {

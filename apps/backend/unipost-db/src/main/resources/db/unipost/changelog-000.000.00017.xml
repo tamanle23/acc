@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <!-- 1. Evolve existing UNIPOST_IDENTITY_USERPERMISSION for Tenant-Scoped Ad-Hoc Overrides -->
+    <changeSet id="evolve-userpermission-table-17" author="antigravity">
+        <comment>Add tenant_id, is_granted, delegated_by_uid, and reason to existing USERPERMISSION table</comment>
+        <addColumn tableName="${table_prefix}USERPERMISSION">
+            <column name="tenant_id" type="VARCHAR(255)" defaultValue="SYSTEM">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_granted" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="delegated_by_uid" type="VARCHAR(255)"/>
+            <column name="reason" type="VARCHAR(500)"/>
+        </addColumn>
+
+        <sql dbms="postgresql">
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_userperm_tenant ON ${table_prefix}USERPERMISSION (user_uid, permission_uid, tenant_id);
+            CREATE INDEX IF NOT EXISTS idx_userperm_lookup ON ${table_prefix}USERPERMISSION (user_uid, tenant_id);
+        </sql>
+    </changeSet>
+
+    <!-- 2. Add tenant_id to UNIPOST_IDENTITY_ROLE -->
+    <changeSet id="add-tenant-id-to-role-17" author="antigravity">
+        <comment>Add tenant_id column to ROLE table to isolate custom tenant roles</comment>
+        <addColumn tableName="${table_prefix}ROLE">
+            <column name="tenant_id" type="VARCHAR(255)" defaultValue="SYSTEM">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql dbms="postgresql">
+            CREATE INDEX IF NOT EXISTS idx_role_tenant ON ${table_prefix}ROLE (tenant_id) WHERE role_scope = 'TENANT';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -13,16 +13,26 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useCreateSystemRole } from '../api/use-system-fleet';
+import type { RoleScope, PlanTier } from '../types/rbac-matrix-types';
 
 interface RoleDefinitionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTenantId?: string;
 }
 
-export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalProps) {
+export function RoleDefinitionModal({
+  open,
+  onOpenChange,
+  defaultTenantId = 'tenant-startup-alpha',
+}: RoleDefinitionModalProps) {
   const [roleName, setRoleName] = useState('');
   const [roleId, setRoleId] = useState('');
   const [description, setDescription] = useState('');
+  const [roleScope, setRoleScope] = useState<RoleScope>('TENANT');
+  const [minPlanTier, setMinPlanTier] = useState<PlanTier>('COMMUNITY');
+  const [tenantId, setTenantId] = useState(defaultTenantId);
+
   const createRoleMutation = useCreateSystemRole();
 
   const handleCreate = (e: React.FormEvent) => {
@@ -34,7 +44,10 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
         roleId,
         roleName: roleName.trim(),
         description: description.trim(),
-        inheritedRoles: ['ROLE_USER'],
+        roleScope,
+        minPlanTier,
+        tenantId: roleScope === 'SYSTEM' ? 'SYSTEM' : tenantId,
+        inheritedRoles: ['ROLE_STANDARD_MEMBER'],
         permissions: [],
       },
       {
@@ -42,6 +55,8 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
           setRoleName('');
           setRoleId('');
           setDescription('');
+          setRoleScope('TENANT');
+          setMinPlanTier('COMMUNITY');
           onOpenChange(false);
         },
       }
@@ -88,6 +103,52 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="role-scope">Role Scope</Label>
+                <select
+                  id="role-scope"
+                  aria-label="Role Scope"
+                  value={roleScope}
+                  onChange={(e) => setRoleScope(e.target.value as RoleScope)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="TENANT">Tenant Isolated</option>
+                  <option value="SYSTEM">Sovereign Cluster</option>
+                </select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="plan-tier">Minimum Plan Tier</Label>
+                <select
+                  id="plan-tier"
+                  aria-label="Minimum Plan Tier"
+                  value={minPlanTier}
+                  onChange={(e) => setMinPlanTier(e.target.value as PlanTier)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="COMMUNITY">Community</option>
+                  <option value="STANDARD">Standard</option>
+                  <option value="PRO">Pro</option>
+                  <option value="ENTERPRISE">Enterprise</option>
+                </select>
+              </div>
+            </div>
+
+            {roleScope === 'TENANT' && (
+              <div className="grid gap-2">
+                <Label htmlFor="tenant-id">Tenant ID</Label>
+                <Input
+                  id="tenant-id"
+                  value={tenantId}
+                  onChange={(e) => setTenantId(e.target.value)}
+                  placeholder="e.g. tenant-startup-alpha"
+                  className="font-mono text-sm"
+                  required
+                />
+              </div>
+            )}
+
             <div className="grid gap-2">
               <Label htmlFor="role-desc">Description</Label>
               <Input
@@ -107,7 +168,7 @@ export function RoleDefinitionModal({ open, onOpenChange }: RoleDefinitionModalP
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs font-mono p-2 rounded bg-background/80 border">
-                <Badge variant="secondary">ROLE_USER</Badge>
+                <Badge variant="secondary">ROLE_STANDARD_MEMBER</Badge>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 <Badge variant="default">{roleId || 'ROLE_CUSTOM'}</Badge>
               </div>

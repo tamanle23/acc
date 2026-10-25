@@ -163,5 +163,35 @@
   "workflows": {
     "title": "Đặc tả quy trình",
     "description": "Thiết kế, mô phỏng và quan sát luồng quy trình đồ thị DAG phân tán với hàng đợi lease đơn cột và worker Virtual Threads."
+  },
+  "rbacStudio": {
+    "title": "Ma trận RBAC & Người dùng Toàn cục",
+    "subtitle": "Xưởng ma trận phân quyền khai báo, quản lý vòng đời vai trò chuẩn tắc và kiểm soát thông tin xác thực xuyên đối tượng thuê.",
+    "tabs": {
+      "matrix": "Ma trận Phân quyền",
+      "roles": "Quản lý Vai trò",
+      "users": "Danh bạ Người dùng Toàn cầu"
+    },
+    "matrix": {
+      "searchPlaceholder": "Tìm kiếm 35 nguyên tử quyền hạn...",
+      "allScopes": "Tất cả Phạm vi",
+      "tenantMatrix": "Ma trận Thuê bao",
+      "sovereignMatrix": "Ma trận Cụm Tối cao",
+      "createRole": "Tạo Vai trò",
+      "allPlanes": "Tất cả Mặt phẳng",
+      "commitChanges": "Lưu Thay đổi",
+      "discardAll": "Hủy Bỏ"
+    },
+    "roles": {
+      "catalogTitle": "Danh mục Vai trò",
+      "inspect": "Kiểm tra Nguyên tử",
+      "delete": "Xóa Vai trò",
+      "createRole": "Tạo Vai trò"
+    },
+    "delegation": {
+      "title": "Ủy quyền Vai trò Thuê bao",
+      "ceilingAdvisory": "Áp dụng Trần Ủy quyền: Bạn chỉ có thể ủy quyền các vai trò và quyền hạn mà danh tính quản trị viên của bạn đang sở hữu.",
+      "commit": "Xác nhận Ủy quyền"
+    }
   }
 }

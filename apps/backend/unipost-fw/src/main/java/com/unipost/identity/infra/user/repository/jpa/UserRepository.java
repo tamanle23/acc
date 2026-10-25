@@ -10,6 +10,8 @@ public interface UserRepository extends BaseRepository<User> {
 
   User findByUserName(String username);
 
+  User findByUid(String uid);
+
   User deleteByUserName(String username);
 
   int countByIdNotAndUserNameIgnoreCase(Long id, String userName);

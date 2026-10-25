@@ -35,6 +35,9 @@ export interface SandboxRoleWithPermissions {
   roleName: string;
   description: string;
   systemRole: boolean;
+  roleScope: 'SYSTEM' | 'TENANT';
+  minPlanTier: 'COMMUNITY' | 'STANDARD' | 'PRO' | 'ENTERPRISE';
+  tenantId: string;
   permissions: string[];
   inheritedRoles: string[];
   userCount: number;
@@ -172,61 +175,188 @@ const DEFAULT_FLEET_TENANTS: SandboxFleetTenant[] = [
 
 const DEFAULT_ROLES: SandboxRoleWithPermissions[] = [
   {
-    roleId: 'ROLE_SYSTEM_CUSTODIAN',
-    roleName: 'Sovereign Custodian',
-    description: 'Ultimate sovereign authority across all tenants and infrastructure.',
+    roleId: 'ROLE_SYSTEM_ROOT',
+    roleName: 'Sovereign Root Custodian',
+    description: 'Supreme platform owner with full infrastructure and schema control',
     systemRole: true,
+    roleScope: 'SYSTEM',
+    minPlanTier: 'ENTERPRISE',
+    tenantId: 'SYSTEM',
     permissions: [
       'platform:fleet:read',
       'platform:fleet:mutate',
+      'platform:fleet:circuit_trip',
       'platform:tenant:assume',
+      'platform:tenant:suspend',
+      'platform:tenant:purge:request',
+      'platform:tenant:purge:approve',
       'platform:quotas:override',
       'platform:roles:manage',
       'platform:users:lock',
-      'METADATA_SCHEMA_READ',
-      'METADATA_SCHEMA_WRITE',
-      'METADATA_RECORD_READ',
-      'METADATA_RECORD_WRITE',
+      'platform:workflow:submit',
+      'platform:workflow:verify',
+      'platform:workflow:approve',
+      'platform:workflow:reject',
+      'metadata:schema:read',
+      'metadata:schema:write',
+      'metadata:blueprint:package',
+      'metadata:blueprint:provision',
+      'metadata:cache:evict',
+      'platform:security:inspect',
+      'platform:audit:verify',
+      'platform:compliance:export',
+      'platform:dlq:manage',
+      'billing:tier:override',
+      'billing:manual:invoice',
+      'billing:reconcile',
+      'tenant:feature:grant',
+      'platform:kyc:verify',
+      'platform:kyc:approve',
     ],
-    inheritedRoles: ['ROLE_ADMIN', 'ROLE_USER'],
+    inheritedRoles: ['ROLE_WORKSPACE_OWNER', 'ROLE_STANDARD_MEMBER'],
     userCount: 1,
     createdDate: '2026-01-01T00:00:00Z',
   },
   {
-    roleId: 'ROLE_ADMIN',
-    roleName: 'Organization Admin',
-    description: 'Tenant administrator with workspace, schema, and billing authority.',
+    roleId: 'ROLE_SYSTEM_SUPPORT',
+    roleName: 'Customer Operations & Support',
+    description: 'Customer operations, Assume-Tenant support, and billing reconciliation',
     systemRole: true,
+    roleScope: 'SYSTEM',
+    minPlanTier: 'ENTERPRISE',
+    tenantId: 'SYSTEM',
     permissions: [
-      'METADATA_SCHEMA_READ',
-      'METADATA_SCHEMA_WRITE',
-      'METADATA_RECORD_READ',
-      'METADATA_RECORD_WRITE',
-      'TENANT_SETTINGS_MANAGE',
-      'BILLING_MANAGE',
+      'platform:fleet:read',
+      'platform:tenant:assume',
+      'platform:quotas:override',
+      'billing:reconcile',
+      'tenant:feature:grant',
+      'metadata:schema:read',
     ],
-    inheritedRoles: ['ROLE_USER'],
-    userCount: 12,
+    inheritedRoles: ['ROLE_STANDARD_MEMBER'],
+    userCount: 4,
     createdDate: '2026-01-01T00:00:00Z',
   },
   {
-    roleId: 'ROLE_USER',
-    roleName: 'Standard Member',
-    description: 'Standard member with data record read/write access.',
+    roleId: 'ROLE_SYSTEM_VERIFIER',
+    roleName: 'Governance & KYC Verifier',
+    description: 'System governance, audit trail verification, and commercial KYC review',
     systemRole: true,
-    permissions: ['METADATA_SCHEMA_READ', 'METADATA_RECORD_READ', 'METADATA_RECORD_WRITE'],
-    inheritedRoles: [],
-    userCount: 148,
+    roleScope: 'SYSTEM',
+    minPlanTier: 'ENTERPRISE',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'platform:audit:verify',
+      'platform:security:inspect',
+      'platform:compliance:export',
+      'platform:kyc:verify',
+      'platform:workflow:verify',
+      'platform:fleet:read',
+    ],
+    inheritedRoles: ['ROLE_STANDARD_MEMBER'],
+    userCount: 2,
     createdDate: '2026-01-01T00:00:00Z',
   },
   {
-    roleId: 'ROLE_READONLY',
-    roleName: 'Auditor / Read-Only',
-    description: 'Restricted view-only role for compliance and audits.',
-    systemRole: false,
-    permissions: ['METADATA_SCHEMA_READ', 'METADATA_RECORD_READ'],
+    roleId: 'ROLE_SYSTEM_APPROVER',
+    roleName: 'Quorum Approver',
+    description: 'Four-eyes quorum approver for high-risk fleet and operational gates',
+    systemRole: true,
+    roleScope: 'SYSTEM',
+    minPlanTier: 'ENTERPRISE',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'platform:workflow:approve',
+      'platform:tenant:purge:approve',
+      'platform:fleet:circuit_trip',
+      'platform:kyc:approve',
+    ],
     inheritedRoles: [],
-    userCount: 5,
+    userCount: 2,
+    createdDate: '2026-01-01T00:00:00Z',
+  },
+  {
+    roleId: 'ROLE_WORKSPACE_OWNER',
+    roleName: 'Workspace Owner',
+    description: 'Workspace Owner with full administrative authority over tenant workspace',
+    systemRole: true,
+    roleScope: 'TENANT',
+    minPlanTier: 'COMMUNITY',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'org:workspace:read',
+      'org:workspace:mutate',
+      'org:member:invite',
+      'org:member:manage',
+      'org:billing:read',
+      'org:billing:upgrade',
+      'entity:record:read',
+      'entity:record:create',
+      'entity:record:update',
+      'entity:record:delete',
+      'org:workflow:submit',
+      'org:workflow:approve',
+      'org:audit:read',
+      'metadata:schema:read',
+    ],
+    inheritedRoles: ['ROLE_OPERATIONS_MANAGER', 'ROLE_STANDARD_MEMBER'],
+    userCount: 18,
+    createdDate: '2026-01-01T00:00:00Z',
+  },
+  {
+    roleId: 'ROLE_OPERATIONS_MANAGER',
+    roleName: 'Operations Manager',
+    description: 'Operations manager over business entities, dispatching, and approvals',
+    systemRole: true,
+    roleScope: 'TENANT',
+    minPlanTier: 'STANDARD',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'entity:record:read',
+      'entity:record:create',
+      'entity:record:update',
+      'entity:record:delete',
+      'org:workflow:submit',
+      'org:workflow:approve',
+      'metadata:schema:read',
+    ],
+    inheritedRoles: ['ROLE_STANDARD_MEMBER'],
+    userCount: 42,
+    createdDate: '2026-01-01T00:00:00Z',
+  },
+  {
+    roleId: 'ROLE_STANDARD_MEMBER',
+    roleName: 'Standard Member',
+    description: 'Standard team member with data record read and write access',
+    systemRole: true,
+    roleScope: 'TENANT',
+    minPlanTier: 'COMMUNITY',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'entity:record:read',
+      'entity:record:write',
+      'entity:record:create',
+      'metadata:schema:read',
+    ],
+    inheritedRoles: [],
+    userCount: 156,
+    createdDate: '2026-01-01T00:00:00Z',
+  },
+  {
+    roleId: 'ROLE_AUDITOR',
+    roleName: 'Compliance Auditor',
+    description: 'Tenant compliance and read-only auditor',
+    systemRole: false,
+    roleScope: 'TENANT',
+    minPlanTier: 'PRO',
+    tenantId: 'SYSTEM',
+    permissions: [
+      'entity:record:read',
+      'org:audit:read',
+      'metadata:schema:read',
+    ],
+    inheritedRoles: [],
+    userCount: 6,
     createdDate: '2026-03-01T00:00:00Z',
   },
 ];
@@ -412,6 +542,9 @@ class MockFleetRepository {
     roleId: string;
     roleName: string;
     description?: string;
+    roleScope?: 'SYSTEM' | 'TENANT';
+    minPlanTier?: 'COMMUNITY' | 'STANDARD' | 'PRO' | 'ENTERPRISE';
+    tenantId?: string;
     permissions?: string[];
     inheritedRoles?: string[];
   }): SandboxRoleWithPermissions {
@@ -425,14 +558,48 @@ class MockFleetRepository {
       roleName: role.roleName,
       description: role.description || '',
       systemRole: false,
+      roleScope: role.roleScope || 'TENANT',
+      minPlanTier: role.minPlanTier || 'COMMUNITY',
+      tenantId: role.tenantId || 'SYSTEM',
       permissions: role.permissions || [],
-      inheritedRoles: role.inheritedRoles || ['ROLE_USER'],
+      inheritedRoles: role.inheritedRoles || ['ROLE_STANDARD_MEMBER'],
       userCount: 0,
       createdDate: new Date().toISOString(),
     };
 
     this.roles.push(newRole);
     return newRole;
+  }
+
+  deleteRole(roleId: string): { roleId: string; success: boolean } {
+    const index = this.roles.findIndex((r) => r.roleId === roleId);
+    if (index === -1) throw new Error(`Role '${roleId}' not found`);
+    if (this.roles[index].systemRole) {
+      throw new Error(`Cannot delete system-protected core role '${roleId}'`);
+    }
+    this.roles.splice(index, 1);
+    return { roleId, success: true };
+  }
+
+  delegateUser(
+    tenantId: string,
+    userId: string,
+    roles: string[],
+    permissionOverrides: { permissionCode: string; isGranted: boolean; reason?: string }[],
+    reason: string
+  ): { userId: string; tenantId: string; assignedRoles: string[]; activeOverrides: any[]; delegatedBy: string; reason: string } {
+    const user = this.users.find((u) => u.userId === userId || u.username === userId);
+    if (!user) throw new Error(`User '${userId}' not found`);
+
+    user.roles = roles;
+    return {
+      userId: user.userId,
+      tenantId,
+      assignedRoles: roles,
+      activeOverrides: permissionOverrides || [],
+      delegatedBy: 'admin',
+      reason,
+    };
   }
 
   updateRolePermissions(roleId: string, permissions: string[], inheritedRoles?: string[]): SandboxRoleWithPermissions {
@@ -651,6 +818,77 @@ export const systemSandboxHandler: SandboxRouteHandler = {
           data: {
             header: { success: false },
             message: err.message || 'Failed to create role',
+          },
+        };
+      }
+    }
+
+    // 8c. DELETE /api/v1/system/roles/{id}
+    const deleteRoleMatch = path.match(/^\/api\/v1\/system\/roles\/([^/]+)$/);
+    if (method === 'DELETE' && deleteRoleMatch) {
+      try {
+        const roleId = deleteRoleMatch[1];
+        const result = mockFleetStore.deleteRole(roleId);
+        return {
+          status: 200,
+          data: {
+            header: { success: true },
+            body: result,
+          },
+        };
+      } catch (err: any) {
+        return {
+          status: 400,
+          data: {
+            header: { success: false },
+            message: err.message || 'Failed to delete role',
+          },
+        };
+      }
+    }
+
+    // 8d. GET /api/v1/system/tenants/{tenantId}/roles
+    const tenantRolesMatch = path.match(/^\/api\/v1\/system\/tenants\/([^/]+)\/roles$/);
+    if (method === 'GET' && tenantRolesMatch) {
+      const tenantId = tenantRolesMatch[1];
+      const allRoles = mockFleetStore.getRoles();
+      const filtered = allRoles.filter((r) => r.roleScope === 'TENANT' || r.tenantId === tenantId);
+      return {
+        status: 200,
+        data: {
+          header: { success: true },
+          body: filtered,
+        },
+      };
+    }
+
+    // 8e. PUT /api/v1/system/tenants/{tenantId}/users/{userId}/delegation
+    const delegationMatch = path.match(/^\/api\/v1\/system\/tenants\/([^/]+)\/users\/([^/]+)\/delegation$/);
+    if (method === 'PUT' && delegationMatch) {
+      try {
+        const tenantId = delegationMatch[1];
+        const userId = delegationMatch[2];
+        const { roles, permissionOverrides, reason } = req.data || {};
+        const result = mockFleetStore.delegateUser(
+          tenantId,
+          userId,
+          roles || [],
+          permissionOverrides || [],
+          reason || 'Delegated via console'
+        );
+        return {
+          status: 200,
+          data: {
+            header: { success: true },
+            body: result,
+          },
+        };
+      } catch (err: any) {
+        return {
+          status: 400,
+          data: {
+            header: { success: false },
+            message: err.message || 'Failed to delegate user',
           },
         };
       }

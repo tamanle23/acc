@@ -33,4 +33,7 @@ public class UserRole extends BaseModel {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "role_uid", referencedColumnName = "uid")
   private Role role;
+
+  @jakarta.persistence.Column(name = "tenant_id", nullable = false)
+  private String tenantId;
 }

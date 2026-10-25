@@ -9,4 +9,10 @@ import com.unipost.user.model.UserPermission;
 public interface UserPermissionRepository extends BaseRepository<UserPermission>{
 
   List<UserPermission> findAllByUser(User user);
+
+  List<UserPermission> findAllByUserAndTenantId(User user, String tenantId);
+
+  List<UserPermission> findAllByTenantId(String tenantId);
+
+  void deleteAllByUserAndTenantId(User user, String tenantId);
 }

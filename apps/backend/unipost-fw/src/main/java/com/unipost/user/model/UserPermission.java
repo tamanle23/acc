@@ -35,11 +35,26 @@ public class UserPermission extends BaseModel {
 
   private Byte status;
 
+  @jakarta.persistence.Column(name = "tenant_id")
+  private String tenantId;
+
+  @jakarta.persistence.Column(name = "is_granted")
+  private Boolean isGranted;
+
+  @jakarta.persistence.Column(name = "delegated_by_uid")
+  private String delegatedByUid;
+
+  @jakarta.persistence.Column(name = "reason")
+  private String reason;
+
   @Builder
-  public UserPermission(User user, Permission permission, Byte status) {
+  public UserPermission(User user, Permission permission, Byte status, String tenantId, Boolean isGranted, String delegatedByUid, String reason) {
     this.user = user;
     this.permission = permission;
     this.status = status;
+    this.tenantId = tenantId;
+    this.isGranted = isGranted != null ? isGranted : (status == null || status == 1);
+    this.delegatedByUid = delegatedByUid;
+    this.reason = reason;
   }
-
 }

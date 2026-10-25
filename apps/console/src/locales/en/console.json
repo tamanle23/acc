@@ -163,5 +163,35 @@
   "workflows": {
     "title": "Workflow Definitions",
     "description": "Design, simulate, and observe distributed DAG workflows with single-column lease queues and virtual-thread workers."
+  },
+  "rbacStudio": {
+    "title": "RBAC Matrix & Global Users",
+    "subtitle": "Declarative permission matrix studio, canonical role lifecycle management, and universal cross-tenant credential control.",
+    "tabs": {
+      "matrix": "Permission Matrix",
+      "roles": "Roles Management",
+      "users": "Universal Users Directory"
+    },
+    "matrix": {
+      "searchPlaceholder": "Search 35 permission atoms...",
+      "allScopes": "All Scopes",
+      "tenantMatrix": "Tenant Matrix",
+      "sovereignMatrix": "Sovereign Matrix",
+      "createRole": "Create Role",
+      "allPlanes": "All Planes",
+      "commitChanges": "Commit Changes",
+      "discardAll": "Discard All"
+    },
+    "roles": {
+      "catalogTitle": "Roles Catalog",
+      "inspect": "Inspect Atoms",
+      "delete": "Delete Role",
+      "createRole": "Create Role"
+    },
+    "delegation": {
+      "title": "Tenant Role Delegation",
+      "ceilingAdvisory": "Delegation Ceiling Enforced: You may only delegate roles and permissions actively held by your administrator identity.",
+      "commit": "Commit Delegation"
+    }
   }
 }

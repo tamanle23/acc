@@ -96,6 +96,9 @@ export interface SystemRoleWithPermissions {
   roleName: string;
   description: string;
   systemRole: boolean;
+  roleScope?: 'SYSTEM' | 'TENANT';
+  minPlanTier?: 'COMMUNITY' | 'STANDARD' | 'PRO' | 'ENTERPRISE';
+  tenantId?: string;
   permissions: string[];
   inheritedRoles: string[];
   userCount: number;
@@ -106,6 +109,9 @@ export interface CreateRolePayload {
   roleId: string;
   roleName: string;
   description?: string;
+  roleScope?: 'SYSTEM' | 'TENANT';
+  minPlanTier?: 'COMMUNITY' | 'STANDARD' | 'PRO' | 'ENTERPRISE';
+  tenantId?: string;
   permissions?: string[];
   inheritedRoles?: string[];
 }
@@ -115,6 +121,29 @@ export interface UpdateRolePermissionsPayload {
   permissions: string[];
   inheritedRoles?: string[];
   reason?: string;
+}
+
+export interface PermissionOverridePayload {
+  permissionCode: string;
+  isGranted: boolean;
+  reason?: string;
+}
+
+export interface DelegateUserRolesPayload {
+  tenantId: string;
+  userId: string;
+  roles: string[];
+  permissionOverrides?: PermissionOverridePayload[];
+  reason: string;
+}
+
+export interface UserDelegationResult {
+  userId: string;
+  tenantId: string;
+  assignedRoles: string[];
+  activeOverrides: PermissionOverridePayload[];
+  delegatedBy: string;
+  reason: string;
 }
 
 export interface GlobalUserListItem {
@@ -453,6 +482,64 @@ export function useLockUser() {
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.message || 'Failed to lock/unlock user';
+      toast.error(msg);
+    },
+  });
+}
+
+/**
+ * Sovereign mutation: Revoke/delete a custom system or tenant role.
+ */
+export function useDeleteSystemRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (roleId: string) => {
+      const response = await springApiClient.delete<{
+        header: { success: boolean };
+        body: { roleId: string; success: boolean };
+      }>(`/v1/system/roles/${encodeURIComponent(roleId)}`);
+      return response.data?.body;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: SYSTEM_FLEET_QUERY_KEYS.roles() });
+      toast.success(`Role '${data?.roleId}' successfully revoked and deleted!`);
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to delete role';
+      toast.error(msg);
+    },
+  });
+}
+
+/**
+ * Tenant / Sovereign mutation: Delegate roles and ad-hoc permission overrides to a tenant user.
+ */
+export function useDelegateUserRoles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: DelegateUserRolesPayload): Promise<UserDelegationResult> => {
+      const response = await springApiClient.put<{
+        header: { success: boolean };
+        body: UserDelegationResult;
+      }>(
+        `/v1/system/tenants/${encodeURIComponent(payload.tenantId)}/users/${encodeURIComponent(payload.userId)}/delegation`,
+        {
+          roles: payload.roles,
+          permissionOverrides: payload.permissionOverrides || [],
+          reason: payload.reason,
+        }
+      );
+      return response.data.body;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: SYSTEM_FLEET_QUERY_KEYS.users() });
+      queryClient.invalidateQueries({ queryKey: SYSTEM_FLEET_QUERY_KEYS.roles() });
+      toast.success(`Successfully delegated permissions to user in tenant '${variables.tenantId}'!`);
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to delegate user permissions';
       toast.error(msg);
     },
   });

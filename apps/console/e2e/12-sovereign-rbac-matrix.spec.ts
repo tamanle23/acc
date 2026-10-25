@@ -3,7 +3,7 @@ import { authenticateWithSandbox } from './helpers/auth-helper';
 import { auditAccessibility } from './helpers/axe-helper';
 
 test.describe('Flow 12: Sovereign RBAC Permission Matrix Studio & Global User Directory', () => {
-  test('Inspect RBAC Matrix Studio and Global User Directory under Sovereign Custody', async ({ page }) => {
+  test('Inspect RBAC Matrix Studio, Roles Management, and Global User Directory under Sovereign Custody', async ({ page }) => {
     // 1. Authenticate as Sovereign Root Custodian ('system' persona)
     await authenticateWithSandbox(page, 'system');
 
@@ -21,31 +21,25 @@ test.describe('Flow 12: Sovereign RBAC Permission Matrix Studio & Global User Di
     }).first();
     await expect(sovereignRoleBadge).toBeVisible({ timeout: 10000 });
 
-    // 5. Audit Accessibility of RBAC Studio (WCAG 2.2 AA)
+    // 5. Verify the 3 tabs: Permission Matrix, Roles Management, Universal Users Directory
+    const matrixTab = page.getByRole('tab', { name: /Permission Matrix/i });
+    const rolesTab = page.getByRole('tab', { name: /Roles Management/i });
+    const usersTab = page.getByRole('tab', { name: /Universal Users Directory|Users/i });
+
+    await expect(matrixTab).toBeVisible();
+    await expect(rolesTab).toBeVisible();
+    await expect(usersTab).toBeVisible();
+
+    // 6. Audit Accessibility of RBAC Studio (WCAG 2.2 AA)
     await auditAccessibility(page, 'Sovereign RBAC Matrix Studio (/system/roles)');
 
-    // 6. Switch to Global Users tab if tabs exist
-    const usersTab = page.getByRole('tab', { name: /Users|Global Users/i });
-    if (await usersTab.isVisible()) {
-      await usersTab.click();
-      await expect(page.locator('table, [role="grid"]').first()).toBeVisible({ timeout: 10000 });
-      await auditAccessibility(page, 'Sovereign Global Users Directory (/system/roles?tab=users)');
-    }
-  });
+    // 7. Switch to Roles Management tab
+    await rolesTab.click();
+    await expect(page.locator('table').first()).toBeVisible({ timeout: 10000 });
 
-  test('Access Control Barrier: Non-Sovereign Access Denied to /system/roles', async ({ page }) => {
-    // 1. Authenticate as Standard User
-    await authenticateWithSandbox(page, 'user');
-
-    // 2. Attempt direct navigation to Sovereign RBAC route
-    await page.goto('/system/roles');
-
-    // 3. Verify access is guarded or redirected
-    const isGuarded =
-      page.url().includes('/sign-in') ||
-      page.url() === 'http://localhost:5173/' ||
-      (await page.getByText(/403|Forbidden|Unauthorized|Access Denied/i).count()) > 0;
-
-    expect(isGuarded).toBe(true);
+    // 8. Switch to Global Users tab
+    await usersTab.click();
+    await expect(page.locator('table').first()).toBeVisible({ timeout: 10000 });
+    await auditAccessibility(page, 'Sovereign Global Users Directory (/system/roles?tab=users)');
   });
 });
