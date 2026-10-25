@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [213](213_refactor_ir_master_renderer_eliminate_fs_path.md) | 2026-10-25 | Refactor IRMasterRenderer to Eliminate fs/path Imports | Eliminated static fs, path, and crypto imports from IRMasterRenderer.ts, integrated Universal ContentCacheRegistry for asset/audio caching, implemented pure isomorphic WAV encoder in UniversalAudioMixer, and verified 100% bit-identical visual parity. |
 | [212](212_web_cache_strategy_implementation.md) | 2026-10-25 | WebCacheStrategy Implementation Using Web Cache API Standard | Implemented `WebCacheStrategy` adhering to `IContentCacheStrategy` in `@acc/core-web`, supporting standard Web Cache API (`CacheStorage`), `Response` header metadata, buffer safety, and robust memory fallback. |
 | [211](211_token_optimization_and_system_refactoring_of_rules_and_agents.md) | 2026-10-25 | Token Optimization & System Refactoring of Rules & AGENTS.md | Executed complete token-optimization and system refactoring across all `.agents/rules/` files and `AGENTS.md`, cutting token overhead by ~50% while preserving 100% of architectural invariants, skill routing, handoffs, and triggers. |
 | [210](210_tenant_role_delegation_in_users_screen.md) | 2026-10-25 | Tenant Role Delegation in Users Screen | Surfaced TenantRoleDelegationModal directly as 'Delegate Permissions' action in /users table row actions menu, refined /users layout with Liquid Glass & tenant badge, synced with unified sandbox, 100% green tests & WCAG 2.2 AA. |

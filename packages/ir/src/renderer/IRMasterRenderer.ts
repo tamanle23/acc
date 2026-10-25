@@ -1,6 +1,3 @@
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 import type { ResolvedTimeline, ResolvedTrack, ResolvedSequence } from '../types/VideoIR';
 import { FrameBackpressureLock } from './handshake/FrameBackpressureLock';
 import { DeterministicNoiseGenerator } from './DeterministicNoiseGenerator';
@@ -10,7 +7,7 @@ import {
 } from './audio/UniversalAudioMixer';
 import type { IIRFrameSink, SinkFinalizeResult } from './sink/IIRFrameSink';
 import { ModifierPluginRegistry, registerCoreModifierPlugins, createIsolatedCoreModifierPlugins } from '../plugins';
-import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
+import { UniversalCanvasProvider, CanvasAssetLoader, ContentCacheRegistry } from '@acc/core-isomorphic';
 import { MediaEngineRegistry, type IVideoDecoder, type MediaEngineType } from '@acc/core-isomorphic';
 import { IRCanvasCompositor, type IAssetSourceResolver } from './shared/IRCanvasCompositor';
 
@@ -40,11 +37,106 @@ export interface HeadlessRenderResult {
 }
 
 /**
+ * Pure isomorphic path utilities replacing Node.js path module.
+ */
+function isAbsolutePath(p: string): boolean {
+  return (
+    p.startsWith('/') ||
+    p.startsWith('http://') ||
+    p.startsWith('https://') ||
+    p.startsWith('data:') ||
+    p.startsWith('blob:') ||
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(p) ||
+    /^[a-zA-Z]:[\\/]/.test(p) ||
+    p.startsWith('\\\\')
+  );
+}
+
+function resolveAssetPath(baseDir: string, src: string): string {
+  if (isAbsolutePath(src)) {
+    return src;
+  }
+  const cleanBase = (baseDir || '.').replace(/[\\/]+$/, '');
+  const cleanSrc = src.replace(/^[\\/]+/, '');
+  return `${cleanBase}/${cleanSrc}`;
+}
+
+function getFileExtension(filePath: string): string {
+  const clean = filePath.split('?')[0].split('#')[0];
+  const lastDot = clean.lastIndexOf('.');
+  if (lastDot === -1) return '';
+  return clean.slice(lastDot).toLowerCase();
+}
+
+function getDirectoryPath(filePath: string): string {
+  const clean = filePath.replace(/[\\/]+$/, '');
+  const idx = Math.max(clean.lastIndexOf('/'), clean.lastIndexOf('\\'));
+  if (idx <= 0) return idx === 0 ? '/' : '.';
+  return clean.slice(0, idx);
+}
+
+/**
+ * Universal SHA-256 Frame and Timeline Hasher.
+ * Dynamically resolves Node crypto or WebCrypto to ensure zero static Node imports.
+ */
+class UniversalHasher {
+  private nodeHash: any | null = null;
+  private chunks: (Uint8Array | string)[] = [];
+
+  public static async create(): Promise<UniversalHasher> {
+    const hasher = new UniversalHasher();
+    try {
+      if (typeof globalThis !== 'undefined' && (globalThis as any).process?.versions?.node) {
+        const cryptoModule = await import('crypto');
+        if (cryptoModule && typeof cryptoModule.createHash === 'function') {
+          hasher.nodeHash = cryptoModule.createHash('sha256');
+        }
+      }
+    } catch {
+      hasher.nodeHash = null;
+    }
+    return hasher;
+  }
+
+  public update(data: Uint8Array | string): void {
+    if (this.nodeHash) {
+      this.nodeHash.update(data);
+    } else {
+      this.chunks.push(typeof data === 'string' ? data : new Uint8Array(data));
+    }
+  }
+
+  public async digest(): Promise<string> {
+    if (this.nodeHash) {
+      return this.nodeHash.digest('hex');
+    }
+    let totalLength = 0;
+    const uint8Chunks: Uint8Array[] = [];
+    for (const chunk of this.chunks) {
+      const u8 = typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk;
+      uint8Chunks.push(u8);
+      totalLength += u8.byteLength;
+    }
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const u8 of uint8Chunks) {
+      combined.set(u8, offset);
+      offset += u8.byteLength;
+    }
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', combined);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+}
+
+/**
  * IRMasterRenderer:
  * Headless, deterministic rasterizer and timeline executor.
  * Advances discrete integer frames (t ∈ [0, N-1]) synchronously via backpressure locks,
  * evaluating seeded shaders, modifier plugins, and audio mixdown without wall-clock drift.
  * Feeds dual target sinks (FFIVideoEncoderSink or PreviewCanvasSink).
+ * Pure isomorphic TS with zero static fs or path dependencies.
  */
 export class IRMasterRenderer {
   private timeline: ResolvedTimeline;
@@ -53,7 +145,7 @@ export class IRMasterRenderer {
   private audioMixer: UniversalAudioMixer;
   private pluginRegistry: ModifierPluginRegistry;
 
-  // Cached assets to prevent disk re-reads in render loop
+  // Cached assets to prevent disk/network re-reads in render loop
   private imageCache: Map<string, any> = new Map();
   private videoDecoders: Map<string, IVideoDecoder> = new Map();
 
@@ -66,9 +158,9 @@ export class IRMasterRenderer {
     this.pluginRegistry = pluginRegistry ?? createIsolatedCoreModifierPlugins();
   }
 
-
   /**
    * Pre-load static visual image assets declared in timeline.assets into memory.
+   * Utilizes Universal Content Cache Registry (ContentCacheRegistry) to verify and cache asset buffers.
    */
   public async preloadAssets(baseDir: string = '.', engineType?: MediaEngineType): Promise<void> {
     if (!this.timeline.assets) return;
@@ -83,18 +175,35 @@ export class IRMasterRenderer {
       strategy = undefined;
     }
 
+    const cache = ContentCacheRegistry.get();
+
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
       if (assetDef.type === 'image' || assetDef.type === 'media') {
-        const resolvedPath = path.isAbsolute(assetDef.src)
-          ? assetDef.src
-          : path.resolve(baseDir, assetDef.src);
+        const resolvedPath = resolveAssetPath(baseDir, assetDef.src);
+        const ext = getFileExtension(resolvedPath);
 
-        if (fs.existsSync(resolvedPath)) {
+        let assetExists = await cache.has(resolvedPath);
+        let cachedBytes: Uint8Array | null = null;
+
+        if (assetExists) {
+          cachedBytes = await cache.get(resolvedPath);
+        } else if (typeof process !== 'undefined' && process.versions?.node) {
           try {
-            const ext = path.extname(resolvedPath).toLowerCase();
+            const fsModule = await import('fs');
+            if (fsModule.existsSync(resolvedPath)) {
+              assetExists = true;
+            }
+          } catch {
+            assetExists = false;
+          }
+        }
+
+        if (assetExists || isAbsolutePath(resolvedPath)) {
+          try {
             // Load if image format
             if (['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(ext)) {
-              const img = await CanvasAssetLoader.loadImage(resolvedPath);
+              const imageSource = cachedBytes || resolvedPath;
+              const img = await CanvasAssetLoader.loadImage(imageSource);
               this.imageCache.set(assetId, img);
             } else if (['.mp4', '.mov', '.mkv', '.webm', '.avi'].includes(ext)) {
               if (strategy && typeof strategy.createVideoDecoder === 'function') {
@@ -184,9 +293,20 @@ export class IRMasterRenderer {
       if (sink && !options.audioPath) {
         audioResult = await this.audioMixer.mixTimeline(this.timeline, { baseDir: options.baseDir });
         if (audioResult.totalSamples > 0) {
-          const outDir = options.outputPath ? path.dirname(options.outputPath) : '.';
-          tempAudioWavPath = path.resolve(outDir, `.temp_${Date.now()}_master_audio.wav`);
+          const outDir = options.outputPath ? getDirectoryPath(options.outputPath) : '.';
+          tempAudioWavPath = `${outDir.replace(/[\\/]+$/, '')}/.temp_${Date.now()}_master_audio.wav`;
           await UniversalAudioMixer.exportToWav(tempAudioWavPath, audioResult);
+
+          // Store mixed audio buffer into Universal Content Cache Registry
+          try {
+            const wavBytes = UniversalAudioMixer.encodeToWav(audioResult);
+            await ContentCacheRegistry.get().set(tempAudioWavPath, wavBytes, {
+              mimeType: 'audio/wav',
+              sizeBytes: wavBytes.byteLength,
+            });
+          } catch {
+            // Non-critical cache persistence
+          }
         }
       } else {
         audioResult = await this.audioMixer.mixTimeline(this.timeline, { baseDir: options.baseDir });
@@ -210,7 +330,7 @@ export class IRMasterRenderer {
 
     // 2. Discrete Frame-Step Scheduling (Zero Wall-Clock Dependency)
     const frameHashes: string[] = [];
-    const hashAccumulator = crypto.createHash('sha256');
+    const hashAccumulator = await UniversalHasher.create();
 
     // Pre-allocate single native-sized RGBA pixel buffer to guarantee ZERO-ALLOC-FRAME-LOOP
     const framePixelBuffer = new Uint8Array(width * height * 4);
@@ -250,7 +370,9 @@ export class IRMasterRenderer {
 
       // Compute cryptographic hash of rendered frame buffer for bit-identical reproducibility
       if (options.generateFrameHash) {
-        const frameHash = crypto.createHash('sha256').update(framePixelBuffer).digest('hex');
+        const frameHasher = await UniversalHasher.create();
+        frameHasher.update(framePixelBuffer);
+        const frameHash = await frameHasher.digest();
         frameHashes.push(frameHash);
         hashAccumulator.update(frameHash);
       }
@@ -267,7 +389,7 @@ export class IRMasterRenderer {
       }
     }
 
-    const cumulativeHash = hashAccumulator.digest('hex');
+    const cumulativeHash = await hashAccumulator.digest();
 
     // Finalize Sink
     let sinkResult: SinkFinalizeResult | undefined;
@@ -275,12 +397,19 @@ export class IRMasterRenderer {
       sinkResult = await sink.finalize(audioResult);
     }
 
-    // Clean up temporary audio file if generated
-    if (tempAudioWavPath && fs.existsSync(tempAudioWavPath)) {
+    // Clean up temporary audio file from cache and disk if generated
+    if (tempAudioWavPath) {
       try {
-        await fs.promises.unlink(tempAudioWavPath);
-      } catch {
-        // Ignored
+        await ContentCacheRegistry.get().delete(tempAudioWavPath);
+      } catch {}
+
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        try {
+          const fsModule = await import('fs');
+          if (fsModule.existsSync(tempAudioWavPath)) {
+            await fsModule.promises.unlink(tempAudioWavPath);
+          }
+        } catch {}
       }
     }
 

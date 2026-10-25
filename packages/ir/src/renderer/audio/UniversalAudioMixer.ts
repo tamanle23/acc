@@ -539,7 +539,11 @@ export class UniversalAudioMixer {
   /**
    * Encodes a DecoupledAudioMixResult into a valid 16-bit stereo PCM WAV file on disk.
    */
-  public static async exportToWav(filePath: string, mixResult: DecoupledAudioMixResult): Promise<void> {
+  /**
+   * Pure isomorphic in-memory WAV encoder.
+   * Converts Float32Array PCM stereo mixdown to standard RIFF 16-bit PCM WAV byte buffer.
+   */
+  public static encodeToWav(mixResult: DecoupledAudioMixResult): Uint8Array {
     const totalFrames = mixResult.totalSamples;
     const channels = mixResult.channels;
     const sampleRate = mixResult.sampleRate;
@@ -549,26 +553,27 @@ export class UniversalAudioMixer {
     const dataSize = totalFrames * blockAlign;
     const totalBufferSize = 44 + dataSize;
 
-    const buffer = Buffer.alloc(totalBufferSize);
+    const buffer = new Uint8Array(totalBufferSize);
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
 
     // RIFF chunk descriptor
-    buffer.write('RIFF', 0);
-    buffer.writeUInt32LE(totalBufferSize - 8, 4);
-    buffer.write('WAVE', 8);
+    buffer.set([0x52, 0x49, 0x46, 0x46], 0); // 'RIFF'
+    view.setUint32(4, totalBufferSize - 8, true);
+    buffer.set([0x57, 0x41, 0x56, 0x45], 8); // 'WAVE'
 
     // "fmt " sub-chunk
-    buffer.write('fmt ', 12);
-    buffer.writeUInt32LE(16, 16);
-    buffer.writeUInt16LE(1, 20);
-    buffer.writeUInt16LE(channels, 22);
-    buffer.writeUInt32LE(sampleRate, 24);
-    buffer.writeUInt32LE(byteRate, 28);
-    buffer.writeUInt16LE(blockAlign, 32);
-    buffer.writeUInt16LE(16, 34);
+    buffer.set([0x66, 0x6d, 0x74, 0x20], 12); // 'fmt '
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true); // 16-bit
 
     // "data" sub-chunk
-    buffer.write('data', 36);
-    buffer.writeUInt32LE(dataSize, 40);
+    buffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
+    view.setUint32(40, dataSize, true);
 
     let byteOffset = 44;
     const floatSamples = mixResult.buffer;
@@ -579,9 +584,15 @@ export class UniversalAudioMixer {
       if (s > 1.0) s = 1.0;
       else if (s < -1.0) s = -1.0;
       const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-      buffer.writeInt16LE(int16, byteOffset);
+      view.setInt16(byteOffset, int16, true);
       byteOffset += 2;
     }
+
+    return buffer;
+  }
+
+  public static async exportToWav(filePath: string, mixResult: DecoupledAudioMixResult): Promise<void> {
+    const wavBytes = UniversalAudioMixer.encodeToWav(mixResult);
 
     const pathModule = await import('path');
     const fsModule = await import('fs');
@@ -590,6 +601,6 @@ export class UniversalAudioMixer {
       await fsModule.promises.mkdir(dir, { recursive: true });
     }
 
-    await fsModule.promises.writeFile(filePath, buffer);
+    await fsModule.promises.writeFile(filePath, Buffer.from(wavBytes.buffer, wavBytes.byteOffset, wavBytes.byteLength));
   }
 }
