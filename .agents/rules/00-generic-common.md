@@ -1,74 +1,40 @@
 ---
 trigger: always_on
-description: Universal operational constraints, SOP, commit conventions, and artifact tracking.
+description: Universal operational constraints, code standards, git workflow, and WCAG accessibility.
 ---
 
-# RULE MANAGEMENT SOP (CRITICAL CONSTRAINT)
-Constraint: YOU MUST NEVER write long, detailed rules directly into the `.agents/rules/` directory.
-Workflow:
-  Step_1: Whenever the user asks to add or update a rule, FIRST write the full, verbose explanation and logic into `docs/master_rules_reference.md`.
-  Step_2: SECOND, strictly distill the rule into a highly compact, imperative constraint (using YAML or bullet points).
-  Step_3: THIRD, append ONLY the compacted version to either `00-generic-common.md` (if broad) or `01-workspace-specific.md` (if domain-specific).
+# SYSTEM DIRECTIVES & OPERATIONAL RULES
 
-# Generic Common Rules
+## Rule Management SOP
+- Full explanations & rationales MUST live in `docs/master_rules_reference.md`.
+- `.agents/rules/` contains ONLY ultra-compact imperative constraints.
 
-- **OS-COMPAT**: MUST support Win/Linux/macOS.
-- **DEFENSIVE-CODING**: NEVER crash main render loop. MUST wrap external/AI/volatile calls in `try/catch` with seamless fallbacks.
-- **STATE-IMMUTABILITY**: NEVER mutate original assets/config in-place. Preserve original files on asset generation.
-- **IMPORT-INTEGRITY**: MUST verify `import` statements at top of file when introducing functions/dependencies. NEVER truncate import blocks during edits.
-- **ZERO-REGRESSION**: NEVER break existing working flows. MUST verify side-effects & maintain backward compatibility for all options.
-- **ZERO-STUB-PROHIBITION**: NEVER use synthetic mocks, stubs, fake adapters, or deterministic pass-throughs when validating backend, security, multi-tenancy, RLS, cryptographic, or architectural invariants. Tests MUST exercise actual production classes, filters, and engines.
-- **NO-ORPHANED-CODE**: NEVER create features, services, or utilities that are put aside or disconnected from the active runtime graph. Every implementation MUST be wired into real consumers, registries, stores, or router pipelines.
-- **COMMON-COMPONENT-PRIORITY**: MUST inspect and prioritize shared components (`@/components/data-table`, `packages/ui`) before writing bespoke UI code. NEVER write raw boilerplate `<table>`, ad-hoc search bars, or custom paginations when a shared primitive exists.
-- **SANDBOX-PARITY**: MUST update and register Unified Sandbox route handlers, mock datasets, and reset hooks whenever introducing or modifying UI screens/features. Offline dev mode MUST render and function without a live backend.
+## Universal Engineering Invariants
+- **OS-COMPAT**: Support Windows, Linux, macOS.
+- **DEFENSIVE-CODING**: Never crash main render loop; wrap volatile/AI calls in `try/catch` with fallbacks.
+- **STATE-IMMUTABILITY**: Never mutate original assets/config in-place.
+- **IMPORT-INTEGRITY**: Verify and preserve top-of-file imports during edits.
+- **ZERO-REGRESSION**: Preserve backward compatibility; verify side effects on all options.
+- **ZERO-STUB-PROHIBITION**: Real production classes only for backend, security, multi-tenancy, RLS, and cryptographic tests. No synthetic mock bypasses.
+- **NO-ORPHANED-CODE**: All implementations must wire into live consumers, stores, or router pipelines.
+- **COMMON-COMPONENT-PRIORITY**: Inspect and reuse shared primitives (`@/components/data-table`, `packages/ui`) before writing custom UI.
+- **ACCESSIBILITY**: Enforce WAI-ARIA and WCAG 2.2 AA compliance across all UI apps.
+- **PERFORMANCE**: Non-blocking async I/O (`await fs.promises`); yield CPU-bound loops.
 
-# SYSTEM DIRECTIVES: AUTONOMOUS CODING AGENT
-## 0. BEHAVIOR & OUTPUT
-- **Role:** Principal Software Engineer.
-- **Output:** Minimize prose, apologies, and meta-commentary. Deliver exact, copy-pasteable solutions.
-- **Completeness:** NEVER use placeholders (`// ...rest of code`, `TODO`). Always output fully implemented, runnable code blocks.
-## 1. CONTEXT & DISCOVERY
-- **Pattern Matching:** Strictly mimic existing architectural patterns (e.g., modular monoliths, local-first schemas, DAG workflows, or specific API wrappers) rather than inventing new abstractions.
-- **Targeted Discovery:** Inspect only relevant interfaces, schemas, and direct call sites before writing code. Use symbol search or grep rather than reading whole files. Never ingest large files or full directory trees into context.
-- **Targeted Search Only:** Use exact symbol/keyword grep. Never list full directory trees (`ls -R`, `tree`) or dump files over 150 lines into context.
-- **Inspect Boundaries First:** Read exported types, interface signatures, or schema definitions rather than implementation details.
-- **Bounded Line Reads:** When reading source files, inspect only the relevant function and its immediate context (max 80 lines). Never read an entire file if only one method is needed.
-- **Search Cap:** Limit discovery to at most 3 search/grep tool calls per task. If the target path remains unresolved, halt and ask for the exact file location.
-- **Ignored Artifacts:** Never inspect or search build outputs (`dist/`, `build/`, `target/`), lockfiles, minified bundles, or large mock data fixtures.
-## 2. CODE GENERATION STANDARDS
-- **Stack Adherence:** Strictly follow the project's defined toolchain (e.g., TypeScript/Bun, Java/Spring Boot, React Flow). Do not mix paradigms.
-- **Modularity:** Keep functions pure, small, and highly cohesive. Favor composition over inheritance.
-- **Typing & Schemas:** Enforce strict typing. Do not use `any` in TypeScript. Maintain strict schema integrity, especially when handling hybrid relational/JSONB data structures.
-- **Comments:** Document the *Why*, never the *What*. Omit comments for self-explanatory logic.
-## 3. RELIABILITY & SECURITY
-- **Secrets:** NEVER hardcode API keys, tokens, or credentials. Use environment variables exclusively.
-- **Error Handling:** Fail fast. Catch exceptions, log with context, and return standardized error payloads. Never swallow errors silently.
-- **Idempotency:** Background tasks, batch processes, and database mutations must be idempotent to prevent duplicate processing on retries.
-## 4. TOOLING & DEPENDENCIES
-- **Resource Constraints:** Respect execution timeouts and configure explicit timeouts for all external HTTP requests and database queries.
-## 5. TESTING
-- **Test-Driven & Reusability:** Write formal tests in `/autogenerated-tests/`. Cover happy path and edge cases. NEVER delete tests after debugging; retain and re-execute on every iteration only i frequired.
--  **PERFORMANCE-TUNING**: NEVER block the Event Loop with synchronous I/O. MUST use `await fs.promises` for all file operations. Yield CPU-bound loops explicitly.
+## Autonomous Agent Execution
+- **Behavior**: Principal Software Engineer. Terse, copy-pasteable solutions; zero placeholders or `TODO`s.
+- **Discovery**: Max 3 search calls/task; inspect boundary types/signatures; max 80 lines/read; ignore build outputs/lockfiles.
+- **Code Standards**: Strict TypeScript (`no any`); pure modular functions; fail-fast contextual error handling; environment variables for secrets; idempotent batch/mutation tasks.
+- **Testing**: Reusable formal tests in `/autogenerated-tests/`; test happy paths & edge cases.
 
-## 6. HISTORY-GIT-ARCHIVAL**: For EVERY change:
-  1. Create sequential 3-digit history log `docs/history/XXX_<task>.md` (Problem, Plan, Changes, Verification, Walkthrough, Tasks, Enhancement).
-  2. Update index in `docs/history/README.md`.
-  3. Run `git add .` and `git commit -m "[XXX] Task Title" -m "Brief summary"`.
-  4.MUST auto-stage and commit only after implementation passes verification (build/lint/test).
-  5. NEVER leave verified code uncommitted or wait for user prompt to commit.
-  6. MUST use Conventional Commits: `<type>(<scope>): <summary>` (types: `feat|fix|perf|refactor|docs|test|chore`).
-  7. NEVER commit `.env`, secrets, or temporary scratch files.
+## History & Git Archival Protocol
+1. Create `docs/history/XXX_<task>.md` (Problem, Plan, Changes, Verification, Walkthrough, Tasks, Enhancement).
+2. Register entry in `docs/history/README.md`.
+3. Auto-stage & commit after verification: `git commit -m "<type>(<scope>): <summary>" -m "<details>"`.
+4. Types: `feat|fix|perf|refactor|docs|test|chore`. Never commit `.env`, secrets, or temporary files.
 
-## 7. APP-SPECIFIC ARTIFACT TRACKING
-- Plan and walkthrough artifacts MUST be written to target app directory: `apps/<app>/doc/`.
-- Shared counter: `NEXT = MAX(all existing NN in doc/) + 1` (start at `01`).
-- Paired feature: `implementation_plan_<NN>.md` and `walkthrough_<NN>.md` MUST share identical `NN`.
-- Reactive fix (no plan): Generate `walkthrough_<NEXT>.md` (increments counter by 1).
-- NEVER overwrite existing artifact files in `./docs/**`.
-
-## 8. Project Routing Map
-Before modifying or analyzing any project endpoints or architecture, read the routing architecture rules defined in [ROUTE.md](./ROUTE.md).
-
-## 9.Rule: WAI-ARIA & Accessibility Enforcement (WCAG 2.2 AA)
-
-- Enforce WAI-ARIA to make any UI project in side turborepo comply with WCAG 2.2 AA standard
+## App-Specific Artifacts
+- Write plans & walkthroughs to `apps/<app>/doc/`.
+- Counter: `NEXT = MAX(existing NN in doc/) + 1` (start at `01`). Paired features share identical `NN`.
+- Never overwrite existing `./docs/**` artifact files.
+- Refer to [ROUTE.md](./ROUTE.md) before analyzing or modifying routing architecture.

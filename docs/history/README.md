@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [211](211_token_optimization_and_system_refactoring_of_rules_and_agents.md) | 2026-10-25 | Token Optimization & System Refactoring of Rules & AGENTS.md | Executed complete token-optimization and system refactoring across all `.agents/rules/` files and `AGENTS.md`, cutting token overhead by ~50% while preserving 100% of architectural invariants, skill routing, handoffs, and triggers. |
 | [210](210_tenant_role_delegation_in_users_screen.md) | 2026-10-25 | Tenant Role Delegation in Users Screen | Surfaced TenantRoleDelegationModal directly as 'Delegate Permissions' action in /users table row actions menu, refined /users layout with Liquid Glass & tenant badge, synced with unified sandbox, 100% green tests & WCAG 2.2 AA. |
 | [209](209_cryptographic_audit_studio_and_dynamic_access_control.md) | 2026-10-25 | Cryptographic Audit Studio & Dynamic Entity Access Control | Implemented SHA-256 forward-hash cryptographic audit ledger (Liquibase changelog 18, AuditMerkleService), dynamic entity permissions in EntityDataGrid, and Sovereign Audit Studio (/system/audit) with 100% green tests & WCAG 2.2 AA. |
 | [208](208_rbac_matrix_grid_data_table_standardization.md) | 2026-10-25 | RbacMatrixGrid DataTable Standardization | Reused `@/components/data-table` in `RbacMatrixGrid` via dynamic TanStack columns and `<DataTable showRowIndex />`, achieving 100% data table standardization across the entire `@acc/console` client. |
