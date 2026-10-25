@@ -2,12 +2,12 @@ import { describe, expect, test } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
 import {
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   IRMasterRenderer,
   FFIVideoEncoderSink,
   type VideoIRDocument,
 } from '../packages/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 import { FFmpegManager, initFFI } from '../packages/core';
 import { GenerativeStoryPipeline } from '../apps/cli/src/pipelines/04-generative-story/GenerativeStoryPipeline';
 

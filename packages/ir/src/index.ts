@@ -8,7 +8,6 @@ export * from './schema/VideoIRSchemaValidator';
 export * from './prober/AssetMetadataProber';
 export * from './adapters/IConfigToIRAdapter';
 export * from './adapters/IRConfigAdapterRegistry';
-export * from './adapters/StoryConfigToUniversalIRAdapter';
 export * from './adapters/PipelineIRToUniversalIRAdapter';
 export * from './compiler/DeterministicAudioClock';
 export * from './compiler/IntervalTreeIndex';

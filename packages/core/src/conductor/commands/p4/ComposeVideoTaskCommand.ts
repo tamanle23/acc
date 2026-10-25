@@ -21,7 +21,8 @@ export class ComposeVideoTaskCommand implements IConductorTaskCommand {
     let renderedScenesCount = Array.isArray(storyConfig?.scenes) ? storyConfig.scenes.length : 3;
 
     try {
-      const { StoryConfigToUniversalIRAdapter, RelationalDAGCompiler } = await import('@acc/ir');
+      const { RelationalDAGCompiler } = await import('@acc/ir');
+      const { StoryConfigToUniversalIRAdapter } = await import('@acc/legacy-story-renderer');
       if (storyConfig && (storyConfig.scenes || storyConfig.slides)) {
         const irDoc = StoryConfigToUniversalIRAdapter.adapt(storyConfig);
         const compiler = new RelationalDAGCompiler();

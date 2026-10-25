@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [218](218_move_story_config_adapter_to_legacy_story_renderer.md) | 2026-10-26 | Refactor and Move StoryConfigToUniversalIRAdapter to legacy-story-renderer | Moved StoryConfigToUniversalIRAdapter from packages/ir to apps/legacy-story-renderer, decoupled canonical IRConfigAdapterRegistry, and updated all consumers across CLI and test suites. |
 | [217](217_eliminate_sample_story_in_apps_cli.md) | 2026-10-26 | Eliminate Hardcoded "sample-story" in apps/cli | Removed all hardcoded defaults and prompt placeholders referencing sample-story in apps/cli, requiring explicit input paths with informative diagnostics. |
 | [216](216_clean_cli_args_parsing_with_node_util_parseargs.md) | 2026-10-26 | Clean Declarative CLI Argument Parsing with node:util parseArgs | Refactored manual imperative argument parsing in apps/cli/src/index.ts to declarative two-phase parser with node:util parseArgs, supporting strict mode validation, clustered flags, and graceful error guidance. |
 | [215](215_refactor_cli_subcommands_and_wizards_with_clack_prompts.md) | 2026-10-26 | Refactor CLI Subcommands & Interactive Wizard with @clack/prompts | Refactored CLI entrypoint (index.ts) and subcommands (sfx.ts, studio.ts, overlay.ts, ir-render.ts) with @clack/prompts, created shared apps/cli/src/prompts.ts utility module, deleted legacy packages/core/src/interactive.ts, and verified 100% test parity. |

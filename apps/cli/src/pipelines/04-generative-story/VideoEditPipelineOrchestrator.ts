@@ -47,11 +47,11 @@ export class VideoEditPipelineOrchestrator {
       '⚡ Routing via Canonical Universal Video IR Engine & IRChunkWorkerPool...'
     );
     const {
-      StoryConfigToUniversalIRAdapter,
       RelationalDAGCompiler,
       AssetMetadataProber,
       IRMasterRenderer,
     } = await import('@acc/ir');
+    const { StoryConfigToUniversalIRAdapter } = await import('@acc/legacy-story-renderer');
     const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
 
     const irDoc = StoryConfigToUniversalIRAdapter.adapt(config, undefined, baseDir);

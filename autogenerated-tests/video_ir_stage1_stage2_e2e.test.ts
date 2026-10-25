@@ -4,7 +4,6 @@ import fs from 'fs';
 import { FFmpegManager } from '@acc/core';
 import {
   IRConfigAdapterRegistry,
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
@@ -14,6 +13,7 @@ import {
   type VideoIRDocument,
   type LegacyStoryConfig,
 } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Video IR Stage 1 & Stage 2: Dual Sinks, Concrete Plugins & Native MP4 Compilation', () => {
   const sampleConfigPath = path.resolve(import.meta.dir, '../sample-story/story-config.json');

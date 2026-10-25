@@ -1,10 +1,10 @@
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 import { describe, it, expect } from 'bun:test';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import {
   VideoIRSchemaValidator,
-  StoryConfigToUniversalIRAdapter,
   PipelineIRToUniversalIRAdapter,
   RelationalDAGCompiler,
   IRMasterRenderer,

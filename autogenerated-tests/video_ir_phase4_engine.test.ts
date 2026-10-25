@@ -2,7 +2,6 @@ import { describe, it, expect } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
 import {
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
@@ -12,6 +11,7 @@ import {
   DecoupledAudioMixer,
   type LegacyStoryConfig,
 } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Video IR Phase 4: Deterministic Headless Rasterizer & Interactive Preview Engine', () => {
   it('generates bit-identical frame hashes and cumulative hash across independent runs (Determinism Invariant)', async () => {

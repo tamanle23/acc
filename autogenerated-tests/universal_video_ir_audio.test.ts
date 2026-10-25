@@ -11,8 +11,8 @@ import {
   DecoupledAudioMixer,
   RelationalDAGCompiler,
   IRMasterRenderer,
-  StoryConfigToUniversalIRAdapter,
 } from '../packages/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Pillar 2: Universal Video IR Audio Mixing & Master Voiceover Enhancements', () => {
   test('FFIAudioDecoder decodes audio into standardized 48kHz Stereo Float32 PCM', async () => {

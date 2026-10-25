@@ -3,12 +3,12 @@ import {
   RelationalDAGCompiler,
   IRPreviewEngine,
   IRMasterRenderer,
-  StoryConfigToUniversalIRAdapter,
   PipelineIRToUniversalIRAdapter,
   VideoIRSchemaValidator,
   type VideoIRDocument,
   type IIRFrameSink,
 } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Phase 5: Pure Isomorphic Video IR Suite (@acc/ir)', () => {
   it('exports only root . in @acc/ir without client or server subpaths', async () => {

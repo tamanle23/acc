@@ -1,9 +1,9 @@
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import {
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
   type LegacyStoryConfig,

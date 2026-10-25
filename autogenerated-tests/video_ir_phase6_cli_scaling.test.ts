@@ -2,13 +2,13 @@ import { describe, it, expect } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
 import {
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   AssetMetadataProber,
   IRMasterRenderer,
   type VideoIRDocument,
   type LegacyStoryConfig,
 } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 import { parseCliArgs } from '../apps/cli/src/index';
 
 describe('Phase 6: Distributed Temporal Slicing & CLI Execution Parity', () => {

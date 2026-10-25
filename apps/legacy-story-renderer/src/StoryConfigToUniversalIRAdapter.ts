@@ -4,10 +4,11 @@ import type {
   IRSequence,
   AssetDefinition,
   ModifierNode,
-} from '../types/VideoIR';
-import type { LegacyStoryConfig, LegacySceneConfig } from './LegacyStoryConfigAdapter';
-
-import type { IConfigToIRAdapter, AdapterOptions } from './IConfigToIRAdapter';
+  LegacyStoryConfig,
+  LegacySceneConfig,
+  IConfigToIRAdapter,
+  AdapterOptions,
+} from '@acc/ir';
 
 /**
  * StoryConfigToUniversalIRAdapter:

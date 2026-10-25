@@ -1,7 +1,7 @@
+import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 import { describe, it, expect } from 'bun:test';
 import {
   VideoIRSchemaValidator,
-  StoryConfigToUniversalIRAdapter,
   RelationalDAGCompiler,
   DeterministicAudioClock,
   IntervalTreeIndex,

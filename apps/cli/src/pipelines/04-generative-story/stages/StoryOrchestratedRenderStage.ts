@@ -21,11 +21,11 @@ export function createStoryOrchestratedRenderStage(
 
       // Phase 2 Canonical Transition: Universal Video IR Engine is the primary, default renderer
       const {
-        StoryConfigToUniversalIRAdapter,
         RelationalDAGCompiler,
         AssetMetadataProber,
         IRMasterRenderer,
       } = await import('@acc/ir');
+      const { StoryConfigToUniversalIRAdapter } = await import('@acc/legacy-story-renderer');
       const { FFIVideoEncoderSink, IRChunkWorkerPool } = await import('@acc/core');
 
       const irDoc = StoryConfigToUniversalIRAdapter.adapt(resolvedConfig, undefined, absoluteDir);
