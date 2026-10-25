@@ -4,11 +4,10 @@ import type {
   IRSequence,
   AssetDefinition,
   ModifierNode,
-  LegacyStoryConfig,
-  LegacySceneConfig,
   IConfigToIRAdapter,
   AdapterOptions,
 } from '@acc/ir';
+import type { LegacyStoryConfig, LegacySceneConfig } from './LegacyStoryConfigAdapter';
 
 /**
  * StoryConfigToUniversalIRAdapter:

@@ -1,9 +1,9 @@
 import { EditingOpFactory } from '@acc/core';
+import type { ExtendedPipelineIR } from '@acc/ir';
 import {
   LegacyStoryConfigAdapter,
   type LegacyStoryConfig,
-  type ExtendedPipelineIR,
-} from '@acc/ir';
+} from './LegacyStoryConfigAdapter';
 import { SafeZoneManager } from '@acc/effect-engines';
 import type { ExportOptions } from '@acc/exporters';
 

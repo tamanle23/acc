@@ -1,8 +1,8 @@
+import { LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, expect, test } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { LegacyStoryConfigAdapter, type LegacyStoryConfig } from '../packages/ir/src/LegacyStoryConfigAdapter';
 import {
   EditingOpFactory,
   StandardCutStrategy,

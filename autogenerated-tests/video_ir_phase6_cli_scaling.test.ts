@@ -6,9 +6,8 @@ import {
   AssetMetadataProber,
   IRMasterRenderer,
   type VideoIRDocument,
-  type LegacyStoryConfig,
-} from '@acc/ir';
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+  } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { parseCliArgs } from '../apps/cli/src/index';
 
 describe('Phase 6: Distributed Temporal Slicing & CLI Execution Parity', () => {

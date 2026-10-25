@@ -1,4 +1,4 @@
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, it, expect } from 'bun:test';
 import {
   VideoIRSchemaValidator,
@@ -6,8 +6,7 @@ import {
   DeterministicAudioClock,
   IntervalTreeIndex,
   type VideoIRDocument,
-  type LegacyStoryConfig,
-} from '../packages/ir/src';
+  } from '../packages/ir/src';
 
 describe('Video IR Phase 1 & Phase 2: Schema, Adapter & Deterministic DAG Compiler', () => {
   it('validates a correct Video IR V1.0-Stable document', () => {

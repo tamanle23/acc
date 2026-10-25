@@ -1,12 +1,11 @@
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, it, expect } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
 import {
   RelationalDAGCompiler,
   AssetMetadataProber,
-  type LegacyStoryConfig,
-} from '../packages/ir/src';
+  } from '../packages/ir/src';
 import {
   IRMasterRenderer,
   IRChunkWorkerPool,

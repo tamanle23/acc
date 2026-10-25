@@ -6,7 +6,7 @@ import type {
   AudioTrackSpec,
   PlatformPreset,
   PipelineId
-} from './PipelineIR';
+} from '@acc/ir';
 
 export interface LegacySceneConfig {
   image?: string;

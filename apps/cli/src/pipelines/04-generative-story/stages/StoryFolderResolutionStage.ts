@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { type IPipelineMiddleware, fileExists } from '@acc/core';
-import { LegacyStoryConfigAdapter } from '@acc/ir';
+import { LegacyStoryConfigAdapter } from '@acc/legacy-story-renderer';
 import type { GenerativeStoryContext } from '../GenerativeStoryPipeline';
 import { resolveStoryFolder } from '../utils/folderResolver';
 

@@ -1,3 +1,4 @@
+import { LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, it, expect } from 'bun:test';
 import fs from 'fs';
 import path from 'path';

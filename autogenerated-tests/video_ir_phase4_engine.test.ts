@@ -9,9 +9,8 @@ import {
   DeterministicNoiseGenerator,
   FrameBackpressureLock,
   DecoupledAudioMixer,
-  type LegacyStoryConfig,
-} from '@acc/ir';
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+  } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 
 describe('Video IR Phase 4: Deterministic Headless Rasterizer & Interactive Preview Engine', () => {
   it('generates bit-identical frame hashes and cumulative hash across independent runs (Determinism Invariant)', async () => {

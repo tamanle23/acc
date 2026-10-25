@@ -4,9 +4,8 @@ import fs from 'fs';
 import {
   RelationalDAGCompiler,
   IRMasterRenderer,
-  type LegacyStoryConfig,
-} from '@acc/ir';
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+  } from '@acc/ir';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 
 describe('Video IR Phase 5: Pioneer End-to-End Parity Audit', () => {
   it('verifies strict functional parity between story-config.json and IR compiled timeline', async () => {

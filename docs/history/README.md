@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [219](219_isolate_legacy_story_config_adapter.md) | 2026-10-26 | Isolate LegacyStoryConfigAdapter into Legacy Story Renderer | Relocated LegacyStoryConfigAdapter and legacy types to @acc/legacy-story-renderer, decoupled packages/ir, and updated all consumers across CLI and test suites. |
 | [218](218_move_story_config_adapter_to_legacy_story_renderer.md) | 2026-10-26 | Refactor and Move StoryConfigToUniversalIRAdapter to legacy-story-renderer | Moved StoryConfigToUniversalIRAdapter from packages/ir to apps/legacy-story-renderer, decoupled canonical IRConfigAdapterRegistry, and updated all consumers across CLI and test suites. |
 | [217](217_eliminate_sample_story_in_apps_cli.md) | 2026-10-26 | Eliminate Hardcoded "sample-story" in apps/cli | Removed all hardcoded defaults and prompt placeholders referencing sample-story in apps/cli, requiring explicit input paths with informative diagnostics. |
 | [216](216_clean_cli_args_parsing_with_node_util_parseargs.md) | 2026-10-26 | Clean Declarative CLI Argument Parsing with node:util parseArgs | Refactored manual imperative argument parsing in apps/cli/src/index.ts to declarative two-phase parser with node:util parseArgs, supporting strict mode validation, clustered flags, and graceful error guidance. |

@@ -1,5 +1,4 @@
 export * from './PipelineIR';
-export * from './LegacyStoryConfigAdapter';
 
 // Universal Video IR V1.0-Stable Exports
 export * from './types/VideoIR';

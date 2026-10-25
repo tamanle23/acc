@@ -1,3 +1,4 @@
+import { LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, test, expect } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
@@ -5,7 +6,6 @@ import { ptr } from 'bun:ffi';
 import { createCanvas } from '@napi-rs/canvas';
 import { ModelHandleRegistry } from '../packages/core/src';
 import { BoundedQueue } from '../packages/core/src/BoundedQueue';
-import { LegacyStoryConfigAdapter } from '../packages/ir/src/LegacyStoryConfigAdapter';
 import { FFmpegManager } from '../packages/core/src/FFmpegManager';
 import { FFI, freePtr, makeAVRational, safeArrayBuffer, Structs, AV_PIX_FMT_RGBA } from '../packages/core/src/ffmpeg-ffi';
 import { generateCsvReport } from '../benchmarks/cli/benchmark-cli';

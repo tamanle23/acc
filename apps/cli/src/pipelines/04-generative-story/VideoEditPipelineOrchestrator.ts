@@ -1,7 +1,8 @@
 import os from 'os';
 import { FFmpegManager, Logger } from '@acc/core';
 import type { ResolvedStoryConfig } from '@acc/core/types';
-import type { LegacyStoryConfig, ExtendedPipelineIR } from '@acc/ir';
+import type { ExtendedPipelineIR } from '@acc/ir';
+import type { LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import {
   LegacyIRPreparationAdapter,
   type PipelineExecutionOptions,

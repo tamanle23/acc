@@ -1,4 +1,4 @@
-import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
+import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import path from 'path';
 import fs from 'fs';
@@ -6,8 +6,7 @@ import os from 'os';
 import {
   RelationalDAGCompiler,
   AssetMetadataProber,
-  type LegacyStoryConfig,
-} from '../packages/ir/src';
+  } from '../packages/ir/src';
 import { IRChunkWorkerPool } from '../packages/ir/src/server';
 import { FFmpegManager, initFFI, MediaEngineRegistry } from '@acc/core';
 
