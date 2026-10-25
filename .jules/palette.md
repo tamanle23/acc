@@ -19,3 +19,7 @@
 ## 2025-05-22 - SignOutDialog Async Loading State
 **Learning:** Modal confirmation wrappers (like `SignOutDialog`) using generic `ConfirmDialog` components must propagate `isLoading` state so that `aria-busy="true"`, loading spinners, and disabled button states are properly reflected during async network actions.
 **Action:** Always ensure async state variables (`isLoading`) in custom dialog wrappers are explicitly forwarded to underlying `ConfirmDialog` components.
+
+## 2025-05-23 - Hover-Only Interactive Buttons in List Items & Keyboard Focus
+**Learning:** Icon-only action buttons inside menu items (e.g. setting default workspace) that use `opacity-0 group-hover:opacity-100` are invisible to keyboard navigation users unless `focus-visible:opacity-100` and `focus-visible:ring-1` are added, along with `aria-label` and `aria-pressed`.
+**Action:** Always include `focus-visible:opacity-100` alongside `group-hover:opacity-100` on conditionally visible action buttons within list or dropdown items.
