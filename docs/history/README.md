@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [217](217_eliminate_sample_story_in_apps_cli.md) | 2026-10-26 | Eliminate Hardcoded "sample-story" in apps/cli | Removed all hardcoded defaults and prompt placeholders referencing sample-story in apps/cli, requiring explicit input paths with informative diagnostics. |
 | [216](216_clean_cli_args_parsing_with_node_util_parseargs.md) | 2026-10-26 | Clean Declarative CLI Argument Parsing with node:util parseArgs | Refactored manual imperative argument parsing in apps/cli/src/index.ts to declarative two-phase parser with node:util parseArgs, supporting strict mode validation, clustered flags, and graceful error guidance. |
 | [215](215_refactor_cli_subcommands_and_wizards_with_clack_prompts.md) | 2026-10-26 | Refactor CLI Subcommands & Interactive Wizard with @clack/prompts | Refactored CLI entrypoint (index.ts) and subcommands (sfx.ts, studio.ts, overlay.ts, ir-render.ts) with @clack/prompts, created shared apps/cli/src/prompts.ts utility module, deleted legacy packages/core/src/interactive.ts, and verified 100% test parity. |
 | [214](214_implement_bootstrap_node_for_node_and_bun.md) | 2026-10-25 | Implement bootstrapNode for Node and Bun Runtimes | Implemented `bootstrapNode` in `@acc/core` providing unified IoC registration for native Skia canvas (`NapiCanvasAdapter`), filesystem cache (`NativeFileCacheStrategy`), server media engines (`bun-ffi`, `mediabunny-server`, `fluent-ffmpeg`), and optional FFmpeg binary preparation. |

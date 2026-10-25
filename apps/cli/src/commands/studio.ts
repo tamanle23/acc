@@ -19,7 +19,11 @@ export interface StudioCliOptions {
  * Spins up local HTTP Studio editor server for visual scrubbing and live JSON Patch AST editing.
  */
 export async function handleStudioCommand(options: StudioCliOptions): Promise<StudioServer> {
-  let inputPath = options.input ? path.resolve(options.input) : path.resolve('./sample-story');
+  if (!options.input) {
+    throw new Error('Studio input path is required. Please specify a path to a project directory or Video IR JSON document.');
+  }
+
+  let inputPath = path.resolve(options.input);
 
   if (fs.existsSync(inputPath) && fs.statSync(inputPath).isDirectory()) {
     const candidates = ['video-ir.json', 'pipeline-ir.json', 'story-config.json', 'omnichannel-config.json'];

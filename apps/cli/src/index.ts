@@ -321,7 +321,10 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
   }
 
   if (normId === '4' || normId === 'story' || normId === 'generative-storytelling' || normId === 'storyteller') {
-    return options.configPath || './sample-story';
+    if (!options.configPath) {
+      throw new Error(`Pipeline 'story' requires a configuration directory or story-config file. Provide one with -c or --config.`);
+    }
+    return options.configPath;
   }
 
   if (normId === '5' || normId === 'rule' || normId === 'math' || normId === 'logic' || normId === 'rule-logic') {
@@ -413,9 +416,13 @@ export async function run(customArgs?: string[]): Promise<any> {
       return { success: true, command: 'sfx' };
     }
     if (options.command === 'ir-render') {
+      if (!options.configPath) {
+        Logger.error('IRRenderCommand', 'Error: -c / --config <ir.json|project_dir> is required for ir-render.');
+        return { success: false, error: 'Missing --config flag' };
+      }
       const { handleIrRenderCommand } = await import('./commands/ir-render');
       await handleIrRenderCommand({
-        input: options.configPath || './sample-story',
+        input: options.configPath,
         output: options.outDir,
         engine: options.mediaEngine,
         dryRun: options.dryRun,
@@ -427,9 +434,14 @@ export async function run(customArgs?: string[]): Promise<any> {
       return { success: true, command: 'ir-render' };
     }
     if (options.command === 'studio') {
+      const targetInput = options.configPath || rawArgs[1];
+      if (!targetInput) {
+        Logger.error('StudioCommand', 'Error: -c / --config <ir.json|project_dir> or positional path is required for studio.');
+        return { success: false, error: 'Missing studio input path' };
+      }
       const { handleStudioCommand } = await import('./commands/studio');
       const studio = await handleStudioCommand({
-        input: options.configPath || rawArgs[1] || './sample-story',
+        input: targetInput,
         port: options.port || 3300,
         keepAlive: true,
       });
@@ -488,9 +500,8 @@ export async function run(customArgs?: string[]): Promise<any> {
   switch (commandSelection) {
     case 'studio': {
       const configLocation = await promptPath({
-        message: 'Path to Video IR document or story folder:',
-        placeholder: './sample-story',
-        defaultPath: './sample-story',
+        message: 'Path to Video IR document or project folder:',
+        placeholder: './projects/my-video-project',
       });
       const { handleStudioCommand } = await import('./commands/studio');
       const studio = await handleStudioCommand({
@@ -502,9 +513,8 @@ export async function run(customArgs?: string[]): Promise<any> {
     }
     case 'ir-render': {
       const configLocation = await promptPath({
-        message: 'Path to Video IR document or story folder:',
-        placeholder: './sample-story',
-        defaultPath: './sample-story',
+        message: 'Path to Video IR document or project folder:',
+        placeholder: './projects/video-ir.json',
       });
       const { handleIrRenderCommand } = await import('./commands/ir-render');
       await handleIrRenderCommand({
@@ -568,9 +578,8 @@ export async function run(customArgs?: string[]): Promise<any> {
       });
 
       const configLocation = await promptPath({
-        message: 'Path to story-config folder or input file:',
-        placeholder: './sample-story',
-        defaultPath: './sample-story',
+        message: 'Path to pipeline configuration folder or input file:',
+        placeholder: './projects/config.json',
       });
 
       const { executionResult, outputPaths } = await runPipeline(pipelineId, configLocation);
