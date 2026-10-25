@@ -8,6 +8,7 @@ export * from './canvas/NapiCanvasAdapter';
 export * from '../buffer/NativeBufferPool';
 export { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStrategy';
 export { FFmpegManager } from '../FFmpegManager';
+export { bootstrapNode, type BootstrapNodeOptions } from '../bootstrap';
 
 export async function bootstrapServer(): Promise<void> {
   await FFmpegManager.prepare();

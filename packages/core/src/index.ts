@@ -57,6 +57,7 @@ export * from './telemetry/Tracer';
 export * from './telemetry/MetricsRegistry';
 export * from './security/DynamicSecretsManager';
 export * from './autoconfig';
+export * from './bootstrap';
 export * from './media-engine';
 export * from './native';
 export * from './buffer';
