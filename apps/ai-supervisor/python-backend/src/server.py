@@ -166,6 +166,10 @@ def serve(host="127.0.0.1", port=50051, parent_pid=None):
     def graceful_shutdown(signum, frame):
         print(f"\n[ACC Python AI] Received signal {signum}. Initiating graceful shutdown...", flush=True)
         health_servicer.set("", health_pb2.HealthCheckResponse.NOT_SERVING)
+        try:
+            ModelLifecycleManager.get_instance().stop()
+        except Exception as e:
+            print(f"[ACC Python AI] Error stopping ModelLifecycleManager: {e}", flush=True)
         server.stop(grace=1.0)
         pid_manager.remove_pid()
         sys.exit(0)

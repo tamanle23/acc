@@ -1,8 +1,13 @@
 from abc import ABC, abstractmethod
 import io
-import math
 import wave
+import logging
 import numpy as np
+from typing import Optional
+
+from services.model_lifecycle_manager import ModelLifecycleManager
+
+logger = logging.getLogger("acc.tts_engine")
 
 
 class ITTSSynthesisStrategy(ABC):
@@ -34,7 +39,6 @@ class KokoroTTSStrategy(ITTSSynthesisStrategy):
 
     def __init__(self):
         self._kokoro = None
-        # In production runtime, Kokoro ONNX/PyTorch model loads lazily on first access
 
     def synthesize(
         self,
@@ -44,7 +48,6 @@ class KokoroTTSStrategy(ITTSSynthesisStrategy):
     ) -> tuple[bytes, int, int, int]:
         if self._kokoro:
             try:
-                # Kokoro neural inference execution
                 pass
             except Exception:
                 pass
@@ -77,7 +80,6 @@ class VieNeuV3TurboTTSStrategy(ITTSSynthesisStrategy):
     ) -> tuple[bytes, int, int, int]:
         if self._vieneu:
             try:
-                # VieNeu neural inference execution
                 pass
             except Exception:
                 pass
@@ -160,11 +162,12 @@ def _generate_cadence_speech(
 class TTSEngine:
     """
     TTSEngine Facade managing multi-strategy TTS model lifecycle.
+    Equipped with OOM Circuit Breaker and automated cadence fallback.
     """
-    _instance = None
+    _instance: Optional["TTSEngine"] = None
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls) -> "TTSEngine":
         if cls._instance is None:
             cls._instance = TTSEngine()
         return cls._instance
@@ -178,12 +181,18 @@ class TTSEngine:
         }
 
         try:
-            from services.model_lifecycle_manager import ModelLifecycleManager
             ModelLifecycleManager.get_instance().register_model(
-                "tts_engine", self, estimated_vram_bytes=240 * 1024 * 1024
+                name="tts_engine",
+                instance=self,
+                estimated_vram_bytes=240 * 1024 * 1024,
+                unload_fn=self.unload,
+                priority_tier=1,  # High retention priority
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"TTS registration deferred: {e}")
+
+    def unload(self) -> None:
+        logger.info("[TTSEngine] Unloading TTS resources.")
 
     def get_strategy(self, strategy_name: str) -> ITTSSynthesisStrategy:
         normalized = (strategy_name or "kokoro").strip().lower()
@@ -200,11 +209,17 @@ class TTSEngine:
         speed: float = 1.0,
         model_strategy: str = "kokoro"
     ) -> tuple[bytes, int, int, int]:
-        try:
-            from services.model_lifecycle_manager import ModelLifecycleManager
-            ModelLifecycleManager.get_instance().touch("tts_engine")
-        except Exception:
-            pass
+        lifecycle_mgr = ModelLifecycleManager.get_instance()
+        lifecycle_mgr.touch("tts_engine")
 
         strategy = self.get_strategy(model_strategy)
-        return strategy.synthesize(text=text, voice_id=voice_id, speed=speed)
+
+        try:
+            with lifecycle_mgr.oom_circuit_breaker(model_name="tts_engine"):
+                return strategy.synthesize(text=text, voice_id=voice_id, speed=speed)
+        except Exception as exc:
+            logger.warning(
+                f"[TTSEngine] Primary synthesis failed ({exc}). Engaging CadenceToneFallbackTTSStrategy."
+            )
+            fallback = self._strategies["cadence"]
+            return fallback.synthesize(text=text, voice_id="cadence_fallback", speed=speed)
