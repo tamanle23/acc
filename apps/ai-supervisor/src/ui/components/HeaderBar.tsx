@@ -90,6 +90,15 @@ export function HeaderBar(props: HeaderBarProps) {
         <ThemeSwitcher themeStore={props.themeStore} />
 
         <button
+          onClick={() => props.store.setIsAuditDrawerOpen(true)}
+          title="Open Model Lifecycle & OOM Audit forensics drawer"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors cursor-pointer"
+        >
+          <span class="w-2 h-2 rounded-full bg-[var(--accent-primary)] animate-pulse" />
+          <span>Audit Stream</span>
+        </button>
+
+        <button
           onClick={() => props.store.purgeVram()}
           title="Force release inactive models & VRAM from GPU memory"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--status-error-bg)] hover:brightness-110 text-[var(--status-error-text)] border border-[var(--status-error-border)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"

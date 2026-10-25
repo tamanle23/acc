@@ -44,6 +44,7 @@ Bảng theo dõi toàn bộ danh mục kế hoạch phát triển, tính năng t
 | [`038`](038_master_integration_plan_iteration16.md) | Master Integration Plan Iteration 16: Canvas LSP Decoupling, Declarative Timeline Standards, Route Isolation, Default IR & OffscreenCanvas | Monorepo Core / Universal IR / Exporters / Studio / CLI | ✅ `Completed` | 2026-10-20 | [`283_master_integration_plan_iteration16_execution.md`](../history/283_master_integration_plan_iteration16_execution.md) |
 | [`039`](039_ai_supervisor_rest_sse_and_studio_ir_preview_sync.md) | AI-Supervisor REST+SSE Fleet Control Plane & Studio Universal Video IR Preview Synchronization | AI-Supervisor / Studio / Universal IR | ✅ `Completed` | 2026-10-24 | [`340_ai_supervisor_rest_sse_and_unified_python_ai.md`](../history/340_ai_supervisor_rest_sse_and_unified_python_ai.md) |
 | [`040`](040_model_lifecycle_hardware_strategies_and_oom_telemetry.md) | Enterprise Model Lifecycle, Hardware Memory Strategies & OOM Telemetry Audit Plane | AI-Supervisor / Python Backend / Memory Management | ✅ `Completed` | 2026-10-25 | [`343_enterprise_model_lifecycle_and_oom_telemetry.md`](../history/343_enterprise_model_lifecycle_and_oom_telemetry.md) |
+| [`041`](041_inverted_telemetry_ingestion_and_ark_ui_observability.md) | Inverted Telemetry Ingestion Architecture & Ark UI Fleet Observability | AI-Supervisor / Worker / Proto | ✅ `Completed` | 2026-10-25 | [`345_inverted_telemetry_ingestion_and_ark_ui_observability.md`](../history/345_inverted_telemetry_ingestion_and_ark_ui_observability.md) |
 
 ---
 

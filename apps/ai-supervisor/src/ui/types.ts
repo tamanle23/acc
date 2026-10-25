@@ -124,6 +124,21 @@ export interface SupervisorStatusResponse {
   readonly trayColor: TrayColor;
 }
 
-export interface LogLineResult {
-  readonly logs: readonly string[];
+export interface AuditEventEntry {
+  readonly id: string;
+  readonly timestamp: number;
+  readonly service: string;
+  readonly eventType: "MODEL_LOADED" | "MODEL_EVICTED" | "OOM_INTERCEPTED" | "HEARTBEAT" | "STATE_CHANGE";
+  readonly message: string;
+  readonly details?: Record<string, any>;
 }
+
+export interface TelemetryAlert {
+  readonly id: string;
+  readonly level: "warning" | "error" | "critical";
+  readonly service: string;
+  readonly message: string;
+  readonly timestamp: number;
+}
+
+export type StreamConnectionStatus = "CONNECTING" | "CONNECTED" | "RECONNECTING" | "DISCONNECTED";

@@ -1,4 +1,7 @@
 import { EventEmitter } from "node:events";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 
 export type ServiceStatus =
   | "STOPPED"
@@ -68,6 +71,15 @@ export interface TelemetryAlert {
   timestamp: number;
 }
 
+export interface AuditEventEntry {
+  id: string;
+  timestamp: number;
+  service: string;
+  eventType: "MODEL_LOADED" | "MODEL_EVICTED" | "OOM_INTERCEPTED" | "HEARTBEAT" | "STATE_CHANGE";
+  message: string;
+  details?: Record<string, any>;
+}
+
 /**
  * TelemetryEventBroker:
  * Enterprise In-Memory Event Bus & Ring Buffer managing real-time Fleet Telemetry.
@@ -79,6 +91,9 @@ export class TelemetryEventBroker extends EventEmitter {
   private historyRingBuffer: FleetTelemetrySnapshot[] = [];
   private readonly maxHistoryLength = 60; // 60 snapshots (1 minute @ 1Hz)
   private domainTelemetryMap: Map<string, SidecarDomainTelemetry> = new Map();
+  private auditEventsRingBuffer: AuditEventEntry[] = [];
+  private readonly maxAuditEvents = 200;
+  private auditLogFilePath: string;
 
   constructor() {
     super();
@@ -93,6 +108,14 @@ export class TelemetryEventBroker extends EventEmitter {
       },
       services: {},
     };
+
+    const supervisorDir = path.join(os.homedir(), ".acc", "supervisor");
+    try {
+      if (!fs.existsSync(supervisorDir)) {
+        fs.mkdirSync(supervisorDir, { recursive: true });
+      }
+    } catch {}
+    this.auditLogFilePath = path.join(supervisorDir, "audit_events.jsonl");
   }
 
   public static getInstance(): TelemetryEventBroker {
@@ -206,6 +229,33 @@ export class TelemetryEventBroker extends EventEmitter {
     return [...this.historyRingBuffer];
   }
 
+  public recordAuditEvent(entry: Omit<AuditEventEntry, "id">): AuditEventEntry {
+    const fullEntry: AuditEventEntry = {
+      ...entry,
+      id: `aud_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    };
+
+    // 1. Sliding in-memory ring buffer (last 200 items)
+    this.auditEventsRingBuffer.push(fullEntry);
+    if (this.auditEventsRingBuffer.length > this.maxAuditEvents) {
+      this.auditEventsRingBuffer.shift();
+    }
+
+    // 2. Append-only JSONL file for forensic persistence
+    try {
+      fs.appendFileSync(this.auditLogFilePath, JSON.stringify(fullEntry) + "\n");
+    } catch (err: any) {
+      console.warn(`[TelemetryEventBroker] Failed to append to audit log: ${err.message}`);
+    }
+
+    this.emit("audit", fullEntry);
+    return fullEntry;
+  }
+
+  public getAuditEvents(): AuditEventEntry[] {
+    return [...this.auditEventsRingBuffer];
+  }
+
   public emitAlert(alert: Omit<TelemetryAlert, "id" | "timestamp">): void {
     const fullAlert: TelemetryAlert = {
       ...alert,
@@ -232,6 +282,14 @@ export class TelemetryEventBroker extends EventEmitter {
         controller.enqueue(
           encoder.encode(`event: telemetry\ndata: ${JSON.stringify(initial)}\n\n`)
         );
+
+        // Immediate audit events flush
+        const initialAudits = this.getAuditEvents();
+        if (initialAudits.length > 0) {
+          controller.enqueue(
+            encoder.encode(`event: audit_history\ndata: ${JSON.stringify(initialAudits)}\n\n`)
+          );
+        }
 
         // 2. Periodic keep-alive ping (every 15s)
         keepAliveTimer = setInterval(() => {
@@ -263,8 +321,17 @@ export class TelemetryEventBroker extends EventEmitter {
           }
         };
 
+        const auditHandler = (audit: AuditEventEntry) => {
+          try {
+            controller.enqueue(
+              encoder.encode(`event: audit\ndata: ${JSON.stringify(audit)}\n\n`)
+            );
+          } catch {}
+        };
+
         this.on("telemetry", telemetryHandler);
         this.on("alert", alertHandler);
+        this.on("audit", auditHandler);
 
         // 4. Abort / Cancel handling
         if (signal) {
@@ -272,6 +339,7 @@ export class TelemetryEventBroker extends EventEmitter {
             if (keepAliveTimer) clearInterval(keepAliveTimer);
             if (telemetryHandler) this.off("telemetry", telemetryHandler);
             if (alertHandler) this.off("alert", alertHandler);
+            this.off("audit", auditHandler);
             try {
               controller.close();
             } catch {}

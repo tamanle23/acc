@@ -22,6 +22,9 @@ import llm_pb2
 import llm_pb2_grpc
 import admin_pb2
 import admin_pb2_grpc
+import telemetry_pb2
+import telemetry_pb2_grpc
+from services.telemetry_service import TelemetryService
 from watchdog import PIDManager, start_parent_watchdog
 from services.model_lifecycle_manager import ModelLifecycleManager
 
@@ -144,11 +147,12 @@ def serve(host="127.0.0.1", port=50051, parent_pid=None):
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 
-    # 2. Register Consolidated ACC AI services (TTS + LLM + Admin)
+    # 2. Register Consolidated ACC AI services (TTS + LLM + Admin + Telemetry)
     # Vision & Depth have been stripped off to decouple from supervisor
     tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
     llm_pb2_grpc.add_LLMServiceServicer_to_server(LLMService(), server)
     admin_pb2_grpc.add_AdminServiceServicer_to_server(AdminService(), server)
+    telemetry_pb2_grpc.add_TelemetryServiceServicer_to_server(TelemetryService(), server)
 
     # 3. Standard grpc.health.v1 health check servicer
     health_servicer = health.HealthServicer()
@@ -156,6 +160,7 @@ def serve(host="127.0.0.1", port=50051, parent_pid=None):
     health_servicer.set("acc.v1.TTSService", health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set("acc.v1.LLMService", health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set("acc.v1.AdminService", health_pb2.HealthCheckResponse.SERVING)
+    health_servicer.set("acc.v1.TelemetryService", health_pb2.HealthCheckResponse.SERVING)
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
 
     bind_address = f"{host}:{port}"

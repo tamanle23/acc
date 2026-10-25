@@ -6,6 +6,8 @@ import { TelemetryGrid } from "./components/TelemetryGrid";
 import { FleetGrid } from "./components/FleetGrid";
 import { ConsoleSection } from "./components/ConsoleSection";
 import { SettingsModal } from "./components/SettingsModal";
+import { AuditDrawer } from "./components/AuditDrawer";
+import { TtsPlaygroundModal } from "./components/TtsPlaygroundModal";
 import { AlertCircle, CheckCircle, Info } from "lucide-solid";
 
 export function App() {
@@ -87,6 +89,7 @@ export function App() {
           onControlService={(name, action) => store.controlService(name, action)}
           onPurgeVram={() => store.purgeVram()}
           onOpenStudio={handleOpenStudio}
+          onOpenTtsPlayground={() => store.setIsTtsPlaygroundOpen(true)}
         />
 
         {/* 4. Live Console Logs */}
@@ -107,6 +110,12 @@ export function App() {
         autostart={store.status()?.autostart ?? false}
         onSave={(cfg) => store.saveConfig(cfg)}
       />
+
+      {/* Model Lifecycle & OOM Audit Drawer */}
+      <AuditDrawer store={store} />
+
+      {/* Neural TTS Synthesis Playground Modal */}
+      <TtsPlaygroundModal store={store} />
     </main>
   );
 }

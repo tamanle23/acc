@@ -3,11 +3,15 @@ import type {
   SupervisorStatusResponse,
   SupervisorConfig,
   FleetTelemetrySnapshot,
+  AuditEventEntry,
+  StreamConnectionStatus,
 } from "../types";
 
 export function createSupervisorStore() {
   const [status, setStatus] = createSignal<SupervisorStatusResponse | null>(null);
   const [telemetry, setTelemetry] = createSignal<FleetTelemetrySnapshot | null>(null);
+  const [auditEvents, setAuditEvents] = createSignal<readonly AuditEventEntry[]>([]);
+  const [streamStatus, setStreamStatus] = createSignal<StreamConnectionStatus>("CONNECTING");
   const [isLoading, setIsLoading] = createSignal<boolean>(true);
   const [error, setError] = createSignal<string | null>(null);
   const [activeLogService, setActiveLogService] = createSignal<string>("supervisor");
@@ -15,8 +19,12 @@ export function createSupervisorStore() {
   const [logFilter, setLogFilter] = createSignal<string>("");
   const [isActionPending, setIsActionPending] = createSignal<boolean>(false);
   const [toastMessage, setToastMessage] = createSignal<{ text: string; type: "info" | "success" | "error" } | null>(null);
+  const [isAuditDrawerOpen, setIsAuditDrawerOpen] = createSignal<boolean>(false);
+  const [isTtsPlaygroundOpen, setIsTtsPlaygroundOpen] = createSignal<boolean>(false);
 
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let eventSource: EventSource | null = null;
+
   const showToast = (text: string, type: "info" | "success" | "error" = "info") => {
     if (toastTimer) clearTimeout(toastTimer);
     setToastMessage({ text, type });
@@ -37,17 +45,6 @@ export function createSupervisorStore() {
     }
   };
 
-  const fetchTelemetry = async () => {
-    try {
-      const res = await fetch("/api/telemetry/snapshot");
-      if (!res.ok) return;
-      const data: FleetTelemetrySnapshot = await res.json();
-      setTelemetry(data);
-    } catch {
-      // transient telemetry network error
-    }
-  };
-
   const fetchLogs = async () => {
     const service = activeLogService();
     const filter = encodeURIComponent(logFilter());
@@ -59,6 +56,67 @@ export function createSupervisorStore() {
     } catch {
       // ignore transient poll errors
     }
+  };
+
+  const fetchAuditHistory = async () => {
+    try {
+      const res = await fetch("/api/telemetry/audits");
+      if (!res.ok) return;
+      const data: AuditEventEntry[] = await res.json();
+      setAuditEvents(data);
+    } catch {}
+  };
+
+  const setupEventSource = () => {
+    if (typeof window === "undefined" || !("EventSource" in window)) return;
+
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+
+    setStreamStatus("CONNECTING");
+    eventSource = new EventSource("/api/telemetry/stream");
+
+    eventSource.onopen = () => {
+      setStreamStatus("CONNECTED");
+    };
+
+    eventSource.addEventListener("telemetry", (e: MessageEvent) => {
+      try {
+        const snapshot: FleetTelemetrySnapshot = JSON.parse(e.data);
+        setTelemetry(snapshot);
+      } catch {}
+    });
+
+    eventSource.addEventListener("audit", (e: MessageEvent) => {
+      try {
+        const audit: AuditEventEntry = JSON.parse(e.data);
+        setAuditEvents((prev) => [audit, ...prev].slice(0, 200));
+
+        if (audit.eventType === "OOM_INTERCEPTED") {
+          showToast(`OOM Alert: ${audit.message}`, "error");
+        }
+      } catch {}
+    });
+
+    eventSource.addEventListener("audit_history", (e: MessageEvent) => {
+      try {
+        const audits: AuditEventEntry[] = JSON.parse(e.data);
+        setAuditEvents(audits);
+      } catch {}
+    });
+
+    eventSource.addEventListener("alert", (e: MessageEvent) => {
+      try {
+        const alert = JSON.parse(e.data);
+        showToast(`[${alert.service}] ${alert.message}`, alert.level === "critical" ? "error" : "info");
+      } catch {}
+    });
+
+    eventSource.onerror = () => {
+      setStreamStatus("RECONNECTING");
+    };
   };
 
   const controlService = async (serviceName: string, action: "start" | "stop" | "restart") => {
@@ -141,17 +199,19 @@ export function createSupervisorStore() {
   };
 
   onMount(() => {
+    // Initial fetch
     fetchStatus();
-    fetchTelemetry();
     fetchLogs();
-    const statusInterval = setInterval(fetchStatus, 2000);
-    const telemetryInterval = setInterval(fetchTelemetry, 1500);
-    const logsInterval = setInterval(fetchLogs, 3000);
+    fetchAuditHistory();
+
+    // Stream telemetry live without HTTP setInterval polling
+    setupEventSource();
 
     onCleanup(() => {
-      clearInterval(statusInterval);
-      clearInterval(telemetryInterval);
-      clearInterval(logsInterval);
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
       if (toastTimer) clearTimeout(toastTimer);
     });
   });
@@ -159,6 +219,8 @@ export function createSupervisorStore() {
   return {
     status,
     telemetry,
+    auditEvents,
+    streamStatus,
     isLoading,
     error,
     activeLogService,
@@ -174,13 +236,16 @@ export function createSupervisorStore() {
     },
     isActionPending,
     toastMessage,
+    isAuditDrawerOpen,
+    setIsAuditDrawerOpen,
+    isTtsPlaygroundOpen,
+    setIsTtsPlaygroundOpen,
     controlService,
     purgeVram,
     restartAll,
     checkUpdates,
     saveConfig,
     refreshStatus: fetchStatus,
-    refreshTelemetry: fetchTelemetry,
     refreshLogs: fetchLogs,
   };
 }

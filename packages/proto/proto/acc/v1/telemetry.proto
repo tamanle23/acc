@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package acc.v1;
+
+service TelemetryService {
+  // Streams real-time sidecar telemetry (VRAM, memory, active models, OOM circuit-breaker alerts)
+  rpc StreamTelemetry (TelemetryStreamRequest) returns (stream TelemetryEvent);
+}
+
+message TelemetryStreamRequest {
+  string client_id = 1;
+  int32 interval_ms = 2; // Desired heartbeat rate, default ~1000ms
+}
+
+enum TelemetryEventType {
+  TELEMETRY_EVENT_TYPE_UNSPECIFIED = 0;
+  TELEMETRY_EVENT_TYPE_HEARTBEAT = 1;
+  TELEMETRY_EVENT_TYPE_MODEL_LOADED = 2;
+  TELEMETRY_EVENT_TYPE_MODEL_EVICTED = 3;
+  TELEMETRY_EVENT_TYPE_OOM_INTERCEPTED = 4;
+}
+
+message ActiveModelInfo {
+  string name = 1;
+  int64 allocated_bytes = 2;
+  int64 touch_count = 3;
+  string state = 4;
+}
+
+message TelemetryEvent {
+  int64 timestamp_ms = 1;
+  string service_name = 2;
+  TelemetryEventType event_type = 3;
+  string message = 4;
+
+  // Hardware Memory & VRAM Metrics
+  int64 vram_allocated_bytes = 5;
+  int64 vram_reserved_bytes = 6;
+  int64 vram_total_bytes = 7;
+  string hardware_tier = 8;
+  float gpu_utilization_percent = 9;
+
+  // Active Models Snapshot
+  repeated ActiveModelInfo active_models = 10;
+  int32 total_registered_models = 11;
+  int32 active_cached_models = 12;
+}

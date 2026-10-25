@@ -156,6 +156,15 @@ class ModelLifecycleManager:
             logger.info(
                 f"[ModelLifecycleManager] Registered model '{name}' (~{estimated_vram_bytes // (1024*1024)}MB, Tier {priority_tier})"
             )
+            try:
+                from services.telemetry_service import TelemetryService
+                from generated import telemetry_pb2
+                TelemetryService.emit_lifecycle_event(
+                    telemetry_pb2.TELEMETRY_EVENT_TYPE_MODEL_LOADED,
+                    f"Model '{name}' registered (~{estimated_vram_bytes // (1024*1024)}MB, Tier {priority_tier})"
+                )
+            except Exception:
+                pass
 
     def touch(self, name: str) -> None:
         """
@@ -287,6 +296,16 @@ class ModelLifecycleManager:
                 # Generational GC & hardware empty cache
                 gc.collect()
                 self.device_strategy.empty_cache()
+
+                try:
+                    from services.telemetry_service import TelemetryService
+                    from generated import telemetry_pb2
+                    TelemetryService.emit_lifecycle_event(
+                        telemetry_pb2.TELEMETRY_EVENT_TYPE_OOM_INTERCEPTED,
+                        f"OOM Circuit Breaker triggered for model '{model_name}' on {self.device_strategy.get_device_type()}"
+                    )
+                except Exception:
+                    pass
 
             raise exc
 

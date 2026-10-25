@@ -11,6 +11,8 @@ import { setStartupEnabled, getStartupStatus } from "./StartupManager.js";
 import { NativeTrayBridge } from "./NativeTrayBridge.js";
 import { WindowHost } from "./WindowHost.js";
 import { telemetryBroker } from "./telemetry/TelemetryEventBroker.js";
+import { PythonGrpcStreamConsumer } from "./telemetry/PythonGrpcStreamConsumer.js";
+import { WorkerSseStreamConsumer } from "./telemetry/WorkerSseStreamConsumer.js";
 
 async function main() {
   console.log("====================================================");
@@ -146,6 +148,91 @@ async function main() {
           return Response.json({ success: true }, { headers: corsHeaders });
         } catch (err: any) {
           return Response.json({ success: false, error: err.message }, { status: 400, headers: corsHeaders });
+        }
+      }
+
+      // 3b. Real-Time Telemetry Ingest Sink (HTTP Fallback / Active Sidecars)
+      if (url.pathname === "/api/telemetry/ingest" && req.method === "POST") {
+        try {
+          const body = await req.json();
+          if (body.service && body.domain) {
+            telemetryBroker.recordDomainTelemetry(body.service, body.domain);
+          }
+          if (body.alert) {
+            telemetryBroker.emitAlert(body.alert);
+          }
+          telemetryBroker.publishSnapshot();
+          return Response.json({ success: true, timestamp: Date.now() }, { headers: corsHeaders });
+        } catch (err: any) {
+          return Response.json({ success: false, error: err.message }, { status: 400, headers: corsHeaders });
+        }
+      }
+
+      // 3c. Audit Events History Endpoint
+      if (url.pathname === "/api/telemetry/audits" && req.method === "GET") {
+        return Response.json(telemetryBroker.getAuditEvents(), { headers: corsHeaders });
+      }
+
+      // 3d. Interactive Neural TTS Playground Proxy Endpoint
+      if (url.pathname === "/api/tts/test" && req.method === "POST") {
+        try {
+          const body = await req.json();
+          const protoPath = path.resolve(process.cwd(), "packages/proto/proto/acc/v1/tts.proto");
+          const protoLoader = await import("@grpc/proto-loader");
+          const grpc = await import("@grpc/grpc-js");
+
+          const packageDefinition = protoLoader.loadSync(protoPath, {
+            keepCase: true,
+            longs: String,
+            enums: String,
+            defaults: true,
+            oneofs: true,
+            includeDirs: [path.resolve(process.cwd(), "packages/proto/proto/acc/v1")],
+          });
+          const proto = grpc.loadPackageDefinition(packageDefinition) as any;
+          const TTSService = proto.acc?.v1?.TTSService;
+
+          if (!TTSService) {
+            return Response.json({ success: false, error: "TTSService proto not found" }, { status: 500, headers: corsHeaders });
+          }
+
+          const client = new TTSService(`127.0.0.1:${config.pythonPort}`, grpc.credentials.createInsecure());
+          const startTime = performance.now();
+
+          const result = await new Promise<any>((resolve, reject) => {
+            client.Synthesize(
+              {
+                text: body.text || "Hello from ACC AI-Supervisor Neural Speech Playground.",
+                voice_id: body.voice_id || "af_heart",
+                speed: Number(body.speed || 1.0),
+                model_strategy: body.model_strategy || "kokoro",
+              },
+              (err: any, response: any) => {
+                if (err) reject(err);
+                else resolve(response);
+              }
+            );
+          });
+
+          const latencyMs = Math.round(performance.now() - startTime);
+          const audioBase64 = Buffer.from(result.audio_data).toString("base64");
+          const durationMs = Number(result.duration_ms) || 1000;
+          const rtf = Number((latencyMs / durationMs).toFixed(3));
+
+          return Response.json(
+            {
+              success: true,
+              audioBase64,
+              sampleRate: result.sample_rate || 24000,
+              durationMs,
+              latencyMs,
+              rtf,
+              modelStrategy: body.model_strategy || "kokoro",
+            },
+            { headers: corsHeaders }
+          );
+        } catch (err: any) {
+          return Response.json({ success: false, error: err.message }, { status: 500, headers: corsHeaders });
         }
       }
 
@@ -298,12 +385,20 @@ async function main() {
     trayBridge.setTooltip(`ACC Control Plane - ${color === "green" ? "Healthy" : color === "yellow" ? "Processing" : "Alert"}`);
   });
 
-  // 8. Start Fleet
+  // 8. Start Fleet & Inverted Telemetry Stream Consumers
   await supervisorEngine.startAll();
+
+  const pythonStreamConsumer = new PythonGrpcStreamConsumer("127.0.0.1", config.pythonPort);
+  pythonStreamConsumer.start();
+
+  const workerStreamConsumer = new WorkerSseStreamConsumer("127.0.0.1", 4000);
+  workerStreamConsumer.start();
 
   // 9. Graceful Process Teardown
   const shutdown = async () => {
     console.log("\n[Supervisor] Shutting down all supervised services...");
+    pythonStreamConsumer.stop();
+    workerStreamConsumer.stop();
     trayBridge.stop();
     windowHost.close();
     await supervisorEngine.stopAll();

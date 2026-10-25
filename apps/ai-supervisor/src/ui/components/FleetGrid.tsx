@@ -7,6 +7,7 @@ interface FleetGridProps {
   onControlService: (name: string, action: "start" | "stop" | "restart") => void;
   onPurgeVram: () => void;
   onOpenStudio: () => void;
+  onOpenTtsPlayground?: () => void;
 }
 
 export function FleetGrid(props: FleetGridProps) {
@@ -31,8 +32,8 @@ export function FleetGrid(props: FleetGridProps) {
         isActionPending={props.isActionPending}
         onControl={(action) => props.onControlService("python-backend", action)}
         customAction={{
-          label: "Purge VRAM",
-          onClick: props.onPurgeVram,
+          label: "Test Voice",
+          onClick: props.onOpenTtsPlayground || props.onPurgeVram,
         }}
       />
 
