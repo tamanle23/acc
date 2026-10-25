@@ -3,6 +3,7 @@ import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { findRepoRoot } from "../SupervisorEngine.js";
+import { isPortListening } from "../portScanner.js";
 import { telemetryBroker, type PythonBackendDomainTelemetry, type SidecarTelemetry } from "./TelemetryEventBroker.js";
 
 /**
@@ -60,12 +61,19 @@ export class PythonGrpcStreamConsumer {
     }
   }
 
-  private connectAndStream(): void {
+  private async connectAndStream(): Promise<void> {
     if (!this.isRunning) return;
 
     try {
       if (!fs.existsSync(this.protoPath)) {
-        console.warn(`[PythonGrpcStreamConsumer] Proto definition not found at: ${this.protoPath}. Retrying...`);
+        this.scheduleReconnect();
+        return;
+      }
+
+      // Check if Python gRPC server is actually listening before firing stream
+      const isListening = await isPortListening(this.port, this.host, 300);
+      if (!isListening) {
+        telemetryBroker.updateServiceMetrics("python-backend", { status: "STARTING" });
         this.scheduleReconnect();
         return;
       }
