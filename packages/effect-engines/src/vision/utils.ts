@@ -1,6 +1,5 @@
-import { UniversalCanvasProvider, CanvasAssetLoader } from '@acc/core-isomorphic';
-import type { BoundingBox } from './types';
-import { UniversalOnnxRuntimeProvider } from './UniversalOnnxRuntimeProvider';
+import { UniversalCanvasProvider, CanvasAssetLoader, BoundingBox } from '@acc/core-isomorphic';
+import { UniversalOnnxRuntimeProvider, type HfConfigOptions } from './UniversalOnnxRuntimeProvider';
 
 // Ensure global Hugging Face cache adheres to GLOBAL-STORAGE rule when in Node/Bun environment
 function getGlobalHfCache(): string | undefined {
@@ -17,27 +16,35 @@ function getGlobalHfCache(): string | undefined {
 const globalHfCache = getGlobalHfCache();
 if (globalHfCache && typeof process !== 'undefined' && process.env) {
   process.env.HF_HOME = globalHfCache;
+  UniversalOnnxRuntimeProvider.configure({ cacheDir: globalHfCache });
 }
 
-export function configureHfEnv(transformersEnv?: any) {
+export function configureHfEnv(transformersEnv?: any, options?: Partial<HfConfigOptions>) {
   if (globalHfCache && typeof process !== 'undefined' && process.env) {
     process.env.HF_HOME = globalHfCache;
   }
-  if (transformersEnv && globalHfCache) {
-    transformersEnv.cacheDir = globalHfCache;
-    transformersEnv.allowLocalModels = true;
+  if (options) {
+    UniversalOnnxRuntimeProvider.configure(options);
+  }
+  if (transformersEnv) {
+    if (globalHfCache) {
+      transformersEnv.cacheDir = globalHfCache;
+      transformersEnv.allowLocalModels = true;
+    }
+    UniversalOnnxRuntimeProvider.applyConfigToEnv(transformersEnv);
   }
 }
 
 /**
- * Universally imports the optimal HuggingFace Transformers module for the host environment.
- * If native onnxruntime-node is missing or fails on host architecture (e.g. darwin/x64),
- * automatically yields the WebAssembly/WebGPU build.
+ * Universally imports and initializes HuggingFace Transformers module with WebGPU default and multi-device overrides.
  */
-export async function loadUniversalTransformers(): Promise<any> {
+export async function loadUniversalTransformers(options?: Partial<HfConfigOptions>): Promise<any> {
+  if (options) {
+    UniversalOnnxRuntimeProvider.configure(options);
+  }
   const tf = await UniversalOnnxRuntimeProvider.getTransformers();
   if (tf?.env) {
-    configureHfEnv(tf.env);
+    configureHfEnv(tf.env, options);
   }
   return tf;
 }
@@ -105,7 +112,7 @@ export async function createCutoutRgba(
       const idx = y * mW + x;
       const rawVal = alphaMask[idx];
       let normVal = typeof rawVal === 'number' && rawVal <= 1.0 ? rawVal : Number(rawVal) / 255.0;
-      
+
       // Smoothstep curve for soft edge transition if requested or default
       if (options?.featherRadius !== 0) {
         // smoothstep between 0.1 and 0.9
@@ -114,10 +121,10 @@ export async function createCutoutRgba(
         const clamped = Math.max(0, Math.min(1, (normVal - edgeMin) / (edgeMax - edgeMin)));
         normVal = clamped * clamped * (3 - 2 * clamped);
       }
-      
+
       const alpha = Math.max(0, Math.min(255, Math.round(normVal * 255)));
       const pos = idx * 4;
-      
+
       maskImgData.data[pos] = 255;
       maskImgData.data[pos + 1] = 255;
       maskImgData.data[pos + 2] = 255;

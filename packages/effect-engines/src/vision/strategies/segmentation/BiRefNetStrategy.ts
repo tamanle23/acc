@@ -18,7 +18,6 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
   private rawImageClass: any = null;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
-  private fallbackStrategy = new GrabCutFallbackStrategy();
 
   public async init(): Promise<void> {
     if (this.model && this.processor) return;
@@ -50,53 +49,49 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
     imageBufferOrInput: Buffer | Uint8Array | VisionImageInput,
     options?: SegmentationOptions | IsomorphicSegOptions
   ): Promise<SegmentationResult & Partial<IsomorphicSegResult>> {
-    try {
-      await this.init();
 
-      const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-      if (!RawImage) throw new Error('[BiRefNetStrategy] RawImage unavailable.');
-      const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
-      const origW = rawImage.width;
-      const origH = rawImage.height;
+    await this.init();
 
-      const inputs = await this.processor(rawImage);
-      const outputs = await this.model({ input_image: inputs.pixel_values });
+    const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
+    const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
+    if (!RawImage) throw new Error('[BiRefNetStrategy] RawImage unavailable.');
+    const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+    const origW = rawImage.width;
+    const origH = rawImage.height;
 
-      const maskData = outputs.output_image.data;
-      const maskW = 1024;
-      const maskH = 1024;
+    const inputs = await this.processor(rawImage);
+    const outputs = await this.model({ input_image: inputs.pixel_values });
 
-      const uint8Mask = new Uint8Array(maskW * maskH);
-      for (let i = 0; i < maskW * maskH; i++) {
-        const raw = maskData[i];
-        const val = raw < 0 || raw > 1 ? 1 / (1 + Math.exp(-raw)) : raw;
-        const clamped = Math.max(0, Math.min(1, val));
-        const smoothVal = clamped * clamped * (3 - 2 * clamped);
-        uint8Mask[i] = Math.round(smoothVal * 255);
-      }
+    const maskData = outputs.output_image.data;
+    const maskW = 1024;
+    const maskH = 1024;
 
-      const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
-        Buffer.isBuffer(imageBytes) ? imageBytes : Buffer.from(imageBytes),
-        uint8Mask,
-        maskW,
-        maskH,
-        { fillHoles: options?.fillInternalHoles ?? true, featherRadius: options?.featherRadius ?? 2 }
-      );
-
-      return {
-        maskRgbaBuffer: rgbaBuffer,
-        maskAlphaBuffer: alphaBuffer,
-        maskAlphaData: uint8Mask,
-        width: origW,
-        height: origH,
-        boundingBox: bbox,
-        confidence: 0.98,
-        modelUsed: this.modelId
-      };
-    } catch (err: any) {
-      console.warn(`[BiRefNetStrategy] Neural inference failed (${err?.message || err}), cascading to GrabCutFallbackStrategy.`);
-      return await this.fallbackStrategy.segment(imageBufferOrInput, options);
+    const uint8Mask = new Uint8Array(maskW * maskH);
+    for (let i = 0; i < maskW * maskH; i++) {
+      const raw = maskData[i];
+      const val = raw < 0 || raw > 1 ? 1 / (1 + Math.exp(-raw)) : raw;
+      const clamped = Math.max(0, Math.min(1, val));
+      const smoothVal = clamped * clamped * (3 - 2 * clamped);
+      uint8Mask[i] = Math.round(smoothVal * 255);
     }
+
+    const { rgbaBuffer, alphaBuffer, bbox } = await createCutoutRgba(
+      Buffer.isBuffer(imageBytes) ? imageBytes : Buffer.from(imageBytes),
+      uint8Mask,
+      maskW,
+      maskH,
+      { fillHoles: options?.fillInternalHoles ?? true, featherRadius: options?.featherRadius ?? 2 }
+    );
+
+    return {
+      maskRgbaBuffer: rgbaBuffer,
+      maskAlphaBuffer: alphaBuffer,
+      maskAlphaData: uint8Mask,
+      width: origW,
+      height: origH,
+      boundingBox: bbox,
+      confidence: 0.98,
+      modelUsed: this.modelId
+    };
   }
 }

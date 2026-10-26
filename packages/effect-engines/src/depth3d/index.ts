@@ -82,9 +82,9 @@ async function getStoryRootAndCacheDir(
       if (!(await checkExists(depthCacheDir))) {
         try {
           await fs.promises.mkdir(depthCacheDir, { recursive: true });
-        } catch {}
+        } catch { }
       }
-    } catch {}
+    } catch { }
   }
 
   return { storyRoot, depthCacheDir };
@@ -94,9 +94,7 @@ async function getStoryRootAndCacheDir(
  * Unified Runner for all 3D Depth & Visual Pop-Out rendering engines.
  * Pure isomorphic execution leveraging MediaEngineRegistry, ContentCacheRegistry, and UniversalCanvasProvider.
  */
-export async function renderDepth3DScene(
-  options: Depth3DSceneOptions,
-): Promise<{ path: string; duration: number }> {
+export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<{ path: string; duration: number }> {
   const {
     scene,
     duration,
@@ -134,15 +132,10 @@ export async function renderDepth3DScene(
     depthConfig.autoSegment !== undefined
       ? depthConfig.autoSegment
       : mode === "frame_breaker" ||
-        mode === "volumetric_sandwich" ||
-        mode === "sandwich";
+      mode === "volumetric_sandwich" ||
+      mode === "sandwich";
 
-  const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(scene.resolvedImage);
-  const imageChecksum = fastChecksum(imgBuffer);
   const segContext = SubjectSegmentationContext.getInstance();
-  const segStratName = segContext
-    .getActiveStrategyName()
-    .replace(/[^a-zA-Z0-9_-]/g, "_");
 
   // Load subject cutout if available
   try {
@@ -151,7 +144,7 @@ export async function renderDepth3DScene(
       subjectImg = cutoutRes.subjectImg;
       subjectBBox = cutoutRes.subjectBBox;
     }
-  } catch {}
+  } catch { }
 
   // Auto-segmentation fallback
   if (!subjectImg && shouldAutoSegment) {
@@ -161,7 +154,7 @@ export async function renderDepth3DScene(
         subjectImg = await CanvasAssetLoader.loadImage(segRes.maskRgbaBuffer);
         subjectBBox = segRes.boundingBox;
       }
-    } catch {}
+    } catch { }
   }
 
   // 2. Setup Mode-Specific Canvas Layers
@@ -204,7 +197,7 @@ export async function renderDepth3DScene(
         drawImageCover(dCtx, dm, 0, 0, width, height);
         loadedDepth = true;
       }
-    } catch {}
+    } catch { }
   }
 
   if (!loadedDepth) {
@@ -279,7 +272,7 @@ export async function renderDepth3DScene(
       mg: mgCanvas,
       fg: fgCanvas,
     };
-  } catch {}
+  } catch { }
 
   // 3. Resolve Video Sink via MediaEngineRegistry (Decoupled from native FFIVideoEncoder)
   const canvas = UniversalCanvasProvider.createCanvas(width, height);
@@ -419,7 +412,7 @@ export async function resolveSubjectCutout(
       try {
         const crypto = require("crypto");
         md5Checksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
-      } catch {}
+      } catch { }
     }
 
     // 1. Check in-memory ContentCacheRegistry
@@ -488,10 +481,10 @@ export async function resolveSubjectCutout(
             try {
               const meta = JSON.parse(await fs.promises.readFile(jsonCandidate, "utf-8"));
               if (meta.boundingBox) subjectBBox = meta.boundingBox;
-            } catch {}
+            } catch { }
           }
           return { subjectImg, subjectBBox };
-        } catch {}
+        } catch { }
       }
     }
 
@@ -541,7 +534,7 @@ export async function resolveDepthMapData(
     try {
       const crypto = require("crypto");
       md5Checksum = crypto.createHash("md5").update(imgBuffer).digest("hex").slice(0, 8);
-    } catch {}
+    } catch { }
   }
 
   const cacheKey = `depth_${depthStratName}_${fChecksum}`;
@@ -586,7 +579,7 @@ export async function resolveDepthMapData(
           drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
           loadedDepth = true;
           break;
-        } catch {}
+        } catch { }
       }
     }
   }
@@ -600,7 +593,7 @@ export async function resolveDepthMapData(
         drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
         loadedDepth = true;
       }
-    } catch {}
+    } catch { }
   }
 
   if (!loadedDepth) {
