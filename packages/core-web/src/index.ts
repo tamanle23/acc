@@ -5,6 +5,11 @@ import {
   ContentCacheRegistry,
   ContentCacheStrategyId,
   PlatformDetector,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
+  HeuristicDepthStrategy,
+  GrabCutFallbackStrategy,
 } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from './canvas/WebCanvasAdapter';
 import { MediabunnyClientStrategy } from './media-engine/MediabunnyClientStrategy';
@@ -58,5 +63,15 @@ export function bootstrapClient(options: BootstrapClientOptions = {}): void {
   if (ContentCacheRegistry.has(resolvedCacheStrategy)) {
     ContentCacheRegistry.setDefault(resolvedCacheStrategy);
   }
+
+  // 4. Client-Safe Vision Strategies Registration (Heuristic & Algorithmic Fallbacks)
+  if (!VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)) {
+    VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy(), true);
+  }
+  if (!VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)) {
+    VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy(), true);
+  }
+  VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.Heuristic);
+  VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.GrabCutFallback);
 }
 

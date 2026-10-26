@@ -5,7 +5,13 @@ import {
   ContentCacheRegistry,
   ContentCacheStrategyId,
   PlatformDetector,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
+  HeuristicDepthStrategy,
+  GrabCutFallbackStrategy,
 } from '@acc/core-isomorphic';
+import { DepthAnythingV2SmallStrategy, RmbgStrategy } from '@acc/effect-engines';
 import { NapiCanvasAdapter } from './native/canvas/NapiCanvasAdapter';
 import { NativeFileCacheStrategy, type NativeFileCacheOptions } from './cache/NativeFileCacheStrategy';
 import { BunFFIEngineStrategy } from './media-engine/strategies/BunFFIEngineStrategy';
@@ -68,7 +74,25 @@ export async function bootstrapNode(options: BootstrapNodeOptions = {}): Promise
   const resolvedDefaultEngine = options.defaultMediaEngine || PlatformDetector.resolveDefaultMediaEngine();
   MediaEngineRegistry.setDefaultEngine(resolvedDefaultEngine);
 
-  // 5. Optionally prepare FFmpeg if requested
+  // 5. Register server vision strategies
+  if (!VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)) {
+    VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy());
+  }
+  if (!VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.DepthAnythingV2Small)) {
+    VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), true);
+  }
+
+  if (!VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)) {
+    VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy());
+  }
+  if (!VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.Rmbg14)) {
+    VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
+  }
+
+  VisionEngineRegistry.setDefaultDepthStrategy(PlatformDetector.resolveDefaultDepthStrategy());
+  VisionEngineRegistry.setDefaultSegmentationStrategy(PlatformDetector.resolveDefaultSegmentationStrategy());
+
+  // 6. Optionally prepare FFmpeg if requested
   if (options.prepareFFmpeg) {
     await FFmpegManager.prepare();
   }

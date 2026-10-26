@@ -1,4 +1,4 @@
-import { UniversalLogger as Logger } from "@acc/core-isomorphic";
+import { UniversalLogger as Logger, VisionEngineRegistry, DepthStrategyId } from "@acc/core-isomorphic";
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from './types';
 import { DepthAnythingV2SmallStrategy } from './strategies/depth/DepthAnythingV2SmallStrategy';
 import { DepthAnythingV2BaseStrategy } from './strategies/depth/DepthAnythingV2BaseStrategy';
@@ -13,8 +13,11 @@ export class DepthEstimationContext {
 
   private constructor() {
     this.fallbackStrategy = new HeuristicDepthStrategy();
-    // Default: Depth Anything v2 Small (95MB)
-    this.currentStrategy = new DepthAnythingV2SmallStrategy();
+    if (VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.DepthAnythingV2Small)) {
+      this.currentStrategy = VisionEngineRegistry.getDepthStrategy(DepthStrategyId.DepthAnythingV2Small) as any;
+    } else {
+      this.currentStrategy = new DepthAnythingV2SmallStrategy();
+    }
   }
 
   public static getInstance(): DepthEstimationContext {

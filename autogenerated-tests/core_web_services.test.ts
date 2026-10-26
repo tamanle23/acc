@@ -10,12 +10,16 @@ import {
   UniversalCanvasProvider,
   MediaEngineRegistry,
   ContentCacheRegistry,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 
 describe('Phase 2: Core Web Services Suite (@acc/core-web)', () => {
   beforeEach(() => {
     MediaEngineRegistry.reset();
     ContentCacheRegistry.reset();
+    VisionEngineRegistry.reset();
   });
 
   describe('bootstrapClient()', () => {
@@ -25,6 +29,10 @@ describe('Phase 2: Core Web Services Suite (@acc/core-web)', () => {
       expect(MediaEngineRegistry.has('mediabunny-client')).toBe(true);
       expect(ContentCacheRegistry.has('indexeddb')).toBe(true);
       expect(ContentCacheRegistry.get().id).toBe('indexeddb');
+      expect(VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)).toBe(true);
+      expect(VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)).toBe(true);
+      expect(VisionEngineRegistry.getDefaultDepthStrategyId()).toBe(DepthStrategyId.Heuristic);
+      expect(VisionEngineRegistry.getDefaultSegmentationStrategyId()).toBe(SegmentationStrategyId.GrabCutFallback);
     });
   });
 

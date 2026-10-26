@@ -1,4 +1,4 @@
-import { UniversalLogger as Logger } from "@acc/core-isomorphic";
+import { UniversalLogger as Logger, VisionEngineRegistry, SegmentationStrategyId } from "@acc/core-isomorphic";
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from './types';
 import { SlimSamStrategy } from './strategies/segmentation/SlimSamStrategy';
 import { SamVitBaseStrategy } from './strategies/segmentation/SamVitBaseStrategy';
@@ -14,8 +14,11 @@ export class SubjectSegmentationContext {
 
   private constructor() {
     this.fallbackStrategy = new GrabCutFallbackStrategy();
-    // Default strategy: RMBG-1.4 (SOTA clean background removal, 44MB, 2.8s)
-    this.currentStrategy = new RmbgStrategy();
+    if (VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.Rmbg14)) {
+      this.currentStrategy = VisionEngineRegistry.getSegmentationStrategy(SegmentationStrategyId.Rmbg14) as any;
+    } else {
+      this.currentStrategy = new RmbgStrategy();
+    }
   }
 
   public static getInstance(): SubjectSegmentationContext {

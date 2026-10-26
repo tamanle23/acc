@@ -19,6 +19,7 @@
   "private": true,
   "dependencies": {
     "@acc/core-isomorphic": "workspace:*",
+    "@acc/effect-engines": "workspace:*",
     "@mediabunny/server": "^1.61.5",
     "@napi-rs/canvas": "^1.0.9",
     "mediabunny": "^1.61.5"

@@ -3,6 +3,9 @@ import {
   UniversalCanvasProvider,
   MediaEngineRegistry,
   ContentCacheRegistry,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import {
   bootstrapNode,
@@ -81,6 +84,9 @@ describe('Phase 4: Node/Bun Runtime Bootstrap Suite (@acc/core)', () => {
       expect(available).toContain('bun-ffi');
       expect(available).toContain('mediabunny-server');
       expect(available).toContain('fluent-ffmpeg');
+
+      expect(VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.DepthAnythingV2Small)).toBe(true);
+      expect(VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.Rmbg14)).toBe(true);
 
       expect(MediaEngineRegistry.get('mediabunny-server')).toBeInstanceOf(MediabunnyServerStrategy);
     });
