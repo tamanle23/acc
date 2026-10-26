@@ -2,6 +2,13 @@
  * Universal Isomorphic Content Cache Strategy Types
  */
 
+export enum ContentCacheStrategyId {
+  Memory = 'memory',
+  NativeFile = 'native-file',
+  IndexedDb = 'indexeddb',
+  WebCache = 'web-cache',
+}
+
 export interface CacheEntryMetadata {
   checksum: string;
   mimeType?: string;
@@ -11,7 +18,7 @@ export interface CacheEntryMetadata {
 }
 
 export interface IContentCacheStrategy {
-  readonly id: string;
+  readonly id: ContentCacheStrategyId | string;
   readonly name: string;
 
   has(key: string): Promise<boolean>;

@@ -1,4 +1,4 @@
-import type { IContentCacheStrategy, CacheEntryMetadata } from '@acc/core-isomorphic';
+import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from '@acc/core-isomorphic';
 import { fastChecksum } from '@acc/core-isomorphic';
 
 export interface WebCacheOptions {
@@ -30,7 +30,7 @@ const HEADER_META_JSON = 'x-acc-meta-json';
  * Gracefully falls back to an in-memory Map in non-browser/SSR or test mock environments without window.caches.
  */
 export class WebCacheStrategy implements IContentCacheStrategy {
-  public readonly id = 'web-cache';
+  public readonly id = ContentCacheStrategyId.WebCache;
   public readonly name = 'Standard Web Cache API Content Cache';
 
   private readonly cacheName: string;

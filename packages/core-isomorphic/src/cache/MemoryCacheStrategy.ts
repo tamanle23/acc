@@ -1,4 +1,4 @@
-import type { IContentCacheStrategy, CacheEntryMetadata } from './types';
+import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from './types';
 import { fastChecksum } from './fastChecksum';
 
 interface MemoryCacheRecord {
@@ -12,7 +12,7 @@ interface MemoryCacheRecord {
  * Compatible with Node, Bun, Browser DOM, and Web Worker environments.
  */
 export class MemoryCacheStrategy implements IContentCacheStrategy {
-  public readonly id = 'memory';
+  public readonly id = ContentCacheStrategyId.Memory;
   public readonly name = 'In-Memory Content Cache';
 
   private cache: Map<string, MemoryCacheRecord> = new Map();

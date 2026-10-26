@@ -1,4 +1,4 @@
-import type { IContentCacheStrategy } from './types';
+import { ContentCacheStrategyId, type IContentCacheStrategy } from './types';
 import { MemoryCacheStrategy } from './MemoryCacheStrategy';
 
 /**
@@ -7,8 +7,8 @@ import { MemoryCacheStrategy } from './MemoryCacheStrategy';
  */
 export class ContentCacheRegistry {
   private static defaultStrategy: IContentCacheStrategy = new MemoryCacheStrategy();
-  private static strategies: Map<string, IContentCacheStrategy> = new Map([
-    ['memory', ContentCacheRegistry.defaultStrategy],
+  private static strategies: Map<ContentCacheStrategyId | string, IContentCacheStrategy> = new Map([
+    [ContentCacheStrategyId.Memory, ContentCacheRegistry.defaultStrategy],
   ]);
 
   public static register(strategy: IContentCacheStrategy, makeDefault: boolean = false): void {
@@ -18,7 +18,7 @@ export class ContentCacheRegistry {
     }
   }
 
-  public static setDefault(strategyOrId: IContentCacheStrategy | string): void {
+  public static setDefault(strategyOrId: IContentCacheStrategy | ContentCacheStrategyId | string): void {
     if (typeof strategyOrId === 'string') {
       const found = ContentCacheRegistry.strategies.get(strategyOrId);
       if (!found) {
@@ -30,7 +30,7 @@ export class ContentCacheRegistry {
     }
   }
 
-  public static get(id?: string): IContentCacheStrategy {
+  public static get(id?: ContentCacheStrategyId | string): IContentCacheStrategy {
     if (!id) {
       return ContentCacheRegistry.defaultStrategy;
     }
@@ -41,13 +41,13 @@ export class ContentCacheRegistry {
     return found;
   }
 
-  public static has(id: string): boolean {
+  public static has(id: ContentCacheStrategyId | string): boolean {
     return ContentCacheRegistry.strategies.has(id);
   }
 
   public static reset(): void {
     ContentCacheRegistry.defaultStrategy = new MemoryCacheStrategy();
     ContentCacheRegistry.strategies.clear();
-    ContentCacheRegistry.strategies.set('memory', ContentCacheRegistry.defaultStrategy);
+    ContentCacheRegistry.strategies.set(ContentCacheStrategyId.Memory, ContentCacheRegistry.defaultStrategy);
   }
 }

@@ -1,9 +1,10 @@
 import {
   UniversalCanvasProvider,
   MediaEngineRegistry,
+  MediaEngineType,
   ContentCacheRegistry,
+  ContentCacheStrategyId,
   PlatformDetector,
-  type MediaEngineType,
 } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from './native/canvas/NapiCanvasAdapter';
 import { NativeFileCacheStrategy, type NativeFileCacheOptions } from './cache/NativeFileCacheStrategy';
@@ -46,20 +47,20 @@ export async function bootstrapNode(options: BootstrapNodeOptions = {}): Promise
   UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
 
   // 2. Register native disk cache strategy
-  if (!ContentCacheRegistry.has('native-file')) {
+  if (!ContentCacheRegistry.has(ContentCacheStrategyId.NativeFile)) {
     ContentCacheRegistry.register(new NativeFileCacheStrategy(options.cacheOptions), true);
   }
 
   // 3. Register server media engines
-  if (!MediaEngineRegistry.has('bun-ffi')) {
+  if (!MediaEngineRegistry.has(MediaEngineType.BunFFI)) {
     MediaEngineRegistry.register(new BunFFIEngineStrategy());
   }
 
-  if (!MediaEngineRegistry.has('mediabunny-server')) {
+  if (!MediaEngineRegistry.has(MediaEngineType.MediabunnyServer)) {
     MediaEngineRegistry.register(new MediabunnyServerStrategy());
   }
 
-  if (!MediaEngineRegistry.has('fluent-ffmpeg')) {
+  if (!MediaEngineRegistry.has(MediaEngineType.FluentFFmpeg)) {
     MediaEngineRegistry.register(new FluentFFmpegEngineStrategy());
   }
 

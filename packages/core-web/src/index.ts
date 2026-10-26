@@ -1,7 +1,9 @@
 import {
   UniversalCanvasProvider,
   MediaEngineRegistry,
+  MediaEngineType,
   ContentCacheRegistry,
+  ContentCacheStrategyId,
   PlatformDetector,
 } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from './canvas/WebCanvasAdapter';
@@ -20,23 +22,23 @@ export interface BootstrapClientOptions {
    * Optional custom default cache strategy ID ('indexeddb' | 'web-cache' | 'memory').
    * If not specified, automatically probed via PlatformDetector.
    */
-  defaultCacheStrategy?: string;
+  defaultCacheStrategy?: ContentCacheStrategyId | string;
 }
 
 export function bootstrapClient(options: BootstrapClientOptions = {}): void {
   // 1. Synchronized Canvas & Media Engine Registration
   UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
 
-  if (!MediaEngineRegistry.has('mediabunny-client')) {
+  if (!MediaEngineRegistry.has(MediaEngineType.MediabunnyClient)) {
     MediaEngineRegistry.register(new MediabunnyClientStrategy());
   }
-  MediaEngineRegistry.setDefaultEngine('mediabunny-client');
+  MediaEngineRegistry.setDefaultEngine(MediaEngineType.MediabunnyClient);
 
   // 2. Client Cache Strategies Registration
-  if (!ContentCacheRegistry.has('web-cache')) {
+  if (!ContentCacheRegistry.has(ContentCacheStrategyId.WebCache)) {
     ContentCacheRegistry.register(new WebCacheStrategy());
   }
-  if (!ContentCacheRegistry.has('indexeddb')) {
+  if (!ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)) {
     ContentCacheRegistry.register(new IndexedDbCacheStrategy());
   }
 
@@ -45,9 +47,13 @@ export function bootstrapClient(options: BootstrapClientOptions = {}): void {
   // bootstrapClient defaults to 'indexeddb' for browser client parity, unless explicitly overridden.
   const resolvedCacheStrategy =
     options.defaultCacheStrategy ||
-    (ContentCacheRegistry.has('indexeddb')
-      ? 'indexeddb'
-      : PlatformDetector.resolveDefaultCacheStrategy(['indexeddb', 'web-cache', 'memory']));
+    (ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)
+      ? ContentCacheStrategyId.IndexedDb
+      : PlatformDetector.resolveDefaultCacheStrategy([
+          ContentCacheStrategyId.IndexedDb,
+          ContentCacheStrategyId.WebCache,
+          ContentCacheStrategyId.Memory,
+        ]));
 
   if (ContentCacheRegistry.has(resolvedCacheStrategy)) {
     ContentCacheRegistry.setDefault(resolvedCacheStrategy);

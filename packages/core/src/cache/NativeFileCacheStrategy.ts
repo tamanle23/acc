@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import type { IContentCacheStrategy, CacheEntryMetadata } from '@acc/core-isomorphic';
+import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from '@acc/core-isomorphic';
 import { fastChecksum } from '@acc/core-isomorphic';
 
 export interface NativeFileCacheOptions {
@@ -14,7 +14,7 @@ export interface NativeFileCacheOptions {
  * Adheres strictly to GLOBAL-STORAGE by defaulting to ~/.acc/cache/ or specified base directory.
  */
 export class NativeFileCacheStrategy implements IContentCacheStrategy {
-  public readonly id = 'native-file';
+  public readonly id = ContentCacheStrategyId.NativeFile;
   public readonly name = 'Server Local File System Cache';
 
   private baseDir: string;

@@ -1,4 +1,4 @@
-import type { IContentCacheStrategy, CacheEntryMetadata } from '@acc/core-isomorphic';
+import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from '@acc/core-isomorphic';
 import { fastChecksum } from '@acc/core-isomorphic';
 
 const DB_NAME = 'acc_content_cache';
@@ -17,7 +17,7 @@ interface IndexedDbRecord {
  * Falls back to in-memory Map in non-browser/SSR or test mock environments.
  */
 export class IndexedDbCacheStrategy implements IContentCacheStrategy {
-  public readonly id = 'indexeddb';
+  public readonly id = ContentCacheStrategyId.IndexedDb;
   public readonly name = 'Browser IndexedDB Content Cache';
 
   private dbPromise: Promise<IDBDatabase | null> | null = null;

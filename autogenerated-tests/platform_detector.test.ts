@@ -5,7 +5,9 @@ import {
   OperatingSystem,
   UniversalCanvasProvider,
   MediaEngineRegistry,
+  MediaEngineType,
   ContentCacheRegistry,
+  ContentCacheStrategyId,
 } from '@acc/core-isomorphic';
 
 describe('Platform & Feature Detection Suite (@acc/core-isomorphic)', () => {
@@ -61,8 +63,13 @@ describe('Platform & Feature Detection Suite (@acc/core-isomorphic)', () => {
 
     it('resolves synchronized defaults on Bun host', () => {
       expect(PlatformDetector.resolveDefaultCanvasAdapter()).toBe('node');
-      expect(PlatformDetector.resolveDefaultMediaEngine()).toBe('bun-ffi');
-      expect(PlatformDetector.resolveDefaultCacheStrategy(['native-file', 'memory'])).toBe('native-file');
+      expect(PlatformDetector.resolveDefaultMediaEngine()).toBe(MediaEngineType.BunFFI);
+      expect(
+        PlatformDetector.resolveDefaultCacheStrategy([
+          ContentCacheStrategyId.NativeFile,
+          ContentCacheStrategyId.Memory,
+        ])
+      ).toBe(ContentCacheStrategyId.NativeFile);
     });
   });
 
@@ -73,13 +80,13 @@ describe('Platform & Feature Detection Suite (@acc/core-isomorphic)', () => {
     });
 
     it('MediaEngineRegistry initializes and resets default engine via PlatformDetector', () => {
-      expect(MediaEngineRegistry.getDefaultEngine()).toBe('bun-ffi');
+      expect(MediaEngineRegistry.getDefaultEngine()).toBe(MediaEngineType.BunFFI);
 
-      MediaEngineRegistry.setDefaultEngine('fluent-ffmpeg');
-      expect(MediaEngineRegistry.getDefaultEngine()).toBe('fluent-ffmpeg');
+      MediaEngineRegistry.setDefaultEngine(MediaEngineType.FluentFFmpeg);
+      expect(MediaEngineRegistry.getDefaultEngine()).toBe(MediaEngineType.FluentFFmpeg);
 
       MediaEngineRegistry.reset();
-      expect(MediaEngineRegistry.getDefaultEngine()).toBe('bun-ffi');
+      expect(MediaEngineRegistry.getDefaultEngine()).toBe(MediaEngineType.BunFFI);
     });
   });
 
@@ -140,8 +147,8 @@ describe('Platform & Feature Detection Suite (@acc/core-isomorphic)', () => {
     });
 
     it('falls back gracefully to memory cache when no storage APIs are available', () => {
-      const selected = PlatformDetector.resolveDefaultCacheStrategy(['memory']);
-      expect(selected).toBe('memory');
+      const selected = PlatformDetector.resolveDefaultCacheStrategy([ContentCacheStrategyId.Memory]);
+      expect(selected).toBe(ContentCacheStrategyId.Memory);
     });
   });
 });

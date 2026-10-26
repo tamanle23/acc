@@ -2,7 +2,12 @@
  * Universal Media Engine Strategy Types & Contracts
  */
 
-export type MediaEngineType = 'bun-ffi' | 'fluent-ffmpeg' | 'mediabunny-server' | 'mediabunny-client';
+export enum MediaEngineType {
+  BunFFI = 'bun-ffi',
+  FluentFFmpeg = 'fluent-ffmpeg',
+  MediabunnyServer = 'mediabunny-server',
+  MediabunnyClient = 'mediabunny-client',
+}
 
 export interface MediaEngineCapabilities {
   supportsZeroCopyFFI: boolean;

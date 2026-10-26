@@ -1,5 +1,6 @@
 import { RuntimeEnvironment, OperatingSystem, type RuntimeCapabilities, type PlatformProfile } from './types';
-import type { MediaEngineType } from '../media-engine/types';
+import { MediaEngineType } from '../media-engine/types';
+import { ContentCacheStrategyId } from '../cache/types';
 
 /**
  * PlatformDetector:
@@ -178,47 +179,45 @@ export class PlatformDetector {
 
   /**
    * Synchronized resolver: resolves the optimal default media engine.
-   * - Bun -> 'bun-ffi'
-   * - Node -> 'mediabunny-server'
-   * - Browser / Worker -> 'mediabunny-client'
+   * - Bun -> MediaEngineType.BunFFI
+   * - Node -> MediaEngineType.MediabunnyServer
+   * - Browser / Worker -> MediaEngineType.MediabunnyClient
    */
   public static resolveDefaultMediaEngine(): MediaEngineType {
     const runtime = this.getRuntime();
     if (runtime === RuntimeEnvironment.Bun) {
-      return 'bun-ffi';
+      return MediaEngineType.BunFFI;
     }
     if (runtime === RuntimeEnvironment.Browser || runtime === RuntimeEnvironment.WebWorker) {
-      return 'mediabunny-client';
+      return MediaEngineType.MediabunnyClient;
     }
-    return 'mediabunny-server';
+    return MediaEngineType.MediabunnyServer;
   }
 
   /**
    * Synchronized resolver: resolves the optimal default content cache strategy ID.
-   * - Server with FS -> 'native-file' (or 'memory')
-   * - Browser/Client -> 'indexeddb' (if available) -> 'web-cache' (if available) -> 'memory'
+   * - Server with FS -> ContentCacheStrategyId.NativeFile (or Memory)
+   * - Browser/Client -> ContentCacheStrategyId.IndexedDb (if available) -> WebCache -> Memory
    */
-  public static resolveDefaultCacheStrategy(registeredIds?: string[]): string {
+  public static resolveDefaultCacheStrategy(registeredIds?: (ContentCacheStrategyId | string)[]): ContentCacheStrategyId {
     const runtime = this.getRuntime();
     const capabilities = this.getCapabilities();
-    const ids = registeredIds ? new Set(registeredIds) : null;
+    const ids = registeredIds ? new Set<string>(registeredIds as string[]) : null;
 
     if (runtime === RuntimeEnvironment.Bun || runtime === RuntimeEnvironment.Node) {
-      if (capabilities.hasFileSystem && (!ids || ids.has('native-file'))) {
-        return 'native-file';
+      if (capabilities.hasFileSystem && (!ids || ids.has(ContentCacheStrategyId.NativeFile))) {
+        return ContentCacheStrategyId.NativeFile;
       }
-      return 'memory';
+      return ContentCacheStrategyId.Memory;
     }
-
+    if (capabilities.hasWebCache && (!ids || ids.has(ContentCacheStrategyId.WebCache))) {
+      return ContentCacheStrategyId.WebCache;
+    }
     // Browser / Worker client
-    if (capabilities.hasIndexedDb && (!ids || ids.has('indexeddb'))) {
-      return 'indexeddb';
+    if (capabilities.hasIndexedDb && (!ids || ids.has(ContentCacheStrategyId.IndexedDb))) {
+      return ContentCacheStrategyId.IndexedDb;
     }
-    if (capabilities.hasWebCache && (!ids || ids.has('web-cache'))) {
-      return 'web-cache';
-    }
-
-    return 'memory';
+    return ContentCacheStrategyId.Memory;
   }
 
   public static isServer(): boolean {

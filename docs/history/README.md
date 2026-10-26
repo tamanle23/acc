@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [221](221_refactor_media_engine_and_cache_strategy_to_enums.md) | 2026-10-26 | Refactor MediaEngineType and ContentCacheStrategyId to TypeScript Enums | Converted MediaEngineType and ContentCacheStrategyId to TypeScript string enums for strict typesafe checking across registries, strategies, and bootstrap modules. |
 | [220](220_isomorphic_platform_detection_and_synchronized_defaults.md) | 2026-10-26 | Isomorphic Platform & Feature Detection with Synchronized Registry Defaults | Implemented PlatformDetector with type-safe enums in @acc/core-isomorphic, synchronized UniversalCanvasProvider and MediaEngineRegistry pairings, and integrated resilient defaults across bootstrapClient and bootstrapNode. |
 | [219](219_isolate_legacy_story_config_adapter.md) | 2026-10-26 | Isolate LegacyStoryConfigAdapter into Legacy Story Renderer | Relocated LegacyStoryConfigAdapter and legacy types to @acc/legacy-story-renderer, decoupled packages/ir, and updated all consumers across CLI and test suites. |
 | [218](218_move_story_config_adapter_to_legacy_story_renderer.md) | 2026-10-26 | Refactor and Move StoryConfigToUniversalIRAdapter to legacy-story-renderer | Moved StoryConfigToUniversalIRAdapter from packages/ir to apps/legacy-story-renderer, decoupled canonical IRConfigAdapterRegistry, and updated all consumers across CLI and test suites. |
