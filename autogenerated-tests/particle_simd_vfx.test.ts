@@ -1,14 +1,18 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { createCanvas } from '@napi-rs/canvas';
 import {
   SIMDParticleComputeEngine,
   PARTICLE_STRIDE,
 } from '../packages/effect-engines/src/overlay-effects/simulators/SIMDParticleComputeEngine';
 import { PostProcessingShaders } from '../packages/effect-engines/src/overlay-effects/simulators/PostProcessingShaders';
-import { CanvasAdapterFactory } from '../packages/effect-engines/src/overlay-effects/canvas-strategies/factory';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { bootstrapNode } from '@acc/core';
 import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';
 
 describe('Phase 3: Hardware-Accelerated Shader & Particle VFX Pipeline', () => {
+  beforeAll(async () => {
+    await bootstrapNode();
+  });
   it('should manage 10,000+ particles contiguously in Float32Array without heap allocation', () => {
     const maxParticles = 10000;
     const engine = new SIMDParticleComputeEngine({
@@ -43,14 +47,15 @@ describe('Phase 3: Hardware-Accelerated Shader & Particle VFX Pipeline', () => {
   });
 
   it('should resolve CanvasAdapter with headless server safe fallback', () => {
-    const autoAdapter = CanvasAdapterFactory.getAdapter('auto');
+    const autoAdapter = UniversalCanvasProvider.getAdapter('auto');
     expect(autoAdapter).toBeDefined();
 
-    const gpuAdapter = CanvasAdapterFactory.getAdapter('gpu');
-    expect(gpuAdapter).toBeDefined();
+    const nodeAdapter = UniversalCanvasProvider.getAdapter('node');
+    expect(nodeAdapter).toBeDefined();
+    expect(nodeAdapter.environment).toBe('node');
 
-    const detected = CanvasAdapterFactory.getDetectedEngine();
-    expect(['gpu', 'napi-rs']).toContain(detected);
+    const detected = UniversalCanvasProvider.detectEnvironment();
+    expect(['web', 'node']).toContain(detected);
 
     const testCanvas = autoAdapter.createCanvas(100, 100);
     expect(testCanvas.width).toBe(100);

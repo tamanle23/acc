@@ -2,15 +2,18 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import {
   UniversalCanvasProvider,
   CanvasAssetLoader,
-  WebCanvasAdapter,
-  NodeCanvasAdapter,
   type CanvasInstance,
   type CanvasAdapter,
-} from '../packages/effect-engines/src';
-import { CanvasAdapterFactory } from '../packages/effect-engines/src/overlay-effects/canvas-strategies/factory';
+} from '@acc/core-isomorphic';
+import { WebCanvasAdapter } from '@acc/core-web';
+import { NapiCanvasAdapter, bootstrapNode } from '@acc/core';
 
 describe('Phase 8: Universal Canvas Abstraction Layer & Environment Switching Suite', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Reset and register standard adapters
+    UniversalCanvasProvider.unregisterAll();
+    await bootstrapNode();
+    UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter());
     // Reset engine to auto between tests
     UniversalCanvasProvider.setEngine('auto');
   });
@@ -21,7 +24,7 @@ describe('Phase 8: Universal Canvas Abstraction Layer & Environment Switching Su
       expect(detected).toBe('node');
     });
 
-    it('should resolve NodeCanvasAdapter by default in Bun runtime', () => {
+    it('should resolve NapiCanvasAdapter by default in Bun runtime', () => {
       const adapter = UniversalCanvasProvider.getAdapter();
       expect(adapter).toBeDefined();
       expect(adapter.environment).toBe('node');
@@ -47,9 +50,9 @@ describe('Phase 8: Universal Canvas Abstraction Layer & Environment Switching Su
     });
   });
 
-  describe('NodeCanvasAdapter Drawing & Pixel Extraction Fidelity', () => {
+  describe('NapiCanvasAdapter Drawing & Pixel Extraction Fidelity', () => {
     it('should create a canvas instance, perform 2D drawing, and extract raw RGBA pixels', () => {
-      const adapter = new NodeCanvasAdapter();
+      const adapter = new NapiCanvasAdapter();
       expect(adapter.isSupported()).toBe(true);
 
       const width = 160;
@@ -90,7 +93,7 @@ describe('Phase 8: Universal Canvas Abstraction Layer & Environment Switching Su
     });
 
     it('should export valid data URL in Node', () => {
-      const adapter = new NodeCanvasAdapter();
+      const adapter = new NapiCanvasAdapter();
       const canvas = adapter.createCanvas(64, 64);
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = '#00ff00';
@@ -206,20 +209,13 @@ describe('Phase 8: Universal Canvas Abstraction Layer & Environment Switching Su
     });
   });
 
-  describe('CanvasAdapterFactory Backward Compatibility', () => {
-    it('should seamlessly route CanvasAdapterFactory calls to UniversalCanvasProvider', () => {
-      const adapterAuto = CanvasAdapterFactory.getAdapter('auto');
-      expect(adapterAuto).toBeDefined();
-      expect(typeof adapterAuto.createCanvas).toBe('function');
-
-      const adapterNapi = CanvasAdapterFactory.getAdapter('napi-rs');
-      expect(adapterNapi).toBeDefined();
-
-      const adapterWeb = CanvasAdapterFactory.getAdapter('web');
-      expect(adapterWeb).toBeDefined();
-
-      const detected = CanvasAdapterFactory.getDetectedEngine();
-      expect(['gpu', 'napi-rs']).toContain(detected);
+  describe('UniversalCanvasProvider Modern Capabilities', () => {
+    it('should create canvas directly from UniversalCanvasProvider', () => {
+      const canvas = UniversalCanvasProvider.createCanvas(100, 100);
+      expect(canvas).toBeDefined();
+      expect(canvas.width).toBe(100);
+      expect(canvas.height).toBe(100);
+      expect(typeof canvas.getContext).toBe('function');
     });
   });
 });

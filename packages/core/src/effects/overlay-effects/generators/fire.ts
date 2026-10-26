@@ -1,12 +1,11 @@
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
-import { CanvasAdapterFactory } from '../canvas-strategies/factory';
-import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class FireEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-    const adapter = CanvasAdapterFactory.getAdapter('napi-rs');
-    const canvas = adapter.createCanvas(this.width, this.height);
+    
+    const canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     // Lower resolution noise map to save CPU, then stretch it
     const noiseScale = 0.25;
@@ -129,7 +128,7 @@ export class FireEffect extends BaseEffectEngine {
       const sway1 = Math.sin(timeSec * swayFreq) * (this.width * 0.02);
       const sway2 = Math.cos(timeSec * swayFreq * 2) * (this.width * 0.015);
       // Create a temporary canvas from scratch pool to draw the flames and apply the mask
-      const tempCanvas = adapter.acquireScratchCanvas ? adapter.acquireScratchCanvas(this.width, this.height) : adapter.createCanvas(this.width, this.height);
+      const tempCanvas = UniversalCanvasProvider.acquireScratchCanvas(this.width, this.height);
       const tempCtx = tempCanvas.getContext('2d') as any;
       const drawLayer = (layerCanvas: any, offset: number, horizontalSway: number, blendMode: string) => {
         const raw = layerCanvas.getRawCanvas ? layerCanvas.getRawCanvas() : layerCanvas;
@@ -149,9 +148,7 @@ export class FireEffect extends BaseEffectEngine {
       // Use standard blending
       (ctx as any).globalCompositeOperation = 'source-over';
       (ctx as any).drawImage(rawTemp, 0, 0);
-      if (adapter.releaseScratchCanvas) {
-        adapter.releaseScratchCanvas(tempCanvas);
-      }
+      UniversalCanvasProvider.releaseScratchCanvas(tempCanvas);
       const buffer = canvas.toBuffer('raw');
       stream.write(buffer);
     }

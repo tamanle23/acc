@@ -1,5 +1,4 @@
-import { UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { MediaEngineRegistry } from '../media-engine/MediaEngineRegistry';
+import { UniversalCanvasProvider, MediaEngineRegistry, MediaEngineType } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from './canvas/NapiCanvasAdapter';
 import { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStrategy';
 import { FFmpegManager } from '../FFmpegManager';
@@ -13,7 +12,7 @@ export { bootstrapNode, type BootstrapNodeOptions } from '../bootstrap';
 export async function bootstrapServer(): Promise<void> {
   await FFmpegManager.prepare();
   UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
-  if (!MediaEngineRegistry.has('bun-ffi')) {
+  if (!MediaEngineRegistry.has(MediaEngineType.BunFFI)) {
     MediaEngineRegistry.register(new BunFFIEngineStrategy());
   }
 }

@@ -1,11 +1,10 @@
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
-import { CanvasAdapterFactory } from '../canvas-strategies/factory';
-import { CanvasAdapter } from '../canvas-strategies/base';
 export class LensFlareEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-    const adapter = CanvasAdapterFactory.getAdapter('napi-rs');
-    const canvas = adapter.createCanvas(this.width, this.height);
+    
+    const canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
     const { stream, promise } = this.initStream(outputPath);

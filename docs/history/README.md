@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [222](222_eliminate_canvas_strategies_migrate_to_universal_canvas_provider.md) | 2026-10-26 | Eliminate Legacy canvas-strategies and Migrate to UniversalCanvasProvider | Deleted legacy canvas-strategies and CanvasAdapterFactory in core and effect-engines, migrated all 27 overlay generators and tests to UniversalCanvasProvider. |
 | [221](221_refactor_media_engine_and_cache_strategy_to_enums.md) | 2026-10-26 | Refactor MediaEngineType and ContentCacheStrategyId to TypeScript Enums | Converted MediaEngineType and ContentCacheStrategyId to TypeScript string enums for strict typesafe checking across registries, strategies, and bootstrap modules. |
 | [220](220_isomorphic_platform_detection_and_synchronized_defaults.md) | 2026-10-26 | Isomorphic Platform & Feature Detection with Synchronized Registry Defaults | Implemented PlatformDetector with type-safe enums in @acc/core-isomorphic, synchronized UniversalCanvasProvider and MediaEngineRegistry pairings, and integrated resilient defaults across bootstrapClient and bootstrapNode. |
 | [219](219_isolate_legacy_story_config_adapter.md) | 2026-10-26 | Isolate LegacyStoryConfigAdapter into Legacy Story Renderer | Relocated LegacyStoryConfigAdapter and legacy types to @acc/legacy-story-renderer, decoupled packages/ir, and updated all consumers across CLI and test suites. |

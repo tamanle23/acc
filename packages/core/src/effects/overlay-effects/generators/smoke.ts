@@ -1,12 +1,11 @@
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { Logger } from "@acc/core";
 import { BaseEffectEngine } from '@acc/core';
-import { CanvasAdapterFactory } from '../canvas-strategies/factory';
-import { CanvasAdapter } from '../canvas-strategies/base';
 import { createNoise2D } from 'simplex-noise';
 export class SmokeEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-    const adapter = CanvasAdapterFactory.getAdapter('napi-rs');
-    const canvas = adapter.createCanvas(this.width, this.height);
+    
+    const canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     // Lower resolution noise map to save CPU
     const noiseScale = 0.25;
