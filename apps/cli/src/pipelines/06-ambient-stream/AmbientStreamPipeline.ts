@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import type { PipelineIR } from '@acc/ir';
 import { defaultExporterDispatcher, ExporterDispatcher, MultiExportResults } from '@acc/exporters';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import {
   IPipeline,
   PipelineExecutionOptions,
@@ -10,7 +11,6 @@ import {
   createUnifiedPipelineContext,
   createExporterDispatcherMiddleware,
   DefaultPipelineRegistry,
-  UniversalCanvasProvider,
 } from '@acc/core';
 import { createAmbientParticleShaderCompositionStage } from './stages/AmbientParticleShaderCompositionStage';
 

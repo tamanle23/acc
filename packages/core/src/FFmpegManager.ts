@@ -22,7 +22,20 @@ export class FFmpegManager {
   }
 
   public static getBinDir(): string {
-    if (!this.binDirPath) throw new Error('FFmpegManager.prepare() must be called before getBinDir()');
+    if (!this.binDirPath) {
+      // Auto-probe local shared build if already present
+      const home = process.env.USERPROFILE || process.env.HOME || os.homedir();
+      const appDir = path.join(home, '.acc');
+      const targetDir = path.join(appDir, 'bin', 'ffmpeg-shared');
+      const existing = this.findBinaries(targetDir);
+      if (existing.binDir && existing.ffmpeg && existing.ffprobe) {
+        this.binDirPath = existing.binDir;
+        this.ffmpegPath = existing.ffmpeg;
+        this.ffprobePath = existing.ffprobe;
+        return this.binDirPath;
+      }
+      throw new Error('FFmpegManager.prepare() must be called before getBinDir()');
+    }
     return this.binDirPath;
   }
 

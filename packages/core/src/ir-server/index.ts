@@ -1,2 +1,2 @@
-export * from './IRChunkWorkerPool';
+export * from '@acc/ir/server';
 export * from './FFIChunkConcatMuxer';

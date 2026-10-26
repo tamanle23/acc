@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FFIVideoEncoder } from '../../ffmpeg-ffi/FFIVideoEncoder';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
-import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '../types';
+import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '@acc/core-isomorphic';
 
 function writeFloatWav(filePath: string, floatData: Float32Array, sampleRate: number, channels: number): void {
   const byteLength = floatData.byteLength;

@@ -178,7 +178,7 @@ export class IRMasterRenderer {
     const cache = ContentCacheRegistry.get();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
-      if (assetDef.type === AssetType.image || assetDef.type === AssetType.Video) {
+      if (assetDef.type === 'image' || assetDef.type === 'video') {
         const resolvedPath = resolveAssetPath(baseDir, assetDef.src);
         const ext = getFileExtension(resolvedPath);
 

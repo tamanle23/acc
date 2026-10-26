@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { fileExists, UniversalCanvasProvider } from '@acc/core';
+import { fileExists } from '@acc/core';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
 

@@ -6,6 +6,20 @@ import type { IProcessRunner, ProcessOutput, Result } from "../apps/ai-superviso
 class MockProcessRunner implements IProcessRunner {
   public async exec(cmd: string[]): Promise<Result<ProcessOutput, Error>> {
     const cmdStr = cmd.join(" ");
+    if (cmdStr.includes("Get-Process")) {
+      return {
+        ok: true,
+        value: {
+          exitCode: 0,
+          stdout: JSON.stringify({
+            Id: 9999,
+            CPU: 12.4,
+            WorkingSet64: 268435456, // 256 MB
+          }),
+          stderr: "",
+        },
+      };
+    }
     if (cmdStr.includes("ps -o %cpu,rss")) {
       return {
         ok: true,

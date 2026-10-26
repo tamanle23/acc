@@ -4,8 +4,8 @@ import os from 'os';
 import crypto from 'crypto';
 import { FFmpegManager } from '../../FFmpegManager';
 import { GPUEncoderResolver } from '../../ffmpeg-ffi/GPUEncoderResolver';
-import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '../types';
-import { MediaEngineError } from '../types';
+import type { IMediaFrameSink, SinkInitMetadata, SinkFinalizeResult, MediaAudioMixResult } from '@acc/core-isomorphic';
+import { MediaEngineError } from '@acc/core-isomorphic';
 
 function writeFloatWav(filePath: string, floatData: Float32Array, sampleRate: number, channels: number): void {
   const byteLength = floatData.byteLength;

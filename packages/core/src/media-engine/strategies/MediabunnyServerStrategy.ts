@@ -25,8 +25,8 @@ import type {
   IChunkExecutionPolicy,
   MediaProbeResult,
   SinkInitMetadata,
-} from '../types';
-import { MediaEngineError } from '../types';
+} from '@acc/core-isomorphic';
+import { MediaEngineError } from '@acc/core-isomorphic';
 import { MediabunnyServerSink } from '../sinks/MediabunnyServerSink';
 
 export class MediabunnyProbeStrategy implements IMediaProbeStrategy {

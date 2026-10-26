@@ -1,7 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
-import { UniversalCanvasProvider, type IPipelineMiddleware } from '@acc/core';
+import { UniversalCanvasProvider } from '@acc/core-isomorphic';
+import type { IPipelineMiddleware } from '@acc/core';
 import type { RuleLogicPipelineContext } from '../RuleLogicPipeline';
 
 export function createRuleLogicChalkboardCompositionStage(): IPipelineMiddleware<RuleLogicPipelineContext> {
