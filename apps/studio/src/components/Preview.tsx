@@ -1,14 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   useDroppable,
-  DndContext,
-  useDraggable,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragMoveEvent,
-  type DragEndEvent,
 } from '@dnd-kit/core';
 import { IRStateManager } from '../lib/ir/irState';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
@@ -338,21 +330,10 @@ export function Preview({
     });
   }, []);
 
-  // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
-  const transformSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
-    })
-  );
-
-  const handleTransformDragStart = (e: DragStartEvent) => {
+  // High-performance Transform Overlay Drag Handlers powered by @neodrag/react
+  const handleTransformDragStart = (handleType: TransformHandleType) => {
     if (isLocked) return;
-    const data = e.active.data.current;
-    if (!data) return;
 
-    const handleType = data.handleType as TransformHandleType;
     setIsDragging(true);
     setActiveHandle(handleType);
     setStartTransform({ ...transform });
@@ -361,14 +342,14 @@ export function Preview({
     overlayRef.current.setActiveInteraction(handleType, mode);
   };
 
-  const handleTransformDragMove = (e: DragMoveEvent) => {
+  const handleTransformDragMove = (handleType: TransformHandleType, delta: { x: number; y: number }) => {
     if (!isDragging || !activeHandle || !selectedSeqId || isLocked) return;
 
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const dx = e.delta.x;
-    const dy = e.delta.y;
+    const dx = delta.x;
+    const dy = delta.y;
 
     const baseW = 0.5;
     const baseH = 0.5;
@@ -416,7 +397,7 @@ export function Preview({
     overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
   };
 
-  const handleTransformDragEnd = (e: DragEndEvent) => {
+  const handleTransformDragEnd = (handleType: TransformHandleType) => {
     if (selectedSeqId && !isLocked) {
       IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', transform as any);
     }
@@ -670,7 +651,7 @@ export function Preview({
             dragCoords={dragCoords}
           />
 
-          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
+          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill powered by @neodrag/react */}
           <TransformGizmoOverlay
             selectedSeqId={selectedSeqId}
             activeSequences={activeSequences}
@@ -679,10 +660,9 @@ export function Preview({
             transform={transform}
             isDragging={isDragging}
             previewEngine={previewEngineRef.current}
-            transformSensors={transformSensors}
-            onTransformDragStart={handleTransformDragStart}
-            onTransformDragMove={handleTransformDragMove}
-            onTransformDragEnd={handleTransformDragEnd}
+            onHandleDragStart={handleTransformDragStart}
+            onHandleDrag={handleTransformDragMove}
+            onHandleDragEnd={handleTransformDragEnd}
             onSetTransform={setTransform}
             onToggleLock={() => setIsLocked(!isLocked)}
             onStartEditingCue={setEditingCue}
