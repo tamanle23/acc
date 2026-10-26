@@ -4,6 +4,8 @@
  * Derived from docs/ir/1. video_(IR)_specification.md & docs/ir/2.technical_proposal_universal_video_ir_rendering_engine.md
  */
 
+import { ModifierNode } from "./modifiers";
+
 export type TrackType = 'video' | 'audio' | 'data' | 'timed_text';
 
 export type SequenceType = 'video' | 'image' | 'audio' | 'text' | 'overlay';
@@ -65,7 +67,6 @@ export interface TimedTextCue {
 }
 
 
-import type { ModifierNode } from './modifiers';
 
 export interface IRSequence {
   id: string;

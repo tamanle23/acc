@@ -1,9 +1,10 @@
 import { ProceduralAudioSynthesizer } from './ProceduralAudioSynthesizer';
 import { DynamicAudioDuckingEngine } from './DynamicAudioDuckingEngine';
 import type { IAudioSourceProvider } from './AudioSourceAdapter';
-import type { ModifierNode, ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
+import type { ResolvedTimeline, ResolvedTrack } from '../../types/VideoIR';
 import { ModifierPluginRegistry, type AudioProcessContext } from '../../plugins/ModifierPluginRegistry';
 import { DeterministicAudioClock } from '../../compiler/DeterministicAudioClock';
+import type { ModifierNode } from "../../types/modifiers";
 
 export interface DecodedAudioPCM {
   sampleRate: number;
