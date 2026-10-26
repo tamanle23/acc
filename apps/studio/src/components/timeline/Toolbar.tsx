@@ -194,7 +194,7 @@ export function Toolbar({
 
         {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
         <div className="flex items-center rounded-md border border-glass-border p-0.5 bg-muted/20 text-xs shadow-2xs">
-          <Tooltip content="DOM Mode: Interactive HTML Elements with @dnd-kit">
+          <Tooltip content="DOM Mode: High-performance interactive HTML elements with @neodrag/react">
             <Button
               variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
               size="sm"

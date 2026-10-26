@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [225](225_replace_dnd_kit_with_neodrag_in_studio_timeline_clips_and_trims.md) | 2026-10-26 | Replace @dnd-kit with @neodrag/react in Studio Timeline Clips & Trimming | Migrated Timeline clips and trim handles from @dnd-kit to @neodrag/react, removed timeline DndContext, enforced track-sequence media compatibility, and added 15 unit tests. |
 | [224](224_replace_dnd_kit_with_neodrag_in_studio_preview_transform_gizmo.md) | 2026-10-26 | Replace @dnd-kit with @neodrag/react in Studio Preview Transform Gizmo | Migrated Canvas Transform Gizmo 9-handle bounding box from @dnd-kit to @neodrag/react, eliminated DndContext and sensor re-render overhead, and fixed relative imports in vision strategies. |
 | [224](224_isomorphic_vision_engine_registry_and_synchronized_bootstrap.md) | 2026-10-26 | Isomorphic VisionEngineRegistry Architecture with Synchronized Bootstrap Pairing | Established VisionEngineRegistry in @acc/core-isomorphic with typed enums, integrated HeuristicDepthStrategy and GrabCutFallbackStrategy, added defensive cascading to neural models, and synchronized full 4-pillar bootstrap across bootstrapClient and bootstrapNode. |
 | [223](223_monorepo_stabilization_test_isolation_and_isomorphic_ir_worker_pool.md) | 2026-10-26 | Monorepo Stabilization, Test Suite Isolation & Isomorphic IR Worker Pool | Fixed media-engine direct imports, resolved inspect_packets native segfault on Windows, authored isomorphic IRChunkWorkerPool in @acc/ir, and fixed AI supervisor process sampling. |
