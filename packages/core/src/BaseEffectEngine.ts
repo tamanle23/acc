@@ -42,7 +42,6 @@ export abstract class BaseEffectEngine {
    */
   protected initStream(outputPath: string): { stream: PassThrough, promise: Promise<void> } {
     const inputStream = new PassThrough();
-    const command = new FFmpegCommand();
 
     // Configure input stream as raw RGBA video
     const tempRawPath = path.join(os.tmpdir(), `raw_pipe_${Date.now()}_${Math.random().toString(36).substring(7)}.raw`);

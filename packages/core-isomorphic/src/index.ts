@@ -7,6 +7,8 @@ export * from './math/clock';
 export * from './assets/IAssetBlob';
 export * from './assets/AssetProtocolRegistry';
 export * from './logger';
+export { UniversalLogger as Logger } from './logger';
 export * from './cache';
 export * from './vision';
 export * from './platform';
+
