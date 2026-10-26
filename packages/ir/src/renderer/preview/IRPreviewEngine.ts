@@ -9,6 +9,8 @@ import {
 } from './DeterministicMotionEvaluator';
 
 import { IRCanvasCompositor } from '../shared/IRCanvasCompositor';
+import { UniversalAudioMixer, type AudioMixResult } from '../audio/UniversalAudioMixer';
+import type { IAudioSourceProvider } from '../audio/AudioSourceAdapter';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;
@@ -40,6 +42,7 @@ export interface PreviewFrameResult {
  * - Multi-track visual layer composition with track sorting, aspect-ratio fit modes, and blend modes
  * - Closed-form deterministic motion resolver (pop_in, slide_left, bounce, overshoot, drift)
  * - Retains seek() for interval tree queries & LOD scale
+ * - Encapsulates UniversalAudioMixer for sample-accurate audio mixing with 100% parity to IRMasterRenderer
  */
 export class IRPreviewEngine {
   private timeline: ResolvedTimeline;
@@ -47,12 +50,52 @@ export class IRPreviewEngine {
   private currentScale: number = 1.0;
   private pluginRegistry: ModifierPluginRegistry;
   private defaultTextureCache: AssetTextureCache = new AssetTextureCache();
+  private audioMixer: UniversalAudioMixer;
+  private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
 
-  constructor(timeline: ResolvedTimeline, pluginRegistry?: ModifierPluginRegistry) {
+  constructor(
+    timeline: ResolvedTimeline,
+    pluginRegistry?: ModifierPluginRegistry,
+    audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined,
+    audioSampleRate = 48000
+  ) {
     this.timeline = timeline;
     const allSequences = Array.from(timeline.sequences.values());
     this.intervalTree = new IntervalTreeIndex(allSequences);
     this.pluginRegistry = pluginRegistry ?? registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
+    this.audioSourceResolver = audioSourceResolver;
+    this.audioMixer = new UniversalAudioMixer([], audioSampleRate);
+    this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
+  }
+
+  /**
+   * Synchronizes timeline state across visual interval tree and audio mixer simultaneously.
+   */
+  public syncTimeline(
+    timeline: ResolvedTimeline,
+    audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined
+  ): void {
+    this.timeline = timeline;
+    const allSequences = Array.from(timeline.sequences.values());
+    this.intervalTree = new IntervalTreeIndex(allSequences);
+    if (audioSourceResolver !== undefined) {
+      this.audioSourceResolver = audioSourceResolver;
+    }
+    this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
+  }
+
+  /**
+   * Retrieves the encapsulated UniversalAudioMixer instance.
+   */
+  public getAudioMixer(): UniversalAudioMixer {
+    return this.audioMixer;
+  }
+
+  /**
+   * Renders a synchronized audio slice deterministically from the Master Bus.
+   */
+  public renderAudioSlice(timeSec: number, durationSec: number): AudioMixResult {
+    return this.audioMixer.mixStereo(timeSec, durationSec);
   }
 
   /**

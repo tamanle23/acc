@@ -16,6 +16,7 @@ import type { ICommand } from '../commands/ICommand';
 import { TrimSequenceCommand } from '../commands/TrimSequenceCommand';
 import { RippleTrimSequenceCommand } from '../commands/RippleTrimSequenceCommand';
 import { MoveSequenceCommand } from '../commands/MoveSequenceCommand';
+import { RippleMoveSequenceCommand } from '../commands/RippleMoveSequenceCommand';
 import { SplitSequenceCommand } from '../commands/SplitSequenceCommand';
 import { UpdateModifierCommand } from '../commands/UpdateModifierCommand';
 import { RemoveModifierCommand } from '../commands/RemoveModifierCommand';
@@ -285,6 +286,10 @@ export class IRStateManager {
 
   public moveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void {
     this.dispatch(new MoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame));
+  }
+
+  public rippleMoveSequence(sequenceId: string, targetTrackId: string, targetStartFrame: number): void {
+    this.dispatch(new RippleMoveSequenceCommand(sequenceId, targetTrackId, targetStartFrame));
   }
 
   public splitSequence(sequenceId: string, splitFrame: number): void {

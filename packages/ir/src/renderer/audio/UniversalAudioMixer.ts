@@ -87,6 +87,116 @@ export class UniversalAudioMixer {
   }
 
   /**
+   * Builds AudioMixerClip array from a ResolvedTimeline, inspecting tracks, audio modifiers, and ducking parameters.
+   */
+  public syncFromTimeline(
+    timeline: ResolvedTimeline,
+    audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined
+  ): void {
+    const fps = timeline.meta.globalFps || 30;
+    const clips: AudioMixerClip[] = [];
+    let customDuckingFactor: number | null = null;
+
+    const assets = (timeline as any).assets || (timeline as any).doc?.assets || {};
+
+    for (const track of timeline.tracks.values()) {
+      if (track.type !== 'audio' && track.type !== 'video') {
+        continue;
+      }
+
+      for (const seq of track.sequences) {
+        const hasAudioModifier = seq.modifiers?.some((m) =>
+          m.type.startsWith('audio/') || m.type.startsWith('sfx/')
+        );
+        const isAudioTrack = track.type === 'audio';
+
+        if (!isAudioTrack && !hasAudioModifier) {
+          continue;
+        }
+
+        const startSec = (seq.startFrame ?? 0) / Math.max(1, fps);
+        const durationSec = (seq.durationFrames || 30) / Math.max(1, fps);
+
+        let clipType: AudioTrackType = 'bgm';
+        const nameLower = (seq.name || '').toLowerCase();
+        const kindLower = ((seq as any).kind || '').toLowerCase();
+        const trackIdLower = (track.id || '').toLowerCase();
+
+        if (
+          nameLower.includes('pilot') ||
+          nameLower.includes('voice') ||
+          kindLower.includes('voice') ||
+          trackIdLower.includes('voice') ||
+          trackIdLower.includes('a1')
+        ) {
+          clipType = 'voice';
+        } else if (
+          nameLower.includes('bgm') ||
+          nameLower.includes('music') ||
+          kindLower.includes('bgm') ||
+          trackIdLower.includes('bgm') ||
+          trackIdLower.includes('a2')
+        ) {
+          clipType = 'bgm';
+        } else if (
+          nameLower.includes('laser') ||
+          nameLower.includes('sfx') ||
+          kindLower.includes('sfx') ||
+          trackIdLower.includes('sfx') ||
+          trackIdLower.includes('a3')
+        ) {
+          clipType = 'sfx';
+        }
+
+        let clipVolume = 0.8;
+        let clipPan = clipType === 'sfx' ? -0.3 : 0.0;
+
+        if (seq.modifiers) {
+          for (const mod of seq.modifiers) {
+            if (mod.type === 'sfx/dynamic_ducking' && mod.params) {
+              const p = mod.params as any;
+              if (typeof p.duckVolume === 'number') customDuckingFactor = p.duckVolume;
+              if (typeof p.attackMs === 'number') this.attackMs = p.attackMs;
+              if (typeof p.releaseMs === 'number') this.releaseMs = p.releaseMs;
+              if (typeof p.stereoPan === 'number') clipPan = p.stereoPan;
+            }
+            if (mod.type === 'audio/volume' && mod.params) {
+              const p = mod.params as any;
+              if (typeof p.volume === 'number') clipVolume = p.volume;
+            }
+          }
+        }
+
+        let audioSource: IAudioSourceProvider | undefined;
+        if (audioSourceResolver && seq.assetId) {
+          const assetDef = assets[seq.assetId];
+          audioSource = audioSourceResolver(seq.assetId, assetDef?.src);
+        }
+
+        clips.push({
+          id: seq.id,
+          type: clipType,
+          startTimeSec: startSec,
+          durationSec,
+          volume: clipVolume,
+          pan: clipPan,
+          assetId: seq.assetId,
+          audioSource,
+          modifiers: seq.modifiers,
+        });
+      }
+    }
+
+    if (customDuckingFactor !== null) {
+      this.duckingFactor = customDuckingFactor;
+    } else {
+      this.duckingFactor = 0.25;
+    }
+
+    this.setClips(clips);
+  }
+
+  /**
    * Mixes all active clips over a given time slice into stereo Float32Array PCM buffers.
    */
   public mixStereo(timeOffsetSec: number, durationSec: number): AudioMixResult {

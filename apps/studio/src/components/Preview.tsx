@@ -214,6 +214,7 @@ export function Preview({
     } else {
       const engine = new IRPreviewEngine(irState.timeline);
       previewEngineRef.current = engine;
+      WebAudioEngine.getInstance().attachPreviewEngine(engine);
     }
     setGlReady(true);
   }, [irState.timeline, irState.doc?.assets, width, height, fps, totalFrames]);

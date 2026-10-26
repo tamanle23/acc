@@ -1,4 +1,4 @@
-import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
+import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource, IRPreviewEngine } from '@acc/ir';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';
@@ -14,7 +14,8 @@ export interface AudioLevels {
  * WebAudioEngine:
  * Zero-server, browser-native Web Audio engine for Apps/Studio.
  * Provides live multi-track audio playback, dynamic voice ducking, real-time AnalyserNode
- * VU metering, and tactile scrub audio slices using UniversalAudioMixer.
+ * VU metering, and continuous scheduled multi-chunk playback by delegating audio DSP
+ * directly to IRPreviewEngine and its encapsulated UniversalAudioMixer.
  */
 export class WebAudioEngine {
   private static instance: WebAudioEngine;
@@ -23,6 +24,15 @@ export class WebAudioEngine {
   private analyser: AnalyserNode | null = null;
   private currentSource: AudioBufferSourceNode | null = null;
   private scrubSource: AudioBufferSourceNode | null = null;
+
+  // Active audio sources queue for continuous multi-chunk streaming
+  private queuedSources: AudioBufferSourceNode[] = [];
+  private scheduledAudioEndTime = 0;
+  private nextTimelineSecToSynthesize = 0;
+  private refillInterval: any = null;
+
+  // Encapsulated preview engine maintaining audio-visual parity
+  private previewEngine: IRPreviewEngine | null = null;
   private mixer: UniversalAudioMixer = new UniversalAudioMixer([], 44100);
   private waveformCache = new Map<string, Float32Array>();
   private waveformWorker: Worker | null = null;
@@ -55,6 +65,18 @@ export class WebAudioEngine {
     return WebAudioEngine.instance;
   }
 
+  /**
+   * Sets or attaches an active IRPreviewEngine instance to share the identical audio mixer.
+   */
+  public attachPreviewEngine(engine: IRPreviewEngine): void {
+    this.previewEngine = engine;
+    this.mixer = engine.getAudioMixer();
+  }
+
+  public getMixer(): UniversalAudioMixer {
+    return this.mixer;
+  }
+
   private initContext(): boolean {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -78,7 +100,8 @@ export class WebAudioEngine {
   }
 
   /**
-   * Builds audio mixer clips from Video IR state and syncs dynamic ducking and panning modifiers.
+   * Synchronizes timeline audio state across the attached IRPreviewEngine or internal mixer.
+   * Leverages UniversalAudioMixer.syncFromTimeline for 100% parity with IRMasterRenderer.
    */
   public syncFromIR(irState: any, fps = 30): void {
     if (!irState || !irState.timeline) return;
@@ -88,112 +111,30 @@ export class WebAudioEngine {
     const assets = irState.timeline.assets || irState.doc?.assets || {};
     AudioAssetCache.getInstance().preloadAssets(assets);
 
-    const rawTracks = irState.timeline.tracks;
-    const tracks = rawTracks instanceof Map
-      ? Array.from(rawTracks.values())
-      : Array.isArray(rawTracks)
-      ? rawTracks
-      : [];
-
-    const clips: AudioMixerClip[] = [];
-    let customDuckingFactor: number | null = null;
-
-    for (const track of tracks as any[]) {
-      if (track.type === 'audio') {
-        const rawSeqs = track.sequences;
-        const sequences = rawSeqs instanceof Map
-          ? Array.from(rawSeqs.values())
-          : Array.isArray(rawSeqs)
-          ? rawSeqs
-          : [];
-
-        for (const seq of sequences) {
-          const startSec = ((seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0) / Math.max(1, fps);
-          const durationSec = (seq.durationFrames || 30) / Math.max(1, fps);
-
-          let clipType: 'voice' | 'sfx' | 'bgm' = 'bgm';
-          const nameLower = (seq.name || '').toLowerCase();
-          const kindLower = (seq.kind || '').toLowerCase();
-          const trackIdLower = (track.id || '').toLowerCase();
-
-          if (nameLower.includes('pilot') || nameLower.includes('voice') || kindLower.includes('voice') || trackIdLower.includes('voice') || trackIdLower.includes('a1')) {
-            clipType = 'voice';
-          } else if (nameLower.includes('laser') || nameLower.includes('sfx') || kindLower.includes('sfx') || trackIdLower.includes('sfx') || trackIdLower.includes('a2')) {
-            clipType = 'sfx';
-          }
-
-          let clipVolume = 0.8;
-          let clipPan = clipType === 'sfx' ? -0.3 : 0.0;
-
-          // Check for dynamic ducking modifier or audio settings attached to sequence
-          if (seq.modifiers) {
-            for (const mod of seq.modifiers) {
-              if (mod.type === 'sfx/dynamic_ducking' && mod.params) {
-                const p = mod.params as any;
-                if (typeof p.duckVolume === 'number') {
-                  customDuckingFactor = p.duckVolume;
-                }
-                if (typeof p.attackMs === 'number') {
-                  this.mixer.attackMs = p.attackMs;
-                }
-                if (typeof p.releaseMs === 'number') {
-                  this.mixer.releaseMs = p.releaseMs;
-                }
-                if (typeof p.stereoPan === 'number') {
-                  clipPan = p.stereoPan;
-                }
-              }
-              if (mod.type === 'audio/volume' && mod.params) {
-                const p = mod.params as any;
-                if (typeof p.volume === 'number') {
-                  clipVolume = p.volume;
-                }
-              }
-            }
-          }
-
-          // Query AudioAssetCache for decoded audio
-          let audioSource: DecodedPcmSource | undefined;
-          if (seq.assetId && assets[seq.assetId]) {
-            const assetDef = assets[seq.assetId];
-            const decoded = AudioAssetCache.getInstance().getAudioChannels(seq.assetId, assetDef.src);
-            if (decoded) {
-              audioSource = new DecodedPcmSource({
-                channels: decoded.channels,
-                sourceSampleRate: decoded.sampleRate,
-                sourceTrimStartSec: (seq.sourceTrim?.startFrame || 0) / Math.max(1, fps),
-                loop: trackIdLower.includes('bgm') || track.name?.toLowerCase().includes('bgm'),
-              });
-            }
-          }
-
-          clips.push({
-            id: seq.id,
-            type: clipType,
-            startTimeSec: startSec,
-            durationSec: durationSec,
-            volume: clipVolume,
-            pan: clipPan,
-            assetId: seq.assetId,
-            audioSource,
-            modifiers: seq.modifiers,
-          });
-        }
+    const audioSourceResolver = (assetId: string, src?: string): DecodedPcmSource | undefined => {
+      const decoded = AudioAssetCache.getInstance().getAudioChannels(assetId, src);
+      if (decoded) {
+        return new DecodedPcmSource({
+          channels: decoded.channels,
+          sourceSampleRate: decoded.sampleRate,
+          sourceTrimStartSec: 0,
+        });
       }
-    }
+      return undefined;
+    };
 
-    if (customDuckingFactor !== null) {
-      this.mixer.duckingFactor = customDuckingFactor;
+    if (this.previewEngine) {
+      this.previewEngine.syncTimeline(irState.timeline, audioSourceResolver);
+      this.mixer = this.previewEngine.getAudioMixer();
     } else {
-      this.mixer.duckingFactor = 0.25;
+      this.mixer.syncFromTimeline(irState.timeline, audioSourceResolver);
     }
-
-    this.mixer.setClips(clips);
   }
 
   /**
    * Starts synchronized audio playback from current playhead frame.
-   * Synthesizes audio using lightweight non-blocking 5.0s chunks to eliminate UI thread lockup.
+   * Synthesizes audio using lightweight non-blocking 5.0s chunks and chains
+   * consecutive AudioBufferSourceNode instances into the Master Bus for continuous playback.
    */
   public startPlayback(currentFrame: number, fps: number, irState: any): void {
     try {
@@ -225,18 +166,95 @@ export class WebAudioEngine {
       source.start(now);
 
       this.currentSource = source;
+      this.queuedSources = [source];
       this.isPlaying = true;
       this.playbackStartAudioTime = now;
       this.playbackStartTimelineTime = startSec;
+      this.scheduledAudioEndTime = now + renderDuration;
+      this.nextTimelineSecToSynthesize = startSec + renderDuration;
+
+      // Start continuous lookahead replenishment loop (checks every 1000ms)
+      this.startRefillScheduler(totalFrames, fps);
     } catch (err) {
       console.warn('WebAudioEngine: startPlayback encountered an error:', err);
     }
   }
 
   /**
-   * Stops active audio playback.
+   * Checks remaining audio buffer every 1000ms. If remaining buffered duration < 2.0s,
+   * asynchronously synthesizes the next 5.0-second slice and chains it to the master bus.
+   */
+  private startRefillScheduler(totalFrames: number, fps: number): void {
+    if (this.refillInterval) {
+      clearInterval(this.refillInterval);
+      this.refillInterval = null;
+    }
+
+    const totalDurationSec = totalFrames / Math.max(1, fps);
+
+    this.refillInterval = setInterval(() => {
+      if (!this.isPlaying || !this.ctx || !this.masterGain) {
+        if (this.refillInterval) {
+          clearInterval(this.refillInterval);
+          this.refillInterval = null;
+        }
+        return;
+      }
+
+      const now = this.ctx.currentTime;
+      const remainingBufferedTime = this.scheduledAudioEndTime - now;
+
+      // Refill threshold: schedule next chunk when buffered time falls below 2.0s
+      if (remainingBufferedTime < 2.0 && this.nextTimelineSecToSynthesize < totalDurationSec) {
+        const remainingTimelineSec = totalDurationSec - this.nextTimelineSecToSynthesize;
+        if (remainingTimelineSec <= 0.05) return;
+
+        const sliceDuration = Math.min(5.0, remainingTimelineSec);
+        const sliceStart = this.nextTimelineSecToSynthesize;
+        this.nextTimelineSecToSynthesize += sliceDuration;
+
+        try {
+          const mix = this.mixer.mixStereo(sliceStart, sliceDuration);
+          this.streamWorklet.pushChunk(mix.left, mix.right);
+
+          const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
+          buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
+          buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
+
+          const nextSource = this.ctx.createBufferSource();
+          nextSource.buffer = buffer;
+          nextSource.connect(this.masterGain);
+
+          // Schedule contiguous playback right after preceding chunk finishes
+          const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
+          nextSource.start(scheduleTime);
+          this.scheduledAudioEndTime = scheduleTime + sliceDuration;
+          this.queuedSources.push(nextSource);
+
+          // Prune sources that have already finished playing
+          this.queuedSources = this.queuedSources.filter((s) => {
+            try {
+              return s.buffer !== null;
+            } catch {
+              return false;
+            }
+          });
+        } catch (e) {
+          console.warn('[WebAudioEngine] Error scheduling audio slice:', e);
+        }
+      }
+    }, 1000);
+  }
+
+  /**
+   * Stops active audio playback and clears all queued sources and replenishment intervals.
    */
   public stopPlayback(): void {
+    if (this.refillInterval) {
+      clearInterval(this.refillInterval);
+      this.refillInterval = null;
+    }
+
     if (this.currentSource) {
       try {
         this.currentSource.stop();
@@ -246,6 +264,16 @@ export class WebAudioEngine {
       }
       this.currentSource = null;
     }
+
+    for (const source of this.queuedSources) {
+      try {
+        source.stop();
+        source.disconnect();
+      } catch {}
+    }
+    this.queuedSources = [];
+    this.scheduledAudioEndTime = 0;
+    this.nextTimelineSecToSynthesize = 0;
     this.streamWorklet.reset();
     this.isPlaying = false;
   }
