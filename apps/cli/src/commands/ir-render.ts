@@ -3,10 +3,8 @@ import path from 'path';
 import {
   IRChunkWorkerPool,
   FFmpegManager,
-  Logger,
   Tracer,
   TraceContext,
-  MediaEngineRegistry,
 } from '@acc/core';
 import {
   IRConfigAdapterRegistry,
@@ -16,8 +14,8 @@ import {
   type IIRFrameSink,
   type VideoIRDocument,
 } from '@acc/ir';
-import type { MediaEngineType } from '@acc/core';
 import { log } from '../prompts';
+import { Logger, MediaEngineRegistry, MediaEngineType } from '@acc/core-isomorphic';
 
 export interface IrRenderCliOptions {
   input: string;

@@ -11,6 +11,7 @@ export * from './ai-backend/GenerativeAIFacade';
 export * from './ai-backend/VoiceIsolationCloningStrategy';
 export * from './ai-backend/MatchmoveVisionFacade';
 export * from './TextBasedEditingEngine';
+export * from './media-engine';
 export * from './ffmpeg-ffi';
 export * from './ffmpeg-ffi/FFIVideoEncoder';
 export * from './ffmpeg-ffi/FFAudioMuxer';
@@ -61,3 +62,4 @@ export * from './cache';
 export * from './effects';
 export * from './editing';
 export * from './ir-server';
+

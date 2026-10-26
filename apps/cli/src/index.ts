@@ -6,7 +6,7 @@ import {
   AmbientStreamPipeline,
   ScraperEngine,
 } from './pipelines';
-import { DefaultPipelineRegistry, Logger, MediaEngineType, fileExists } from '@acc/core';
+import { DefaultPipelineRegistry, fileExists } from '@acc/core';
 import { bootstrapServer } from './bootstrap';
 import {
   intro,
@@ -16,6 +16,7 @@ import {
   spinner,
   log,
 } from './prompts';
+import { Logger, MediaEngineType } from '@acc/core-isomorphic';
 
 export type CliCommand =
   | 'run'
@@ -240,7 +241,7 @@ async function probeCanonicalConfig(dirPath: string): Promise<any | null> {
     if (fs.existsSync(candidatePath)) {
       try {
         return JSON.parse(await fs.promises.readFile(candidatePath, 'utf-8'));
-      } catch {}
+      } catch { }
     }
   }
   return null;
@@ -258,7 +259,7 @@ export async function resolvePipelineInput(pipelineId: string, options: CliOptio
       if (isDirectory) {
         parsedFromDir = await probeCanonicalConfig(options.configPath);
       }
-    } catch {}
+    } catch { }
   }
 
   if (normId === '1' || normId === 'scraper' || normId === 'scraper-summarizer') {

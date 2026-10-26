@@ -1,4 +1,4 @@
-import { Logger } from "@acc/core";
+import { Logger } from '@acc/core-isomorphic';
 import { Server } from 'bun';
 
 export interface IngestedEvent {
@@ -34,7 +34,7 @@ export class ScraperEngine {
     try {
       const response = await fetch(url, { headers: { 'User-Agent': 'ACC-ScraperEngine/3.0' } });
       const htmlOrText = await response.text();
-      
+
       // Simple tag stripper to extract body content
       const cleaned = htmlOrText
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
