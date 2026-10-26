@@ -77,7 +77,6 @@ export function Timeline({
 
   const handleScrub = (frame: number) => {
     const discreteFrame = snapToDiscreteFrame(frame);
-    WebAudioEngine.getInstance().playScrubFeedback(discreteFrame, fps, irState);
     onScrub(discreteFrame);
   };
 

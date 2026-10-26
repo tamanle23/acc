@@ -66,9 +66,6 @@ export class MediabunnyWorkerReader {
           source: new UrlSource(this.src),
         });
 
-        const duration = await this.input.computeDuration().catch(() => 0);
-        this.durationSec = duration;
-
         const track = await this.input.getPrimaryVideoTrack();
         if (!track) {
           console.warn(`[MediabunnyWorkerReader] No primary video track found for ${this.src}`);
@@ -80,15 +77,16 @@ export class MediabunnyWorkerReader {
         this.width = (await track.getDisplayWidth().catch(() => 1920)) || 1920;
         this.height = (await track.getDisplayHeight().catch(() => 1080)) || 1080;
 
-        // Try getting framerate metrics
-        const metrics = await track.computeFrameRateMetrics().catch(() => null);
-        if (metrics && metrics.averageFrameRate > 0) {
-          this.fps = Math.round(metrics.averageFrameRate);
-        }
-
+        // Instant CanvasSink instantiation without network packet scanning
         this.canvasSink = new CanvasSink(track);
         this.isInitialized = true;
         this.isInitializing = false;
+
+        // Compute duration asynchronously in the background (zero impact on initial seek responsiveness)
+        this.input.computeDuration().then((dur) => {
+          this.durationSec = dur;
+        }).catch(() => {});
+
         return true;
       } catch (err) {
         console.warn(`[MediabunnyWorkerReader] Failed to initialize video ${this.src}:`, err);
@@ -123,8 +121,11 @@ export class MediabunnyWorkerReader {
 
     const execute = async (): Promise<ImageBitmap | null> => {
       if (!this.isInitialized) {
-        const ok = await this.init();
-        if (!ok || !this.canvasSink) return null;
+        // Cold start protection: trigger initialization in background without blocking frame render
+        if (!this.isInitializing) {
+          this.init().catch(() => {});
+        }
+        return null;
       }
 
       const targetSec = Math.max(0, frame / (fps || this.fps || 30));

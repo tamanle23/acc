@@ -103,13 +103,15 @@ export class WebAudioEngine {
    * Synchronizes timeline audio state across the attached IRPreviewEngine or internal mixer.
    * Leverages UniversalAudioMixer.syncFromTimeline for 100% parity with IRMasterRenderer.
    */
-  public syncFromIR(irState: any, fps = 30): void {
+  public syncFromIR(irState: any, fps = 30, preload = true): void {
     if (!irState || !irState.timeline) return;
     this.lastIrState = irState;
     this.lastFps = fps;
 
-    const assets = irState.timeline.assets || irState.doc?.assets || {};
-    AudioAssetCache.getInstance().preloadAssets(assets);
+    if (preload) {
+      const assets = irState.timeline.assets || irState.doc?.assets || {};
+      AudioAssetCache.getInstance().preloadAssets(assets);
+    }
 
     const audioSourceResolver = (assetId: string, src?: string): DecodedPcmSource | undefined => {
       const decoded = AudioAssetCache.getInstance().getAudioChannels(assetId, src);
@@ -320,6 +322,11 @@ export class WebAudioEngine {
     try {
       if (!this.initContext() || !this.ctx || !this.masterGain) return;
 
+      // Autoplay policy guard: do not execute audio DSP or schedule buffers on suspended context
+      if (this.ctx.state === 'suspended') {
+        return;
+      }
+
       const now = performance.now();
       if (now - this.lastScrubAudioTime < 70) {
         return;
@@ -336,7 +343,7 @@ export class WebAudioEngine {
       }
 
       if (irState) {
-        this.syncFromIR(irState, fps);
+        this.syncFromIR(irState, fps, false);
       }
 
       const timeSec = frame / Math.max(1, fps);
