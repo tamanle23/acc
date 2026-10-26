@@ -215,9 +215,8 @@ export function Timeline({
         onMouseDown={handleTimelineMouseDown}
         onMouseMove={handleTimelineMouseMove}
         onMouseUp={handleTimelineMouseUp}
-        className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${
-          activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
-        }`}
+        className={`flex-1 overflow-x-auto overflow-y-auto relative select-none ${activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
+          }`}
       >
         <div style={{ width: `${timelineWidth + 208}px` }} className="space-y-1 relative">
           {/* Sticky Timeline Head: Track Headers title & Timecode Ruler */}
@@ -285,7 +284,7 @@ export function Timeline({
               rippleEnabled={rippleEnabled}
               currentFrame={currentFrame}
               onActiveSnapGuidelineChange={setActiveSnapGuideline}
-              onHoveredClipChange={() => {}}
+              onHoveredClipChange={() => { }}
             />
           )}
 
