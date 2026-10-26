@@ -69,6 +69,10 @@ export class VisionEngineRegistry {
     return this.defaultDepthId;
   }
 
+  public static getRegisteredDepthStrategies(): string[] {
+    return Array.from(this.depthStrategies.keys());
+  }
+
   // --- Subject Segmentation ---
 
   public static registerSegmentationStrategy(strategy: ISubjectSegmentationStrategy, isDefault: boolean = false): void {
@@ -107,6 +111,10 @@ export class VisionEngineRegistry {
 
   public static getDefaultSegmentationStrategyId(): string {
     return this.defaultSegmentationId;
+  }
+
+  public static getRegisteredSegmentationStrategies(): string[] {
+    return Array.from(this.segmentationStrategies.keys());
   }
 
   // --- Lifecycle & Testing Management ---
