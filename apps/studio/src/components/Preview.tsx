@@ -1,5 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { useStagingDrag } from '../lib/staging/StagingDragManager';
+import {
+  useDroppable,
+  DndContext,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragMoveEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { IRStateManager } from '../lib/ir/irState';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import { useTheme } from '../lib/theme/ThemeProvider';
@@ -60,9 +70,10 @@ export function Preview({
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
-  // Staging drop target powered by StagingDragManager
-  const stagingDrag = useStagingDrag();
-  const isOver = stagingDrag.isDragging && stagingDrag.hoveredTarget?.type === 'viewport';
+  // dnd-kit drop target
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: 'canvas-viewport-drop-zone',
+  });
 
   // In-Canvas 2D Vector Transform & Magnetic Snapping State
   const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
@@ -327,10 +338,21 @@ export function Preview({
     });
   }, []);
 
-  // High-performance Transform Overlay Drag Handlers powered by @neodrag/react
-  const handleTransformDragStart = (handleType: TransformHandleType) => {
-    if (isLocked) return;
+  // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
+  const transformSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    })
+  );
 
+  const handleTransformDragStart = (e: DragStartEvent) => {
+    if (isLocked) return;
+    const data = e.active.data.current;
+    if (!data) return;
+
+    const handleType = data.handleType as TransformHandleType;
     setIsDragging(true);
     setActiveHandle(handleType);
     setStartTransform({ ...transform });
@@ -339,14 +361,14 @@ export function Preview({
     overlayRef.current.setActiveInteraction(handleType, mode);
   };
 
-  const handleTransformDragMove = (handleType: TransformHandleType, delta: { x: number; y: number }) => {
+  const handleTransformDragMove = (e: DragMoveEvent) => {
     if (!isDragging || !activeHandle || !selectedSeqId || isLocked) return;
 
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const dx = delta.x;
-    const dy = delta.y;
+    const dx = e.delta.x;
+    const dy = e.delta.y;
 
     const baseW = 0.5;
     const baseH = 0.5;
@@ -394,7 +416,7 @@ export function Preview({
     overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
   };
 
-  const handleTransformDragEnd = (handleType: TransformHandleType) => {
+  const handleTransformDragEnd = (e: DragEndEvent) => {
     if (selectedSeqId && !isLocked) {
       IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', transform as any);
     }
@@ -549,9 +571,10 @@ export function Preview({
 
   return (
     <div
-      ref={containerRef}
-      id="canvas-viewport-drop-zone"
-      data-drop-zone="canvas-viewport"
+      ref={(node) => {
+        containerRef.current = node;
+        setDroppableRef(node);
+      }}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDragOver={handleDragOver}
@@ -647,7 +670,7 @@ export function Preview({
             dragCoords={dragCoords}
           />
 
-          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill powered by @neodrag/react */}
+          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
           <TransformGizmoOverlay
             selectedSeqId={selectedSeqId}
             activeSequences={activeSequences}
@@ -656,9 +679,10 @@ export function Preview({
             transform={transform}
             isDragging={isDragging}
             previewEngine={previewEngineRef.current}
-            onHandleDragStart={handleTransformDragStart}
-            onHandleDrag={handleTransformDragMove}
-            onHandleDragEnd={handleTransformDragEnd}
+            transformSensors={transformSensors}
+            onTransformDragStart={handleTransformDragStart}
+            onTransformDragMove={handleTransformDragMove}
+            onTransformDragEnd={handleTransformDragEnd}
             onSetTransform={setTransform}
             onToggleLock={() => setIsLocked(!isLocked)}
             onStartEditingCue={setEditingCue}

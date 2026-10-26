@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { useDraggable } from '@neodrag/react';
+import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import type { TransformHandleType } from '../../lib/gizmo';
 
 export interface TransformHandleProps {
@@ -7,9 +7,6 @@ export interface TransformHandleProps {
   isLocked: boolean;
   className: string;
   title: string;
-  onDragStart: (handle: TransformHandleType) => void;
-  onDrag: (handle: TransformHandleType, delta: { x: number; y: number }) => void;
-  onDragEnd: (handle: TransformHandleType) => void;
   children?: React.ReactNode;
 }
 
@@ -18,25 +15,22 @@ export function TransformHandle({
   isLocked,
   className,
   title,
-  onDragStart,
-  onDrag,
-  onDragEnd,
   children,
 }: TransformHandleProps) {
-  const handleRef = useRef<HTMLDivElement>(null);
-
-  useDraggable(handleRef, {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `transform-handle-${handleType}`,
+    data: {
+      type: 'handle',
+      handleType,
+    },
     disabled: isLocked,
-    threshold: { distance: 3 },
-    transform: () => '',
-    onDragStart: () => onDragStart(handleType),
-    onDrag: ({ offsetX, offsetY }) => onDrag(handleType, { x: offsetX, y: offsetY }),
-    onDragEnd: () => onDragEnd(handleType),
   });
 
   return (
     <div
-      ref={handleRef}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={className}
       title={title}
       onClick={(e) => e.stopPropagation()}
@@ -52,9 +46,6 @@ export interface TransformBodyDraggableProps {
   style: React.CSSProperties;
   className: string;
   onDoubleClick: () => void;
-  onDragStart: (handle: TransformHandleType) => void;
-  onDrag: (handle: TransformHandleType, delta: { x: number; y: number }) => void;
-  onDragEnd: (handle: TransformHandleType) => void;
 }
 
 export function TransformBodyDraggable({
@@ -63,24 +54,21 @@ export function TransformBodyDraggable({
   style,
   className,
   onDoubleClick,
-  onDragStart,
-  onDrag,
-  onDragEnd,
 }: TransformBodyDraggableProps) {
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  useDraggable(bodyRef, {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: 'transform-handle-body',
+    data: {
+      type: 'handle',
+      handleType: 'body' as TransformHandleType,
+    },
     disabled: isLocked,
-    threshold: { distance: 3 },
-    transform: () => '',
-    onDragStart: () => onDragStart('body'),
-    onDrag: ({ offsetX, offsetY }) => onDrag('body', { x: offsetX, y: offsetY }),
-    onDragEnd: () => onDragEnd('body'),
   });
 
   return (
     <div
-      ref={bodyRef}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       onDoubleClick={onDoubleClick}
       style={style}
       className={className}

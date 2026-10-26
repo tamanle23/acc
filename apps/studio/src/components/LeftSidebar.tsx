@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Library,
   Folder,
@@ -26,8 +26,7 @@ import {
   VolumeX,
   UploadCloud,
 } from 'lucide-react';
-import { useDraggable } from '@neodrag/react';
-import { StagingDragManager } from '../lib/staging/StagingDragManager';
+import { useDraggable } from '@dnd-kit/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -357,31 +356,19 @@ export function DraggablePresetCard({
   preset: StagingPreset;
   onInsert: (preset: StagingPreset) => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  useDraggable(cardRef, {
-    threshold: { distance: 6 },
-    transform: () => '',
-    onDragStart: ({ event }) => {
-      setIsDragging(true);
-      StagingDragManager.getInstance().startDrag(
-        { type: 'preset', preset },
-        { x: event.clientX, y: event.clientY }
-      );
-    },
-    onDrag: ({ event }) => {
-      StagingDragManager.getInstance().updateDrag({ x: event.clientX, y: event.clientY });
-    },
-    onDragEnd: () => {
-      setIsDragging(false);
-      StagingDragManager.getInstance().endDrag();
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `preset-${preset.id}`,
+    data: {
+      type: 'preset',
+      preset,
     },
   });
 
   return (
     <div
-      ref={cardRef}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={`p-3 rounded-xl glass-card transition-all duration-200 select-none cursor-grab active:cursor-grabbing group hover:-translate-y-0.5 hover:border-accent-theme/40 hover:shadow-accent-glow/15 ${isDragging
         ? 'opacity-40 border-accent-theme scale-[0.98]'
         : 'hover:border-accent-theme/40'
@@ -509,25 +496,12 @@ export function DraggableAssetCard({
   assetId: string;
   asset: any;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  useDraggable(cardRef, {
-    threshold: { distance: 6 },
-    transform: () => '',
-    onDragStart: ({ event }) => {
-      setIsDragging(true);
-      StagingDragManager.getInstance().startDrag(
-        { type: 'asset', assetId, asset },
-        { x: event.clientX, y: event.clientY }
-      );
-    },
-    onDrag: ({ event }) => {
-      StagingDragManager.getInstance().updateDrag({ x: event.clientX, y: event.clientY });
-    },
-    onDragEnd: () => {
-      setIsDragging(false);
-      StagingDragManager.getInstance().endDrag();
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `asset-${assetId}`,
+    data: {
+      type: 'asset',
+      assetId,
+      asset,
     },
   });
 
@@ -546,7 +520,9 @@ export function DraggableAssetCard({
 
   return (
     <Card
-      ref={cardRef}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       className={`p-2.5 rounded-lg glass-card transition-all select-none cursor-grab active:cursor-grabbing group ${isDragging
         ? 'opacity-40 border-accent-theme scale-[0.98]'
         : 'hover:border-accent-theme/60'

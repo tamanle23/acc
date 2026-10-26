@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { useDraggable } from '@neodrag/react';
+import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import {
   Link2,
   Unlink,
@@ -36,12 +36,6 @@ export interface ClipItemProps {
     deltaFrames: number;
     targetTrackId?: string;
   } | null;
-  onClipDragStart?: (seq: any, track: any) => void;
-  onClipDrag?: (seq: any, track: any, delta: { x: number; y: number }, event: PointerEvent) => void;
-  onClipDragEnd?: (seq: any, track: any) => void;
-  onTrimStart?: (seq: any, handle: 'start' | 'end') => void;
-  onTrim?: (seq: any, handle: 'start' | 'end', delta: { x: number; y: number }) => void;
-  onTrimEnd?: (seq: any, handle: 'start' | 'end') => void;
 }
 
 export type TimelineClipItemProps = ClipItemProps;
@@ -57,14 +51,7 @@ export function ClipItem({
   onClipClick,
   onClipHover,
   activeDragState,
-  onClipDragStart,
-  onClipDrag,
-  onClipDragEnd,
-  onTrimStart,
-  onTrim,
-  onTrimEnd,
 }: ClipItemProps) {
-  const clipRef = useRef<HTMLDivElement>(null);
   const isBeingDragged = activeDragState?.seqId === seq.id;
   const isAudio = seq.type === 'audio';
   const isTextOrOverlay =
@@ -96,14 +83,14 @@ export function ClipItem({
   const leftPx = displayStartFrame * pixelsPerFrame;
   const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
 
-  useDraggable(clipRef, {
-    disabled: activeTool === 'razor' || activeTool === 'hand',
-    threshold: { distance: 3 },
-    cancel: '[data-trim-handle]',
-    transform: () => '',
-    onDragStart: () => onClipDragStart?.(seq, track),
-    onDrag: ({ offsetX, offsetY, event }) => onClipDrag?.(seq, track, { x: offsetX, y: offsetY }, event),
-    onDragEnd: () => onClipDragEnd?.(seq, track),
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `clip-${seq.id}`,
+    data: {
+      type: 'clip',
+      seq,
+      trackId: track.id,
+    },
+    disabled: activeTool === 'razor',
   });
 
   // Extract first cue text snippet if present
@@ -126,7 +113,9 @@ export function ClipItem({
   return (
     <ClipHoverHUD seq={seq} track={track} fps={fps}>
       <div
-        ref={clipRef}
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
         onClick={(e) => onClipClick(seq, e)}
         onMouseEnter={(e) => {
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -155,13 +144,7 @@ export function ClipItem({
             : 'hover:brightness-110 z-10'
           } ${getTrackBadgeStyle(track)}`}
       >
-        <TrimHandle
-          seq={seq}
-          handle="start"
-          onTrimStart={onTrimStart}
-          onTrim={onTrim}
-          onTrimEnd={onTrimEnd}
-        />
+        <TrimHandle seq={seq} handle="start" />
 
       {/* Visual Transition Block Handle (Cut boundary) */}
       {seq.modifiers &&
@@ -315,13 +298,7 @@ export function ClipItem({
         )}
       </div>
 
-        <TrimHandle
-          seq={seq}
-          handle="end"
-          onTrimStart={onTrimStart}
-          onTrim={onTrim}
-          onTrimEnd={onTrimEnd}
-        />
+      <TrimHandle seq={seq} handle="end" />
     </div>
   </ClipHoverHUD>
   );

@@ -101,10 +101,16 @@ describe('Phase 9: Unified @dnd-kit Architecture & State Management Suite', () =
 
   describe('3. Preview.tsx @dnd-kit Transform Architecture', () => {
     it('verifies Preview.tsx implements declarative @dnd-kit transform overlay without manual window listeners', () => {
-      const previewCode = fs.readFileSync(
+      const previewDir = path.join(__dirname, '../apps/studio/src/components/preview');
+      const previewCoordinator = fs.readFileSync(
         path.join(__dirname, '../apps/studio/src/components/Preview.tsx'),
         'utf-8'
       );
+      const subFiles = fs.readdirSync(previewDir).filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
+      const previewCode = [
+        previewCoordinator,
+        ...subFiles.map((f) => fs.readFileSync(path.join(previewDir, f), 'utf-8')),
+      ].join('\n');
 
       // Verify @dnd-kit sub-components
       expect(previewCode).toContain('TransformBodyDraggable');

@@ -21,7 +21,15 @@ import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadControll
 import { TimelineWorkerBridge } from '../lib/timeline/TimelineWorkerBridge';
 import type { TimelineRenderModel, ClipLayoutEntry } from '../workers/timelineTypes';
 import { RationalTime } from '@acc/core-isomorphic';
-import { isTrackCompatibleWithSequence } from '../lib/timeline/trackCompatibility';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragMoveEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import {
   TimelinePointerStateMachine,
   type GhostDragState,
@@ -128,7 +136,7 @@ export function Timeline({
     IRStateManager.getInstance().trimSequence(seqId, deltaStart, deltaDuration);
   };
 
-  // Unified @neodrag/react Drag State for Timeline Clips & Trim Handles
+  // Unified @dnd-kit Drag State for Timeline Clips & Trim Handles
   const [activeDragState, setActiveDragState] = useState<{
     type: 'clip' | 'trim';
     seqId: string;
@@ -352,7 +360,7 @@ export function Timeline({
     isPanningRef.current = false;
   };
 
-  // Backward-compatible aliases for trimmingState & startTrim unified under @neodrag/react
+  // Backward-compatible aliases for trimmingState & startTrim unified under @dnd-kit
   const trimmingState = activeDragState?.type === 'trim' ? activeDragState : null;
   const startTrim = (seq: any, handle: 'start' | 'end') => {
     setActiveDragState({
@@ -365,229 +373,212 @@ export function Timeline({
     });
   };
 
-  // =========================================================================
-  // Native @neodrag/react Drag & Drop Handlers for Timeline Clips & Trimming
-  // =========================================================================
+  const timelineSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3,
+      },
+    })
+  );
 
-  const handleClipDragStart = (seq: any, track: any) => {
-    setActiveDragState({
-      type: 'clip',
-      seqId: seq.id,
-      initialStartFrame: seq.startFrame ?? seq.timelineStartFrame ?? 0,
-      initialDurationFrames: seq.durationFrames,
-      deltaFrames: 0,
-      targetTrackId: track.id,
-    });
-    IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+  const handleDragStart = (e: DragStartEvent) => {
+    const data = e.active.data.current;
+    if (!data) return;
+
+    if (data.type === 'clip') {
+      setActiveDragState({
+        type: 'clip',
+        seqId: data.seq.id,
+        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
+        initialDurationFrames: data.seq.durationFrames,
+        deltaFrames: 0,
+        targetTrackId: data.trackId,
+      });
+      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+    } else if (data.type === 'trim') {
+      setActiveDragState({
+        type: 'trim',
+        handle: data.handle,
+        seqId: data.seq.id,
+        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
+        initialDurationFrames: data.seq.durationFrames,
+        deltaFrames: 0,
+      });
+      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+    }
   };
 
-  const handleClipDrag = (seq: any, track: any, delta: { x: number; y: number }, event: PointerEvent) => {
-    if (!activeDragState || activeDragState.type !== 'clip') return;
+  const handleDragMove = (e: DragMoveEvent) => {
+    if (!activeDragState) return;
 
-    const rawDeltaFrames = Math.round(delta.x / pixelsPerFrame);
+    const rawDeltaFrames = Math.round(e.delta.x / pixelsPerFrame);
 
-    // Track lane vertical hopping with media-type compatibility validation
-    let overTrackId = activeDragState.targetTrackId || track.id;
-    if (scrollContainerRef.current) {
-      const trackElements = scrollContainerRef.current.querySelectorAll<HTMLElement>('[data-track-lane-id]');
-      for (const el of trackElements) {
-        const rect = el.getBoundingClientRect();
-        if (event.clientY >= rect.top && event.clientY <= rect.bottom) {
-          const tId = el.getAttribute('data-track-lane-id');
-          const candidateTrack = tracks.find((t) => t.id === tId);
-          if (candidateTrack) {
-            const isCompatible = isTrackCompatibleWithSequence(candidateTrack.type, seq.type);
-            const isTargetLocked = lockedTracks[candidateTrack.id] || false;
-            if (isCompatible && !isTargetLocked) {
-              overTrackId = candidateTrack.id;
+    if (activeDragState.type === 'clip') {
+      const overTrackId = (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
+      let targetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
+      let snappedGuideline: number | null = null;
+
+      if (snapEnabled) {
+        // Collect candidate snap points: playhead, sequence boundaries, and 1s ticks
+        interface SnapPointCandidate {
+          frame: number;
+          label?: string;
+          isAbut?: boolean;
+        }
+
+        const candidatePoints: SnapPointCandidate[] = [{ frame: currentFrame, label: 'Playhead' }];
+
+        for (const track of tracks) {
+          for (const s of track.sequences) {
+            if (s.id !== activeDragState.seqId) {
+              const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
+              const sEnd = sStart + s.durationFrames;
+              candidatePoints.push(
+                { frame: sStart, label: `Abut ${s.id}`, isAbut: true },
+                { frame: sEnd, label: `Abut ${s.id}`, isAbut: true }
+              );
             }
           }
-          break;
         }
+
+        // 1-second grid ticks
+        const totalSeconds = Math.ceil(totalFrames / fps);
+        for (let sec = 0; sec <= totalSeconds; sec++) {
+          candidatePoints.push({ frame: sec * fps, label: `${sec}s` });
+        }
+
+        // Test start edge and end edge against snap points (within 4 frames)
+        const targetEnd = targetStart + activeDragState.initialDurationFrames;
+        let snapResult: { frame: number; label?: string; isAbut?: boolean } | null = null;
+
+        for (const pt of candidatePoints) {
+          if (Math.abs(targetStart - pt.frame) <= 4) {
+            targetStart = pt.frame;
+            snapResult = pt;
+            break;
+          } else if (Math.abs(targetEnd - pt.frame) <= 4) {
+            targetStart = pt.frame - activeDragState.initialDurationFrames;
+            snapResult = pt;
+            break;
+          }
+        }
+
+        setActiveSnapGuideline(snapResult);
+      } else {
+        setActiveSnapGuideline(null);
       }
-    }
 
-    let targetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
-    let snapResult: { frame: number; label?: string; isAbut?: boolean } | null = null;
-
-    if (snapEnabled) {
-      interface SnapPointCandidate {
-        frame: number;
-        label?: string;
-        isAbut?: boolean;
-      }
-
-      const candidatePoints: SnapPointCandidate[] = [{ frame: currentFrame, label: 'Playhead' }];
-
-      for (const t of tracks) {
-        for (const s of t.sequences) {
+      // Overlap prevention on target track
+      const targetTrack = tracks.find((t) => t.id === overTrackId);
+      if (targetTrack) {
+        for (const s of targetTrack.sequences) {
           if (s.id !== activeDragState.seqId) {
             const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
             const sEnd = sStart + s.durationFrames;
-            candidatePoints.push(
-              { frame: sStart, label: `Abut ${s.id}`, isAbut: true },
-              { frame: sEnd, label: `Abut ${s.id}`, isAbut: true }
-            );
-          }
-        }
-      }
-
-      // 1-second grid ticks
-      const totalSeconds = Math.ceil(totalFrames / fps);
-      for (let sec = 0; sec <= totalSeconds; sec++) {
-        candidatePoints.push({ frame: sec * fps, label: `${sec}s` });
-      }
-
-      // Test start edge and end edge against snap points (within 4 frames)
-      const targetEnd = targetStart + activeDragState.initialDurationFrames;
-      for (const pt of candidatePoints) {
-        if (Math.abs(targetStart - pt.frame) <= 4) {
-          targetStart = pt.frame;
-          snapResult = pt;
-          break;
-        } else if (Math.abs(targetEnd - pt.frame) <= 4) {
-          targetStart = pt.frame - activeDragState.initialDurationFrames;
-          snapResult = pt;
-          break;
-        }
-      }
-
-      setActiveSnapGuideline(snapResult);
-    } else {
-      setActiveSnapGuideline(null);
-    }
-
-    // Overlap prevention on target track
-    const targetTrack = tracks.find((t) => t.id === overTrackId);
-    if (targetTrack) {
-      for (const s of targetTrack.sequences) {
-        if (s.id !== activeDragState.seqId) {
-          const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
-          const sEnd = sStart + s.durationFrames;
-          const myEnd = targetStart + activeDragState.initialDurationFrames;
-          if (targetStart < sEnd && myEnd > sStart) {
-            if (activeDragState.initialStartFrame >= sEnd) {
-              targetStart = Math.max(targetStart, sEnd);
-            } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= sStart) {
-              targetStart = Math.min(targetStart, sStart - activeDragState.initialDurationFrames);
+            const myEnd = targetStart + activeDragState.initialDurationFrames;
+            if (targetStart < sEnd && myEnd > sStart) {
+              if (activeDragState.initialStartFrame >= sEnd) {
+                targetStart = Math.max(targetStart, sEnd);
+              } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= sStart) {
+                targetStart = Math.min(targetStart, sStart - activeDragState.initialDurationFrames);
+              }
             }
           }
         }
       }
-    }
 
-    const deltaFrames = targetStart - activeDragState.initialStartFrame;
-    setActiveDragState((prev) =>
-      prev
-        ? {
+      const deltaFrames = targetStart - activeDragState.initialStartFrame;
+      setActiveDragState((prev) =>
+        prev
+          ? {
             ...prev,
             deltaFrames,
             targetTrackId: overTrackId,
           }
-        : null
-    );
-  };
-
-  const handleClipDragEnd = (seq: any, track: any) => {
-    setActiveSnapGuideline(null);
-    if (!activeDragState || activeDragState.type !== 'clip') return;
-
-    const targetTrackId = activeDragState.targetTrackId || track.id;
-    const targetStartFrame = Math.max(
-      0,
-      activeDragState.initialStartFrame + activeDragState.deltaFrames
-    );
-
-    if (targetTrackId) {
-      IRStateManager.getInstance().moveSequence(
-        activeDragState.seqId,
-        targetTrackId,
-        targetStartFrame
+          : null
       );
+    } else if (activeDragState.type === 'trim') {
+      let deltaFrames = rawDeltaFrames;
+      let snappedGuideline: number | null = null;
+
+      if (snapEnabled) {
+        const snapPoints: number[] = [currentFrame];
+        for (const track of tracks) {
+          for (const s of track.sequences) {
+            if (s.id !== activeDragState.seqId) {
+              snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+            }
+          }
+        }
+        const totalSeconds = Math.ceil(totalFrames / fps);
+        for (let sec = 0; sec <= totalSeconds; sec++) {
+          snapPoints.push(sec * fps);
+        }
+
+        if (activeDragState.handle === 'start') {
+          const rawTarget = activeDragState.initialStartFrame + deltaFrames;
+          for (const sp of snapPoints) {
+            if (Math.abs(rawTarget - sp) <= 4) {
+              deltaFrames = sp - activeDragState.initialStartFrame;
+              snappedGuideline = sp;
+              break;
+            }
+          }
+        } else {
+          const rawTarget =
+            activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
+          for (const sp of snapPoints) {
+            if (Math.abs(rawTarget - sp) <= 4) {
+              deltaFrames =
+                sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
+              snappedGuideline = sp;
+              break;
+            }
+          }
+        }
+      }
+
+      setActiveSnapGuideline(snappedGuideline !== null ? { frame: snappedGuideline } : null);
+      setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
     }
-
-    setActiveDragState(null);
   };
 
-  const handleTrimDragStart = (seq: any, handle: 'start' | 'end') => {
-    setActiveDragState({
-      type: 'trim',
-      handle,
-      seqId: seq.id,
-      initialStartFrame: seq.startFrame ?? seq.timelineStartFrame ?? 0,
-      initialDurationFrames: seq.durationFrames,
-      deltaFrames: 0,
-    });
-    IRStateManager.getInstance().setSelectedSequenceId(seq.id);
-  };
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveSnapGuideline(null);
+    if (!activeDragState) return;
 
-  const handleTrimDrag = (seq: any, handle: 'start' | 'end', delta: { x: number; y: number }) => {
-    if (!activeDragState || activeDragState.type !== 'trim') return;
+    if (activeDragState.type === 'clip') {
+      const targetTrackId =
+        (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
+      const targetStartFrame = Math.max(
+        0,
+        activeDragState.initialStartFrame + activeDragState.deltaFrames
+      );
 
-    const rawDeltaFrames = Math.round(delta.x / pixelsPerFrame);
-    let deltaFrames = rawDeltaFrames;
-    let snappedGuideline: number | null = null;
-
-    if (snapEnabled) {
-      const snapPoints: number[] = [currentFrame];
-      for (const t of tracks) {
-        for (const s of t.sequences) {
-          if (s.id !== activeDragState.seqId) {
-            snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
-          }
-        }
+      if (targetTrackId) {
+        IRStateManager.getInstance().moveSequence(
+          activeDragState.seqId,
+          targetTrackId,
+          targetStartFrame
+        );
       }
-      const totalSeconds = Math.ceil(totalFrames / fps);
-      for (let sec = 0; sec <= totalSeconds; sec++) {
-        snapPoints.push(sec * fps);
-      }
+    } else if (activeDragState.type === 'trim') {
+      const dStart = activeDragState.handle === 'start' ? activeDragState.deltaFrames : 0;
+      const dDur = activeDragState.handle === 'start' ? -activeDragState.deltaFrames : activeDragState.deltaFrames;
 
-      if (activeDragState.handle === 'start') {
-        const rawTarget = activeDragState.initialStartFrame + deltaFrames;
-        for (const sp of snapPoints) {
-          if (Math.abs(rawTarget - sp) <= 4) {
-            deltaFrames = sp - activeDragState.initialStartFrame;
-            snappedGuideline = sp;
-            break;
-          }
-        }
+      if (rippleEnabled) {
+        IRStateManager.getInstance().rippleTrimSequence(
+          activeDragState.seqId,
+          dStart,
+          dDur
+        );
       } else {
-        const rawTarget =
-          activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
-        for (const sp of snapPoints) {
-          if (Math.abs(rawTarget - sp) <= 4) {
-            deltaFrames =
-              sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
-            snappedGuideline = sp;
-            break;
-          }
-        }
+        IRStateManager.getInstance().trimSequence(
+          activeDragState.seqId,
+          dStart,
+          dDur
+        );
       }
-    }
-
-    setActiveSnapGuideline(snappedGuideline !== null ? { frame: snappedGuideline } : null);
-    setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
-  };
-
-  const handleTrimDragEnd = (seq: any, handle: 'start' | 'end') => {
-    setActiveSnapGuideline(null);
-    if (!activeDragState || activeDragState.type !== 'trim') return;
-
-    const dStart = activeDragState.handle === 'start' ? activeDragState.deltaFrames : 0;
-    const dDur = activeDragState.handle === 'start' ? -activeDragState.deltaFrames : activeDragState.deltaFrames;
-
-    if (rippleEnabled) {
-      IRStateManager.getInstance().rippleTrimSequence(
-        activeDragState.seqId,
-        dStart,
-        dDur
-      );
-    } else {
-      IRStateManager.getInstance().trimSequence(
-        activeDragState.seqId,
-        dStart,
-        dDur
-      );
     }
 
     setActiveDragState(null);
@@ -747,14 +738,20 @@ export function Timeline({
       />
 
       {/* 2. Unified Scroll Container with Sticky Track Headers and Sticky Timecode Ruler */}
-      <div
-        ref={scrollContainerRef}
-        onMouseDown={handleTimelineMouseDown}
-        onMouseMove={handleTimelineMouseMove}
-        onMouseUp={handleTimelineMouseUp}
-        className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
-          }`}
+      <DndContext
+        sensors={timelineSensors}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
       >
+        <div
+          ref={scrollContainerRef}
+          onMouseDown={handleTimelineMouseDown}
+          onMouseMove={handleTimelineMouseMove}
+          onMouseUp={handleTimelineMouseUp}
+          className={`flex-1 overflow-x-auto overflow-y-auto px-4 py-2 relative select-none ${activeTool === 'hand' ? 'cursor-grab active:cursor-grabbing' : ''
+            }`}
+        >
           <div style={{ width: `${timelineWidth + 208}px` }} className="space-y-1 relative">
             {/* Sticky Timeline Head: Track Headers title & Timecode Ruler */}
             <div className="sticky top-0 z-40 bg-[var(--glass-bg)]/95 backdrop-blur-md pb-1 flex items-center gap-2">
@@ -880,11 +877,7 @@ export function Timeline({
                       {/* Track Sequence Lane: Render DOM clips only in DOM mode to prevent double rendering */}
                       <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
                         {timelineMode === 'dom' ? (
-                          <DroppableTrackLane
-                            track={track}
-                            isLocked={isLocked}
-                            isDropTarget={activeDragState?.targetTrackId === track.id && activeDragState?.type === 'clip'}
-                          >
+                          <DroppableTrackLane track={track} isLocked={isLocked}>
                             {visibleSequences.map((seq) => (
                               <ClipItem
                                 key={seq.id}
@@ -897,7 +890,7 @@ export function Timeline({
                                 getTrackBadgeStyle={getTrackBadgeStyle}
                                 onClipClick={handleClipClick}
                                 onClipHover={(hoverData) => {
-                                  if (hoverData && !activeDragState) {
+                                  if (hoverData) {
                                     setHoveredClip({
                                       ...hoverData,
                                       fps,
@@ -907,12 +900,6 @@ export function Timeline({
                                   }
                                 }}
                                 activeDragState={activeDragState}
-                                onClipDragStart={handleClipDragStart}
-                                onClipDrag={handleClipDrag}
-                                onClipDragEnd={handleClipDragEnd}
-                                onTrimStart={handleTrimDragStart}
-                                onTrim={handleTrimDrag}
-                                onTrimEnd={handleTrimDragEnd}
                               />
                             ))}
                           </DroppableTrackLane>
@@ -937,6 +924,7 @@ export function Timeline({
             </div>
           </div>
         </div>
+      </DndContext>
     </footer>
   );
 }

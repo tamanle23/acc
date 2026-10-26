@@ -545,12 +545,15 @@ importers:
       '@base-ui/react':
         specifier: ^1.9.0
         version: 1.9.0(@date-fns/tz@1.4.1)(@types/react@19.2.14)(date-fns@4.4.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.2.4)
       '@fontsource-variable/inter':
         specifier: ^5.3.0
         version: 5.3.0
-      '@neodrag/react':
-        specifier: ^2.3.1
-        version: 2.3.1
       '@shadcn/react':
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.2.14)(react@19.2.4)
@@ -3322,9 +3325,6 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
-
-  '@neodrag/react@2.3.1':
-    resolution: {integrity: sha512-mOVefo3mFmaVLs9PB5F5wMXnnclG81qjOaPHyf8YZUnw/Ciz0pAqyJDwDJk0nPTIK5I2x1JdjXSchGNdCxZNRQ==}
 
   '@next/bundle-analyzer@15.5.12':
     resolution: {integrity: sha512-tDkdfvuKz9JlH+B/CEIY0+XqQ5gymVZZWvDer5HJI68rPI0EYfbSadbvIUvHTugYnMkyxSBf8u0P2yGOSQ4h+w==}
@@ -16360,8 +16360,6 @@ snapshots:
       '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.1
     optional: true
-
-  '@neodrag/react@2.3.1': {}
 
   '@next/bundle-analyzer@15.5.12':
     dependencies:
