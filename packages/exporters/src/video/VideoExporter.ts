@@ -2,9 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import type { PipelineIR, ContentChunk } from '@acc/ir';
 import type { IExporter, ExportOptions, ExportResult } from '../base/BaseExporter';
-import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists, Logger, UniversalCanvasProvider } from '@acc/core';
+import { FFmpegManager, initFFI, FFIVideoEncoder, fileExists } from '@acc/core';
 
-import type { MediaEngineType } from '@acc/core';
+import { Logger, MediaEngineType, UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export interface VideoExportOptions extends ExportOptions {
   engine?: MediaEngineType;

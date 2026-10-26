@@ -3,11 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import type { ResolvedTimeline, IIRFrameSink } from '@acc/ir';
-import { IRMasterRenderer, type HeadlessRenderResult, DecoupledAudioMixer } from '@acc/ir';
-import { FFIVideoEncoderSink } from '../media-engine/sinks/FFIVideoEncoderSink';
-import { FFIChunkConcatMuxer } from './FFIChunkConcatMuxer';
-import { MediaEngineRegistry } from '@acc/core-isomorphic';
-import type { MediaEngineType } from '@acc/core-isomorphic';
+import { IRMasterRenderer, DecoupledAudioMixer } from '@acc/ir';
+import { MediaEngineRegistry, type MediaEngineType } from '@acc/core-isomorphic';
 
 export interface ChunkSlice {
   chunkIndex: number;
@@ -107,7 +104,6 @@ export class IRChunkWorkerPool {
 
     // Resolve active media engine strategy and chunk execution policy
     const {
-      MediaEngineRegistry,
       AdaptiveResourceGovernor,
       RenderCheckpointManager,
       SagaOrchestrator,

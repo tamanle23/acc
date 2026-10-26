@@ -64,8 +64,6 @@ export interface TimedTextCue {
   text: string;
 }
 
-// Re-export all modular modifier definitions and types
-export * from './modifiers';
 
 import type { ModifierNode } from './modifiers';
 

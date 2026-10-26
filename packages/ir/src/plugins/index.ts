@@ -30,7 +30,6 @@ export * from './vfx/DepthRelightingAdapterPlugin';
 export * from './vfx/Camera3DPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
-export * from './transform/TransformModifierPlugin';
 export * from './motion/GSAPMotionPlugin';
 export * from './text/CaptionModifierPlugin';
 export * from './shape/ShapeModifierPlugin';
@@ -42,10 +41,6 @@ export * from './editorial/UniversalTransitionPlugin';
 export * from './overlay/BlendModePlugin';
 export * from './overlay/CanvasParticleOverlayPlugin';
 export * from './overlay/HologramHUDPlugin';
-export * from './audio/VolumeModifierPlugin';
-export * from './audio/PanModifierPlugin';
-export * from './audio/FilterModifierPlugin';
-export * from './audio/PitchModifierPlugin';
 
 /**
  * Initializes and registers standard core modifier plugins

@@ -1,4 +1,4 @@
-import { Logger } from "@acc/core";
+import { Logger } from '@acc/core-isomorphic';
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import path from 'path';
 

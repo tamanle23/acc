@@ -1,7 +1,7 @@
-import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
 import path from 'path';
 import fs from 'fs';
+import { Logger } from '@acc/core-isomorphic';
 
 export class Fauna implements ISoundGenerator {
   async generate(effect: string, variant: string, subVariant: string, duration: number, outDir: string, customPrompt?: string): Promise<GeneratedSound> {
