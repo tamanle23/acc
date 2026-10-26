@@ -142,6 +142,11 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size='lg'
+              aria-label={`Select workspace or context (current: ${
+                isSovereign && !isAssumed
+                  ? 'Sovereign Platform'
+                  : activeProfile?.name || 'Orphaned Tenant'
+              })`}
               className={cn(
                 'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground transition-all duration-200',
                 isAssumed && 'bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15'
@@ -330,6 +335,12 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                       <div className='flex items-center gap-1 shrink-0'>
                         <button
                           type='button'
+                          aria-label={
+                            isPersonalDefault
+                              ? `Workspace "${profile.name}" is set as default`
+                              : `Set "${profile.name}" as default workspace`
+                          }
+                          aria-pressed={isPersonalDefault}
                           title={isPersonalDefault ? 'Workspace mặc định của bạn' : 'Đặt làm workspace mặc định'}
                           onClick={(e) => {
                             e.stopPropagation()
@@ -339,13 +350,16 @@ export function ProfileSwitcher({ profiles: propProfiles }: ProfileSwitcherProps
                             }
                           }}
                           className={cn(
-                            'p-1 rounded hover:bg-white/10 transition-colors',
+                            'p-1 rounded hover:bg-white/10 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-amber-500 transition-colors',
                             isPersonalDefault
                               ? 'text-amber-500 opacity-100'
-                              : 'text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover/ws-item:opacity-100'
+                              : 'text-muted-foreground/30 hover:text-amber-500 opacity-0 group-hover/ws-item:opacity-100 focus-visible:opacity-100'
                           )}
                         >
-                          <Star className={cn('size-3.5', isPersonalDefault && 'fill-amber-500')} />
+                          <Star
+                            className={cn('size-3.5', isPersonalDefault && 'fill-amber-500')}
+                            aria-hidden='true'
+                          />
                         </button>
                         {isSelected ? (
                           <Check className='size-4 text-primary shrink-0' />
