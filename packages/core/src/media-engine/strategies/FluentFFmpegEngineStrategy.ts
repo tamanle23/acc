@@ -4,7 +4,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { FFmpegManager } from '../../FFmpegManager';
 import { FluentPipeVideoSink } from '../sinks/FluentPipeVideoSink';
-import type {
+import {
   IMediaEngineStrategy,
   IMediaFrameSink,
   IMediaProbeStrategy,
@@ -14,11 +14,12 @@ import type {
   MediaEngineCapabilities,
   MediaProbeResult,
   SinkInitMetadata,
-} from '../types';
-import { MediaEngineError } from '../types';
+  MediaEngineError,
+  MediaEngineType
+} from '@acc/core-isomorphic';
 
 export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
-  public readonly id = 'fluent-ffmpeg';
+  public readonly id = MediaEngineType.FluentFFmpeg;
   public readonly name = 'CLI-Isolated FFmpeg Subprocess Engine (Bun.spawn)';
 
   public readonly capabilities: MediaEngineCapabilities = {
@@ -34,11 +35,11 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
     try {
       ffmpegPath = FFmpegManager.getFFmpegPath();
     } catch (err: any) {
-      throw new MediaEngineError('fluent-ffmpeg', `FFmpeg binary not prepared: ${err.message}`);
+      throw new MediaEngineError(MediaEngineType.FluentFFmpeg, `FFmpeg binary not prepared: ${err.message}`);
     }
 
     if (!fs.existsSync(ffmpegPath)) {
-      throw new MediaEngineError('fluent-ffmpeg', `FFmpeg binary not found at resolved path: ${ffmpegPath}`);
+      throw new MediaEngineError(MediaEngineType.FluentFFmpeg, `FFmpeg binary not found at resolved path: ${ffmpegPath}`);
     }
   }
 
@@ -50,7 +51,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
     return {
       async probe(filePath: string): Promise<MediaProbeResult> {
         if (!fs.existsSync(filePath)) {
-          throw new MediaEngineError('fluent-ffmpeg', `File not found for probing: ${filePath}`);
+          throw new MediaEngineError(MediaEngineType.FluentFFmpeg, `File not found for probing: ${filePath}`);
         }
 
         const ffprobePath = FFmpegManager.getFFprobePath();
@@ -98,7 +99,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
             hasVideo: !!videoStream,
           };
         } catch (err: any) {
-          throw new MediaEngineError('fluent-ffmpeg', `Failed to probe file ${filePath}: ${err.message}`);
+          throw new MediaEngineError(MediaEngineType.FluentFFmpeg, `Failed to probe file ${filePath}: ${err.message}`);
         }
       },
     };
@@ -144,7 +145,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
           if (exitCode !== 0) {
             const stderrText = await new Response(proc.stderr).text();
             throw new MediaEngineError(
-              'fluent-ffmpeg',
+              MediaEngineType.FluentFFmpeg,
               'FFmpeg lossless concat demuxer failed',
               exitCode,
               stderrText.slice(-1000)
@@ -153,7 +154,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
         } finally {
           try {
             fs.rmSync(tempDir, { recursive: true, force: true });
-          } catch {}
+          } catch { }
         }
       },
     };
@@ -181,7 +182,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
         if (exitCode !== 0) {
           const stderrText = await new Response(proc.stderr).text();
           throw new MediaEngineError(
-            'fluent-ffmpeg',
+            MediaEngineType.FluentFFmpeg,
             'Audio/Video muxing failed',
             exitCode,
             stderrText.slice(-1000)
@@ -212,7 +213,7 @@ export class FluentFFmpegEngineStrategy implements IMediaEngineStrategy {
     if (exitCode !== 0) {
       const stderrText = await new Response(proc.stderr).text();
       throw new MediaEngineError(
-        'fluent-ffmpeg',
+        MediaEngineType.FluentFFmpeg,
         'FFmpeg command execution failed',
         exitCode,
         stderrText.slice(-1000)

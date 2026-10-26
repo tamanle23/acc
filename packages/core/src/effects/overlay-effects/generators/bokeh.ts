@@ -1,6 +1,6 @@
 import { BaseEffectEngine } from '@acc/core';
 import { CanvasAdapterFactory } from '../canvas-strategies/factory';
-import { CanvasAdapter } from '../canvas-strategies/base';
+
 export class BokehEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
     const adapter = CanvasAdapterFactory.getAdapter('napi-rs');

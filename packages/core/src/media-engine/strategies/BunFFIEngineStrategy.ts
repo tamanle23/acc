@@ -5,7 +5,7 @@ import { FFIConcatMuxer } from '../../ffmpeg-ffi/FFIConcatMuxer';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
 import { FFIVideoEncoderSink } from '../sinks/FFIVideoEncoderSink';
 import { FFIVideoDecoder } from '../../ffmpeg-ffi/FFIVideoDecoder';
-import type {
+import {
   IMediaEngineStrategy,
   IMediaFrameSink,
   IVideoDecoder,
@@ -13,14 +13,15 @@ import type {
   IMediaConcatStrategy,
   IAudioMuxerStrategy,
   IChunkExecutionPolicy,
+  MediaEngineError,
   MediaEngineCapabilities,
   MediaProbeResult,
-  SinkInitMetadata,
-} from '../types';
-import { MediaEngineError } from '../types';
+  MediaEngineType,
+  SinkInitMetadata
+} from '@acc/core-isomorphic';
 
 export class BunFFIEngineStrategy implements IMediaEngineStrategy {
-  public readonly id = 'bun-ffi';
+  public readonly id = MediaEngineType.BunFFI;
   public readonly name = 'Native C bun:ffi Shared Library FFmpeg Engine';
 
   public readonly capabilities: MediaEngineCapabilities = {
@@ -33,12 +34,12 @@ export class BunFFIEngineStrategy implements IMediaEngineStrategy {
 
   public validatePrerequisites(): void {
     if (typeof (globalThis as any).Bun === 'undefined') {
-      throw new MediaEngineError('bun-ffi', 'bun:ffi engine requires the Bun runtime.');
+      throw new MediaEngineError(MediaEngineType.BunFFI, 'bun:ffi engine requires the Bun runtime.');
     }
     try {
       FFmpegManager.getBinDir();
     } catch (err: any) {
-      throw new MediaEngineError('bun-ffi', `Shared FFmpeg libraries not prepared: ${err.message}`);
+      throw new MediaEngineError(MediaEngineType.BunFFI, `Shared FFmpeg libraries not prepared: ${err.message}`);
     }
   }
 
@@ -54,7 +55,7 @@ export class BunFFIEngineStrategy implements IMediaEngineStrategy {
     return {
       async probe(filePath: string): Promise<MediaProbeResult> {
         if (!fs.existsSync(filePath)) {
-          throw new MediaEngineError('bun-ffi', `File not found for probing: ${filePath}`);
+          throw new MediaEngineError(MediaEngineType.BunFFI, `File not found for probing: ${filePath}`);
         }
         const duration = getMediaDurationFFI(filePath);
         return {
@@ -95,7 +96,7 @@ export class BunFFIEngineStrategy implements IMediaEngineStrategy {
   public async executeCommand(args: string[]): Promise<void> {
     // For arbitrary CLI filtergraphs, FFI cannot run arbitrary strings directly
     throw new MediaEngineError(
-      'bun-ffi',
+      MediaEngineType.BunFFI,
       'Arbitrary filter_complex CLI command execution is not supported by bun:ffi. Use fluent-ffmpeg engine.'
     );
   }

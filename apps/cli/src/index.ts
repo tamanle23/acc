@@ -6,7 +6,7 @@ import {
   AmbientStreamPipeline,
   ScraperEngine,
 } from './pipelines';
-import { DefaultPipelineRegistry, Logger, fileExists } from '@acc/core';
+import { DefaultPipelineRegistry, Logger, MediaEngineType, fileExists } from '@acc/core';
 import { bootstrapServer } from './bootstrap';
 import {
   intro,
@@ -25,7 +25,6 @@ export type CliCommand =
   | 'overlay'
   | 'sfx'
   | 'help'
-  | 'worker'
   | 'ir-render'
   | 'studio';
 
@@ -46,7 +45,7 @@ export interface CliOptions {
   chunkEnd?: number;
   concurrency?: number;
   traceparent?: string;
-  mediaEngine?: 'bun-ffi' | 'fluent-ffmpeg' | 'mediabunny-server' | 'mediabunny-client';
+  mediaEngine?: MediaEngineType;
 }
 
 const KNOWN_COMMANDS = new Set<CliCommand>([
@@ -56,7 +55,6 @@ const KNOWN_COMMANDS = new Set<CliCommand>([
   'list',
   'overlay',
   'sfx',
-  'worker',
   'ir-render',
   'studio',
   'help',
@@ -493,7 +491,6 @@ export async function run(customArgs?: string[]): Promise<any> {
       { label: 'Stream', value: 'stream', hint: 'Stream live video output to RTMP ingestion endpoint' },
       { label: 'Overlay', value: 'overlay', hint: 'Generate dynamic canvas procedural visual lower thirds or overlays' },
       { label: 'SFX', value: 'sfx', hint: 'Synthesize procedural audio DSP sound effects and foley markers' },
-      { label: 'Worker', value: 'worker', hint: 'Start Conductor OSS stateless task worker daemon' },
     ],
   });
 
@@ -531,18 +528,6 @@ export async function run(customArgs?: string[]): Promise<any> {
       const { runSFXCommand } = await import('./commands/sfx');
       await runSFXCommand([]);
       return { success: true, command: 'sfx' };
-    }
-    case 'worker': {
-      if (!options.conductorUrl && !options.conductorSandbox) {
-        log.error('Error: --conductor-url <url> or --sandbox is required for the worker daemon command.');
-        return { success: false, error: 'Missing configuration for worker' };
-      }
-      const { runWorkerDaemon } = await import('./worker');
-      await runWorkerDaemon({
-        conductorUrl: options.conductorUrl || 'http://localhost:8080',
-        sandboxMode: options.conductorSandbox,
-      });
-      return { success: true, command: 'worker' };
     }
     case 'stream': {
       if (!options.rtmpUrl) {
