@@ -6,7 +6,6 @@ import { TimecodeBadge } from './TimecodeBadge';
 export interface OverlayHUDProps {
   pixelsPerFrame: number;
   activeSnapGuideline: { frame: number; label?: string; isAbut?: boolean } | null;
-  timelineMode: 'dom' | 'canvas';
   razorHoverFrame: number | null;
   timecodeHUD: {
     frame: number;
@@ -26,7 +25,6 @@ export type TimelineOverlayHUDProps = OverlayHUDProps;
 export function OverlayHUD({
   pixelsPerFrame,
   activeSnapGuideline,
-  timelineMode,
   razorHoverFrame,
   timecodeHUD,
 }: OverlayHUDProps) {
@@ -41,14 +39,12 @@ export function OverlayHUD({
       {/* 2. Razor Tool Hover Cut Indicator Guideline */}
       <RazorGuideline
         pixelsPerFrame={pixelsPerFrame}
-        timelineMode={timelineMode}
         razorHoverFrame={razorHoverFrame}
       />
 
       {/* 3. Floating Timecode HUD Badge during Drag or Trim */}
       <TimecodeBadge
         pixelsPerFrame={pixelsPerFrame}
-        timelineMode={timelineMode}
         timecodeHUD={timecodeHUD}
       />
     </>

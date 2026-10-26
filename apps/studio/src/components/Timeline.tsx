@@ -4,14 +4,12 @@ import { Toolbar } from './timeline/Toolbar';
 import { OverlayHUD } from './timeline/OverlayHUD';
 import { EmptyState } from './timeline/EmptyState';
 import { TimelineDom } from './timeline/TimelineDom';
-import { TimelineCanvas } from './timeline/TimelineCanvas';
 import { IRStateManager } from '../lib/ir/irState';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import { TimelineCommandDispatcher, RazorCutCommand } from '../lib/timeline/commands/TimelineCommands';
-import type { TimelineMode } from '../lib/timeline/strategies/ITimelineRenderStrategy';
 
 export interface TimelineProps {
   playhead: {
@@ -39,7 +37,6 @@ export function Timeline({
   const [rippleEnabled, setRippleEnabled] = useState(false);
   const [zoomScale, setZoomScale] = useState(1.65); // 1.0 = ~1.5px per frame
   const [activeTool, setActiveTool] = useState<'select' | 'razor' | 'hand'>('select');
-  const [timelineMode, setTimelineMode] = useState<TimelineMode>('dom');
   const [timecodeHUD, setTimecodeHUD] = useState<{
     frame: number;
     deltaFrames: number;
@@ -205,8 +202,6 @@ export function Timeline({
         onSetSnapEnabled={setSnapEnabled}
         rippleEnabled={rippleEnabled}
         onSetRippleEnabled={setRippleEnabled}
-        timelineMode={timelineMode}
-        onSetTimelineMode={setTimelineMode}
         zoomScale={zoomScale}
         onSetZoomScale={setZoomScale}
         currentFrame={currentFrame}
@@ -261,7 +256,6 @@ export function Timeline({
           <OverlayHUD
             pixelsPerFrame={pixelsPerFrame}
             activeSnapGuideline={activeSnapGuideline}
-            timelineMode={timelineMode}
             razorHoverFrame={razorHoverFrame}
             timecodeHUD={timecodeHUD}
           />
@@ -271,7 +265,7 @@ export function Timeline({
             <EmptyState
               onLoadSample={() => IRStateManager.getInstance().switchTemplate('default')}
             />
-          ) : timelineMode === 'dom' ? (
+          ) : (
             <TimelineDom
               tracks={tracks}
               lockedTracks={lockedTracks}
@@ -292,29 +286,6 @@ export function Timeline({
               currentFrame={currentFrame}
               onActiveSnapGuidelineChange={setActiveSnapGuideline}
               onHoveredClipChange={() => {}}
-            />
-          ) : (
-            <TimelineCanvas
-              tracks={tracks}
-              lockedTracks={lockedTracks}
-              mutedTracks={mutedTracks}
-              onToggleLock={toggleLock}
-              onToggleMute={toggleMute}
-              selectedSeqId={selectedSeqId}
-              activeTool={activeTool}
-              snapEnabled={snapEnabled}
-              fps={fps}
-              totalFrames={totalFrames}
-              pixelsPerFrame={pixelsPerFrame}
-              timelineWidth={timelineWidth}
-              scrollContainerRef={scrollContainerRef}
-              scrollLeft={scrollLeft}
-              clientWidth={clientWidth}
-              currentFrame={currentFrame}
-              onCursorChange={() => {}}
-              onRazorHoverFrameChange={setRazorHoverFrame}
-              onTimecodeHUDChange={setTimecodeHUD}
-              onActiveSnapGuidelineChange={setActiveSnapGuideline}
             />
           )}
 

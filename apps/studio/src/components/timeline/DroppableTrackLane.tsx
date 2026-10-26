@@ -30,6 +30,10 @@ export function DroppableTrackLane({
   return (
     <div
       ref={setNodeRef}
+      style={{
+        contentVisibility: 'auto',
+        containIntrinsicSize: '1000px 40px',
+      }}
       className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${
         isLocked
           ? 'opacity-60 pointer-events-none bg-muted/40 border-[var(--glass-border)]'

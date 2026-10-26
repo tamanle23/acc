@@ -6,6 +6,7 @@ export interface ClipHoverHUDProps {
   seq: any;
   track: any;
   fps: number;
+  disabled?: boolean;
   children: React.ReactNode;
 }
 
@@ -21,8 +22,13 @@ export const ClipHoverHUD: React.FC<ClipHoverHUDProps> = ({
   seq,
   track,
   fps,
+  disabled = false,
   children,
 }) => {
+  if (disabled) {
+    return <>{children}</>;
+  }
+
   return (
     <HoverCard openDelay={200} closeDelay={100}>
       <HoverCardTrigger asChild>

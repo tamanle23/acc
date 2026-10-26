@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
@@ -8,10 +9,11 @@ import {
   type DragMoveEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { TrackHeaderCard } from './TrackHeaderCard';
 import { DroppableTrackLane } from './DroppableTrackLane';
 import { ClipItem } from './ClipItem';
+import { ClipDragProxy } from './ClipDragProxy';
+import { TimelineSnapCalculator } from '../../lib/timeline/interaction/TimelineSnapCalculator';
 import { IRStateManager } from '../../lib/ir/irState';
 
 export interface TimelineDomProps {
@@ -61,11 +63,18 @@ export function TimelineDom({
   const [activeDragState, setActiveDragState] = useState<{
     type: 'clip' | 'trim';
     seqId: string;
+    pairedSeqId?: string | null;
     handle?: 'start' | 'end';
     initialStartFrame: number;
     initialDurationFrames: number;
     deltaFrames: number;
+    snappedStartFrame: number;
+    sourceTrackId?: string;
     targetTrackId?: string;
+    isInvalidDrop?: boolean;
+    snapLabel?: string | null;
+    activeSeq?: any;
+    activeTrack?: any;
   } | null>(null);
 
   const timelineSensors = useSensors(
@@ -76,15 +85,7 @@ export function TimelineDom({
     })
   );
 
-  // TanStack Vertical Track Virtualization
-  const rowVirtualizer = useVirtualizer({
-    count: tracks.length,
-    getScrollElement: () => scrollContainerRef.current,
-    estimateSize: () => 48,
-    overscan: 4,
-  });
-
-  // Horizontal Sequence Virtualization
+  // Horizontal Sequence Virtualization (Active drag & paired sequences are never culled)
   const bufferFrames = Math.ceil(400 / pixelsPerFrame);
   const visibleStartFrame = Math.max(0, Math.floor(scrollLeft / pixelsPerFrame) - bufferFrames);
   const visibleEndFrame = Math.ceil((scrollLeft + clientWidth) / pixelsPerFrame) + bufferFrames;
@@ -94,15 +95,33 @@ export function TimelineDom({
     if (!data) return;
 
     if (data.type === 'clip') {
+      const seq = data.seq;
+      // Detect paired A/V linked sequence
+      let pairedSeqId: string | null = null;
+      const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
+      if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
+        pairedSeqId = avLink.params.linkedSequenceId as string;
+      }
+
+      const initialStart = seq.startFrame ?? seq.timelineStartFrame ?? 0;
+      const sourceTrack = tracks.find((t) => t.id === data.trackId);
+
       setActiveDragState({
         type: 'clip',
-        seqId: data.seq.id,
-        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
-        initialDurationFrames: data.seq.durationFrames,
+        seqId: seq.id,
+        pairedSeqId,
+        initialStartFrame: initialStart,
+        initialDurationFrames: seq.durationFrames,
         deltaFrames: 0,
+        snappedStartFrame: initialStart,
+        sourceTrackId: data.trackId,
         targetTrackId: data.trackId,
+        isInvalidDrop: false,
+        snapLabel: null,
+        activeSeq: seq,
+        activeTrack: sourceTrack,
       });
-      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+      IRStateManager.getInstance().setSelectedSequenceId(seq.id);
     } else if (data.type === 'trim') {
       setActiveDragState({
         type: 'trim',
@@ -111,6 +130,10 @@ export function TimelineDom({
         initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
         initialDurationFrames: data.seq.durationFrames,
         deltaFrames: 0,
+        snappedStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
+        isInvalidDrop: false,
+        snapLabel: null,
+        activeSeq: data.seq,
       });
       IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
     }
@@ -123,73 +146,41 @@ export function TimelineDom({
 
     if (activeDragState.type === 'clip') {
       const overTrackId = (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
-      let targetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
-      let snapResult: { frame: number; label?: string; isAbut?: boolean } | null = null;
+      const rawTargetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
 
-      if (snapEnabled) {
-        interface SnapPointCandidate {
-          frame: number;
-          label?: string;
-          isAbut?: boolean;
-        }
-
-        const candidatePoints: SnapPointCandidate[] = [{ frame: currentFrame, label: 'Playhead' }];
-
-        for (const track of tracks) {
-          for (const s of track.sequences) {
-            if (s.id !== activeDragState.seqId) {
-              const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
-              const sEnd = sStart + s.durationFrames;
-              candidatePoints.push(
-                { frame: sStart, label: `Abut ${s.id}`, isAbut: true },
-                { frame: sEnd, label: `Abut ${s.id}`, isAbut: true }
-              );
-            }
-          }
-        }
-
-        const totalSeconds = Math.ceil(totalFrames / fps);
-        for (let sec = 0; sec <= totalSeconds; sec++) {
-          candidatePoints.push({ frame: sec * fps, label: `${sec}s` });
-        }
-
-        const targetEnd = targetStart + activeDragState.initialDurationFrames;
-
-        for (const pt of candidatePoints) {
-          if (Math.abs(targetStart - pt.frame) <= 4) {
-            targetStart = pt.frame;
-            snapResult = pt;
-            break;
-          } else if (Math.abs(targetEnd - pt.frame) <= 4) {
-            targetStart = pt.frame - activeDragState.initialDurationFrames;
-            snapResult = pt;
-            break;
-          }
-        }
-
-        onActiveSnapGuidelineChange(snapResult);
-      } else {
-        onActiveSnapGuidelineChange(null);
-      }
-
-      // Overlap prevention on target track
+      // Validate track compatibility: audio sequences stay on audio tracks, visual on visual
+      const sourceTrack = tracks.find((t) => t.id === activeDragState.sourceTrackId);
       const targetTrack = tracks.find((t) => t.id === overTrackId);
-      if (targetTrack) {
-        for (const s of targetTrack.sequences) {
-          if (s.id !== activeDragState.seqId) {
-            const sStart = (s as any).startFrame ?? (s as any).timelineStartFrame ?? 0;
-            const sEnd = sStart + s.durationFrames;
-            const myEnd = targetStart + activeDragState.initialDurationFrames;
-            if (targetStart < sEnd && myEnd > sStart) {
-              if (activeDragState.initialStartFrame >= sEnd) {
-                targetStart = Math.max(targetStart, sEnd);
-              } else if (activeDragState.initialStartFrame + activeDragState.initialDurationFrames <= sStart) {
-                targetStart = Math.min(targetStart, sStart - activeDragState.initialDurationFrames);
-              }
-            }
-          }
+      const isSourceAudio = sourceTrack?.type === 'audio' || activeDragState.activeSeq?.type === 'audio';
+      const isTargetAudio = targetTrack?.type === 'audio';
+      const isInvalidDrop = Boolean(targetTrack && isSourceAudio !== isTargetAudio);
+
+      let targetStart = rawTargetStart;
+      let snapGuideline: number | null = null;
+      let snapLabel: string | null = null;
+
+      if (snapEnabled && !isInvalidDrop) {
+        const snapRes = TimelineSnapCalculator.calculateSnap({
+          targetStart: rawTargetStart,
+          durationFrames: activeDragState.initialDurationFrames,
+          pixelsPerFrame,
+          playheadFrame: currentFrame,
+          tracks,
+          excludeSeqIds: [
+            activeDragState.seqId,
+            ...(activeDragState.pairedSeqId ? [activeDragState.pairedSeqId] : []),
+          ],
+          activeGuidelineFrame: activeDragState.snapLabel ? activeDragState.snappedStartFrame : null,
+        });
+
+        if (snapRes.isSnapped) {
+          targetStart = snapRes.snappedFrame;
+          snapGuideline = snapRes.guidelineFrame;
+          snapLabel = snapRes.label;
         }
       }
+
+      onActiveSnapGuidelineChange(snapGuideline !== null ? { frame: snapGuideline, label: snapLabel || undefined } : null);
 
       const deltaFrames = targetStart - activeDragState.initialStartFrame;
       setActiveDragState((prev) =>
@@ -197,7 +188,10 @@ export function TimelineDom({
           ? {
               ...prev,
               deltaFrames,
+              snappedStartFrame: targetStart,
               targetTrackId: overTrackId,
+              isInvalidDrop,
+              snapLabel,
             }
           : null
       );
@@ -206,6 +200,7 @@ export function TimelineDom({
       let snappedGuideline: number | null = null;
 
       if (snapEnabled) {
+        const snapThresholdFrames = Math.max(1, Math.round(8 / pixelsPerFrame));
         const snapPoints: number[] = [currentFrame];
         for (const track of tracks) {
           for (const s of track.sequences) {
@@ -214,29 +209,29 @@ export function TimelineDom({
             }
           }
         }
-        const totalSeconds = Math.ceil(totalFrames / fps);
-        for (let sec = 0; sec <= totalSeconds; sec++) {
-          snapPoints.push(sec * fps);
-        }
 
         if (activeDragState.handle === 'start') {
           const rawTarget = activeDragState.initialStartFrame + deltaFrames;
+          let closestDist = Infinity;
           for (const sp of snapPoints) {
-            if (Math.abs(rawTarget - sp) <= 4) {
+            const dist = Math.abs(rawTarget - sp);
+            if (dist <= snapThresholdFrames && dist < closestDist) {
+              closestDist = dist;
               deltaFrames = sp - activeDragState.initialStartFrame;
               snappedGuideline = sp;
-              break;
             }
           }
         } else {
           const rawTarget =
             activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
+          let closestDist = Infinity;
           for (const sp of snapPoints) {
-            if (Math.abs(rawTarget - sp) <= 4) {
+            const dist = Math.abs(rawTarget - sp);
+            if (dist <= snapThresholdFrames && dist < closestDist) {
+              closestDist = dist;
               deltaFrames =
                 sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
               snappedGuideline = sp;
-              break;
             }
           }
         }
@@ -256,11 +251,15 @@ export function TimelineDom({
         (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
       const targetStartFrame = Math.max(
         0,
-        activeDragState.initialStartFrame + activeDragState.deltaFrames
+        activeDragState.snappedStartFrame ?? (activeDragState.initialStartFrame + activeDragState.deltaFrames)
       );
 
-      if (targetTrackId) {
-        IRStateManager.getInstance().moveSequence(
+      const targetTrack = tracks.find((t) => t.id === targetTrackId);
+      const isLocked = targetTrackId ? lockedTracks[targetTrackId] : false;
+
+      if (targetTrackId && targetTrack && !isLocked && !activeDragState.isInvalidDrop) {
+        // Professional track-scoped Ripple Push / Insert
+        IRStateManager.getInstance().rippleMoveSequence(
           activeDragState.seqId,
           targetTrackId,
           targetStartFrame
@@ -327,39 +326,35 @@ export function TimelineDom({
     >
       <div
         style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
           width: `${timelineWidth + 208}px`,
-          position: 'relative',
         }}
+        className="flex flex-col gap-1 relative"
       >
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-          const track = tracks[virtualRow.index];
-          if (!track) return null;
-          const idx = virtualRow.index;
+        {tracks.map((track: any, idx: number) => {
           const isLocked = lockedTracks[track.id] || false;
           const isMuted = mutedTracks[track.id] || false;
           const canMoveUp = idx > 0;
           const canMoveDown = idx < tracks.length - 1;
 
-          // Horizontal sequence virtualization
+          // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)
           const visibleSequences = track.sequences.filter((seq: any) => {
-            if (activeDragState?.seqId === seq.id) return true;
+            if (activeDragState?.seqId === seq.id || activeDragState?.pairedSeqId === seq.id) return true;
             const seqStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
             const seqEnd = seqStart + seq.durationFrames;
             return seqEnd >= visibleStartFrame && seqStart <= visibleEndFrame;
           });
 
+          const isInvalidDropOverThisTrack =
+            Boolean(activeDragState?.isInvalidDrop && activeDragState.targetTrackId === track.id);
+
           return (
             <div
               key={track.id}
               style={{
-                position: 'absolute',
-                top: `${virtualRow.start}px`,
-                left: 0,
                 width: `${timelineWidth + 208}px`,
                 height: '40px',
               }}
-              className="h-10 flex items-center gap-2 bg-[var(--glass-bg)]"
+              className="h-10 flex items-center gap-2 bg-[var(--glass-bg)] shrink-0"
             >
               {/* Sticky Track Header Card */}
               <TrackHeaderCard
@@ -372,9 +367,13 @@ export function TimelineDom({
                 onToggleMute={onToggleMute}
               />
 
-              {/* Track Sequence Lane: Render DOM clips */}
+              {/* Track Sequence Lane: Render DOM clips with CSS content-visibility optimization */}
               <div style={{ width: `${timelineWidth}px` }} className="h-full shrink-0">
-                <DroppableTrackLane track={track} isLocked={isLocked}>
+                <DroppableTrackLane
+                  track={track}
+                  isLocked={isLocked}
+                  isInvalidDrop={isInvalidDropOverThisTrack}
+                >
                   {visibleSequences.map((seq: any) => (
                     <ClipItem
                       key={seq.id}
@@ -405,6 +404,22 @@ export function TimelineDom({
           );
         })}
       </div>
+
+      {/* Elevated Portal Drag Proxy: Unclipped, follows pointer with grab offset */}
+      <DragOverlay dropAnimation={null}>
+        {activeDragState?.type === 'clip' && activeDragState.activeSeq ? (
+          <ClipDragProxy
+            seq={activeDragState.activeSeq}
+            track={activeDragState.activeTrack}
+            pixelsPerFrame={pixelsPerFrame}
+            deltaFrames={activeDragState.deltaFrames}
+            snappedStartFrame={activeDragState.snappedStartFrame}
+            isInvalidDrop={activeDragState.isInvalidDrop}
+            snapLabel={activeDragState.snapLabel}
+            getTrackBadgeStyle={getTrackBadgeStyle}
+          />
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }

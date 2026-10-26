@@ -30,6 +30,7 @@ export interface ClipItemProps {
   activeDragState: {
     type: 'clip' | 'trim';
     seqId: string;
+    pairedSeqId?: string | null;
     handle?: 'start' | 'end';
     initialStartFrame: number;
     initialDurationFrames: number;
@@ -53,6 +54,7 @@ export function ClipItem({
   activeDragState,
 }: ClipItemProps) {
   const isBeingDragged = activeDragState?.seqId === seq.id;
+  const isPairedDrag = activeDragState?.pairedSeqId === seq.id;
   const isAudio = seq.type === 'audio';
   const isTextOrOverlay =
     track.type === 'overlay' ||
@@ -67,16 +69,13 @@ export function ClipItem({
   let displayStartFrame = rawStart;
   let displayDurationFrames = seq.durationFrames;
 
-  if (isBeingDragged && activeDragState) {
-    if (activeDragState.type === 'clip') {
+  // Trim handle interaction directly modifies display frames during trim
+  if (isBeingDragged && activeDragState && activeDragState.type === 'trim') {
+    if (activeDragState.handle === 'start') {
       displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-    } else if (activeDragState.type === 'trim') {
-      if (activeDragState.handle === 'start') {
-        displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-        displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
-      } else {
-        displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
-      }
+      displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
+    } else {
+      displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
     }
   }
 
@@ -111,13 +110,14 @@ export function ClipItem({
   const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
 
   return (
-    <ClipHoverHUD seq={seq} track={track} fps={fps}>
+    <ClipHoverHUD seq={seq} track={track} fps={fps} disabled={Boolean(activeDragState)}>
       <div
         ref={setNodeRef}
         {...listeners}
         {...attributes}
         onClick={(e) => onClipClick(seq, e)}
         onMouseEnter={(e) => {
+          if (activeDragState) return;
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
           onClipHover?.({
             seq,
@@ -134,15 +134,18 @@ export function ClipItem({
           left: `${leftPx}px`,
           width: `${widthPx}px`,
         }}
-        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
-            ? 'cursor-crosshair'
-            : isBeingDragged && activeDragState?.type === 'clip'
-              ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-accent-theme/80 z-30'
-              : 'cursor-grab'
-          } ${isSelected
+        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${
+          isBeingDragged && activeDragState?.type === 'clip'
+            ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
+            : isPairedDrag
+              ? 'ring-1 ring-dashed ring-accent-theme/70 opacity-70 z-10'
+              : activeTool === 'razor'
+                ? 'cursor-crosshair'
+                : 'cursor-grab'
+        } ${isSelected && !isBeingDragged
             ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
             : 'hover:brightness-110 z-10'
-          } ${getTrackBadgeStyle(track)}`}
+        } ${getTrackBadgeStyle(track)}`}
       >
         <TrimHandle seq={seq} handle="start" />
 

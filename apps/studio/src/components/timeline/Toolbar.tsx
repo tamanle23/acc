@@ -9,8 +9,6 @@ import {
   SkipForward,
   Magnet,
   ArrowRightLeft,
-  LayoutGrid,
-  Monitor,
   ZoomIn,
   ZoomOut,
   Maximize,
@@ -23,7 +21,6 @@ import { Toggle } from '../ui/toggle';
 import { Separator } from '../ui/separator';
 import { MasterAudioMeter } from '../audio/MasterAudioMeter';
 import { RationalTime } from '@acc/core-isomorphic';
-import type { TimelineMode } from '../../lib/timeline/strategies/ITimelineRenderStrategy';
 import type { UseShuttleEngineReturn } from '../../lib/shuttle/useShuttleEngine';
 
 export interface ToolbarProps {
@@ -36,8 +33,6 @@ export interface ToolbarProps {
   onSetSnapEnabled: (snap: boolean) => void;
   rippleEnabled: boolean;
   onSetRippleEnabled: (ripple: boolean) => void;
-  timelineMode: TimelineMode;
-  onSetTimelineMode: (mode: TimelineMode) => void;
   zoomScale: number;
   onSetZoomScale: (zoom: number | ((z: number) => number)) => void;
   currentFrame: number;
@@ -57,8 +52,6 @@ export function Toolbar({
   onSetSnapEnabled,
   rippleEnabled,
   onSetRippleEnabled,
-  timelineMode,
-  onSetTimelineMode,
   zoomScale,
   onSetZoomScale,
   currentFrame,
@@ -189,42 +182,6 @@ export function Toolbar({
             Ripple
           </Toggle>
         </Tooltip>
-
-        <Separator orientation="vertical" className="h-4 mx-1" />
-
-        {/* Dual-Mode Studio Timeline Strategy Switcher: DOM vs Canvas */}
-        <div className="flex items-center rounded-md border border-glass-border p-0.5 bg-muted/20 text-xs shadow-2xs">
-          <Tooltip content="DOM Mode: Interactive HTML Elements with @dnd-kit">
-            <Button
-              variant={timelineMode === 'dom' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onSetTimelineMode('dom')}
-              className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
-                timelineMode === 'dom'
-                  ? 'bg-secondary text-secondary-foreground font-semibold shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <LayoutGrid className="w-3 h-3" />
-              DOM
-            </Button>
-          </Tooltip>
-          <Tooltip content="Canvas Mode: 60fps High-Performance OffscreenCanvas & Pure Math Hit-Testing">
-            <Button
-              variant={timelineMode === 'canvas' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onSetTimelineMode('canvas')}
-              className={`h-6 px-2 text-[10px] font-mono gap-1 rounded-sm transition-colors ${
-                timelineMode === 'canvas'
-                  ? 'bg-accent-theme/20 text-accent-theme border border-accent-theme/40 font-semibold shadow-2xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Monitor className="w-3 h-3" />
-              Canvas
-            </Button>
-          </Tooltip>
-        </div>
       </div>
 
       {/* Center: Zoom Controls & Fit */}

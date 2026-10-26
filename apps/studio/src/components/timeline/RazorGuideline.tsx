@@ -2,7 +2,6 @@ import React from 'react';
 
 export interface RazorGuidelineProps {
   pixelsPerFrame: number;
-  timelineMode: 'dom' | 'canvas';
   razorHoverFrame: number | null;
 }
 
@@ -14,10 +13,9 @@ export type TimelineRazorGuidelineProps = RazorGuidelineProps;
  */
 export const RazorGuideline: React.FC<RazorGuidelineProps> = ({
   pixelsPerFrame,
-  timelineMode,
   razorHoverFrame,
 }) => {
-  if (timelineMode !== 'canvas' || razorHoverFrame === null) return null;
+  if (razorHoverFrame === null) return null;
 
   return (
     <div

@@ -2,7 +2,6 @@ import React from 'react';
 
 export interface TimecodeBadgeProps {
   pixelsPerFrame: number;
-  timelineMode: 'dom' | 'canvas';
   timecodeHUD: {
     frame: number;
     deltaFrames: number;
@@ -19,10 +18,9 @@ export type TimelineTimecodeBadgeProps = TimecodeBadgeProps;
  */
 export const TimecodeBadge: React.FC<TimecodeBadgeProps> = ({
   pixelsPerFrame,
-  timelineMode,
   timecodeHUD,
 }) => {
-  if (timelineMode !== 'canvas' || !timecodeHUD) return null;
+  if (!timecodeHUD) return null;
 
   return (
     <div

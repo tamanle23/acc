@@ -16,7 +16,6 @@ export * from './ClipHoverHUD';
 export * from './ClipInsightCard';
 export * from './EmptyState';
 export * from './TimelineDom';
-export * from './TimelineCanvas';
 
 // Legacy Aliases for backwards compatibility with test harnesses
 export { EmptyState } from './EmptyState';
