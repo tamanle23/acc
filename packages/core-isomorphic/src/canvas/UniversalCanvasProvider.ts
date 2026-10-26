@@ -6,6 +6,7 @@ import type {
   CanvasInstance,
 } from './types';
 import { CanvasScratchPool } from './CanvasScratchPool';
+import { PlatformDetector } from '../platform/PlatformDetector';
 
 /**
  * UniversalCanvasProvider:
@@ -28,26 +29,7 @@ export class UniversalCanvasProvider {
   }
 
   public static detectEnvironment(): 'web' | 'node' {
-    const isNodeOrBun =
-      typeof process !== 'undefined' &&
-      typeof process.versions !== 'undefined' &&
-      (Boolean(process.versions.node) || Boolean((process.versions as any).bun));
-
-    const isBrowserWindow = typeof window !== 'undefined' && typeof window.document !== 'undefined';
-    const isWebWorker =
-      typeof globalThis !== 'undefined' &&
-      typeof (globalThis as any).importScripts === 'function' &&
-      typeof (globalThis as any).OffscreenCanvas !== 'undefined';
-
-    if (isBrowserWindow || isWebWorker) {
-      return 'web';
-    }
-
-    if (isNodeOrBun) {
-      return 'node';
-    }
-
-    return 'web';
+    return PlatformDetector.resolveDefaultCanvasAdapter();
   }
 
   public static registerAdapter(adapter: ICanvasAdapter, isDefault = false): void {

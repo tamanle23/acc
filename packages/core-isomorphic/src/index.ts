@@ -9,3 +9,4 @@ export * from './assets/AssetProtocolRegistry';
 export * from './logger';
 export * from './cache';
 export * from './vision';
+export * from './platform';

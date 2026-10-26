@@ -1,9 +1,10 @@
 import type { IMediaEngineStrategy, MediaEngineType } from './types';
 import { MediaEngineError } from './types';
+import { PlatformDetector } from '../platform/PlatformDetector';
 
 export class MediaEngineRegistry {
   private static strategies = new Map<MediaEngineType, IMediaEngineStrategy>();
-  private static defaultEngine: MediaEngineType = 'bun-ffi';
+  private static defaultEngine: MediaEngineType = PlatformDetector.resolveDefaultMediaEngine();
   private static registeredLazyLoaders = new Map<MediaEngineType, () => Promise<IMediaEngineStrategy>>();
 
   private static normalizeId(id: string): MediaEngineType {
@@ -89,6 +90,6 @@ export class MediaEngineRegistry {
   public static reset(): void {
     this.strategies.clear();
     this.registeredLazyLoaders.clear();
-    this.defaultEngine = 'bun-ffi';
+    this.defaultEngine = PlatformDetector.resolveDefaultMediaEngine();
   }
 }

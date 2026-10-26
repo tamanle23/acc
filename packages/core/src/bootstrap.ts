@@ -2,6 +2,7 @@ import {
   UniversalCanvasProvider,
   MediaEngineRegistry,
   ContentCacheRegistry,
+  PlatformDetector,
   type MediaEngineType,
 } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from './native/canvas/NapiCanvasAdapter';
@@ -62,10 +63,9 @@ export async function bootstrapNode(options: BootstrapNodeOptions = {}): Promise
     MediaEngineRegistry.register(new FluentFFmpegEngineStrategy());
   }
 
-  // 4. Optionally set the default media engine if explicitly requested
-  if (options.defaultMediaEngine) {
-    MediaEngineRegistry.setDefaultEngine(options.defaultMediaEngine);
-  }
+  // 4. Set the default media engine (explicit option or coordinated PlatformDetector resolution)
+  const resolvedDefaultEngine = options.defaultMediaEngine || PlatformDetector.resolveDefaultMediaEngine();
+  MediaEngineRegistry.setDefaultEngine(resolvedDefaultEngine);
 
   // 5. Optionally prepare FFmpeg if requested
   if (options.prepareFFmpeg) {
