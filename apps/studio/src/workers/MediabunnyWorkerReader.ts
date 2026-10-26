@@ -44,6 +44,11 @@ export class MediabunnyWorkerReader {
   private lastScrubRequestTime = 0;
   private readonly fastScrubThrottleMs: number;
 
+  // In-Flight Request Deduplication & WebCodecs Concurrency Gate
+  private inFlightRequests = new Map<number, Promise<ImageBitmap | null>>();
+  private activeDecodes = 0;
+  private readonly MAX_CONCURRENT_DECODES = 2;
+
   constructor(src: string, options: MediabunnyReaderOptions = {}) {
     this.src = src;
     this.fastScrubThrottleMs = 1000 / (options.fastScrubFps ?? 30);
@@ -102,50 +107,80 @@ export class MediabunnyWorkerReader {
   /**
    * Decodes a specific frame integer t directly via CanvasSink.
    * Frame caching and lifecycle are owned by PreviewFrameMemoryManager.
+   * Enforces in-flight deduplication and a hard concurrency gate (<= 2 decodes)
+   * to guarantee zero WebCodecs hardware queue saturation.
    */
-  public async requestFrame(
+  public requestFrame(
     frame: number,
     fps: number,
     isScrubbing = false
   ): Promise<ImageBitmap | null> {
-    if (!this.isInitialized) {
-      const ok = await this.init();
-      if (!ok || !this.canvasSink) return null;
+    // 1. In-flight request deduplication: return active promise if already decoding
+    const existingPromise = this.inFlightRequests.get(frame);
+    if (existingPromise) {
+      return existingPromise;
     }
 
-    const targetSec = Math.max(0, frame / (fps || this.fps || 30));
+    const execute = async (): Promise<ImageBitmap | null> => {
+      if (!this.isInitialized) {
+        const ok = await this.init();
+        if (!ok || !this.canvasSink) return null;
+      }
 
-    if (isScrubbing) {
-      // 1. Scrub throttling: enforce <= 30fps decode rate
-      const now = performance.now();
-      if (now - this.lastScrubRequestTime < this.fastScrubThrottleMs) {
+      const targetSec = Math.max(0, frame / (fps || this.fps || 30));
+
+      if (isScrubbing) {
+        // 2. Scrub throttling: enforce <= 30fps decode rate
+        const now = performance.now();
+        if (now - this.lastScrubRequestTime < this.fastScrubThrottleMs) {
+          return null;
+        }
+        this.lastScrubRequestTime = now;
+
+        // Concurrency check for scrubbing: if hardware decoder is busy, skip scrub frame
+        if (this.activeDecodes >= this.MAX_CONCURRENT_DECODES) {
+          return null;
+        }
+
+        this.activeDecodes++;
+        try {
+          const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
+          if (wrappedCanvas) {
+            return await this.toImageBitmap(wrappedCanvas);
+          }
+        } catch (err) {
+          // Graceful scrub skip
+        } finally {
+          this.activeDecodes = Math.max(0, this.activeDecodes - 1);
+          this.inFlightRequests.delete(frame);
+        }
         return null;
       }
-      this.lastScrubRequestTime = now;
 
-      // Fast seek
+      // 3. Exact frame decode with Concurrency Gate
+      if (this.activeDecodes >= this.MAX_CONCURRENT_DECODES) {
+        // Do not launch unthrottled concurrent decodes; return null to hold current frame
+        return null;
+      }
+
+      this.activeDecodes++;
       try {
         const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
         if (wrappedCanvas) {
           return await this.toImageBitmap(wrappedCanvas);
         }
       } catch (err) {
-        // Graceful scrub skip
+        // Decode error fallback
+      } finally {
+        this.activeDecodes = Math.max(0, this.activeDecodes - 1);
+        this.inFlightRequests.delete(frame);
       }
       return null;
-    }
+    };
 
-    // 2. Exact frame decode
-    try {
-      const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
-      if (wrappedCanvas) {
-        return await this.toImageBitmap(wrappedCanvas);
-      }
-    } catch (err) {
-      // Decode error fallback
-    }
-
-    return null;
+    const promise = execute();
+    this.inFlightRequests.set(frame, promise);
+    return promise;
   }
 
   private async toImageBitmap(wrappedCanvas: any): Promise<ImageBitmap | null> {

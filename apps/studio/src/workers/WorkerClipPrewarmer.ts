@@ -30,9 +30,11 @@ export class WorkerClipPrewarmer {
   }
 
   /**
-   * Scans ahead 1.5s from current playhead frame.
+   * Scans ahead 1.5s from current playhead frame to discover upcoming clips,
+   * and proactively pre-warms a tight 4-frame forward lookahead window
+   * [currentFrame + 1 .. currentFrame + 4] for active playing clips.
    */
-  public prewarmUpcomingClips(currentFrame: number, fps: number): void {
+  public prewarmUpcomingClips(currentFrame: number, fps: number, isPlaying = false): void {
     if (!this.timeline) return;
 
     const lookaheadFrames = Math.round(1.5 * fps);
@@ -47,7 +49,17 @@ export class WorkerClipPrewarmer {
       }
 
       for (const seq of track.sequences) {
-        // Check if clip starts in the lookahead window [currentFrame, windowEnd]
+        // 1. Proactive 4-frame sequential lookahead for actively playing clips
+        if (
+          isPlaying &&
+          seq.assetId &&
+          currentFrame >= seq.startFrame &&
+          currentFrame < seq.startFrame + seq.durationFrames
+        ) {
+          this.prewarmSequentialLookahead(seq, currentFrame, fps);
+        }
+
+        // 2. Discover upcoming clips in the lookahead window [currentFrame, windowEnd]
         if (seq.startFrame >= currentFrame && seq.startFrame <= windowEnd) {
           if (!this.warmedSequences.has(seq.id)) {
             this.warmedSequences.add(seq.id);
@@ -55,6 +67,36 @@ export class WorkerClipPrewarmer {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Proactively pre-decodes [currentFrame + 1 .. currentFrame + 4] into PreviewFrameMemoryManager
+   * so upcoming frames are hot in memory before playhead advancement.
+   */
+  private prewarmSequentialLookahead(seq: ResolvedSequence, currentFrame: number, fps: number): void {
+    if (!seq.assetId) return;
+    const reader = this.readers.get(seq.assetId);
+    if (!reader) return;
+
+    const assetId = seq.assetId;
+    const seqStart = seq.startFrame ?? 0;
+    const seqEnd = seqStart + seq.durationFrames;
+
+    // 4-frame lookahead window
+    for (let offset = 1; offset <= 4; offset++) {
+      const targetFrame = currentFrame + offset;
+      if (targetFrame >= seqEnd) break;
+
+      const localFrame = targetFrame - seqStart;
+      if (this.memoryManager.get(assetId, localFrame)) continue;
+
+      // Asynchronously trigger decode into memory manager via concurrency gate
+      reader.requestFrame(localFrame, fps, false).then((bmp) => {
+        if (bmp && (bmp.width === undefined || bmp.width > 0)) {
+          this.memoryManager.set(assetId, localFrame, bmp);
+        }
+      }).catch(() => {});
     }
   }
 

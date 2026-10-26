@@ -78,8 +78,8 @@ function renderCurrentFrame(
   const w = currentWidth;
   const h = currentHeight;
 
-  // 2. Lookahead Pre-warming of upcoming clips within 1.5s
-  clipPrewarmer.prewarmUpcomingClips(frame, currentFps);
+  // 2. Lookahead Pre-warming of upcoming clips within 1.5s & active 4-frame sequential lookahead
+  clipPrewarmer.prewarmUpcomingClips(frame, currentFps, isPlaying);
 
   // 3. Resolve active video frames from Mediabunny readers or MemoryManager using clip-local frames
   const activeSeqs = engine.seek(frame).activeSequences;
@@ -93,14 +93,16 @@ function renderCurrentFrame(
     if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
       textureCache.set(seq.assetId, cachedBmp);
     } else {
-      // Async decode requested if not in buffer or detached
+      // Cache miss: Hold last rendered canvas frame (do not clear or replace with detached proxy)
+      // and issue deduplicated request through MediabunnyWorkerReader's concurrency gate
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
           memoryManager.set(assetId, localFrame, bmp);
           textureCache.set(assetId, bmp);
-          // If paused or idling, trigger immediate repaint with new frame
-          if (!isPlaying) {
+          // Only trigger immediate repaint if paused / parked at this exact frame.
+          // During active playback, this frame will be naturally painted on the next RAF tick.
+          if (!isPlaying && currentFrame === frame) {
             texturesDirty = true;
             renderCurrentFrame(currentFrame, lod, popOutIntensity, false, clearColor);
           }

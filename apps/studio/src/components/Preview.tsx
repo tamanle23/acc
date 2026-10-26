@@ -632,6 +632,13 @@ export function Preview({
     s.modifiers?.some((m) => m.type === 'shape/vector')
   );
 
+  // Check if selected sequence explicitly has a transform modifier
+  const selectedSeq = selectedSeqId
+    ? (irState.timeline?.sequences?.get(selectedSeqId) ||
+       irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId))
+    : undefined;
+  const hasTransformModifier = Boolean(selectedSeq?.modifiers?.some((m) => m.type === 'transform'));
+
   return (
     <div
       ref={(node) => {
@@ -735,24 +742,26 @@ export function Preview({
             dragCoords={dragCoords}
           />
 
-          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
-          <TransformGizmoOverlay
-            key={selectedSeqId || 'no-seq-gizmo'}
-            selectedSeqId={selectedSeqId}
-            activeSequences={activeSequences}
-            currentFrame={currentFrame}
-            isLocked={isLocked}
-            transform={transform}
-            isDragging={isDragging}
-            previewEngine={previewEngineRef.current}
-            transformSensors={transformSensors}
-            onTransformDragStart={handleTransformDragStart}
-            onTransformDragMove={handleTransformDragMove}
-            onTransformDragEnd={handleTransformDragEnd}
-            onSetTransform={setTransform}
-            onToggleLock={() => setIsLocked(!isLocked)}
-            onStartEditingCue={setEditingCue}
-          />
+          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill (only when selected sequence has a transform modifier) */}
+          {hasTransformModifier && (
+            <TransformGizmoOverlay
+              key={selectedSeqId || 'no-seq-gizmo'}
+              selectedSeqId={selectedSeqId}
+              activeSequences={activeSequences}
+              currentFrame={currentFrame}
+              isLocked={isLocked}
+              transform={transform}
+              isDragging={isDragging}
+              previewEngine={previewEngineRef.current}
+              transformSensors={transformSensors}
+              onTransformDragStart={handleTransformDragStart}
+              onTransformDragMove={handleTransformDragMove}
+              onTransformDragEnd={handleTransformDragEnd}
+              onSetTransform={setTransform}
+              onToggleLock={() => setIsLocked(!isLocked)}
+              onStartEditingCue={setEditingCue}
+            />
+          )}
 
           {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos, Overlays) */}
           <UniversalCanvasHitOverlay

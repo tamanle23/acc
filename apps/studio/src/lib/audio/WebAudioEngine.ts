@@ -193,6 +193,7 @@ export class WebAudioEngine {
 
   /**
    * Starts synchronized audio playback from current playhead frame.
+   * Synthesizes audio using lightweight non-blocking 5.0s chunks to eliminate UI thread lockup.
    */
   public startPlayback(currentFrame: number, fps: number, irState: any): void {
     try {
@@ -204,8 +205,8 @@ export class WebAudioEngine {
       const startSec = currentFrame / Math.max(1, fps);
       const remainingSec = Math.max(0.1, (totalFrames - currentFrame) / Math.max(1, fps));
 
-      // Synthesize audio chunk for remaining playback duration (up to 30s)
-      const renderDuration = Math.min(30.0, remainingSec);
+      // Synthesize initial responsive audio chunk (5.0s max instead of blocking 30s)
+      const renderDuration = Math.min(5.0, remainingSec);
       const mixResult = this.mixer.mixStereo(startSec, renderDuration);
 
       // Stream into UniversalAudioStreamWorklet ring buffer for non-blocking worklet transport
