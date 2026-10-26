@@ -1,6 +1,5 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import {
   Link2,
   Unlink,
@@ -31,14 +30,11 @@ export interface ClipItemProps {
   activeDragState: {
     type: 'clip' | 'trim';
     seqId: string;
-    pairedSeqId?: string | null;
     handle?: 'start' | 'end';
     initialStartFrame: number;
     initialDurationFrames: number;
     deltaFrames: number;
     targetTrackId?: string;
-    isInvalidDrop?: boolean;
-    snapLabel?: string | null;
   } | null;
 }
 
@@ -57,7 +53,6 @@ export function ClipItem({
   activeDragState,
 }: ClipItemProps) {
   const isBeingDragged = activeDragState?.seqId === seq.id;
-  const isPairedDrag = activeDragState?.pairedSeqId === seq.id;
   const isAudio = seq.type === 'audio';
   const isTextOrOverlay =
     track.type === 'overlay' ||
@@ -72,10 +67,10 @@ export function ClipItem({
   let displayStartFrame = rawStart;
   let displayDurationFrames = seq.durationFrames;
 
-  if (activeDragState && (isBeingDragged || isPairedDrag)) {
+  if (isBeingDragged && activeDragState) {
     if (activeDragState.type === 'clip') {
       displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-    } else if (activeDragState.type === 'trim' && isBeingDragged) {
+    } else if (activeDragState.type === 'trim') {
       if (activeDragState.handle === 'start') {
         displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
         displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
@@ -88,7 +83,7 @@ export function ClipItem({
   const leftPx = displayStartFrame * pixelsPerFrame;
   const widthPx = Math.max(16, displayDurationFrames * pixelsPerFrame);
 
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useDraggable({
     id: `clip-${seq.id}`,
     data: {
       type: 'clip',
@@ -138,45 +133,18 @@ export function ClipItem({
         style={{
           left: `${leftPx}px`,
           width: `${widthPx}px`,
-          ...(transform ? { transform: CSS.Translate.toString(transform) } : {}),
         }}
-        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
-          isBeingDragged || isPairedDrag ? 'transition-none z-30' : 'transition-all'
-        } ${activeTool === 'razor'
+        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${activeTool === 'razor'
             ? 'cursor-crosshair'
             : isBeingDragged && activeDragState?.type === 'clip'
-              ? activeDragState.isInvalidDrop
-                ? 'cursor-not-allowed opacity-90 shadow-2xl scale-[1.01] ring-2 ring-destructive bg-destructive/30 border-destructive z-30'
-                : 'cursor-grabbing opacity-95 shadow-2xl scale-[1.01] ring-2 ring-accent-theme/90 z-30'
-              : isPairedDrag
-                ? 'opacity-85 shadow-lg ring-1 ring-accent-theme/60 z-25'
-                : 'cursor-grab'
+              ? 'cursor-grabbing opacity-90 shadow-xl ring-2 ring-accent-theme/80 z-30'
+              : 'cursor-grab'
           } ${isSelected
             ? 'ring-2 ring-accent-theme shadow-md z-20 brightness-110'
             : 'hover:brightness-110 z-10'
           } ${getTrackBadgeStyle(track)}`}
       >
         <TrimHandle seq={seq} handle="start" />
-
-        {/* Real-Time Drag HUD Micro-Pill (displays delta frames & magnet snapping badge) */}
-        {isBeingDragged && activeDragState?.type === 'clip' && (
-          <div className="absolute top-0.5 right-1 z-40 flex items-center gap-1 pointer-events-none">
-            {activeDragState.snapLabel && (
-              <span className="text-[7.5px] font-mono px-1 py-0.2 rounded bg-amber-500/90 text-black font-bold uppercase shadow-xs">
-                {activeDragState.snapLabel}
-              </span>
-            )}
-            <span
-              className={`text-[8px] font-mono px-1 py-0.2 rounded shadow-xs font-semibold ${
-                activeDragState.isInvalidDrop
-                  ? 'bg-destructive text-destructive-foreground'
-                  : 'bg-black/85 text-accent-foreground border border-accent-theme/40'
-              }`}
-            >
-              {activeDragState.deltaFrames >= 0 ? `+${activeDragState.deltaFrames}f` : `${activeDragState.deltaFrames}f`}
-            </span>
-          </div>
-        )}
 
       {/* Visual Transition Block Handle (Cut boundary) */}
       {seq.modifiers &&
