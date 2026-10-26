@@ -52,6 +52,12 @@ export function TransformGizmoOverlay({
 }: TransformGizmoOverlayProps) {
   if (!selectedSeqId) return null;
 
+  // Resolve sequence from active sequences or fallback to timeline lookup
+  const timelineSeqs = IRStateManager.getInstance().getState().timeline?.sequences;
+  const selectedSeq =
+    activeSequences.find((s) => s.id === selectedSeqId) ||
+    (timelineSeqs ? timelineSeqs.get(selectedSeqId) : undefined);
+
   return (
     <DndContext
       sensors={transformSensors}
@@ -62,7 +68,6 @@ export function TransformGizmoOverlay({
       <TransformBodyDraggable
         isLocked={isLocked}
         onDoubleClick={() => {
-          const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
           if (selectedSeq?.cues && selectedSeq.cues.length > 0 && onStartEditingCue) {
             onStartEditingCue({
               sequenceId: selectedSeq.id,
@@ -72,7 +77,6 @@ export function TransformGizmoOverlay({
           }
         }}
         style={(() => {
-          const selectedSeq = activeSequences.find((s) => s.id === selectedSeqId);
           const activeInterp =
             !isDragging && selectedSeq && previewEngine
               ? previewEngine.getActiveInterpolatedTransform(selectedSeq, currentFrame)

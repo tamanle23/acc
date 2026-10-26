@@ -100,6 +100,7 @@ export function Preview({
   const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
   const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
+  const [showDepthHeatmap, setShowDepthHeatmap] = useState(false);
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [assetTick, setAssetTick] = useState(0);
@@ -122,11 +123,33 @@ export function Preview({
   const totalFrames = playhead?.totalFrames || irState.timeline?.totalFrames || 300;
   const selectedSeqId = irState.selectedSequenceId;
 
-  // Sync transform state from selected sequence modifier if available
+  // Sync transform state from selected sequence modifier if available, and auto-seek when paused
   useEffect(() => {
-    if (!selectedSeqId) return;
-    const activeSeqs = irState.timeline?.sequences ? Array.from(irState.timeline.sequences.values()) : [];
-    const seq = activeSeqs.find((s) => s.id === selectedSeqId);
+    if (!selectedSeqId) {
+      setTransform({ x: 0, y: 0, scale: 1.0, rotation: 0 });
+      return;
+    }
+
+    // Resolve target sequence across timeline or active document tracks
+    const allSeqs = irState.timeline?.sequences
+      ? Array.from(irState.timeline.sequences.values())
+      : irState.doc?.tracks.flatMap((t) => t.sequences) || [];
+    const seq = allSeqs.find((s) => s.id === selectedSeqId);
+
+    if (seq) {
+      // If paused and playhead is outside sequence duration, jump to sequence start
+      const playheadController = StudioPlayheadController.getInstance();
+      const isPaused = !playheadController.getIsPlaying();
+      const currentNeedleFrame = playheadController.getFrame();
+      const seqStart = (seq as any).startFrame ?? 0;
+      const seqDuration = (seq as any).durationFrames ?? 0;
+      const seqEnd = seqStart + seqDuration;
+
+      if (isPaused && (currentNeedleFrame < seqStart || currentNeedleFrame >= seqEnd)) {
+        playheadController.seek(seqStart, true);
+      }
+    }
+
     if (seq?.modifiers) {
       const transMod = seq.modifiers.find((m) => m.type === 'transform');
       if (transMod?.params) {
@@ -137,9 +160,18 @@ export function Preview({
           scale: p.scale ?? 1.0,
           rotation: p.rotation ?? 0,
         });
+        return;
       }
     }
-  }, [selectedSeqId, irState]);
+
+    // Reset to default identity transform if sequence has no transform modifier
+    setTransform({
+      x: 0,
+      y: 0,
+      scale: 1.0,
+      rotation: 0,
+    });
+  }, [selectedSeqId, irState.timeline, irState.doc]);
 
   const workerBridgeRef = useRef<PreviewWorkerBridge | null>(null);
   const [, setWorkerReady] = useState(false);
@@ -264,10 +296,24 @@ export function Preview({
             bridge.updateTextures(activeTexturesToSync);
           }
           // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
-          bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity, false, clearColor);
+          bridge.renderFrame(
+            currentFrame,
+            isPlaying ? 0.5 : 1.0,
+            popOutIntensity,
+            false,
+            clearColor,
+            showDepthHeatmap ? 'depth_heatmap' : 'none'
+          );
         });
       } else {
-        bridge.renderFrame(currentFrame, isPlaying ? 0.5 : 1.0, popOutIntensity, false, clearColor);
+        bridge.renderFrame(
+          currentFrame,
+          isPlaying ? 0.5 : 1.0,
+          popOutIntensity,
+          false,
+          clearColor,
+          showDepthHeatmap ? 'depth_heatmap' : 'none'
+        );
       }
     } else {
       // Main-thread fallback
@@ -311,6 +357,7 @@ export function Preview({
             textureCache: engineTextures,
             popOutIntensity,
             clearColor,
+            debugMode: showDepthHeatmap ? 'depth_heatmap' : 'none',
           });
         }
       }
@@ -326,7 +373,23 @@ export function Preview({
         }
       }
     }
-  }, [currentFrame, fps, irState, glReady, selectedSeqId, transform, activeGuides, width, height, showCheckerboard, showVfxAmbiance, isDragging, assetTick]);
+  }, [
+    currentFrame,
+    fps,
+    irState,
+    glReady,
+    selectedSeqId,
+    transform,
+    activeGuides,
+    width,
+    height,
+    showCheckerboard,
+    showDepthHeatmap,
+    showVfxAmbiance,
+    isDragging,
+    assetTick,
+    isPlaying,
+  ]);
 
   // High-Frequency Direct Playhead Subscription (Smooth 60fps OffscreenCanvas rendering without React re-renders)
   useEffect(() => {
@@ -617,6 +680,8 @@ export function Preview({
         onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
         showVfxAmbiance={showVfxAmbiance}
         onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+        showDepthHeatmap={showDepthHeatmap}
+        onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap)}
         isTelemetryCompanionOpen={isTelemetryCompanionOpen}
         onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen)}
       />
@@ -672,6 +737,7 @@ export function Preview({
 
           {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill */}
           <TransformGizmoOverlay
+            key={selectedSeqId || 'no-seq-gizmo'}
             selectedSeqId={selectedSeqId}
             activeSequences={activeSequences}
             currentFrame={currentFrame}

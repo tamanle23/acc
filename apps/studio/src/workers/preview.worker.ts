@@ -31,11 +31,12 @@ const textTextureCache = ContentHashTextureCache.getInstance();
 let lastRenderedFrame: number | null = null;
 let lastRenderedLOD: number | null = null;
 let lastPopOutIntensity: number | null = null;
+let lastDebugMode: string | null = null;
 let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean } | null = null;
+let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean; debugMode?: 'depth_heatmap' | 'none' } | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -50,7 +51,8 @@ function renderCurrentFrame(
   lod = 1.0,
   popOutIntensity = 1.0,
   isScrubbing = false,
-  clearColor = '#000000'
+  clearColor = '#000000',
+  debugMode?: 'depth_heatmap' | 'none'
 ) {
   if (!canvas || !ctx || !engine) return;
 
@@ -60,14 +62,15 @@ function renderCurrentFrame(
     !isScrubbing &&
     frame === lastRenderedFrame &&
     lod === lastRenderedLOD &&
-    popOutIntensity === lastPopOutIntensity
+    popOutIntensity === lastPopOutIntensity &&
+    debugMode === lastDebugMode
   ) {
     return;
   }
 
   if (isRendering) {
     // Coalesce latest requested frame to avoid worker message queue pileup
-    pendingRender = { frame, lod, popOutIntensity, isScrubbing };
+    pendingRender = { frame, lod, popOutIntensity, isScrubbing, debugMode };
     return;
   }
 
@@ -124,6 +127,7 @@ function renderCurrentFrame(
       textureCache,
       popOutIntensity,
       clearColor,
+      debugMode,
     });
   } catch (err) {
     console.error('[preview.worker] Render error at frame', frame, err);
@@ -144,12 +148,13 @@ function renderCurrentFrame(
   lastRenderedFrame = frame;
   lastRenderedLOD = lod;
   lastPopOutIntensity = popOutIntensity;
+  lastDebugMode = debugMode ?? null;
 
   // Drain coalesced pending frame if one arrived during this draw pass
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing, clearColor);
+    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing, clearColor, next.debugMode);
   }
 }
 
@@ -298,7 +303,8 @@ self.onmessage = (e: MessageEvent) => {
         data.lod ?? 1.0,
         data.popOutIntensity ?? 1.0,
         isScrub,
-        data.clearColor ?? '#000000'
+        data.clearColor ?? '#000000',
+        data.debugMode
       );
       break;
     }

@@ -39,6 +39,8 @@ export type ParamFieldType =
   | 'karaoke_group'
   | 'sfx_actions'
   | 'regions_array'
+  | 'vision_depth_strategy'
+  | 'vision_segmentation_strategy'
   | 'group';
 
 export interface ParamFieldDescriptor {

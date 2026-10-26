@@ -42,9 +42,13 @@ describe('PreviewFrameMemoryManager Suite', () => {
     // Access frame 0 so it is NOT the least recently used
     memoryManager.get('asset-1', 0);
 
-    // Adding 65th frame should evict frame 1
+    // Adding 65th frame should evict frame 1 to staged disposal queue
     memoryManager.set('asset-1', 100, createBitmap(100));
     expect(memoryManager.size()).toBe(64);
+    expect(memoryManager.getPendingDisposalCount()).toBe(1);
+    
+    // Drain disposal queue to execute .close()
+    memoryManager.drainDisposalQueue();
     expect(closedCount).toBe(1); // One frame closed!
     expect(memoryManager.get('asset-1', 1)).toBeNull();
     expect(memoryManager.get('asset-1', 0)).not.toBeNull();
@@ -73,6 +77,8 @@ describe('PreviewFrameMemoryManager Suite', () => {
     memoryManager.pruneOutsideWindow(100, fps);
 
     expect(memoryManager.size()).toBe(3);
+    expect(memoryManager.getPendingDisposalCount()).toBe(2);
+    memoryManager.drainDisposalQueue();
     expect(closedCount).toBe(2);
     expect(memoryManager.get('asset-1', 20)).toBeNull();
     expect(memoryManager.get('asset-1', 250)).toBeNull();

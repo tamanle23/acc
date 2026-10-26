@@ -20,6 +20,7 @@ export interface PreviewRenderOptions {
   popOutIntensity?: number;
   lodScale?: number;
   clearColor?: string;
+  debugMode?: 'depth_heatmap' | 'none';
 }
 
 export interface PreviewFrameResult {
@@ -139,6 +140,7 @@ export class IRPreviewEngine {
       assetResolver: textures,
       popOutIntensity,
       clearColor: options.clearColor || '#000000',
+      debugMode: options.debugMode,
     });
 
     const latencyMs = performance.now() - start;

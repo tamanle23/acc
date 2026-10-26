@@ -18,6 +18,7 @@ export interface ClipRenderContext {
   height: number;
   sequence: ResolvedSequence;
   baseAsset?: any;
+  debugMode?: 'depth_heatmap' | 'none';
 }
 
 export interface StreamRenderContext {

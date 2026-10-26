@@ -21,6 +21,7 @@ import { ProceduralSFXModifierPlugin } from './sfx/ProceduralSFXModifierPlugin';
 import { TimeSpaceModifierPlugin } from './TimeSpaceModifierPlugin';
 import { GSAPMotionPlugin } from './motion/GSAPMotionPlugin';
 import { DepthRelightingAdapterPlugin } from './vfx/DepthRelightingAdapterPlugin';
+import { AutoReframeModifierPlugin } from './vfx/AutoReframeModifierPlugin';
 
 export * from './ModifierPluginRegistry';
 export * from './IVideoPluginStrategy';
@@ -28,6 +29,7 @@ export * from './TimeSpaceModifierPlugin';
 export * from './vfx/Depth3DPlugin';
 export * from './vfx/DepthRelightingAdapterPlugin';
 export * from './vfx/Camera3DPlugin';
+export * from './vfx/AutoReframeModifierPlugin';
 export * from './vfx/ColorGradingPlugin';
 export * from './vfx/PartialVFXPlugin';
 export * from './motion/GSAPMotionPlugin';
@@ -53,6 +55,7 @@ export function registerCoreModifierPlugins(
   registry.register(depthPlugin);
   registry.register(new DepthRelightingAdapterPlugin(depthPlugin));
   registry.register(new Camera3DPlugin());
+  registry.register(new AutoReframeModifierPlugin());
   registry.register(new ColorGradingPlugin());
   registry.register(new PartialVFXPlugin());
   registry.register(new TransformModifierPlugin());

@@ -588,4 +588,92 @@ export const VFX_PRESETS: StagingPreset[] = [
       ],
     }),
   },
+  // ==========================================
+  // 3D VISION & DEPTH AI PRESETS
+  // ==========================================
+  {
+    id: 'vfx_parallax_zoom_3d',
+    category: 'vfx',
+    name: '2.5D Parallax Zoom Plane',
+    badge: 'Vision 3D',
+    description: 'Volumetric spatial depth displacement with dynamic pop-out plane',
+    iconName: 'Layers',
+    targetTrackId: 'track-v1',
+    targetTrackType: 'video',
+    targetTrackName: 'Video 1',
+    createSequence: ({ startFrame, durationFrames = 90 }) => ({
+      id: `seq-vfx-parallax-${Date.now()}`,
+      type: 'video',
+      time: { start: startFrame, duration: durationFrames },
+      modifiers: [
+        {
+          type: 'vfx/depth3d',
+          params: {
+            enabled: true,
+            mode: 'parallax_25d',
+            popOutIntensity: 1.35,
+            autoDepth: true,
+            autoSegment: true,
+            depthStrategy: 'heuristic',
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'vfx_auto_reframe_mobile',
+    category: 'vfx',
+    name: 'Smart Mobile Re-Frame (9:16)',
+    badge: 'Auto-Reframe',
+    description: 'Autonomous vertical subject tracking crop for Reels, Shorts, and TikTok',
+    iconName: 'Crop',
+    targetTrackId: 'track-v1',
+    targetTrackType: 'video',
+    targetTrackName: 'Video 1',
+    createSequence: ({ startFrame, durationFrames = 90 }) => ({
+      id: `seq-vfx-reframe-${Date.now()}`,
+      type: 'video',
+      time: { start: startFrame, duration: durationFrames },
+      modifiers: [
+        {
+          type: 'vfx/auto_reframe',
+          params: {
+            enabled: true,
+            targetAspectRatio: '9:16',
+            smoothingFactor: 0.85,
+            motionDamping: true,
+            visualGuide: true,
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'vfx_cinematic_rack_focus',
+    category: 'vfx',
+    name: 'Cinematic 3D Camera & Lens',
+    badge: 'Camera 3D',
+    description: 'Physical lens bokeh and dynamic 3D camera trajectory focus racking',
+    iconName: 'Camera',
+    targetTrackId: 'track-v1',
+    targetTrackType: 'video',
+    targetTrackName: 'Video 1',
+    createSequence: ({ startFrame, durationFrames = 90 }) => ({
+      id: `seq-vfx-cam3d-${Date.now()}`,
+      type: 'video',
+      time: { start: startFrame, duration: durationFrames },
+      modifiers: [
+        {
+          type: 'vfx/camera_3d',
+          params: {
+            enabled: true,
+            fov: 50,
+            focalDistance: 2.5,
+            bokehRadius: 8.0,
+            motionBlur: true,
+          },
+        },
+      ],
+    }),
+  },
 ];

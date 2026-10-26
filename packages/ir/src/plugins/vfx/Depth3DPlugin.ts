@@ -74,7 +74,20 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           { label: 'Dolly Zoom Push', value: 'parallax_dolly' },
           { label: 'Volumetric Sandwich', value: 'volumetric_sandwich' },
           { label: 'Silhouette Rim Light', value: 'silhouette_rim_light' },
+          { label: 'Depth Disparity Heatmap', value: 'depth_heatmap' },
         ],
+      },
+      depthStrategy: {
+        key: 'depthStrategy',
+        label: 'Depth Estimation Strategy',
+        type: 'vision_depth_strategy' as const,
+        defaultValue: 'heuristic',
+      },
+      segmentationStrategy: {
+        key: 'segmentationStrategy',
+        label: 'Subject Cutout Strategy',
+        type: 'vision_segmentation_strategy' as const,
+        defaultValue: 'grabcut-fallback',
       },
       popOutIntensity: {
         key: 'popOutIntensity',
@@ -372,6 +385,26 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         try {
           canvasCtx.globalCompositeOperation = 'screen';
           canvasCtx.drawImage(relightCanvas, 0, 0);
+        } finally {
+          canvasCtx.restore();
+        }
+      }
+    }
+
+    // Diagnostic Depth Heatmap Overlay Mode (Phase 2 Diagnostic)
+    if (ctx.debugMode === 'depth_heatmap' || mode === 'depth_heatmap' || mode === 'depth_map_3d') {
+      const depthSrc = depthLayersData?.srcCanvas;
+      if (depthSrc) {
+        canvasCtx.save();
+        try {
+          canvasCtx.globalAlpha = 0.85;
+          canvasCtx.drawImage(
+            depthSrc.getRawCanvas ? depthSrc.getRawCanvas() : depthSrc,
+            0,
+            0,
+            width,
+            height
+          );
         } finally {
           canvasCtx.restore();
         }

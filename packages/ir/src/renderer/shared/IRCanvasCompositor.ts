@@ -26,6 +26,7 @@ export interface CanvasCompositorOptions {
   clearColor?: string;
   generatePixelBuffer?: Uint8Array;
   executionProfile?: 'preview' | 'master';
+  debugMode?: 'depth_heatmap' | 'none';
 }
 
 /**
@@ -208,7 +209,8 @@ export class IRCanvasCompositor {
           fps,
           popOutIntensity,
           registry,
-          assets
+          assets,
+          options.debugMode
         );
 
         // Apply Track Stream-Space Modifiers on the scratch buffer
@@ -373,7 +375,8 @@ export class IRCanvasCompositor {
     fps: number,
     popOutIntensity: number,
     registry: ModifierPluginRegistry,
-    assets?: IAssetSourceResolver
+    assets?: IAssetSourceResolver,
+    debugMode?: 'depth_heatmap' | 'none'
   ): void {
     for (const seq of activeTrackSeqs) {
       const localFrame = clampedFrame - seq.startFrame;
@@ -401,6 +404,7 @@ export class IRCanvasCompositor {
                   height,
                   sequence: seq,
                   baseAsset: seq.assetId && assets ? assets.get(seq.assetId) : undefined,
+                  debugMode,
                 },
                 {
                   ...mod.params,

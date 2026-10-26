@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Crosshair, Sparkles, Volume2 } from 'lucide-react';
+import { Plus, Trash2, Crosshair, Sparkles, Volume2, Cpu, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Slider } from '../ui/slider';
@@ -7,6 +7,7 @@ import { Switch } from '../ui/switch';
 import type { ParamFieldDescriptor } from '@acc/ir';
 import type { PartialVFXRegionConfig } from '@acc/ir';
 import { ProceduralAudioSynthesizer } from '@acc/ir';
+import { VisionEngineRegistry, DepthStrategyId, SegmentationStrategyId } from '@acc/core-isomorphic';
 import { EasingCurveSelector } from '../EasingCurveSelector';
 import { KeyframeDiamondButton } from './KeyframeDiamondButton';
 import { IRStateManager } from '../../lib/ir/irState';
@@ -962,6 +963,74 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
 };
 
 /**
+ * Strategy 12: VisionStrategyControlStrategy
+ * Renders an AI strategy selector with performance badges ('⚡ Zero-Latency Heuristic' vs '🧠 Neural AI').
+ */
+export const VisionStrategyControlStrategy: React.FC<ControlStrategyProps> = ({
+  descriptor,
+  value,
+  onChange,
+  disabled = false,
+}) => {
+  const isDepth = descriptor.type === 'vision_depth_strategy';
+  const registered = isDepth
+    ? VisionEngineRegistry.getRegisteredDepthStrategies()
+    : VisionEngineRegistry.getRegisteredSegmentationStrategies();
+
+  const options = registered.map((id) => {
+    const isHeuristic = id === DepthStrategyId.Heuristic || id === SegmentationStrategyId.GrabCutFallback;
+    return {
+      value: id,
+      label: isHeuristic ? `${id} (⚡ 60fps Zero Latency)` : `${id} (🧠 Neural AI)`,
+      isHeuristic,
+    };
+  });
+
+  const currentVal = value || descriptor.defaultValue || (options[0]?.value ?? '');
+  const activeOption = options.find((o) => o.value === currentVal);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <label className="font-medium text-foreground/90 flex items-center gap-1.5">
+          {activeOption?.isHeuristic ? (
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+          ) : (
+            <Cpu className="w-3.5 h-3.5 text-accent-theme" />
+          )}
+          {descriptor.label}
+        </label>
+        <span
+          className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono border ${
+            activeOption?.isHeuristic
+              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              : 'bg-accent-theme/10 text-accent-theme border-accent-theme/20'
+          }`}
+        >
+          {activeOption?.isHeuristic ? 'HEURISTIC' : 'NEURAL'}
+        </span>
+      </div>
+
+      <select
+        value={currentVal}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-background/50 border border-input rounded-md px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent-theme transition-colors disabled:opacity-50"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      {descriptor.description && (
+        <p className="text-[10px] text-muted-foreground">{descriptor.description}</p>
+      )}
+    </div>
+  );
+};
+
+/**
  * Control Strategy Factory:
  * Resolves the appropriate UI control strategy component for any ParamFieldDescriptor.
  */
@@ -989,6 +1058,9 @@ export function resolveParamControlStrategy(
       return SFXActionsControlStrategy;
     case 'regions_array':
       return RegionsArrayControlStrategy;
+    case 'vision_depth_strategy':
+    case 'vision_segmentation_strategy':
+      return VisionStrategyControlStrategy;
     case 'string':
     default:
       return StringControlStrategy;

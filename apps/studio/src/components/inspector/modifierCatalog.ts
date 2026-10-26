@@ -3,6 +3,7 @@ import {
   Layers,
   Sparkles,
   Camera,
+  Crop,
   Palette,
   Type,
   Volume2,
@@ -237,6 +238,22 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
       popOutIntensity: 1.25,
       autoSegment: true,
       autoDepth: true,
+      depthStrategy: 'heuristic',
+      segmentationStrategy: 'grabcut-fallback',
+    },
+  },
+  'vfx/auto_reframe': {
+    name: 'Smart Auto-Reframe',
+    category: 'vfx',
+    icon: Crop,
+    supportedTrackTypes: ['video'],
+    defaultParams: {
+      enabled: true,
+      targetAspectRatio: '9:16',
+      smoothingFactor: 0.85,
+      motionDamping: true,
+      visualGuide: false,
+      strategyId: 'grabcut-fallback',
     },
   },
   'vfx/camera_3d': {
@@ -685,6 +702,8 @@ export function getSectionIdForModifierType(type: string): string {
     case 'vfx/depth3d_relighting':
     case 'vfx/depth3d':
       return 'relighting';
+    case 'vfx/auto_reframe':
+      return 'auto_reframe';
     case 'vfx/camera_3d':
     case 'camera/3d':
     case 'camera/path':

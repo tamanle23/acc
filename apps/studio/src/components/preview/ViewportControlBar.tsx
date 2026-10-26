@@ -10,6 +10,7 @@ import {
   Grid,
   Layers,
   LayoutPanelTop,
+  ScanEye,
 } from 'lucide-react';
 import { Tooltip } from '../ui/tooltip';
 import { SnappingGuide } from '../../lib/gizmo';
@@ -36,6 +37,8 @@ export interface ViewportControlBarProps {
   onToggleCheckerboard: () => void;
   showVfxAmbiance: boolean;
   onToggleVfxAmbiance: () => void;
+  showDepthHeatmap?: boolean;
+  onToggleDepthHeatmap?: () => void;
   isTelemetryCompanionOpen?: boolean;
   onToggleTelemetryCompanion?: () => void;
 }
@@ -62,6 +65,8 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   onToggleCheckerboard,
   showVfxAmbiance,
   onToggleVfxAmbiance,
+  showDepthHeatmap = false,
+  onToggleDepthHeatmap,
   isTelemetryCompanionOpen,
   onToggleTelemetryCompanion,
 }) => {
@@ -231,6 +236,24 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
             <Grid className="w-3.5 h-3.5" />
           </button>
         </Tooltip>
+
+        {/* Depth Disparity Heatmap Diagnostics Toggle */}
+        {onToggleDepthHeatmap && (
+          <Tooltip content={`Depth Disparity Heatmap: ${showDepthHeatmap ? 'Active' : 'Disabled'}`}>
+            <button
+              type="button"
+              onClick={onToggleDepthHeatmap}
+              aria-label={showDepthHeatmap ? 'Disable depth heatmap' : 'Enable depth heatmap'}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
+                showDepthHeatmap
+                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'border-glass-border text-foreground/40 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <ScanEye className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+        )}
 
         {/* FX Ambiance (Particles & Hologram HUD) Toggle */}
         <Tooltip content={`VFX Ambiance (HUD & Particles): ${showVfxAmbiance ? 'Enabled' : 'Disabled'}`}>
