@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import {
-  useDroppable,
-} from '@dnd-kit/core';
+import { useStagingDrag } from '../lib/staging/StagingDragManager';
 import { IRStateManager } from '../lib/ir/irState';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 import { useTheme } from '../lib/theme/ThemeProvider';
@@ -62,10 +60,9 @@ export function Preview({
   const [glReady, setGlReady] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
-  // dnd-kit drop target
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: 'canvas-viewport-drop-zone',
-  });
+  // Staging drop target powered by StagingDragManager
+  const stagingDrag = useStagingDrag();
+  const isOver = stagingDrag.isDragging && stagingDrag.hoveredTarget?.type === 'viewport';
 
   // In-Canvas 2D Vector Transform & Magnetic Snapping State
   const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
@@ -552,10 +549,9 @@ export function Preview({
 
   return (
     <div
-      ref={(node) => {
-        containerRef.current = node;
-        setDroppableRef(node);
-      }}
+      ref={containerRef}
+      id="canvas-viewport-drop-zone"
+      data-drop-zone="canvas-viewport"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDragOver={handleDragOver}

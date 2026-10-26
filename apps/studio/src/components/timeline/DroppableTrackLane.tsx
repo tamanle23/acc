@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useStagingDrag } from '../../lib/staging/StagingDragManager';
 
 export interface DroppableTrackLaneProps {
   track: any;
@@ -14,20 +14,17 @@ export function DroppableTrackLane({
   isDropTarget = false,
   children,
 }: DroppableTrackLaneProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `track-${track.id}`,
-    data: {
-      type: 'track',
-      trackId: track.id,
-    },
-    disabled: isLocked,
-  });
+  const stagingDrag = useStagingDrag();
+  const isStagingOver =
+    stagingDrag.isDragging &&
+    stagingDrag.hoveredTarget?.type === 'track' &&
+    stagingDrag.hoveredTarget?.trackId === track.id;
 
-  const activeHighlight = isOver || isDropTarget;
+  const activeHighlight = isDropTarget || isStagingOver;
 
   return (
     <div
-      ref={setNodeRef}
+      data-drop-zone="track-lane"
       data-track-lane-id={track.id}
       data-track-type={track.type}
       className={`flex-1 h-full rounded-md border relative overflow-hidden transition-colors ${

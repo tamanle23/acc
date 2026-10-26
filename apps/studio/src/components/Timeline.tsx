@@ -128,7 +128,7 @@ export function Timeline({
     IRStateManager.getInstance().trimSequence(seqId, deltaStart, deltaDuration);
   };
 
-  // Unified @dnd-kit Drag State for Timeline Clips & Trim Handles
+  // Unified @neodrag/react Drag State for Timeline Clips & Trim Handles
   const [activeDragState, setActiveDragState] = useState<{
     type: 'clip' | 'trim';
     seqId: string;
@@ -352,7 +352,7 @@ export function Timeline({
     isPanningRef.current = false;
   };
 
-  // Backward-compatible aliases for trimmingState & startTrim unified under @dnd-kit
+  // Backward-compatible aliases for trimmingState & startTrim unified under @neodrag/react
   const trimmingState = activeDragState?.type === 'trim' ? activeDragState : null;
   const startTrim = (seq: any, handle: 'start' | 'end') => {
     setActiveDragState({
