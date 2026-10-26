@@ -1,9 +1,7 @@
-import { UniversalCanvasProvider, MediaEngineRegistry } from '@acc/core-isomorphic';
-import { WebCanvasAdapter, MediabunnyClientStrategy } from '@acc/core-web';
+import { bootstrapClient as bootstrapCoreWeb } from '@acc/core-web';
 
 export function bootstrapClient(): void {
-  UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
-  if (!MediaEngineRegistry.has('mediabunny-client')) {
-    MediaEngineRegistry.register(new MediabunnyClientStrategy());
-  }
+  // Delegate to canonical core-web client bootstrap (initializes UniversalCanvasProvider,
+  // MediaEngineRegistry, ContentCacheRegistry, and VisionEngineRegistry)
+  bootstrapCoreWeb();
 }

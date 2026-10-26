@@ -977,7 +977,14 @@ export const VisionStrategyControlStrategy: React.FC<ControlStrategyProps> = ({
     ? VisionEngineRegistry.getRegisteredDepthStrategies()
     : VisionEngineRegistry.getRegisteredSegmentationStrategies();
 
-  const options = registered.map((id) => {
+  // Invariant fallback: if registry hasn't been initialized by the host container, provide canonical standard defaults
+  const fallbackStrategies = isDepth
+    ? [DepthStrategyId.Heuristic, 'depth-anything-v2-small', 'glpn-kitti']
+    : [SegmentationStrategyId.GrabCutFallback, 'birefnet-general', 'rmbg-1.4'];
+
+  const effectiveRegistered = registered.length > 0 ? registered : fallbackStrategies;
+
+  const options = effectiveRegistered.map((id) => {
     const isHeuristic = id === DepthStrategyId.Heuristic || id === SegmentationStrategyId.GrabCutFallback;
     return {
       value: id,
