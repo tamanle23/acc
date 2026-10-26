@@ -1,5 +1,4 @@
 import { Logger } from "@acc/core";
-import { FFmpegManager } from '@acc/core';
 import { FFmpegCommand } from '@acc/core';
 import { SoundRegistryManager } from './core/Registry';
 import { AudioNormalizer, fileExists } from '@acc/core';
@@ -17,12 +16,12 @@ export async function renderSoundEffect(
 ): Promise<string> {
   const generator = registry.getGenerator(effect);
   const result = await generator.generate(effect, variant, subVariant, duration, outDir, customPrompt);
-  
+
   const playbackType = AudioNormalizer.getPlaybackType(effect, variant);
-  
+
   Logger.info('SoundEffectsEngine', `Post-processing output (Type: ${playbackType}, Duration: ${duration}s)...`);
   const finalWavPath = await AudioNormalizer.normalize(result.audioPath, result.audioPath, playbackType, duration);
-  
+
   // Update the JSON metadata
   if (result.jsonPath && await fileExists(result.jsonPath)) {
     try {
@@ -35,7 +34,7 @@ export async function renderSoundEffect(
       await fs.promises.writeFile(result.jsonPath, JSON.stringify(meta, null, 2));
     } catch(e) {}
   }
-  
+
   return finalWavPath;
 }
 
@@ -46,21 +45,21 @@ export async function renderCompositeSound(
 ): Promise<string[]> {
   const config = registry.getCompositeConfig(compositeName);
   const outputs: string[] = [];
-  
+
   Logger.info('SoundEffectsEngine', `Preparing mix for composite: ${compositeName}...`);
-  
+
   for (const layer of config.layers) {
     const dur = layer.duration || 5.0; // Polyrhythmic defaults
     const wavPath = await renderSoundEffect(registry, layer.effect, layer.variant, layer.subVariant, dur, outDir);
     outputs.push(wavPath);
   }
-  
+
   // Mix the layers together using FFmpeg's filter_complex with delays
   const finalWavPath = path.join(outDir, `${compositeName}_composite.wav`);
   const inputs = outputs.map(o => `-i "${o}"`).join(' ');
 
   let filterComplex = '';
-  
+
   const bgIndices: string[] = [];
   const fgIndices: string[] = [];
 

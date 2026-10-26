@@ -1,5 +1,4 @@
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { FFmpegManager } from '@acc/core';
 import path from 'path';
 
 export class Diegetic implements ISoundGenerator {

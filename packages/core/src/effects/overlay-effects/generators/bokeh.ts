@@ -1,9 +1,9 @@
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
-import { BaseEffectEngine } from '@acc/core';
+import { BaseEffectEngine, Logger } from '@acc/core';
 
 export class BokehEffect extends BaseEffectEngine {
   async renderAndPipe(outputPath: string): Promise<void> {
-    
+
     const canvas = UniversalCanvasProvider.createCanvas(this.width, this.height);
     const ctx = canvas.getContext('2d');
     const totalFrames = Math.ceil(this.fps * this.duration);
@@ -48,7 +48,7 @@ export class BokehEffect extends BaseEffectEngine {
         wobblePhase: Math.random() * Math.PI * 2,
       });
     }
-    process.stdout.write(`Rendering ${totalFrames} frames for Bokeh (${this.variantName}): `);
+    Logger.info('BokehEffect', `Rendering ${totalFrames} frames for Bokeh (${this.variantName}): `);
     for (let frame = 0; frame < totalFrames; frame++) {
       if (frame % Math.floor(this.fps) === 0) {
         process.stdout.write('.');
@@ -107,7 +107,7 @@ export class BokehEffect extends BaseEffectEngine {
       const buffer = canvas.toBuffer('raw');
       stream.write(buffer);
     }
-    process.stdout.write(' Done!\n');
+    Logger.info('BokehEffect', ' Done!\n');
     stream.end();
     await promise;
   }

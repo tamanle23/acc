@@ -1,6 +1,5 @@
 import { Logger } from "@acc/core";
 import { ISoundGenerator, GeneratedSound } from '../../core/interfaces';
-import { FFmpegManager } from '@acc/core';
 import path from 'path';
 
 export class SciFi implements ISoundGenerator {
