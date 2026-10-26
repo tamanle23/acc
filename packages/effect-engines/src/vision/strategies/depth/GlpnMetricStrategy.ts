@@ -6,8 +6,8 @@ import {
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
-import { configureHfEnv, loadUniversalTransformers } from '../../utils';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
+import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
 
 export class GlpnMetricStrategy implements IDepthEstimationStrategy {
   public readonly id = DepthStrategyId.GlpnMetric;
@@ -28,11 +28,6 @@ export class GlpnMetricStrategy implements IDepthEstimationStrategy {
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[GlpnMetricStrategy] Transformers unavailable.');
-        const { AutoModelForDepthEstimation, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           AutoModelForDepthEstimation.from_pretrained(this.modelId),
           AutoProcessor.from_pretrained(this.modelId)
@@ -55,8 +50,6 @@ export class GlpnMetricStrategy implements IDepthEstimationStrategy {
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-      if (!RawImage) throw new Error('[GlpnMetricStrategy] RawImage unavailable.');
       const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;

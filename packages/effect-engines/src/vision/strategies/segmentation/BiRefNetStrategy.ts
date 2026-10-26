@@ -5,8 +5,8 @@ import {
   SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
-import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
-import { GrabCutFallbackStrategy } from './GrabCutFallbackStrategy';
+import { AutoProcessor, PreTrainedModel, RawImage } from '@huggingface/transformers';
+import { createCutoutRgba } from '../../utils';
 
 export class BiRefNetStrategy implements ISegmentationStrategy {
   public readonly id = SegmentationStrategyId.BiRefNet;
@@ -15,22 +15,14 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
 
   private model: any = null;
   private processor: any = null;
-  private rawImageClass: any = null;
-  private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[BiRefNetStrategy] Transformers unavailable.');
-        const { PreTrainedModel, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           PreTrainedModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => PreTrainedModel.from_pretrained(this.modelId)),
           AutoProcessor.from_pretrained(this.modelId)
@@ -38,7 +30,6 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
         this.model = model;
         this.processor = processor;
       } finally {
-        this.isInitializing = false;
       }
     })();
 
@@ -53,8 +44,6 @@ export class BiRefNetStrategy implements ISegmentationStrategy {
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-    if (!RawImage) throw new Error('[BiRefNetStrategy] RawImage unavailable.');
     const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
     const origW = rawImage.width;
     const origH = rawImage.height;

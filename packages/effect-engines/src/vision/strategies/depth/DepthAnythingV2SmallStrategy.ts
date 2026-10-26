@@ -6,7 +6,7 @@ import {
   HeuristicDepthStrategy,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
-import { configureHfEnv, loadUniversalTransformers } from '../../utils';
+import { pipeline, RawImage } from '@huggingface/transformers';
 
 export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.DepthAnythingV2Small;
@@ -15,7 +15,6 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
   public readonly isSupported = true;
 
   private depthPipeline: any = null;
-  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
 
@@ -24,11 +23,6 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = (async () => {
-      const tf = await loadUniversalTransformers();
-      if (!tf) throw new Error('[DepthAnythingV2SmallStrategy] Transformers module unavailable.');
-      const { pipeline, RawImage, env } = tf;
-      configureHfEnv(env);
-      this.rawImageClass = RawImage;
       this.depthPipeline = await pipeline('depth-estimation', this.modelId, { dtype: 'fp32' });
     })();
 
@@ -40,8 +34,6 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-      if (!RawImage) throw new Error('[DepthAnythingV2SmallStrategy] RawImage class unavailable.');
       const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
       const output = await this.depthPipeline(rawImage);
 

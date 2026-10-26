@@ -5,8 +5,8 @@ import {
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
-import { configureHfEnv, loadUniversalTransformers } from '../../utils';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
+import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
 
 export class DptLargeStrategy implements IDepthEstimationStrategy {
   public readonly name = 'dpt-large';
@@ -14,8 +14,6 @@ export class DptLargeStrategy implements IDepthEstimationStrategy {
 
   private model: any = null;
   private processor: any = null;
-  private rawImageClass: any = null;
-  private isInitializing = false;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
 
@@ -23,14 +21,8 @@ export class DptLargeStrategy implements IDepthEstimationStrategy {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[DptLargeStrategy] Transformers unavailable.');
-        const { AutoModelForDepthEstimation, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           AutoModelForDepthEstimation.from_pretrained(this.modelId),
           AutoProcessor.from_pretrained(this.modelId)
@@ -38,7 +30,6 @@ export class DptLargeStrategy implements IDepthEstimationStrategy {
         this.model = model;
         this.processor = processor;
       } finally {
-        this.isInitializing = false;
       }
     })();
 
@@ -53,8 +44,6 @@ export class DptLargeStrategy implements IDepthEstimationStrategy {
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-      if (!RawImage) throw new Error('[DptLargeStrategy] RawImage unavailable.');
       const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;

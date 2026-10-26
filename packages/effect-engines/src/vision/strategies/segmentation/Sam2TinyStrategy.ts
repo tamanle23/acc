@@ -4,8 +4,8 @@ import {
   type VisionImageInput,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
-import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
-import { GrabCutFallbackStrategy } from './GrabCutFallbackStrategy';
+import { createCutoutRgba } from '../../utils';
+import { AutoModel, AutoProcessor, RawImage } from '@huggingface/transformers';
 
 export class Sam2TinyStrategy implements ISegmentationStrategy {
   public readonly name = 'sam2-tiny';
@@ -13,22 +13,14 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
 
   private model: any = null;
   private processor: any = null;
-  private rawImageClass: any = null;
-  private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[Sam2TinyStrategy] Transformers unavailable.');
-        const { AutoModel, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           AutoModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
           AutoProcessor.from_pretrained(this.modelId)
@@ -36,7 +28,6 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
         this.model = model;
         this.processor = processor;
       } finally {
-        this.isInitializing = false;
       }
     })();
 
@@ -50,8 +41,6 @@ export class Sam2TinyStrategy implements ISegmentationStrategy {
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-    if (!RawImage) throw new Error('[Sam2TinyStrategy] RawImage unavailable.');
     const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;

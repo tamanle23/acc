@@ -6,8 +6,8 @@ import {
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
-import { configureHfEnv, loadUniversalTransformers } from '../../utils';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
+import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
 
 export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
   public readonly id = DepthStrategyId.DepthAnythingV2Base;
@@ -16,7 +16,6 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
 
   private model: any = null;
   private processor: any = null;
-  private rawImageClass: any = null;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
@@ -28,11 +27,6 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[DepthAnythingV2BaseStrategy] Transformers unavailable.');
-        const { AutoModelForDepthEstimation, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           AutoModelForDepthEstimation.from_pretrained(this.modelId, { dtype: 'fp32' }),
           AutoProcessor.from_pretrained(this.modelId)
@@ -55,8 +49,6 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-      if (!RawImage) throw new Error('[DepthAnythingV2BaseStrategy] RawImage unavailable.');
       const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;

@@ -6,6 +6,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
+import { AutoProcessor, PreTrainedModel } from '@huggingface/transformers';
 
 export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.Rmbg14;
@@ -16,21 +17,14 @@ export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentat
   private model: any = null;
   private processor: any = null;
   private rawImageClass: any = null;
-  private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[RmbgStrategy] Transformers module unavailable.');
-        const { PreTrainedModel, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           PreTrainedModel.from_pretrained(this.modelId),
           AutoProcessor.from_pretrained(this.modelId)
@@ -38,7 +32,6 @@ export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentat
         this.model = model;
         this.processor = processor;
       } finally {
-        this.isInitializing = false;
       }
     })();
 

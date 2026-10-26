@@ -4,8 +4,8 @@ import {
   type VisionImageInput,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
-import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
-import { GrabCutFallbackStrategy } from './GrabCutFallbackStrategy';
+import { createCutoutRgba } from '../../utils';
+import { AutoProcessor, RawImage, SamModel } from '@huggingface/transformers';
 
 export class SamVitBaseStrategy implements ISegmentationStrategy {
   public readonly name = 'sam-vit-base';
@@ -14,21 +14,14 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
   private model: any = null;
   private processor: any = null;
   private rawImageClass: any = null;
-  private isInitializing = false;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
     if (this.model && this.processor) return;
     if (this.initPromise) return this.initPromise;
 
-    this.isInitializing = true;
     this.initPromise = (async () => {
       try {
-        const tf = await loadUniversalTransformers();
-        if (!tf) throw new Error('[SamVitBaseStrategy] Transformers unavailable.');
-        const { SamModel, AutoProcessor, RawImage, env } = tf;
-        configureHfEnv(env);
-        this.rawImageClass = RawImage;
         const [model, processor] = await Promise.all([
           SamModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
           AutoProcessor.from_pretrained(this.modelId)
@@ -36,7 +29,6 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
         this.model = model;
         this.processor = processor;
       } finally {
-        this.isInitializing = false;
       }
     })();
 
@@ -50,8 +42,6 @@ export class SamVitBaseStrategy implements ISegmentationStrategy {
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const RawImage = this.rawImageClass || (await loadUniversalTransformers())?.RawImage;
-    if (!RawImage) throw new Error('[SamVitBaseStrategy] RawImage unavailable.');
     const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;
