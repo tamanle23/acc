@@ -2,6 +2,7 @@
 
 | ID | Date | Task Title | Summary |
 | :--- | :--- | :--- | :--- |
+| [230](230_deterministic_single_owner_preview_cache.md) | 2026-10-26 | Deterministic Single-Owner Cache & Post-Render Drain in Studio Preview | Refactored MediabunnyWorkerReader to pure stateless decoder, unified frame lifecycle in PreviewFrameMemoryManager with post-render drain queue, and eliminated all setTimeout delays with zero detached bitmap crashes. |
 | [229](229_fix_detached_image_bitmap_preview_compositor.md) | 2026-10-26 | Fix InvalidStateError Detached Image in Studio Preview Worker & Compositor | Hardened IRCanvasCompositor against detached bitmaps with validation and fallback, deferred bitmap disposal in memory managers, and eliminated worker render crashes during scrubbing and playback. |
 | [228](228_restore_robust_dnd_kit_studio.md) | 2026-10-26 | Restore Robust @dnd-kit Drag-and-Drop Architecture in Studio | Reverted experimental @neodrag/react migration due to stale closure and event collision issues, restoring 100% reliable timeline clip dragging, edge trimming, and cross-container staging with @dnd-kit. |
 | [227](227_unified_isomorphic_vision_processing_architecture.md) | 2026-10-26 | Unified Isomorphic Vision Processing Architecture | Promoted pure algorithmic vision math (AutoReframeStrategy, CameraSplineInterpolator, SurfaceNormalGenerator) to @acc/core-isomorphic, deduplicated Heuristic and GrabCut strategies in @acc/effect-engines, standardized all neural models on isomorphic inputs with defensive cascading, and unified contexts with VisionEngineRegistry. |

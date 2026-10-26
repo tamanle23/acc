@@ -86,7 +86,7 @@ function renderCurrentFrame(
     if (!reader) continue;
 
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
-    const cachedBmp = memoryManager.get(seq.assetId, localFrame) || reader.getFrame(localFrame);
+    const cachedBmp = memoryManager.get(seq.assetId, localFrame);
     if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
       textureCache.set(seq.assetId, cachedBmp);
     } else {
@@ -94,8 +94,8 @@ function renderCurrentFrame(
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-          textureCache.set(assetId, bmp);
           memoryManager.set(assetId, localFrame, bmp);
+          textureCache.set(assetId, bmp);
           // If paused or idling, trigger immediate repaint with new frame
           if (!isPlaying) {
             texturesDirty = true;
@@ -127,9 +127,18 @@ function renderCurrentFrame(
     });
   } catch (err) {
     console.error('[preview.worker] Render error at frame', frame, err);
+  } finally {
+    ctx.restore();
+    // Post-render drain: safely close evicted frames, protecting any frame actively drawn
+    const protectedBitmaps = new Set<ImageBitmap>();
+    for (const val of textureCache.values()) {
+      if (val && typeof val.close === 'function') {
+        protectedBitmaps.add(val);
+      }
+    }
+    memoryManager.drainDisposalQueue(protectedBitmaps);
   }
 
-  ctx.restore();
   isRendering = false;
   texturesDirty = false;
   lastRenderedFrame = frame;

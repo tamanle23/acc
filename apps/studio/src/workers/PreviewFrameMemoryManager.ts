@@ -21,6 +21,9 @@ export class PreviewFrameMemoryManager {
   // Key: `${assetId}:${frame}` -> CachedFrameEntry
   private frameMap = new Map<string, CachedFrameEntry>();
 
+  // Staged disposal queue: frames evicted during prewarm/seek that must not be closed until current render completes
+  private pendingDisposal: ImageBitmap[] = [];
+
   private constructor() {}
 
   public static getInstance(): PreviewFrameMemoryManager {
@@ -44,7 +47,7 @@ export class PreviewFrameMemoryManager {
     const key = `${assetId}:${frame}`;
     const existing = this.frameMap.get(key);
     if (existing && existing.bitmap !== bitmap) {
-      this.closeBitmap(existing.bitmap);
+      this.stageForDisposal(existing.bitmap);
     }
 
     // Enforce global budget
@@ -70,7 +73,7 @@ export class PreviewFrameMemoryManager {
     for (const [key, entry] of this.frameMap) {
       if (entry.frame < minFrame || entry.frame > maxFrame) {
         this.frameMap.delete(key);
-        this.closeBitmap(entry.bitmap);
+        this.stageForDisposal(entry.bitmap);
       }
     }
   }
@@ -90,22 +93,47 @@ export class PreviewFrameMemoryManager {
       const entry = this.frameMap.get(oldestKey);
       if (entry) {
         this.frameMap.delete(oldestKey);
-        this.closeBitmap(entry.bitmap);
+        this.stageForDisposal(entry.bitmap);
       }
     }
   }
 
-  private closeBitmap(bitmap: ImageBitmap): void {
-    // Defer bitmap.close() slightly to guarantee that concurrent canvas compositor draw passes finish safely without Detached errors
-    setTimeout(() => {
-      try {
-        if (typeof bitmap.close === 'function') {
-          bitmap.close();
-        }
-      } catch (err) {
-        // Invariant: ignore disposal errors if already closed
+  private stageForDisposal(bitmap: ImageBitmap): void {
+    if (bitmap && !this.pendingDisposal.includes(bitmap)) {
+      this.pendingDisposal.push(bitmap);
+    }
+  }
+
+  /**
+   * Post-Render Drain: synchronously closes evicted bitmaps after canvas draw passes finish.
+   * Any bitmap currently in `protectedBitmaps` (actively used by the active frame render) is retained.
+   */
+  public drainDisposalQueue(protectedBitmaps?: Set<ImageBitmap>): void {
+    if (this.pendingDisposal.length === 0) return;
+
+    const remaining: ImageBitmap[] = [];
+    for (const bmp of this.pendingDisposal) {
+      if (protectedBitmaps && protectedBitmaps.has(bmp)) {
+        remaining.push(bmp);
+      } else {
+        this.closeBitmap(bmp);
       }
-    }, 50);
+    }
+    this.pendingDisposal = remaining;
+  }
+
+  private closeBitmap(bitmap: ImageBitmap): void {
+    try {
+      if (typeof bitmap.close === 'function') {
+        bitmap.close();
+      }
+    } catch (err) {
+      // Invariant: ignore disposal errors if already closed
+    }
+  }
+
+  public getPendingDisposalCount(): number {
+    return this.pendingDisposal.length;
   }
 
   public size(): number {
@@ -117,5 +145,10 @@ export class PreviewFrameMemoryManager {
       this.closeBitmap(entry.bitmap);
     }
     this.frameMap.clear();
+
+    for (const bmp of this.pendingDisposal) {
+      this.closeBitmap(bmp);
+    }
+    this.pendingDisposal = [];
   }
 }
