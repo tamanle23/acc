@@ -1,5 +1,14 @@
 export type CanvasEnvironment = 'auto' | 'web' | 'node';
 
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence?: number;
+}
+
+
 export interface ICanvasGradient {
   addColorStop(offset: number, color: string): void;
 }

@@ -906,6 +906,9 @@ importers:
       '@acc/core-isomorphic':
         specifier: workspace:*
         version: link:../core-isomorphic
+      '@acc/effect-engines':
+        specifier: workspace:*
+        version: link:../effect-engines
       mediabunny:
         specifier: ^1.61.5
         version: 1.62.1

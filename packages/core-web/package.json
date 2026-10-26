@@ -8,6 +8,7 @@
   "private": true,
   "dependencies": {
     "@acc/core-isomorphic": "workspace:*",
+    "@acc/effect-engines": "workspace:*",
     "mediabunny": "^1.61.5"
   }
 }

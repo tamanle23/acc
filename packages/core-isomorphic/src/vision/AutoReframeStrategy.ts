@@ -1,4 +1,4 @@
-import type { BoundingBox } from '../types';
+import { BoundingBox } from "../canvas";
 
 export interface CropRect {
   x: number;

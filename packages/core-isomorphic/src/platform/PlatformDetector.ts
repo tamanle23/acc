@@ -221,31 +221,6 @@ export class PlatformDetector {
     return ContentCacheStrategyId.Memory;
   }
 
-  /**
-   * Synchronized resolver: resolves the optimal default depth estimation strategy ID.
-   * - Browser / Worker: DepthStrategyId.Heuristic (zero-download, instant)
-   * - Server / Bun / Node: DepthStrategyId.DepthAnythingV2Small (neural SOTA)
-   */
-  public static resolveDefaultDepthStrategy(): DepthStrategyId {
-    const runtime = this.getRuntime();
-    if (runtime === RuntimeEnvironment.Browser || runtime === RuntimeEnvironment.WebWorker) {
-      return DepthStrategyId.Heuristic;
-    }
-    return DepthStrategyId.DepthAnythingV2Small;
-  }
-
-  /**
-   * Synchronized resolver: resolves the optimal default subject segmentation strategy ID.
-   * - Browser / Worker: SegmentationStrategyId.GrabCutFallback (zero-download, algorithmic)
-   * - Server / Bun / Node: SegmentationStrategyId.Rmbg14 (neural high-precision)
-   */
-  public static resolveDefaultSegmentationStrategy(): SegmentationStrategyId {
-    const runtime = this.getRuntime();
-    if (runtime === RuntimeEnvironment.Browser || runtime === RuntimeEnvironment.WebWorker) {
-      return SegmentationStrategyId.GrabCutFallback;
-    }
-    return SegmentationStrategyId.Rmbg14;
-  }
 
   public static isServer(): boolean {
     const runtime = this.getRuntime();

@@ -17,52 +17,42 @@ import { UniversalLogger as Logger } from '../logger';
  * and ContentCacheRegistry across client and server environments.
  */
 export class VisionEngineRegistry {
-  private static depthStrategies: Map<string, IDepthEstimationStrategy> = new Map();
-  private static segmentationStrategies: Map<string, ISubjectSegmentationStrategy> = new Map();
+  private static depthStrategies: Map<DepthStrategyId, IDepthEstimationStrategy> = new Map();
+  private static segmentationStrategies: Map<SegmentationStrategyId, ISubjectSegmentationStrategy> = new Map();
   private static defaultDepthId: string = DepthStrategyId.Heuristic;
   private static defaultSegmentationId: string = SegmentationStrategyId.GrabCutFallback;
-
-  /**
-   * Normalizes strategy identifiers (e.g. trimming or lowercasing).
-   */
-  private static normalizeId(id: string): string {
-    return id.toLowerCase().trim();
-  }
 
   // --- Depth Estimation ---
 
   public static registerDepthStrategy(strategy: IDepthEstimationStrategy, isDefault: boolean = false): void {
-    const norm = this.normalizeId(strategy.id);
-    this.depthStrategies.set(norm, strategy);
+    this.depthStrategies.set(strategy.id, strategy);
     Logger.debug('VisionEngineRegistry', `Registered depth strategy: ${strategy.id} (${strategy.name})`);
     if (isDefault || this.depthStrategies.size === 1) {
-      this.defaultDepthId = norm;
+      this.defaultDepthId = strategy.id;
     }
   }
 
-  public static hasDepthStrategy(id: DepthStrategyId | string): boolean {
-    return this.depthStrategies.has(this.normalizeId(id));
+  public static hasDepthStrategy(id: DepthStrategyId): boolean {
+    return this.depthStrategies.has(id);
   }
 
-  public static getDepthStrategy(id?: DepthStrategyId | string): IDepthEstimationStrategy {
-    const target = id ? this.normalizeId(id) : this.defaultDepthId;
-    const strategy = this.depthStrategies.get(target);
+  public static getDepthStrategy(id: DepthStrategyId): IDepthEstimationStrategy {
+    const strategy = this.depthStrategies.get(id);
     if (!strategy) {
       throw new VisionEngineError(
         VisionDomain.Depth,
-        target,
-        `No depth strategy registered with ID '${target}'. Available: ${Array.from(this.depthStrategies.keys()).join(', ')}`
+        id,
+        `No depth strategy registered with ID '${id}'. Available: ${Array.from(this.depthStrategies.keys()).join(', ')}`
       );
     }
     return strategy;
   }
 
-  public static setDefaultDepthStrategy(id: DepthStrategyId | string): void {
-    const norm = this.normalizeId(id);
-    if (!this.depthStrategies.has(norm)) {
+  public static setDefaultDepthStrategy(id: DepthStrategyId): void {
+    if (!this.depthStrategies.has(id)) {
       Logger.warn('VisionEngineRegistry', `Setting default depth strategy to '${id}' before registration.`);
     }
-    this.defaultDepthId = norm;
+    this.defaultDepthId = id;
   }
 
   public static getDefaultDepthStrategyId(): string {
@@ -76,37 +66,34 @@ export class VisionEngineRegistry {
   // --- Subject Segmentation ---
 
   public static registerSegmentationStrategy(strategy: ISubjectSegmentationStrategy, isDefault: boolean = false): void {
-    const norm = this.normalizeId(strategy.id);
-    this.segmentationStrategies.set(norm, strategy);
+    this.segmentationStrategies.set(strategy.id, strategy);
     Logger.debug('VisionEngineRegistry', `Registered segmentation strategy: ${strategy.id} (${strategy.name})`);
     if (isDefault || this.segmentationStrategies.size === 1) {
-      this.defaultSegmentationId = norm;
+      this.defaultSegmentationId = strategy.id;
     }
   }
 
-  public static hasSegmentationStrategy(id: SegmentationStrategyId | string): boolean {
-    return this.segmentationStrategies.has(this.normalizeId(id));
+  public static hasSegmentationStrategy(id: SegmentationStrategyId): boolean {
+    return this.segmentationStrategies.has(id);
   }
 
-  public static getSegmentationStrategy(id?: SegmentationStrategyId | string): ISubjectSegmentationStrategy {
-    const target = id ? this.normalizeId(id) : this.defaultSegmentationId;
-    const strategy = this.segmentationStrategies.get(target);
+  public static getSegmentationStrategy(id: SegmentationStrategyId): ISubjectSegmentationStrategy {
+    const strategy = this.segmentationStrategies.get(id);
     if (!strategy) {
       throw new VisionEngineError(
         VisionDomain.Segmentation,
-        target,
-        `No segmentation strategy registered with ID '${target}'. Available: ${Array.from(this.segmentationStrategies.keys()).join(', ')}`
+        id,
+        `No segmentation strategy registered with ID '${id}'. Available: ${Array.from(this.segmentationStrategies.keys()).join(', ')}`
       );
     }
     return strategy;
   }
 
-  public static setDefaultSegmentationStrategy(id: SegmentationStrategyId | string): void {
-    const norm = this.normalizeId(id);
-    if (!this.segmentationStrategies.has(norm)) {
+  public static setDefaultSegmentationStrategy(id: SegmentationStrategyId): void {
+    if (!this.segmentationStrategies.has(id)) {
       Logger.warn('VisionEngineRegistry', `Setting default segmentation strategy to '${id}' before registration.`);
     }
-    this.defaultSegmentationId = norm;
+    this.defaultSegmentationId = id;
   }
 
   public static getDefaultSegmentationStrategyId(): string {

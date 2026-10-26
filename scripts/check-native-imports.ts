@@ -40,6 +40,7 @@ function checkFile(filePath: string) {
   // Allow native adapters to import native libraries
   const isAllowedNapi =
     normalized.includes('packages/core/src/native') ||
+    normalized.includes('packages/core/src/canvas/NapiCanvasAdapter') ||
     normalized.includes('packages/core-native');
 
   const isAllowedFFI =

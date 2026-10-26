@@ -62,7 +62,7 @@ export interface SubjectSegmentationResult {
 }
 
 export interface IDepthEstimationStrategy {
-  readonly id: DepthStrategyId | string;
+  readonly id: DepthStrategyId;
   readonly name: string;
   readonly isSupported: boolean;
   init?(): Promise<void>;
@@ -70,7 +70,7 @@ export interface IDepthEstimationStrategy {
 }
 
 export interface ISubjectSegmentationStrategy {
-  readonly id: SegmentationStrategyId | string;
+  readonly id: SegmentationStrategyId;
   readonly name: string;
   readonly isSupported: boolean;
   init?(): Promise<void>;

@@ -77,18 +77,6 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           { label: 'Depth Disparity Heatmap', value: 'depth_heatmap' },
         ],
       },
-      depthStrategy: {
-        key: 'depthStrategy',
-        label: 'Depth Estimation Strategy',
-        type: 'vision_depth_strategy' as const,
-        defaultValue: 'heuristic',
-      },
-      segmentationStrategy: {
-        key: 'segmentationStrategy',
-        label: 'Subject Cutout Strategy',
-        type: 'vision_segmentation_strategy' as const,
-        defaultValue: 'grabcut-fallback',
-      },
       popOutIntensity: {
         key: 'popOutIntensity',
         label: 'Pop-Out Intensity',

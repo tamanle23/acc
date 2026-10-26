@@ -21,6 +21,8 @@ export * from './media-engine/MediabunnyClientSink';
 export * from './media-engine/MediabunnyClientStrategy';
 export * from './cache/IndexedDbCacheStrategy';
 export * from './cache/WebCacheStrategy';
+import { DepthAnythingV2SmallStrategy, RmbgStrategy } from '@acc/effect-engines';
+
 
 export interface BootstrapClientOptions {
   /**
@@ -30,7 +32,7 @@ export interface BootstrapClientOptions {
   defaultCacheStrategy?: ContentCacheStrategyId | string;
 }
 
-export function bootstrapClient(options: BootstrapClientOptions = {}): void {
+export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
   // 1. Synchronized Canvas & Media Engine Registration
   UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
 
@@ -55,23 +57,20 @@ export function bootstrapClient(options: BootstrapClientOptions = {}): void {
     (ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)
       ? ContentCacheStrategyId.IndexedDb
       : PlatformDetector.resolveDefaultCacheStrategy([
-          ContentCacheStrategyId.IndexedDb,
-          ContentCacheStrategyId.WebCache,
-          ContentCacheStrategyId.Memory,
-        ]));
+        ContentCacheStrategyId.IndexedDb,
+        ContentCacheStrategyId.WebCache,
+        ContentCacheStrategyId.Memory,
+      ]));
 
   if (ContentCacheRegistry.has(resolvedCacheStrategy)) {
     ContentCacheRegistry.setDefault(resolvedCacheStrategy);
   }
 
   // 4. Client-Safe Vision Strategies Registration (Heuristic & Algorithmic Fallbacks)
-  if (!VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)) {
-    VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy(), true);
-  }
-  if (!VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)) {
-    VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy(), true);
-  }
-  VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.Heuristic);
-  VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.GrabCutFallback);
+  VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy());
+  VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), true);
+
+  VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy());
+  VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
 }
 
