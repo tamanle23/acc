@@ -96,13 +96,16 @@ export class PreviewFrameMemoryManager {
   }
 
   private closeBitmap(bitmap: ImageBitmap): void {
-    try {
-      if (typeof bitmap.close === 'function') {
-        bitmap.close();
+    // Defer bitmap.close() slightly to guarantee that concurrent canvas compositor draw passes finish safely without Detached errors
+    setTimeout(() => {
+      try {
+        if (typeof bitmap.close === 'function') {
+          bitmap.close();
+        }
+      } catch (err) {
+        // Invariant: ignore disposal errors if already closed
       }
-    } catch (err) {
-      // Invariant: ignore disposal errors if already closed
-    }
+    }, 50);
   }
 
   public size(): number {

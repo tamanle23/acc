@@ -446,8 +446,24 @@ export class IRCanvasCompositor {
               ? (asset as any).getRawCanvas()
               : asset;
 
-            if (rawAsset && typeof ctx.drawImage === 'function') {
-              ctx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
+            // Defensive check: verify asset is not detached/closed (e.g. ImageBitmap.close() resets width/height to 0)
+            const isAssetValid = Boolean(
+              rawAsset &&
+              (rawAsset.width === undefined || rawAsset.width > 0) &&
+              (rawAsset.height === undefined || rawAsset.height > 0)
+            );
+
+            if (isAssetValid && typeof ctx.drawImage === 'function') {
+              try {
+                ctx.drawImage(rawAsset, drawX, drawY, drawW, drawH);
+              } catch (drawErr) {
+                // Defensive fallback: if the underlying bitmap was detached/closed asynchronously during draw
+                ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
+                ctx.fillRect(0, 0, width, height);
+              }
+            } else {
+              ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
+              ctx.fillRect(0, 0, width, height);
             }
           } else if (seq.type !== 'overlay' && (!seq.modifiers || seq.modifiers.length === 0)) {
             // Non-blocking neutral placeholder fallback only if sequence is a primary media clip without procedural modifiers

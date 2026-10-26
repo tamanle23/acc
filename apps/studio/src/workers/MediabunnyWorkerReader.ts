@@ -265,9 +265,12 @@ export class MediabunnyWorkerReader {
       if (this.onFrameEvicted) {
         this.onFrameEvicted(frame, bmp);
       }
-      try {
-        bmp.close();
-      } catch {}
+      // Defer bitmap.close() to next microtask/turn to ensure active render passes currently drawing the frame finish safely
+      setTimeout(() => {
+        try {
+          bmp.close();
+        } catch {}
+      }, 50);
     }
   }
 

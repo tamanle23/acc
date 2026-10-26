@@ -87,13 +87,13 @@ function renderCurrentFrame(
 
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
     const cachedBmp = memoryManager.get(seq.assetId, localFrame) || reader.getFrame(localFrame);
-    if (cachedBmp) {
+    if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
       textureCache.set(seq.assetId, cachedBmp);
     } else {
-      // Async decode requested if not in buffer
+      // Async decode requested if not in buffer or detached
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
-        if (bmp) {
+        if (bmp && (bmp.width === undefined || bmp.width > 0)) {
           textureCache.set(assetId, bmp);
           memoryManager.set(assetId, localFrame, bmp);
           // If paused or idling, trigger immediate repaint with new frame
