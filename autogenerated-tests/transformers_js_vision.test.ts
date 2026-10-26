@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { createCanvas } from '@napi-rs/canvas';
+import { bootstrapNode } from '../packages/core/src/bootstrap';
 import {
   SubjectSegmentationContext,
   DepthEstimationContext,
@@ -18,7 +19,8 @@ import {
 describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash Fallbacks)', () => {
   let testImageBuffer: Buffer;
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    await bootstrapNode();
     // Generate a test RGBA canvas image with a distinct subject
     const canvas = createCanvas(320, 240);
     const ctx = canvas.getContext('2d');

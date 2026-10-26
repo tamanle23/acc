@@ -250,3 +250,93 @@ flowchart TD
 
 ### Manual Verification
 - Verify that calling `bootstrapNode()` and running depth estimation or subject separation succeeds without network dependency or unhandled fetch rejections.
+
+---
+
+## 5. Extension: Unified Isomorphic Vision Processing Architecture
+
+### 5.1. Context & Architectural Problem Statement
+Currently, vision code is split across two package trees:
+1. `packages/core-isomorphic/src/vision/`
+2. `packages/effect-engines/src/vision/`
+
+#### Analysis of Split & Redundancy:
+- **Historical split reason**: `packages/core-isomorphic/src/vision/` was established in Iteration 27 as the contract, typed registry, and zero-dependency algorithmic fallback layer. `packages/effect-engines/src/vision/` historically contained heavy machine learning models (SAM2, Depth-Anything v2, RMBG-1.4, BiRefNet) driven by `@huggingface/transformers` and `onnxruntime-web`.
+- **95% Isomorphic Reality**: `packages/effect-engines/src/vision/` has **zero** native imports (`fs`, `path`, FFI bindings). It already runs on WebAssembly/WebGPU via `onnxruntime-web` and `@huggingface/transformers`. The single obstacle preventing full isomorphism is its legacy method signatures demanding Node.js `Buffer`.
+- **Direct Duplication**: `HeuristicDepthStrategy` and `GrabCutFallbackStrategy` exist in both directories (`packages/core-isomorphic/src/vision/strategies/` vs `packages/effect-engines/src/vision/strategies/`).
+- **Context vs Registry Redundancy**: `DepthEstimationContext` and `SubjectSegmentationContext` in `effect-engines` duplicate the strategy resolution and fallback orchestration that `VisionEngineRegistry` now provides in `core-isomorphic`.
+- **Misplaced Algorithmic Utilities**: Pure mathematical and camera utilities (`SurfaceNormalGenerator`, `CameraSplineInterpolator`, `AutoReframeStrategy`) have no neural weights or external dependencies, but are trapped in `@acc/effect-engines`, preventing lightweight isomorphic clients (e.g. Studio UI, Web Workers) from using them cleanly.
+
+---
+
+### 5.2. Target Unified Architecture
+
+```mermaid
+graph TD
+    subgraph CoreIsomorphic["@acc/core-isomorphic/src/vision (Contracts & Algorithmic Layer)"]
+        VER["VisionEngineRegistry (Singleton Engine)"]
+        Contracts["IDepthStrategy / ISegmentationStrategy\n(VisionImageInput -> Typed VisionResult)"]
+        Fallbacks["Zero-Dependency Fallbacks:\n- HeuristicDepthStrategy\n- GrabCutFallbackStrategy"]
+        PureMath["Math & Camera Utilities:\n- SurfaceNormalGenerator\n- CameraSplineInterpolator\n- AutoReframeStrategy"]
+    end
+
+    subgraph EffectEngines["@acc/effect-engines/src/vision (Neural ML Engine Layer)"]
+        NeuralDepth["Neural Depth Strategies:\n- DepthAnythingV2 (Small / Base)\n- GlpnMetricStrategy\n- DptLargeStrategy"]
+        NeuralSeg["Neural Segmentation Strategies:\n- RmbgStrategy\n- BiRefNetStrategy\n- Sam2TinyStrategy\n- SlimSamStrategy"]
+        Facades["Backward-Compatible Facades:\n- DepthEstimationContext\n- SubjectSegmentationContext\n(Thin wrappers forwarding to VisionEngineRegistry)"]
+    end
+
+    subgraph Runtimes["Unified Consumers Across Monorepo"]
+        WebBoot["bootstrapClient() (@acc/core-web)"]
+        NodeBoot["bootstrapNode() (@acc/core)"]
+        Renderers["Depth3DPlugin / Camera3DPlugin / IRMasterRenderer"]
+    end
+
+    NeuralDepth -->|implements| Contracts
+    NeuralSeg -->|implements| Contracts
+    Facades -->|delegates to| VER
+    VER --> WebBoot
+    VER --> NodeBoot
+    VER --> Renderers
+```
+
+---
+
+### 5.3. Implementation Roadmap for Unification
+
+#### Step 1: Eliminate Strategy Duplication & Re-export from Core
+- Deprecate local duplicate implementations of `HeuristicDepthStrategy` and `GrabCutFallbackStrategy` in `packages/effect-engines/src/vision/strategies/`.
+- Re-export `HeuristicDepthStrategy` and `GrabCutFallbackStrategy` directly from `@acc/core-isomorphic` to guarantee backward compatibility without duplicated maintenance.
+
+#### Step 2: Standardize All Neural Strategies on `VisionImageInput`
+- Refactor all neural strategies in `packages/effect-engines/src/vision/strategies/`:
+  - `DepthAnythingV2BaseStrategy`, `GlpnMetricStrategy`, `DptLargeStrategy`
+  - `BiRefNetStrategy`, `Sam2TinyStrategy`, `SamVitBaseStrategy`, `SlimSamStrategy`
+- Change method signatures from `estimateDepth(imageBuffer: Buffer)` / `segment(imageBuffer: Buffer)` to:
+  ```typescript
+  estimateDepth(input: VisionImageInput, options?: VisionDepthOptions): Promise<DepthEstimationResult>
+  segment(input: VisionImageInput, options?: VisionSegmentationOptions): Promise<SubjectSegmentationResult>
+  ```
+- Support dual-mode inputs (`Uint8Array | Buffer | ICanvasInstance | VisionImageInput`).
+- Provide backward-compatible result facades that return typed `Uint8Array`/`Uint16Array` alongside `.toBuffer()` / Node `Buffer` representations for legacy callers.
+
+#### Step 3: Refactor Context Classes to Facades over `VisionEngineRegistry`
+- Refactor `DepthEstimationContext` and `SubjectSegmentationContext` in `packages/effect-engines`:
+  - Delegate `setStrategy(id)` to `VisionEngineRegistry.getInstance().setStrategy(domain, id)`.
+  - Delegate execution to `VisionEngineRegistry.getInstance().getDepthStrategy().estimateDepth(...)` and `getSegmentationStrategy().segment(...)`.
+  - Retain legacy method signatures (`Buffer -> Promise<Buffer>`) so zero external consumers or test suites break.
+
+#### Step 4: Promote Pure Mathematical Vision Utilities to `@acc/core-isomorphic`
+- Move pure algorithmic utilities from `@acc/effect-engines/src/vision/` to `@acc/core-isomorphic/src/vision/`:
+  - `SurfaceNormalGenerator` (Sobel filter over depth maps)
+  - `CameraSplineInterpolator` (Catmull-Rom & Hermite 3D camera path interpolation)
+  - `AutoReframeStrategy` (saliency-based bounding box re-framing)
+- Keep re-export shims with `@deprecated` docstrings in `@acc/effect-engines/src/vision/` for non-breaking imports.
+
+#### Step 5: Verification & Boundary Audits
+- Run `bun test autogenerated-tests/vision_engine_registry.test.ts`.
+- Run `bun test autogenerated-tests/depth_strategies_benchmark.test.ts`.
+- Run `bun test autogenerated-tests/depth3d_strategies.test.ts`.
+- Run `bun run scripts/check-native-imports.ts` to ensure `@acc/core-isomorphic` remains 100% free of native Node/C runtime leaks.
+- Run `pnpm --filter @acc/core-isomorphic --filter @acc/effect-engines check-types`.
+
