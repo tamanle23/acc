@@ -1,5 +1,13 @@
 import type { ResolvedTimeline } from '@acc/ir';
 
+export interface WorkerRenderOptions {
+  lod?: number;
+  isScrubbing?: boolean;
+  clearColor?: string;
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
+  popOutIntensity?: number;
+}
+
 export class PreviewWorkerBridge {
   private worker: Worker | null = null;
   private isSupported: boolean = false;
@@ -96,7 +104,6 @@ export class PreviewWorkerBridge {
     timeline: ResolvedTimeline,
     totalFrames: number,
     fps: number,
-    popOutIntensity?: number,
     assets?: Record<string, { src?: string; type?: string }>
   ) {
     if (!this.worker || !this.isTransferred) return;
@@ -105,7 +112,6 @@ export class PreviewWorkerBridge {
       timeline,
       totalFrames,
       fps,
-      popOutIntensity,
       assets,
     });
   }
@@ -120,33 +126,50 @@ export class PreviewWorkerBridge {
 
   public renderFrame(
     frame: number,
-    lod = 1.0,
-    popOutIntensity?: number,
+    optionsOrLod?: WorkerRenderOptions | number,
     isScrubbing = false,
     clearColor?: string,
-    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
+    popOutIntensity?: number
   ) {
     if (!this.worker || !this.isTransferred) return;
+
+    let lod = 1.0;
+    let scrubbing = isScrubbing;
+    let color = clearColor;
+    let mode = debugMode;
+    let intensity = popOutIntensity;
+
+    if (typeof optionsOrLod === 'object' && optionsOrLod !== null) {
+      lod = optionsOrLod.lod ?? 1.0;
+      scrubbing = optionsOrLod.isScrubbing ?? false;
+      color = optionsOrLod.clearColor;
+      mode = optionsOrLod.debugMode;
+      intensity = optionsOrLod.popOutIntensity;
+    } else if (typeof optionsOrLod === 'number') {
+      lod = optionsOrLod;
+    }
+
     this.worker.postMessage({
       type: 'renderFrame',
       frame,
       lod,
-      popOutIntensity,
-      isScrubbing,
-      clearColor,
-      debugMode,
+      popOutIntensity: intensity,
+      isScrubbing: scrubbing,
+      clearColor: color,
+      debugMode: mode,
     });
   }
 
   public requestFrame(
     frame: number,
-    lod = 1.0,
-    popOutIntensity?: number,
+    optionsOrLod?: WorkerRenderOptions | number,
     isScrubbing = false,
     clearColor?: string,
-    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
+    popOutIntensity?: number
   ) {
-    this.renderFrame(frame, lod, popOutIntensity, isScrubbing, clearColor, debugMode);
+    this.renderFrame(frame, optionsOrLod, isScrubbing, clearColor, debugMode, popOutIntensity);
   }
 
   public startPlayback(

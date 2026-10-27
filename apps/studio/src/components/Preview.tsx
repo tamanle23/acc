@@ -215,7 +215,7 @@ export function Preview({
     }
 
     if (bridge.hasTransferred()) {
-      bridge.updateTimeline(irState.timeline, totalFrames, fps, undefined, assetsMap);
+      bridge.updateTimeline(irState.timeline, totalFrames, fps, assetsMap);
       StudioSidecarCoordinator.getInstance().preflightTimeline(irState.timeline, {
         prioritizedFrame: playhead?.currentFrame || 0,
       });
@@ -304,24 +304,18 @@ export function Preview({
             bridge.updateTextures(activeTexturesToSync);
           }
           // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
-          bridge.renderFrame(
-            currentFrame,
-            isPlaying ? 0.5 : 1.0,
-            undefined,
-            false,
+          bridge.renderFrame(currentFrame, {
+            lod: isPlaying ? 0.5 : 1.0,
             clearColor,
-            visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
-          );
+            debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
+          });
         });
       } else {
-        bridge.renderFrame(
-          currentFrame,
-          isPlaying ? 0.5 : 1.0,
-          undefined,
-          false,
+        bridge.renderFrame(currentFrame, {
+          lod: isPlaying ? 0.5 : 1.0,
           clearColor,
-          visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
-        );
+          debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
+        });
       }
     } else {
       // Main-thread fallback
@@ -403,7 +397,10 @@ export function Preview({
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const bridge = workerBridgeRef.current;
       if (bridge && bridge.hasTransferred()) {
-        bridge.renderFrame(frame, playing ? 0.5 : 1.0, undefined, !playing);
+        bridge.renderFrame(frame, {
+          lod: playing ? 0.5 : 1.0,
+          isScrubbing: !playing,
+        });
       }
     });
   }, []);

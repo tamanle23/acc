@@ -287,7 +287,7 @@ self.onmessage = (e: MessageEvent) => {
         syncAssetSources(data.assets);
       }
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, data.popOutIntensity, false);
+      renderCurrentFrame(currentFrame, 1.0, undefined, false);
       break;
     }
 
