@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
-import { parseCubicBezier, solveCubicBezier } from '../packages/ir/src/renderer/preview/BezierMath';
-import { evaluateEase } from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+import { parseCubicBezier, solveCubicBezier } from '../packages/ir/src/motion/BezierMath';
+import { evaluateEase } from '../packages/ir/src/motion/DeterministicMotionEvaluator';
 
 describe('Deterministic Cubic Bézier Evaluator & Solver Suite', () => {
   describe('parseCubicBezier', () => {

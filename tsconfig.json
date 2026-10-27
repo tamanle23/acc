@@ -74,6 +74,12 @@
       ],
       "@acc/legacy-story-renderer/*": [
         "./apps/legacy-story-renderer/src/*"
+      ],
+      "@acc/studio": [
+        "./apps/studio/src/renderer/preview/index.ts"
+      ],
+      "@acc/studio/*": [
+        "./apps/studio/src/*"
       ]
     }
   }

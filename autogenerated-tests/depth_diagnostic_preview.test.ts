@@ -2,11 +2,11 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { bootstrapNode } from '@acc/core';
 import {
-  IRPreviewEngine,
   type ResolvedTimeline,
   type ResolvedSequence,
   type ResolvedTrack,
 } from '@acc/ir';
+import { IRPreviewEngine } from '@acc/studio';
 
 describe('Depth Diagnostic Preview Suite (Web & Node Parity)', () => {
   beforeAll(async () => {

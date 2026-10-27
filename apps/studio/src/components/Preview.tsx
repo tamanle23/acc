@@ -27,7 +27,7 @@ import {
 import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
-} from '@acc/ir';
+} from '../renderer/preview';
 import {
   Gizmo2DTransformation,
   type BoundingBox2D,
@@ -37,7 +37,6 @@ import {
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import { WebAudioEngine } from '../lib/audio';
-import { StudioVisionPipelineManager } from '../lib/vision/StudioVisionPipelineManager';
 
 interface PreviewProps {
   playhead: {
@@ -110,7 +109,6 @@ export function Preview({
   const [assetTick, setAssetTick] = useState(0);
 
   useEffect(() => {
-    StudioVisionPipelineManager.getInstance();
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
@@ -220,6 +218,12 @@ export function Preview({
       const engine = new IRPreviewEngine(irState.timeline);
       previewEngineRef.current = engine;
       WebAudioEngine.getInstance().attachPreviewEngine(engine);
+      const unsub = engine.onModifierWarmed(() => {
+        setAssetTick((t) => t + 1);
+      });
+      return () => {
+        unsub();
+      };
     }
     setGlReady(true);
   }, [irState.timeline, irState.doc?.assets, width, height, fps, totalFrames]);

@@ -1,4 +1,5 @@
-import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource, IRPreviewEngine } from '@acc/ir';
+import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
+import { IRPreviewEngine } from '../../renderer/preview';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';

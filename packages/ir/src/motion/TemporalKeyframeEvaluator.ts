@@ -1,5 +1,5 @@
 import { parseCubicBezier, solveCubicBezier } from './BezierMath';
-import type { TemporalCurve } from '../../types/modifiers';
+import type { TemporalCurve } from '../types/modifiers';
 
 /**
  * Standard CSS & NLE Easing Presets mapped to cubic-bezier parameters [x1, y1, x2, y2].

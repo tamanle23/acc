@@ -27,7 +27,7 @@ import {
   TooltipProvider,
 } from './components/ui';
 import { MediabunnyClientSink } from '@acc/core-web';
-import { IRPreviewEngine } from '@acc/ir';
+import { IRPreviewEngine } from './renderer/preview';
 import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
 import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { AudioAssetCache } from './lib/audio/AudioAssetCache';

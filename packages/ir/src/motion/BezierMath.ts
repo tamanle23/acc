@@ -36,7 +36,6 @@ export function parseCubicBezier(spec: string): [number, number, number, number]
  * Evaluates polynomial coordinate B(t) given control values P0=0, P1, P2, P3=1.
  */
 function sampleCurve(t: number, p1: number, p2: number): number {
-  // ((1 - 3*p2 + 3*p1)*t + (3*p2 - 6*p1))*t + 3*p1)*t
   return ((1 - 3 * p2 + 3 * p1) * t + (3 * p2 - 6 * p1)) * t * t + 3 * p1 * t;
 }
 

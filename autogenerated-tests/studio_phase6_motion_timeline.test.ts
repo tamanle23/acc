@@ -1,7 +1,7 @@
 import {
   evaluateSequenceMotion,
   evaluateEase,
-} from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+} from '@acc/ir';
 import { UniversalAudioMixer } from '@acc/ir';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { TrimSequenceCommand } from '../apps/studio/src/lib/commands/TrimSequenceCommand';
@@ -182,8 +182,8 @@ describe('Phase 6: Universal Motion & Easing Engine & Timeline Direct Manipulati
       const subFiles = fs.readdirSync(timelineDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
       const timelineCode = [coordinator, ...subFiles.map(f => fs.readFileSync(path.join(timelineDir, f), 'utf-8'))].join('\n');
 
-      expect(timelineCode).toContain('trimmingState');
-      expect(timelineCode).toContain('startTrim');
+      expect(timelineCode).toContain('TrimHandle');
+      expect(timelineCode).toContain('trimSequence');
       expect(timelineCode).toContain('cursor-col-resize');
       expect(timelineCode).toContain('handleClipClick');
       expect(timelineCode).toContain("activeTool === 'razor'");

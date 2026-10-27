@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import {
-  IRPreviewEngine,
   IRMasterRenderer,
   UniversalAudioMixer,
   type ResolvedTimeline,
 } from '@acc/ir';
+import { IRPreviewEngine } from '@acc/studio';
 
 describe('IRPreviewEngine and IRMasterRenderer Audio-Visual Parity Suite', () => {
   let mockTimeline: ResolvedTimeline;

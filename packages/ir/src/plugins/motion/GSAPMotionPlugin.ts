@@ -7,7 +7,7 @@ import type {
 import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
-} from '../../renderer/preview/DeterministicMotionEvaluator';
+} from '../../motion/DeterministicMotionEvaluator';
 
 export interface GSAPMotionPluginParams {
   preset?: 'none' | 'pop_in' | 'slide_left' | 'bounce' | 'overshoot' | 'drift';

@@ -7,7 +7,7 @@ describe('Iteration 9 Phase 3: Client-Side Full-Fidelity MP4 Export Suite', () =
   const appContent = readFileSync(appPath, 'utf8');
 
   it('verifies App.tsx imports IRPreviewEngine, UniversalAudioMixer, and MediabunnyClientSink', () => {
-    expect(appContent).toContain("import { IRPreviewEngine } from '@acc/ir';");
+    expect(appContent).toContain("import { IRPreviewEngine } from './renderer/preview';");
     expect(appContent).toContain("import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';");
     expect(appContent).toContain("import { MediabunnyClientSink } from '@acc/core-web';");
     expect(appContent).toContain("import { AssetTextureCache } from './lib/textures/AssetTextureCache';");

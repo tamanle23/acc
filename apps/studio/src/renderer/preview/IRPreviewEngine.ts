@@ -1,16 +1,24 @@
-import type { ResolvedTimeline, ResolvedSequence, ResolvedTrack } from '../../types/VideoIR';
-import { IntervalTreeIndex } from '../../compiler/IntervalTreeIndex';
-import { ModifierPluginRegistry } from '../../plugins/ModifierPluginRegistry';
-import { registerCoreModifierPlugins } from '../../plugins';
-import { AssetTextureCache } from './AssetTextureCache';
 import {
+  type ResolvedTimeline,
+  type ResolvedSequence,
+  type ResolvedTrack,
+  IntervalTreeIndex,
+  ModifierPluginRegistry,
+  registerCoreModifierPlugins,
   evaluateSequenceMotion,
   type InterpolatedTransformState,
-} from './DeterministicMotionEvaluator';
+  IRCanvasCompositor,
+  UniversalAudioMixer,
+  type AudioMixResult,
+  type IAudioSourceProvider,
+} from '@acc/ir';
 
-import { IRCanvasCompositor } from '../shared/IRCanvasCompositor';
-import { UniversalAudioMixer, type AudioMixResult } from '../audio/UniversalAudioMixer';
-import type { IAudioSourceProvider } from '../audio/AudioSourceAdapter';
+import { AssetTextureCache } from './AssetTextureCache';
+import {
+  StudioSidecarCoordinator,
+  type ModifierWarmedEvent,
+  type SidecarPreflightOptions,
+} from './sidecar/StudioSidecarCoordinator';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;
@@ -33,16 +41,21 @@ export interface PreviewFrameResult {
   latencyMs: number;
 }
 
+export interface IRPreviewEngineOptions {
+  sidecarCoordinator?: StudioSidecarCoordinator;
+  autoPreflight?: boolean;
+}
+
 /**
- * IRPreviewEngine:
- * Full interactive renderer and random-access timeline evaluator mirroring IRMasterRenderer.
+ * IRPreviewEngine (StudioPreviewEngine):
+ * Interactive preview renderer and random-access timeline evaluator in Studio.
  * Adheres strictly to DETERMINISTIC-HANDSHAKE-BACKPRESSURE:
  * - Pure discrete integer frame evaluation: timeSec = frame / fps
- * - Dispatches through ModifierPluginRegistry for clip-space, stream-space, and master-composite modifiers
- * - Multi-track visual layer composition with track sorting, aspect-ratio fit modes, and blend modes
- * - Closed-form deterministic motion resolver (pop_in, slide_left, bounce, overshoot, drift)
- * - Retains seek() for interval tree queries & LOD scale
- * - Encapsulates UniversalAudioMixer for sample-accurate audio mixing with 100% parity to IRMasterRenderer
+ * - Dispatches through ModifierPluginRegistry via IRCanvasCompositor
+ * - Integrated StudioSidecarCoordinator for background modifier preflight & warmups
+ * - Reactive onModifierWarmed event dispatching for zero-latency UI repaints
+ * - Closed-form deterministic motion resolver
+ * - Encapsulates UniversalAudioMixer for sample-accurate audio parity with IRMasterRenderer
  */
 export class IRPreviewEngine {
   private timeline: ResolvedTimeline;
@@ -52,36 +65,83 @@ export class IRPreviewEngine {
   private defaultTextureCache: AssetTextureCache = new AssetTextureCache();
   private audioMixer: UniversalAudioMixer;
   private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
+  private sidecarCoordinator: StudioSidecarCoordinator | null = null;
+  private autoPreflight: boolean = true;
 
   constructor(
     timeline: ResolvedTimeline,
     pluginRegistry?: ModifierPluginRegistry,
     audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined,
-    audioSampleRate = 48000
+    audioSampleRate = 48000,
+    options?: IRPreviewEngineOptions
   ) {
     this.timeline = timeline;
     const allSequences = Array.from(timeline.sequences.values());
     this.intervalTree = new IntervalTreeIndex(allSequences);
-    this.pluginRegistry = pluginRegistry ?? registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
+    this.pluginRegistry =
+      pluginRegistry ?? registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
     this.audioSourceResolver = audioSourceResolver;
     this.audioMixer = new UniversalAudioMixer([], audioSampleRate);
     this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
+
+    this.sidecarCoordinator = options?.sidecarCoordinator ?? StudioSidecarCoordinator.getInstance();
+    this.autoPreflight = options?.autoPreflight ?? true;
+
+    if (this.autoPreflight && this.sidecarCoordinator) {
+      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => {});
+    }
   }
 
   /**
-   * Synchronizes timeline state across visual interval tree and audio mixer simultaneously.
+   * Synchronizes timeline state across visual interval tree, audio mixer, and sidecar coordinator.
+   * Handles sequence additions, modifications, and deletions deterministically.
    */
   public syncTimeline(
     timeline: ResolvedTimeline,
     audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined
   ): void {
+    const previousSequences = this.timeline.sequences;
     this.timeline = timeline;
+
+    // Detect removed sequences and abort in-flight sidecar tasks
+    if (this.sidecarCoordinator) {
+      for (const [prevId] of previousSequences.entries()) {
+        if (!timeline.sequences.has(prevId)) {
+          this.sidecarCoordinator.cancelTasksForTarget(prevId);
+        }
+      }
+    }
+
     const allSequences = Array.from(timeline.sequences.values());
     this.intervalTree = new IntervalTreeIndex(allSequences);
     if (audioSourceResolver !== undefined) {
       this.audioSourceResolver = audioSourceResolver;
     }
     this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
+
+    // Eagerly preflight added or updated sequences
+    if (this.autoPreflight && this.sidecarCoordinator) {
+      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => {});
+    }
+  }
+
+  /**
+   * Explicitly triggers preflight execution for all timeline modifiers via sidecar.
+   */
+  public async prepare(options?: SidecarPreflightOptions): Promise<void> {
+    if (this.sidecarCoordinator) {
+      await this.sidecarCoordinator.preflightTimeline(this.timeline, options);
+    }
+  }
+
+  /**
+   * Subscribes to modifier warming events to trigger eager canvas frame redraws.
+   */
+  public onModifierWarmed(callback: (event: ModifierWarmedEvent) => void): () => void {
+    if (this.sidecarCoordinator) {
+      return this.sidecarCoordinator.onModifierWarmed(callback);
+    }
+    return () => {};
   }
 
   /**
@@ -155,12 +215,7 @@ export class IRPreviewEngine {
 
   /**
    * Renders a discrete frame deterministically onto the target CanvasRenderingContext2D.
-   * Mirrors IRMasterRenderer's 4-phase lifecycle:
-   * 1. Clear background
-   * 2. Track order sorting (V1 -> V4)
-   * 3. Sequence Clip-Space Modifiers & Visual Blitting
-   * 4. Track Stream-Space Modifiers
-   * 5. Master Composite Modifiers
+   * Delegates pure visual layer blitting to canonical IRCanvasCompositor.
    */
   public renderFrame(
     frame: number,
@@ -173,7 +228,6 @@ export class IRPreviewEngine {
     const fps = this.timeline.meta.globalFps;
     const timeSec = clampedFrame / fps;
 
-    const { w: width, h: height } = this.timeline.meta.canvasSize;
     const textures = options.textureCache ?? this.defaultTextureCache;
     const popOutIntensity = options.popOutIntensity ?? 1.0;
     const activeSequences = this.intervalTree.queryActive(clampedFrame);
@@ -184,6 +238,7 @@ export class IRPreviewEngine {
       popOutIntensity,
       clearColor: options.clearColor || '#000000',
       debugMode: options.debugMode,
+      executionProfile: 'preview',
     });
 
     const latencyMs = performance.now() - start;
@@ -197,3 +252,5 @@ export class IRPreviewEngine {
     };
   }
 }
+
+export const StudioPreviewEngine = IRPreviewEngine;

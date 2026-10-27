@@ -5,12 +5,12 @@ import {
 } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '@acc/core';
 import {
-  IRPreviewEngine,
   IRMasterRenderer,
   createIsolatedCoreModifierPlugins,
   type ResolvedTimeline,
   type ResolvedTrack,
 } from '@acc/ir';
+import { IRPreviewEngine } from '@acc/studio';
 
 describe('Iteration 10 Phase 4: IR Master & Preview Web/Server Visual Parity Suite', () => {
   beforeAll(() => {

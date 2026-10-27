@@ -2,8 +2,8 @@ import { describe, it, expect } from 'bun:test';
 import {
   TemporalKeyframeEvaluator,
   evaluateEasingProgress,
-} from '../packages/ir/src/renderer/preview/TemporalKeyframeEvaluator';
-import { evaluateSequenceMotion } from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+  evaluateSequenceMotion,
+} from '@acc/ir';
 
 describe('TemporalKeyframeEvaluator Suite', () => {
   it('should interpolate linear keyframe sequences', () => {

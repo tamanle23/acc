@@ -1,4 +1,5 @@
-import { IRPreviewEngine, registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
+import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
+import { IRPreviewEngine } from '../renderer/preview';
 import { DeterministicTimelineClock, UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
