@@ -20,3 +20,7 @@
 ## 2026-10-15 - Single-Pass Facet Binning & Pre-Indexed Active Filter Sets
 **Learning:** In faceted search sidebars (`FacetedSearchSidebar`), running multiple `.filter()` calls on numerical/date record lists creates redundant array passes and intermediate allocations ($3\times–4\times$ iterations). Furthermore, checking active filters inside nested bucket rendering loops using `.some()` incurs $O(G \cdot B \cdot F)$ complexity on every render pass.
 **Action:** Replace multiple `.filter()` passes with a single `for...of` loop pass for numeric/date range binning. Pre-index `activeFilters` into memoized `Set` lookup keys using `useMemo` so that active status checks run in $O(1)$ time instead of linear array scans.
+
+## 2026-10-27 - Pre-Indexing Selected Sets in Modal Pickers
+**Learning:** In modal entity pickers (such as `NewChat`), performing array `.find()` lookups inside `.map()` render loops and click event handlers causes $O(N \cdot M)$ time complexity on every render and selection toggling pass.
+**Action:** Pre-index selected entity IDs into a memoized `Set` (`selectedIds = useMemo(() => new Set(selected.map((item) => item.id)), [selected])`) to reduce list rendering checks and selection state checks to $O(1)$ constant time.

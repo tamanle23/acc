@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Check, X } from 'lucide-react'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,12 @@ export function NewChat({ users, onOpenChange, open }: NewChatProps) {
   const [selectedUsers, setSelectedUsers] = useState<User[]>([])
   const createConversationMutation = useCreateConversationMutation()
 
+  // Pre-index selected user IDs in a memoized Set to convert O(N * M) list lookup complexity to O(N)
+  const selectedUserIds = useMemo(
+    () => new Set(selectedUsers.map((u) => u.id)),
+    [selectedUsers]
+  )
+
   const handleStartChat = async () => {
     if (selectedUsers.length === 0) return
     const target = selectedUsers[0]
@@ -46,7 +52,7 @@ export function NewChat({ users, onOpenChange, open }: NewChatProps) {
   }
 
   const handleSelectUser = (user: User) => {
-    if (!selectedUsers.find((u) => u.id === user.id)) {
+    if (!selectedUserIds.has(user.id)) {
       setSelectedUsers([...selectedUsers, user])
     } else {
       handleRemoveUser(user.id)
@@ -121,7 +127,7 @@ export function NewChat({ users, onOpenChange, open }: NewChatProps) {
                       </div>
                     </div>
 
-                    {selectedUsers.find((u) => u.id === user.id) && (
+                    {selectedUserIds.has(user.id) && (
                       <Check className='h-4 w-4' />
                     )}
                   </CommandItem>
