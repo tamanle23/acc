@@ -3,7 +3,7 @@ name: acc-monorepo-guidelines
 description: >-
   Comprehensive guide, path-scoped rules, architecture boundaries, and local
   build, test, and lint commands for the acc monorepo, covering backend
-  microservices, web applications, mobile app, desktop client, and shared packages.
+  microservices, web applications, mobile app, and shared packages.
 ---
 
 # Acc Monorepo Guidelines & Development Runbook
@@ -22,7 +22,6 @@ acc/
 │   ├── rules/monorepo.md         # Turborepo and pnpm enforcement rules
 │   └── SKILL.md                  # Comprehensive monorepo runbook (this document)
 ├── apps/
-│   ├── desktop-console/          # Electrobun desktop client (@acc/desktop)
 │   ├── mobile-ui/                # Expo / React Native mobile app (mobile-ui)
 │   ├── acc-backend/         # Java 17 / Spring Boot multi-module backend (com.acc)
 │   ├── acc-console/         # React 19 / Vite 8 web console (@acc/web)
@@ -42,7 +41,6 @@ acc/
 | **`apps/acc-console`** | `@acc/web` | Web / Electron Admin Console | React 19.2.4, Vite 8, Tailwind CSS v4, TanStack Router & Query & Table, Radix UI, Clerk Auth, Zustand, ESLint 10, Knip | `package.json`, `vite.config.ts`, `vite.electron.config.ts`, `eslint.config.js`, `knip.config.ts` |
 | **`apps/tekgo-ui`** | `tekgo-ui` | Web Portal / Content App | Next.js 15.5.12 (App Router), React 19, Tailwind CSS v4, Pliny, Remark/Rehype, KaTeX, MDX, Husky, Lint-Staged | `package.json`, `next.config.js`, `eslint.config.mjs`, `postcss.config.js` |
 | **`apps/mobile-ui`** | `mobile-ui` | Cross-Platform Mobile App | Expo SDK 57, React Native 0.86.3, React 19, Zustand, React Navigation 7, Metro Bundler | `package.json`, `app.json`, `metro.config.js`, `babel.config.js`, `tsconfig.json` |
-| **`apps/desktop-console`** | `@acc/desktop` | Cross-Platform Desktop App | Electrobun 2.0.1 (Bun + Cottontail runtime), Hutch, TypeScript | `package.json`, `electrobun.config.ts`, `hutch.config.ts`, `tsconfig.json` |
 | **`packages/typescript-config`** | `@acc/typescript-config` | Shared Tooling / Library | TypeScript base configs (`base.json`, `electron-main.json`, `react-renderer.json`) | `package.json`, `base.json` |
 
 ---
@@ -73,14 +71,14 @@ acc/
 ### 2.4 Version Control & Commit Practices
 * **Conventional Commits**: Format commit messages as `<type>(<scope>): <summary>`
   * Valid types: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`.
-  * Recommended scopes: `backend`, `acc-console`, `tekgo-ui`, `mobile-ui`, `desktop-console`, `typescript-config`, `root`.
+  * Recommended scopes: `backend`, `acc-console`, `tekgo-ui`, `mobile-ui`, `typescript-config`, `root`.
   * Example: `feat(acc-console): integrate tanstack query devtools`
 * **Ignore Rules**:
   * Keep credentials and environment files (`.env`, `.env.*local`, `credentials.json`) out of version control.
   * Always verify `.gitignore` before adding new local configuration files or caches.
 
 ### 2.5 Universal UI Standard: Liquid Glass Design Priority
-* **Liquid Glass First**: For every application with a User Interface (`apps/acc-console`, `apps/tekgo-ui`, `apps/mobile-ui`, `apps/desktop-console`, and future client apps), **Liquid Glass** is the mandatory design aesthetic.
+* **Liquid Glass First**: For every application with a User Interface (`apps/acc-console`, `apps/tekgo-ui`, `apps/mobile-ui`, and future client apps), **Liquid Glass** is the mandatory design aesthetic.
 * **Core Tenets**:
   * **Optical Translucency & Frosted Surfaces**: Use multi-layer backdrop blurs (`backdrop-blur-md` to `backdrop-blur-2xl` / `expo-blur`) over semi-translucent tinted surfaces (`bg-white/60..75`, `dark:bg-slate-900/60..80`). Avoid flat, opaque background panels.
   * **Specular Highlights & Glass Borders**: Add refined translucent borders (`border-white/20..30` in light, `border-white/10..15` in dark) with subtle top-edge illumination (`shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]`).
@@ -147,20 +145,11 @@ acc/
   * Path aliases: Use `~/*` mapping to `./src/*` as defined in `tsconfig.json`.
   * Safe Areas: Always wrap mobile layouts in `react-native-safe-area-context` containers.
 
-### 3.5 `apps/desktop-console` (Electrobun / Hutch / TypeScript)
-* **Tech Stack**: Electrobun 2.0.1 (Bun runtime + Cottontail desktop window manager), Hutch toolchain, TypeScript, ESLint.
-* **Workspace Dependencies**: Links to `@acc/typescript-config: workspace:*` and `@acc/web: workspace:*`.
-* **Configuration**: `electrobun.config.ts` (app ID `dev.acc.desktop`, Cottontail entrypoint `src/bun/index.ts`) and `hutch.config.ts`.
-* **Development Rules**:
-  * Use Bun / Hutch runtime commands configured in `hutch.config.ts` and `package.json`.
-  * Liquid Glass Desktop Aesthetics: Exploit native window vibrancy/translucency where supported. Ensure webviews use CSS `backdrop-filter: blur(...)` with translucent chrome, glassmorphic toolbars, and floating panels.
-  * Desktop-to-web bridge: Electrobun consumes renderer assets produced by `@acc/web`. Ensure `@acc/web` is built before packaging desktop distributions.
-
-### 3.6 `packages/typescript-config` (Shared Config Presets)
+### 3.5 `packages/typescript-config` (Shared Config Presets)
 * **Role**: Provides unified TypeScript configuration presets across all monorepo packages and applications.
 * **Configs**:
   * `base.json`: Base configuration (ESNext target, strict mode enabled, skipLibCheck).
-  * Referenced by `@acc/desktop` and `@acc/web`.
+  * Referenced by `@acc/web`.
 
 ---
 
@@ -267,20 +256,6 @@ pnpm --filter mobile-ui web
 
 # TypeScript type check
 pnpm --filter mobile-ui exec tsc --noEmit
-```
-
-#### 5. `apps/desktop-console` (`@acc/desktop`)
-Run from the workspace root:
-
-```bash
-# Start Electrobun development mode
-pnpm --filter @acc/desktop dev
-
-# Build Electrobun desktop distribution
-pnpm --filter @acc/desktop build
-
-# Lint desktop client code
-pnpm --filter @acc/desktop lint
 ```
 
 ---

@@ -34,7 +34,6 @@ Whenever a rule needs to be introduced, updated, or modified:
 | :--- | :--- | :--- | :--- |
 | `@acc/backend` | `apps/backend` | Java 21, Spring Boot, Spring Modulith, Spring Cloud, Maven | None |
 | `@acc/console` | `apps/console` | React 19, Vite 8, Tailwind CSS v4, TanStack Router/Query | `@acc/ui`, `@acc/i18n`, `@acc/typescript-config` |
-| `@acc/desktop` | `apps/desktop-console` | Electrobun 2.0 (Bun runtime + Cottontail window manager) | `@acc/console`, `@acc/typescript-config` |
 | `mobile-ui` | `apps/mobile-ui` | Expo SDK 57, React Native 0.86, React 19, Zustand | None |
 | `tekgo-ui` | `apps/tekgo-ui` | Next.js 15 (App Router), React 19, MDX, Pliny | `@acc/ui` |
 | `@acc/i18n` | `packages/i18n` | Shared i18next dictionaries and translation utilities | None |
@@ -162,15 +161,13 @@ Liquid Glass is the mandatory design standard for all UI clients across web, mob
 - **Mobile (Expo & React Native)**:
   - `BlurView` from `expo-blur` (`tint="systemMaterial"`, intensity 50-85) for floating tab bars and bottom sheets.
   - `LinearGradient` from `expo-linear-gradient` for specular top sheen borders.
-- **Desktop (Electrobun)**:
-  - Window transparency/vibrancy with CSS `backdrop-filter: blur(...)` across translucent titlebars and floating toolbars.
 
 ---
 
 ## 8. App UI/UX Design & Route Specification Foundation (Google Stitch Integration)
 
 ### Core Directives
-To ensure visual consistency, architectural predictability, and seamless collaboration with generative design engines like **Google Stitch**, every frontend and mobile application in the monorepo (`apps/console`, `apps/mobile-ui`, `apps/tekgo-ui`, `apps/desktop-console`) maintains two living foundation files in its root directory:
+To ensure visual consistency, architectural predictability, and seamless collaboration with generative design engines like **Google Stitch**, every frontend and mobile application in the monorepo (`apps/console`, `apps/mobile-ui`, `apps/tekgo-ui`) maintains two living foundation files in its root directory:
 1. **`DESIGN.md` (Portable Design System & Google Stitch Context)**:
    - Contains complete design tokens (colors, OKLCH scales, light/dark themes, Liquid Glass blur/specular values, typography hierarchy, radii, elevation).
    - Specifies core component contracts (`GlassCard`, `GlassButton`, frosted headers, floating bars).

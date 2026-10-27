@@ -15,7 +15,7 @@ We wrapped the application items on the Apps Integration screen in the standard 
   - Automatic reactivity to `--glass-blur`, `--glass-intensity`, and `--glass-specular-alpha`.
 
 ### 2. Workspace Package Name Verification
-- Verified that package names across `apps/acc-console` and `apps/desktop-console` are now standardized to `@acc/console`.
+- Verified that package name is standardized to `@acc/console`.
 - Verified `pnpm --filter @acc/console build:web` and `lint` execute cleanly with the updated name.
 
 ---

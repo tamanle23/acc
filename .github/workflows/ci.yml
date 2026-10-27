@@ -111,10 +111,9 @@ jobs:
         run: |
           pnpm --filter @acc/console test
 
-      - name: Run Mobile & Desktop Tests (mobile-ui Outbox Chaos, Desktop Bridge)
+      - name: Run Mobile Tests (mobile-ui Outbox Chaos)
         run: |
           pnpm --filter mobile-ui test
-          pnpm --filter @acc/desktop test
 
   # ---------------------------------------------------------------------------
   # Job 4: Headless Playwright Browser E2E & WCAG 2.2 AA Audit

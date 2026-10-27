@@ -10,7 +10,6 @@ description: Workspace registry, packaging boundaries, i18n, Liquid Glass UI tok
 - Registry:
   - `@acc/backend`: `apps/backend` (Java 21 / Spring Modulith)
   - `@acc/console`: `apps/console` (React 19 / Vite 8) | Deps: `@acc/ui`, `@acc/i18n`, `@acc/typescript-config`
-  - `@acc/desktop`: `apps/desktop-console` (Electrobun) | Deps: `@acc/console`, `@acc/typescript-config`
   - `mobile-ui`: `apps/mobile-ui` (Expo SDK 57 / React Native 0.86)
   - `tekgo-ui`: `apps/tekgo-ui` (Next.js 15 / React 19) | Deps: `@acc/ui`
   - Shared: `@acc/i18n` (`packages/i18n`), `@acc/typescript-config` (`packages/typescript-config`), `@acc/ui` (`packages/ui`)
