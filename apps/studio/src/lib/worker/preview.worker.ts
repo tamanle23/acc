@@ -293,6 +293,18 @@ self.onmessage = (e: MessageEvent) => {
       break;
     }
 
+    case 'resize': {
+      if (data.width) currentWidth = data.width;
+      if (data.height) currentHeight = data.height;
+      if (canvas) {
+        canvas.width = currentWidth;
+        canvas.height = currentHeight;
+      }
+      texturesDirty = true;
+      renderCurrentFrame(currentFrame, 1.0, undefined, false);
+      break;
+    }
+
     case 'renderFrame': {
       currentFrame = data.frame;
       const isScrub = !!data.isScrubbing;

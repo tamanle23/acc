@@ -123,6 +123,15 @@ export class PreviewWorkerBridge {
     });
   }
 
+  public resize(width: number, height: number) {
+    if (!this.worker || !this.isTransferred) return;
+    this.worker.postMessage({
+      type: 'resize',
+      width,
+      height,
+    });
+  }
+
   public renderFrame(
     frame: number,
     optionsOrLod?: WorkerRenderOptions | number,
