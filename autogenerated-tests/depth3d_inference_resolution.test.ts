@@ -146,4 +146,86 @@ describe('Depth3DPlugin & Sidecar Inference Resolution Suite', () => {
     unsub();
     coordinator.terminate();
   });
+
+  it('IRCanvasCompositor preserves each sequence modifier popOutIntensity without global overwrite', () => {
+    const rawCanvas = scratchCanvas.getRawCanvas ? scratchCanvas.getRawCanvas() : scratchCanvas;
+    const ctx = rawCanvas.getContext('2d');
+
+    const dispatchedIntensities: number[] = [];
+    const testRegistry = {
+      get: (type: string) => {
+        if (type === 'vfx/depth3d') {
+          return {
+            type: 'vfx/depth3d',
+            targetScope: 'sequence',
+            targetPhase: 2,
+            renderClipSpace: (_c: any, params: any) => {
+              dispatchedIntensities.push(params.popOutIntensity);
+            },
+          };
+        }
+        return undefined;
+      },
+    } as any;
+
+    const seqA: ResolvedSequence = {
+      id: 'seq-a',
+      trackId: 't-1',
+      startFrame: 0,
+      endFrame: 30,
+      durationFrames: 30,
+      modifiers: [
+        {
+          type: 'vfx/depth3d',
+          params: { popOutIntensity: 2.25 },
+        },
+      ],
+    };
+
+    const seqB: ResolvedSequence = {
+      id: 'seq-b',
+      trackId: 't-1',
+      startFrame: 0,
+      endFrame: 30,
+      durationFrames: 30,
+      modifiers: [
+        {
+          type: 'vfx/depth3d',
+          params: { popOutIntensity: 0.75 },
+        },
+      ],
+    };
+
+    const timeline: ResolvedTimeline = {
+      meta: {
+        canvasSize: { w: 320, h: 240 },
+        globalFps: 30,
+        backgroundColor: '#000000',
+      },
+      tracks: new Map([
+        [
+          't-1',
+          {
+            id: 't-1',
+            name: 'V1',
+            type: 'video',
+            sequences: [seqA, seqB],
+          },
+        ],
+      ]),
+      sequences: new Map([
+        ['seq-a', seqA],
+        ['seq-b', seqB],
+      ]),
+      totalFrames: 60,
+    };
+
+    const { IRCanvasCompositor } = require('@acc/ir');
+    // Call renderFrame without options.popOutIntensity
+    IRCanvasCompositor.renderFrame(ctx, timeline, 5, {
+      pluginRegistry: testRegistry,
+    });
+
+    expect(dispatchedIntensities).toEqual([2.25, 0.75]);
+  });
 });

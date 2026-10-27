@@ -354,21 +354,6 @@ function StudioWorkspace() {
       const assetsMap = irState.doc?.assets || {};
       const engineTextures = previewEngine ? previewEngine.getTextureCache() : null;
 
-      // Determine popOutIntensity from depth modifiers if present
-      let popOutIntensity = 1.0;
-      if (irState.timeline?.sequences) {
-        for (const seq of irState.timeline.sequences.values()) {
-          if (seq.modifiers) {
-            for (const mod of seq.modifiers) {
-              if (mod.type === 'vfx/depth3d') {
-                const p = mod.params as any;
-                if (typeof p?.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
-              }
-            }
-          }
-        }
-      }
-
       for (let f = 0; f < totalFrames; f++) {
         if (cancelExportRef.current) {
           console.warn('Client export cancelled by user.');
@@ -406,7 +391,6 @@ function StudioWorkspace() {
 
             previewEngine.renderFrame(f, ctx, {
               textureCache: engineTextures,
-              popOutIntensity,
             });
           }
 

@@ -31,13 +31,13 @@ const textTextureCache = ContentHashTextureCache.getInstance();
 // Dirty-Frame & Refresh Optimization state
 let lastRenderedFrame: number | null = null;
 let lastRenderedLOD: number | null = null;
-let lastPopOutIntensity: number | null = null;
+let lastPopOutIntensity: number | null | undefined = null;
 let lastDebugMode: string | null = null;
 let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
+let pendingRender: { frame: number; lod: number; popOutIntensity?: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -50,7 +50,7 @@ let workerClock: DeterministicTimelineClock | null = null;
 function renderCurrentFrame(
   frame: number,
   lod = 1.0,
-  popOutIntensity = 1.0,
+  popOutIntensity?: number,
   isScrubbing = false,
   clearColor = '#000000',
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
@@ -287,7 +287,7 @@ self.onmessage = (e: MessageEvent) => {
         syncAssetSources(data.assets);
       }
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, data.popOutIntensity ?? 1.0, false);
+      renderCurrentFrame(currentFrame, 1.0, data.popOutIntensity, false);
       break;
     }
 
@@ -304,7 +304,7 @@ self.onmessage = (e: MessageEvent) => {
       renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,
-        data.popOutIntensity ?? 1.0,
+        data.popOutIntensity,
         isScrub,
         data.clearColor ?? '#000000',
         data.debugMode

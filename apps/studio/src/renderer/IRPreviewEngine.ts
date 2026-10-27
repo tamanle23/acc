@@ -229,7 +229,7 @@ export class IRPreviewEngine {
     const timeSec = clampedFrame / fps;
 
     const textures = options.textureCache ?? this.defaultTextureCache;
-    const popOutIntensity = options.popOutIntensity ?? 1.0;
+    const popOutIntensity = options.popOutIntensity;
     const activeSequences = this.intervalTree.queryActive(clampedFrame);
 
     IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {

@@ -4,3 +4,4 @@
 |---|---|---|
 | 346 | [Fix Depth3D Sequence Asset Resolution and Neural Inference](./346_fix_depth3d_sequence_asset_resolution_and_neural_inference.md) | Completed |
 | 347 | [Fix Preview Worker Bridge requestFrame TypeError](./347_fix_preview_worker_bridge_request_frame.md) | Completed |
+| 348 | [Decouple popOutIntensity from renderFrame to Sequence Modifier Dynamic Resolution](./348_decouple_popout_intensity_from_renderframe.md) | Completed |

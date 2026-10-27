@@ -249,19 +249,7 @@ export function Preview({
   useEffect(() => {
     const overlayCanvas = overlayCanvasRef.current;
 
-    // Determine popOutIntensity from depth modifiers if present
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
-    let popOutIntensity = 1.0;
-    for (const seq of activeSeqs) {
-      if (seq.modifiers) {
-        for (const mod of seq.modifiers) {
-          if (mod.type === 'vfx/depth3d') {
-            const p = mod.params as any;
-            if (typeof p.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
-          }
-        }
-      }
-    }
 
     const bridge = workerBridgeRef.current;
     const studioTextureCache = AssetTextureCache.getInstance();
@@ -319,7 +307,7 @@ export function Preview({
           bridge.renderFrame(
             currentFrame,
             isPlaying ? 0.5 : 1.0,
-            popOutIntensity,
+            undefined,
             false,
             clearColor,
             visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
@@ -329,7 +317,7 @@ export function Preview({
         bridge.renderFrame(
           currentFrame,
           isPlaying ? 0.5 : 1.0,
-          popOutIntensity,
+          undefined,
           false,
           clearColor,
           visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
@@ -375,7 +363,6 @@ export function Preview({
 
           engine.renderFrame(currentFrame, baseCtx, {
             textureCache: engineTextures,
-            popOutIntensity,
             clearColor,
             debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
           });
@@ -416,7 +403,7 @@ export function Preview({
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const bridge = workerBridgeRef.current;
       if (bridge && bridge.hasTransferred()) {
-        bridge.renderFrame(frame, playing ? 0.5 : 1.0, 1.0, !playing);
+        bridge.renderFrame(frame, playing ? 0.5 : 1.0, undefined, !playing);
       }
     });
   }, []);

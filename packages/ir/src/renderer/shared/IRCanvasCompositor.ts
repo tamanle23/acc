@@ -115,7 +115,7 @@ export class IRCanvasCompositor {
     const fps = timeline.meta.globalFps || 30;
     const registry = options.pluginRegistry;
     const assets = options.assetResolver;
-    const popOutIntensity = options.popOutIntensity ?? 1.0;
+    const popOutIntensity = options.popOutIntensity;
     const canvas = canvasCtx.canvas || canvasCtx;
     const profile = options.executionProfile || 'preview';
 
@@ -229,8 +229,8 @@ export class IRCanvasCompositor {
                   activeSequences: activeTrackSeqs,
                 },
                 {
+                  ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
                   ...mod.params,
-                  popOutIntensity,
                 }
               );
             }
@@ -318,8 +318,8 @@ export class IRCanvasCompositor {
                 pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
               },
               {
+                ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
                 ...mod.params,
-                popOutIntensity,
               }
             );
           }
@@ -342,8 +342,8 @@ export class IRCanvasCompositor {
               pixelBuffer: options.generatePixelBuffer || new Uint8Array(0),
             },
             {
+              ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
               ...mod.params,
-              popOutIntensity,
             }
           );
         }
@@ -373,7 +373,7 @@ export class IRCanvasCompositor {
     width: number,
     height: number,
     fps: number,
-    popOutIntensity: number,
+    popOutIntensity: number | undefined,
     registry: ModifierPluginRegistry,
     assets?: IAssetSourceResolver,
     debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
@@ -407,8 +407,8 @@ export class IRCanvasCompositor {
                   debugMode,
                 },
                 {
+                  ...(popOutIntensity !== undefined ? { popOutIntensity } : {}),
                   ...mod.params,
-                  popOutIntensity,
                 }
               );
             }
