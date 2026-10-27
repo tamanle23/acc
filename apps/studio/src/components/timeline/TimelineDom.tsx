@@ -320,6 +320,15 @@ export function TimelineDom({
   return (
     <DndContext
       sensors={timelineSensors}
+      autoScroll={{
+        threshold: {
+          x: 0.15,
+          y: 0.2,
+        },
+        acceleration: 15,
+        interval: 10,
+        layoutShiftCompensation: false,
+      }}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
