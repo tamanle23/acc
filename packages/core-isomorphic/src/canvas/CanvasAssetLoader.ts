@@ -51,6 +51,7 @@ export class CanvasAssetLoader {
     try {
       const adapter = UniversalCanvasProvider.getAdapter();
       if (adapter && typeof adapter.loadImage === 'function') {
+        console.log("adapter", adapter)
         return await adapter.loadImage(source);
       }
     } catch {

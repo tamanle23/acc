@@ -24,7 +24,7 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
     if (!fs.existsSync(this.baseDir)) {
       try {
         fs.mkdirSync(this.baseDir, { recursive: true });
-      } catch {}
+      } catch { }
     }
   }
 
@@ -50,6 +50,7 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
 
   public async get(key: string): Promise<Uint8Array | null> {
     const filePath = this.getFilePath(key);
+    console.log(filePath)
     try {
       const buffer = await fs.promises.readFile(filePath);
       return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
@@ -108,10 +109,10 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
         for (const file of files) {
           try {
             await fs.promises.unlink(path.join(this.baseDir, file));
-          } catch {}
+          } catch { }
         }
       }
-    } catch {}
+    } catch { }
   }
 
   public async getKeys(): Promise<string[]> {

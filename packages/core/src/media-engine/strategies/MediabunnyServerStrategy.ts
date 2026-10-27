@@ -14,7 +14,7 @@ import {
   EncodedPacket,
 } from 'mediabunny';
 import { FFAudioMuxer } from '../../ffmpeg-ffi/FFAudioMuxer';
-import type {
+import {
   IMediaEngineStrategy,
   MediaEngineType,
   MediaEngineCapabilities,
@@ -52,7 +52,7 @@ export class MediabunnyProbeStrategy implements IMediaProbeStrategy {
           if (metrics && metrics.averageFps) {
             fps = Math.round(metrics.averageFps);
           }
-        } catch {}
+        } catch { }
       }
 
       return {
@@ -209,7 +209,7 @@ export class MediabunnyServerChunkPolicy implements IChunkExecutionPolicy {
  * Utilizes pure TypeScript demuxing/muxing combined with NodeAV server-side codecs.
  */
 export class MediabunnyServerStrategy implements IMediaEngineStrategy {
-  public readonly id: MediaEngineType = 'mediabunny-server';
+  public readonly id = MediaEngineType.MediabunnyServer;
   public readonly name: string = 'Mediabunny Server Engine (NodeAV & TypeScript Muxer)';
 
   public readonly capabilities: MediaEngineCapabilities = {
@@ -230,7 +230,7 @@ export class MediabunnyServerStrategy implements IMediaEngineStrategy {
       registerMediabunnyServer();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      throw new MediaEngineError('mediabunny-server', `Failed to initialize server codecs: ${msg}`);
+      throw new MediaEngineError(this.id, `Failed to initialize server codecs: ${msg}`);
     }
   }
 

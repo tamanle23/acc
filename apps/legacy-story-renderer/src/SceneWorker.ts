@@ -53,7 +53,9 @@ if (!isMainThread) {
                   useHighQualityIntermediate: hasAnyTransition,
                   engine,
                 });
+                console.log(result)
               } catch (depthErr: any) {
+                console.log(depthErr)
                 result = await FFISceneEngine.renderScene({
                   scene,
                   duration,
@@ -101,7 +103,7 @@ export class SceneWorkerPool {
     reject: (err: any) => void;
   }> = [];
 
-  constructor(private size: number, private binDir: string) {}
+  constructor(private size: number, private binDir: string) { }
 
   public async initialize(): Promise<void> {
     const initPromises: Promise<void>[] = [];
@@ -174,7 +176,7 @@ export class SceneWorkerPool {
     for (const w of this.workers) {
       try {
         w.postMessage({ type: 'EXIT' });
-      } catch {}
+      } catch { }
     }
     this.workers = [];
     this.idleWorkers = [];

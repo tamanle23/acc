@@ -69,7 +69,7 @@ export class PreviewWorkerCoordinator {
         };
 
         this.worker.onerror = (err) => {
-          Logger.warn('StudioSidecarCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
+          Logger.warn('PreviewWorkerCoordinator', `Sidecar worker encountered an error: ${err.message || err}`);
           this.isProcessing = false;
           this.drainNext();
         };
@@ -78,7 +78,7 @@ export class PreviewWorkerCoordinator {
         return;
       } catch (err: any) {
         Logger.warn(
-          'StudioSidecarCoordinator',
+          'PreviewWorkerCoordinator.ts',
           `Failed to initialize Web Worker; falling back to in-process execution: ${err?.message || err}`
         );
       }
@@ -118,7 +118,7 @@ export class PreviewWorkerCoordinator {
     switch (msg.type) {
       case 'WARMED_UP': {
         this.isWarmedUp = true;
-        Logger.info('StudioSidecarCoordinator', 'Sidecar worker successfully warmed up.');
+        Logger.info('PreviewWorkerCoordinator.ts', 'Sidecar worker successfully warmed up.');
         break;
       }
 
@@ -159,7 +159,7 @@ export class PreviewWorkerCoordinator {
           this.activeTasks.delete(msg.taskId);
           task.reject(new Error(msg.error));
         }
-        Logger.warn('StudioSidecarCoordinator', `Task failed: ${msg.error}`);
+        Logger.warn('PreviewWorkerCoordinator.ts', `Task failed: ${msg.error}`);
         this.isProcessing = false;
         this.drainNext();
         break;
@@ -182,7 +182,7 @@ export class PreviewWorkerCoordinator {
       try {
         listener(event);
       } catch (err) {
-        Logger.error('StudioSidecarCoordinator', 'Error in warmed listener', err);
+        Logger.error('PreviewWorkerCoordinator.ts', 'Error in warmed listener', err);
       }
     }
   }
@@ -232,7 +232,6 @@ export class PreviewWorkerCoordinator {
         fps: payload.fps,
         canvas: payload.canvas,
       };
-      Logger.info("PreviewWorkerCoodinator", "Excute plugin", plugin, context);
       await plugin.execute(context, payload.modifier.params);
       this.completedTaskKeys.add(taskKey);
       this.notifyWarmed({
@@ -320,7 +319,6 @@ export class PreviewWorkerCoordinator {
         }
       }
     }
-    console.log("Timeline:", timeline)
     // 2. Sequence Modifiers sorted by proximity to prioritizedFrame
     const sequences = Array.from(timeline.sequences.values()).sort((a, b) => {
       const distA = Math.abs((a.startFrame ?? 0) - prioritizedFrame);

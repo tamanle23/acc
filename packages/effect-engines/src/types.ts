@@ -304,12 +304,11 @@ export interface StoryConfig {
   description?: string;
   settings: StorySettings;
   scenes?: SceneConfig[];
-  slides?: SceneConfig[]; // deprecated backward compatibility
 }
 
 export interface ResolvedSceneConfig extends SceneConfig {
-  resolvedImage?: string;
-  resolvedVideo?: string;
+  resolvedImage: string;
+  resolvedVideo: string;
   resolvedAudio: string;
   resolvedVideoSettings?: Required<VideoSettings>;
 }

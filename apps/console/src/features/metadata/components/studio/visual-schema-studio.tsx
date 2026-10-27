@@ -27,7 +27,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
   const [selectedAttributeId, setSelectedAttributeId] = useState<string | number | null>(
     attributes[0]?.id || null
   );
-  const [studioTabState, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'composite'>('canvas');
+  const [studioTabState, setActiveStudioTab] = useState<'canvas' | 'workflow'>('canvas');
   const isComposite = Boolean(entityType?.isComposite);
   // Composite entities are locked to the Bento Studio (no manual fields, no FSM canvas)
   const activeStudioTab = isComposite ? 'composite' : studioTabState;
@@ -93,7 +93,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
         {!isComposite && (
         <Tabs
           value={activeStudioTab}
-          onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow' | 'conductor' | 'composite')}
+          onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow')}
           className="w-auto"
         >
           <TabsList className="bg-white/40 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 p-1 rounded-xl">
@@ -103,13 +103,6 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
             >
               <Layers className="h-3.5 w-3.5 text-sky-500" />
               <span>Schema Canvas & Live Preview</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="composite"
-              className="text-xs gap-1.5 px-3 py-1.5 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 shadow-xs"
-            >
-              <Boxes className="h-3.5 w-3.5 text-purple-500" />
-              <span>Composite Bento Studio</span>
             </TabsTrigger>
             <TabsTrigger
               value="workflow"

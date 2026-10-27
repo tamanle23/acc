@@ -3,15 +3,10 @@ import path from 'path';
 import { ptr, toArrayBuffer } from 'bun:ffi';
 import { FFI, Structs, AV_PIX_FMT_RGBA, safeArrayBuffer, initFFI } from './index';
 import { FFmpegManager } from '../FFmpegManager';
-import type { ICanvasInstance, ICanvasContext2D, IVideoDecoder } from '@acc/core-isomorphic';
+import type { ICanvasInstance, ICanvasContext2D, IVideoDecoder, DecodedVideoFrame } from '@acc/core-isomorphic';
 import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 
-export interface DecodedVideoFrame {
-  width: number;
-  height: number;
-  canvas: ICanvasInstance;
-  ctx: ICanvasContext2D;
-}
+
 
 /**
  * FFIVideoDecoder:

@@ -92,6 +92,7 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
   }
 
   try {
+    console.log("loadAssetBytes", assetPathOrUri)
     const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
     const ab = await blob.arrayBuffer();
     const bytes = new Uint8Array(ab);
@@ -190,10 +191,11 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       mode === "sandwich";
 
   const segStrat = VisionEngineRegistry.getSegmentationStrategy(depthConfig?.segmentationStrategy);
-
+  console.log("segstrat", segStrat)
   // Load subject cutout if available
   try {
     const cutoutRes = await resolveSubjectCutout(scene.resolvedImage, depthConfig);
+    console.log("cutout", cutoutRes)
     if (cutoutRes.subjectImg) {
       subjectImg = cutoutRes.subjectImg;
       subjectBBox = cutoutRes.subjectBBox;
@@ -203,6 +205,8 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   // Auto-segmentation fallback
   if (!subjectImg && shouldAutoSegment) {
     try {
+      console.log('Segment infer', subjectImg);
+
       const segRes = await (segStrat as any).segment(imgBuffer);
       const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
       if (maskBuffer) {
@@ -454,71 +458,13 @@ export async function resolveSubjectCutout(
       }
     }
 
-    // 2. Check pre-computed cache candidates isomorphically
-    const sceneDir = getPathDir(imagePath);
-    const baseName = getPathBase(imagePath, true);
-
-    let resolvedSubPath: string | null = null;
-    if (depthConfig?.subjectImage) {
-      const candidate = resolvePath(sceneDir, depthConfig.subjectImage);
-      if (await checkExists(candidate)) {
-        resolvedSubPath = candidate;
-      } else {
-        const rootCand = resolvePath(storyRoot, depthConfig.subjectImage);
-        if (await checkExists(rootCand)) {
-          resolvedSubPath = rootCand;
-        } else {
-          const cacheCand = resolvePath(depthCacheDir, depthConfig.subjectImage);
-          if (await checkExists(cacheCand)) resolvedSubPath = cacheCand;
-        }
-      }
-    }
-
-    if (!resolvedSubPath) {
-      const candidates = [
-        joinPaths(depthCacheDir, `${baseName}_subject_${segStratName}_${fChecksum}.png`),
-        joinPaths(depthCacheDir, `${baseName}_subject_${fChecksum}.png`),
-        joinPaths(depthCacheDir, `${baseName}_subject.png`),
-        joinPaths(sceneDir, `${baseName}_subject_${segStratName}_${fChecksum}.png`),
-        joinPaths(sceneDir, `${baseName}_subject_${fChecksum}.png`),
-        joinPaths(sceneDir, `${baseName}_subject.png`),
-        joinPaths(storyRoot, `${baseName}_subject_${fChecksum}.png`),
-        joinPaths(storyRoot, `${baseName}_subject.png`),
-      ];
-      for (const cand of candidates) {
-        if (await checkExists(cand)) {
-          resolvedSubPath = cand;
-          break;
-        }
-      }
-    }
-
-    if (resolvedSubPath) {
-      try {
-        const data = await loadAssetBytes(resolvedSubPath);
-        if (data && data.length > 0) {
-          await cache.set(cacheKey, data, { mimeType: 'image/png' });
-          const subjectImg = await CanvasAssetLoader.loadImage(data);
-          let subjectBBox: any = null;
-          const jsonCandidate = resolvedSubPath.replace(/\.png$/i, ".json");
-          const jsonData = await loadAssetBytes(jsonCandidate);
-          if (jsonData) {
-            try {
-              const meta = JSON.parse(new TextDecoder().decode(jsonData));
-              if (meta.boundingBox) subjectBBox = meta.boundingBox;
-            } catch { }
-          }
-          return { subjectImg, subjectBBox };
-        }
-      } catch { }
-    }
-
     // 3. Fallback to active/fallback segmentation strategy
     const segRes = await (segStrat as any).segment(imgBuffer);
     const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
     if (maskBuffer) {
       await cache.set(cacheKey, maskBuffer, { mimeType: 'image/png' });
       const subjectImg = await CanvasAssetLoader.loadImage(maskBuffer);
+      console.log("resolved", subjectImg);
       return { subjectImg, subjectBBox: segRes.boundingBox };
     }
 

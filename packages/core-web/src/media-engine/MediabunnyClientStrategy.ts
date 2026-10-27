@@ -1,5 +1,5 @@
 import { MediabunnyClientSink } from './MediabunnyClientSink';
-import type {
+import {
   IMediaEngineStrategy,
   MediaEngineType,
   MediaEngineCapabilities,
@@ -55,7 +55,7 @@ export class MediabunnyClientChunkPolicy implements IChunkExecutionPolicy {
  * Designed for pure browser / WebCodecs environments (apps/studio) without requiring native binaries.
  */
 export class MediabunnyClientStrategy implements IMediaEngineStrategy {
-  public readonly id: MediaEngineType = 'mediabunny-client';
+  public readonly id = MediaEngineType.MediabunnyClient;
   public readonly name: string = 'Mediabunny Client Engine (WebCodecs & Browser Blob)';
 
   public readonly capabilities: MediaEngineCapabilities = {
@@ -78,7 +78,7 @@ export class MediabunnyClientStrategy implements IMediaEngineStrategy {
 
     if (!hasBrowserWebCodecs && !hasNode) {
       throw new MediaEngineError(
-        'mediabunny-client',
+       this.id,
         'WebCodecs (VideoEncoder) is not supported in this runtime environment.'
       );
     }

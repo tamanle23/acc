@@ -1,6 +1,9 @@
+
 /**
- * Universal Media Engine Strategy Types & Contracts
- */
+* Universal Media Engine Strategy Types & Contracts
+*/
+
+import { ICanvasContext2D, ICanvasInstance } from "../canvas/types";
 
 export enum MediaEngineType {
   BunFFI = 'bun-ffi',
@@ -89,8 +92,8 @@ export interface IAudioMuxerStrategy {
 export interface DecodedVideoFrame {
   width: number;
   height: number;
-  canvas: any;
-  ctx: any;
+  canvas: ICanvasInstance;
+  ctx: ICanvasContext2D;
 }
 
 export interface IVideoDecoder {

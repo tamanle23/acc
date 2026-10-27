@@ -204,6 +204,7 @@ export class AssetProtocolRegistry {
     if (uri.startsWith('data:')) {
       return new DataUriAssetBlob(uri);
     }
+    
 
     let filePath = uri;
     if (filePath.startsWith('file://')) {
