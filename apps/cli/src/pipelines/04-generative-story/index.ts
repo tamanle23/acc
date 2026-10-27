@@ -3,7 +3,7 @@ export * from './StoryRenderer';
 export * from './platforms';
 export * from './tts';
 export * from './whisper';
-export * from './upscaler';
+export * from './plugins/upscaler';
 export * from './plugins/UpscalerPlugin';
 export * from './VideoEditPipelineOrchestrator';
 export * from './stages/StoryFolderResolutionStage';

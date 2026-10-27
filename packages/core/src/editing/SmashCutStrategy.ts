@@ -1,5 +1,5 @@
+import { ExtendedContentChunk } from '@acc/ir';
 import type { ICutStrategy, CutExecutionResult } from './ICutStrategy';
-import type { ExtendedContentChunk } from '../types';
 
 export class SmashCutStrategy implements ICutStrategy {
   public readonly id: string = 'smash_cut';

@@ -1,5 +1,5 @@
-import type { ResolvedStoryConfig } from '../types';
 import { AssetContext } from './AssetContext';
+import { ResolvedStoryConfig } from './types';
 
 export interface RenderContext {
   config: ResolvedStoryConfig;

@@ -34,7 +34,7 @@ export * from './AudioNormalizer';
 export * from './BaseEffectEngine';
 export * from './FFmpegExecutor';
 export * from './FFmpegFilterGraph';
-export * from './effects/sound-effects/FreesoundClient';
+export * from './effects/sound-effects/generators/library/FreesoundClient';
 export * from './IPlugin';
 export * from './Registry';
 export * from './utils';

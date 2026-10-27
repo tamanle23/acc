@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { IPlugin, RenderContext, Logger, Utils, fileExists } from '@acc/core';
-import { checkAndDownloadUpscaler, upscaleImage } from '../upscaler';
+import { checkAndDownloadUpscaler, upscaleImage } from './upscaler';
 
 
 export class UpscalerPlugin implements IPlugin {
@@ -17,7 +17,7 @@ export class UpscalerPlugin implements IPlugin {
 
     const modelName = upscale.model || 'realesrgan-x4plus';
     Logger.info(this.name, `AI Auto-Upscale is enabled. Checking dependencies for ${modelName}...`);
-    
+
     try {
       await checkAndDownloadUpscaler(modelName);
     } catch (err: any) {
