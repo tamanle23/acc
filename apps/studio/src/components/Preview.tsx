@@ -35,6 +35,7 @@ import {
 } from '../lib/gizmo';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
+import { WebAudioEngine } from '../lib/audio';
 
 interface PreviewProps {
   playhead: {
@@ -636,7 +637,7 @@ export function Preview({
   // Check if selected sequence explicitly has a transform modifier
   const selectedSeq = selectedSeqId
     ? (irState.timeline?.sequences?.get(selectedSeqId) ||
-       irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId))
+      irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId))
     : undefined;
   const hasTransformModifier = Boolean(selectedSeq?.modifiers?.some((m) => m.type === 'transform'));
 
