@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  pointerWithin,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -80,10 +81,21 @@ export function TimelineDom({
   const timelineSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
+        distance: 5,
       },
     })
   );
+
+  // rAF Throttle for DragMove to prevent state thrashing during 144Hz high-frequency mouse moves
+  const dragRafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+      }
+    };
+  }, []);
 
   // Horizontal Sequence Virtualization (Active drag & paired sequences are never culled)
   const bufferFrames = Math.ceil(400 / pixelsPerFrame);
@@ -142,107 +154,121 @@ export function TimelineDom({
   const handleDragMove = (e: DragMoveEvent) => {
     if (!activeDragState) return;
 
-    const rawDeltaFrames = Math.round(e.delta.x / pixelsPerFrame);
-
-    if (activeDragState.type === 'clip') {
-      const overTrackId = (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
-      const rawTargetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
-
-      // Validate track compatibility: audio sequences stay on audio tracks, visual on visual
-      const sourceTrack = tracks.find((t) => t.id === activeDragState.sourceTrackId);
-      const targetTrack = tracks.find((t) => t.id === overTrackId);
-      const isSourceAudio = sourceTrack?.type === 'audio' || activeDragState.activeSeq?.type === 'audio';
-      const isTargetAudio = targetTrack?.type === 'audio';
-      const isInvalidDrop = Boolean(targetTrack && isSourceAudio !== isTargetAudio);
-
-      let targetStart = rawTargetStart;
-      let snapGuideline: number | null = null;
-      let snapLabel: string | null = null;
-
-      if (snapEnabled && !isInvalidDrop) {
-        const snapRes = TimelineSnapCalculator.calculateSnap({
-          targetStart: rawTargetStart,
-          durationFrames: activeDragState.initialDurationFrames,
-          pixelsPerFrame,
-          playheadFrame: currentFrame,
-          tracks,
-          excludeSeqIds: [
-            activeDragState.seqId,
-            ...(activeDragState.pairedSeqId ? [activeDragState.pairedSeqId] : []),
-          ],
-          activeGuidelineFrame: activeDragState.snapLabel ? activeDragState.snappedStartFrame : null,
-        });
-
-        if (snapRes.isSnapped) {
-          targetStart = snapRes.snappedFrame;
-          snapGuideline = snapRes.guidelineFrame;
-          snapLabel = snapRes.label;
-        }
-      }
-
-      onActiveSnapGuidelineChange(snapGuideline !== null ? { frame: snapGuideline, label: snapLabel || undefined } : null);
-
-      const deltaFrames = targetStart - activeDragState.initialStartFrame;
-      setActiveDragState((prev) =>
-        prev
-          ? {
-              ...prev,
-              deltaFrames,
-              snappedStartFrame: targetStart,
-              targetTrackId: overTrackId,
-              isInvalidDrop,
-              snapLabel,
-            }
-          : null
-      );
-    } else if (activeDragState.type === 'trim') {
-      let deltaFrames = rawDeltaFrames;
-      let snappedGuideline: number | null = null;
-
-      if (snapEnabled) {
-        const snapThresholdFrames = Math.max(1, Math.round(8 / pixelsPerFrame));
-        const snapPoints: number[] = [currentFrame];
-        for (const track of tracks) {
-          for (const s of track.sequences) {
-            if (s.id !== activeDragState.seqId) {
-              snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
-            }
-          }
-        }
-
-        if (activeDragState.handle === 'start') {
-          const rawTarget = activeDragState.initialStartFrame + deltaFrames;
-          let closestDist = Infinity;
-          for (const sp of snapPoints) {
-            const dist = Math.abs(rawTarget - sp);
-            if (dist <= snapThresholdFrames && dist < closestDist) {
-              closestDist = dist;
-              deltaFrames = sp - activeDragState.initialStartFrame;
-              snappedGuideline = sp;
-            }
-          }
-        } else {
-          const rawTarget =
-            activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
-          let closestDist = Infinity;
-          for (const sp of snapPoints) {
-            const dist = Math.abs(rawTarget - sp);
-            if (dist <= snapThresholdFrames && dist < closestDist) {
-              closestDist = dist;
-              deltaFrames =
-                sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
-              snappedGuideline = sp;
-            }
-          }
-        }
-      }
-
-      onActiveSnapGuidelineChange(snappedGuideline !== null ? { frame: snappedGuideline } : null);
-      setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
+    if (dragRafRef.current !== null) {
+      cancelAnimationFrame(dragRafRef.current);
     }
+
+    const deltaX = e.delta.x;
+    const overTrackIdFromEvent = (e.over?.data?.current as any)?.trackId;
+
+    dragRafRef.current = requestAnimationFrame(() => {
+      dragRafRef.current = null;
+      const rawDeltaFrames = Math.round(deltaX / pixelsPerFrame);
+
+      if (activeDragState.type === 'clip') {
+        const overTrackId = overTrackIdFromEvent || activeDragState.targetTrackId;
+        const rawTargetStart = Math.max(0, activeDragState.initialStartFrame + rawDeltaFrames);
+
+        // Validate track compatibility: audio sequences stay on audio tracks, visual on visual
+        const sourceTrack = tracks.find((t) => t.id === activeDragState.sourceTrackId);
+        const targetTrack = tracks.find((t) => t.id === overTrackId);
+        const isSourceAudio = sourceTrack?.type === 'audio' || activeDragState.activeSeq?.type === 'audio';
+        const isTargetAudio = targetTrack?.type === 'audio';
+        const isInvalidDrop = Boolean(targetTrack && isSourceAudio !== isTargetAudio);
+
+        let targetStart = rawTargetStart;
+        let snapGuideline: number | null = null;
+        let snapLabel: string | null = null;
+
+        if (snapEnabled && !isInvalidDrop) {
+          const snapRes = TimelineSnapCalculator.calculateSnap({
+            targetStart: rawTargetStart,
+            durationFrames: activeDragState.initialDurationFrames,
+            pixelsPerFrame,
+            playheadFrame: currentFrame,
+            tracks,
+            excludeSeqIds: [
+              activeDragState.seqId,
+              ...(activeDragState.pairedSeqId ? [activeDragState.pairedSeqId] : []),
+            ],
+            activeGuidelineFrame: activeDragState.snapLabel ? activeDragState.snappedStartFrame : null,
+          });
+
+          if (snapRes.isSnapped) {
+            targetStart = snapRes.snappedFrame;
+            snapGuideline = snapRes.guidelineFrame;
+            snapLabel = snapRes.label;
+          }
+        }
+
+        onActiveSnapGuidelineChange(snapGuideline !== null ? { frame: snapGuideline, label: snapLabel || undefined } : null);
+
+        const deltaFrames = targetStart - activeDragState.initialStartFrame;
+        setActiveDragState((prev) =>
+          prev
+            ? {
+                ...prev,
+                deltaFrames,
+                snappedStartFrame: targetStart,
+                targetTrackId: overTrackId,
+                isInvalidDrop,
+                snapLabel,
+              }
+            : null
+        );
+      } else if (activeDragState.type === 'trim') {
+        let deltaFrames = rawDeltaFrames;
+        let snappedGuideline: number | null = null;
+
+        if (snapEnabled) {
+          const snapThresholdFrames = Math.max(1, Math.round(8 / pixelsPerFrame));
+          const snapPoints: number[] = [currentFrame];
+          for (const track of tracks) {
+            for (const s of track.sequences) {
+              if (s.id !== activeDragState.seqId) {
+                snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+              }
+            }
+          }
+
+          if (activeDragState.handle === 'start') {
+            const rawTarget = activeDragState.initialStartFrame + deltaFrames;
+            let closestDist = Infinity;
+            for (const sp of snapPoints) {
+              const dist = Math.abs(rawTarget - sp);
+              if (dist <= snapThresholdFrames && dist < closestDist) {
+                closestDist = dist;
+                deltaFrames = sp - activeDragState.initialStartFrame;
+                snappedGuideline = sp;
+              }
+            }
+          } else {
+            const rawTarget =
+              activeDragState.initialStartFrame + activeDragState.initialDurationFrames + deltaFrames;
+            let closestDist = Infinity;
+            for (const sp of snapPoints) {
+              const dist = Math.abs(rawTarget - sp);
+              if (dist <= snapThresholdFrames && dist < closestDist) {
+                closestDist = dist;
+                deltaFrames =
+                  sp - (activeDragState.initialStartFrame + activeDragState.initialDurationFrames);
+                snappedGuideline = sp;
+              }
+            }
+          }
+        }
+
+        onActiveSnapGuidelineChange(snappedGuideline !== null ? { frame: snappedGuideline } : null);
+        setActiveDragState((prev) => (prev ? { ...prev, deltaFrames } : null));
+      }
+    });
   };
 
   const handleDragEnd = (e: DragEndEvent) => {
+    if (dragRafRef.current !== null) {
+      cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = null;
+    }
     onActiveSnapGuidelineChange(null);
     if (!activeDragState) return;
 
@@ -320,6 +346,7 @@ export function TimelineDom({
   return (
     <DndContext
       sensors={timelineSensors}
+      collisionDetection={pointerWithin}
       autoScroll={{
         threshold: {
           x: 0.15,

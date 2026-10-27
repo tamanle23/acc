@@ -134,7 +134,11 @@ export function ClipItem({
           left: `${leftPx}px`,
           width: `${widthPx}px`,
         }}
-        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group transition-all overflow-hidden ${
+        className={`absolute top-1 bottom-1 rounded-sm border px-1.5 flex items-center justify-between select-none group overflow-hidden ${
+          isBeingDragged
+            ? 'transition-none'
+            : 'transition-all'
+        } ${
           isBeingDragged && activeDragState?.type === 'clip'
             ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
             : isPairedDrag

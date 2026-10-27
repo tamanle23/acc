@@ -52,8 +52,9 @@ export const ClipDragProxy: React.FC<ClipDragProxyProps> = ({
       style={{
         width: `${widthPx}px`,
         height: '32px',
+        willChange: 'transform',
       }}
-      className={`rounded-sm border px-2 flex items-center justify-between select-none shadow-2xl scale-[1.02] backdrop-blur-md pointer-events-none transition-transform duration-75 ${
+      className={`rounded-sm border px-2 flex items-center justify-between select-none shadow-2xl scale-[1.02] backdrop-blur-md pointer-events-none ${
         isInvalidDrop
           ? 'bg-destructive/35 border-destructive text-destructive-foreground ring-2 ring-destructive cursor-not-allowed shadow-[0_0_20px_rgba(239,68,68,0.4)]'
           : 'bg-popover/90 border-accent-theme/80 text-foreground ring-2 ring-accent-theme/90 shadow-[0_10px_30px_rgba(0,0,0,0.5)]'
