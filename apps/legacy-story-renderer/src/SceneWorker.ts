@@ -1,6 +1,7 @@
 import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
-import { FFmpegManager } from './FFmpegManager';
+import { FFmpegManager, bootstrapNode, FFISceneEngine } from '@acc/core';
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
+import { renderDepth3DScene } from '@acc/effect-engines';
 import path from 'path';
 
 export interface SceneTaskPayload {
@@ -28,29 +29,8 @@ if (!isMainThread) {
     try {
       if (workerData?.binDir) {
         FFmpegManager.setBinDir(workerData.binDir);
-      } else {
-        await FFmpegManager.prepare();
       }
-
-      const { UniversalCanvasProvider, MediaEngineRegistry } = await import('@acc/core-isomorphic');
-      const { NapiCanvasAdapter } = await import('./native/canvas/NapiCanvasAdapter');
-      const { BunFFIEngineStrategy } = await import('./media-engine/strategies/BunFFIEngineStrategy');
-      const { FluentFFmpegEngineStrategy } = await import('./media-engine/strategies/FluentFFmpegEngineStrategy');
-      const { MediabunnyServerStrategy } = await import('./media-engine/strategies/MediabunnyServerStrategy');
-
-      UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
-      if (!MediaEngineRegistry.has('bun-ffi')) {
-        MediaEngineRegistry.register(new BunFFIEngineStrategy());
-      }
-      if (!MediaEngineRegistry.has('fluent-ffmpeg')) {
-        MediaEngineRegistry.register(new FluentFFmpegEngineStrategy());
-      }
-      if (!MediaEngineRegistry.has('mediabunny')) {
-        MediaEngineRegistry.register(new MediabunnyServerStrategy());
-      }
-
-      const { renderDepth3DScene } = await import('@acc/effect-engines');
-      const { FFISceneEngine } = await import('./ffmpeg-ffi/FFISceneEngine');
+      await bootstrapNode({ prepareFFmpeg: !workerData?.binDir });
 
       parentPort?.on('message', async (task: { type: string; data: SceneTaskPayload }) => {
         if (task.type === 'EXIT') {

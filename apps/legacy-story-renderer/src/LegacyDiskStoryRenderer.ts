@@ -6,13 +6,13 @@ import {
   Logger,
   AssetContext,
   FFmpegFilterGraph,
-  SceneWorkerPool,
   FFISceneEngine,
   FFmpegExecutor,
   getMediaDuration,
   type RenderContext,
   fileExists,
 } from '@acc/core';
+import { SceneWorkerPool } from './SceneWorker';
 import type { ResolvedStoryConfig, TransitionSettings } from '@acc/core/types';
 import {
   generateAssContent,

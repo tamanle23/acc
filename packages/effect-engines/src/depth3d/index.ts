@@ -342,20 +342,9 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       (config.settings as any)?.mediaEngine ||
       (config.settings as any)?.engine;
 
-    let strategy;
-    if (rawEngine && MediaEngineRegistry.has(rawEngine)) {
-      strategy = MediaEngineRegistry.get(rawEngine);
-    } else {
-      // Auto-detect platform default strategy:
-      // In web/browser, defaults to registered default (e.g. mediabunny-client)
-      // In node/bun, defaults to bun-ffi if present, else default strategy
-      const isWeb = typeof window !== 'undefined' || typeof document !== 'undefined';
-      if (!isWeb && MediaEngineRegistry.has('bun-ffi')) {
-        strategy = MediaEngineRegistry.get('bun-ffi');
-      } else {
-        strategy = MediaEngineRegistry.get();
-      }
-    }
+    const strategy = rawEngine && MediaEngineRegistry.has(rawEngine)
+      ? MediaEngineRegistry.get(rawEngine)
+      : MediaEngineRegistry.get();
 
     sink = strategy.createVideoSink({
       width,
