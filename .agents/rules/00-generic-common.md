@@ -3,11 +3,12 @@ trigger: always_on
 description: Universal operational constraints, code standards, git workflow, and WCAG accessibility.
 ---
 
-# SYSTEM DIRECTIVES & OPERATIONAL RULES
-
-## Rule Management SOP
-- Full explanations & rationales MUST live in `docs/master_rules_reference.md`.
-- `.agents/rules/` contains ONLY ultra-compact imperative constraints.
+# RULE MANAGEMENT SOP (CRITICAL CONSTRAINT)
+Constraint: YOU MUST NEVER write long, detailed rules directly into the `.agents/rules/` directory.
+Workflow:
+  Step_1: Whenever the user asks to add or update a rule, FIRST write the full, verbose explanation and logic into `docs/master_rules_reference.md`.
+  Step_2: SECOND, strictly distill the rule into a highly compact, imperative constraint (using YAML or bullet points).
+  Step_3: THIRD, append ONLY the compacted version to either `00-generic-common.md` (if broad) or `01-workspace-specific.md` (if domain-specific).
 
 ## Universal Engineering Invariants
 - **OS-COMPAT**: Support Windows, Linux, macOS.

@@ -18,7 +18,7 @@ Whenever a rule needs to be introduced, updated, or modified:
    - **Generic Common**: Applicable across any software project (e.g., git conventions, error handling, tracking).
    - **Workspace Specific**: Bound to this monorepo's applications, frameworks, UI system, or packages.
 3. **Step 3 (Distillation)**: Condense the rule into minimal, imperative bullet points / YAML syntax without transitional fluff.
-4. **Step 4 (Append Active Rule)**: Append only the distilled constraint to `.agents/rules/00-generic-common.md` or `.agents/rules/01-story-specific.md`.
+4. **Step 4 (Append Active Rule)**: Append only the distilled constraint to `.agents/rules/00-generic-common.md` or `.agents/rules/01-workspace-specific.md`.
 
 ---
 

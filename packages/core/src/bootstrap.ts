@@ -89,9 +89,6 @@ export async function bootstrapNode(options: BootstrapNodeOptions = {}): Promise
     VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
   }
 
-  VisionEngineRegistry.setDefaultDepthStrategy(PlatformDetector.resolveDefaultDepthStrategy());
-  VisionEngineRegistry.setDefaultSegmentationStrategy(PlatformDetector.resolveDefaultSegmentationStrategy());
-
   // 6. Optionally prepare FFmpeg if requested
   if (options.prepareFFmpeg) {
     await FFmpegManager.prepare();
