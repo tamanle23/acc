@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { WaveformLODPyramid } from '../apps/studio/src/lib/timeline/WaveformLODPyramid';
 import { ThumbnailLRUCache } from '../apps/studio/src/lib/timeline/ThumbnailLRUCache';
-import type { ClipLayoutEntry } from '../apps/studio/src/workers/timelineTypes';
+import type { ClipLayoutEntry } from '../apps/studio/src/renderer/workers/timelineTypes';
 
 describe('Timeline Virtualization & Memory Hygiene Suite', () => {
   describe('WaveformLODPyramid (Multi-Resolution Peak Decimation)', () => {
@@ -95,11 +95,11 @@ describe('Timeline Virtualization & Memory Hygiene Suite', () => {
       // Mock browser environment in Bun test runner
       (globalThis as any).window = globalThis;
       (globalThis as any).HTMLCanvasElement = class HTMLCanvasElement {
-        transferControlToOffscreen() {}
+        transferControlToOffscreen() { }
       };
       (globalThis as any).Worker = class MockWorker {
-        postMessage() {}
-        terminate() {}
+        postMessage() { }
+        terminate() { }
       };
 
       const { TimelineWorkerBridge } = await import('../apps/studio/src/lib/timeline/TimelineWorkerBridge');

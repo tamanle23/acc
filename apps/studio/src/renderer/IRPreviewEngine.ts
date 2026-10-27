@@ -18,7 +18,7 @@ import {
   StudioSidecarCoordinator,
   type ModifierWarmedEvent,
   type SidecarPreflightOptions,
-} from './sidecar/StudioSidecarCoordinator';
+} from './StudioSidecarCoordinator';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;
@@ -88,7 +88,7 @@ export class IRPreviewEngine {
     this.autoPreflight = options?.autoPreflight ?? true;
 
     if (this.autoPreflight && this.sidecarCoordinator) {
-      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => {});
+      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => { });
     }
   }
 
@@ -121,7 +121,7 @@ export class IRPreviewEngine {
 
     // Eagerly preflight added or updated sequences
     if (this.autoPreflight && this.sidecarCoordinator) {
-      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => {});
+      this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => { });
     }
   }
 
@@ -141,7 +141,7 @@ export class IRPreviewEngine {
     if (this.sidecarCoordinator) {
       return this.sidecarCoordinator.onModifierWarmed(callback);
     }
-    return () => {};
+    return () => { };
   }
 
   /**

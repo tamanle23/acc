@@ -1,11 +1,11 @@
 import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
-import { IRPreviewEngine } from '../renderer/preview';
+import { IRPreviewEngine } from '../../renderer';
 import { DeterministicTimelineClock, UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
-import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
-import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
-import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
-import { ContentHashTextureCache } from './ContentHashTextureCache';
+import { MediabunnyWorkerReader } from '../../renderer/workers/MediabunnyWorkerReader';
+import { PreviewFrameMemoryManager } from '../../renderer/workers/PreviewFrameMemoryManager';
+import { WorkerClipPrewarmer } from '../../renderer/workers/WorkerClipPrewarmer';
+import { ContentHashTextureCache } from '../../renderer/workers/ContentHashTextureCache';
 
 // Register isomorphic canvas adapter and canonical core modifiers for the dedicated worker thread
 UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);

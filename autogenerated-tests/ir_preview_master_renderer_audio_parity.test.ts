@@ -4,7 +4,7 @@ import {
   UniversalAudioMixer,
   type ResolvedTimeline,
 } from '@acc/ir';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 
 describe('IRPreviewEngine and IRMasterRenderer Audio-Visual Parity Suite', () => {
   let mockTimeline: ResolvedTimeline;

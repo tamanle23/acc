@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { MediabunnyWorkerReader } from '../apps/studio/src/workers/MediabunnyWorkerReader';
+import { MediabunnyWorkerReader } from '../apps/studio/src/renderer/workers/MediabunnyWorkerReader';
 
 describe('MediabunnyWorkerReader In-Flight Deduplication & Concurrency Gate Suite', () => {
   let reader: MediabunnyWorkerReader;

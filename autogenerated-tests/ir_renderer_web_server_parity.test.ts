@@ -10,7 +10,7 @@ import {
   type ResolvedTimeline,
   type ResolvedTrack,
 } from '@acc/ir';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 
 describe('Iteration 10 Phase 4: IR Master & Preview Web/Server Visual Parity Suite', () => {
   beforeAll(() => {
@@ -248,8 +248,8 @@ describe('Iteration 10 Phase 4: IR Master & Preview Web/Server Visual Parity Sui
     // Create a mock frame sink to capture raw frame buffers directly from IRMasterRenderer
     const masterCapturedFrames = new Map<number, Uint8Array>();
     const mockSink = {
-      initialize: async () => {},
-      prepare: async () => {},
+      initialize: async () => { },
+      prepare: async () => { },
       consumeFrame: async (frameIndex: number, rgbaBuffer: Uint8Array) => {
         if (FRAMES_TO_VERIFY.includes(frameIndex)) {
           masterCapturedFrames.set(frameIndex, new Uint8Array(rgbaBuffer));

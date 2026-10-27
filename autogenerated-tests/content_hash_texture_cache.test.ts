@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { ContentHashTextureCache } from '../apps/studio/src/workers/ContentHashTextureCache';
+import { ContentHashTextureCache } from '../apps/studio/src/renderer/workers/ContentHashTextureCache';
 
 describe('ContentHashTextureCache Suite', () => {
   let cache: ContentHashTextureCache;

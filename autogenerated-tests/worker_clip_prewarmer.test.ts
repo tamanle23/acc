@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { WorkerClipPrewarmer } from '../apps/studio/src/workers/WorkerClipPrewarmer';
-import { PreviewFrameMemoryManager } from '../apps/studio/src/workers/PreviewFrameMemoryManager';
+import { WorkerClipPrewarmer } from '../apps/studio/src/renderer/workers/WorkerClipPrewarmer';
+import { PreviewFrameMemoryManager } from '../apps/studio/src/renderer/workers/PreviewFrameMemoryManager';
 import type { ResolvedTimeline } from '@acc/ir';
 
 describe('WorkerClipPrewarmer Suite', () => {
@@ -18,7 +18,7 @@ describe('WorkerClipPrewarmer Suite', () => {
         return {
           width: 1920,
           height: 1080,
-          close: () => {},
+          close: () => { },
         } as unknown as ImageBitmap;
       },
     });

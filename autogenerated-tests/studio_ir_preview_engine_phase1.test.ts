@@ -10,7 +10,7 @@ import {
 import {
   IRPreviewEngine,
   AssetTextureCache,
-} from '@acc/studio';
+} from '@acc/studio/renderer';
 
 // Mock 2D Canvas Context for test execution
 function createMockCanvasContext() {
@@ -33,7 +33,7 @@ function createMockCanvasContext() {
     strokeRect: (x: number, y: number, w: number, h: number) => calls.push(`strokeRect(${x},${y},${w},${h})`),
     setLineDash: (d: number[]) => calls.push(`setLineDash([${d.join(',')}])`),
     createRadialGradient: () => ({
-      addColorStop: () => {},
+      addColorStop: () => { },
     }),
     drawImage: () => calls.push('drawImage'),
     globalCompositeOperation: 'source-over',

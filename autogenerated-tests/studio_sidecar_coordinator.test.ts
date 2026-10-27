@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import {
   StudioSidecarCoordinator,
   type ModifierWarmedEvent,
-} from '../apps/studio/src/renderer/preview/sidecar/StudioSidecarCoordinator';
+} from '../apps/studio/src/renderer/StudioSidecarCoordinator';
 import {
   IRPreviewEngine,
   AssetTextureCache,
-} from '../apps/studio/src/renderer/preview';
+} from '../apps/studio/src/renderer';
 import {
   type ResolvedTimeline,
   type ResolvedSequence,

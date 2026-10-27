@@ -158,25 +158,48 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight
-    if (params.imagePath) {
+    const seq = context.targetType === 'sequence' ? (context.targetEntity as any) : null;
+    const assetId = seq?.assetId;
+    const assetDef = assetId && context.assets ? context.assets[assetId] : undefined;
+    const effectiveImagePath = params.imagePath || assetDef?.src || seq?.src || assetId;
+
+    if (effectiveImagePath) {
+      const cacheKeys = [effectiveImagePath, params.imagePath, assetId, seq?.id, seq?.src].filter(Boolean) as string[];
+
       try {
-        const cutout = await resolveSubjectCutout(params.imagePath, params as any);
-        this.cutoutCache.set(params.imagePath, cutout);
+        const cutout = await resolveSubjectCutout(effectiveImagePath, params as any);
+        for (const k of cacheKeys) {
+          this.cutoutCache.set(k, cutout);
+        }
       } catch { }
 
       const mode = params.mode || 'frame_breaker';
       const width = context.canvas.width;
       const height = context.canvas.height;
 
-      if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth || params.relighting?.enabled) {
+      const needsDepth =
+        mode === 'depth_map_3d' ||
+        mode === 'mesh_displacement' ||
+        mode === 'depth_heatmap' ||
+        mode === 'parallax_25d' ||
+        mode === 'parallax_dolly' ||
+        mode === 'volumetric_sandwich' ||
+        mode === 'sandwich' ||
+        mode === 'frame_breaker' ||
+        params.autoDepth !== false ||
+        Boolean(params.relighting?.enabled);
+
+      if (needsDepth) {
         try {
           const depthData = await resolveDepthMapData(
-            params.imagePath,
+            effectiveImagePath,
             width,
             height,
             params as any
           );
-          this.depthLayerCache.set(params.imagePath, depthData);
+          for (const k of cacheKeys) {
+            this.depthLayerCache.set(k, depthData);
+          }
 
           // If relighting is requested, compute surface normal map once during preflight to adhere to ZERO-ALLOC-FRAME-LOOP
           if (params.relighting?.enabled && depthData?.srcCanvas) {
@@ -189,12 +212,20 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
               4,
               params.relighting.normalStrength ?? 2.0
             );
-            this.normalMapCache.set(params.imagePath, normalMap);
+            for (const k of cacheKeys) {
+              this.normalMapCache.set(k, normalMap);
+            }
 
             // Pre-allocate scratch canvas for relight compositing
             const relightCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
             const rCtx = relightCanvas.getContext('2d');
-            this.relightCanvasCache.set(params.imagePath, { canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas, ctx: rCtx });
+            const relightEntry = {
+              canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas,
+              ctx: rCtx,
+            };
+            for (const k of cacheKeys) {
+              this.relightCanvasCache.set(k, relightEntry);
+            }
           }
         } catch { }
       }
@@ -209,7 +240,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           opacity: 0.2 + (i % 5) * 0.12,
           pulseSpeed: 1.5 + (i % 3),
         }));
-        this.particlesCache.set(params.imagePath, particles);
+        for (const k of cacheKeys) {
+          this.particlesCache.set(k, particles);
+        }
       } else if (mode === 'volumetric_sandwich' || mode === 'sandwich') {
         const dustParticles = Array.from({ length: 35 }, (_, i) => ({
           x: (Math.sin(i * 47) * 0.5 + 0.5) * width,
@@ -219,7 +252,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
           speedY: -0.3 - (i % 3) * 0.2,
           opacity: 0.15 + (i % 4) * 0.1,
         }));
-        this.dustParticlesCache.set(params.imagePath, dustParticles);
+        for (const k of cacheKeys) {
+          this.dustParticlesCache.set(k, dustParticles);
+        }
       }
     }
   }
@@ -239,8 +274,21 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     const progress = localFrame / totalSeqFrames;
     const timeSec = localFrame / 30; // Approx 30fps
 
+    const candidateKeys = [
+      params.imagePath,
+      sequence.assetId,
+      sequence.id,
+      (sequence as any).src,
+    ].filter(Boolean) as string[];
+
     // Retrieve cached cutout if available
-    let cutout = params.imagePath ? this.cutoutCache.get(params.imagePath) : undefined;
+    let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined;
+    for (const k of candidateKeys) {
+      if (this.cutoutCache.has(k)) {
+        cutout = this.cutoutCache.get(k);
+        break;
+      }
+    }
     if (!cutout && (baseAsset as any)._cutoutResolved === undefined) {
       // Synchronous attempt or empty fallback
       cutout = { subjectImg: null, subjectBBox: null };
@@ -248,8 +296,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
     // Build or retrieve cached dimmed background plate for frame_breaker
     let bgCanvas: any | undefined;
-    if (mode === 'frame_breaker' && params.imagePath) {
-      bgCanvas = this.bgCanvasCache.get(params.imagePath);
+    if (mode === 'frame_breaker') {
+      for (const k of candidateKeys) {
+        if (this.bgCanvasCache.has(k)) {
+          bgCanvas = this.bgCanvasCache.get(k);
+          break;
+        }
+      }
       if (!bgCanvas) {
         const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
         bgCanvas = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
@@ -277,7 +330,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         bgCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, bgX, bgY, bgW, bgH);
         bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
         bgCtx.fillRect(bgX, bgY, bgW, bgH);
-        this.bgCanvasCache.set(params.imagePath, bgCanvas);
+        for (const k of candidateKeys) {
+          this.bgCanvasCache.set(k, bgCanvas);
+        }
       }
     }
 
@@ -295,20 +350,47 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       depthMesh: params.depthMesh,
     };
 
-    const depthLayersData = params.imagePath ? this.depthLayerCache.get(params.imagePath) : undefined;
-    const particles = params.imagePath ? this.particlesCache.get(params.imagePath) : undefined;
-    const dustParticles = params.imagePath ? this.dustParticlesCache.get(params.imagePath) : undefined;
+    let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined;
+    for (const k of candidateKeys) {
+      if (this.depthLayerCache.has(k)) {
+        depthLayersData = this.depthLayerCache.get(k);
+        break;
+      }
+    }
+
+    let particles: any[] | undefined;
+    for (const k of candidateKeys) {
+      if (this.particlesCache.has(k)) {
+        particles = this.particlesCache.get(k);
+        break;
+      }
+    }
+
+    let dustParticles: any[] | undefined;
+    for (const k of candidateKeys) {
+      if (this.dustParticlesCache.has(k)) {
+        dustParticles = this.dustParticlesCache.get(k);
+        break;
+      }
+    }
 
     // Build or retrieve cached baseCanvas (e.g. for wigglegram)
     let baseCanvas: any | undefined;
-    if (mode === 'wigglegram' && params.imagePath) {
-      baseCanvas = this.baseCanvasCache.get(params.imagePath);
+    if (mode === 'wigglegram') {
+      for (const k of candidateKeys) {
+        if (this.baseCanvasCache.has(k)) {
+          baseCanvas = this.baseCanvasCache.get(k);
+          break;
+        }
+      }
       if (!baseCanvas) {
         const uBaseCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
         baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
         const bCtx = baseCanvas.getContext('2d');
         bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
-        this.baseCanvasCache.set(params.imagePath, baseCanvas);
+        for (const k of candidateKeys) {
+          this.baseCanvasCache.set(k, baseCanvas);
+        }
       }
     }
 
@@ -350,9 +432,21 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     }
 
     // Dynamic Relighting Pass (Phase 1)
-    if (params.relighting?.enabled && params.imagePath) {
-      const normalMap = this.normalMapCache.get(params.imagePath);
-      const relightEntry = this.relightCanvasCache.get(params.imagePath);
+    if (params.relighting?.enabled) {
+      let normalMap: SurfaceNormalMap | undefined;
+      let relightEntry: { canvas: any; ctx: any } | undefined;
+      for (const k of candidateKeys) {
+        if (this.normalMapCache.has(k)) {
+          normalMap = this.normalMapCache.get(k);
+          break;
+        }
+      }
+      for (const k of candidateKeys) {
+        if (this.relightCanvasCache.has(k)) {
+          relightEntry = this.relightCanvasCache.get(k);
+          break;
+        }
+      }
 
       if (normalMap && relightEntry) {
         const { canvas: relightCanvas, ctx: rCtx } = relightEntry;
@@ -421,7 +515,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         }
       }
     } else if (ctx.debugMode === 'normals') {
-      const normalMap = params.imagePath ? this.normalMapCache.get(params.imagePath) : undefined;
+      let normalMap: SurfaceNormalMap | undefined;
+      for (const k of candidateKeys) {
+        if (this.normalMapCache.has(k)) {
+          normalMap = this.normalMapCache.get(k);
+          break;
+        }
+      }
       if (normalMap) {
         canvasCtx.save();
         try {

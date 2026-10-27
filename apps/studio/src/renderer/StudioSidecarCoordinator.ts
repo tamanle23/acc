@@ -55,12 +55,12 @@ export class StudioSidecarCoordinator {
   }
 
   private initWorker(customWorkerUrl?: URL): void {
-    if (typeof Worker !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof Worker !== 'undefined') {
       try {
         this.worker = customWorkerUrl
           ? new Worker(customWorkerUrl, { type: 'module' })
           : new Worker(
-              new URL('../../../workers/preview-sidecar.worker.ts', import.meta.url),
+              new URL('./IRPreviewEngine.worker.ts', import.meta.url),
               { type: 'module' }
             );
 
@@ -228,6 +228,7 @@ export class StudioSidecarCoordinator {
         targetType: payload.targetType,
         targetEntity: payload.targetEntity as any,
         timeline: new Map(),
+        assets: payload.assets,
         fps: payload.fps,
         canvas: payload.canvas,
       };
@@ -326,6 +327,8 @@ export class StudioSidecarCoordinator {
       return distA - distB;
     });
 
+    const assets = timeline.assets || {};
+
     for (const seq of sequences) {
       if (seq.modifiers) {
         const start = seq.startFrame ?? 0;
@@ -333,6 +336,9 @@ export class StudioSidecarCoordinator {
         const isNearPlayhead =
           prioritizedFrame >= start - lookaheadFrames &&
           prioritizedFrame <= end + lookaheadFrames;
+
+        const assetDef = seq.assetId ? assets[seq.assetId] : undefined;
+        const effectiveImagePath = assetDef?.src || seq.assetId;
 
         for (const mod of seq.modifiers) {
           const taskId = `seq:${seq.id}:${mod.type}`;
@@ -342,8 +348,18 @@ export class StudioSidecarCoordinator {
                 taskId,
                 targetType: 'sequence',
                 targetId: seq.id,
-                targetEntity: seq as unknown as Record<string, unknown>,
-                modifier: { type: mod.type, params: mod.params || {} },
+                targetEntity: {
+                  ...seq,
+                  src: effectiveImagePath,
+                } as unknown as Record<string, unknown>,
+                modifier: {
+                  type: mod.type,
+                  params: {
+                    ...mod.params,
+                    imagePath: mod.params?.imagePath || effectiveImagePath,
+                  },
+                },
+                assets,
                 fps,
                 canvas,
               },

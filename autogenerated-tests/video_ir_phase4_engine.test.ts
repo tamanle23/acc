@@ -9,7 +9,7 @@ import {
   FrameBackpressureLock,
   DecoupledAudioMixer,
 } from '@acc/ir';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 import { StoryConfigToUniversalIRAdapter, LegacyStoryConfigAdapter, type LegacyStoryConfig } from '@acc/legacy-story-renderer';
 
 describe('Video IR Phase 4: Deterministic Headless Rasterizer & Interactive Preview Engine', () => {

@@ -7,7 +7,7 @@ import {
   type VideoIRDocument,
   type IIRFrameSink,
 } from '@acc/ir';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Phase 5: Pure Isomorphic Video IR Suite (@acc/ir)', () => {

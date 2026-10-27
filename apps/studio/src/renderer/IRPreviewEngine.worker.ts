@@ -8,7 +8,7 @@ import { VisionEngineRegistry } from '@acc/core-isomorphic';
 import type {
   SidecarWorkerMessage,
   SidecarWorkerResponse,
-} from '../renderer/preview/sidecar/SidecarTypes';
+} from './SidecarTypes';
 
 // Bootstrap isomorphic client runtime inside worker context
 bootstrapCoreWeb();
@@ -78,6 +78,7 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
           timeline: new Map(),
           fps: payload.fps,
           canvas: payload.canvas,
+          assets: payload.assets,
         };
 
         if (plugin && typeof plugin.execute === 'function') {

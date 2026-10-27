@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { RippleTrimSequenceCommand } from '../apps/studio/src/lib/commands/RippleTrimSequenceCommand';
 import { RippleDeleteSequenceCommand } from '../apps/studio/src/lib/commands/RippleDeleteSequenceCommand';
-import { computePeaksFromPcm, generateProceduralEnvelope } from '../apps/studio/src/workers/audioWaveform.worker';
+import { computePeaksFromPcm, generateProceduralEnvelope } from '../apps/studio/src/lib/audio/audioWaveform.worker';
 import type { VideoIRDocument } from '@acc/ir';
 
 function createMockDoc(): VideoIRDocument {

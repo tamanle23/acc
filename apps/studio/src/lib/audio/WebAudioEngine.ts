@@ -1,5 +1,5 @@
 import { UniversalAudioMixer, type AudioMixerClip, DecodedPcmSource } from '@acc/ir';
-import { IRPreviewEngine } from '../../renderer/preview';
+import { IRPreviewEngine } from '../../renderer';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';
@@ -95,7 +95,7 @@ export class WebAudioEngine {
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      this.ctx.resume().catch(() => { });
     }
     return !!this.ctx;
   }
@@ -272,7 +272,7 @@ export class WebAudioEngine {
       try {
         source.stop();
         source.disconnect();
-      } catch {}
+      } catch { }
     }
     this.queuedSources = [];
     this.scheduledAudioEndTime = 0;
@@ -311,7 +311,7 @@ export class WebAudioEngine {
           (this.currentSource.playbackRate as any).preservesPitch = true;
         }
         this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-      } catch {}
+      } catch { }
     }
   }
 
@@ -339,7 +339,7 @@ export class WebAudioEngine {
         try {
           this.scrubSource.stop();
           this.scrubSource.disconnect();
-        } catch {}
+        } catch { }
         this.scrubSource = null;
       }
 
@@ -427,7 +427,7 @@ export class WebAudioEngine {
       try {
         if (!this.waveformWorker) {
           this.waveformWorker = new Worker(
-            new URL('../../workers/audioWaveform.worker.ts', import.meta.url),
+            new URL('./audioWaveform.worker.ts', import.meta.url),
             { type: 'module' }
           );
           this.waveformWorker.onmessage = (e: MessageEvent<{ id: string; targetBars: number; peaks: Float32Array }>) => {

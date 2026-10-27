@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { PreviewFrameMemoryManager } from '../apps/studio/src/workers/PreviewFrameMemoryManager';
+import { PreviewFrameMemoryManager } from '../apps/studio/src/renderer/workers/PreviewFrameMemoryManager';
 
 describe('PreviewFrameMemoryManager Suite', () => {
   let memoryManager: PreviewFrameMemoryManager;
@@ -13,7 +13,7 @@ describe('PreviewFrameMemoryManager Suite', () => {
     const mockBitmap = {
       width: 1920,
       height: 1080,
-      close: () => {},
+      close: () => { },
     } as unknown as ImageBitmap;
 
     memoryManager.set('asset-1', 42, mockBitmap);
@@ -46,7 +46,7 @@ describe('PreviewFrameMemoryManager Suite', () => {
     memoryManager.set('asset-1', 100, createBitmap(100));
     expect(memoryManager.size()).toBe(64);
     expect(memoryManager.getPendingDisposalCount()).toBe(1);
-    
+
     // Drain disposal queue to execute .close()
     memoryManager.drainDisposalQueue();
     expect(closedCount).toBe(1); // One frame closed!

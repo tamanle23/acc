@@ -6,7 +6,7 @@ import {
   type ResolvedSequence,
   type ResolvedTrack,
 } from '@acc/ir';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 
 describe('Depth Diagnostic Preview Suite (Web & Node Parity)', () => {
   beforeAll(async () => {

@@ -28,7 +28,7 @@ import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
   StudioSidecarCoordinator,
-} from '../renderer/preview';
+} from '../renderer';
 import {
   Gizmo2DTransformation,
   type BoundingBox2D,

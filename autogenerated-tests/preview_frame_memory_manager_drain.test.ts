@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { PreviewFrameMemoryManager } from '../apps/studio/src/workers/PreviewFrameMemoryManager';
+import { PreviewFrameMemoryManager } from '../apps/studio/src/renderer/workers/PreviewFrameMemoryManager';
 
 describe('PreviewFrameMemoryManager Post-Render Drain Queue & Eviction Suite', () => {
   let memoryManager: PreviewFrameMemoryManager;

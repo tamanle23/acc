@@ -9,6 +9,7 @@ export interface ExecuteModifierPayload {
     type: string;
     params: Record<string, unknown>;
   };
+  assets?: Record<string, { src: string; type?: string }>;
   fps: number;
   canvas: { width: number; height: number };
 }

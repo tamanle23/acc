@@ -27,7 +27,7 @@ import {
   TooltipProvider,
 } from './components/ui';
 import { MediabunnyClientSink } from '@acc/core-web';
-import { IRPreviewEngine } from './renderer/preview';
+import { IRPreviewEngine } from './renderer';
 import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
 import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { AudioAssetCache } from './lib/audio/AudioAssetCache';
@@ -428,8 +428,8 @@ function StudioWorkspace() {
         try {
           const resolvedTracks = irState.timeline?.tracks
             ? (irState.timeline.tracks instanceof Map
-                ? Array.from(irState.timeline.tracks.values())
-                : irState.timeline.tracks)
+              ? Array.from(irState.timeline.tracks.values())
+              : irState.timeline.tracks)
             : [];
           const audioTracks = resolvedTracks.filter((t: any) => t.type === 'audio');
           if (audioTracks.length > 0) {
@@ -443,8 +443,8 @@ function StudioWorkspace() {
               const sequences = Array.isArray(track.sequences)
                 ? track.sequences
                 : track.sequences instanceof Map
-                ? Array.from(track.sequences.values())
-                : [];
+                  ? Array.from(track.sequences.values())
+                  : [];
               for (const seq of sequences) {
                 const startSec = (seq.startFrame ?? 0) / fps;
                 const durationSec = (seq.durationFrames ?? 30) / fps;

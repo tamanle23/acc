@@ -50,7 +50,7 @@ export class PreviewWorkerBridge {
 
     try {
       const offscreen = canvas.transferControlToOffscreen();
-      this.worker = new Worker(new URL('../../workers/preview.worker.ts', import.meta.url), {
+      this.worker = new Worker(new URL('./preview.worker.ts', import.meta.url), {
         type: 'module',
       });
 

@@ -6,7 +6,7 @@ import {
   type CanvasInstance,
 } from '@acc/core-isomorphic';
 import { NapiCanvasAdapter } from '@acc/core';
-import { IRPreviewEngine } from '@acc/studio';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 import { evaluateSequenceMotion } from '@acc/ir';
 import type { ResolvedTimeline, ResolvedTrack } from '../packages/ir/src/types/VideoIR';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';

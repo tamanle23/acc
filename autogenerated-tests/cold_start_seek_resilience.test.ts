@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { MediabunnyWorkerReader } from '../apps/studio/src/workers/MediabunnyWorkerReader';
+import { MediabunnyWorkerReader } from '../apps/studio/src/renderer/workers/MediabunnyWorkerReader';
 import { WebAudioEngine } from '../apps/studio/src/lib/audio/WebAudioEngine';
 
 describe('Cold Start Playhead Jump & Scrub Resilience Suite', () => {
@@ -12,7 +12,7 @@ describe('Cold Start Playhead Jump & Scrub Resilience Suite', () => {
 
     it('returns null immediately without blocking worker loop when requested before initialization', async () => {
       const startTime = performance.now();
-      
+
       // Cold requestFrame before init() completes
       const framePromise = reader.requestFrame(60, 30, false);
       const result = await framePromise;
