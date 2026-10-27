@@ -1041,6 +1041,56 @@ export const VisionStrategyControlStrategy: React.FC<ControlStrategyProps> = ({
  * Control Strategy Factory:
  * Resolves the appropriate UI control strategy component for any ParamFieldDescriptor.
  */
+/**
+ * Strategy 13: LightVectorControlStrategy
+ * Renders an intuitive 2D azimuth / elevation directional pad for positioning 3D relighting sources.
+ */
+export const LightVectorControlStrategy: React.FC<ControlStrategyProps> = ({
+  descriptor,
+  value,
+  onChange,
+  disabled = false,
+}) => {
+  const lightX = typeof value?.x === 'number' ? value.x : 0;
+  const lightY = typeof value?.y === 'number' ? value.y : 0;
+
+  const handlePadClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1; // [-1, 1]
+    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1; // [-1, 1]
+    onChange({ x: Number(nx.toFixed(2)), y: Number(ny.toFixed(2)) });
+  };
+
+  return (
+    <div className="flex flex-col gap-2 p-2 rounded-lg bg-background/40 border border-glass-border">
+      <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
+        <span>{descriptor.label || '3D Light Direction'}</span>
+        <span className="text-accent-theme font-bold">
+          X: {lightX.toFixed(2)} | Y: {lightY.toFixed(2)}
+        </span>
+      </div>
+      <div
+        onClick={handlePadClick}
+        className="relative w-full h-24 rounded-md border border-glass-border/60 bg-black/40 cursor-crosshair overflow-hidden flex items-center justify-center"
+      >
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 opacity-15 pointer-events-none">
+          <div className="border-r border-b border-foreground/40" />
+          <div className="border-b border-foreground/40" />
+          <div className="border-r border-foreground/40" />
+          <div />
+        </div>
+        <div
+          style={{
+            transform: `translate(${lightX * 40}px, ${lightY * 40}px)`,
+          }}
+          className="w-4 h-4 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)] border border-white transition-transform duration-75 pointer-events-none"
+        />
+      </div>
+    </div>
+  );
+};
+
 export function resolveParamControlStrategy(
   descriptor: ParamFieldDescriptor
 ): React.FC<ControlStrategyProps> {
@@ -1068,6 +1118,8 @@ export function resolveParamControlStrategy(
     case 'vision_depth_strategy':
     case 'vision_segmentation_strategy':
       return VisionStrategyControlStrategy;
+    case 'light_vector':
+      return LightVectorControlStrategy;
     case 'string':
     default:
       return StringControlStrategy;

@@ -124,7 +124,7 @@ export class PreviewWorkerBridge {
     popOutIntensity = 1.0,
     isScrubbing = false,
     clearColor?: string,
-    debugMode?: 'depth_heatmap' | 'none'
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
   ) {
     if (!this.worker || !this.isTransferred) return;
     this.worker.postMessage({

@@ -21,6 +21,7 @@ import {
   UniversalCanvasHitOverlay,
   StagingDropTargetOverlay,
   TransformGizmoOverlay,
+  LightGizmoOverlay,
   ViewportCanvasLayer,
 } from './preview/index';
 import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
@@ -36,6 +37,7 @@ import {
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import { WebAudioEngine } from '../lib/audio';
+import { StudioVisionPipelineManager } from '../lib/vision/StudioVisionPipelineManager';
 
 interface PreviewProps {
   playhead: {
@@ -102,11 +104,13 @@ export function Preview({
   const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
   const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
   const [showDepthHeatmap, setShowDepthHeatmap] = useState(false);
+  const [visionPassMode, setVisionPassMode] = useState<'composite' | 'depth' | 'normals' | 'alpha'>('composite');
 
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
   const [assetTick, setAssetTick] = useState(0);
 
   useEffect(() => {
+    StudioVisionPipelineManager.getInstance();
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
@@ -304,7 +308,7 @@ export function Preview({
             popOutIntensity,
             false,
             clearColor,
-            showDepthHeatmap ? 'depth_heatmap' : 'none'
+            visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
           );
         });
       } else {
@@ -314,7 +318,7 @@ export function Preview({
           popOutIntensity,
           false,
           clearColor,
-          showDepthHeatmap ? 'depth_heatmap' : 'none'
+          visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
         );
       }
     } else {
@@ -359,7 +363,7 @@ export function Preview({
             textureCache: engineTextures,
             popOutIntensity,
             clearColor,
-            debugMode: showDepthHeatmap ? 'depth_heatmap' : 'none',
+            debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
           });
         }
       }
@@ -535,6 +539,16 @@ export function Preview({
         }
       }
 
+      if (e.shiftKey && e.key.toUpperCase() === 'V') {
+        e.preventDefault();
+        setVisionPassMode((prev) => {
+          if (prev === 'composite') return 'depth';
+          if (prev === 'depth') return 'normals';
+          if (prev === 'normals') return 'alpha';
+          return 'composite';
+        });
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
         if (selectedSeqId) {
           e.preventDefault();
@@ -689,6 +703,15 @@ export function Preview({
         onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
         showVfxAmbiance={showVfxAmbiance}
         onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
+        visionPassMode={visionPassMode}
+        onCycleVisionPass={() => {
+          setVisionPassMode((prev) => {
+            if (prev === 'composite') return 'depth';
+            if (prev === 'depth') return 'normals';
+            if (prev === 'normals') return 'alpha';
+            return 'composite';
+          });
+        }}
         showDepthHeatmap={showDepthHeatmap}
         onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap)}
         isTelemetryCompanionOpen={isTelemetryCompanionOpen}
@@ -764,6 +787,15 @@ export function Preview({
               onStartEditingCue={setEditingCue}
             />
           )}
+
+          {/* Interactive 3D Point Light Gizmo Overlay (Isolated DndContext) */}
+          <LightGizmoOverlay
+            selectedSeqId={selectedSeqId}
+            activeSequences={activeSequences}
+            width={width}
+            height={height}
+            zoomLevel={zoomLevel}
+          />
 
           {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos, Overlays) */}
           <UniversalCanvasHitOverlay

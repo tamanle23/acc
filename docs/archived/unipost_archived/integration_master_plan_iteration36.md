@@ -29,11 +29,12 @@ In **Iteration 28**, we connect this isomorphic vision pipeline into `@acc/studi
 5. **Missing Auto-Reframe Plugin**: `AutoReframeStrategy` existed in `@acc/core-isomorphic`, but lacked a canonical `@acc/ir` plugin, inspector controls, and catalog definitions.
 
 ### The Solutions Aligned via Interactive `/grill-me`:
-1. **Isolated `@dnd-kit` Canvas Gizmo**: Canvas gizmos (Transform Gizmo and 3D Light Gizmo) are managed in a dedicated, isolated `DndContext` inside `Preview.tsx`.
+1. **Isolated `@dnd-kit` Canvas Gizmo**: Canvas gizmos (Transform Gizmo and 3D Light Gizmo) are managed with dedicated, isolated `DndContext` components inside `Preview.tsx` (e.g. standalone `LightGizmoOverlay` with its own isolated `DndContext`).
 2. **Eager Idle Warmup**: A background Web Worker (`visionWorker.ts`) eagerly compiles and initializes ONNX sessions via `window.requestIdleCallback` after Studio loads.
-3. **Lag-Free 60 FPS Playback via `ContentCacheRegistry`**: Real-time 60 FPS playback **never** runs live ONNX inference. Keyframe depth and segmentation masks are computed on-demand during playhead pause/idle and stored in `ContentCacheRegistry` (IndexedDB). If an uncached frame is encountered during live playback, the renderer freezes/holds the last known cached frame to preserve visual continuity.
-4. **Viewport Pass Inspection**: `ViewportControlBar.tsx` gains an interactive pass selector dropdown (`Shift+V`) for Composite, Depth Buffer, Surface Normals, and Alpha Cutout.
-5. **Canonical Auto-Reframe Plugin**: Integrates `AutoReframeStrategy` into `@acc/ir` as `transform/auto_reframe`.
+3. **Lag-Free 60 FPS Playback via `ContentCacheRegistry`**: Real-time 60 FPS playback **never** runs live ONNX inference. Keyframe depth and segmentation masks are computed on-demand during playhead pause/idle and stored in `ContentCacheRegistry` using the pre-configured default strategy. If an uncached frame is encountered during live playback, the renderer freezes/holds the last known cached frame to preserve visual continuity.
+4. **Scope Restriction for Depth3DPlugin**: `Depth3DPlugin` is strictly restricted to sequence `image` types only.
+5. **Viewport Pass Inspection**: `ViewportControlBar.tsx` gains an interactive pass selector dropdown (`Shift+V`) for Composite, Depth Buffer, Surface Normals, and Alpha Cutout, wired via expanding `debugMode` to `'none' | 'depth_heatmap' | 'normals' | 'alpha'` in `ClipRenderContext`, `IRCanvasCompositor`, and `IRPreviewEngine`.
+6. **Canonical Auto-Reframe Plugin**: Standardized under `vfx/auto_reframe` (aligning with existing `@acc/ir` modifier catalog and contextual action pill).
 
 ---
 
@@ -95,9 +96,10 @@ flowchart TD
 #### 1.3. Isomorphic `Depth3DPlugin` Refactor
 - **File:** `packages/ir/src/plugins/vfx/Depth3DPlugin.ts`
 - Eliminate server-only `typeof window === 'undefined'` check and dynamic `require('@acc/effect-engines')`.
-- Wire directly to `VisionEngineRegistry.getDepthStrategy()` and `VisionEngineRegistry.getSegmentationStrategy()`.
+- Restrict execution strictly to sequence `image` types (`sequence.type === 'image'`).
+- Wire directly to `VisionEngineRegistry.getDepthStrategy()` and `VisionEngineRegistry.getSegmentationStrategy()`, falling back to preflight cache if worker hasn't processed it yet.
 - In `renderClipSpace()`:
-  - Query `ContentCacheRegistry` for cached depth/normal/mask data for the sequence frame.
+  - Query `ContentCacheRegistry.get()` (default pre-configured strategy) for cached depth/normal/mask data for the sequence frame.
   - If uncached during playback, hold the last known cached frame (`this.lastKnownFrames.get(sequence.id)`).
   - Use `SurfaceNormalGenerator` and `UniversalCanvasProvider.acquireScratchCanvas()` for zero-allocation Blinn-Phong relighting.
 
@@ -124,20 +126,21 @@ flowchart TD
 ### Component 3: Canonical Auto-Reframe Plugin
 
 #### 3.1. Canonical IR Plugin
-- **File:** `packages/ir/src/plugins/transform/AutoReframePlugin.ts`
-- Implement `ModifierPlugin<AutoReframePluginParams>`:
-  - **Type**: `transform/auto_reframe`
+- **File:** `packages/ir/src/plugins/vfx/AutoReframeModifierPlugin.ts`
+- Implement / reinforce `ModifierPlugin<AutoReframePluginParams>`:
+  - **Type**: `vfx/auto_reframe` (standardized across `@acc/ir` and Studio catalog)
   - **Target Scope**: `sequence`, **Target Phase**: 2 (Clip-Space)
   - **Params**:
-    - `targetAspectRatio`: `'9:16' | '1:1' | '4:5'` (default `'9:16'`)
+    - `targetAspectRatio`: `'9:16' | '1:1' | '4:5' | '16:9'` (default `'9:16'`)
     - `smoothingFactor`: `0.1` to `1.0` (default `0.85`)
-    - `saliencyMode`: `'auto' | 'face' | 'center'`
-    - `debugCropBox`: `boolean`
-  - Uses `AutoReframeStrategy` (from `@acc/core-isomorphic`) coupled with cached subject bounding boxes from `ContentCacheRegistry`.
+    - `motionDamping`: `boolean`
+    - `visualGuide`: `boolean`
+    - `subjectBox`: `BoundingBox`
+  - Uses `AutoReframeStrategy` (from `@acc/core-isomorphic`) coupled with cached subject bounding boxes.
 
-#### 3.2. Transform Plugin Export & Registration
-- **File:** `packages/ir/src/plugins/transform/index.ts`
-- Export `AutoReframePlugin` and register it inside `registerCoreModifierPlugins()`.
+#### 3.2. Plugin Export & Registration Parity
+- **File:** `packages/ir/src/plugins/vfx/index.ts` & `packages/ir/src/plugins/index.ts`
+- Ensure `AutoReframeModifierPlugin` is exported and registered inside `registerCoreModifierPlugins()`.
 
 ---
 
@@ -157,15 +160,16 @@ flowchart TD
 
 ### Component 5: Studio Preview Canvas Gizmos & Pass Inspector
 
-#### 5.1. Isolated Gizmo `DndContext` in Preview
-- **File:** `apps/studio/src/components/Preview.tsx`
-- Embed a dedicated `DndContext` specifically for in-canvas gizmos (`TransformGizmoOverlay` and `LightGizmoOverlay`).
-- Add state for `visionPassMode`: `'composite' | 'depth' | 'normals' | 'alpha'`.
-- Pass `visionPassMode` to `IRPreviewEngine` to route rendering passes to the target visual representation.
+#### 5.1. Viewport Pass Routing in Compositor & Engine
+- **Files:** `packages/ir/src/types/modifiers.ts`, `packages/ir/src/renderer/shared/IRCanvasCompositor.ts`, `packages/ir/src/renderer/preview/IRPreviewEngine.ts`
+- Expand `debugMode` option type from `'depth_heatmap' | 'none'` to `'none' | 'depth_heatmap' | 'normals' | 'alpha'`.
+- Wire `ClipRenderContext.debugMode` through to `Depth3DPlugin.renderClipSpace()`.
+- In `Preview.tsx`, maintain state `visionPassMode` and pass it mapped to `debugMode` in `IRPreviewEngine.renderFrame()`.
 
 #### 5.2. Interactive 3D Light Gizmo Overlay
 - **File:** `apps/studio/src/components/preview/LightGizmoOverlay.tsx`
-- Uses `@dnd-kit/core` (`useDraggable`) inside the dedicated gizmo `DndContext`.
+- Embedded in `Preview.tsx` as a standalone overlay with its own isolated `DndContext` (matching `TransformGizmoOverlay` pattern).
+- Uses `@dnd-kit/core` (`useDraggable`).
 - Displays a glowing 3D point light indicator with vector rays pointing to the sequence center.
 - Dragging updates `lightX` and `lightY` on `vfx/depth_relighting` in real time with immediate specular feedback.
 

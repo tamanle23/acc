@@ -36,12 +36,13 @@ export class VisionEngineRegistry {
     return this.depthStrategies.has(id);
   }
 
-  public static getDepthStrategy(id: DepthStrategyId): IDepthEstimationStrategy {
-    const strategy = this.depthStrategies.get(id);
+  public static getDepthStrategy(id?: DepthStrategyId | string): IDepthEstimationStrategy {
+    const target = (id || this.defaultDepthId) as DepthStrategyId;
+    const strategy = this.depthStrategies.get(target);
     if (!strategy) {
       throw new VisionEngineError(
         VisionDomain.Depth,
-        id,
+        target,
         `No depth strategy registered with ID '${id}'. Available: ${Array.from(this.depthStrategies.keys()).join(', ')}`
       );
     }
@@ -77,12 +78,13 @@ export class VisionEngineRegistry {
     return this.segmentationStrategies.has(id);
   }
 
-  public static getSegmentationStrategy(id: SegmentationStrategyId): ISubjectSegmentationStrategy {
-    const strategy = this.segmentationStrategies.get(id);
+  public static getSegmentationStrategy(id?: SegmentationStrategyId | string): ISubjectSegmentationStrategy {
+    const target = (id || this.defaultSegmentationId) as SegmentationStrategyId;
+    const strategy = this.segmentationStrategies.get(target);
     if (!strategy) {
       throw new VisionEngineError(
         VisionDomain.Segmentation,
-        id,
+        target,
         `No segmentation strategy registered with ID '${id}'. Available: ${Array.from(this.segmentationStrategies.keys()).join(', ')}`
       );
     }

@@ -22,7 +22,7 @@ export interface PreviewRenderOptions {
   popOutIntensity?: number;
   lodScale?: number;
   clearColor?: string;
-  debugMode?: 'depth_heatmap' | 'none';
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
 }
 
 export interface PreviewFrameResult {

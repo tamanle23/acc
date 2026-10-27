@@ -37,6 +37,8 @@ export interface ViewportControlBarProps {
   onToggleCheckerboard: () => void;
   showVfxAmbiance: boolean;
   onToggleVfxAmbiance: () => void;
+  visionPassMode?: 'composite' | 'depth' | 'normals' | 'alpha';
+  onCycleVisionPass?: () => void;
   showDepthHeatmap?: boolean;
   onToggleDepthHeatmap?: () => void;
   isTelemetryCompanionOpen?: boolean;
@@ -65,6 +67,8 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
   onToggleCheckerboard,
   showVfxAmbiance,
   onToggleVfxAmbiance,
+  visionPassMode = 'composite',
+  onCycleVisionPass,
   showDepthHeatmap = false,
   onToggleDepthHeatmap,
   isTelemetryCompanionOpen,
@@ -237,8 +241,24 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
           </button>
         </Tooltip>
 
-        {/* Depth Disparity Heatmap Diagnostics Toggle */}
-        {onToggleDepthHeatmap && (
+        {/* Viewport Pass Selector (Composite, Depth, Normals, Alpha - Shift+V) */}
+        {onCycleVisionPass ? (
+          <Tooltip content={`Vision Pass: ${visionPassMode.toUpperCase()} (Shift+V to Cycle)`}>
+            <button
+              type="button"
+              onClick={onCycleVisionPass}
+              aria-label={`Vision pass mode: ${visionPassMode}`}
+              className={`px-2 py-1 rounded-full border text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                visionPassMode !== 'composite'
+                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'border-glass-border text-foreground/60 hover:text-foreground hover:bg-foreground/10'
+              }`}
+            >
+              <ScanEye className="w-3.5 h-3.5" />
+              <span className="uppercase tracking-wider font-semibold">{visionPassMode}</span>
+            </button>
+          </Tooltip>
+        ) : onToggleDepthHeatmap && (
           <Tooltip content={`Depth Disparity Heatmap: ${showDepthHeatmap ? 'Active' : 'Disabled'}`}>
             <button
               type="button"

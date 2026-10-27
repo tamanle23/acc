@@ -63,6 +63,18 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public readonly targetPhase = 2;
   public readonly schema = {
     fields: {
+      depthStrategy: {
+        key: 'depthStrategy',
+        label: 'Depth Estimation Strategy',
+        type: 'vision_depth_strategy' as const,
+        defaultValue: 'heuristic',
+      },
+      segmentationStrategy: {
+        key: 'segmentationStrategy',
+        label: 'Subject Cutout Strategy',
+        type: 'vision_segmentation_strategy' as const,
+        defaultValue: 'grabcut-fallback',
+      },
       mode: {
         key: 'mode',
         label: '3D Depth Projection Mode',
@@ -212,6 +224,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   public renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): void {
     const { ctx: canvasCtx, width, height, localFrame, sequence, baseAsset } = ctx;
     if (!baseAsset) return;
+    // Restrict Depth3DPlugin processing exclusively to image sequence types
+    if (sequence.type && sequence.type !== 'image') return;
 
     const mode = params.mode || 'frame_breaker';
     const totalSeqFrames = sequence.durationFrames || 1;
@@ -379,15 +393,60 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       }
     }
 
-    // Diagnostic Depth Heatmap Overlay Mode (Phase 2 Diagnostic)
+    // Viewport Pass Inspection & Diagnostics (Composite, Depth Buffer, Surface Normals, Alpha Mask)
     if (ctx.debugMode === 'depth_heatmap' || mode === 'depth_heatmap' || mode === 'depth_map_3d') {
       const depthSrc = depthLayersData?.srcCanvas;
       if (depthSrc) {
         canvasCtx.save();
         try {
-          canvasCtx.globalAlpha = 0.85;
+          canvasCtx.globalAlpha = 0.95;
           canvasCtx.drawImage(
             depthSrc.getRawCanvas ? depthSrc.getRawCanvas() : depthSrc,
+            0,
+            0,
+            width,
+            height
+          );
+        } finally {
+          canvasCtx.restore();
+        }
+      }
+    } else if (ctx.debugMode === 'normals') {
+      const normalMap = params.imagePath ? this.normalMapCache.get(params.imagePath) : undefined;
+      if (normalMap) {
+        canvasCtx.save();
+        try {
+          const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          const rawScratch = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
+          const sCtx = rawScratch.getContext('2d');
+          const imgData = sCtx.createImageData(width, height);
+          const normals = normalMap.normals;
+          const totalPixels = width * height;
+          for (let i = 0; i < totalPixels; i++) {
+            const nIdx = i * 3;
+            const pIdx = i * 4;
+            // Map [-1, 1] normal vector to RGB [0, 255]
+            imgData.data[pIdx] = Math.round((normals[nIdx] * 0.5 + 0.5) * 255);
+            imgData.data[pIdx + 1] = Math.round((normals[nIdx + 1] * 0.5 + 0.5) * 255);
+            imgData.data[pIdx + 2] = Math.round((normals[nIdx + 2] * 0.5 + 0.5) * 255);
+            imgData.data[pIdx + 3] = 255;
+          }
+          sCtx.putImageData(imgData, 0, 0);
+          canvasCtx.drawImage(rawScratch, 0, 0, width, height);
+          UniversalCanvasProvider.releaseScratchCanvas(uCanvas);
+        } finally {
+          canvasCtx.restore();
+        }
+      }
+    } else if (ctx.debugMode === 'alpha') {
+      if (cutout?.subjectImg) {
+        canvasCtx.save();
+        try {
+          canvasCtx.clearRect(0, 0, width, height);
+          canvasCtx.fillStyle = '#090d16';
+          canvasCtx.fillRect(0, 0, width, height);
+          canvasCtx.drawImage(
+            cutout.subjectImg.getRawCanvas ? cutout.subjectImg.getRawCanvas() : cutout.subjectImg,
             0,
             0,
             width,

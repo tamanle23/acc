@@ -222,6 +222,22 @@ export class PlatformDetector {
   }
 
 
+  public static resolveDefaultDepthStrategy(): DepthStrategyId {
+    const runtime = this.getRuntime();
+    if (runtime === RuntimeEnvironment.Browser || runtime === RuntimeEnvironment.WebWorker) {
+      return DepthStrategyId.Heuristic;
+    }
+    return DepthStrategyId.DepthAnythingV2Small;
+  }
+
+  public static resolveDefaultSegmentationStrategy(): SegmentationStrategyId {
+    const runtime = this.getRuntime();
+    if (runtime === RuntimeEnvironment.Browser || runtime === RuntimeEnvironment.WebWorker) {
+      return SegmentationStrategyId.GrabCutFallback;
+    }
+    return SegmentationStrategyId.Rmbg14;
+  }
+
   public static isServer(): boolean {
     const runtime = this.getRuntime();
     return runtime === RuntimeEnvironment.Bun || runtime === RuntimeEnvironment.Node;

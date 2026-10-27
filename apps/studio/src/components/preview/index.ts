@@ -8,3 +8,4 @@ export * from './UniversalCanvasHitOverlay';
 export * from './StagingDropTargetOverlay';
 export * from './TransformGizmoOverlay';
 export * from './ViewportCanvasLayer';
+export * from './LightGizmoOverlay';

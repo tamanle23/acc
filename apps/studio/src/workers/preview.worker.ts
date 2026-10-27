@@ -36,7 +36,7 @@ let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean; debugMode?: 'depth_heatmap' | 'none' } | null = null;
+let pendingRender: { frame: number; lod: number; popOutIntensity: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -52,7 +52,7 @@ function renderCurrentFrame(
   popOutIntensity = 1.0,
   isScrubbing = false,
   clearColor = '#000000',
-  debugMode?: 'depth_heatmap' | 'none'
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
 ) {
   if (!canvas || !ctx || !engine) return;
 

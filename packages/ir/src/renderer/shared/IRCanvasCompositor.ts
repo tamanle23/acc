@@ -26,7 +26,7 @@ export interface CanvasCompositorOptions {
   clearColor?: string;
   generatePixelBuffer?: Uint8Array;
   executionProfile?: 'preview' | 'master';
-  debugMode?: 'depth_heatmap' | 'none';
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
 }
 
 /**
@@ -376,7 +376,7 @@ export class IRCanvasCompositor {
     popOutIntensity: number,
     registry: ModifierPluginRegistry,
     assets?: IAssetSourceResolver,
-    debugMode?: 'depth_heatmap' | 'none'
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
   ): void {
     for (const seq of activeTrackSeqs) {
       const localFrame = clampedFrame - seq.startFrame;
