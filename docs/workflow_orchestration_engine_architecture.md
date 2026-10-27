@@ -17,7 +17,7 @@ The **Acc Workflow Orchestration Engine** is an enterprise-grade, distributed Di
 
 ```
 ====================================================================================================
-                              UNIPOST WORKFLOW ORCHESTRATION ENGINE                                 
+                              ACC WORKFLOW ORCHESTRATION ENGINE                                 
 ====================================================================================================
   1. PURE DETERMINISTIC CORE    |    2. DISTRIBUTED WORKER FLEET    |   3. OPERATOR STUDIO & RUNTIME
   Zero-I/O Decider, Strategy     | Lease-based polling, auto-        | Dual-mode visual DAG canvas,  
