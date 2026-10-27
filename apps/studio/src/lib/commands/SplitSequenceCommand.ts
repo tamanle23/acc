@@ -1,5 +1,6 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '@acc/ir';
+import type { VideoIRDocument, IRSequence } from '../../../../../packages/ir/src/types/VideoIR';
+import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring/VideoIRAuthoringEngine';
 
 export class SplitSequenceCommand implements ICommand {
   public readonly id: string;
@@ -10,6 +11,7 @@ export class SplitSequenceCommand implements ICommand {
   private splitFrame: number;
   private originalSequenceSnapshot: IRSequence | null = null;
   private createdSequenceId: string | null = null;
+  private nextSequenceIndexSnapshot: number | undefined = undefined;
 
   constructor(sequenceId: string, splitFrame: number, startFrame: number, endFrame: number) {
     this.id = `split_${sequenceId}_${Date.now()}`;
@@ -29,6 +31,9 @@ export class SplitSequenceCommand implements ICommand {
         if (!this.originalSequenceSnapshot) {
           this.originalSequenceSnapshot = JSON.parse(JSON.stringify(originalSeq));
         }
+        if (this.nextSequenceIndexSnapshot === undefined) {
+          this.nextSequenceIndexSnapshot = copy.meta?.nextSequenceIndex;
+        }
 
         const currentStart = typeof originalSeq.time.start === 'number' ? originalSeq.time.start : 0;
         const currentDur = typeof originalSeq.time.duration === 'number' ? originalSeq.time.duration : 90;
@@ -41,19 +46,24 @@ export class SplitSequenceCommand implements ICommand {
         const dur1 = this.splitFrame - currentStart;
         const dur2 = currentEnd - this.splitFrame;
 
-        // Sequence 1 updated
+        // Sequence 1 updated (retains original sequence ID)
         originalSeq.time = {
           start: currentStart,
           duration: dur1,
         };
 
-        // Sequence 2 created
-        const newSeqId = this.createdSequenceId || `${originalSeq.id}_split_${Date.now()}`;
-        this.createdSequenceId = newSeqId;
+        // Sequence 2 created with deterministic sequential ID from VideoIRAuthoringEngine
+        if (!this.createdSequenceId) {
+          const splitResult = VideoIRAuthoringEngine.allocateSplitSequenceId(copy, originalSeq);
+          this.createdSequenceId = splitResult.part2Id;
+        }
+        const newSeqId = this.createdSequenceId;
 
+        const baseName = originalSeq.name || originalSeq.id;
         const newSeq: IRSequence = {
           ...JSON.parse(JSON.stringify(originalSeq)),
           id: newSeqId,
+          name: `${baseName} (Part 2)`,
           time: {
             start: {
               after: originalSeq.id,
@@ -84,6 +94,14 @@ export class SplitSequenceCommand implements ICommand {
         if (this.createdSequenceId) {
           track.sequences = track.sequences.filter((s) => s.id !== this.createdSequenceId);
         }
+
+        // Restore nextSequenceIndex if we had a snapshot
+        if (copy.meta) {
+          if (this.nextSequenceIndexSnapshot !== undefined) {
+            copy.meta.nextSequenceIndex = this.nextSequenceIndexSnapshot;
+          }
+        }
+
         return copy;
       }
     }

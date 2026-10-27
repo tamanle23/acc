@@ -1,5 +1,6 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '@acc/ir';
+import type { VideoIRDocument, IRSequence } from '../../../../../packages/ir/src/types/VideoIR';
+import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring/VideoIRAuthoringEngine';
 
 /**
  * DuplicateSequenceCommand:
@@ -15,6 +16,7 @@ export class DuplicateSequenceCommand implements ICommand {
   private duplicatedSequence: IRSequence | null = null;
   private targetTrackId: string | null = null;
   private insertIndex: number = -1;
+  private nextSequenceIndexSnapshot: number | undefined = undefined;
 
   constructor(sequenceId: string) {
     this.id = `dup_seq_${sequenceId}_${Date.now()}`;
@@ -37,10 +39,14 @@ export class DuplicateSequenceCommand implements ICommand {
         this.targetTrackId = track.id;
         this.insertIndex = idx + 1;
 
+        if (this.nextSequenceIndexSnapshot === undefined) {
+          this.nextSequenceIndexSnapshot = copy.meta?.nextSequenceIndex;
+        }
+
         if (!this.duplicatedSequence) {
-          const dupId = `${orig.id}_copy_${Math.random().toString(36).slice(2, 7)}`;
+          const alloc = VideoIRAuthoringEngine.allocateDuplicateSequenceId(copy, orig);
           const cloned: IRSequence = JSON.parse(JSON.stringify(orig));
-          cloned.id = dupId;
+          cloned.id = alloc.id;
           cloned.name = `${orig.name || orig.id} (Copy)`;
 
           // Adjust timeline position if explicit start frame is defined
@@ -68,6 +74,10 @@ export class DuplicateSequenceCommand implements ICommand {
     const track = copy.tracks.find((t) => t.id === this.targetTrackId);
     if (track) {
       track.sequences = track.sequences.filter((s) => s.id !== this.duplicatedSequence!.id);
+    }
+
+    if (copy.meta && this.nextSequenceIndexSnapshot !== undefined) {
+      copy.meta.nextSequenceIndex = this.nextSequenceIndexSnapshot;
     }
 
     return copy;

@@ -1,5 +1,6 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence, AssetDefinition } from '@acc/ir';
+import type { VideoIRDocument, IRSequence, AssetDefinition } from '../../../../../packages/ir/src/types/VideoIR';
+import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring/VideoIRAuthoringEngine';
 
 export interface AddLinkedAVSequenceOptions {
   videoTrackId: string;
@@ -28,6 +29,7 @@ export class AddLinkedAVSequenceCommand implements ICommand {
 
   private createdVideoTrack: boolean = false;
   private createdAudioTrack: boolean = false;
+  private nextSequenceIndexSnapshot: number | undefined = undefined;
 
   constructor(options: AddLinkedAVSequenceOptions) {
     this.id = `add_linked_av_${options.videoSequence.id}_${Date.now()}`;
@@ -43,6 +45,10 @@ export class AddLinkedAVSequenceCommand implements ICommand {
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
+
+    if (this.nextSequenceIndexSnapshot === undefined) {
+      this.nextSequenceIndexSnapshot = copy.meta?.nextSequenceIndex;
+    }
 
     // 1. Register asset if provided
     if (this.asset) {
@@ -78,7 +84,27 @@ export class AddLinkedAVSequenceCommand implements ICommand {
       this.createdAudioTrack = true;
     }
 
-    // 4. Insert or update Video Sequence
+    // 4. Ensure coordinated sequential IDs if sequences are new/temporary
+    if (!this.videoSequence.id || this.videoSequence.id.startsWith('temp_')) {
+      const vAlloc = VideoIRAuthoringEngine.allocateNextSequenceId(copy, {
+        type: 'video',
+        nameOrSlug: this.videoSequence.name,
+      });
+      this.videoSequence.id = vAlloc.id;
+    }
+    if (!this.audioSequence.id || this.audioSequence.id.startsWith('temp_')) {
+      const aAlloc = VideoIRAuthoringEngine.allocateNextSequenceId(copy, {
+        type: 'audio',
+        nameOrSlug: this.audioSequence.name,
+      });
+      this.audioSequence.id = aAlloc.id;
+    }
+
+    // 5. Wire reciprocal av_link modifier targets
+    this.wireAVLinkModifier(this.videoSequence, this.audioSequence.id, this.audioTrackId);
+    this.wireAVLinkModifier(this.audioSequence, this.videoSequence.id, this.videoTrackId);
+
+    // 6. Insert or update Video Sequence
     const existingVIdx = vTrack.sequences.findIndex((s) => s.id === this.videoSequence.id);
     if (existingVIdx >= 0) {
       vTrack.sequences[existingVIdx] = JSON.parse(JSON.stringify(this.videoSequence));
@@ -86,7 +112,7 @@ export class AddLinkedAVSequenceCommand implements ICommand {
       vTrack.sequences.push(JSON.parse(JSON.stringify(this.videoSequence)));
     }
 
-    // 5. Insert or update Audio Sequence
+    // 7. Insert or update Audio Sequence
     const existingAIdx = aTrack.sequences.findIndex((s) => s.id === this.audioSequence.id);
     if (existingAIdx >= 0) {
       aTrack.sequences[existingAIdx] = JSON.parse(JSON.stringify(this.audioSequence));
@@ -95,6 +121,27 @@ export class AddLinkedAVSequenceCommand implements ICommand {
     }
 
     return copy;
+  }
+
+  private wireAVLinkModifier(seq: IRSequence, linkedSeqId: string, linkedTrackId: string): void {
+    if (!Array.isArray(seq.modifiers)) {
+      seq.modifiers = [];
+    }
+    const existingLink = seq.modifiers.find((m) => m.type === 'editorial/av_link');
+    if (existingLink) {
+      if (!existingLink.params) existingLink.params = {};
+      existingLink.params.linkedSequenceId = linkedSeqId;
+      existingLink.params.linkedTrackId = linkedTrackId;
+    } else {
+      seq.modifiers.push({
+        type: 'editorial/av_link',
+        target: seq.id,
+        params: {
+          linkedSequenceId: linkedSeqId,
+          linkedTrackId: linkedTrackId,
+        },
+      });
+    }
   }
 
   public undo(doc: VideoIRDocument): VideoIRDocument {
@@ -132,6 +179,10 @@ export class AddLinkedAVSequenceCommand implements ICommand {
       if (!isReferenced) {
         delete copy.assets[this.asset.id];
       }
+    }
+
+    if (copy.meta && this.nextSequenceIndexSnapshot !== undefined) {
+      copy.meta.nextSequenceIndex = this.nextSequenceIndexSnapshot;
     }
 
     return copy;

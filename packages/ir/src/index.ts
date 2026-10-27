@@ -5,6 +5,7 @@ export * from './types/VideoIR';
 export * from './types/modifiers';
 export * from './types/FineGrainedVideoDirectorConfig';
 export * from './schema/VideoIRSchemaValidator';
+export * from './authoring/VideoIRAuthoringEngine';
 export * from './prober/AssetMetadataProber';
 export * from './adapters/IConfigToIRAdapter';
 export * from './adapters/IRConfigAdapterRegistry';

@@ -70,6 +70,7 @@ export interface TimedTextCue {
 
 export interface IRSequence {
   id: string;
+  name?: string; // Optional human-readable display label
   type: SequenceType; // Strictly required
   assetId?: string;
   compositionId?: string;
@@ -100,6 +101,7 @@ export interface IRMeta {
     h: number;
   };
   colorSpace?: string;
+  nextSequenceIndex?: number;
 }
 
 export interface VideoIRDocument {

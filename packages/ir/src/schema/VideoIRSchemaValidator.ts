@@ -64,6 +64,11 @@ export class VideoIRSchemaValidator {
       ) {
         errors.push('"meta.canvasSize" must have positive integer dimensions w and h');
       }
+      if (d.meta.nextSequenceIndex !== undefined) {
+        if (typeof d.meta.nextSequenceIndex !== 'number' || !Number.isInteger(d.meta.nextSequenceIndex) || d.meta.nextSequenceIndex < 1) {
+          errors.push('"meta.nextSequenceIndex" must be a positive integer greater than or equal to 1');
+        }
+      }
     }
 
     if (d.assets !== undefined) {
@@ -95,6 +100,13 @@ export class VideoIRSchemaValidator {
     } else {
       const validTrackTypes = new Set(['video', 'audio', 'data', 'timed_text']);
       const trackIds = new Set<string>();
+      const sequenceIds = new Set<string>();
+      interface RelationalRef {
+        sourceSeqId: string;
+        targetId: string;
+        field: string;
+      }
+      const pendingRefs: RelationalRef[] = [];
 
       for (let tIdx = 0; tIdx < d.tracks.length; tIdx++) {
         const track = d.tracks[tIdx];
@@ -110,6 +122,10 @@ export class VideoIRSchemaValidator {
             errors.push(`Duplicate track id "${track.id}" at index ${tIdx}`);
           }
           trackIds.add(track.id);
+        }
+
+        if (track.name !== undefined && typeof track.name !== 'string') {
+          errors.push(`Track "${track.id || tIdx}" "name" must be a string`);
         }
 
         if (!validTrackTypes.has(track.type)) {
@@ -138,6 +154,15 @@ export class VideoIRSchemaValidator {
 
             if (!seq.id || typeof seq.id !== 'string') {
               errors.push(`Sequence index ${sIdx} on track "${track.id}" missing valid "id"`);
+            } else {
+              if (sequenceIds.has(seq.id)) {
+                errors.push(`Duplicate sequence id "${seq.id}" found on track "${track.id}" at index ${sIdx}`);
+              }
+              sequenceIds.add(seq.id);
+            }
+
+            if (seq.name !== undefined && typeof seq.name !== 'string') {
+              errors.push(`Sequence "${seq.id || sIdx}" "name" must be a string`);
             }
 
             // Strictly required sequence type
@@ -160,11 +185,32 @@ export class VideoIRSchemaValidator {
             } else {
               if (seq.time.start === undefined) {
                 errors.push(`Sequence "${seq.id || sIdx}" missing "time.start"`);
+              } else if (typeof seq.time.start === 'object' && seq.time.start !== null) {
+                const rs = seq.time.start as any;
+                if (rs.after !== undefined) {
+                  if (typeof rs.after !== 'string') {
+                    errors.push(`Sequence "${seq.id || sIdx}" time.start.after must be a string`);
+                  } else if (seq.id) {
+                    pendingRefs.push({ sourceSeqId: seq.id, targetId: rs.after, field: 'time.start.after' });
+                  }
+                }
+                if (rs.syncWith !== undefined) {
+                  if (typeof rs.syncWith !== 'string') {
+                    errors.push(`Sequence "${seq.id || sIdx}" time.start.syncWith must be a string`);
+                  } else if (seq.id) {
+                    pendingRefs.push({ sourceSeqId: seq.id, targetId: rs.syncWith, field: 'time.start.syncWith' });
+                  }
+                }
               }
+
               if (seq.time.duration !== undefined && typeof seq.time.duration === 'object' && seq.time.duration !== null) {
                 const rd = seq.time.duration as any;
-                if (rd.matchLengthOf !== undefined && typeof rd.matchLengthOf !== 'string') {
-                  errors.push(`Sequence "${seq.id || sIdx}" time.duration.matchLengthOf must be a string`);
+                if (rd.matchLengthOf !== undefined) {
+                  if (typeof rd.matchLengthOf !== 'string') {
+                    errors.push(`Sequence "${seq.id || sIdx}" time.duration.matchLengthOf must be a string`);
+                  } else if (rd.matchLengthOf !== 'timeline' && seq.id) {
+                    pendingRefs.push({ sourceSeqId: seq.id, targetId: rd.matchLengthOf, field: 'time.duration.matchLengthOf' });
+                  }
                 }
                 if (rd.matchAssetDuration !== undefined && typeof rd.matchAssetDuration !== 'boolean') {
                   errors.push(`Sequence "${seq.id || sIdx}" time.duration.matchAssetDuration must be a boolean`);
@@ -180,8 +226,40 @@ export class VideoIRSchemaValidator {
 
             if (seq.modifiers !== undefined) {
               this.validateModifiers(seq.modifiers, `sequence "${seq.id || sIdx}"`, errors, track.type, seq.type as SequenceType);
+
+              // Collect modifier relational targets for referential integrity checking
+              if (Array.isArray(seq.modifiers) && seq.id) {
+                for (let mIdx = 0; mIdx < seq.modifiers.length; mIdx++) {
+                  const m = seq.modifiers[mIdx];
+                  if (m && typeof m === 'object' && m.params && typeof m.params === 'object') {
+                    const p = m.params as any;
+                    if (p.linkedSequenceId && typeof p.linkedSequenceId === 'string') {
+                      pendingRefs.push({ sourceSeqId: seq.id, targetId: p.linkedSequenceId, field: `${m.type}.linkedSequenceId` });
+                    }
+                    if (p.overlapTarget && typeof p.overlapTarget === 'string') {
+                      pendingRefs.push({ sourceSeqId: seq.id, targetId: p.overlapTarget, field: `${m.type}.overlapTarget` });
+                    }
+                    if (p.outgoingSeqId && typeof p.outgoingSeqId === 'string') {
+                      pendingRefs.push({ sourceSeqId: seq.id, targetId: p.outgoingSeqId, field: `${m.type}.outgoingSeqId` });
+                    }
+                  }
+                }
+              }
             }
           }
+        }
+      }
+
+      // Pass 2: Referential Integrity Verification
+      for (const ref of pendingRefs) {
+        if (ref.sourceSeqId === ref.targetId) {
+          errors.push(
+            `Self-referential relation rejected: sequence "${ref.sourceSeqId}" references itself via "${ref.field}"`
+          );
+        } else if (!sequenceIds.has(ref.targetId)) {
+          errors.push(
+            `Dangling relational reference: sequence "${ref.sourceSeqId}" references non-existent sequence "${ref.targetId}" via "${ref.field}"`
+          );
         }
       }
     }

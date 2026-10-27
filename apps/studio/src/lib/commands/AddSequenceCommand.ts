@@ -1,5 +1,6 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence, IRTrack, AssetDefinition } from '@acc/ir';
+import type { VideoIRDocument, IRSequence, IRTrack, AssetDefinition } from '../../../../../packages/ir/src/types/VideoIR';
+import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring/VideoIRAuthoringEngine';
 
 export interface AddSequenceOptions {
   trackTypeFallback?: 'video' | 'audio' | 'timed_text';
@@ -23,6 +24,7 @@ export class AddSequenceCommand implements ICommand {
   private trackNameFallback: string;
   private asset?: { id: string; asset: AssetDefinition };
   private createdTrack: boolean = false;
+  private nextSequenceIndexSnapshot: number | undefined = undefined;
 
   constructor(targetTrackId: string, sequence: IRSequence, options?: AddSequenceOptions) {
     this.id = `add_seq_${sequence.id}_${Date.now()}`;
@@ -37,6 +39,10 @@ export class AddSequenceCommand implements ICommand {
 
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
+
+    if (this.nextSequenceIndexSnapshot === undefined) {
+      this.nextSequenceIndexSnapshot = copy.meta?.nextSequenceIndex;
+    }
 
     // 1. Register asset if provided
     if (this.asset) {
@@ -59,7 +65,16 @@ export class AddSequenceCommand implements ICommand {
       this.createdTrack = true;
     }
 
-    // 3. Append sequence if not already present
+    // 3. Assign or advance monotonic sequence ID if sequence ID is missing or temporary
+    if (!this.sequence.id || this.sequence.id.startsWith('temp_')) {
+      const allocated = VideoIRAuthoringEngine.allocateNextSequenceId(copy, {
+        type: this.sequence.type,
+        nameOrSlug: this.sequence.name,
+      });
+      this.sequence.id = allocated.id;
+    }
+
+    // 4. Append sequence if not already present
     const existingIdx = track.sequences.findIndex((s) => s.id === this.sequence.id);
     if (existingIdx >= 0) {
       track.sequences[existingIdx] = JSON.parse(JSON.stringify(this.sequence));
@@ -97,6 +112,10 @@ export class AddSequenceCommand implements ICommand {
       if (!isReferenced) {
         delete copy.assets[this.asset.id];
       }
+    }
+
+    if (copy.meta && this.nextSequenceIndexSnapshot !== undefined) {
+      copy.meta.nextSequenceIndex = this.nextSequenceIndexSnapshot;
     }
 
     return copy;

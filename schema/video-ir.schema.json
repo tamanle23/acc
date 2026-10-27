@@ -316,6 +316,10 @@
           "type": "string",
           "description": "Unique sequence identifier within the document"
         },
+        "name": {
+          "type": "string",
+          "description": "Optional human-readable sequence display name"
+        },
         "type": {
           "$ref": "#/definitions/SequenceType"
         },
@@ -446,6 +450,11 @@
         "colorSpace": {
           "type": "string",
           "description": "Target color space (e.g. 'rec709', 'bt2020', 'hdr10')"
+        },
+        "nextSequenceIndex": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Monotonically increasing counter for sequence ID allocation"
         }
       }
     }
