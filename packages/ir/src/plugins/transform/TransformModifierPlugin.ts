@@ -8,7 +8,7 @@ import type {
 import {
   evaluateSequenceMotion,
   type InterpolatedTransformState,
-} from '../../renderer/preview/DeterministicMotionEvaluator';
+} from '../../motion/DeterministicMotionEvaluator';
 
 export interface TransformModifierParams {
   x?: number;

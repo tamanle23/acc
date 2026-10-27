@@ -3,11 +3,11 @@ import { createHash } from 'crypto';
 import { createCanvas } from '@napi-rs/canvas';
 import {
   UniversalCanvasProvider,
-  NodeCanvasAdapter,
   type CanvasInstance,
-} from '../packages/effect-engines/src';
-import { IRPreviewEngine } from '../packages/ir/src/renderer/preview/IRPreviewEngine';
-import { evaluateSequenceMotion } from '../packages/ir/src/renderer/preview/DeterministicMotionEvaluator';
+} from '@acc/core-isomorphic';
+import { NapiCanvasAdapter } from '@acc/core';
+import { IRPreviewEngine } from '@acc/studio/renderer';
+import { evaluateSequenceMotion } from '@acc/ir';
 import type { ResolvedTimeline, ResolvedTrack } from '../packages/ir/src/types/VideoIR';
 import { IRStateManager } from '../apps/studio/src/lib/ir/irState';
 import { MoveSequenceCommand } from '../apps/studio/src/lib/commands/MoveSequenceCommand';
@@ -89,7 +89,7 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
     }
 
     function renderDeterministicSceneRun(): { frameHashes: string[]; cumulativeHash: string } {
-      const adapter = new NodeCanvasAdapter();
+      const adapter = new NapiCanvasAdapter();
       const canvas = adapter.createCanvas(W, H);
       const ctx = canvas.getContext('2d') as any;
 
@@ -148,7 +148,7 @@ describe('Phase 7: Master E2E Parity, Performance Benchmarking & Hardening Suite
     const TOTAL_BENCHMARK_FRAMES = 120; // 4 seconds at 30fps or 2 seconds at 60fps
 
     it('should sustain high-density scene rendering at < 12ms/frame average ceiling', () => {
-      const adapter = new NodeCanvasAdapter();
+      const adapter = new NapiCanvasAdapter();
       const canvas = adapter.createCanvas(W, H);
       const ctx = canvas.getContext('2d') as any;
 

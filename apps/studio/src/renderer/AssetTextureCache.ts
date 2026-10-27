@@ -1,7 +1,6 @@
 /**
  * AssetTextureCache:
- * Resource Manager & Object Pool for preview image and video textures.
- * Supports HTMLImageElement, ImageBitmap, HTMLVideoElement, and Canvas sources.
+ * Resource Manager & Object Pool for preview visual textures.
  * In browser environments, maps Blobs via URL.createObjectURL with safe revocation on eviction/dispose.
  * Provides safe fallback for headless SSR/Node/Bun environments.
  */
@@ -31,10 +30,26 @@ export class AssetTextureCache {
   }
 
   /**
+   * Delete a cached texture by asset ID.
+   */
+  public delete(assetId: string): boolean {
+    const url = this.objectUrls.get(assetId);
+    if (url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+      URL.revokeObjectURL(url);
+      this.objectUrls.delete(assetId);
+    }
+    return this.textures.delete(assetId);
+  }
+
+  /**
    * Load an image texture from a Blob or URL string.
    */
   public async loadBlob(assetId: string, blob: Blob): Promise<any> {
-    if (typeof window === 'undefined' || typeof URL === 'undefined' || typeof Image === 'undefined') {
+    if (
+      typeof window === 'undefined' ||
+      typeof URL === 'undefined' ||
+      typeof Image === 'undefined'
+    ) {
       // Headless / non-DOM mock
       const mockImg = { width: 1920, height: 1080, _isMock: true };
       this.textures.set(assetId, mockImg);
@@ -51,31 +66,24 @@ export class AssetTextureCache {
         this.textures.set(assetId, img);
         resolve(img);
       };
-      img.onerror = (err) => {
-        URL.revokeObjectURL(objectUrl);
-        this.objectUrls.delete(assetId);
-        reject(err);
+      img.onerror = (e) => {
+        reject(new Error(`Failed to load texture blob for ${assetId}: ${e}`));
       };
       img.src = objectUrl;
     });
   }
 
   /**
-   * Remove and dispose a specific asset texture.
+   * Clears all cached textures and revokes object URLs.
    */
-  public delete(assetId: string): void {
-    this.textures.delete(assetId);
-    const url = this.objectUrls.get(assetId);
-    if (url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
-      URL.revokeObjectURL(url);
-      this.objectUrls.delete(assetId);
-    }
+  public clear(): void {
+    this.dispose();
   }
 
   /**
-   * Evict all textures and revoke any created Object URLs.
+   * Disposes of object URLs to prevent memory leaks in long-running sessions.
    */
-  public clear(): void {
+  public dispose(): void {
     if (typeof URL !== 'undefined' && URL.revokeObjectURL) {
       for (const url of this.objectUrls.values()) {
         URL.revokeObjectURL(url);

@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'bun:test';
 import {
   RelationalDAGCompiler,
-  IRPreviewEngine,
   IRMasterRenderer,
   PipelineIRToUniversalIRAdapter,
   VideoIRSchemaValidator,
   type VideoIRDocument,
   type IIRFrameSink,
 } from '@acc/ir';
+import { IRPreviewEngine } from '@acc/studio/renderer';
 import { StoryConfigToUniversalIRAdapter } from '@acc/legacy-story-renderer';
 
 describe('Phase 5: Pure Isomorphic Video IR Suite (@acc/ir)', () => {
@@ -90,7 +90,7 @@ describe('Phase 5: Pure Isomorphic Video IR Suite (@acc/ir)', () => {
     expect(resolvedAsset.src).toBe('/tmp/base/relative/path.mp4');
   });
 
-  it('exposes IRMasterRenderer and IRPreviewEngine from root @acc/ir', () => {
+  it('exposes IRMasterRenderer from root @acc/ir and IRPreviewEngine from @acc/studio', () => {
     expect(IRMasterRenderer).toBeDefined();
     expect(IRPreviewEngine).toBeDefined();
   });

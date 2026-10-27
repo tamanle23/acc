@@ -15,4 +15,5 @@ export * from './compiler/IntervalTreeIndex';
 export * from './compiler/RelationalDAGCompiler';
 export * from './commands/RenderCommand';
 export * from './plugins';
+export * from './motion';
 export * from './renderer';

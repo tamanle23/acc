@@ -20,6 +20,7 @@ export interface ModifierContext {
   targetType: 'track' | 'sequence';
   targetEntity: ResolvedTrack | ResolvedSequence;
   timeline: ReadonlyMap<string, ResolvedSequence>;
+  assets?: Record<string, { src: string; type?: string }>;
   fps: number;
   canvas: { width: number; height: number };
   state?: Record<string, unknown>;

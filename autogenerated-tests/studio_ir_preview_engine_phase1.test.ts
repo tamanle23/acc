@@ -1,14 +1,16 @@
 import { describe, it, expect } from 'bun:test';
 import {
-  IRPreviewEngine,
-  AssetTextureCache,
   HologramHUDPlugin,
   PartialVFXPlugin,
   evaluateSequenceMotion,
   evaluateEase,
-} from '../packages/ir/src/client';
-import { RelationalDAGCompiler } from '../packages/ir/src/compiler/RelationalDAGCompiler';
-import type { VideoIRDocument } from '../packages/ir/src/types/VideoIR';
+  RelationalDAGCompiler,
+  type VideoIRDocument,
+} from '@acc/ir';
+import {
+  IRPreviewEngine,
+  AssetTextureCache,
+} from '@acc/studio/renderer';
 
 // Mock 2D Canvas Context for test execution
 function createMockCanvasContext() {
@@ -31,7 +33,7 @@ function createMockCanvasContext() {
     strokeRect: (x: number, y: number, w: number, h: number) => calls.push(`strokeRect(${x},${y},${w},${h})`),
     setLineDash: (d: number[]) => calls.push(`setLineDash([${d.join(',')}])`),
     createRadialGradient: () => ({
-      addColorStop: () => {},
+      addColorStop: () => { },
     }),
     drawImage: () => calls.push('drawImage'),
     globalCompositeOperation: 'source-over',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { MediabunnyWorkerReader } from '../apps/studio/src/workers/MediabunnyWorkerReader';
+import { MediabunnyWorkerReader } from '../apps/studio/src/renderer/workers/MediabunnyWorkerReader';
 
 describe('MediabunnyWorkerReader Decoder Architecture Suite', () => {
   it('initializes with source URI and configurable options', () => {

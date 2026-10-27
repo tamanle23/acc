@@ -27,7 +27,8 @@ import {
 import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
-} from '@acc/ir';
+  PreviewWorkerCoordinator,
+} from '../renderer';
 import {
   Gizmo2DTransformation,
   type BoundingBox2D,
@@ -37,7 +38,6 @@ import {
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
 import { WebAudioEngine } from '../lib/audio';
-import { StudioVisionPipelineManager } from '../lib/vision/StudioVisionPipelineManager';
 
 interface PreviewProps {
   playhead: {
@@ -110,7 +110,7 @@ export function Preview({
   const [assetTick, setAssetTick] = useState(0);
 
   useEffect(() => {
-    StudioVisionPipelineManager.getInstance();
+    PreviewWorkerCoordinator.getInstance();
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
@@ -215,13 +215,27 @@ export function Preview({
     }
 
     if (bridge.hasTransferred()) {
-      bridge.updateTimeline(irState.timeline, totalFrames, fps, undefined, assetsMap);
+      bridge.updateTimeline(irState.timeline, totalFrames, fps, assetsMap);
+      PreviewWorkerCoordinator.getInstance().preflightTimeline(irState.timeline, {
+        prioritizedFrame: playhead?.currentFrame || 0,
+      });
     } else {
       const engine = new IRPreviewEngine(irState.timeline);
       previewEngineRef.current = engine;
       WebAudioEngine.getInstance().attachPreviewEngine(engine);
     }
+
+    const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
+      setAssetTick((t) => t + 1);
+      if (bridge.hasTransferred() && irState.timeline) {
+        bridge.renderFrame(playhead?.currentFrame || 0);
+      }
+    });
+
     setGlReady(true);
+    return () => {
+      unsubWarmed();
+    };
   }, [irState.timeline, irState.doc?.assets, width, height, fps, totalFrames]);
 
   useEffect(() => {
@@ -235,19 +249,7 @@ export function Preview({
   useEffect(() => {
     const overlayCanvas = overlayCanvasRef.current;
 
-    // Determine popOutIntensity from depth modifiers if present
     const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
-    let popOutIntensity = 1.0;
-    for (const seq of activeSeqs) {
-      if (seq.modifiers) {
-        for (const mod of seq.modifiers) {
-          if (mod.type === 'vfx/depth3d') {
-            const p = mod.params as any;
-            if (typeof p.popOutIntensity === 'number') popOutIntensity = p.popOutIntensity;
-          }
-        }
-      }
-    }
 
     const bridge = workerBridgeRef.current;
     const studioTextureCache = AssetTextureCache.getInstance();
@@ -302,24 +304,18 @@ export function Preview({
             bridge.updateTextures(activeTexturesToSync);
           }
           // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
-          bridge.renderFrame(
-            currentFrame,
-            isPlaying ? 0.5 : 1.0,
-            popOutIntensity,
-            false,
+          bridge.renderFrame(currentFrame, {
+            lod: isPlaying ? 0.5 : 1.0,
             clearColor,
-            visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
-          );
+            debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
+          });
         });
       } else {
-        bridge.renderFrame(
-          currentFrame,
-          isPlaying ? 0.5 : 1.0,
-          popOutIntensity,
-          false,
+        bridge.renderFrame(currentFrame, {
+          lod: isPlaying ? 0.5 : 1.0,
           clearColor,
-          visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none'
-        );
+          debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
+        });
       }
     } else {
       // Main-thread fallback
@@ -361,7 +357,6 @@ export function Preview({
 
           engine.renderFrame(currentFrame, baseCtx, {
             textureCache: engineTextures,
-            popOutIntensity,
             clearColor,
             debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
           });
@@ -402,7 +397,10 @@ export function Preview({
     return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
       const bridge = workerBridgeRef.current;
       if (bridge && bridge.hasTransferred()) {
-        bridge.renderFrame(frame, playing ? 0.5 : 1.0, 1.0, !playing);
+        bridge.renderFrame(frame, {
+          lod: playing ? 0.5 : 1.0,
+          isScrubbing: !playing,
+        });
       }
     });
   }, []);

@@ -536,7 +536,7 @@ export async function resolveDepthMapData(
   targetWidth: number,
   targetHeight: number,
   depthConfig?: Depth3DConfig
-): Promise<{ depthCanvas: ICanvasInstance; depthData: Uint8ClampedArray; normalMap?: any }> {
+): Promise<{ depthCanvas: ICanvasInstance; depthData: Uint8ClampedArray; normalMap?: any; srcCanvas?: ICanvasInstance }> {
   const imgBuffer = await loadAssetBytes(imagePath);
   if (!imgBuffer) {
     throw new Error(`[resolveDepthMapData] Asset could not be loaded: ${imagePath}`);
@@ -622,5 +622,5 @@ export async function resolveDepthMapData(
   }
 
   const depthData = dCtx.getImageData(0, 0, targetWidth, targetHeight).data;
-  return { depthCanvas: dCanvas, depthData };
+  return { depthCanvas: dCanvas, depthData, srcCanvas: dCanvas };
 }
