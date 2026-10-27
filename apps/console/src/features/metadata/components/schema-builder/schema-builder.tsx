@@ -12,12 +12,14 @@ import { Plus, Code, Search, Layers, Sparkles, LayoutPanelTop, List } from 'luci
 import { VisualSchemaStudio } from '../studio';
 import { useTenantBilling } from '../../api/use-billing';
 import { usePermissions } from '@/features/spring-auth';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   entityTypeId: string | number;
 }
 
 export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
+  const { t } = useTranslation('console');
   const { data: attributesResponse, isLoading } = useAttributeDefinitions(entityTypeId, { size: 500 });
   const { data: entityType } = useEntityType(entityTypeId);
   const { openCreateAttributeDialog, openJsonSchemaPreview } = useMetadataUiStore();
@@ -80,6 +82,45 @@ export const SchemaBuilder: React.FC<Props> = ({ entityTypeId }) => {
       <div className="flex flex-col items-center justify-center p-12 text-muted-foreground gap-3">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span className="text-sm">Loading schema definitions...</span>
+      </div>
+    );
+  }
+
+  // Composite entities are projections: no manual fields, no list mode, Bento Studio only.
+  if (entityType?.isComposite) {
+    return (
+      <div className="group/grid flex flex-col gap-4 w-full min-w-0 flex-1 min-h-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 p-5 rounded-2xl bg-white/45 dark:bg-slate-900/45 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-lg shadow-black/5 dark:shadow-black/25 shrink-0">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                {entityType.name} {t('metadata.schema.compositeTitle', 'Composite Studio')}
+              </h2>
+              <Badge variant="secondary" className="px-2 py-0.5 text-xs font-semibold">
+                {t('metadata.schema.compositeBadge', 'Composite')}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'metadata.schema.compositeHint',
+                'Compose root and child entity projections. Fields are derived, not added manually.'
+              )}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openJsonSchemaPreview}
+            className="h-9 gap-1.5 text-xs bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60"
+          >
+            <Code className="h-4 w-4 text-primary" />
+            <span>Draft-07 JSON</span>
+          </Button>
+        </div>
+        <div className="flex-1 min-h-0 w-full">
+          <VisualSchemaStudio entityTypeId={entityTypeId} />
+        </div>
+        <SchemaJsonPreview entityTypeId={entityTypeId} entityTypeName={entityType.name} />
       </div>
     );
   }

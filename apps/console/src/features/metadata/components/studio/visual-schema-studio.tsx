@@ -27,16 +27,12 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
   const [selectedAttributeId, setSelectedAttributeId] = useState<string | number | null>(
     attributes[0]?.id || null
   );
-  const [activeStudioTab, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'composite'>('canvas');
+  const [studioTabState, setActiveStudioTab] = useState<'canvas' | 'workflow' | 'composite'>('canvas');
+  const isComposite = Boolean(entityType?.isComposite);
+  // Composite entities are locked to the Bento Studio (no manual fields, no FSM canvas)
+  const activeStudioTab = isComposite ? 'composite' : studioTabState;
 
   const selectedAttribute = attributes.find((a) => String(a.id) === String(selectedAttributeId)) || null;
-
-  // Auto-switch to composite tab if entityType is composite
-  React.useEffect(() => {
-    if (entityType?.isComposite) {
-      setActiveStudioTab('composite');
-    }
-  }, [entityType?.isComposite]);
 
   // Handle dropping or clicking a field item from the palette
   const handleSelectPaletteItem = async (item: PaletteFieldItem) => {
@@ -94,6 +90,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
           </div>
         </div>
 
+        {!isComposite && (
         <Tabs
           value={activeStudioTab}
           onValueChange={(val) => setActiveStudioTab(val as 'canvas' | 'workflow' | 'conductor' | 'composite')}
@@ -123,6 +120,7 @@ export const VisualSchemaStudio: React.FC<Props> = ({ entityTypeId }) => {
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        )}
       </div>
 
       {activeStudioTab === 'canvas' ? (
