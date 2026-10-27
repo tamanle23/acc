@@ -58,6 +58,7 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
   const [dataType, setDataType] = useState<DataType>('STRING');
   const [isRequired, setIsRequired] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
+  const [isIndexed, setIsIndexed] = useState(false);
   const [defaultValue, setDefaultValue] = useState('');
   const [choices, setChoices] = useState<string[]>([]);
   const [newChoice, setNewChoice] = useState('');
@@ -88,6 +89,7 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
       setDataType(editingAttribute.dataType);
       setIsRequired(Boolean(editingAttribute.isRequired));
       setIsArchived(Boolean(editingAttribute.isArchived));
+      setIsIndexed(Boolean(editingAttribute.options?.indexed));
       setDefaultValue(editingAttribute.defaultValue || '');
       setChoices(editingAttribute.options?.choices || []);
       setMinVal(
@@ -115,6 +117,7 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
       setDataType('STRING');
       setIsRequired(false);
       setIsArchived(false);
+      setIsIndexed(false);
       setDefaultValue('');
       setChoices([]);
       setMinVal('');
@@ -212,6 +215,7 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
     if (minVal !== '') options.min = Number(minVal);
     if (maxVal !== '') options.max = Number(maxVal);
     if (placeholder.trim()) options.placeholder = placeholder.trim();
+    if (isIndexed) options.indexed = true;
     if (uiComponent === 'relation_picker') {
       if (!targetEntityTypeId) {
         alert('Please select a Target Entity Model for the relation picker.');
@@ -471,6 +475,23 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
                 </div>
               )}
 
+              {/* Functional Index Optimization */}
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 p-3.5 backdrop-blur-sm">
+                <div className="space-y-0.5 pr-4">
+                  <Label htmlFor="attr-indexed" className="text-sm font-medium cursor-pointer">
+                    PostgreSQL Functional Index
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Accelerates queries and faceted search on this attribute with an automated PostgreSQL JSONB expression index.
+                  </p>
+                </div>
+                <Switch
+                  id="attr-indexed"
+                  checked={isIndexed}
+                  onCheckedChange={setIsIndexed}
+                />
+              </div>
+
               {currentMeta.hasMinMax && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -539,6 +560,23 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
                   )}
                 </div>
               )}
+
+              {/* Functional Index Optimization */}
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 p-3.5 backdrop-blur-sm">
+                <div className="space-y-0.5 pr-4">
+                  <Label htmlFor="attr-indexed" className="text-sm font-medium cursor-pointer">
+                    PostgreSQL Functional Index
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Accelerates queries and faceted search on this attribute with an automated PostgreSQL JSONB expression index.
+                  </p>
+                </div>
+                <Switch
+                  id="attr-indexed"
+                  checked={isIndexed}
+                  onCheckedChange={setIsIndexed}
+                />
+              </div>
             </TabsContent>
           </Tabs>
 

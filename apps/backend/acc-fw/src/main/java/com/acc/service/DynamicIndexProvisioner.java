@@ -87,6 +87,52 @@ public class DynamicIndexProvisioner {
     }
 
     /**
+     * Generates a PostgreSQL JSONB expression index statement for an AttributeDefinition.
+     */
+    public String generateAttributeIndexStatement(Long entityTypeId, String systemName, String dataType) {
+        if (entityTypeId == null || systemName == null || systemName.isBlank()) {
+            return null;
+        }
+
+        String cleanAttr = systemName.replaceAll("[^a-zA-Z0-9_]", "");
+        String indexName = "idx_ent_attr_" + entityTypeId + "_" + cleanAttr;
+        String typeUpper = dataType != null ? dataType.trim().toUpperCase() : "STRING";
+
+        String expr;
+        if ("NUMERIC".equals(typeUpper) || "NUMBER".equals(typeUpper) || "INTEGER".equals(typeUpper)) {
+            expr = "((attributes->>'" + cleanAttr + "')::numeric)";
+        } else if ("DATE".equals(typeUpper) || "DATETIME".equals(typeUpper) || "TIMESTAMP".equals(typeUpper)) {
+            expr = "((attributes->>'" + cleanAttr + "')::timestamp)";
+        } else {
+            expr = "(attributes->>'" + cleanAttr + "')";
+        }
+
+        return String.format(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS %s ON UNIPOST_ENTITIES (%s) WHERE (entity_type_id = %d AND \"deletedDate\" IS NULL);",
+            indexName, expr, entityTypeId
+        );
+    }
+
+    /**
+     * Asynchronously provisions a PostgreSQL functional expression index for a single entity attribute.
+     */
+    public void provisionAttributeIndexAsync(Long entityTypeId, String systemName, String dataType) {
+        String ddl = generateAttributeIndexStatement(entityTypeId, systemName, dataType);
+        if (ddl == null) return;
+
+        indexExecutor.submit(() -> {
+            try {
+                log.info("Executing asynchronous attribute functional index provisioning: {}", ddl);
+                if (jdbcTemplate != null) {
+                    jdbcTemplate.execute(ddl);
+                }
+            } catch (Exception e) {
+                log.warn("Async attribute functional index creation skipped or encountered warning: {}", e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Executes index provisioning on a dedicated background thread outside active transactions.
      */
     public void provisionIndexesAsync(CompositeSpec spec) {

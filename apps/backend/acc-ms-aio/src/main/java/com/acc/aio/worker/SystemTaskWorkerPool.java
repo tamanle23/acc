@@ -108,6 +108,20 @@ public class SystemTaskWorkerPool {
     }
 
     /**
+     * Phase 7 / Iteration 38: Autonomous Task Lease Watchdog Reaper.
+     * Periodically inspects distributed task queue for expired worker leases,
+     * re-enqueues retryable tasks, or quarantines persistent zombies to DLQ.
+     */
+    @Scheduled(fixedDelay = 5000)
+    public void scheduleTaskLeaseWatchdog() {
+        try {
+            engineService.reapExpiredLeases(System.currentTimeMillis());
+        } catch (Exception e) {
+            log.debug("Task lease watchdog cycle encountered error: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Polls and dispatches a batch of pending system tasks across all reserved system domains.
      * @return count of tasks polled and submitted to virtual thread fleet.
      */

@@ -34,8 +34,10 @@ Workflow:
 3. Auto-stage & commit after verification: `git commit -m "<type>(<scope>): <summary>" -m "<details>"`.
 4. Types: `feat|fix|perf|refactor|docs|test|chore`. Never commit `.env`, secrets, or temporary files.
 
-## App-Specific Artifacts
-- Write plans & walkthroughs to `apps/<app>/doc/`.
-- Counter: `NEXT = MAX(existing NN in doc/) + 1` (start at `01`). Paired features share identical `NN`.
+## App-Specific & Consolidated Iteration Artifacts
+- Write local plans & walkthroughs to `apps/<app>/doc/`.
+- App Counter: `NEXT = MAX(existing NN in doc/) + 1` (start at `01`). Paired features share identical `NN`.
+- Consolidated Iteration Plans: Maintain consolidated cross-cutting plans in `docs/iterations/` named `master_implementation_plan_iteration_${increment_number}.md` (`NEXT_ITERATION = MAX + 1`).
+- Execution Context Invariant: When executing a master implementation plan, ALWAYS read and load all companion local app plans into context before editing code.
 - Never overwrite existing `./docs/**` artifact files.
 - Refer to [ROUTE.md](./ROUTE.md) before analyzing or modifying routing architecture.

@@ -73,22 +73,30 @@ Whenever an implementation plan, bug fix, refactoring, or code update completes 
 
 ---
 
-## 4. App-Specific Artifact History & Incremental Tracking
+## 4. App-Specific & Consolidated Iteration Artifact History
 
 ### Traceability Architecture
-All agent planning documents and post-execution walkthroughs must be stored directly within the affected application's local `doc/` directory to ensure version-controlled historical tracking.
+1. **Local App Artifacts**: All local planning documents and post-execution walkthroughs must be stored directly within the affected application's local `doc/` directory to ensure version-controlled historical tracking.
+2. **Consolidated Iteration Master Plans (`docs/iterations`)**:
+   - For all multi-system, full-stack, or cross-cutting initiatives, the agent must maintain a single, consolidated master implementation plan saved in `docs/iterations/`.
+   - File naming format: `docs/iterations/master_implementation_plan_iteration_${increment_number}.md`.
+   - The iteration increment counter is computed as `NEXT_ITERATION = MAX(all existing iteration numbers in docs/iterations/ and archives) + 1` (starting after 37, so next is `38`).
+   - App-specific paired plans/walkthroughs in `apps/<app>/doc/` reference this consolidated iteration document.
+3. **Execution Context Invariant for Consolidated Plans**:
+   - Whenever the user instructs the agent to execute a consolidated master implementation plan (e.g. `master_implementation_plan_iteration_${increment_number}.md`), the agent **MUST ALWAYS read and include all companion local plans** (e.g., `apps/backend/doc/implementation_plan_<NN>.md`, `apps/console/doc/implementation_plan_<NN>.md`) into the active execution context before making any code changes.
+   - This prevents context drift, guarantees alignment with local app specifications, and ensures matched local walkthroughs are recorded accurately.
 
 ### Numbering & Counter Mechanism
-1. **Target Path**: `apps/<target-app>/doc/` (or `packages/<target-pkg>/doc/`). Auto-create if absent.
-2. **Shared Global Counter**:
-   - Compute `NEXT = MAX(all existing NN indices across plans and walkthroughs) + 1`. If none exist, start at `01`.
+1. **Target Path for App-Specific Docs**: `apps/<target-app>/doc/` (or `packages/<target-pkg>/doc/`). Auto-create if absent.
+2. **Shared App Global Counter**:
+   - Compute `NEXT = MAX(all existing NN indices across plans and walkthroughs in apps/<app>/doc/) + 1`. If none exist, start at `01`.
    - A planned feature generates a matched pair sharing the same index number:
      - `apps/<target-app>/doc/implementation_plan_<NN>.md` (created before execution)
      - `apps/<target-app>/doc/walkthrough_<NN>.md` (created after execution)
    - A reactive fix (no planning phase) skips the plan file but advances the shared counter:
      - `apps/<target-app>/doc/walkthrough_<NEXT>.md`
 3. **Dual Persistence**:
-   - Interactive artifacts in the agent session brain directory are mirrored 1:1 into the target app's `doc/` folder.
+   - Interactive artifacts in the agent session brain directory are mirrored 1:1 into the target app's `doc/` folder and `docs/iterations/`.
    - Never overwrite prior numbered iterations.
 
 ---

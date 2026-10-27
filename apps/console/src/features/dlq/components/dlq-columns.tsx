@@ -95,15 +95,30 @@ export const createDlqColumns = ({
     ),
     cell: ({ row }) => {
       const item = row.original;
+      const isLeaseExpired = item.errorMessage?.includes('TASK_LEASE_EXPIRED');
+
       return (
-        <div className="flex items-start gap-1.5 max-w-[340px]">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-          <span
-            className="text-xs text-foreground/90 font-mono line-clamp-2"
-            title={item.errorMessage}
-          >
-            {item.errorMessage || 'Unknown error occurred'}
-          </span>
+        <div className="flex flex-col gap-1 max-w-[340px]">
+          {isLeaseExpired && (
+            <Badge
+              variant="outline"
+              className="w-fit text-[10px] font-semibold tracking-wide border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center gap-1 py-0 px-1.5"
+            >
+              <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+              <span>⚡ Lease Expired</span>
+            </Badge>
+          )}
+          <div className="flex items-start gap-1.5">
+            {!isLeaseExpired && (
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+            )}
+            <span
+              className="text-xs text-foreground/90 font-mono line-clamp-2"
+              title={item.errorMessage}
+            >
+              {item.errorMessage || 'Unknown error occurred'}
+            </span>
+          </div>
         </div>
       );
     },

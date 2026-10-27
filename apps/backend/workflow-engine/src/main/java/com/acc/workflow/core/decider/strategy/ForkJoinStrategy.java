@@ -41,6 +41,36 @@ public final class ForkJoinStrategy implements NodeEvaluatorStrategy {
                     allJoinedComplete = false;
                     break;
                 } else {
+                    // Fail-Fast Dynamic Fork Barrier: If prereq is a dynamic fork, verify all child subtasks completed
+                    if (prereq.outputData() != null && prereq.outputData().containsKey("dynamicRefs")) {
+                        Object refsObj = prereq.outputData().get("dynamicRefs");
+                        if (refsObj instanceof List<?> dynamicRefs) {
+                            for (Object childRefObj : dynamicRefs) {
+                                String childRef = String.valueOf(childRefObj);
+                                TaskSnapshot childSnap = snapshot.tasksByRef().get(childRef);
+                                if (childSnap == null || childSnap.status() != TaskStatus.COMPLETED) {
+                                    if (childSnap != null && (childSnap.status() == TaskStatus.FAILED || childSnap.status() == TaskStatus.TIMED_OUT)) {
+                                        // Fail-Fast immediately on child failure
+                                        String err = "Join barrier failed: dynamic child '" + childRef + "' is " + childSnap.status();
+                                        List<EngineCommand> failCmds = List.of(new EngineCommand.UpdateTaskStatus(
+                                            snapshot.workflowId() + "_" + refName,
+                                            refName,
+                                            TaskStatus.FAILED,
+                                            Map.of("failedChild", childRef, "error", err),
+                                            err
+                                        ));
+                                        return NodeEvaluationResult.failed(failCmds, err);
+                                    }
+                                    allJoinedComplete = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!allJoinedComplete) {
+                        break;
+                    }
                     aggregatedJoinOutput.put(prerequisiteRef, prereq.outputData());
                 }
             }

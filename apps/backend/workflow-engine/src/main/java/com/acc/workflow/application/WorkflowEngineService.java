@@ -30,6 +30,7 @@ public class WorkflowEngineService {
     private final PersistencePort persistencePort;
     private final PureDecider decider;
     private final AuditLedgerService auditLedgerService;
+    private final TaskLeaseWatchdog taskLeaseWatchdog;
     private final TopologicalCompatibilityValidator compatibilityValidator = new TopologicalCompatibilityValidator();
 
     public WorkflowEngineService(PersistencePort persistencePort, PureDecider decider) {
@@ -37,9 +38,19 @@ public class WorkflowEngineService {
     }
 
     public WorkflowEngineService(PersistencePort persistencePort, PureDecider decider, AuditLedgerService auditLedgerService) {
+        this(persistencePort, decider, auditLedgerService, new TaskLeaseWatchdog(persistencePort));
+    }
+
+    public WorkflowEngineService(
+        PersistencePort persistencePort,
+        PureDecider decider,
+        AuditLedgerService auditLedgerService,
+        TaskLeaseWatchdog taskLeaseWatchdog
+    ) {
         this.persistencePort = Objects.requireNonNull(persistencePort, "persistencePort required");
         this.decider = Objects.requireNonNull(decider, "decider required");
         this.auditLedgerService = Objects.requireNonNull(auditLedgerService, "auditLedgerService required");
+        this.taskLeaseWatchdog = Objects.requireNonNull(taskLeaseWatchdog, "taskLeaseWatchdog required");
     }
 
     public WorkflowSnapshot startWorkflow(
@@ -819,24 +830,30 @@ public class WorkflowEngineService {
                 30000L,
                 "sim-worker"
             );
-            simulatedTasks.put(ref, simTask);
-            outputPayload.put(ref, taskOutput);
+    /**
+     * Phase 7 / Iteration 38: Task Lease Watchdog & Reaper.
+     * Reaps expired worker leases across tenant task queues. If a task exceeds max attempts,
+     * it is isolated to task_dlq and the parent workflow is re-evaluated by the decider.
+     *
+     * @param nowEpochMs Current epoch timestamp in milliseconds.
+     * @return List of reaped TaskSnapshot instances.
+     */
+    public List<TaskSnapshot> reapExpiredLeases(long nowEpochMs) {
+        List<TaskSnapshot> reapedTasks = taskLeaseWatchdog.reapExpiredLeases(nowEpochMs);
+        for (TaskSnapshot task : reapedTasks) {
+            if (task.attempt() >= taskLeaseWatchdog.getMaxAttempts()) {
+                // If quarantined, re-evaluate workflow to fail or advance
+                try {
+                    decide(task.workflowId(), nowEpochMs);
+                } catch (Exception e) {
+                    // Log and continue to next task
+                }
+            }
         }
+        return reapedTasks;
+    }
 
-        currentStatus = WorkflowStatus.COMPLETED;
-
-        return new WorkflowSnapshot(
-            simWorkflowId,
-            "sim-tenant",
-            "sim-workspace",
-            definition.workflowKey(),
-            definition.version(),
-            currentStatus,
-            effectiveInput,
-            outputPayload,
-            Collections.emptyMap(),
-            null,
-            simulatedTasks
-        );
+    public TaskLeaseWatchdog getTaskLeaseWatchdog() {
+        return taskLeaseWatchdog;
     }
 }

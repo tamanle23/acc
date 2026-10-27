@@ -354,6 +354,11 @@ public class MetadataService {
 
         AttributeDefinition saved = attributeDefinitionRepository.save(attributeDefinition);
 
+        // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if marked indexed
+        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+            dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
+        }
+
         incrementSchemaVersion(entityType);
         eventPublisher.publishEvent(new AttributeDefinitionUpdatedEvent(this, entityTypeId, activeTenantId));
         return MetadataDtoMapper.toResponse(saved);
@@ -394,6 +399,11 @@ public class MetadataService {
         if (request.defaultValue() != null) attr.setDefaultValue(request.defaultValue());
 
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
+
+        // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
+        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+            dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
+        }
 
         incrementSchemaVersion(entityType);
         String activeTenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
@@ -457,6 +467,11 @@ public class MetadataService {
         attr.setIsArchived(true);
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
 
+        // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
+        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+            dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
+        }
+
         incrementSchemaVersion(entityType);
         String activeTenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
         eventPublisher.publishEvent(new AttributeDefinitionUpdatedEvent(this, entityTypeId, activeTenantId));
@@ -473,6 +488,11 @@ public class MetadataService {
 
         attr.setIsArchived(false);
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
+
+        // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
+        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+            dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
+        }
 
         incrementSchemaVersion(entityType);
         String activeTenantId = com.acc.fw.tenancy.TenantContextHolder.getTenantId();
