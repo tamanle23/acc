@@ -138,6 +138,17 @@ export class PreviewWorkerBridge {
     });
   }
 
+  public requestFrame(
+    frame: number,
+    lod = 1.0,
+    popOutIntensity = 1.0,
+    isScrubbing = false,
+    clearColor?: string,
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
+  ) {
+    this.renderFrame(frame, lod, popOutIntensity, isScrubbing, clearColor, debugMode);
+  }
+
   public startPlayback(
     speed: number,
     startFrame: number,

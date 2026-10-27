@@ -228,7 +228,7 @@ export function Preview({
     const unsubWarmed = StudioSidecarCoordinator.getInstance().onModifierWarmed(() => {
       setAssetTick((t) => t + 1);
       if (bridge.hasTransferred() && irState.timeline) {
-        bridge.requestFrame(playhead?.currentFrame || 0);
+        bridge.renderFrame(playhead?.currentFrame || 0);
       }
     });
 
