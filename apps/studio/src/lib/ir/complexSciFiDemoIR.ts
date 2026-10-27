@@ -36,6 +36,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       h: 1080,
     },
     colorSpace: 'srgb',
+    nextSequenceIndex: 25,
   },
   assets: {
     'asset-cyber-city': {
@@ -90,6 +91,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-city-intro',
+          name: 'Establishing: Cyberpunk Metropolis',
           type: 'image',
           assetId: 'asset-cyber-city',
           time: {
@@ -124,6 +126,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-core-reveal',
+          name: 'Reveal: Matrix Core',
           type: 'video',
           assetId: 'asset-matrix-core',
           time: {
@@ -156,6 +159,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-skyline-climax',
+          name: 'Climax: Orbital Skyline',
           type: 'image',
           assetId: 'asset-orbital-skyline',
           time: {
@@ -208,6 +212,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-holo-subject',
+          name: 'Hologram: Neon Warrior',
           type: 'image',
           assetId: 'asset-neon-warrior',
           time: {
@@ -243,6 +248,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-holo-drone',
+          name: 'Hologram: Cyber Drone',
           type: 'image',
           assetId: 'asset-cyber-drone',
           time: {
@@ -289,6 +295,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-matrix-rain',
+          name: 'VFX: Matrix Digital Rain',
           type: 'overlay',
           time: {
             start: 0,
@@ -309,6 +316,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-neon-embers',
+          name: 'VFX: Neon Embers',
           type: 'overlay',
           time: {
             start: {
@@ -332,6 +340,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-warp-speed',
+          name: 'VFX: Warp Speed Lines',
           type: 'overlay',
           time: {
             start: {
@@ -363,6 +372,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-hud-tactical',
+          name: 'HUD: Tactical Targeting',
           type: 'overlay',
           time: {
             start: 45,
@@ -393,6 +403,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-hud-critical-lock',
+          name: 'HUD: Critical Lock Warning',
           type: 'overlay',
           time: {
             start: {
@@ -425,6 +436,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-cyber-spotlight',
+          name: 'VFX: Cyber Spotlight',
           type: 'overlay',
           time: {
             start: 35,
@@ -451,6 +463,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-chromatic-burst',
+          name: 'VFX: Chromatic Glitch Burst',
           type: 'overlay',
           time: {
             start: 220,
@@ -494,6 +507,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-lower-third-callout',
+          name: 'Motion Graphic: Cyber Lower Third',
           type: 'overlay',
           time: {
             start: 60,
@@ -547,6 +561,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-pilot-comm',
+          name: 'Dialogue: Pilot Intro Comm',
           type: 'audio',
           assetId: 'asset-voice-pilot',
           time: {
@@ -584,6 +599,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-pilot-climax',
+          name: 'Dialogue: Pilot Climax Call',
           type: 'audio',
           assetId: 'asset-voice-pilot',
           time: {
@@ -621,6 +637,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-ai-dispatch-comm',
+          name: 'Comms: AI Dispatch Protocol',
           type: 'audio',
           assetId: 'asset-ai-dispatch',
           time: {
@@ -664,6 +681,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-laser-hit',
+          name: 'SFX: Laser Impact Burst',
           type: 'audio',
           assetId: 'asset-laser-impact',
           time: {
@@ -690,6 +708,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-sub-drop',
+          name: 'SFX: Sub-Bass Drop & Riser',
           type: 'audio',
           assetId: 'asset-sub-bass-drop',
           time: {
@@ -726,6 +745,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-synth-score',
+          name: 'Score: Synthwave Cyberpunk BGM',
           type: 'audio',
           assetId: 'asset-synth-bgm',
           time: {
@@ -767,6 +787,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-dialogue-1',
+          name: 'Dialogue Subtitle 1',
           type: 'text',
           time: {
             start: 20,
@@ -799,6 +820,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-dialogue-2',
+          name: 'Dialogue Subtitle 2',
           type: 'text',
           time: {
             start: 95,
@@ -830,6 +852,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-dialogue-3',
+          name: 'Dialogue Subtitle 3',
           type: 'text',
           time: {
             start: 210,
@@ -875,6 +898,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-hud-callout',
+          name: 'HUD Telemetry: Parallax Breach Notice',
           type: 'text',
           time: {
             start: 45,
@@ -902,6 +926,7 @@ export const complexSciFiDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-hud-callout-warning',
+          name: 'HUD Telemetry: Sub-Orbital Warning',
           type: 'text',
           time: {
             start: 215,

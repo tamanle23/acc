@@ -19,6 +19,7 @@ export const defaultDemoIR: VideoIRDocument = {
       h: 1080,
     },
     colorSpace: 'srgb',
+    nextSequenceIndex: 8,
   },
   assets: {
     'asset-scene-1': {
@@ -46,6 +47,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-visual-1',
+          name: 'Scene 1: Starlit Lake',
           type: 'image',
           assetId: 'asset-scene-1',
           time: {
@@ -66,6 +68,7 @@ export const defaultDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-visual-2',
+          name: 'Scene 2: Tropical Coast',
           type: 'image',
           assetId: 'asset-scene-2',
           time: {
@@ -97,6 +100,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-particle-overlay',
+          name: 'Atmospheric Dust',
           type: 'overlay',
           time: {
             start: 30,
@@ -123,6 +127,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-narration',
+          name: 'Robot Narration',
           type: 'audio',
           assetId: 'asset-voiceover',
           time: {
@@ -151,6 +156,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-music-bg',
+          name: 'Heavy Rain Ambience',
           type: 'audio',
           assetId: 'asset-music',
           time: {
@@ -170,6 +176,7 @@ export const defaultDemoIR: VideoIRDocument = {
       sequences: [
         {
           id: 'seq-subs-1',
+          name: 'Subtitle Line 1',
           type: 'text',
           time: {
             start: 15,
@@ -185,6 +192,7 @@ export const defaultDemoIR: VideoIRDocument = {
         },
         {
           id: 'seq-subs-2',
+          name: 'Subtitle Line 2',
           type: 'text',
           time: {
             start: 75,
