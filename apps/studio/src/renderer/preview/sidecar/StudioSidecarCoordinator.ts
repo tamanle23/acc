@@ -57,10 +57,12 @@ export class StudioSidecarCoordinator {
   private initWorker(customWorkerUrl?: URL): void {
     if (typeof Worker !== 'undefined') {
       try {
-        const workerUrl =
-          customWorkerUrl ??
-          new URL('../../../workers/preview-sidecar.worker.ts', import.meta.url);
-        this.worker = new Worker(workerUrl, { type: 'module' });
+        this.worker = customWorkerUrl
+          ? new Worker(customWorkerUrl, { type: 'module' })
+          : new Worker(
+              new URL('../../../workers/preview-sidecar.worker.ts', import.meta.url),
+              { type: 'module' }
+            );
 
         this.worker.onmessage = (event: MessageEvent<SidecarWorkerResponse>) => {
           this.handleWorkerMessage(event.data);
@@ -86,15 +88,30 @@ export class StudioSidecarCoordinator {
     this.inProcessRegistry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
   }
 
+  public warmup(): void {
+    if (this.worker && !this.isWarmedUp) {
+      this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+    }
+  }
+
   private scheduleWarmup(): void {
     if (typeof window === 'undefined' || !this.worker) return;
-    const schedule =
-      (window as any).requestIdleCallback || ((cb: any) => setTimeout(cb, 200));
-    schedule(() => {
-      if (this.worker && !this.isWarmedUp) {
-        this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
-      }
-    });
+    if (typeof (window as any).requestIdleCallback === 'function') {
+      (window as any).requestIdleCallback(
+        () => {
+          if (this.worker && !this.isWarmedUp) {
+            this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+          }
+        },
+        { timeout: 1000 }
+      );
+    } else {
+      setTimeout(() => {
+        if (this.worker && !this.isWarmedUp) {
+          this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+        }
+      }, 100);
+    }
   }
 
   private handleWorkerMessage(msg: SidecarWorkerResponse): void {
