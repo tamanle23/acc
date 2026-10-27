@@ -135,7 +135,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       mode === "volumetric_sandwich" ||
       mode === "sandwich";
 
-  const segStrat = VisionEngineRegistry.getSegmentationStrategy();
+  const segStrat = VisionEngineRegistry.getSegmentationStrategy(depthConfig?.segmentationStrategy);
 
   // Load subject cutout if available
   try {
@@ -187,7 +187,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const sCtx = sCanvas.getContext("2d");
   drawImageCover(sCtx, img, 0, 0, width, height);
 
-  const depthStrat = VisionEngineRegistry.getDepthStrategy();
+  const depthStrat = VisionEngineRegistry.getDepthStrategy(depthConfig?.depthStrategy);
   const depthStratName = (depthStrat.name || depthStrat.id || "depth").replace(/[^a-zA-Z0-9_-]/g, "_");
 
   if (!loadedDepth && depthConfig.autoDepth) {
@@ -404,7 +404,7 @@ export async function resolveSubjectCutout(
     }
 
     const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
-    const segStrat = VisionEngineRegistry.getSegmentationStrategy();
+    const segStrat = VisionEngineRegistry.getSegmentationStrategy(depthConfig?.segmentationStrategy);
     const segStratName = (segStrat.name || segStrat.id || "segmentation").replace(/[^a-zA-Z0-9_-]/g, "_");
 
     // Compute both fastChecksum and md5 slice for disk compatibility
@@ -529,7 +529,7 @@ export async function resolveDepthMapData(
   const dCanvas = UniversalCanvasProvider.createCanvas(targetWidth, targetHeight);
   const dCtx = dCanvas.getContext("2d");
 
-  const depthStrat = VisionEngineRegistry.getDepthStrategy();
+  const depthStrat = VisionEngineRegistry.getDepthStrategy(depthConfig?.depthStrategy);
   const depthStratName = (depthStrat.name || depthStrat.id || "depth").replace(/[^a-zA-Z0-9_-]/g, "_");
   const fChecksum = fastChecksum(imgBuffer);
   let md5Checksum = fChecksum;

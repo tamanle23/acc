@@ -1,4 +1,9 @@
-import { UniversalCanvasProvider } from '@acc/core-isomorphic';
+import {
+  UniversalCanvasProvider,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
+} from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
   Depth3DFactory,
@@ -7,6 +12,7 @@ import {
   type SurfaceNormalMap,
   type RelightingParams,
   resolveSubjectCutout,
+  resolveDepthMapData,
 } from '@acc/effect-engines';
 
 export type Depth3DMode =
@@ -37,6 +43,8 @@ export type Depth3DMode =
 
 export interface Depth3DPluginParams {
   mode: Depth3DMode | string;
+  depthStrategy?: DepthStrategyId | string;
+  segmentationStrategy?: SegmentationStrategyId | string;
   frameStyle?: string;
   popOutIntensity?: number;
   autoSegment?: boolean;
@@ -144,13 +152,14 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       mode: params.mode || 'frame_breaker',
       frameStyle: params.frameStyle,
       popOutIntensity: params.popOutIntensity ?? 1.25,
+      depthStrategy: params.depthStrategy || VisionEngineRegistry.getDefaultDepthStrategyId(),
+      segmentationStrategy: params.segmentationStrategy || VisionEngineRegistry.getDefaultSegmentationStrategyId(),
       active: true,
     };
 
-    // Pre-resolve AI subject cutout and Depth Anything layers during preflight
-    if (params.imagePath && typeof window === 'undefined') {
+    // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight
+    if (params.imagePath) {
       try {
-        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
         const cutout = await resolveSubjectCutout(params.imagePath, params as any);
         this.cutoutCache.set(params.imagePath, cutout);
       } catch { }
@@ -161,9 +170,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
 
       if (mode === 'depth_map_3d' || mode === 'mesh_displacement' || params.autoDepth || params.relighting?.enabled) {
         try {
-          const req = typeof require !== 'undefined' ? require : (0, eval)('require');
-          const effectEngines = req('@acc/effect-engines');
-          const depthData = await effectEngines.resolveDepthMapData(
+          const depthData = await resolveDepthMapData(
             params.imagePath,
             width,
             height,
@@ -281,6 +288,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       popOutIntensity: params.popOutIntensity ?? 1.25,
       shadow: params.shadow !== false,
       floatMotion: params.floatMotion !== false,
+      depthStrategy: params.depthStrategy,
+      segmentationStrategy: params.segmentationStrategy,
       sandwich: params.sandwich,
       parallax: params.parallax,
       depthMesh: params.depthMesh,

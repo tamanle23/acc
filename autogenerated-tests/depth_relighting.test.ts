@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'bun:test';
 import { createCanvas } from '@napi-rs/canvas';
 import {
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
+} from '@acc/core-isomorphic';
+import {
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type Light3DSource,
@@ -158,5 +163,31 @@ describe('Phase 1: Depth-Aware Dynamic Relighting & Normal Map Shading', () => {
 
     // Verify baseline was rendered without crash
     expect(baselineData.length).toBe(width * height * 4);
+  });
+
+  it('should coordinate depthStrategy and segmentationStrategy with VisionEngineRegistry in Depth3DPlugin', async () => {
+    const plugin = new Depth3DPlugin();
+    const context: any = {
+      canvas: createCanvas(100, 100),
+      state: {},
+    };
+
+    await plugin.execute(context, {
+      mode: 'volumetric_sandwich',
+      depthStrategy: DepthStrategyId.Heuristic,
+      segmentationStrategy: SegmentationStrategyId.GrabCutFallback,
+    });
+
+    expect(context.state.depth3d).toBeDefined();
+    expect(context.state.depth3d.mode).toBe('volumetric_sandwich');
+    expect(context.state.depth3d.depthStrategy).toBe(DepthStrategyId.Heuristic);
+    expect(context.state.depth3d.segmentationStrategy).toBe(SegmentationStrategyId.GrabCutFallback);
+    expect(context.state.depth3d.active).toBe(true);
+
+    // Verify schema fields expose vision strategy controls
+    expect(plugin.schema.fields.depthStrategy).toBeDefined();
+    expect(plugin.schema.fields.depthStrategy.key).toBe('depthStrategy');
+    expect(plugin.schema.fields.segmentationStrategy).toBeDefined();
+    expect(plugin.schema.fields.segmentationStrategy.key).toBe('segmentationStrategy');
   });
 });

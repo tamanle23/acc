@@ -116,6 +116,8 @@ export interface Depth3DConfig {
   subjectImage?: string; // Optional transparent cutout PNG/WebM of subject if provided separately
   autoSegment?: boolean; // Auto-extract subject alpha mask via SAM2 / MobileSAM when subjectImage is omitted
   autoDepth?: boolean; // Auto-generate metric depth map via Depth Anything v2 when depthMapPath is omitted
+  depthStrategy?: string; // Optional override for depth strategy in VisionEngineRegistry
+  segmentationStrategy?: string; // Optional override for segmentation strategy in VisionEngineRegistry
 
   // Specific mode sub-configurations
   parallax?: Parallax25DSettings;
