@@ -33,25 +33,33 @@ describe('Iteration 8 Phase 2: Real Visual Media Compositor (Image & Video)', ()
   describe('Preview.tsx Multi-Track Compositor Source Verification', () => {
     const previewFile = path.resolve(process.cwd(), 'apps/studio/src/components/Preview.tsx');
     const previewDir = path.resolve(process.cwd(), 'apps/studio/src/components/preview');
+    const strategiesDir = path.resolve(process.cwd(), 'apps/studio/src/renderer/strategies');
 
-    // Aggregate coordinator + all preview submodules (Tasks 302–303 decomposed Preview.tsx)
+    // Aggregate coordinator, preview submodules, and render strategies (Iteration 40)
     function readPreviewModuleTree(): string {
       const coordinator = fs.readFileSync(previewFile, 'utf-8');
       const subFiles = fs.readdirSync(previewDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
-      return [coordinator, ...subFiles.map(f => fs.readFileSync(path.join(previewDir, f), 'utf-8'))].join('\n');
+      const strategyFiles = fs.existsSync(strategiesDir)
+        ? fs.readdirSync(strategiesDir).filter(f => f.endsWith('.ts'))
+        : [];
+      return [
+        coordinator,
+        ...subFiles.map(f => fs.readFileSync(path.join(previewDir, f), 'utf-8')),
+        ...strategyFiles.map(f => fs.readFileSync(path.join(strategiesDir, f), 'utf-8')),
+      ].join('\n');
     }
 
     it('should query visual assets via AssetTextureCache in render loop and delegate to IRPreviewEngine.renderFrame', () => {
-      const code = fs.readFileSync(previewFile, 'utf-8');
+      const code = readPreviewModuleTree();
 
       expect(code).toContain('studioTextureCache.getVisualAsset(');
-      expect(code).toContain('engine.renderFrame(currentFrame');
+      expect(code).toContain('.renderFrame(');
     });
 
     it('should initialize IRPreviewEngine with active timeline and populate engine texture cache', () => {
-      const code = fs.readFileSync(previewFile, 'utf-8');
+      const code = readPreviewModuleTree();
 
-      expect(code).toContain('new IRPreviewEngine(irState.timeline)');
+      expect(code).toContain('new IRPreviewEngine(');
       expect(code).toContain('engineTextures.set(seq.assetId, visualAsset.source)');
     });
 

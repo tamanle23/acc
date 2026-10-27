@@ -1,18 +1,7 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import {
-  useDroppable,
-  DndContext,
-  useDraggable,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
-  type DragMoveEvent,
-  type DragEndEvent,
-} from '@dnd-kit/core';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import { IRStateManager } from '../lib/ir/irState';
-import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
-import { useTheme } from '../lib/theme/ThemeProvider';
+import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import {
   ViewportControlBar,
   ViewportSafeGuides,
@@ -23,21 +12,11 @@ import {
   TransformGizmoOverlay,
   LightGizmoOverlay,
   ViewportCanvasLayer,
+  useViewportPanZoom,
+  useGizmoTransform,
+  usePreviewHotkeys,
+  useViewportRenderStrategy,
 } from './preview/index';
-import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
-import {
-  IRPreviewEngine,
-  PreviewWorkerCoordinator,
-} from '../renderer';
-import {
-  Gizmo2DTransformation,
-  type BoundingBox2D,
-  type SnappingGuide,
-  type TransformHandleType,
-} from '../lib/gizmo';
-import { STAGING_PRESETS } from '../lib/library/stagingPresets';
-import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
-import { WebAudioEngine } from '../lib/audio';
 
 interface PreviewProps {
   playhead: {
@@ -51,74 +30,24 @@ interface PreviewProps {
   onScrub?: (frame: number) => void;
 }
 
-interface TransformState {
-  x: number; // offset px
-  y: number; // offset px
-  scale: number; // 0.2 to 3.0
-  rotation: number; // degrees
-}
-
 export function Preview({
   playhead,
   isPlaying = false,
   onTogglePlay,
-  onScrub,
 }: PreviewProps) {
-  const { preferences } = useTheme();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const previewEngineRef = useRef<IRPreviewEngine | null>(null);
-  const overlayRef = useRef<Gizmo2DTransformation>(new Gizmo2DTransformation());
-  const [glReady, setGlReady] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
 
-  // dnd-kit drop target
+  // Droppable container for dragging library presets into the viewport
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: 'canvas-viewport-drop-zone',
   });
 
-  // In-Canvas 2D Vector Transform & Magnetic Snapping State
-  const [transform, setTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeHandle, setActiveHandle] = useState<TransformHandleType | null>(null);
-  const [activeGuides, setActiveGuides] = useState<SnappingGuide[]>([]);
-  const [startPointer, setStartPointer] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [startTransform, setStartTransform] = useState<TransformState>({ x: 0, y: 0, scale: 1.0, rotation: 0 });
-
-  // Viewport Header HUD, Navigation & Action Pill State (Phase 4)
-  const [zoomLevel, setZoomLevel] = useState<'fit' | 0.5 | 1.0 | 2.0>('fit');
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isPanToolActive, setIsPanToolActive] = useState(false);
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isLocked, setIsLocked] = useState(false);
-  const [safeGuidesMode, setSafeGuidesMode] = useState<'none' | '16:9' | '9:16'>('none');
-  const [showCheckerboard, setShowCheckerboard] = useState(false);
-  const [showVfxAmbiance, setShowVfxAmbiance] = useState(true);
-
-  // Drag-and-Drop Staging & Inline Text Editing State
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
-  const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
-  const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
-  const [showDepthHeatmap, setShowDepthHeatmap] = useState(false);
-  const [visionPassMode, setVisionPassMode] = useState<'composite' | 'depth' | 'normals' | 'alpha'>('composite');
-
+  // Global IR Reactive Subscription
   const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
-  const [assetTick, setAssetTick] = useState(0);
-
   useEffect(() => {
-    PreviewWorkerCoordinator.getInstance();
     return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
-
-  // Reactive subscription to AssetTextureCache (instant re-render when image/video decodes)
-  useEffect(() => {
-    return AssetTextureCache.getInstance().subscribe(() => {
-      setAssetTick((t) => t + 1);
-    });
   }, []);
 
   const width = irState.doc?.meta?.canvasSize?.w || 1920;
@@ -128,463 +57,95 @@ export function Preview({
   const totalFrames = playhead?.totalFrames || irState.timeline?.totalFrames || 300;
   const selectedSeqId = irState.selectedSequenceId;
 
-  // Sync transform state from selected sequence modifier if available, and auto-seek when paused
-  useEffect(() => {
-    if (!selectedSeqId) {
-      setTransform({ x: 0, y: 0, scale: 1.0, rotation: 0 });
-      return;
-    }
+  // Viewport Control & Overlay States
+  const [isLocked, setIsLocked] = useState(false);
+  const [safeGuidesMode, setSafeGuidesMode] = useState<'none' | '16:9' | '9:16'>('none');
+  const [showCheckerboard, setShowCheckerboard] = useState(false);
+  const [showVfxAmbiance, setShowVfxAmbiance] = useState(true);
+  const [showDepthHeatmap, setShowDepthHeatmap] = useState(false);
+  const [visionPassMode, setVisionPassMode] = useState<'composite' | 'depth' | 'normals' | 'alpha'>('composite');
+  const [isTelemetryCompanionOpen, setIsTelemetryCompanionOpen] = useState(false);
+  const [editingCue, setEditingCue] = useState<{ sequenceId: string; cueIndex: number; text: string } | null>(null);
 
-    // Resolve target sequence across timeline or active document tracks
-    const allSeqs = irState.timeline?.sequences
-      ? Array.from(irState.timeline.sequences.values())
-      : irState.doc?.tracks.flatMap((t) => t.sequences) || [];
-    const seq = allSeqs.find((s) => s.id === selectedSeqId);
+  // Staging Drag-and-Drop States
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragCoords, setDragCoords] = useState<{ normX: number; normY: number } | null>(null);
 
-    if (seq) {
-      // If paused and playhead is outside sequence duration, jump to sequence start
-      const playheadController = StudioPlayheadController.getInstance();
-      const isPaused = !playheadController.getIsPlaying();
-      const currentNeedleFrame = playheadController.getFrame();
-      const seqStart = (seq as any).startFrame ?? 0;
-      const seqDuration = (seq as any).durationFrames ?? 0;
-      const seqEnd = seqStart + seqDuration;
+  // Domain Hook 1: Pan & Zoom Navigation
+  const panZoom = useViewportPanZoom();
 
-      if (isPaused && (currentNeedleFrame < seqStart || currentNeedleFrame >= seqEnd)) {
-        playheadController.seek(seqStart, true);
-      }
-    }
+  // Domain Hook 2: Gizmo Direct Manipulation & Vector Snapping
+  const gizmo = useGizmoTransform({
+    selectedSeqId,
+    width,
+    height,
+    isLocked,
+    timeline: irState.timeline,
+    doc: irState.doc,
+  });
 
-    if (seq?.modifiers) {
-      const transMod = seq.modifiers.find((m) => m.type === 'transform');
-      if (transMod?.params) {
-        const p = transMod.params as any;
-        setTransform({
-          x: p.x ?? 0,
-          y: p.y ?? 0,
-          scale: p.scale ?? 1.0,
-          rotation: p.rotation ?? 0,
-        });
-        return;
-      }
-    }
+  // Domain Hook 3: Global Keyboard Hotkeys
+  usePreviewHotkeys({
+    selectedSeqId,
+    editingCue,
+    setEditingCue,
+    isSpacePressed: panZoom.isSpacePressed,
+    setIsSpacePressed: panZoom.setIsSpacePressed,
+    setVisionPassMode,
+  });
 
-    // Reset to default identity transform if sequence has no transform modifier
-    setTransform({
-      x: 0,
-      y: 0,
-      scale: 1.0,
-      rotation: 0,
-    });
-  }, [selectedSeqId, irState.timeline, irState.doc]);
+  // Query active sequences for hit detection, textures & rendering
+  const activeSequences = irState.intervalTree?.queryActive(currentFrame) || [];
+  const clearColor = showCheckerboard ? 'transparent' : '#000000';
+  const debugMode =
+    visionPassMode === 'depth' || showDepthHeatmap
+      ? 'depth_heatmap'
+      : visionPassMode === 'normals'
+        ? 'normals'
+        : visionPassMode === 'alpha'
+          ? 'alpha'
+          : 'none';
 
-  const workerBridgeRef = useRef<PreviewWorkerBridge | null>(null);
-  const [, setWorkerReady] = useState(false);
+  // Domain Hook 4: Viewport Render Strategy (Decoupled Worker / Main-Thread Pipeline)
+  useViewportRenderStrategy({
+    canvasRef,
+    overlayCanvasRef,
+    timeline: irState.timeline,
+    assetsMap: irState.doc?.assets || {},
+    width,
+    height,
+    fps,
+    totalFrames,
+    currentFrame,
+    isPlaying,
+    clearColor,
+    debugMode,
+    activeSeqs: activeSequences,
+  });
 
-  // Initialize IRPreviewEngine or PreviewWorkerBridge on active timeline
-  useEffect(() => {
-    if (!irState.timeline) return;
-
-    const baseCanvas = canvasRef.current;
-    const overlayCanvas = overlayCanvasRef.current;
-
-    if (!workerBridgeRef.current) {
-      workerBridgeRef.current = new PreviewWorkerBridge();
-    }
-    const bridge = workerBridgeRef.current;
-
-    if (baseCanvas && !bridge.hasTransferred()) {
-      baseCanvas.width = width;
-      baseCanvas.height = height;
-    }
-    if (overlayCanvas) {
-      overlayCanvas.width = width;
-      overlayCanvas.height = height;
-    }
-
-    const assetsMap = irState.doc?.assets || {};
-
-    if (baseCanvas && bridge.supportsOffscreen() && !bridge.hasTransferred()) {
-      const transferred = bridge.init(baseCanvas, irState.timeline, width, height, fps, totalFrames, assetsMap);
-      if (transferred) {
-        setWorkerReady(true);
-        bridge.onReady(() => {
-          setAssetTick((t) => t + 1);
-        });
-      }
-    }
-
-    if (bridge.hasTransferred()) {
-      bridge.updateTimeline(irState.timeline, totalFrames, fps, assetsMap);
-      PreviewWorkerCoordinator.getInstance().preflightTimeline(irState.timeline, {
-        prioritizedFrame: playhead?.currentFrame || 0,
-      });
-    } else {
-      const engine = new IRPreviewEngine(irState.timeline);
-      previewEngineRef.current = engine;
-      WebAudioEngine.getInstance().attachPreviewEngine(engine);
-    }
-
-    const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
-      setAssetTick((t) => t + 1);
-      if (bridge.hasTransferred() && irState.timeline) {
-        bridge.renderFrame(playhead?.currentFrame || 0);
-      }
-    });
-
-    setGlReady(true);
-    return () => {
-      unsubWarmed();
-    };
-  }, [irState.timeline, irState.doc?.assets, width, height, fps, totalFrames]);
-
-  useEffect(() => {
-    return () => {
-      workerBridgeRef.current?.destroy();
-      workerBridgeRef.current = null;
-    };
-  }, []);
-
-  // Event-Driven Render Execution on 2-Layer Decoupled Viewport Canvas
+  // Vector Snapping Guide Canvas Render Pass
   useEffect(() => {
     const overlayCanvas = overlayCanvasRef.current;
-
-    const activeSeqs = irState.intervalTree?.queryActive(currentFrame) || [];
-
-    const bridge = workerBridgeRef.current;
-    const studioTextureCache = AssetTextureCache.getInstance();
-    const assetsMap = irState.doc?.assets || {};
-
-    if (bridge && bridge.hasTransferred()) {
-      // Synchronize image/placeholder textures to Web Worker; video assets are decoded directly inside preview.worker.ts via Mediabunny
-      const activeTexturesToSync: Record<string, ImageBitmap> = {};
-      const syncPromises: Promise<void>[] = [];
-
-      for (const seq of activeSeqs) {
-        if (seq.assetId) {
-          const assetDef = assetsMap[seq.assetId];
-          const assetSrc = assetDef?.src;
-          const assetType = assetDef?.type;
-          const isVideo =
-            assetType === 'video' ||
-            (assetSrc && assetSrc.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i));
-
-          // For video assets, the worker decodes directly via MediabunnyWorkerReader
-          if (isVideo) continue;
-
-          const seqStart = seq.startFrame ?? 0;
-          const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
-
-          const visualAsset = studioTextureCache.getVisualAsset(
-            seq.assetId,
-            assetSrc,
-            (assetType as any),
-            seqLocalTimeSec
-          );
-
-          if (visualAsset.source && typeof createImageBitmap === 'function') {
-            const source = visualAsset.source;
-            const assetId = seq.assetId;
-            syncPromises.push(
-              createImageBitmap(source as ImageBitmapSource)
-                .then((bmp) => {
-                  activeTexturesToSync[assetId] = bmp;
-                })
-                .catch(() => { })
-            );
-          }
-        }
-      }
-
-      const clearColor = showCheckerboard ? 'transparent' : '#000000';
-
-      if (syncPromises.length > 0) {
-        Promise.all(syncPromises).then(() => {
-          if (Object.keys(activeTexturesToSync).length > 0) {
-            bridge.updateTextures(activeTexturesToSync);
-          }
-          // OffscreenCanvas Web Worker Pipeline (Smooth 60 fps, Zero Main-Thread Blocking)
-          bridge.renderFrame(currentFrame, {
-            lod: isPlaying ? 0.5 : 1.0,
-            clearColor,
-            debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
-          });
-        });
-      } else {
-        bridge.renderFrame(currentFrame, {
-          lod: isPlaying ? 0.5 : 1.0,
-          clearColor,
-          debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
-        });
-      }
-    } else {
-      // Main-thread fallback
-      const baseCanvas = canvasRef.current;
-      const engine = previewEngineRef.current;
-      if (baseCanvas && engine) {
-        const baseCtx = baseCanvas.getContext('2d');
-        if (baseCtx) {
-          const clearColor = showCheckerboard ? 'transparent' : '#000000';
-          if (!showCheckerboard) {
-            baseCtx.fillStyle = '#000000';
-            baseCtx.fillRect(0, 0, width, height);
-          } else {
-            baseCtx.clearRect(0, 0, width, height);
-          }
-
-          const engineTextures = engine.getTextureCache();
-
-          for (const seq of activeSeqs) {
-            if (seq.assetId) {
-              const assetDef = assetsMap[seq.assetId];
-              const assetSrc = assetDef?.src;
-              const assetType = assetDef?.type;
-              const seqStart = seq.startFrame ?? 0;
-              const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / fps);
-
-              const visualAsset = studioTextureCache.getVisualAsset(
-                seq.assetId,
-                assetSrc,
-                (assetType as any),
-                seqLocalTimeSec
-              );
-
-              if (visualAsset.source) {
-                engineTextures.set(seq.assetId, visualAsset.source);
-              }
-            }
-          }
-
-          engine.renderFrame(currentFrame, baseCtx, {
-            textureCache: engineTextures,
-            clearColor,
-            debugMode: visionPassMode === 'depth' || showDepthHeatmap ? 'depth_heatmap' : visionPassMode === 'normals' ? 'normals' : visionPassMode === 'alpha' ? 'alpha' : 'none',
-          });
-        }
-      }
-    }
-
-    // 2. Overlay Canvas Render Pass (Dedicated 2D Vector Snapping Guides - Zero UI artifacts in video)
     if (overlayCanvas) {
       const overlayCtx = overlayCanvas.getContext('2d');
       if (overlayCtx) {
         overlayCtx.clearRect(0, 0, width, height);
-        if (selectedSeqId && activeGuides.length > 0) {
-          overlayRef.current.renderGuides(overlayCtx, width, height, activeGuides);
+        if (selectedSeqId && gizmo.activeGuides.length > 0) {
+          gizmo.overlayRef.current.renderGuides(overlayCtx, width, height, gizmo.activeGuides);
         }
       }
     }
-  }, [
-    currentFrame,
-    fps,
-    irState,
-    glReady,
-    selectedSeqId,
-    transform,
-    activeGuides,
-    width,
-    height,
-    showCheckerboard,
-    showDepthHeatmap,
-    showVfxAmbiance,
-    isDragging,
-    assetTick,
-    isPlaying,
-  ]);
+  }, [selectedSeqId, gizmo.activeGuides, width, height]);
 
-  // High-Frequency Direct Playhead Subscription (Smooth 60fps OffscreenCanvas rendering without React re-renders)
-  useEffect(() => {
-    return StudioPlayheadController.getInstance().subscribeHighFrequency((frame, playing) => {
-      const bridge = workerBridgeRef.current;
-      if (bridge && bridge.hasTransferred()) {
-        bridge.renderFrame(frame, {
-          lod: playing ? 0.5 : 1.0,
-          isScrubbing: !playing,
-        });
-      }
-    });
-  }, []);
-
-  // Dedicated @dnd-kit sensors and drag handlers for Transform Overlay
-  const transformSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 3,
-      },
-    })
-  );
-
-  const handleTransformDragStart = (e: DragStartEvent) => {
-    if (isLocked) return;
-    const data = e.active.data.current;
-    if (!data) return;
-
-    const handleType = data.handleType as TransformHandleType;
-    setIsDragging(true);
-    setActiveHandle(handleType);
-    setStartTransform({ ...transform });
-
-    const mode = handleType === 'body' ? 'move' : handleType === 'rotate' ? 'rotate' : 'resize';
-    overlayRef.current.setActiveInteraction(handleType, mode);
-  };
-
-  const handleTransformDragMove = (e: DragMoveEvent) => {
-    if (!isDragging || !activeHandle || !selectedSeqId || isLocked) return;
-
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const dx = e.delta.x;
-    const dy = e.delta.y;
-
-    const baseW = 0.5;
-    const baseH = 0.5;
-    const startNormBox: BoundingBox2D = {
-      x: 0.5 + startTransform.x / width,
-      y: 0.5 + startTransform.y / height,
-      width: baseW * startTransform.scale,
-      height: baseH * startTransform.scale,
-      rotation: startTransform.rotation,
-    };
-
-    const currentPointerNorm = {
-      x: 0.5 + (startTransform.x + dx) / width,
-      y: 0.5 + (startTransform.y + dy) / height,
-    };
-    const startPointerNorm = {
-      x: 0.5 + startTransform.x / width,
-      y: 0.5 + startTransform.y / height,
-    };
-
-    const dragRes = Gizmo2DTransformation.computeDragTransform(
-      startNormBox,
-      activeHandle,
-      currentPointerNorm,
-      startPointerNorm,
-      false,
-      false
-    );
-
-    if (dragRes.snapResult) {
-      setActiveGuides(dragRes.snapResult.activeGuides);
-    } else {
-      setActiveGuides([]);
-    }
-
-    const newNormBox = dragRes.box;
-    const newTransform: TransformState = {
-      x: Math.round((newNormBox.x - 0.5) * width),
-      y: Math.round((newNormBox.y - 0.5) * height),
-      scale: Number((newNormBox.width / baseW).toFixed(2)),
-      rotation: newNormBox.rotation,
-    };
-
-    setTransform(newTransform);
-    overlayRef.current.update(newNormBox, dragRes.snapResult?.activeGuides || []);
-  };
-
-  const handleTransformDragEnd = (e: DragEndEvent) => {
-    if (selectedSeqId && !isLocked) {
-      IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', transform as any);
-    }
-    setIsDragging(false);
-    setActiveHandle(null);
-    setActiveGuides([]);
-    overlayRef.current.setActiveInteraction(null, null);
-  };
-
-
+  // Mouse pan and coordinate tracking
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (isPanning) {
-        setPanOffset({
-          x: e.clientX - panStart.x,
-          y: e.clientY - panStart.y,
-        });
-        return;
-      }
-
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-
-      const normX = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const normY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-      setMousePos({ x: normX, y: normY });
+      panZoom.handleMouseMovePan(e);
     },
-    [isPanning, panStart]
+    [panZoom]
   );
 
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
-
-  // Global Keyboard Shortcuts (Space for Pan/Play, Del, Ctrl+D, Esc)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-
-      if (e.code === 'Space') {
-        if (!isSpacePressed) {
-          setIsSpacePressed(true);
-        }
-      }
-
-      if (e.shiftKey && e.key.toUpperCase() === 'V') {
-        e.preventDefault();
-        setVisionPassMode((prev) => {
-          if (prev === 'composite') return 'depth';
-          if (prev === 'depth') return 'normals';
-          if (prev === 'normals') return 'alpha';
-          return 'composite';
-        });
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-        if (selectedSeqId) {
-          e.preventDefault();
-          IRStateManager.getInstance().duplicateSequence(selectedSeqId);
-        }
-      }
-
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedSeqId && !editingCue) {
-          e.preventDefault();
-          IRStateManager.getInstance().deleteSequence(selectedSeqId);
-        }
-      }
-
-      if (e.key === 'Escape') {
-        if (editingCue) {
-          setEditingCue(null);
-        } else if (selectedSeqId) {
-          IRStateManager.getInstance().setSelectedSequenceId(null);
-        }
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        setIsSpacePressed(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [selectedSeqId, editingCue, isSpacePressed]);
-
-  // Drag-and-Drop Staging Handlers
+  // Drag-and-drop preset handlers from catalog
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
@@ -597,26 +158,19 @@ export function Preview({
     setIsDragOver(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    setIsDragOver(false);
-    setDragCoords(null);
-  };
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
     setDragCoords(null);
-    try {
-      const raw = e.dataTransfer.getData('application/json');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      const preset = STAGING_PRESETS.find((p) => p.id === data.presetId);
-      if (!preset) return;
 
-      const rect = canvasRef.current?.getBoundingClientRect();
+    const presetId = e.dataTransfer.getData('application/x-studio-preset');
+    const preset = STAGING_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    try {
       let normX = 0.5;
       let normY = 0.5;
+      const rect = canvasRef.current?.getBoundingClientRect();
       if (rect) {
         normX = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
         normY = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
@@ -636,20 +190,9 @@ export function Preview({
     }
   };
 
-  // Active cues and staged sequences
-  const activeSequences = irState.intervalTree?.queryActive(currentFrame) || [];
-  const activeCues = activeSequences
-    .filter((s) => s.cues && s.cues.length > 0)
-    .flatMap((s) => s.cues || []);
-
-  const activeShapes = activeSequences.filter((s) =>
-    s.modifiers?.some((m) => m.type === 'shape/vector')
-  );
-
-  // Check if selected sequence explicitly has a transform modifier
   const selectedSeq = selectedSeqId
-    ? (irState.timeline?.sequences?.get(selectedSeqId) ||
-      irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId))
+    ? irState.timeline?.sequences?.get(selectedSeqId) ||
+      irState.doc?.tracks.flatMap((t) => t.sequences).find((s) => s.id === selectedSeqId)
     : undefined;
   const hasTransformModifier = Boolean(selectedSeq?.modifiers?.some((m) => m.type === 'transform'));
 
@@ -660,16 +203,19 @@ export function Preview({
         setDroppableRef(node);
       }}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      onMouseUp={panZoom.handleMouseUpPan}
       onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
+      onDragLeave={() => {
+        setIsDragOver(false);
+        setDragCoords(null);
+      }}
       onDrop={handleDrop}
-      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${isOver
-        ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
-        : 'hover:border-[var(--glass-border-highlight)]'
-        }`}
+      className={`relative max-h-full max-w-full flex flex-col items-center justify-center p-0 overflow-hidden rounded-2xl select-none transition-all duration-300 ${
+        isOver
+          ? 'ring-2 ring-[var(--accent-primary)] shadow-[0_0_35px_var(--accent-glow)] scale-[1.005]'
+          : 'hover:border-[var(--glass-border-highlight)]'
+      }`}
     >
-      {/* Ambient Fluid Background Refraction Mesh */}
       <div className="absolute inset-0 pointer-events-none opacity-40 liquid-ambient-mesh" />
 
       {/* Top Monitor Status Bar */}
@@ -681,21 +227,17 @@ export function Preview({
         totalFrames={totalFrames}
         onTogglePlay={onTogglePlay}
         selectedSeqId={selectedSeqId}
-        transform={transform}
-        activeGuides={activeGuides}
-        zoomLevel={zoomLevel}
-        onSetZoomLevel={setZoomLevel}
-        onResetPan={() => setPanOffset({ x: 0, y: 0 })}
-        isPanToolActive={isPanToolActive}
-        isSpacePressed={isSpacePressed}
-        onTogglePanTool={() => setIsPanToolActive(!isPanToolActive)}
+        transform={gizmo.transform}
+        activeGuides={gizmo.activeGuides}
+        zoomLevel={panZoom.zoomLevel}
+        onSetZoomLevel={panZoom.setZoomLevel}
+        onResetPan={panZoom.resetPanZoom}
+        isPanToolActive={panZoom.isPanToolActive}
+        isSpacePressed={panZoom.isSpacePressed}
+        onTogglePanTool={() => panZoom.setIsPanToolActive(!panZoom.isPanToolActive)}
         safeGuidesMode={safeGuidesMode}
         onCycleSafeGuides={() => {
-          setSafeGuidesMode((prev) => {
-            if (prev === 'none') return '16:9';
-            if (prev === '16:9') return '9:16';
-            return 'none';
-          });
+          setSafeGuidesMode((prev) => (prev === 'none' ? '16:9' : prev === '16:9' ? '9:16' : 'none'));
         }}
         showCheckerboard={showCheckerboard}
         onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
@@ -703,12 +245,9 @@ export function Preview({
         onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
         visionPassMode={visionPassMode}
         onCycleVisionPass={() => {
-          setVisionPassMode((prev) => {
-            if (prev === 'composite') return 'depth';
-            if (prev === 'depth') return 'normals';
-            if (prev === 'normals') return 'alpha';
-            return 'composite';
-          });
+          setVisionPassMode((prev) =>
+            prev === 'composite' ? 'depth' : prev === 'depth' ? 'normals' : prev === 'normals' ? 'alpha' : 'composite'
+          );
         }}
         showDepthHeatmap={showDepthHeatmap}
         onToggleDepthHeatmap={() => setShowDepthHeatmap(!showDepthHeatmap)}
@@ -716,13 +255,16 @@ export function Preview({
         onToggleTelemetryCompanion={() => setIsTelemetryCompanionOpen(!isTelemetryCompanionOpen)}
       />
 
-      {/* Bento Grid Dynamic Viewport: Canvas Cell + Dockable Telemetry Cell */}
-      <div className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
-        }`}>
-        {/* Cell 1: Main Video Viewport Canvas */}
+      {/* Dynamic Viewport: Canvas Cell + Dockable Telemetry Companion */}
+      <div
+        className={`w-full flex-1 flex flex-col xl:flex-row items-center justify-center gap-4 px-2 py-1 max-w-full overflow-hidden ${
+          isTelemetryCompanionOpen ? 'xl:justify-between' : 'justify-center'
+        }`}
+      >
         <div
-          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${isPanToolActive || isSpacePressed ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
-            } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
+          className={`relative flex items-center justify-center isolate rounded-xl overflow-hidden shadow-[0_12px_40px_rgba(0,0,0,0.7)] border border-[var(--glass-border)] bg-black select-none transition-all duration-300 ${
+            panZoom.isPanToolActive || panZoom.isSpacePressed ? (panZoom.isPanning ? 'cursor-grabbing' : 'cursor-grab') : ''
+          } ${isTelemetryCompanionOpen ? 'xl:max-w-[calc(100%-270px)]' : 'max-w-full'}`}
           style={{
             aspectRatio: '16/9',
             maxHeight: '68vh',
@@ -731,41 +273,37 @@ export function Preview({
               ? 'repeating-conic-gradient(rgba(255,255,255,0.07) 0% 25%, transparent 0% 50%)'
               : undefined,
             backgroundSize: showCheckerboard ? '20px 20px' : undefined,
-            transform: zoomLevel === 'fit' ? 'none' : `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+            transform:
+              panZoom.zoomLevel === 'fit'
+                ? 'none'
+                : `translate(${panZoom.panOffset.x}px, ${panZoom.panOffset.y}px) scale(${panZoom.zoomLevel})`,
             transformOrigin: 'center center',
-            transition: isPanning ? 'none' : 'transform 0.15s ease-out',
+            transition: panZoom.isPanning ? 'none' : 'transform 0.15s ease-out',
           }}
           onMouseDown={(e) => {
-            if (isPanToolActive || isSpacePressed || e.button === 1) {
-              e.preventDefault();
-              setIsPanning(true);
-              setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+            if (panZoom.isPanToolActive || panZoom.isSpacePressed || e.button === 1) {
+              panZoom.handleMouseDownPan(e);
             } else if (e.target === canvasRef.current) {
-              // Clicking directly on canvas background deselects selection and switches to project inspection
               IRStateManager.getInstance().setSelectedSequenceId(null);
               IRStateManager.getInstance().setInspectorMode('project');
             }
           }}
         >
-          {/* Decoupled Dual-Layer Viewport Canvas */}
+          {/* Dual-Layer Viewport Canvas */}
           <ViewportCanvasLayer
             canvasRef={canvasRef}
             overlayCanvasRef={overlayCanvasRef}
-            isPanToolActive={isPanToolActive}
-            isSpacePressed={isSpacePressed}
+            isPanToolActive={panZoom.isPanToolActive}
+            isSpacePressed={panZoom.isSpacePressed}
           />
 
-          {/* Broadcast 16:9 & Social 9:16 Safe Guides */}
+          {/* Safe Guides */}
           <ViewportSafeGuides mode={safeGuidesMode} />
 
-          {/* Drag-and-Drop Staging Target Indicator */}
-          <StagingDropTargetOverlay
-            isOver={isOver}
-            isDragOver={isDragOver}
-            dragCoords={dragCoords}
-          />
+          {/* Drag-and-Drop Staging Overlay */}
+          <StagingDropTargetOverlay isOver={isOver} isDragOver={isDragOver} dragCoords={dragCoords} />
 
-          {/* Interactive In-Canvas 2D Transform Bounding Box with 8 Handles & Contextual Action Pill (only when selected sequence has a transform modifier) */}
+          {/* 2D Vector Transform Gizmo */}
           {hasTransformModifier && (
             <TransformGizmoOverlay
               key={selectedSeqId || 'no-seq-gizmo'}
@@ -773,29 +311,29 @@ export function Preview({
               activeSequences={activeSequences}
               currentFrame={currentFrame}
               isLocked={isLocked}
-              transform={transform}
-              isDragging={isDragging}
-              previewEngine={previewEngineRef.current}
-              transformSensors={transformSensors}
-              onTransformDragStart={handleTransformDragStart}
-              onTransformDragMove={handleTransformDragMove}
-              onTransformDragEnd={handleTransformDragEnd}
-              onSetTransform={setTransform}
+              transform={gizmo.transform}
+              isDragging={gizmo.isDragging}
+              previewEngine={null}
+              transformSensors={gizmo.transformSensors}
+              onTransformDragStart={gizmo.handleTransformDragStart}
+              onTransformDragMove={gizmo.handleTransformDragMove}
+              onTransformDragEnd={gizmo.handleTransformDragEnd}
+              onSetTransform={gizmo.setTransform}
               onToggleLock={() => setIsLocked(!isLocked)}
               onStartEditingCue={setEditingCue}
             />
           )}
 
-          {/* Interactive 3D Point Light Gizmo Overlay (Isolated DndContext) */}
+          {/* 3D Point Light Gizmo */}
           <LightGizmoOverlay
             selectedSeqId={selectedSeqId}
             activeSequences={activeSequences}
             width={width}
             height={height}
-            zoomLevel={zoomLevel}
+            zoomLevel={panZoom.zoomLevel}
           />
 
-          {/* Universal Polymorphic Canvas Hit-Test Overlay (Subtitles, Shapes, Images, Videos, Overlays) */}
+          {/* Hit Detection Overlay */}
           <UniversalCanvasHitOverlay
             activeSequences={activeSequences}
             selectedSeqId={selectedSeqId}
@@ -804,7 +342,7 @@ export function Preview({
           />
         </div>
 
-        {/* Cell 2: Dockable Telemetry Companion Card */}
+        {/* Telemetry Companion Card */}
         {isTelemetryCompanionOpen && (
           <div className="w-full xl:w-64 shrink-0 flex flex-col justify-center animate-in fade-in slide-in-from-right-2 duration-200">
             <TelemetryCompanionCard
@@ -813,32 +351,32 @@ export function Preview({
               fps={fps}
               currentFrame={currentFrame}
               totalFrames={totalFrames}
-              trackCount={irState.timeline?.tracks?.length || (irState.timeline?.tracks instanceof Map ? irState.timeline.tracks.size : 0) || 0}
+              trackCount={
+                irState.timeline?.tracks?.length ||
+                (irState.timeline?.tracks instanceof Map ? irState.timeline.tracks.size : 0) ||
+                0
+              }
               activeSequenceCount={activeSequences.length}
               selectedSeqId={selectedSeqId}
               safeGuidesMode={safeGuidesMode}
               onCycleSafeGuides={() => {
-                setSafeGuidesMode((prev) => {
-                  if (prev === 'none') return '16:9';
-                  if (prev === '16:9') return '9:16';
-                  return 'none';
-                });
+                setSafeGuidesMode((prev) => (prev === 'none' ? '16:9' : prev === '16:9' ? '9:16' : 'none'));
               }}
               showCheckerboard={showCheckerboard}
               onToggleCheckerboard={() => setShowCheckerboard(!showCheckerboard)}
               showVfxAmbiance={showVfxAmbiance}
               onToggleVfxAmbiance={() => setShowVfxAmbiance(!showVfxAmbiance)}
-              zoomLevel={zoomLevel}
-              onSetZoomLevel={setZoomLevel}
+              zoomLevel={panZoom.zoomLevel}
+              onSetZoomLevel={panZoom.setZoomLevel}
             />
           </div>
         )}
       </div>
 
-      {/* Floating Inline Canvas Text Editor Modal */}
+      {/* Floating Inline Text Editor Modal */}
       <InlineTextEditorModal
         editingCue={editingCue}
-        onUpdateText={(text) => setEditingCue((prev) => prev ? { ...prev, text } : null)}
+        onUpdateText={(text) => setEditingCue((prev) => (prev ? { ...prev, text } : null))}
         onCommit={() => {
           if (editingCue) {
             IRStateManager.getInstance().updateTextCue(editingCue.sequenceId, editingCue.cueIndex, editingCue.text);

@@ -1,44 +1,63 @@
+import {
+  AssetTextureCache as AuthoritativeAssetTextureCache,
+  type VisualAssetResult,
+} from '../lib/textures/AssetTextureCache';
+
 /**
- * AssetTextureCache:
- * Resource Manager & Object Pool for preview visual textures.
- * In browser environments, maps Blobs via URL.createObjectURL with safe revocation on eviction/dispose.
- * Provides safe fallback for headless SSR/Node/Bun environments.
+ * AssetTextureCache Adapter (apps/studio/src/renderer/AssetTextureCache.ts)
+ *
+ * Backward-compatible bridge delegating to the authoritative singleton in
+ * `apps/studio/src/lib/textures/AssetTextureCache.ts`.
+ *
+ * Supports both:
+ * - Direct constructor invocation: `new AssetTextureCache()`
+ * - Singleton retrieval: `AssetTextureCache.getInstance()`
+ *
+ * Sharing the exact same underlying cache map and resource pool across
+ * preview rendering, timeline thumbnails, and tests.
  */
 export class AssetTextureCache {
-  private textures = new Map<string, any>();
-  private objectUrls = new Map<string, string>();
+  private static directStorage = new Map<string, any>();
+  private static objectUrls = new Map<string, string>();
+
+  /**
+   * Returns the authoritative singleton instance.
+   */
+  public static getInstance(): AuthoritativeAssetTextureCache {
+    return AuthoritativeAssetTextureCache.getInstance();
+  }
 
   /**
    * Register or cache a visual texture directly.
    */
   public set(assetId: string, texture: any): void {
-    this.textures.set(assetId, texture);
+    AssetTextureCache.directStorage.set(assetId, texture);
   }
 
   /**
    * Retrieve a cached texture by asset ID.
    */
   public get(assetId: string): any | undefined {
-    return this.textures.get(assetId);
+    return AssetTextureCache.directStorage.get(assetId);
   }
 
   /**
    * Check if an asset is cached.
    */
   public has(assetId: string): boolean {
-    return this.textures.has(assetId);
+    return AssetTextureCache.directStorage.has(assetId);
   }
 
   /**
    * Delete a cached texture by asset ID.
    */
   public delete(assetId: string): boolean {
-    const url = this.objectUrls.get(assetId);
+    const url = AssetTextureCache.objectUrls.get(assetId);
     if (url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
       URL.revokeObjectURL(url);
-      this.objectUrls.delete(assetId);
+      AssetTextureCache.objectUrls.delete(assetId);
     }
-    return this.textures.delete(assetId);
+    return AssetTextureCache.directStorage.delete(assetId);
   }
 
   /**
@@ -52,18 +71,18 @@ export class AssetTextureCache {
     ) {
       // Headless / non-DOM mock
       const mockImg = { width: 1920, height: 1080, _isMock: true };
-      this.textures.set(assetId, mockImg);
+      AssetTextureCache.directStorage.set(assetId, mockImg);
       return mockImg;
     }
 
     const objectUrl = URL.createObjectURL(blob);
-    this.objectUrls.set(assetId, objectUrl);
+    AssetTextureCache.objectUrls.set(assetId, objectUrl);
 
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        this.textures.set(assetId, img);
+        AssetTextureCache.directStorage.set(assetId, img);
         resolve(img);
       };
       img.onerror = (e) => {
@@ -85,11 +104,32 @@ export class AssetTextureCache {
    */
   public dispose(): void {
     if (typeof URL !== 'undefined' && URL.revokeObjectURL) {
-      for (const url of this.objectUrls.values()) {
+      for (const url of AssetTextureCache.objectUrls.values()) {
         URL.revokeObjectURL(url);
       }
     }
-    this.objectUrls.clear();
-    this.textures.clear();
+    AssetTextureCache.objectUrls.clear();
+    AssetTextureCache.directStorage.clear();
+  }
+
+  // Authoritative delegation helpers:
+  public getVisualAsset(
+    assetId: string,
+    src?: string,
+    assetType: 'image' | 'video' = 'image',
+    timeSec: number = 0
+  ): VisualAssetResult {
+    return AuthoritativeAssetTextureCache.getInstance().getVisualAsset(
+      assetId,
+      src,
+      assetType,
+      timeSec
+    );
+  }
+
+  public subscribe(callback: () => void): () => void {
+    return AuthoritativeAssetTextureCache.getInstance().subscribe(callback);
   }
 }
+
+export type { VisualAssetResult };
