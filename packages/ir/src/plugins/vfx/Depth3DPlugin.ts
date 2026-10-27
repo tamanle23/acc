@@ -6,6 +6,7 @@ import {
   SurfaceNormalGenerator,
   type SurfaceNormalMap,
   type RelightingParams,
+  resolveSubjectCutout,
 } from '@acc/effect-engines';
 
 export type Depth3DMode =
@@ -150,8 +151,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     if (params.imagePath && typeof window === 'undefined') {
       try {
         const req = typeof require !== 'undefined' ? require : (0, eval)('require');
-        const effectEngines = req('@acc/effect-engines');
-        const cutout = await effectEngines.resolveSubjectCutout(params.imagePath, params as any);
+        const cutout = await resolveSubjectCutout(params.imagePath, params as any);
         this.cutoutCache.set(params.imagePath, cutout);
       } catch { }
 

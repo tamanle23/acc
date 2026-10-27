@@ -2,6 +2,7 @@ import {
   type DepthOptions as IsomorphicDepthOptions,
   type DepthEstimationResult as IsomorphicDepthResult,
   type VisionImageInput,
+  type IDepthEstimationStrategy as IIsomorphicDepthStrategy,
   DepthStrategyId,
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
@@ -9,10 +10,11 @@ import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
 import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
 
-export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy {
+export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.DepthAnythingV2Base;
   public readonly name = 'depth-anything-v2-base';
   public readonly modelId = 'onnx-community/depth-anything-v2-base';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;

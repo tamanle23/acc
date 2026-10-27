@@ -4,6 +4,9 @@ import {
   ContentCacheRegistry,
   MemoryCacheStrategy,
   OnnxModelManager,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import {
   BunFFIEngineStrategy,
@@ -11,11 +14,10 @@ import {
   MediabunnyServerStrategy,
   NativeFileCacheStrategy,
   FFmpegManager,
+  bootstrapNode,
 } from '@acc/core';
 import {
   UniversalOnnxRuntimeProvider,
-  SubjectSegmentationContext,
-  DepthEstimationContext,
 } from '@acc/effect-engines';
 
 describe('Iteration 32: Configurable Target Runtime (MediaEngine, OnnxModelManager & Universal ONNX Provider)', () => {
@@ -74,27 +76,22 @@ describe('Iteration 32: Configurable Target Runtime (MediaEngine, OnnxModelManag
   it('Pillar 3: UniversalOnnxRuntimeProvider resolves active backend without throwing native binary errors', async () => {
     const status = await UniversalOnnxRuntimeProvider.getStatus();
     expect(status).toBeDefined();
-    expect(['node', 'web', 'heuristic']).toContain(status.backend);
-    expect(typeof status.platform).toBe('string');
-    expect(typeof status.arch).toBe('string');
-
-    // On macOS x64 where onnxruntime-node omits binaries, it safely falls back to 'web' (WASM)
-    if (process.platform === 'darwin' && process.arch === 'x64') {
-      expect(status.backend).toBe('web');
-      expect(status.webWasmAvailable).toBe(true);
-      expect(status.nativeAvailable).toBe(false);
-    }
+    expect(['transformers', 'heuristic']).toContain(status.backend);
+    expect(status.available).toBe(true);
 
     const tf = await UniversalOnnxRuntimeProvider.getTransformers();
     expect(tf).toBeDefined();
     expect(typeof tf.pipeline).toBe('function');
   });
 
-  it('Pillar 4: SubjectSegmentationContext and DepthEstimationContext operate seamlessly with universal provider', async () => {
-    const segContext = SubjectSegmentationContext.getInstance();
-    expect(segContext.getActiveStrategyName()).toBe('rmbg-1.4');
+  it('Pillar 4: VisionEngineRegistry operates seamlessly with registered isomorphic strategies', async () => {
+    await bootstrapNode();
+    const segStrat = VisionEngineRegistry.getSegmentationStrategy();
+    expect(segStrat.id).toBe(SegmentationStrategyId.Rmbg14);
+    expect(segStrat.name).toBe('rmbg-1.4');
 
-    const depthContext = DepthEstimationContext.getInstance();
-    expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-small');
+    const depthStrat = VisionEngineRegistry.getDepthStrategy();
+    expect(depthStrat.id).toBe(DepthStrategyId.DepthAnythingV2Small);
+    expect(depthStrat.name).toBe('depth-anything-v2-small');
   });
 });

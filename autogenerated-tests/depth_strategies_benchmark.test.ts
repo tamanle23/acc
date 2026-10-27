@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 import fs from 'fs';
 import path from 'path';
 import { bootstrapNode } from '../packages/core/src/bootstrap';
+import { VisionEngineRegistry, DepthStrategyId } from '@acc/core-isomorphic';
 import {
-  DepthEstimationContext,
   DepthAnythingV2SmallStrategy,
   DepthAnythingV2BaseStrategy,
   GlpnMetricStrategy,
@@ -83,15 +83,18 @@ describe('Depth Estimation Multi-Strategy Benchmark Suite', () => {
     console.log(`[Depth Benchmark] DPT Large: ${dt} ms | size: ${res.depth16Buffer.length} bytes`);
   }, 45000);
 
-  it('should seamlessly route through DepthEstimationContext singleton', async () => {
-    const ctx = DepthEstimationContext.getInstance();
-    ctx.useStrategy('glpn-metric');
-    expect(ctx.getActiveStrategyName()).toBe('glpn-metric');
+  it('should seamlessly route through VisionEngineRegistry', async () => {
+    VisionEngineRegistry.registerDepthStrategy(new GlpnMetricStrategy());
+    VisionEngineRegistry.registerDepthStrategy(new DptLargeStrategy());
+    VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy());
 
-    ctx.useStrategy('dpt-large');
-    expect(ctx.getActiveStrategyName()).toBe('dpt-large');
+    VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.GlpnMetric);
+    expect(VisionEngineRegistry.getDepthStrategy().name).toBe('glpn-metric');
 
-    ctx.useStrategy('depth-anything-v2-small');
-    expect(ctx.getActiveStrategyName()).toBe('depth-anything-v2-small');
+    VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DptLarge);
+    expect(VisionEngineRegistry.getDepthStrategy().name).toBe('dpt-large');
+
+    VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DepthAnythingV2Small);
+    expect(VisionEngineRegistry.getDepthStrategy().name).toBe('depth-anything-v2-small');
   });
 });

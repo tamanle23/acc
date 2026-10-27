@@ -3,6 +3,8 @@ import {
   type VisionImageInput,
   type DepthOptions as IsomorphicDepthOptions,
   type DepthEstimationResult as IsomorphicDepthResult,
+  type IDepthEstimationStrategy as IIsomorphicDepthStrategy,
+  DepthStrategyId,
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
@@ -12,9 +14,11 @@ import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../
  * Re-exported facade backed by `@acc/core-isomorphic`'s zero-download HeuristicDepthStrategy.
  * Supports both legacy Node Buffer API and modern isomorphic VisionImageInput.
  */
-export class HeuristicDepthStrategy implements IDepthEstimationStrategy {
+export class HeuristicDepthStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
+  public readonly id = DepthStrategyId.Heuristic;
   public readonly name = 'heuristic-depth';
   public readonly modelId = 'heuristic-luminance-gradient';
+  public readonly isSupported = true;
   private isomorphicStrategy = new IsomorphicHeuristicDepthStrategy();
 
   public async init(): Promise<void> {

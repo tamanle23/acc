@@ -2,14 +2,18 @@ import {
   type SegmentationOptions as IsomorphicSegOptions,
   type SubjectSegmentationResult as IsomorphicSegResult,
   type VisionImageInput,
+  SegmentationStrategyId,
+  type ISubjectSegmentationStrategy as IIsomorphicSegmentationStrategy,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { createCutoutRgba } from '../../utils';
 import { AutoModel, AutoProcessor, RawImage } from '@huggingface/transformers';
 
-export class Sam2TinyStrategy implements ISegmentationStrategy {
+export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
+  public readonly id = SegmentationStrategyId.Sam2Tiny;
   public readonly name = 'sam2-tiny';
   public readonly modelId = 'onnx-community/sam2.1-hiera-tiny-ONNX';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;

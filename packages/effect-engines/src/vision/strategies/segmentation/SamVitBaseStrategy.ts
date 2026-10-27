@@ -2,14 +2,18 @@ import {
   type SegmentationOptions as IsomorphicSegOptions,
   type SubjectSegmentationResult as IsomorphicSegResult,
   type VisionImageInput,
+  SegmentationStrategyId,
+  type ISubjectSegmentationStrategy as IIsomorphicSegmentationStrategy,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { createCutoutRgba } from '../../utils';
 import { AutoProcessor, RawImage, SamModel } from '@huggingface/transformers';
 
-export class SamVitBaseStrategy implements ISegmentationStrategy {
+export class SamVitBaseStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
+  public readonly id = SegmentationStrategyId.SamVitBase;
   public readonly name = 'sam-vit-base';
   public readonly modelId = 'Xenova/sam-vit-base';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;

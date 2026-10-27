@@ -3,6 +3,8 @@ import {
   type VisionImageInput,
   type SegmentationOptions as IsomorphicSegOptions,
   type SubjectSegmentationResult as IsomorphicSegResult,
+  type ISubjectSegmentationStrategy as IIsomorphicSegmentationStrategy,
+  SegmentationStrategyId,
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
@@ -12,9 +14,11 @@ import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } f
  * Re-exported facade backed by `@acc/core-isomorphic`'s zero-download GrabCutFallbackStrategy.
  * Supports both legacy Node Buffer API and modern isomorphic VisionImageInput.
  */
-export class GrabCutFallbackStrategy implements ISegmentationStrategy {
+export class GrabCutFallbackStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
+  public readonly id = SegmentationStrategyId.GrabCutFallback;
   public readonly name = 'grabcut-fallback';
   public readonly modelId = 'heuristic-saliency-grabcut';
+  public readonly isSupported = true;
   private isomorphicStrategy = new IsomorphicGrabCutStrategy();
 
   public async init(): Promise<void> {

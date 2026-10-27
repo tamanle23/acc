@@ -10,6 +10,7 @@ export enum DepthStrategyId {
   DepthAnythingV2Small = 'depth-anything-v2-small',
   DepthAnythingV2Base = 'depth-anything-v2-base',
   GlpnMetric = 'glpn-metric',
+  DptLarge = 'dpt-large',
   Heuristic = 'heuristic',
 }
 
@@ -18,6 +19,8 @@ export enum SegmentationStrategyId {
   BiRefNet = 'birefnet',
   GrabCutFallback = 'grabcut-fallback',
   SlimSam = 'slimsam',
+  Sam2Tiny = 'sam2-tiny',
+  SamVitBase = 'sam-vit-base',
 }
 
 export interface VisionImageInput {

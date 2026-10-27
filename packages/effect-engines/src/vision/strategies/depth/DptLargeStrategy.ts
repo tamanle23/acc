@@ -2,15 +2,19 @@ import {
   type DepthOptions as IsomorphicDepthOptions,
   type DepthEstimationResult as IsomorphicDepthResult,
   type VisionImageInput,
+  DepthStrategyId,
+  type IDepthEstimationStrategy as IIsomorphicDepthStrategy,
   UniversalCanvasProvider,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
 import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
 
-export class DptLargeStrategy implements IDepthEstimationStrategy {
+export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
+  public readonly id = DepthStrategyId.DptLarge;
   public readonly name = 'dpt-large';
   public readonly modelId = 'Xenova/dpt-large';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;

@@ -2,18 +2,28 @@ import { describe, it, expect, beforeAll } from 'bun:test';
 import { createCanvas } from '@napi-rs/canvas';
 import { bootstrapNode } from '../packages/core/src/bootstrap';
 import {
-  SubjectSegmentationContext,
-  DepthEstimationContext,
+  VisionEngineRegistry,
+  DepthStrategyId,
+  SegmentationStrategyId,
+  type ISubjectSegmentationStrategy,
+  type IDepthEstimationStrategy,
+  type VisionImageInput,
+  type SubjectSegmentationResult,
+  type DepthEstimationResult,
+} from '@acc/core-isomorphic';
+import {
   SlimSamStrategy,
   SamVitBaseStrategy,
+  Sam2TinyStrategy,
+  RmbgStrategy,
+  BiRefNetStrategy,
   GrabCutFallbackStrategy,
   DepthAnythingV2SmallStrategy,
+  DepthAnythingV2BaseStrategy,
+  GlpnMetricStrategy,
+  DptLargeStrategy,
   HeuristicDepthStrategy,
   createCutoutRgba,
-  type ISegmentationStrategy,
-  type IDepthEstimationStrategy,
-  type SegmentationResult,
-  type DepthResult
 } from '../packages/effect-engines/src/vision';
 
 describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash Fallbacks)', () => {
@@ -21,6 +31,20 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
 
   beforeAll(async () => {
     await bootstrapNode();
+    // Register all strategies into VisionEngineRegistry
+    VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy());
+    VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
+    VisionEngineRegistry.registerSegmentationStrategy(new BiRefNetStrategy());
+    VisionEngineRegistry.registerSegmentationStrategy(new SlimSamStrategy());
+    VisionEngineRegistry.registerSegmentationStrategy(new Sam2TinyStrategy());
+    VisionEngineRegistry.registerSegmentationStrategy(new SamVitBaseStrategy());
+
+    VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy());
+    VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), true);
+    VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2BaseStrategy());
+    VisionEngineRegistry.registerDepthStrategy(new GlpnMetricStrategy());
+    VisionEngineRegistry.registerDepthStrategy(new DptLargeStrategy());
+
     // Generate a test RGBA canvas image with a distinct subject
     const canvas = createCanvas(320, 240);
     const ctx = canvas.getContext('2d');
@@ -35,38 +59,35 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
     testImageBuffer = canvas.toBuffer('image/png');
   });
 
-  describe('SubjectSegmentationContext & Strategies', () => {
+  describe('VisionEngineRegistry & Segmentation Strategies', () => {
     it('should initialize with default RMBG-1.4 strategy', () => {
-      const segContext = SubjectSegmentationContext.getInstance();
-      expect(segContext.getActiveStrategyName()).toBe('rmbg-1.4');
+      const segStrat = VisionEngineRegistry.getSegmentationStrategy();
+      expect(segStrat.name).toBe('rmbg-1.4');
     });
 
-    it('should switch strategies dynamically via useStrategy', () => {
-      const segContext = SubjectSegmentationContext.getInstance();
-      segContext.useStrategy('grabcut');
-      expect(segContext.getActiveStrategyName()).toBe('grabcut-fallback');
+    it('should switch strategies dynamically via VisionEngineRegistry', () => {
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.GrabCutFallback);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('grabcut-fallback');
 
-      segContext.useStrategy('sam-vit-base');
-      expect(segContext.getActiveStrategyName()).toBe('sam-vit-base');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.SamVitBase);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('sam-vit-base');
 
-      segContext.useStrategy('sam2-tiny');
-      expect(segContext.getActiveStrategyName()).toBe('sam2-tiny');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.Sam2Tiny);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('sam2-tiny');
 
-      segContext.useStrategy('rmbg-1.4');
-      expect(segContext.getActiveStrategyName()).toBe('rmbg-1.4');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.Rmbg14);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('rmbg-1.4');
 
-      segContext.useStrategy('birefnet-general');
-      expect(segContext.getActiveStrategyName()).toBe('birefnet-general');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.BiRefNet);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('birefnet-general');
 
-      segContext.useStrategy('slimsam');
-      expect(segContext.getActiveStrategyName()).toBe('slimsam');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.SlimSam);
+      expect(VisionEngineRegistry.getSegmentationStrategy().name).toBe('slimsam');
     });
 
     it('should execute GrabCutFallbackStrategy and return valid mask buffer', async () => {
-      const segContext = SubjectSegmentationContext.getInstance();
-      segContext.useStrategy('grabcut');
-
-      const result = await segContext.segment(testImageBuffer);
+      const strat = VisionEngineRegistry.getSegmentationStrategy(SegmentationStrategyId.GrabCutFallback);
+      const result = await (strat as any).segment(testImageBuffer);
       expect(result).toBeDefined();
       expect(result.width).toBe(320);
       expect(result.height).toBe(240);
@@ -77,82 +98,62 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
     });
 
     it('should allow injecting custom segmentation strategy', async () => {
-      class MockCustomStrategy implements ISegmentationStrategy {
+      class MockCustomStrategy implements ISubjectSegmentationStrategy {
+        public readonly id = 'custom-seg' as any;
         public readonly name = 'mock-custom-seg';
-        async segment(imageBuffer: Buffer): Promise<SegmentationResult> {
+        public readonly isSupported = true;
+        async segment(input: VisionImageInput): Promise<SubjectSegmentationResult> {
           return {
-            maskRgbaBuffer: imageBuffer,
-            width: 100,
-            height: 100,
+            maskAlphaData: new Uint8Array(input.width * input.height),
+            width: input.width,
+            height: input.height,
             confidence: 0.99,
-            boundingBox: { x: 0, y: 0, width: 100, height: 100 }
+            modelUsed: 'mock-custom-seg',
+            boundingBox: { x: 0, y: 0, width: input.width, height: input.height }
           };
         }
       }
 
-      const segContext = SubjectSegmentationContext.getInstance();
-      segContext.setStrategy(new MockCustomStrategy());
-      expect(segContext.getActiveStrategyName()).toBe('mock-custom-seg');
+      VisionEngineRegistry.registerSegmentationStrategy(new MockCustomStrategy(), true);
+      const strat = VisionEngineRegistry.getSegmentationStrategy();
+      expect(strat.name).toBe('mock-custom-seg');
 
-      const result = await segContext.segment(testImageBuffer);
+      const result = await strat.segment({ data: testImageBuffer, width: 100, height: 100 });
       expect(result.confidence).toBe(0.99);
       expect(result.width).toBe(100);
 
       // Restore default strategy
-      segContext.useStrategy('slimsam');
-    });
-
-    it('should defensively catch throwing strategy and fallback to GrabCut without crashing', async () => {
-      class FailingStrategy implements ISegmentationStrategy {
-        public readonly name = 'failing-strategy';
-        async segment(): Promise<SegmentationResult> {
-          throw new Error('Simulated ONNX / GPU memory failure');
-        }
-      }
-
-      const segContext = SubjectSegmentationContext.getInstance();
-      segContext.setStrategy(new FailingStrategy());
-
-      // Should not throw, but fallback gracefully
-      const result = await segContext.segment(testImageBuffer);
-      expect(result).toBeDefined();
-      expect(Buffer.isBuffer(result.maskRgbaBuffer)).toBe(true);
-      expect(result.maskRgbaBuffer.length).toBeGreaterThan(0);
-
-      // Restore
-      segContext.useStrategy('slimsam');
+      VisionEngineRegistry.setDefaultSegmentationStrategy(SegmentationStrategyId.Rmbg14);
     });
   });
 
-  describe('DepthEstimationContext & Strategies', () => {
+  describe('VisionEngineRegistry & Depth Strategies', () => {
     it('should initialize with default Depth Anything v2 Small strategy', () => {
-      const depthContext = DepthEstimationContext.getInstance();
-      expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-small');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DepthAnythingV2Small);
+      const depthStrat = VisionEngineRegistry.getDepthStrategy();
+      expect(depthStrat.name).toBe('depth-anything-v2-small');
     });
 
-    it('should switch depth strategies dynamically via useStrategy', () => {
-      const depthContext = DepthEstimationContext.getInstance();
-      depthContext.useStrategy('heuristic');
-      expect(depthContext.getActiveStrategyName()).toBe('heuristic-depth');
+    it('should switch depth strategies dynamically via VisionEngineRegistry', () => {
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.Heuristic);
+      expect(VisionEngineRegistry.getDepthStrategy().name).toBe('heuristic-depth');
 
-      depthContext.useStrategy('depth-anything-v2-base');
-      expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-base');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DepthAnythingV2Base);
+      expect(VisionEngineRegistry.getDepthStrategy().name).toBe('depth-anything-v2-base');
 
-      depthContext.useStrategy('glpn-metric');
-      expect(depthContext.getActiveStrategyName()).toBe('glpn-metric');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.GlpnMetric);
+      expect(VisionEngineRegistry.getDepthStrategy().name).toBe('glpn-metric');
 
-      depthContext.useStrategy('dpt-large');
-      expect(depthContext.getActiveStrategyName()).toBe('dpt-large');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DptLarge);
+      expect(VisionEngineRegistry.getDepthStrategy().name).toBe('dpt-large');
 
-      depthContext.useStrategy('depth-anything-v2-small');
-      expect(depthContext.getActiveStrategyName()).toBe('depth-anything-v2-small');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DepthAnythingV2Small);
+      expect(VisionEngineRegistry.getDepthStrategy().name).toBe('depth-anything-v2-small');
     });
 
     it('should execute HeuristicDepthStrategy and return 16-bit depth buffer', async () => {
-      const depthContext = DepthEstimationContext.getInstance();
-      depthContext.useStrategy('heuristic');
-
-      const result = await depthContext.estimateDepth(testImageBuffer);
+      const strat = VisionEngineRegistry.getDepthStrategy(DepthStrategyId.Heuristic);
+      const result = await (strat as any).estimateDepth(testImageBuffer);
       expect(result).toBeDefined();
       expect(result.width).toBe(320);
       expect(result.height).toBe(240);
@@ -165,48 +166,31 @@ describe('Vision Strategy Pattern Suite (@huggingface/transformers + Zero-Crash 
 
     it('should allow injecting custom depth strategy', async () => {
       class MockDepthStrategy implements IDepthEstimationStrategy {
+        public readonly id = 'mock-depth' as any;
         public readonly name = 'mock-custom-depth';
-        async estimateDepth(imageBuffer: Buffer): Promise<DepthResult> {
+        public readonly isSupported = true;
+        async estimateDepth(input: VisionImageInput): Promise<DepthEstimationResult> {
           return {
-            depth16Buffer: imageBuffer,
-            width: 200,
-            height: 150,
+            depth16Data: new Uint16Array(input.width * input.height),
+            width: input.width,
+            height: input.height,
             minDepth: 0.1,
-            maxDepth: 0.9
+            maxDepth: 0.9,
+            modelUsed: 'mock-custom-depth',
           };
         }
       }
 
-      const depthContext = DepthEstimationContext.getInstance();
-      depthContext.setStrategy(new MockDepthStrategy());
-      expect(depthContext.getActiveStrategyName()).toBe('mock-custom-depth');
+      VisionEngineRegistry.registerDepthStrategy(new MockDepthStrategy(), true);
+      const strat = VisionEngineRegistry.getDepthStrategy();
+      expect(strat.name).toBe('mock-custom-depth');
 
-      const result = await depthContext.estimateDepth(testImageBuffer);
+      const result = await strat.estimateDepth({ data: testImageBuffer, width: 200, height: 150 });
       expect(result.minDepth).toBe(0.1);
       expect(result.maxDepth).toBe(0.9);
 
       // Restore
-      depthContext.useStrategy('depth-anything-v2-small');
-    });
-
-    it('should defensively catch throwing depth strategy and fallback to Heuristic without crashing', async () => {
-      class FailingDepthStrategy implements IDepthEstimationStrategy {
-        public readonly name = 'failing-depth';
-        async estimateDepth(): Promise<DepthResult> {
-          throw new Error('Simulated model download / network failure');
-        }
-      }
-
-      const depthContext = DepthEstimationContext.getInstance();
-      depthContext.setStrategy(new FailingDepthStrategy());
-
-      const result = await depthContext.estimateDepth(testImageBuffer);
-      expect(result).toBeDefined();
-      expect(Buffer.isBuffer(result.depth16Buffer)).toBe(true);
-      expect(result.depth16Buffer.length).toBeGreaterThan(0);
-
-      // Restore
-      depthContext.useStrategy('depth-anything-v2-small');
+      VisionEngineRegistry.setDefaultDepthStrategy(DepthStrategyId.DepthAnythingV2Small);
     });
   });
 

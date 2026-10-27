@@ -18,7 +18,7 @@ import { drawParallaxFrame } from "./parallax";
 import { drawSandwichFrame } from "./sandwich";
 import { drawDepthMeshFrame } from "./depth-mesh";
 import { drawCanvasCaptionsFromSnapshot, BoundedAcousticCaptionStrategy } from "../subtitles";
-import { SubjectSegmentationContext, DepthEstimationContext } from "../vision";
+import { VisionEngineRegistry, DepthStrategyId, SegmentationStrategyId } from "@acc/core-isomorphic";
 import { Depth3DFactory } from "./factory";
 
 export async function checkExists(p: string): Promise<boolean> {
@@ -135,7 +135,7 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
       mode === "volumetric_sandwich" ||
       mode === "sandwich";
 
-  const segContext = SubjectSegmentationContext.getInstance();
+  const segStrat = VisionEngineRegistry.getSegmentationStrategy();
 
   // Load subject cutout if available
   try {
@@ -149,9 +149,10 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   // Auto-segmentation fallback
   if (!subjectImg && shouldAutoSegment) {
     try {
-      const segRes = await segContext.segmentSubject(imgBuffer);
-      if (segRes && segRes.maskRgbaBuffer) {
-        subjectImg = await CanvasAssetLoader.loadImage(segRes.maskRgbaBuffer);
+      const segRes = await (segStrat as any).segment(imgBuffer);
+      const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
+      if (maskBuffer) {
+        subjectImg = await CanvasAssetLoader.loadImage(maskBuffer);
         subjectBBox = segRes.boundingBox;
       }
     } catch { }
@@ -186,14 +187,15 @@ export async function renderDepth3DScene(options: Depth3DSceneOptions): Promise<
   const sCtx = sCanvas.getContext("2d");
   drawImageCover(sCtx, img, 0, 0, width, height);
 
-  const depthContext = DepthEstimationContext.getInstance();
-  const depthStratName = depthContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
+  const depthStrat = VisionEngineRegistry.getDepthStrategy();
+  const depthStratName = (depthStrat.name || depthStrat.id || "depth").replace(/[^a-zA-Z0-9_-]/g, "_");
 
   if (!loadedDepth && depthConfig.autoDepth) {
     try {
-      const depthRes = await depthContext.estimateDepth(imgBuffer);
-      if (depthRes && depthRes.depth16Buffer && depthRes.depth16Buffer.length > 0) {
-        const dm = await CanvasAssetLoader.loadImage(depthRes.depth16Buffer);
+      const depthRes = await (depthStrat as any).estimateDepth(imgBuffer);
+      const depthBuffer = (depthRes as any)?.depth16Buffer || (depthRes as any)?.depth16Data;
+      if (depthBuffer && depthBuffer.length > 0) {
+        const dm = await CanvasAssetLoader.loadImage(depthBuffer);
         drawImageCover(dCtx, dm, 0, 0, width, height);
         loadedDepth = true;
       }
@@ -402,8 +404,8 @@ export async function resolveSubjectCutout(
     }
 
     const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
-    const segContext = SubjectSegmentationContext.getInstance();
-    const segStratName = segContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const segStrat = VisionEngineRegistry.getSegmentationStrategy();
+    const segStratName = (segStrat.name || segStrat.id || "segmentation").replace(/[^a-zA-Z0-9_-]/g, "_");
 
     // Compute both fastChecksum and md5 slice for disk compatibility
     const fChecksum = fastChecksum(imgBuffer);
@@ -489,10 +491,11 @@ export async function resolveSubjectCutout(
     }
 
     // 3. Fallback to active/fallback segmentation strategy
-    const segRes = await segContext.segmentSubject(imgBuffer);
-    if (segRes && segRes.maskRgbaBuffer) {
-      await cache.set(cacheKey, segRes.maskRgbaBuffer, { mimeType: 'image/png' });
-      const subjectImg = await CanvasAssetLoader.loadImage(segRes.maskRgbaBuffer);
+    const segRes = await (segStrat as any).segment(imgBuffer);
+    const maskBuffer = (segRes as any)?.maskRgbaBuffer || (segRes as any)?.maskAlphaData;
+    if (maskBuffer) {
+      await cache.set(cacheKey, maskBuffer, { mimeType: 'image/png' });
+      const subjectImg = await CanvasAssetLoader.loadImage(maskBuffer);
       return { subjectImg, subjectBBox: segRes.boundingBox };
     }
 
@@ -526,8 +529,8 @@ export async function resolveDepthMapData(
   const dCanvas = UniversalCanvasProvider.createCanvas(targetWidth, targetHeight);
   const dCtx = dCanvas.getContext("2d");
 
-  const depthContext = DepthEstimationContext.getInstance();
-  const depthStratName = depthContext.getActiveStrategyName().replace(/[^a-zA-Z0-9_-]/g, "_");
+  const depthStrat = VisionEngineRegistry.getDepthStrategy();
+  const depthStratName = (depthStrat.name || depthStrat.id || "depth").replace(/[^a-zA-Z0-9_-]/g, "_");
   const fChecksum = fastChecksum(imgBuffer);
   let md5Checksum = fChecksum;
   if (isNode) {
@@ -586,10 +589,11 @@ export async function resolveDepthMapData(
 
   if (!loadedDepth) {
     try {
-      const depthRes = await depthContext.estimateDepth(imgBuffer);
-      if (depthRes && depthRes.depth16Buffer && depthRes.depth16Buffer.length > 0) {
-        await cache.set(cacheKey, depthRes.depth16Buffer, { mimeType: 'image/png' });
-        const dm = await CanvasAssetLoader.loadImage(depthRes.depth16Buffer);
+      const depthRes = await (depthStrat as any).estimateDepth(imgBuffer);
+      const depthBuffer = (depthRes as any)?.depth16Buffer || (depthRes as any)?.depth16Data;
+      if (depthBuffer && depthBuffer.length > 0) {
+        await cache.set(cacheKey, depthBuffer, { mimeType: 'image/png' });
+        const dm = await CanvasAssetLoader.loadImage(depthBuffer);
         drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
         loadedDepth = true;
       }

@@ -2,6 +2,7 @@ import {
   type SegmentationOptions as IsomorphicSegOptions,
   type SubjectSegmentationResult as IsomorphicSegResult,
   type VisionImageInput,
+  type ISubjectSegmentationStrategy as IIsomorphicSegmentationStrategy,
   SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
@@ -9,10 +10,11 @@ import { GrabCutFallbackStrategy } from './GrabCutFallbackStrategy';
 import { AutoProcessor, RawImage, SamModel } from '@huggingface/transformers';
 import { createCutoutRgba } from '../../utils';
 
-export class SlimSamStrategy implements ISegmentationStrategy {
+export class SlimSamStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.SlimSam;
   public readonly name = 'slimsam';
   public readonly modelId = 'Xenova/slimsam-77-uniform';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;

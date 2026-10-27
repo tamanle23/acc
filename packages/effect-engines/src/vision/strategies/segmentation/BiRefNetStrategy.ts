@@ -2,16 +2,18 @@ import {
   type SegmentationOptions as IsomorphicSegOptions,
   type SubjectSegmentationResult as IsomorphicSegResult,
   type VisionImageInput,
+  type ISubjectSegmentationStrategy as IIsomorphicSegmentationStrategy,
   SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { AutoProcessor, PreTrainedModel, RawImage } from '@huggingface/transformers';
 import { createCutoutRgba } from '../../utils';
 
-export class BiRefNetStrategy implements ISegmentationStrategy {
+export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.BiRefNet;
   public readonly name = 'birefnet-general';
   public readonly modelId = 'onnx-community/BiRefNet-general-ONNX';
+  public readonly isSupported = true;
 
   private model: any = null;
   private processor: any = null;
