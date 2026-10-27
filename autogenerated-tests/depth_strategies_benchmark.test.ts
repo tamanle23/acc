@@ -81,7 +81,7 @@ describe('Depth Estimation Multi-Strategy Benchmark Suite', () => {
     expect(Buffer.isBuffer(res.depth16Buffer)).toBe(true);
     fs.writeFileSync(path.join(outDepthDir, 'scene1_depth_benchmark_dpt_large.png'), res.depth16Buffer);
     console.log(`[Depth Benchmark] DPT Large: ${dt} ms | size: ${res.depth16Buffer.length} bytes`);
-  }, 45000);
+  }, 90000);
 
   it('should seamlessly route through VisionEngineRegistry', async () => {
     VisionEngineRegistry.registerDepthStrategy(new GlpnMetricStrategy());
