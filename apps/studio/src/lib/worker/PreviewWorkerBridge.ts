@@ -5,7 +5,6 @@ export interface WorkerRenderOptions {
   isScrubbing?: boolean;
   clearColor?: string;
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
-  popOutIntensity?: number;
 }
 
 export class PreviewWorkerBridge {
@@ -129,8 +128,7 @@ export class PreviewWorkerBridge {
     optionsOrLod?: WorkerRenderOptions | number,
     isScrubbing = false,
     clearColor?: string,
-    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
-    popOutIntensity?: number
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
   ) {
     if (!this.worker || !this.isTransferred) return;
 
@@ -138,14 +136,12 @@ export class PreviewWorkerBridge {
     let scrubbing = isScrubbing;
     let color = clearColor;
     let mode = debugMode;
-    let intensity = popOutIntensity;
 
     if (typeof optionsOrLod === 'object' && optionsOrLod !== null) {
       lod = optionsOrLod.lod ?? 1.0;
       scrubbing = optionsOrLod.isScrubbing ?? false;
       color = optionsOrLod.clearColor;
       mode = optionsOrLod.debugMode;
-      intensity = optionsOrLod.popOutIntensity;
     } else if (typeof optionsOrLod === 'number') {
       lod = optionsOrLod;
     }
@@ -154,7 +150,6 @@ export class PreviewWorkerBridge {
       type: 'renderFrame',
       frame,
       lod,
-      popOutIntensity: intensity,
       isScrubbing: scrubbing,
       clearColor: color,
       debugMode: mode,
@@ -166,10 +161,9 @@ export class PreviewWorkerBridge {
     optionsOrLod?: WorkerRenderOptions | number,
     isScrubbing = false,
     clearColor?: string,
-    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha',
-    popOutIntensity?: number
+    debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
   ) {
-    this.renderFrame(frame, optionsOrLod, isScrubbing, clearColor, debugMode, popOutIntensity);
+    this.renderFrame(frame, optionsOrLod, isScrubbing, clearColor, debugMode);
   }
 
   public startPlayback(

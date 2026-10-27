@@ -31,13 +31,12 @@ const textTextureCache = ContentHashTextureCache.getInstance();
 // Dirty-Frame & Refresh Optimization state
 let lastRenderedFrame: number | null = null;
 let lastRenderedLOD: number | null = null;
-let lastPopOutIntensity: number | null | undefined = null;
 let lastDebugMode: string | null = null;
 let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; popOutIntensity?: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
+let pendingRender: { frame: number; lod: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -50,20 +49,18 @@ let workerClock: DeterministicTimelineClock | null = null;
 function renderCurrentFrame(
   frame: number,
   lod = 1.0,
-  popOutIntensity?: number,
   isScrubbing = false,
   clearColor = '#000000',
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
 ) {
   if (!canvas || !ctx || !engine) return;
 
-  // 1. Dirty-Frame Optimization: Skip redraw if frame, LOD, and popOutIntensity haven't changed
+  // 1. Dirty-Frame Optimization: Skip redraw if frame, LOD, and debugMode haven't changed
   if (
     !texturesDirty &&
     !isScrubbing &&
     frame === lastRenderedFrame &&
     lod === lastRenderedLOD &&
-    popOutIntensity === lastPopOutIntensity &&
     debugMode === lastDebugMode
   ) {
     return;
@@ -71,7 +68,7 @@ function renderCurrentFrame(
 
   if (isRendering) {
     // Coalesce latest requested frame to avoid worker message queue pileup
-    pendingRender = { frame, lod, popOutIntensity, isScrubbing, debugMode };
+    pendingRender = { frame, lod, isScrubbing, debugMode };
     return;
   }
 
@@ -105,7 +102,7 @@ function renderCurrentFrame(
           // During active playback, this frame will be naturally painted on the next RAF tick.
           if (!isPlaying && currentFrame === frame) {
             texturesDirty = true;
-            renderCurrentFrame(currentFrame, lod, popOutIntensity, false, clearColor);
+            renderCurrentFrame(currentFrame, lod, false, clearColor);
           }
         }
       });
@@ -128,7 +125,6 @@ function renderCurrentFrame(
   try {
     engine.renderFrame(frame, ctx as any, {
       textureCache,
-      popOutIntensity,
       clearColor,
       debugMode,
     });
@@ -150,14 +146,13 @@ function renderCurrentFrame(
   texturesDirty = false;
   lastRenderedFrame = frame;
   lastRenderedLOD = lod;
-  lastPopOutIntensity = popOutIntensity;
   lastDebugMode = debugMode ?? null;
 
   // Drain coalesced pending frame if one arrived during this draw pass
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(next.frame, next.lod, next.popOutIntensity, next.isScrubbing, clearColor, next.debugMode);
+    renderCurrentFrame(next.frame, next.lod, next.isScrubbing, clearColor, next.debugMode);
   }
 }
 
@@ -304,7 +299,6 @@ self.onmessage = (e: MessageEvent) => {
       renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,
-        data.popOutIntensity,
         isScrub,
         data.clearColor ?? '#000000',
         data.debugMode
