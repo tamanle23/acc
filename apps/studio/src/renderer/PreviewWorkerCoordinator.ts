@@ -10,7 +10,7 @@ import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import type {
   ExecuteModifierPayload,
   SidecarWorkerMessage,
-  SidecarWorkerResponse,
+  WorkerResponse,
 } from './SidecarTypes';
 
 export interface ModifierWarmedEvent {
@@ -24,8 +24,8 @@ export interface SidecarPreflightOptions {
   lookaheadSec?: number;
 }
 
-export class StudioSidecarCoordinator {
-  private static instance: StudioSidecarCoordinator | null = null;
+export class PreviewWorkerCoordinator {
+  private static instance: PreviewWorkerCoordinator | null = null;
   private worker: Worker | null = null;
   private inProcessRegistry: ModifierPluginRegistry | null = null;
   private isWarmedUp = false;
@@ -47,11 +47,11 @@ export class StudioSidecarCoordinator {
     this.initWorker(customWorkerUrl);
   }
 
-  public static getInstance(): StudioSidecarCoordinator {
-    if (!StudioSidecarCoordinator.instance) {
-      StudioSidecarCoordinator.instance = new StudioSidecarCoordinator();
+  public static getInstance(): PreviewWorkerCoordinator {
+    if (!PreviewWorkerCoordinator.instance) {
+      PreviewWorkerCoordinator.instance = new PreviewWorkerCoordinator();
     }
-    return StudioSidecarCoordinator.instance;
+    return PreviewWorkerCoordinator.instance;
   }
 
   private initWorker(customWorkerUrl?: URL): void {
@@ -60,11 +60,11 @@ export class StudioSidecarCoordinator {
         this.worker = customWorkerUrl
           ? new Worker(customWorkerUrl, { type: 'module' })
           : new Worker(
-              new URL('./IRPreviewEngine.worker.ts', import.meta.url),
-              { type: 'module' }
-            );
+            new URL('./IRPreviewEngine.worker.ts', import.meta.url),
+            { type: 'module' }
+          );
 
-        this.worker.onmessage = (event: MessageEvent<SidecarWorkerResponse>) => {
+        this.worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
           this.handleWorkerMessage(event.data);
         };
 
@@ -114,7 +114,7 @@ export class StudioSidecarCoordinator {
     }
   }
 
-  private handleWorkerMessage(msg: SidecarWorkerResponse): void {
+  private handleWorkerMessage(msg: WorkerResponse): void {
     switch (msg.type) {
       case 'WARMED_UP': {
         this.isWarmedUp = true;
@@ -232,6 +232,7 @@ export class StudioSidecarCoordinator {
         fps: payload.fps,
         canvas: payload.canvas,
       };
+      Logger.info("PreviewWorkerCoodinator", "Excute plugin", plugin, context);
       await plugin.execute(context, payload.modifier.params);
       this.completedTaskKeys.add(taskKey);
       this.notifyWarmed({
@@ -319,7 +320,7 @@ export class StudioSidecarCoordinator {
         }
       }
     }
-
+    console.log("Timeline:", timeline)
     // 2. Sequence Modifiers sorted by proximity to prioritizedFrame
     const sequences = Array.from(timeline.sequences.values()).sort((a, b) => {
       const distA = Math.abs((a.startFrame ?? 0) - prioritizedFrame);

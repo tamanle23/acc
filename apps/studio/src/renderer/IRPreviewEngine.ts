@@ -15,10 +15,10 @@ import {
 
 import { AssetTextureCache } from './AssetTextureCache';
 import {
-  StudioSidecarCoordinator,
+  PreviewWorkerCoordinator,
   type ModifierWarmedEvent,
   type SidecarPreflightOptions,
-} from './StudioSidecarCoordinator';
+} from './PreviewWorkerCoordinator';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;
@@ -41,7 +41,7 @@ export interface PreviewFrameResult {
 }
 
 export interface IRPreviewEngineOptions {
-  sidecarCoordinator?: StudioSidecarCoordinator;
+  sidecarCoordinator?: PreviewWorkerCoordinator;
   autoPreflight?: boolean;
 }
 
@@ -64,7 +64,7 @@ export class IRPreviewEngine {
   private defaultTextureCache: AssetTextureCache = new AssetTextureCache();
   private audioMixer: UniversalAudioMixer;
   private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
-  private sidecarCoordinator: StudioSidecarCoordinator | null = null;
+  private sidecarCoordinator: PreviewWorkerCoordinator | null = null;
   private autoPreflight: boolean = true;
 
   constructor(
@@ -83,7 +83,7 @@ export class IRPreviewEngine {
     this.audioMixer = new UniversalAudioMixer([], audioSampleRate);
     this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
 
-    this.sidecarCoordinator = options?.sidecarCoordinator ?? StudioSidecarCoordinator.getInstance();
+    this.sidecarCoordinator = options?.sidecarCoordinator ?? PreviewWorkerCoordinator.getInstance();
     this.autoPreflight = options?.autoPreflight ?? true;
 
     if (this.autoPreflight && this.sidecarCoordinator) {

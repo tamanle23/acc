@@ -27,7 +27,7 @@ import {
 import { PreviewWorkerBridge } from '../lib/worker/PreviewWorkerBridge';
 import {
   IRPreviewEngine,
-  StudioSidecarCoordinator,
+  PreviewWorkerCoordinator,
 } from '../renderer';
 import {
   Gizmo2DTransformation,
@@ -110,7 +110,7 @@ export function Preview({
   const [assetTick, setAssetTick] = useState(0);
 
   useEffect(() => {
-    StudioSidecarCoordinator.getInstance();
+    PreviewWorkerCoordinator.getInstance();
     return IRStateManager.getInstance().subscribe(setIrState);
   }, []);
 
@@ -216,7 +216,7 @@ export function Preview({
 
     if (bridge.hasTransferred()) {
       bridge.updateTimeline(irState.timeline, totalFrames, fps, assetsMap);
-      StudioSidecarCoordinator.getInstance().preflightTimeline(irState.timeline, {
+      PreviewWorkerCoordinator.getInstance().preflightTimeline(irState.timeline, {
         prioritizedFrame: playhead?.currentFrame || 0,
       });
     } else {
@@ -225,7 +225,7 @@ export function Preview({
       WebAudioEngine.getInstance().attachPreviewEngine(engine);
     }
 
-    const unsubWarmed = StudioSidecarCoordinator.getInstance().onModifierWarmed(() => {
+    const unsubWarmed = PreviewWorkerCoordinator.getInstance().onModifierWarmed(() => {
       setAssetTick((t) => t + 1);
       if (bridge.hasTransferred() && irState.timeline) {
         bridge.renderFrame(playhead?.currentFrame || 0);

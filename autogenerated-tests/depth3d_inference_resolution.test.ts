@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'bun:test';
 import { Depth3DPlugin } from '../packages/ir/src/plugins/vfx/Depth3DPlugin';
-import { StudioSidecarCoordinator } from '../apps/studio/src/renderer/StudioSidecarCoordinator';
+import { PreviewWorkerCoordinator } from '../apps/studio/src/renderer/PreviewWorkerCoordinator';
 import { UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';
 import { bootstrapNode } from '@acc/core';
 import type { ModifierContext, ClipRenderContext } from '../packages/ir/src/plugins/ModifierPluginRegistry';
@@ -88,7 +88,7 @@ describe('Depth3DPlugin & Sidecar Inference Resolution Suite', () => {
   });
 
   it('StudioSidecarCoordinator automatically injects assets and binds effectiveImagePath during preflight', async () => {
-    const coordinator = new StudioSidecarCoordinator();
+    const coordinator = new PreviewWorkerCoordinator();
     coordinator.reset();
 
     const track: ResolvedTrack = {

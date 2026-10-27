@@ -3,6 +3,7 @@ import {
   VisionEngineRegistry,
   DepthStrategyId,
   SegmentationStrategyId,
+  Logger,
 } from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
@@ -156,7 +157,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       segmentationStrategy: params.segmentationStrategy || VisionEngineRegistry.getDefaultSegmentationStrategyId(),
       active: true,
     };
-
+    Logger.info("Depth3DPlugin", `Executing depth 3D plugin`, context, params);
     // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight
     const seq = context.targetType === 'sequence' ? (context.targetEntity as any) : null;
     const assetId = seq?.assetId;
@@ -264,6 +265,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
    * Renders the 3D frame border, floating motion, and pop-out effect directly onto the canvas.
    */
   public renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): void {
+    Logger.info("Depth3DPlugin", `renderClipSpace depth 3D plugin`, ctx, params);
     const { ctx: canvasCtx, width, height, localFrame, sequence, baseAsset } = ctx;
     if (!baseAsset) return;
     // Restrict Depth3DPlugin processing exclusively to image sequence types

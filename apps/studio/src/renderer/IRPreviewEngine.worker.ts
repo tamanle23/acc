@@ -7,7 +7,7 @@ import {
 import { VisionEngineRegistry } from '@acc/core-isomorphic';
 import type {
   SidecarWorkerMessage,
-  SidecarWorkerResponse,
+  WorkerResponse,
 } from './SidecarTypes';
 
 // Bootstrap isomorphic client runtime inside worker context
@@ -31,12 +31,12 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
         if (typeof (segStrategy as any).init === 'function') {
           await (segStrategy as any).init();
         }
-        self.postMessage({ type: 'WARMED_UP' } satisfies SidecarWorkerResponse);
+        self.postMessage({ type: 'WARMED_UP' } satisfies WorkerResponse);
       } catch (err: any) {
         self.postMessage({
           type: 'ERROR',
           error: `[SidecarWorker:Warmup] ${err?.message || err}`,
-        } satisfies SidecarWorkerResponse);
+        } satisfies WorkerResponse);
       }
       break;
     }
@@ -47,7 +47,7 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
         type: 'TASK_CANCELED',
         taskId: message.taskId,
         targetId: message.targetId,
-      } satisfies SidecarWorkerResponse);
+      } satisfies WorkerResponse);
       break;
     }
 
@@ -66,7 +66,7 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
           type: 'TASK_CANCELED',
           taskId: payload.taskId,
           targetId: payload.targetId,
-        } satisfies SidecarWorkerResponse);
+        } satisfies WorkerResponse);
         return;
       }
 
@@ -91,7 +91,7 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
             type: 'TASK_CANCELED',
             taskId: payload.taskId,
             targetId: payload.targetId,
-          } satisfies SidecarWorkerResponse);
+          } satisfies WorkerResponse);
           return;
         }
 
@@ -101,14 +101,14 @@ self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
           targetId: payload.targetId,
           modifierType: payload.modifier.type,
           state: context.state,
-        } satisfies SidecarWorkerResponse);
+        } satisfies WorkerResponse);
       } catch (err: any) {
         self.postMessage({
           type: 'ERROR',
           taskId: payload.taskId,
           targetId: payload.targetId,
           error: `[SidecarWorker:Execute] ${err?.message || err}`,
-        } satisfies SidecarWorkerResponse);
+        } satisfies WorkerResponse);
       }
       break;
     }

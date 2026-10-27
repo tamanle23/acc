@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import {
-  StudioSidecarCoordinator,
+  PreviewWorkerCoordinator,
   type ModifierWarmedEvent,
-} from '../apps/studio/src/renderer/StudioSidecarCoordinator';
+} from '../apps/studio/src/renderer/PreviewWorkerCoordinator';
 import {
   IRPreviewEngine,
   AssetTextureCache,
@@ -17,11 +17,11 @@ import {
 import { ContentCacheRegistry } from '@acc/core-isomorphic';
 
 describe('Studio Sidecar Worker & Coordinator Suite', () => {
-  let coordinator: StudioSidecarCoordinator;
+  let coordinator: PreviewWorkerCoordinator;
   let mockTimeline: ResolvedTimeline;
 
   beforeEach(() => {
-    coordinator = new StudioSidecarCoordinator();
+    coordinator = new PreviewWorkerCoordinator();
     coordinator.reset();
 
     const track1: ResolvedTrack = {
