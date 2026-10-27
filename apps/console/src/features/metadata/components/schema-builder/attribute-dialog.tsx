@@ -560,23 +560,6 @@ export const AttributeDialog: React.FC<Props> = ({ entityTypeId }) => {
                   )}
                 </div>
               )}
-
-              {/* Functional Index Optimization */}
-              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 p-3.5 backdrop-blur-sm">
-                <div className="space-y-0.5 pr-4">
-                  <Label htmlFor="attr-indexed" className="text-sm font-medium cursor-pointer">
-                    PostgreSQL Functional Index
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Accelerates queries and faceted search on this attribute with an automated PostgreSQL JSONB expression index.
-                  </p>
-                </div>
-                <Switch
-                  id="attr-indexed"
-                  checked={isIndexed}
-                  onCheckedChange={setIsIndexed}
-                />
-              </div>
             </TabsContent>
           </Tabs>
 

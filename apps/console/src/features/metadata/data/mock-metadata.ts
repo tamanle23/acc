@@ -515,6 +515,7 @@ export const initialMockAttributes: Record<string, AttributeDefinition[]> = {
 const generateInitialRecords = (): Record<string, EntityRecord[]> => {
   const customerTiers = ['Starter', 'Professional', 'Enterprise', 'Strategic'];
   const regions = [
+    'tenant-acme',
     'tenant-us-east-1',
     'tenant-us-west-2',
     'tenant-eu-central-1',
@@ -1161,7 +1162,8 @@ export class MockMetadataService implements MetadataDataSource {
     let recs = [...(this.records[strId] || [])];
 
     // Filter by tenantId
-    if (params?.tenantId) {
+    // SYSTEM is the sovereign root: sees all tenants' records
+    if (params?.tenantId && params.tenantId !== 'SYSTEM') {
       recs = recs.filter((r) => r.tenantId === params.tenantId);
     }
 
@@ -2077,7 +2079,7 @@ export class MockMetadataService implements MetadataDataSource {
     const rootTypeId = String(et.compositeSpec.root_entity_type_id);
     let rootRecords = [...(this.records[rootTypeId] || [])];
 
-    if (params?.tenantId) {
+    if (params?.tenantId && params.tenantId !== 'SYSTEM') {
       rootRecords = rootRecords.filter((r) => r.tenantId === params.tenantId);
     }
 
