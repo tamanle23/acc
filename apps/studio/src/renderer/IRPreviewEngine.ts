@@ -27,7 +27,6 @@ export interface IPreviewTextureProvider {
 
 export interface PreviewRenderOptions {
   textureCache?: IPreviewTextureProvider | AssetTextureCache;
-  popOutIntensity?: number;
   lodScale?: number;
   clearColor?: string;
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
@@ -229,13 +228,11 @@ export class IRPreviewEngine {
     const timeSec = clampedFrame / fps;
 
     const textures = options.textureCache ?? this.defaultTextureCache;
-    const popOutIntensity = options.popOutIntensity;
     const activeSequences = this.intervalTree.queryActive(clampedFrame);
 
     IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {
       pluginRegistry: this.pluginRegistry,
       assetResolver: textures,
-      popOutIntensity,
       clearColor: options.clearColor || '#000000',
       debugMode: options.debugMode,
       executionProfile: 'preview',
