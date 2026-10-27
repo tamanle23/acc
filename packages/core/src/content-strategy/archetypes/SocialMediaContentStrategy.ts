@@ -1,5 +1,5 @@
+import { UnifiedPipelineContext } from '@acc/core/pipeline';
 import { BaseContentTaskStrategy, StrategyDescriptor } from '../BaseContentTaskStrategy';
-import type { UnifiedPipelineContext } from '../../../pipeline/UnifiedPipelineContext';
 import type { PipelineIR } from '@acc/ir';
 
 export interface SocialMediaOutput {

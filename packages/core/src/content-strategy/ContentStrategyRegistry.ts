@@ -1,4 +1,4 @@
-import type { IContentTaskStrategy } from '../interfaces/IContentTaskStrategy';
+import { IContentTaskStrategy } from "./BaseContentTaskStrategy";
 
 /**
  * ContentStrategyRegistry:
