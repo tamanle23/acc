@@ -29,11 +29,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     case 'WARMUP': {
       try {
         const depthStrategy = VisionEngineRegistry.getDepthStrategy();
-        if (typeof (depthStrategy as any).init === 'function') {
+        // Only warm up lightweight/heuristic strategies during idle warmup; heavy neural models initialize lazily on demand
+        if (depthStrategy && !(depthStrategy as any).modelId && typeof (depthStrategy as any).init === 'function') {
           await (depthStrategy as any).init();
         }
         const segStrategy = VisionEngineRegistry.getSegmentationStrategy();
-        if (typeof (segStrategy as any).init === 'function') {
+        if (segStrategy && !(segStrategy as any).modelId && typeof (segStrategy as any).init === 'function') {
           await (segStrategy as any).init();
         }
         self.postMessage({ type: 'WARMED_UP' } satisfies WorkerResponse);

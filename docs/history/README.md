@@ -21,3 +21,4 @@
 | 360 | [Document Workflow Orchestration Engine Architecture Analysis](./360_document_workflow_orchestration_engine_analysis.md) | Completed |
 | 361 | [Elimination of In-Memory Texture Caches & Native Media Buffer Leaks](./361_eliminate_asset_texture_cache_memory_and_native_buffer_leaks.md) | Completed |
 | 362 | [Eliminate Mediabunny CanvasSink and Playback Native Buffer Leaks](./362_eliminate_mediabunny_canvas_sink_and_playback_buffer_leaks.md) | Completed |
+| 363 | [Prevent Eager ONNX WebAssembly Neural Model Preloading in Browser Client](./363_prevent_eager_onnx_wasm_neural_model_initialization.md) | Completed |

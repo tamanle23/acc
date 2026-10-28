@@ -72,12 +72,12 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
     ContentCacheRegistry.setDefault(resolvedCacheStrategy);
   }
 
-  // 4. Client-Safe Vision Strategies Registration (Heuristic & Algorithmic Fallbacks)
-  VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy());
-  VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), true);
+  // 4. Client-Safe Vision Strategies Registration (Heuristic & Algorithmic Defaults)
+  VisionEngineRegistry.registerDepthStrategy(new HeuristicDepthStrategy(), true);
+  VisionEngineRegistry.registerDepthStrategy(new DepthAnythingV2SmallStrategy(), false);
 
-  VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy());
-  VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
+  VisionEngineRegistry.registerSegmentationStrategy(new GrabCutFallbackStrategy(), true);
+  VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), false);
 }
 
 export const bootstrapClient = bootstrapCoreWeb;
