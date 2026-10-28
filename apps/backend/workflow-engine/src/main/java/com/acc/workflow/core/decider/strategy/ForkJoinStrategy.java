@@ -8,13 +8,15 @@ import com.acc.workflow.core.model.TaskStatus;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * FORK_JOIN strategy:
- * Concurrently schedules all initial tasks of each fork branch.
+ * Concurrently schedules all initial tasks of each fork branch, and advances
+ * sequential tasks within multi-task branches as each preceding task completes.
  * If joinOn is defined, enforces a fan-in barrier: blocks until all specified
  * joinOn prerequisite tasks have reached COMPLETED.
  */
@@ -94,35 +96,13 @@ public final class ForkJoinStrategy implements NodeEvaluatorStrategy {
             return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, aggregatedJoinOutput, false);
         }
 
-        // Otherwise this is a FORK node: schedule the first task of every parallel branch
+        // FORK node: schedule initial task of each parallel branch and advance multi-task branches
+        List<EngineCommand> commands = new ArrayList<>();
+        Map<String, Object> forkOutput = existing != null ? new HashMap<>(existing.outputData()) : new HashMap<>();
+        int branchCount = taskDef.forkTasks() != null ? taskDef.forkTasks().size() : 0;
+        forkOutput.put("forkedBranches", branchCount);
+
         if (existing == null) {
-            List<EngineCommand> commands = new ArrayList<>();
-            Map<String, Object> forkOutput = new HashMap<>();
-            int branchCount = 0;
-
-            if (taskDef.forkTasks() != null) {
-                for (List<TaskDefinition> branch : taskDef.forkTasks()) {
-                    if (branch != null && !branch.isEmpty()) {
-                        TaskDefinition firstTask = branch.get(0);
-                        String branchTaskId = snapshot.workflowId() + "_" + firstTask.taskReferenceName() + "_att1";
-                        Map<String, Object> input = resolver.resolve(firstTask.inputParameters(), snapshot);
-
-                        commands.add(new EngineCommand.ScheduleTask(
-                            branchTaskId,
-                            firstTask.taskType().name(),
-                            firstTask.taskReferenceName(),
-                            firstTask.domain(),
-                            input,
-                            1,
-                            nowEpochMs,
-                            (long) firstTask.timeoutSeconds() * 1000L
-                        ));
-                        branchCount++;
-                    }
-                }
-            }
-
-            forkOutput.put("forkedBranches", branchCount);
             commands.add(new EngineCommand.UpdateTaskStatus(
                 snapshot.workflowId() + "_" + refName,
                 refName,
@@ -130,10 +110,51 @@ public final class ForkJoinStrategy implements NodeEvaluatorStrategy {
                 forkOutput,
                 null
             ));
-
-            return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, forkOutput, false);
         }
 
-        return NodeEvaluationResult.completed(existing.outputData());
+        if (taskDef.forkTasks() != null) {
+            for (List<TaskDefinition> branch : taskDef.forkTasks()) {
+                if (branch == null || branch.isEmpty()) continue;
+
+                for (int b = 0; b < branch.size(); b++) {
+                    TaskDefinition bTask = branch.get(b);
+                    TaskSnapshot bSnap = snapshot.tasksByRef().get(bTask.taskReferenceName());
+
+                    if (bSnap == null) {
+                        boolean shouldSchedule = false;
+                        if (b == 0) {
+                            shouldSchedule = (existing == null);
+                        } else {
+                            TaskSnapshot prevSnap = snapshot.tasksByRef().get(branch.get(b - 1).taskReferenceName());
+                            shouldSchedule = prevSnap != null && (prevSnap.status() == TaskStatus.COMPLETED || prevSnap.status() == TaskStatus.SKIPPED);
+                        }
+
+                        if (shouldSchedule) {
+                            String branchTaskId = snapshot.workflowId() + "_" + bTask.taskReferenceName() + "_att1";
+                            Map<String, Object> input = resolver.resolve(bTask.inputParameters(), snapshot);
+                            commands.add(new EngineCommand.ScheduleTask(
+                                branchTaskId,
+                                bTask.taskType().name(),
+                                bTask.taskReferenceName(),
+                                bTask.domain(),
+                                input,
+                                1,
+                                nowEpochMs,
+                                (long) bTask.timeoutSeconds() * 1000L
+                            ));
+                        }
+                        break;
+                    } else if (bSnap.status() == TaskStatus.IN_PROGRESS || bSnap.status() == TaskStatus.SCHEDULED) {
+                        break;
+                    } else if (bSnap.status() == TaskStatus.FAILED || bSnap.status() == TaskStatus.TIMED_OUT) {
+                        String err = "Fork branch task failed: " + bTask.taskReferenceName();
+                        return NodeEvaluationResult.failed(Collections.emptyList(), err);
+                    }
+                    // bSnap is COMPLETED or SKIPPED -> continue checking next task in this branch
+                }
+            }
+        }
+
+        return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, forkOutput, false);
     }
 }

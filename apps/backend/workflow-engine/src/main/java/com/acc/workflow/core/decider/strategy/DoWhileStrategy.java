@@ -16,8 +16,9 @@ import java.util.Map;
 
 /**
  * DO_WHILE strategy:
- * Executes enclosed loop tasks iteratively until loopCondition evaluates to false
+ * Executes enclosed loop tasks iteratively until loopCondition/continueCondition evaluates to false
  * or maximum iteration limit (default: 100) is exceeded.
+ * Supports multi-step tasks within each iteration and tracks current iteration attempt.
  */
 public final class DoWhileStrategy implements NodeEvaluatorStrategy {
 
@@ -45,37 +46,133 @@ public final class DoWhileStrategy implements NodeEvaluatorStrategy {
             return NodeEvaluationResult.failed(List.of(failCmd), reason);
         }
 
-        // Check if loop condition is satisfied
+        List<TaskDefinition> loopTasks = taskDef.loopOver();
+        if (loopTasks == null || loopTasks.isEmpty()) {
+            return NodeEvaluationResult.completed(Collections.emptyMap());
+        }
+
+        // Check task progression for current iteration
+        boolean allCurrentIterTasksComplete = true;
+        List<EngineCommand> commands = new ArrayList<>();
+        Map<String, Object> iterOutputs = existing != null ? new HashMap<>(existing.outputData()) : new HashMap<>();
+
+        for (int i = 0; i < loopTasks.size(); i++) {
+            TaskDefinition lTask = loopTasks.get(i);
+            String lRef = lTask.taskReferenceName();
+            TaskSnapshot lSnap = snapshot.tasksByRef().get(lRef);
+
+            boolean completedForThisIter = lSnap != null
+                && (lSnap.status() == TaskStatus.COMPLETED || lSnap.status() == TaskStatus.SKIPPED)
+                && lSnap.attempt() >= currentIteration;
+
+            if (!completedForThisIter) {
+                boolean prevComplete = (i == 0);
+                if (i > 0) {
+                    TaskSnapshot prevSnap = snapshot.tasksByRef().get(loopTasks.get(i - 1).taskReferenceName());
+                    prevComplete = prevSnap != null
+                        && (prevSnap.status() == TaskStatus.COMPLETED || prevSnap.status() == TaskStatus.SKIPPED)
+                        && prevSnap.attempt() >= currentIteration;
+                }
+
+                if (prevComplete) {
+                    if (lSnap == null || lSnap.attempt() < currentIteration) {
+                        String loopTaskId = snapshot.workflowId() + "_" + lRef + "_iter" + currentIteration;
+                        Map<String, Object> input = resolver.resolve(lTask.inputParameters(), snapshot);
+                        commands.add(new EngineCommand.ScheduleTask(
+                            loopTaskId,
+                            lTask.taskType().name(),
+                            lRef,
+                            lTask.domain(),
+                            input,
+                            currentIteration,
+                            nowEpochMs,
+                            (long) lTask.timeoutSeconds() * 1000L
+                        ));
+                    }
+                }
+
+                if (lSnap != null && (lSnap.status() == TaskStatus.FAILED || lSnap.status() == TaskStatus.TIMED_OUT)) {
+                    String err = "Loop task failed in iteration " + currentIteration + ": " + lRef;
+                    return NodeEvaluationResult.failed(Collections.emptyList(), err);
+                }
+
+                allCurrentIterTasksComplete = false;
+                break;
+            } else if (lSnap != null && lSnap.outputData() != null) {
+                iterOutputs.putAll(lSnap.outputData());
+            }
+        }
+
+        if (!allCurrentIterTasksComplete) {
+            if (existing == null || existing.attempt() != currentIteration) {
+                commands.add(new EngineCommand.UpdateTaskStatus(
+                    snapshot.workflowId() + "_" + refName,
+                    refName,
+                    TaskStatus.IN_PROGRESS,
+                    iterOutputs,
+                    null
+                ));
+            }
+            return new NodeEvaluationResult(TaskStatus.IN_PROGRESS, commands, iterOutputs, true);
+        }
+
+        // All tasks in current iteration are complete: evaluate exit condition
         Map<String, Object> resolvedInput = resolver.resolve(taskDef.inputParameters(), snapshot);
         Object continueCondition = resolvedInput.get("continueCondition");
-        boolean shouldContinue = continueCondition instanceof Boolean bool ? bool : Boolean.parseBoolean(String.valueOf(continueCondition));
-
-        if (!shouldContinue && existing != null) {
-            // Loop completed!
-            Map<String, Object> output = new HashMap<>(existing.outputData());
-            output.put("finalIteration", currentIteration);
-            return NodeEvaluationResult.completed(output);
+        if (continueCondition == null && taskDef.loopCondition() != null) {
+            continueCondition = resolver.resolveValue(taskDef.loopCondition(), snapshot);
         }
 
-        // Schedule loop tasks
-        List<EngineCommand> commands = new ArrayList<>();
-        if (taskDef.loopOver() != null && !taskDef.loopOver().isEmpty()) {
-            TaskDefinition firstLoopTask = taskDef.loopOver().get(0);
-            String loopTaskId = snapshot.workflowId() + "_" + firstLoopTask.taskReferenceName() + "_iter" + currentIteration;
-            Map<String, Object> input = resolver.resolve(firstLoopTask.inputParameters(), snapshot);
+        boolean shouldContinue = continueCondition instanceof Boolean bool
+            ? bool : Boolean.parseBoolean(String.valueOf(continueCondition));
 
-            commands.add(new EngineCommand.ScheduleTask(
-                loopTaskId,
-                firstLoopTask.taskType().name(),
-                firstLoopTask.taskReferenceName(),
-                firstLoopTask.domain(),
-                input,
-                currentIteration,
-                nowEpochMs,
-                (long) firstLoopTask.timeoutSeconds() * 1000L
+        if (!shouldContinue) {
+            // Loop finished!
+            iterOutputs.put("finalIteration", currentIteration);
+            commands.add(new EngineCommand.UpdateTaskStatus(
+                snapshot.workflowId() + "_" + refName,
+                refName,
+                TaskStatus.COMPLETED,
+                iterOutputs,
+                null
             ));
+            return NodeEvaluationResult.completed(iterOutputs);
         }
 
-        return NodeEvaluationResult.scheduled(commands);
+        // Advance to next iteration
+        int nextIteration = currentIteration + 1;
+        if (nextIteration > DEFAULT_MAX_ITERATIONS) {
+            String reason = "DoWhile loop '" + refName + "' exceeded maximum iteration ceiling (" + DEFAULT_MAX_ITERATIONS + ")";
+            EngineCommand.TransitionWorkflow failCmd = new EngineCommand.TransitionWorkflow(
+                WorkflowStatus.FAILED,
+                Collections.emptyMap(),
+                reason
+            );
+            return NodeEvaluationResult.failed(List.of(failCmd), reason);
+        }
+
+        TaskDefinition firstTask = loopTasks.get(0);
+        String nextTaskId = snapshot.workflowId() + "_" + firstTask.taskReferenceName() + "_iter" + nextIteration;
+        Map<String, Object> firstInput = resolver.resolve(firstTask.inputParameters(), snapshot);
+        commands.add(new EngineCommand.ScheduleTask(
+            nextTaskId,
+            firstTask.taskType().name(),
+            firstTask.taskReferenceName(),
+            firstTask.domain(),
+            firstInput,
+            nextIteration,
+            nowEpochMs,
+            (long) firstTask.timeoutSeconds() * 1000L
+        ));
+
+        commands.add(new EngineCommand.UpdateTaskStatus(
+            snapshot.workflowId() + "_" + refName,
+            refName,
+            TaskStatus.IN_PROGRESS,
+            iterOutputs,
+            null
+        ));
+
+        return new NodeEvaluationResult(TaskStatus.IN_PROGRESS, commands, iterOutputs, true);
     }
 }

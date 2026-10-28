@@ -15,3 +15,4 @@
 | 355 | [Unify Isomorphic Resource & Asset Management with Blob & Streaming Pipeline](./355_unify_isomorphic_resource_cache_blob_streaming.md) | Completed |
 | 356 | [Studio System-Wide Memory & Lifecycle Audit](./356_studio_system_wide_memory_and_lifecycle_audit.md) | Completed |
 | 357 | [Enterprise Workflow Orchestration Upgrade & Resilience](./357_enterprise_workflow_orchestration_upgrade.md) | Completed |
+| 358 | [Workflow Decider Engine Enterprise Enhancements](./358_workflow_decider_engine_enhancements.md) | Completed |

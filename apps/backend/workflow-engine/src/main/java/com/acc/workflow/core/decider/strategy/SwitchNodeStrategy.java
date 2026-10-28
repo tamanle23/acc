@@ -16,7 +16,8 @@ import java.util.Map;
 /**
  * SWITCH node strategy:
  * Evaluates a condition/case expression (from inputParameters or decisionCases key).
- * Chooses matching branch tasks or defaultCase tasks, scheduling them and completing the switch.
+ * Chooses matching branch tasks or defaultCase tasks, scheduling them sequentially
+ * across multiple steps within the branch until the branch is completed.
  */
 public final class SwitchNodeStrategy implements NodeEvaluatorStrategy {
 
@@ -43,13 +44,11 @@ public final class SwitchNodeStrategy implements NodeEvaluatorStrategy {
             caseKey = "default";
         }
 
-        if (existing == null) {
-            // First time evaluating switch node: schedule first task of selected branch or complete if empty
-            List<EngineCommand> commands = new ArrayList<>();
-            Map<String, Object> switchOutput = new HashMap<>();
-            switchOutput.put("selectedCase", caseKey != null ? caseKey : "none");
+        Map<String, Object> switchOutput = existing != null ? new HashMap<>(existing.outputData()) : new HashMap<>();
+        switchOutput.put("selectedCase", caseKey != null ? caseKey : "none");
 
-            // Mark the SWITCH node itself as COMPLETED immediately, recording selectedCase
+        List<EngineCommand> commands = new ArrayList<>();
+        if (existing == null) {
             commands.add(new EngineCommand.UpdateTaskStatus(
                 snapshot.workflowId() + "_" + refName,
                 refName,
@@ -57,28 +56,47 @@ public final class SwitchNodeStrategy implements NodeEvaluatorStrategy {
                 switchOutput,
                 null
             ));
-
-            if (selectedBranch != null && !selectedBranch.isEmpty()) {
-                TaskDefinition firstBranchTask = selectedBranch.get(0);
-                String branchTaskId = snapshot.workflowId() + "_" + firstBranchTask.taskReferenceName() + "_att1";
-                Map<String, Object> branchInput = resolver.resolve(firstBranchTask.inputParameters(), snapshot);
-
-                commands.add(new EngineCommand.ScheduleTask(
-                    branchTaskId,
-                    firstBranchTask.taskType().name(),
-                    firstBranchTask.taskReferenceName(),
-                    firstBranchTask.domain(),
-                    branchInput,
-                    1,
-                    nowEpochMs,
-                    (long) firstBranchTask.timeoutSeconds() * 1000L
-                ));
-                return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, true);
-            }
-
-            return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, false);
         }
 
-        return NodeEvaluationResult.completed(existing.outputData());
+        if (selectedBranch != null && !selectedBranch.isEmpty()) {
+            for (int b = 0; b < selectedBranch.size(); b++) {
+                TaskDefinition bTask = selectedBranch.get(b);
+                TaskSnapshot bSnap = snapshot.tasksByRef().get(bTask.taskReferenceName());
+
+                if (bSnap == null) {
+                    boolean shouldSchedule = false;
+                    if (b == 0) {
+                        shouldSchedule = (existing == null);
+                    } else {
+                        TaskSnapshot prevSnap = snapshot.tasksByRef().get(selectedBranch.get(b - 1).taskReferenceName());
+                        shouldSchedule = prevSnap != null && (prevSnap.status() == TaskStatus.COMPLETED || prevSnap.status() == TaskStatus.SKIPPED);
+                    }
+
+                    if (shouldSchedule) {
+                        String branchTaskId = snapshot.workflowId() + "_" + bTask.taskReferenceName() + "_att1";
+                        Map<String, Object> input = resolver.resolve(bTask.inputParameters(), snapshot);
+                        commands.add(new EngineCommand.ScheduleTask(
+                            branchTaskId,
+                            bTask.taskType().name(),
+                            bTask.taskReferenceName(),
+                            bTask.domain(),
+                            input,
+                            1,
+                            nowEpochMs,
+                            (long) bTask.timeoutSeconds() * 1000L
+                        ));
+                    }
+
+                    return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, true);
+                } else if (bSnap.status() == TaskStatus.IN_PROGRESS || bSnap.status() == TaskStatus.SCHEDULED) {
+                    return NodeEvaluationResult.inProgress();
+                } else if (bSnap.status() == TaskStatus.FAILED || bSnap.status() == TaskStatus.TIMED_OUT) {
+                    return NodeEvaluationResult.failed(Collections.emptyList(), bSnap.errorMessage());
+                }
+                // bSnap is COMPLETED or SKIPPED -> check next task in selectedBranch
+            }
+        }
+
+        return new NodeEvaluationResult(TaskStatus.COMPLETED, commands, switchOutput, false);
     }
 }

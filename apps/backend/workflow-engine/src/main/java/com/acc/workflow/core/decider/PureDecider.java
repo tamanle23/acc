@@ -24,6 +24,7 @@ import java.util.Map;
  * 1. Zero I/O (no JDBC, network, thread pools, Spring beans).
  * 2. Strategy + Registry pattern (Open/Closed principle).
  * 3. Deterministic parameter resolution via ParameterResolver.
+ * 4. Graph dependency evaluation for concurrent DAG and linear pipelines.
  */
 public final class PureDecider {
 
@@ -62,21 +63,32 @@ public final class PureDecider {
         boolean allCompleted = true;
         Map<String, Object> aggregatedOutput = new HashMap<>();
 
+        boolean hasAnyExplicitJoinOn = tasks.stream().anyMatch(t -> t.joinOn() != null && !t.joinOn().isEmpty());
+
         for (int i = 0; i < tasks.size(); i++) {
             TaskDefinition taskDef = tasks.get(i);
             String refName = taskDef.taskReferenceName();
+            TaskSnapshot existing = snapshot.tasksByRef().get(refName);
 
-            // Check engine-level debugger breakpoints before scheduling an unstarted node
-            if (!snapshot.tasksByRef().containsKey(refName) && isBreakpointActive(snapshot, refName)) {
-                Map<String, Object> bpOutput = new HashMap<>(aggregatedOutput);
-                bpOutput.put("pausedAtNode", refName);
-                String reason = "Paused at breakpoint: " + refName;
-                accumulatedCommands.add(new EngineCommand.TransitionWorkflow(
-                    WorkflowStatus.PAUSED_AT_BREAKPOINT,
-                    bpOutput,
-                    reason
-                ));
-                return new DecisionResult(WorkflowStatus.PAUSED_AT_BREAKPOINT, accumulatedCommands, bpOutput, reason);
+            // Dependency gate: check if unstarted task is ready to begin
+            if (existing == null) {
+                if (!isTaskReadyToStart(taskDef, i, tasks, snapshot, hasAnyExplicitJoinOn)) {
+                    allCompleted = false;
+                    continue; // Skip this unstarted task for this pass; dependencies not yet met
+                }
+
+                // Check engine-level debugger breakpoints before scheduling an unstarted node
+                if (isBreakpointActive(snapshot, refName)) {
+                    Map<String, Object> bpOutput = new HashMap<>(aggregatedOutput);
+                    bpOutput.put("pausedAtNode", refName);
+                    String reason = "Paused at breakpoint: " + refName;
+                    accumulatedCommands.add(new EngineCommand.TransitionWorkflow(
+                        WorkflowStatus.PAUSED_AT_BREAKPOINT,
+                        bpOutput,
+                        reason
+                    ));
+                    return new DecisionResult(WorkflowStatus.PAUSED_AT_BREAKPOINT, accumulatedCommands, bpOutput, reason);
+                }
             }
 
             NodeEvaluatorStrategy strategy = strategyRegistry.get(taskDef.taskType());
@@ -114,7 +126,7 @@ public final class PureDecider {
                     taskDef.taskType(),
                     taskDef.domain(),
                     TaskStatus.COMPLETED,
-                    1,
+                    existing != null ? existing.attempt() : 1,
                     taskDef.inputParameters(),
                     result.output() != null ? result.output() : Collections.emptyMap(),
                     null,
@@ -142,7 +154,10 @@ public final class PureDecider {
 
             if (result.shouldHaltProgression()) {
                 allCompleted = false;
-                break;
+                if (!hasAnyExplicitJoinOn) {
+                    // In a strictly linear sequential pipeline, halt evaluation pass on first in-flight task
+                    break;
+                }
             }
         }
 
@@ -173,6 +188,45 @@ public final class PureDecider {
         }
 
         return DecisionResult.continueRunning(accumulatedCommands);
+    }
+
+    private boolean isTaskReadyToStart(
+        TaskDefinition taskDef,
+        int taskIndex,
+        List<TaskDefinition> tasks,
+        WorkflowSnapshot snapshot,
+        boolean hasAnyExplicitJoinOn
+    ) {
+        // EXCLUSIVE_JOIN, JOIN, and FORK_JOIN evaluate their own join barriers and forks internally
+        if (taskDef.taskType() == TaskType.EXCLUSIVE_JOIN
+            || taskDef.taskType() == TaskType.JOIN
+            || taskDef.taskType() == TaskType.FORK_JOIN) {
+            return true;
+        }
+
+        if (hasAnyExplicitJoinOn) {
+            // In a DAG with explicit joinOn:
+            List<String> joinOn = taskDef.joinOn();
+            if (joinOn == null || joinOn.isEmpty()) {
+                // Root node of the DAG
+                return true;
+            }
+            for (String prereqRef : joinOn) {
+                TaskSnapshot prereq = snapshot.tasksByRef().get(prereqRef);
+                if (prereq == null || (prereq.status() != TaskStatus.COMPLETED && prereq.status() != TaskStatus.SKIPPED)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            // Implicit linear sequential pipeline: each task depends on the immediately preceding task
+            if (taskIndex == 0) {
+                return true;
+            }
+            TaskDefinition prevDef = tasks.get(taskIndex - 1);
+            TaskSnapshot prevSnap = snapshot.tasksByRef().get(prevDef.taskReferenceName());
+            return prevSnap != null && (prevSnap.status() == TaskStatus.COMPLETED || prevSnap.status() == TaskStatus.SKIPPED);
+        }
     }
 
     private boolean isBreakpointActive(WorkflowSnapshot snapshot, String refName) {
