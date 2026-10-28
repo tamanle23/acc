@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings, Keyboard, Code2 } from 'lucide-react';
+import { Download, Upload, Undo2, Redo2, FileJson, XCircle, Film, Sparkles, PanelLeft, PanelRight, Sun, Moon, Settings, Keyboard, Code2, HardDrive } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Tooltip } from './ui/tooltip';
@@ -11,6 +11,7 @@ import { useIRSelector } from '../lib/ir/useStudioStore';
 import { useTheme } from '../lib/theme/ThemeProvider';
 import { ShortcutsModal } from './ShortcutsModal';
 import { VisualIRJsonDebuggerModal } from './debugger/VisualIRJsonDebuggerModal';
+import { OpfsDebuggerModal } from './debugger/opfs/OpfsDebuggerModal';
 
 interface TitlebarProps {
   projectTitle: string;
@@ -47,12 +48,18 @@ export function Titlebar({
   const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDebuggerOpen, setIsDebuggerOpen] = useState(false);
+  const [isOpfsOpen, setIsOpfsOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'j') {
         e.preventDefault();
         setIsDebuggerOpen((prev) => !prev);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        setIsOpfsOpen((prev) => !prev);
         return;
       }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -224,6 +231,20 @@ export function Titlebar({
           </Button>
         </Tooltip>
 
+        {/* OPFS Cache & Files Debugger Trigger */}
+        <Tooltip content="Inspect & Debug OPFS Files & Folders (Ctrl+Shift+O)">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsOpfsOpen(true)}
+            data-testid="titlebar-opfs-debugger-btn"
+            className="gap-1.5 text-xs h-8 font-mono text-foreground border-border/50 bg-muted/40 hover:bg-muted/80 shadow-xs"
+          >
+            <HardDrive className="w-3.5 h-3.5 text-accent-theme" />
+            OPFS Cache
+          </Button>
+        </Tooltip>
+
         <Separator orientation="vertical" className="h-4 mx-1" />
 
         {/* MP4 Export Button */}
@@ -314,6 +335,7 @@ export function Titlebar({
 
       <ShortcutsModal open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
       <VisualIRJsonDebuggerModal open={isDebuggerOpen} onOpenChange={setIsDebuggerOpen} />
+      <OpfsDebuggerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
     </header>
   );
 }

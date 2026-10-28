@@ -16,6 +16,47 @@ export interface OpfsCacheOptions {
   fallbackStrategy?: IContentCacheStrategy;
 }
 
+export interface OpfsEntryInfo {
+  name: string;
+  path: string;
+  kind: 'file' | 'directory';
+  sizeBytes: number;
+  lastModified: number;
+  mimeType: string;
+  isMetadata: boolean;
+  decodedKey?: string;
+  metadata?: CacheEntryMetadata | null;
+}
+
+export interface OpfsTreeNode {
+  name: string;
+  path: string;
+  kind: 'file' | 'directory';
+  sizeBytes: number;
+  lastModified: number;
+  mimeType: string;
+  isMetadata: boolean;
+  decodedKey?: string;
+  metadata?: CacheEntryMetadata | null;
+  children?: OpfsTreeNode[];
+}
+
+export interface OpfsStorageEstimate {
+  usage: number;
+  quota: number;
+  usagePercent: number;
+  formattedUsage: string;
+  formattedQuota: string;
+}
+
+export function formatOpfsBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+}
+
 /**
  * OpfsCacheStrategy:
  * Browser client cache strategy utilizing the Origin Private File System (OPFS).
@@ -266,13 +307,314 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
       if (entriesIterator) {
         for await (const entry of entriesIterator) {
           if (!entry.name.endsWith('.meta.json')) {
-            keys.push(decodeURIComponent(entry.name.replace(/_/g, '%')));
+            try {
+              keys.push(decodeURIComponent(entry.name.replace(/_/g, '%')));
+            } catch {
+              keys.push(entry.name);
+            }
           }
         }
       }
     } catch {}
 
     return keys;
+  }
+
+  public getDirectoryName(): string {
+    return this.directoryName;
+  }
+
+  public async getDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+    return this.getDirectory();
+  }
+
+  public async getRootDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+    if (!this.isSupported()) return null;
+    try {
+      return await navigator.storage.getDirectory();
+    } catch {
+      return null;
+    }
+  }
+
+  public async getStorageEstimate(): Promise<OpfsStorageEstimate | null> {
+    if (typeof navigator === 'undefined' || !navigator.storage?.estimate) {
+      return null;
+    }
+    try {
+      const estimate = await navigator.storage.estimate();
+      const usage = estimate.usage || 0;
+      const quota = estimate.quota || 0;
+      const usagePercent = quota > 0 ? (usage / quota) * 100 : 0;
+      return {
+        usage,
+        quota,
+        usagePercent,
+        formattedUsage: formatOpfsBytes(usage),
+        formattedQuota: formatOpfsBytes(quota),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Recursively traverses and returns a hierarchical tree of files and subdirectories.
+   */
+  public async inspectTree(
+    targetDirHandle?: FileSystemDirectoryHandle | null,
+    basePath?: string
+  ): Promise<OpfsTreeNode> {
+    const dir = targetDirHandle || (await this.getDirectory());
+    const dirName = targetDirHandle ? targetDirHandle.name : this.directoryName;
+    const currentPath = basePath ? `${basePath}/${dirName}` : dirName;
+
+    if (!dir) {
+      return {
+        name: dirName,
+        path: currentPath,
+        kind: 'directory',
+        sizeBytes: 0,
+        lastModified: Date.now(),
+        mimeType: 'inode/directory',
+        isMetadata: false,
+        children: [],
+      };
+    }
+
+    const children: OpfsTreeNode[] = [];
+    let totalSizeBytes = 0;
+    let latestModified = 0;
+
+    try {
+      // Gather handles via entries() or values()
+      const entries: FileSystemHandle[] = [];
+      const anyDir = dir as any;
+      if (typeof anyDir.values === 'function') {
+        for await (const handle of anyDir.values()) {
+          entries.push(handle);
+        }
+      } else if (typeof anyDir.entries === 'function') {
+        for await (const [, handle] of anyDir.entries()) {
+          entries.push(handle);
+        }
+      }
+
+      // First pass: extract any .meta.json files into lookup map
+      const metaLookup = new Map<string, CacheEntryMetadata>();
+      for (const handle of entries) {
+        if (handle.kind === 'file' && handle.name.endsWith('.meta.json')) {
+          try {
+            const file = await (handle as FileSystemFileHandle).getFile();
+            const text = await file.text();
+            const meta = JSON.parse(text) as CacheEntryMetadata;
+            const targetBaseName = handle.name.replace(/\.meta\.json$/, '');
+            metaLookup.set(targetBaseName, meta);
+          } catch {}
+        }
+      }
+
+      // Second pass: build node objects
+      for (const handle of entries) {
+        const itemPath = `${currentPath}/${handle.name}`;
+        if (handle.kind === 'directory') {
+          const subTree = await this.inspectTree(handle as FileSystemDirectoryHandle, currentPath);
+          children.push(subTree);
+          totalSizeBytes += subTree.sizeBytes;
+          if (subTree.lastModified > latestModified) {
+            latestModified = subTree.lastModified;
+          }
+        } else {
+          try {
+            const file = await (handle as FileSystemFileHandle).getFile();
+            const isMeta = handle.name.endsWith('.meta.json');
+            const safeBaseName = isMeta ? handle.name.replace(/\.meta\.json$/, '') : handle.name;
+            let decodedKey: string | undefined;
+            if (!isMeta) {
+              try {
+                decodedKey = decodeURIComponent(safeBaseName.replace(/_/g, '%'));
+              } catch {
+                decodedKey = safeBaseName;
+              }
+            }
+            const metadata = !isMeta ? metaLookup.get(safeBaseName) || null : null;
+
+            totalSizeBytes += file.size;
+            if (file.lastModified > latestModified) {
+              latestModified = file.lastModified;
+            }
+
+            children.push({
+              name: handle.name,
+              path: itemPath,
+              kind: 'file',
+              sizeBytes: file.size,
+              lastModified: file.lastModified,
+              mimeType: file.type || (isMeta ? 'application/json' : metadata?.mimeType || 'application/octet-stream'),
+              isMetadata: isMeta,
+              decodedKey,
+              metadata,
+            });
+          } catch {}
+        }
+      }
+    } catch {}
+
+    // Sort children: directories first, then alphabetical
+    children.sort((a, b) => {
+      if (a.kind !== b.kind) {
+        return a.kind === 'directory' ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return {
+      name: dirName,
+      path: currentPath,
+      kind: 'directory',
+      sizeBytes: totalSizeBytes,
+      lastModified: latestModified || Date.now(),
+      mimeType: 'inode/directory',
+      isMetadata: false,
+      children,
+    };
+  }
+
+  /**
+   * Returns a flattened list of all entries in the OPFS cache directory.
+   */
+  public async inspectEntries(includeMeta: boolean = true): Promise<OpfsEntryInfo[]> {
+    const tree = await this.inspectTree();
+    const result: OpfsEntryInfo[] = [];
+
+    function traverse(node: OpfsTreeNode) {
+      if (node.kind === 'file') {
+        if (includeMeta || !node.isMetadata) {
+          result.push({
+            name: node.name,
+            path: node.path,
+            kind: 'file',
+            sizeBytes: node.sizeBytes,
+            lastModified: node.lastModified,
+            mimeType: node.mimeType,
+            isMetadata: node.isMetadata,
+            decodedKey: node.decodedKey,
+            metadata: node.metadata,
+          });
+        }
+      } else if (node.children) {
+        for (const child of node.children) {
+          traverse(child);
+        }
+      }
+    }
+
+    if (tree.children) {
+      for (const child of tree.children) {
+        traverse(child);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Directly reads a file in the OPFS cache directory as a Web Blob.
+   */
+  public async readEntryBlob(pathOrName: string): Promise<Blob | null> {
+    const dir = await this.getDirectory();
+    if (!dir) return null;
+
+    const fileName = pathOrName.split('/').pop() || pathOrName;
+    try {
+      const handle = await dir.getFileHandle(fileName);
+      return await handle.getFile();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Directly reads a file in the OPFS cache directory as UTF-8 text.
+   */
+  public async readEntryText(pathOrName: string): Promise<string | null> {
+    const blob = await this.readEntryBlob(pathOrName);
+    if (!blob) return null;
+    return await blob.text();
+  }
+
+  /**
+   * Writes a custom file directly into the OPFS directory.
+   */
+  public async writeCustomFile(
+    fileName: string,
+    data: CachePayload,
+    mimeType?: string
+  ): Promise<void> {
+    const dir = await this.getDirectory();
+    if (!dir) {
+      throw new Error('[OpfsCacheStrategy] OPFS directory unavailable');
+    }
+
+    const cleanName = fileName.split('/').pop() || fileName;
+    const blob = await payloadToBlob(data, mimeType);
+    const handle = await dir.getFileHandle(cleanName, { create: true });
+    const writable = await handle.createWritable();
+    try {
+      if (
+        (typeof WritableStream !== 'undefined' && writable instanceof WritableStream) ||
+        typeof (writable as any).getWriter === 'function'
+      ) {
+        await blob.stream().pipeTo(writable);
+      } else {
+        const buffer = await blob.arrayBuffer();
+        if (typeof (writable as any).write === 'function') {
+          await (writable as any).write(new Uint8Array(buffer));
+        }
+      }
+    } finally {
+      try {
+        await (writable as any).close();
+      } catch {}
+    }
+  }
+
+  /**
+   * Removes a file or directory entry by name.
+   */
+  public async removeCustomEntry(fileName: string, isDirectory: boolean = false): Promise<boolean> {
+    const dir = await this.getDirectory();
+    if (!dir) return false;
+
+    const cleanName = fileName.split('/').pop() || fileName;
+    try {
+      await dir.removeEntry(cleanName, { recursive: isDirectory });
+      // If there's companion metadata, remove it as well
+      if (!isDirectory && !cleanName.endsWith('.meta.json')) {
+        try {
+          await dir.removeEntry(`${cleanName}.meta.json`);
+        } catch {}
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Creates a sub-directory in the OPFS directory.
+   */
+  public async createCustomDirectory(dirName: string): Promise<boolean> {
+    const dir = await this.getDirectory();
+    if (!dir) return false;
+
+    const cleanName = dirName.split('/').pop() || dirName;
+    try {
+      await dir.getDirectoryHandle(cleanName, { create: true });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async writeMetadata(

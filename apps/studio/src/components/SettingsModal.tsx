@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import { Sliders, Sun, Moon, Sparkles, RefreshCw, Layers, Check, HardDrive, Tras
 import { toast } from 'sonner';
 import { ContentCacheRegistry } from '@acc/core-isomorphic';
 import { clearWaveSurferPeakCache } from './timeline/WaveSurferWaveform';
+import { OpfsDebuggerModal } from './debugger/opfs/OpfsDebuggerModal';
 
 const GLASS_STYLES: { id: GlassStyle; label: string; desc: string }[] = [
   { id: 'specular', label: 'Specular Sheen', desc: 'Sharpened top-edge highlight with subtle rim reflection' },
@@ -43,6 +44,7 @@ const ACCENT_COLORS: { id: AccentColor; label: string; hex: string }[] = [
 
 export function SettingsModal() {
   const { preferences, setTheme, resetTheme, isSettingsOpen, setIsSettingsOpen } = useTheme();
+  const [isOpfsOpen, setIsOpfsOpen] = useState(false);
 
   return (
     <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -186,25 +188,37 @@ export function SettingsModal() {
                   Cached video slices, audio PCM waveforms, and export scratch files
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-rose-500/20 gap-1.5 cursor-pointer"
-                onClick={async () => {
-                  try {
-                    const cache = ContentCacheRegistry.get();
-                    await cache.clear();
-                    clearWaveSurferPeakCache();
-                    toast.success(`Media cache [${cache.name}] purged successfully`);
-                  } catch (err: unknown) {
-                    toast.error('Failed to clear cache');
-                  }
-                }}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Purge Cache
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs text-accent-theme hover:bg-accent-theme/10 border-accent-theme/30 gap-1.5 cursor-pointer"
+                  onClick={() => setIsOpfsOpen(true)}
+                >
+                  <HardDrive className="w-3.5 h-3.5" />
+                  Inspect Files
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-rose-500/20 gap-1.5 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      const cache = ContentCacheRegistry.get();
+                      await cache.clear();
+                      clearWaveSurferPeakCache();
+                      toast.success(`Media cache [${cache.name}] purged successfully`);
+                    } catch (err: unknown) {
+                      toast.error('Failed to clear cache');
+                    }
+                  }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Purge Cache
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -250,6 +264,7 @@ export function SettingsModal() {
           </Button>
         </DialogFooter>
       </DialogContent>
+      <OpfsDebuggerModal open={isOpfsOpen} onOpenChange={setIsOpfsOpen} />
     </Dialog>
   );
 }
