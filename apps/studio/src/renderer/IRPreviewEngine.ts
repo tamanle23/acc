@@ -13,12 +13,12 @@ import {
   type IAudioSourceProvider,
 } from '@acc/ir';
 
-import { AssetTextureCache } from './AssetTextureCache';
 import {
   PreviewWorkerCoordinator,
   type ModifierWarmedEvent,
   type SidecarPreflightOptions,
 } from './PreviewWorkerCoordinator';
+import { AssetTextureCache } from '../lib';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;
