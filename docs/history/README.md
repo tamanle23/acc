@@ -22,3 +22,6 @@
 | 361 | [Elimination of In-Memory Texture Caches & Native Media Buffer Leaks](./361_eliminate_asset_texture_cache_memory_and_native_buffer_leaks.md) | Completed |
 | 362 | [Eliminate Mediabunny CanvasSink and Playback Native Buffer Leaks](./362_eliminate_mediabunny_canvas_sink_and_playback_buffer_leaks.md) | Completed |
 | 363 | [Prevent Eager ONNX WebAssembly Neural Model Preloading in Browser Client](./363_prevent_eager_onnx_wasm_neural_model_initialization.md) | Completed |
+| 364 | [Studio IRPreviewEngine & Sidecar Worker Permanent Decoupling](./364_studio_ir_preview_engine_worker_decoupling.md) | Completed |
+| 365 | [Studio Timeline Waveform Virtualization (Phase 1)](./365_studio_timeline_waveform_virtualization.md) | Completed |
+| 366 | [Fix FilmstripThumbnail Empty src Attribute Browser Warning](./366_fix_filmstrip_thumbnail_empty_src_browser_warning.md) | Completed |

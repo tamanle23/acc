@@ -514,29 +514,42 @@ export class AssetTextureCache implements Disposable {
    * Utilizes UniversalCanvasProvider scratch pool to avoid DOM canvas allocation churn.
    */
   public getThumbnailDataUrl(assetId: string, width = 120, height = 68): string {
-    const key = `thumb:${assetId}:${width}:${height}`;
+    if (!assetId || !assetId.trim()) {
+      return '';
+    }
+    const safeWidth = Math.max(1, width);
+    const safeHeight = Math.max(1, height);
+    const key = `thumb:${assetId}:${safeWidth}:${safeHeight}`;
     if (this.dataUrlCache.has(key)) {
       return this.dataUrlCache.get(key)!;
     }
 
     let dataUrl = '';
     try {
-      const scratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+      const scratch = UniversalCanvasProvider.acquireScratchCanvas(safeWidth, safeHeight);
       const raw = (scratch as any).getRawCanvas ? (scratch as any).getRawCanvas() : scratch;
       const ctx = raw.getContext ? raw.getContext('2d') : null;
 
       if (ctx) {
-        this.renderProceduralSciFiAsset(ctx, assetId, width, height);
+        this.renderProceduralSciFiAsset(ctx, assetId, safeWidth, safeHeight);
         if (typeof raw.toDataURL === 'function') {
           dataUrl = raw.toDataURL('image/jpeg', 0.85);
         }
       }
       UniversalCanvasProvider.releaseScratchCanvas(scratch);
     } catch {
-      // Fallback to getTextureCanvas in environments without scratch pool
-      const canvas = this.getTextureCanvas(assetId, width, height);
-      if (typeof canvas.toDataURL === 'function') {
-        dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      // Fallback handled below
+    }
+
+    // If scratch canvas does not support toDataURL (e.g. OffscreenCanvas in browser) or failed, fallback to DOM canvas
+    if (!dataUrl) {
+      try {
+        const canvas = this.getTextureCanvas(assetId, safeWidth, safeHeight);
+        if (typeof canvas.toDataURL === 'function') {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        }
+      } catch {
+        // Fallback gracefully
       }
     }
 

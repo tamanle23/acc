@@ -8,13 +8,21 @@ interface FilmstripThumbnailProps {
 }
 
 export function FilmstripThumbnail({ assetId, width, height }: FilmstripThumbnailProps) {
+  const thumbUrl = useMemo(() => {
+    if (!assetId) return null;
+    const url = AssetTextureCache.getInstance().getThumbnailDataUrl(assetId, 120, 68);
+    return url && url.trim().length > 0 ? url : null;
+  }, [assetId]);
+
+  // Do not render anything if no valid thumbnail URL is available
+  // This prevents rendering <img src="" /> which triggers browser page re-download warnings
+  if (!thumbUrl) {
+    return null;
+  }
+
   // Compute how many thumbnail frames fit across the width
   const thumbWidth = 60; // 60px per thumbnail slice
   const numThumbs = Math.max(1, Math.floor(width / thumbWidth));
-
-  const thumbUrl = useMemo(() => {
-    return AssetTextureCache.getInstance().getThumbnailDataUrl(assetId, 120, 68);
-  }, [assetId]);
 
   return (
     <div

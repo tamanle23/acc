@@ -28,4 +28,10 @@ describe('Phase 4: AssetTextureCache & Timeline Filmstrip Generation', () => {
       expect(laserThumb).toBeDefined();
     } catch {}
   });
+
+  it('should safely return empty string for blank or invalid asset IDs to prevent img src reload bug', () => {
+    const cache = AssetTextureCache.getInstance();
+    expect(cache.getThumbnailDataUrl('')).toBe('');
+    expect(cache.getThumbnailDataUrl('   ')).toBe('');
+  });
 });
