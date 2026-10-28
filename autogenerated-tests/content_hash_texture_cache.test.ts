@@ -39,4 +39,23 @@ describe('ContentHashTextureCache Suite', () => {
     expect(cache.has(hash)).toBe(false);
     expect(closed).toBe(true);
   });
+
+  it('enforces maximum capacity of 64 entries with synchronous close() eviction', () => {
+    const closedBitmaps = new Set<ImageBitmap>();
+
+    for (let i = 0; i < 70; i++) {
+      const bmp = {
+        width: 100,
+        height: 20,
+        close: () => {
+          closedBitmaps.add(bmp as unknown as ImageBitmap);
+        },
+      } as unknown as ImageBitmap;
+
+      cache.set(i + 1000, bmp);
+    }
+
+    // Exactly 6 oldest entries must have been evicted and closed
+    expect(closedBitmaps.size).toBe(6);
+  });
 });

@@ -196,7 +196,7 @@ export function SettingsModal() {
                     const cache = ContentCacheRegistry.get();
                     await cache.clear();
                     clearWaveSurferPeakCache();
-                    toast.success('Media cache purged successfully');
+                    toast.success(`Media cache [${cache.name}] purged successfully`);
                   } catch (err: unknown) {
                     toast.error('Failed to clear cache');
                   }

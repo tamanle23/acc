@@ -112,3 +112,10 @@ export async function convertBlobToMp4(
     return typeof window !== 'undefined' && 'VideoEncoder' in window && 'VideoDecoder' in window;
   }
   ```
+
+---
+
+## 5. References & Advanced Streaming
+
+- **OPFS Zero-Copy Streaming:** See [references/opfs-streaming.md](references/opfs-streaming.md) for streaming multi-gigabyte media files to/from the Origin Private File System using `BlobSource` and `StreamTarget`.
+

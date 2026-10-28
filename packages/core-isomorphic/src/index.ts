@@ -12,4 +12,5 @@ export * from './cache';
 export * from './vision';
 export * from './platform';
 export * from './crypto';
+export * from './telemetry';
 
