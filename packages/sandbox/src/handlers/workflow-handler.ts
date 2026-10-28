@@ -956,7 +956,50 @@ export const workflowSandboxHandler: SandboxRouteHandler = {
     // 1. Workflow Executions Collection: GET & POST /workflow/executions or /workflow-executions
     if (cleanPath === '/workflow/executions' || cleanPath === '/workflow/executions/' || cleanPath === '/workflow-executions' || cleanPath === '/workflow-executions/') {
       if (method === 'GET') {
-        return { status: 200, data: workflowExecutionsSandboxRepo.getAll(tenantId) };
+        const all = workflowExecutionsSandboxRepo.getAll(tenantId);
+        const urlParams = context.searchParams;
+        const pageParam = urlParams?.get('page');
+        const sizeParam = urlParams?.get('size') || urlParams?.get('limit');
+        const afterId = urlParams?.get('afterId');
+
+        if (pageParam !== null && pageParam !== undefined) {
+          const page = Math.max(0, parseInt(pageParam, 10) || 0);
+          const size = Math.max(1, parseInt(sizeParam || '20', 10));
+          const start = page * size;
+          const content = all.slice(start, start + size);
+          return {
+            status: 200,
+            data: {
+              content,
+              page,
+              size,
+              totalElements: all.length,
+              totalPages: Math.ceil(all.length / size),
+              first: page === 0,
+              last: start + size >= all.length,
+            },
+          };
+        }
+
+        if (afterId) {
+          const limit = Math.max(1, parseInt(sizeParam || '20', 10));
+          const idx = all.findIndex((x) => x.id === afterId);
+          const start = idx >= 0 ? idx + 1 : 0;
+          const content = all.slice(start, start + limit);
+          const nextCursor = content.length > 0 ? content[content.length - 1].id : null;
+          return {
+            status: 200,
+            data: {
+              content,
+              limit,
+              afterId,
+              nextCursor,
+              hasMore: start + content.length < all.length,
+            },
+          };
+        }
+
+        return { status: 200, data: all };
       }
       if (method === 'POST') {
         const body = (req.data || {}) as Record<string, any>;

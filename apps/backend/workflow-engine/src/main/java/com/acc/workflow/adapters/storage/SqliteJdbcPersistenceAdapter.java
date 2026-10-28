@@ -27,12 +27,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * SQLite JDBC Persistence Adapter (Local-First).
  * Configures PRAGMA journal_mode = WAL and busy_timeout = 5000.
  */
 public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
+
+    private final ReentrantLock pollLock = new ReentrantLock();
 
     private final String jdbcUrl;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -355,61 +358,66 @@ public final class SqliteJdbcPersistenceAdapter implements PersistencePort {
         String tenantId, String taskType, String domain, int batchSize,
         String workerId, long responseTimeoutMs, long nowEpochMs
     ) {
-        String selectSql = """
-            SELECT task_id FROM task_queue 
-            WHERE tenant_id = ? AND task_type = ? AND domain = ? AND visible_at_epoch_ms <= ?
-            ORDER BY (priority + CAST((? - created_at_ms) / 5000 AS INTEGER)) DESC, visible_at_epoch_ms ASC LIMIT ?
-            """;
-        String updateQueueSql = "UPDATE task_queue SET visible_at_epoch_ms = ?, lease_owner = ? WHERE task_id = ?";
-        String updateTaskSql = "UPDATE task_executions SET status = 'IN_PROGRESS', worker_id = ?, updated_at_ms = ? WHERE task_id = ?";
+        pollLock.lock();
+        try {
+            String selectSql = """
+                SELECT task_id FROM task_queue 
+                WHERE tenant_id = ? AND task_type = ? AND domain = ? AND visible_at_epoch_ms <= ?
+                ORDER BY (priority + CAST((? - created_at_ms) / 5000 AS INTEGER)) DESC, visible_at_epoch_ms ASC LIMIT ?
+                """;
+            String updateQueueSql = "UPDATE task_queue SET visible_at_epoch_ms = ?, lease_owner = ? WHERE task_id = ?";
+            String updateTaskSql = "UPDATE task_executions SET status = 'IN_PROGRESS', worker_id = ?, updated_at_ms = ? WHERE task_id = ?";
 
-        List<TaskSnapshot> results = new ArrayList<>();
-        try (Connection conn = getConnection()) {
-            conn.setAutoCommit(false);
-            List<String> polledTaskIds = new ArrayList<>();
+            List<TaskSnapshot> results = new ArrayList<>();
+            try (Connection conn = getConnection()) {
+                conn.setAutoCommit(false);
+                List<String> polledTaskIds = new ArrayList<>();
 
-            try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
-                psSelect.setString(1, tenantId);
-                psSelect.setString(2, taskType);
-                psSelect.setString(3, domain);
-                psSelect.setLong(4, nowEpochMs);
-                psSelect.setLong(5, nowEpochMs);
-                psSelect.setInt(6, batchSize);
+                try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
+                    psSelect.setString(1, tenantId);
+                    psSelect.setString(2, taskType);
+                    psSelect.setString(3, domain);
+                    psSelect.setLong(4, nowEpochMs);
+                    psSelect.setLong(5, nowEpochMs);
+                    psSelect.setInt(6, batchSize);
 
-                try (ResultSet rs = psSelect.executeQuery()) {
-                    while (rs.next()) {
-                        polledTaskIds.add(rs.getString("task_id"));
+                    try (ResultSet rs = psSelect.executeQuery()) {
+                        while (rs.next()) {
+                            polledTaskIds.add(rs.getString("task_id"));
+                        }
                     }
                 }
-            }
 
-            long newVisibleAt = nowEpochMs + responseTimeoutMs;
-            try (PreparedStatement psUpQ = conn.prepareStatement(updateQueueSql);
-                 PreparedStatement psUpT = conn.prepareStatement(updateTaskSql)) {
+                long newVisibleAt = nowEpochMs + responseTimeoutMs;
+                try (PreparedStatement psUpQ = conn.prepareStatement(updateQueueSql);
+                     PreparedStatement psUpT = conn.prepareStatement(updateTaskSql)) {
+
+                    for (String taskId : polledTaskIds) {
+                        psUpQ.setLong(1, newVisibleAt);
+                        psUpQ.setString(2, workerId);
+                        psUpQ.setString(3, taskId);
+                        psUpQ.addBatch();
+
+                        psUpT.setString(1, workerId);
+                        psUpT.setLong(2, nowEpochMs);
+                        psUpT.setString(3, taskId);
+                        psUpT.addBatch();
+                    }
+                    psUpQ.executeBatch();
+                    psUpT.executeBatch();
+                }
+
+                conn.commit();
 
                 for (String taskId : polledTaskIds) {
-                    psUpQ.setLong(1, newVisibleAt);
-                    psUpQ.setString(2, workerId);
-                    psUpQ.setString(3, taskId);
-                    psUpQ.addBatch();
-
-                    psUpT.setString(1, workerId);
-                    psUpT.setLong(2, nowEpochMs);
-                    psUpT.setString(3, taskId);
-                    psUpT.addBatch();
+                    getTaskExecution(taskId).ifPresent(results::add);
                 }
-                psUpQ.executeBatch();
-                psUpT.executeBatch();
+                return Collections.unmodifiableList(results);
+            } catch (SQLException e) {
+                throw new RuntimeException("Failed to poll tasks from SQLite", e);
             }
-
-            conn.commit();
-
-            for (String taskId : polledTaskIds) {
-                getTaskExecution(taskId).ifPresent(results::add);
-            }
-            return Collections.unmodifiableList(results);
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to poll tasks from SQLite", e);
+        } finally {
+            pollLock.unlock();
         }
     }
 

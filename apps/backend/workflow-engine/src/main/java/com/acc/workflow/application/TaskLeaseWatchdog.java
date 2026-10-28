@@ -54,6 +54,12 @@ public class TaskLeaseWatchdog {
         for (TaskSnapshot task : expiredTasks) {
             String taskId = task.taskId();
             int currentAttempt = task.attempt();
+            String workflowId = task.workflowId();
+            var wfOpt = persistencePort.getWorkflowSnapshot(workflowId);
+            String tenantId = wfOpt.map(com.acc.workflow.core.model.WorkflowSnapshot::tenantId).orElse("system");
+            String workspaceId = wfOpt.map(com.acc.workflow.core.model.WorkflowSnapshot::workspaceId).orElse("default");
+            String taskTypeStr = task.taskType() != null ? task.taskType().name() : "SIMPLE";
+            String refName = task.taskReferenceName();
 
             if (currentAttempt >= maxAttempts) {
                 log.warn("Task {} exceeded max lease attempts ({}/{}); quarantining to DLQ",
@@ -65,10 +71,10 @@ public class TaskLeaseWatchdog {
                 TaskDlqRecord dlqRecord = new TaskDlqRecord(
                     dlqId,
                     task.taskId(),
-                    task.workflowId(),
-                    task.tenantId(),
-                    task.workspaceId(),
-                    task.taskType(),
+                    workflowId,
+                    tenantId,
+                    workspaceId,
+                    taskTypeStr,
                     task.domain(),
                     errorMessage,
                     null,
@@ -88,11 +94,11 @@ public class TaskLeaseWatchdog {
 
                 persistencePort.saveTaskExecution(
                     task.taskId(),
-                    task.workflowId(),
-                    task.tenantId(),
-                    task.workspaceId(),
-                    task.referenceName(),
-                    task.taskType(),
+                    workflowId,
+                    tenantId,
+                    workspaceId,
+                    refName,
+                    taskTypeStr,
                     task.domain(),
                     TaskStatus.SCHEDULED,
                     nextAttempt,
@@ -105,10 +111,10 @@ public class TaskLeaseWatchdog {
 
                 persistencePort.enqueueTask(
                     task.taskId(),
-                    task.workflowId(),
-                    task.tenantId(),
-                    task.workspaceId(),
-                    task.taskType(),
+                    workflowId,
+                    tenantId,
+                    workspaceId,
+                    taskTypeStr,
                     task.domain(),
                     0,
                     nowEpochMs

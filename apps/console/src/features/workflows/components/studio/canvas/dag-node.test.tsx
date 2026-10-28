@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { DagWorkflowNodeComponent, type DagNodeData } from './dag-node';
+import { DagWorkflowNodeComponent, areDagNodePropsEqual, type DagNodeData } from './dag-node';
 import { ReactFlowProvider } from '@xyflow/react';
 
 describe('DagWorkflowNodeComponent Unit Tests', () => {
@@ -194,5 +194,85 @@ describe('DagWorkflowNodeComponent Unit Tests', () => {
     // END node only has target handle (in-degree), NO source handle (out-degree is 0)
     expect(screen.getByTestId('dag-handle-target-endTask')).toBeDefined();
     expect(screen.queryByTestId('dag-handle-source-endTask')).toBeNull();
+  });
+
+  it('adheres to WCAG 2.2 AA accessibility with keyboard navigation and ARIA labels', () => {
+    let inspectedRef: string | null = null;
+    const data: DagNodeData = {
+      taskReferenceName: 'validatePayment',
+      taskType: 'SIMPLE',
+      label: 'Validate Payment',
+      executionState: 'IN_PROGRESS',
+      onInspectTask: (ref) => {
+        inspectedRef = ref;
+      },
+    };
+
+    render(
+      <ReactFlowProvider>
+        <DagWorkflowNodeComponent
+          id="access-node"
+          type="dagNode"
+          data={data}
+          selected={true}
+          zIndex={0}
+          isConnectable={true}
+          positionAbsoluteX={0}
+          positionAbsoluteY={0}
+          dragging={false}
+        />
+      </ReactFlowProvider>
+    );
+
+    const nodeBtn = screen.getByRole('button', { name: /Validate Payment, status IN_PROGRESS/i });
+    expect(nodeBtn).toBeDefined();
+    expect(nodeBtn.getAttribute('tabindex')).toBe('0');
+    expect(nodeBtn.getAttribute('aria-selected')).toBe('true');
+
+    // Test Enter key activates task inspector
+    nodeBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(inspectedRef).toBe('validatePayment');
+  });
+
+  it('correctly evaluates areDagNodePropsEqual to isolate re-renders', () => {
+    const baseNodeProps: any = {
+      id: 'node-1',
+      selected: false,
+      data: {
+        taskReferenceName: 'step1',
+        taskType: 'SIMPLE',
+        label: 'Step 1',
+        executionState: 'PENDING',
+      },
+    };
+
+    const identicalProps: any = {
+      id: 'node-1',
+      selected: false,
+      data: {
+        taskReferenceName: 'step1',
+        taskType: 'SIMPLE',
+        label: 'Step 1',
+        executionState: 'PENDING',
+      },
+    };
+
+    expect(areDagNodePropsEqual(baseNodeProps, identicalProps)).toBe(true);
+
+    const changedStateProps: any = {
+      id: 'node-1',
+      selected: false,
+      data: {
+        ...baseNodeProps.data,
+        executionState: 'COMPLETED',
+      },
+    };
+    expect(areDagNodePropsEqual(baseNodeProps, changedStateProps)).toBe(false);
+
+    const changedSelectionProps: any = {
+      ...baseNodeProps,
+      selected: true,
+    };
+    expect(areDagNodePropsEqual(baseNodeProps, changedSelectionProps)).toBe(false);
   });
 });

@@ -202,7 +202,7 @@ class WorkflowChaosStressVerificationTest {
 
         // Complete Step 1 (reserve) for all 200
         List<TaskSnapshot> step1Tasks = persistencePort.pollTasks(
-            TENANT_ID, "SIMPLE", "inventory", SAGA_RUNS, "worker-inv", 30000L, now
+            TENANT_ID, "SIMPLE", "inventory", SAGA_RUNS, "worker-inv", 30000L, System.currentTimeMillis() + 60000L
         );
         for (TaskSnapshot t : step1Tasks) {
             workerController.reportResult(
@@ -214,7 +214,7 @@ class WorkflowChaosStressVerificationTest {
 
         // Complete Step 2 (payment) for all 200
         List<TaskSnapshot> step2Tasks = persistencePort.pollTasks(
-            TENANT_ID, "SIMPLE", "payment", SAGA_RUNS, "worker-pay", 30000L, now + 200L
+            TENANT_ID, "SIMPLE", "payment", SAGA_RUNS, "worker-pay", 30000L, System.currentTimeMillis() + 60000L
         );
         for (TaskSnapshot t : step2Tasks) {
             workerController.reportResult(
@@ -226,7 +226,7 @@ class WorkflowChaosStressVerificationTest {
 
         // Inject intentional failure on Step 3 (shipping)
         List<TaskSnapshot> step3Tasks = persistencePort.pollTasks(
-            TENANT_ID, "SIMPLE", "shipping", SAGA_RUNS, "worker-ship", 30000L, now + 400L
+            TENANT_ID, "SIMPLE", "shipping", SAGA_RUNS, "worker-ship", 30000L, System.currentTimeMillis() + 60000L
         );
         for (TaskSnapshot t : step3Tasks) {
             workerController.reportResult(

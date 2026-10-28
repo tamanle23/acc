@@ -9,8 +9,19 @@ export function useWorkflowExecutionsQuery() {
   return useQuery({
     queryKey: WORKFLOW_EXECUTIONS_QUERY_KEY,
     queryFn: async (): Promise<WorkflowExecution[]> => {
-      const response = await springApiClient.get<WorkflowExecution[]>('/api/workflow/executions');
-      return response.data;
+      try {
+        const response = await springApiClient.get<any>('/api/v1/workflow/executions');
+        const raw = response.data;
+        if (Array.isArray(raw)) return raw;
+        if (raw && Array.isArray(raw.content)) return raw.content;
+        return [];
+      } catch {
+        const fallback = await springApiClient.get<any>('/api/workflow/executions');
+        const raw = fallback.data;
+        if (Array.isArray(raw)) return raw;
+        if (raw && Array.isArray(raw.content)) return raw.content;
+        return [];
+      }
     },
   });
 }

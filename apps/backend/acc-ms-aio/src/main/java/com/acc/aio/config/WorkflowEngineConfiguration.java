@@ -36,11 +36,14 @@ public class WorkflowEngineConfiguration {
     @ConditionalOnMissingBean(PersistencePort.class)
     public PersistencePort persistencePort(@Autowired(required = false) DataSource dataSource) {
         if (dataSource != null) {
-            try (Connection conn = dataSource.getConnection()) {
+            DataSource proxyDataSource = (dataSource instanceof org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy)
+                ? dataSource
+                : new org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy(dataSource);
+            try (Connection conn = proxyDataSource.getConnection()) {
                 String dbProduct = conn.getMetaData().getDatabaseProductName().toLowerCase();
                 log.info("Wiring Workflow PersistencePort for detected DB product: {}", dbProduct);
                 if (dbProduct.contains("postgres")) {
-                    return new PostgresJdbcPersistenceAdapter(dataSource);
+                    return new PostgresJdbcPersistenceAdapter(proxyDataSource);
                 } else if (dbProduct.contains("sqlite")) {
                     String url = conn.getMetaData().getURL();
                     return new SqliteJdbcPersistenceAdapter(url);

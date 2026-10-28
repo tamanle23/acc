@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Collections;
@@ -24,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/workflow/executions")
+@RequestMapping({"/api/v1/workflow/executions", "/api/workflow/executions"})
 public class WorkflowExecutionController {
 
     private final WorkflowEngineService engineService;
@@ -131,6 +132,79 @@ public class WorkflowExecutionController {
         ));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(snapshot);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> listExecutions(
+        @RequestParam(value = "status", required = false) String statusStr,
+        @RequestParam(value = "workflowKey", required = false) String workflowKey,
+        @RequestParam(value = "search", required = false) String search,
+        @RequestParam(value = "page", defaultValue = "1") int page,
+        @RequestParam(value = "size", defaultValue = "20") int size,
+        @RequestParam(value = "limit", required = false) Integer limit,
+        @RequestParam(value = "afterId", required = false) String afterId,
+        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+    ) {
+        String tenantId = resolveTenantId(headerTenantId);
+        WorkflowStatus status = null;
+        if (statusStr != null && !statusStr.isBlank() && !"ALL".equalsIgnoreCase(statusStr)) {
+            try {
+                status = WorkflowStatus.valueOf(statusStr.toUpperCase());
+            } catch (Exception ignored) {}
+        }
+
+        List<WorkflowSnapshot> list = persistencePort.listWorkflowExecutions(tenantId, workflowKey, status);
+        if (search != null && !search.isBlank()) {
+            String lowerSearch = search.toLowerCase();
+            list = list.stream()
+                .filter(w -> (w.workflowId() != null && w.workflowId().toLowerCase().contains(lowerSearch)) ||
+                             (w.workflowKey() != null && w.workflowKey().toLowerCase().contains(lowerSearch)))
+                .toList();
+        }
+
+        // Keyset cursor pagination if afterId is provided
+        if (afterId != null && !afterId.isBlank()) {
+            int effectiveLimit = limit != null ? Math.max(1, limit) : size;
+            int foundIdx = -1;
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).workflowId().equals(afterId)) {
+                    foundIdx = i;
+                    break;
+                }
+            }
+            int start = foundIdx >= 0 ? foundIdx + 1 : 0;
+            int end = Math.min(start + effectiveLimit, list.size());
+            List<WorkflowSnapshot> paged = (start < list.size()) ? list.subList(start, end) : List.of();
+            boolean hasMore = end < list.size();
+            String nextCursor = (!paged.isEmpty() && hasMore) ? paged.get(paged.size() - 1).workflowId() : null;
+            return ResponseEntity.ok(Map.of(
+                "items", paged,
+                "total", list.size(),
+                "limit", effectiveLimit,
+                "hasMore", hasMore,
+                "nextCursor", nextCursor != null ? nextCursor : ""
+            ));
+        }
+
+        // Standard Page offset pagination
+        int effectiveSize = limit != null ? limit : Math.max(1, size);
+        int pageNumber = Math.max(1, page);
+        int start = (pageNumber - 1) * effectiveSize;
+        int end = Math.min(start + effectiveSize, list.size());
+        List<WorkflowSnapshot> content = (start < list.size()) ? list.subList(start, end) : List.of();
+        int totalPages = list.isEmpty() ? 0 : (list.size() + effectiveSize - 1) / effectiveSize;
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", content);
+        response.put("items", content);
+        response.put("total", list.size());
+        response.put("totalElements", (long) list.size());
+        response.put("totalPages", totalPages);
+        response.put("page", pageNumber);
+        response.put("size", effectiveSize);
+        response.put("hasMore", end < list.size());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping(value = "/{id}/events", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)

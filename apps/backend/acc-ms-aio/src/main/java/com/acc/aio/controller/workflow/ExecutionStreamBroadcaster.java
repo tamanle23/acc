@@ -19,6 +19,7 @@ public class ExecutionStreamBroadcaster {
 
     private static final Logger log = LoggerFactory.getLogger(ExecutionStreamBroadcaster.class);
 
+    private static final int MAX_EMITTERS_PER_EXECUTION = 100;
     private final Map<String, List<SseEmitter>> executionEmitters = new ConcurrentHashMap<>();
     private final ExecutorService virtualThreadExecutor = createAsyncExecutor();
 
@@ -35,7 +36,14 @@ public class ExecutionStreamBroadcaster {
 
     public SseEmitter register(String executionId, long timeoutMs) {
         SseEmitter emitter = new SseEmitter(timeoutMs);
-        executionEmitters.computeIfAbsent(executionId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        List<SseEmitter> emitters = executionEmitters.computeIfAbsent(executionId, k -> new CopyOnWriteArrayList<>());
+        while (emitters.size() >= MAX_EMITTERS_PER_EXECUTION) {
+            SseEmitter oldest = emitters.remove(0);
+            try {
+                oldest.complete();
+            } catch (Exception ignored) {}
+        }
+        emitters.add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(executionId, emitter));
         emitter.onTimeout(() -> removeEmitter(executionId, emitter));

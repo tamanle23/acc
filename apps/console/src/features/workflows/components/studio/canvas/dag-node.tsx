@@ -190,6 +190,39 @@ export interface DagNodeData {
 export type ConductorNodeType = DagNodeType;
 export type ConductorNodeData = DagNodeData;
 
+export function areDagNodePropsEqual(
+  prev: NodeProps<DagNodeData>,
+  next: NodeProps<DagNodeData>
+): boolean {
+  if (prev.selected !== next.selected) return false;
+  const p = prev.data;
+  const n = next.data;
+  if (p === n) return true;
+  if (!p || !n) return false;
+
+  return (
+    p.taskReferenceName === n.taskReferenceName &&
+    p.taskType === n.taskType &&
+    p.label === n.label &&
+    p.executionState === n.executionState &&
+    p.durationMs === n.durationMs &&
+    p.diffStatus === n.diffStatus &&
+    p.hasBreakpoint === n.hasBreakpoint &&
+    p.isStartNode === n.isStartNode &&
+    p.isEndNode === n.isEndNode &&
+    p.validationError === n.validationError &&
+    p.attemptNumber === n.attemptNumber &&
+    p.workerId === n.workerId &&
+    p.error === n.error &&
+    p.timeoutSeconds === n.timeoutSeconds &&
+    p.retryCount === n.retryCount &&
+    p.inputParameters === n.inputParameters &&
+    p.outputParameters === n.outputParameters &&
+    p.onToggleBreakpoint === n.onToggleBreakpoint &&
+    p.onInspectTask === n.onInspectTask
+  );
+}
+
 export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagNodeData>) => {
   const isRunning = data.executionState === 'IN_PROGRESS';
   const startTimeRef = useRef<number | null>(null);
@@ -355,8 +388,24 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
     }
   };
 
+    const nodeAccessibleLabel = `${data.isStartNode ? 'Start Node' : data.isEndNode ? 'End Node' : data.label || data.taskReferenceName}, status ${data.executionState || 'PENDING'}${data.validationError ? `, error: ${data.validationError}` : ''}`;
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (data.onInspectTask) {
+          data.onInspectTask(data.taskReferenceName);
+        }
+      }
+    };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={nodeAccessibleLabel}
+      aria-selected={Boolean(selected)}
+      onKeyDown={handleKeyDown}
       className={cn(
         'group relative px-4 py-3 min-w-[200px] rounded-2xl backdrop-blur-xl border transition-all duration-200 select-none',
         'shadow-xl shadow-black/5 dark:shadow-black/30',
@@ -579,7 +628,7 @@ export const DagWorkflowNodeComponent = memo(({ data, selected }: NodeProps<DagN
       )}
     </div>
   );
-});
+}, areDagNodePropsEqual);
 
 DagWorkflowNodeComponent.displayName = 'DagWorkflowNodeComponent';
 export const ConductorWorkflowNodeComponent = DagWorkflowNodeComponent;

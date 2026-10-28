@@ -49,7 +49,7 @@ export const WorkflowExecutionStreamModal: React.FC<WorkflowExecutionStreamModal
 
         <VisualDagStudio
           mode="execution"
-          workflowKey={workflowExecution.workflowId || 'order-pipeline'}
+          workflowKey={workflowExecution.workflowId || workflowExecution.workflowName || 'order-pipeline'}
           executionId={workflowExecution.id}
           onCloseExecution={() => onOpenChange(false)}
         />

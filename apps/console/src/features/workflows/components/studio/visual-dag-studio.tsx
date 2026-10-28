@@ -1,14 +1,9 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
   type Node,
   type Edge,
   useReactFlow,
   ReactFlowProvider,
-  SelectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -17,7 +12,6 @@ import {
   DagWorkflowNodeComponent,
   type DagNodeData,
   type DagNodeType,
-  type ExecutionState,
 } from './canvas/dag-node';
 import { DagConditionEdge, type DagConditionEdgeData } from './canvas/dag-condition-edge';
 import { DagCanvasEmptyState } from './canvas/dag-canvas-empty-state';
@@ -34,12 +28,9 @@ import { TaskTelemetryInspector } from './inspectors/task-telemetry-inspector';
 import { TimeTravelScrubber } from './timeline/time-travel-scrubber';
 import { WorkflowExecutionFlamegraph } from './timeline/workflow-execution-flamegraph';
 
-import { DagEdgeConditionModal, type EdgeConditionModalData } from './modals/dag-edge-condition-modal';
-import { WorkflowIrDialog } from './modals/workflow-ir-dialog';
-import { WorkflowDryRunModal } from './modals/workflow-dry-run-modal';
-import { WorkflowSimulationModal } from './modals/workflow-simulation-modal';
-import { WorkflowVariableWatchDrawer } from './modals/workflow-variable-watch-drawer';
-import { HotMigrationModal } from '@/features/workflows/components/migration/hot-migration-modal';
+import { DagCanvasContainer } from './canvas/dag-canvas-container';
+import { DagModalsContainer } from './modals/dag-modals-container';
+import type { EdgeConditionModalData } from './modals/dag-edge-condition-modal';
 import { ExecutionRunDrawer } from '@/features/workflows/components/execution/execution-run-drawer';
 import {
   MULTI_BRANCH_ORDER_NODES,
@@ -53,7 +44,6 @@ import {
   exportToWorkflowIR,
   importFromWorkflowIR,
   validateGraphTopology,
-  type WorkflowIR,
 } from './utils/workflow-ir-converter';
 import {
   BLANK_WORKFLOW_NODES,
@@ -63,7 +53,7 @@ import {
 } from './utils/dag-sample-data';
 
 import { cn } from '@/lib/utils';
-import { Clock, Radio, RotateCcw } from 'lucide-react';
+import { Clock, Radio } from 'lucide-react';
 import {
   useWorkflowExecutionStream,
   type WorkflowStreamEvent,
@@ -135,7 +125,6 @@ function DagStudioCanvas({
     setEdges,
     undoStack,
     redoStack,
-    pushUndoSnapshot,
     handleUndo,
     handleRedo,
     onNodesChange,
@@ -769,11 +758,15 @@ function DagStudioCanvas({
           />
         </div>
       ) : (
-        <ReactFlow
+        <DagCanvasContainer
           nodes={decoratedNodes}
           edges={decoratedEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
+          isReadOnly={isReadOnly}
+          isExecutionMode={isExecutionMode}
+          isSnapToGrid={isSnapToGrid}
+          followLive={followLive}
           onNodesChange={isReadOnly ? undefined : onNodesChange}
           onEdgesChange={isReadOnly ? undefined : onEdgesChange}
           onConnect={isReadOnly ? undefined : onConnect}
@@ -789,46 +782,9 @@ function DagStudioCanvas({
           onEdgeClick={(_: React.MouseEvent, edge: Edge) => {
             handleOpenEdgeEditor(edge.id);
           }}
-          nodesDraggable={!isReadOnly}
-          nodesConnectable={!isReadOnly}
-          elementsSelectable={true}
-          selectionOnDrag={!isReadOnly}
-          selectionMode={SelectionMode?.Partial || ('partial' as SelectionMode)}
-          panOnDrag={[1, 2]}
-          snapToGrid={isSnapToGrid}
-          snapGrid={[16, 16]}
-          fitView
-          onMoveStart={isExecutionMode ? handleMoveStart : undefined}
-        >
-          <Background gap={16} size={1} />
-          <Controls className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl !shadow-lg" />
-          <MiniMap
-            className="!bg-white/80 dark:!bg-slate-900/80 !border-white/20 !rounded-xl"
-            nodeColor={(n) => {
-              const data = n.data as DagNodeData;
-              if (data?.validationError) return '#ef4444';
-              if (data?.executionState === 'COMPLETED') return '#10b981';
-              if (data?.executionState === 'PAUSED_AT_BREAKPOINT') return '#f59e0b';
-              if (data?.executionState === 'IN_PROGRESS') return '#0284c7';
-              if (data?.executionState === 'FAILED') return '#ef4444';
-              return '#94a3b8';
-            }}
-          />
-          {/* Resume Follow pill — appears when user has disabled follow-live in execution mode */}
-          {isExecutionMode && !followLive && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
-              <button
-                type="button"
-                onClick={handleResumeFollow}
-                aria-label="Resume camera follow for active tasks"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-2xl bg-white/80 dark:bg-slate-900/80 border border-white/30 dark:border-white/15 shadow-xl shadow-black/10 hover:bg-white/95 dark:hover:bg-slate-800/95 transition-all duration-150 text-foreground"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Resume Follow
-              </button>
-            </div>
-          )}
-        </ReactFlow>
+          onMoveStart={handleMoveStart}
+          onResumeFollow={handleResumeFollow}
+        />
       )}
 
       {/* 7. Multi-Node Selection & Alignment Floating Toolbar */}
@@ -949,80 +905,58 @@ function DagStudioCanvas({
         />
       )}
 
-      {/* 12. Modals & Drawers */}
-      {!isReadOnly && (
-        <>
-          <DagEdgeConditionModal
-            open={isEdgeConditionOpen}
-            onOpenChange={setIsEdgeConditionOpen}
-            edgeData={selectedEdgeData}
-            availableTaskRefs={availableTaskRefs}
-            onSaveEdgeCondition={handleSaveEdgeCondition}
-          />
-          <WorkflowIrDialog
-            open={isIrDialogOpen}
-            onOpenChange={setIsIrDialogOpen}
-            mode={irDialogMode}
-            initialJson={irDialogContent}
-            onImportJson={handleApplyImportedJson}
-          />
-          <WorkflowDryRunModal
-            open={isDryRunOpen}
-            onOpenChange={setIsDryRunOpen}
-            workflowIR={exportToWorkflowIR(nodes, edges)}
-            onSimulationSuccess={handleSimulationSuccess}
-          />
-          <WorkflowSimulationModal
-            open={isSimulationModalOpen}
-            onOpenChange={setIsSimulationModalOpen}
-            onStartSimulation={(simExecId) => {
-              // Load realistic multi-branch pipeline blueprint with logic fork/join nodes
-              setNodes(MULTI_BRANCH_ORDER_NODES);
-              setEdges(MULTI_BRANCH_ORDER_EDGES);
-              setActiveSimulationExecutionId(simExecId);
-              setIsSimulationModalOpen(false);
-            }}
-          />
-        </>
-      )}
-
-      {isExecutionMode && (
-        <WorkflowVariableWatchDrawer
-          open={isVariableWatchOpen}
-          onOpenChange={setIsVariableWatchOpen}
-          executionId={executionId}
-          workflowStatus={
-            stream.workflowStatus ||
-            (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')
+      {/* 12. Modals & Drawers Container */}
+      <DagModalsContainer
+        isReadOnly={isReadOnly}
+        isExecutionMode={isExecutionMode}
+        executionId={executionId}
+        workflowKey={workflowKey}
+        isEdgeConditionOpen={isEdgeConditionOpen}
+        onEdgeConditionOpenChange={setIsEdgeConditionOpen}
+        selectedEdgeData={selectedEdgeData}
+        availableTaskRefs={availableTaskRefs}
+        onSaveEdgeCondition={handleSaveEdgeCondition}
+        isIrDialogOpen={isIrDialogOpen}
+        onIrDialogOpenChange={setIsIrDialogOpen}
+        irDialogMode={irDialogMode}
+        irDialogContent={irDialogContent}
+        onApplyImportedJson={handleApplyImportedJson}
+        isDryRunOpen={isDryRunOpen}
+        onDryRunOpenChange={setIsDryRunOpen}
+        workflowIR={exportToWorkflowIR(nodes, edges)}
+        onSimulationSuccess={handleSimulationSuccess}
+        isSimulationModalOpen={isSimulationModalOpen}
+        onSimulationModalOpenChange={setIsSimulationModalOpen}
+        onStartSimulation={(simExecId) => {
+          setNodes(MULTI_BRANCH_ORDER_NODES);
+          setEdges(MULTI_BRANCH_ORDER_EDGES);
+          setActiveSimulationExecutionId(simExecId);
+          setIsSimulationModalOpen(false);
+        }}
+        isVariableWatchOpen={isVariableWatchOpen}
+        onVariableWatchOpenChange={setIsVariableWatchOpen}
+        workflowStatus={
+          stream.workflowStatus ||
+          (breakpoints.length > 0 ? 'PAUSED_AT_BREAKPOINT' : 'RUNNING')
+        }
+        pausedAtNode={((stream.snapshot?.outputPayload as any)?.pausedAtNode as string) || null}
+        breakpoints={breakpoints}
+        onRemoveBreakpoint={handleToggleBreakpoint}
+        variablesSnapshot={
+          (stream.snapshot as any)?.variables ||
+          (stream.snapshot as any)?.inputPayload || {
+            orderId: 'ORD-2026-991',
+            tier: 'EXPRESS',
           }
-          pausedAtNode={(stream.snapshot?.outputPayload?.pausedAtNode as string) || null}
-          breakpoints={breakpoints}
-          onRemoveBreakpoint={handleToggleBreakpoint}
-          variablesSnapshot={
-            (stream.snapshot as any)?.variables ||
-            (stream.snapshot as any)?.inputPayload || {
-              orderId: 'ORD-2026-991',
-              tier: 'EXPRESS',
-            }
-          }
-          taskOutputs={variableWatchSnapshot.taskOutputs}
-          onStepOver={handleDebuggerStepOver}
-          onPause={handleDebuggerPause}
-          onResume={handleDebuggerResume}
-          isStepping={stepOverExecutionMutation.isPending}
-        />
-      )}
-
-      {executionId && (
-        <HotMigrationModal
-          isOpen={isHotMigrationOpen}
-          onClose={() => setIsHotMigrationOpen(false)}
-          workflowKey={workflowKey || 'order-fulfillment-v1'}
-          executionId={executionId}
-          currentVersion={1}
-          onMigrationSuccess={() => setIsHotMigrationOpen(false)}
-        />
-      )}
+        }
+        taskOutputs={variableWatchSnapshot.taskOutputs}
+        onDebuggerStepOver={handleDebuggerStepOver}
+        onDebuggerPause={handleDebuggerPause}
+        onDebuggerResume={handleDebuggerResume}
+        isStepping={stepOverExecutionMutation.isPending}
+        isHotMigrationOpen={isHotMigrationOpen}
+        onCloseHotMigration={() => setIsHotMigrationOpen(false)}
+      />
     </div>
   );
 }

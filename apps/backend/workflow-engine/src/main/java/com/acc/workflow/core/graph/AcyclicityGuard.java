@@ -44,14 +44,27 @@ public final class AcyclicityGuard {
             outDegree.putIfAbsent(task.taskReferenceName(), 0);
         }
 
-        for (TaskDefinition task : tasks) {
-            String toNode = task.taskReferenceName();
-            if (task.joinOn() != null && !task.joinOn().isEmpty()) {
-                for (String fromNode : task.joinOn()) {
-                    if (adj.containsKey(fromNode)) {
-                        if (adj.get(fromNode).add(toNode)) {
-                            inDegree.put(toNode, inDegree.get(toNode) + 1);
-                            outDegree.put(fromNode, outDegree.get(fromNode) + 1);
+        boolean hasAnyJoinOn = tasks.stream().anyMatch(t -> t.joinOn() != null && !t.joinOn().isEmpty());
+        if (!hasAnyJoinOn && tasks.size() > 1) {
+            // Implicit linear sequential pipeline: each task depends on the preceding task
+            for (int i = 1; i < tasks.size(); i++) {
+                String fromNode = tasks.get(i - 1).taskReferenceName();
+                String toNode = tasks.get(i).taskReferenceName();
+                if (adj.get(fromNode).add(toNode)) {
+                    inDegree.put(toNode, inDegree.get(toNode) + 1);
+                    outDegree.put(fromNode, outDegree.get(fromNode) + 1);
+                }
+            }
+        } else {
+            for (TaskDefinition task : tasks) {
+                String toNode = task.taskReferenceName();
+                if (task.joinOn() != null && !task.joinOn().isEmpty()) {
+                    for (String fromNode : task.joinOn()) {
+                        if (adj.containsKey(fromNode)) {
+                            if (adj.get(fromNode).add(toNode)) {
+                                inDegree.put(toNode, inDegree.get(toNode) + 1);
+                                outDegree.put(fromNode, outDegree.get(fromNode) + 1);
+                            }
                         }
                     }
                 }

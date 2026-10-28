@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,8 +24,8 @@ class EntityWorkflowTriggerDispatcherSpELTest {
     @DisplayName("Should evaluate action equality correctly")
     void shouldEvaluateActionEquality() {
         EntityRecordMutatedEvent event = new EntityRecordMutatedEvent(
-            this, 1L, 100L, "CREATE", "user_1", 1L,
-            Map.of("title", "Hello"), CollectionsEmptyMap(), "tenant_a", Instant.now()
+            1L, 100L, "tenant_a", "CREATE", "user_1", 1L,
+            Map.of("title", "Hello"), Collections.emptyMap(), Instant.now()
         );
 
         boolean matches = dispatcher.evaluatePredicate("#action == 'CREATE'", event);
@@ -38,10 +39,10 @@ class EntityWorkflowTriggerDispatcherSpELTest {
     @DisplayName("Should evaluate attribute delta condition when state changes")
     void shouldEvaluateAttributeDeltaCondition() {
         EntityRecordMutatedEvent event = new EntityRecordMutatedEvent(
-            this, 2L, 200L, "UPDATE", "admin", 2L,
+            2L, 200L, "tenant_a", "UPDATE", "admin", 2L,
             Map.of("status", "APPROVED", "amount", 15000),
             Map.of("status", "PENDING", "amount", 15000),
-            "tenant_a", Instant.now()
+            Instant.now()
         );
 
         String expr = "#new['status'] == 'APPROVED' && #old['status'] != 'APPROVED' && #new['amount'] > 10000";

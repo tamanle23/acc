@@ -401,7 +401,7 @@ public class MetadataService {
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
 
         // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
-        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+        if (saved.getOptions() != null && (Boolean.TRUE.equals(saved.getOptions().get("indexed")) || Boolean.TRUE.equals(saved.getOptions().get("searchable")))) {
             dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
         }
 
@@ -468,7 +468,7 @@ public class MetadataService {
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
 
         // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
-        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+        if (saved.getOptions() != null && (Boolean.TRUE.equals(saved.getOptions().get("indexed")) || Boolean.TRUE.equals(saved.getOptions().get("searchable")))) {
             dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
         }
 
@@ -490,7 +490,7 @@ public class MetadataService {
         AttributeDefinition saved = attributeDefinitionRepository.save(attr);
 
         // Tier 3 Performance: Asynchronously provision PostgreSQL functional expression index if updated to indexed
-        if (request.options() != null && (Boolean.TRUE.equals(request.options().get("indexed")) || Boolean.TRUE.equals(request.options().get("searchable")))) {
+        if (saved.getOptions() != null && (Boolean.TRUE.equals(saved.getOptions().get("indexed")) || Boolean.TRUE.equals(saved.getOptions().get("searchable")))) {
             dynamicIndexProvisioner.provisionAttributeIndexAsync(entityTypeId, saved.getSystemName(), saved.getDataType());
         }
 

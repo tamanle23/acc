@@ -121,6 +121,11 @@ public class WorkflowEngineService {
             TaskSnapshot existing = persistencePort.getTaskExecution(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
 
+            // Optimistic Idempotency Guard: if task is already terminal, ignore duplicate/late callbacks
+            if (existing.status().isTerminal()) {
+                return;
+            }
+
             if (callbackAfterSeconds > 0) {
                 // Async deferral
                 long nextVisibleAt = nowEpochMs + (callbackAfterSeconds * 1000L);
@@ -830,27 +835,37 @@ public class WorkflowEngineService {
                 30000L,
                 "sim-worker"
             );
+            simulatedTasks.put(ref, simTask);
+            outputPayload.put(ref, taskOutput);
+        }
+
+        currentStatus = WorkflowStatus.COMPLETED;
+
+        return new WorkflowSnapshot(
+            simWorkflowId,
+            "sim-tenant",
+            "sim-workspace",
+            definition.workflowKey(),
+            definition.version(),
+            currentStatus,
+            effectiveInput,
+            outputPayload,
+            Collections.emptyMap(),
+            null,
+            simulatedTasks
+        );
+    }
+
     /**
      * Phase 7 / Iteration 38: Task Lease Watchdog & Reaper.
      * Reaps expired worker leases across tenant task queues. If a task exceeds max attempts,
-     * it is isolated to task_dlq and the parent workflow is re-evaluated by the decider.
+     * it is isolated to task_dlq.
      *
      * @param nowEpochMs Current epoch timestamp in milliseconds.
      * @return List of reaped TaskSnapshot instances.
      */
     public List<TaskSnapshot> reapExpiredLeases(long nowEpochMs) {
-        List<TaskSnapshot> reapedTasks = taskLeaseWatchdog.reapExpiredLeases(nowEpochMs);
-        for (TaskSnapshot task : reapedTasks) {
-            if (task.attempt() >= taskLeaseWatchdog.getMaxAttempts()) {
-                // If quarantined, re-evaluate workflow to fail or advance
-                try {
-                    decide(task.workflowId(), nowEpochMs);
-                } catch (Exception e) {
-                    // Log and continue to next task
-                }
-            }
-        }
-        return reapedTasks;
+        return taskLeaseWatchdog.reapExpiredLeases(nowEpochMs);
     }
 
     public TaskLeaseWatchdog getTaskLeaseWatchdog() {
