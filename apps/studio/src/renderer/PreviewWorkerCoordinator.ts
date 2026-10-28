@@ -48,6 +48,14 @@ export class PreviewWorkerCoordinator {
   }
 
   public static getInstance(): PreviewWorkerCoordinator {
+    // Invariant: PreviewWorkerCoordinator must NEVER be instantiated in Web Worker threads
+    if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
+      throw new Error('[PreviewWorkerCoordinator] Must not be instantiated in a Web Worker realm.');
+    }
+    if (typeof self !== 'undefined' && typeof (self as any).importScripts === 'function') {
+      throw new Error('[PreviewWorkerCoordinator] Must not be instantiated in a Web Worker realm.');
+    }
+
     if (!PreviewWorkerCoordinator.instance) {
       PreviewWorkerCoordinator.instance = new PreviewWorkerCoordinator();
     }
@@ -55,7 +63,15 @@ export class PreviewWorkerCoordinator {
   }
 
   private initWorker(customWorkerUrl?: URL): void {
-    if (typeof window !== 'undefined' && typeof Worker !== 'undefined') {
+    // Strictly prevent worker initialization if inside another worker
+    if (typeof WorkerGlobalScope !== 'undefined' && typeof self !== 'undefined' && self instanceof WorkerGlobalScope) {
+      return;
+    }
+    if (typeof self !== 'undefined' && typeof (self as any).importScripts === 'function') {
+      return;
+    }
+
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof Worker !== 'undefined') {
       try {
         this.worker = customWorkerUrl
           ? new Worker(customWorkerUrl, { type: 'module' })

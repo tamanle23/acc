@@ -13,10 +13,10 @@ import {
   type IAudioSourceProvider,
 } from '@acc/ir';
 
-import {
+import type {
   PreviewWorkerCoordinator,
-  type ModifierWarmedEvent,
-  type SidecarPreflightOptions,
+  ModifierWarmedEvent,
+  SidecarPreflightOptions,
 } from './PreviewWorkerCoordinator';
 import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 
@@ -41,7 +41,8 @@ export interface PreviewFrameResult {
 }
 
 export interface IRPreviewEngineOptions {
-  sidecarCoordinator?: PreviewWorkerCoordinator;
+  /** Optional sidecar coordinator. If omitted, engine operates purely without background preflight. */
+  sidecarCoordinator?: PreviewWorkerCoordinator | null;
   autoPreflight?: boolean;
 }
 
@@ -83,8 +84,8 @@ export class IRPreviewEngine {
     this.audioMixer = new UniversalAudioMixer([], audioSampleRate);
     this.audioMixer.syncFromTimeline(this.timeline, this.audioSourceResolver);
 
-    this.sidecarCoordinator = options?.sidecarCoordinator ?? PreviewWorkerCoordinator.getInstance();
-    this.autoPreflight = options?.autoPreflight ?? true;
+    this.sidecarCoordinator = options?.sidecarCoordinator ?? null;
+    this.autoPreflight = options?.autoPreflight ?? false;
 
     if (this.autoPreflight && this.sidecarCoordinator) {
       this.sidecarCoordinator.preflightTimeline(this.timeline).catch(() => { });

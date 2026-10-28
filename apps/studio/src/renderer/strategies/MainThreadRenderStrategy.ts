@@ -1,5 +1,6 @@
 import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
+import { PreviewWorkerCoordinator } from '../PreviewWorkerCoordinator';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
 import { WebAudioEngine } from '../../lib/audio';
 import type { WorkerRenderOptions } from '../workers/PreviewWorkerBridge';
@@ -33,7 +34,23 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
   }
 
   private recreateEngine(timeline: ResolvedTimeline): void {
-    this.engine = new IRPreviewEngine(timeline);
+    let coordinator: PreviewWorkerCoordinator | null = null;
+    try {
+      coordinator = PreviewWorkerCoordinator.getInstance();
+    } catch {
+      // In headless test environments without DOM window
+    }
+
+    this.engine = new IRPreviewEngine(
+      timeline,
+      undefined,
+      undefined,
+      48000,
+      {
+        sidecarCoordinator: coordinator,
+        autoPreflight: coordinator !== null,
+      }
+    );
     try {
       WebAudioEngine.getInstance().attachPreviewEngine(this.engine);
     } catch {

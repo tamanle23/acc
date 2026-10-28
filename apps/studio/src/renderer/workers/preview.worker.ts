@@ -3,7 +3,7 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
   (self as any).window = self;
 }
 
-import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
+import { registerCoreModifierPlugins, Depth3DPlugin, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
@@ -137,8 +137,23 @@ function renderCurrentFrame(
         safeSetTexture(seq.assetId, cachedBmp);
       } else {
         const assetId = seq.assetId;
+        const requestedLocal = localFrame;
+        const seqStart = seq.startFrame ?? 0;
         reader.requestFrame(localFrame, currentFps, false).then((bmp) => {
-          if (bmp && (bmp.width === undefined || bmp.width > 0)) {
+          if (!bmp) return;
+          if (isPlaying) {
+            const currentLocal = Math.max(0, currentFrame - seqStart);
+            if (currentLocal > requestedLocal) {
+              // Frame arrived too late; close immediately to eliminate memory leak
+              if (typeof (bmp as any).close === 'function') {
+                try {
+                  (bmp as any).close();
+                } catch {}
+              }
+              return;
+            }
+          }
+          if (bmp.width === undefined || bmp.width > 0) {
             (bmp as any)._isTransient = true;
             safeSetTexture(assetId, bmp);
           }
@@ -376,7 +391,10 @@ self.onmessage = (e: MessageEvent) => {
 
       if (data.timeline) {
         currentTimeline = data.timeline;
-        engine = new IRPreviewEngine(data.timeline);
+        engine = new IRPreviewEngine(data.timeline, undefined, undefined, 48000, {
+          sidecarCoordinator: null,
+          autoPreflight: false,
+        });
         clipPrewarmer.setTimeline(data.timeline);
       }
 
@@ -391,9 +409,17 @@ self.onmessage = (e: MessageEvent) => {
     }
 
     case 'updateTimeline': {
+      if (currentTimeline?.sequences) {
+        for (const seq of currentTimeline.sequences.values()) {
+          Depth3DPlugin.cleanupSequence(seq);
+        }
+      }
       if (data.timeline) {
         currentTimeline = data.timeline;
-        engine = new IRPreviewEngine(data.timeline);
+        engine = new IRPreviewEngine(data.timeline, undefined, undefined, 48000, {
+          sidecarCoordinator: null,
+          autoPreflight: false,
+        });
         clipPrewarmer.setTimeline(data.timeline);
       }
       if (data.totalFrames) currentTotalFrames = data.totalFrames;
