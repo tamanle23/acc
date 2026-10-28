@@ -1,5 +1,5 @@
 import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
-import type { WorkerRenderOptions } from '../../lib/worker/PreviewWorkerBridge';
+import type { WorkerRenderOptions } from '../workers/PreviewWorkerBridge';
 
 /**
  * IPreviewRenderStrategy

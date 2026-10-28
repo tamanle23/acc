@@ -7,3 +7,4 @@
 | 348 | [Decouple popOutIntensity from renderFrame to Sequence Modifier Dynamic Resolution](./348_decouple_popout_intensity_from_renderframe.md) | Completed |
 | 349 | [Refactor PreviewWorkerBridge to Options-Based Clean API](./349_refactor_preview_worker_bridge_clean_options_api.md) | Completed |
 | 350 | [Studio Viewport Pipeline & Architecture Modernization](./350_studio_viewport_pipeline_architecture_modernization.md) | Completed |
+| 351 | [Studio Phase 1 Enterprise Cleanup & Worker Pipeline Consolidation](./351_studio_phase1_enterprise_cleanup_and_pipeline_consolidation.md) | Completed |

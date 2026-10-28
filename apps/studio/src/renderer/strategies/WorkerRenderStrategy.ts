@@ -2,7 +2,7 @@ import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
 import {
   PreviewWorkerBridge,
   type WorkerRenderOptions,
-} from '../../lib/worker/PreviewWorkerBridge';
+} from '../workers/PreviewWorkerBridge';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
 import type { IPreviewRenderStrategy } from './IPreviewRenderStrategy';
 

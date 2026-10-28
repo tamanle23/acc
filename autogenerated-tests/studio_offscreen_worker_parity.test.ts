@@ -3,7 +3,7 @@ import {
   PreviewRenderWorkerCore,
   DecodedFrameCache,
   type FrameAckPayload,
-} from '../apps/studio/src/lib/workers/PreviewRenderWorker';
+} from '../apps/studio/src/renderer/workers/PreviewWorkerBridge';
 
 describe('Studio Offscreen Canvas & Preview Worker Test Suite', () => {
   it('manages LRU ring buffer with forward and backward limits', () => {

@@ -2,7 +2,7 @@ import type { ResolvedTimeline, ResolvedSequence } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
 import { WebAudioEngine } from '../../lib/audio';
-import type { WorkerRenderOptions } from '../../lib/worker/PreviewWorkerBridge';
+import type { WorkerRenderOptions } from '../workers/PreviewWorkerBridge';
 import type { IPreviewRenderStrategy } from './IPreviewRenderStrategy';
 
 export class MainThreadRenderStrategy implements IPreviewRenderStrategy {

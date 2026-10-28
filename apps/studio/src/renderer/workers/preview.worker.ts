@@ -1,11 +1,11 @@
 import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
-import { IRPreviewEngine } from '../../renderer';
+import { IRPreviewEngine } from '../IRPreviewEngine';
 import { DeterministicTimelineClock, UniversalCanvasProvider } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
-import { MediabunnyWorkerReader } from '../../renderer/workers/MediabunnyWorkerReader';
-import { PreviewFrameMemoryManager } from '../../renderer/workers/PreviewFrameMemoryManager';
-import { WorkerClipPrewarmer } from '../../renderer/workers/WorkerClipPrewarmer';
-import { ContentHashTextureCache } from '../../renderer/workers/ContentHashTextureCache';
+import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
+import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
+import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
+import { ContentHashTextureCache } from './ContentHashTextureCache';
 
 // Register isomorphic canvas adapter and canonical core modifiers for the dedicated worker thread
 UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
@@ -27,6 +27,7 @@ const videoReaders = new Map<string, MediabunnyWorkerReader>();
 const clipPrewarmer = new WorkerClipPrewarmer(videoReaders);
 const memoryManager = PreviewFrameMemoryManager.getInstance();
 const textTextureCache = ContentHashTextureCache.getInstance();
+void textTextureCache;
 
 // Dirty-Frame & Refresh Optimization state
 let lastRenderedFrame: number | null = null;
@@ -36,7 +37,13 @@ let texturesDirty = false;
 
 // Frame coalescing state
 let isRendering = false;
-let pendingRender: { frame: number; lod: number; isScrubbing?: boolean; debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha' } | null = null;
+let pendingRender: {
+  frame: number;
+  lod: number;
+  isScrubbing?: boolean;
+  clearColor?: string;
+  debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
+} | null = null;
 
 // Playback state
 let isPlaying = false;
@@ -68,7 +75,7 @@ function renderCurrentFrame(
 
   if (isRendering) {
     // Coalesce latest requested frame to avoid worker message queue pileup
-    pendingRender = { frame, lod, isScrubbing, debugMode };
+    pendingRender = { frame, lod, isScrubbing, clearColor, debugMode };
     return;
   }
 
@@ -91,18 +98,14 @@ function renderCurrentFrame(
     if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
       textureCache.set(seq.assetId, cachedBmp);
     } else {
-      // Cache miss: Hold last rendered canvas frame (do not clear or replace with detached proxy)
-      // and issue deduplicated request through MediabunnyWorkerReader's concurrency gate
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
           memoryManager.set(assetId, localFrame, bmp);
           textureCache.set(assetId, bmp);
-          // Only trigger immediate repaint if paused / parked at this exact frame.
-          // During active playback, this frame will be naturally painted on the next RAF tick.
           if (!isPlaying && currentFrame === frame) {
             texturesDirty = true;
-            renderCurrentFrame(currentFrame, lod, false, clearColor);
+            renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
           }
         }
       });
@@ -132,7 +135,6 @@ function renderCurrentFrame(
     console.error('[preview.worker] Render error at frame', frame, err);
   } finally {
     ctx.restore();
-    // Post-render drain: safely close evicted frames, protecting any frame actively drawn
     const protectedBitmaps = new Set<ImageBitmap>();
     for (const val of textureCache.values()) {
       if (val && typeof val.close === 'function') {
@@ -148,11 +150,16 @@ function renderCurrentFrame(
   lastRenderedLOD = lod;
   lastDebugMode = debugMode ?? null;
 
-  // Drain coalesced pending frame if one arrived during this draw pass
   if (pendingRender) {
     const next = pendingRender;
     pendingRender = null;
-    renderCurrentFrame(next.frame, next.lod, next.isScrubbing, clearColor, next.debugMode);
+    renderCurrentFrame(
+      next.frame,
+      next.lod,
+      next.isScrubbing,
+      next.clearColor ?? clearColor,
+      next.debugMode
+    );
   }
 }
 
@@ -178,7 +185,7 @@ function playbackLoop(now: number) {
   }
 
   // Active playback renders at 0.5x Dynamic LOD for maximum smoothness
-  renderCurrentFrame(currentFrame, 0.5, 1.0, false);
+  renderCurrentFrame(currentFrame, 0.5, false);
 
   // Throttle React UI state synchronization to 15 Hz (~66ms) to eliminate React lag
   if (now - lastUiSyncTime >= 66) {
@@ -201,25 +208,27 @@ function stopPlayback() {
   }
   // Parked hero frame: Render crystal-clear 1.0x full LOD
   texturesDirty = true;
-  renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+  renderCurrentFrame(currentFrame, 1.0, false);
 }
 
 function syncAssetSources(assets: Record<string, { src?: string; type?: string }>) {
   for (const [id, def] of Object.entries(assets)) {
     if (!def.src) continue;
     const isVideo =
-      def.type === 'video' ||
-      def.src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i);
+      def.type === 'video' || Boolean(def.src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i));
 
     if (isVideo) {
       if (!videoReaders.has(id)) {
-        const reader = new MediabunnyWorkerReader(def.src, { ringBufferSize: 8 });
+        const reader = new MediabunnyWorkerReader(def.src);
         videoReaders.set(id, reader);
-        reader.init().catch(() => { });
+        reader.init().catch(() => {});
       }
     } else {
-      // Image asset fallback loading directly in worker
-      if (!textureCache.has(id) && typeof fetch === 'function' && typeof createImageBitmap === 'function') {
+      if (
+        !textureCache.has(id) &&
+        typeof fetch === 'function' &&
+        typeof createImageBitmap === 'function'
+      ) {
         const url = def.src;
         const assetId = id;
         fetch(url)
@@ -229,10 +238,10 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             textureCache.set(assetId, bmp);
             texturesDirty = true;
             if (!isPlaying) {
-              renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+              renderCurrentFrame(currentFrame, 1.0, false);
             }
           })
-          .catch(() => { });
+          .catch(() => {});
       }
     }
   }
@@ -251,7 +260,9 @@ self.onmessage = (e: MessageEvent) => {
       currentTotalFrames = data.totalFrames || 300;
       canvas.width = currentWidth;
       canvas.height = currentHeight;
-      ctx = canvas.getContext('2d', { willReadFrequently: false }) as OffscreenCanvasRenderingContext2D;
+      ctx = canvas.getContext('2d', {
+        willReadFrequently: false,
+      }) as OffscreenCanvasRenderingContext2D;
 
       if (data.timeline) {
         currentTimeline = data.timeline;
@@ -264,9 +275,8 @@ self.onmessage = (e: MessageEvent) => {
       }
 
       self.postMessage({ type: 'ready' });
-      // Render initial hero frame immediately upon worker initialization
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+      renderCurrentFrame(currentFrame, 1.0, false);
       break;
     }
 
@@ -282,7 +292,7 @@ self.onmessage = (e: MessageEvent) => {
         syncAssetSources(data.assets);
       }
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, undefined, false);
+      renderCurrentFrame(currentFrame, 1.0, false);
       break;
     }
 
@@ -301,13 +311,13 @@ self.onmessage = (e: MessageEvent) => {
         canvas.height = currentHeight;
       }
       texturesDirty = true;
-      renderCurrentFrame(currentFrame, 1.0, undefined, false);
+      renderCurrentFrame(currentFrame, 1.0, false);
       break;
     }
 
     case 'renderFrame': {
       currentFrame = data.frame;
-      const isScrub = !!data.isScrubbing;
+      const isScrub = Boolean(data.isScrubbing);
       renderCurrentFrame(
         currentFrame,
         data.lod ?? 1.0,
@@ -349,9 +359,8 @@ self.onmessage = (e: MessageEvent) => {
           textureCache.set(id, bmp);
         }
         texturesDirty = true;
-        // If parked/paused, re-render immediately with newly synchronized textures
         if (!isPlaying) {
-          renderCurrentFrame(currentFrame, 1.0, 1.0, false);
+          renderCurrentFrame(currentFrame, 1.0, false);
         }
       }
       break;

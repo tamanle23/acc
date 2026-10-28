@@ -7,7 +7,7 @@ import {
 import { PreviewWorkerCoordinator } from '../../renderer/PreviewWorkerCoordinator';
 import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
-import type { WorkerRenderOptions } from '../../lib/worker/PreviewWorkerBridge';
+import type { WorkerRenderOptions } from '../../renderer/workers/PreviewWorkerBridge';
 
 export interface UseViewportRenderStrategyOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;

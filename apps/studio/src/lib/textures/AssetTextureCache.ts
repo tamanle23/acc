@@ -12,22 +12,133 @@ export interface VisualAssetResult {
   type: 'image' | 'video' | 'placeholder';
 }
 
-export class AssetTextureCache {
+export class AssetTextureCache implements Disposable {
   private static instance: AssetTextureCache;
+  private static directStorage = new Map<string, any>();
+  private static objectUrls = new Map<string, string>();
   private canvasCache = new Map<string, HTMLCanvasElement>();
   private dataUrlCache = new Map<string, string>();
   private imageCache = new Map<string, { img: HTMLImageElement; isReady: boolean }>();
   private videoCache = new Map<string, { video: HTMLVideoElement; isReady: boolean }>();
   private placeholderCache = new Map<string, HTMLCanvasElement>();
   private subscribers = new Set<() => void>();
+  private readonly MAX_CACHE_ENTRIES = 128;
 
-  private constructor() {}
+  public constructor() {}
 
   public static getInstance(): AssetTextureCache {
     if (!AssetTextureCache.instance) {
       AssetTextureCache.instance = new AssetTextureCache();
     }
     return AssetTextureCache.instance;
+  }
+
+  /**
+   * Register or cache a visual texture directly (IPreviewTextureProvider contract).
+   */
+  public set(assetId: string, texture: any): void {
+    if (AssetTextureCache.directStorage.size >= this.MAX_CACHE_ENTRIES) {
+      const oldestKey = AssetTextureCache.directStorage.keys().next().value;
+      if (oldestKey !== undefined) {
+        this.delete(oldestKey);
+      }
+    }
+    AssetTextureCache.directStorage.set(assetId, texture);
+  }
+
+  /**
+   * Retrieve a cached texture by asset ID (IPreviewTextureProvider contract).
+   */
+  public get(assetId: string): any | undefined {
+    return AssetTextureCache.directStorage.get(assetId);
+  }
+
+  /**
+   * Check if an asset is cached (IPreviewTextureProvider contract).
+   */
+  public has(assetId: string): boolean {
+    return AssetTextureCache.directStorage.has(assetId);
+  }
+
+  /**
+   * Delete a cached texture by asset ID and revoke any associated object URL.
+   */
+  public delete(assetId: string): boolean {
+    const url = AssetTextureCache.objectUrls.get(assetId);
+    if (url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+      URL.revokeObjectURL(url);
+      AssetTextureCache.objectUrls.delete(assetId);
+    }
+    return AssetTextureCache.directStorage.delete(assetId);
+  }
+
+  /**
+   * Load an image texture from a Blob.
+   */
+  public async loadBlob(assetId: string, blob: Blob): Promise<any> {
+    if (
+      typeof window === 'undefined' ||
+      typeof URL === 'undefined' ||
+      typeof Image === 'undefined'
+    ) {
+      const mockImg = { width: 1920, height: 1080, _isMock: true };
+      AssetTextureCache.directStorage.set(assetId, mockImg);
+      return mockImg;
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    AssetTextureCache.objectUrls.set(assetId, objectUrl);
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        AssetTextureCache.directStorage.set(assetId, img);
+        resolve(img);
+      };
+      img.onerror = (e) => {
+        reject(new Error(`Failed to load texture blob for ${assetId}: ${e}`));
+      };
+      img.src = objectUrl;
+    });
+  }
+
+  /**
+   * Clears all cached textures and revokes object URLs.
+   */
+  public clear(): void {
+    this.dispose();
+  }
+
+  /**
+   * Disposes of object URLs and media decoders to prevent memory leaks in long-running sessions.
+   */
+  public dispose(): void {
+    if (typeof URL !== 'undefined' && URL.revokeObjectURL) {
+      for (const url of AssetTextureCache.objectUrls.values()) {
+        URL.revokeObjectURL(url);
+      }
+    }
+    for (const entry of this.videoCache.values()) {
+      try {
+        entry.video.pause();
+        entry.video.removeAttribute('src');
+        entry.video.load();
+      } catch {
+        // Ignore in headless environments
+      }
+    }
+    AssetTextureCache.objectUrls.clear();
+    AssetTextureCache.directStorage.clear();
+    this.canvasCache.clear();
+    this.dataUrlCache.clear();
+    this.imageCache.clear();
+    this.videoCache.clear();
+    this.placeholderCache.clear();
+  }
+
+  public [Symbol.dispose](): void {
+    this.dispose();
   }
 
   /**
