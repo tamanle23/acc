@@ -14,5 +14,9 @@ Multi-phase initiative to elevate `@acc/studio` (`apps/studio`) to enterprise-gr
   - Harden `IRStateManager` with synchronous immutable state transitions on `dispatch`, `undo`, `redo`, `switchTemplate`, and `loadFromJSON`.
   - Fix stale un-subscribed state in `Titlebar.tsx` and `ModifierControlStrategies.tsx`, and fix `App.tsx` linked A/V drop payload schema mismatch.
   - Eliminate `any` sprawl across commands, timeline, preview, inspector, and audio/shuttle modules.
-- **Phase 3 (Planned)**: God-Component Decomposition (`App.tsx`, `LeftSidebar.tsx`, `ModifierControlStrategies.tsx`) & 60 FPS Timeline Virtualization
+- **Phase 3 (Executed)**: God-Component Decomposition (`App.tsx`, `LeftSidebar.tsx`, `ModifierControlStrategies.tsx`) & 60 FPS Timeline Virtualization
+  - Extract `ClientExportOrchestrator` (with main-thread yielding and `AbortController` cancellation), `useWorkspaceDnd`, and `ExportProgressModal` from `App.tsx` (692 -> 269 lines).
+  - Wrap `ClipItem` in `React.memo` and pass scoped primitive drag props from `TimelineDom.tsx` with `useCallback`-stabilized handlers so stationary clips do not re-render during 60Hz drag moves.
+  - Modularize `LeftSidebar.tsx` (1,190 -> 396 lines) into `src/components/sidebar/` (`PresetThumbnails.tsx`, `SidebarCards.tsx`, `SidebarActivityRail.tsx`).
+  - Modularize `ModifierControlStrategies.tsx` (1,130 -> 217 lines) into `src/components/inspector/strategies/` (`PrimitiveControlStrategies.tsx`, `RegionsArrayControlStrategy.tsx`, `CompositeGroupControlStrategies.tsx`).
 - **Phase 4 (Planned)**: Enterprise UX, Resizable Layout, Sonner Toasts, and `DESIGN.md` / `ROUTE.md` Specs

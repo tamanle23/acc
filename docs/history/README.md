@@ -9,3 +9,4 @@
 | 350 | [Studio Viewport Pipeline & Architecture Modernization](./350_studio_viewport_pipeline_architecture_modernization.md) | Completed |
 | 351 | [Studio Phase 1 Enterprise Cleanup & Worker Pipeline Consolidation](./351_studio_phase1_enterprise_cleanup_and_pipeline_consolidation.md) | Completed |
 | 352 | [Studio Phase 2 Reactive Store & Strict TypeScript](./352_studio_phase2_reactive_store_and_strict_typescript.md) | Completed |
+| 353 | [Studio Phase 3 Component Decomposition & 60 FPS Timeline Virtualization](./353_studio_phase3_component_decomposition_and_60fps_timeline.md) | Completed |

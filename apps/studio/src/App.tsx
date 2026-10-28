@@ -1,53 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  pointerWithin,
-  type DragStartEvent,
-  type DragEndEvent,
-} from '@dnd-kit/core';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
+import { AlertCircle } from 'lucide-react';
 import { Titlebar } from './components/Titlebar';
 import { LeftSidebar, DragOverlayPreview, type LeftNavTab } from './components/LeftSidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { Preview } from './components/Preview';
 import { Timeline } from './components/Timeline';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  Progress,
-  Button,
-  Badge,
-  TooltipProvider,
-} from './components/ui';
-import { MediabunnyClientSink } from '@acc/core-web';
-import { IRPreviewEngine } from './renderer';
-import { UniversalAudioMixer, DecodedPcmSource } from '@acc/ir';
-import { AssetTextureCache } from './lib/textures/AssetTextureCache';
-import { AudioAssetCache } from './lib/audio/AudioAssetCache';
-import { Video, AlertCircle } from 'lucide-react';
+import { ExportProgressModal } from './components/ExportProgressModal';
+import { SettingsModal } from './components/SettingsModal';
+import { TooltipProvider } from './components/ui';
 import { IRStateManager } from './lib/ir/irState';
 import { useIRState } from './lib/ir/useStudioStore';
-import {
-  getErrorMessage,
-  normalizeTracksList,
-  type StudioAssetRecord,
-} from './lib/ir/studioTypes';
-import type { IRSequence } from '@acc/ir';
-import type { StagingPreset } from './lib/library/stagingPresets';
+import { getErrorMessage } from './lib/ir/studioTypes';
 import { ThemeProvider } from './lib/theme/ThemeProvider';
-import { SettingsModal } from './components/SettingsModal';
-
 import { WebAudioEngine } from './lib/audio/WebAudioEngine';
 import { useShuttleEngine } from './lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from './lib/playhead/StudioPlayheadController';
+import { useWorkspaceDnd } from './lib/dnd/useWorkspaceDnd';
+import {
+  ClientExportOrchestrator,
+  downloadExportedMp4,
+} from './lib/export/ClientExportOrchestrator';
 
 function StudioWorkspace() {
   const irState = useIRState();
@@ -59,11 +33,15 @@ function StudioWorkspace() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
-  const [activeDragItem, setActiveDragItem] = useState<Record<string, unknown> | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
-  const cancelExportRef = useRef(false);
+  const exportAbortControllerRef = useRef<AbortController | null>(null);
+
+  const fps = irState.doc.meta.globalFps || 30;
+  const totalFrames = irState.timeline?.totalFrames || 300;
+  const width = irState.doc.meta.canvasSize.w || 1920;
+  const height = irState.doc.meta.canvasSize.h || 1080;
 
   // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
   // J, K, L, Space, and Arrow keys are handled with discrete frame accuracy by useShuttleEngine
@@ -94,213 +72,15 @@ function StudioWorkspace() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRightOpen]);
 
-  // @dnd-kit PointerSensor with 6px distance activation constraint
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
-    })
-  );
+  const handleSequenceInserted = useCallback(() => {
+    setIsRightOpen(true);
+  }, []);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragItem(event.active.data.current);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveDragItem(null);
-
-    if (!over) return;
-
-    const data = active.data.current;
-    if (!data) return;
-
-    if (over.id === 'canvas-viewport-drop-zone') {
-      if (data.type === 'preset' && data.preset) {
-        const preset = data.preset as StagingPreset;
-        const seq = preset.createSequence({
-          startFrame: currentFrame,
-          normX: 0.5,
-          normY: 0.5,
-        });
-        IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
-          trackTypeFallback: preset.targetTrackType,
-          trackNameFallback: preset.targetTrackName,
-        });
-        setIsRightOpen(true);
-      } else if (data.type === 'asset' && data.asset) {
-        const asset = data.asset as StudioAssetRecord;
-        const assetId = String(data.assetId || asset.id || 'asset');
-        const targetTrackId = asset.type === 'audio' ? 'track-a1' : 'track-v1';
-        const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
-        const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
-        const durationFrames = asset.durationSec ? Math.round(asset.durationSec * fps) : 90;
-
-        const newSeq: IRSequence = {
-          id: seqId,
-          name: assetId,
-          type: asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : 'video',
-          time: {
-            start: currentFrame,
-            duration: durationFrames,
-          },
-          startFrame: currentFrame,
-          timelineStartFrame: currentFrame,
-          durationFrames,
-          assetId,
-          modifiers: [],
-        };
-
-        IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
-          trackTypeFallback: targetTrackType,
-          trackNameFallback: targetTrackId,
-        });
-        setIsRightOpen(true);
-      }
-      return;
-    }
-
-    // Direct Track Dropping from LeftSidebar Preset or Asset Library
-    const overIdStr = String(over.id);
-    const overData = over.data.current as { type?: string; trackId?: string } | undefined;
-    if (overIdStr.startsWith('track-') || overData?.type === 'track') {
-      const targetTrackId = overData?.trackId || overIdStr.replace(/^track-/, '');
-
-      // Calculate drop frame from translated pointer coordinate relative to target lane
-      let dropFrame = currentFrame;
-      const zoomScale = 1.0; // default baseline zoom scale
-      const pixelsPerFrame = Math.max(1, 4 * zoomScale);
-
-      if (event.active.rect.current.translated && over.rect) {
-        const relX = event.active.rect.current.translated.left - over.rect.left;
-        if (relX > 0) {
-          dropFrame = Math.max(0, Math.round(relX / pixelsPerFrame));
-        } else {
-          dropFrame = currentFrame;
-        }
-      }
-
-      // Magnetic Snapping check against current playhead
-      if (Math.abs(dropFrame - currentFrame) <= 4) {
-        dropFrame = currentFrame;
-      }
-
-      if (data.type === 'preset' && data.preset) {
-        const preset = data.preset as StagingPreset;
-        const seq = preset.createSequence({
-          startFrame: dropFrame,
-          normX: 0.5,
-          normY: 0.5,
-        });
-        IRStateManager.getInstance().addSequence(targetTrackId, seq, {
-          trackTypeFallback: preset.targetTrackType,
-          trackNameFallback: preset.targetTrackName,
-        });
-        setIsRightOpen(true);
-      } else if (data.type === 'asset' && data.asset) {
-        const asset = data.asset as StudioAssetRecord;
-        const assetId = String(data.assetId || asset.id || 'asset');
-        const durationFrames = asset.durationSec ? Math.round(asset.durationSec * fps) : 90;
-
-        // Check if asset is video with audio -> Ingest with Linked A/V Split Engine
-        if (asset.type === 'video' && asset.hasAudio !== false) {
-          const timestamp = Date.now().toString(36);
-          const vSeqId = `seq_${assetId}_v_${timestamp}`;
-          const aSeqId = `seq_${assetId}_a_${timestamp}`;
-          const audioTrackId = 'track-a1';
-
-          const videoSeq: IRSequence = {
-            id: vSeqId,
-            name: `${assetId} (Video)`,
-            type: 'video',
-            time: {
-              start: dropFrame,
-              duration: durationFrames,
-            },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
-            assetId,
-            modifiers: [
-              {
-                id: `mod_link_${vSeqId}`,
-                type: 'editorial/av_link',
-                params: {
-                  linkedSequenceId: aSeqId,
-                  linkedTrackId: audioTrackId,
-                  enabled: true,
-                  syncTrim: true,
-                },
-              },
-            ],
-          };
-
-          const audioSeq: IRSequence = {
-            id: aSeqId,
-            name: `${assetId} (Audio)`,
-            type: 'audio',
-            time: {
-              start: dropFrame,
-              duration: durationFrames,
-            },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
-            assetId,
-            modifiers: [
-              {
-                id: `mod_link_${aSeqId}`,
-                type: 'editorial/av_link',
-                params: {
-                  linkedSequenceId: vSeqId,
-                  linkedTrackId: targetTrackId,
-                  enabled: true,
-                  syncTrim: true,
-                },
-              },
-            ],
-          };
-
-          IRStateManager.getInstance().addLinkedAVSequences({
-            videoSequence: videoSeq,
-            audioSequence: audioSeq,
-            videoTrackId: targetTrackId,
-            audioTrackId,
-          });
-        } else {
-          // Standard single sequence ingestion (Pure Audio or Video without audio stream)
-          const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
-          const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
-          const newSeq: IRSequence = {
-            id: seqId,
-            name: assetId,
-            type: asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : 'video',
-            time: {
-              start: dropFrame,
-              duration: durationFrames,
-            },
-            startFrame: dropFrame,
-            timelineStartFrame: dropFrame,
-            durationFrames,
-            assetId,
-            modifiers: [],
-          };
-
-          IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
-            trackTypeFallback: targetTrackType,
-            trackNameFallback: targetTrackId,
-          });
-        }
-        setIsRightOpen(true);
-      }
-    }
-  };
-
-  const fps = irState.doc.meta.globalFps || 30;
-  const totalFrames = irState.timeline?.totalFrames || 300;
-  const width = irState.doc.meta.canvasSize.w || 1920;
-  const height = irState.doc.meta.canvasSize.h || 1080;
+  const { sensors, activeDragItem, handleDragStart, handleDragEnd } = useWorkspaceDnd({
+    currentFrame,
+    fps,
+    onSequenceInserted: handleSequenceInserted,
+  });
 
   // Sync StudioPlayheadController configuration
   useEffect(() => {
@@ -345,210 +125,46 @@ function StudioWorkspace() {
     shuttle.togglePlay();
   };
 
-
   const handleStartExport = async () => {
+    const abortController = new AbortController();
+    exportAbortControllerRef.current = abortController;
+
     try {
       setIsExporting(true);
       setExportProgress(0);
-      cancelExportRef.current = false;
 
-      const sink = new MediabunnyClientSink();
-      await sink.initialize({
+      const result = await ClientExportOrchestrator.exportToMp4({
+        irState,
         width,
         height,
         fps,
-        format: 'mp4',
-        codec: 'avc1.42E01E',
-        videoBitrate: 4_000_000,
-        enableAudio: true,
+        totalFrames,
+        signal: abortController.signal,
+        onProgress: setExportProgress,
       });
 
-      let offscreenCanvas: HTMLCanvasElement | null = null;
-      let ctx: CanvasRenderingContext2D | null = null;
-
-      if (typeof document !== 'undefined') {
-        offscreenCanvas = document.createElement('canvas');
-        offscreenCanvas.width = width;
-        offscreenCanvas.height = height;
-        ctx = offscreenCanvas.getContext('2d', { willReadFrequently: true });
-      }
-
-      // Initialize IRPreviewEngine with active timeline if available
-      const previewEngine = irState.timeline ? new IRPreviewEngine(irState.timeline) : null;
-      const studioTextureCache = AssetTextureCache.getInstance();
-      const assetsMap = irState.doc?.assets || {};
-      const engineTextures = previewEngine ? previewEngine.getTextureCache() : null;
-
-      for (let f = 0; f < totalFrames; f++) {
-        if (cancelExportRef.current) {
-          console.warn('Client export cancelled by user.');
-          break;
+      if (!result.cancelled) {
+        if (result.buffer) {
+          downloadExportedMp4(result.buffer);
         }
-
-        let rgba: Uint8Array;
-        if (ctx && offscreenCanvas) {
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(0, 0, width, height);
-
-          if (previewEngine && engineTextures) {
-            // Lazy texture loading for active sequences at frame f
-            const activeSeqs = irState.intervalTree?.queryActive(f) || [];
-            for (const seq of activeSeqs) {
-              if (seq.assetId) {
-                const assetDef = assetsMap[seq.assetId];
-                const assetSrc = assetDef?.src;
-                const assetType = assetDef?.type;
-                const seqStart = seq.startFrame ?? 0;
-                const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
-
-                const visualAsset = studioTextureCache.getVisualAsset(
-                  seq.assetId,
-                  assetSrc,
-                  assetType === 'image' ? 'image' : 'video',
-                  seqLocalTimeSec
-                );
-
-                if (visualAsset.source) {
-                  engineTextures.set(seq.assetId, visualAsset.source);
-                }
-              }
-            }
-
-            previewEngine.renderFrame(f, ctx, {
-              textureCache: engineTextures,
-            });
-          }
-
-          const imgData = ctx.getImageData(0, 0, width, height);
-          rgba = new Uint8Array(imgData.data.buffer);
-        } else {
-          rgba = new Uint8Array(width * height * 4).fill(0);
-        }
-
-        await sink.consumeFrame(f, rgba);
-        setExportProgress(Math.round(((f + 1) / totalFrames) * 85));
-      }
-
-      if (!cancelExportRef.current) {
-        setExportProgress(90);
-
-        // Mix timeline audio using UniversalAudioMixer
-        let audioMixResult:
-          | {
-              totalSamples: number;
-              sampleRate: number;
-              channels: number;
-              durationSeconds: number;
-              buffer: Float32Array;
-              pcmLeft: Float32Array;
-              pcmRight: Float32Array;
-            }
-          | undefined = undefined;
-        try {
-          const resolvedTracks = normalizeTracksList(irState.timeline?.tracks);
-          const audioTracks = resolvedTracks.filter((t) => t.type === 'audio');
-          if (audioTracks.length > 0) {
-            const sampleRate = 48000;
-            const totalDurationSec = totalFrames / fps;
-            const totalSamples = Math.floor(totalDurationSec * sampleRate);
-            const mixer = new UniversalAudioMixer([], sampleRate);
-
-            // Populate clips from compiled audio sequences
-            for (const track of audioTracks) {
-              const sequences = Array.isArray(track.sequences)
-                ? track.sequences
-                : track.sequences instanceof Map
-                  ? Array.from(track.sequences.values())
-                  : [];
-              for (const seq of sequences) {
-                const startSec = (seq.startFrame ?? 0) / fps;
-                const durationSec = (seq.durationFrames ?? 30) / fps;
-                const isVoice = track.id?.includes('voice') || seq.name?.toLowerCase().includes('voice');
-
-                // Resolve real PCM audio source if asset is available
-                let audioSource: DecodedPcmSource | undefined;
-                if (seq.assetId && assetsMap[seq.assetId]) {
-                  const assetDef = assetsMap[seq.assetId];
-                  let decoded = AudioAssetCache.getInstance().getAudioChannels(seq.assetId, assetDef.src);
-                  if (!decoded && assetDef.src) {
-                    try {
-                      decoded = await AudioAssetCache.getInstance().fetchAndDecode(seq.assetId, assetDef.src);
-                    } catch (e) {
-                      console.warn(`[Export] Failed to decode audio for asset ${seq.assetId}:`, e);
-                    }
-                  }
-                  if (decoded) {
-                    audioSource = new DecodedPcmSource({
-                      channels: decoded.channels,
-                      sourceSampleRate: decoded.sampleRate,
-                      sourceTrimStartSec: (seq.sourceTrim?.startFrame || 0) / fps,
-                      loop: track.id?.toLowerCase().includes('bgm') || track.name?.toLowerCase().includes('bgm'),
-                    });
-                  }
-                }
-
-                mixer.addClip({
-                  id: seq.id,
-                  type: isVoice ? 'voice' : 'bgm',
-                  startTimeSec: startSec,
-                  durationSec: durationSec,
-                  volume: 0.85,
-                  assetId: seq.assetId,
-                  audioSource,
-                  modifiers: seq.modifiers,
-                });
-              }
-            }
-
-            const mix = mixer.mixStereo(0, totalDurationSec);
-            audioMixResult = {
-              totalSamples,
-              sampleRate,
-              channels: 2,
-              durationSeconds: totalDurationSec,
-              buffer: new Float32Array(totalSamples * 2),
-              pcmLeft: mix.left,
-              pcmRight: mix.right,
-            };
-          }
-        } catch (audioErr) {
-          console.warn('Audio mixing for export encountered an error, falling back to silent/video-only:', audioErr);
-        }
-
-        setExportProgress(95);
-        const result = await sink.finalize(audioMixResult);
-        setExportProgress(100);
-        const exportBuffer = result.buffer || sink.getBuffer();
-
-        if (exportBuffer && typeof document !== 'undefined' && typeof URL !== 'undefined') {
-          const blob = new Blob([exportBuffer], { type: 'video/mp4' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `video-ir-export-${Date.now()}.mp4`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 5000);
-        }
-
         alert(
-          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes || exportBuffer?.byteLength || 0} bytes\nFrames: ${result.framesConsumed}`
+          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes} bytes\nFrames: ${result.framesConsumed}`
         );
       }
     } catch (err: unknown) {
       console.error('Client export error:', err);
       alert(`Client export failed: ${getErrorMessage(err)}`);
     } finally {
+      exportAbortControllerRef.current = null;
       setIsExporting(false);
       setExportProgress(0);
     }
   };
 
-  const handleCancelExport = () => {
-    cancelExportRef.current = true;
+  const handleCancelExport = useCallback(() => {
+    exportAbortControllerRef.current?.abort();
     setIsExporting(false);
-  };
+  }, []);
 
   return (
     <DndContext
@@ -616,44 +232,11 @@ function StudioWorkspace() {
               onScrub={handleScrub}
             />
 
-            {/* Export Progress Modal */}
-            <Dialog
-              open={isExporting}
-              onOpenChange={(open) => {
-                if (!open) handleCancelExport();
-              }}
-            >
-              <DialogContent className="max-w-sm glass-panel border-glass-border text-foreground">
-                <DialogHeader>
-                  <div className="flex items-center justify-left">
-                    <div className="flex items-center gap-2">
-                      <Video className="w-4 h-4 text-accent-theme" />
-                      <DialogTitle>Video Export</DialogTitle>
-                    </div>
-                    <Badge variant="outline" className="font-mono text-accent-theme bg-accent-theme/10 border-accent-theme/30">
-                      {exportProgress}%
-                    </Badge>
-                  </div>
-                  <DialogDescription>
-                    Encoding Video IR timeline into MP4 ...
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="py-3">
-                  <Progress value={exportProgress} className="h-2.5" />
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleCancelExport}
-                  >
-                    Cancel Export
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <ExportProgressModal
+              isExporting={isExporting}
+              exportProgress={exportProgress}
+              onCancelExport={handleCancelExport}
+            />
           </div>
 
           {isRightOpen && <RightSidebar />}

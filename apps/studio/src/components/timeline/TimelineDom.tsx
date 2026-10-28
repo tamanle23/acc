@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -329,33 +329,56 @@ export function TimelineDom({
     setActiveDragState(null);
   };
 
-  const handleClipClick = (seq: StudioSequence, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (activeTool === 'razor') {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickPx = e.clientX - rect.left;
-      const sStart = getSequenceStartFrame(seq);
-      const sDuration = getSequenceDurationFrames(seq, 30);
-      const clickedFrame = Math.max(
-        sStart + 1,
-        Math.min(
-          sStart + sDuration - 1,
-          sStart + Math.round(clickPx / pixelsPerFrame)
-        )
-      );
-      IRStateManager.getInstance().splitSequence(seq.id, clickedFrame);
-    } else {
-      IRStateManager.getInstance().setSelectedSequenceId(seq.id);
-    }
-  };
+  const handleClipClick = useCallback(
+    (seq: StudioSequence, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (activeTool === 'razor') {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickPx = e.clientX - rect.left;
+        const sStart = getSequenceStartFrame(seq);
+        const sDuration = getSequenceDurationFrames(seq, 30);
+        const clickedFrame = Math.max(
+          sStart + 1,
+          Math.min(
+            sStart + sDuration - 1,
+            sStart + Math.round(clickPx / pixelsPerFrame)
+          )
+        );
+        IRStateManager.getInstance().splitSequence(seq.id, clickedFrame);
+      } else {
+        IRStateManager.getInstance().setSelectedSequenceId(seq.id);
+      }
+    },
+    [activeTool, pixelsPerFrame]
+  );
 
-  const getTrackBadgeStyle = (track: StudioTrack) => {
+  const getTrackBadgeStyle = useCallback((track: StudioTrack) => {
     if (track.type === 'audio') return 'bg-emerald-950/85 border-emerald-500/50 text-emerald-200 shadow-emerald-950/30';
     if (track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx')) return 'bg-amber-950/85 border-amber-500/50 text-amber-200 shadow-amber-950/30';
     if (track.type === 'overlay' || track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub')) return 'bg-violet-950/85 border-violet-500/50 text-violet-200 shadow-violet-950/30';
     if (track.type === 'video') return 'bg-indigo-950/85 border-indigo-500/50 text-indigo-200 shadow-indigo-950/30';
     return 'bg-muted/85 border-glass-border text-foreground shadow-sm';
-  };
+  }, []);
+
+  const handleClipHover = useCallback(
+    (
+      hoverData: {
+        seq: StudioSequence;
+        track: StudioTrack;
+        position: { leftPx: number; topPx: number; widthPx: number };
+      } | null
+    ) => {
+      if (hoverData) {
+        onHoveredClipChange({
+          ...hoverData,
+          fps,
+        });
+      } else {
+        onHoveredClipChange(null);
+      }
+    },
+    [fps, onHoveredClipChange]
+  );
 
   return (
     <DndContext
@@ -424,30 +447,30 @@ export function TimelineDom({
                   isLocked={isLocked}
                   isInvalidDrop={isInvalidDropOverThisTrack}
                 >
-                  {visibleSequences.map((seq: StudioSequence) => (
-                    <ClipItem
-                      key={seq.id}
-                      seq={seq}
-                      track={track}
-                      fps={fps}
-                      pixelsPerFrame={pixelsPerFrame}
-                      isSelected={selectedSeqId === seq.id}
-                      activeTool={activeTool}
-                      getTrackBadgeStyle={getTrackBadgeStyle}
-                      onClipClick={handleClipClick}
-                      onClipHover={(hoverData) => {
-                        if (hoverData) {
-                          onHoveredClipChange({
-                            ...hoverData,
-                            fps,
-                          });
-                        } else {
-                          onHoveredClipChange(null);
-                        }
-                      }}
-                      activeDragState={activeDragState}
-                    />
-                  ))}
+                  {visibleSequences.map((seq: StudioSequence) => {
+                    const isSeqDragged = activeDragState?.seqId === seq.id;
+                    const isSeqPairedDrag = activeDragState?.pairedSeqId === seq.id;
+                    return (
+                      <ClipItem
+                        key={seq.id}
+                        seq={seq}
+                        track={track}
+                        fps={fps}
+                        pixelsPerFrame={pixelsPerFrame}
+                        isSelected={selectedSeqId === seq.id}
+                        activeTool={activeTool}
+                        getTrackBadgeStyle={getTrackBadgeStyle}
+                        onClipClick={handleClipClick}
+                        onClipHover={handleClipHover}
+                        isBeingDragged={isSeqDragged}
+                        isPairedDrag={isSeqPairedDrag}
+                        dragType={isSeqDragged ? activeDragState?.type ?? null : null}
+                        trimHandle={isSeqDragged ? activeDragState?.handle : undefined}
+                        trimDeltaFrames={isSeqDragged ? activeDragState?.deltaFrames ?? 0 : 0}
+                        isAnyDragActive={Boolean(activeDragState)}
+                      />
+                    );
+                  })}
                 </DroppableTrackLane>
               </div>
             </div>

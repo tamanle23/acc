@@ -34,7 +34,21 @@ export interface ClipItemProps {
   getTrackBadgeStyle: (track: StudioTrack) => string;
   onClipClick: (seq: StudioSequence, e: React.MouseEvent) => void;
   onClipHover?: (clipData: { seq: StudioSequence; track: StudioTrack; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
-  activeDragState: {
+  /**
+   * Scoped primitive drag props for 60 FPS memoization isolation.
+   * Stationary clips receive constant primitive booleans so they do not re-render
+   * on every animation frame while another clip is being dragged.
+   */
+  isBeingDragged?: boolean;
+  isPairedDrag?: boolean;
+  dragType?: 'clip' | 'trim' | null;
+  trimHandle?: 'start' | 'end';
+  trimDeltaFrames?: number;
+  isAnyDragActive?: boolean;
+  /**
+   * Optional legacy drag state object (preserved for backward compatibility).
+   */
+  activeDragState?: {
     type: 'clip' | 'trim';
     seqId: string;
     pairedSeqId?: string | null;
@@ -48,7 +62,7 @@ export interface ClipItemProps {
 
 export type TimelineClipItemProps = ClipItemProps;
 
-export function ClipItem({
+function ClipItemInner({
   seq,
   track,
   pixelsPerFrame,
@@ -58,10 +72,21 @@ export function ClipItem({
   getTrackBadgeStyle,
   onClipClick,
   onClipHover,
+  isBeingDragged: propIsBeingDragged,
+  isPairedDrag: propIsPairedDrag,
+  dragType: propDragType,
+  trimHandle: propTrimHandle,
+  trimDeltaFrames: propTrimDeltaFrames,
+  isAnyDragActive: propIsAnyDragActive,
   activeDragState,
 }: ClipItemProps) {
-  const isBeingDragged = activeDragState?.seqId === seq.id;
-  const isPairedDrag = activeDragState?.pairedSeqId === seq.id;
+  const isBeingDragged = propIsBeingDragged ?? (activeDragState?.seqId === seq.id);
+  const isPairedDrag = propIsPairedDrag ?? (activeDragState?.pairedSeqId === seq.id);
+  const effectiveDragType = propDragType ?? (isBeingDragged ? activeDragState?.type ?? null : null);
+  const effectiveTrimHandle = propTrimHandle ?? activeDragState?.handle;
+  const effectiveTrimDelta = propTrimDeltaFrames ?? (activeDragState?.deltaFrames ?? 0);
+  const anyDragActive = propIsAnyDragActive ?? Boolean(activeDragState);
+
   const isAudio = seq.type === 'audio';
   const isTextOrOverlay =
     track.type === 'overlay' ||
@@ -69,7 +94,6 @@ export function ClipItem({
     seq.type === 'text' ||
     (seq.cues && seq.cues.length > 0);
   const isFx = !seq.assetId;
-  const isVideoAsset = seq.type === 'video';
   const isImageAsset = seq.type === 'image';
 
   const rawStart = getSequenceStartFrame(seq);
@@ -78,12 +102,12 @@ export function ClipItem({
   let displayDurationFrames = seqDurationFrames;
 
   // Trim handle interaction directly modifies display frames during trim
-  if (isBeingDragged && activeDragState && activeDragState.type === 'trim') {
-    if (activeDragState.handle === 'start') {
-      displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-      displayDurationFrames = Math.max(1, seqDurationFrames - activeDragState.deltaFrames);
+  if (isBeingDragged && effectiveDragType === 'trim') {
+    if (effectiveTrimHandle === 'start') {
+      displayStartFrame = Math.max(0, rawStart + effectiveTrimDelta);
+      displayDurationFrames = Math.max(1, seqDurationFrames - effectiveTrimDelta);
     } else {
-      displayDurationFrames = Math.max(1, seqDurationFrames + activeDragState.deltaFrames);
+      displayDurationFrames = Math.max(1, seqDurationFrames + effectiveTrimDelta);
     }
   }
 
@@ -118,14 +142,14 @@ export function ClipItem({
   const durationBadge = displayDurationFrames >= 30 ? `${durationSec}s` : `${displayDurationFrames}f`;
 
   return (
-    <ClipHoverHUD seq={seq} track={track} fps={fps} disabled={Boolean(activeDragState)}>
+    <ClipHoverHUD seq={seq} track={track} fps={fps} disabled={anyDragActive}>
       <div
         ref={setNodeRef}
         {...listeners}
         {...attributes}
         onClick={(e) => onClipClick(seq, e)}
         onMouseEnter={(e) => {
-          if (activeDragState) return;
+          if (anyDragActive) return;
           const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
           onClipHover?.({
             seq,
@@ -147,7 +171,7 @@ export function ClipItem({
             ? 'transition-none'
             : 'transition-all'
         } ${
-          isBeingDragged && activeDragState?.type === 'clip'
+          isBeingDragged && effectiveDragType === 'clip'
             ? 'opacity-35 border-dashed border-accent-theme/70 bg-accent-theme/15 z-10'
             : isPairedDrag
               ? 'ring-1 ring-dashed ring-accent-theme/70 opacity-70 z-10'
@@ -320,6 +344,12 @@ export function ClipItem({
   );
 }
 
+/**
+ * Memoized ClipItem component.
+ * Prevents stationary clips across all timeline tracks from re-rendering at 60Hz
+ * when another clip is being dragged or trimmed.
+ */
+export const ClipItem = React.memo(ClipItemInner);
+
 // Backward-compatible alias
 export const TimelineClipItem = ClipItem;
-
