@@ -25,6 +25,7 @@ export interface WebCacheOptions {
  * Designed for Service Workers, Web Workers, and Browser environments to cache binary assets, frames,
  * and blobs with HTTP Response streaming semantics.
  * Strictly operates on its own capacity (CacheStorage) with zero in-memory fallback retention.
+ * @deprecated use IndexedDbCacheStrategy or OpfsCacheStrategy instead
  */
 export class WebCacheStrategy implements IContentCacheStrategy {
   public readonly id = ContentCacheStrategyId.WebCache;

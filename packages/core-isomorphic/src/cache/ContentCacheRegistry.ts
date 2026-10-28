@@ -1,15 +1,12 @@
 import { ContentCacheStrategyId, type IContentCacheStrategy } from './types';
-import { MemoryCacheStrategy } from './MemoryCacheStrategy';
 
 /**
  * Universal Content Cache Registry:
  * Manages default and named cache strategies across isomorphic, client, and native runtimes.
  */
 export class ContentCacheRegistry {
-  private static defaultStrategy: IContentCacheStrategy = new MemoryCacheStrategy();
-  private static strategies: Map<ContentCacheStrategyId | string, IContentCacheStrategy> = new Map([
-    [ContentCacheStrategyId.Memory, ContentCacheRegistry.defaultStrategy],
-  ]);
+  private static defaultStrategy: IContentCacheStrategy;
+  private static strategies: Map<ContentCacheStrategyId | string, IContentCacheStrategy> = new Map();
 
   public static register(strategy: IContentCacheStrategy, makeDefault: boolean = false): void {
     ContentCacheRegistry.strategies.set(strategy.id, strategy);
@@ -46,8 +43,6 @@ export class ContentCacheRegistry {
   }
 
   public static reset(): void {
-    ContentCacheRegistry.defaultStrategy = new MemoryCacheStrategy();
     ContentCacheRegistry.strategies.clear();
-    ContentCacheRegistry.strategies.set(ContentCacheStrategyId.Memory, ContentCacheRegistry.defaultStrategy);
   }
 }

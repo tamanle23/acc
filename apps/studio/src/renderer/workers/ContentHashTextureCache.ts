@@ -18,6 +18,7 @@ export interface TextRasterOptions {
 
 export class ContentHashTextureCache {
   private static instance: ContentHashTextureCache;
+  private readonly MAX_ENTRIES = 64;
   private cache = new Map<number, ImageBitmap>();
   private scratchCanvas: OffscreenCanvas | null = null;
   private scratchCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -97,7 +98,7 @@ export class ContentHashTextureCache {
 
     try {
       const bitmap = await createImageBitmap(this.scratchCanvas, 0, 0, textWidth, textHeight);
-      this.cache.set(hash, bitmap);
+      this.set(hash, bitmap);
       return bitmap;
     } catch {
       return null;
@@ -105,7 +106,13 @@ export class ContentHashTextureCache {
   }
 
   public get(hash: number): ImageBitmap | undefined {
-    return this.cache.get(hash);
+    const bmp = this.cache.get(hash);
+    if (bmp) {
+      // Refresh LRU order
+      this.cache.delete(hash);
+      this.cache.set(hash, bmp);
+    }
+    return bmp;
   }
 
   public has(hash: number): boolean {
@@ -118,6 +125,18 @@ export class ContentHashTextureCache {
       try {
         existing.close();
       } catch {}
+      this.cache.delete(hash);
+    } else if (this.cache.size >= this.MAX_ENTRIES && !this.cache.has(hash)) {
+      const oldestHash = this.cache.keys().next().value;
+      if (oldestHash !== undefined) {
+        const oldBmp = this.cache.get(oldestHash);
+        if (oldBmp) {
+          try {
+            oldBmp.close();
+          } catch {}
+        }
+        this.cache.delete(oldestHash);
+      }
     }
     this.cache.set(hash, bitmap);
   }

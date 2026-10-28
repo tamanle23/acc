@@ -1,4 +1,4 @@
-import { AssetProtocolRegistry } from '@acc/core-isomorphic';
+import { AssetProtocolRegistry, ContentCacheRegistry } from '@acc/core-isomorphic';
 
 /**
  * AudioAssetCache:
@@ -108,9 +108,33 @@ export class AudioAssetCache {
         const ctx = this.getAudioContext();
         if (!ctx) return null;
 
-        // Resolve audio source via AssetProtocolRegistry (supports blob:, cache:, http:, data:)
-        const assetBlob = AssetProtocolRegistry.getInstance().resolve(src);
-        const arrayBuffer = await assetBlob.arrayBuffer();
+        // Check ContentCacheRegistry (OPFS / persistent cache) first
+        let arrayBuffer: ArrayBuffer | null = null;
+        try {
+          const contentCache = ContentCacheRegistry.get();
+          if (typeof contentCache.getBlob === 'function') {
+            const cachedBlob = await contentCache.getBlob(src);
+            if (cachedBlob) {
+              arrayBuffer = await cachedBlob.arrayBuffer();
+            }
+          }
+        } catch {}
+
+        if (!arrayBuffer) {
+          // Resolve audio source via AssetProtocolRegistry (supports blob:, cache:, http:, data:)
+          const assetBlob = AssetProtocolRegistry.getInstance().resolve(src);
+          arrayBuffer = await assetBlob.arrayBuffer();
+
+          // Asynchronously persist to ContentCacheRegistry (OPFS) for future fast streaming
+          try {
+            const contentCache = ContentCacheRegistry.get();
+            if (typeof contentCache.setBlob === 'function') {
+              const rawBlob = await assetBlob.blob();
+              contentCache.setBlob(src, rawBlob).catch(() => {});
+            }
+          } catch {}
+        }
+
         const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
         const channels: Float32Array[] = [];
@@ -201,5 +225,22 @@ export class AudioAssetCache {
     this.cache.clear();
     this.inFlight.clear();
     this.currentPcmBytes = 0;
+  }
+
+  /**
+   * Disposes of the active AudioContext and purges memory to prevent leaks.
+   */
+  public dispose(): void {
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        this.audioContext.close();
+      } catch {}
+      this.audioContext = null;
+    }
+    this.clear();
+  }
+
+  public [Symbol.dispose](): void {
+    this.dispose();
   }
 }

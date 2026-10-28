@@ -14,7 +14,8 @@ export interface WaveSurferWaveformProps {
   fps?: number;
 }
 
-// Global pyramid cache to provide multi-resolution LOD decimation
+// Global pyramid cache to provide multi-resolution LOD decimation with bounded LRU ceiling
+const MAX_PYRAMID_CACHE_ENTRIES = 32;
 const pyramidCache = new Map<string, WaveformLODPyramid>();
 
 export function getCachedPeaks(id: string, durationFrames: number, targetBars: number): number[] {
@@ -22,6 +23,16 @@ export function getCachedPeaks(id: string, durationFrames: number, targetBars: n
   if (!pyramid) {
     const rawPeaks = WebAudioEngine.getInstance().getWaveformPeaks(id, durationFrames, Math.max(targetBars * 4, 320));
     pyramid = new WaveformLODPyramid(rawPeaks);
+    if (pyramidCache.size >= MAX_PYRAMID_CACHE_ENTRIES && !pyramidCache.has(id)) {
+      const oldestId = pyramidCache.keys().next().value;
+      if (oldestId !== undefined) {
+        pyramidCache.delete(oldestId);
+      }
+    }
+    pyramidCache.set(id, pyramid);
+  } else {
+    // Refresh LRU order
+    pyramidCache.delete(id);
     pyramidCache.set(id, pyramid);
   }
 

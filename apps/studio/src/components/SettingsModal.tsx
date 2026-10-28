@@ -16,7 +16,10 @@ import {
   type BlurIntensity,
   type AccentColor,
 } from '../lib/theme/ThemeProvider';
-import { Sliders, Sun, Moon, Sparkles, RefreshCw, Layers, Check } from 'lucide-react';
+import { Sliders, Sun, Moon, Sparkles, RefreshCw, Layers, Check, HardDrive, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { clearWaveSurferPeakCache } from './timeline/WaveSurferWaveform';
 
 const GLASS_STYLES: { id: GlassStyle; label: string; desc: string }[] = [
   { id: 'specular', label: 'Specular Sheen', desc: 'Sharpened top-edge highlight with subtle rim reflection' },
@@ -167,6 +170,41 @@ export function SettingsModal() {
                   <span className="text-xs text-foreground font-medium">{accent.label}</span>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* 5. Storage & Media Cache (OPFS & Local Scratch) */}
+          <div className="pt-2 border-t border-[var(--glass-border)]">
+            <label className="font-semibold text-foreground/90 tracking-wide uppercase text-[11px] flex items-center gap-1.5 mb-2">
+              <HardDrive className="w-3.5 h-3.5 text-cyan-500" />
+              Storage & Media Cache
+            </label>
+            <div className="glass-card p-3 rounded-xl border border-[var(--glass-border)] flex items-center justify-between">
+              <div>
+                <div className="font-semibold text-foreground text-xs">Origin Private File System (OPFS)</div>
+                <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  Cached video slices, audio PCM waveforms, and export scratch files
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border-rose-500/20 gap-1.5 cursor-pointer"
+                onClick={async () => {
+                  try {
+                    const cache = ContentCacheRegistry.get();
+                    await cache.clear();
+                    clearWaveSurferPeakCache();
+                    toast.success('Media cache purged successfully');
+                  } catch (err: unknown) {
+                    toast.error('Failed to clear cache');
+                  }
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Purge Cache
+              </Button>
             </div>
           </div>
 

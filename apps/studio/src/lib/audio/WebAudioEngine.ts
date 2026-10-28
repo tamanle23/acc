@@ -27,8 +27,8 @@ export class WebAudioEngine {
   private currentSource: AudioBufferSourceNode | null = null;
   private scrubSource: AudioBufferSourceNode | null = null;
 
-  // Active audio sources queue for continuous multi-chunk streaming
-  private queuedSources: AudioBufferSourceNode[] = [];
+  // Active audio sources set for continuous multi-chunk streaming with deterministic onended cleanup
+  private activeSources = new Set<AudioBufferSourceNode>();
   private scheduledAudioEndTime = 0;
   private nextTimelineSecToSynthesize = 0;
   private refillInterval: ReturnType<typeof setInterval> | null = null;
@@ -37,9 +37,9 @@ export class WebAudioEngine {
   private previewEngine: IRPreviewEngine | null = null;
   private mixer: UniversalAudioMixer = new UniversalAudioMixer([], 44100);
   private waveformCache = new Map<string, Float32Array>();
+  private readonly MAX_WAVEFORM_ENTRIES = 64;
   private waveformWorker: Worker | null = null;
   private workerPending = new Set<string>();
-  private audioBufferCache = new Map<string, AudioBuffer>();
   private streamWorklet: UniversalAudioStreamWorklet = new UniversalAudioStreamWorklet(44100);
   private isPlaying = false;
   private playbackStartAudioTime = 0;
@@ -190,7 +190,14 @@ export class WebAudioEngine {
       source.start(now);
 
       this.currentSource = source;
-      this.queuedSources = [source];
+      this.activeSources.add(source);
+      source.onended = () => {
+        try {
+          source.disconnect();
+        } catch {}
+        this.activeSources.delete(source);
+      };
+
       this.isPlaying = true;
       this.playbackStartAudioTime = now;
       this.playbackStartTimelineTime = startSec;
@@ -253,16 +260,14 @@ export class WebAudioEngine {
           const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
           nextSource.start(scheduleTime);
           this.scheduledAudioEndTime = scheduleTime + sliceDuration;
-          this.queuedSources.push(nextSource);
 
-          // Prune sources that have already finished playing
-          this.queuedSources = this.queuedSources.filter((s) => {
+          this.activeSources.add(nextSource);
+          nextSource.onended = () => {
             try {
-              return s.buffer !== null;
-            } catch {
-              return false;
-            }
-          });
+              nextSource.disconnect();
+            } catch {}
+            this.activeSources.delete(nextSource);
+          };
         } catch (e) {
           console.warn('[WebAudioEngine] Error scheduling audio slice:', e);
         }
@@ -271,7 +276,7 @@ export class WebAudioEngine {
   }
 
   /**
-   * Stops active audio playback and clears all queued sources and replenishment intervals.
+   * Stops active audio playback and clears all active sources and replenishment intervals.
    */
   public stopPlayback(): void {
     if (this.refillInterval) {
@@ -289,13 +294,13 @@ export class WebAudioEngine {
       this.currentSource = null;
     }
 
-    for (const source of this.queuedSources) {
+    for (const source of this.activeSources) {
       try {
         source.stop();
         source.disconnect();
       } catch { }
     }
-    this.queuedSources = [];
+    this.activeSources.clear();
     this.scheduledAudioEndTime = 0;
     this.nextTimelineSecToSynthesize = 0;
     this.streamWorklet.reset();
@@ -452,10 +457,11 @@ export class WebAudioEngine {
             new URL('./audioWaveform.worker.ts', import.meta.url),
             { type: 'module' }
           );
-          this.waveformWorker.onmessage = (e: MessageEvent<{ id: string; targetBars: number; peaks: Float32Array }>) => {
+          this.waveformWorker.onmessage = (e: MessageEvent<{ id: string; durationFrames?: number; targetBars: number; peaks: Float32Array }>) => {
             const res = e.data;
-            const key = `${res.id}:${durationFrames}:${res.targetBars}`;
-            this.waveformCache.set(key, res.peaks);
+            const resFrames = res.durationFrames ?? durationFrames;
+            const key = `${res.id}:${resFrames}:${res.targetBars}`;
+            this.setWaveformCache(key, res.peaks);
             this.workerPending.delete(key);
           };
         }
@@ -484,7 +490,7 @@ export class WebAudioEngine {
           }
           peaks[i] = Math.max(0.05, Math.min(1.0, maxVal));
         }
-        this.waveformCache.set(cacheKey, peaks);
+        this.setWaveformCache(cacheKey, peaks);
         return peaks;
       }
     }
@@ -504,8 +510,18 @@ export class WebAudioEngine {
       peaks[i] = Math.max(0.1, Math.min(1.0, primaryEnvelope + cadence + noise));
     }
 
-    this.waveformCache.set(cacheKey, peaks);
+    this.setWaveformCache(cacheKey, peaks);
     return peaks;
+  }
+
+  private setWaveformCache(key: string, peaks: Float32Array): void {
+    if (this.waveformCache.size >= this.MAX_WAVEFORM_ENTRIES && !this.waveformCache.has(key)) {
+      const oldest = this.waveformCache.keys().next().value;
+      if (oldest !== undefined) {
+        this.waveformCache.delete(oldest);
+      }
+    }
+    this.waveformCache.set(key, peaks);
   }
 
   /**

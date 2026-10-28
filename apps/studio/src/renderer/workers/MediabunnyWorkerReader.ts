@@ -1,10 +1,12 @@
 import {
   Input,
   UrlSource,
+  BlobSource,
   CanvasSink,
   ALL_FORMATS,
   type InputVideoTrack,
 } from 'mediabunny';
+import { ContentCacheRegistry } from '@acc/core-isomorphic';
 
 export interface MediabunnyReaderOptions {
   fastScrubFps?: number; // default: 30
@@ -61,9 +63,24 @@ export class MediabunnyWorkerReader {
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        let source: any = new UrlSource(this.src);
+
+        // Zero-copy OPFS / cached Blob streaming resolution
+        try {
+          const cache = ContentCacheRegistry.get();
+          if (typeof cache.getBlob === 'function') {
+            const cachedBlob = await cache.getBlob(this.src);
+            if (cachedBlob) {
+              source = new BlobSource(cachedBlob);
+            }
+          }
+        } catch {
+          // Fallback to standard network UrlSource
+        }
+
         this.input = new Input({
           formats: ALL_FORMATS,
-          source: new UrlSource(this.src),
+          source,
         });
 
         const track = await this.input.getPrimaryVideoTrack();

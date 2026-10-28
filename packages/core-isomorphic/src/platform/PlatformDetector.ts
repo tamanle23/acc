@@ -209,16 +209,14 @@ export class PlatformDetector {
       if (capabilities.hasFileSystem && (!ids || ids.has(ContentCacheStrategyId.NativeFile))) {
         return ContentCacheStrategyId.NativeFile;
       }
-      return ContentCacheStrategyId.Memory;
-    }
-    if (capabilities.hasWebCache && (!ids || ids.has(ContentCacheStrategyId.WebCache))) {
-      return ContentCacheStrategyId.WebCache;
     }
     // Browser / Worker client
     if (capabilities.hasIndexedDb && (!ids || ids.has(ContentCacheStrategyId.IndexedDb))) {
       return ContentCacheStrategyId.IndexedDb;
     }
-    return ContentCacheStrategyId.Memory;
+    if (capabilities.hasWebCache && (!ids || ids.has(ContentCacheStrategyId.WebCache))) {
+      return ContentCacheStrategyId.WebCache;
+    }
   }
 
 

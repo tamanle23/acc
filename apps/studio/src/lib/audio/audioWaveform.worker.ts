@@ -13,6 +13,7 @@ export interface WaveformWorkerRequest {
 
 export interface WaveformWorkerResponse {
   id: string;
+  durationFrames?: number;
   targetBars: number;
   peaks: Float32Array;
 }
@@ -73,13 +74,14 @@ export function generateProceduralEnvelope(id: string, targetBars: number): Floa
 // In Web Worker context: listen for incoming requests
 if (typeof self !== 'undefined' && typeof window === 'undefined') {
   self.onmessage = (event: MessageEvent<WaveformWorkerRequest>) => {
-    const { id, targetBars, channelData } = event.data;
+    const { id, durationFrames, targetBars, channelData } = event.data;
     const peaks = channelData && channelData.length > 0
       ? computePeaksFromPcm(channelData, targetBars)
       : generateProceduralEnvelope(id, targetBars);
 
     const response: WaveformWorkerResponse = {
       id,
+      durationFrames,
       targetBars,
       peaks,
     };

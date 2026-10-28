@@ -43,7 +43,7 @@ export interface ClientExportResult {
   cancelled: boolean;
   framesConsumed: number;
   fileSizeBytes: number;
-  buffer: Uint8Array | ArrayBuffer | null;
+  buffer: Uint8Array | ArrayBuffer | Blob | null;
 }
 
 /**
@@ -70,18 +70,19 @@ export async function yieldToMainThread(): Promise<void> {
 }
 
 /**
- * Triggers a client-side browser download for an exported MP4 buffer.
+ * Triggers a client-side browser download for an exported MP4 buffer or OPFS Blob.
  */
 export function downloadExportedMp4(
-  exportBuffer: Uint8Array | ArrayBuffer,
+  exportBuffer: Uint8Array | ArrayBuffer | Blob,
   filename = `video-ir-export-${Date.now()}.mp4`
 ): void {
   if (typeof document === 'undefined' || typeof URL === 'undefined') return;
-  const blobPart =
-    exportBuffer instanceof Uint8Array
-      ? (exportBuffer as unknown as BlobPart)
-      : (new Uint8Array(exportBuffer) as unknown as BlobPart);
-  const blob = new Blob([blobPart], { type: 'video/mp4' });
+  const blob =
+    exportBuffer instanceof Blob
+      ? exportBuffer
+      : new Blob([exportBuffer instanceof Uint8Array ? exportBuffer : new Uint8Array(exportBuffer)], {
+        type: 'video/mp4',
+      });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -89,7 +90,7 @@ export function downloadExportedMp4(
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 /**
@@ -116,8 +117,26 @@ export class ClientExportOrchestrator {
 
     onProgress?.(0);
 
+    // Attempt OPFS scratch stream to eliminate in-memory buffer retention
+    let opfsFileHandle: FileSystemFileHandle | null = null;
+    let opfsWritable: FileSystemWritableFileStream | undefined = undefined;
+
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.storage &&
+      typeof navigator.storage.getDirectory === 'function'
+    ) {
+      try {
+        const root = await navigator.storage.getDirectory();
+        const dir = await root.getDirectoryHandle('acc_content_cache', { create: true });
+        const scratchName = `export_${Date.now()}.mp4`;
+        opfsFileHandle = await dir.getFileHandle(scratchName, { create: true });
+        opfsWritable = await opfsFileHandle.createWritable();
+      } catch {}
+    }
+
     const sink: ClientExportSinkLike = sinkFactory ? sinkFactory() : new MediabunnyClientSink();
-    await sink.initialize({
+    await (sink as any).initialize({
       width,
       height,
       fps,
@@ -125,6 +144,7 @@ export class ClientExportOrchestrator {
       codec,
       videoBitrate,
       enableAudio: true,
+      writableStream: opfsWritable,
     });
 
     let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -145,63 +165,76 @@ export class ClientExportOrchestrator {
     const safeTotalFrames = Math.max(1, totalFrames);
     const yieldStride = Math.max(1, yieldEveryNFrames);
 
-    for (let f = 0; f < safeTotalFrames; f++) {
-      if (signal?.aborted) {
-        console.warn('Client export cancelled by user.');
-        return {
-          cancelled: true,
-          framesConsumed: f,
-          fileSizeBytes: 0,
-          buffer: null,
-        };
-      }
+    // Single pre-allocated frame buffer to eliminate per-frame GC thrashing
+    const reusableRgba = new Uint8Array(width * height * 4);
 
-      let rgba: Uint8Array;
-      if (ctx && offscreenCanvas) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, width, height);
-
-        if (previewEngine && engineTextures) {
-          const activeSeqs = irState.intervalTree?.queryActive(f) || [];
-          for (const seq of activeSeqs) {
-            if (seq.assetId) {
-              const assetDef = assetsMap[seq.assetId];
-              const assetSrc = assetDef?.src;
-              const assetType = assetDef?.type;
-              const seqStart = seq.startFrame ?? 0;
-              const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
-
-              const visualAsset = studioTextureCache.getVisualAsset(
-                seq.assetId,
-                assetSrc,
-                assetType === 'image' ? 'image' : 'video',
-                seqLocalTimeSec
-              );
-
-              if (visualAsset.source) {
-                engineTextures.set(seq.assetId, visualAsset.source);
-              }
-            }
+    try {
+      for (let f = 0; f < safeTotalFrames; f++) {
+        if (signal?.aborted) {
+          console.warn('Client export cancelled by user.');
+          if (typeof (sink as any).dispose === 'function') {
+            await (sink as any).dispose();
           }
-
-          previewEngine.renderFrame(f, ctx, {
-            textureCache: engineTextures,
-          });
+          return {
+            cancelled: true,
+            framesConsumed: f,
+            fileSizeBytes: 0,
+            buffer: null,
+          };
         }
 
-        const imgData = ctx.getImageData(0, 0, width, height);
-        rgba = new Uint8Array(imgData.data.buffer);
-      } else {
-        rgba = new Uint8Array(width * height * 4).fill(0);
-      }
+        let rgba: Uint8Array;
+        if (ctx && offscreenCanvas) {
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, width, height);
 
-      await sink.consumeFrame(f, rgba);
-      onProgress?.(Math.round(((f + 1) / safeTotalFrames) * 85));
+          if (previewEngine && engineTextures) {
+            const activeSeqs = irState.intervalTree?.queryActive(f) || [];
+            for (const seq of activeSeqs) {
+              if (seq.assetId) {
+                const assetDef = assetsMap[seq.assetId];
+                const assetSrc = assetDef?.src;
+                const assetType = assetDef?.type;
+                const seqStart = seq.startFrame ?? 0;
+                const seqLocalTimeSec = Math.max(0, (f - seqStart) / fps);
 
-      // Yield to main thread periodically so UI remains 60fps responsive & Cancel works immediately
-      if ((f + 1) % yieldStride === 0) {
-        await yieldToMainThread();
+                const visualAsset = studioTextureCache.getVisualAsset(
+                  seq.assetId,
+                  assetSrc,
+                  assetType === 'image' ? 'image' : 'video',
+                  seqLocalTimeSec
+                );
+
+                if (visualAsset.source) {
+                  engineTextures.set(seq.assetId, visualAsset.source);
+                }
+              }
+            }
+
+            previewEngine.renderFrame(f, ctx, {
+              textureCache: engineTextures,
+            });
+          }
+
+          const imgData = ctx.getImageData(0, 0, width, height);
+          reusableRgba.set(imgData.data);
+          rgba = reusableRgba;
+        } else {
+          reusableRgba.fill(0);
+          rgba = reusableRgba;
+        }
+
+        await sink.consumeFrame(f, rgba);
+        onProgress?.(Math.round(((f + 1) / safeTotalFrames) * 85));
+
+        // Yield to main thread periodically so UI remains 60fps responsive & Cancel works immediately
+        if ((f + 1) % yieldStride === 0) {
+          await yieldToMainThread();
+        }
       }
+    } finally {
+      offscreenCanvas = null;
+      ctx = null;
     }
 
     if (signal?.aborted) {
@@ -307,6 +340,9 @@ export class ClientExportOrchestrator {
     }
 
     if (signal?.aborted) {
+      if (typeof (sink as any).dispose === 'function') {
+        await (sink as any).dispose();
+      }
       return {
         cancelled: true,
         framesConsumed: safeTotalFrames,
@@ -318,13 +354,32 @@ export class ClientExportOrchestrator {
     onProgress?.(95);
     const result = await sink.finalize(audioMixResult);
     onProgress?.(100);
-    const exportBuffer = result.buffer || sink.getBuffer?.() || null;
+
+    let exportBuffer: Uint8Array | ArrayBuffer | Blob | null = null;
+    let fileSizeBytes = result.fileSizeBytes || 0;
+
+    // 1. Zero-memory OPFS scratch file retrieval
+    if (opfsFileHandle) {
+      try {
+        const opfsFile = await opfsFileHandle.getFile();
+        exportBuffer = opfsFile;
+        fileSizeBytes = opfsFile.size;
+      } catch {}
+    }
+
+    // 2. Fallback to in-memory ArrayBuffer
+    if (!exportBuffer) {
+      exportBuffer = (result.buffer || sink.getBuffer?.() || null) as any;
+      if (!fileSizeBytes && exportBuffer && 'byteLength' in exportBuffer) {
+        fileSizeBytes = exportBuffer.byteLength;
+      }
+    }
 
     return {
       cancelled: false,
       framesConsumed: result.framesConsumed ?? safeTotalFrames,
-      fileSizeBytes: result.fileSizeBytes || exportBuffer?.byteLength || 0,
-      buffer: exportBuffer ?? null,
+      fileSizeBytes,
+      buffer: exportBuffer,
     };
   }
 }

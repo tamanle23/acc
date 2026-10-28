@@ -1,6 +1,6 @@
 import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
-import { DeterministicTimelineClock, UniversalCanvasProvider } from '@acc/core-isomorphic';
+import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
@@ -26,22 +26,11 @@ const textureCache = new Map<string, any>();
 const MAX_WORKER_TEXTURES = 32;
 
 function safeSetTexture(id: string, bmp: any): void {
-  const existing = textureCache.get(id);
-  if (existing && existing !== bmp && typeof existing.close === 'function') {
-    try {
-      existing.close();
-    } catch {}
-  }
-
+  // Enforce single-ownership: do not close previous ImageBitmap directly here.
+  // PreviewFrameMemoryManager.drainDisposalQueue manages deterministic bitmap closure.
   if (textureCache.size >= MAX_WORKER_TEXTURES && !textureCache.has(id)) {
     const oldestKey = textureCache.keys().next().value;
     if (oldestKey) {
-      const oldBmp = textureCache.get(oldestKey);
-      if (oldBmp && typeof oldBmp.close === 'function') {
-        try {
-          oldBmp.close();
-        } catch {}
-      }
       textureCache.delete(oldestKey);
     }
   }
@@ -239,6 +228,18 @@ function stopPlayback() {
 }
 
 function syncAssetSources(assets: Record<string, { src?: string; type?: string }>) {
+  const activeIds = new Set(Object.keys(assets));
+
+  // 1. Evict and dispose stale video readers to free hardware decoders
+  for (const [id, reader] of videoReaders.entries()) {
+    if (!activeIds.has(id)) {
+      reader.dispose();
+      videoReaders.delete(id);
+      textureCache.delete(id);
+    }
+  }
+
+  // 2. Sync incoming assets
   for (const [id, def] of Object.entries(assets)) {
     if (!def.src) continue;
     const isVideo =
@@ -253,22 +254,47 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
     } else {
       if (
         !textureCache.has(id) &&
-        typeof fetch === 'function' &&
         typeof createImageBitmap === 'function'
       ) {
         const url = def.src;
         const assetId = id;
-          fetch(url)
-            .then((res) => res.blob())
-            .then((blob) => createImageBitmap(blob))
-            .then((bmp) => {
+
+        // Attempt zero-copy retrieval from ContentCacheRegistry before network fetch
+        const resolveBlob = async (): Promise<Blob | null> => {
+          try {
+            const cache = ContentCacheRegistry.get();
+            if (typeof cache.getBlob === 'function') {
+              const cached = await cache.getBlob(url);
+              if (cached) return cached;
+            }
+          } catch {}
+          if (typeof fetch === 'function') {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            // Store to cache asynchronously
+            try {
+              const cache = ContentCacheRegistry.get();
+              if (typeof cache.setBlob === 'function') {
+                cache.setBlob(url, blob).catch(() => {});
+              }
+            } catch {}
+            return blob;
+          }
+          return null;
+        };
+
+        resolveBlob()
+          .then((blob) => (blob ? createImageBitmap(blob) : null))
+          .then((bmp) => {
+            if (bmp) {
               safeSetTexture(assetId, bmp);
               texturesDirty = true;
               if (!isPlaying) {
                 renderCurrentFrame(currentFrame, 1.0, false);
               }
-            })
-            .catch(() => {});
+            }
+          })
+          .catch(() => {});
       }
     }
   }

@@ -3,10 +3,10 @@
  */
 
 export enum ContentCacheStrategyId {
-  Memory = 'memory',
   NativeFile = 'native-file',
   IndexedDb = 'indexeddb',
   WebCache = 'web-cache',
+  Opfs = 'opfs',
 }
 
 export interface CacheEntryMetadata {

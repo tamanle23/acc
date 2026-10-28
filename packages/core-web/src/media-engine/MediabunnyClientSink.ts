@@ -2,6 +2,7 @@ import {
   Output,
   Mp4OutputFormat,
   BufferTarget,
+  StreamTarget,
   VideoSampleSource,
   VideoSample,
   AudioSampleSource,
@@ -32,9 +33,12 @@ export class MediabunnyClientSink implements IMediaFrameSink {
   private videoSource?: VideoSampleSource;
   private audioSource?: AudioSampleSource;
   private bufferTarget?: BufferTarget;
+  private streamTarget?: StreamTarget;
   private hasAudioTrack: boolean = false;
 
-  public async initialize(meta: SinkInitMetadata & { enableAudio?: boolean }): Promise<void> {
+  public async initialize(
+    meta: SinkInitMetadata & { enableAudio?: boolean; writableStream?: WritableStream<Uint8Array> }
+  ): Promise<void> {
     this.meta = meta;
     this.outputPath = meta.outputPath;
     this.framesConsumed = 0;
@@ -46,11 +50,19 @@ export class MediabunnyClientSink implements IMediaFrameSink {
       bitrate: 2_000_000,
     });
 
-    this.bufferTarget = new BufferTarget();
-    this.output = new Output({
-      format: new Mp4OutputFormat(),
-      target: this.bufferTarget,
-    });
+    if (meta.writableStream) {
+      this.streamTarget = new StreamTarget(meta.writableStream);
+      this.output = new Output({
+        format: new Mp4OutputFormat(),
+        target: this.streamTarget,
+      });
+    } else {
+      this.bufferTarget = new BufferTarget();
+      this.output = new Output({
+        format: new Mp4OutputFormat(),
+        target: this.bufferTarget,
+      });
+    }
 
     this.output.addVideoTrack(this.videoSource);
 
@@ -184,5 +196,22 @@ export class MediabunnyClientSink implements IMediaFrameSink {
         inMemoryBufferSize: buffer ? buffer.byteLength : 0,
       },
     };
+  }
+
+  public async dispose(): Promise<void> {
+    if (this.output) {
+      try {
+        await this.output.finalize();
+      } catch {}
+      this.output = undefined;
+    }
+    this.videoSource = undefined;
+    this.audioSource = undefined;
+    this.bufferTarget = undefined;
+    this.streamTarget = undefined;
+  }
+
+  public async [Symbol.asyncDispose](): Promise<void> {
+    await this.dispose();
   }
 }
