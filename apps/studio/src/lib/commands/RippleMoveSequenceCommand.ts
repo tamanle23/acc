@@ -253,4 +253,8 @@ export class RippleMoveSequenceCommand implements ICommand {
 
     return copy;
   }
+
+  public tryMerge(_next: ICommand): boolean {
+    return false;
+  }
 }

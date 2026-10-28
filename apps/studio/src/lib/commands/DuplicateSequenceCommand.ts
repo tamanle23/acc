@@ -1,6 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '../../../../../packages/ir/src/types/VideoIR';
-import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring/VideoIRAuthoringEngine';
+import { IRSequence, VideoIRAuthoringEngine, VideoIRDocument } from '@acc/ir';
 
 /**
  * DuplicateSequenceCommand:
@@ -25,6 +24,8 @@ export class DuplicateSequenceCommand implements ICommand {
     this.sequenceId = sequenceId;
   }
 
+
+
   public getDuplicatedId(): string | null {
     return this.duplicatedSequence ? this.duplicatedSequence.id : null;
   }
@@ -35,7 +36,7 @@ export class DuplicateSequenceCommand implements ICommand {
     for (const track of copy.tracks) {
       const idx = track.sequences.findIndex((s) => s.id === this.sequenceId);
       if (idx >= 0) {
-        const orig = track.sequences[idx];
+        const orig = track.sequences[idx] as IRSequence;
         this.targetTrackId = track.id;
         this.insertIndex = idx + 1;
 
@@ -52,8 +53,6 @@ export class DuplicateSequenceCommand implements ICommand {
           // Adjust timeline position if explicit start frame is defined
           if (cloned.time && typeof cloned.time.start === 'number' && typeof cloned.time.duration === 'number' && typeof orig.time.start === 'number' && typeof orig.time.duration === 'number') {
             cloned.time.start = orig.time.start + orig.time.duration;
-          } else if (cloned.timelineStartFrame !== undefined && cloned.durationFrames !== undefined) {
-            cloned.timelineStartFrame = orig.timelineStartFrame! + orig.durationFrames;
           }
 
           this.duplicatedSequence = cloned;
@@ -81,5 +80,9 @@ export class DuplicateSequenceCommand implements ICommand {
     }
 
     return copy;
+  }
+
+    public tryMerge(_next: ICommand): boolean {
+    return false;
   }
 }
