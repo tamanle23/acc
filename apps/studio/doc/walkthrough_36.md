@@ -58,8 +58,8 @@ This walkthrough summarizes the unified isomorphic resource/asset caching archit
 
 ### 2.3 Memory & Web Cache Strategies
 - `MemoryCacheStrategy`: Added `maxSizeBytes` LRU byte ceiling (default 64MB) and zero-copy `Blob`/`ReadableStream` storage.
-- `WebCacheStrategy`: Backed by standard Web Cache API (`window.caches`). `getStream()` returns `response.body` directly from HTTP cache. `setBlob()` stores `new Response(blob)` without loading into RAM.
-- `IndexedDbCacheStrategy`: Stores `Blob` objects natively in IndexedDB object stores.
+- `WebCacheStrategy`: Backed strictly by standard Web Cache API (`window.caches`). `getStream()` returns `response.body` directly from HTTP cache. `setBlob()` stores `new Response(blob)` without loading into RAM. Eliminated all `fallbackMemory` Maps.
+- `IndexedDbCacheStrategy`: Stores `Blob` objects natively in IndexedDB object stores. Eliminated all `fallbackMemory` Maps so the strategy operates strictly on its own IndexedDB capacity.
 - `NativeFileCacheStrategy`: Chunked Node/Bun filesystem streams via `fs.createReadStream` / `createWriteStream`.
 
 ### 2.4 Studio Memory Leak Remediations

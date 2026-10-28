@@ -5,23 +5,7 @@ import {
   fastChecksum,
   streamToBlob,
   blobToStream,
-  uint8ArrayToStream,
-  blobToUint8Array,
 } from '@acc/core-isomorphic';
-
-export interface WebCacheOptions {
-  /**
-   * The name of the cache namespace in CacheStorage.
-   * Defaults to 'acc_content_cache'.
-   */
-  cacheName?: string;
-  /**
-   * Base URL scheme/prefix to construct valid Request URLs from keys.
-   * Keys are mapped to URL: `${baseUrlPrefix}/${encodeURIComponent(key)}`.
-   * Defaults to 'https://acc.internal/cache/'.
-   */
-  baseUrlPrefix?: string;
-}
 
 const DEFAULT_CACHE_NAME = 'acc_content_cache';
 const DEFAULT_URL_PREFIX = 'https://acc.internal/cache';
@@ -30,10 +14,9 @@ const HEADER_CHECKSUM = 'x-acc-checksum';
 const HEADER_CREATED_AT = 'x-acc-created-at';
 const HEADER_META_JSON = 'x-acc-meta-json';
 
-interface FallbackMemoryItem {
-  data?: Uint8Array;
-  blob?: Blob;
-  metadata: CacheEntryMetadata;
+export interface WebCacheOptions {
+  cacheName?: string;
+  baseUrlPrefix?: string;
 }
 
 /**
@@ -41,7 +24,7 @@ interface FallbackMemoryItem {
  * Browser client cache strategy utilizing the standard Web Cache API (window.caches / self.caches).
  * Designed for Service Workers, Web Workers, and Browser environments to cache binary assets, frames,
  * and blobs with HTTP Response streaming semantics.
- * Gracefully falls back to an in-memory Map in non-browser/SSR or test mock environments without window.caches.
+ * Strictly operates on its own capacity (CacheStorage) with zero in-memory fallback retention.
  */
 export class WebCacheStrategy implements IContentCacheStrategy {
   public readonly id = ContentCacheStrategyId.WebCache;
@@ -50,7 +33,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   private readonly cacheName: string;
   private readonly baseUrlPrefix: string;
   private cachePromise: Promise<Cache | null> | null = null;
-  private readonly fallbackMemory: Map<string, FallbackMemoryItem> = new Map();
 
   constructor(options: WebCacheOptions = {}) {
     this.cacheName = options.cacheName || DEFAULT_CACHE_NAME;
@@ -102,7 +84,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async has(key: string): Promise<boolean> {
     const cache = await this.getCache();
     if (!cache) {
-      return this.fallbackMemory.has(key);
+      return false;
     }
 
     try {
@@ -120,10 +102,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async get(key: string): Promise<Uint8Array | null> {
     const cache = await this.getCache();
     if (!cache) {
-      const item = this.fallbackMemory.get(key);
-      if (!item) return null;
-      if (item.data) return item.data;
-      if (item.blob) return await blobToUint8Array(item.blob);
       return null;
     }
 
@@ -147,12 +125,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async getBlob(key: string): Promise<Blob | null> {
     const cache = await this.getCache();
     if (!cache) {
-      const item = this.fallbackMemory.get(key);
-      if (!item) return null;
-      if (item.blob) return item.blob;
-      if (item.data) {
-        return new Blob([item.data], { type: item.metadata.mimeType || 'application/octet-stream' });
-      }
       return null;
     }
 
@@ -173,10 +145,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
     const cache = await this.getCache();
     if (!cache) {
-      const item = this.fallbackMemory.get(key);
-      if (!item) return null;
-      if (item.blob) return blobToStream(item.blob);
-      if (item.data) return uint8ArrayToStream(item.data);
       return null;
     }
 
@@ -204,7 +172,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
 
     const cache = await this.getCache();
     if (!cache) {
-      this.fallbackMemory.set(key, { data, metadata: fullMeta });
       return;
     }
 
@@ -221,9 +188,8 @@ export class WebCacheStrategy implements IContentCacheStrategy {
       });
 
       await cache.put(url, response);
-    } catch (err) {
-      // Fallback gracefully to memory if quota exceeded or storage error
-      this.fallbackMemory.set(key, { data, metadata: fullMeta });
+    } catch {
+      // Storage error or quota exceeded
     }
   }
 
@@ -241,7 +207,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
 
     const cache = await this.getCache();
     if (!cache) {
-      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
       return;
     }
 
@@ -255,7 +220,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
       });
       await cache.put(url, response);
     } catch {
-      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
+      // Storage error or quota exceeded
     }
   }
 
@@ -278,8 +243,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
     const cache = await this.getCache();
     if (!cache) {
-      const item = this.fallbackMemory.get(key);
-      return item ? item.metadata : null;
+      return null;
     }
 
     try {
@@ -334,7 +298,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async delete(key: string): Promise<boolean> {
     const cache = await this.getCache();
     if (!cache) {
-      return this.fallbackMemory.delete(key);
+      return false;
     }
 
     try {
@@ -351,7 +315,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async clear(): Promise<void> {
     const cache = await this.getCache();
     if (!cache) {
-      this.fallbackMemory.clear();
       return;
     }
 
@@ -366,8 +329,6 @@ export class WebCacheStrategy implements IContentCacheStrategy {
       }
     } catch {
       // Best-effort clear
-    } finally {
-      this.fallbackMemory.clear();
     }
   }
 
@@ -377,7 +338,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   public async getKeys(): Promise<string[]> {
     const cache = await this.getCache();
     if (!cache) {
-      return Array.from(this.fallbackMemory.keys());
+      return [];
     }
 
     try {

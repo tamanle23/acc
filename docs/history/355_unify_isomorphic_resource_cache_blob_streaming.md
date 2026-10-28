@@ -44,8 +44,10 @@
   - Added `blob?(): Promise<Blob>` to `IAssetBlob` and registered `BlobAssetBlob` and `CachedAssetBlob`.
 - **`packages/core-web/src/cache/WebCacheStrategy.ts`**:
   - Implemented zero-copy `getStream` returning `response.body`, `getBlob` returning `response.blob()`, and `setBlob`/`setStream` writing native responses.
+  - Eliminated all `fallbackMemory` in-memory Maps; strategy operates strictly on its own CacheStorage capacity with zero heap retention.
 - **`packages/core-web/src/cache/IndexedDbCacheStrategy.ts`**:
   - Implemented direct IndexedDB `Blob` persistence with streaming bridges.
+  - Eliminated all `fallbackMemory` in-memory Maps; strategy operates strictly on its own IndexedDB capacity with zero heap retention.
 - **`packages/core-web/src/index.ts`**:
   - Added `bootstrapClient = bootstrapCoreWeb` alias.
 - **`packages/core/src/cache/NativeFileCacheStrategy.ts`**:

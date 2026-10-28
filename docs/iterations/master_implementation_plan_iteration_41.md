@@ -73,8 +73,10 @@ graph TD
   - Zero-copy streaming via `response.body`.
   - Native Blob extraction via `response.blob()`.
   - Direct `setBlob` constructing `new Response(blob)` with custom metadata headers (`x-acc-checksum`, `x-acc-created-at`, `x-acc-meta-json`).
+  - Zero in-memory fallback Maps; operates purely on CacheStorage capacity.
 - **IndexedDB Strategy (`IndexedDbCacheStrategy.ts`)**:
   - Direct `Blob` storage in IndexedDB object store with streaming adapters.
+  - Zero in-memory fallback Maps; operates purely on IndexedDB capacity.
 - **Native Filesystem Strategy (`NativeFileCacheStrategy.ts`)**:
   - Chunked Node/Bun filesystem streams via `fs.createReadStream` / `createWriteStream`.
 

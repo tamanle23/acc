@@ -5,7 +5,6 @@ import {
   fastChecksum,
   streamToBlob,
   blobToStream,
-  uint8ArrayToStream,
   blobToUint8Array,
 } from '@acc/core-isomorphic';
 
@@ -20,24 +19,17 @@ interface IndexedDbRecord {
   metadata: CacheEntryMetadata;
 }
 
-interface FallbackMemoryItem {
-  data?: Uint8Array;
-  blob?: Blob;
-  metadata: CacheEntryMetadata;
-}
-
 /**
  * IndexedDbCacheStrategy:
  * Browser client cache strategy utilizing IndexedDB for persistent storage across sessions.
  * Features first-class Blob and Streaming support with zero-copy disk backing.
- * Falls back to in-memory Map in non-browser/SSR or test mock environments.
+ * Strictly operates on its own capacity (IndexedDB) with zero in-memory fallback retention.
  */
 export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public readonly id = ContentCacheStrategyId.IndexedDb;
   public readonly name = 'Browser IndexedDB Content Cache';
 
   private dbPromise: Promise<IDBDatabase | null> | null = null;
-  private fallbackMemory: Map<string, FallbackMemoryItem> = new Map();
 
   private getDB(): Promise<IDBDatabase | null> {
     if (typeof indexedDB === 'undefined') {
@@ -68,7 +60,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async has(key: string): Promise<boolean> {
     const db = await this.getDB();
     if (!db) {
-      return this.fallbackMemory.has(key);
+      return false;
     }
 
     return new Promise((resolve) => {
@@ -87,10 +79,6 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async get(key: string): Promise<Uint8Array | null> {
     const db = await this.getDB();
     if (!db) {
-      const item = this.fallbackMemory.get(key);
-      if (!item) return null;
-      if (item.data) return item.data;
-      if (item.blob) return await blobToUint8Array(item.blob);
       return null;
     }
 
@@ -121,12 +109,6 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async getBlob(key: string): Promise<Blob | null> {
     const db = await this.getDB();
     if (!db) {
-      const item = this.fallbackMemory.get(key);
-      if (!item) return null;
-      if (item.blob) return item.blob;
-      if (item.data) {
-        return new Blob([item.data], { type: item.metadata.mimeType || 'application/octet-stream' });
-      }
       return null;
     }
 
@@ -156,7 +138,8 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
 
   public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
     const blob = await this.getBlob(key);
-    return blob ? blobToStream(blob) : null;
+    if (!blob) return null;
+    return blobToStream(blob);
   }
 
   public async set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
@@ -170,7 +153,6 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
 
     const db = await this.getDB();
     if (!db) {
-      this.fallbackMemory.set(key, { data, metadata: fullMeta });
       return;
     }
 
@@ -203,7 +185,6 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
 
     const db = await this.getDB();
     if (!db) {
-      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
       return;
     }
 
@@ -238,8 +219,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
     const db = await this.getDB();
     if (!db) {
-      const item = this.fallbackMemory.get(key);
-      return item ? item.metadata : null;
+      return null;
     }
 
     return new Promise((resolve) => {
@@ -261,7 +241,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async delete(key: string): Promise<boolean> {
     const db = await this.getDB();
     if (!db) {
-      return this.fallbackMemory.delete(key);
+      return false;
     }
 
     return new Promise((resolve) => {
@@ -280,7 +260,6 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async clear(): Promise<void> {
     const db = await this.getDB();
     if (!db) {
-      this.fallbackMemory.clear();
       return;
     }
 
@@ -300,7 +279,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public async getKeys(): Promise<string[]> {
     const db = await this.getDB();
     if (!db) {
-      return Array.from(this.fallbackMemory.keys());
+      return [];
     }
 
     return new Promise((resolve) => {

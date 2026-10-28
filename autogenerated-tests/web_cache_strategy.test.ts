@@ -14,81 +14,35 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
     ContentCacheRegistry.reset();
   });
 
-  describe('Fallback Memory Mode (SSR/Node/Bun without window.caches)', () => {
+  describe('Standalone Capacity without Web Cache API (SSR/Node/Bun without window.caches)', () => {
     it('initializes with default identifier and options', () => {
       const strategy = new WebCacheStrategy();
       expect(strategy.id).toBe('web-cache');
       expect(strategy.name).toBe('Standard Web Cache API Content Cache');
     });
 
-    it('performs CRUD operations correctly using fallback memory', async () => {
+    it('operates on its own capacity with zero in-memory fallback retention', async () => {
       const strategy = new WebCacheStrategy();
       const payload = new Uint8Array([1, 2, 3, 4, 5]);
 
       expect(await strategy.has('blob/item-1')).toBe(false);
       expect(await strategy.get('blob/item-1')).toBeNull();
+      expect(await strategy.getBlob('blob/item-1')).toBeNull();
+      expect(await strategy.getStream('blob/item-1')).toBeNull();
 
-      await strategy.set('blob/item-1', payload, {
-        mimeType: 'application/octet-stream',
-        metadata: { tag: 'unit-test' },
-      });
-
-      expect(await strategy.has('blob/item-1')).toBe(true);
-      const retrieved = await strategy.get('blob/item-1');
-      expect(retrieved).not.toBeNull();
-      expect(retrieved).toEqual(payload);
-
-      const keys = await strategy.getKeys();
-      expect(keys).toContain('blob/item-1');
-
-      const deleted = await strategy.delete('blob/item-1');
-      expect(deleted).toBe(true);
+      // Setting without CacheStorage should be safe no-op without allocating in-memory Map
+      await strategy.set('blob/item-1', payload);
       expect(await strategy.has('blob/item-1')).toBe(false);
       expect(await strategy.get('blob/item-1')).toBeNull();
-    });
 
-    it('clears all cached entries in memory mode', async () => {
-      const strategy = new WebCacheStrategy();
-      await strategy.set('key-a', new Uint8Array([10]));
-      await strategy.set('key-b', new Uint8Array([20]));
+      const blob = new Blob(['test-blob']);
+      await strategy.setBlob('blob-2', blob);
+      expect(await strategy.has('blob-2')).toBe(false);
+      expect(await strategy.getBlob('blob-2')).toBeNull();
 
-      expect((await strategy.getKeys()).length).toBe(2);
+      expect(await strategy.getKeys()).toEqual([]);
+      expect(await strategy.delete('blob/item-1')).toBe(false);
       await strategy.clear();
-      expect(await strategy.get('key-a')).toBeNull();
-    });
-
-    it('supports Blob and ReadableStream operations in fallback memory mode', async () => {
-      const strategy = new WebCacheStrategy();
-      const blob = new Blob(['fallback-stream-test'], { type: 'text/plain' });
-
-      await strategy.setBlob('blob-fallback', blob, {
-        mimeType: 'text/plain',
-        metadata: { source: 'unit-test' },
-      });
-
-      expect(await strategy.has('blob-fallback')).toBe(true);
-
-      const retrievedBlob = await strategy.getBlob('blob-fallback');
-      expect(retrievedBlob).not.toBeNull();
-      expect(await retrievedBlob!.text()).toBe('fallback-stream-test');
-
-      const meta = await strategy.getMetadata('blob-fallback');
-      expect(meta).not.toBeNull();
-      expect(meta?.sizeBytes).toBe(blob.size);
-
-      // Stream retrieval
-      const stream = await strategy.getStream('blob-fallback');
-      expect(stream).not.toBeNull();
-      const bytes = await streamToUint8Array(stream!);
-      expect(new TextDecoder().decode(bytes)).toBe('fallback-stream-test');
-
-      // Stream set
-      const writeStream = uint8ArrayToStream(new TextEncoder().encode('streaming-data'));
-      await strategy.setStream('stream-key', writeStream, { mimeType: 'text/plain' });
-      const streamRes = await strategy.getStream('stream-key');
-      expect(streamRes).not.toBeNull();
-      const readBackBytes = await streamToUint8Array(streamRes!);
-      expect(new TextDecoder().decode(readBackBytes)).toBe('streaming-data');
     });
   });
 

@@ -50,8 +50,7 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
   }
 
   // 3. Resilient Default Cache Resolution via PlatformDetector
-  // If registered strategies contains indexeddb (which has built-in in-memory fallback),
-  // bootstrapClient defaults to 'indexeddb' for browser client parity, unless explicitly overridden.
+  // Defaults to 'indexeddb' for browser client parity, unless explicitly overridden.
   const resolvedCacheStrategy =
     options.defaultCacheStrategy ||
     (ContentCacheRegistry.has(ContentCacheStrategyId.IndexedDb)
