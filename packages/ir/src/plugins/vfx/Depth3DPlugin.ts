@@ -233,16 +233,45 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       (sequence as any).src,
     ].filter(Boolean) as string[];
 
-    // Retrieve cached cutout via ContentCacheRegistry / resolveSubjectCutout
-    let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined;
-    try {
-      if (candidateKeys[0]) {
-        cutout = await resolveSubjectCutout(candidateKeys[0], params as any);
+    // 1. Resolve or reuse sequence-scoped 3D depth state to prevent per-frame re-allocation
+    let depthState = (sequence as any)._depth3dState;
+    if (
+      !depthState ||
+      depthState.width !== width ||
+      depthState.height !== height ||
+      depthState.mode !== mode ||
+      depthState.key !== candidateKeys[0]
+    ) {
+      let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined;
+      try {
+        if (candidateKeys[0]) {
+          cutout = await resolveSubjectCutout(candidateKeys[0], params as any);
+        }
+      } catch {}
+      if (!cutout && (baseAsset as any)._cutoutResolved === undefined) {
+        cutout = { subjectImg: null, subjectBBox: null };
       }
-    } catch {}
-    if (!cutout && (baseAsset as any)._cutoutResolved === undefined) {
-      cutout = { subjectImg: null, subjectBBox: null };
+
+      let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined;
+      try {
+        if (candidateKeys[0]) {
+          depthLayersData = await resolveDepthMapData(candidateKeys[0], width, height, params as any);
+        }
+      } catch {}
+
+      depthState = {
+        cutout,
+        depthLayersData,
+        width,
+        height,
+        mode,
+        key: candidateKeys[0],
+      };
+      (sequence as any)._depth3dState = depthState;
     }
+
+    const cutout = depthState.cutout;
+    const depthLayersData = depthState.depthLayersData;
 
     // Build scoped scratch background plate for frame_breaker
     let uBgCanvas: any | undefined;
@@ -291,13 +320,6 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       parallax: params.parallax,
       depthMesh: params.depthMesh,
     };
-
-    let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined;
-    try {
-      if (candidateKeys[0]) {
-        depthLayersData = await resolveDepthMapData(candidateKeys[0], width, height, params as any);
-      }
-    } catch {}
 
     // 100% Stateless mathematical evaluation of parallax and dust particles (ZERO-ALLOC-FRAME-LOOP)
     const particles = (mode === 'parallax_25d' || mode === 'parallax_dolly')
@@ -526,6 +548,32 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       if (uBaseCanvas) {
         UniversalCanvasProvider.releaseScratchCanvas(uBaseCanvas);
       }
+    }
+  }
+
+  /**
+   * Disposes of sequence-scoped 3D state (ImageBitmaps and Canvas instances)
+   * to eliminate native buffer accumulation when sequences end or change.
+   */
+  public static cleanupSequence(sequence: any): void {
+    if (sequence?._depth3dState) {
+      const state = sequence._depth3dState;
+      if (state.cutout?.subjectImg && typeof state.cutout.subjectImg.close === 'function') {
+        try {
+          state.cutout.subjectImg.close();
+        } catch {}
+      }
+      if (state.depthLayersData?.srcCanvas && typeof state.depthLayersData.srcCanvas.close === 'function') {
+        try {
+          state.depthLayersData.srcCanvas.close();
+        } catch {}
+      }
+      if (state.depthLayersData?.depthCanvas && typeof state.depthLayersData.depthCanvas.close === 'function') {
+        try {
+          state.depthLayersData.depthCanvas.close();
+        } catch {}
+      }
+      delete sequence._depth3dState;
     }
   }
 }

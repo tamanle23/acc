@@ -56,8 +56,9 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
     if ((subjectImg as any)._bbox) {
       subBBox = (subjectImg as any)._bbox;
     } else {
+      let uCanvas: any | null = null;
       try {
-        const uCanvas = UniversalCanvasProvider.createCanvas(subjectImg.width, subjectImg.height);
+        uCanvas = UniversalCanvasProvider.acquireScratchCanvas(subjectImg.width, subjectImg.height);
         const c = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
         const cctx = c.getContext('2d');
         cctx.drawImage(subjectImg, 0, 0);
@@ -78,7 +79,11 @@ export function drawFrameBreakerFrame(ctx: any, state: FrameBreakerState) {
           subBBox = { minX, maxX, minY, maxY };
           (subjectImg as any)._bbox = subBBox;
         }
-      } catch {}
+      } catch {} finally {
+        if (uCanvas) {
+          UniversalCanvasProvider.releaseScratchCanvas(uCanvas);
+        }
+      }
     }
   }
 

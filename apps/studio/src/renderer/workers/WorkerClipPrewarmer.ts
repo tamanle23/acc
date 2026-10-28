@@ -44,7 +44,7 @@ export class WorkerClipPrewarmer {
     this.memoryManager.pruneOutsideWindow(currentFrame, fps, this.timeline);
 
     for (const track of this.timeline.tracks.values()) {
-      if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
+      if (track.type !== 'video') {
         continue;
       }
 
@@ -100,7 +100,7 @@ export class WorkerClipPrewarmer {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
           this.memoryManager.set(assetId, localFrame, bmp);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 

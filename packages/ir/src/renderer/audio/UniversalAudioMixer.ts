@@ -94,7 +94,7 @@ export class UniversalAudioMixer {
     timeline: ResolvedTimeline,
     audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined
   ): void {
-    const fps = timeline.meta.globalFps || 30;
+    const fps = timeline.meta?.globalFps || (timeline.meta as any)?.fps || 30;
     const clips: AudioMixerClip[] = [];
     let customDuckingFactor: number | null = null;
 
