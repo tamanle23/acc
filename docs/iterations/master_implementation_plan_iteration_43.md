@@ -98,10 +98,20 @@ Given:
 The visible timeline frame interval $[F_{\text{start}}, F_{\text{end}}]$ is calculated deterministically:
 $$F_{\text{start}} = \max\left(0, \left\lfloor \frac{X_{\text{scroll}}}{S_{px}} \right\rfloor\right), \quad F_{\text{end}} = \left\lceil \frac{X_{\text{scroll}} + W_{\text{viewport}}}{S_{px}} \right\rceil$$
 
-An audio clip $C_k$ on track $T_j$ with boundaries $[C_k.\text{startFrame}, C_k.\text{endFrame}]$ is drawn if and only if:
+An audio clip $C_k$ on track $T_j$ with timeline boundaries $[C_k.\text{startFrame}, C_k.\text{endFrame}]$ is drawn if and only if:
 $$[C_k.\text{startFrame}, C_k.\text{endFrame}] \cap [F_{\text{start}}, F_{\text{end}}] \neq \emptyset$$
 
-#### Sub-Pixel Batch Path Drawing
+#### Source-Trimmed Peak Sampling Formulation
+When an audio clip has been trimmed with in-point offset $T_{\text{in}} = C_k.\text{sourceStartTimeSec}$ and sample rate $R_{\text{sample}} = 44,100\text{ Hz}$:
+For any horizontal screen pixel $x \in [\max(X_{\text{scroll}}, C_k.\text{startX}), \min(X_{\text{scroll}} + W_{\text{viewport}}, C_k.\text{endX})]$:
+$$\text{clipLocalTimeSec}(x) = T_{\text{in}} + \frac{x - C_k.\text{startX}}{S_{px} \times \text{FPS}}$$
+The corresponding multi-resolution LOD pyramid decimation level is chosen via $S_{px}$, guaranteeing that only 1 peak is sampled every 2 physical pixels, completely preventing overdraw.
+
+#### Sub-Pixel Batch Path Drawing & Viewport-Anchored Canvas DOM
+- **DOM Container**: Inside each `DroppableTrackLane.tsx`, a sticky canvas wrapper is mounted:
+  `style={{ position: 'sticky', left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}`.
+- **Physical Canvas Backing Store**: Sized strictly to $W_{\text{viewport}} \times \text{DPR}$ by $H_{\text{lane}} \times \text{DPR}$.
+- **Rendering Routine**:
 ```typescript
 const dpr = window.devicePixelRatio || 1;
 ctx.save();
@@ -143,20 +153,48 @@ $$\text{Total Buffer Size} = 64\text{ bytes (Header)} + (44,100 \times 5 \times 
 [Offset 882,064..1,764,063]:   Channel 1 / Right (Float32Array view, 220,500 elements)
 ```
 
-#### Lock-Free SPSC Producer & Consumer Algorithms
-- **Producer (UniversalAudioMixer / WebAudioEngine)**:
-  1. `readPtr = Atomics.load(control, READ_POINTER)`
-  2. `writePtr = Atomics.load(control, WRITE_POINTER)`
-  3. `availableSpace = (readPtr - writePtr - 1 + capacity) % capacity`
-  4. Write $N = \min(\text{chunkLength}, \text{availableSpace})$ samples into planar float views.
-  5. `Atomics.store(control, WRITE_POINTER, (writePtr + N) % capacity)`
-- **Consumer (`AudioWorkletProcessor.process`)**:
-  1. `readPtr = Atomics.load(control, READ_POINTER)`
-  2. `writePtr = Atomics.load(control, WRITE_POINTER)`
-  3. `availableSamples = (writePtr - readPtr + capacity) % capacity`
-  4. If `availableSamples < 128`: Fill `outputs` with zeros, set `STATE_FLAGS = Underflow`.
-  5. Else: Copy 128 samples into `output[0]` and `output[1]`.
-  6. `Atomics.store(control, READ_POINTER, (readPtr + 128) % capacity)`
+#### Split Circular Wraparound Math (Critical Invariant)
+Because audio chunks are written in variable block sizes ($N$ samples) while the audio thread reads in fixed 128-sample blocks, pointer wraparound across `CAPACITY_SAMPLES` must be handled with split boundary copies:
+
+1. **Producer Split Write**:
+   If `writePtr + N > capacity`:
+   - First slice: write $L_1 = \text{capacity} - \text{writePtr}$ samples into `[writePtr .. capacity - 1]`.
+   - Second slice: write $L_2 = N - L_1$ samples into `[0 .. L_2 - 1]`.
+   - Advance pointer: `nextWritePtr = L_2`.
+   Else:
+   - Write $N$ samples into `[writePtr .. writePtr + N - 1]`.
+   - Advance pointer: `nextWritePtr = writePtr + N`.
+
+2. **Consumer Split Read (`AudioWorkletProcessor.process`)**:
+   If `readPtr + 128 > capacity`:
+   - First slice: copy $R_1 = \text{capacity} - \text{readPtr}$ samples into `output[0..R_1 - 1]`.
+   - Second slice: copy $R_2 = 128 - R_1$ samples into `output[R_1 .. 127]`.
+   - Advance pointer: `nextReadPtr = R_2`.
+   Else:
+   - Copy 128 samples into `output[0..127]`.
+   - Advance pointer: `nextReadPtr = readPtr + 128`.
+
+#### Memory Barrier Ordering & Atomics Semantics
+JavaScript `Atomics` operations only operate on integer typed arrays (`Int32Array`), not `Float32Array`. To guarantee data integrity without race conditions:
+- **Producer (Release Barrier)**:
+  1. Load consumer `readPtr` with `Atomics.load(control, READ_POINTER)`.
+  2. Write audio data to planar `Float32Array` channels.
+  3. **Release Store**: `Atomics.store(control, WRITE_POINTER, nextWritePtr)`. This guarantees all float samples are globally committed in memory before the updated write pointer is published.
+- **Consumer (Acquire Barrier)**:
+  1. **Acquire Load**: `writePtr = Atomics.load(control, WRITE_POINTER)`. Guarantees all samples written prior to this pointer update are visible to the audio worklet thread.
+  2. Copy 128 samples from `Float32Array` views into Web Audio output channels.
+  3. Update consumer pointer: `Atomics.store(control, READ_POINTER, nextReadPtr)`.
+
+#### Dual-Transport Architecture (COOP/COEP Fallback)
+```typescript
+export interface IAudioStreamTransport {
+  write(left: Float32Array, right: Float32Array): number;
+  reset(): void;
+  dispose(): void;
+}
+```
+- **`SharedArrayBufferTransport` (Primary)**: Zero-copy, zero-GC, $< 3\text{ ms}$ latency when `crossOriginIsolated === true`.
+- **`MessagePortTransferableTransport` (Fallback)**: Automatically engaged if `typeof SharedArrayBuffer === 'undefined'` or `crossOriginIsolated === false`. Transfers pre-allocated Float32 buffers via `port.postMessage([left, right], [left.buffer, right.buffer])`.
 
 ---
 
@@ -164,14 +202,16 @@ $$\text{Total Buffer Size} = 64\text{ bytes (Header)} + (44,100 \times 5 \times 
 
 #### Priority Scoring Formulation
 To ensure that hardware decoders are assigned strictly to visible, active video tracks near the playhead:
-$$P(C_k) = \begin{cases}
+
+$$
+P(C_k) = \begin{cases}
   10,000 - (\text{trackIndex} \times 100) & \text{if } F_{\text{playhead}} \in [C_k.\text{start}, C_k.\text{end}] \land \neg \text{track.isMuted} \\
   1,000 - \frac{|F_{\text{playhead}} - C_k.\text{start}|}{\text{FPS}} \times 50 & \text{if within } \pm 3 \text{ seconds of playhead} \\
-  10 & \text{if visible on screen but outside active scrub window} \\
-  0 & \text{if track is hidden / muted or clip is off-screen}
-\end{cases}$$
+  10 & \text{if visible on screen but outside active scrub window} \\0 & \text{if track is hidden / muted or clip is off-screen}
+\end{cases}
+$$
 
-#### State Transition Machine
+#### State Transition Machine & Quota Recovery Ladder
 ```mermaid
 stateDiagram-v2
     [*] --> IdleUnallocated: Clip Added to Project
@@ -182,26 +222,118 @@ stateDiagram-v2
     PosterFallback --> Disposed: Asset Deleted
 ```
 
+#### QuotaExceededError Auto-Recovery Ladder
+If `VideoDecoder.configure()` throws `QuotaExceededError` due to OS GPU driver limits:
+1. Trap error in `WebCodecsDecoderPool`.
+2. Automatically reduce maximum hardware decoder ceiling: $\text{cap} \leftarrow \max(2, \text{cap} - 2)$.
+3. Immediately evict the lowest-priority leased reader (`reader.evictHardwareDecoder()`).
+4. Re-attempt decode configuration on high-priority track.
+5. Inactive tracks fall back to OPFS-cached poster frames (`ContentCacheRegistry.get('opfs')`).
+
 ---
 
 ### 4.4 Professional NLE Editing Workflows
 
-#### Ripple Delete Mathematical Algorithm
+#### Linked A/V Track Ripple Invariant
 When deleting clip $C_{\text{target}}$ on track $T_{\text{target}}$ with starting frame $S$ and duration $D = C_{\text{target}}.\text{durationFrames}$:
-1. Remove $C_{\text{target}}$ from track $T_{\text{target}}$.
-2. For all clips $C_i \in T_{\text{target}}$ where $C_i.\text{startFrame} > S$:
-   $$C_i.\text{startFrame} \leftarrow C_i.\text{startFrame} - D$$
-   $$C_i.\text{endFrame} \leftarrow C_i.\text{endFrame} - D$$
-3. If `rippleAllUnlockedTracks` is enabled:
-   For every track $T_m$ where $T_m.\text{isLocked} = \text{false}$:
-   For every clip $C_j \in T_m$ where $C_j.\text{startFrame} \ge S$:
-   $$C_j.\text{startFrame} \leftarrow C_j.\text{startFrame} - D$$
-   $$C_j.\text{endFrame} \leftarrow C_j.\text{endFrame} - D$$
-4. Encapsulate in `RippleDeleteCommand` with inverted state delta for atomic `undo()` / `redo()`.
+1. **Find Linked Clips**: If $C_{\text{target}}$ has a companion linked audio or video clip ($C_{\text{linked}}.\text{linkId} === C_{\text{target}}.\text{linkId}$), delete both clips simultaneously.
+2. **Track Shift**:
+   For each track $T \in \text{AffectedTracks}$:
+   - Remove target clip.
+   - For all clips $C_i \in T$ where $C_i.\text{startFrame} > S$:
+     $$C_i.\text{startFrame} \leftarrow C_i.\text{startFrame} - D$$
+     $$C_i.\text{endFrame} \leftarrow C_i.\text{endFrame} - D$$
+3. **Multi-Track Ripple All**:
+   If `rippleAllUnlockedTracks === true`: apply $-D$ shift to all unlocked tracks at or after $S$. Locked tracks ($T.\text{isLocked} === true$) are strictly immune and maintain clip positions.
+4. **Command Inversion for Undo/Redo**:
+   `RippleDeleteCommand` stores the deleted clip references and shifted clip IDs with their exact original frame positions, guaranteeing bit-identical state restoration on `undo()`.
+
+#### J-K-L Transport & Pitch-Preserving Audio
+- **$1\times, 2\times$ Forward/Reverse**: Audio is synthesized with `playbackRate = speed` and `preservesPitch = true`.
+- **$\ge 4\times$ Shuttle**: Audio output is muted (`gain.gain.value = 0`) to prevent high-frequency transducer clipping, and optional discrete 10-frame metronome clicks ("scrub chirps") provide acoustic timeline distance feedback.
+- **K + L / K + J Step Scrubbing**: Holding K while tapping L or J advances playback by exactly 1 frame or runs at $0.5\times$ slow-motion.
 
 ---
 
-## 5. Implementation Roadmap & Concrete Deliverables
+## 5. Concrete Code Contracts & Method Signatures
+
+### 5.1 `TrackWaveformVirtualCanvas` Interface
+```typescript
+// apps/studio/src/components/timeline/TrackWaveformVirtualCanvas.tsx
+export interface TrackWaveformVirtualCanvasProps {
+  trackId: string;
+  clips: readonly TimelineClip[];
+  viewportWidth: number;
+  laneHeight: number;
+  scrollLeft: number;
+  pxPerFrame: number;
+  fps: number;
+  trackColor?: string;
+}
+
+export const TrackWaveformVirtualCanvas: React.FC<TrackWaveformVirtualCanvasProps>;
+```
+
+### 5.2 `SharedArrayRingBuffer` Interface
+```typescript
+// apps/studio/src/lib/audio/SharedArrayRingBuffer.ts
+export interface SharedArrayRingBufferConfig {
+  sampleRate?: number; // default: 44100
+  capacitySeconds?: number; // default: 5
+}
+
+export class SharedArrayRingBuffer implements IAudioStreamTransport {
+  constructor(config?: SharedArrayRingBufferConfig);
+  public static isSupported(): boolean;
+  public getSharedBuffer(): SharedArrayBuffer;
+  public write(left: Float32Array, right: Float32Array): number;
+  public read(outLeft: Float32Array, outRight: Float32Array, blockSize?: number): number;
+  public reset(): void;
+  public getAvailableRead(): number;
+  public getAvailableWrite(): number;
+  public dispose(): void;
+}
+```
+
+### 5.3 `WebCodecsDecoderPool` Interface
+```typescript
+// apps/studio/src/renderer/workers/WebCodecsDecoderPool.ts
+export interface DecoderLease {
+  clipId: string;
+  reader: MediabunnyWorkerReader;
+  priorityScore: number;
+  lastUsedTimestamp: number;
+}
+
+export class WebCodecsDecoderPool {
+  public static getInstance(): WebCodecsDecoderPool;
+  public setMaxHardwareDecoders(limit: number): void;
+  public acquireLease(clipId: string, reader: MediabunnyWorkerReader, priority: number): Promise<boolean>;
+  public releaseLease(clipId: string): void;
+  public updatePriorities(playheadFrame: number, fps: number, activeTracks: string[]): void;
+  public evictLowestPriority(): boolean;
+  public clear(): void;
+}
+```
+
+### 5.4 `RippleDeleteCommand` Interface
+```typescript
+// apps/studio/src/lib/timeline/commands/RippleDeleteCommand.ts
+export class RippleDeleteCommand implements TimelineCommand {
+  public readonly id = 'RIPPLE_DELETE_COMMAND';
+  public readonly name = 'Ripple Delete Clip';
+  constructor(
+    private readonly targetClipId: string,
+    private readonly rippleAllUnlocked: boolean = false
+  );
+  public execute(state: IRState): IRState;
+  public undo(state: IRState): IRState;
+}
+```
+
+---
+
+## 6. Implementation Roadmap & Phased Deliverables
 
 ```mermaid
 gantt
@@ -266,7 +398,7 @@ gantt
 
 ---
 
-## 6. Formal Verification Matrix
+## 7. Formal Verification Matrix
 
 | Capability | Test Target | Verification Criteria & Invariants |
 |---|---|---|
@@ -277,7 +409,7 @@ gantt
 
 ---
 
-## 7. Rollback & Risk Mitigation Strategy
+## 8. Rollback & Risk Mitigation Strategy
 
 1. **SharedArrayBuffer Inavailability (COOP/COEP)**:
    - *Risk*: Environments lacking Cross-Origin Isolation headers block `SharedArrayBuffer`.
