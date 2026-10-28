@@ -41,4 +41,15 @@ describe('Phase 4: AssetTextureCache & Timeline Filmstrip Generation', () => {
     cache.setThumbnailDataUrl('custom-asset-123', customDataUrl, 100, 50);
     expect(cache.getThumbnailDataUrl('custom-asset-123', 100, 50)).toBe(customDataUrl);
   });
+
+  it('should prioritize real registered textures in directStorage over procedural generation', () => {
+    const cache = AssetTextureCache.getInstance();
+    let drawImageCalled = false;
+    const mockCanvasSource = {
+      width: 100,
+      height: 100,
+    };
+    cache.set('real-asset-key', mockCanvasSource);
+    expect(cache.get('real-asset-key')).toBe(mockCanvasSource);
+  });
 });

@@ -498,7 +498,7 @@ export class AssetTextureCache implements Disposable {
     const ctx = canvas.getContext('2d');
 
     if (ctx) {
-      this.renderProceduralSciFiAsset(ctx, assetId, width, height);
+      this.renderAssetThumbnail(ctx, assetId, width, height);
     }
 
     if (this.canvasCache.size >= this.MAX_CANVAS_ENTRIES) {
@@ -546,7 +546,7 @@ export class AssetTextureCache implements Disposable {
       const ctx = raw.getContext ? raw.getContext('2d') : null;
 
       if (ctx) {
-        this.renderProceduralSciFiAsset(ctx, assetId, safeWidth, safeHeight);
+        this.renderAssetThumbnail(ctx, assetId, safeWidth, safeHeight);
         if (typeof raw.toDataURL === 'function') {
           dataUrl = raw.toDataURL('image/jpeg', 0.85);
         }
@@ -576,6 +576,39 @@ export class AssetTextureCache implements Disposable {
       this.dataUrlCache.set(key, dataUrl);
     }
     return dataUrl;
+  }
+
+  /**
+   * Renders a visual thumbnail for an asset:
+   * Prioritizes real decoded visual assets (images, canvas, video frames, direct textures).
+   * Falls back to procedural sci-fi asset generator for mock/demo IDs and offline states.
+   */
+  private renderAssetThumbnail(
+    ctx: CanvasRenderingContext2D,
+    assetId: string,
+    w: number,
+    h: number
+  ): void {
+    // 1. Check if real visual asset is available in direct storage or decoded LRU
+    const direct = AssetTextureCache.directStorage.get(assetId);
+    const hotImg = this.hotImageLRU.get(assetId);
+    const hotVideo = this.hotVideoLRU.get(assetId);
+    const visualSource =
+      direct ||
+      hotImg?.img ||
+      (hotVideo?.video && hotVideo.video.readyState >= 2 ? hotVideo.video : null);
+
+    if (visualSource) {
+      try {
+        ctx.drawImage(visualSource, 0, 0, w, h);
+        return;
+      } catch {
+        // Fallback to procedural if drawing real asset fails (e.g. unready or detached)
+      }
+    }
+
+    // 2. Procedural sci-fi renderer fallback for mock/demo IDs and offline placeholders
+    this.renderProceduralSciFiAsset(ctx, assetId, w, h);
   }
 
   /**

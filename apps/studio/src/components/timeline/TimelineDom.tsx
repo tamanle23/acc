@@ -446,6 +446,10 @@ export function TimelineDom({
                   track={track}
                   isLocked={isLocked}
                   isInvalidDrop={isInvalidDropOverThisTrack}
+                  scrollLeft={scrollLeft}
+                  viewportWidth={clientWidth}
+                  pixelsPerFrame={pixelsPerFrame}
+                  fps={fps}
                 >
                   {visibleSequences.map((seq: StudioSequence) => {
                     const isSeqDragged = activeDragState?.seqId === seq.id;

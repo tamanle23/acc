@@ -1,12 +1,17 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { StudioTrack } from '../../lib/ir/studioTypes';
+import { TrackWaveformVirtualCanvas } from './TrackWaveformVirtualCanvas';
 
 export interface DroppableTrackLaneProps {
   track: StudioTrack;
   isLocked: boolean;
   isInvalidDrop?: boolean;
   children: React.ReactNode;
+  scrollLeft?: number;
+  viewportWidth?: number;
+  pixelsPerFrame?: number;
+  fps?: number;
 }
 
 export function DroppableTrackLane({
@@ -14,6 +19,10 @@ export function DroppableTrackLane({
   isLocked,
   isInvalidDrop,
   children,
+  scrollLeft,
+  viewportWidth,
+  pixelsPerFrame,
+  fps,
 }: DroppableTrackLaneProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `track-${track.id}`,
@@ -45,6 +54,22 @@ export function DroppableTrackLane({
               : 'bg-background/25 border-[var(--glass-border)] hover:border-[var(--glass-border-highlight)]/40'
       }`}
     >
+      {/* Unified Virtualized 2D Canvas Waveform Lane for Audio Tracks */}
+      {track.type === 'audio' &&
+        viewportWidth !== undefined &&
+        viewportWidth > 0 &&
+        scrollLeft !== undefined &&
+        pixelsPerFrame !== undefined &&
+        pixelsPerFrame > 0 && (
+          <TrackWaveformVirtualCanvas
+            trackId={track.id}
+            sequences={track.sequences}
+            viewportWidth={viewportWidth}
+            scrollLeft={scrollLeft}
+            pixelsPerFrame={pixelsPerFrame}
+            fps={fps}
+          />
+        )}
       {children}
     </div>
   );
