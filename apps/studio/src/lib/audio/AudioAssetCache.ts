@@ -112,11 +112,9 @@ export class AudioAssetCache {
         let arrayBuffer: ArrayBuffer | null = null;
         try {
           const contentCache = ContentCacheRegistry.get();
-          if (typeof contentCache.getBlob === 'function') {
-            const cachedBlob = await contentCache.getBlob(src);
-            if (cachedBlob) {
-              arrayBuffer = await cachedBlob.arrayBuffer();
-            }
+          const cachedBlob = await contentCache.get(src);
+          if (cachedBlob) {
+            arrayBuffer = await cachedBlob.arrayBuffer();
           }
         } catch {}
 
@@ -128,10 +126,8 @@ export class AudioAssetCache {
           // Asynchronously persist to ContentCacheRegistry (OPFS) for future fast streaming
           try {
             const contentCache = ContentCacheRegistry.get();
-            if (typeof contentCache.setBlob === 'function') {
-              const rawBlob = await assetBlob.blob();
-              contentCache.setBlob(src, rawBlob).catch(() => {});
-            }
+            const rawBlob = await assetBlob.blob();
+            contentCache.set(src, rawBlob).catch(() => {});
           } catch {}
         }
 

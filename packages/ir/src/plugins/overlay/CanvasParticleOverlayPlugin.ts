@@ -220,8 +220,6 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
     },
   };
 
-  private scratchCanvasCache = new Map<string, { canvas: any; ctx: any }>();
-
   public validate(params: unknown): params is CanvasParticleOverlayParams {
     return Boolean(params && typeof params === 'object' && 'type' in params);
   }
@@ -234,18 +232,6 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
       intensity: params.intensity ?? 1.0,
       active: true,
     };
-
-    const width = context.canvas.width;
-    const height = context.canvas.height;
-    const key = `${(context.targetEntity as any)?.id || 'default'}_${params.type}`;
-
-    // Pre-allocate scratch canvas for post-processing shaders if requested
-    if (params.shaders?.bloom?.enabled || params.shaders?.chromaticAberration?.enabled) {
-      const uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-      const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
-      const sCtx = scratch.getContext('2d');
-      this.scratchCanvasCache.set(key, { canvas: scratch, ctx: sCtx });
-    }
   }
 
   public renderClipSpace(ctx: ClipRenderContext, params: CanvasParticleOverlayParams): void {
@@ -260,20 +246,23 @@ export class CanvasParticleOverlayPlugin implements ModifierPlugin<CanvasParticl
 
     // 2. Post-Processing Shaders Pass
     if (params.shaders) {
-      const key = `${(ctx as any).track?.id || (ctx as any).sequence?.id || 'default'}_${params.type}`;
-      const scratchEntry = this.scratchCanvasCache.get(key);
-
       // A. Bloom & Glow
-      if (params.shaders.bloom?.enabled && scratchEntry) {
-        PostProcessingShaders.applyBloom(
-          canvasCtx,
-          scratchEntry.canvas,
-          scratchEntry.ctx,
-          width,
-          height,
-          params.shaders.bloom.threshold ?? 0.7,
-          params.shaders.bloom.intensity ?? 0.5
-        );
+      if (params.shaders.bloom?.enabled) {
+        try {
+          const uScratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          const scratch = uScratch.getRawCanvas ? uScratch.getRawCanvas() : uScratch;
+          const sCtx = scratch.getContext('2d');
+          PostProcessingShaders.applyBloom(
+            canvasCtx,
+            scratch,
+            sCtx,
+            width,
+            height,
+            params.shaders.bloom.threshold ?? 0.7,
+            params.shaders.bloom.intensity ?? 0.5
+          );
+          UniversalCanvasProvider.releaseScratchCanvas(uScratch);
+        } catch {}
       }
 
       // B. Anamorphic Lens Flare

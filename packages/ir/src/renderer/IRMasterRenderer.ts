@@ -300,7 +300,7 @@ export class IRMasterRenderer {
           // Store mixed audio buffer into Universal Content Cache Registry
           try {
             const wavBytes = UniversalAudioMixer.encodeToWav(audioResult);
-            await ContentCacheRegistry.get().set(tempAudioWavPath, wavBytes, {
+            await ContentCacheRegistry.get().set(tempAudioWavPath, new Blob([wavBytes as any], { type: 'audio/wav' }), {
               mimeType: 'audio/wav',
               sizeBytes: wavBytes.byteLength,
             });
@@ -474,7 +474,7 @@ export class IRMasterRenderer {
     };
 
     // 3. Delegate to canonical IRCanvasCompositor with 'master' execution profile
-    IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
+    await IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
       pluginRegistry: this.pluginRegistry,
       assetResolver,
       clearColor: '#000000',

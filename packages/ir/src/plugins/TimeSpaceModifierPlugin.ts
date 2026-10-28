@@ -38,23 +38,20 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
     },
   };
 
-  private machineCache: Map<string, TimeSpaceStateMachine> = new Map();
-
-  public getOrCreateMachine(templateId: string, customParams?: any, cacheKey?: string): TimeSpaceStateMachine {
-    const key = cacheKey || templateId;
-    let machine = this.machineCache.get(key);
-    if (!machine) {
-      machine = TimeSpaceRegistry.instantiate(templateId, customParams);
-      this.machineCache.set(key, machine);
+  public getOrCreateMachine(templateId: string, customParams?: any, targetHolder?: any): TimeSpaceStateMachine {
+    if (targetHolder) {
+      if (!targetHolder._timeSpaceMachine) {
+        targetHolder._timeSpaceMachine = TimeSpaceRegistry.instantiate(templateId, customParams);
+      }
+      return targetHolder._timeSpaceMachine;
     }
-    return machine;
+    return TimeSpaceRegistry.instantiate(templateId, customParams);
   }
 
   public renderClip(ctx: ClipRenderContext, params: TimeSpaceModifierParams): void {
     if (!params || !params.templateId) return;
 
-    const cacheKey = `${ctx.sequence.id}_${params.templateId}`;
-    const machine = this.getOrCreateMachine(params.templateId, params.params, cacheKey);
+    const machine = this.getOrCreateMachine(params.templateId, params.params, ctx.sequence);
     const fps = 30; // Standard baseline frame rate
     const viewport = { width: ctx.width, height: ctx.height };
 
@@ -68,8 +65,7 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
   public renderMasterComposite(ctx: MasterCompositeContext, params: TimeSpaceModifierParams): void {
     if (!params || !params.templateId) return;
 
-    const cacheKey = `master_${params.templateId}`;
-    const machine = this.getOrCreateMachine(params.templateId, params.params, cacheKey);
+    const machine = this.getOrCreateMachine(params.templateId, params.params, ctx);
     const fps = 30;
     const viewport = { width: ctx.width, height: ctx.height };
 

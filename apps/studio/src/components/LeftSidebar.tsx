@@ -94,9 +94,7 @@ export function LeftSidebar({
       // Store into ContentCacheRegistry with Blob API zero-copy backing
       try {
         const cache = ContentCacheRegistry.get();
-        if (typeof cache.setBlob === 'function') {
-          cache.setBlob(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
-        }
+        cache.set(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
       } catch {}
 
       IRStateManager.getInstance().addAsset(assetId, { id: assetId, type, src: objectUrl, name: file.name, size: file.size });

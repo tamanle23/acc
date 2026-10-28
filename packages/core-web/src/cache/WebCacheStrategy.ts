@@ -1,10 +1,10 @@
 import {
   ContentCacheStrategyId,
   type IContentCacheStrategy,
+  type CachePayload,
   type CacheEntryMetadata,
   fastChecksum,
-  streamToBlob,
-  blobToStream,
+  payloadToBlob,
 } from '@acc/core-isomorphic';
 
 const DEFAULT_CACHE_NAME = 'acc_content_cache';
@@ -98,32 +98,10 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   }
 
   /**
-   * Retrieves the binary content associated with key as Uint8Array (backward compatibility).
-   */
-  public async get(key: string): Promise<Uint8Array | null> {
-    const cache = await this.getCache();
-    if (!cache) {
-      return null;
-    }
-
-    try {
-      const url = this.getRequestUrl(key);
-      const res = await cache.match(url);
-      if (!res) {
-        return null;
-      }
-      const arrayBuffer = await res.arrayBuffer();
-      return new Uint8Array(arrayBuffer);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Retrieves the cached content directly as a Web standard Blob.
    * Zero heap Uint8Array allocation.
    */
-  public async getBlob(key: string): Promise<Blob | null> {
+  public async get(key: string): Promise<Blob | null> {
     const cache = await this.getCache();
     if (!cache) {
       return null;
@@ -140,64 +118,14 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   }
 
   /**
-   * Retrieves the cached content as a WHATWG ReadableStream<Uint8Array>.
-   * Enables zero-copy streaming directly from the browser's HTTP cache.
+   * Stores payload and its metadata in Web Cache.
    */
-  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
-    const cache = await this.getCache();
-    if (!cache) {
-      return null;
-    }
-
-    try {
-      const url = this.getRequestUrl(key);
-      const res = await cache.match(url);
-      if (!res || !res.body) return null;
-      return res.body;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Stores binary data and its metadata in Web Cache.
-   */
-  public async set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
-    const fullMeta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || fastChecksum(data),
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: data.byteLength,
-      metadata: metadata?.metadata,
-    };
-
-    const cache = await this.getCache();
-    if (!cache) {
-      return;
-    }
-
-    try {
-      const url = this.getRequestUrl(key);
-      const headers = this.buildHeaders(fullMeta, data.byteLength);
-
-      // Create a cloned buffer slice to prevent detached buffer mutations
-      const safeBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-      const response = new Response(safeBuffer, {
-        status: 200,
-        statusText: 'OK',
-        headers,
-      });
-
-      await cache.put(url, response);
-    } catch {
-      // Storage error or quota exceeded
-    }
-  }
-
-  /**
-   * Stores a Web standard Blob directly into Web Cache without array buffer conversion.
-   */
-  public async setBlob(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
+  public async set(
+    key: string,
+    data: CachePayload,
+    metadata?: Partial<CacheEntryMetadata>
+  ): Promise<void> {
+    const blob = await payloadToBlob(data, metadata?.mimeType);
     const fullMeta: CacheEntryMetadata = {
       checksum: metadata?.checksum || `blob_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
@@ -226,16 +154,22 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   }
 
   /**
-   * Stores a ReadableStream directly into Web Cache.
+   * Opens a WHATWG WritableStream directly into Web Cache.
    */
-  public async setStream(
+  public async createWritableStream(
     key: string,
-    stream: ReadableStream<Uint8Array>,
     metadata?: Partial<CacheEntryMetadata>
-  ): Promise<void> {
-    const mimeType = metadata?.mimeType || 'application/octet-stream';
-    const blob = await streamToBlob(stream, mimeType);
-    await this.setBlob(key, blob, metadata);
+  ): Promise<WritableStream<Uint8Array>> {
+    const chunks: Uint8Array[] = [];
+    return new WritableStream<Uint8Array>({
+      write(chunk) {
+        chunks.push(chunk);
+      },
+      close: async () => {
+        const blob = new Blob(chunks, { type: metadata?.mimeType || 'application/octet-stream' });
+        await this.set(key, blob, metadata);
+      },
+    });
   }
 
   /**

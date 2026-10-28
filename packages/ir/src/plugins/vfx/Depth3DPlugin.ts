@@ -4,6 +4,8 @@ import {
   DepthStrategyId,
   SegmentationStrategyId,
   Logger,
+  ContentCacheRegistry,
+  CanvasAssetLoader,
 } from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
@@ -133,16 +135,6 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     },
   };
 
-  // Cache resolved cutouts and depth layers per sequence to maintain ZERO-ALLOC-FRAME-LOOP
-  private cutoutCache = new Map<string, { subjectImg: any | null; subjectBBox: any | null }>();
-  private depthLayerCache = new Map<string, { srcCanvas: any; depthLayers: any }>();
-  private bgCanvasCache = new Map<string, any>();
-  private particlesCache = new Map<string, any[]>();
-  private dustParticlesCache = new Map<string, any[]>();
-  private baseCanvasCache = new Map<string, any>();
-  private normalMapCache = new Map<string, SurfaceNormalMap>();
-  private relightCanvasCache = new Map<string, { canvas: any; ctx: any }>();
-
   public validate(params: unknown): params is Depth3DPluginParams {
     return Boolean(params && typeof params === 'object' && 'mode' in params);
   }
@@ -157,8 +149,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       segmentationStrategy: params.segmentationStrategy || VisionEngineRegistry.getDefaultSegmentationStrategyId(),
       active: true,
     };
-    // Logger.info("Depth3DPlugin", `Executing depth 3D plugin`, context, params);
-    // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight
+    
+    // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight into ContentCacheRegistry
     const seq = context.targetType === 'sequence' ? (context.targetEntity as any) : null;
     const assetId = seq?.assetId;
     const assetDef = assetId && context.assets ? context.assets[assetId] : undefined;
@@ -168,10 +160,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       const cacheKeys = [effectiveImagePath, params.imagePath, assetId, seq?.id, seq?.src].filter(Boolean) as string[];
 
       try {
-        const cutout = await resolveSubjectCutout(effectiveImagePath, params as any);
-        for (const k of cacheKeys) {
-          this.cutoutCache.set(k, cutout);
-        }
+        await resolveSubjectCutout(effectiveImagePath, params as any);
       } catch { }
 
       const mode = params.mode || 'frame_breaker';
@@ -198,11 +187,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             height,
             params as any
           );
-          for (const k of cacheKeys) {
-            this.depthLayerCache.set(k, depthData);
-          }
 
-          // If relighting is requested, compute surface normal map once during preflight to adhere to ZERO-ALLOC-FRAME-LOOP
+          // If relighting is requested, compute surface normal map and persist as Blob in ContentCacheRegistry
           if (params.relighting?.enabled && depthData?.srcCanvas) {
             const dCtx = depthData.srcCanvas.getContext('2d');
             const depthImgData = dCtx.getImageData(0, 0, width, height);
@@ -213,49 +199,14 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
               4,
               params.relighting.normalStrength ?? 2.0
             );
+            const normalBlob = new Blob([normalMap.normals.buffer], { type: 'application/octet-stream' });
             for (const k of cacheKeys) {
-              this.normalMapCache.set(k, normalMap);
-            }
-
-            // Pre-allocate scratch canvas for relight compositing
-            const relightCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-            const rCtx = relightCanvas.getContext('2d');
-            const relightEntry = {
-              canvas: relightCanvas.getRawCanvas ? relightCanvas.getRawCanvas() : relightCanvas,
-              ctx: rCtx,
-            };
-            for (const k of cacheKeys) {
-              this.relightCanvasCache.set(k, relightEntry);
+              await ContentCacheRegistry.get().set(`normal_${k}`, normalBlob, {
+                metadata: { width: normalMap.width, height: normalMap.height },
+              });
             }
           }
         } catch { }
-      }
-
-      if (mode === 'parallax_25d' || mode === 'parallax_dolly') {
-        const particles = Array.from({ length: 28 }, (_, i) => ({
-          x: (Math.sin(i * 99) * 0.5 + 0.5) * width,
-          y: (Math.cos(i * 33) * 0.5 + 0.5) * height,
-          size: 3 + (i % 6) * 3,
-          speedX: (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1),
-          speedY: -0.5 - (i % 4) * 0.4,
-          opacity: 0.2 + (i % 5) * 0.12,
-          pulseSpeed: 1.5 + (i % 3),
-        }));
-        for (const k of cacheKeys) {
-          this.particlesCache.set(k, particles);
-        }
-      } else if (mode === 'volumetric_sandwich' || mode === 'sandwich') {
-        const dustParticles = Array.from({ length: 35 }, (_, i) => ({
-          x: (Math.sin(i * 47) * 0.5 + 0.5) * width,
-          y: (Math.cos(i * 83) * 0.5 + 0.5) * height,
-          size: 2 + (i % 4) * 2,
-          speedX: (0.2 + (i % 3) * 0.2) * (i % 2 === 0 ? 1 : -1),
-          speedY: -0.3 - (i % 3) * 0.2,
-          opacity: 0.15 + (i % 4) * 0.1,
-        }));
-        for (const k of cacheKeys) {
-          this.dustParticlesCache.set(k, dustParticles);
-        }
       }
     }
   }
@@ -264,8 +215,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
    * Phase 2: Clip Space Rendering.
    * Renders the 3D frame border, floating motion, and pop-out effect directly onto the canvas.
    */
-  public renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): void {
-    // Logger.info("Depth3DPlugin", `renderClipSpace depth 3D plugin`, ctx, params);
+  public async renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): Promise<void> {
     const { ctx: canvasCtx, width, height, localFrame, sequence, baseAsset } = ctx;
     if (!baseAsset) return;
     // Restrict Depth3DPlugin processing exclusively to image sequence types
@@ -283,31 +233,24 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       (sequence as any).src,
     ].filter(Boolean) as string[];
 
-    // Retrieve cached cutout if available
+    // Retrieve cached cutout via ContentCacheRegistry / resolveSubjectCutout
     let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined;
-    for (const k of candidateKeys) {
-      if (this.cutoutCache.has(k)) {
-        cutout = this.cutoutCache.get(k);
-        break;
+    try {
+      if (candidateKeys[0]) {
+        cutout = await resolveSubjectCutout(candidateKeys[0], params as any);
       }
-    }
+    } catch {}
     if (!cutout && (baseAsset as any)._cutoutResolved === undefined) {
-      // Synchronous attempt or empty fallback
       cutout = { subjectImg: null, subjectBBox: null };
     }
 
-    // Build or retrieve cached dimmed background plate for frame_breaker
+    // Build scoped scratch background plate for frame_breaker
+    let uBgCanvas: any | undefined;
     let bgCanvas: any | undefined;
     if (mode === 'frame_breaker') {
-      for (const k of candidateKeys) {
-        if (this.bgCanvasCache.has(k)) {
-          bgCanvas = this.bgCanvasCache.get(k);
-          break;
-        }
-      }
-      if (!bgCanvas) {
-        const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-        bgCanvas = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
+      try {
+        uBgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+        bgCanvas = uBgCanvas.getRawCanvas ? uBgCanvas.getRawCanvas() : uBgCanvas;
         const bgCtx = bgCanvas.getContext('2d');
         bgCtx.fillStyle = '#06060c';
         bgCtx.fillRect(0, 0, width, height);
@@ -332,10 +275,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         bgCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, bgX, bgY, bgW, bgH);
         bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
         bgCtx.fillRect(bgX, bgY, bgW, bgH);
-        for (const k of candidateKeys) {
-          this.bgCanvasCache.set(k, bgCanvas);
-        }
-      }
+      } catch {}
     }
 
     const depthConfig = {
@@ -353,219 +293,238 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     };
 
     let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined;
-    for (const k of candidateKeys) {
-      if (this.depthLayerCache.has(k)) {
-        depthLayersData = this.depthLayerCache.get(k);
-        break;
+    try {
+      if (candidateKeys[0]) {
+        depthLayersData = await resolveDepthMapData(candidateKeys[0], width, height, params as any);
       }
-    }
+    } catch {}
 
-    let particles: any[] | undefined;
-    for (const k of candidateKeys) {
-      if (this.particlesCache.has(k)) {
-        particles = this.particlesCache.get(k);
-        break;
-      }
-    }
+    // 100% Stateless mathematical evaluation of parallax and dust particles (ZERO-ALLOC-FRAME-LOOP)
+    const particles = (mode === 'parallax_25d' || mode === 'parallax_dolly')
+      ? Array.from({ length: 28 }, (_, i) => ({
+          x: (Math.sin(i * 99 + localFrame * 0.05) * 0.5 + 0.5) * width,
+          y: (Math.cos(i * 33 + localFrame * 0.03) * 0.5 + 0.5) * height,
+          size: 3 + (i % 6) * 3,
+          speedX: (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1),
+          speedY: -0.5 - (i % 4) * 0.4,
+          opacity: 0.2 + (i % 5) * 0.12,
+          pulseSpeed: 1.5 + (i % 3),
+        }))
+      : undefined;
 
-    let dustParticles: any[] | undefined;
-    for (const k of candidateKeys) {
-      if (this.dustParticlesCache.has(k)) {
-        dustParticles = this.dustParticlesCache.get(k);
-        break;
-      }
-    }
+    const dustParticles = (mode === 'volumetric_sandwich' || mode === 'sandwich')
+      ? Array.from({ length: 35 }, (_, i) => ({
+          x: (Math.sin(i * 47 + localFrame * 0.02) * 0.5 + 0.5) * width,
+          y: (Math.cos(i * 83 + localFrame * 0.015) * 0.5 + 0.5) * height,
+          size: 2 + (i % 4) * 2,
+          speedX: (0.2 + (i % 3) * 0.2) * (i % 2 === 0 ? 1 : -1),
+          speedY: -0.3 - (i % 3) * 0.2,
+          opacity: 0.15 + (i % 4) * 0.1,
+        }))
+      : undefined;
 
-    // Build or retrieve cached baseCanvas (e.g. for wigglegram)
+    let uBaseCanvas: any | undefined;
     let baseCanvas: any | undefined;
     if (mode === 'wigglegram') {
-      for (const k of candidateKeys) {
-        if (this.baseCanvasCache.has(k)) {
-          baseCanvas = this.baseCanvasCache.get(k);
-          break;
-        }
-      }
-      if (!baseCanvas) {
-        const uBaseCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+      try {
+        uBaseCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
         baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
         const bCtx = baseCanvas.getContext('2d');
         bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
+      } catch {}
+    }
+
+    try {
+      const renderer = Depth3DFactory.getRenderer(mode);
+      if (renderer) {
+        renderer.renderFrame(canvasCtx, {
+          img: baseAsset,
+          subjectImg: cutout?.subjectImg || null,
+          subjectBBox: cutout?.subjectBBox || null,
+          bgCanvas: bgCanvas || null,
+          srcCanvas: depthLayersData?.srcCanvas || null,
+          baseCanvas: baseCanvas || null,
+          depthLayers: depthLayersData?.depthLayers || null,
+          particles,
+          dustParticles,
+          captions: params.captions,
+          width,
+          height,
+          frame: localFrame,
+          totalFrames: totalSeqFrames,
+          timeSec,
+          progress,
+          depthConfig,
+        });
+      } else {
+        drawFrameBreakerFrame(canvasCtx, {
+          img: baseAsset,
+          subjectImg: cutout?.subjectImg || null,
+          subjectBBox: cutout?.subjectBBox || null,
+          bgCanvas: bgCanvas || null,
+          width,
+          height,
+          frame: localFrame,
+          totalFrames: totalSeqFrames,
+          timeSec,
+          progress,
+          depthConfig,
+        });
+      }
+
+      // Dynamic Relighting Pass (Phase 1)
+      if (params.relighting?.enabled) {
+        let normalMap: SurfaceNormalMap | undefined;
         for (const k of candidateKeys) {
-          this.baseCanvasCache.set(k, baseCanvas);
-        }
-      }
-    }
-
-    const renderer = Depth3DFactory.getRenderer(mode);
-    if (renderer) {
-      renderer.renderFrame(canvasCtx, {
-        img: baseAsset,
-        subjectImg: cutout?.subjectImg || null,
-        subjectBBox: cutout?.subjectBBox || null,
-        bgCanvas: bgCanvas || null,
-        srcCanvas: depthLayersData?.srcCanvas || null,
-        baseCanvas: baseCanvas || null,
-        depthLayers: depthLayersData?.depthLayers || null,
-        particles,
-        dustParticles,
-        captions: params.captions,
-        width,
-        height,
-        frame: localFrame,
-        totalFrames: totalSeqFrames,
-        timeSec,
-        progress,
-        depthConfig,
-      });
-    } else {
-      drawFrameBreakerFrame(canvasCtx, {
-        img: baseAsset,
-        subjectImg: cutout?.subjectImg || null,
-        subjectBBox: cutout?.subjectBBox || null,
-        bgCanvas: bgCanvas || null,
-        width,
-        height,
-        frame: localFrame,
-        totalFrames: totalSeqFrames,
-        timeSec,
-        progress,
-        depthConfig,
-      });
-    }
-
-    // Dynamic Relighting Pass (Phase 1)
-    if (params.relighting?.enabled) {
-      let normalMap: SurfaceNormalMap | undefined;
-      let relightEntry: { canvas: any; ctx: any } | undefined;
-      for (const k of candidateKeys) {
-        if (this.normalMapCache.has(k)) {
-          normalMap = this.normalMapCache.get(k);
-          break;
-        }
-      }
-      for (const k of candidateKeys) {
-        if (this.relightCanvasCache.has(k)) {
-          relightEntry = this.relightCanvasCache.get(k);
-          break;
-        }
-      }
-
-      if (normalMap && relightEntry) {
-        const { canvas: relightCanvas, ctx: rCtx } = relightEntry;
-
-        // Clear pre-allocated scratch canvas
-        rCtx.clearRect(0, 0, width, height);
-
-        // Draw current canvas snapshot to scratch canvas
-        rCtx.drawImage(canvasCtx.canvas, 0, 0);
-
-        const imgData = rCtx.getImageData(0, 0, width, height);
-
-        // Calculate dynamic light position (interpolated or orbit if needed)
-        const lightPos = params.relighting.lightPosition || [
-          Math.sin(progress * Math.PI * 2) * 0.8,
-          Math.cos(progress * Math.PI * 2) * 0.5 - 0.2,
-          1.2,
-        ];
-
-        const lightColor = SurfaceNormalGenerator.parseColor(params.relighting.lightColor);
-
-        SurfaceNormalGenerator.applyRelightingToRgba(
-          imgData.data,
-          normalMap,
-          null, // Gated by existing alpha in imgData
-          {
-            position: lightPos,
-            diffuse: params.relighting.diffuse ?? 0.8,
-            specular: params.relighting.specular ?? 0.6,
-            shininess: params.relighting.shininess ?? 16.0,
-            ambient: params.relighting.ambient ?? 0.1,
-            rimIntensity: params.relighting.rimIntensity ?? 0.4,
-            color: lightColor,
+          const normalKey = `normal_${k}`;
+          if (await ContentCacheRegistry.get().has(normalKey)) {
+            const blob = await ContentCacheRegistry.get().get(normalKey);
+            if (blob) {
+              const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+              const ab = await blob.arrayBuffer();
+              normalMap = {
+                normals: new Float32Array(ab),
+                width: (meta?.metadata?.width as number) || width,
+                height: (meta?.metadata?.height as number) || height,
+              };
+              break;
+            }
           }
-        );
-
-        rCtx.putImageData(imgData, 0, 0);
-
-        // Non-destructive additive screen compositing onto primary canvas context
-        canvasCtx.save();
-        try {
-          canvasCtx.globalCompositeOperation = 'screen';
-          canvasCtx.drawImage(relightCanvas, 0, 0);
-        } finally {
-          canvasCtx.restore();
         }
-      }
-    }
 
-    // Viewport Pass Inspection & Diagnostics (Composite, Depth Buffer, Surface Normals, Alpha Mask)
-    if (ctx.debugMode === 'depth_heatmap' || mode === 'depth_heatmap' || mode === 'depth_map_3d') {
-      const depthSrc = depthLayersData?.srcCanvas;
-      if (depthSrc) {
-        canvasCtx.save();
-        try {
-          canvasCtx.globalAlpha = 0.95;
-          canvasCtx.drawImage(
-            depthSrc.getRawCanvas ? depthSrc.getRawCanvas() : depthSrc,
-            0,
-            0,
-            width,
-            height
-          );
-        } finally {
-          canvasCtx.restore();
-        }
-      }
-    } else if (ctx.debugMode === 'normals') {
-      let normalMap: SurfaceNormalMap | undefined;
-      for (const k of candidateKeys) {
-        if (this.normalMapCache.has(k)) {
-          normalMap = this.normalMapCache.get(k);
-          break;
-        }
-      }
-      if (normalMap) {
-        canvasCtx.save();
-        try {
-          const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-          const rawScratch = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
-          const sCtx = rawScratch.getContext('2d');
-          const imgData = sCtx.createImageData(width, height);
-          const normals = normalMap.normals;
-          const totalPixels = width * height;
-          for (let i = 0; i < totalPixels; i++) {
-            const nIdx = i * 3;
-            const pIdx = i * 4;
-            // Map [-1, 1] normal vector to RGB [0, 255]
-            imgData.data[pIdx] = Math.round((normals[nIdx] * 0.5 + 0.5) * 255);
-            imgData.data[pIdx + 1] = Math.round((normals[nIdx + 1] * 0.5 + 0.5) * 255);
-            imgData.data[pIdx + 2] = Math.round((normals[nIdx + 2] * 0.5 + 0.5) * 255);
-            imgData.data[pIdx + 3] = 255;
+        if (normalMap) {
+          const uRelightCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+          const relightCanvas = uRelightCanvas.getRawCanvas ? uRelightCanvas.getRawCanvas() : uRelightCanvas;
+          const rCtx = relightCanvas.getContext('2d');
+
+          try {
+            rCtx.clearRect(0, 0, width, height);
+            rCtx.drawImage(canvasCtx.canvas, 0, 0);
+            const imgData = rCtx.getImageData(0, 0, width, height);
+
+            const lightPos = params.relighting.lightPosition || [
+              Math.sin(progress * Math.PI * 2) * 0.8,
+              Math.cos(progress * Math.PI * 2) * 0.5 - 0.2,
+              1.2,
+            ];
+
+            const lightColor = SurfaceNormalGenerator.parseColor(params.relighting.lightColor);
+
+            SurfaceNormalGenerator.applyRelightingToRgba(
+              imgData.data,
+              normalMap,
+              null,
+              {
+                position: lightPos,
+                diffuse: params.relighting.diffuse ?? 0.8,
+                specular: params.relighting.specular ?? 0.6,
+                shininess: params.relighting.shininess ?? 16.0,
+                ambient: params.relighting.ambient ?? 0.1,
+                rimIntensity: params.relighting.rimIntensity ?? 0.4,
+                color: lightColor,
+              }
+            );
+
+            rCtx.putImageData(imgData, 0, 0);
+
+            canvasCtx.save();
+            try {
+              canvasCtx.globalCompositeOperation = 'screen';
+              canvasCtx.drawImage(relightCanvas, 0, 0);
+            } finally {
+              canvasCtx.restore();
+            }
+          } finally {
+            UniversalCanvasProvider.releaseScratchCanvas(uRelightCanvas);
           }
-          sCtx.putImageData(imgData, 0, 0);
-          canvasCtx.drawImage(rawScratch, 0, 0, width, height);
-          UniversalCanvasProvider.releaseScratchCanvas(uCanvas);
-        } finally {
-          canvasCtx.restore();
         }
       }
-    } else if (ctx.debugMode === 'alpha') {
-      if (cutout?.subjectImg) {
-        canvasCtx.save();
-        try {
-          canvasCtx.clearRect(0, 0, width, height);
-          canvasCtx.fillStyle = '#090d16';
-          canvasCtx.fillRect(0, 0, width, height);
-          canvasCtx.drawImage(
-            cutout.subjectImg.getRawCanvas ? cutout.subjectImg.getRawCanvas() : cutout.subjectImg,
-            0,
-            0,
-            width,
-            height
-          );
-        } finally {
-          canvasCtx.restore();
+
+      // Viewport Pass Inspection & Diagnostics (Composite, Depth Buffer, Surface Normals, Alpha Mask)
+      if (ctx.debugMode === 'depth_heatmap' || mode === 'depth_heatmap' || mode === 'depth_map_3d') {
+        const depthSrc = depthLayersData?.srcCanvas;
+        if (depthSrc) {
+          canvasCtx.save();
+          try {
+            canvasCtx.globalAlpha = 0.95;
+            canvasCtx.drawImage(
+              depthSrc.getRawCanvas ? depthSrc.getRawCanvas() : depthSrc,
+              0,
+              0,
+              width,
+              height
+            );
+          } finally {
+            canvasCtx.restore();
+          }
         }
+      } else if (ctx.debugMode === 'normals') {
+        let normalMap: SurfaceNormalMap | undefined;
+        for (const k of candidateKeys) {
+          const normalKey = `normal_${k}`;
+          if (await ContentCacheRegistry.get().has(normalKey)) {
+            const blob = await ContentCacheRegistry.get().get(normalKey);
+            if (blob) {
+              const meta = await ContentCacheRegistry.get().getMetadata(normalKey);
+              const ab = await blob.arrayBuffer();
+              normalMap = {
+                normals: new Float32Array(ab),
+                width: (meta?.metadata?.width as number) || width,
+                height: (meta?.metadata?.height as number) || height,
+              };
+              break;
+            }
+          }
+        }
+        if (normalMap) {
+          canvasCtx.save();
+          try {
+            const uCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+            const rawScratch = uCanvas.getRawCanvas ? uCanvas.getRawCanvas() : uCanvas;
+            const sCtx = rawScratch.getContext('2d');
+            const imgData = sCtx.createImageData(width, height);
+            const normals = normalMap.normals;
+            const totalPixels = width * height;
+            for (let i = 0; i < totalPixels; i++) {
+              const nIdx = i * 3;
+              const pIdx = i * 4;
+              imgData.data[pIdx] = Math.round((normals[nIdx] * 0.5 + 0.5) * 255);
+              imgData.data[pIdx + 1] = Math.round((normals[nIdx + 1] * 0.5 + 0.5) * 255);
+              imgData.data[pIdx + 2] = Math.round((normals[nIdx + 2] * 0.5 + 0.5) * 255);
+              imgData.data[pIdx + 3] = 255;
+            }
+            sCtx.putImageData(imgData, 0, 0);
+            canvasCtx.drawImage(rawScratch, 0, 0, width, height);
+            UniversalCanvasProvider.releaseScratchCanvas(uCanvas);
+          } finally {
+            canvasCtx.restore();
+          }
+        }
+      } else if (ctx.debugMode === 'alpha') {
+        if (cutout?.subjectImg) {
+          canvasCtx.save();
+          try {
+            canvasCtx.clearRect(0, 0, width, height);
+            canvasCtx.fillStyle = '#090d16';
+            canvasCtx.fillRect(0, 0, width, height);
+            canvasCtx.drawImage(
+              cutout.subjectImg.getRawCanvas ? cutout.subjectImg.getRawCanvas() : cutout.subjectImg,
+              0,
+              0,
+              width,
+              height
+            );
+          } finally {
+            canvasCtx.restore();
+          }
+        }
+      }
+    } finally {
+      if (uBgCanvas) {
+        UniversalCanvasProvider.releaseScratchCanvas(uBgCanvas);
+      }
+      if (uBaseCanvas) {
+        UniversalCanvasProvider.releaseScratchCanvas(uBaseCanvas);
       }
     }
   }

@@ -103,12 +103,12 @@ export class IRCanvasCompositor {
   /**
    * Renders frame t deterministically onto target 2D canvas context.
    */
-  public static renderFrame(
+  public static async renderFrame(
     canvasCtx: any,
     timeline: ResolvedTimeline,
     frame: number,
     options: CanvasCompositorOptions
-  ): void {
+  ): Promise<void> {
     const totalFrames = timeline.totalFrames;
     const clampedFrame = Math.max(0, Math.min(totalFrames, Math.round(frame)));
     const { w: width, h: height } = timeline.meta.canvasSize;
@@ -176,7 +176,7 @@ export class IRCanvasCompositor {
 
       if (!requiresIsolation) {
         // Fast-path Direct Draw to Master Canvas
-        IRCanvasCompositor.renderTrackSequences(
+        await IRCanvasCompositor.renderTrackSequences(
           canvasCtx,
           canvas,
           track,
@@ -198,7 +198,7 @@ export class IRCanvasCompositor {
         scratchCtx.globalCompositeOperation = 'source-over';
 
         // Render sequences inside isolated track buffer
-        IRCanvasCompositor.renderTrackSequences(
+        await IRCanvasCompositor.renderTrackSequences(
           scratchCtx,
           scratchCanvas,
           track,
@@ -364,7 +364,7 @@ export class IRCanvasCompositor {
   /**
    * Helper to render active sequences within a track into a given 2D context.
    */
-  private static renderTrackSequences(
+  private static async renderTrackSequences(
     ctx: any,
     canvas: any,
     track: ResolvedTrack,
@@ -377,7 +377,7 @@ export class IRCanvasCompositor {
     registry: ModifierPluginRegistry,
     assets?: IAssetSourceResolver,
     debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha'
-  ): void {
+  ): Promise<void> {
     for (const seq of activeTrackSeqs) {
       const localFrame = clampedFrame - seq.startFrame;
       ctx.save();
@@ -394,7 +394,7 @@ export class IRCanvasCompositor {
 
             const plugin = registry.get(mod.type);
             if (plugin && plugin.renderClipSpace) {
-              plugin.renderClipSpace(
+              const res = plugin.renderClipSpace(
                 {
                   canvas,
                   ctx,
@@ -411,6 +411,9 @@ export class IRCanvasCompositor {
                   ...mod.params,
                 }
               );
+              if (res instanceof Promise) {
+                await res;
+              }
             }
           }
         }

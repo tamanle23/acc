@@ -1,11 +1,10 @@
 import {
   ContentCacheStrategyId,
   type IContentCacheStrategy,
+  type CachePayload,
   type CacheEntryMetadata,
   fastChecksum,
-  streamToBlob,
-  blobToStream,
-  blobToUint8Array,
+  payloadToBlob,
 } from '@acc/core-isomorphic';
 
 const DB_NAME = 'acc_content_cache';
@@ -76,37 +75,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
     });
   }
 
-  public async get(key: string): Promise<Uint8Array | null> {
-    const db = await this.getDB();
-    if (!db) {
-      return null;
-    }
-
-    return new Promise((resolve) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.get(key);
-        req.onsuccess = async () => {
-          const res = req.result as IndexedDbRecord | undefined;
-          if (!res) {
-            resolve(null);
-          } else if (res.data) {
-            resolve(new Uint8Array(res.data));
-          } else if (res.blob) {
-            resolve(await blobToUint8Array(res.blob));
-          } else {
-            resolve(null);
-          }
-        };
-        req.onerror = () => resolve(null);
-      } catch {
-        resolve(null);
-      }
-    });
-  }
-
-  public async getBlob(key: string): Promise<Blob | null> {
+  public async get(key: string): Promise<Blob | null> {
     const db = await this.getDB();
     if (!db) {
       return null;
@@ -136,45 +105,12 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
     });
   }
 
-  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
-    const blob = await this.getBlob(key);
-    if (!blob) return null;
-    return blobToStream(blob);
-  }
-
-  public async set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
-    const fullMeta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || fastChecksum(data),
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: data.byteLength,
-      metadata: metadata?.metadata,
-    };
-
-    const db = await this.getDB();
-    if (!db) {
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
-        const record: IndexedDbRecord = {
-          key,
-          data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
-          metadata: fullMeta,
-        };
-        const req = store.put(record);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  }
-
-  public async setBlob(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
+  public async set(
+    key: string,
+    data: CachePayload,
+    metadata?: Partial<CacheEntryMetadata>
+  ): Promise<void> {
+    const blob = await payloadToBlob(data, metadata?.mimeType);
     const fullMeta: CacheEntryMetadata = {
       checksum: metadata?.checksum || `blob_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
@@ -206,14 +142,20 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
     });
   }
 
-  public async setStream(
+  public async createWritableStream(
     key: string,
-    stream: ReadableStream<Uint8Array>,
     metadata?: Partial<CacheEntryMetadata>
-  ): Promise<void> {
-    const mimeType = metadata?.mimeType || 'application/octet-stream';
-    const blob = await streamToBlob(stream, mimeType);
-    await this.setBlob(key, blob, metadata);
+  ): Promise<WritableStream<Uint8Array>> {
+    const chunks: Uint8Array[] = [];
+    return new WritableStream<Uint8Array>({
+      write(chunk) {
+        chunks.push(chunk);
+      },
+      close: async () => {
+        const blob = new Blob(chunks, { type: metadata?.mimeType || 'application/octet-stream' });
+        await this.set(key, blob, metadata);
+      },
+    });
   }
 
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {

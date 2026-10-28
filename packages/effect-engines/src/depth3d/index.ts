@@ -87,16 +87,19 @@ function resolvePath(baseDir: string, relativeOrAbsolute: string): string {
 async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null> {
   const cache = ContentCacheRegistry.get();
   if (await cache.has(assetPathOrUri)) {
-    const data = await cache.get(assetPathOrUri);
-    if (data) return data;
+    const blob = await cache.get(assetPathOrUri);
+    if (blob) {
+      const ab = await blob.arrayBuffer();
+      return new Uint8Array(ab);
+    }
   }
 
   try {
-    console.log("loadAssetBytes", assetPathOrUri)
+    console.log("loadAssetBytes", assetPathOrUri);
     const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
     const ab = await blob.arrayBuffer();
     const bytes = new Uint8Array(ab);
-    await cache.set(assetPathOrUri, bytes);
+    await cache.set(assetPathOrUri, blob);
     return bytes;
   } catch {
     return null;

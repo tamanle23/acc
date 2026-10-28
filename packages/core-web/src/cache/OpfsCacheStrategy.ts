@@ -1,10 +1,11 @@
 import {
   ContentCacheStrategyId,
   type IContentCacheStrategy,
+  type CachePayload,
   type CacheEntryMetadata,
   fastChecksum,
-  uint8ArrayToStream,
-  streamToUint8Array,
+  payloadToBlob,
+  payloadToStream,
 } from '@acc/core-isomorphic';
 import { IndexedDbCacheStrategy } from './IndexedDbCacheStrategy';
 
@@ -85,61 +86,10 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     }
   }
 
-  public async get(key: string): Promise<Uint8Array | null> {
+  public async get(key: string): Promise<Blob | null> {
     const dir = await this.getDirectory();
     if (!dir) {
       return this.fallback.get(key);
-    }
-
-    const safeName = this.sanitizeKey(key);
-    try {
-      const handle = await dir.getFileHandle(safeName);
-      const file = await handle.getFile();
-      const buffer = await file.arrayBuffer();
-      return new Uint8Array(buffer);
-    } catch {
-      return null;
-    }
-  }
-
-  public async set(
-    key: string,
-    data: Uint8Array,
-    metadata?: Partial<CacheEntryMetadata>
-  ): Promise<void> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      return this.fallback.set(key, data, metadata);
-    }
-
-    const safeName = this.sanitizeKey(key);
-    const handle = await dir.getFileHandle(safeName, { create: true });
-    const writable = await handle.createWritable();
-    try {
-      await writable.write(data as unknown as ArrayBufferView);
-    } finally {
-      await writable.close();
-    }
-
-    // Persist companion metadata
-    const meta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || fastChecksum(data),
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: data.byteLength,
-      metadata: metadata?.metadata,
-    };
-    await this.writeMetadata(dir, safeName, meta);
-  }
-
-  public async getBlob(key: string): Promise<Blob | null> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      if (typeof this.fallback.getBlob === 'function') {
-        return this.fallback.getBlob(key);
-      }
-      const data = await this.fallback.get(key);
-      return data ? new Blob([data as unknown as BlobPart]) : null;
     }
 
     const safeName = this.sanitizeKey(key);
@@ -151,34 +101,29 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     }
   }
 
-  public async setBlob(
+  public async set(
     key: string,
-    blob: Blob,
+    data: CachePayload,
     metadata?: Partial<CacheEntryMetadata>
   ): Promise<void> {
     const dir = await this.getDirectory();
     if (!dir) {
-      if (typeof this.fallback.setBlob === 'function') {
-        return this.fallback.setBlob(key, blob, metadata);
-      }
-      const data = new Uint8Array(await blob.arrayBuffer());
       return this.fallback.set(key, data, metadata);
     }
 
     const safeName = this.sanitizeKey(key);
+    const blob = await payloadToBlob(data, metadata?.mimeType);
     const handle = await dir.getFileHandle(safeName, { create: true });
     const writable = await handle.createWritable();
     try {
-      // Pipe blob stream directly to OPFS writable without intermediate heap allocation
       await blob.stream().pipeTo(writable);
     } finally {
       try {
         await writable.close();
-      } catch {
-        // Ignore if already closed by pipeTo
-      }
+      } catch {}
     }
 
+    // Persist companion metadata
     const meta: CacheEntryMetadata = {
       checksum: metadata?.checksum || `opfs-blob-${Date.now()}`,
       mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
@@ -189,61 +134,43 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     await this.writeMetadata(dir, safeName, meta);
   }
 
-  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
-    const dir = await this.getDirectory();
-    if (!dir) {
-      if (typeof this.fallback.getStream === 'function') {
-        return this.fallback.getStream(key);
-      }
-      const data = await this.fallback.get(key);
-      return data ? uint8ArrayToStream(data) : null;
-    }
-
-    const safeName = this.sanitizeKey(key);
-    try {
-      const handle = await dir.getFileHandle(safeName);
-      const file = await handle.getFile();
-      return file.stream();
-    } catch {
-      return null;
-    }
-  }
-
-  public async setStream(
+  public async createWritableStream(
     key: string,
-    stream: ReadableStream<Uint8Array>,
     metadata?: Partial<CacheEntryMetadata>
-  ): Promise<void> {
+  ): Promise<WritableStream<Uint8Array>> {
     const dir = await this.getDirectory();
     if (!dir) {
-      if (typeof this.fallback.setStream === 'function') {
-        return this.fallback.setStream(key, stream, metadata);
+      if (typeof this.fallback.createWritableStream === 'function') {
+        return this.fallback.createWritableStream(key, metadata);
       }
-      const data = await streamToUint8Array(stream);
-      return this.fallback.set(key, data, metadata);
+      throw new Error('[OpfsCacheStrategy] OPFS unavailable and fallback has no createWritableStream');
     }
 
     const safeName = this.sanitizeKey(key);
     const handle = await dir.getFileHandle(safeName, { create: true });
     const writable = await handle.createWritable();
-    try {
-      await stream.pipeTo(writable);
-    } finally {
-      try {
-        await writable.close();
-      } catch {
-        // Ignore if closed
-      }
-    }
+    let totalBytes = 0;
 
-    const meta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || `opfs-stream-${Date.now()}`,
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: metadata?.sizeBytes,
-      metadata: metadata?.metadata,
-    };
-    await this.writeMetadata(dir, safeName, meta);
+    return new WritableStream<Uint8Array>({
+      async write(chunk) {
+        totalBytes += chunk.byteLength;
+        await writable.write(chunk as unknown as ArrayBufferView);
+      },
+      async close() {
+        await writable.close();
+        const meta: CacheEntryMetadata = {
+          checksum: metadata?.checksum || `opfs-stream-${Date.now()}_${totalBytes}`,
+          mimeType: metadata?.mimeType || 'application/octet-stream',
+          createdAt: metadata?.createdAt || Date.now(),
+          sizeBytes: metadata?.sizeBytes ?? totalBytes,
+          metadata: metadata?.metadata,
+        };
+        await this.writeMetadata(dir, safeName, meta);
+      },
+      async abort(reason) {
+        await writable.abort(reason);
+      },
+    });
   }
 
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {

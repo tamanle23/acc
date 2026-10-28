@@ -263,10 +263,8 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
         const resolveBlob = async (): Promise<Blob | null> => {
           try {
             const cache = ContentCacheRegistry.get();
-            if (typeof cache.getBlob === 'function') {
-              const cached = await cache.getBlob(url);
-              if (cached) return cached;
-            }
+            const cached = await cache.get(url);
+            if (cached) return cached;
           } catch {}
           if (typeof fetch === 'function') {
             const res = await fetch(url);
@@ -274,9 +272,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             // Store to cache asynchronously
             try {
               const cache = ContentCacheRegistry.get();
-              if (typeof cache.setBlob === 'function') {
-                cache.setBlob(url, blob).catch(() => {});
-              }
+              cache.set(url, blob).catch(() => {});
             } catch {}
             return blob;
           }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test';
 import { CanvasParticleOverlayPlugin } from '../packages/ir/src/plugins/overlay/CanvasParticleOverlayPlugin';
-import { UniversalCanvasProvider } from '../packages/effect-engines';
+import { UniversalCanvasProvider } from '../packages/core-isomorphic';
 import { createHash } from 'crypto';
 
 function hashCanvas(canvasCtx: any, width: number, height: number): string {

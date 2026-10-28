@@ -230,7 +230,7 @@ export class IRPreviewEngine {
     const textures = options.textureCache ?? this.defaultTextureCache;
     const activeSequences = this.intervalTree.queryActive(clampedFrame);
 
-    IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {
+    void IRCanvasCompositor.renderFrame(ctx, this.timeline, clampedFrame, {
       pluginRegistry: this.pluginRegistry,
       assetResolver: textures,
       clearColor: options.clearColor || '#000000',

@@ -17,6 +17,8 @@ export interface CacheEntryMetadata {
   metadata?: Record<string, unknown>;
 }
 
+export type CachePayload = Blob | ReadableStream<Uint8Array> | ArrayBuffer | ArrayBufferView | string;
+
 export interface IContentCacheStrategy {
   readonly id: ContentCacheStrategyId | string;
   readonly name: string;
@@ -24,42 +26,26 @@ export interface IContentCacheStrategy {
   has(key: string): Promise<boolean>;
 
   /**
-   * Standard byte-array retrieval (backward compatibility).
+   * First-class Web standard Blob retrieval.
+   * Backed by zero-copy filesystem, OPFS handles, or IDB Blobs.
    */
-  get(key: string): Promise<Uint8Array | null>;
+  get(key: string): Promise<Blob | null>;
 
   /**
-   * Standard byte-array persistence (backward compatibility).
+   * Standardized polymorphic persistence.
+   * Directly supports Blob, WHATWG ReadableStream<Uint8Array>, ArrayBuffer, ArrayBufferView, or string.
    */
-  set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void>;
+  set(key: string, data: CachePayload, metadata?: Partial<CacheEntryMetadata>): Promise<void>;
 
   /**
-   * Zero-copy / platform-native Blob retrieval.
-   * Returns a standard Web Blob directly without holding raw contiguous Uint8Array in JavaScript heap.
+   * Opens a WHATWG WritableStream directly into storage for zero-copy streaming ingestion.
    */
-  getBlob?(key: string): Promise<Blob | null>;
-
-  /**
-   * Zero-copy / platform-native Blob persistence.
-   */
-  setBlob?(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void>;
-
-  /**
-   * Streaming API retrieval.
-   * Yields a WHATWG ReadableStream<Uint8Array> for chunked non-blocking processing.
-   */
-  getStream?(key: string): Promise<ReadableStream<Uint8Array> | null>;
-
-  /**
-   * Streaming API persistence.
-   * Consumes a WHATWG ReadableStream<Uint8Array> directly into storage.
-   */
-  setStream?(key: string, stream: ReadableStream<Uint8Array>, metadata?: Partial<CacheEntryMetadata>): Promise<void>;
+  createWritableStream?(key: string, metadata?: Partial<CacheEntryMetadata>): Promise<WritableStream<Uint8Array>>;
 
   /**
    * Metadata retrieval without loading the payload into memory.
    */
-  getMetadata?(key: string): Promise<CacheEntryMetadata | null>;
+  getMetadata(key: string): Promise<CacheEntryMetadata | null>;
 
   delete(key: string): Promise<boolean>;
   clear(): Promise<void>;

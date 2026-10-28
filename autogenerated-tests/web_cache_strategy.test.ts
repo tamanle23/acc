@@ -27,8 +27,6 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
 
       expect(await strategy.has('blob/item-1')).toBe(false);
       expect(await strategy.get('blob/item-1')).toBeNull();
-      expect(await strategy.getBlob('blob/item-1')).toBeNull();
-      expect(await strategy.getStream('blob/item-1')).toBeNull();
 
       // Setting without CacheStorage should be safe no-op without allocating in-memory Map
       await strategy.set('blob/item-1', payload);
@@ -36,9 +34,9 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
       expect(await strategy.get('blob/item-1')).toBeNull();
 
       const blob = new Blob(['test-blob']);
-      await strategy.setBlob('blob-2', blob);
+      await strategy.set('blob-2', blob);
       expect(await strategy.has('blob-2')).toBe(false);
-      expect(await strategy.getBlob('blob-2')).toBeNull();
+      expect(await strategy.get('blob-2')).toBeNull();
 
       expect(await strategy.getKeys()).toEqual([]);
       expect(await strategy.delete('blob/item-1')).toBe(false);
@@ -111,7 +109,8 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
 
       const retrieved = await strategy.get('model/v1/weights.bin');
       expect(retrieved).not.toBeNull();
-      expect(retrieved).toEqual(binaryData);
+      expect(retrieved instanceof Blob).toBe(true);
+      expect(new Uint8Array(await retrieved!.arrayBuffer())).toEqual(binaryData);
 
       // Verify that the underlying mock cache stored a Response with headers
       const expectedUrl = 'https://cdn.example.com/assets/model%2Fv1%2Fweights.bin';
@@ -146,14 +145,14 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
       const strategy = new WebCacheStrategy();
       const blob = new Blob(['cache-storage-stream-test'], { type: 'text/plain' });
 
-      await strategy.setBlob('blob-cache-key', blob, {
+      await strategy.set('blob-cache-key', blob, {
         mimeType: 'text/plain',
         metadata: { streamable: true },
       });
 
       expect(await strategy.has('blob-cache-key')).toBe(true);
 
-      const retrievedBlob = await strategy.getBlob('blob-cache-key');
+      const retrievedBlob = await strategy.get('blob-cache-key');
       expect(retrievedBlob).not.toBeNull();
       expect(await retrievedBlob!.text()).toBe('cache-storage-stream-test');
 
@@ -161,19 +160,20 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
       expect(meta).not.toBeNull();
       expect(meta?.sizeBytes).toBe(blob.size);
 
-      // Stream retrieval directly from Response.body
-      const stream = await strategy.getStream('blob-cache-key');
-      expect(stream).not.toBeNull();
-      const bytes = await streamToUint8Array(stream!);
+      // Stream retrieval directly from Blob.stream()
+      const stream = retrievedBlob!.stream();
+      expect(stream).toBeDefined();
+      const bytes = await streamToUint8Array(stream);
       expect(new TextDecoder().decode(bytes)).toBe('cache-storage-stream-test');
 
-      // Stream set
-      const writeStream = uint8ArrayToStream(new TextEncoder().encode('cached-stream-payload'));
-      await strategy.setStream('stream-target', writeStream, { mimeType: 'text/plain' });
-      const streamRes = await strategy.getStream('stream-target');
+      // WritableStream ingest
+      const writable = await strategy.createWritableStream('stream-target', { mimeType: 'text/plain' });
+      const inStream = new Blob(['cached-stream-payload']).stream();
+      await inStream.pipeTo(writable);
+
+      const streamRes = await strategy.get('stream-target');
       expect(streamRes).not.toBeNull();
-      const readBackBytes = await streamToUint8Array(streamRes!);
-      expect(new TextDecoder().decode(readBackBytes)).toBe('cached-stream-payload');
+      expect(await streamRes!.text()).toBe('cached-stream-payload');
     });
 
     it('registers and retrieves from ContentCacheRegistry as IContentCacheStrategy', () => {

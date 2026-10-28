@@ -99,9 +99,7 @@ export class AssetTextureCache implements Disposable {
     // Persist to unified isomorphic ContentCacheRegistry asynchronously
     try {
       const cache = ContentCacheRegistry.get();
-      if (typeof cache.setBlob === 'function') {
-        cache.setBlob(assetId, blob).catch(() => {});
-      }
+      cache.set(assetId, blob).catch(() => {});
     } catch {}
 
     return new Promise((resolve, reject) => {

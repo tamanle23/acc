@@ -4,9 +4,12 @@ import {
   LogLevel,
   IUniversalLoggerSink,
   fastChecksum,
-  MemoryCacheStrategy,
   ContentCacheRegistry,
-  IContentCacheStrategy,
+  type IContentCacheStrategy,
+  type CachePayload,
+  type CacheEntryMetadata,
+  payloadToBlob,
+  payloadToStream,
   streamToUint8Array,
 } from '../packages/core-isomorphic/src';
 
@@ -62,94 +65,102 @@ describe('Phase 1: Universal Isomorphic Services Suite (@acc/core-isomorphic)', 
       ContentCacheRegistry.reset();
     });
 
-    it('stores, retrieves, checks, and evicts entries in MemoryCacheStrategy', async () => {
-      const cache = new MemoryCacheStrategy(2);
-      const data1 = new Uint8Array([1, 2, 3]);
-      const data2 = new Uint8Array([4, 5, 6]);
-      const data3 = new Uint8Array([7, 8, 9]);
+    class MockStandardCacheStrategy implements IContentCacheStrategy {
+      public readonly id = 'mock-storage';
+      public readonly name = 'Mock Standard Storage';
+      private store = new Map<string, { blob: Blob; metadata: CacheEntryMetadata }>();
 
-      await cache.set('k1', data1);
-      await cache.set('k2', data2);
+      async has(key: string): Promise<boolean> {
+        return this.store.has(key);
+      }
 
+      async get(key: string): Promise<Blob | null> {
+        const entry = this.store.get(key);
+        return entry ? entry.blob : null;
+      }
+
+      async set(key: string, data: CachePayload, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
+        const blob = await payloadToBlob(data, metadata?.mimeType);
+        const meta: CacheEntryMetadata = {
+          checksum: metadata?.checksum || 'mock_hash',
+          mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
+          createdAt: metadata?.createdAt || Date.now(),
+          sizeBytes: blob.size,
+          metadata: metadata?.metadata,
+        };
+        this.store.set(key, { blob, metadata: meta });
+      }
+
+      async createWritableStream(key: string, metadata?: Partial<CacheEntryMetadata>): Promise<WritableStream<Uint8Array>> {
+        const chunks: Uint8Array[] = [];
+        return new WritableStream<Uint8Array>({
+          write: (chunk) => { chunks.push(chunk); },
+          close: async () => {
+            const blob = new Blob(chunks, { type: metadata?.mimeType || 'application/octet-stream' });
+            await this.set(key, blob, metadata);
+          },
+        });
+      }
+
+      async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
+        return this.store.get(key)?.metadata || null;
+      }
+
+      async delete(key: string): Promise<boolean> {
+        return this.store.delete(key);
+      }
+
+      async clear(): Promise<void> {
+        this.store.clear();
+      }
+
+      async getKeys(): Promise<string[]> {
+        return Array.from(this.store.keys());
+      }
+    }
+
+    it('stores, retrieves, checks, and deletes entries using first-class Blob in standardized strategy', async () => {
+      const cache = new MockStandardCacheStrategy();
+      const sampleBlob = new Blob(['hello-standard-cache'], { type: 'text/plain' });
+
+      await cache.set('k1', sampleBlob);
       expect(await cache.has('k1')).toBe(true);
-      expect(await cache.has('k2')).toBe(true);
 
-      const retrieved1 = await cache.get('k1');
-      expect(retrieved1).toEqual(data1);
+      const retrieved = await cache.get('k1');
+      expect(retrieved).not.toBeNull();
+      expect(retrieved instanceof Blob).toBe(true);
+      expect(await retrieved!.text()).toBe('hello-standard-cache');
 
-      // Inserting third item should evict oldest (k2 was less recently used than k1)
-      await cache.set('k3', data3);
-      expect(await cache.has('k3')).toBe(true);
-      expect(await cache.has('k1')).toBe(true);
-      expect(await cache.has('k2')).toBe(false);
+      // Test streaming consumption directly from Blob
+      const stream = retrieved!.stream();
+      expect(stream).toBeDefined();
+      const bytes = await streamToUint8Array(stream);
+      expect(new TextDecoder().decode(bytes)).toBe('hello-standard-cache');
 
       await cache.delete('k1');
       expect(await cache.has('k1')).toBe(false);
-
-      await cache.clear();
-      expect(await cache.has('k3')).toBe(false);
     });
 
     it('manages default and custom cache strategies via ContentCacheRegistry', async () => {
-      const defaultStrat = ContentCacheRegistry.get();
-      expect(defaultStrat.id).toBe('memory');
+      const custom = new MockStandardCacheStrategy();
+      ContentCacheRegistry.register(custom, true);
 
-      class MockCustomStrategy implements IContentCacheStrategy {
-        public readonly id = 'custom';
-        public readonly name = 'Custom Strategy';
-        async has() { return false; }
-        async get() { return null; }
-        async set() {}
-        async delete() { return true; }
-        async clear() {}
-      }
-
-      const custom = new MockCustomStrategy();
-      ContentCacheRegistry.register(custom);
-      expect(ContentCacheRegistry.has('custom')).toBe(true);
-      expect(ContentCacheRegistry.get('custom').id).toBe('custom');
-
-      ContentCacheRegistry.setDefault('custom');
-      expect(ContentCacheRegistry.get().id).toBe('custom');
+      expect(ContentCacheRegistry.has('mock-storage')).toBe(true);
+      expect(ContentCacheRegistry.get('mock-storage').id).toBe('mock-storage');
+      expect(ContentCacheRegistry.get().id).toBe('mock-storage');
     });
 
-    it('stores and retrieves Blob and ReadableStream with zero-copy in MemoryCacheStrategy', async () => {
-      const cache = new MemoryCacheStrategy();
-      const sampleBlob = new Blob(['hello-streaming-cache'], { type: 'text/plain' });
+    it('supports direct zero-copy streaming ingest via createWritableStream', async () => {
+      const cache = new MockStandardCacheStrategy();
+      const writable = await cache.createWritableStream('stream-key', { mimeType: 'text/plain' });
 
-      await cache.setBlob('blob-entry', sampleBlob);
-      expect(await cache.has('blob-entry')).toBe(true);
+      const stream = payloadToStream('streaming-chunk-data');
+      await stream.pipeTo(writable);
 
-      const retrievedBlob = await cache.getBlob('blob-entry');
-      expect(retrievedBlob).not.toBeNull();
-      expect(await retrievedBlob!.text()).toBe('hello-streaming-cache');
-      expect(retrievedBlob!.type).toContain('text/plain');
-
-      const meta = await cache.getMetadata('blob-entry');
-      expect(meta).not.toBeNull();
-      expect(meta!.sizeBytes).toBe(sampleBlob.size);
-
-      // Streaming retrieval
-      const stream = await cache.getStream('blob-entry');
-      expect(stream).not.toBeNull();
-      const streamBytes = await streamToUint8Array(stream!);
-      expect(new TextDecoder().decode(streamBytes)).toBe('hello-streaming-cache');
-    });
-
-    it('enforces maxSizeBytes LRU byte ceiling in MemoryCacheStrategy', async () => {
-      const cache = new MemoryCacheStrategy({ maxSizeBytes: 100, maxItems: 10 });
-      const chunkA = new Uint8Array(60).fill(1);
-      const chunkB = new Uint8Array(60).fill(2);
-
-      await cache.set('chunk-a', chunkA);
-      expect(await cache.has('chunk-a')).toBe(true);
-      expect(cache.getCurrentSizeBytes()).toBe(60);
-
-      // Inserting chunkB (60 bytes) pushes total to 120 bytes > 100 bytes limit -> evicts chunk-a
-      await cache.set('chunk-b', chunkB);
-      expect(await cache.has('chunk-b')).toBe(true);
-      expect(await cache.has('chunk-a')).toBe(false);
-      expect(cache.getCurrentSizeBytes()).toBe(60);
+      expect(await cache.has('stream-key')).toBe(true);
+      const retrieved = await cache.get('stream-key');
+      expect(retrieved).not.toBeNull();
+      expect(await retrieved!.text()).toBe('streaming-chunk-data');
     });
   });
 });

@@ -77,7 +77,11 @@ export class OnnxModelManager {
       const cache = ContentCacheRegistry.get();
       const cacheKey = `onnx_model_${modelKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
       if (await cache.has(cacheKey)) {
-        return (await cache.get(cacheKey)) || undefined;
+        const blob = await cache.get(cacheKey);
+        if (blob) {
+          const ab = await blob.arrayBuffer();
+          return new Uint8Array(ab);
+        }
       }
     } catch (err: any) {
       Logger.warn('OnnxModelManager', `Cache lookup failed for ${modelKey}: ${err.message}`);
@@ -96,7 +100,8 @@ export class OnnxModelManager {
     try {
       const cache = ContentCacheRegistry.get();
       const cacheKey = `onnx_model_${modelKey.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-      await cache.set(cacheKey, buffer, { mimeType });
+      const blob = new Blob([buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)], { type: mimeType });
+      await cache.set(cacheKey, blob, { mimeType, sizeBytes: buffer.byteLength });
     } catch (err: any) {
       Logger.warn('OnnxModelManager', `Failed to store model in cache for ${modelKey}: ${err.message}`);
     }

@@ -1,4 +1,5 @@
 import { fastChecksum } from './fastChecksum';
+import type { CachePayload } from './types';
 
 /**
  * Universal Isomorphic Stream & Blob Utilities:
@@ -138,3 +139,57 @@ export async function computeStreamChecksumAndSize(
     stream: streamB,
   };
 }
+
+/**
+ * Normalizes any supported CachePayload into a standard Web Blob.
+ */
+export async function payloadToBlob(
+  payload: CachePayload,
+  mimeType: string = 'application/octet-stream'
+): Promise<Blob> {
+  if (payload instanceof Blob) {
+    return payload;
+  }
+  if (payload instanceof ReadableStream) {
+    return streamToBlob(payload, mimeType);
+  }
+  if (typeof payload === 'string') {
+    return new Blob([payload], { type: mimeType });
+  }
+  if (ArrayBuffer.isView(payload)) {
+    const view = payload as ArrayBufferView;
+    const slice = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
+    return new Blob([slice], { type: mimeType });
+  }
+  if (payload instanceof ArrayBuffer) {
+    return new Blob([payload], { type: mimeType });
+  }
+  return new Blob([payload as any], { type: mimeType });
+}
+
+/**
+ * Normalizes any supported CachePayload into a WHATWG ReadableStream<Uint8Array>.
+ */
+export function payloadToStream(payload: CachePayload): ReadableStream<Uint8Array> {
+  if (payload instanceof ReadableStream) {
+    return payload;
+  }
+  if (payload instanceof Blob) {
+    return blobToStream(payload);
+  }
+  if (typeof payload === 'string') {
+    return uint8ArrayToStream(new TextEncoder().encode(payload));
+  }
+  if (payload instanceof Uint8Array) {
+    return uint8ArrayToStream(payload);
+  }
+  if (ArrayBuffer.isView(payload)) {
+    const view = payload as ArrayBufferView;
+    return uint8ArrayToStream(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+  }
+  if (payload instanceof ArrayBuffer) {
+    return uint8ArrayToStream(new Uint8Array(payload));
+  }
+  return uint8ArrayToStream(new Uint8Array(payload as any));
+}
+

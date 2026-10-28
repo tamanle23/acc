@@ -4,7 +4,6 @@ import { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStr
 import { FFmpegManager } from '../FFmpegManager';
 
 export * from './canvas/NapiCanvasAdapter';
-export * from '../buffer/NativeBufferPool';
 export { BunFFIEngineStrategy } from '../media-engine/strategies/BunFFIEngineStrategy';
 export { FFmpegManager } from '../FFmpegManager';
 export { bootstrapNode, type BootstrapNodeOptions } from '../bootstrap';

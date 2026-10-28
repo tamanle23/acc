@@ -19,7 +19,7 @@ import {
  * Target Phase: 2 (Clip-Space Sequence Evaluation).
  *
  * Adheres strictly to:
- * - ZERO-ALLOC-FRAME-LOOP: WeakMap cache for CaptionConfig arrays to avoid per-frame mapping.
+ * - ZERO-ALLOC-FRAME-LOOP: Scoped sequence caption configs to avoid per-frame mapping.
  * - SAFE-ZONE-COMPLIANCE: Evaluates SafeZoneManager boundaries for TikTok, Reels, Shorts, and YouTube.
  */
 export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
@@ -125,7 +125,6 @@ export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
   };
 
   private captionStrategy = new BoundedAcousticCaptionStrategy();
-  private captionConfigCache = new WeakMap<any, CaptionConfig[]>();
 
   public validate(params: unknown): params is CaptionSettings {
     return Boolean(params && typeof params === 'object');
@@ -143,7 +142,7 @@ export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
     const { ctx: canvasCtx, width, height, sequence, localFrame } = ctx;
     if (!sequence.cues || sequence.cues.length === 0) return;
 
-    let captionConfigs = this.captionConfigCache.get(sequence);
+    let captionConfigs = (sequence as any)._captionConfigs as CaptionConfig[] | undefined;
     const fps = (sequence as any).fps || 30;
 
     if (!captionConfigs) {
@@ -152,7 +151,7 @@ export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
         start: c.startOffsetMs / 1000,
         end: c.endOffsetMs === 'end' ? (sequence.durationFrames / fps) : (c.endOffsetMs / 1000),
       }));
-      this.captionConfigCache.set(sequence, captionConfigs);
+      (sequence as any)._captionConfigs = captionConfigs;
     }
 
     const localTimeSec = localFrame / fps;
@@ -176,14 +175,14 @@ export class CaptionModifierPlugin implements ModifierPlugin<CaptionSettings> {
 
     for (const seq of activeSequences) {
       if (seq.cues && seq.cues.length > 0) {
-        let captionConfigs = this.captionConfigCache.get(seq);
+        let captionConfigs = (seq as any)._captionConfigs as CaptionConfig[] | undefined;
         if (!captionConfigs) {
           captionConfigs = seq.cues.map((c) => ({
             text: c.text,
             start: c.startOffsetMs / 1000,
             end: c.endOffsetMs === 'end' ? (seq.durationFrames / fps) : (c.endOffsetMs / 1000),
           }));
-          this.captionConfigCache.set(seq, captionConfigs);
+          (seq as any)._captionConfigs = captionConfigs;
         }
 
         const localTimeSec = Math.max(0, (frame - seq.startFrame) / fps);

@@ -5,9 +5,10 @@ import { Readable, Writable } from 'node:stream';
 import {
   ContentCacheStrategyId,
   type IContentCacheStrategy,
+  type CachePayload,
   type CacheEntryMetadata,
   fastChecksum,
-  streamToBlob,
+  payloadToBlob,
 } from '@acc/core-isomorphic';
 
 export interface NativeFileCacheOptions {
@@ -55,53 +56,11 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
     }
   }
 
-  public async get(key: string): Promise<Uint8Array | null> {
-    const filePath = this.getFilePath(key);
-    try {
-      const buffer = await fs.promises.readFile(filePath);
-      return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    } catch {
-      return null;
-    }
-  }
-
   /**
-   * Zero-copy streaming retrieval directly from disk.
-   */
-  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
-    const filePath = this.getFilePath(key);
-    if (!fs.existsSync(filePath)) return null;
-
-    if (typeof (globalThis as any).Bun !== 'undefined' && typeof (globalThis as any).Bun.file === 'function') {
-      return (globalThis as any).Bun.file(filePath).stream();
-    }
-
-    if (typeof Readable.toWeb === 'function') {
-      const nodeStream = fs.createReadStream(filePath);
-      return Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
-    }
-
-    // Custom fallback stream
-    const nodeStream = fs.createReadStream(filePath);
-    return new ReadableStream<Uint8Array>({
-      start(controller) {
-        nodeStream.on('data', (chunk: any) => {
-          controller.enqueue(new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength));
-        });
-        nodeStream.on('end', () => controller.close());
-        nodeStream.on('error', (err: any) => controller.error(err));
-      },
-      cancel() {
-        nodeStream.destroy();
-      },
-    });
-  }
-
-  /**
-   * Kernel-backed file Blob retrieval.
+   * First-class Web standard Blob retrieval.
    * On Bun and Node.js 18+, returns file-backed Blob with zero RAM preloading.
    */
-  public async getBlob(key: string): Promise<Blob | null> {
+  public async get(key: string): Promise<Blob | null> {
     const filePath = this.getFilePath(key);
     if (!fs.existsSync(filePath)) return null;
 
@@ -120,36 +79,13 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
     return new Blob([buffer], { type: mimeType });
   }
 
-  public async set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
-    const filePath = this.getFilePath(key);
-    const metaPath = this.getMetaPath(key);
-
-    const fullMeta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || fastChecksum(data),
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: data.byteLength,
-      metadata: metadata?.metadata,
-    };
-
-    try {
-      const dir = path.dirname(filePath);
-      if (!fs.existsSync(dir)) {
-        await fs.promises.mkdir(dir, { recursive: true });
-      }
-      await fs.promises.writeFile(filePath, data);
-      await fs.promises.writeFile(metaPath, JSON.stringify(fullMeta, null, 2), 'utf-8');
-    } catch (err) {
-      throw new Error(`[NativeFileCacheStrategy] Failed to write cache for key "${key}": ${err}`);
-    }
-  }
-
   /**
-   * Streaming file persistence with zero full-buffer heap buffering.
+   * Standardized polymorphic persistence.
+   * Directly supports Blob, WHATWG ReadableStream<Uint8Array>, ArrayBuffer, ArrayBufferView, or string.
    */
-  public async setStream(
+  public async set(
     key: string,
-    stream: ReadableStream<Uint8Array>,
+    data: CachePayload,
     metadata?: Partial<CacheEntryMetadata>
   ): Promise<void> {
     const filePath = this.getFilePath(key);
@@ -159,52 +95,13 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
       await fs.promises.mkdir(dir, { recursive: true });
     }
 
-    const reader = stream.getReader();
-    const writeStream = fs.createWriteStream(filePath);
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) {
-          await new Promise<void>((resolve, reject) => {
-            writeStream.write(value, (err) => (err ? reject(err) : resolve()));
-          });
-        }
-      }
-    } finally {
-      await new Promise<void>((resolve) => writeStream.end(resolve));
-      reader.releaseLock();
-    }
-
-
-    const stat = await fs.promises.stat(filePath).catch(() => ({ size: 0 }));
-    const fullMeta: CacheEntryMetadata = {
-      checksum: metadata?.checksum || `file_${Date.now()}_${stat.size}`,
-      mimeType: metadata?.mimeType || 'application/octet-stream',
-      createdAt: metadata?.createdAt || Date.now(),
-      sizeBytes: metadata?.sizeBytes ?? stat.size,
-      metadata: metadata?.metadata,
-    };
-
-    await fs.promises.writeFile(metaPath, JSON.stringify(fullMeta, null, 2), 'utf-8');
-  }
-
-  public async setBlob(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
-    const filePath = this.getFilePath(key);
-    const metaPath = this.getMetaPath(key);
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      await fs.promises.mkdir(dir, { recursive: true });
-    }
+    const blob = await payloadToBlob(data, metadata?.mimeType);
 
     if (typeof (globalThis as any).Bun !== 'undefined' && typeof (globalThis as any).Bun.write === 'function') {
       await (globalThis as any).Bun.write(filePath, blob);
     } else {
-      await this.setStream(key, blob.stream(), {
-        ...metadata,
-        mimeType: metadata?.mimeType || blob.type,
-        sizeBytes: blob.size,
-      });
+      const writable = await this.createWritableStream(key, metadata);
+      await blob.stream().pipeTo(writable);
       return;
     }
 
@@ -216,6 +113,72 @@ export class NativeFileCacheStrategy implements IContentCacheStrategy {
       metadata: metadata?.metadata,
     };
     await fs.promises.writeFile(metaPath, JSON.stringify(fullMeta, null, 2), 'utf-8');
+  }
+
+  /**
+   * Opens a WHATWG WritableStream directly into disk storage for zero-copy streaming ingestion.
+   */
+  public async createWritableStream(
+    key: string,
+    metadata?: Partial<CacheEntryMetadata>
+  ): Promise<WritableStream<Uint8Array>> {
+    const filePath = this.getFilePath(key);
+    const metaPath = this.getMetaPath(key);
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      await fs.promises.mkdir(dir, { recursive: true });
+    }
+
+    const writeStream = fs.createWriteStream(filePath);
+    let totalBytes = 0;
+
+    const finalizeMeta = async () => {
+      const fullMeta: CacheEntryMetadata = {
+        checksum: metadata?.checksum || `stream_${Date.now()}_${totalBytes}`,
+        mimeType: metadata?.mimeType || 'application/octet-stream',
+        createdAt: metadata?.createdAt || Date.now(),
+        sizeBytes: metadata?.sizeBytes ?? totalBytes,
+        metadata: metadata?.metadata,
+      };
+      await fs.promises.writeFile(metaPath, JSON.stringify(fullMeta, null, 2), 'utf-8');
+    };
+
+    if (typeof Writable.toWeb === 'function') {
+      const webWritable = Writable.toWeb(writeStream) as WritableStream<Uint8Array>;
+      return new WritableStream<Uint8Array>({
+        async write(chunk, controller) {
+          totalBytes += chunk.byteLength;
+          const writer = webWritable.getWriter();
+          try {
+            await writer.write(chunk);
+          } finally {
+            writer.releaseLock();
+          }
+        },
+        async close() {
+          await finalizeMeta();
+        },
+        async abort(reason) {
+          writeStream.destroy(reason instanceof Error ? reason : new Error(String(reason)));
+        },
+      });
+    }
+
+    return new WritableStream<Uint8Array>({
+      async write(chunk) {
+        totalBytes += chunk.byteLength;
+        await new Promise<void>((resolve, reject) => {
+          writeStream.write(chunk, (err) => (err ? reject(err) : resolve()));
+        });
+      },
+      async close() {
+        await new Promise<void>((resolve) => writeStream.end(resolve));
+        await finalizeMeta();
+      },
+      abort(reason) {
+        writeStream.destroy(reason instanceof Error ? reason : new Error(String(reason)));
+      },
+    });
   }
 
   public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {

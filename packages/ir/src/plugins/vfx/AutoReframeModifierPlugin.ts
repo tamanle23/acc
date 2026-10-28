@@ -91,8 +91,6 @@ export class AutoReframeModifierPlugin implements ModifierPlugin<AutoReframePlug
     },
   };
 
-  private strategyCache = new Map<string, AutoReframeStrategy>();
-
   public validate(params: unknown): params is AutoReframePluginParams {
     return Boolean(params && typeof params === 'object');
   }
@@ -117,19 +115,12 @@ export class AutoReframeModifierPlugin implements ModifierPlugin<AutoReframePlug
     const targetAspectRatio = params.targetAspectRatio || '9:16';
     const smoothing = params.smoothingFactor ?? 0.85;
 
-    // Cache key incorporates sequence context or canvas dimension
-    const cacheKey = `${ctx.sequence.id}_${width}x${height}_${targetAspectRatio}`;
-    let strategy = this.strategyCache.get(cacheKey);
-
-    if (!strategy) {
-      strategy = new AutoReframeStrategy({
-        sourceWidth: width,
-        sourceHeight: height,
-        targetAspectRatio: targetAspectRatio as any,
-        smoothingFactor: smoothing,
-      });
-      this.strategyCache.set(cacheKey, strategy);
-    }
+    const strategy = new AutoReframeStrategy({
+      sourceWidth: width,
+      sourceHeight: height,
+      targetAspectRatio: targetAspectRatio as any,
+      smoothingFactor: smoothing,
+    });
 
     // Default subject box centered if none provided
     const defaultSubjectBox: BoundingBox = params.subjectBox || {

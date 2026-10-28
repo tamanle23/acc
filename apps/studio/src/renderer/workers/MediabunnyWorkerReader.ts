@@ -68,11 +68,9 @@ export class MediabunnyWorkerReader {
         // Zero-copy OPFS / cached Blob streaming resolution
         try {
           const cache = ContentCacheRegistry.get();
-          if (typeof cache.getBlob === 'function') {
-            const cachedBlob = await cache.getBlob(this.src);
-            if (cachedBlob) {
-              source = new BlobSource(cachedBlob);
-            }
+          const cachedBlob = await cache.get(this.src);
+          if (cachedBlob) {
+            source = new BlobSource(cachedBlob);
           }
         } catch {
           // Fallback to standard network UrlSource
