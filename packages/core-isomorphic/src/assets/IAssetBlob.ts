@@ -9,5 +9,7 @@ export interface IAssetBlob {
   readonly size?: number;
   stream(): ReadableStream<Uint8Array>;
   arrayBuffer(): Promise<ArrayBuffer>;
+  blob?(): Promise<Blob>;
   getNativePath?(): string | null;
 }
+

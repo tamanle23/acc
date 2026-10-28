@@ -74,3 +74,5 @@ export function bootstrapCoreWeb(options: BootstrapClientOptions = {}): void {
   VisionEngineRegistry.registerSegmentationStrategy(new RmbgStrategy(), true);
 }
 
+export const bootstrapClient = bootstrapCoreWeb;
+

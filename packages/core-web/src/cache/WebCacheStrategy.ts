@@ -1,5 +1,13 @@
-import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from '@acc/core-isomorphic';
-import { fastChecksum } from '@acc/core-isomorphic';
+import {
+  ContentCacheStrategyId,
+  type IContentCacheStrategy,
+  type CacheEntryMetadata,
+  fastChecksum,
+  streamToBlob,
+  blobToStream,
+  uint8ArrayToStream,
+  blobToUint8Array,
+} from '@acc/core-isomorphic';
 
 export interface WebCacheOptions {
   /**
@@ -22,11 +30,17 @@ const HEADER_CHECKSUM = 'x-acc-checksum';
 const HEADER_CREATED_AT = 'x-acc-created-at';
 const HEADER_META_JSON = 'x-acc-meta-json';
 
+interface FallbackMemoryItem {
+  data?: Uint8Array;
+  blob?: Blob;
+  metadata: CacheEntryMetadata;
+}
+
 /**
  * WebCacheStrategy:
  * Browser client cache strategy utilizing the standard Web Cache API (window.caches / self.caches).
  * Designed for Service Workers, Web Workers, and Browser environments to cache binary assets, frames,
- * and blobs with HTTP Response semantics.
+ * and blobs with HTTP Response streaming semantics.
  * Gracefully falls back to an in-memory Map in non-browser/SSR or test mock environments without window.caches.
  */
 export class WebCacheStrategy implements IContentCacheStrategy {
@@ -36,7 +50,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   private readonly cacheName: string;
   private readonly baseUrlPrefix: string;
   private cachePromise: Promise<Cache | null> | null = null;
-  private readonly fallbackMemory: Map<string, { data: Uint8Array; metadata: CacheEntryMetadata }> = new Map();
+  private readonly fallbackMemory: Map<string, FallbackMemoryItem> = new Map();
 
   constructor(options: WebCacheOptions = {}) {
     this.cacheName = options.cacheName || DEFAULT_CACHE_NAME;
@@ -101,13 +115,16 @@ export class WebCacheStrategy implements IContentCacheStrategy {
   }
 
   /**
-   * Retrieves the binary content associated with key.
+   * Retrieves the binary content associated with key as Uint8Array (backward compatibility).
    */
   public async get(key: string): Promise<Uint8Array | null> {
     const cache = await this.getCache();
     if (!cache) {
       const item = this.fallbackMemory.get(key);
-      return item ? item.data : null;
+      if (!item) return null;
+      if (item.data) return item.data;
+      if (item.blob) return await blobToUint8Array(item.blob);
+      return null;
     }
 
     try {
@@ -118,6 +135,56 @@ export class WebCacheStrategy implements IContentCacheStrategy {
       }
       const arrayBuffer = await res.arrayBuffer();
       return new Uint8Array(arrayBuffer);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Retrieves the cached content directly as a Web standard Blob.
+   * Zero heap Uint8Array allocation.
+   */
+  public async getBlob(key: string): Promise<Blob | null> {
+    const cache = await this.getCache();
+    if (!cache) {
+      const item = this.fallbackMemory.get(key);
+      if (!item) return null;
+      if (item.blob) return item.blob;
+      if (item.data) {
+        return new Blob([item.data], { type: item.metadata.mimeType || 'application/octet-stream' });
+      }
+      return null;
+    }
+
+    try {
+      const url = this.getRequestUrl(key);
+      const res = await cache.match(url);
+      if (!res) return null;
+      return await res.blob();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Retrieves the cached content as a WHATWG ReadableStream<Uint8Array>.
+   * Enables zero-copy streaming directly from the browser's HTTP cache.
+   */
+  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
+    const cache = await this.getCache();
+    if (!cache) {
+      const item = this.fallbackMemory.get(key);
+      if (!item) return null;
+      if (item.blob) return blobToStream(item.blob);
+      if (item.data) return uint8ArrayToStream(item.data);
+      return null;
+    }
+
+    try {
+      const url = this.getRequestUrl(key);
+      const res = await cache.match(url);
+      if (!res || !res.body) return null;
+      return res.body;
     } catch {
       return null;
     }
@@ -143,19 +210,7 @@ export class WebCacheStrategy implements IContentCacheStrategy {
 
     try {
       const url = this.getRequestUrl(key);
-      const headers = new Headers();
-      headers.set('Content-Type', fullMeta.mimeType || 'application/octet-stream');
-      headers.set('Content-Length', String(data.byteLength));
-      headers.set(HEADER_CHECKSUM, fullMeta.checksum);
-      headers.set(HEADER_CREATED_AT, String(fullMeta.createdAt));
-
-      if (fullMeta.metadata) {
-        try {
-          headers.set(HEADER_META_JSON, JSON.stringify(fullMeta.metadata));
-        } catch {
-          // Ignore JSON serialization errors on metadata
-        }
-      }
+      const headers = this.buildHeaders(fullMeta, data.byteLength);
 
       // Create a cloned buffer slice to prevent detached buffer mutations
       const safeBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
@@ -170,6 +225,107 @@ export class WebCacheStrategy implements IContentCacheStrategy {
       // Fallback gracefully to memory if quota exceeded or storage error
       this.fallbackMemory.set(key, { data, metadata: fullMeta });
     }
+  }
+
+  /**
+   * Stores a Web standard Blob directly into Web Cache without array buffer conversion.
+   */
+  public async setBlob(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
+    const fullMeta: CacheEntryMetadata = {
+      checksum: metadata?.checksum || `blob_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
+      createdAt: metadata?.createdAt || Date.now(),
+      sizeBytes: blob.size,
+      metadata: metadata?.metadata,
+    };
+
+    const cache = await this.getCache();
+    if (!cache) {
+      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
+      return;
+    }
+
+    try {
+      const url = this.getRequestUrl(key);
+      const headers = this.buildHeaders(fullMeta, blob.size);
+      const response = new Response(blob, {
+        status: 200,
+        statusText: 'OK',
+        headers,
+      });
+      await cache.put(url, response);
+    } catch {
+      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
+    }
+  }
+
+  /**
+   * Stores a ReadableStream directly into Web Cache.
+   */
+  public async setStream(
+    key: string,
+    stream: ReadableStream<Uint8Array>,
+    metadata?: Partial<CacheEntryMetadata>
+  ): Promise<void> {
+    const mimeType = metadata?.mimeType || 'application/octet-stream';
+    const blob = await streamToBlob(stream, mimeType);
+    await this.setBlob(key, blob, metadata);
+  }
+
+  /**
+   * Retrieves entry metadata without loading payload into memory.
+   */
+  public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
+    const cache = await this.getCache();
+    if (!cache) {
+      const item = this.fallbackMemory.get(key);
+      return item ? item.metadata : null;
+    }
+
+    try {
+      const url = this.getRequestUrl(key);
+      const res = await cache.match(url);
+      if (!res) return null;
+
+      const checksum = res.headers.get(HEADER_CHECKSUM) || '';
+      const createdAt = Number(res.headers.get(HEADER_CREATED_AT) || Date.now());
+      const mimeType = res.headers.get('Content-Type') || 'application/octet-stream';
+      const sizeBytes = Number(res.headers.get('Content-Length') || 0);
+      const metaHeader = res.headers.get(HEADER_META_JSON);
+      let metadata: Record<string, unknown> | undefined;
+      if (metaHeader) {
+        try {
+          metadata = JSON.parse(metaHeader);
+        } catch {}
+      }
+
+      return {
+        checksum,
+        createdAt,
+        mimeType,
+        sizeBytes,
+        metadata,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private buildHeaders(meta: CacheEntryMetadata, length: number): Headers {
+    const headers = new Headers();
+    headers.set('Content-Type', meta.mimeType || 'application/octet-stream');
+    headers.set('Content-Length', String(length));
+    headers.set(HEADER_CHECKSUM, meta.checksum);
+    headers.set(HEADER_CREATED_AT, String(meta.createdAt));
+
+    if (meta.metadata) {
+      try {
+        headers.set(HEADER_META_JSON, JSON.stringify(meta.metadata));
+      } catch {
+        // Ignore JSON serialization errors on metadata
+      }
+    }
+    return headers;
   }
 
   /**

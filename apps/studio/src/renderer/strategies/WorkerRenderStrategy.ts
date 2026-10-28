@@ -52,6 +52,8 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     );
   }
 
+  private syncedSources = new Map<string, any>();
+
   public updateTimeline(
     timeline: ResolvedTimeline,
     totalFrames: number,
@@ -64,6 +66,7 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     if (assets) {
       this.assets = assets;
     }
+    this.syncedSources.clear();
 
     if (this.bridge.hasTransferred()) {
       this.bridge.updateTimeline(timeline, totalFrames, fps, this.assets);
@@ -105,6 +108,14 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
         seqLocalTimeSec
       );
 
+      // Deduplicate: If this asset source is already synchronized to the worker, skip creating a new ImageBitmap
+      if (
+        visualAsset.source &&
+        this.syncedSources.get(seq.assetId) === visualAsset.source
+      ) {
+        continue;
+      }
+
       if (visualAsset.source && typeof createImageBitmap === 'function') {
         const source = visualAsset.source;
         const assetId = seq.assetId;
@@ -112,6 +123,7 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
           createImageBitmap(source as ImageBitmapSource)
             .then((bmp) => {
               activeTexturesToSync[assetId] = bmp;
+              this.syncedSources.set(assetId, source);
             })
             .catch(() => {})
         );

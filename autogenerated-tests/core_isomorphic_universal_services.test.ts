@@ -7,7 +7,9 @@ import {
   MemoryCacheStrategy,
   ContentCacheRegistry,
   IContentCacheStrategy,
+  streamToUint8Array,
 } from '../packages/core-isomorphic/src';
+
 
 describe('Phase 1: Universal Isomorphic Services Suite (@acc/core-isomorphic)', () => {
   describe('UniversalLogger', () => {
@@ -110,5 +112,45 @@ describe('Phase 1: Universal Isomorphic Services Suite (@acc/core-isomorphic)', 
       ContentCacheRegistry.setDefault('custom');
       expect(ContentCacheRegistry.get().id).toBe('custom');
     });
+
+    it('stores and retrieves Blob and ReadableStream with zero-copy in MemoryCacheStrategy', async () => {
+      const cache = new MemoryCacheStrategy();
+      const sampleBlob = new Blob(['hello-streaming-cache'], { type: 'text/plain' });
+
+      await cache.setBlob('blob-entry', sampleBlob);
+      expect(await cache.has('blob-entry')).toBe(true);
+
+      const retrievedBlob = await cache.getBlob('blob-entry');
+      expect(retrievedBlob).not.toBeNull();
+      expect(await retrievedBlob!.text()).toBe('hello-streaming-cache');
+      expect(retrievedBlob!.type).toContain('text/plain');
+
+      const meta = await cache.getMetadata('blob-entry');
+      expect(meta).not.toBeNull();
+      expect(meta!.sizeBytes).toBe(sampleBlob.size);
+
+      // Streaming retrieval
+      const stream = await cache.getStream('blob-entry');
+      expect(stream).not.toBeNull();
+      const streamBytes = await streamToUint8Array(stream!);
+      expect(new TextDecoder().decode(streamBytes)).toBe('hello-streaming-cache');
+    });
+
+    it('enforces maxSizeBytes LRU byte ceiling in MemoryCacheStrategy', async () => {
+      const cache = new MemoryCacheStrategy({ maxSizeBytes: 100, maxItems: 10 });
+      const chunkA = new Uint8Array(60).fill(1);
+      const chunkB = new Uint8Array(60).fill(2);
+
+      await cache.set('chunk-a', chunkA);
+      expect(await cache.has('chunk-a')).toBe(true);
+      expect(cache.getCurrentSizeBytes()).toBe(60);
+
+      // Inserting chunkB (60 bytes) pushes total to 120 bytes > 100 bytes limit -> evicts chunk-a
+      await cache.set('chunk-b', chunkB);
+      expect(await cache.has('chunk-b')).toBe(true);
+      expect(await cache.has('chunk-a')).toBe(false);
+      expect(cache.getCurrentSizeBytes()).toBe(60);
+    });
   });
 });
+
