@@ -49,7 +49,8 @@ export class AudioAssetCache {
 
   private getAudioContext(): AudioContext | null {
     if (!this.audioContext && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioCtx = window.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         this.audioContext = new AudioCtx({ sampleRate: 44100 });
       }

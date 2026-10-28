@@ -50,8 +50,8 @@ export class DuplicateSequenceCommand implements ICommand {
           cloned.name = `${orig.name || orig.id} (Copy)`;
 
           // Adjust timeline position if explicit start frame is defined
-          if (cloned.time && typeof (cloned.time as any).start === 'number' && typeof (cloned.time as any).duration === 'number') {
-            (cloned.time as any).start = (orig.time as any).start + (orig.time as any).duration;
+          if (cloned.time && typeof cloned.time.start === 'number' && typeof cloned.time.duration === 'number' && typeof orig.time.start === 'number' && typeof orig.time.duration === 'number') {
+            cloned.time.start = orig.time.start + orig.time.duration;
           } else if (cloned.timelineStartFrame !== undefined && cloned.durationFrames !== undefined) {
             cloned.timelineStartFrame = orig.timelineStartFrame! + orig.durationFrames;
           }

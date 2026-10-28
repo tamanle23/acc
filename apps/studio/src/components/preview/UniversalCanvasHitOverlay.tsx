@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import type { ResolvedSequence } from '@acc/ir';
 import { CanvasHitTester, type SequenceHitRegion } from '../../lib/hit-test/CanvasHitTester';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { StudioTrack } from '../../lib/ir/studioTypes';
 import { Type, Sparkles, Box, Film, Image } from 'lucide-react';
 
 export interface UniversalCanvasHitOverlayProps {
   activeSequences: ResolvedSequence[];
   selectedSeqId: string | null;
-  tracks?: any[];
+  tracks?: StudioTrack[];
   onStartEditingCue?: (cue: { sequenceId: string; cueIndex: number; text: string }) => void;
 }
 

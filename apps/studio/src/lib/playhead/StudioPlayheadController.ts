@@ -31,13 +31,13 @@ export class StudioPlayheadController {
     return StudioPlayheadController.instance;
   }
 
-  public getFrame(): number {
+  public getFrame = (): number => {
     return this.currentFrame;
-  }
+  };
 
-  public getIsPlaying(): boolean {
+  public getIsPlaying = (): boolean => {
     return this.isPlaying;
-  }
+  };
 
   public setConfig(fps: number, totalFrames: number) {
     this.fps = Math.max(1, fps);
@@ -56,26 +56,26 @@ export class StudioPlayheadController {
    * Subscribes to high-frequency frame ticks (called on every RAF / discrete step).
    * Ideal for direct canvas drawing and CSS translate3d needle movements.
    */
-  public subscribeHighFrequency(subscriber: PlayheadSubscriber): () => void {
+  public subscribeHighFrequency = (subscriber: PlayheadSubscriber): (() => void) => {
     this.highFreqSubscribers.add(subscriber);
     // Initial call
     subscriber(this.currentFrame, this.isPlaying);
     return () => {
       this.highFreqSubscribers.delete(subscriber);
     };
-  }
+  };
 
   /**
    * Subscribes to low-frequency throttled updates (~10 Hz during playback, immediate on stop).
    * Ideal for React state setters to prevent virtual DOM diffing on every frame.
    */
-  public subscribeLowFrequency(subscriber: PlayheadSubscriber): () => void {
+  public subscribeLowFrequency = (subscriber: PlayheadSubscriber): (() => void) => {
     this.lowFreqSubscribers.add(subscriber);
     subscriber(this.currentFrame, this.isPlaying);
     return () => {
       this.lowFreqSubscribers.delete(subscriber);
     };
-  }
+  };
 
   /**
    * Seeks to an exact frame and dispatches updates.

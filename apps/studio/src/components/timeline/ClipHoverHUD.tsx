@@ -1,10 +1,11 @@
 import React from 'react';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '../ui/hover-card';
 import { ClipInsightCard } from './ClipInsightCard';
+import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
 
 export interface ClipHoverHUDProps {
-  seq: any;
-  track: any;
+  seq: StudioSequence;
+  track?: StudioTrack | null;
   fps: number;
   disabled?: boolean;
   children: React.ReactNode;

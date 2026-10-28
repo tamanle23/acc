@@ -3,6 +3,7 @@ import { IRPreviewEngine } from '../../renderer';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';
+import type { IRState } from '../ir/irState';
 
 export interface AudioLevels {
   levelL: number;
@@ -30,7 +31,7 @@ export class WebAudioEngine {
   private queuedSources: AudioBufferSourceNode[] = [];
   private scheduledAudioEndTime = 0;
   private nextTimelineSecToSynthesize = 0;
-  private refillInterval: any = null;
+  private refillInterval: ReturnType<typeof setInterval> | null = null;
 
   // Encapsulated preview engine maintaining audio-visual parity
   private previewEngine: IRPreviewEngine | null = null;
@@ -43,7 +44,7 @@ export class WebAudioEngine {
   private isPlaying = false;
   private playbackStartAudioTime = 0;
   private playbackStartTimelineTime = 0;
-  private lastIrState: any = null;
+  private lastIrState: IRState | null = null;
   private lastFps = 30;
   private lastScrubAudioTime = 0;
 
@@ -80,7 +81,8 @@ export class WebAudioEngine {
 
   private initContext(): boolean {
     if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioCtx = window.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx({ sampleRate: 44100 });
         this.masterGain = this.ctx.createGain();
@@ -104,7 +106,7 @@ export class WebAudioEngine {
    * Synchronizes timeline audio state across the attached IRPreviewEngine or internal mixer.
    * Leverages UniversalAudioMixer.syncFromTimeline for 100% parity with IRMasterRenderer.
    */
-  public syncFromIR(irState: any, fps = 30, preload = true): void {
+  public syncFromIR(irState: IRState | null | undefined, fps = 30, preload = true): void {
     if (!irState || !irState.timeline) return;
     this.lastIrState = irState;
     this.lastFps = fps;
@@ -139,7 +141,7 @@ export class WebAudioEngine {
    * Synthesizes audio using lightweight non-blocking 5.0s chunks and chains
    * consecutive AudioBufferSourceNode instances into the Master Bus for continuous playback.
    */
-  public startPlayback(currentFrame: number, fps: number, irState: any): void {
+  public startPlayback(currentFrame: number, fps: number, irState: IRState | null | undefined): void {
     try {
       if (!this.initContext() || !this.ctx || !this.masterGain) return;
       this.stopPlayback();
@@ -284,7 +286,7 @@ export class WebAudioEngine {
   /**
    * Sets shuttle playback speed with hardware clock pitch preservation and high-speed/reverse muting.
    */
-  public setShuttleSpeed(speed: ShuttleSpeed, currentFrame: number, fps: number, irState: any): void {
+  public setShuttleSpeed(speed: ShuttleSpeed, currentFrame: number, fps: number, irState: IRState | null | undefined): void {
     if (speed === 0) {
       this.stopPlayback();
       return;
@@ -307,8 +309,9 @@ export class WebAudioEngine {
     if (this.currentSource && this.masterGain && this.ctx) {
       try {
         this.currentSource.playbackRate.setValueAtTime(playbackRate, this.ctx.currentTime);
-        if ((this.currentSource.playbackRate as any).preservesPitch !== undefined) {
-          (this.currentSource.playbackRate as any).preservesPitch = true;
+        const rateParam = this.currentSource.playbackRate as AudioParam & { preservesPitch?: boolean };
+        if (rateParam.preservesPitch !== undefined) {
+          rateParam.preservesPitch = true;
         }
         this.masterGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
       } catch { }
@@ -319,7 +322,7 @@ export class WebAudioEngine {
    * Plays a responsive micro-burst of actual audio content during playhead scrubbing.
    * Throttled to ~14 Hz (70ms) to prevent main-thread CPU lockup during rapid key-repeat scrubbing.
    */
-  public playScrubFeedback(frame: number, fps = 30, irState?: any): void {
+  public playScrubFeedback(frame: number, fps = 30, irState?: IRState | null): void {
     try {
       if (!this.initContext() || !this.ctx || !this.masterGain) return;
 

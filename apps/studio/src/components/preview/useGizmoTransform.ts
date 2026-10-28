@@ -8,6 +8,12 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { IRStateManager } from '../../lib/ir/irState';
+import {
+  getSequenceDurationFrames,
+  getSequenceStartFrame,
+  type StudioSequence,
+} from '../../lib/ir/studioTypes';
+import type { ModifierNode, ResolvedTimeline, VideoIRDocument } from '@acc/ir';
 import { StudioPlayheadController } from '../../lib/playhead/StudioPlayheadController';
 import {
   Gizmo2DTransformation,
@@ -28,8 +34,8 @@ export interface UseGizmoTransformOptions {
   width: number;
   height: number;
   isLocked: boolean;
-  timeline?: any;
-  doc?: any;
+  timeline?: ResolvedTimeline | null;
+  doc?: VideoIRDocument | null;
 }
 
 export function useGizmoTransform({
@@ -64,17 +70,17 @@ export function useGizmoTransform({
       return;
     }
 
-    const allSeqs = timeline?.sequences
+    const allSeqs: StudioSequence[] = timeline?.sequences
       ? Array.from(timeline.sequences.values())
-      : doc?.tracks?.flatMap((t: any) => t.sequences) || [];
-    const seq = allSeqs.find((s: any) => s.id === selectedSeqId);
+      : doc?.tracks?.flatMap((t) => t.sequences) || [];
+    const seq = allSeqs.find((s) => s.id === selectedSeqId);
 
     if (seq) {
       const playheadController = StudioPlayheadController.getInstance();
       const isPaused = !playheadController.getIsPlaying();
       const currentNeedleFrame = playheadController.getFrame();
-      const seqStart = (seq as any).startFrame ?? 0;
-      const seqDuration = (seq as any).durationFrames ?? 0;
+      const seqStart = getSequenceStartFrame(seq);
+      const seqDuration = getSequenceDurationFrames(seq, 0);
       const seqEnd = seqStart + seqDuration;
 
       if (isPaused && (currentNeedleFrame < seqStart || currentNeedleFrame >= seqEnd)) {
@@ -83,14 +89,14 @@ export function useGizmoTransform({
     }
 
     if (seq?.modifiers) {
-      const transMod = seq.modifiers.find((m: any) => m.type === 'transform');
+      const transMod = seq.modifiers.find((m: ModifierNode) => m.type === 'transform');
       if (transMod?.params) {
-        const p = transMod.params as any;
+        const p = transMod.params as Record<string, unknown>;
         setTransform({
-          x: p.x ?? 0,
-          y: p.y ?? 0,
-          scale: p.scale ?? 1.0,
-          rotation: p.rotation ?? 0,
+          x: typeof p.x === 'number' ? p.x : 0,
+          y: typeof p.y === 'number' ? p.y : 0,
+          scale: typeof p.scale === 'number' ? p.scale : 1.0,
+          rotation: typeof p.rotation === 'number' ? p.rotation : 0,
         });
         return;
       }
@@ -187,7 +193,7 @@ export function useGizmoTransform({
   const handleTransformDragEnd = useCallback(
     (_e: DragEndEvent) => {
       if (selectedSeqId && !isLocked) {
-        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', transform as any);
+        IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...transform });
       }
       setIsDragging(false);
       setActiveHandle(null);

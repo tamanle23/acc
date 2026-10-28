@@ -36,6 +36,8 @@ import { ScrollArea } from './ui/scroll-area';
 import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib/library/stagingPresets';
 import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
+import { useIRState } from '../lib/ir/useStudioStore';
+import type { StudioAssetRecord } from '../lib/ir/studioTypes';
 import { ProceduralAudioSynthesizer, ProceduralSFXModifierPlugin } from '@acc/ir';
 
 export type LeftNavTab =
@@ -436,7 +438,8 @@ export function DraggablePresetCard({
             onClick={(e) => {
               e.stopPropagation();
               try {
-                const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                const win = window as Window & { webkitAudioContext?: typeof AudioContext };
+                const AudioCtx = window.AudioContext || win.webkitAudioContext;
                 if (!AudioCtx) return;
                 const ctx = new AudioCtx();
                 let buf: Float32Array;
@@ -451,7 +454,7 @@ export function DraggablePresetCard({
                   buf = ProceduralAudioSynthesizer.synthWhoosh(0, 0.6);
                 }
                 const audioBuf = ctx.createBuffer(1, buf.length, 44100);
-                audioBuf.copyToChannel(buf, 0);
+                audioBuf.copyToChannel(buf as unknown as Float32Array<ArrayBuffer>, 0);
                 const source = ctx.createBufferSource();
                 source.buffer = audioBuf;
                 source.connect(ctx.destination);
@@ -494,7 +497,7 @@ export function DraggableAssetCard({
   asset,
 }: {
   assetId: string;
-  asset: any;
+  asset: StudioAssetRecord;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `asset-${assetId}`,
@@ -553,7 +556,7 @@ export function DraggableAssetCard({
   );
 }
 
-export function DragOverlayPreview({ item }: { item: any }) {
+export function DragOverlayPreview({ item }: { item: Record<string, unknown> | null | undefined }) {
   if (!item) return null;
 
   if (item.type === 'preset' && item.preset) {
@@ -573,13 +576,15 @@ export function DragOverlayPreview({ item }: { item: any }) {
   }
 
   if (item.type === 'asset' && item.asset) {
+    const asset = item.asset as StudioAssetRecord;
+    const assetId = String(item.assetId || asset.id || '');
     return (
       <div className="p-2.5 border-2 border-accent-theme bg-popover/95 text-popover-foreground rounded-lg shadow-xl w-60 pointer-events-none backdrop-blur-md">
         <div className="flex items-center justify-between">
-          <span className="font-mono text-xs font-semibold text-foreground truncate">{item.assetId}</span>
-          <Badge className="text-[9px] uppercase font-mono bg-accent-theme text-primary-foreground">{item.asset.type}</Badge>
+          <span className="font-mono text-xs font-semibold text-foreground truncate">{assetId}</span>
+          <Badge className="text-[9px] uppercase font-mono bg-accent-theme text-primary-foreground">{asset.type}</Badge>
         </div>
-        <p className="text-[10px] text-muted-foreground truncate font-mono mt-0.5">{item.asset.src}</p>
+        <p className="text-[10px] text-muted-foreground truncate font-mono mt-0.5">{asset.src}</p>
       </div>
     );
   }
@@ -594,7 +599,7 @@ export function LeftSidebar({
   setActiveNav,
   onInsertPreset,
 }: LeftSidebarProps) {
-  const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
+  const irState = useIRState();
   const [libraryFilterQuery, setLibraryFilterQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | PresetCategory>('all');
   const [selectedSfxBank, setSelectedSfxBank] = useState<string>('all');
@@ -627,10 +632,6 @@ export function LeftSidebar({
       });
     }
   };
-
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
 
   const handleInsert = (preset: StagingPreset) => {
     if (onInsertPreset) {

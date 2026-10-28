@@ -33,11 +33,13 @@ import {
   MODIFIER_PRESENTATION_CATALOG,
 } from './modifierCatalog';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
+import type { ModifierNode } from '@acc/ir';
 import { CueTimelineDialog } from './CueTimelineDialog';
 
 export interface SequenceInspectorProps {
-  selectedSeq: any;
-  selectedTrack: any;
+  selectedSeq: StudioSequence | null | undefined;
+  selectedTrack: StudioTrack | null | undefined;
   irState: ReturnType<typeof IRStateManager.prototype.getState>;
   fps: number;
   isLocked?: boolean;
@@ -102,7 +104,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
   }
 
   const selectedSeqId = selectedSeq.id;
-  const modifiers: any[] = selectedSeq.modifiers || [];
+  const modifiers: ModifierNode[] = selectedSeq.modifiers || [];
 
   const handleCopyId = () => {
     navigator.clipboard?.writeText(selectedSeqId);
@@ -120,7 +122,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     IRStateManager.getInstance().deleteSequence(selectedSeqId);
   };
 
-  const updateModifierParams = (modType: string, params: Record<string, any>) => {
+  const updateModifierParams = (modType: string, params: Record<string, unknown>) => {
     if (!selectedSeqId) return;
     IRStateManager.getInstance().updateModifier(selectedSeqId, modType, params);
   };
@@ -147,13 +149,17 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
     .map((s) => s.id)
     .filter((id) => id !== selectedSeqId);
 
-  const relStartObj = isStartRelational ? (selectedSeq.time.start as any) : {};
+  const relStartObj = isStartRelational
+    ? (selectedSeq.time.start as { after?: string; syncWith?: string; offsetFrames?: number; overlapFrames?: number })
+    : {};
   const relStartType = relStartObj.syncWith ? 'syncWith' : 'after';
   const relStartTarget = relStartObj.after || relStartObj.syncWith || otherSequenceIds[0] || '';
   const relStartOffset = relStartObj.offsetFrames ?? 0;
   const relStartOverlap = relStartObj.overlapFrames ?? 0;
 
-  const relDurObj = isDurationRelational ? (selectedSeq.time.duration as any) : {};
+  const relDurObj = isDurationRelational
+    ? (selectedSeq.time.duration as { matchAssetDuration?: boolean; matchLengthOf?: string; paddingFrames?: number })
+    : {};
   const relDurMatchAsset = Boolean(relDurObj.matchAssetDuration);
   const relDurTarget = relDurObj.matchLengthOf || otherSequenceIds[0] || '';
   const relDurPadding = relDurObj.paddingFrames ?? 0;
@@ -567,11 +573,11 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
 
         {/* A/V Link Status & Controls */}
         {(() => {
-          const avLink = modifiers.find((m: any) => m.type === 'editorial/av_link');
+          const avLink = modifiers.find((m: ModifierNode) => m.type === 'editorial/av_link');
           if (!avLink) return null;
           const isLinked = avLink.params?.enabled !== false;
-          const partnerId = avLink.params?.linkedSequenceId;
-          const partnerTrack = avLink.params?.linkedTrackId;
+          const partnerId = avLink.params?.linkedSequenceId as string | undefined;
+          const partnerTrack = avLink.params?.linkedTrackId as string | undefined;
           return (
             <div className="pt-2 border-t border-glass-border space-y-1.5">
               <div className="flex items-center justify-between">
@@ -709,7 +715,7 @@ export const SequenceInspector: React.FC<SequenceInspectorProps> = ({
         onValueChange={setOpenSections}
         className="border-glass-border space-y-2"
       >
-        {modifiers.map((mod: any) => {
+        {modifiers.map((mod: ModifierNode) => {
           const sectionId = getSectionIdForModifierType(mod.type);
           const catalogEntry = MODIFIER_PRESENTATION_CATALOG[mod.type];
           const Icon = catalogEntry?.icon || Sparkles;

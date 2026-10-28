@@ -127,11 +127,13 @@ export type ModifierCategory =
   | 'text'
   | 'custom';
 
+export type ModifierIconComponent = React.ComponentType<{ className?: string }>;
+
 export interface AvailableModifierDef {
   type: string;
   name: string;
   category: ModifierCategory;
-  icon: any;
+  icon: ModifierIconComponent;
   supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
   defaultParams: Record<string, unknown>;
 }
@@ -141,7 +143,7 @@ export const MODIFIER_PRESENTATION_CATALOG: Record<
   {
     name: string;
     category: ModifierCategory;
-    icon: any;
+    icon: ModifierIconComponent;
     supportedTrackTypes: Array<'video' | 'audio' | 'timed_text' | 'data'>;
     defaultParams: Record<string, unknown>;
   }

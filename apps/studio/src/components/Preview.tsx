@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { IRStateManager } from '../lib/ir/irState';
+import { useIRState } from '../lib/ir/useStudioStore';
 import { STAGING_PRESETS } from '../lib/library/stagingPresets';
 import {
   ViewportControlBar,
@@ -45,10 +46,7 @@ export function Preview({
   });
 
   // Global IR Reactive Subscription
-  const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
+  const irState = useIRState();
 
   const width = irState.doc?.meta?.canvasSize?.w || 1920;
   const height = irState.doc?.meta?.canvasSize?.h || 1080;

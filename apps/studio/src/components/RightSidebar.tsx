@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Sliders,
   Settings,
@@ -24,7 +24,9 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
 } from './ui/dropdown-menu';
+import type { IRSequence, IRTrack, ModifierNode } from '@acc/ir';
 import { IRStateManager } from '../lib/ir/irState';
+import { useIRState } from '../lib/ir/useStudioStore';
 import { ProjectInspector } from './inspector/ProjectInspector';
 import { TrackInspector } from './inspector/TrackInspector';
 import { SequenceInspector } from './inspector/SequenceInspector';
@@ -33,6 +35,7 @@ import {
   getSectionIdForModifierType,
   type AvailableModifierDef,
   type ModifierCategory,
+  type ModifierIconComponent,
 } from './inspector/modifierCatalog';
 
 export * from './inspector/modifierCatalog';
@@ -42,7 +45,7 @@ export { TrackInspector } from './inspector/TrackInspector';
 export { SequenceInspector } from './inspector/SequenceInspector';
 export { DynamicModifierInspector } from './inspector/DynamicModifierInspector';
 
-const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: any }> = {
+const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: ModifierIconComponent }> = {
   motion: { label: 'Motion & Spatial', icon: Move },
   vfx: { label: 'Visual Effects (VFX)', icon: Sparkles },
   transitions: { label: 'Transitions', icon: Film },
@@ -53,7 +56,7 @@ const CATEGORY_CONFIG: Record<ModifierCategory, { label: string; icon: any }> = 
 const CATEGORY_KEYS = Object.keys(CATEGORY_CONFIG) as ModifierCategory[];
 
 export function RightSidebar() {
-  const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
+  const irState = useIRState();
   const [openSections, setOpenSections] = useState<string[]>([
     'transform',
     'motion_gsap',
@@ -70,16 +73,12 @@ export function RightSidebar() {
   const [isSequenceLocked, setIsSequenceLocked] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
-
   const selectedSeqId = irState.selectedSequenceId;
   const selectedTrackId = irState.selectedTrackId;
 
   // Resolve selected track & sequence
-  let selectedTrack: any = null;
-  let selectedSeq: any = null;
+  let selectedTrack: IRTrack | null = null;
+  let selectedSeq: IRSequence | null = null;
 
   for (const track of irState.doc.tracks) {
     if (track.id === selectedTrackId) {
@@ -107,7 +106,7 @@ export function RightSidebar() {
     mod.supportedTrackTypes.includes(trackType)
   );
 
-  const modifiers: any[] = selectedSeq?.modifiers || [];
+  const modifiers: ModifierNode[] = selectedSeq?.modifiers || [];
 
   const handleAddEffect = (mod: AvailableModifierDef) => {
     if (!selectedSeqId || isSequenceLocked) return;
@@ -183,7 +182,7 @@ export function RightSidebar() {
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="w-56">
                         {groupModifiers.map((mod) => {
-                          const isAttached = modifiers.some((m: any) => m.type === mod.type);
+                          const isAttached = modifiers.some((m: ModifierNode) => m.type === mod.type);
                           const Icon = mod.icon;
                           return (
                             <DropdownMenuItem

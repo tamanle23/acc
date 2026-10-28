@@ -6,7 +6,7 @@ export interface UpdateSequenceProperties {
   assetId?: string;
   activeStreams?: string[];
   cues?: TimedTextCue[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class UpdateSequencePropsCommand implements ICommand {

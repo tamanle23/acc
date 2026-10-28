@@ -55,10 +55,11 @@ export class UpdateTextCueCommand implements ICommand {
           if (seq.modifiers) {
             const styleMod = seq.modifiers.find((m) => m.type === 'text/style');
             if (styleMod && styleMod.params) {
-              if (this.previousModifierText === null && typeof (styleMod.params as any).text === 'string') {
-                this.previousModifierText = (styleMod.params as any).text;
+              const params = styleMod.params as Record<string, unknown>;
+              if (this.previousModifierText === null && typeof params.text === 'string') {
+                this.previousModifierText = params.text;
               }
-              (styleMod.params as any).text = this.newText;
+              params.text = this.newText;
             }
           }
 
@@ -82,7 +83,7 @@ export class UpdateTextCueCommand implements ICommand {
           if (this.previousModifierText !== null && seq.modifiers) {
             const styleMod = seq.modifiers.find((m) => m.type === 'text/style');
             if (styleMod && styleMod.params) {
-              (styleMod.params as any).text = this.previousModifierText;
+              (styleMod.params as Record<string, unknown>).text = this.previousModifierText;
             }
           }
           return copy;

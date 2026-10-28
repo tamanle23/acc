@@ -9,10 +9,12 @@ import {
 } from '@dnd-kit/core';
 import { SunMedium } from 'lucide-react';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { ModifierNode } from '@acc/ir';
+import type { StudioSequence } from '../../lib/ir/studioTypes';
 
 export interface LightGizmoOverlayProps {
   selectedSeqId: string | null;
-  activeSequences: any[];
+  activeSequences: StudioSequence[];
   width: number;
   height: number;
   zoomLevel: number | 'fit';
@@ -112,7 +114,7 @@ export function LightGizmoOverlay({
 
   // Look for relighting modifier on the active sequence
   const relightMod = selectedSeq.modifiers?.find(
-    (m: any) => m.type === 'vfx/depth_relighting' || m.type === 'vfx/depth3d_relighting'
+    (m: ModifierNode) => m.type === 'vfx/depth_relighting' || m.type === 'vfx/depth3d_relighting'
   );
 
   if (!relightMod || relightMod.params?.enabled === false) {

@@ -17,13 +17,20 @@ import {
   Maximize2
 } from 'lucide-react';
 import { RationalTime } from '@acc/core-isomorphic';
-import { IRStateManager } from '../../lib/ir/irState';
+import type { ModifierNode } from '@acc/ir';
+import { useIRSelector } from '../../lib/ir/useStudioStore';
+import {
+  getSequenceDurationFrames,
+  getSequenceStartFrame,
+  type StudioSequence,
+  type StudioTrack,
+} from '../../lib/ir/studioTypes';
 import { AssetTextureCache } from '../../lib/textures/AssetTextureCache';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 export interface ClipInsightCardProps {
-  seq: any;
-  track: any;
+  seq: StudioSequence;
+  track?: StudioTrack | null;
   fps: number;
 }
 
@@ -41,8 +48,8 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
   track,
   fps,
 }) => {
-  const startFrame = seq.startFrame ?? 0;
-  const durationFrames = seq.durationFrames ?? 30;
+  const startFrame = getSequenceStartFrame(seq);
+  const durationFrames = getSequenceDurationFrames(seq, 30);
   const endFrame = startFrame + durationFrames;
 
   const startSMPTE = RationalTime.fromFrame(startFrame, fps).toSMPTE(fps);
@@ -54,18 +61,16 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
   const isText = track?.type === 'text' || track?.type === 'timed_text' || seq.type === 'text' || Boolean(seq.cues?.length);
   const isVideo = !isAudio && !isText && (seq.type === 'video');
   const isImage = !isAudio && !isText && (seq.type === 'image');
-  const isFx = seq.modifiers?.some((m: any) => m.type.startsWith('vfx/'));
+  const isFx = seq.modifiers?.some((m: ModifierNode) => m.type.startsWith('vfx/'));
 
   // Resolve Asset definition from VideoIRDocument
-  const [irDoc, setIrDoc] = useState(() => IRStateManager.getInstance().getState().doc);
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe((state) => {
-      setIrDoc(state.doc);
-    });
-  }, []);
+  const irDoc = useIRSelector((s) => s.doc);
 
   const assetDef = seq.assetId ? irDoc?.assets?.[seq.assetId] : undefined;
-  const assetSrc = assetDef?.src || (typeof seq.source === 'string' ? seq.source : undefined);
+  const legacySource = 'source' in seq && typeof (seq as { source?: unknown }).source === 'string'
+    ? ((seq as { source: string }).source)
+    : undefined;
+  const assetSrc = assetDef?.src || legacySource;
   const assetType = assetDef?.type || seq.type || (isVideo ? 'video' : isImage ? 'image' : isAudio ? 'audio' : 'text');
 
   // Interactive Media States
@@ -144,7 +149,7 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
     return <Film className="w-3.5 h-3.5 text-indigo-400" />;
   };
 
-  const modifiers: any[] = seq.modifiers || [];
+  const modifiers: ModifierNode[] = seq.modifiers || [];
   const cueText = seq.cues?.[0]?.text;
 
   return (
@@ -408,7 +413,7 @@ export const ClipInsightCard: React.FC<ClipInsightCardProps> = ({
           <span className="text-[9px] font-mono text-muted-foreground flex items-center gap-0.5 mr-1">
             <Layers className="w-2.5 h-2.5" /> Modifiers ({modifiers.length}):
           </span>
-          {modifiers.slice(0, 4).map((m: any, idx: number) => {
+          {modifiers.slice(0, 4).map((m: ModifierNode, idx: number) => {
             const shortName = m.type.split('/').pop() || m.type;
             return (
               <span

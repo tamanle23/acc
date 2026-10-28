@@ -45,7 +45,7 @@ interface SseFleetTelemetry {
       status: string;
       cpuPercent: number;
       memoryRssMb: number;
-      domain?: any;
+      domain?: Record<string, unknown>;
     }
   >;
 }

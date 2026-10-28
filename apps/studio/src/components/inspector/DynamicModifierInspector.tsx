@@ -8,8 +8,8 @@ import { resolveParamControlStrategy } from './ModifierControlStrategies';
 
 export interface DynamicModifierInspectorProps {
   modifierType: string;
-  params: Record<string, any>;
-  onChange: (nextParams: Record<string, any>) => void;
+  params: Record<string, unknown>;
+  onChange: (nextParams: Record<string, unknown>) => void;
   disabled?: boolean;
 }
 
@@ -38,7 +38,7 @@ export const DynamicModifierInspector: React.FC<DynamicModifierInspectorProps> =
   const registry = ensureRegistryPopulated(ModifierPluginRegistry.getInstance());
   const schema = registry.getSchema(modifierType);
 
-  const handleFieldChange = (key: string, newVal: any) => {
+  const handleFieldChange = (key: string, newVal: unknown) => {
     if (disabled) return;
     onChange({
       ...params,
@@ -193,7 +193,7 @@ export function inferFieldDescriptor(key: string, val: unknown): ParamFieldDescr
       key,
       label: 'Motion Lifecycle Animation',
       type: 'motion_lifecycle',
-      defaultValue: val as any,
+      defaultValue: val as Record<string, unknown>,
     };
   }
 

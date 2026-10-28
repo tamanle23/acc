@@ -7,7 +7,7 @@ export interface UpdateTrackProperties {
   routeTo?: string;
   parentTrack?: string;
   style?: Record<string, unknown>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class UpdateTrackCommand implements ICommand {

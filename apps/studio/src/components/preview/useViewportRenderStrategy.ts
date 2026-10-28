@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import type { ResolvedTimeline } from '@acc/ir';
+import type { AssetDefinition, ResolvedSequence, ResolvedTimeline } from '@acc/ir';
 import {
   createPreviewRenderStrategy,
   type IPreviewRenderStrategy,
@@ -13,7 +13,7 @@ export interface UseViewportRenderStrategyOptions {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   overlayCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   timeline: ResolvedTimeline | null;
-  assetsMap: Record<string, any>;
+  assetsMap: Record<string, AssetDefinition>;
   width: number;
   height: number;
   fps: number;
@@ -22,7 +22,7 @@ export interface UseViewportRenderStrategyOptions {
   isPlaying: boolean;
   clearColor: string;
   debugMode?: 'none' | 'depth_heatmap' | 'normals' | 'alpha';
-  activeSeqs: any[];
+  activeSeqs: ResolvedSequence[];
 }
 
 export function useViewportRenderStrategy({

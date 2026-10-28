@@ -10,15 +10,21 @@ import {
   AlertOctagon,
 } from 'lucide-react';
 
+import {
+  getSequenceDurationFrames,
+  type StudioSequence,
+  type StudioTrack,
+} from '../../lib/ir/studioTypes';
+
 export interface ClipDragProxyProps {
-  seq: any;
-  track: any;
+  seq: StudioSequence;
+  track?: StudioTrack | null;
   pixelsPerFrame: number;
   deltaFrames: number;
   snappedStartFrame: number;
   isInvalidDrop?: boolean;
   snapLabel?: string | null;
-  getTrackBadgeStyle?: (track: any) => string;
+  getTrackBadgeStyle?: (track: StudioTrack) => string;
 }
 
 /**
@@ -40,7 +46,7 @@ export const ClipDragProxy: React.FC<ClipDragProxyProps> = ({
   snapLabel = null,
   getTrackBadgeStyle,
 }) => {
-  const durationFrames = seq.durationFrames || 30;
+  const durationFrames = getSequenceDurationFrames(seq, 30);
   const widthPx = Math.max(16, durationFrames * pixelsPerFrame);
   const isAudio = seq.type === 'audio' || track?.type === 'audio';
 

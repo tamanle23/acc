@@ -7,13 +7,14 @@ import {
 } from './shuttleTypes';
 import { WebAudioEngine } from '../audio/WebAudioEngine';
 import { DeterministicTimelineClock } from '../clock/DeterministicTimelineClock';
+import type { IRState } from '../ir/irState';
 
 export interface UseShuttleEngineOptions {
   currentFrame: number;
   totalFrames: number;
   fps: number;
   onScrub: (frame: number) => void;
-  irState?: any;
+  irState?: IRState | null;
   enableKeybindings?: boolean;
 }
 

@@ -5,8 +5,10 @@ import { VideoIRAuthoringEngine } from '../../../../../packages/ir/src/authoring
 export interface AddLinkedAVSequenceOptions {
   videoTrackId: string;
   audioTrackId: string;
-  videoSequence: IRSequence;
-  audioSequence: IRSequence;
+  videoSequence?: IRSequence;
+  audioSequence?: IRSequence;
+  videoSeq?: IRSequence;
+  audioSeq?: IRSequence;
   asset?: { id: string; asset: AssetDefinition };
 }
 
@@ -32,14 +34,20 @@ export class AddLinkedAVSequenceCommand implements ICommand {
   private nextSequenceIndexSnapshot: number | undefined = undefined;
 
   constructor(options: AddLinkedAVSequenceOptions) {
-    this.id = `add_linked_av_${options.videoSequence.id}_${Date.now()}`;
-    this.description = `Add linked A/V sequences (${options.videoSequence.id} & ${options.audioSequence.id})`;
+    const resolvedVideo = options.videoSequence ?? options.videoSeq;
+    const resolvedAudio = options.audioSequence ?? options.audioSeq;
+    if (!resolvedVideo || !resolvedAudio) {
+      throw new Error('AddLinkedAVSequenceCommand requires both video and audio sequences');
+    }
+
+    this.id = `add_linked_av_${resolvedVideo.id}_${Date.now()}`;
+    this.description = `Add linked A/V sequences (${resolvedVideo.id} & ${resolvedAudio.id})`;
     this.timestamp = Date.now();
 
     this.videoTrackId = options.videoTrackId;
     this.audioTrackId = options.audioTrackId;
-    this.videoSequence = JSON.parse(JSON.stringify(options.videoSequence));
-    this.audioSequence = JSON.parse(JSON.stringify(options.audioSequence));
+    this.videoSequence = JSON.parse(JSON.stringify(resolvedVideo));
+    this.audioSequence = JSON.parse(JSON.stringify(resolvedAudio));
     this.asset = options.asset ? JSON.parse(JSON.stringify(options.asset)) : undefined;
   }
 

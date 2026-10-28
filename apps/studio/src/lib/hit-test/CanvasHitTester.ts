@@ -1,4 +1,5 @@
-import type { ResolvedSequence } from '@acc/ir';
+import type { ModifierNode, ResolvedSequence } from '@acc/ir';
+import type { StudioTrack } from '../ir/studioTypes';
 
 export interface SequenceHitRegion {
   readonly sequenceId: string;
@@ -25,12 +26,12 @@ export class CanvasHitTester {
    */
   public static computeHitRegions(
     activeSequences: ResolvedSequence[],
-    tracks: any[] = []
+    tracks: StudioTrack[] = []
   ): SequenceHitRegion[] {
     const regions: SequenceHitRegion[] = [];
 
     // Map trackId to track index
-    const trackOrderMap = new Map<string, { index: number; track: any }>();
+    const trackOrderMap = new Map<string, { index: number; track: StudioTrack }>();
     tracks.forEach((t, idx) => {
       trackOrderMap.set(t.id, { index: idx, track: t });
     });
@@ -56,18 +57,18 @@ export class CanvasHitTester {
     trackId: string
   ): SequenceHitRegion | null {
     const modifiers = seq.modifiers || [];
-    const transMod = modifiers.find((m: any) => m.type === 'transform');
-    const shapeMod = modifiers.find((m: any) => m.type === 'shape/vector' || m.type === 'shape/draw');
-    const textMod = modifiers.find((m: any) => m.type === 'text/style');
+    const transMod = modifiers.find((m: ModifierNode) => m.type === 'transform');
+    const shapeMod = modifiers.find((m: ModifierNode) => m.type === 'shape/vector' || m.type === 'shape/draw');
+    const textMod = modifiers.find((m: ModifierNode) => m.type === 'text/style');
 
-    const tp = (transMod?.params || {}) as any;
-    const normX = Number.isFinite(tp.normX) ? tp.normX : 0.5;
-    const normY = Number.isFinite(tp.normY) ? tp.normY : 0.5;
+    const tp = (transMod?.params || {}) as Record<string, unknown>;
+    const normX = typeof tp.normX === 'number' && Number.isFinite(tp.normX) ? tp.normX : 0.5;
+    const normY = typeof tp.normY === 'number' && Number.isFinite(tp.normY) ? tp.normY : 0.5;
 
     // 1. Text & Subtitles archetype
     if (textMod || (seq.cues && seq.cues.length > 0) || seq.type === 'text') {
-      const p = (textMod?.params || {}) as any;
-      const marginV = p.marginV ?? 65;
+      const p = (textMod?.params || {}) as Record<string, unknown>;
+      const marginV = typeof p.marginV === 'number' ? p.marginV : 65;
       const marginVNorm = marginV / 1080;
       const cueText = seq.cues?.[0]?.text || seq.name || 'Subtitle';
       const textLen = Math.max(10, Math.min(80, cueText.length));
@@ -94,9 +95,9 @@ export class CanvasHitTester {
 
     // 3. Vector Shapes archetype
     if (shapeMod) {
-      const sp = (shapeMod.params || {}) as any;
-      const rawW = sp.width ?? 320;
-      const rawH = sp.height ?? 180;
+      const sp = (shapeMod.params || {}) as Record<string, unknown>;
+      const rawW = typeof sp.width === 'number' ? sp.width : 320;
+      const rawH = typeof sp.height === 'number' ? sp.height : 180;
       return {
         sequenceId: seq.id,
         sequenceType: 'shape',
@@ -106,13 +107,13 @@ export class CanvasHitTester {
         normY,
         normWidth: Math.max(0.04, rawW / 1920),
         normHeight: Math.max(0.04, rawH / 1080),
-        label: `Shape: ${sp.shapeType || 'vector'}`,
+        label: `Shape: ${typeof sp.shapeType === 'string' ? sp.shapeType : 'vector'}`,
         zIndex: 50 + trackIndex,
       };
     }
 
     // 4. Procedural Visual Overlays (e.g. particles, rain, snow, HUDs)
-    if (seq.type === 'overlay' || modifiers.some((m: any) => m.type.startsWith('overlay/'))) {
+    if (seq.type === 'overlay' || modifiers.some((m: ModifierNode) => m.type.startsWith('overlay/'))) {
       return {
         sequenceId: seq.id,
         sequenceType: 'overlay',
@@ -133,10 +134,12 @@ export class CanvasHitTester {
       seq.type === 'image' ||
       (seq.assetId && !trackId.includes('audio') && !trackId.includes('a1') && !trackId.includes('a2'))
     ) {
-      const scale = Number.isFinite(tp.scale) ? tp.scale : 1.0;
+      const scale = typeof tp.scale === 'number' && Number.isFinite(tp.scale) ? tp.scale : 1.0;
+      const resolvedType: SequenceHitRegion['sequenceType'] =
+        seq.type === 'image' ? 'image' : 'video';
       return {
         sequenceId: seq.id,
-        sequenceType: (seq.type as any) || 'video',
+        sequenceType: resolvedType,
         trackIndex,
         trackId,
         normX,

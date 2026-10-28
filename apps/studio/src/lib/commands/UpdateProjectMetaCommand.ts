@@ -5,7 +5,7 @@ export interface UpdateProjectMetaProperties {
   contentId?: string;
   globalFps?: number;
   canvasSize?: { w: number; h: number };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class UpdateProjectMetaCommand implements ICommand {

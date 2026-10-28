@@ -22,9 +22,12 @@ export const TransitionBlock: React.FC<TransitionBlockProps> = ({
   pixelsPerFrame,
   onClick,
 }) => {
-  const p = transitionModifier.params as any;
-  const durationFrames = p?.durationFrames ?? 15;
-  const transType = p?.transitionType || transitionModifier.type.split('/').pop() || 'transition';
+  const p = (transitionModifier.params || {}) as Record<string, unknown>;
+  const durationFrames = typeof p.durationFrames === 'number' ? p.durationFrames : 15;
+  const transType =
+    (typeof p.transitionType === 'string' && p.transitionType) ||
+    transitionModifier.type.split('/').pop() ||
+    'transition';
   const widthPx = Math.max(16, durationFrames * pixelsPerFrame);
 
   const getTransitionBadgeColor = () => {

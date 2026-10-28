@@ -33,6 +33,13 @@ import { AssetTextureCache } from './lib/textures/AssetTextureCache';
 import { AudioAssetCache } from './lib/audio/AudioAssetCache';
 import { Video, AlertCircle } from 'lucide-react';
 import { IRStateManager } from './lib/ir/irState';
+import { useIRState } from './lib/ir/useStudioStore';
+import {
+  getErrorMessage,
+  normalizeTracksList,
+  type StudioAssetRecord,
+} from './lib/ir/studioTypes';
+import type { IRSequence } from '@acc/ir';
 import type { StagingPreset } from './lib/library/stagingPresets';
 import { ThemeProvider } from './lib/theme/ThemeProvider';
 import { SettingsModal } from './components/SettingsModal';
@@ -43,7 +50,7 @@ import { snapToDiscreteFrame } from './lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from './lib/playhead/StudioPlayheadController';
 
 function StudioWorkspace() {
-  const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
+  const irState = useIRState();
   const [currentFrame, setCurrentFrame] = useState(0);
   const currentFrameRef = useRef(currentFrame);
   currentFrameRef.current = currentFrame;
@@ -52,15 +59,11 @@ function StudioWorkspace() {
   const [isLeftOpen, setIsLeftOpen] = useState(true);
   const [isRightOpen, setIsRightOpen] = useState(true);
   const [activeNav, setActiveNav] = useState<LeftNavTab>('vault');
-  const [activeDragItem, setActiveDragItem] = useState<any>(null);
+  const [activeDragItem, setActiveDragItem] = useState<Record<string, unknown> | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<number>(0);
   const cancelExportRef = useRef(false);
-
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
 
   // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
   // J, K, L, Space, and Arrow keys are handled with discrete frame accuracy by useShuttleEngine
@@ -127,23 +130,29 @@ function StudioWorkspace() {
         });
         setIsRightOpen(true);
       } else if (data.type === 'asset' && data.asset) {
-        const asset = data.asset;
-        const assetId = data.assetId;
+        const asset = data.asset as StudioAssetRecord;
+        const assetId = String(data.assetId || asset.id || 'asset');
         const targetTrackId = asset.type === 'audio' ? 'track-a1' : 'track-v1';
         const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
         const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
+        const durationFrames = asset.durationSec ? Math.round(asset.durationSec * fps) : 90;
 
-        const newSeq = {
+        const newSeq: IRSequence = {
           id: seqId,
           name: assetId,
+          type: asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : 'video',
+          time: {
+            start: currentFrame,
+            duration: durationFrames,
+          },
           startFrame: currentFrame,
           timelineStartFrame: currentFrame,
-          durationFrames: asset.durationSec ? Math.round(asset.durationSec * fps) : 90,
+          durationFrames,
           assetId,
           modifiers: [],
         };
 
-        IRStateManager.getInstance().addSequence(targetTrackId, newSeq as any, {
+        IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
           trackTypeFallback: targetTrackType,
           trackNameFallback: targetTrackId,
         });
@@ -154,8 +163,9 @@ function StudioWorkspace() {
 
     // Direct Track Dropping from LeftSidebar Preset or Asset Library
     const overIdStr = String(over.id);
-    if (overIdStr.startsWith('track-') || (over.data.current as any)?.type === 'track') {
-      const targetTrackId = (over.data.current as any)?.trackId || overIdStr.replace(/^track-/, '');
+    const overData = over.data.current as { type?: string; trackId?: string } | undefined;
+    if (overIdStr.startsWith('track-') || overData?.type === 'track') {
+      const targetTrackId = overData?.trackId || overIdStr.replace(/^track-/, '');
 
       // Calculate drop frame from translated pointer coordinate relative to target lane
       let dropFrame = currentFrame;
@@ -189,8 +199,8 @@ function StudioWorkspace() {
         });
         setIsRightOpen(true);
       } else if (data.type === 'asset' && data.asset) {
-        const asset = data.asset;
-        const assetId = data.assetId;
+        const asset = data.asset as StudioAssetRecord;
+        const assetId = String(data.assetId || asset.id || 'asset');
         const durationFrames = asset.durationSec ? Math.round(asset.durationSec * fps) : 90;
 
         // Check if asset is video with audio -> Ingest with Linked A/V Split Engine
@@ -200,9 +210,14 @@ function StudioWorkspace() {
           const aSeqId = `seq_${assetId}_a_${timestamp}`;
           const audioTrackId = 'track-a1';
 
-          const videoSeq = {
+          const videoSeq: IRSequence = {
             id: vSeqId,
             name: `${assetId} (Video)`,
+            type: 'video',
+            time: {
+              start: dropFrame,
+              duration: durationFrames,
+            },
             startFrame: dropFrame,
             timelineStartFrame: dropFrame,
             durationFrames,
@@ -210,7 +225,7 @@ function StudioWorkspace() {
             modifiers: [
               {
                 id: `mod_link_${vSeqId}`,
-                type: 'editorial/av_link' as const,
+                type: 'editorial/av_link',
                 params: {
                   linkedSequenceId: aSeqId,
                   linkedTrackId: audioTrackId,
@@ -221,9 +236,14 @@ function StudioWorkspace() {
             ],
           };
 
-          const audioSeq = {
+          const audioSeq: IRSequence = {
             id: aSeqId,
             name: `${assetId} (Audio)`,
+            type: 'audio',
+            time: {
+              start: dropFrame,
+              duration: durationFrames,
+            },
             startFrame: dropFrame,
             timelineStartFrame: dropFrame,
             durationFrames,
@@ -231,7 +251,7 @@ function StudioWorkspace() {
             modifiers: [
               {
                 id: `mod_link_${aSeqId}`,
-                type: 'editorial/av_link' as const,
+                type: 'editorial/av_link',
                 params: {
                   linkedSequenceId: vSeqId,
                   linkedTrackId: targetTrackId,
@@ -243,8 +263,8 @@ function StudioWorkspace() {
           };
 
           IRStateManager.getInstance().addLinkedAVSequences({
-            videoSeq: videoSeq as any,
-            audioSeq: audioSeq as any,
+            videoSequence: videoSeq,
+            audioSequence: audioSeq,
             videoTrackId: targetTrackId,
             audioTrackId,
           });
@@ -252,9 +272,14 @@ function StudioWorkspace() {
           // Standard single sequence ingestion (Pure Audio or Video without audio stream)
           const targetTrackType = asset.type === 'audio' ? 'audio' : 'video';
           const seqId = `seq_${assetId}_${Date.now().toString(36)}`;
-          const newSeq = {
+          const newSeq: IRSequence = {
             id: seqId,
             name: assetId,
+            type: asset.type === 'audio' ? 'audio' : asset.type === 'image' ? 'image' : 'video',
+            time: {
+              start: dropFrame,
+              duration: durationFrames,
+            },
             startFrame: dropFrame,
             timelineStartFrame: dropFrame,
             durationFrames,
@@ -262,7 +287,7 @@ function StudioWorkspace() {
             modifiers: [],
           };
 
-          IRStateManager.getInstance().addSequence(targetTrackId, newSeq as any, {
+          IRStateManager.getInstance().addSequence(targetTrackId, newSeq, {
             trackTypeFallback: targetTrackType,
             trackNameFallback: targetTrackId,
           });
@@ -379,7 +404,7 @@ function StudioWorkspace() {
                 const visualAsset = studioTextureCache.getVisualAsset(
                   seq.assetId,
                   assetSrc,
-                  (assetType as any),
+                  assetType === 'image' ? 'image' : 'video',
                   seqLocalTimeSec
                 );
 
@@ -408,14 +433,20 @@ function StudioWorkspace() {
         setExportProgress(90);
 
         // Mix timeline audio using UniversalAudioMixer
-        let audioMixResult: any = undefined;
+        let audioMixResult:
+          | {
+              totalSamples: number;
+              sampleRate: number;
+              channels: number;
+              durationSeconds: number;
+              buffer: Float32Array;
+              pcmLeft: Float32Array;
+              pcmRight: Float32Array;
+            }
+          | undefined = undefined;
         try {
-          const resolvedTracks = irState.timeline?.tracks
-            ? (irState.timeline.tracks instanceof Map
-              ? Array.from(irState.timeline.tracks.values())
-              : irState.timeline.tracks)
-            : [];
-          const audioTracks = resolvedTracks.filter((t: any) => t.type === 'audio');
+          const resolvedTracks = normalizeTracksList(irState.timeline?.tracks);
+          const audioTracks = resolvedTracks.filter((t) => t.type === 'audio');
           if (audioTracks.length > 0) {
             const sampleRate = 48000;
             const totalDurationSec = totalFrames / fps;
@@ -505,9 +536,9 @@ function StudioWorkspace() {
           `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes || exportBuffer?.byteLength || 0} bytes\nFrames: ${result.framesConsumed}`
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Client export error:', err);
-      alert(`Client export failed: ${err.message}`);
+      alert(`Client export failed: ${getErrorMessage(err)}`);
     } finally {
       setIsExporting(false);
       setExportProgress(0);

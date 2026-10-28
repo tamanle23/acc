@@ -16,17 +16,24 @@ import { AudioWaveform } from './AudioWaveform';
 import { FilmstripThumbnail } from './FilmstripThumbnail';
 import { ClipHoverHUD } from './ClipHoverHUD';
 import { IRStateManager } from '../../lib/ir/irState';
+import {
+  getSequenceDurationFrames,
+  getSequenceStartFrame,
+  type StudioSequence,
+  type StudioTrack,
+} from '../../lib/ir/studioTypes';
+import type { ModifierNode } from '@acc/ir';
 
 export interface ClipItemProps {
-  seq: any;
-  track: any;
+  seq: StudioSequence;
+  track: StudioTrack;
   pixelsPerFrame: number;
   isSelected: boolean;
   activeTool: 'select' | 'razor' | 'hand';
   fps?: number;
-  getTrackBadgeStyle: (track: any) => string;
-  onClipClick: (seq: any, e: React.MouseEvent) => void;
-  onClipHover?: (clipData: { seq: any; track: any; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
+  getTrackBadgeStyle: (track: StudioTrack) => string;
+  onClipClick: (seq: StudioSequence, e: React.MouseEvent) => void;
+  onClipHover?: (clipData: { seq: StudioSequence; track: StudioTrack; position: { leftPx: number; topPx: number; widthPx: number } } | null) => void;
   activeDragState: {
     type: 'clip' | 'trim';
     seqId: string;
@@ -65,17 +72,18 @@ export function ClipItem({
   const isVideoAsset = seq.type === 'video';
   const isImageAsset = seq.type === 'image';
 
-  const rawStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
+  const rawStart = getSequenceStartFrame(seq);
+  const seqDurationFrames = getSequenceDurationFrames(seq, 30);
   let displayStartFrame = rawStart;
-  let displayDurationFrames = seq.durationFrames;
+  let displayDurationFrames = seqDurationFrames;
 
   // Trim handle interaction directly modifies display frames during trim
   if (isBeingDragged && activeDragState && activeDragState.type === 'trim') {
     if (activeDragState.handle === 'start') {
       displayStartFrame = Math.max(0, rawStart + activeDragState.deltaFrames);
-      displayDurationFrames = Math.max(1, seq.durationFrames - activeDragState.deltaFrames);
+      displayDurationFrames = Math.max(1, seqDurationFrames - activeDragState.deltaFrames);
     } else {
-      displayDurationFrames = Math.max(1, seq.durationFrames + activeDragState.deltaFrames);
+      displayDurationFrames = Math.max(1, seqDurationFrames + activeDragState.deltaFrames);
     }
   }
 
@@ -157,7 +165,7 @@ export function ClipItem({
       {seq.modifiers &&
         (() => {
           const transMod = seq.modifiers.find(
-            (m: any) =>
+            (m: ModifierNode) =>
               m.type.startsWith('transition/') || m.type.startsWith('editorial/transition')
           );
           if (!transMod || transMod.params?.enabled === false) return null;
@@ -180,7 +188,7 @@ export function ClipItem({
         {isAudio ? (
           <AudioWaveform
             id={seq.assetId || seq.id}
-            durationFrames={seq.durationFrames}
+            durationFrames={seqDurationFrames}
             width={widthPx}
             height={28}
           />
@@ -236,9 +244,10 @@ export function ClipItem({
         {/* Linked A/V Button (Available on LOD 2 and LOD 3) */}
         {lod >= 2 &&
           (() => {
-            const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
+            const avLink = seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
             if (!avLink) return null;
             const isLinked = avLink.params?.enabled !== false;
+            const linkedSeqId = avLink.params?.linkedSequenceId as string | undefined;
             return (
               <button
                 type="button"
@@ -251,9 +260,9 @@ export function ClipItem({
                     enabled: newEnabled,
                   });
                   // Also update on partner sequence if present
-                  if (avLink.params?.linkedSequenceId) {
+                  if (linkedSeqId) {
                     IRStateManager.getInstance().updateModifier(
-                      avLink.params.linkedSequenceId,
+                      linkedSeqId,
                       'editorial/av_link',
                       {
                         ...avLink.params,
@@ -271,7 +280,7 @@ export function ClipItem({
                 }`}
                 title={
                   isLinked
-                    ? `Linked to ${avLink.params?.linkedSequenceId} (Click to unlink)`
+                    ? `Linked to ${linkedSeqId} (Click to unlink)`
                     : 'Unlinked A/V (Click to re-link)'
                 }
               >
@@ -290,7 +299,7 @@ export function ClipItem({
         {/* LOD 3: Individual Active Modifier Pills */}
         {lod === 3 && seq.modifiers && seq.modifiers.length > 0 && (
           <div className="flex items-center gap-1 shrink-0 relative z-10">
-            {seq.modifiers.slice(0, 3).map((mod: any, mIdx: number) => {
+            {seq.modifiers.slice(0, 3).map((mod: ModifierNode, mIdx: number) => {
               const modShortName = (mod.type || '').split('/').pop() || 'mod';
               return (
                 <span

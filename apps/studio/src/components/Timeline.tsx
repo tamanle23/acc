@@ -5,6 +5,8 @@ import { OverlayHUD } from './timeline/OverlayHUD';
 import { EmptyState } from './timeline/EmptyState';
 import { TimelineDom } from './timeline/TimelineDom';
 import { IRStateManager } from '../lib/ir/irState';
+import { useIRState } from '../lib/ir/useStudioStore';
+import { normalizeTracksList } from '../lib/ir/studioTypes';
 import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
@@ -52,20 +54,10 @@ export function Timeline({
     isAbut?: boolean;
   } | null>(null);
 
-  const [irState, setIrState] = useState(IRStateManager.getInstance().getState());
-
-  useEffect(() => {
-    return IRStateManager.getInstance().subscribe(setIrState);
-  }, []);
+  const irState = useIRState();
 
   const totalFrames = irState.timeline?.totalFrames || playhead?.totalFrames || 300;
-  const rawTracks = irState.timeline?.tracks;
-  const tracks =
-    rawTracks instanceof Map
-      ? Array.from(rawTracks.values())
-      : Array.isArray(rawTracks)
-        ? rawTracks
-        : [];
+  const tracks = normalizeTracksList(irState.timeline?.tracks);
   const selectedSeqId = irState.selectedSequenceId;
 
   // Adaptive Zoom Scaling: 1.5px/frame at 1.0x allows standard 3s (90f) clips to render at 135px (LOD 2)

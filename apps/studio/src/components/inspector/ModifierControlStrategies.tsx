@@ -11,6 +11,8 @@ import { VisionEngineRegistry, DepthStrategyId, SegmentationStrategyId } from '@
 import { EasingCurveSelector } from '../EasingCurveSelector';
 import { KeyframeDiamondButton } from './KeyframeDiamondButton';
 import { IRStateManager } from '../../lib/ir/irState';
+import { useIRSelector, usePlayheadFrame } from '../../lib/ir/useStudioStore';
+import type { IRSequence } from '@acc/ir';
 
 export interface ControlStrategyProps {
   descriptor: ParamFieldDescriptor;
@@ -38,10 +40,9 @@ export const NumberControlStrategy: React.FC<ControlStrategyProps> = ({
   const isKeyframed = Boolean(value && typeof value === 'object' && Array.isArray(value.keyframes));
   const keyframes: Array<{ timeSec: number; value: number; ease?: string }> = isKeyframed ? value.keyframes : [];
 
-  // Determine current timeline playhead time from IRStateManager
-  const irState = IRStateManager.getInstance().getState();
-  const currentFrame = irState.timeline?.currentFrame ?? 0;
-  const fps = irState.timeline?.meta.globalFps ?? 30;
+  // Determine current timeline playhead time from StudioPlayheadController & IRStateManager
+  const currentFrame = usePlayheadFrame();
+  const fps = useIRSelector((s) => s.timeline?.meta.globalFps ?? s.doc.meta?.globalFps ?? 30);
   const currentTimeSec = currentFrame / fps;
 
   // Check if a keyframe exists exactly at or near the current frame (+/- 0.5 frame)
@@ -877,11 +878,12 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const win = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioCtx = window.AudioContext || win.webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
         const audioBuf = ctx.createBuffer(1, buf.length, 44100);
-        audioBuf.copyToChannel(buf, 0);
+        audioBuf.copyToChannel(buf as unknown as Float32Array<ArrayBuffer>, 0);
         const source = ctx.createBufferSource();
         source.buffer = audioBuf;
         source.connect(ctx.destination);
@@ -902,9 +904,10 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
     if (disabled) return;
     const startFrame = 0;
     const durationFrames = Math.round(durationSec * 30);
-    const seq = {
+    const seq: IRSequence = {
       id: `seq-sfx-${synthType}-${Date.now()}`,
       name: `${synthType.toUpperCase()} SFX`,
+      type: 'audio',
       time: {
         start: startFrame,
         duration: durationFrames,
@@ -921,7 +924,7 @@ export const SFXActionsControlStrategy: React.FC<ControlStrategyProps> = ({
         },
       ],
     };
-    IRStateManager.getInstance().addSequence('track-audio', seq as any, {
+    IRStateManager.getInstance().addSequence('track-audio', seq, {
       trackTypeFallback: 'audio',
       trackNameFallback: 'Master Audio Track',
     });

@@ -33,6 +33,7 @@ import { UpdateSequencePropsCommand, type UpdateSequenceProperties } from '../co
 import { UpdateProjectMetaCommand, type UpdateProjectMetaProperties } from '../commands/UpdateProjectMetaCommand';
 import { ReplaceDocumentCommand } from '../commands/ReplaceDocumentCommand';
 import type { IRSequence, SequenceTime } from '@acc/ir';
+import { cloneIR, getErrorMessage, type StudioAssetRecord } from './studioTypes';
 
 export type InspectorMode = 'sequence' | 'track' | 'project';
 
@@ -64,7 +65,7 @@ export class IRStateManager {
   private subscribers = new Set<IRStateSubscriber>();
 
   private state: IRState = {
-    doc: JSON.parse(JSON.stringify(complexSciFiDemoIR)),
+    doc: cloneIR(complexSciFiDemoIR),
     timeline: null,
     intervalTree: null,
     selectedSequenceId: 'seq-city-intro',
@@ -87,17 +88,21 @@ export class IRStateManager {
     return IRStateManager.instance;
   }
 
-  public getState(): IRState {
+  public getState = (): IRState => {
     return this.state;
-  }
+  };
 
-  public subscribe(callback: IRStateSubscriber): () => void {
+  public getSnapshot = (): IRState => {
+    return this.state;
+  };
+
+  public subscribe = (callback: IRStateSubscriber): (() => void) => {
     this.subscribers.add(callback);
     callback(this.state);
     return () => {
       this.subscribers.delete(callback);
     };
-  }
+  };
 
   private notify() {
     for (const sub of this.subscribers) {
@@ -137,10 +142,10 @@ export class IRStateManager {
         canRedo: this.historyManager.canRedo(),
       };
       this.notify();
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.state = {
         ...this.state,
-        error: err.message || 'DAG Compilation error',
+        error: getErrorMessage(err, 'DAG Compilation error'),
       };
       this.notify();
     }
@@ -148,18 +153,26 @@ export class IRStateManager {
 
   public dispatch(command: ICommand): void {
     const newDoc = this.historyManager.execute(command, this.state.doc);
-    this.state.doc = newDoc;
-    this.state.canUndo = this.historyManager.canUndo();
-    this.state.canRedo = this.historyManager.canRedo();
+    this.state = {
+      ...this.state,
+      doc: newDoc,
+      canUndo: this.historyManager.canUndo(),
+      canRedo: this.historyManager.canRedo(),
+    };
+    this.notify();
     this.recompile();
   }
 
   public undo(): void {
     const rolledBackDoc = this.historyManager.undo(this.state.doc);
     if (rolledBackDoc) {
-      this.state.doc = rolledBackDoc;
-      this.state.canUndo = this.historyManager.canUndo();
-      this.state.canRedo = this.historyManager.canRedo();
+      this.state = {
+        ...this.state,
+        doc: rolledBackDoc,
+        canUndo: this.historyManager.canUndo(),
+        canRedo: this.historyManager.canRedo(),
+      };
+      this.notify();
       this.recompile();
     }
   }
@@ -167,9 +180,13 @@ export class IRStateManager {
   public redo(): void {
     const replayedDoc = this.historyManager.redo(this.state.doc);
     if (replayedDoc) {
-      this.state.doc = replayedDoc;
-      this.state.canUndo = this.historyManager.canUndo();
-      this.state.canRedo = this.historyManager.canRedo();
+      this.state = {
+        ...this.state,
+        doc: replayedDoc,
+        canUndo: this.historyManager.canUndo(),
+        canRedo: this.historyManager.canRedo(),
+      };
+      this.notify();
       this.recompile();
     }
   }
@@ -223,10 +240,13 @@ export class IRStateManager {
     const targetDoc = template === 'scifi' ? complexSciFiDemoIR : defaultDemoIR;
     this.state = {
       ...this.state,
-      doc: JSON.parse(JSON.stringify(targetDoc)),
+      doc: cloneIR(targetDoc),
       activeTemplate: template,
       selectedSequenceId: targetDoc.tracks[0]?.sequences[0]?.id || null,
+      canUndo: false,
+      canRedo: false,
     };
+    this.notify();
     await this.recompile();
   }
 
@@ -243,11 +263,18 @@ export class IRStateManager {
         return val;
       }
       this.historyManager.clear();
-      this.state.doc = parsed;
+      this.state = {
+        ...this.state,
+        doc: parsed,
+        error: null,
+        canUndo: false,
+        canRedo: false,
+      };
+      this.notify();
       this.recompile();
       return { valid: true, errors: [] };
-    } catch (e: any) {
-      const err = e.message || 'Invalid JSON';
+    } catch (e: unknown) {
+      const err = getErrorMessage(e, 'Invalid JSON');
       this.state = {
         ...this.state,
         error: `JSON parse error: ${err}`,
@@ -266,8 +293,8 @@ export class IRStateManager {
       }
       this.dispatch(new ReplaceDocumentCommand(parsed));
       return { valid: true, errors: [] };
-    } catch (e: any) {
-      const err = e.message || 'Invalid JSON';
+    } catch (e: unknown) {
+      const err = getErrorMessage(e, 'Invalid JSON');
       return { valid: false, errors: [`JSON parse error: ${err}`] };
     }
   }
@@ -334,7 +361,10 @@ export class IRStateManager {
 
   public addLinkedAVSequences(options: AddLinkedAVSequenceOptions): void {
     this.dispatch(new AddLinkedAVSequenceCommand(options));
-    this.setSelectedSequenceId(options.videoSequence.id);
+    const vSeq = options.videoSequence ?? options.videoSeq;
+    if (vSeq) {
+      this.setSelectedSequenceId(vSeq.id);
+    }
   }
 
   public updateTextCue(sequenceId: string, cueIndex: number, newText: string): void {
@@ -364,7 +394,7 @@ export class IRStateManager {
     }
   }
 
-  public addAsset(assetId: string, asset: any): void {
+  public addAsset(assetId: string, asset: StudioAssetRecord): void {
     const assets = { ...(this.state.doc.assets || {}), [assetId]: asset };
     this.state = {
       ...this.state,

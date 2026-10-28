@@ -6,9 +6,11 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { ParameterSlider } from './modifierCatalog';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { StudioSequence, StudioTrack } from '../../lib/ir/studioTypes';
+import type { BlendMode } from '@acc/ir';
 
 export interface TrackInspectorProps {
-  selectedTrack: any;
+  selectedTrack: StudioTrack | null | undefined;
   irState: ReturnType<typeof IRStateManager.prototype.getState>;
 }
 
@@ -104,7 +106,7 @@ export const TrackInspector: React.FC<TrackInspectorProps> = ({
               value={selectedTrack.blendMode || 'normal'}
               onChange={(e) => {
                 IRStateManager.getInstance().updateTrack(selectedTrack.id, {
-                  blendMode: e.target.value as any,
+                  blendMode: e.target.value as BlendMode,
                 });
               }}
               className="h-6 text-[10px] font-mono bg-glass-surface border border-glass-border rounded px-1.5 text-foreground focus:outline-none focus:border-accent-theme"
@@ -218,7 +220,7 @@ export const TrackInspector: React.FC<TrackInspectorProps> = ({
             </Badge>
           </div>
           <div className="space-y-1 max-h-32 overflow-y-auto pr-0.5">
-            {selectedTrack.sequences.map((seq: any) => (
+            {selectedTrack.sequences.map((seq: StudioSequence) => (
               <div
                 key={seq.id}
                 onClick={() => {

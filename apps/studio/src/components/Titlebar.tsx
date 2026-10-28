@@ -7,6 +7,7 @@ import { TooltipProvider } from "./ui/tooltip";
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { IRStateManager } from '../lib/ir/irState';
+import { useIRSelector } from '../lib/ir/useStudioStore';
 import { useTheme } from '../lib/theme/ThemeProvider';
 import { ShortcutsModal } from './ShortcutsModal';
 import { VisualIRJsonDebuggerModal } from './debugger/VisualIRJsonDebuggerModal';
@@ -40,7 +41,9 @@ export function Titlebar({
 }: TitlebarProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const manager = IRStateManager.getInstance();
-  const state = manager.getState();
+  const activeTemplate = useIRSelector((s) => s.activeTemplate);
+  const canUndo = useIRSelector((s) => s.canUndo);
+  const canRedo = useIRSelector((s) => s.canRedo);
   const { preferences, toggleMode, setIsSettingsOpen } = useTheme();
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isDebuggerOpen, setIsDebuggerOpen] = useState(false);
@@ -128,7 +131,7 @@ export function Titlebar({
         {/* Demo Template Switcher */}
         <div className="ml-4 flex items-center gap-1.5">
           <Select
-            value={state.activeTemplate}
+            value={activeTemplate}
             onValueChange={(val: 'scifi' | 'default') => manager.switchTemplate(val)}
           >
             <SelectTrigger className="h-7 text-[11px] w-48 bg-[var(--glass-bg)] border-[var(--glass-border)] text-foreground">
@@ -149,7 +152,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => manager.undo()}
-            disabled={!manager.canUndo()}
+            disabled={!canUndo}
             aria-label="Undo action"
             className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >
@@ -162,7 +165,7 @@ export function Titlebar({
             variant="ghost"
             size="icon"
             onClick={() => manager.redo()}
-            disabled={!manager.canRedo()}
+            disabled={!canRedo}
             aria-label="Redo action"
             className="h-8 w-8 text-muted-foreground hover:text-foreground disabled:opacity-40"
           >

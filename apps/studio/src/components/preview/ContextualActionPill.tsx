@@ -45,7 +45,7 @@ export const ContextualActionPill: React.FC<ContextualActionPillProps> = ({
       .flatMap((t) => t.sequences)
       .find((s) => s.id === selectedSeqId);
 
-    const existingMod = seq?.modifiers?.find((m: any) => m.type === 'vfx/depth3d');
+    const existingMod = seq?.modifiers?.find((m) => m.type === 'vfx/depth3d');
 
     if (existingMod) {
       IRStateManager.getInstance().updateModifier(selectedSeqId, 'vfx/depth3d', {
@@ -76,7 +76,7 @@ export const ContextualActionPill: React.FC<ContextualActionPillProps> = ({
       .flatMap((t) => t.sequences)
       .find((s) => s.id === selectedSeqId);
 
-    const existingMod = seq?.modifiers?.find((m: any) => m.type === 'vfx/auto_reframe');
+    const existingMod = seq?.modifiers?.find((m) => m.type === 'vfx/auto_reframe');
 
     if (existingMod) {
       IRStateManager.getInstance().updateModifier(selectedSeqId, 'vfx/auto_reframe', {

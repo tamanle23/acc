@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import type { StudioSequence } from '../../lib/ir/studioTypes';
 
 export interface TrimHandleProps {
-  seq: any;
+  seq: StudioSequence;
   handle: 'start' | 'end';
 }
 

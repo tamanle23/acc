@@ -11,10 +11,11 @@ import { Lock, RotateCw } from 'lucide-react';
 import { ContextualActionPill } from './ContextualActionPill';
 import { TransformHandle, TransformBodyDraggable } from './TransformHandles';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { StudioSequence } from '../../lib/ir/studioTypes';
 
 export interface TransformGizmoOverlayProps {
   selectedSeqId: string | null;
-  activeSequences: any[];
+  activeSequences: StudioSequence[];
   currentFrame: number;
   isLocked: boolean;
   transform: {
@@ -24,7 +25,12 @@ export interface TransformGizmoOverlayProps {
     rotation: number;
   };
   isDragging: boolean;
-  previewEngine: any;
+  previewEngine?: {
+    getActiveInterpolatedTransform: (
+      seq: StudioSequence,
+      frame: number
+    ) => { x: number; y: number; scale: number; rotation: number; opacity: number } | null;
+  } | null;
   transformSensors: SensorDescriptor<SensorOptions>[];
   onTransformDragStart: (e: DragStartEvent) => void;
   onTransformDragMove: (e: DragMoveEvent) => void;
@@ -107,13 +113,13 @@ export function TransformGizmoOverlay({
           onCenter={() => {
             const newT = { ...transform, x: 0, y: 0 };
             onSetTransform(newT);
-            IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+            IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...newT });
           }}
           onToggleLock={onToggleLock}
           onResetTransform={() => {
             const newT = { x: 0, y: 0, scale: 1.0, rotation: 0 };
             onSetTransform(newT);
-            IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', newT as any);
+            IRStateManager.getInstance().updateModifier(selectedSeqId, 'transform', { ...newT });
           }}
           onDelete={(id) => IRStateManager.getInstance().deleteSequence(id)}
         />

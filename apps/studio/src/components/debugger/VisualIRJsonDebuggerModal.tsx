@@ -55,15 +55,16 @@ export function analyzeVideoIRJson(rawJson: string): {
   parsedDoc: VideoIRDocument | null;
   diagnostics: IRDiagnosticsReport;
 } {
-  let parsed: any = null;
+  let parsed: Record<string, unknown> | null = null;
   try {
-    parsed = JSON.parse(rawJson);
-  } catch (err: any) {
+    parsed = JSON.parse(rawJson) as Record<string, unknown>;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Syntax error in JSON payload';
     return {
       parsedDoc: null,
       diagnostics: {
-        parseError: err.message || 'Syntax error in JSON payload',
-        schemaValidation: { valid: false, errors: [`Syntax Error: ${err.message || 'Invalid JSON'}`] },
+        parseError: msg || 'Syntax error in JSON payload',
+        schemaValidation: { valid: false, errors: [`Syntax Error: ${msg || 'Invalid JSON'}`] },
         trackCount: 0,
         sequenceCount: 0,
         assetCount: 0,
@@ -76,8 +77,8 @@ export function analyzeVideoIRJson(rawJson: string): {
   }
 
   const schemaValidation = VideoIRSchemaValidator.validate(parsed);
-  const tracks = Array.isArray(parsed?.tracks) ? parsed.tracks : [];
-  const assetsObj = parsed?.assets && typeof parsed.assets === 'object' ? parsed.assets : {};
+  const tracks = Array.isArray(parsed?.tracks) ? (parsed.tracks as Array<Record<string, unknown>>) : [];
+  const assetsObj = parsed?.assets && typeof parsed.assets === 'object' ? (parsed.assets as Record<string, unknown>) : {};
   const assetIds = new Set(Object.keys(assetsObj));
 
   const sequenceIds = new Set<string>();
@@ -94,14 +95,14 @@ export function analyzeVideoIRJson(rawJson: string): {
 
   for (const track of tracks) {
     if (Array.isArray(track?.modifiers)) {
-      for (const mod of track.modifiers) {
+      for (const mod of track.modifiers as Array<{ type?: string }>) {
         modifierCount++;
         if (mod?.type && !registry.get(mod.type)) {
           unregisteredSet.add(mod.type);
         }
       }
     }
-    const seqs = Array.isArray(track?.sequences) ? track.sequences : [];
+    const seqs = Array.isArray(track?.sequences) ? (track.sequences as Array<Record<string, unknown>>) : [];
     for (const seq of seqs) {
       sequenceCount++;
       if (typeof seq?.id === 'string') {
@@ -111,10 +112,11 @@ export function analyzeVideoIRJson(rawJson: string): {
   }
 
   for (const track of tracks) {
-    const seqs = Array.isArray(track?.sequences) ? track.sequences : [];
+    const seqs = Array.isArray(track?.sequences) ? (track.sequences as Array<Record<string, unknown>>) : [];
     for (const seq of seqs) {
-      const seqId = seq?.id || 'unknown';
-      const refId = seq?.time?.start?.referenceId;
+      const seqId = typeof seq?.id === 'string' ? seq.id : 'unknown';
+      const timeObj = seq?.time as { start?: { referenceId?: string } } | undefined;
+      const refId = timeObj?.start?.referenceId;
       if (typeof refId === 'string' && refId.length > 0 && !sequenceIds.has(refId)) {
         danglingAnchors.push({ sequenceId: seqId, referenceId: refId });
       }
@@ -122,7 +124,7 @@ export function analyzeVideoIRJson(rawJson: string): {
         missingAssets.push({ sequenceId: seqId, assetId: seq.assetId });
       }
       if (Array.isArray(seq?.modifiers)) {
-        for (const mod of seq.modifiers) {
+        for (const mod of seq.modifiers as Array<{ type?: string }>) {
           modifierCount++;
           if (mod?.type && !registry.get(mod.type)) {
             unregisteredSet.add(mod.type);
@@ -133,7 +135,7 @@ export function analyzeVideoIRJson(rawJson: string): {
   }
 
   return {
-    parsedDoc: parsed as VideoIRDocument,
+    parsedDoc: parsed as unknown as VideoIRDocument,
     diagnostics: {
       parseError: null,
       schemaValidation,

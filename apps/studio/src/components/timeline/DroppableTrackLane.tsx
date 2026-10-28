@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import type { StudioTrack } from '../../lib/ir/studioTypes';
 
 export interface DroppableTrackLaneProps {
-  track: any;
+  track: StudioTrack;
   isLocked: boolean;
   isInvalidDrop?: boolean;
   children: React.ReactNode;

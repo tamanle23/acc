@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '@acc/ir';
+import type { VideoIRDocument, IRSequence, IRTrack } from '@acc/ir';
 
 export class MoveSequenceCommand implements ICommand {
   public readonly id: string;
@@ -25,7 +25,7 @@ export class MoveSequenceCommand implements ICommand {
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
-    let sourceTrack: any = null;
+    let sourceTrack: IRTrack | null = null;
     let seqIndex = -1;
     let sequenceToMove: IRSequence | null = null;
 
@@ -107,7 +107,7 @@ export class MoveSequenceCommand implements ICommand {
 
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
-    let currentTrack: any = null;
+    let currentTrack: IRTrack | null = null;
     let seqIndex = -1;
     let sequenceToRestore: IRSequence | null = null;
 

@@ -1,5 +1,5 @@
 import type { ICommand } from './ICommand';
-import type { VideoIRDocument, IRSequence } from '@acc/ir';
+import type { VideoIRDocument, IRSequence, IRTrack } from '@acc/ir';
 
 export interface DisplacedClipRecord {
   sequenceId: string;
@@ -41,7 +41,7 @@ export class RippleMoveSequenceCommand implements ICommand {
   public execute(doc: VideoIRDocument): VideoIRDocument {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
-    let sourceTrack: any = null;
+    let sourceTrack: IRTrack | null = null;
     let seqIndex = -1;
     let sequenceToMove: IRSequence | null = null;
 
@@ -136,7 +136,7 @@ export class RippleMoveSequenceCommand implements ICommand {
     targetTrack.sequences.push(sequenceToMove);
 
     // Sort target track sequences by start frame
-    targetTrack.sequences.sort((a: any, b: any) => {
+    targetTrack.sequences.sort((a: IRSequence, b: IRSequence) => {
       const aStart = typeof a.time.start === 'number' ? a.time.start : a.time.start?.offsetFrames ?? 0;
       const bStart = typeof b.time.start === 'number' ? b.time.start : b.time.start?.offsetFrames ?? 0;
       return aStart - bStart;
@@ -182,7 +182,7 @@ export class RippleMoveSequenceCommand implements ICommand {
     const copy = JSON.parse(JSON.stringify(doc)) as VideoIRDocument;
 
     // 1. Find moved sequence on current target track
-    let currentTrack: any = null;
+    let currentTrack: IRTrack | null = null;
     let seqIndex = -1;
     let sequenceToRestore: IRSequence | null = null;
 
@@ -205,7 +205,7 @@ export class RippleMoveSequenceCommand implements ICommand {
 
     // 3. Restore displaced downstream clips back to original positions
     for (const record of this.displacedClips) {
-      const targetSeq = currentTrack.sequences.find((s: any) => s.id === record.sequenceId);
+      const targetSeq = currentTrack.sequences.find((s: IRSequence) => s.id === record.sequenceId);
       if (targetSeq) {
         if (typeof targetSeq.time.start === 'number') {
           targetSeq.time.start = record.originalStart;
@@ -230,7 +230,7 @@ export class RippleMoveSequenceCommand implements ICommand {
     }
 
     sourceTrack.sequences.push(sequenceToRestore);
-    sourceTrack.sequences.sort((a: any, b: any) => {
+    sourceTrack.sequences.sort((a: IRSequence, b: IRSequence) => {
       const aStart = typeof a.time.start === 'number' ? a.time.start : a.time.start?.offsetFrames ?? 0;
       const bStart = typeof b.time.start === 'number' ? b.time.start : b.time.start?.offsetFrames ?? 0;
       return aStart - bStart;

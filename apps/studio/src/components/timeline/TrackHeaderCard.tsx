@@ -10,9 +10,10 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { IRStateManager } from '../../lib/ir/irState';
+import type { StudioTrack } from '../../lib/ir/studioTypes';
 
 export interface TrackHeaderCardProps {
-  track: any;
+  track: StudioTrack;
   isLocked: boolean;
   isMuted: boolean;
   canMoveUp: boolean;

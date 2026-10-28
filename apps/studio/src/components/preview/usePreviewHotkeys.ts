@@ -4,7 +4,7 @@ import { IRStateManager } from '../../lib/ir/irState';
 export interface UsePreviewHotkeysOptions {
   selectedSeqId: string | null;
   editingCue: { sequenceId: string; cueIndex: number; text: string } | null;
-  setEditingCue: (cue: any) => void;
+  setEditingCue: (cue: { sequenceId: string; cueIndex: number; text: string } | null) => void;
   isSpacePressed: boolean;
   setIsSpacePressed: (pressed: boolean) => void;
   setVisionPassMode: (fn: (prev: 'composite' | 'depth' | 'normals' | 'alpha') => 'composite' | 'depth' | 'normals' | 'alpha') => void;

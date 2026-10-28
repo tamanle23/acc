@@ -16,9 +16,16 @@ import { ClipItem } from './ClipItem';
 import { ClipDragProxy } from './ClipDragProxy';
 import { TimelineSnapCalculator } from '../../lib/timeline/interaction/TimelineSnapCalculator';
 import { IRStateManager } from '../../lib/ir/irState';
+import {
+  getSequenceDurationFrames,
+  getSequenceStartFrame,
+  type StudioSequence,
+  type StudioTrack,
+} from '../../lib/ir/studioTypes';
+import type { ModifierNode } from '@acc/ir';
 
 export interface TimelineDomProps {
-  tracks: any[];
+  tracks: StudioTrack[];
   lockedTracks: Record<string, boolean>;
   mutedTracks: Record<string, boolean>;
   onToggleLock: (trackId: string) => void;
@@ -36,7 +43,7 @@ export interface TimelineDomProps {
   rippleEnabled: boolean;
   currentFrame: number;
   onActiveSnapGuidelineChange: (guideline: { frame: number; label?: string; isAbut?: boolean } | null) => void;
-  onHoveredClipChange: (clip: any) => void;
+  onHoveredClipChange: (clip: unknown) => void;
 }
 
 export function TimelineDom({
@@ -74,8 +81,8 @@ export function TimelineDom({
     targetTrackId?: string;
     isInvalidDrop?: boolean;
     snapLabel?: string | null;
-    activeSeq?: any;
-    activeTrack?: any;
+    activeSeq?: StudioSequence;
+    activeTrack?: StudioTrack;
   } | null>(null);
 
   const timelineSensors = useSensors(
@@ -107,15 +114,16 @@ export function TimelineDom({
     if (!data) return;
 
     if (data.type === 'clip') {
-      const seq = data.seq;
+      const seq = data.seq as StudioSequence;
       // Detect paired A/V linked sequence
       let pairedSeqId: string | null = null;
-      const avLink = seq.modifiers?.find((m: any) => m.type === 'editorial/av_link');
+      const avLink = seq.modifiers?.find((m: ModifierNode) => m.type === 'editorial/av_link');
       if (avLink && avLink.params?.enabled !== false && avLink.params?.linkedSequenceId) {
         pairedSeqId = avLink.params.linkedSequenceId as string;
       }
 
-      const initialStart = seq.startFrame ?? seq.timelineStartFrame ?? 0;
+      const initialStart = getSequenceStartFrame(seq);
+      const initialDuration = getSequenceDurationFrames(seq, 30);
       const sourceTrack = tracks.find((t) => t.id === data.trackId);
 
       setActiveDragState({
@@ -123,11 +131,11 @@ export function TimelineDom({
         seqId: seq.id,
         pairedSeqId,
         initialStartFrame: initialStart,
-        initialDurationFrames: seq.durationFrames,
+        initialDurationFrames: initialDuration,
         deltaFrames: 0,
         snappedStartFrame: initialStart,
-        sourceTrackId: data.trackId,
-        targetTrackId: data.trackId,
+        sourceTrackId: data.trackId as string,
+        targetTrackId: data.trackId as string,
         isInvalidDrop: false,
         snapLabel: null,
         activeSeq: seq,
@@ -135,19 +143,22 @@ export function TimelineDom({
       });
       IRStateManager.getInstance().setSelectedSequenceId(seq.id);
     } else if (data.type === 'trim') {
+      const seq = data.seq as StudioSequence;
+      const initialStart = getSequenceStartFrame(seq);
+      const initialDuration = getSequenceDurationFrames(seq, 30);
       setActiveDragState({
         type: 'trim',
-        handle: data.handle,
-        seqId: data.seq.id,
-        initialStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
-        initialDurationFrames: data.seq.durationFrames,
+        handle: data.handle as 'start' | 'end',
+        seqId: seq.id,
+        initialStartFrame: initialStart,
+        initialDurationFrames: initialDuration,
         deltaFrames: 0,
-        snappedStartFrame: data.seq.startFrame ?? data.seq.timelineStartFrame ?? 0,
+        snappedStartFrame: initialStart,
         isInvalidDrop: false,
         snapLabel: null,
-        activeSeq: data.seq,
+        activeSeq: seq,
       });
-      IRStateManager.getInstance().setSelectedSequenceId(data.seq.id);
+      IRStateManager.getInstance().setSelectedSequenceId(seq.id);
     }
   };
 
@@ -159,7 +170,7 @@ export function TimelineDom({
     }
 
     const deltaX = e.delta.x;
-    const overTrackIdFromEvent = (e.over?.data?.current as any)?.trackId;
+    const overTrackIdFromEvent = (e.over?.data?.current as { trackId?: string } | undefined)?.trackId;
 
     dragRafRef.current = requestAnimationFrame(() => {
       dragRafRef.current = null;
@@ -226,7 +237,9 @@ export function TimelineDom({
           for (const track of tracks) {
             for (const s of track.sequences) {
               if (s.id !== activeDragState.seqId) {
-                snapPoints.push(s.startFrame, s.startFrame + s.durationFrames);
+                const sStart = getSequenceStartFrame(s);
+                const sDur = getSequenceDurationFrames(s, 30);
+                snapPoints.push(sStart, sStart + sDur);
               }
             }
           }
@@ -274,7 +287,7 @@ export function TimelineDom({
 
     if (activeDragState.type === 'clip') {
       const targetTrackId =
-        (e.over?.data?.current as any)?.trackId || activeDragState.targetTrackId;
+        (e.over?.data?.current as { trackId?: string } | undefined)?.trackId || activeDragState.targetTrackId;
       const targetStartFrame = Math.max(
         0,
         activeDragState.snappedStartFrame ?? (activeDragState.initialStartFrame + activeDragState.deltaFrames)
@@ -316,16 +329,17 @@ export function TimelineDom({
     setActiveDragState(null);
   };
 
-  const handleClipClick = (seq: any, e: React.MouseEvent) => {
+  const handleClipClick = (seq: StudioSequence, e: React.MouseEvent) => {
     e.stopPropagation();
     if (activeTool === 'razor') {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickPx = e.clientX - rect.left;
-      const sStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
+      const sStart = getSequenceStartFrame(seq);
+      const sDuration = getSequenceDurationFrames(seq, 30);
       const clickedFrame = Math.max(
         sStart + 1,
         Math.min(
-          sStart + seq.durationFrames - 1,
+          sStart + sDuration - 1,
           sStart + Math.round(clickPx / pixelsPerFrame)
         )
       );
@@ -335,7 +349,7 @@ export function TimelineDom({
     }
   };
 
-  const getTrackBadgeStyle = (track: any) => {
+  const getTrackBadgeStyle = (track: StudioTrack) => {
     if (track.type === 'audio') return 'bg-emerald-950/85 border-emerald-500/50 text-emerald-200 shadow-emerald-950/30';
     if (track.id.includes('v2') || track.id.includes('depth') || track.id.includes('vfx')) return 'bg-amber-950/85 border-amber-500/50 text-amber-200 shadow-amber-950/30';
     if (track.type === 'overlay' || track.type === 'timed_text' || track.id.includes('text') || track.id.includes('sub')) return 'bg-violet-950/85 border-violet-500/50 text-violet-200 shadow-violet-950/30';
@@ -366,17 +380,17 @@ export function TimelineDom({
         }}
         className="flex flex-col gap-1 relative"
       >
-        {tracks.map((track: any, idx: number) => {
+        {tracks.map((track: StudioTrack, idx: number) => {
           const isLocked = lockedTracks[track.id] || false;
           const isMuted = mutedTracks[track.id] || false;
           const canMoveUp = idx > 0;
           const canMoveDown = idx < tracks.length - 1;
 
           // Horizontal sequence virtualization (Preserve dragged clip & paired A/V clip)
-          const visibleSequences = track.sequences.filter((seq: any) => {
+          const visibleSequences = track.sequences.filter((seq: StudioSequence) => {
             if (activeDragState?.seqId === seq.id || activeDragState?.pairedSeqId === seq.id) return true;
-            const seqStart = (seq as any).startFrame ?? (seq as any).timelineStartFrame ?? 0;
-            const seqEnd = seqStart + seq.durationFrames;
+            const seqStart = getSequenceStartFrame(seq);
+            const seqEnd = seqStart + getSequenceDurationFrames(seq, 30);
             return seqEnd >= visibleStartFrame && seqStart <= visibleEndFrame;
           });
 
@@ -410,7 +424,7 @@ export function TimelineDom({
                   isLocked={isLocked}
                   isInvalidDrop={isInvalidDropOverThisTrack}
                 >
-                  {visibleSequences.map((seq: any) => (
+                  {visibleSequences.map((seq: StudioSequence) => (
                     <ClipItem
                       key={seq.id}
                       seq={seq}
