@@ -79,6 +79,8 @@ export function TrackHeaderCard({
         <Button
           variant="ghost"
           size="icon"
+          aria-pressed={isLocked}
+          aria-label={isLocked ? 'Unlock Track' : 'Lock Track'}
           onClick={(e) => {
             e.stopPropagation();
             onToggleLock(track.id);
@@ -96,6 +98,8 @@ export function TrackHeaderCard({
         <Button
           variant="ghost"
           size="icon"
+          aria-pressed={isMuted}
+          aria-label={isMuted ? 'Unmute Track' : 'Mute Track'}
           onClick={(e) => {
             e.stopPropagation();
             onToggleMute(track.id);

@@ -66,6 +66,8 @@ export function Toolbar({
           <Button
             variant={activeTool === 'select' ? 'secondary' : 'ghost'}
             size="icon"
+            aria-label="Selection Tool (V)"
+            aria-pressed={activeTool === 'select'}
             onClick={() => onSetActiveTool('select')}
             className={`h-7 w-7 transition-colors ${
               activeTool === 'select'
@@ -81,6 +83,8 @@ export function Toolbar({
           <Button
             variant={activeTool === 'razor' ? 'default' : 'ghost'}
             size="icon"
+            aria-label="Razor Split Tool (C)"
+            aria-pressed={activeTool === 'razor'}
             onClick={() => {
               onSetActiveTool(activeTool === 'razor' ? 'select' : 'razor');
             }}
@@ -98,6 +102,8 @@ export function Toolbar({
           <Button
             variant={activeTool === 'hand' ? 'secondary' : 'ghost'}
             size="icon"
+            aria-label="Hand Panning Tool (H)"
+            aria-pressed={activeTool === 'hand'}
             onClick={() => onSetActiveTool('hand')}
             className={`h-7 w-7 transition-colors ${
               activeTool === 'hand'
@@ -116,6 +122,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Shuttle Rewind (J)"
             onClick={shuttle.shuttleReverse}
             className={`h-7 w-7 transition-colors ${
               shuttle.speed < 0
@@ -131,6 +138,8 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label={isPlaying ? 'Pause Timeline' : 'Play Timeline'}
+            aria-pressed={isPlaying}
             onClick={onTogglePlay}
             className={`h-7 w-7 transition-colors ${
               isPlaying
@@ -146,6 +155,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Shuttle Forward (L)"
             onClick={shuttle.shuttleForward}
             className={`h-7 w-7 transition-colors ${
               shuttle.speed > 0
@@ -218,6 +228,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
+            aria-label="Zoom to fit 100%"
             onClick={() => onSetZoomScale(1.0)}
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
           >

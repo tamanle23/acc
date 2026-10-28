@@ -9,6 +9,13 @@ import { Timeline } from './components/Timeline';
 import { ExportProgressModal } from './components/ExportProgressModal';
 import { SettingsModal } from './components/SettingsModal';
 import { TooltipProvider } from './components/ui';
+import { Toaster } from './components/ui/sonner';
+import { toast } from 'sonner';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from './components/ui/resizable';
 import { IRStateManager } from './lib/ir/irState';
 import { useIRState } from './lib/ir/useStudioStore';
 import { getErrorMessage } from './lib/ir/studioTypes';
@@ -44,22 +51,12 @@ function StudioWorkspace() {
   const height = irState.doc.meta.canvasSize.h || 1080;
 
   // Global Workspace Hotkeys: [ (left drawer), ] (right inspector), \ (zen mode)
-  // J, K, L, Space, and Arrow keys are handled with discrete frame accuracy by useShuttleEngine
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement).isContentEditable
-      ) {
-        return;
-      }
-
-      if (e.key === '[') {
-        setIsLeftOpen((prev) => !prev);
-      } else if (e.key === ']') {
-        setIsRightOpen((prev) => !prev);
-      } else if (e.key === '\\') {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) return;
+      if (e.key === '[') setIsLeftOpen((prev) => !prev);
+      else if (e.key === ']') setIsRightOpen((prev) => !prev);
+      else if (e.key === '\\') {
         setIsLeftOpen((prevLeft) => {
           const anyOpen = prevLeft || isRightOpen;
           setIsRightOpen(!anyOpen);
@@ -67,7 +64,6 @@ function StudioWorkspace() {
         });
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRightOpen]);
@@ -147,13 +143,21 @@ function StudioWorkspace() {
         if (result.buffer) {
           downloadExportedMp4(result.buffer);
         }
-        alert(
-          `Client-Side MP4 Export Completed!\nFile Size: ${result.fileSizeBytes} bytes\nFrames: ${result.framesConsumed}`
-        );
+        toast.success('MP4 Export Completed!', {
+          description: `Rendered ${result.framesConsumed} frames (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
+          action: result.buffer
+            ? {
+                label: 'Download Again',
+                onClick: () => downloadExportedMp4(result.buffer!),
+              }
+            : undefined,
+        });
       }
     } catch (err: unknown) {
       console.error('Client export error:', err);
-      alert(`Client export failed: ${getErrorMessage(err)}`);
+      toast.error('Client Export Failed', {
+        description: getErrorMessage(err),
+      });
     } finally {
       exportAbortControllerRef.current = null;
       setIsExporting(false);
@@ -198,62 +202,72 @@ function StudioWorkspace() {
           </div>
         )}
 
-        {/* 2. Main Middle Workspace (LeftSidebar, Preview, RightSidebar) */}
-        <div className="flex flex-1 overflow-hidden border-b border-glass-border">
-          <LeftSidebar
-            isOpen={isLeftOpen}
-            onToggle={() => setIsLeftOpen(!isLeftOpen)}
-            activeNav={activeNav}
-            setActiveNav={setActiveNav}
-            onInsertPreset={(preset) => {
-              const seq = preset.createSequence({
-                startFrame: currentFrame,
-                normX: 0.5,
-                normY: 0.5,
-              });
-              IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
-                trackTypeFallback: preset.targetTrackType,
-                trackNameFallback: preset.targetTrackName,
-              });
-              setIsRightOpen(true);
-            }}
-          />
+        {/* 2. Main Middle Workspace & Timeline in Resizable Vertical Layout */}
+        <ResizablePanelGroup direction="vertical" className="flex-1">
+          <ResizablePanel defaultSize={62} minSize={30}>
+            <div className="flex h-full w-full overflow-hidden">
+              <LeftSidebar
+                isOpen={isLeftOpen}
+                onToggle={() => setIsLeftOpen(!isLeftOpen)}
+                activeNav={activeNav}
+                setActiveNav={setActiveNav}
+                onInsertPreset={(preset) => {
+                  const seq = preset.createSequence({
+                    startFrame: currentFrame,
+                    normX: 0.5,
+                    normY: 0.5,
+                  });
+                  IRStateManager.getInstance().addSequence(preset.targetTrackId, seq, {
+                    trackTypeFallback: preset.targetTrackType,
+                    trackNameFallback: preset.targetTrackName,
+                  });
+                  setIsRightOpen(true);
+                }}
+              />
 
-          <div className="flex-1 flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
-            <Preview
-              playhead={{
-                currentFrame,
-                totalFrames,
-                currentTime: currentFrame / fps,
-                fps,
-              }}
-              isPlaying={isPlaying}
-              onTogglePlay={handleTogglePlay}
-              onScrub={handleScrub}
-            />
+              <div className="flex-1 flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
+                <Preview
+                  playhead={{
+                    currentFrame,
+                    totalFrames,
+                    currentTime: currentFrame / fps,
+                    fps,
+                  }}
+                  isPlaying={isPlaying}
+                  onTogglePlay={handleTogglePlay}
+                  onScrub={handleScrub}
+                />
 
-            <ExportProgressModal
-              isExporting={isExporting}
-              exportProgress={exportProgress}
-              onCancelExport={handleCancelExport}
-            />
-          </div>
+                <ExportProgressModal
+                  isExporting={isExporting}
+                  exportProgress={exportProgress}
+                  onCancelExport={handleCancelExport}
+                />
+              </div>
 
-          {isRightOpen && <RightSidebar />}
-        </div>
+              {isRightOpen && <RightSidebar />}
+            </div>
+          </ResizablePanel>
 
-        {/* 3. Bottom Timeline Scrubber */}
-        <Timeline
-          playhead={{
-            currentFrame,
-            totalFrames,
-            fps,
-          }}
-          onScrub={handleScrub}
-          isPlaying={isPlaying}
-          onTogglePlay={handleTogglePlay}
-          shuttle={shuttle}
-        />
+          <ResizableHandle withHandle className="bg-border/60 hover:bg-accent-theme/60 transition-colors" />
+
+          {/* 3. Bottom Timeline Scrubber */}
+          <ResizablePanel defaultSize={38} minSize={20}>
+            <div className="h-full overflow-hidden">
+              <Timeline
+                playhead={{
+                  currentFrame,
+                  totalFrames,
+                  fps,
+                }}
+                onScrub={handleScrub}
+                isPlaying={isPlaying}
+                onTogglePlay={handleTogglePlay}
+                shuttle={shuttle}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
 
         {/* 4. Drag Overlay */}
         <DragOverlay dropAnimation={null}>
@@ -269,6 +283,7 @@ export default function App() {
     <ThemeProvider>
       <TooltipProvider>
         <StudioWorkspace />
+        <Toaster position="bottom-right" richColors />
       </TooltipProvider>
     </ThemeProvider>
   );

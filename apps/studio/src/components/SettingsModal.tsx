@@ -76,8 +76,9 @@ export function SettingsModal() {
               <button
                 type="button"
                 onClick={() => setTheme({ mode: 'dark' })}
+                aria-pressed={preferences.mode === 'dark'}
                 data-active={preferences.mode === 'dark'}
-                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer"
+                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden"
               >
                 <Moon className="w-3.5 h-3.5" />
                 Dark Obsidian (Default)
@@ -85,8 +86,9 @@ export function SettingsModal() {
               <button
                 type="button"
                 onClick={() => setTheme({ mode: 'light' })}
+                aria-pressed={preferences.mode === 'light'}
                 data-active={preferences.mode === 'light'}
-                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer"
+                className="glass-pill flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden"
               >
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
                 Light Frosted Acrylic
@@ -106,8 +108,9 @@ export function SettingsModal() {
                   key={style.id}
                   type="button"
                   onClick={() => setTheme({ glassStyle: style.id })}
+                  aria-pressed={preferences.glassStyle === style.id}
                   data-active={preferences.glassStyle === style.id}
-                  className="glass-pill p-2.5 rounded-lg text-left flex flex-col justify-between cursor-pointer"
+                  className="glass-pill p-2.5 rounded-lg text-left flex flex-col justify-between cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden"
                 >
                   <div className="font-semibold text-foreground flex items-center justify-between mb-1">
                     <span>{style.label}</span>
@@ -131,8 +134,9 @@ export function SettingsModal() {
                   key={blur.id}
                   type="button"
                   onClick={() => setTheme({ blurIntensity: blur.id })}
+                  aria-pressed={preferences.blurIntensity === blur.id}
                   data-active={preferences.blurIntensity === blur.id}
-                  className="glass-pill py-2 px-3 rounded-lg text-center cursor-pointer"
+                  className="glass-pill py-2 px-3 rounded-lg text-center cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden"
                 >
                   <div className="font-medium text-foreground">{blur.label}</div>
                   <div className="text-[10px] text-muted-foreground font-mono">{blur.px}</div>
@@ -152,8 +156,9 @@ export function SettingsModal() {
                   key={accent.id}
                   type="button"
                   onClick={() => setTheme({ accentColor: accent.id })}
+                  aria-pressed={preferences.accentColor === accent.id}
                   data-active={preferences.accentColor === accent.id}
-                  className="glass-pill group flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer"
+                  className="glass-pill group flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer focus-visible:ring-2 focus-visible:ring-accent-theme focus-visible:outline-hidden"
                 >
                   <span
                     className="w-3 h-3 rounded-full shadow-xs transition-transform group-hover:scale-110"

@@ -19,4 +19,8 @@ Multi-phase initiative to elevate `@acc/studio` (`apps/studio`) to enterprise-gr
   - Wrap `ClipItem` in `React.memo` and pass scoped primitive drag props from `TimelineDom.tsx` with `useCallback`-stabilized handlers so stationary clips do not re-render during 60Hz drag moves.
   - Modularize `LeftSidebar.tsx` (1,190 -> 396 lines) into `src/components/sidebar/` (`PresetThumbnails.tsx`, `SidebarCards.tsx`, `SidebarActivityRail.tsx`).
   - Modularize `ModifierControlStrategies.tsx` (1,130 -> 217 lines) into `src/components/inspector/strategies/` (`PrimitiveControlStrategies.tsx`, `RegionsArrayControlStrategy.tsx`, `CompositeGroupControlStrategies.tsx`).
-- **Phase 4 (Planned)**: Enterprise UX, Resizable Layout, Sonner Toasts, and `DESIGN.md` / `ROUTE.md` Specs
+- **Phase 4 (Executed)**: Enterprise UX, Resizable Layout, Sonner Toasts, and `DESIGN.md` / `ROUTE.md` Specs
+  - Author missing mandatory workspace specifications `apps/studio/DESIGN.md` (Liquid Glass tokens, color invariants) and `apps/studio/ROUTE.md` (topology, modal hierarchy, keybinding matrix).
+  - Integrate `ResizablePanelGroup`, `ResizablePanel`, and `ResizableHandle` in `App.tsx` for dynamic, accessible vertical resizing between the video viewport stage and timeline tracks.
+  - Replace blocking `window.alert(...)` modals with non-blocking, accessible `sonner` toast notifications (`toast.success` with "Download Again" action button, `toast.error`).
+  - Enforce WCAG 2.2 AA accessibility: add `aria-pressed`, `aria-label`, and `focus-visible:ring-2` across `SettingsModal.tsx`, `TrackHeaderCard.tsx`, `Toolbar.tsx`, and `ViewportControlBar.tsx`.

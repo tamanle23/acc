@@ -105,6 +105,8 @@ export const ViewportControlBar: React.FC<ViewportControlBarProps> = ({
             <button
               type="button"
               onClick={onTogglePlay}
+              aria-label={isPlaying ? 'Pause Viewport' : 'Play Viewport'}
+              aria-pressed={isPlaying}
               className={`glass-button px-2.5 py-1 rounded-full text-[10px] font-mono flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-95 border ${isPlaying
                 ? 'border-emerald-500/50 text-emerald-300 bg-emerald-950/40 hover:bg-emerald-950/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                 : 'border-glass-border text-foreground/80 hover:text-foreground'
