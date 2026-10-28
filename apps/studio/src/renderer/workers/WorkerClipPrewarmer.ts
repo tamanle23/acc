@@ -40,8 +40,8 @@ export class WorkerClipPrewarmer {
     const lookaheadFrames = Math.round(1.5 * fps);
     const windowEnd = currentFrame + lookaheadFrames;
 
-    // Prune memory outside [playhead - 2s, playhead + 3s]
-    this.memoryManager.pruneOutsideWindow(currentFrame, fps);
+    // Prune memory outside [playhead - 2s, playhead + 3s] with sequence-aware local frame boundaries
+    this.memoryManager.pruneOutsideWindow(currentFrame, fps, this.timeline);
 
     for (const track of this.timeline.tracks.values()) {
       if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
@@ -49,6 +49,10 @@ export class WorkerClipPrewarmer {
       }
 
       for (const seq of track.sequences) {
+        // Clear sequences that ended far in the past to prevent warmedSequences Set growth
+        if (seq.startFrame + (seq.durationFrames ?? 0) < currentFrame - 300) {
+          this.warmedSequences.delete(seq.id);
+        }
         // 1. Proactive 4-frame sequential lookahead for actively playing clips
         if (
           isPlaying &&

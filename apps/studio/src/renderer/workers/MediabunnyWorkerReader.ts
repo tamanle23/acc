@@ -10,6 +10,7 @@ import { ContentCacheRegistry } from '@acc/core-isomorphic';
 
 export interface MediabunnyReaderOptions {
   fastScrubFps?: number; // default: 30
+  assetId?: string;
 }
 
 /**
@@ -27,6 +28,7 @@ export interface MediabunnyReaderOptions {
  */
 export class MediabunnyWorkerReader {
   public readonly src: string;
+  public readonly assetId?: string;
   private input: Input | null = null;
   private videoTrack: InputVideoTrack | null = null;
   private canvasSink: CanvasSink | null = null;
@@ -53,6 +55,7 @@ export class MediabunnyWorkerReader {
 
   constructor(src: string, options: MediabunnyReaderOptions = {}) {
     this.src = src;
+    this.assetId = options.assetId;
     this.fastScrubThrottleMs = 1000 / (options.fastScrubFps ?? 30);
   }
 
@@ -68,7 +71,13 @@ export class MediabunnyWorkerReader {
         // Zero-copy OPFS / cached Blob streaming resolution
         try {
           const cache = ContentCacheRegistry.get();
-          const cachedBlob = await cache.get(this.src);
+          let cachedBlob: Blob | null = null;
+          if (this.assetId) {
+            cachedBlob = await cache.get(this.assetId);
+          }
+          if (!cachedBlob && this.src) {
+            cachedBlob = await cache.get(this.src);
+          }
           if (cachedBlob) {
             source = new BlobSource(cachedBlob);
           }
@@ -92,8 +101,8 @@ export class MediabunnyWorkerReader {
         this.width = (await track.getDisplayWidth().catch(() => 1920)) || 1920;
         this.height = (await track.getDisplayHeight().catch(() => 1080)) || 1080;
 
-        // Instant CanvasSink instantiation without network packet scanning
-        this.canvasSink = new CanvasSink(track);
+        // Bounded CanvasSink pool to eliminate uncollected OffscreenCanvas allocations
+        this.canvasSink = new CanvasSink(track, { poolSize: 2 });
         this.isInitialized = true;
         this.isInitializing = false;
 
@@ -222,6 +231,9 @@ export class MediabunnyWorkerReader {
       clearTimeout(this.scrubIdleTimer);
       this.scrubIdleTimer = null;
     }
+
+    this.inFlightRequests.clear();
+    this.activeDecodes = 0;
 
     if (this.input) {
       try {

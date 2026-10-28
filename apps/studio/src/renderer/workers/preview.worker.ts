@@ -128,28 +128,41 @@ function renderCurrentFrame(
     if (!reader) continue;
 
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
-    const cachedBmp = memoryManager.get(seq.assetId, localFrame);
-    if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
-      safeSetTexture(seq.assetId, cachedBmp);
-    } else {
-      const assetId = seq.assetId;
-      reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
-        if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-          if (isPlaying) {
-            // Sequential playback: mark as single-use transient frame
+    if (isPlaying) {
+      // 1. Sequential Playback Path:
+      // Consume frame from lookahead memory manager so it does not linger in memory
+      const cachedBmp = memoryManager.take(seq.assetId, localFrame);
+      if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
+        (cachedBmp as any)._isTransient = true;
+        safeSetTexture(seq.assetId, cachedBmp);
+      } else {
+        const assetId = seq.assetId;
+        reader.requestFrame(localFrame, currentFps, false).then((bmp) => {
+          if (bmp && (bmp.width === undefined || bmp.width > 0)) {
             (bmp as any)._isTransient = true;
             safeSetTexture(assetId, bmp);
-          } else {
-            // Scrubbing/idle: store in strict LRU scrub cache
+          }
+        });
+      }
+    } else {
+      // 2. Scrubbing / Paused Path:
+      // Cache in strict LRU scrub cache
+      const cachedBmp = memoryManager.get(seq.assetId, localFrame);
+      if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
+        safeSetTexture(seq.assetId, cachedBmp);
+      } else {
+        const assetId = seq.assetId;
+        reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
+          if (bmp && (bmp.width === undefined || bmp.width > 0)) {
             memoryManager.set(assetId, localFrame, bmp);
             safeSetTexture(assetId, bmp);
+            if (!isPlaying && currentFrame === frame) {
+              texturesDirty = true;
+              renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
+            }
           }
-          if (!isPlaying && currentFrame === frame) {
-            texturesDirty = true;
-            renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
-          }
-        }
-      });
+        });
+      }
     }
   }
 
@@ -295,7 +308,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
 
     if (isVideo) {
       if (!videoReaders.has(id)) {
-        const reader = new MediabunnyWorkerReader(def.src);
+        const reader = new MediabunnyWorkerReader(def.src, { assetId: id });
         videoReaders.set(id, reader);
         reader.init().catch(() => {});
       }
@@ -311,7 +324,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
         const resolveBlob = async (): Promise<Blob | null> => {
           try {
             const cache = ContentCacheRegistry.get();
-            const cached = await cache.get(url);
+            const cached = (await cache.get(assetId)) || (await cache.get(url));
             if (cached) return cached;
           } catch {}
           if (typeof fetch === 'function') {
@@ -320,7 +333,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
             // Store to cache asynchronously
             try {
               const cache = ContentCacheRegistry.get();
-              cache.set(url, blob).catch(() => {});
+              cache.set(assetId, blob).catch(() => {});
             } catch {}
             return blob;
           }

@@ -11,7 +11,7 @@ import {
 } from '@acc/ir';
 import { VisionEngineRegistry } from '@acc/core-isomorphic';
 import type {
-  SidecarWorkerMessage,
+  WorkerMessage,
   WorkerResponse,
 } from './SidecarTypes';
 
@@ -21,7 +21,7 @@ bootstrapCoreWeb();
 const registry = registerCoreModifierPlugins(ModifierPluginRegistry.createIsolated());
 const canceledTaskIds = new Set<string>();
 
-self.onmessage = async (event: MessageEvent<SidecarWorkerMessage>) => {
+self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const message = event.data;
   if (!message || !message.type) return;
 

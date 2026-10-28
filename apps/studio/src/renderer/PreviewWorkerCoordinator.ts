@@ -9,7 +9,7 @@ import {
 import { UniversalLogger as Logger } from '@acc/core-isomorphic';
 import type {
   ExecuteModifierPayload,
-  SidecarWorkerMessage,
+  WorkerMessage,
   WorkerResponse,
 } from './SidecarTypes';
 
@@ -90,7 +90,7 @@ export class PreviewWorkerCoordinator {
 
   public warmup(): void {
     if (this.worker && !this.isWarmedUp) {
-      this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+      this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
     }
   }
 
@@ -100,7 +100,7 @@ export class PreviewWorkerCoordinator {
       (window as any).requestIdleCallback(
         () => {
           if (this.worker && !this.isWarmedUp) {
-            this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+            this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
           }
         },
         { timeout: 1000 }
@@ -108,7 +108,7 @@ export class PreviewWorkerCoordinator {
     } else {
       setTimeout(() => {
         if (this.worker && !this.isWarmedUp) {
-          this.worker.postMessage({ type: 'WARMUP' } satisfies SidecarWorkerMessage);
+          this.worker.postMessage({ type: 'WARMUP' } satisfies WorkerMessage);
         }
       }, 100);
     }
@@ -253,7 +253,7 @@ export class PreviewWorkerCoordinator {
     this.worker.postMessage({
       type: 'EXECUTE_MODIFIER',
       payload: nextPayload,
-    } satisfies SidecarWorkerMessage);
+    } satisfies WorkerMessage);
   }
 
   /**
@@ -272,7 +272,7 @@ export class PreviewWorkerCoordinator {
             type: 'CANCEL_TASK',
             taskId,
             targetId,
-          } satisfies SidecarWorkerMessage);
+          } satisfies WorkerMessage);
         }
         this.activeTasks.delete(taskId);
         task.resolve();
@@ -382,7 +382,7 @@ export class PreviewWorkerCoordinator {
     this.completedTaskKeys.clear();
     this.isProcessing = false;
     if (this.worker) {
-      this.worker.postMessage({ type: 'RESET' } satisfies SidecarWorkerMessage);
+      this.worker.postMessage({ type: 'RESET' } satisfies WorkerMessage);
     }
   }
 

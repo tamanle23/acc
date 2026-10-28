@@ -20,3 +20,4 @@
 | 360 | [OPFS Cache Strategy Files & Folders Debugger UI](./360_opfs_cache_strategy_files_and_folders_debugger_ui.md) | Completed |
 | 360 | [Document Workflow Orchestration Engine Architecture Analysis](./360_document_workflow_orchestration_engine_analysis.md) | Completed |
 | 361 | [Elimination of In-Memory Texture Caches & Native Media Buffer Leaks](./361_eliminate_asset_texture_cache_memory_and_native_buffer_leaks.md) | Completed |
+| 362 | [Eliminate Mediabunny CanvasSink and Playback Native Buffer Leaks](./362_eliminate_mediabunny_canvas_sink_and_playback_buffer_leaks.md) | Completed |

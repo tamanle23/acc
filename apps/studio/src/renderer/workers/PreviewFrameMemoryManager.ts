@@ -24,7 +24,7 @@ export class PreviewFrameMemoryManager {
   // Staged disposal queue: retained for defensive compatibility
   private pendingDisposal: ImageBitmap[] = [];
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): PreviewFrameMemoryManager {
     if (!PreviewFrameMemoryManager.instance) {
@@ -70,9 +70,56 @@ export class PreviewFrameMemoryManager {
 
   /**
    * Enforces window-bounded eviction: discard frames outside [playhead - 2s, playhead + 3s].
+   * When a timeline is provided, resolves clip-local frame boundaries per active sequence.
    * All discarded bitmaps are synchronously and immediately closed.
    */
-  public pruneOutsideWindow(playheadFrame: number, fps: number): void {
+  public pruneOutsideWindow(playheadFrame: number, fps: number, timeline?: any): void {
+    if (timeline && timeline.tracks) {
+      // Build active local frame windows per assetId
+      const activeAssetWindows = new Map<string, Array<{ minLocal: number; maxLocal: number }>>();
+      const windowLookaheadFrames = Math.round(3 * fps);
+      const windowLookbehindFrames = Math.round(2 * fps);
+
+      for (const track of timeline.tracks.values()) {
+        if (track.type !== 'video' && track.type !== 'image' && track.type !== 'overlay') {
+          continue;
+        }
+        for (const seq of track.sequences) {
+          if (!seq.assetId) continue;
+          const seqStart = seq.startFrame ?? 0;
+          const seqEnd = seqStart + (seq.durationFrames ?? 0);
+
+          // Check if sequence intersects [playhead - 2s, playhead + 3s]
+          if (seqEnd >= playheadFrame - windowLookbehindFrames && seqStart <= playheadFrame + windowLookaheadFrames) {
+            const minLocal = Math.max(0, playheadFrame - seqStart - windowLookbehindFrames);
+            const maxLocal = playheadFrame - seqStart + windowLookaheadFrames;
+
+            const existing = activeAssetWindows.get(seq.assetId) || [];
+            existing.push({ minLocal, maxLocal });
+            activeAssetWindows.set(seq.assetId, existing);
+          }
+        }
+      }
+
+      for (const [key, entry] of this.frameMap) {
+        const windows = activeAssetWindows.get(entry.assetId);
+        if (!windows || windows.length === 0) {
+          // Asset is no longer anywhere near the playhead - prune immediately
+          this.frameMap.delete(key);
+          this.closeBitmap(entry.bitmap);
+          continue;
+        }
+
+        // Check if entry.frame falls within at least one valid local window
+        const inWindow = windows.some((w) => entry.frame >= w.minLocal && entry.frame <= w.maxLocal);
+        if (!inWindow) {
+          this.frameMap.delete(key);
+          this.closeBitmap(entry.bitmap);
+        }
+      }
+      return;
+    }
+
     const minFrame = Math.max(0, playheadFrame - Math.round(2 * fps));
     const maxFrame = playheadFrame + Math.round(3 * fps);
 
@@ -82,6 +129,20 @@ export class PreviewFrameMemoryManager {
         this.closeBitmap(entry.bitmap);
       }
     }
+  }
+
+  /**
+   * Removes and returns a frame without closing it, transferring ownership to the caller
+   * (e.g. for marking as single-use transient playback frame).
+   */
+  public take(assetId: string, frame: number): ImageBitmap | null {
+    const key = `${assetId}:${frame}`;
+    const entry = this.frameMap.get(key);
+    if (entry) {
+      this.frameMap.delete(key);
+      return entry.bitmap;
+    }
+    return null;
   }
 
   private evictLeastRecentlyUsed(): void {

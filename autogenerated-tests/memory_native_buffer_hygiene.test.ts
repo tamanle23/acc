@@ -364,4 +364,82 @@ describe('Iteration 44: Native Media Buffer Hygiene & Memory Management Suite', 
     expect(closedList.length).toBe(1);
     expect(closedList[0]).toBe(1); // Oldest evicted entry closed!
   });
+
+  it('Pillar 6: PreviewFrameMemoryManager.take() transfers ownership for single-use playback transience', () => {
+    const memoryManager = PreviewFrameMemoryManager.getInstance();
+    let closed = false;
+    const bmp = {
+      width: 1920,
+      height: 1080,
+      close: () => {
+        closed = true;
+      },
+    } as unknown as ImageBitmap;
+
+    memoryManager.set('clip-vid-1', 10, bmp);
+    expect(memoryManager.size()).toBe(1);
+
+    // Take frame: must return bitmap, remove from cache, and NOT close it yet
+    const taken = memoryManager.take('clip-vid-1', 10);
+    expect(taken).toBe(bmp);
+    expect(memoryManager.size()).toBe(0);
+    expect(closed).toBe(false);
+
+    // Mark transient as done during playback
+    (taken as any)._isTransient = true;
+    (taken as any).close();
+    expect(closed).toBe(true);
+  });
+
+  it('Pillar 7: pruneOutsideWindow resolves clip-local frames and timeline sequence boundaries accurately', () => {
+    const memoryManager = PreviewFrameMemoryManager.getInstance();
+    const closedFrames: number[] = [];
+
+    const makeBmp = (localFrame: number) => ({
+      width: 1920,
+      height: 1080,
+      close: () => {
+        closedFrames.push(localFrame);
+      },
+    } as unknown as ImageBitmap);
+
+    // Mock timeline with 2 video clips:
+    // Clip A: asset 'vid-A', global start 0, duration 100 (frames 0..100)
+    // Clip B: asset 'vid-B', global start 200, duration 100 (frames 200..300)
+    const mockTimeline = {
+      meta: { globalFps: 30, canvasSize: { w: 1920, h: 1080 } },
+      tracks: new Map([
+        [
+          'v1',
+          {
+            id: 'v1',
+            type: 'video',
+            sequences: [
+              { id: 'seq-A', assetId: 'vid-A', startFrame: 0, durationFrames: 100 },
+              { id: 'seq-B', assetId: 'vid-B', startFrame: 200, durationFrames: 100 },
+            ],
+          },
+        ],
+      ]),
+    };
+
+    // Staging frames:
+    // For vid-A (ended at 100): local frame 50
+    // For vid-B (starts at 200): local frame 0, local frame 10, local frame 90
+    memoryManager.set('vid-A', 50, makeBmp(50));
+    memoryManager.set('vid-B', 0, makeBmp(0));
+    memoryManager.set('vid-B', 10, makeBmp(10));
+    memoryManager.set('vid-B', 90, makeBmp(90));
+
+    // Playhead is now at global frame 210 (inside Clip B, local frame 10).
+    // Clip A is at [0..100], which is > 90 frames (3s) behind playhead (210 - 100 = 110 > 60).
+    // Vid-A frames must be pruned immediately!
+    // Vid-B local 0 and 10 are within [10 - 60, 10 + 90] = [0, 100].
+    memoryManager.pruneOutsideWindow(210, 30, mockTimeline);
+
+    expect(closedFrames).toContain(50); // vid-A frame 50 was closed!
+    expect(memoryManager.get('vid-A', 50)).toBeNull();
+    expect(memoryManager.get('vid-B', 0)).not.toBeNull();
+    expect(memoryManager.get('vid-B', 10)).not.toBeNull();
+  });
 });
