@@ -93,7 +93,17 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
       return new Uint8Array(ab);
     }
   }
-  return null;
+
+  try {
+    console.log("loadAssetBytes", assetPathOrUri);
+    const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
+    const ab = await blob.arrayBuffer();
+    const bytes = new Uint8Array(ab);
+    await cache.set(assetPathOrUri, blob);
+    return bytes;
+  } catch {
+    return null;
+  }
 }
 
 export async function checkExists(p: string): Promise<boolean> {
@@ -497,25 +507,37 @@ export async function resolveDepthMapData(
     if (cached) {
       const dm = await CanvasAssetLoader.loadImage(cached);
       drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
-      if (dm && typeof dm.close === 'function') {
-        try { dm.close(); } catch { }
-      }
       loadedDepth = true;
     }
   }
 
   // Check pre-computed cache candidates isomorphically
   if (!loadedDepth) {
-    const data = await loadAssetBytes(cacheKey);
-    if (data && data.length > 0) {
-      try {
-        const dm = await CanvasAssetLoader.loadImage(data);
-        drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
-        if (dm && typeof dm.close === 'function') {
-          try { dm.close(); } catch { }
-        }
-        loadedDepth = true;
-      } catch { }
+    const { storyRoot, depthCacheDir } = await getStoryRootAndCacheDir(imagePath);
+    const sceneDir = getPathDir(imagePath);
+    const baseName = getPathBase(imagePath, true);
+
+    const candidates = [
+      joinPaths(depthCacheDir, `${baseName}_depth_${depthStratName}_${fChecksum}.png`),
+      joinPaths(depthCacheDir, `${baseName}_depth_${fChecksum}.png`),
+      joinPaths(depthCacheDir, `${baseName}_depth.png`),
+      joinPaths(sceneDir, `${baseName}_depth_${depthStratName}_${fChecksum}.png`),
+      joinPaths(sceneDir, `${baseName}_depth_${fChecksum}.png`),
+      joinPaths(sceneDir, `${baseName}_depth.png`),
+      joinPaths(storyRoot, `${baseName}_depth_${fChecksum}.png`),
+      joinPaths(storyRoot, `${baseName}_depth.png`),
+    ];
+    for (const cand of candidates) {
+      const data = await loadAssetBytes(cand);
+      if (data && data.length > 0) {
+        try {
+          await cache.set(cacheKey, data, { mimeType: 'image/png' });
+          const dm = await CanvasAssetLoader.loadImage(data);
+          drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
+          loadedDepth = true;
+          break;
+        } catch { }
+      }
     }
   }
 
@@ -527,9 +549,6 @@ export async function resolveDepthMapData(
         await cache.set(cacheKey, depthBuffer, { mimeType: 'image/png' });
         const dm = await CanvasAssetLoader.loadImage(depthBuffer);
         drawImageCover(dCtx, dm, 0, 0, targetWidth, targetHeight);
-        if (dm && typeof dm.close === 'function') {
-          try { dm.close(); } catch { }
-        }
         loadedDepth = true;
       }
     } catch { }

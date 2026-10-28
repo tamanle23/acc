@@ -144,47 +144,26 @@ export class MediabunnyWorkerReader {
     }
 
     const execute = async (): Promise<ImageBitmap | null> => {
-      try {
-        if (!this.isInitialized) {
-          // Cold start protection: trigger initialization in background without blocking frame render
-          if (!this.isInitializing) {
-            this.init().catch(() => {});
-          }
+      if (!this.isInitialized) {
+        // Cold start protection: trigger initialization in background without blocking frame render
+        if (!this.isInitializing) {
+          this.init().catch(() => {});
+        }
+        return null;
+      }
+
+      const targetSec = Math.max(0, frame / (fps || this.fps || 30));
+
+      if (isScrubbing) {
+        // 2. Scrub throttling: enforce <= 30fps decode rate
+        const now = performance.now();
+        if (now - this.lastScrubRequestTime < this.fastScrubThrottleMs) {
           return null;
         }
+        this.lastScrubRequestTime = now;
 
-        const targetSec = Math.max(0, frame / (fps || this.fps || 30));
-
-        if (isScrubbing) {
-          // 2. Scrub throttling: enforce <= 30fps decode rate
-          const now = performance.now();
-          if (now - this.lastScrubRequestTime < this.fastScrubThrottleMs) {
-            return null;
-          }
-          this.lastScrubRequestTime = now;
-
-          // Concurrency check for scrubbing: if hardware decoder is busy, skip scrub frame
-          if (this.activeDecodes >= this.MAX_CONCURRENT_DECODES) {
-            return null;
-          }
-
-          this.activeDecodes++;
-          try {
-            const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
-            if (wrappedCanvas) {
-              return await this.toImageBitmap(wrappedCanvas);
-            }
-          } catch (err) {
-            // Graceful scrub skip
-          } finally {
-            this.activeDecodes = Math.max(0, this.activeDecodes - 1);
-          }
-          return null;
-        }
-
-        // 3. Exact frame decode with Concurrency Gate
+        // Concurrency check for scrubbing: if hardware decoder is busy, skip scrub frame
         if (this.activeDecodes >= this.MAX_CONCURRENT_DECODES) {
-          // Do not launch unthrottled concurrent decodes; return null to hold current frame
           return null;
         }
 
@@ -195,19 +174,36 @@ export class MediabunnyWorkerReader {
             return await this.toImageBitmap(wrappedCanvas);
           }
         } catch (err) {
-          // Decode error fallback
+          // Graceful scrub skip
         } finally {
           this.activeDecodes = Math.max(0, this.activeDecodes - 1);
+          this.inFlightRequests.delete(frame);
         }
         return null;
-      } catch (err) {
+      }
+
+      // 3. Exact frame decode with Concurrency Gate
+      if (this.activeDecodes >= this.MAX_CONCURRENT_DECODES) {
+        // Do not launch unthrottled concurrent decodes; return null to hold current frame
         return null;
       }
+
+      this.activeDecodes++;
+      try {
+        const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
+        if (wrappedCanvas) {
+          return await this.toImageBitmap(wrappedCanvas);
+        }
+      } catch (err) {
+        // Decode error fallback
+      } finally {
+        this.activeDecodes = Math.max(0, this.activeDecodes - 1);
+        this.inFlightRequests.delete(frame);
+      }
+      return null;
     };
 
-    const promise = execute().finally(() => {
-      this.inFlightRequests.delete(frame);
-    });
+    const promise = execute();
     this.inFlightRequests.set(frame, promise);
     return promise;
   }

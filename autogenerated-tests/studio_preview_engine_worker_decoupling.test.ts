@@ -26,11 +26,10 @@ describe('Studio IRPreviewEngine & Worker Decoupling Suite', () => {
     track1.sequences.push(seq1);
 
     mockTimeline = {
-      meta: { globalFps: 30, canvasSize: { w: 1920, h: 1080 } },
       tracks: new Map([['track-v1', track1]]),
       sequences: new Map([['seq-1', seq1]]),
       durationFrames: 90,
-    } as any;
+    };
   });
 
   it('instantiates IRPreviewEngine purely with zero side-effects and null sidecarCoordinator by default', () => {
