@@ -19,7 +19,6 @@ export interface OpfsFileDetails {
   node: OpfsTreeNode | OpfsEntryInfo;
   blob: Blob | null;
   text: string | null;
-  hexBytes: Uint8Array | null;
   companionMeta: CacheEntryMetadata | null;
   isLoading: boolean;
   error: string | null;

@@ -308,8 +308,8 @@ export function OpfsFilePreview({ details, onDeleteFile }: OpfsFilePreviewProps)
             )}
 
             {/* Binary Fallback */}
-            {!isImage && !isAudio && !isVideo && !isJson && !isText && details.hexBytes && (
-              <OpfsHexViewer bytes={details.hexBytes} />
+            {!isImage && !isAudio && !isVideo && !isJson && !isText && details.blob && (
+              <OpfsHexViewer blob={details.blob} />
             )}
           </div>
         )}
@@ -377,8 +377,8 @@ export function OpfsFilePreview({ details, onDeleteFile }: OpfsFilePreviewProps)
         {/* Hex Dump Tab */}
         {activeTab === 'hex' && (
           <div className="h-full">
-            {details.hexBytes ? (
-              <OpfsHexViewer bytes={details.hexBytes} />
+            {details.blob ? (
+              <OpfsHexViewer blob={details.blob} />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
                 No binary stream available

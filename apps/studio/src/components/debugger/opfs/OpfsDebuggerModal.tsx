@@ -106,7 +106,6 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
         node,
         blob: null,
         text: null,
-        hexBytes: null,
         companionMeta: node.metadata || null,
         isLoading: true,
         error: null,
@@ -121,9 +120,6 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
           return;
         }
 
-        const ab = await blob.arrayBuffer();
-        const hexBytes = new Uint8Array(ab);
-
         let text: string | null = null;
         const mime = node.mimeType || blob.type || '';
         const isTextual =
@@ -133,9 +129,15 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
           node.name.endsWith('.meta.json') ||
           node.name.endsWith('.txt');
 
-        if (isTextual && hexBytes.byteLength < 5 * 1024 * 1024) {
+        // Only read text for textual formats, sliced to at most 1 MB to prevent heap freeze
+        if (isTextual) {
           try {
-            text = new TextDecoder('utf-8').decode(hexBytes);
+            const maxTextBytes = 1024 * 1024;
+            const textSlice = blob.slice(0, maxTextBytes);
+            text = await textSlice.text();
+            if (blob.size > maxTextBytes) {
+              text += `\n\n--- [TRUNCATED] Showing first 1 MB of ${formatOpfsBytes(blob.size)} ---`;
+            }
           } catch {}
         }
 
@@ -143,7 +145,6 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
           node,
           blob,
           text,
-          hexBytes,
           companionMeta: node.metadata || null,
           isLoading: false,
           error: null,
@@ -151,7 +152,7 @@ export function OpfsDebuggerModal({ open, onOpenChange }: OpfsDebuggerModalProps
       } catch (err: any) {
         setFileDetails((prev) =>
           prev
-            ? { ...prev, isLoading: false, error: err?.message || 'Error reading stream' }
+            ? { ...prev, isLoading: false, error: err?.message || 'Error reading file' }
             : null
         );
       }
