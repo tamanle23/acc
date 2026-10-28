@@ -138,7 +138,7 @@ export function RightSidebar() {
   });
 
   return (
-    <aside className="w-[336px] glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-xs z-10 shrink-0">
+    <aside className="w-full glass-panel border-l border-glass-border flex flex-col h-full select-none shadow-xs z-10">
       {/* 1. Multi-Tier Interactive Breadcrumbs & Header */}
       <div className="p-2.5 border-b border-glass-border bg-glass-surface/40 flex flex-col gap-2">
         <div className="flex items-center justify-between">

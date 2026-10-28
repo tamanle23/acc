@@ -124,40 +124,25 @@ function StudioWorkspace() {
   const handleStartExport = async () => {
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
-
     try {
       setIsExporting(true);
       setExportProgress(0);
-
       const result = await ClientExportOrchestrator.exportToMp4({
-        irState,
-        width,
-        height,
-        fps,
-        totalFrames,
+        irState, width, height, fps, totalFrames,
         signal: abortController.signal,
         onProgress: setExportProgress,
       });
 
       if (!result.cancelled) {
-        if (result.buffer) {
-          downloadExportedMp4(result.buffer);
-        }
+        if (result.buffer) downloadExportedMp4(result.buffer);
         toast.success('MP4 Export Completed!', {
           description: `Rendered ${result.framesConsumed} frames (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
-          action: result.buffer
-            ? {
-              label: 'Download Again',
-              onClick: () => downloadExportedMp4(result.buffer!),
-            }
-            : undefined,
+          action: result.buffer ? { label: 'Download Again', onClick: () => downloadExportedMp4(result.buffer!) } : undefined,
         });
       }
     } catch (err: unknown) {
       console.error('Client export error:', err);
-      toast.error('Client Export Failed', {
-        description: getErrorMessage(err),
-      });
+      toast.error('Client Export Failed', { description: getErrorMessage(err) });
     } finally {
       exportAbortControllerRef.current = null;
       setIsExporting(false);
@@ -225,27 +210,41 @@ function StudioWorkspace() {
                 }}
               />
 
-              <div className="flex-1 flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
-                <Preview
-                  playhead={{
-                    currentFrame,
-                    totalFrames,
-                    currentTime: currentFrame / fps,
-                    fps,
-                  }}
-                  isPlaying={isPlaying}
-                  onTogglePlay={handleTogglePlay}
-                  onScrub={handleScrub}
-                />
+              {/* Horizontal Bento Splitting for Preview Canvas and Right Inspector */}
+              <ResizablePanelGroup direction="horizontal" className="flex-1 h-full">
+                <ResizablePanel defaultSize={isRightOpen ? 74 : 100} minSize={40}>
+                  <div className="h-full w-full flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
+                    <Preview
+                      playhead={{
+                        currentFrame,
+                        totalFrames,
+                        currentTime: currentFrame / fps,
+                        fps,
+                      }}
+                      isPlaying={isPlaying}
+                      onTogglePlay={handleTogglePlay}
+                      onScrub={handleScrub}
+                    />
 
-                <ExportProgressModal
-                  isExporting={isExporting}
-                  exportProgress={exportProgress}
-                  onCancelExport={handleCancelExport}
-                />
-              </div>
+                    <ExportProgressModal
+                      isExporting={isExporting}
+                      exportProgress={exportProgress}
+                      onCancelExport={handleCancelExport}
+                    />
+                  </div>
+                </ResizablePanel>
 
-              {isRightOpen && <RightSidebar />}
+                {isRightOpen && (
+                  <>
+                    <ResizableHandle withHandle className="bg-border/60 hover:bg-accent-theme/60 transition-colors" />
+                    <ResizablePanel defaultSize={26} minSize={18} maxSize={45}>
+                      <div className="h-full w-full overflow-hidden">
+                        <RightSidebar />
+                      </div>
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
             </div>
           </ResizablePanel>
 

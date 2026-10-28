@@ -3,13 +3,23 @@
 import { cn } from "cn"
 import * as ResizablePrimitive from "react-resizable-panels"
 
+interface ResizablePanelGroupProps extends Omit<ResizablePrimitive.GroupProps, "orientation"> {
+  direction?: "horizontal" | "vertical"
+  orientation?: "horizontal" | "vertical"
+}
+
 function ResizablePanelGroup({
   className,
+  direction,
+  orientation,
   ...props
-}: ResizablePrimitive.GroupProps) {
+}: ResizablePanelGroupProps) {
+  const resolvedOrientation = orientation ?? direction ?? "horizontal"
+
   return (
     <ResizablePrimitive.Group
       data-slot="resizable-panel-group"
+      orientation={resolvedOrientation}
       className={cn(
         "flex h-full w-full aria-[orientation=vertical]:flex-col",
         className
