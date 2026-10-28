@@ -33,7 +33,7 @@ export class AssetTextureCache implements Disposable {
   private readonly MAX_DATA_URL_ENTRIES = 16;
   private readonly MAX_PLACEHOLDER_ENTRIES = 4;
 
-  public constructor() {}
+  private constructor() { }
 
   public static getInstance(): AssetTextureCache {
     if (!AssetTextureCache.instance) {
@@ -82,7 +82,7 @@ export class AssetTextureCache implements Disposable {
     if (texture && typeof texture.close === 'function') {
       try {
         texture.close();
-      } catch {}
+      } catch { }
     }
     return AssetTextureCache.directStorage.delete(assetId);
   }
@@ -96,7 +96,7 @@ export class AssetTextureCache implements Disposable {
     try {
       const cache = ContentCacheRegistry.get();
       await cache.set(assetId, blob);
-    } catch {}
+    } catch { }
 
     if (
       typeof window === 'undefined' ||
@@ -163,7 +163,7 @@ export class AssetTextureCache implements Disposable {
       if (typeof (entry.img as any).close === 'function') {
         try {
           (entry.img as any).close();
-        } catch {}
+        } catch { }
       }
     }
 
@@ -174,14 +174,14 @@ export class AssetTextureCache implements Disposable {
         entry.video.pause();
         entry.video.removeAttribute('src');
         entry.video.load();
-      } catch {}
+      } catch { }
     }
 
     for (const val of AssetTextureCache.directStorage.values()) {
       if (val && typeof val.close === 'function') {
         try {
           val.close();
-        } catch {}
+        } catch { }
       }
     }
 
@@ -232,7 +232,7 @@ export class AssetTextureCache implements Disposable {
           if (typeof (old.img as any).close === 'function') {
             try {
               (old.img as any).close();
-            } catch {}
+            } catch { }
           }
         }
         this.hotImageLRU.delete(oldestKey);
@@ -253,7 +253,7 @@ export class AssetTextureCache implements Disposable {
             old.video.pause();
             old.video.removeAttribute('src');
             old.video.load();
-          } catch {}
+          } catch { }
         }
         this.hotVideoLRU.delete(oldestKey);
       }
@@ -270,15 +270,15 @@ export class AssetTextureCache implements Disposable {
         if (!blob && src) {
           blob = await cache.get(src);
         }
-      } catch {}
+      } catch { }
 
       if (!blob && typeof fetch === 'function' && src && !src.startsWith('blob:')) {
         const res = await fetch(src);
         blob = await res.blob();
         try {
           const cache = ContentCacheRegistry.get();
-          cache.set(assetId, blob).catch(() => {});
-        } catch {}
+          cache.set(assetId, blob).catch(() => { });
+        } catch { }
       }
 
       if (blob) {
@@ -387,7 +387,7 @@ export class AssetTextureCache implements Disposable {
         if (Math.abs(vEntry.video.currentTime - targetTime) > 0.05) {
           try {
             vEntry.video.currentTime = targetTime;
-          } catch {}
+          } catch { }
         }
         return {
           source: vEntry.video,

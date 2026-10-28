@@ -62,7 +62,7 @@ export class IRPreviewEngine {
   private intervalTree: IntervalTreeIndex;
   private currentScale: number = 1.0;
   private pluginRegistry: ModifierPluginRegistry;
-  private defaultTextureCache: AssetTextureCache = new AssetTextureCache();
+  private defaultTextureCache: AssetTextureCache = AssetTextureCache.getInstance();
   private audioMixer: UniversalAudioMixer;
   private audioSourceResolver?: (assetId: string, src?: string) => IAudioSourceProvider | undefined;
   private sidecarCoordinator: PreviewWorkerCoordinator | null = null;

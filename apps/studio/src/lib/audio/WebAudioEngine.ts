@@ -3,6 +3,7 @@ import { IRPreviewEngine } from '../../renderer';
 import { AudioAssetCache } from './AudioAssetCache';
 import { type ShuttleSpeed, shouldMuteAudio, getAudioPlaybackRate } from '../shuttle/shuttleTypes';
 import { UniversalAudioStreamWorklet } from './UniversalAudioStreamWorklet';
+import { registerSpscAudioWorklet, SPSC_WORKLET_NAME } from './worklets/SpscAudioWorkletProcessor';
 import type { IRState } from '../ir/irState';
 
 export interface AudioLevels {
@@ -41,6 +42,8 @@ export class WebAudioEngine {
   private waveformWorker: Worker | null = null;
   private workerPending = new Set<string>();
   private streamWorklet: UniversalAudioStreamWorklet = new UniversalAudioStreamWorklet(44100);
+  private workletNode: AudioWorkletNode | null = null;
+  private isWorkletActive = false;
   private isPlaying = false;
   private playbackStartAudioTime = 0;
   private playbackStartTimelineTime = 0;
@@ -94,6 +97,28 @@ export class WebAudioEngine {
 
         this.masterGain.connect(this.analyser);
         this.analyser.connect(this.ctx.destination);
+
+        // Register SPSC AudioWorklet if SharedArrayBuffer is supported in isolated context
+        if (this.streamWorklet.getRingBuffer().isShared) {
+          registerSpscAudioWorklet(this.ctx).then((ok) => {
+            if (ok && this.ctx && this.masterGain && !this.workletNode) {
+              try {
+                this.workletNode = new AudioWorkletNode(this.ctx, SPSC_WORKLET_NAME, {
+                  numberOfInputs: 0,
+                  numberOfOutputs: 1,
+                  outputChannelCount: [2],
+                  processorOptions: {
+                    sharedBuffer: this.streamWorklet.getRingBuffer().getRawBuffer(),
+                  },
+                });
+                this.workletNode.connect(this.masterGain);
+                this.isWorkletActive = true;
+              } catch (e) {
+                console.warn('[WebAudioEngine] SPSC AudioWorkletNode initialization failed, using scheduling fallback:', e);
+              }
+            }
+          }).catch(() => {});
+        }
       }
     }
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -178,25 +203,28 @@ export class WebAudioEngine {
       this.streamWorklet.reset();
       this.streamWorklet.pushChunk(mixResult.left, mixResult.right);
 
-      const buffer = this.ctx.createBuffer(2, mixResult.left.length, this.ctx.sampleRate);
-      buffer.copyToChannel(mixResult.left as unknown as Float32Array<ArrayBuffer>, 0);
-      buffer.copyToChannel(mixResult.right as unknown as Float32Array<ArrayBuffer>, 1);
-
-      const source = this.ctx.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.masterGain);
-
       const now = this.ctx.currentTime;
-      source.start(now);
 
-      this.currentSource = source;
-      this.activeSources.add(source);
-      source.onended = () => {
-        try {
-          source.disconnect();
-        } catch {}
-        this.activeSources.delete(source);
-      };
+      if (!this.isWorkletActive) {
+        const buffer = this.ctx.createBuffer(2, mixResult.left.length, this.ctx.sampleRate);
+        buffer.copyToChannel(mixResult.left as unknown as Float32Array<ArrayBuffer>, 0);
+        buffer.copyToChannel(mixResult.right as unknown as Float32Array<ArrayBuffer>, 1);
+
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.masterGain);
+
+        source.start(now);
+
+        this.currentSource = source;
+        this.activeSources.add(source);
+        source.onended = () => {
+          try {
+            source.disconnect();
+          } catch {}
+          this.activeSources.delete(source);
+        };
+      }
 
       this.isPlaying = true;
       this.playbackStartAudioTime = now;
@@ -248,26 +276,30 @@ export class WebAudioEngine {
           const mix = this.mixer.mixStereo(sliceStart, sliceDuration);
           this.streamWorklet.pushChunk(mix.left, mix.right);
 
-          const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
-          buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
-          buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
+          if (!this.isWorkletActive) {
+            const buffer = this.ctx.createBuffer(2, mix.left.length, this.ctx.sampleRate);
+            buffer.copyToChannel(mix.left as unknown as Float32Array<ArrayBuffer>, 0);
+            buffer.copyToChannel(mix.right as unknown as Float32Array<ArrayBuffer>, 1);
 
-          const nextSource = this.ctx.createBufferSource();
-          nextSource.buffer = buffer;
-          nextSource.connect(this.masterGain);
+            const nextSource = this.ctx.createBufferSource();
+            nextSource.buffer = buffer;
+            nextSource.connect(this.masterGain);
 
-          // Schedule contiguous playback right after preceding chunk finishes
-          const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
-          nextSource.start(scheduleTime);
-          this.scheduledAudioEndTime = scheduleTime + sliceDuration;
+            // Schedule contiguous playback right after preceding chunk finishes
+            const scheduleTime = Math.max(now, this.scheduledAudioEndTime);
+            nextSource.start(scheduleTime);
+            this.scheduledAudioEndTime = scheduleTime + sliceDuration;
 
-          this.activeSources.add(nextSource);
-          nextSource.onended = () => {
-            try {
-              nextSource.disconnect();
-            } catch {}
-            this.activeSources.delete(nextSource);
-          };
+            this.activeSources.add(nextSource);
+            nextSource.onended = () => {
+              try {
+                nextSource.disconnect();
+              } catch {}
+              this.activeSources.delete(nextSource);
+            };
+          } else {
+            this.scheduledAudioEndTime = Math.max(now, this.scheduledAudioEndTime) + sliceDuration;
+          }
         } catch (e) {
           console.warn('[WebAudioEngine] Error scheduling audio slice:', e);
         }

@@ -2,7 +2,10 @@
  * UniversalAudioStreamWorklet:
  * Streaming AudioWorklet transport processor for continuous, non-blocking audio playback.
  * Pulls continuous 128-sample blocks with smooth 5ms cosine cross-fade on seek/scrub.
+ * Backed by SharedArrayRingBuffer for lock-free zero-allocation audio streaming.
  */
+
+import { SharedArrayRingBuffer, type IAudioStreamTransport } from './SharedArrayRingBuffer';
 
 export interface AudioStreamChunk {
   left: Float32Array;
@@ -10,83 +13,28 @@ export interface AudioStreamChunk {
   startSample: number;
 }
 
-export class UniversalAudioRingBuffer {
-  private capacity: number;
-  private leftBuffer: Float32Array;
-  private rightBuffer: Float32Array;
-  private readIndex: number = 0;
-  private writeIndex: number = 0;
-  private availableSamples: number = 0;
-
-  constructor(capacitySamples: number = 44100 * 5) {
-    this.capacity = capacitySamples;
-    this.leftBuffer = new Float32Array(capacitySamples);
-    this.rightBuffer = new Float32Array(capacitySamples);
-  }
-
-  public write(chunk: AudioStreamChunk): number {
-    const len = chunk.left.length;
-    let written = 0;
-
-    for (let i = 0; i < len; i++) {
-      if (this.availableSamples >= this.capacity) break;
-      this.leftBuffer[this.writeIndex] = chunk.left[i];
-      this.rightBuffer[this.writeIndex] = chunk.right[i];
-      this.writeIndex = (this.writeIndex + 1) % this.capacity;
-      this.availableSamples++;
-      written++;
-    }
-
-    return written;
-  }
-
-  public read(outLeft: Float32Array, outRight: Float32Array, blockSize: number = 128): number {
-    const toRead = Math.min(blockSize, this.availableSamples, outLeft.length);
-
-    for (let i = 0; i < toRead; i++) {
-      outLeft[i] = this.leftBuffer[this.readIndex];
-      outRight[i] = this.rightBuffer[this.readIndex];
-      this.readIndex = (this.readIndex + 1) % this.capacity;
-    }
-
-    // Fill remainder with silence
-    for (let i = toRead; i < outLeft.length; i++) {
-      outLeft[i] = 0;
-      outRight[i] = 0;
-    }
-
-    this.availableSamples -= toRead;
-    return toRead;
-  }
-
-  public clear(): void {
-    this.readIndex = 0;
-    this.writeIndex = 0;
-    this.availableSamples = 0;
-  }
-
-  public getAvailable(): number {
-    return this.availableSamples;
-  }
-}
-
 /**
- * AudioWorklet Node Controller for UI thread
+ * UniversalAudioStreamWorklet:
+ * AudioWorklet Node Controller for UI thread and Audio DSP pipeline.
  */
 export class UniversalAudioStreamWorklet {
-  private ringBuffer: UniversalAudioRingBuffer;
+  private ringBuffer: SharedArrayRingBuffer;
   private sampleRate: number;
   private totalSamplesProcessed: number = 0;
   private crossFadeSamples: number;
 
   constructor(sampleRate: number = 44100) {
     this.sampleRate = sampleRate;
-    this.ringBuffer = new UniversalAudioRingBuffer(sampleRate * 10);
+    this.ringBuffer = new SharedArrayRingBuffer({ sampleRate, capacitySeconds: 10 });
     // 5ms cosine cross-fade
     this.crossFadeSamples = Math.floor((sampleRate * 5) / 1000);
   }
 
-  public getRingBuffer(): UniversalAudioRingBuffer {
+  public getRingBuffer(): SharedArrayRingBuffer {
+    return this.ringBuffer;
+  }
+
+  public getTransport(): IAudioStreamTransport {
     return this.ringBuffer;
   }
 
@@ -98,12 +46,10 @@ export class UniversalAudioStreamWorklet {
     return this.totalSamplesProcessed / this.sampleRate;
   }
 
-  public pushChunk(left: Float32Array, right: Float32Array): void {
-    this.ringBuffer.write({
-      left,
-      right,
-      startSample: this.totalSamplesProcessed,
-    });
+  public pushChunk(left: Float32Array, right: Float32Array): number {
+    const written = this.ringBuffer.write(left, right);
+    this.totalSamplesProcessed += written;
+    return written;
   }
 
   /**
@@ -128,7 +74,9 @@ export class UniversalAudioStreamWorklet {
   }
 
   public reset(): void {
-    this.ringBuffer.clear();
+    this.ringBuffer.reset();
     this.totalSamplesProcessed = 0;
   }
 }
+
+export { SharedArrayRingBuffer };

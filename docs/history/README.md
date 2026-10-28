@@ -26,3 +26,4 @@
 | 365 | [Studio Timeline Waveform Virtualization (Phase 1)](./365_studio_timeline_waveform_virtualization.md) | Completed |
 | 366 | [Fix FilmstripThumbnail Empty src Attribute Browser Warning](./366_fix_filmstrip_thumbnail_empty_src_browser_warning.md) | Completed |
 | 367 | [Studio WebCodecs Hardware Decoder Quota Pool (Phase 2)](./367_studio_webcodecs_hardware_decoder_quota_pool.md) | Completed |
+| 368 | [Studio Lock-Free AudioWorklet SPSC RingBuffer (Phase 3)](./368_studio_spsc_audioworklet_ring_buffer.md) | Completed |
