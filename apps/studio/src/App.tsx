@@ -189,7 +189,7 @@ function StudioWorkspace() {
 
         {/* 2. Main Middle Workspace & Timeline in Resizable Vertical Layout */}
         <ResizablePanelGroup direction="vertical" className="flex-1">
-          <ResizablePanel defaultSize={62} minSize={30}>
+          <ResizablePanel defaultSize="62%" minSize="30%" className="h-full">
             <div className="flex h-full w-full overflow-hidden">
               <LeftSidebar
                 isOpen={isLeftOpen}
@@ -212,7 +212,7 @@ function StudioWorkspace() {
 
               {/* Horizontal Bento Splitting for Preview Canvas and Right Inspector */}
               <ResizablePanelGroup direction="horizontal" className="flex-1 h-full">
-                <ResizablePanel defaultSize={isRightOpen ? 74 : 100} minSize={40}>
+                <ResizablePanel id="preview-viewport-panel" defaultSize={isRightOpen ? "72%" : "100%"} minSize="40%" className="h-full">
                   <div className="h-full w-full flex flex-col items-center justify-center p-3 relative overflow-hidden bg-background/50">
                     <Preview
                       playhead={{
@@ -236,11 +236,9 @@ function StudioWorkspace() {
 
                 {isRightOpen && (
                   <>
-                    <ResizableHandle withHandle className="bg-border/60 hover:bg-accent-theme/60 transition-colors" />
-                    <ResizablePanel defaultSize={26} minSize={18} maxSize={45}>
-                      <div className="h-full w-full overflow-hidden">
-                        <RightSidebar />
-                      </div>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel id="inspector-panel" defaultSize="28%" minSize="280px" maxSize="55%" className="h-full">
+                      <RightSidebar />
                     </ResizablePanel>
                   </>
                 )}
@@ -248,10 +246,10 @@ function StudioWorkspace() {
             </div>
           </ResizablePanel>
 
-          <ResizableHandle withHandle className="bg-border/60 hover:bg-accent-theme/60 transition-colors" />
+          <ResizableHandle withHandle />
 
           {/* 3. Bottom Timeline Scrubber */}
-          <ResizablePanel defaultSize={38} minSize={20}>
+          <ResizablePanel defaultSize="38%" minSize="20%" className="h-full">
             <div className="h-full overflow-hidden">
               <Timeline
                 playhead={{
