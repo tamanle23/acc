@@ -67,7 +67,8 @@ export function useShuttleEngine({
 
   const setSpeed = useCallback((newSpeed: ShuttleSpeed) => {
     // If parked at or past end of timeline and attempting forward playback, restart from frame 0
-    if (newSpeed > 0 && currentFrameRef.current >= totalFramesRef.current) {
+    const maxBound = Math.max(0, totalFramesRef.current - 1);
+    if (newSpeed > 0 && currentFrameRef.current >= maxBound) {
       currentFrameRef.current = 0;
       onScrubRef.current(0);
     }
@@ -161,8 +162,9 @@ export function useShuttleEngine({
       lastTime = now;
 
       const total = totalFramesRef.current || 300;
-      if (targetFrame >= total) {
-        const discreteFrame = snapToDiscreteFrame(total);
+      const endFrame = Math.max(0, total - 1);
+      if (targetFrame >= endFrame && currentSpeed > 0) {
+        const discreteFrame = snapToDiscreteFrame(endFrame);
         currentFrameRef.current = discreteFrame;
         onScrubRef.current(discreteFrame);
         setSpeed(0);
