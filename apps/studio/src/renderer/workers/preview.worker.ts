@@ -1,3 +1,8 @@
+// Defensive worker environment polyfill to avoid runtime errors from Vite HMR / React Refresh
+if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') {
+  (self as any).window = self;
+}
+
 import { registerCoreModifierPlugins, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
 import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';

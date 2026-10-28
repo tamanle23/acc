@@ -18,7 +18,7 @@ import {
   type ModifierWarmedEvent,
   type SidecarPreflightOptions,
 } from './PreviewWorkerCoordinator';
-import { AssetTextureCache } from '../lib';
+import { AssetTextureCache } from '../lib/textures/AssetTextureCache';
 
 export interface IPreviewTextureProvider {
   get(assetId: string): any | undefined;

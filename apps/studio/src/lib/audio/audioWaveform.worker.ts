@@ -1,3 +1,8 @@
+// Defensive worker environment polyfill to avoid runtime errors from Vite HMR / React Refresh
+if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') {
+  (self as any).window = self;
+}
+
 /**
  * AudioWaveformWorker:
  * Dedicated background worker for asynchronous PCM decoding and multi-resolution LOD peak extraction.
