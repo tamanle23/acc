@@ -202,6 +202,43 @@ describe('IR Plugin Cache Elimination & Blob-First ContentCacheRegistry Suite', 
       const ab = await cachedBlob!.arrayBuffer();
       const trajArray = new Float32Array(ab);
       expect(trajArray.length).toBeGreaterThan(0);
+
+      // Verify renderClipSpace renders with rack focus crossfade without throwing
+      let drawImageCalls = 0;
+      const renderCanvasCtx: any = {
+        save: () => {},
+        restore: () => {},
+        translate: () => {},
+        rotate: () => {},
+        scale: () => {},
+        drawImage: () => {
+          drawImageCalls++;
+        },
+      };
+
+      const mockSeq: any = { id: 'camera_seq_1', durationFrames: 60 };
+      mockSeq._focalZones = {
+        sharpCanvas: null,
+        nearBlurCanvas: {},
+        farBlurCanvas: {},
+      };
+
+      await plugin.renderClipSpace(
+        {
+          ctx: renderCanvasCtx,
+          canvas: canvas as any,
+          frame: 0,
+          localFrame: 0,
+          width: 320,
+          height: 180,
+          sequence: mockSeq,
+          baseAsset: undefined,
+        },
+        {}
+      );
+
+      // At frame 0, focalZ is 0.2 (< 0.5), so farBlurCanvas should be drawn with bokeh crossfade
+      expect(drawImageCalls).toBe(1);
     });
 
     it('verifies AutoReframeModifierPlugin has no in-memory strategyCache Map', () => {

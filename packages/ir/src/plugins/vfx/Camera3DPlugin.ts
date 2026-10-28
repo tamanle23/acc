@@ -158,6 +158,52 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
         metadata: { totalFrames, width, height },
       });
     } catch {}
+
+    // 2. Pre-generate and cache multi-tier focal zone canvases if rack focus is requested
+    const rackFocusEnabled = params.rackFocus?.enabled !== false;
+    const imgPath = params.imagePath;
+    if (rackFocusEnabled && imgPath && typeof window === 'undefined') {
+      try {
+        const req = typeof require !== 'undefined' ? require : (0, eval)('require');
+        const effectEngines = req('@acc/effect-engines');
+        const depthData = await effectEngines.resolveDepthMapData(imgPath, width, height, params as any);
+        if (depthData?.srcCanvas) {
+          const sharpCanvas = depthData.srcCanvas;
+
+          // Generate near-blur (foreground bokeh) and far-blur (background bokeh)
+          const uNear = UniversalCanvasProvider.createCanvas(width, height);
+          const uFar = UniversalCanvasProvider.createCanvas(width, height);
+          const nearBlurCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
+          const farBlurCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
+
+          const nbCtx = nearBlurCanvas.getContext('2d');
+          const fbCtx = farBlurCanvas.getContext('2d');
+
+          // Draw base image with multi-pass box blur simulation
+          this.drawFastBlurred(nbCtx, sharpCanvas, width, height, 8);
+          this.drawFastBlurred(fbCtx, sharpCanvas, width, height, 16);
+
+          const focalZones: FocalZoneCanvases = {
+            sharpCanvas,
+            nearBlurCanvas,
+            farBlurCanvas,
+          };
+          if (context.targetEntity) {
+            (context.targetEntity as any)._focalZones = focalZones;
+          }
+
+          // Persist raw pixel buffers to ContentCacheRegistry as Blobs for cross-worker sharing
+          try {
+            const nbData = nbCtx.getImageData(0, 0, width, height);
+            const fbData = fbCtx.getImageData(0, 0, width, height);
+            const nearBlob = new Blob([nbData.data.buffer], { type: 'application/octet-stream' });
+            const farBlob = new Blob([fbData.data.buffer], { type: 'application/octet-stream' });
+            await ContentCacheRegistry.get().set(`camera3d_focal_near_${cacheKey}`, nearBlob);
+            await ContentCacheRegistry.get().set(`camera3d_focal_far_${cacheKey}`, farBlob);
+          } catch {}
+        }
+      } catch {}
+    }
   }
 
   /**
@@ -205,7 +251,7 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
       this.scratchCameraState
     );
 
-    const { scale, transX, transY, rotationRad } = this.scratchCameraState;
+    const { scale, transX, transY, rotationRad, focalZ, focalAperture } = this.scratchCameraState;
 
     // Apply 3D Camera Affine Transform to clip space canvas
     canvasCtx.save();
@@ -219,6 +265,71 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     }
     canvasCtx.scale(scale, scale);
     canvasCtx.translate(-centerX, -centerY);
+
+    // Render Dynamic Rack Focus crossfade if focal zones exist
+    let focalZones = (sequence as any)?._focalZones as FocalZoneCanvases | undefined;
+    if (!focalZones && focalAperture > 0.01) {
+      try {
+        const nearBlob = await ContentCacheRegistry.get().get(`camera3d_focal_near_${cacheKey}`);
+        const farBlob = await ContentCacheRegistry.get().get(`camera3d_focal_far_${cacheKey}`);
+        if (nearBlob && farBlob) {
+          const nearBytes = new Uint8ClampedArray(await nearBlob.arrayBuffer());
+          const farBytes = new Uint8ClampedArray(await farBlob.arrayBuffer());
+
+          const uNear = UniversalCanvasProvider.createCanvas(width, height);
+          const uFar = UniversalCanvasProvider.createCanvas(width, height);
+          const nearCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
+          const farCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
+
+          const nCtx = nearCanvas.getContext('2d');
+          const fCtx = farCanvas.getContext('2d');
+
+          const nImgData = nCtx.createImageData(width, height);
+          nImgData.data.set(nearBytes);
+          nCtx.putImageData(nImgData, 0, 0);
+
+          const fImgData = fCtx.createImageData(width, height);
+          fImgData.data.set(farBytes);
+          fCtx.putImageData(fImgData, 0, 0);
+
+          focalZones = {
+            sharpCanvas: null,
+            nearBlurCanvas: nearCanvas,
+            farBlurCanvas: farCanvas,
+          };
+          if (sequence) {
+            (sequence as any)._focalZones = focalZones;
+          }
+        }
+      } catch {}
+    }
+
+    if (focalZones && focalAperture > 0.01) {
+      const { nearBlurCanvas, farBlurCanvas } = focalZones;
+
+      // Dynamic crossfade: if focalZ < 0.5 (foreground in focus), fade in far blur (background bokeh)
+      // if focalZ > 0.5 (background in focus), fade in near blur (foreground bokeh)
+      // modulated by focalAperture
+      if (focalZ < 0.5) {
+        // Foreground in focus -> background blurred
+        const bgBlurAlpha = Math.min(1.0, (0.5 - focalZ) * 2.0 * focalAperture);
+        if (bgBlurAlpha > 0.01 && farBlurCanvas) {
+          canvasCtx.save();
+          canvasCtx.globalAlpha = bgBlurAlpha;
+          canvasCtx.drawImage(farBlurCanvas, 0, 0);
+          canvasCtx.restore();
+        }
+      } else {
+        // Background in focus -> foreground blurred
+        const fgBlurAlpha = Math.min(1.0, (focalZ - 0.5) * 2.0 * focalAperture);
+        if (fgBlurAlpha > 0.01 && nearBlurCanvas) {
+          canvasCtx.save();
+          canvasCtx.globalAlpha = fgBlurAlpha;
+          canvasCtx.drawImage(nearBlurCanvas, 0, 0);
+          canvasCtx.restore();
+        }
+      }
+    }
     // Transformation is popped after clip children or drawn elements
     // Notice: we do not restore canvasCtx here if children need the camera transform;
     // In IRMasterRenderer, ctx.save() is called before modifiers and ctx.restore() after clip drawing.

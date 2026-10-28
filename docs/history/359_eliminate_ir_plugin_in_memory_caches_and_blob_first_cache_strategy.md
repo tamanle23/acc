@@ -38,7 +38,7 @@ Concurrently, `IContentCacheStrategy` and `ContentCacheRegistry` had splintered 
 
 ### 3. IR Plugins (`packages/ir/src/plugins`)
 - **`vfx/Depth3DPlugin.ts`**: Completely removed all 8 `Map` cache properties. Renders depth maps and surface normals statelessly via `ContentCacheRegistry` and `CanvasAssetLoader`.
-- **`vfx/Camera3DPlugin.ts`**: Removed `trajectoryCache` and `focalZoneCache`. Precomputes and caches camera trajectories into `ContentCacheRegistry` as binary `Blob`s.
+- **`vfx/Camera3DPlugin.ts`**: Removed `trajectoryCache` and `focalZoneCache` Map properties. Precomputes and caches camera trajectories into `ContentCacheRegistry` as binary `Blob`s. Preserves dynamic rack focus pre-generation and bokeh crossfading by storing near/far focal zone layers as `Blob`s in `ContentCacheRegistry` and caching on sequence context.
 - **`vfx/AutoReframeModifierPlugin.ts`**: Removed `strategyCache`.
 - **`overlay/CanvasParticleOverlayPlugin.ts`**: Removed `scratchCanvasCache`.
 - **`text/CaptionModifierPlugin.ts`**: Removed `captionConfigCache` `WeakMap`.
