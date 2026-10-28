@@ -387,8 +387,8 @@ export class IRStateManager {
     }
   }
 
-  public rippleDeleteSequence(sequenceId: string): void {
-    this.dispatch(new RippleDeleteSequenceCommand(sequenceId));
+  public rippleDeleteSequence(sequenceId: string, rippleAllUnlocked = false): void {
+    this.dispatch(new RippleDeleteSequenceCommand(sequenceId, rippleAllUnlocked));
     if (this.state.selectedSequenceId === sequenceId) {
       this.setSelectedSequenceId(null);
     }

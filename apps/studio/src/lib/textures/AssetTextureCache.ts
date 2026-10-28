@@ -91,53 +91,53 @@ export class AssetTextureCache implements Disposable {
    * Load an image texture from a Blob.
    * Persists directly into ContentCacheRegistry and decodes into memory.
    */
-  public async loadBlob(assetId: string, blob: Blob): Promise<any> {
-    // Persist to unified isomorphic ContentCacheRegistry
-    try {
-      const cache = ContentCacheRegistry.get();
-      await cache.set(assetId, blob);
-    } catch { }
+  // public async loadBlob(assetId: string, blob: Blob): Promise<any> {
+  //   // Persist to unified isomorphic ContentCacheRegistry
+  //   try {
+  //     const cache = ContentCacheRegistry.get();
+  //     await cache.set(assetId, blob);
+  //   } catch { }
 
-    if (
-      typeof window === 'undefined' ||
-      typeof URL === 'undefined' ||
-      typeof Image === 'undefined'
-    ) {
-      const mockImg = { width: 1920, height: 1080, _isMock: true };
-      this.set(assetId, mockImg);
-      return mockImg;
-    }
+  //   if (
+  //     typeof window === 'undefined' ||
+  //     typeof URL === 'undefined' ||
+  //     typeof Image === 'undefined'
+  //   ) {
+  //     const mockImg = { width: 1920, height: 1080, _isMock: true };
+  //     this.set(assetId, mockImg);
+  //     return mockImg;
+  //   }
 
-    if (typeof createImageBitmap === 'function') {
-      try {
-        const bmp = await createImageBitmap(blob);
-        this.set(assetId, bmp);
-        this.setHotImage(assetId, bmp);
-        this.notify();
-        return bmp;
-      } catch {
-        // Fallback to Image element
-      }
-    }
+  //   if (typeof createImageBitmap === 'function') {
+  //     try {
+  //       const bmp = await createImageBitmap(blob);
+  //       this.set(assetId, bmp);
+  //       this.setHotImage(assetId, bmp);
+  //       this.notify();
+  //       return bmp;
+  //     } catch {
+  //       // Fallback to Image element
+  //     }
+  //   }
 
-    const objectUrl = URL.createObjectURL(blob);
-    AssetTextureCache.objectUrls.set(assetId, objectUrl);
+  //   const objectUrl = URL.createObjectURL(blob);
+  //   AssetTextureCache.objectUrls.set(assetId, objectUrl);
 
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        this.set(assetId, img);
-        this.setHotImage(assetId, img, objectUrl);
-        this.notify();
-        resolve(img);
-      };
-      img.onerror = (e) => {
-        reject(new Error(`Failed to load texture blob for ${assetId}: ${e}`));
-      };
-      img.src = objectUrl;
-    });
-  }
+  //   return new Promise((resolve, reject) => {
+  //     const img = new Image();
+  //     img.crossOrigin = 'anonymous';
+  //     img.onload = () => {
+  //       this.set(assetId, img);
+  //       this.setHotImage(assetId, img, objectUrl);
+  //       this.notify();
+  //       resolve(img);
+  //     };
+  //     img.onerror = (e) => {
+  //       reject(new Error(`Failed to load texture blob for ${assetId}: ${e}`));
+  //     };
+  //     img.src = objectUrl;
+  //   });
+  // }
 
   /**
    * Clears all cached textures and revokes object URLs.

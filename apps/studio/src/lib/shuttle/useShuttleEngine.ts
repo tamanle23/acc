@@ -198,6 +198,8 @@ export function useShuttleEngine({
     };
   }, [speed]);
 
+  const isKDownRef = useRef(false);
+
   // J-K-L and Arrow Keybindings with repeat debouncing
   useEffect(() => {
     if (!enableKeybindings || typeof window === 'undefined') return;
@@ -216,15 +218,24 @@ export function useShuttleEngine({
       switch (e.code) {
         case 'KeyJ':
           e.preventDefault();
-          shuttleReverse();
+          if (isKDownRef.current) {
+            stepFrame(-1);
+          } else {
+            shuttleReverse();
+          }
           break;
         case 'KeyK':
           e.preventDefault();
+          isKDownRef.current = true;
           shuttleStop();
           break;
         case 'KeyL':
           e.preventDefault();
-          shuttleForward();
+          if (isKDownRef.current) {
+            stepFrame(1);
+          } else {
+            shuttleForward();
+          }
           break;
         case 'Space':
           e.preventDefault();
@@ -247,8 +258,18 @@ export function useShuttleEngine({
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'KeyK') {
+        isKDownRef.current = false;
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [enableKeybindings, shuttleReverse, shuttleStop, shuttleForward, togglePlay, stepFrame]);
 
   return {

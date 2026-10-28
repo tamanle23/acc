@@ -11,7 +11,11 @@ import { WebAudioEngine } from '../lib/audio/WebAudioEngine';
 import { useShuttleEngine, type UseShuttleEngineReturn } from '../lib/shuttle/useShuttleEngine';
 import { snapToDiscreteFrame } from '../lib/shuttle/shuttleTypes';
 import { StudioPlayheadController } from '../lib/playhead/StudioPlayheadController';
-import { TimelineCommandDispatcher, RazorCutCommand } from '../lib/timeline/commands/TimelineCommands';
+import {
+  TimelineCommandDispatcher,
+  RazorCutCommand,
+  RippleDeleteCommand,
+} from '../lib/timeline/commands/TimelineCommands';
 
 export interface TimelineProps {
   playhead: {
@@ -143,12 +147,40 @@ export function Timeline({
     setMutedTracks((prev) => ({ ...prev, [trackId]: !prev[trackId] }));
   };
 
-  // Keyboard shortcuts (editing tools and zoom; transport/scrubbing handled by useShuttleEngine)
+  // Keyboard shortcuts (editing tools, split, ripple delete, and zoom; transport/scrubbing handled by useShuttleEngine)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === 'c' || e.key === 'C') {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        // Cmd+K / Ctrl+K: Split selected clip at playhead
+        e.preventDefault();
+        if (selectedSeqId) {
+          TimelineCommandDispatcher.getInstance().dispatch(
+            new RazorCutCommand(selectedSeqId, currentFrame)
+          );
+        }
+      } else if (e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+        // Shift+Delete / Shift+Backspace: Professional NLE Ripple Delete
+        e.preventDefault();
+        if (selectedSeqId) {
+          TimelineCommandDispatcher.getInstance().dispatch(
+            new RippleDeleteCommand(selectedSeqId, rippleEnabled)
+          );
+        }
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Delete / Backspace: Regular delete or ripple delete depending on rippleEnabled toggle
+        e.preventDefault();
+        if (selectedSeqId) {
+          if (rippleEnabled) {
+            TimelineCommandDispatcher.getInstance().dispatch(
+              new RippleDeleteCommand(selectedSeqId, true)
+            );
+          } else {
+            IRStateManager.getInstance().deleteSequence(selectedSeqId);
+          }
+        }
+      } else if (e.key === 'c' || e.key === 'C') {
         setActiveTool((prev) => (prev === 'razor' ? 'select' : 'razor'));
       } else if (e.key === 's' || e.key === 'S') {
         // Split selected clip at playhead
@@ -169,7 +201,7 @@ export function Timeline({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedSeqId, currentFrame]);
+  }, [selectedSeqId, currentFrame, rippleEnabled]);
 
   return (
     <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">

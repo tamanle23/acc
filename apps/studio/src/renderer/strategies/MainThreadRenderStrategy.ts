@@ -76,8 +76,7 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
   ): Promise<void> {
     if (!this.engine) return;
 
-    const studioTextureCache = AssetTextureCache.getInstance();
-    const engineTextures = this.engine.getTextureCache();
+    const assetTextureCache = AssetTextureCache.getInstance();
 
     for (const seq of activeSeqs) {
       if (!seq.assetId) continue;
@@ -88,7 +87,7 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
       const seqStart = seq.startFrame ?? 0;
       const seqLocalTimeSec = Math.max(0, (currentFrame - seqStart) / (fps || 30));
 
-      const visualAsset = studioTextureCache.getVisualAsset(
+      const visualAsset = assetTextureCache.getVisualAsset(
         seq.assetId,
         assetSrc,
         (assetType as any) || 'image',
@@ -96,7 +95,7 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
       );
 
       if (visualAsset.source) {
-        engineTextures.set(seq.assetId, visualAsset.source);
+        assetTextureCache.set(seq.assetId, visualAsset.source);
       }
     }
   }

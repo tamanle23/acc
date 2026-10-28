@@ -106,3 +106,6 @@ export class TimelineCommandDispatcher {
     this.history = [];
   }
 }
+
+export { RippleDeleteCommand } from './RippleDeleteCommand';
+
