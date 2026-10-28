@@ -17,3 +17,4 @@
 | 357 | [Enterprise Workflow Orchestration Upgrade & Resilience](./357_enterprise_workflow_orchestration_upgrade.md) | Completed |
 | 358 | [Workflow Decider Engine Enterprise Enhancements](./358_workflow_decider_engine_enhancements.md) | Completed |
 | 359 | [Eliminate IR Plugin In-Memory Caches & Standardize Blob-First ContentCacheRegistry](./359_eliminate_ir_plugin_in_memory_caches_and_blob_first_cache_strategy.md) | Completed |
+| 360 | [Document Workflow Orchestration Engine Architecture Analysis](./360_document_workflow_orchestration_engine_analysis.md) | Completed |
