@@ -123,6 +123,11 @@ export class MainThreadRenderStrategy implements IPreviewRenderStrategy {
   }
 
   public dispose(): void {
+    if (this.engine) {
+      try {
+        this.engine.getTextureCache().dispose();
+      } catch {}
+    }
     this.canvas = null;
     this.engine = null;
     this.ready = false;

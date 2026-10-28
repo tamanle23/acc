@@ -4,7 +4,7 @@
  * Seamlessly decodes real image/video files into HTMLCanvasElement / ImageBitmap,
  * and procedurally generates rich sci-fi filmstrips and 3D textures for mock asset IDs.
  */
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { ContentCacheRegistry, UniversalCanvasProvider } from '@acc/core-isomorphic';
 
 export interface VisualAssetResult {
   source: CanvasImageSource | null;
@@ -18,18 +18,20 @@ export class AssetTextureCache implements Disposable {
   private static instance: AssetTextureCache;
   private static directStorage = new Map<string, any>();
   private static objectUrls = new Map<string, string>();
+  private hotImageLRU = new Map<string, { img: CanvasImageSource; url?: string; lastUsed: number }>();
+  private hotVideoLRU = new Map<string, { video: HTMLVideoElement; lastUsed: number }>();
   private canvasCache = new Map<string, HTMLCanvasElement>();
   private dataUrlCache = new Map<string, string>();
-  private imageCache = new Map<string, { img: HTMLImageElement; isReady: boolean }>();
-  private videoCache = new Map<string, { video: HTMLVideoElement; isReady: boolean }>();
   private placeholderCache = new Map<string, HTMLCanvasElement>();
+  private inFlightResolutions = new Set<string>();
   private subscribers = new Set<() => void>();
-  private readonly MAX_CACHE_ENTRIES = 128;
-  private readonly MAX_IMAGE_ENTRIES = 32;
-  private readonly MAX_VIDEO_ENTRIES = 6;
-  private readonly MAX_CANVAS_ENTRIES = 32;
-  private readonly MAX_DATA_URL_ENTRIES = 32;
-  private readonly MAX_PLACEHOLDER_ENTRIES = 16;
+
+  private readonly MAX_DIRECT_ENTRIES = 16;
+  private readonly MAX_IMAGE_LRU = 8;
+  private readonly MAX_VIDEO_LRU = 4;
+  private readonly MAX_CANVAS_ENTRIES = 8;
+  private readonly MAX_DATA_URL_ENTRIES = 16;
+  private readonly MAX_PLACEHOLDER_ENTRIES = 4;
 
   public constructor() {}
 
@@ -44,7 +46,7 @@ export class AssetTextureCache implements Disposable {
    * Register or cache a visual texture directly (IPreviewTextureProvider contract).
    */
   public set(assetId: string, texture: any): void {
-    if (AssetTextureCache.directStorage.size >= this.MAX_CACHE_ENTRIES) {
+    if (AssetTextureCache.directStorage.size >= this.MAX_DIRECT_ENTRIES && !AssetTextureCache.directStorage.has(assetId)) {
       const oldestKey = AssetTextureCache.directStorage.keys().next().value;
       if (oldestKey !== undefined) {
         this.delete(oldestKey);
@@ -76,37 +78,58 @@ export class AssetTextureCache implements Disposable {
       URL.revokeObjectURL(url);
       AssetTextureCache.objectUrls.delete(assetId);
     }
+    const texture = AssetTextureCache.directStorage.get(assetId);
+    if (texture && typeof texture.close === 'function') {
+      try {
+        texture.close();
+      } catch {}
+    }
     return AssetTextureCache.directStorage.delete(assetId);
   }
 
   /**
    * Load an image texture from a Blob.
+   * Persists directly into ContentCacheRegistry and decodes into memory.
    */
   public async loadBlob(assetId: string, blob: Blob): Promise<any> {
+    // Persist to unified isomorphic ContentCacheRegistry
+    try {
+      const cache = ContentCacheRegistry.get();
+      await cache.set(assetId, blob);
+    } catch {}
+
     if (
       typeof window === 'undefined' ||
       typeof URL === 'undefined' ||
       typeof Image === 'undefined'
     ) {
       const mockImg = { width: 1920, height: 1080, _isMock: true };
-      AssetTextureCache.directStorage.set(assetId, mockImg);
+      this.set(assetId, mockImg);
       return mockImg;
+    }
+
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bmp = await createImageBitmap(blob);
+        this.set(assetId, bmp);
+        this.setHotImage(assetId, bmp);
+        this.notify();
+        return bmp;
+      } catch {
+        // Fallback to Image element
+      }
     }
 
     const objectUrl = URL.createObjectURL(blob);
     AssetTextureCache.objectUrls.set(assetId, objectUrl);
 
-    // Persist to unified isomorphic ContentCacheRegistry asynchronously
-    try {
-      const cache = ContentCacheRegistry.get();
-      cache.set(assetId, blob).catch(() => {});
-    } catch {}
-
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        AssetTextureCache.directStorage.set(assetId, img);
+        this.set(assetId, img);
+        this.setHotImage(assetId, img, objectUrl);
+        this.notify();
         resolve(img);
       };
       img.onerror = (e) => {
@@ -132,22 +155,44 @@ export class AssetTextureCache implements Disposable {
         URL.revokeObjectURL(url);
       }
     }
-    for (const entry of this.videoCache.values()) {
+
+    for (const entry of this.hotImageLRU.values()) {
+      if (entry.url && typeof URL !== 'undefined' && URL.revokeObjectURL) {
+        URL.revokeObjectURL(entry.url);
+      }
+      if (typeof (entry.img as any).close === 'function') {
+        try {
+          (entry.img as any).close();
+        } catch {}
+      }
+    }
+
+    for (const entry of this.hotVideoLRU.values()) {
       try {
+        entry.video.onloadeddata = null;
+        entry.video.onerror = null;
         entry.video.pause();
         entry.video.removeAttribute('src');
         entry.video.load();
-      } catch {
-        // Ignore in headless environments
+      } catch {}
+    }
+
+    for (const val of AssetTextureCache.directStorage.values()) {
+      if (val && typeof val.close === 'function') {
+        try {
+          val.close();
+        } catch {}
       }
     }
+
     AssetTextureCache.objectUrls.clear();
     AssetTextureCache.directStorage.clear();
+    this.hotImageLRU.clear();
+    this.hotVideoLRU.clear();
     this.canvasCache.clear();
     this.dataUrlCache.clear();
-    this.imageCache.clear();
-    this.videoCache.clear();
     this.placeholderCache.clear();
+    this.inFlightResolutions.clear();
   }
 
   public [Symbol.dispose](): void {
@@ -175,6 +220,93 @@ export class AssetTextureCache implements Disposable {
     }
   }
 
+  private setHotImage(key: string, img: CanvasImageSource, url?: string): void {
+    if (this.hotImageLRU.size >= this.MAX_IMAGE_LRU && !this.hotImageLRU.has(key)) {
+      const oldestKey = this.hotImageLRU.keys().next().value;
+      if (oldestKey) {
+        const old = this.hotImageLRU.get(oldestKey);
+        if (old) {
+          if (old.url && typeof URL !== 'undefined') {
+            URL.revokeObjectURL(old.url);
+          }
+          if (typeof (old.img as any).close === 'function') {
+            try {
+              (old.img as any).close();
+            } catch {}
+          }
+        }
+        this.hotImageLRU.delete(oldestKey);
+      }
+    }
+    this.hotImageLRU.set(key, { img, url, lastUsed: performance.now() });
+  }
+
+  private setHotVideo(key: string, video: HTMLVideoElement): void {
+    if (this.hotVideoLRU.size >= this.MAX_VIDEO_LRU && !this.hotVideoLRU.has(key)) {
+      const oldestKey = this.hotVideoLRU.keys().next().value;
+      if (oldestKey) {
+        const old = this.hotVideoLRU.get(oldestKey);
+        if (old) {
+          try {
+            old.video.onloadeddata = null;
+            old.video.onerror = null;
+            old.video.pause();
+            old.video.removeAttribute('src');
+            old.video.load();
+          } catch {}
+        }
+        this.hotVideoLRU.delete(oldestKey);
+      }
+    }
+    this.hotVideoLRU.set(key, { video, lastUsed: performance.now() });
+  }
+
+  private async resolveImageAssetAsync(assetId: string, src: string): Promise<void> {
+    try {
+      let blob: Blob | null = null;
+      try {
+        const cache = ContentCacheRegistry.get();
+        blob = await cache.get(assetId);
+        if (!blob && src) {
+          blob = await cache.get(src);
+        }
+      } catch {}
+
+      if (!blob && typeof fetch === 'function' && src && !src.startsWith('blob:')) {
+        const res = await fetch(src);
+        blob = await res.blob();
+        try {
+          const cache = ContentCacheRegistry.get();
+          cache.set(assetId, blob).catch(() => {});
+        } catch {}
+      }
+
+      if (blob) {
+        if (typeof createImageBitmap === 'function') {
+          const bmp = await createImageBitmap(blob);
+          this.setHotImage(src, bmp);
+          this.notify();
+          return;
+        } else if (typeof Image !== 'undefined' && typeof URL !== 'undefined') {
+          const objectUrl = URL.createObjectURL(blob);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            this.setHotImage(src, img, objectUrl);
+            this.notify();
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+          };
+          img.src = objectUrl;
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn(`[AssetTextureCache] Failed async resolve for ${assetId}:`, err);
+    }
+  }
+
   /**
    * Retrieves or asynchronously loads a visual asset (Image or Video decoder).
    * If not yet decoded or if URL fails, returns an isolated dark video placeholder canvas.
@@ -185,54 +317,50 @@ export class AssetTextureCache implements Disposable {
     assetType: 'image' | 'video' = 'image',
     timeSec: number = 0
   ): VisualAssetResult {
+    // 0. Direct Storage Check
+    const direct = AssetTextureCache.directStorage.get(assetId);
+    if (direct) {
+      const w = direct.naturalWidth || direct.videoWidth || direct.width || 1920;
+      const h = direct.naturalHeight || direct.videoHeight || direct.height || 1080;
+      return {
+        source: direct,
+        width: w,
+        height: h,
+        isReady: true,
+        type: assetType,
+      };
+    }
+
     // 1. If real URL provided and image type
     if (src && (assetType === 'image' || src.match(/\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i))) {
-      let entry = this.imageCache.get(src);
-      if (!entry) {
-        if (typeof Image !== 'undefined') {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          entry = { img, isReady: false };
-          img.onload = () => {
-            entry!.isReady = true;
-            this.notify();
+      const cached = this.hotImageLRU.get(src);
+      if (cached) {
+        cached.lastUsed = performance.now();
+        const img = cached.img as any;
+        const w = img.naturalWidth || img.width || 0;
+        const h = img.naturalHeight || img.height || 0;
+        if (w > 0 && h > 0) {
+          return {
+            source: cached.img,
+            width: w,
+            height: h,
+            isReady: true,
+            type: 'image',
           };
-          img.onerror = () => {
-            console.warn(`[AssetTextureCache] Failed to load image: ${src}`);
-          };
-          img.src = src;
-
-          // Enforce image LRU limit
-          if (this.imageCache.size >= this.MAX_IMAGE_ENTRIES) {
-            const oldestKey = this.imageCache.keys().next().value;
-            if (oldestKey) {
-              const oldEntry = this.imageCache.get(oldestKey);
-              if (oldEntry) {
-                oldEntry.img.onload = null;
-                oldEntry.img.onerror = null;
-                oldEntry.img.src = '';
-              }
-              this.imageCache.delete(oldestKey);
-            }
-          }
-          this.imageCache.set(src, entry);
         }
       }
 
-      if (entry && entry.isReady && entry.img.naturalWidth > 0) {
-        return {
-          source: entry.img,
-          width: entry.img.naturalWidth,
-          height: entry.img.naturalHeight,
-          isReady: true,
-          type: 'image',
-        };
+      if (!this.inFlightResolutions.has(src)) {
+        this.inFlightResolutions.add(src);
+        this.resolveImageAssetAsync(assetId, src).finally(() => {
+          this.inFlightResolutions.delete(src);
+        });
       }
     }
 
     // 2. If real URL provided and video/media type
     if (src && (assetType === 'video' || src.match(/\.(mp4|webm|mov|mkv)(\?.*)?$/i))) {
-      let vEntry = this.videoCache.get(src);
+      let vEntry = this.hotVideoLRU.get(src);
       if (!vEntry) {
         if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
           const video = document.createElement('video');
@@ -240,10 +368,8 @@ export class AssetTextureCache implements Disposable {
           video.muted = true;
           video.playsInline = true;
           video.preload = 'auto';
-          vEntry = { video, isReady: false };
 
           video.onloadeddata = () => {
-            vEntry!.isReady = true;
             this.notify();
           };
           video.onerror = () => {
@@ -251,29 +377,12 @@ export class AssetTextureCache implements Disposable {
           };
           video.src = src;
 
-          // Enforce video decoder LRU limit (releasing hardware decoders)
-          if (this.videoCache.size >= this.MAX_VIDEO_ENTRIES) {
-            const oldestKey = this.videoCache.keys().next().value;
-            if (oldestKey) {
-              const oldV = this.videoCache.get(oldestKey);
-              if (oldV) {
-                try {
-                  oldV.video.onloadeddata = null;
-                  oldV.video.onerror = null;
-                  oldV.video.pause();
-                  oldV.video.removeAttribute('src');
-                  oldV.video.load();
-                } catch {}
-              }
-              this.videoCache.delete(oldestKey);
-            }
-          }
-          this.videoCache.set(src, vEntry);
+          this.setHotVideo(src, video);
+          vEntry = this.hotVideoLRU.get(src);
         }
       }
 
-      if (vEntry && vEntry.isReady && vEntry.video.videoWidth > 0) {
-        // Direct seek without audio un-mute
+      if (vEntry && vEntry.video.videoWidth > 0) {
         const targetTime = Math.max(0, timeSec);
         if (Math.abs(vEntry.video.currentTime - targetTime) > 0.05) {
           try {
@@ -402,6 +511,7 @@ export class AssetTextureCache implements Disposable {
 
   /**
    * Generates a data URL for timeline filmstrip thumbnail rendering.
+   * Utilizes UniversalCanvasProvider scratch pool to avoid DOM canvas allocation churn.
    */
   public getThumbnailDataUrl(assetId: string, width = 120, height = 68): string {
     const key = `thumb:${assetId}:${width}:${height}`;
@@ -409,13 +519,34 @@ export class AssetTextureCache implements Disposable {
       return this.dataUrlCache.get(key)!;
     }
 
-    const canvas = this.getTextureCanvas(assetId, width, height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-    if (this.dataUrlCache.size >= this.MAX_DATA_URL_ENTRIES) {
-      const oldestKey = this.dataUrlCache.keys().next().value;
-      if (oldestKey) this.dataUrlCache.delete(oldestKey);
+    let dataUrl = '';
+    try {
+      const scratch = UniversalCanvasProvider.acquireScratchCanvas(width, height);
+      const raw = (scratch as any).getRawCanvas ? (scratch as any).getRawCanvas() : scratch;
+      const ctx = raw.getContext ? raw.getContext('2d') : null;
+
+      if (ctx) {
+        this.renderProceduralSciFiAsset(ctx, assetId, width, height);
+        if (typeof raw.toDataURL === 'function') {
+          dataUrl = raw.toDataURL('image/jpeg', 0.85);
+        }
+      }
+      UniversalCanvasProvider.releaseScratchCanvas(scratch);
+    } catch {
+      // Fallback to getTextureCanvas in environments without scratch pool
+      const canvas = this.getTextureCanvas(assetId, width, height);
+      if (typeof canvas.toDataURL === 'function') {
+        dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      }
     }
-    this.dataUrlCache.set(key, dataUrl);
+
+    if (dataUrl) {
+      if (this.dataUrlCache.size >= this.MAX_DATA_URL_ENTRIES) {
+        const oldestKey = this.dataUrlCache.keys().next().value;
+        if (oldestKey) this.dataUrlCache.delete(oldestKey);
+      }
+      this.dataUrlCache.set(key, dataUrl);
+    }
     return dataUrl;
   }
 
@@ -568,6 +699,10 @@ export class AssetTextureCache implements Disposable {
     ctx.fillStyle = fillColor;
     ctx.fillText(text, 8, h * 0.5);
 
+    if (this.canvasCache.size >= this.MAX_CANVAS_ENTRIES) {
+      const oldestKey = this.canvasCache.keys().next().value;
+      if (oldestKey) this.canvasCache.delete(oldestKey);
+    }
     this.canvasCache.set(key, canvas);
     return canvas;
   }
@@ -597,6 +732,10 @@ export class AssetTextureCache implements Disposable {
       drawFn(ctx, w, h);
     }
 
+    if (this.canvasCache.size >= this.MAX_CANVAS_ENTRIES) {
+      const oldestKey = this.canvasCache.keys().next().value;
+      if (oldestKey) this.canvasCache.delete(oldestKey);
+    }
     this.canvasCache.set(key, canvas);
     return canvas;
   }

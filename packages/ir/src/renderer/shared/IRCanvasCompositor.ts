@@ -17,6 +17,11 @@ import { UniversalCanvasProvider } from '@acc/core-isomorphic';
 export interface IAssetSourceResolver {
   get(assetId: string): any | undefined;
   has(assetId: string): boolean;
+  /**
+   * Invoked synchronously immediately after ctx.drawImage() completes for a sequence.
+   * Enables the resolver to synchronously close transient frames once all sequences in the tick are done.
+   */
+  onAssetDrawn?(assetId: string, asset: any): void;
 }
 
 export interface CanvasCompositorOptions {
@@ -84,15 +89,21 @@ export class IRCanvasCompositor {
 
   private static getScratchContext(width: number, height: number): { canvas: any; ctx: any } {
     if (
-      !IRCanvasCompositor.scratchCanvas ||
-      IRCanvasCompositor.scratchCanvas.width !== width ||
-      IRCanvasCompositor.scratchCanvas.height !== height
+      !IRCanvasCompositor.scratchCanvasInstance ||
+      IRCanvasCompositor.scratchCanvas.width < width ||
+      IRCanvasCompositor.scratchCanvas.height < height
     ) {
-      IRCanvasCompositor.scratchCanvasInstance = UniversalCanvasProvider.createCanvas(width, height);
+      if (IRCanvasCompositor.scratchCanvasInstance) {
+        UniversalCanvasProvider.releaseScratchCanvas(IRCanvasCompositor.scratchCanvasInstance);
+      }
+      IRCanvasCompositor.scratchCanvasInstance = UniversalCanvasProvider.acquireScratchCanvas(width, height);
       IRCanvasCompositor.scratchCanvas = IRCanvasCompositor.scratchCanvasInstance.getRawCanvas
         ? IRCanvasCompositor.scratchCanvasInstance.getRawCanvas()
         : IRCanvasCompositor.scratchCanvasInstance;
       IRCanvasCompositor.scratchCtx = IRCanvasCompositor.scratchCanvas.getContext('2d');
+    } else if (IRCanvasCompositor.scratchCtx) {
+      IRCanvasCompositor.scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+      IRCanvasCompositor.scratchCtx.clearRect(0, 0, IRCanvasCompositor.scratchCanvas.width, IRCanvasCompositor.scratchCanvas.height);
     }
     return {
       canvas: IRCanvasCompositor.scratchCanvas,
@@ -467,6 +478,20 @@ export class IRCanvasCompositor {
                 // Defensive fallback: if the underlying bitmap was detached/closed asynchronously during draw
                 ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';
                 ctx.fillRect(0, 0, width, height);
+              } finally {
+                // Explicit immediate disposal for transient native buffers
+                if (assets?.onAssetDrawn && seq.assetId) {
+                  assets.onAssetDrawn(seq.assetId, asset);
+                } else if (
+                  rawAsset &&
+                  (rawAsset as any)._isTransient &&
+                  !(rawAsset as any)._isShared &&
+                  typeof rawAsset.close === 'function'
+                ) {
+                  try {
+                    rawAsset.close();
+                  } catch {}
+                }
               }
             } else {
               ctx.fillStyle = 'rgba(20, 20, 28, 0.4)';

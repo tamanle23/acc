@@ -471,16 +471,39 @@ export class IRMasterRenderer {
     const assetResolver: IAssetSourceResolver = {
       has: (id: string) => activeVideoFrames.has(id) || this.imageCache.has(id),
       get: (id: string) => activeVideoFrames.get(id) || this.imageCache.get(id),
+      onAssetDrawn: (assetId: string) => {
+        if (activeVideoFrames.has(assetId)) {
+          const frame = activeVideoFrames.get(assetId);
+          activeVideoFrames.delete(assetId);
+          try {
+            if (frame && typeof frame.close === 'function') {
+              frame.close();
+            }
+          } catch {}
+        }
+      },
     };
 
     // 3. Delegate to canonical IRCanvasCompositor with 'master' execution profile
-    await IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
-      pluginRegistry: this.pluginRegistry,
-      assetResolver,
-      clearColor: '#000000',
-      executionProfile: 'master',
-      generatePixelBuffer: buffer,
-    });
+    try {
+      await IRCanvasCompositor.renderFrame(ctx, this.timeline, t, {
+        pluginRegistry: this.pluginRegistry,
+        assetResolver,
+        clearColor: '#000000',
+        executionProfile: 'master',
+        generatePixelBuffer: buffer,
+      });
+    } finally {
+      // Ensure any remaining frames (e.g. from culled or hidden tracks) are closed immediately
+      for (const frame of activeVideoFrames.values()) {
+        try {
+          if (frame && typeof frame.close === 'function') {
+            frame.close();
+          }
+        } catch {}
+      }
+      activeVideoFrames.clear();
+    }
   }
 
   private rasterizeProceduralFrame(t: number, width: number, height: number, buffer: Uint8Array): void {

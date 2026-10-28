@@ -19,3 +19,4 @@
 | 359 | [Eliminate IR Plugin In-Memory Caches & Standardize Blob-First ContentCacheRegistry](./359_eliminate_ir_plugin_in_memory_caches_and_blob_first_cache_strategy.md) | Completed |
 | 360 | [OPFS Cache Strategy Files & Folders Debugger UI](./360_opfs_cache_strategy_files_and_folders_debugger_ui.md) | Completed |
 | 360 | [Document Workflow Orchestration Engine Architecture Analysis](./360_document_workflow_orchestration_engine_analysis.md) | Completed |
+| 361 | [Elimination of In-Memory Texture Caches & Native Media Buffer Leaks](./361_eliminate_asset_texture_cache_memory_and_native_buffer_leaks.md) | Completed |

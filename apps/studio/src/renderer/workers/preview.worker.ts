@@ -31,11 +31,24 @@ const textureCache = new Map<string, any>();
 const MAX_WORKER_TEXTURES = 32;
 
 function safeSetTexture(id: string, bmp: any): void {
-  // Enforce single-ownership: do not close previous ImageBitmap directly here.
-  // PreviewFrameMemoryManager.drainDisposalQueue manages deterministic bitmap closure.
+  const existing = textureCache.get(id);
+  if (existing && existing !== bmp) {
+    if (typeof existing.close === 'function') {
+      try {
+        existing.close();
+      } catch {}
+    }
+  }
+
   if (textureCache.size >= MAX_WORKER_TEXTURES && !textureCache.has(id)) {
     const oldestKey = textureCache.keys().next().value;
     if (oldestKey) {
+      const oldBmp = textureCache.get(oldestKey);
+      if (oldBmp && typeof oldBmp.close === 'function') {
+        try {
+          oldBmp.close();
+        } catch {}
+      }
       textureCache.delete(oldestKey);
     }
   }
@@ -122,8 +135,15 @@ function renderCurrentFrame(
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-          memoryManager.set(assetId, localFrame, bmp);
-          safeSetTexture(assetId, bmp);
+          if (isPlaying) {
+            // Sequential playback: mark as single-use transient frame
+            (bmp as any)._isTransient = true;
+            safeSetTexture(assetId, bmp);
+          } else {
+            // Scrubbing/idle: store in strict LRU scrub cache
+            memoryManager.set(assetId, localFrame, bmp);
+            safeSetTexture(assetId, bmp);
+          }
           if (!isPlaying && currentFrame === frame) {
             texturesDirty = true;
             renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
@@ -146,9 +166,24 @@ function renderCurrentFrame(
     ctx.fillRect(0, 0, w, h);
   }
 
+  const workerAssetResolver = {
+    has: (id: string) => textureCache.has(id),
+    get: (id: string) => textureCache.get(id),
+    onAssetDrawn: (assetId: string, asset: any) => {
+      if (asset && (asset as any)._isTransient && typeof (asset as any).close === 'function') {
+        try {
+          (asset as any).close();
+        } catch {}
+        if (textureCache.get(assetId) === asset) {
+          textureCache.delete(assetId);
+        }
+      }
+    },
+  };
+
   try {
     engine.renderFrame(frame, ctx as any, {
-      textureCache,
+      textureCache: workerAssetResolver as any,
       clearColor,
       debugMode,
     });
@@ -156,13 +191,15 @@ function renderCurrentFrame(
     console.error('[preview.worker] Render error at frame', frame, err);
   } finally {
     ctx.restore();
-    const protectedBitmaps = new Set<ImageBitmap>();
-    for (const val of textureCache.values()) {
-      if (val && typeof val.close === 'function') {
-        protectedBitmaps.add(val);
+    // Synchronously close any remaining playback transient bitmaps in textureCache
+    for (const [id, val] of textureCache.entries()) {
+      if (val && (val as any)._isTransient && typeof (val as any).close === 'function') {
+        try {
+          (val as any).close();
+        } catch {}
+        textureCache.delete(id);
       }
     }
-    memoryManager.drainDisposalQueue(protectedBitmaps);
   }
 
   isRendering = false;
@@ -240,6 +277,12 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
     if (!activeIds.has(id)) {
       reader.dispose();
       videoReaders.delete(id);
+      const oldBmp = textureCache.get(id);
+      if (oldBmp && typeof oldBmp.close === 'function') {
+        try {
+          oldBmp.close();
+        } catch {}
+      }
       textureCache.delete(id);
     }
   }

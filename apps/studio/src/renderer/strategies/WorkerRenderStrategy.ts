@@ -157,6 +157,7 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
   }
 
   public dispose(): void {
+    this.syncedSources.clear();
     this.bridge.destroy();
   }
 

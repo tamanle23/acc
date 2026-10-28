@@ -16,12 +16,12 @@ export interface CachedFrameEntry {
 
 export class PreviewFrameMemoryManager {
   private static instance: PreviewFrameMemoryManager;
-  private readonly MAX_GLOBAL_FRAMES = 64;
+  private readonly MAX_GLOBAL_FRAMES = 32;
 
   // Key: `${assetId}:${frame}` -> CachedFrameEntry
   private frameMap = new Map<string, CachedFrameEntry>();
 
-  // Staged disposal queue: frames evicted during prewarm/seek that must not be closed until current render completes
+  // Staged disposal queue: retained for defensive compatibility
   private pendingDisposal: ImageBitmap[] = [];
 
   private constructor() {}
@@ -37,7 +37,10 @@ export class PreviewFrameMemoryManager {
     const key = `${assetId}:${frame}`;
     const entry = this.frameMap.get(key);
     if (entry) {
+      // Refresh LRU order: delete and re-insert
+      this.frameMap.delete(key);
       entry.lastAccess = performance.now();
+      this.frameMap.set(key, entry);
       return entry.bitmap;
     }
     return null;
@@ -46,12 +49,14 @@ export class PreviewFrameMemoryManager {
   public set(assetId: string, frame: number, bitmap: ImageBitmap): void {
     const key = `${assetId}:${frame}`;
     const existing = this.frameMap.get(key);
-    if (existing && existing.bitmap !== bitmap) {
-      this.stageForDisposal(existing.bitmap);
-    }
 
-    // Enforce global budget
-    if (this.frameMap.size >= this.MAX_GLOBAL_FRAMES) {
+    if (existing) {
+      if (existing.bitmap !== bitmap) {
+        // Synchronously close overwritten bitmap immediately
+        this.closeBitmap(existing.bitmap);
+      }
+      this.frameMap.delete(key);
+    } else if (this.frameMap.size >= this.MAX_GLOBAL_FRAMES) {
       this.evictLeastRecentlyUsed();
     }
 
@@ -65,6 +70,7 @@ export class PreviewFrameMemoryManager {
 
   /**
    * Enforces window-bounded eviction: discard frames outside [playhead - 2s, playhead + 3s].
+   * All discarded bitmaps are synchronously and immediately closed.
    */
   public pruneOutsideWindow(playheadFrame: number, fps: number): void {
     const minFrame = Math.max(0, playheadFrame - Math.round(2 * fps));
@@ -73,29 +79,32 @@ export class PreviewFrameMemoryManager {
     for (const [key, entry] of this.frameMap) {
       if (entry.frame < minFrame || entry.frame > maxFrame) {
         this.frameMap.delete(key);
-        this.stageForDisposal(entry.bitmap);
+        this.closeBitmap(entry.bitmap);
       }
     }
   }
 
   private evictLeastRecentlyUsed(): void {
-    let oldestKey: string | null = null;
-    let oldestTime = Infinity;
-
-    for (const [key, entry] of this.frameMap) {
-      if (entry.lastAccess < oldestTime) {
-        oldestTime = entry.lastAccess;
-        oldestKey = key;
-      }
-    }
-
-    if (oldestKey) {
+    // With insertion-order Map and get() re-inserting, first key is oldest LRU
+    const oldestKey = this.frameMap.keys().next().value;
+    if (oldestKey !== undefined) {
       const entry = this.frameMap.get(oldestKey);
+      this.frameMap.delete(oldestKey);
       if (entry) {
-        this.frameMap.delete(oldestKey);
-        this.stageForDisposal(entry.bitmap);
+        this.closeBitmap(entry.bitmap);
       }
     }
+  }
+
+  public delete(assetId: string, frame: number): boolean {
+    const key = `${assetId}:${frame}`;
+    const entry = this.frameMap.get(key);
+    if (entry) {
+      this.frameMap.delete(key);
+      this.closeBitmap(entry.bitmap);
+      return true;
+    }
+    return false;
   }
 
   private stageForDisposal(bitmap: ImageBitmap): void {

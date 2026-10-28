@@ -18,7 +18,7 @@ export interface TextRasterOptions {
 
 export class ContentHashTextureCache {
   private static instance: ContentHashTextureCache;
-  private readonly MAX_ENTRIES = 64;
+  private readonly MAX_ENTRIES = 32;
   private cache = new Map<number, ImageBitmap>();
   private scratchCanvas: OffscreenCanvas | null = null;
   private scratchCtx: OffscreenCanvasRenderingContext2D | null = null;
@@ -117,6 +117,17 @@ export class ContentHashTextureCache {
 
   public has(hash: number): boolean {
     return this.cache.has(hash);
+  }
+
+  public delete(hash: number): boolean {
+    const existing = this.cache.get(hash);
+    if (existing) {
+      try {
+        existing.close();
+      } catch {}
+      return this.cache.delete(hash);
+    }
+    return false;
   }
 
   public set(hash: number, bitmap: ImageBitmap): void {
