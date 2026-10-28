@@ -47,6 +47,7 @@ export class MediabunnyWorkerReader {
   private scrubIdleTimer: any = null;
   private lastScrubRequestTime = 0;
   private readonly fastScrubThrottleMs: number;
+  private hasSavedPoster = false;
 
   // In-Flight Request Deduplication & WebCodecs Concurrency Gate
   private inFlightRequests = new Map<number, Promise<ImageBitmap | null>>();
@@ -145,9 +146,19 @@ export class MediabunnyWorkerReader {
 
     const execute = async (): Promise<ImageBitmap | null> => {
       if (!this.isInitialized) {
-        // Cold start protection: trigger initialization in background without blocking frame render
-        if (!this.isInitializing) {
-          this.init().catch(() => {});
+        // Cold start or Evicted Standby: Fall back to OPFS poster keyframe if available
+        if (this.assetId && typeof createImageBitmap === 'function') {
+          try {
+            const cache = ContentCacheRegistry.get();
+            const posterBlob =
+              (await cache.get(`poster:${this.assetId}`)) ||
+              (await cache.get(this.assetId));
+            if (posterBlob) {
+              return await createImageBitmap(posterBlob);
+            }
+          } catch {
+            // No cached poster available
+          }
         }
         return null;
       }
@@ -171,7 +182,12 @@ export class MediabunnyWorkerReader {
         try {
           const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
           if (wrappedCanvas) {
-            return await this.toImageBitmap(wrappedCanvas);
+            const bmp = await this.toImageBitmap(wrappedCanvas);
+            if (bmp && this.assetId && !this.hasSavedPoster) {
+              this.hasSavedPoster = true;
+              this.savePosterToCache(wrappedCanvas);
+            }
+            return bmp;
           }
         } catch (err) {
           // Graceful scrub skip
@@ -192,7 +208,12 @@ export class MediabunnyWorkerReader {
       try {
         const wrappedCanvas = await this.canvasSink!.getCanvas(targetSec);
         if (wrappedCanvas) {
-          return await this.toImageBitmap(wrappedCanvas);
+          const bmp = await this.toImageBitmap(wrappedCanvas);
+          if (bmp && this.assetId && !this.hasSavedPoster) {
+            this.hasSavedPoster = true;
+            this.savePosterToCache(wrappedCanvas);
+          }
+          return bmp;
         }
       } catch (err) {
         // Decode error fallback
@@ -224,6 +245,67 @@ export class MediabunnyWorkerReader {
       }
     }
     return null;
+  }
+
+  private savePosterToCache(wrappedCanvas: any): void {
+    if (!this.assetId) return;
+    try {
+      const raw = typeof wrappedCanvas.getRawCanvas === 'function'
+        ? wrappedCanvas.getRawCanvas()
+        : wrappedCanvas.canvas || wrappedCanvas;
+
+      if (raw && typeof raw.convertToBlob === 'function') {
+        raw.convertToBlob({ type: 'image/jpeg', quality: 0.8 }).then((blob: Blob) => {
+          const cache = ContentCacheRegistry.get();
+          cache.set(`poster:${this.assetId}`, blob).catch(() => {});
+        }).catch(() => {});
+      } else if (raw && typeof raw.toBlob === 'function') {
+        raw.toBlob((blob: Blob | null) => {
+          if (blob) {
+            const cache = ContentCacheRegistry.get();
+            cache.set(`poster:${this.assetId}`, blob).catch(() => {});
+          }
+        }, 'image/jpeg', 0.8);
+      }
+    } catch {}
+  }
+
+  /**
+   * Reacquires hardware decoder session if evicted.
+   */
+  public async reacquireHardwareDecoder(): Promise<boolean> {
+    if (this.isInitialized) return true;
+    this.initPromise = null;
+    return this.init();
+  }
+
+  /**
+   * Evicts the underlying WebCodecs VideoDecoder hardware session
+   * to free GPU resources and respect operating system decoder quotas.
+   */
+  public evictHardwareDecoder(): void {
+    if (this.scrubIdleTimer) {
+      clearTimeout(this.scrubIdleTimer);
+      this.scrubIdleTimer = null;
+    }
+
+    this.inFlightRequests.clear();
+    this.activeDecodes = 0;
+
+    if (this.canvasSink) {
+      this.canvasSink = null;
+    }
+
+    if (this.input) {
+      try {
+        this.input.dispose();
+      } catch {}
+      this.input = null;
+    }
+
+    this.videoTrack = null;
+    this.isInitialized = false;
+    this.initPromise = null;
   }
 
   public dispose(): void {

@@ -25,3 +25,4 @@
 | 364 | [Studio IRPreviewEngine & Sidecar Worker Permanent Decoupling](./364_studio_ir_preview_engine_worker_decoupling.md) | Completed |
 | 365 | [Studio Timeline Waveform Virtualization (Phase 1)](./365_studio_timeline_waveform_virtualization.md) | Completed |
 | 366 | [Fix FilmstripThumbnail Empty src Attribute Browser Warning](./366_fix_filmstrip_thumbnail_empty_src_browser_warning.md) | Completed |
+| 367 | [Studio WebCodecs Hardware Decoder Quota Pool (Phase 2)](./367_studio_webcodecs_hardware_decoder_quota_pool.md) | Completed |

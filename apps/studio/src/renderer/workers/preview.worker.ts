@@ -11,6 +11,10 @@ import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
 import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
 import { ContentHashTextureCache } from './ContentHashTextureCache';
+import { WebCodecsDecoderPool } from './WebCodecsDecoderPool';
+
+// Centralized WebCodecs hardware decoder lease pool
+const decoderPool = WebCodecsDecoderPool.getInstance();
 
 // Register isomorphic canvas adapter and canonical core modifiers for the dedicated worker thread
 UniversalCanvasProvider.registerAdapter(new WebCanvasAdapter(), true);
@@ -122,12 +126,27 @@ function renderCurrentFrame(
 
   // 3. Resolve active video frames from Mediabunny readers or MemoryManager using clip-local frames
   const activeSeqs = engine.seek(frame).activeSequences;
+  const activeAssetIds = new Set<string>();
+  for (const seq of activeSeqs) {
+    if (seq.assetId) activeAssetIds.add(seq.assetId);
+  }
+
+  // Update hardware decoder lease priorities based on active timeline sequences
+  decoderPool.updatePriorities({
+    playheadFrame: frame,
+    fps: currentFps,
+    activeAssetIds,
+    timeline: currentTimeline || undefined,
+  });
+
   for (const seq of activeSeqs) {
     if (!seq.assetId) continue;
     const reader = videoReaders.get(seq.assetId);
     if (!reader) continue;
 
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
+    const assetId = seq.assetId;
+
     if (isPlaying) {
       // 1. Sequential Playback Path:
       // Consume frame from lookahead memory manager so it does not linger in memory
@@ -136,27 +155,28 @@ function renderCurrentFrame(
         (cachedBmp as any)._isTransient = true;
         safeSetTexture(seq.assetId, cachedBmp);
       } else {
-        const assetId = seq.assetId;
         const requestedLocal = localFrame;
         const seqStart = seq.startFrame ?? 0;
-        reader.requestFrame(localFrame, currentFps, false).then((bmp) => {
-          if (!bmp) return;
-          if (isPlaying) {
-            const currentLocal = Math.max(0, currentFrame - seqStart);
-            if (currentLocal > requestedLocal) {
-              // Frame arrived too late; close immediately to eliminate memory leak
-              if (typeof (bmp as any).close === 'function') {
-                try {
-                  (bmp as any).close();
-                } catch {}
+        decoderPool.acquireLease(assetId, 1000).then(() => {
+          reader.requestFrame(requestedLocal, currentFps, false).then((bmp) => {
+            if (!bmp) return;
+            if (isPlaying) {
+              const currentLocal = Math.max(0, currentFrame - seqStart);
+              if (currentLocal > requestedLocal) {
+                // Frame arrived too late; close immediately to eliminate memory leak
+                if (typeof (bmp as any).close === 'function') {
+                  try {
+                    (bmp as any).close();
+                  } catch {}
+                }
+                return;
               }
-              return;
             }
-          }
-          if (bmp.width === undefined || bmp.width > 0) {
-            (bmp as any)._isTransient = true;
-            safeSetTexture(assetId, bmp);
-          }
+            if (bmp.width === undefined || bmp.width > 0) {
+              (bmp as any)._isTransient = true;
+              safeSetTexture(assetId, bmp);
+            }
+          });
         });
       }
     } else {
@@ -166,16 +186,17 @@ function renderCurrentFrame(
       if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
         safeSetTexture(seq.assetId, cachedBmp);
       } else {
-        const assetId = seq.assetId;
-        reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
-          if (bmp && (bmp.width === undefined || bmp.width > 0)) {
-            memoryManager.set(assetId, localFrame, bmp);
-            safeSetTexture(assetId, bmp);
-            if (!isPlaying && currentFrame === frame) {
-              texturesDirty = true;
-              renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
+        decoderPool.acquireLease(assetId, 1000).then(() => {
+          reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
+            if (bmp && (bmp.width === undefined || bmp.width > 0)) {
+              memoryManager.set(assetId, localFrame, bmp);
+              safeSetTexture(assetId, bmp);
+              if (!isPlaying && currentFrame === frame) {
+                texturesDirty = true;
+                renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
+              }
             }
-          }
+          });
         });
       }
     }
@@ -303,6 +324,7 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
   // 1. Evict and dispose stale video readers to free hardware decoders
   for (const [id, reader] of videoReaders.entries()) {
     if (!activeIds.has(id)) {
+      decoderPool.unregister(id);
       reader.dispose();
       videoReaders.delete(id);
       const oldBmp = textureCache.get(id);
@@ -325,7 +347,8 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
       if (!videoReaders.has(id)) {
         const reader = new MediabunnyWorkerReader(def.src, { assetId: id });
         videoReaders.set(id, reader);
-        reader.init().catch(() => {});
+        decoderPool.register(id, reader);
+        // Note: Hardware leases are assigned on-demand via decoderPool.acquireLease()
       }
     } else {
       if (
