@@ -510,6 +510,21 @@ export class AssetTextureCache implements Disposable {
   }
 
   /**
+   * Explicitly sets or pre-populates a thumbnail data URL in the cache.
+   */
+  public setThumbnailDataUrl(assetId: string, dataUrl: string, width = 120, height = 68): void {
+    if (!assetId || !assetId.trim() || !dataUrl) return;
+    const safeWidth = Math.max(1, width);
+    const safeHeight = Math.max(1, height);
+    const key = `thumb:${assetId}:${safeWidth}:${safeHeight}`;
+    if (this.dataUrlCache.size >= this.MAX_DATA_URL_ENTRIES && !this.dataUrlCache.has(key)) {
+      const oldestKey = this.dataUrlCache.keys().next().value;
+      if (oldestKey) this.dataUrlCache.delete(oldestKey);
+    }
+    this.dataUrlCache.set(key, dataUrl);
+  }
+
+  /**
    * Generates a data URL for timeline filmstrip thumbnail rendering.
    * Utilizes UniversalCanvasProvider scratch pool to avoid DOM canvas allocation churn.
    */

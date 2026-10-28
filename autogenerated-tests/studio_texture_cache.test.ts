@@ -34,4 +34,11 @@ describe('Phase 4: AssetTextureCache & Timeline Filmstrip Generation', () => {
     expect(cache.getThumbnailDataUrl('')).toBe('');
     expect(cache.getThumbnailDataUrl('   ')).toBe('');
   });
+
+  it('should allow explicitly setting and retrieving custom thumbnail data URLs via setThumbnailDataUrl', () => {
+    const cache = AssetTextureCache.getInstance();
+    const customDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    cache.setThumbnailDataUrl('custom-asset-123', customDataUrl, 100, 50);
+    expect(cache.getThumbnailDataUrl('custom-asset-123', 100, 50)).toBe(customDataUrl);
+  });
 });
