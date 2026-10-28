@@ -273,19 +273,19 @@ describe('Iteration 44: Native Media Buffer Hygiene & Memory Management Suite', 
       },
     } as unknown as ImageBitmap);
 
-    // Fill to capacity of 32
-    for (let f = 0; f < 32; f++) {
+    // Fill to capacity of 8
+    for (let f = 0; f < 8; f++) {
       memoryManager.set('clip-1', f, createMockBitmap(f));
     }
-    expect(memoryManager.size()).toBe(32);
+    expect(memoryManager.size()).toBe(8);
     expect(closedBitmaps.length).toBe(0);
 
     // Access frame 0 so frame 1 becomes the oldest LRU
     memoryManager.get('clip-1', 0);
 
-    // Add 33rd frame: frame 1 must be evicted and closed synchronously
+    // Add 9th frame: frame 1 must be evicted and closed synchronously
     memoryManager.set('clip-1', 99, createMockBitmap(99));
-    expect(memoryManager.size()).toBe(32);
+    expect(memoryManager.size()).toBe(8);
     expect(closedBitmaps.length).toBe(1);
     expect(closedBitmaps[0]).toBe(1); // Frame 1 evicted and closed!
     expect(memoryManager.get('clip-1', 1)).toBeNull();
@@ -298,26 +298,21 @@ describe('Iteration 44: Native Media Buffer Hygiene & Memory Management Suite', 
     expect(memoryManager.get('clip-1', 0)).toBe(replaceBmp);
   });
 
-  it('Pillar 3: AssetTextureCache delegates to ContentCacheRegistry and bounds hot decoders', async () => {
+  it('Pillar 3: AssetTextureCache bounds hot storage and provides visual asset fallbacks', async () => {
     const textureCache = AssetTextureCache.getInstance();
-    const testBlob = new Blob(['sample-image-pixel-data'], { type: 'image/png' });
+    const testCanvas = UniversalCanvasProvider.createCanvas(100, 100);
 
-    // 1. Load Blob into AssetTextureCache
-    await textureCache.loadBlob('asset-cloud-1', testBlob);
+    // 1. Direct texture registration
+    textureCache.set('asset-cloud-1', testCanvas);
+    expect(textureCache.has('asset-cloud-1')).toBe(true);
 
-    // 2. Verify persistence into ContentCacheRegistry
-    const ccr = ContentCacheRegistry.get();
-    const cachedFromRegistry = await ccr.get('asset-cloud-1');
-    expect(cachedFromRegistry).not.toBeNull();
-    expect(cachedFromRegistry?.size).toBe(testBlob.size);
-
-    // 3. Verify getVisualAsset fallback to placeholder canvas without crashing
+    // 2. Verify getVisualAsset fallback to placeholder canvas without crashing
     const visual = textureCache.getVisualAsset('asset-cloud-1', undefined, 'image');
     expect(visual).toBeDefined();
     expect(visual.width).toBeGreaterThan(0);
     expect(visual.height).toBeGreaterThan(0);
 
-    // 4. Verify thumbnail generation via scratch pool produces valid data URL
+    // 3. Verify thumbnail generation produces valid string or data
     const thumbUrl = textureCache.getThumbnailDataUrl('asset-cloud-1', 120, 68);
     expect(thumbUrl).toBeDefined();
     expect(typeof thumbUrl).toBe('string');

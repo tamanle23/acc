@@ -80,6 +80,8 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
     fps: number
   ): Promise<void> {
     if (!this.bridge.hasTransferred()) return;
+    // Decouple React playback: Worker owns playback frame loop and textures completely
+    if (this.bridge.getIsPlaying()) return;
 
     const studioTextureCache = AssetTextureCache.getInstance();
     const activeTexturesToSync: Record<string, ImageBitmap> = {};
@@ -140,6 +142,7 @@ export class WorkerRenderStrategy implements IPreviewRenderStrategy {
 
   public renderFrame(frame: number, options?: WorkerRenderOptions): void {
     if (this.bridge.hasTransferred()) {
+      if (this.bridge.getIsPlaying()) return;
       this.bridge.renderFrame(frame, options);
     }
   }

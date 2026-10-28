@@ -5,7 +5,7 @@ if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') 
 
 import { registerCoreModifierPlugins, Depth3DPlugin, type ResolvedTimeline } from '@acc/ir';
 import { IRPreviewEngine } from '../IRPreviewEngine';
-import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';
+import { DeterministicTimelineClock, UniversalCanvasProvider, ContentCacheRegistry, NativeResourceManager } from '@acc/core-isomorphic';
 import { WebCanvasAdapter } from '@acc/core-web';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
@@ -120,6 +120,7 @@ function renderCurrentFrame(
   isRendering = true;
   const w = currentWidth;
   const h = currentHeight;
+  const frameScope = NativeResourceManager.getInstance().createFrameScope();
 
   // 2. Lookahead Pre-warming of upcoming clips within 1.5s & active 4-frame sequential lookahead
   clipPrewarmer.prewarmUpcomingClips(frame, currentFps, isPlaying);
@@ -148,37 +149,13 @@ function renderCurrentFrame(
     const assetId = seq.assetId;
 
     if (isPlaying) {
-      // 1. Sequential Playback Path:
-      // Consume frame from lookahead memory manager so it does not linger in memory
-      const cachedBmp = memoryManager.take(seq.assetId, localFrame);
-      if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
-        (cachedBmp as any)._isTransient = true;
-        safeSetTexture(seq.assetId, cachedBmp);
-      } else {
-        const requestedLocal = localFrame;
-        const seqStart = seq.startFrame ?? 0;
-        decoderPool.acquireLease(assetId, 1000).then(() => {
-          reader.requestFrame(requestedLocal, currentFps, false).then((bmp) => {
-            if (!bmp) return;
-            if (isPlaying) {
-              const currentLocal = Math.max(0, currentFrame - seqStart);
-              if (currentLocal > requestedLocal) {
-                // Frame arrived too late; close immediately to eliminate memory leak
-                if (typeof (bmp as any).close === 'function') {
-                  try {
-                    (bmp as any).close();
-                  } catch {}
-                }
-                return;
-              }
-            }
-            if (bmp.width === undefined || bmp.width > 0) {
-              (bmp as any)._isTransient = true;
-              safeSetTexture(assetId, bmp);
-            }
-          });
+      // 1. Zero-Alloc Sequential Playback Path via Circular Ping-Pong Buffer:
+      decoderPool.acquireLease(assetId, 1000).then(() => {
+        reader.requestSequentialFrame(localFrame, currentFps).then((canvasSlot) => {
+          if (!canvasSlot) return;
+          safeSetTexture(assetId, canvasSlot);
         });
-      }
+      });
     } else {
       // 2. Scrubbing / Paused Path:
       // Cache in strict LRU scrub cache
@@ -239,6 +216,7 @@ function renderCurrentFrame(
   } catch (err) {
     console.error('[preview.worker] Render error at frame', frame, err);
   } finally {
+    frameScope.dispose();
     ctx.restore();
     // Synchronously close any remaining playback transient bitmaps in textureCache
     for (const [id, val] of textureCache.entries()) {

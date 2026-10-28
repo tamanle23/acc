@@ -7,6 +7,7 @@ import {
   type InputVideoTrack,
 } from 'mediabunny';
 import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import { SequentialVideoReader } from './SequentialVideoReader';
 
 export interface MediabunnyReaderOptions {
   fastScrubFps?: number; // default: 30
@@ -32,6 +33,7 @@ export class MediabunnyWorkerReader {
   private input: Input | null = null;
   private videoTrack: InputVideoTrack | null = null;
   private canvasSink: CanvasSink | null = null;
+  private sequentialReader: SequentialVideoReader | null = null;
 
   private isInitialized = false;
   private isInitializing = false;
@@ -104,6 +106,7 @@ export class MediabunnyWorkerReader {
 
         // Bounded CanvasSink pool to eliminate uncollected OffscreenCanvas allocations
         this.canvasSink = new CanvasSink(track, { poolSize: 2 });
+        this.sequentialReader = new SequentialVideoReader(this.canvasSink, this.width, this.height);
         this.isInitialized = true;
         this.isInitializing = false;
 
@@ -229,6 +232,22 @@ export class MediabunnyWorkerReader {
     return promise;
   }
 
+  /**
+   * Zero-alloc sequential playback frame retrieval via circular ping-pong buffer.
+   */
+  public async requestSequentialFrame(
+    frame: number,
+    fps: number
+  ): Promise<OffscreenCanvas | null> {
+    if (!this.isInitialized) {
+      return null;
+    }
+    if (!this.sequentialReader && this.canvasSink) {
+      this.sequentialReader = new SequentialVideoReader(this.canvasSink, this.width, this.height);
+    }
+    return this.sequentialReader ? this.sequentialReader.getFrameCanvas(frame, fps) : null;
+  }
+
   private async toImageBitmap(wrappedCanvas: any): Promise<ImageBitmap | null> {
     if (!wrappedCanvas) return null;
 
@@ -292,6 +311,11 @@ export class MediabunnyWorkerReader {
     this.inFlightRequests.clear();
     this.activeDecodes = 0;
 
+    if (this.sequentialReader) {
+      this.sequentialReader.dispose();
+      this.sequentialReader = null;
+    }
+
     if (this.canvasSink) {
       this.canvasSink = null;
     }
@@ -325,6 +349,10 @@ export class MediabunnyWorkerReader {
     }
 
     this.videoTrack = null;
+    if (this.sequentialReader) {
+      this.sequentialReader.dispose();
+      this.sequentialReader = null;
+    }
     this.canvasSink = null;
     this.isInitialized = false;
   }

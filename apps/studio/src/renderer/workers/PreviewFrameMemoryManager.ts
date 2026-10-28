@@ -16,7 +16,7 @@ export interface CachedFrameEntry {
 
 export class PreviewFrameMemoryManager {
   private static instance: PreviewFrameMemoryManager;
-  private readonly MAX_GLOBAL_FRAMES = 32;
+  private readonly MAX_GLOBAL_FRAMES = 8;
 
   // Key: `${assetId}:${frame}` -> CachedFrameEntry
   private frameMap = new Map<string, CachedFrameEntry>();

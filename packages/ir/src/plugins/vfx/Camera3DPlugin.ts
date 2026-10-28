@@ -1,4 +1,8 @@
-import { UniversalCanvasProvider, ContentCacheRegistry } from '@acc/core-isomorphic';
+import {
+  UniversalCanvasProvider,
+  ContentCacheRegistry,
+  NativeResourceManager,
+} from '@acc/core-isomorphic';
 import type {
   ModifierPlugin,
   ModifierContext,
@@ -133,11 +137,17 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     return Boolean(params && typeof params === 'object');
   }
 
+  public cleanupSequence(sequenceId: string): void {
+    NativeResourceManager.getInstance().disposeSequenceScope(sequenceId);
+  }
+
   public async execute(context: ModifierContext, params: Camera3DPluginParams): Promise<void> {
     const totalFrames = Math.max(1, Math.round((context.targetEntity as any).durationFrames || context.fps * 3));
     const width = context.canvas.width;
     const height = context.canvas.height;
-    const cacheKey = `camera3d_traj_${(context.targetEntity as any).id || 'default'}_${totalFrames}`;
+    const seqId = (context.targetEntity as any)?.id || 'default';
+    const seqScope = NativeResourceManager.getInstance().getOrCreateSequenceScope(seqId);
+    const cacheKey = `camera3d_traj_${seqId}_${totalFrames}`;
 
     // 1. Precompute Catmull-Rom / Bezier camera trajectory and persist into ContentCacheRegistry
     const keyframes = params.keyframes || [
@@ -152,6 +162,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
       width,
       height
     );
+    if (context.targetEntity) {
+      (context.targetEntity as any)._camera3dTrajectory = trajectory;
+    }
     try {
       const blob = new Blob([trajectory.buffer], { type: 'application/octet-stream' });
       await ContentCacheRegistry.get().set(cacheKey, blob, {
@@ -183,6 +196,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
           this.drawFastBlurred(nbCtx, sharpCanvas, width, height, 8);
           this.drawFastBlurred(fbCtx, sharpCanvas, width, height, 16);
 
+          NativeResourceManager.getInstance().register('focal_near', nearBlurCanvas, { scope: seqScope });
+          NativeResourceManager.getInstance().register('focal_far', farBlurCanvas, { scope: seqScope });
+
           const focalZones: FocalZoneCanvases = {
             sharpCanvas,
             nearBlurCanvas,
@@ -213,18 +229,24 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
   public async renderClipSpace(ctx: ClipRenderContext, params: Camera3DPluginParams): Promise<void> {
     const { ctx: canvasCtx, width, height, localFrame, sequence } = ctx;
     const totalFrames = Math.max(1, sequence.durationFrames || 1);
-    const cacheKey = `camera3d_traj_${sequence.id || 'default'}_${totalFrames}`;
+    const seqId = sequence.id || 'default';
+    const seqScope = NativeResourceManager.getInstance().getOrCreateSequenceScope(seqId);
+    const cacheKey = `camera3d_traj_${seqId}_${totalFrames}`;
 
-    let trajectory: Float32Array | undefined;
-    try {
-      if (await ContentCacheRegistry.get().has(cacheKey)) {
-        const blob = await ContentCacheRegistry.get().get(cacheKey);
-        if (blob) {
-          const ab = await blob.arrayBuffer();
-          trajectory = new Float32Array(ab);
+    let trajectory: Float32Array | undefined =
+      (sequence as any)?._camera3dTrajectory || seqScope.get('camera3d_traj')?.getRaw();
+    if (!trajectory) {
+      try {
+        if (await ContentCacheRegistry.get().has(cacheKey)) {
+          const blob = await ContentCacheRegistry.get().get(cacheKey);
+          if (blob) {
+            const ab = await blob.arrayBuffer();
+            trajectory = new Float32Array(ab);
+            (sequence as any)._camera3dTrajectory = trajectory;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
     if (!trajectory) {
       const keyframes = params.keyframes || [
@@ -238,6 +260,9 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
         width,
         height
       );
+      if (sequence) {
+        (sequence as any)._camera3dTrajectory = trajectory;
+      }
     }
 
     if (!trajectory) return;
@@ -269,39 +294,53 @@ export class Camera3DPlugin implements ModifierPlugin<Camera3DPluginParams> {
     // Render Dynamic Rack Focus crossfade if focal zones exist
     let focalZones = (sequence as any)?._focalZones as FocalZoneCanvases | undefined;
     if (!focalZones && focalAperture > 0.01) {
-      try {
-        const nearBlob = await ContentCacheRegistry.get().get(`camera3d_focal_near_${cacheKey}`);
-        const farBlob = await ContentCacheRegistry.get().get(`camera3d_focal_far_${cacheKey}`);
-        if (nearBlob && farBlob) {
-          const nearBytes = new Uint8ClampedArray(await nearBlob.arrayBuffer());
-          const farBytes = new Uint8ClampedArray(await farBlob.arrayBuffer());
+      const nearCanvas = seqScope.get('focal_near')?.getRaw();
+      const farCanvas = seqScope.get('focal_far')?.getRaw();
+      if (nearCanvas && farCanvas) {
+        focalZones = {
+          sharpCanvas: null,
+          nearBlurCanvas: nearCanvas,
+          farBlurCanvas: farCanvas,
+        };
+        (sequence as any)._focalZones = focalZones;
+      } else {
+        try {
+          const nearBlob = await ContentCacheRegistry.get().get(`camera3d_focal_near_${cacheKey}`);
+          const farBlob = await ContentCacheRegistry.get().get(`camera3d_focal_far_${cacheKey}`);
+          if (nearBlob && farBlob) {
+            const nearBytes = new Uint8ClampedArray(await nearBlob.arrayBuffer());
+            const farBytes = new Uint8ClampedArray(await farBlob.arrayBuffer());
 
-          const uNear = UniversalCanvasProvider.createCanvas(width, height);
-          const uFar = UniversalCanvasProvider.createCanvas(width, height);
-          const nearCanvas = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
-          const farCanvas = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
+            const uNear = UniversalCanvasProvider.createCanvas(width, height);
+            const uFar = UniversalCanvasProvider.createCanvas(width, height);
+            const rawNear = uNear.getRawCanvas ? uNear.getRawCanvas() : uNear;
+            const rawFar = uFar.getRawCanvas ? uFar.getRawCanvas() : uFar;
 
-          const nCtx = nearCanvas.getContext('2d');
-          const fCtx = farCanvas.getContext('2d');
+            const nCtx = rawNear.getContext('2d');
+            const fCtx = rawFar.getContext('2d');
 
-          const nImgData = nCtx.createImageData(width, height);
-          nImgData.data.set(nearBytes);
-          nCtx.putImageData(nImgData, 0, 0);
+            const nImgData = nCtx.createImageData(width, height);
+            nImgData.data.set(nearBytes);
+            nCtx.putImageData(nImgData, 0, 0);
 
-          const fImgData = fCtx.createImageData(width, height);
-          fImgData.data.set(farBytes);
-          fCtx.putImageData(fImgData, 0, 0);
+            const fImgData = fCtx.createImageData(width, height);
+            fImgData.data.set(farBytes);
+            fCtx.putImageData(fImgData, 0, 0);
 
-          focalZones = {
-            sharpCanvas: null,
-            nearBlurCanvas: nearCanvas,
-            farBlurCanvas: farCanvas,
-          };
-          if (sequence) {
-            (sequence as any)._focalZones = focalZones;
+            NativeResourceManager.getInstance().register('focal_near', rawNear, { scope: seqScope });
+            NativeResourceManager.getInstance().register('focal_far', rawFar, { scope: seqScope });
+
+            focalZones = {
+              sharpCanvas: null,
+              nearBlurCanvas: rawNear,
+              farBlurCanvas: rawFar,
+            };
+            if (sequence) {
+              (sequence as any)._focalZones = focalZones;
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
 
     if (focalZones && focalAperture > 0.01) {

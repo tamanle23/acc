@@ -229,6 +229,7 @@ export class PreviewWorkerBridge implements Disposable {
   private isSupported: boolean = false;
   private isTransferred: boolean = false;
   private isReady: boolean = false;
+  private isPlaying: boolean = false;
   private onFrameUpdateCallback: ((frame: number, ended?: boolean) => void) | null = null;
   private onReadyCallback: (() => void) | null = null;
 
@@ -288,6 +289,9 @@ export class PreviewWorkerBridge implements Disposable {
             this.onReadyCallback();
           }
         } else if (data.type === 'frameUpdate') {
+          if (data.ended) {
+            this.isPlaying = false;
+          }
           if (this.onFrameUpdateCallback) {
             this.onFrameUpdateCallback(data.frame, data.ended);
           }
@@ -396,6 +400,10 @@ export class PreviewWorkerBridge implements Disposable {
     this.renderFrame(frame, optionsOrLod, isScrubbing, clearColor, debugMode);
   }
 
+  public getIsPlaying(): boolean {
+    return this.isPlaying;
+  }
+
   public startPlayback(
     speed: number,
     startFrame: number,
@@ -404,6 +412,7 @@ export class PreviewWorkerBridge implements Disposable {
     onFrameUpdate: (frame: number, ended?: boolean) => void
   ): void {
     if (!this.worker || !this.isTransferred) return;
+    this.isPlaying = true;
     this.onFrameUpdateCallback = onFrameUpdate;
     this.worker.postMessage({
       type: 'startPlayback',
@@ -416,6 +425,7 @@ export class PreviewWorkerBridge implements Disposable {
 
   public stopPlayback(): void {
     if (!this.worker || !this.isTransferred) return;
+    this.isPlaying = false;
     this.onFrameUpdateCallback = null;
     this.worker.postMessage({ type: 'stopPlayback' });
   }

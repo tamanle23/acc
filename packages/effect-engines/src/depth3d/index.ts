@@ -94,16 +94,7 @@ async function loadAssetBytes(assetPathOrUri: string): Promise<Uint8Array | null
     }
   }
 
-  try {
-    console.log("loadAssetBytes", assetPathOrUri);
-    const blob = AssetProtocolRegistry.getInstance().resolve(assetPathOrUri);
-    const ab = await blob.arrayBuffer();
-    const bytes = new Uint8Array(ab);
-    await cache.set(assetPathOrUri, blob);
-    return bytes;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function checkExists(p: string): Promise<boolean> {

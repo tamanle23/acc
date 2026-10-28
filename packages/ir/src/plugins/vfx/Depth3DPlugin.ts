@@ -6,6 +6,7 @@ import {
   Logger,
   ContentCacheRegistry,
   CanvasAssetLoader,
+  NativeResourceManager,
 } from '@acc/core-isomorphic';
 import type { ModifierPlugin, ModifierContext, ClipRenderContext } from '../ModifierPluginRegistry';
 import {
@@ -139,6 +140,30 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     return Boolean(params && typeof params === 'object' && 'mode' in params);
   }
 
+  // Pre-allocated static particle arrays for Zero-Alloc Frame Loop
+  private static readonly PARALLAX_PARTICLES = Array.from({ length: 28 }, () => ({
+    x: 0,
+    y: 0,
+    size: 0,
+    speedX: 0,
+    speedY: 0,
+    opacity: 0,
+    pulseSpeed: 0,
+  }));
+
+  private static readonly DUST_PARTICLES = Array.from({ length: 35 }, () => ({
+    x: 0,
+    y: 0,
+    size: 0,
+    speedX: 0,
+    speedY: 0,
+    opacity: 0,
+  }));
+
+  public cleanupSequence(sequenceId: string): void {
+    NativeResourceManager.getInstance().disposeSequenceScope(sequenceId);
+  }
+
   public async execute(context: ModifierContext, params: Depth3DPluginParams): Promise<void> {
     if (!context.state) context.state = {};
     context.state.depth3d = {
@@ -152,6 +177,8 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     
     // Pre-resolve AI subject cutout and Depth layers isomorphically during preflight into ContentCacheRegistry
     const seq = context.targetType === 'sequence' ? (context.targetEntity as any) : null;
+    const seqId = seq?.id || 'default';
+    const seqScope = NativeResourceManager.getInstance().getOrCreateSequenceScope(seqId);
     const assetId = seq?.assetId;
     const assetDef = assetId && context.assets ? context.assets[assetId] : undefined;
     const effectiveImagePath = params.imagePath || assetDef?.src || seq?.src || assetId;
@@ -160,7 +187,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       const cacheKeys = [effectiveImagePath, params.imagePath, assetId, seq?.id, seq?.src].filter(Boolean) as string[];
 
       try {
-        await resolveSubjectCutout(effectiveImagePath, params as any);
+        const cutout = await resolveSubjectCutout(effectiveImagePath, params as any);
+        if (cutout && seq) {
+          seq._prebakedCutout = cutout;
+          if (cutout.subjectImg) {
+            NativeResourceManager.getInstance().register('cutout', cutout.subjectImg, { scope: seqScope });
+          }
+        }
       } catch { }
 
       const mode = params.mode || 'frame_breaker';
@@ -188,6 +221,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
             params as any
           );
 
+          if (depthData && seq) {
+            seq._prebakedDepthData = depthData;
+            if (depthData.srcCanvas) {
+              NativeResourceManager.getInstance().register('depth_src', depthData.srcCanvas, { scope: seqScope });
+            }
+          }
+
           // If relighting is requested, compute surface normal map and persist as Blob in ContentCacheRegistry
           if (params.relighting?.enabled && depthData?.srcCanvas) {
             const dCtx = depthData.srcCanvas.getContext('2d');
@@ -199,6 +239,9 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
               4,
               params.relighting.normalStrength ?? 2.0
             );
+            if (seq) {
+              seq._prebakedNormalMap = normalMap;
+            }
             const normalBlob = new Blob([normalMap.normals.buffer], { type: 'application/octet-stream' });
             for (const k of cacheKeys) {
               await ContentCacheRegistry.get().set(`normal_${k}`, normalBlob, {
@@ -214,12 +257,17 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
   /**
    * Phase 2: Clip Space Rendering.
    * Renders the 3D frame border, floating motion, and pop-out effect directly onto the canvas.
+   * Adheres strictly to ZERO-ALLOC-FRAME-LOOP:
+   * Synchronously reads pre-baked textures from SequenceResourceScope or performs one-time initialization.
    */
   public async renderClipSpace(ctx: ClipRenderContext, params: Depth3DPluginParams): Promise<void> {
     const { ctx: canvasCtx, width, height, localFrame, sequence, baseAsset } = ctx;
     if (!baseAsset) return;
     // Restrict Depth3DPlugin processing exclusively to image sequence types
     if (sequence.type && sequence.type !== 'image') return;
+
+    const seqId = sequence.id || 'default';
+    const seqScope = NativeResourceManager.getInstance().getOrCreateSequenceScope(seqId);
 
     const mode = params.mode || 'frame_breaker';
     const totalSeqFrames = sequence.durationFrames || 1;
@@ -233,49 +281,61 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       (sequence as any).src,
     ].filter(Boolean) as string[];
 
-    // Retrieve cached cutout via ContentCacheRegistry / resolveSubjectCutout
-    let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined;
-    try {
-      if (candidateKeys[0]) {
+    // Retrieve cached cutout via prebaked sequence cache or SequenceResourceScope
+    let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined =
+      (sequence as any)._prebakedCutout;
+    if (!cutout && candidateKeys[0]) {
+      try {
         cutout = await resolveSubjectCutout(candidateKeys[0], params as any);
-      }
-    } catch {}
+        if (cutout) {
+          (sequence as any)._prebakedCutout = cutout;
+          if (cutout.subjectImg) {
+            NativeResourceManager.getInstance().register('cutout', cutout.subjectImg, { scope: seqScope });
+          }
+        }
+      } catch {}
+    }
     if (!cutout && (baseAsset as any)._cutoutResolved === undefined) {
       cutout = { subjectImg: null, subjectBBox: null };
     }
 
-    // Build scoped scratch background plate for frame_breaker
-    let uBgCanvas: any | undefined;
+    // Build or reuse scoped scratch background plate for frame_breaker
     let bgCanvas: any | undefined;
     if (mode === 'frame_breaker') {
-      try {
-        uBgCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-        bgCanvas = uBgCanvas.getRawCanvas ? uBgCanvas.getRawCanvas() : uBgCanvas;
-        const bgCtx = bgCanvas.getContext('2d');
-        bgCtx.fillStyle = '#06060c';
-        bgCtx.fillRect(0, 0, width, height);
+      bgCanvas = (sequence as any)._prebakedBgCanvas || seqScope.get('frame_breaker_bg')?.getRaw();
+      if (!bgCanvas) {
+        try {
+          const uBgCanvas = UniversalCanvasProvider.createCanvas(width, height);
+          bgCanvas = uBgCanvas.getRawCanvas ? uBgCanvas.getRawCanvas() : uBgCanvas;
+          const bgCtx = bgCanvas.getContext('2d');
+          bgCtx.fillStyle = '#06060c';
+          bgCtx.fillRect(0, 0, width, height);
 
-        const imgRatio = baseAsset.width / baseAsset.height;
-        const canvasRatio = width / height;
-        let bgW = width;
-        let bgH = height;
-        let bgX = 0;
-        let bgY = 0;
+          const imgRatio = baseAsset.width / baseAsset.height;
+          const canvasRatio = width / height;
+          let bgW = width;
+          let bgH = height;
+          let bgX = 0;
+          let bgY = 0;
 
-        if (imgRatio > canvasRatio) {
-          bgW = width;
-          bgH = width / imgRatio;
-          bgY = (height - bgH) / 2;
-        } else {
-          bgH = height;
-          bgW = height * imgRatio;
-          bgX = (width - bgW) / 2;
-        }
+          if (imgRatio > canvasRatio) {
+            bgW = width;
+            bgH = width / imgRatio;
+            bgY = (height - bgH) / 2;
+          } else {
+            bgH = height;
+            bgW = height * imgRatio;
+            bgX = (width - bgW) / 2;
+          }
 
-        bgCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, bgX, bgY, bgW, bgH);
-        bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
-        bgCtx.fillRect(bgX, bgY, bgW, bgH);
-      } catch {}
+          bgCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, bgX, bgY, bgW, bgH);
+          bgCtx.fillStyle = 'rgba(10, 10, 18, 0.65)';
+          bgCtx.fillRect(bgX, bgY, bgW, bgH);
+
+          (sequence as any)._prebakedBgCanvas = bgCanvas;
+          NativeResourceManager.getInstance().register('frame_breaker_bg', bgCanvas, { scope: seqScope });
+        } catch {}
+      }
     }
 
     const depthConfig = {
@@ -292,46 +352,75 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
       depthMesh: params.depthMesh,
     };
 
-    let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined;
-    try {
-      if (candidateKeys[0]) {
+    const needsDepth =
+      mode === 'depth_map_3d' ||
+      mode === 'mesh_displacement' ||
+      mode === 'depth_heatmap' ||
+      mode === 'parallax_25d' ||
+      mode === 'parallax_dolly' ||
+      mode === 'volumetric_sandwich' ||
+      mode === 'sandwich' ||
+      mode === 'frame_breaker' ||
+      params.autoDepth !== false ||
+      Boolean(params.relighting?.enabled);
+
+    let depthLayersData: { srcCanvas: any; depthLayers: any } | undefined =
+      (sequence as any)._prebakedDepthData;
+    if (!depthLayersData && needsDepth && candidateKeys[0]) {
+      try {
         depthLayersData = await resolveDepthMapData(candidateKeys[0], width, height, params as any);
+        if (depthLayersData) {
+          (sequence as any)._prebakedDepthData = depthLayersData;
+          if (depthLayersData.srcCanvas) {
+            NativeResourceManager.getInstance().register('depth_src', depthLayersData.srcCanvas, { scope: seqScope });
+          }
+        }
+      } catch {}
+    }
+
+    // Zero-alloc in-place mutation of pre-allocated static particles
+    let particles: typeof Depth3DPlugin.PARALLAX_PARTICLES | undefined;
+    if (mode === 'parallax_25d' || mode === 'parallax_dolly') {
+      particles = Depth3DPlugin.PARALLAX_PARTICLES;
+      for (let i = 0; i < 28; i++) {
+        const p = particles[i];
+        p.x = (Math.sin(i * 99 + localFrame * 0.05) * 0.5 + 0.5) * width;
+        p.y = (Math.cos(i * 33 + localFrame * 0.03) * 0.5 + 0.5) * height;
+        p.size = 3 + (i % 6) * 3;
+        p.speedX = (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1);
+        p.speedY = -0.5 - (i % 4) * 0.4;
+        p.opacity = 0.2 + (i % 5) * 0.12;
+        p.pulseSpeed = 1.5 + (i % 3);
       }
-    } catch {}
+    }
 
-    // 100% Stateless mathematical evaluation of parallax and dust particles (ZERO-ALLOC-FRAME-LOOP)
-    const particles = (mode === 'parallax_25d' || mode === 'parallax_dolly')
-      ? Array.from({ length: 28 }, (_, i) => ({
-          x: (Math.sin(i * 99 + localFrame * 0.05) * 0.5 + 0.5) * width,
-          y: (Math.cos(i * 33 + localFrame * 0.03) * 0.5 + 0.5) * height,
-          size: 3 + (i % 6) * 3,
-          speedX: (0.4 + (i % 3) * 0.3) * (i % 2 === 0 ? 1 : -1),
-          speedY: -0.5 - (i % 4) * 0.4,
-          opacity: 0.2 + (i % 5) * 0.12,
-          pulseSpeed: 1.5 + (i % 3),
-        }))
-      : undefined;
+    let dustParticles: typeof Depth3DPlugin.DUST_PARTICLES | undefined;
+    if (mode === 'volumetric_sandwich' || mode === 'sandwich') {
+      dustParticles = Depth3DPlugin.DUST_PARTICLES;
+      for (let i = 0; i < 35; i++) {
+        const p = dustParticles[i];
+        p.x = (Math.sin(i * 47 + localFrame * 0.02) * 0.5 + 0.5) * width;
+        p.y = (Math.cos(i * 83 + localFrame * 0.015) * 0.5 + 0.5) * height;
+        p.size = 2 + (i % 4) * 2;
+        p.speedX = (0.2 + (i % 3) * 0.2) * (i % 2 === 0 ? 1 : -1);
+        p.speedY = -0.3 - (i % 3) * 0.2;
+        p.opacity = 0.15 + (i % 4) * 0.1;
+      }
+    }
 
-    const dustParticles = (mode === 'volumetric_sandwich' || mode === 'sandwich')
-      ? Array.from({ length: 35 }, (_, i) => ({
-          x: (Math.sin(i * 47 + localFrame * 0.02) * 0.5 + 0.5) * width,
-          y: (Math.cos(i * 83 + localFrame * 0.015) * 0.5 + 0.5) * height,
-          size: 2 + (i % 4) * 2,
-          speedX: (0.2 + (i % 3) * 0.2) * (i % 2 === 0 ? 1 : -1),
-          speedY: -0.3 - (i % 3) * 0.2,
-          opacity: 0.15 + (i % 4) * 0.1,
-        }))
-      : undefined;
-
-    let uBaseCanvas: any | undefined;
     let baseCanvas: any | undefined;
     if (mode === 'wigglegram') {
-      try {
-        uBaseCanvas = UniversalCanvasProvider.acquireScratchCanvas(width, height);
-        baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
-        const bCtx = baseCanvas.getContext('2d');
-        bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
-      } catch {}
+      baseCanvas = (sequence as any)._prebakedWiggleBase || seqScope.get('wiggle_base')?.getRaw();
+      if (!baseCanvas) {
+        try {
+          const uBaseCanvas = UniversalCanvasProvider.createCanvas(width, height);
+          baseCanvas = uBaseCanvas.getRawCanvas ? uBaseCanvas.getRawCanvas() : uBaseCanvas;
+          const bCtx = baseCanvas.getContext('2d');
+          bCtx.drawImage(baseAsset, 0, 0, baseAsset.width, baseAsset.height, 0, 0, width, height);
+          (sequence as any)._prebakedWiggleBase = baseCanvas;
+          NativeResourceManager.getInstance().register('wiggle_base', baseCanvas, { scope: seqScope });
+        } catch {}
+      }
     }
 
     try {
@@ -520,12 +609,7 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
         }
       }
     } finally {
-      if (uBgCanvas) {
-        UniversalCanvasProvider.releaseScratchCanvas(uBgCanvas);
-      }
-      if (uBaseCanvas) {
-        UniversalCanvasProvider.releaseScratchCanvas(uBaseCanvas);
-      }
+      // Sequence resources are managed via SequenceResourceScope
     }
   }
 }

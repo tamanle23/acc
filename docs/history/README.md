@@ -28,3 +28,4 @@
 | 367 | [Studio WebCodecs Hardware Decoder Quota Pool (Phase 2)](./367_studio_webcodecs_hardware_decoder_quota_pool.md) | Completed |
 | 368 | [Studio Lock-Free AudioWorklet SPSC RingBuffer (Phase 3)](./368_studio_spsc_audioworklet_ring_buffer.md) | Completed |
 | 369 | [Studio Pro NLE Shortcuts & Ripple Delete (Phase 4)](./369_studio_pro_nle_shortcuts_and_ripple_delete.md) | Completed |
+| 370 | [Scoped Native Resource Manager & Zero-Alloc Video Playback Pipeline](./370_scoped_native_resource_manager_and_zero_alloc_playback_pipeline.md) | Completed |

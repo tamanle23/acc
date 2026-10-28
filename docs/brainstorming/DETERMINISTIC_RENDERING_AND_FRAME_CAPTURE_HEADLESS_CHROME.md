@@ -16,7 +16,9 @@ However, attempting to render web pages into broadcast-quality video using stand
 
 **Deterministic Rendering & Frame Capture** solves this by decoupling the browser's render pipeline entirely from real-world wall-clock time:
 
-$$\mathcal{F}(k) = \text{Render}\Big(\text{DOM}, \; t_{\text{virtual}} = k \cdot \Delta t, \; \text{Seed} = S\Big) \quad \forall \; k \in [0, N-1]$$
+$$
+\mathcal{F}(k) = \text{Render}\Big(\text{DOM}, \; t_{\text{virtual}} = k \cdot \Delta t, \; \text{Seed} = S\Big) \quad \forall \; k \in [0, N-1]
+$$
 
 This blueprint analyzes how to implement bit-exact deterministic rendering and frame capture using **Bun**, **Puppeteer / CDP**, and **`chrome-headless-shell`**, its high-value content applications, and how to pipe captured frames directly into `@acc/exporters` with zero disk I/O.
 
