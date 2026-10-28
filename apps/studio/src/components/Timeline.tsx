@@ -20,17 +20,17 @@ export interface TimelineProps {
     fps: number;
   };
   onScrub: (frame: number) => void;
-  isPlaying?: boolean;
+  isPlaying: boolean;
   onTogglePlay?: () => void;
-  shuttle?: UseShuttleEngineReturn;
+  shuttle: UseShuttleEngineReturn;
 }
 
 export function Timeline({
   playhead,
   onScrub,
-  isPlaying: externalIsPlaying,
+  isPlaying,
   onTogglePlay,
-  shuttle: externalShuttle,
+  shuttle,
 }: TimelineProps) {
   const currentFrame = playhead?.currentFrame || 0;
   const fps = playhead?.fps || 30;
@@ -69,18 +69,8 @@ export function Timeline({
     onScrub(discreteFrame);
   };
 
-  // Frame-Accurate J-K-L Shuttle Engine with Discrete Frame Snapping & Audio Clock Sync
-  const internalShuttle = useShuttleEngine({
-    currentFrame,
-    totalFrames,
-    fps,
-    onScrub: handleScrub,
-    irState,
-    enableKeybindings: !externalShuttle,
-  });
 
-  const shuttle = externalShuttle || internalShuttle;
-  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : shuttle.isPlaying;
+
 
   const togglePlay = () => {
     if (onTogglePlay) {
