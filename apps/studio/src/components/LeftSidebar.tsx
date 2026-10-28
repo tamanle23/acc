@@ -19,6 +19,7 @@ import { STAGING_PRESETS, type StagingPreset, type PresetCategory } from '../lib
 import { SFX_SOUND_BANKS } from '../lib/library/sfxBank';
 import { IRStateManager } from '../lib/ir/irState';
 import { useIRState } from '../lib/ir/useStudioStore';
+import { ContentCacheRegistry } from '@acc/core-isomorphic';
 import {
   renderPresetIcon,
   ShapePresetThumbnail,
@@ -89,6 +90,14 @@ export function LeftSidebar({
       const type = isVideo ? 'video' : isAudio ? 'audio' : isImage ? 'image' : 'video';
       const cleanName = file.name.replace(/[^a-zA-Z0-9_-]/g, '_');
       const assetId = `asset_${Date.now()}_${cleanName.slice(0, 16)}`;
+
+      // Store into ContentCacheRegistry with Blob API zero-copy backing
+      try {
+        const cache = ContentCacheRegistry.get();
+        if (typeof cache.setBlob === 'function') {
+          cache.setBlob(assetId, file, { mimeType: file.type, sizeBytes: file.size }).catch(() => {});
+        }
+      } catch {}
 
       IRStateManager.getInstance().addAsset(assetId, { id: assetId, type, src: objectUrl, name: file.name, size: file.size });
     }

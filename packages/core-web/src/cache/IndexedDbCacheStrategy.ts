@@ -1,19 +1,35 @@
-import { ContentCacheStrategyId, type IContentCacheStrategy, type CacheEntryMetadata } from '@acc/core-isomorphic';
-import { fastChecksum } from '@acc/core-isomorphic';
+import {
+  ContentCacheStrategyId,
+  type IContentCacheStrategy,
+  type CacheEntryMetadata,
+  fastChecksum,
+  streamToBlob,
+  blobToStream,
+  uint8ArrayToStream,
+  blobToUint8Array,
+} from '@acc/core-isomorphic';
 
 const DB_NAME = 'acc_content_cache';
 const STORE_NAME = 'blobs';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented for blob-first schema
 
 interface IndexedDbRecord {
   key: string;
-  data: ArrayBuffer;
+  data?: ArrayBuffer;
+  blob?: Blob;
+  metadata: CacheEntryMetadata;
+}
+
+interface FallbackMemoryItem {
+  data?: Uint8Array;
+  blob?: Blob;
   metadata: CacheEntryMetadata;
 }
 
 /**
  * IndexedDbCacheStrategy:
  * Browser client cache strategy utilizing IndexedDB for persistent storage across sessions.
+ * Features first-class Blob and Streaming support with zero-copy disk backing.
  * Falls back to in-memory Map in non-browser/SSR or test mock environments.
  */
 export class IndexedDbCacheStrategy implements IContentCacheStrategy {
@@ -21,7 +37,7 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
   public readonly name = 'Browser IndexedDB Content Cache';
 
   private dbPromise: Promise<IDBDatabase | null> | null = null;
-  private fallbackMemory: Map<string, { data: Uint8Array; metadata: CacheEntryMetadata }> = new Map();
+  private fallbackMemory: Map<string, FallbackMemoryItem> = new Map();
 
   private getDB(): Promise<IDBDatabase | null> {
     if (typeof indexedDB === 'undefined') {
@@ -72,7 +88,46 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
     const db = await this.getDB();
     if (!db) {
       const item = this.fallbackMemory.get(key);
-      return item ? item.data : null;
+      if (!item) return null;
+      if (item.data) return item.data;
+      if (item.blob) return await blobToUint8Array(item.blob);
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = async () => {
+          const res = req.result as IndexedDbRecord | undefined;
+          if (!res) {
+            resolve(null);
+          } else if (res.data) {
+            resolve(new Uint8Array(res.data));
+          } else if (res.blob) {
+            resolve(await blobToUint8Array(res.blob));
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  public async getBlob(key: string): Promise<Blob | null> {
+    const db = await this.getDB();
+    if (!db) {
+      const item = this.fallbackMemory.get(key);
+      if (!item) return null;
+      if (item.blob) return item.blob;
+      if (item.data) {
+        return new Blob([item.data], { type: item.metadata.mimeType || 'application/octet-stream' });
+      }
+      return null;
     }
 
     return new Promise((resolve) => {
@@ -82,10 +137,14 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
         const req = store.get(key);
         req.onsuccess = () => {
           const res = req.result as IndexedDbRecord | undefined;
-          if (!res || !res.data) {
+          if (!res) {
             resolve(null);
+          } else if (res.blob) {
+            resolve(res.blob);
+          } else if (res.data) {
+            resolve(new Blob([res.data], { type: res.metadata.mimeType || 'application/octet-stream' }));
           } else {
-            resolve(new Uint8Array(res.data));
+            resolve(null);
           }
         };
         req.onerror = () => resolve(null);
@@ -93,6 +152,11 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
         resolve(null);
       }
     });
+  }
+
+  public async getStream(key: string): Promise<ReadableStream<Uint8Array> | null> {
+    const blob = await this.getBlob(key);
+    return blob ? blobToStream(blob) : null;
   }
 
   public async set(key: string, data: Uint8Array, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
@@ -124,6 +188,72 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
         req.onerror = () => reject(req.error);
       } catch (err) {
         reject(err);
+      }
+    });
+  }
+
+  public async setBlob(key: string, blob: Blob, metadata?: Partial<CacheEntryMetadata>): Promise<void> {
+    const fullMeta: CacheEntryMetadata = {
+      checksum: metadata?.checksum || `blob_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      mimeType: metadata?.mimeType || blob.type || 'application/octet-stream',
+      createdAt: metadata?.createdAt || Date.now(),
+      sizeBytes: blob.size,
+      metadata: metadata?.metadata,
+    };
+
+    const db = await this.getDB();
+    if (!db) {
+      this.fallbackMemory.set(key, { blob, metadata: fullMeta });
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const record: IndexedDbRecord = {
+          key,
+          blob,
+          metadata: fullMeta,
+        };
+        const req = store.put(record);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  public async setStream(
+    key: string,
+    stream: ReadableStream<Uint8Array>,
+    metadata?: Partial<CacheEntryMetadata>
+  ): Promise<void> {
+    const mimeType = metadata?.mimeType || 'application/octet-stream';
+    const blob = await streamToBlob(stream, mimeType);
+    await this.setBlob(key, blob, metadata);
+  }
+
+  public async getMetadata(key: string): Promise<CacheEntryMetadata | null> {
+    const db = await this.getDB();
+    if (!db) {
+      const item = this.fallbackMemory.get(key);
+      return item ? item.metadata : null;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => {
+          const res = req.result as IndexedDbRecord | undefined;
+          resolve(res ? res.metadata : null);
+        };
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
       }
     });
   }
@@ -163,6 +293,25 @@ export class IndexedDbCacheStrategy implements IContentCacheStrategy {
         req.onerror = () => resolve();
       } catch {
         resolve();
+      }
+    });
+  }
+
+  public async getKeys(): Promise<string[]> {
+    const db = await this.getDB();
+    if (!db) {
+      return Array.from(this.fallbackMemory.keys());
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAllKeys();
+        req.onsuccess = () => resolve((req.result as string[]) || []);
+        req.onerror = () => resolve([]);
+      } catch {
+        resolve([]);
       }
     });
   }

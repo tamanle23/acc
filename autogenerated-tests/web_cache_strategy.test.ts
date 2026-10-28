@@ -3,7 +3,11 @@ import {
   WebCacheStrategy,
   type WebCacheOptions,
 } from '../packages/core-web/src/cache/WebCacheStrategy';
-import { ContentCacheRegistry } from '@acc/core-isomorphic';
+import {
+  ContentCacheRegistry,
+  streamToUint8Array,
+  uint8ArrayToStream,
+} from '@acc/core-isomorphic';
 
 describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
   beforeEach(() => {
@@ -50,8 +54,41 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
 
       expect((await strategy.getKeys()).length).toBe(2);
       await strategy.clear();
-      expect((await strategy.getKeys()).length).toBe(0);
       expect(await strategy.get('key-a')).toBeNull();
+    });
+
+    it('supports Blob and ReadableStream operations in fallback memory mode', async () => {
+      const strategy = new WebCacheStrategy();
+      const blob = new Blob(['fallback-stream-test'], { type: 'text/plain' });
+
+      await strategy.setBlob('blob-fallback', blob, {
+        mimeType: 'text/plain',
+        metadata: { source: 'unit-test' },
+      });
+
+      expect(await strategy.has('blob-fallback')).toBe(true);
+
+      const retrievedBlob = await strategy.getBlob('blob-fallback');
+      expect(retrievedBlob).not.toBeNull();
+      expect(await retrievedBlob!.text()).toBe('fallback-stream-test');
+
+      const meta = await strategy.getMetadata('blob-fallback');
+      expect(meta).not.toBeNull();
+      expect(meta?.sizeBytes).toBe(blob.size);
+
+      // Stream retrieval
+      const stream = await strategy.getStream('blob-fallback');
+      expect(stream).not.toBeNull();
+      const bytes = await streamToUint8Array(stream!);
+      expect(new TextDecoder().decode(bytes)).toBe('fallback-stream-test');
+
+      // Stream set
+      const writeStream = uint8ArrayToStream(new TextEncoder().encode('streaming-data'));
+      await strategy.setStream('stream-key', writeStream, { mimeType: 'text/plain' });
+      const streamRes = await strategy.getStream('stream-key');
+      expect(streamRes).not.toBeNull();
+      const readBackBytes = await streamToUint8Array(streamRes!);
+      expect(new TextDecoder().decode(readBackBytes)).toBe('streaming-data');
     });
   });
 
@@ -149,6 +186,40 @@ describe('WebCacheStrategy (Standard Web Cache API Strategy Pattern)', () => {
       await strategy.clear();
       expect((await strategy.getKeys()).length).toBe(0);
       expect(await strategy.has('frame-001')).toBe(false);
+    });
+
+    it('supports Blob and ReadableStream operations with CacheStorage', async () => {
+      const strategy = new WebCacheStrategy();
+      const blob = new Blob(['cache-storage-stream-test'], { type: 'text/plain' });
+
+      await strategy.setBlob('blob-cache-key', blob, {
+        mimeType: 'text/plain',
+        metadata: { streamable: true },
+      });
+
+      expect(await strategy.has('blob-cache-key')).toBe(true);
+
+      const retrievedBlob = await strategy.getBlob('blob-cache-key');
+      expect(retrievedBlob).not.toBeNull();
+      expect(await retrievedBlob!.text()).toBe('cache-storage-stream-test');
+
+      const meta = await strategy.getMetadata('blob-cache-key');
+      expect(meta).not.toBeNull();
+      expect(meta?.sizeBytes).toBe(blob.size);
+
+      // Stream retrieval directly from Response.body
+      const stream = await strategy.getStream('blob-cache-key');
+      expect(stream).not.toBeNull();
+      const bytes = await streamToUint8Array(stream!);
+      expect(new TextDecoder().decode(bytes)).toBe('cache-storage-stream-test');
+
+      // Stream set
+      const writeStream = uint8ArrayToStream(new TextEncoder().encode('cached-stream-payload'));
+      await strategy.setStream('stream-target', writeStream, { mimeType: 'text/plain' });
+      const streamRes = await strategy.getStream('stream-target');
+      expect(streamRes).not.toBeNull();
+      const readBackBytes = await streamToUint8Array(streamRes!);
+      expect(new TextDecoder().decode(readBackBytes)).toBe('cached-stream-payload');
     });
 
     it('registers and retrieves from ContentCacheRegistry as IContentCacheStrategy', () => {

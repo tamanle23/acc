@@ -31,8 +31,8 @@ describe('Phase 2: Core Web Services Suite (@acc/core-web)', () => {
       expect(ContentCacheRegistry.get().id).toBe('indexeddb');
       expect(VisionEngineRegistry.hasDepthStrategy(DepthStrategyId.Heuristic)).toBe(true);
       expect(VisionEngineRegistry.hasSegmentationStrategy(SegmentationStrategyId.GrabCutFallback)).toBe(true);
-      expect(VisionEngineRegistry.getDefaultDepthStrategyId()).toBe(DepthStrategyId.Heuristic);
-      expect(VisionEngineRegistry.getDefaultSegmentationStrategyId()).toBe(SegmentationStrategyId.GrabCutFallback);
+      expect(VisionEngineRegistry.getDefaultDepthStrategyId()).toBe(DepthStrategyId.DepthAnythingV2Small);
+      expect(VisionEngineRegistry.getDefaultSegmentationStrategyId()).toBe(SegmentationStrategyId.Rmbg);
     });
   });
 

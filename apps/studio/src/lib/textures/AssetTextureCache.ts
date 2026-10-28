@@ -4,6 +4,8 @@
  * Seamlessly decodes real image/video files into HTMLCanvasElement / ImageBitmap,
  * and procedurally generates rich sci-fi filmstrips and 3D textures for mock asset IDs.
  */
+import { ContentCacheRegistry } from '@acc/core-isomorphic';
+
 export interface VisualAssetResult {
   source: CanvasImageSource | null;
   width: number;
@@ -23,6 +25,11 @@ export class AssetTextureCache implements Disposable {
   private placeholderCache = new Map<string, HTMLCanvasElement>();
   private subscribers = new Set<() => void>();
   private readonly MAX_CACHE_ENTRIES = 128;
+  private readonly MAX_IMAGE_ENTRIES = 32;
+  private readonly MAX_VIDEO_ENTRIES = 6;
+  private readonly MAX_CANVAS_ENTRIES = 32;
+  private readonly MAX_DATA_URL_ENTRIES = 32;
+  private readonly MAX_PLACEHOLDER_ENTRIES = 16;
 
   public constructor() {}
 
@@ -88,6 +95,14 @@ export class AssetTextureCache implements Disposable {
 
     const objectUrl = URL.createObjectURL(blob);
     AssetTextureCache.objectUrls.set(assetId, objectUrl);
+
+    // Persist to unified isomorphic ContentCacheRegistry asynchronously
+    try {
+      const cache = ContentCacheRegistry.get();
+      if (typeof cache.setBlob === 'function') {
+        cache.setBlob(assetId, blob).catch(() => {});
+      }
+    } catch {}
 
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -188,6 +203,20 @@ export class AssetTextureCache implements Disposable {
             console.warn(`[AssetTextureCache] Failed to load image: ${src}`);
           };
           img.src = src;
+
+          // Enforce image LRU limit
+          if (this.imageCache.size >= this.MAX_IMAGE_ENTRIES) {
+            const oldestKey = this.imageCache.keys().next().value;
+            if (oldestKey) {
+              const oldEntry = this.imageCache.get(oldestKey);
+              if (oldEntry) {
+                oldEntry.img.onload = null;
+                oldEntry.img.onerror = null;
+                oldEntry.img.src = '';
+              }
+              this.imageCache.delete(oldestKey);
+            }
+          }
           this.imageCache.set(src, entry);
         }
       }
@@ -223,6 +252,24 @@ export class AssetTextureCache implements Disposable {
             console.warn(`[AssetTextureCache] Failed to load video: ${src}`);
           };
           video.src = src;
+
+          // Enforce video decoder LRU limit (releasing hardware decoders)
+          if (this.videoCache.size >= this.MAX_VIDEO_ENTRIES) {
+            const oldestKey = this.videoCache.keys().next().value;
+            if (oldestKey) {
+              const oldV = this.videoCache.get(oldestKey);
+              if (oldV) {
+                try {
+                  oldV.video.onloadeddata = null;
+                  oldV.video.onerror = null;
+                  oldV.video.pause();
+                  oldV.video.removeAttribute('src');
+                  oldV.video.load();
+                } catch {}
+              }
+              this.videoCache.delete(oldestKey);
+            }
+          }
           this.videoCache.set(src, vEntry);
         }
       }
@@ -317,6 +364,10 @@ export class AssetTextureCache implements Disposable {
       ctx.fillText(`${width}x${height} • OFFLINE / PLACEHOLDER`, width * 0.5, height * 0.5 + 34);
     }
 
+    if (this.placeholderCache.size >= this.MAX_PLACEHOLDER_ENTRIES) {
+      const oldestKey = this.placeholderCache.keys().next().value;
+      if (oldestKey) this.placeholderCache.delete(oldestKey);
+    }
     this.placeholderCache.set(key, canvas);
     return canvas;
   }
@@ -343,6 +394,10 @@ export class AssetTextureCache implements Disposable {
       this.renderProceduralSciFiAsset(ctx, assetId, width, height);
     }
 
+    if (this.canvasCache.size >= this.MAX_CANVAS_ENTRIES) {
+      const oldestKey = this.canvasCache.keys().next().value;
+      if (oldestKey) this.canvasCache.delete(oldestKey);
+    }
     this.canvasCache.set(key, canvas);
     return canvas;
   }
@@ -358,6 +413,10 @@ export class AssetTextureCache implements Disposable {
 
     const canvas = this.getTextureCanvas(assetId, width, height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    if (this.dataUrlCache.size >= this.MAX_DATA_URL_ENTRIES) {
+      const oldestKey = this.dataUrlCache.keys().next().value;
+      if (oldestKey) this.dataUrlCache.delete(oldestKey);
+    }
     this.dataUrlCache.set(key, dataUrl);
     return dataUrl;
   }

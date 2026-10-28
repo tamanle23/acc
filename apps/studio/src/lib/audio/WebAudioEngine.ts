@@ -111,9 +111,28 @@ export class WebAudioEngine {
     this.lastIrState = irState;
     this.lastFps = fps;
 
-    if (preload) {
+    if (preload && irState.timeline) {
+      // Lazy lookahead: Preload audio assets for sequences starting within 10 seconds or active
+      const proximateAssetIds = new Set<string>();
+      for (const track of irState.timeline.tracks.values()) {
+        if (track.type === 'audio') {
+          for (const seq of track.sequences) {
+            if (seq.assetId && (seq.startFrame <= (fps * 10) || seq.startFrame === 0)) {
+              proximateAssetIds.add(seq.assetId);
+            }
+          }
+        }
+      }
       const assets = irState.timeline.assets || irState.doc?.assets || {};
-      AudioAssetCache.getInstance().preloadAssets(assets);
+      const filteredAssets: Record<string, { src: string; type: string }> = {};
+      for (const id of proximateAssetIds) {
+        if (assets[id] && assets[id].type === 'audio') {
+          filteredAssets[id] = assets[id];
+        }
+      }
+      if (Object.keys(filteredAssets).length > 0) {
+        AudioAssetCache.getInstance().preloadAssets(filteredAssets);
+      }
     }
 
     const audioSourceResolver = (assetId: string, src?: string): DecodedPcmSource | undefined => {

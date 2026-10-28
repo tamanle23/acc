@@ -23,11 +23,38 @@ let currentFrame = 0;
 
 // Texture and video reader registries
 const textureCache = new Map<string, any>();
+const MAX_WORKER_TEXTURES = 32;
+
+function safeSetTexture(id: string, bmp: any): void {
+  const existing = textureCache.get(id);
+  if (existing && existing !== bmp && typeof existing.close === 'function') {
+    try {
+      existing.close();
+    } catch {}
+  }
+
+  if (textureCache.size >= MAX_WORKER_TEXTURES && !textureCache.has(id)) {
+    const oldestKey = textureCache.keys().next().value;
+    if (oldestKey) {
+      const oldBmp = textureCache.get(oldestKey);
+      if (oldBmp && typeof oldBmp.close === 'function') {
+        try {
+          oldBmp.close();
+        } catch {}
+      }
+      textureCache.delete(oldestKey);
+    }
+  }
+
+  textureCache.set(id, bmp);
+}
+
 const videoReaders = new Map<string, MediabunnyWorkerReader>();
 const clipPrewarmer = new WorkerClipPrewarmer(videoReaders);
 const memoryManager = PreviewFrameMemoryManager.getInstance();
 const textTextureCache = ContentHashTextureCache.getInstance();
 void textTextureCache;
+
 
 // Dirty-Frame & Refresh Optimization state
 let lastRenderedFrame: number | null = null;
@@ -96,13 +123,13 @@ function renderCurrentFrame(
     const localFrame = Math.max(0, frame - (seq.startFrame ?? 0));
     const cachedBmp = memoryManager.get(seq.assetId, localFrame);
     if (cachedBmp && (cachedBmp.width === undefined || cachedBmp.width > 0)) {
-      textureCache.set(seq.assetId, cachedBmp);
+      safeSetTexture(seq.assetId, cachedBmp);
     } else {
       const assetId = seq.assetId;
       reader.requestFrame(localFrame, currentFps, isScrubbing).then((bmp) => {
         if (bmp && (bmp.width === undefined || bmp.width > 0)) {
           memoryManager.set(assetId, localFrame, bmp);
-          textureCache.set(assetId, bmp);
+          safeSetTexture(assetId, bmp);
           if (!isPlaying && currentFrame === frame) {
             texturesDirty = true;
             renderCurrentFrame(currentFrame, lod, false, clearColor, debugMode);
@@ -231,17 +258,17 @@ function syncAssetSources(assets: Record<string, { src?: string; type?: string }
       ) {
         const url = def.src;
         const assetId = id;
-        fetch(url)
-          .then((res) => res.blob())
-          .then((blob) => createImageBitmap(blob))
-          .then((bmp) => {
-            textureCache.set(assetId, bmp);
-            texturesDirty = true;
-            if (!isPlaying) {
-              renderCurrentFrame(currentFrame, 1.0, false);
-            }
-          })
-          .catch(() => {});
+          fetch(url)
+            .then((res) => res.blob())
+            .then((blob) => createImageBitmap(blob))
+            .then((bmp) => {
+              safeSetTexture(assetId, bmp);
+              texturesDirty = true;
+              if (!isPlaying) {
+                renderCurrentFrame(currentFrame, 1.0, false);
+              }
+            })
+            .catch(() => {});
       }
     }
   }
@@ -356,7 +383,7 @@ self.onmessage = (e: MessageEvent) => {
     case 'updateTextures': {
       if (data.textures) {
         for (const [id, bmp] of Object.entries(data.textures)) {
-          textureCache.set(id, bmp);
+          safeSetTexture(id, bmp);
         }
         texturesDirty = true;
         if (!isPlaying) {
