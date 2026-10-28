@@ -147,9 +147,9 @@ function StudioWorkspace() {
           description: `Rendered ${result.framesConsumed} frames (${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB)`,
           action: result.buffer
             ? {
-                label: 'Download Again',
-                onClick: () => downloadExportedMp4(result.buffer!),
-              }
+              label: 'Download Again',
+              onClick: () => downloadExportedMp4(result.buffer!),
+            }
             : undefined,
         });
       }

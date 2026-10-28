@@ -182,7 +182,7 @@ export function Timeline({
   }, [selectedSeqId, currentFrame]);
 
   return (
-    <footer className="h-72 glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
+    <footer className="h-full glass-panel border-t border-border/50 flex flex-col select-none shadow-sm z-10 shrink-0">
       {/* 1. Pro Transport & Utility Bar */}
       <Toolbar
         activeTool={activeTool}
