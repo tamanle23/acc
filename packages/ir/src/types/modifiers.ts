@@ -286,6 +286,21 @@ export interface TypedModifierNode<TType extends string, TTarget extends Sequenc
 export interface TimeSpaceModifierParams {
   templateId: string;
   seed?: number;
+  theme?: 'cyberpunk' | 'solar_flare' | 'emerald_matrix' | 'monochrome_titanium' | 'synthwave_neon' | 'tactical_amber' | 'custom';
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  surfaceColor?: string;
+  speedMultiplier?: number;
+  scale?: number;
+  density?: number;
+  strokeWidth?: number;
+  text?: string;
+  subtitle?: string;
+  targetX?: number;
+  targetY?: number;
+  labelX?: number;
+  labelY?: number;
   params?: Record<string, number | string | boolean>;
   boundary?: 'loop' | 'pingpong' | 'clamp' | 'once';
   renderMode?: 'canvas2d' | 'webgl_buffers';

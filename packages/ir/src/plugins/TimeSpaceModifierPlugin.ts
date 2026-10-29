@@ -34,7 +34,71 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
           { label: 'Cinematic Countdown Timer', value: 'dynamic_countdown' },
           { label: 'Energy Shield Hex Lattice', value: 'energy_shield_hex' },
           { label: 'Glitch Data Stream Matrix', value: 'glitch_data_stream' },
+          { label: 'Parametric Superformula Geometry', value: 'parametric_superformula' },
+          { label: 'Dynamic Audio Equalizer Spectrum', value: 'audio_equalizer_spectrum' },
         ],
+      },
+      theme: {
+        key: 'theme',
+        label: 'Aesthetic Theme',
+        type: 'select' as const,
+        defaultValue: 'cyberpunk',
+        options: [
+          { label: 'Cyberpunk Neon', value: 'cyberpunk' },
+          { label: 'Solar Flare Warmth', value: 'solar_flare' },
+          { label: 'Emerald Matrix', value: 'emerald_matrix' },
+          { label: 'Monochrome Titanium', value: 'monochrome_titanium' },
+          { label: 'Synthwave Neon', value: 'synthwave_neon' },
+          { label: 'Tactical Amber', value: 'tactical_amber' },
+        ],
+      },
+      primaryColor: {
+        key: 'primaryColor',
+        label: 'Primary Accent Color',
+        type: 'string' as const,
+        defaultValue: '',
+      },
+      accentColor: {
+        key: 'accentColor',
+        label: 'Secondary / Highlight Color',
+        type: 'string' as const,
+        defaultValue: '',
+      },
+      speedMultiplier: {
+        key: 'speedMultiplier',
+        label: 'Motion Speed Multiplier',
+        type: 'number' as const,
+        min: 0.1,
+        max: 5.0,
+        step: 0.1,
+        defaultValue: 1.0,
+      },
+      scale: {
+        key: 'scale',
+        label: 'Geometric Scale',
+        type: 'number' as const,
+        min: 0.2,
+        max: 3.0,
+        step: 0.1,
+        defaultValue: 1.0,
+      },
+      density: {
+        key: 'density',
+        label: 'Lattice / Particle Density',
+        type: 'number' as const,
+        min: 8,
+        max: 128,
+        step: 4,
+        defaultValue: 32,
+      },
+      strokeWidth: {
+        key: 'strokeWidth',
+        label: 'Vector Stroke Width',
+        type: 'number' as const,
+        min: 0.5,
+        max: 8.0,
+        step: 0.5,
+        defaultValue: 1.5,
       },
       boundary: {
         key: 'boundary',
@@ -95,8 +159,11 @@ export class TimeSpaceModifierPlugin implements ModifierPlugin<TimeSpaceModifier
 
   public getOrCreateMachine(templateId: string, customParams?: any, targetHolder?: any): TimeSpaceStateMachine {
     if (targetHolder) {
-      if (!targetHolder._timeSpaceMachine || targetHolder._timeSpaceTemplateId !== templateId) {
+      // Re-create machine if templateId or critical parametric keys change
+      const paramSignature = `${templateId}_${customParams?.theme}_${customParams?.primaryColor}_${customParams?.speedMultiplier}_${customParams?.scale}_${customParams?.density}_${customParams?.strokeWidth}`;
+      if (!targetHolder._timeSpaceMachine || targetHolder._timeSpaceSignature !== paramSignature) {
         targetHolder._timeSpaceMachine = TimeSpaceRegistry.instantiate(templateId, customParams);
+        targetHolder._timeSpaceSignature = paramSignature;
         targetHolder._timeSpaceTemplateId = templateId;
       }
       return targetHolder._timeSpaceMachine;

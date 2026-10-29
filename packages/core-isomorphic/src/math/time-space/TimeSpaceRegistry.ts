@@ -1,7 +1,12 @@
 import { TimeSpaceStateMachine, createTimeSpaceMachine } from './TimeSpaceStateMachine';
-import { Pt, Group, Curve, Circle, Polygon } from '../pts/DeterministicPtsEngine';
+import { Pt, Group, Curve, Polygon } from '../pts/DeterministicPtsEngine';
 import { StatelessHashNoise } from '../pts/StatelessHashNoise';
 import { DeterministicPtsForm } from '../pts/DeterministicPtsForm';
+import {
+  resolveTimeSpacePalette,
+  interpolateTelemetryTokens,
+  type TimeSpacePalette,
+} from './TimeSpacePalette';
 
 export type TimeSpaceFactory = (params?: any) => TimeSpaceStateMachine;
 
@@ -46,9 +51,15 @@ export class TimeSpaceRegistry {
       const targetY = params.targetY ?? 0.0;
       const labelX = params.labelX ?? 0.4;
       const labelY = params.labelY ?? -0.3;
-      const labelText = params.text ?? 'TARGET ACQUIRED';
+      const rawText = params.text ?? 'TARGET ACQUIRED';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+      const scaleMultiplier = params.scale ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           drawProgress: 0,
           reticleScale: 0,
@@ -75,7 +86,7 @@ export class TimeSpaceRegistry {
             },
           },
         },
-        generateGeometry: (state, space) => {
+        generateGeometry: (state, space, time) => {
           const anchor = space.toPixels([targetX, targetY]);
           const box = space.toPixels([labelX, labelY]);
 
@@ -85,6 +96,7 @@ export class TimeSpaceRegistry {
 
           const progressCount = Math.max(2, Math.floor(fullCurve.length * state.drawProgress));
           const activeCurve = fullCurve.slice(0, progressCount);
+          const interpolatedText = interpolateTelemetryTokens(rawText, time);
 
           return {
             points: [anchor, box],
@@ -93,38 +105,51 @@ export class TimeSpaceRegistry {
             meta: {
               box,
               anchor,
-              text: labelText,
+              text: interpolatedText,
+              palette,
+              strokeWidth,
+              scaleMultiplier,
             },
           };
         },
         render: (snapshot, ctx) => {
           const form = new DeterministicPtsForm(ctx);
           const state = snapshot.state;
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+          const sc = meta?.scaleMultiplier || 1.0;
+
           ctx.save();
           ctx.globalAlpha = state.alpha;
 
           if (snapshot.geometry.groups[0]) {
-            form.line(snapshot.geometry.groups[0], { stroke: '#00ffff', lineWidth: 2 });
+            form.line(snapshot.geometry.groups[0], { stroke: pal.primary, lineWidth: sw });
           }
 
           if (snapshot.geometry.points[0]) {
             const anchor = snapshot.geometry.points[0];
-            form.point(anchor, 6 * state.reticleScale, { fill: '#00ffff', stroke: '#ffffff', lineWidth: 1.5 });
+            form.point(anchor, 6 * state.reticleScale * sc, { fill: pal.primary, stroke: pal.accent, lineWidth: sw });
           }
 
           if (snapshot.geometry.meta?.box && state.drawProgress >= 0.8) {
             const box = snapshot.geometry.meta.box;
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 1;
+            ctx.fillStyle = pal.surface;
+            ctx.strokeStyle = pal.primary;
+            ctx.lineWidth = sw;
             ctx.beginPath();
-            ctx.roundRect(box[0], box[1] - 15, 140, 30, 4);
+            ctx.roundRect(box[0], box[1] - 15, 140 * sc, 30 * sc, 4);
             ctx.fill();
             ctx.stroke();
 
+            if (ctx.fillRect) {
+              ctx.fillStyle = pal.accent;
+              ctx.fillRect(box[0] + 2, box[1] - 13, 3, 26 * sc);
+            }
+
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 12px monospace';
-            ctx.fillText(snapshot.geometry.meta.text, box[0] + 8, box[1] + 5);
+            ctx.font = `bold ${Math.round(11 * sc)}px monospace`;
+            ctx.fillText(snapshot.geometry.meta.text, box[0] + 10, box[1] + 5 * sc);
           }
 
           ctx.restore();
@@ -134,8 +159,14 @@ export class TimeSpaceRegistry {
 
     // 2. Kinetic Title Modern
     this.register('kinetic_title', (params = {}) => {
-      const text = params.text ?? 'PRODUCTION READY';
+      const rawText = params.text ?? 'PRODUCTION READY';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const scaleMultiplier = params.scale ?? 1.0;
+
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           scale: 0,
           yOffset: 50,
@@ -165,24 +196,33 @@ export class TimeSpaceRegistry {
           const jitterX = StatelessHashNoise.hash(time.seed, time.frame, 1) * 2;
           const jitterY = StatelessHashNoise.hash(time.seed, time.frame, 2) * 2;
           const center = new Pt(space.center[0] + jitterX, space.center[1] + state.yOffset + jitterY);
+          const interpolatedText = interpolateTelemetryTokens(rawText, time);
+
           return {
             points: [center],
             groups: [],
             polygons: [],
-            meta: { text, scale: state.scale, opacity: state.opacity },
+            meta: {
+              text: interpolatedText,
+              scale: state.scale * scaleMultiplier,
+              opacity: state.opacity,
+              palette,
+            },
           };
         },
         render: (snapshot, ctx) => {
           ctx.save();
           const meta = snapshot.geometry.meta;
           const pt = snapshot.geometry.points[0] || [0, 0];
+          const pal = meta?.palette || palette;
+
           ctx.globalAlpha = meta.opacity;
           ctx.font = '900 48px sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#ffffff';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-          ctx.shadowBlur = 12;
+          ctx.fillStyle = pal.primary;
+          ctx.shadowColor = pal.glow;
+          ctx.shadowBlur = 14;
           ctx.translate(pt[0], pt[1]);
           ctx.scale(meta.scale, meta.scale);
           ctx.fillText(meta.text, 0, 0);
@@ -193,14 +233,20 @@ export class TimeSpaceRegistry {
 
     // 3. Ambient Particle Field
     this.register('particle_ambient', (params = {}) => {
-      const count = params.particleCount ?? 20;
+      const count = params.density ?? params.particleCount ?? 28;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.0;
+
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           turbulence: 1,
           phaseTime: 0,
         },
         setup: (tl, state) => {
-          tl.to(state, { turbulence: 2, duration: 4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+          tl.to(state, { turbulence: 2.2, duration: 4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
         },
         generateGeometry: (state, space, time) => {
           const pts: Pt[] = [];
@@ -221,13 +267,18 @@ export class TimeSpaceRegistry {
             points: pts,
             groups: [],
             polygons: [],
+            meta: { palette, strokeWidth },
           };
         },
         render: (snapshot, ctx) => {
           const form = new DeterministicPtsForm(ctx);
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+
           ctx.save();
           for (const pt of snapshot.geometry.points) {
-            form.point(pt, 3, { fill: 'rgba(0, 240, 255, 0.75)', stroke: '#ffffff', lineWidth: 1 });
+            form.point(pt, 3, { fill: pal.primary, stroke: pal.accent, lineWidth: sw });
           }
           ctx.restore();
         },
@@ -238,9 +289,15 @@ export class TimeSpaceRegistry {
     this.register('hud_tactical_reticle', (params = {}) => {
       const targetX = params.targetX ?? 0.0;
       const targetY = params.targetY ?? 0.0;
-      const labelText = params.text ?? 'LOCK // AZM 184°';
+      const rawText = params.text ?? 'LOCK // AZM {{azimuth}}° // ELEV {{pitch}}°';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
+      const scaleMultiplier = params.scale ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           scale: 0,
           rotation: 0,
@@ -270,9 +327,11 @@ export class TimeSpaceRegistry {
             },
           },
         },
-        generateGeometry: (state, space) => {
+        generateGeometry: (state, space, time) => {
           const center = space.toPixels([targetX, targetY]);
-          const radius = Math.min(space.width, space.height) * 0.12 * state.scale;
+          const radius = Math.min(space.width, space.height) * 0.12 * state.scale * scaleMultiplier;
+          const interpolatedText = interpolateTelemetryTokens(rawText, time);
+
           return {
             points: [center],
             groups: [],
@@ -284,7 +343,9 @@ export class TimeSpaceRegistry {
               counterRotation: state.counterRotation,
               sweepAngle: state.sweepAngle,
               alpha: state.alpha,
-              text: labelText,
+              text: interpolatedText,
+              palette,
+              strokeWidth,
             },
           };
         },
@@ -293,6 +354,8 @@ export class TimeSpaceRegistry {
           if (!meta || meta.radius <= 0) return;
           const [cx, cy] = [meta.center[0], meta.center[1]];
           const r = meta.radius;
+          const pal = meta.palette || palette;
+          const sw = meta.strokeWidth || strokeWidth;
 
           ctx.save();
           ctx.globalAlpha = meta.alpha;
@@ -301,15 +364,15 @@ export class TimeSpaceRegistry {
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate((meta.rotation * Math.PI) / 180);
-          ctx.strokeStyle = '#00f0ff';
-          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = pal.primary;
+          ctx.lineWidth = sw;
           for (let i = 0; i < 4; i++) {
             ctx.beginPath();
             ctx.arc(0, 0, r, i * (Math.PI / 2) + 0.15, (i + 1) * (Math.PI / 2) - 0.15);
             ctx.stroke();
           }
           // Radial tick marks
-          ctx.lineWidth = 1;
+          ctx.lineWidth = Math.max(1, sw * 0.75);
           for (let i = 0; i < 12; i++) {
             const angle = (i * Math.PI * 2) / 12;
             ctx.beginPath();
@@ -323,8 +386,8 @@ export class TimeSpaceRegistry {
           ctx.save();
           ctx.translate(cx, cy);
           ctx.rotate((meta.counterRotation * Math.PI) / 180);
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = pal.secondary;
+          ctx.lineWidth = sw;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
           ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
@@ -333,8 +396,8 @@ export class TimeSpaceRegistry {
           ctx.restore();
 
           // Crosshair and center targeting dot
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = pal.primary;
+          ctx.lineWidth = sw;
           const crossLen = r * 0.4;
           ctx.beginPath();
           ctx.moveTo(cx - crossLen, cy);
@@ -348,16 +411,16 @@ export class TimeSpaceRegistry {
           ctx.stroke();
 
           // Center dot
-          ctx.fillStyle = '#ff0055';
+          ctx.fillStyle = pal.accent;
           ctx.beginPath();
-          ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
           ctx.fill();
 
           // Corner HUD brackets
           const bSize = r * 1.25;
           const bArm = 12;
-          ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
-          ctx.lineWidth = 2;
+          ctx.strokeStyle = pal.primary;
+          ctx.lineWidth = sw * 1.2;
           // Top-Left
           ctx.beginPath();
           ctx.moveTo(cx - bSize, cy - bSize + bArm);
@@ -370,7 +433,7 @@ export class TimeSpaceRegistry {
           ctx.stroke();
 
           // Telemetry readout text
-          ctx.fillStyle = '#00f0ff';
+          ctx.fillStyle = pal.primary;
           ctx.font = 'bold 10px monospace';
           ctx.fillText(meta.text, cx + crossLen + 8, cy - 6);
 
@@ -387,9 +450,14 @@ export class TimeSpaceRegistry {
       const target2Y = params.target2Y ?? -0.2;
       const cardX = params.cardX ?? 0.0;
       const cardY = params.cardY ?? -0.4;
-      const labelText = params.text ?? 'SENSOR CLUSTER ACTIVE';
+      const rawText = params.text ?? 'CLUSTER // ACTIVE [TC {{timecode}}]';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.5;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           drawProgress: 0,
           pulse: 1,
@@ -415,7 +483,7 @@ export class TimeSpaceRegistry {
             },
           },
         },
-        generateGeometry: (state, space) => {
+        generateGeometry: (state, space, time) => {
           const a1 = space.toPixels([targetX, targetY]);
           const a2 = space.toPixels([target2X, target2Y]);
           const hub = space.toPixels([cardX, cardY]);
@@ -425,6 +493,7 @@ export class TimeSpaceRegistry {
 
           const count1 = Math.max(2, Math.floor(curve1.length * state.drawProgress));
           const count2 = Math.max(2, Math.floor(curve2.length * state.drawProgress));
+          const interpolatedText = interpolateTelemetryTokens(rawText, time);
 
           return {
             points: [a1, a2, hub],
@@ -437,48 +506,53 @@ export class TimeSpaceRegistry {
               pulse: state.pulse,
               alpha: state.alpha,
               drawProgress: state.drawProgress,
-              text: labelText,
+              text: interpolatedText,
+              palette,
+              strokeWidth,
             },
           };
         },
         render: (snapshot, ctx) => {
           const meta = snapshot.geometry.meta;
           const form = new DeterministicPtsForm(ctx);
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+
           ctx.save();
           ctx.globalAlpha = meta.alpha;
 
           // Spline leader lines
           if (snapshot.geometry.groups[0]) {
-            form.line(snapshot.geometry.groups[0], { stroke: '#00ffff', lineWidth: 1.5 });
+            form.line(snapshot.geometry.groups[0], { stroke: pal.primary, lineWidth: sw });
           }
           if (snapshot.geometry.groups[1]) {
-            form.line(snapshot.geometry.groups[1], { stroke: 'rgba(0, 255, 255, 0.7)', lineWidth: 1.5 });
+            form.line(snapshot.geometry.groups[1], { stroke: pal.secondary, lineWidth: sw });
           }
 
           // Target node 1
-          form.point(meta.a1, 5 * meta.pulse, { fill: '#00ffff', stroke: '#ffffff', lineWidth: 1.5 });
-          ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+          form.point(meta.a1, 5 * meta.pulse, { fill: pal.primary, stroke: pal.accent, lineWidth: sw });
+          ctx.strokeStyle = pal.secondary;
           ctx.beginPath();
           ctx.arc(meta.a1[0], meta.a1[1], 10 * meta.pulse, 0, Math.PI * 2);
           ctx.stroke();
 
           // Target node 2
-          form.point(meta.a2, 4 * meta.pulse, { fill: '#ffbb00', stroke: '#ffffff', lineWidth: 1.5 });
+          form.point(meta.a2, 4 * meta.pulse, { fill: pal.accent, stroke: '#ffffff', lineWidth: sw });
 
           // Central Telemetry Hub Card
           if (meta.drawProgress >= 0.7) {
             const hx = meta.hub[0];
             const hy = meta.hub[1];
-            ctx.fillStyle = 'rgba(10, 15, 28, 0.85)';
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 1;
+            ctx.fillStyle = pal.surface;
+            ctx.strokeStyle = pal.primary;
+            ctx.lineWidth = sw;
             ctx.beginPath();
-            ctx.roundRect(hx - 80, hy - 16, 160, 32, 4);
+            ctx.roundRect(hx - 95, hy - 16, 190, 32, 4);
             ctx.fill();
             ctx.stroke();
 
-            ctx.fillStyle = '#00ffff';
-            ctx.fillRect(hx - 78, hy - 14, 4, 28);
+            ctx.fillStyle = pal.accent;
+            ctx.fillRect(hx - 93, hy - 14, 4, 28);
 
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px monospace';
@@ -493,10 +567,15 @@ export class TimeSpaceRegistry {
 
     // 6. Network Plexus (Proximity Connected Particle Mesh)
     this.register('network_plexus', (params = {}) => {
-      const nodeCount = params.nodeCount ?? 28;
+      const nodeCount = params.density ?? params.nodeCount ?? 30;
       const proximityDist = params.proximityDistance ?? 140;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           turbulence: 1.0,
           alpha: 1,
@@ -554,29 +633,36 @@ export class TimeSpaceRegistry {
               lines,
               proximityDist,
               alpha: state.alpha,
+              palette,
+              strokeWidth,
             },
           };
         },
         render: (snapshot, ctx) => {
           const meta = snapshot.geometry.meta;
           const form = new DeterministicPtsForm(ctx);
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+
           ctx.save();
           ctx.globalAlpha = meta.alpha;
 
           // Render proximity edge lines
           for (const line of meta.lines) {
             const edgeAlpha = (1.0 - line.dist / meta.proximityDist) * 0.75;
-            ctx.strokeStyle = `rgba(0, 240, 255, ${edgeAlpha})`;
-            ctx.lineWidth = 1.0;
+            ctx.strokeStyle = pal.primary;
+            ctx.globalAlpha = meta.alpha * edgeAlpha;
+            ctx.lineWidth = sw;
             ctx.beginPath();
             ctx.moveTo(line.p1[0], line.p1[1]);
             ctx.lineTo(line.p2[0], line.p2[1]);
             ctx.stroke();
           }
 
+          ctx.globalAlpha = meta.alpha;
           // Render nodes
           for (const pt of snapshot.geometry.points) {
-            form.point(pt, 3, { fill: '#ffffff', stroke: '#00ffff', lineWidth: 1 });
+            form.point(pt, 3, { fill: pal.accent, stroke: pal.primary, lineWidth: sw });
           }
 
           ctx.restore();
@@ -588,9 +674,15 @@ export class TimeSpaceRegistry {
     this.register('audio_waveform_ring', (params = {}) => {
       const targetX = params.targetX ?? 0.0;
       const targetY = params.targetY ?? 0.0;
-      const sampleCount = 64;
+      const sampleCount = params.density ?? 64;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 2.0;
+      const scaleMultiplier = params.scale ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           radiusScale: 0,
           energy: 1.0,
@@ -620,7 +712,7 @@ export class TimeSpaceRegistry {
         },
         generateGeometry: (state, space, time) => {
           const center = space.toPixels([targetX, targetY]);
-          const baseRadius = Math.min(space.width, space.height) * 0.14 * state.radiusScale;
+          const baseRadius = Math.min(space.width, space.height) * 0.14 * state.radiusScale * scaleMultiplier;
           const ringPts: Pt[] = [];
 
           for (let i = 0; i < sampleCount; i++) {
@@ -639,33 +731,38 @@ export class TimeSpaceRegistry {
               center,
               baseRadius,
               alpha: state.alpha,
+              palette,
+              strokeWidth,
             },
           };
         },
         render: (snapshot, ctx) => {
           const meta = snapshot.geometry.meta;
           const form = new DeterministicPtsForm(ctx);
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+
           ctx.save();
           ctx.globalAlpha = meta.alpha;
 
           // Inner glow core
           form.point(meta.center, meta.baseRadius * 0.7, {
-            fill: 'rgba(0, 240, 255, 0.08)',
-            stroke: 'rgba(0, 240, 255, 0.4)',
-            lineWidth: 1.5,
+            fill: pal.surface,
+            stroke: pal.secondary,
+            lineWidth: sw,
           });
 
           // Waveform polygon boundary
           if (snapshot.geometry.polygons[0]) {
             form.polygon(snapshot.geometry.polygons[0], {
-              stroke: '#00ffff',
+              stroke: pal.primary,
               fill: 'rgba(0, 240, 255, 0.12)',
-              lineWidth: 2,
+              lineWidth: sw,
             });
           }
 
           // Center pulsing core dot
-          form.point(meta.center, 5, { fill: '#ffffff', stroke: '#00ffff', lineWidth: 2 });
+          form.point(meta.center, 5, { fill: pal.accent, stroke: pal.primary, lineWidth: sw });
 
           ctx.restore();
         },
@@ -676,10 +773,15 @@ export class TimeSpaceRegistry {
     this.register('cyber_lower_third', (params = {}) => {
       const bannerX = params.targetX ?? -0.3;
       const bannerY = params.targetY ?? 0.65;
-      const title = params.text ?? 'CHIEF SYSTEMS ARCHITECT';
-      const subtitle = params.subtitle ?? 'UNIPOST CORE OS // NODE 01';
+      const rawTitle = params.text ?? 'CHIEF SYSTEMS ARCHITECT';
+      const rawSubtitle = params.subtitle ?? 'UNIPOST CORE OS // TC {{timecode}}';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const scaleMultiplier = params.scale ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           wipe: 0,
           cardHeight: 0,
@@ -706,10 +808,13 @@ export class TimeSpaceRegistry {
             },
           },
         },
-        generateGeometry: (state, space) => {
+        generateGeometry: (state, space, time) => {
           const origin = space.toPixels([bannerX, bannerY]);
-          const fullWidth = space.width * 0.45;
-          const fullHeight = 60;
+          const fullWidth = space.width * 0.45 * scaleMultiplier;
+          const fullHeight = 60 * scaleMultiplier;
+          const title = interpolateTelemetryTokens(rawTitle, time);
+          const subtitle = interpolateTelemetryTokens(rawSubtitle, time);
+
           return {
             points: [origin],
             groups: [],
@@ -724,6 +829,8 @@ export class TimeSpaceRegistry {
               alpha: state.alpha,
               title,
               subtitle,
+              palette,
+              scaleMultiplier,
             },
           };
         },
@@ -733,41 +840,43 @@ export class TimeSpaceRegistry {
           const oy = m.origin[1];
           const curW = m.fullWidth * m.wipe;
           const curH = m.fullHeight * m.cardHeight;
+          const pal = m.palette || palette;
+          const sc = m.scaleMultiplier || 1.0;
 
           ctx.save();
           ctx.globalAlpha = m.alpha;
 
           if (curW > 5 && curH > 5) {
             // Chamfered background box
-            ctx.fillStyle = 'rgba(11, 15, 25, 0.85)';
-            ctx.strokeStyle = '#00f0ff';
+            ctx.fillStyle = pal.surface;
+            ctx.strokeStyle = pal.primary;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(ox, oy);
-            ctx.lineTo(ox + curW - 14, oy);
-            ctx.lineTo(ox + curW, oy + 14);
+            ctx.lineTo(ox + curW - 14 * sc, oy);
+            ctx.lineTo(ox + curW, oy + 14 * sc);
             ctx.lineTo(ox + curW, oy + curH);
-            ctx.lineTo(ox + 14, oy + curH);
-            ctx.lineTo(ox, oy + curH - 14);
+            ctx.lineTo(ox + 14 * sc, oy + curH);
+            ctx.lineTo(ox, oy + curH - 14 * sc);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
 
             // Accent bar
-            ctx.fillStyle = '#00f0ff';
-            ctx.fillRect(ox, oy, 6, curH);
+            ctx.fillStyle = pal.accent;
+            ctx.fillRect(ox, oy, 6 * sc, curH);
 
             // Title & Subtitle Typography
             if (m.textAlpha > 0.1) {
               ctx.save();
               ctx.globalAlpha = m.textAlpha * m.alpha;
               ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 15px sans-serif';
-              ctx.fillText(m.title, ox + 20, oy + 26);
+              ctx.font = `bold ${Math.round(15 * sc)}px sans-serif`;
+              ctx.fillText(m.title, ox + 20 * sc, oy + 26 * sc);
 
-              ctx.fillStyle = '#00f0ff';
-              ctx.font = 'bold 10px monospace';
-              ctx.fillText(m.subtitle, ox + 20, oy + 46);
+              ctx.fillStyle = pal.primary;
+              ctx.font = `bold ${Math.round(10 * sc)}px monospace`;
+              ctx.fillText(m.subtitle, ox + 20 * sc, oy + 46 * sc);
               ctx.restore();
             }
           }
@@ -782,8 +891,14 @@ export class TimeSpaceRegistry {
       const targetX = params.targetX ?? 0.0;
       const targetY = params.targetY ?? 0.0;
       const durationSeconds = params.durationSeconds ?? 5;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 6.0;
+      const scaleMultiplier = params.scale ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           scale: 0,
           countdownVal: durationSeconds,
@@ -812,7 +927,7 @@ export class TimeSpaceRegistry {
         },
         generateGeometry: (state, space) => {
           const center = space.toPixels([targetX, targetY]);
-          const radius = Math.min(space.width, space.height) * 0.12 * state.scale;
+          const radius = Math.min(space.width, space.height) * 0.12 * state.scale * scaleMultiplier;
           const progress = Math.max(0, state.countdownVal / durationSeconds);
 
           return {
@@ -825,6 +940,8 @@ export class TimeSpaceRegistry {
               progress,
               displayNumber: Math.ceil(state.countdownVal),
               alpha: state.alpha,
+              palette,
+              strokeWidth,
             },
           };
         },
@@ -833,20 +950,22 @@ export class TimeSpaceRegistry {
           if (m.radius <= 0) return;
           const [cx, cy] = [m.center[0], m.center[1]];
           const r = m.radius;
+          const pal = m.palette || palette;
+          const sw = m.strokeWidth || strokeWidth;
 
           ctx.save();
           ctx.globalAlpha = m.alpha;
 
           // Track circle
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-          ctx.lineWidth = 6;
+          ctx.lineWidth = sw;
           ctx.beginPath();
           ctx.arc(cx, cy, r, 0, Math.PI * 2);
           ctx.stroke();
 
           // Progress Arc
-          ctx.strokeStyle = m.displayNumber <= 2 ? '#ff0055' : '#00f0ff';
-          ctx.lineWidth = 6;
+          ctx.strokeStyle = m.displayNumber <= 2 ? pal.accent : pal.primary;
+          ctx.lineWidth = sw;
           ctx.lineCap = 'round';
           ctx.beginPath();
           ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + m.progress * Math.PI * 2, false);
@@ -868,9 +987,14 @@ export class TimeSpaceRegistry {
     this.register('energy_shield_hex', (params = {}) => {
       const centerX = params.targetX ?? 0.0;
       const centerY = params.targetY ?? 0.0;
-      const hexRadius = 24;
+      const hexRadius = 24 * (params.scale ?? 1.0);
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 1.2;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           rippleRadius: 0,
           shieldAlpha: 0,
@@ -922,12 +1046,17 @@ export class TimeSpaceRegistry {
               rippleRadius: state.rippleRadius,
               shieldAlpha: state.shieldAlpha,
               hexRadius,
+              palette,
+              strokeWidth,
             },
           };
         },
         render: (snapshot, ctx) => {
           const m = snapshot.geometry.meta;
           const [cx, cy] = [m.center[0], m.center[1]];
+          const pal = m.palette || palette;
+          const sw = m.strokeWidth || strokeWidth;
+
           ctx.save();
           ctx.globalAlpha = m.shieldAlpha;
 
@@ -938,9 +1067,9 @@ export class TimeSpaceRegistry {
             const intensity = Math.max(0, 1 - waveDelta / 80);
 
             if (intensity > 0.05) {
-              ctx.strokeStyle = `rgba(0, 240, 255, ${intensity * 0.8})`;
-              ctx.fillStyle = `rgba(0, 240, 255, ${intensity * 0.25})`;
-              ctx.lineWidth = 1.2;
+              ctx.strokeStyle = pal.primary;
+              ctx.fillStyle = pal.surface;
+              ctx.lineWidth = sw;
 
               // Draw regular hexagon
               ctx.beginPath();
@@ -964,10 +1093,14 @@ export class TimeSpaceRegistry {
 
     // 11. Cyberpunk Glitch Data Stream Rain
     this.register('glitch_data_stream', (params = {}) => {
-      const columnCount = params.columnCount ?? 14;
-      const chars = '0123456789ABCDEF$#@&*';
+      const columnCount = params.density ?? params.columnCount ?? 14;
+      const chars = params.charset ?? '0123456789ABCDEF$#@&*';
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
 
       return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
         initialState: {
           streamOffset: 0,
           alpha: 1,
@@ -1004,11 +1137,14 @@ export class TimeSpaceRegistry {
               chars,
               width: space.width,
               height: space.height,
+              palette,
             },
           };
         },
         render: (snapshot, ctx) => {
           const m = snapshot.geometry.meta;
+          const pal = m.palette || palette;
+
           ctx.save();
           ctx.globalAlpha = m.alpha;
           ctx.font = 'bold 12px monospace';
@@ -1026,18 +1162,205 @@ export class TimeSpaceRegistry {
                 const char = m.chars[charIdx];
 
                 if (row === 0) {
-                  ctx.fillStyle = '#ffffff';
-                  ctx.shadowColor = '#00ff88';
+                  ctx.fillStyle = pal.accent;
+                  ctx.shadowColor = pal.glow;
                   ctx.shadowBlur = 8;
                 } else {
                   const trailAlpha = 1.0 - row / 12;
-                  ctx.fillStyle = `rgba(0, 255, 136, ${trailAlpha * 0.75})`;
+                  ctx.fillStyle = pal.primary;
+                  ctx.globalAlpha = m.alpha * trailAlpha * 0.75;
                   ctx.shadowBlur = 0;
                 }
 
                 ctx.fillText(char, x, y);
               }
             }
+          }
+
+          ctx.restore();
+        },
+      });
+    });
+
+    // 12. Parametric Superformula (Gielis 2D Morphing Polar Geometry)
+    this.register('parametric_superformula', (params = {}) => {
+      const targetX = params.targetX ?? 0.0;
+      const targetY = params.targetY ?? 0.0;
+      const symmetryOrder = params.m ?? 6; // m-fold rotational symmetry
+      const sampleCount = params.density ?? 128;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const strokeWidth = params.strokeWidth ?? 2.0;
+      const scaleMultiplier = params.scale ?? 1.0;
+
+      return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
+        initialState: {
+          morphParam: 1.0,
+          rotation: 0,
+          scale: 0,
+          alpha: 1,
+        },
+        phases: {
+          enter: {
+            duration: 0.6,
+            setup: (tl, state) => {
+              tl.to(state, { scale: 1, duration: 0.6, ease: 'back.out(1.8)' });
+            },
+          },
+          idle: {
+            duration: 4.0,
+            setup: (tl, state) => {
+              tl.to(state, { morphParam: 3.5, duration: 2.0, yoyo: true, repeat: -1, ease: 'sine.inOut' })
+                .to(state, { rotation: 360, duration: 8.0, ease: 'none', repeat: -1 }, 0);
+            },
+          },
+          exit: {
+            duration: 0.4,
+            setup: (tl, state) => {
+              tl.to(state, { scale: 0.1, alpha: 0, duration: 0.4, ease: 'power2.in' });
+            },
+          },
+        },
+        generateGeometry: (state, space) => {
+          const center = space.toPixels([targetX, targetY]);
+          const baseRadius = Math.min(space.width, space.height) * 0.15 * state.scale * scaleMultiplier;
+          const curvePts: Pt[] = [];
+
+          const a = 1.0;
+          const b = 1.0;
+          const m = symmetryOrder;
+          const n1 = state.morphParam;
+          const n2 = 1.0 + state.morphParam * 0.5;
+          const n3 = 1.0 + state.morphParam * 0.5;
+
+          for (let i = 0; i <= sampleCount; i++) {
+            const phi = (i * Math.PI * 2) / sampleCount;
+            const t1 = Math.pow(Math.abs(Math.cos((m * phi) / 4) / a), n2);
+            const t2 = Math.pow(Math.abs(Math.sin((m * phi) / 4) / b), n3);
+            const r = Math.pow(t1 + t2, -1 / n1) * baseRadius;
+
+            const rotAngle = phi + (state.rotation * Math.PI) / 180;
+            curvePts.push(new Pt(center[0] + Math.cos(rotAngle) * r, center[1] + Math.sin(rotAngle) * r));
+          }
+
+          return {
+            points: [center],
+            groups: [new Group(...curvePts)],
+            polygons: [new Group(...curvePts) as any],
+            meta: {
+              center,
+              alpha: state.alpha,
+              palette,
+              strokeWidth,
+            },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const form = new DeterministicPtsForm(ctx);
+          const pal = meta?.palette || palette;
+          const sw = meta?.strokeWidth || strokeWidth;
+
+          ctx.save();
+          ctx.globalAlpha = meta.alpha;
+
+          if (snapshot.geometry.polygons[0]) {
+            form.polygon(snapshot.geometry.polygons[0], {
+              stroke: pal.primary,
+              fill: pal.surface,
+              lineWidth: sw,
+            });
+          }
+
+          form.point(meta.center, 4, { fill: pal.accent, stroke: pal.primary, lineWidth: 1.5 });
+          ctx.restore();
+        },
+      });
+    });
+
+    // 13. Dynamic Audio Equalizer Spectrum Bars
+    this.register('audio_equalizer_spectrum', (params = {}) => {
+      const originX = params.targetX ?? -0.4;
+      const originY = params.targetY ?? 0.3;
+      const barCount = params.density ?? 24;
+      const palette: TimeSpacePalette = resolveTimeSpacePalette(params);
+      const speedMultiplier = params.speedMultiplier ?? 1.0;
+      const scaleMultiplier = params.scale ?? 1.0;
+
+      return createTimeSpaceMachine({
+        boundary: params.boundary,
+        speedMultiplier,
+        initialState: {
+          scaleY: 0,
+          energy: 1.0,
+          alpha: 1,
+        },
+        phases: {
+          enter: {
+            duration: 0.5,
+            setup: (tl, state) => {
+              tl.to(state, { scaleY: 1, duration: 0.5, ease: 'power2.out' });
+            },
+          },
+          idle: {
+            duration: 3.0,
+            setup: (tl, state) => {
+              tl.to(state, { energy: 1.8, duration: 0.8, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+            },
+          },
+          exit: {
+            duration: 0.3,
+            setup: (tl, state) => {
+              tl.to(state, { scaleY: 0, alpha: 0, duration: 0.3 });
+            },
+          },
+        },
+        generateGeometry: (state, space, time) => {
+          const origin = space.toPixels([originX, originY]);
+          const totalWidth = space.width * 0.35 * scaleMultiplier;
+          const maxHeight = 80 * scaleMultiplier * state.scaleY;
+          const barWidth = (totalWidth / barCount) * 0.7;
+          const barSpacing = totalWidth / barCount;
+
+          const bars: { x: number; y: number; h: number; peakY: number }[] = [];
+          for (let i = 0; i < barCount; i++) {
+            const bx = origin[0] + i * barSpacing;
+            const noiseVal = Math.abs(StatelessHashNoise.noise2D(time.seed, time.frame * 0.15, i * 0.5));
+            const h = Math.max(4, noiseVal * maxHeight * state.energy);
+            const peakNoise = Math.abs(StatelessHashNoise.noise2D(time.seed, (time.frame - 5) * 0.1, i * 0.5));
+            const peakY = origin[1] - Math.max(h + 4, peakNoise * maxHeight * 1.1);
+            bars.push({ x: bx, y: origin[1] - h, h, peakY });
+          }
+
+          return {
+            points: [origin],
+            groups: [],
+            polygons: [],
+            meta: {
+              bars,
+              barWidth,
+              alpha: state.alpha,
+              palette,
+            },
+          };
+        },
+        render: (snapshot, ctx) => {
+          const meta = snapshot.geometry.meta;
+          const pal = meta?.palette || palette;
+
+          ctx.save();
+          ctx.globalAlpha = meta.alpha;
+
+          for (const bar of meta.bars) {
+            // Equalizer bar fill
+            ctx.fillStyle = pal.primary;
+            ctx.fillRect(bar.x, bar.y, meta.barWidth, bar.h);
+
+            // Peak hold cap indicator
+            ctx.fillStyle = pal.accent;
+            ctx.fillRect(bar.x, bar.peakY, meta.barWidth, 2);
           }
 
           ctx.restore();

@@ -47,3 +47,4 @@
 | 385 | [TimeSpaceModifierPlugin Refinement & Demo Showcase](./384_timespace_modifier_plugin_refinement_and_demo_showcase.md) | Completed |
 | 386 | [TimeSpaceModifierPlugin Schema Declarations & Inspector Param Flat Serialization](./385_timespace_schema_declarations_and_inspector_flat_serialization.md) | Completed |
 | 387 | [TimeSpace Motion Graphic Templates Expansion](./386_timespace_motion_templates_expansion.md) | Completed |
+| 388 | [TimeSpace Dynamic Motion Synthesizer Architecture](./388_timespace_dynamic_motion_synthesizer.md) | Completed |

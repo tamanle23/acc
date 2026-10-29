@@ -48,6 +48,7 @@ export interface TimeSpaceSnapshot<TState = any> {
 export interface TimeSpaceMachineConfig<TState = any> {
   initialState?: TState;
   boundary?: TemporalBoundaryPolicy;
+  speedMultiplier?: number;
   phases?: Record<string, PhaseDefinition<TState>>;
   tracks?: Record<string, TrackTemporalConfig>;
   setup?: (tl: gsap.core.Timeline, state: TState) => void;
@@ -171,7 +172,8 @@ export class TimeSpaceStateMachine<TState = any> {
     viewport: { width: number; height: number } = { width: 1920, height: 1080 }
   ): TimeSpaceSnapshot<TState> {
     const validFps = Math.max(1, fps);
-    const globalTimeSec = Math.max(0, frame) / validFps;
+    const speed = this.config.speedMultiplier ?? 1.0;
+    const globalTimeSec = (Math.max(0, frame) / validFps) * speed;
 
     let activePhase = 'default';
     let localTimeSec = globalTimeSec;
