@@ -7,8 +7,8 @@ import {
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { GrabCutFallbackStrategy } from './GrabCutFallbackStrategy';
-import { AutoProcessor, RawImage, SamModel } from '@huggingface/transformers';
 import { createCutoutRgba } from '../../utils';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class SlimSamStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.SlimSam;
@@ -30,9 +30,12 @@ export class SlimSamStrategy implements ISegmentationStrategy, IIsomorphicSegmen
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[SlimSamStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          SamModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.SamModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -51,7 +54,7 @@ export class SlimSamStrategy implements ISegmentationStrategy, IIsomorphicSegmen
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+    const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;
 

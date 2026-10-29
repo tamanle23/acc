@@ -6,7 +6,7 @@ import {
   SegmentationStrategyId,
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
-import { AutoProcessor, PreTrainedModel, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 import { createCutoutRgba } from '../../utils';
 
 export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
@@ -17,6 +17,7 @@ export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegme
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
@@ -25,9 +26,12 @@ export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegme
 
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[BiRefNetStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          PreTrainedModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => PreTrainedModel.from_pretrained(this.modelId)),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.PreTrainedModel.from_pretrained(this.modelId, { dtype: 'fp16' }).catch(() => tf.PreTrainedModel.from_pretrained(this.modelId)),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -46,7 +50,7 @@ export class BiRefNetStrategy implements ISegmentationStrategy, IIsomorphicSegme
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+    const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const origW = rawImage.width;
     const origH = rawImage.height;
 

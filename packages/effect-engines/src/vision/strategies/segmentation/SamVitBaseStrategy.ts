@@ -7,7 +7,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { createCutoutRgba } from '../../utils';
-import { AutoProcessor, RawImage, SamModel } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class SamVitBaseStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.SamVitBase;
@@ -26,9 +26,12 @@ export class SamVitBaseStrategy implements ISegmentationStrategy, IIsomorphicSeg
 
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[SamVitBaseStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          SamModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.SamModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -46,7 +49,7 @@ export class SamVitBaseStrategy implements ISegmentationStrategy, IIsomorphicSeg
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+    const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;
 

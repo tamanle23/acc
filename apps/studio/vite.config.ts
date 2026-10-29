@@ -20,6 +20,12 @@ export default defineConfig({
       ],
       output: {
         manualChunks(id) {
+          if (id.includes('node_modules/@huggingface/transformers/')) {
+            return 'vendor-transformers';
+          }
+          if (id.includes('node_modules/onnxruntime-web/') || id.includes('node_modules/onnxruntime-common/')) {
+            return 'vendor-onnx';
+          }
           if (id.includes('node_modules/shiki/')) {
             return 'vendor-shiki';
           }

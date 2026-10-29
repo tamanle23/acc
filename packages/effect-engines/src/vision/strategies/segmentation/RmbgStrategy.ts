@@ -6,7 +6,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { configureHfEnv, createCutoutRgba, loadUniversalTransformers } from '../../utils';
-import { AutoProcessor, PreTrainedModel } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.Rmbg14;
@@ -25,9 +25,12 @@ export class RmbgStrategy implements ISegmentationStrategy, IIsomorphicSegmentat
 
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[RmbgStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          PreTrainedModel.from_pretrained(this.modelId),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.PreTrainedModel.from_pretrained(this.modelId),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;

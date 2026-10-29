@@ -8,7 +8,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
-import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.DptLarge;
@@ -18,6 +18,7 @@ export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDe
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
 
@@ -27,9 +28,12 @@ export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDe
 
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[DptLargeStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          AutoModelForDepthEstimation.from_pretrained(this.modelId),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.AutoModelForDepthEstimation.from_pretrained(this.modelId),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -48,7 +52,7 @@ export class DptLargeStrategy implements IDepthEstimationStrategy, IIsomorphicDe
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+      const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;
 

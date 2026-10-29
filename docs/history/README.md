@@ -37,3 +37,5 @@
 | 376 | [Mandatory Namespaced Cache Architecture with TTL, LRU/Size Eviction & Studio Codebase Optimization](./376_mandatory_namespaced_cache_architecture_ttl_eviction_and_studio_cleanup.md) | Completed |
 | 377 | [Studio Worker Protocol Unification, Canvas Transfer Tracker, and Strict Typing](./377_studio_worker_unification_canvas_transfer_tracker_and_strict_typing.md) | Completed |
 | 378 | [Universal Audio Track Processing and Dynamic Sidechain Ducking Architecture](./378_universal_audio_track_processing_and_dynamic_sidechain_ducking.md) | Completed |
+| 379 | [Zero-Stub Cryptographic Security, Route Unification to `/api/v1/...` & Persistence Hardening](./379_backend_hardening_route_unification.md) | Completed |
+| 380 | [Studio Vite Bundle Optimization and Lazy Vision Strategies](./380_studio_vite_bundle_optimization_and_lazy_vision_strategies.md) | Completed |

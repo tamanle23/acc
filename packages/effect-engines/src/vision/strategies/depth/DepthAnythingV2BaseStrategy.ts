@@ -8,7 +8,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
-import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.DepthAnythingV2Base;
@@ -18,6 +18,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy, II
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private isInitializing = false;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
@@ -29,9 +30,12 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy, II
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[DepthAnythingV2BaseStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          AutoModelForDepthEstimation.from_pretrained(this.modelId, { dtype: 'fp32' }),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.AutoModelForDepthEstimation.from_pretrained(this.modelId, { dtype: 'fp32' }),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -51,7 +55,7 @@ export class DepthAnythingV2BaseStrategy implements IDepthEstimationStrategy, II
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+      const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;
 

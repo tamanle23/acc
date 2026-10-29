@@ -8,7 +8,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
 import { HeuristicDepthStrategy } from './HeuristicDepthStrategy';
-import { AutoModelForDepthEstimation, AutoProcessor, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class GlpnMetricStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.GlpnMetric;
@@ -30,9 +30,12 @@ export class GlpnMetricStrategy implements IDepthEstimationStrategy, IIsomorphic
     this.isInitializing = true;
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[GlpnMetricStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          AutoModelForDepthEstimation.from_pretrained(this.modelId),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.AutoModelForDepthEstimation.from_pretrained(this.modelId),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -52,7 +55,7 @@ export class GlpnMetricStrategy implements IDepthEstimationStrategy, IIsomorphic
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+      const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const origW = rawImage.width;
       const origH = rawImage.height;
 

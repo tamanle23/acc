@@ -7,7 +7,7 @@ import {
 } from '@acc/core-isomorphic';
 import type { ISegmentationStrategy, SegmentationOptions, SegmentationResult } from '../../types';
 import { createCutoutRgba } from '../../utils';
-import { AutoModel, AutoProcessor, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegmentationStrategy {
   public readonly id = SegmentationStrategyId.Sam2Tiny;
@@ -17,6 +17,7 @@ export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegme
 
   private model: any = null;
   private processor: any = null;
+  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
 
   public async init(): Promise<void> {
@@ -25,9 +26,12 @@ export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegme
 
     this.initPromise = (async () => {
       try {
+        const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+        if (!tf) throw new Error('[Sam2TinyStrategy] @huggingface/transformers unavailable');
+        this.rawImageClass = tf.RawImage;
         const [model, processor] = await Promise.all([
-          AutoModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
-          AutoProcessor.from_pretrained(this.modelId)
+          tf.AutoModel.from_pretrained(this.modelId, { dtype: 'fp32' }),
+          tf.AutoProcessor.from_pretrained(this.modelId)
         ]);
         this.model = model;
         this.processor = processor;
@@ -45,7 +49,7 @@ export class Sam2TinyStrategy implements ISegmentationStrategy, IIsomorphicSegme
     await this.init();
 
     const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-    const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+    const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
     const width = rawImage.width;
     const height = rawImage.height;
 

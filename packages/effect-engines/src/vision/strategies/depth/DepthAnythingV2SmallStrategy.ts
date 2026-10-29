@@ -6,7 +6,7 @@ import {
   HeuristicDepthStrategy,
 } from '@acc/core-isomorphic';
 import type { IDepthEstimationStrategy, DepthOptions, DepthResult } from '../../types';
-import { pipeline, RawImage } from '@huggingface/transformers';
+import { UniversalOnnxRuntimeProvider } from '../../UniversalOnnxRuntimeProvider';
 
 export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, IIsomorphicDepthStrategy {
   public readonly id = DepthStrategyId.DepthAnythingV2Small;
@@ -15,6 +15,7 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
   public readonly isSupported = true;
 
   private depthPipeline: any = null;
+  private rawImageClass: any = null;
   private initPromise: Promise<void> | null = null;
   private fallbackStrategy = new HeuristicDepthStrategy();
 
@@ -23,7 +24,10 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
     if (this.initPromise) return this.initPromise;
 
     this.initPromise = (async () => {
-      this.depthPipeline = await pipeline('depth-estimation', this.modelId, { dtype: 'fp32' });
+      const tf = await UniversalOnnxRuntimeProvider.getTransformers();
+      if (!tf) throw new Error('[DepthAnythingV2SmallStrategy] @huggingface/transformers unavailable');
+      this.rawImageClass = tf.RawImage;
+      this.depthPipeline = await tf.pipeline('depth-estimation', this.modelId, { dtype: 'fp32' });
     })();
 
     return this.initPromise;
@@ -34,7 +38,7 @@ export class DepthAnythingV2SmallStrategy implements IDepthEstimationStrategy, I
       await this.init();
 
       const imageBytes = (imageBufferOrInput as any).data || imageBufferOrInput;
-      const rawImage = await RawImage.fromBlob(new Blob([imageBytes]));
+      const rawImage = await this.rawImageClass.fromBlob(new Blob([imageBytes]));
       const output = await this.depthPipeline(rawImage);
 
       // output contains depth map image or depth tensor
