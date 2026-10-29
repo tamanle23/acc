@@ -10,8 +10,9 @@ In `@acc/studio`, video export was hand-rolled directly in `ClientExportOrchestr
 2. **Cooperative Yielding & `AbortSignal` Support in `IRMasterRenderer`:**
    - Extended `HeadlessRenderOptions` with `signal?: AbortSignal` and `yieldInterval?: number`.
    - Wired immediate loop abortion and microtask yielding inside the Phase 2 frame loop.
-3. **Audio Finalization Alignment:**
+3. **Audio Finalization & Streaming WAV Export:**
    - Updated `packages/core-web/src/media-engine/MediabunnyClientSink.ts` `finalize()` to accept `DecoupledAudioMixResult` and planar PCM Float32 channels.
+   - Refactored `UniversalAudioMixer.exportToWav(filePath, mixResult)` to be completely isomorphic: eliminated direct Node/Bun filesystem and `fs`/`path` imports, streaming 16-bit PCM chunks (32 KB per chunk) into OPFS / native storage `WritableStream` via `ContentCacheRegistry.createWritableStream()`. This prevents monolithic in-memory `Blob` and `ArrayBuffer` allocations on long audio timelines.
 4. **Dedicated Background Export Web Worker:**
    - Created `apps/studio/src/renderer/workers/export.worker.ts` and `ExportWorkerBridge.ts` to execute `IRMasterRenderer.render({ engine: 'mediabunny-client', sink })` in a separate background thread with direct OPFS scratch stream writing.
 5. **Refactored `ClientExportOrchestrator.ts`:**
