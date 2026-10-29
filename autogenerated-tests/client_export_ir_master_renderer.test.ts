@@ -52,10 +52,10 @@ class MockTestExportSink implements IIRFrameSink {
 describe('Iteration 47: IRMasterRenderer Studio Export Integration', () => {
   beforeEach(async () => {
     UniversalCanvasProvider.registerAdapter(new NapiCanvasAdapter(), true);
-    if (!ContentCacheRegistry.has('native-file')) {
+    if (!ContentCacheRegistry.hasStrategy('native-file')) {
       ContentCacheRegistry.register(new NativeFileCacheStrategy({ maxBytes: 10 * 1024 * 1024 }), true);
     }
-    await ContentCacheRegistry.get().clear();
+    ContentCacheRegistry.setDefault('native-file');
     NativeResourceManager.getInstance().clear();
   });
 

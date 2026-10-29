@@ -103,6 +103,15 @@ export class ClientExportOrchestrator {
 
     onProgress?.(0);
 
+    if (signal?.aborted) {
+      return {
+        cancelled: true,
+        framesConsumed: 0,
+        fileSizeBytes: 0,
+        buffer: null,
+      };
+    }
+
     // 1. Primary Path: Dedicated Web Worker running IRMasterRenderer + MediabunnyClientSink
     if (typeof Worker !== 'undefined' && !sinkFactory && irState.timeline) {
       try {
@@ -163,7 +172,7 @@ export class ClientExportOrchestrator {
       }
       return {
         cancelled: true,
-        framesConsumed: 0,
+        framesConsumed: renderResult.totalFrames || 0,
         fileSizeBytes: 0,
         buffer: null,
       };

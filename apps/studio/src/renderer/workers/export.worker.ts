@@ -1,6 +1,15 @@
-import { IRMasterRenderer } from '@acc/ir';
+// Defensive worker environment polyfill to avoid runtime errors from Vite HMR / React Refresh
+if (typeof self !== 'undefined' && typeof (self as any).window === 'undefined') {
+  (self as any).window = self;
+}
+
+import { bootstrapCoreWeb, MediabunnyClientStrategy, MediabunnyClientSink } from '@acc/core-web';
+import { registerCoreModifierPlugins, IRMasterRenderer } from '@acc/ir';
 import { MediaEngineRegistry } from '@acc/core-isomorphic';
-import { MediabunnyClientStrategy, MediabunnyClientSink } from '@acc/core-web';
+
+// Bootstrap client runtime (UniversalCanvasProvider WebCanvasAdapter, ContentCacheRegistry OPFS/IndexedDB, MediaEngineRegistry)
+bootstrapCoreWeb();
+registerCoreModifierPlugins();
 
 // Ensure MediabunnyClientStrategy is registered in worker context
 if (!MediaEngineRegistry.has('mediabunny-client')) {

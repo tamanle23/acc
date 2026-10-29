@@ -738,7 +738,12 @@ export class UniversalAudioMixer {
     headerBuffer.set([0x64, 0x61, 0x74, 0x61], 36); // 'data'
     headerView.setUint32(40, dataSize, true);
 
-    const cache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
+    let cache: any;
+    try {
+      cache = ContentCacheRegistry.namespace(CacheNamespace.Audio);
+    } catch {
+      cache = null;
+    }
     const metadata = {
       mimeType: 'audio/wav',
       sizeBytes: totalBufferSize,
@@ -750,7 +755,7 @@ export class UniversalAudioMixer {
     const chunkSize = 16384; // 16k samples per chunk = 32KB buffer chunks
 
     // 2. If storage strategy supports streaming (OPFS / NativeFile), stream directly to WritableStream
-    if (typeof cache.createWritableStream === 'function') {
+    if (cache && typeof cache.createWritableStream === 'function') {
       const writable = await cache.createWritableStream(filePath, metadata);
       const writer = writable.getWriter();
 
@@ -786,34 +791,36 @@ export class UniversalAudioMixer {
     }
 
     // 3. ReadableStream fallback for strategies without createWritableStream
-    const readable = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(headerBuffer);
+    if (cache) {
+      const readable = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(headerBuffer);
 
-        let sampleOffset = 0;
-        while (sampleOffset < totalSampleCount) {
-          const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
-          const pcmChunk = new Uint8Array(chunkLen * 2);
-          const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
+          let sampleOffset = 0;
+          while (sampleOffset < totalSampleCount) {
+            const chunkLen = Math.min(chunkSize, totalSampleCount - sampleOffset);
+            const pcmChunk = new Uint8Array(chunkLen * 2);
+            const chunkView = new DataView(pcmChunk.buffer, pcmChunk.byteOffset, pcmChunk.byteLength);
 
-          let bOffset = 0;
-          for (let i = 0; i < chunkLen; i++) {
-            let s = floatSamples[sampleOffset + i];
-            if (s > 1.0) s = 1.0;
-            else if (s < -1.0) s = -1.0;
-            const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
-            chunkView.setInt16(bOffset, int16, true);
-            bOffset += 2;
+            let bOffset = 0;
+            for (let i = 0; i < chunkLen; i++) {
+              let s = floatSamples[sampleOffset + i];
+              if (s > 1.0) s = 1.0;
+              else if (s < -1.0) s = -1.0;
+              const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
+              chunkView.setInt16(bOffset, int16, true);
+              bOffset += 2;
+            }
+
+            controller.enqueue(pcmChunk);
+            sampleOffset += chunkLen;
           }
 
-          controller.enqueue(pcmChunk);
-          sampleOffset += chunkLen;
-        }
+          controller.close();
+        },
+      });
 
-        controller.close();
-      },
-    });
-
-    await cache.set(filePath, readable, metadata);
+      await cache.set(filePath, readable, metadata);
+    }
   }
 }

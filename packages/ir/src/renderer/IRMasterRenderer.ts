@@ -291,7 +291,13 @@ export class IRMasterRenderer implements Disposable {
       strategy = undefined;
     }
 
-    const cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+    let cache: any;
+    try {
+      cache = ContentCacheRegistry.namespace(CacheNamespace.Assets);
+    } catch {
+      // ContentCacheRegistry has no default strategy registered
+      cache = null;
+    }
     const protocolRegistry = AssetProtocolRegistry.getInstance();
 
     for (const [assetId, assetDef] of Object.entries(this.timeline.assets)) {
@@ -300,10 +306,10 @@ export class IRMasterRenderer implements Disposable {
         const resolvedPath = resolveAssetPath(baseDir, rawSrc);
         const ext = getFileExtension(resolvedPath);
 
-        let assetExists = await cache.has(resolvedPath) || await cache.has(assetId);
+        let assetExists = cache ? (await cache.has(resolvedPath) || await cache.has(assetId)) : false;
         let cachedBytes: Uint8Array | null = null;
 
-        if (assetExists) {
+        if (assetExists && cache) {
           const cachedVal = (await cache.get(resolvedPath)) || (await cache.get(assetId));
           if (cachedVal instanceof Blob) {
             cachedBytes = new Uint8Array(await cachedVal.arrayBuffer());
@@ -318,7 +324,9 @@ export class IRMasterRenderer implements Disposable {
             if (blobData && blobData.size > 0) {
               cachedBytes = new Uint8Array(await blobData.arrayBuffer());
               assetExists = true;
-              await cache.set(resolvedPath, blobData);
+              if (cache) {
+                await cache.set(resolvedPath, blobData);
+              }
             }
           } catch {
             if (typeof process !== 'undefined' && process.versions?.node) {
@@ -506,6 +514,7 @@ export class IRMasterRenderer implements Disposable {
     }
 
     const yieldInterval = options.yieldInterval ?? 5;
+    let actualFramesConsumed = 0;
 
     for (let f = 0; f < framesToRender; f++) {
       if (options.signal?.aborted) {
@@ -528,6 +537,7 @@ export class IRMasterRenderer implements Disposable {
       if (sink) {
         await sink.consumeFrame(f, framePixelBuffer);
       }
+      actualFramesConsumed++;
 
       // Compute cryptographic hash of rendered frame buffer for bit-identical reproducibility
       if (options.generateFrameHash) {
@@ -591,7 +601,7 @@ export class IRMasterRenderer implements Disposable {
     this.videoDecoders.clear();
 
     return {
-      totalFrames: framesToRender,
+      totalFrames: options.signal?.aborted ? actualFramesConsumed : framesToRender,
       durationSeconds: framesToRender > 0 ? parseFloat((framesToRender / fps).toFixed(3)) : 0,
       width,
       height,
