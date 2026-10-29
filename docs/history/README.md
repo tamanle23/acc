@@ -44,6 +44,7 @@
 | 382 | [Console Dead Code Elimination & Shared Data-Table Consolidation](./381_phase3_dead_code_and_ui_consolidation.md) | Completed |
 | 383 | [Unified Sandbox Domain Handler Consolidation & Zero-Trust Token Derivation](./383_phase1_sandbox_handlers_consolidation.md) | Completed |
 | 384 | [Frontend-Backend API Contract & Zero-any Synchronization](./384_phase2_console_api_contract_typing.md) | Completed |
+| 385 | [Backend Multi-Tenancy IDOR Elimination & Security RBAC Hardening](./385_phase3_backend_tenancy_security_rbac.md) | Completed |
 | 383 | [Studio Inspector Cleanliness, Keyframe Diamond UI & Temporal Coordinate Guide](./382_studio_inspector_cleanliness_and_keyframe_guide.md) | Completed |
 | 384 | [Studio Inspector Simplification: Keyframe Diamond Elimination & Pure Sequence Controls](./383_studio_inspector_simplification_and_keyframe_diamond_pruning.md) | Completed |
 | 385 | [TimeSpaceModifierPlugin Refinement & Demo Showcase](./384_timespace_modifier_plugin_refinement_and_demo_showcase.md) | Completed |
@@ -53,3 +54,5 @@
 | 389 | [Studio Core Quadrants Harmonization & Defect Remediation](./389_studio_core_quadrants_harmonization_and_defect_remediation.md) | Completed |
 | 390 | [Studio Iteration 51 Adaptive Audit & Defect Gap Remediation](./390_studio_iteration_51_adaptive_audit_remediation.md) | Completed |
 | 391 | [Discrete `time_space/*` Motion Graphic Plugins & Studio Showcase](./391_discrete_timespace_plugins_and_studio_showcase.md) | Completed |
+| 392 | [Fix Detached Image Guard and Preview Texture Lifecycle](./392_fix_detached_image_guard_and_preview_texture_lifecycle.md) | Completed |
+| 393 | [Eliminate DndContext and Infinite Update Depth in Viewport Gizmo Direct Manipulation](./393_eliminate_dnd_kit_and_infinite_update_depth_in_viewport_gizmo.md) | Completed |

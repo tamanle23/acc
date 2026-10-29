@@ -6,6 +6,7 @@ import com.acc.workflow.core.graph.AcyclicityGuard;
 import com.acc.workflow.core.model.WorkflowDefinition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,20 +40,12 @@ public class WorkflowDefinitionController {
         this.engineService = engineService;
     }
 
-    private String resolveTenantId(String headerTenantId) {
-        if (headerTenantId != null && !headerTenantId.isBlank()) {
-            return headerTenantId;
-        }
-        String ctxTenant = TenantContextHolder.getTenantId();
-        return (ctxTenant != null && !ctxTenant.isBlank()) ? ctxTenant : "system";
-    }
-
     @PostMapping
+    @PreAuthorize("hasAuthority('WORKFLOW_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> registerDefinition(
-        @RequestBody WorkflowDefinition definition,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody WorkflowDefinition definition
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         try {
             // Kahn's & Tarjan verification of acyclicity
             acyclicityGuard.validateAndSort(definition);
@@ -67,11 +60,11 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/{key}")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> getDefinition(
-        @PathVariable("key") String key,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("key") String key
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         return registry.get(tenantId, key)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -79,37 +72,37 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/{key}/versions")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> listDefinitionVersions(
-        @PathVariable("key") String key,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("key") String key
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         return ResponseEntity.ok(registry.listVersions(tenantId, key));
     }
 
     @GetMapping("/{key}/versions/{version}")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> getDefinitionVersion(
         @PathVariable("key") String key,
-        @PathVariable("version") int version,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("version") int version
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         return registry.getVersion(tenantId, key, version)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     @GetMapping
-    public ResponseEntity<Collection<WorkflowDefinition>> listDefinitions(
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
-    ) {
-        String tenantId = resolveTenantId(headerTenantId);
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
+    public ResponseEntity<Collection<WorkflowDefinition>> listDefinitions() {
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         return ResponseEntity.ok(registry.list(tenantId).values());
     }
 
     // --- Execution Migration & Audit Endpoints ---
 
     @PostMapping("/executions/{id}/migrate/dry-run")
+    @PreAuthorize("hasAuthority('WORKFLOW_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> dryRunMigration(
         @PathVariable("id") String executionId,
         @RequestBody WorkflowDefinition targetDefinition
@@ -123,6 +116,7 @@ public class WorkflowDefinitionController {
     }
 
     @PostMapping("/executions/{id}/migrate")
+    @PreAuthorize("hasAuthority('WORKFLOW_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> migrateExecution(
         @PathVariable("id") String executionId,
         @RequestBody WorkflowDefinition targetDefinition,
@@ -139,11 +133,13 @@ public class WorkflowDefinitionController {
     }
 
     @GetMapping("/executions/{id}/audit")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> getAuditLedger(@PathVariable("id") String executionId) {
         return ResponseEntity.ok(engineService.getAuditLedger(executionId));
     }
 
     @GetMapping("/executions/{id}/audit/verify")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> verifyAuditLedger(@PathVariable("id") String executionId) {
         return ResponseEntity.ok(engineService.verifyAuditLedger(executionId));
     }
@@ -154,12 +150,12 @@ public class WorkflowDefinitionController {
     public record BatchMigrateRequest(int targetVersion, List<String> executionIds, Boolean autoMigrateCompatibleOnly) {}
 
     @PostMapping("/{key}/migration-preview")
+    @PreAuthorize("hasAuthority('WORKFLOW_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> migrationPreview(
         @PathVariable("key") String workflowKey,
-        @RequestBody MigrationPreviewRequest req,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody MigrationPreviewRequest req
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         var targetRecordOpt = registry.getVersion(tenantId, workflowKey, req.targetVersion());
         if (targetRecordOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Target definition version not found"));
@@ -217,13 +213,13 @@ public class WorkflowDefinitionController {
     }
 
     @PostMapping("/{key}/batch-migrate")
+    @PreAuthorize("hasAuthority('WORKFLOW_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> batchMigrate(
         @PathVariable("key") String workflowKey,
         @RequestBody BatchMigrateRequest req,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId,
         @RequestHeader(value = "X-Actor-Id", required = false) String actorId
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         var targetRecordOpt = registry.getVersion(tenantId, workflowKey, req.targetVersion());
         if (targetRecordOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Target definition version not found"));
@@ -286,9 +282,9 @@ public class WorkflowDefinitionController {
     ) {}
 
     @PostMapping("/simulate")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> simulateWorkflowDefinition(
-        @RequestBody SimulateWorkflowRequest req,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody SimulateWorkflowRequest req
     ) {
         if (req == null || req.definition() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Workflow definition is required for simulation"));
@@ -309,4 +305,3 @@ public class WorkflowDefinitionController {
         ));
     }
 }
-

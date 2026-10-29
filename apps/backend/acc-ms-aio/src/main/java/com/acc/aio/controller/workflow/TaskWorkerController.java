@@ -8,11 +8,11 @@ import com.acc.workflow.core.model.WorkflowDefinition;
 import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.ports.PersistencePort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +23,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/workflow/tasks")
+@PreAuthorize("hasAuthority('ROLE_SYSTEM_CUSTODIAN') or hasAuthority('platform:worker:manage') or hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
 public class TaskWorkerController {
 
     private final WorkflowEngineService engineService;
@@ -42,21 +43,14 @@ public class TaskWorkerController {
         this.broadcaster = broadcaster;
     }
 
-    private String resolveTenantId(String headerTenantId) {
-        if (headerTenantId != null && !headerTenantId.isBlank()) return headerTenantId;
-        String ctx = TenantContextHolder.getTenantId();
-        return (ctx != null && !ctx.isBlank()) ? ctx : "system";
-    }
-
     @GetMapping("/poll")
     public ResponseEntity<List<TaskSnapshot>> pollTasks(
         @RequestParam(value = "taskType", defaultValue = "SIMPLE") String taskType,
         @RequestParam(value = "domain", defaultValue = "default") String domain,
         @RequestParam(value = "workerId", defaultValue = "jvm-worker") String workerId,
-        @RequestParam(value = "batchSize", defaultValue = "1") int batchSize,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestParam(value = "batchSize", defaultValue = "1") int batchSize
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
         List<TaskSnapshot> tasks = persistencePort.pollTasks(
             tenantId,
@@ -93,10 +87,9 @@ public class TaskWorkerController {
     @PostMapping("/{id}/result")
     public ResponseEntity<?> reportResult(
         @PathVariable("id") String taskId,
-        @RequestBody TaskResultRequest request,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody TaskResultRequest request
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
 
         TaskSnapshot task = persistencePort.getTaskExecution(taskId)
@@ -200,8 +193,7 @@ public class TaskWorkerController {
     @PostMapping("/{id}/claim")
     public ResponseEntity<?> claimTask(
         @PathVariable("id") String taskId,
-        @RequestBody(required = false) Map<String, Object> body,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody(required = false) Map<String, Object> body
     ) {
         TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
         if (task == null) {
@@ -228,8 +220,7 @@ public class TaskWorkerController {
 
     @PostMapping("/{id}/unclaim")
     public ResponseEntity<?> unclaimTask(
-        @PathVariable("id") String taskId,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("id") String taskId
     ) {
         TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);
         if (task == null) {
@@ -260,10 +251,9 @@ public class TaskWorkerController {
     @PostMapping("/{id}/resolve")
     public ResponseEntity<?> resolveTask(
         @PathVariable("id") String taskId,
-        @RequestBody HumanTaskResolutionRequest request,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody HumanTaskResolutionRequest request
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
 
         TaskSnapshot task = persistencePort.getTaskExecution(taskId).orElse(null);

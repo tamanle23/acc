@@ -9,6 +9,7 @@ import com.acc.workflow.core.model.WorkflowStatus;
 import com.acc.workflow.ports.PersistencePort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,12 +59,6 @@ public class WorkflowExecutionController {
         this(engineService, persistencePort, registry, broadcaster, null);
     }
 
-    private String resolveTenantId(String headerTenantId) {
-        if (headerTenantId != null && !headerTenantId.isBlank()) return headerTenantId;
-        String ctx = TenantContextHolder.getTenantId();
-        return (ctx != null && !ctx.isBlank()) ? ctx : "system";
-    }
-
     private String resolveWorkspaceId(String headerWorkspaceId) {
         return (headerWorkspaceId != null && !headerWorkspaceId.isBlank()) ? headerWorkspaceId : "default";
     }
@@ -82,12 +77,12 @@ public class WorkflowExecutionController {
     public record RerunTaskRequest(Map<String, Object> modifiedInput) {}
 
     @PostMapping
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> startExecution(
         @RequestBody StartWorkflowRequest request,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId,
         @RequestHeader(value = "X-Workspace-Id", required = false) String headerWorkspaceId
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         String workspaceId = resolveWorkspaceId(headerWorkspaceId);
 
         WorkflowDefinition def = registry.get(tenantId, request.workflowKey())
@@ -100,24 +95,12 @@ public class WorkflowExecutionController {
             ));
         }
 
-        String executionId = "wf_exec_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        String executionId = "wf-exec-" + UUID.randomUUID().toString().substring(0, 8);
         long now = System.currentTimeMillis();
 
-        Map<String, Object> effectiveInput = new java.util.LinkedHashMap<>();
-        if (request.input() != null) {
-            effectiveInput.putAll(request.input());
-        }
-        if (request.breakpoints() != null && !request.breakpoints().isEmpty()) {
-            effectiveInput.put("__breakpoints", request.breakpoints());
-        }
-
+        var initialInput = request.input() != null ? request.input() : Collections.<String, Object>emptyMap();
         WorkflowSnapshot snapshot = engineService.startWorkflow(
-            executionId,
-            tenantId,
-            workspaceId,
-            def,
-            effectiveInput,
-            now
+            executionId, tenantId, workspaceId, def, initialInput, request.breakpoints(), now
         );
 
         if (approvalsController != null) {
@@ -127,7 +110,6 @@ public class WorkflowExecutionController {
         broadcaster.broadcast(executionId, "WORKFLOW_STARTED", Map.of(
             "workflowId", executionId,
             "status", snapshot.status().name(),
-            "workflowKey", def.workflowKey(),
             "timestamp", now
         ));
 
@@ -135,6 +117,7 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> listExecutions(
         @RequestParam(value = "status", required = false) String statusStr,
         @RequestParam(value = "workflowKey", required = false) String workflowKey,
@@ -142,10 +125,9 @@ public class WorkflowExecutionController {
         @RequestParam(value = "page", defaultValue = "1") int page,
         @RequestParam(value = "size", defaultValue = "20") int size,
         @RequestParam(value = "limit", required = false) Integer limit,
-        @RequestParam(value = "afterId", required = false) String afterId,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestParam(value = "afterId", required = false) String afterId
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         WorkflowStatus status = null;
         if (statusStr != null && !statusStr.isBlank() && !"ALL".equalsIgnoreCase(statusStr)) {
             try {
@@ -208,6 +190,7 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping(value = "/{id}/events", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public org.springframework.web.servlet.mvc.method.annotation.SseEmitter streamExecutionEvents(
         @PathVariable("id") String id
     ) {
@@ -215,9 +198,9 @@ public class WorkflowExecutionController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<?> getExecution(
-        @PathVariable("id") String id,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("id") String id
     ) {
         return persistencePort.getWorkflowSnapshot(id)
             .map(ResponseEntity::ok)
@@ -225,6 +208,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/breakpoints")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> updateBreakpoints(
         @PathVariable("id") String id,
         @RequestBody UpdateBreakpointsRequest request
@@ -246,6 +230,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/pause")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> pauseExecution(@PathVariable("id") String id) {
         long now = System.currentTimeMillis();
         WorkflowSnapshot updated = engineService.pauseExecution(id, now).orElse(null);
@@ -261,11 +246,11 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/resume")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> resumeExecution(
-        @PathVariable("id") String id,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("id") String id
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
         WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
         if (snapshot == null) {
@@ -288,11 +273,11 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/step")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> stepOverExecution(
-        @PathVariable("id") String id,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("id") String id
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
         WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
         if (snapshot == null) {
@@ -315,13 +300,13 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping({ "/{id}/tasks/{taskRef}/rerun", "/{id}/tasks/{taskRef}/replay" })
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> rerunTaskFromNode(
         @PathVariable("id") String id,
         @PathVariable("taskRef") String taskRef,
-        @RequestBody(required = false) Map<String, Object> requestBody,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody(required = false) Map<String, Object> requestBody
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
         WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);
         if (snapshot == null) {
@@ -374,6 +359,7 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/terminate")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> terminateExecution(
         @PathVariable("id") String id,
         @RequestBody(required = false) Map<String, Object> body
@@ -393,11 +379,11 @@ public class WorkflowExecutionController {
     }
 
     @PostMapping("/{id}/compensate")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> compensateExecution(
-        @PathVariable("id") String id,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @PathVariable("id") String id
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
 
         WorkflowSnapshot snapshot = persistencePort.getWorkflowSnapshot(id).orElse(null);

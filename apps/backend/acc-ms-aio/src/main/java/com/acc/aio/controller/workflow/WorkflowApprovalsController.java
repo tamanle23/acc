@@ -11,11 +11,11 @@ import com.acc.workflow.core.model.WorkflowSnapshot;
 import com.acc.workflow.ports.PersistencePort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -175,11 +175,11 @@ public class WorkflowApprovalsController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('WORKFLOW_READ') or hasRole('ADMIN')")
     public ResponseEntity<List<ApprovalTaskDto>> listApprovals(
-        @RequestParam(value = "status", required = false) String statusFilter,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestParam(value = "status", required = false) String statusFilter
     ) {
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         List<ApprovalTaskDto> result = new ArrayList<>();
         for (ApprovalTaskDto task : approvalStore.values()) {
             boolean tenantMatch = "system".equalsIgnoreCase(tenantId)
@@ -196,10 +196,10 @@ public class WorkflowApprovalsController {
     }
 
     @PostMapping("/{id}/resolve")
+    @PreAuthorize("hasAuthority('WORKFLOW_WRITE') or hasRole('ADMIN')")
     public ResponseEntity<?> resolveApproval(
         @PathVariable("id") String id,
-        @RequestBody ResolveApprovalRequest req,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestBody ResolveApprovalRequest req
     ) {
         if (req == null || req.action() == null || req.action().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "action is required"));
@@ -209,7 +209,7 @@ public class WorkflowApprovalsController {
         if ("APPROVE".equals(normalizedAction)) normalizedAction = "APPROVED";
         if ("REJECT".equals(normalizedAction)) normalizedAction = "REJECTED";
 
-        String tenantId = resolveTenantId(headerTenantId);
+        String tenantId = TenantContextHolder.getRequiredTenantId();
         long now = System.currentTimeMillis();
 
         ApprovalTaskDto existing = approvalStore.get(id);
@@ -305,11 +305,5 @@ public class WorkflowApprovalsController {
             "error", "Approval task not found",
             "id", id
         ));
-    }
-
-    private String resolveTenantId(String headerTenantId) {
-        if (headerTenantId != null && !headerTenantId.isBlank()) return headerTenantId;
-        String ctx = TenantContextHolder.getTenantId();
-        return (ctx != null && !ctx.isBlank()) ? ctx : "system";
     }
 }

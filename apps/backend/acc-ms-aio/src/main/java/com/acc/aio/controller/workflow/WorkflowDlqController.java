@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,12 +36,9 @@ public class WorkflowDlqController {
         this.persistencePort = persistencePort;
     }
 
-    private String resolveTenantId(String queryTenantId, String headerTenantId) {
+    private String resolveTenantId(String queryTenantId) {
         if (queryTenantId != null && !queryTenantId.isBlank() && !"ALL".equalsIgnoreCase(queryTenantId) && !"SYSTEM".equalsIgnoreCase(queryTenantId)) {
             return queryTenantId;
-        }
-        if (headerTenantId != null && !headerTenantId.isBlank() && !"ALL".equalsIgnoreCase(headerTenantId) && !"SYSTEM".equalsIgnoreCase(headerTenantId)) {
-            return headerTenantId;
         }
         String ctx = TenantContextHolder.getTenantId();
         if (ctx != null && !ctx.isBlank() && !"SYSTEM".equalsIgnoreCase(ctx)) {
@@ -55,10 +51,9 @@ public class WorkflowDlqController {
     public ResponseEntity<List<TaskDlqRecord>> listDlqTasks(
         @RequestParam(value = "status", required = false) String status,
         @RequestParam(value = "tenantId", required = false) String queryTenantId,
-        @RequestParam(value = "limit", defaultValue = "100") int limit,
-        @RequestHeader(value = "X-Tenant-Id", required = false) String headerTenantId
+        @RequestParam(value = "limit", defaultValue = "100") int limit
     ) {
-        String tenantId = resolveTenantId(queryTenantId, headerTenantId);
+        String tenantId = resolveTenantId(queryTenantId);
         List<TaskDlqRecord> tasks = persistencePort.listDlqTasks(tenantId, status, limit);
         return ResponseEntity.ok(tasks);
     }
