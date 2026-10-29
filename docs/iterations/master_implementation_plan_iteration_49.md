@@ -141,13 +141,13 @@ export function isResolvedSequence(entity: SidecarTargetEntity | unknown): entit
 
 #### 5.3 Unified Worker Message Protocol (`apps/studio/src/renderer/SidecarTypes.ts` & `preview.worker.ts`)
 ```ts
-export type SidecarMessage =
+export type PreviewWorkerMessage =
   | { type: 'WARMUP' }
   | { type: 'EXECUTE_MODIFIER'; payload: ExecuteModifierPayload }
   | { type: 'CANCEL_TASK'; taskId: string; targetId?: string }
   | { type: 'RESET' };
 
-export type SidecarResponse =
+export type PreviewWorkerResponse =
   | { type: 'WARMED_UP' }
   | {
     type: 'MODIFIER_EXECUTED';
@@ -158,6 +158,10 @@ export type SidecarResponse =
   }
   | { type: 'TASK_CANCELED'; taskId: string; targetId?: string }
   | { type: 'ERROR'; taskId?: string; targetId?: string; error: string };
+
+// Backward-compatible aliases
+export type SidecarMessage = PreviewWorkerMessage;
+export type SidecarResponse = PreviewWorkerResponse;
 ```
 
 ---

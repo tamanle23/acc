@@ -19,7 +19,7 @@ import {
   VisionEngineRegistry,
 } from '@acc/core-isomorphic';
 import { WebCanvasAdapter, bootstrapCoreWeb } from '@acc/core-web';
-import type { SidecarMessage, SidecarResponse } from '../SidecarTypes';
+import type { PreviewWorkerMessage, PreviewWorkerResponse } from '../SidecarTypes';
 import { MediabunnyWorkerReader } from './MediabunnyWorkerReader';
 import { PreviewFrameMemoryManager } from './PreviewFrameMemoryManager';
 import { WorkerClipPrewarmer } from './WorkerClipPrewarmer';
@@ -544,12 +544,12 @@ self.onmessage = async (e: MessageEvent) => {
         if (segStrategy && !(segStrategy as any).modelId && typeof (segStrategy as any).init === 'function') {
           await (segStrategy as any).init();
         }
-        self.postMessage({ type: 'WARMED_UP' } satisfies SidecarResponse);
+        self.postMessage({ type: 'WARMED_UP' } satisfies PreviewWorkerResponse);
       } catch (err: any) {
         self.postMessage({
           type: 'ERROR',
           error: `[PreviewWorker:Warmup] ${err?.message || err}`,
-        } satisfies SidecarResponse);
+        } satisfies PreviewWorkerResponse);
       }
       break;
     }
@@ -560,7 +560,7 @@ self.onmessage = async (e: MessageEvent) => {
         type: 'TASK_CANCELED',
         taskId: data.taskId,
         targetId: data.targetId,
-      } satisfies SidecarResponse);
+      } satisfies PreviewWorkerResponse);
       break;
     }
 
@@ -579,7 +579,7 @@ self.onmessage = async (e: MessageEvent) => {
           type: 'TASK_CANCELED',
           taskId: payload.taskId,
           targetId: payload.targetId,
-        } satisfies SidecarResponse);
+        } satisfies PreviewWorkerResponse);
         return;
       }
 
@@ -604,7 +604,7 @@ self.onmessage = async (e: MessageEvent) => {
             type: 'TASK_CANCELED',
             taskId: payload.taskId,
             targetId: payload.targetId,
-          } satisfies SidecarResponse);
+          } satisfies PreviewWorkerResponse);
           return;
         }
 
@@ -614,14 +614,14 @@ self.onmessage = async (e: MessageEvent) => {
           targetId: payload.targetId,
           modifierType: payload.modifier.type,
           state: context.state,
-        } satisfies SidecarResponse);
+        } satisfies PreviewWorkerResponse);
       } catch (err: any) {
         self.postMessage({
           type: 'ERROR',
           taskId: payload.taskId,
           targetId: payload.targetId,
           error: `[PreviewWorker:Execute] ${err?.message || err}`,
-        } satisfies SidecarResponse);
+        } satisfies PreviewWorkerResponse);
       }
       break;
     }
