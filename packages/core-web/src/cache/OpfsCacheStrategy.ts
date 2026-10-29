@@ -192,6 +192,7 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
     const writable = await handle.createWritable();
     let totalBytes = 0;
 
+    const self = this;
     return new WritableStream<Uint8Array>({
       async write(chunk) {
         totalBytes += chunk.byteLength;
@@ -206,7 +207,7 @@ export class OpfsCacheStrategy implements IContentCacheStrategy {
           sizeBytes: metadata?.sizeBytes ?? totalBytes,
           metadata: metadata?.metadata,
         };
-        await this.writeMetadata(dir, safeName, meta);
+        await self.writeMetadata(dir, safeName, meta);
       },
       async abort(reason) {
         await writable.abort(reason);
