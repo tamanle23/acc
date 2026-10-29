@@ -107,11 +107,19 @@ export class NativeResourceManager {
       scope?: INativeResourceScope;
     } = {}
   ): INativeResource {
+    const scopedKey = options.scope ? `${options.scope.id}:${id}` : id;
+
+    // If an existing resource occupies this scoped key, close it first
+    const existing = this.resources.get(scopedKey);
+    if (existing) {
+      existing.resource.close();
+    }
+
     const wrapper = new NativeResourceWrapper(id, raw, {
       byteSize: options.byteSize,
       pinned: options.pinned,
-      onDispose: (res) => {
-        this.unregister(res.id);
+      onDispose: () => {
+        this.unregister(scopedKey);
       },
     });
 
@@ -119,7 +127,7 @@ export class NativeResourceManager {
     this.evictToFit(wrapper.byteSize);
 
     this.currentBytes += wrapper.byteSize;
-    this.resources.set(id, { resource: wrapper, lastAccess: performance.now() });
+    this.resources.set(scopedKey, { resource: wrapper, lastAccess: performance.now() });
 
     if (options.scope) {
       options.scope.register(wrapper);

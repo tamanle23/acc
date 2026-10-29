@@ -54,8 +54,9 @@ export class NativeResourceWrapper implements INativeResource {
       this.byteSize = options.byteSize;
     } else {
       // Deduce byte size: width * height * 4 (standard 32-bit RGBA)
-      const w = raw?.naturalWidth || raw?.videoWidth || raw?.width || 0;
-      const h = raw?.naturalHeight || raw?.videoHeight || raw?.height || 0;
+      const underlying = typeof raw?.getRawCanvas === 'function' ? raw.getRawCanvas() : raw;
+      const w = underlying?.naturalWidth || underlying?.videoWidth || underlying?.width || 0;
+      const h = underlying?.naturalHeight || underlying?.videoHeight || underlying?.height || 0;
       this.byteSize = w > 0 && h > 0 ? w * h * 4 : 1024 * 1024; // 1MB conservative fallback
     }
   }

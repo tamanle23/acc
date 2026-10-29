@@ -291,6 +291,13 @@ export class Depth3DPlugin implements ModifierPlugin<Depth3DPluginParams> {
     // Retrieve cached cutout via prebaked sequence cache or SequenceResourceScope
     let cutout: { subjectImg: any | null; subjectBBox: any | null } | undefined =
       (sequence as any)._prebakedCutout;
+    if (!cutout) {
+      const scopedSubject = seqScope.get('cutout')?.getRaw();
+      if (scopedSubject) {
+        cutout = { subjectImg: scopedSubject, subjectBBox: null };
+        (sequence as any)._prebakedCutout = cutout;
+      }
+    }
     if (!cutout && candidateKeys[0]) {
       try {
         cutout = await resolveSubjectCutout(candidateKeys[0], params as any);

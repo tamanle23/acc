@@ -7,7 +7,7 @@ import type { CanvasSink } from 'mediabunny';
  * and continuously extracts video frames without creating any intermediate
  * VideoFrame or ImageBitmap allocations per tick.
  */
-export class SequentialVideoReader {
+export class SequentialVideoReader implements Disposable {
   private canvasA: OffscreenCanvas | null = null;
   private canvasB: OffscreenCanvas | null = null;
   private ctxA: OffscreenCanvasRenderingContext2D | null = null;
@@ -147,5 +147,9 @@ export class SequentialVideoReader {
     this.ctxA = null;
     this.ctxB = null;
     this.canvasSink = null;
+  }
+
+  public [Symbol.dispose](): void {
+    this.dispose();
   }
 }
